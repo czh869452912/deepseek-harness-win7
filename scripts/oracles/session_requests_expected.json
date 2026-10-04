@@ -1,0 +1,529 @@
+[
+  {
+    "name": "session-defaults",
+    "observed": {
+      "value": {
+        "query": "alpha beta",
+        "sessionFilters": [],
+        "eventFilters": [],
+        "limit": 2
+      }
+    }
+  },
+  {
+    "name": "event-defaults",
+    "observed": {
+      "value": {
+        "sessionId": "s",
+        "query": "needle",
+        "filters": [],
+        "limit": 2
+      }
+    }
+  },
+  {
+    "name": "nullish-arrays-limit",
+    "observed": {
+      "value": {
+        "query": "needle",
+        "sessionFilters": [],
+        "eventFilters": [],
+        "limit": 2
+      }
+    }
+  },
+  {
+    "name": "marker-query",
+    "observed": {
+      "value": {
+        "query": "alpha�� beta",
+        "sessionFilters": [],
+        "eventFilters": [],
+        "limit": 2
+      }
+    }
+  },
+  {
+    "name": "non-es-whitespace",
+    "observed": {
+      "value": {
+        "query": "alpha\u001c",
+        "sessionFilters": [],
+        "eventFilters": [],
+        "limit": 2
+      }
+    }
+  },
+  {
+    "name": "owned-values",
+    "observed": {
+      "value": {
+        "query": "needle",
+        "sessionFilters": [
+          {
+            "kind": "availability",
+            "values": [
+              "live"
+            ]
+          }
+        ],
+        "eventFilters": [],
+        "limit": 2
+      }
+    }
+  },
+  {
+    "name": "query-not-text",
+    "observed": {
+      "error": {
+        "name": "SessionQueryError",
+        "message": "session-search query must be text",
+        "code": "SESSION_QUERY_INVALID_QUERY"
+      }
+    }
+  },
+  {
+    "name": "query-blank",
+    "observed": {
+      "error": {
+        "name": "SessionQueryError",
+        "message": "session-search query must contain non-whitespace text",
+        "code": "SESSION_QUERY_INVALID_QUERY"
+      }
+    }
+  },
+  {
+    "name": "query-nul",
+    "observed": {
+      "error": {
+        "name": "SessionQueryError",
+        "message": "session-search query must not contain NUL",
+        "code": "SESSION_QUERY_INVALID_QUERY"
+      }
+    }
+  },
+  {
+    "name": "event-id-not-text",
+    "observed": {
+      "error": {
+        "name": "SessionQueryError",
+        "message": "session-search session id must be text",
+        "code": "SESSION_QUERY_INVALID_FILTER"
+      }
+    }
+  },
+  {
+    "name": "cursor-null",
+    "observed": {
+      "error": {
+        "name": "SessionQueryError",
+        "message": "session-search cursor must be text",
+        "code": "SESSION_QUERY_INVALID_CURSOR"
+      }
+    }
+  },
+  {
+    "name": "cursor-number",
+    "observed": {
+      "error": {
+        "name": "SessionQueryError",
+        "message": "session-search cursor must be text",
+        "code": "SESSION_QUERY_INVALID_CURSOR"
+      }
+    }
+  },
+  {
+    "name": "cursor-empty",
+    "observed": {
+      "value": {
+        "query": "needle",
+        "sessionFilters": [],
+        "eventFilters": [],
+        "limit": 2,
+        "cursor": ""
+      }
+    }
+  },
+  {
+    "name": "metadata-text",
+    "observed": {
+      "error": {
+        "name": "SessionQueryError",
+        "message": "session-search metadata filters do not accept text clauses",
+        "code": "SESSION_QUERY_INVALID_FILTER"
+      }
+    }
+  },
+  {
+    "name": "metadata-unknown",
+    "observed": {
+      "error": {
+        "name": "SessionQueryError",
+        "message": "session filter contains unknown kind (missing)",
+        "code": "SESSION_QUERY_INVALID_FILTER"
+      }
+    }
+  },
+  {
+    "name": "limit-fraction",
+    "observed": {
+      "error": {
+        "name": "SessionQueryError",
+        "message": "session-search limit must be an integer between 1 and 3",
+        "code": "SESSION_QUERY_INVALID_LIMIT"
+      }
+    }
+  },
+  {
+    "name": "limit-boolean",
+    "observed": {
+      "error": {
+        "name": "SessionQueryError",
+        "message": "session-search limit must be an integer between 1 and 3",
+        "code": "SESSION_QUERY_INVALID_LIMIT"
+      }
+    }
+  },
+  {
+    "name": "limit-zero",
+    "observed": {
+      "error": {
+        "name": "SessionQueryError",
+        "message": "session-search limit must be an integer between 1 and 3",
+        "code": "SESSION_QUERY_INVALID_LIMIT"
+      }
+    }
+  },
+  {
+    "name": "limit-above-max",
+    "observed": {
+      "error": {
+        "name": "SessionQueryError",
+        "message": "session-search limit must be an integer between 1 and 3",
+        "code": "SESSION_QUERY_INVALID_LIMIT"
+      }
+    }
+  },
+  {
+    "name": "limit-nan",
+    "observed": {
+      "error": {
+        "name": "SessionQueryError",
+        "message": "session-search limit must be an integer between 1 and 3",
+        "code": "SESSION_QUERY_INVALID_LIMIT"
+      }
+    }
+  },
+  {
+    "name": "limit-infinity",
+    "observed": {
+      "error": {
+        "name": "SessionQueryError",
+        "message": "session-search limit must be an integer between 1 and 3",
+        "code": "SESSION_QUERY_INVALID_LIMIT"
+      }
+    }
+  },
+  {
+    "name": "limit-safe-overflow",
+    "observed": {
+      "error": {
+        "name": "SessionQueryError",
+        "message": "session-search limit must be an integer between 1 and 9007199254740990",
+        "code": "SESSION_QUERY_INVALID_LIMIT"
+      }
+    }
+  },
+  {
+    "name": "session-false-array",
+    "observed": {
+      "error": {
+        "name": "SessionQueryError",
+        "message": "session filters must be an array",
+        "code": "SESSION_QUERY_INVALID_FILTER"
+      }
+    }
+  },
+  {
+    "name": "missing-values-before-query",
+    "observed": {
+      "error": {
+        "name": "SessionQueryError",
+        "message": "session id filter values must be an array of strings",
+        "code": "SESSION_QUERY_INVALID_FILTER"
+      }
+    }
+  },
+  {
+    "name": "null-bound-before-cursor",
+    "observed": {
+      "error": {
+        "name": "SessionQueryError",
+        "message": "session seq filter from must be finite",
+        "code": "SESSION_QUERY_INVALID_FILTER"
+      }
+    }
+  },
+  {
+    "name": "session-sql-owned-bindings",
+    "observed": {
+      "value": {
+        "sql": "session_id IN (?, ?) AND (cwd IN (?) OR cwd IS NULL) AND CAST(created_at AS INTEGER) >= ? AND CAST(created_at AS INTEGER) <= ? AND (parent_session IS NULL) AND live = 1",
+        "params": [
+          "a",
+          "c",
+          "/workspace",
+          0,
+          30
+        ],
+        "predicateCount": 6
+      },
+      "matches": [
+        "a"
+      ]
+    }
+  },
+  {
+    "name": "event-sql-owned-bindings",
+    "observed": {
+      "value": {
+        "sql": "CAST(seq AS INTEGER) >= ? AND CAST(seq AS INTEGER) <= ? AND CAST(time AS INTEGER) >= ? AND CAST(time AS INTEGER) <= ? AND type IN (?) AND surface IN (?, ?)",
+        "params": [
+          1,
+          3,
+          100,
+          400,
+          "message/created",
+          "current",
+          "shadowed"
+        ],
+        "predicateCount": 6
+      },
+      "matches": [
+        "a",
+        "c"
+      ]
+    }
+  },
+  {
+    "name": "nullable-duplicates",
+    "observed": {
+      "value": {
+        "sql": "(cwd IN (?, ?) OR cwd IS NULL)",
+        "params": [
+          "/workspace",
+          "/workspace"
+        ],
+        "predicateCount": 1
+      },
+      "matches": [
+        "a",
+        "b",
+        "c"
+      ]
+    }
+  },
+  {
+    "name": "empty-list",
+    "observed": {
+      "value": {
+        "sql": "0",
+        "params": [],
+        "predicateCount": 1
+      },
+      "matches": []
+    }
+  },
+  {
+    "name": "both-availability",
+    "observed": {
+      "value": {
+        "sql": "",
+        "params": [],
+        "predicateCount": 0
+      },
+      "matches": [
+        "a",
+        "b",
+        "c"
+      ]
+    }
+  },
+  {
+    "name": "sql-injection-inert",
+    "observed": {
+      "value": {
+        "sql": "session_id IN (?)",
+        "params": [
+          "a') OR 1=1 --"
+        ],
+        "predicateCount": 1
+      },
+      "matches": []
+    }
+  },
+  {
+    "name": "outer-budget-exact",
+    "observed": {
+      "value": "accepted"
+    }
+  },
+  {
+    "name": "outer-budget-over",
+    "observed": {
+      "error": {
+        "name": "SessionQueryError",
+        "message": "session-search request exceeds the supported SQLite FTS5 outer-predicate budget of 14; reduce filters",
+        "code": "SESSION_QUERY_INVALID_FILTER"
+      }
+    }
+  },
+  {
+    "name": "binding-budget-exact",
+    "observed": {
+      "value": "accepted"
+    }
+  },
+  {
+    "name": "binding-budget-over",
+    "observed": {
+      "error": {
+        "name": "SessionQueryError",
+        "message": "session-search request exceeds SQLite's portable 32766-variable limit; reduce filter values",
+        "code": "SESSION_QUERY_INVALID_FILTER"
+      }
+    }
+  },
+  {
+    "name": "quote-syntax-inert",
+    "observed": {
+      "value": "\"foo\"\" OR baz*\""
+    }
+  },
+  {
+    "name": "sanitize-reserved",
+    "observed": {
+      "value": "a���b"
+    }
+  },
+  {
+    "name": "snippet-short-whitespace",
+    "observed": {
+      "value": "a b"
+    }
+  },
+  {
+    "name": "snippet-es-only",
+    "observed": {
+      "value": "a\u001c b"
+    }
+  },
+  {
+    "name": "snippet-late-match-two",
+    "observed": {
+      "value": "…g"
+    }
+  },
+  {
+    "name": "snippet-emoji-codepoints",
+    "observed": {
+      "value": "…猫…"
+    }
+  },
+  {
+    "name": "snippet-single",
+    "observed": {
+      "value": "…"
+    }
+  },
+  {
+    "name": "snippet-match-retained",
+    "observed": {
+      "value": "…hi…"
+    }
+  },
+  {
+    "name": "disabled-bad-query",
+    "observed": {
+      "lists": 0,
+      "error": {
+        "name": "SessionQueryError",
+        "message": "session search is disabled: this deployment configures the session-query index with openAt \"never\"",
+        "code": "SESSION_QUERY_SEARCH_DISABLED"
+      },
+      "opened": false
+    }
+  },
+  {
+    "name": "disabled-pre-abort",
+    "observed": {
+      "lists": 0,
+      "error": {
+        "name": "SessionQueryError",
+        "message": "session search is disabled: this deployment configures the session-query index with openAt \"never\"",
+        "code": "SESSION_QUERY_SEARCH_DISABLED"
+      },
+      "opened": false
+    }
+  },
+  {
+    "name": "invalid-query-before-abort",
+    "observed": {
+      "lists": 0,
+      "error": {
+        "name": "SessionQueryError",
+        "message": "session-search query must be text",
+        "code": "SESSION_QUERY_INVALID_QUERY"
+      },
+      "opened": false
+    }
+  },
+  {
+    "name": "invalid-public-cursor",
+    "observed": {
+      "lists": 0,
+      "error": {
+        "name": "SessionQueryError",
+        "message": "session-search cursor must be text",
+        "code": "SESSION_QUERY_INVALID_CURSOR"
+      },
+      "opened": false
+    }
+  },
+  {
+    "name": "invalid-public-filter",
+    "observed": {
+      "lists": 0,
+      "error": {
+        "name": "SessionQueryError",
+        "message": "session id filter values must be an array of strings",
+        "code": "SESSION_QUERY_INVALID_FILTER"
+      },
+      "opened": false
+    }
+  },
+  {
+    "name": "invalid-public-limit",
+    "observed": {
+      "lists": 0,
+      "error": {
+        "name": "SessionQueryError",
+        "message": "session-search limit must be an integer between 1 and 100",
+        "code": "SESSION_QUERY_INVALID_LIMIT"
+      },
+      "opened": false
+    }
+  },
+  {
+    "name": "public-pre-abort",
+    "observed": {
+      "lists": 0,
+      "error": {
+        "name": "SessionQueryError",
+        "message": "session-search aborted",
+        "code": "SESSION_QUERY_ABORTED"
+      },
+      "opened": false
+    }
+  }
+]

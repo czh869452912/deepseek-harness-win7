@@ -332,45 +332,8 @@ def request_fingerprint(request: Dict[str, Any]) -> str:
 
 
 def make_snippet(marked_text: str, max_chars: int) -> str:
-    """Build a whitespace-normalized excerpt around highlight markers."""
-    clean_chars: List[str] = []
-    match_start: Optional[int] = None
-    for char in marked_text:
-        if char == FTS_HIGHLIGHT_START:
-            if match_start is None:
-                match_start = len(clean_chars)
-            continue
-        if char == FTS_HIGHLIGHT_END:
-            continue
-        if char.isspace():
-            if clean_chars and clean_chars[-1] != " ":
-                clean_chars.append(" ")
-        else:
-            clean_chars.append(char)
-    if clean_chars and clean_chars[-1] == " ":
-        clean_chars.pop()
-    clean = "".join(clean_chars)
-    if len(clean) <= max_chars:
-        return clean
-    if max_chars <= 1:
-        return "…"
-    m_idx = match_start if match_start is not None else 0
-    m_idx = min(m_idx, len(clean) - 1)
-    start = max(0, m_idx - max_chars // 3)
-    prefix = "…" if start > 0 else ""
-    suffix = "…"
-    content_len = max_chars - len(prefix) - len(suffix)
-    if content_len < 1:
-        start = m_idx
-        suffix = ""
-        content_len = max_chars - len(prefix)
-    end = min(len(clean), start + content_len)
-    if end == len(clean):
-        suffix = ""
-        content_len = max_chars - len(prefix)
-        start = max(0, end - content_len)
-    end = min(len(clean), start + content_len)
-    return f"{prefix}{clean[start:end]}{suffix}"
+    from dsh.session.query_requests import make_snippet as render_snippet
+    return render_snippet(marked_text, max_chars)
 
 
 def build_session_event_records(session_id: str, events: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
@@ -426,9 +389,13 @@ class SessionQueryService:
             self._conn = sqlite3.connect(self.db_path, check_same_thread=False)
             self._init_db()
 
-    def ensure_search(self):
+    def _assert_search_enabled(self):
         if self.open_at == 'never':
-            raise SessionQueryError('Search is disabled (openAt: never)', 'SESSION_QUERY_SEARCH_DISABLED')
+            raise SessionQueryError('session search is disabled: this deployment configures the session-query index with openAt "never"',
+                                    'SESSION_QUERY_SEARCH_DISABLED')
+
+    def ensure_search(self):
+        self._assert_search_enabled()
         if self._conn is None:
             self._conn = sqlite3.connect(self.db_path, check_same_thread=False)
             self._init_db()
@@ -533,9 +500,18 @@ class SessionQueryService:
         throw_aborted(signal)
         return trace_session(records, session_id)
 
-    async def searchSessions(self, request, options=None):
-        from dsh.session.web_search import search_sessions
-        return await search_sessions(self, request, options or {})
+    def searchSessions(self, request, options=None):
+        from dsh.session.query_requests import normalize_session_request
+        signal = (options or {}).get('signal')
+        def normalize(value):
+            self._assert_search_enabled()
+            return normalize_session_request(value, dict(defaultLimit=20, maxLimit=100))
+        async def read(owned):
+            from dsh.session.web_search import search_sessions
+            if signal is not None and signal.aborted:
+                raise SessionQueryError('session-search aborted', 'SESSION_QUERY_ABORTED')
+            return await search_sessions(self, owned, dict(signal=signal))
+        return _materialized_read(request, normalize, read)
 
     async def listSessions(self, signal=None):
         import copy

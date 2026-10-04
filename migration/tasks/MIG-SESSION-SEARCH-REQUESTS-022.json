@@ -1,0 +1,52 @@
+{
+  "id": "MIG-SESSION-SEARCH-REQUESTS-022",
+  "goal": "补齐搜索请求的同步归属、错误优先级、参数化 SQL 预算与 Unicode 截断",
+  "kind": "implementation",
+  "state": "running",
+  "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
+  "base_product": "1d9940aaf1af6454045d5e25aadb6733b13991bd",
+  "owner": "current-session-coordinator",
+  "requires": [
+    {
+      "task": "MIG-SESSION-FILTERS-021",
+      "contract": "CON-SESSION-FILTERS",
+      "revision": 1
+    },
+    {
+      "task": "MIG-SESSION-TRACING-020",
+      "contract": "CON-SESSION-TRACING",
+      "revision": 1
+    },
+    {
+      "task": "MIG-CURRENT-RELEASE-GATE-003",
+      "contract": "CON-CURRENT-RELEASE-GATE",
+      "revision": 1
+    }
+  ],
+  "provides": [
+    {
+      "contract": "CON-SESSION-SEARCH-REQUESTS",
+      "revision": 1
+    }
+  ],
+  "acceptance": [
+    "Fifty actual source/native request/SQL/snippet/SQLite Engine refusal observations match their independently declared literals, including real SQLite predicate evaluation and zero index/provider access.",
+    "Ten unchanged upstream query.spec.ts assertions and strict observer/gate refusal probes pass. Four actual JSONL/SQLite consumers prove owned public inputs and invalid/pre-abort rejection.",
+    "A new clean complete release gate executes 125 mandatory lanes, twelve source groups totaling 920 assertions, 44 paired drivers and the actual extracted Python 3.8.10 observer before bounded acceptance."
+  ],
+  "expected_paths": [
+    "dsh/session",
+    "scripts",
+    "tests",
+    "migration",
+    "docs/research"
+  ],
+  "open_findings": [
+    "Fifty source/native observations match after correcting an observer that read Python display strings instead of the literal error.message. Isolated regressions passed 78 and 534 tests; the safe-budget refinement passed final 38-test validation. Following clean filtering acceptance, main expanded gate/consumer regression passed 655 tests in 54.26 seconds, including fresh fifty-case source/native and ten unchanged source assertions. This promoted request contract still needs its own clean complete gate; no bypass or retry is added."
+  ],
+  "conflicts_with": [],
+  "candidate_commit": null,
+  "integrated_commit": null,
+  "evidence_ids": [],
+  "next_action": "推广后主树 655 定向项已通过；独立提交并冻结干净候选，完整全量/125 必需 lane/44 配对/920 原版/解压通过后才签收。随后补来源限定持久化 revision 和完整 FTS/ranking/cursors/reconciliation/代际，继续整体迁移。"
+}

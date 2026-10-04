@@ -1,0 +1,494 @@
+[
+  {
+    "name": "session-defaults",
+    "mode": "session",
+    "request": {
+      "query": "  alpha\n beta  "
+    }
+  },
+  {
+    "name": "event-defaults",
+    "mode": "event",
+    "request": {
+      "sessionId": "s",
+      "query": "needle"
+    }
+  },
+  {
+    "name": "nullish-arrays-limit",
+    "mode": "session",
+    "request": {
+      "query": "needle",
+      "sessionFilters": null,
+      "eventFilters": null,
+      "limit": null
+    }
+  },
+  {
+    "name": "marker-query",
+    "mode": "session",
+    "request": {
+      "query": "﻿ alpha﷐﷑ 　beta ﻿"
+    }
+  },
+  {
+    "name": "non-es-whitespace",
+    "mode": "session",
+    "request": {
+      "query": "alpha\u001c"
+    }
+  },
+  {
+    "name": "owned-values",
+    "mode": "session",
+    "request": {
+      "query": "needle",
+      "sessionFilters": [
+        {
+          "kind": "availability",
+          "values": [
+            "live"
+          ]
+        }
+      ]
+    },
+    "mutate": true
+  },
+  {
+    "name": "query-not-text",
+    "mode": "session",
+    "request": {
+      "query": 1
+    }
+  },
+  {
+    "name": "query-blank",
+    "mode": "session",
+    "request": {
+      "query": "﻿ \n　"
+    }
+  },
+  {
+    "name": "query-nul",
+    "mode": "session",
+    "request": {
+      "query": "bad\u0000query"
+    }
+  },
+  {
+    "name": "event-id-not-text",
+    "mode": "event",
+    "request": {
+      "sessionId": 1,
+      "query": "needle"
+    }
+  },
+  {
+    "name": "cursor-null",
+    "mode": "session",
+    "request": {
+      "query": "needle",
+      "cursor": null
+    }
+  },
+  {
+    "name": "cursor-number",
+    "mode": "session",
+    "request": {
+      "query": "needle",
+      "cursor": 1
+    }
+  },
+  {
+    "name": "cursor-empty",
+    "mode": "session",
+    "request": {
+      "query": "needle",
+      "cursor": ""
+    }
+  },
+  {
+    "name": "metadata-text",
+    "mode": "session",
+    "request": {
+      "query": "needle",
+      "eventFilters": [
+        {
+          "kind": "text",
+          "text": "x"
+        }
+      ]
+    }
+  },
+  {
+    "name": "metadata-unknown",
+    "mode": "event",
+    "request": {
+      "sessionId": "s",
+      "query": "needle",
+      "filters": [
+        {}
+      ]
+    }
+  },
+  {
+    "name": "limit-fraction",
+    "mode": "event",
+    "request": {
+      "sessionId": "s",
+      "query": "needle",
+      "limit": 1.5
+    },
+    "special": "fraction"
+  },
+  {
+    "name": "limit-boolean",
+    "mode": "event",
+    "request": {
+      "sessionId": "s",
+      "query": "needle",
+      "limit": true
+    },
+    "special": "boolean"
+  },
+  {
+    "name": "limit-zero",
+    "mode": "event",
+    "request": {
+      "sessionId": "s",
+      "query": "needle",
+      "limit": 0
+    },
+    "special": "zero"
+  },
+  {
+    "name": "limit-above-max",
+    "mode": "event",
+    "request": {
+      "sessionId": "s",
+      "query": "needle",
+      "limit": 4
+    },
+    "special": "above-max"
+  },
+  {
+    "name": "limit-nan",
+    "mode": "event",
+    "request": {
+      "sessionId": "s",
+      "query": "needle",
+      "limit": null
+    },
+    "special": "nan"
+  },
+  {
+    "name": "limit-infinity",
+    "mode": "event",
+    "request": {
+      "sessionId": "s",
+      "query": "needle",
+      "limit": null
+    },
+    "special": "infinity"
+  },
+  {
+    "name": "limit-safe-overflow",
+    "mode": "session",
+    "request": {
+      "query": "needle",
+      "limit": 9007199254740991
+    },
+    "limits": {
+      "defaultLimit": 1,
+      "maxLimit": 9007199254740991
+    }
+  },
+  {
+    "name": "session-false-array",
+    "mode": "session",
+    "request": {
+      "query": "needle",
+      "sessionFilters": false
+    }
+  },
+  {
+    "name": "missing-values-before-query",
+    "mode": "session",
+    "request": {
+      "query": 1,
+      "sessionFilters": [
+        {
+          "kind": "id"
+        }
+      ]
+    }
+  },
+  {
+    "name": "null-bound-before-cursor",
+    "mode": "event",
+    "request": {
+      "sessionId": "s",
+      "query": "needle",
+      "cursor": 1,
+      "filters": [
+        {
+          "kind": "seq",
+          "from": null
+        }
+      ]
+    }
+  },
+  {
+    "name": "session-sql-owned-bindings",
+    "mode": "session-sql",
+    "filters": [
+      {
+        "kind": "id",
+        "values": [
+          "a",
+          "c"
+        ]
+      },
+      {
+        "kind": "cwd",
+        "values": [
+          "/workspace",
+          null
+        ]
+      },
+      {
+        "kind": "created-at",
+        "from": 0,
+        "to": 30
+      },
+      {
+        "kind": "parent",
+        "values": [
+          null
+        ]
+      },
+      {
+        "kind": "availability",
+        "values": [
+          "live"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "event-sql-owned-bindings",
+    "mode": "event-sql",
+    "filters": [
+      {
+        "kind": "seq",
+        "from": 1,
+        "to": 3
+      },
+      {
+        "kind": "time",
+        "from": 100,
+        "to": 400
+      },
+      {
+        "kind": "type",
+        "values": [
+          "message/created"
+        ]
+      },
+      {
+        "kind": "surface",
+        "values": [
+          "current",
+          "shadowed"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "nullable-duplicates",
+    "mode": "session-sql",
+    "filters": [
+      {
+        "kind": "cwd",
+        "values": [
+          null,
+          "/workspace",
+          null,
+          "/workspace"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "empty-list",
+    "mode": "event-sql",
+    "filters": [
+      {
+        "kind": "type",
+        "values": []
+      }
+    ]
+  },
+  {
+    "name": "both-availability",
+    "mode": "session-sql",
+    "filters": [
+      {
+        "kind": "availability",
+        "values": [
+          "persisted",
+          "live",
+          "live"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "sql-injection-inert",
+    "mode": "session-sql",
+    "filters": [
+      {
+        "kind": "id",
+        "values": [
+          "a') OR 1=1 --"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "outer-budget-exact",
+    "mode": "outer",
+    "count": 14
+  },
+  {
+    "name": "outer-budget-over",
+    "mode": "outer",
+    "count": 15
+  },
+  {
+    "name": "binding-budget-exact",
+    "mode": "binding",
+    "count": 32766
+  },
+  {
+    "name": "binding-budget-over",
+    "mode": "binding",
+    "count": 32767
+  },
+  {
+    "name": "quote-syntax-inert",
+    "mode": "quote",
+    "text": "foo\" OR baz*"
+  },
+  {
+    "name": "sanitize-reserved",
+    "mode": "sanitize",
+    "text": "a\u0000﷐﷑b"
+  },
+  {
+    "name": "snippet-short-whitespace",
+    "mode": "snippet",
+    "text": " ﻿a\n﷐b﷑ 　",
+    "maxChars": 20
+  },
+  {
+    "name": "snippet-es-only",
+    "mode": "snippet",
+    "text": "a\u001c ﻿b",
+    "maxChars": 20
+  },
+  {
+    "name": "snippet-late-match-two",
+    "mode": "snippet",
+    "text": "abcdef﷐g﷑hijk",
+    "maxChars": 2
+  },
+  {
+    "name": "snippet-emoji-codepoints",
+    "mode": "snippet",
+    "text": "😀😀﷐猫﷑尾尾",
+    "maxChars": 3
+  },
+  {
+    "name": "snippet-single",
+    "mode": "snippet",
+    "text": "long text",
+    "maxChars": 1
+  },
+  {
+    "name": "snippet-match-retained",
+    "mode": "snippet",
+    "text": "abcdefgh﷐i﷑jklmnop",
+    "maxChars": 4
+  },
+  {
+    "name": "disabled-bad-query",
+    "mode": "public",
+    "openAt": "never",
+    "request": {
+      "query": 1
+    },
+    "abort": false
+  },
+  {
+    "name": "disabled-pre-abort",
+    "mode": "public",
+    "openAt": "never",
+    "request": {
+      "query": "needle"
+    },
+    "abort": true
+  },
+  {
+    "name": "invalid-query-before-abort",
+    "mode": "public",
+    "openAt": "first-search",
+    "request": {
+      "query": 1
+    },
+    "abort": true
+  },
+  {
+    "name": "invalid-public-cursor",
+    "mode": "public",
+    "openAt": "first-search",
+    "request": {
+      "query": "needle",
+      "cursor": null
+    },
+    "abort": false
+  },
+  {
+    "name": "invalid-public-filter",
+    "mode": "public",
+    "openAt": "first-search",
+    "request": {
+      "query": "needle",
+      "sessionFilters": [
+        {
+          "kind": "id"
+        }
+      ]
+    },
+    "abort": false
+  },
+  {
+    "name": "invalid-public-limit",
+    "mode": "public",
+    "openAt": "first-search",
+    "request": {
+      "query": "needle",
+      "limit": 101
+    },
+    "abort": false
+  },
+  {
+    "name": "public-pre-abort",
+    "mode": "public",
+    "openAt": "first-search",
+    "request": {
+      "query": "needle"
+    },
+    "abort": true
+  }
+]

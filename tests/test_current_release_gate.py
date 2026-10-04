@@ -20,6 +20,7 @@ from scripts.session_corpus_read_oracle import expected as expected_session_corp
 from scripts.session_lineage_oracle import expected as expected_session_lineage
 from scripts.session_event_trace_oracle import expected as expected_session_event_trace
 from scripts.session_filters_oracle import expected as expected_session_filters
+from scripts.session_requests_oracle import expected as expected_session_requests
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -330,7 +331,7 @@ def test_extracted_session_corpus_read_requires_exact_sources_and_batch_drain(tm
 def test_regression_requires_browser_portable_and_acp_process_lanes(tmp_path):
     path = tmp_path / 'pytest.xml'
     regression_xml(path)
-    assert GATE.validate_regression(path) == {'required_lanes': 119, 'skipped': 1}
+    assert GATE.validate_regression(path) == {'required_lanes': 125, 'skipped': 1}
 
 
 @pytest.mark.parametrize('module', ['test_native_web_browser', 'test_portable_smoke', 'test_acp_stdio_journey', 'test_acp_permission_process', 'test_mcp_stdio_transport', 'test_mcp_supervisor', 'test_mcp_schema', 'test_mcp_config', 'test_mcp_tools_source', 'test_mcp_image_consumer', 'test_mcp_http_source', 'test_mcp_http_transport', 'test_mcp_supervisor_source', 'test_mcp_factory_source', 'test_acp_mcp_source', 'test_acp_mcp_runtime_source', 'test_acp_mcp_abort_source', 'test_acp_mcp_process', 'test_acp_mcp_runtime'])
@@ -430,6 +431,8 @@ def extracted_receipt(tmp_path):
     report['sessionEventTrace'] = {'observations': expected_session_event_trace(),
         'root': str(tmp_path), 'module': str(tmp_path / 'dsh/__init__.py'), 'python': [3, 8, 10]}
     report['sessionFilters'] = {'observations': expected_session_filters(),
+        'root': str(tmp_path), 'module': str(tmp_path / 'dsh/__init__.py'), 'python': [3,8,10]}
+    report['sessionRequests'] = {'observations': expected_session_requests(),
         'root': str(tmp_path), 'module': str(tmp_path / 'dsh/__init__.py'), 'python': [3,8,10]}
     return archive, candidate, report
 
@@ -753,6 +756,52 @@ def test_extracted_session_tracing_requires_exact_observations_and_runtime(tmp_p
     path.write_text(json.dumps(report),encoding='utf-8')
     with pytest.raises(RuntimeError):
         GATE.validate_extracted(path,archive,candidate)
+
+@pytest.mark.parametrize('module',['test_session_requests_source','test_session_sqlite_query_source','test_session_requests'])
+@pytest.mark.parametrize('damage',['omit','skip','duplicate','failure'])
+def test_search_request_required_lanes_cannot_be_optional(tmp_path,module,damage):
+    for name in GATE.REQUIRED_REGRESSION[module]:
+        path = tmp_path / 'pytest.xml'
+        regression_xml(path,**{damage:(module,name)})
+        with pytest.raises(RuntimeError):
+            GATE.validate_regression(path)
+
+
+@pytest.mark.parametrize('damage',['missing','tail','duplicate','reorder','foreign-root','foreign-module','python','unknown','index-open','query-copy','sql-injection','snippet'])
+def test_extracted_requests_require_exact_observations_and_runtime(tmp_path,damage):
+    archive,candidate,report = extracted_receipt(tmp_path)
+    read = report['sessionRequests']
+    indexed = {row['name']:row['observed'] for row in read['observations']}
+    if damage == 'missing':
+        del report['sessionRequests']
+    elif damage == 'tail':
+        read['observations'].pop()
+    elif damage == 'duplicate':
+        read['observations'][-1] = copy.deepcopy(read['observations'][0])
+    elif damage == 'reorder':
+        read['observations'].reverse()
+    elif damage == 'foreign-root':
+        read['root'] = str(tmp_path/'foreign')
+        read['module'] = str(tmp_path/'foreign/dsh/__init__.py')
+    elif damage == 'foreign-module':
+        read['module'] = str(tmp_path/'foreign/dsh/__init__.py')
+    elif damage == 'python':
+        read['python'] = [3,9,0]
+    elif damage == 'index-open':
+        indexed['invalid-public-limit']['opened'] = True
+    elif damage == 'query-copy':
+        indexed['owned-values']['value']['sessionFilters'][0]['values'][0] = 'foreign'
+    elif damage == 'sql-injection':
+        indexed['sql-injection-inert']['matches'] = ['a','b','c']
+    elif damage == 'snippet':
+        indexed['snippet-late-match-two']['value'] = '…f'
+    else:
+        read['unknown'] = True
+    path = tmp_path/'extracted.json'
+    path.write_text(json.dumps(report),encoding='utf-8')
+    with pytest.raises(RuntimeError):
+        GATE.validate_extracted(path,archive,candidate)
+
 
 
 @pytest.mark.parametrize('module',['test_session_filters_source','test_session_filters'])

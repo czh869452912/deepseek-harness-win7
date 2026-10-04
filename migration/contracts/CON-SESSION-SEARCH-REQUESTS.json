@@ -1,0 +1,37 @@
+{
+  "id": "CON-SESSION-SEARCH-REQUESTS",
+  "revision": 1,
+  "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
+  "status": "specified",
+  "source_paths": [
+    "reference/packages/session-query/session-query-sqlite/src/query.ts",
+    "reference/packages/session-query/session-query-sqlite/src/index.ts",
+    "reference/packages/session-query/session-query-sqlite/tests/query.spec.ts",
+    "reference/packages/session-query/session-query/src/filters.ts"
+  ],
+  "consumers": [
+    "dsh/session/session_query.py",
+    "dsh/session/web_search.py",
+    "scripts/verify_portable.py"
+  ],
+  "invariants": [
+    "Fifty literal source/native observations retain normalized detached request/filter arrays, explicit nullish defaults, original cursor/query/filter/limit diagnostics and validation precedence.",
+    "Canonical public searchSessions captures normalized query and metadata arrays before its first asynchronous boundary. Only default public limits are currently bound; full configurable backend parity is outside this contract.",
+    "openAt never refuses before normalization, abort, provider or SQLite access. Enumerated invalid requests precede pre-abort; valid pre-abort retains the SQLite search-specific typed SESSION_QUERY_ABORTED taxonomy.",
+    "Session and event SQL fragments preserve literal column names, nullable OR clauses, placeholder order, range casts, predicate counts and portable binding/planner budgets. Both probes evaluate them in actual SQLite over a declared controlled document table.",
+    "FTS caller syntax is quoted as one inert phrase; reserved marker collisions are sanitized. Snippets count Unicode code points and retain the matched character at small late-match windows using the source ECMAScript whitespace set.",
+    "Four real JSONL/SQLite consumer lanes verify public input mutation before awaiting, cold durable results, typed refusal before index/provider access and native oversized-integer rejection.",
+    "Ten unchanged original query.spec.ts declarations establish a mandatory source baseline; these are not ten additional Python parity claims."
+  ],
+  "identity": "Caller-owned request/filter values are copied; source diagnostic code/name/message is observed directly, without Python display-string prefixes. The SQL bindings correspond positionally to the source predicates.",
+  "ownership": "Query owns normalized clauses after the public call. Returned awaitables reject validation without opening SQLite or listing persistence. SQL helper probes own and close their actual in-memory document tables.",
+  "ordering": "Disable check precedes normalization; normalization precedes pre-abort and any index/provider work. Range predicates and bindings retain source input ordering.",
+  "errors": "Enumerated source literals and typed bounds must match; no new bug exception, relaxed assertion or retry is allowed.",
+  "cancellation": "Seven actual source SQLite Engine refusal calls include disabled/invalid-before-abort and typed pre-abort. Neither side opens its index or calls the controlled persistence provider.",
+  "adaptation": "Python synchronous call prefix captures owned inputs and returns an awaitable. Its unbounded positive integers are refused by the safe page budget before any potentially overflowing numeric conversion. Shared SQL uses portable scalar bindings; no STRICT/schema parity is implied.",
+  "open_questions": [
+    "Complete searchEvents, configurable public limits, journal/schema/foreign database ownership, ranking/selected documents, cursors/canonical fingerprint locale, reconciliation/incremental index generations, provider epochs and serialized close remain unaccepted.",
+    "The existing searchSessions carrier still rebuilds a transient view and lacks the complete metadata/ranking protocol. query.ts SQL helpers and snippets are source-backed preparation, not full FTS acceptance.",
+    "Full Tools/Wire, Web/profile/reconnect, arbitrary Task cancellation, ecosystem/auth, fresh uncached installation/remote Actions and deferred Win7 remain unaccepted."
+  ]
+}

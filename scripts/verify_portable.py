@@ -33,6 +33,7 @@ from scripts.session_corpus_read_oracle import validate_runtime as validate_sess
 from scripts.session_lineage_oracle import validate_runtime as validate_session_lineage
 from scripts.session_event_trace_oracle import validate_runtime as validate_session_event_trace
 from scripts.session_filters_oracle import validate_runtime as validate_session_filters
+from scripts.session_requests_oracle import validate_runtime as validate_session_requests
 
 
 def digest(path):
@@ -101,7 +102,9 @@ def main(argv=None):
             'session_event_trace_oracle.py', 'oracles/session_event_trace_python.py',
             'oracles/session_event_trace_expected.json', 'oracles/session_event_trace_fixture.json',
             'session_filters_oracle.py', 'oracles/session_filters_python.py',
-            'oracles/session_filters_expected.json', 'oracles/session_filters_cases.json')})
+            'oracles/session_filters_expected.json', 'oracles/session_filters_cases.json',
+            'session_requests_oracle.py', 'oracles/session_requests_python.py',
+            'oracles/session_requests_expected.json', 'oracles/session_requests_cases.json')})
     node = shutil.which('node') if args.browser else None
     try:
         if args.browser and not node:
@@ -308,7 +311,8 @@ def main(argv=None):
             report['sessionCorpusRead'] = corpus_read_report
             for name, key, validate in [('session_lineage', 'sessionLineage', validate_session_lineage),
                                         ('session_event_trace', 'sessionEventTrace', validate_session_event_trace),
-                                        ('session_filters', 'sessionFilters', validate_session_filters)]:
+                                        ('session_filters', 'sessionFilters', validate_session_filters),
+                                        ('session_requests', 'sessionRequests', validate_session_requests)]:
                 trace_path = workspace / (name + '.json')
                 trace = subprocess.run([str(portable / 'python.exe'), '-I', '-u',
                     str(ROOT / 'scripts/oracles' / (name + '_python.py')), str(trace_path), '--root', str(portable)],

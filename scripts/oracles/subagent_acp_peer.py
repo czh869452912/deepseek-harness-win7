@@ -5,6 +5,10 @@ import sys
 import time
 
 
+sys.stdin.reconfigure(encoding='utf-8')
+sys.stdout.reconfigure(encoding='utf-8')
+
+
 def send(packet):
     sys.stdout.write(json.dumps(dict(jsonrpc='2.0', **packet), ensure_ascii=True) + '\n')
     sys.stdout.flush()

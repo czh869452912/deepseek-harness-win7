@@ -80,7 +80,8 @@ def main(argv=None):
             'subagent_acp_journey.py', 'oracles/subagent_acp_python.py',
             'subagent_acp_teardown_oracle.py', 'oracles/subagent_acp_teardown_python.py',
             'mcp_disposal_oracle.py', 'oracles/mcp_disposal_python.py',
-            'subprocess_ownership_oracle.py', 'oracles/subprocess_ownership_python.py')})
+            'subprocess_ownership_oracle.py', 'oracles/subprocess_ownership_python.py',
+            'oracles/subagent_acp_peer.py')})
     node = shutil.which('node') if args.browser else None
     try:
         if args.browser and not node:

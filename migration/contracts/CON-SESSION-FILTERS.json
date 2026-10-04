@@ -1,0 +1,34 @@
+{
+  "id": "CON-SESSION-FILTERS",
+  "revision": 1,
+  "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
+  "status": "specified",
+  "source_paths": [
+    "reference/packages/session-query/session-query/src/filters.ts",
+    "reference/packages/session-query/session-query/src/documents.ts",
+    "reference/packages/session-query/session-query/src/extraction.ts",
+    "reference/packages/session-query/session-query/src/index.ts"
+  ],
+  "consumers": [
+    "dsh/session/session_query.py",
+    "scripts/verify_portable.py"
+  ],
+  "invariants": [
+    "Public filterSessions/filterEvents materialize detached filters before the first asynchronous boundary, including mutation after the call and before awaiting.",
+    "Invalid filters retain literal source name/code/message; missing values, explicit null bounds, booleans and non-finite bounds are refused. Nullable metadata values remain valid.",
+    "Invalid filters precede cancellation and persistence work; operational failures and aborts retain original causes/reasons.",
+    "Event documents classify current/shadowed/log-only against the complete canonical surface fold and preserve raw ascending log order.",
+    "Literal matching escapes regex metacharacters and uses the enumerated ECMAScript whitespace set, BOM trimming and source I/dotted-I/dotless-I cases.",
+    "Whitespace-only text fails during predicate compilation even if the document collection is empty.",
+    "Actual JSONL/SQLite filtering consumers remain cold and return detached semantic text without retaining full logs or mutating durable messages."
+  ],
+  "identity": "Caller filter arrays are copied synchronously; supplied signal and operational error/cause identity survive. Source document seq/surface/text are retained.",
+  "ownership": "Query owns materialized clauses across await; caller owns original inputs and detached result records/documents.",
+  "ordering": "Materialization precedes async source work; full surface classification precedes semantic document filtering; input order is preserved.",
+  "errors": "Thirty-three literal source/native observations freeze typed diagnostics and operational reason/cause. Malformed typed fields never default to empty successful filters.",
+  "cancellation": "Enumerated pre-abort performs no provider access; invalid filter rejection precedes pre-abort as in the source service.",
+  "adaptation": "A synchronous Python call prefix captures clauses and returns an awaitable even for validation failure. Python regex explicitly represents ECMAScript whitespace and excludes its extra I-case equivalents.",
+  "open_questions": [
+    "New clean complete gate and actual extracted acceptance remain mandatory. Controlled listing/inspection seams are separate from four actual JSONL/SQLite consumers. Complete Unicode version/case-fold parity, all extraction/plugin event types, full FTS/ranking/cursors/generations, provider epochs/Task cancellation, complete Web/profile and deferred Win7 remain unaccepted."
+  ]
+}

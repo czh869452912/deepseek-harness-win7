@@ -41,7 +41,7 @@
 
 此后已逐项提交 subprocess ACP、teardown、MCP disposal、进程所有权/实际树、缓存与 point/corpus 读取、ZIP 暂存和标题批量。未签收的共同候选经历真实浏览器取消、ACP 中文 wire 观察编码、wrapped ZIP 暂存失败，以及用户中断；原始证据均保留。`d81dee16` 本次全量 5970 passed、6 skipped、1 warning，但随后原版 storage/cache 的固定 40ms 创建行检查失败（45 passed、1 failed），门禁拒绝且没有重签。受控 100ms fsync 延迟可复现相同断言，实际失败的具体延迟仍未测得；这不是新增 bug 绕过或已修复根因。
 
-B1 的实际谱系、事件替换链、窗口/快照与 SQLite 对象替换持久化已在上述候选有界签收。下一提交为业务过滤与完整 surface 文档：隔离实现的 33 原始观察匹配、550 定向项通过，尚需主树推广及新的干净全量/119 必需 lane/43 配对/解压验收。原版测试阶段停止并行开发 I/O，保留全部断言和失败退出码。随后按完整 FTS/索引代际、Tools/Wire 组合、完整 Web/profile 主链，再 C/D 顺序继续。旧 Proactor/HTTP 10054、浏览器启动取消、源测试时序和完整 SDK/树边缘仍具名开放；accepted_upstream 不自动完成。
+B1 的实际谱系、事件替换链、窗口/快照与 SQLite 对象替换持久化已在上述候选有界签收。下一提交为业务过滤与完整 surface 文档：33 原始观察匹配，隔离 550 定向项和推广后主树 593 定向项通过；仍需新的干净全量/119 必需 lane/43 配对/解压验收。原版测试阶段停止并行开发 I/O，保留全部断言和失败退出码。随后按完整 FTS/索引代际、Tools/Wire 组合、完整 Web/profile 主链，再 C/D 顺序继续。旧 Proactor/HTTP 10054、浏览器启动取消、源测试时序和完整 SDK/树边缘仍具名开放；accepted_upstream 不自动完成。
 
 A1 的 `MIG-ACP-SESSION-CONTROLS-003` / `CON-ACP-SESSION-CONTROLS@1` 已有界验收。父范围 `MIG-ACP-TRANSPORT-002` 仍是完整 ACP 的未完成任务，不因子合同集成而自动完成。
 

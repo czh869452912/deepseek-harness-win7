@@ -1,0 +1,52 @@
+{
+  "id": "MIG-SESSION-FILTERS-021",
+  "goal": "补齐同步归属的业务过滤、字面文本和完整 surface 文档",
+  "kind": "implementation",
+  "state": "running",
+  "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
+  "base_product": "5c0b3c5e229d900435b3b9df3ed36f9d64a9028b",
+  "owner": "current-session-coordinator",
+  "requires": [
+    {
+      "task": "MIG-SESSION-TRACING-020",
+      "contract": "CON-SESSION-TRACING",
+      "revision": 1
+    },
+    {
+      "task": "MIG-SESSION-CORPUS-READ-019",
+      "contract": "CON-SESSION-CORPUS-READ",
+      "revision": 1
+    },
+    {
+      "task": "MIG-CURRENT-RELEASE-GATE-003",
+      "contract": "CON-CURRENT-RELEASE-GATE",
+      "revision": 1
+    }
+  ],
+  "provides": [
+    {
+      "contract": "CON-SESSION-FILTERS",
+      "revision": 1
+    }
+  ],
+  "acceptance": [
+    "Thirty-three fresh actual source/native materialization, text, document and public query observations preserve synchronous ownership, literal errors, finite bounds and enumerated Unicode whitespace/I-case behavior.",
+    "Strict observer negatives and four real JSONL/SQLite cold/abort consumers verify typed behavior without live activation; earlier exact/title/tracing contracts remain intact.",
+    "A new clean complete gate and extracted Python 3.8.10 execute the same raw observer with exact product/input/root/module provenance before bounded integration."
+  ],
+  "expected_paths": [
+    "dsh/session",
+    "scripts",
+    "tests",
+    "migration",
+    "docs/research"
+  ],
+  "open_findings": [
+    "Thirty-three actual raw source/native observations match; isolated expanded regressions passed 165 and 550 tests. Main promoted gate/consumer regression passed 593 tests in 41.86 seconds. The prior tracing candidate has clean 6082-test acceptance. This new filtering contract requires its own complete clean candidate; no source test, retry or bug exception was changed."
+  ],
+  "conflicts_with": [],
+  "candidate_commit": null,
+  "integrated_commit": null,
+  "evidence_ids": [],
+  "next_action": "推广后的主树 593 定向项已通过；独立提交并冻结新候选，全量/119 必需 lane/43 配对/原版/解压通过才签收。继续完整 FTS/index generations、Web 主链和全部迁移遗留。"
+}

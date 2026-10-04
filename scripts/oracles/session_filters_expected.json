@@ -1,0 +1,506 @@
+[
+  {
+    "name": "sessions-not-array",
+    "observed": {
+      "error": {
+        "name": "SessionQueryError",
+        "message": "session filters must be an array",
+        "code": "SESSION_QUERY_INVALID_FILTER",
+        "sameCause": false,
+        "sameFailure": false
+      }
+    }
+  },
+  {
+    "name": "sessions-missing-values",
+    "observed": {
+      "error": {
+        "name": "SessionQueryError",
+        "message": "session id filter values must be an array of strings",
+        "code": "SESSION_QUERY_INVALID_FILTER",
+        "sameCause": false,
+        "sameFailure": false
+      }
+    }
+  },
+  {
+    "name": "sessions-null-range",
+    "observed": {
+      "error": {
+        "name": "SessionQueryError",
+        "message": "session created-at filter from must be finite",
+        "code": "SESSION_QUERY_INVALID_FILTER",
+        "sameCause": false,
+        "sameFailure": false
+      }
+    }
+  },
+  {
+    "name": "sessions-bool-range",
+    "observed": {
+      "error": {
+        "name": "SessionQueryError",
+        "message": "session created-at filter from must be finite",
+        "code": "SESSION_QUERY_INVALID_FILTER",
+        "sameCause": false,
+        "sameFailure": false
+      }
+    }
+  },
+  {
+    "name": "sessions-nan-range",
+    "observed": {
+      "error": {
+        "name": "SessionQueryError",
+        "message": "session created-at filter from must be finite",
+        "code": "SESSION_QUERY_INVALID_FILTER",
+        "sameCause": false,
+        "sameFailure": false
+      }
+    }
+  },
+  {
+    "name": "sessions-infinite-range",
+    "observed": {
+      "error": {
+        "name": "SessionQueryError",
+        "message": "session created-at filter to must be finite",
+        "code": "SESSION_QUERY_INVALID_FILTER",
+        "sameCause": false,
+        "sameFailure": false
+      }
+    }
+  },
+  {
+    "name": "sessions-reversed-range",
+    "observed": {
+      "error": {
+        "name": "SessionQueryError",
+        "message": "session created-at filter from must be less than or equal to to",
+        "code": "SESSION_QUERY_INVALID_FILTER",
+        "sameCause": false,
+        "sameFailure": false
+      }
+    }
+  },
+  {
+    "name": "sessions-invalid-availability",
+    "observed": {
+      "error": {
+        "name": "SessionQueryError",
+        "message": "session availability filter contains unknown value \"stored\"",
+        "code": "SESSION_QUERY_INVALID_FILTER",
+        "sameCause": false,
+        "sameFailure": false
+      }
+    }
+  },
+  {
+    "name": "sessions-numeric-kind",
+    "observed": {
+      "error": {
+        "name": "SessionQueryError",
+        "message": "session unknown filter kind (missing)",
+        "code": "SESSION_QUERY_INVALID_FILTER",
+        "sameCause": false,
+        "sameFailure": false
+      }
+    }
+  },
+  {
+    "name": "sessions-detached-values",
+    "observed": {
+      "filters": [
+        {
+          "kind": "id",
+          "values": [
+            "live"
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "sessions-nullable-values",
+    "observed": {
+      "filters": [
+        {
+          "kind": "cwd",
+          "values": [
+            null,
+            "/workspace"
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "events-not-array",
+    "observed": {
+      "error": {
+        "name": "SessionQueryError",
+        "message": "session filters must be an array",
+        "code": "SESSION_QUERY_INVALID_FILTER",
+        "sameCause": false,
+        "sameFailure": false
+      }
+    }
+  },
+  {
+    "name": "events-missing-values",
+    "observed": {
+      "error": {
+        "name": "SessionQueryError",
+        "message": "session type filter values must be an array of strings",
+        "code": "SESSION_QUERY_INVALID_FILTER",
+        "sameCause": false,
+        "sameFailure": false
+      }
+    }
+  },
+  {
+    "name": "events-null-range",
+    "observed": {
+      "error": {
+        "name": "SessionQueryError",
+        "message": "session seq filter to must be finite",
+        "code": "SESSION_QUERY_INVALID_FILTER",
+        "sameCause": false,
+        "sameFailure": false
+      }
+    }
+  },
+  {
+    "name": "events-invalid-surface",
+    "observed": {
+      "error": {
+        "name": "SessionQueryError",
+        "message": "session surface filter contains unknown value \"hidden\"",
+        "code": "SESSION_QUERY_INVALID_FILTER",
+        "sameCause": false,
+        "sameFailure": false
+      }
+    }
+  },
+  {
+    "name": "events-invalid-text",
+    "observed": {
+      "error": {
+        "name": "SessionQueryError",
+        "message": "session text filter text must be a string",
+        "code": "SESSION_QUERY_INVALID_FILTER",
+        "sameCause": false,
+        "sameFailure": false
+      }
+    }
+  },
+  {
+    "name": "text-empty",
+    "observed": {
+      "error": {
+        "name": "SessionQueryError",
+        "message": "session text filter must contain non-whitespace text",
+        "code": "SESSION_QUERY_INVALID_FILTER",
+        "sameCause": false,
+        "sameFailure": false
+      }
+    }
+  },
+  {
+    "name": "text-literal",
+    "observed": {
+      "matches": [
+        true,
+        false,
+        false
+      ]
+    }
+  },
+  {
+    "name": "text-whitespace",
+    "observed": {
+      "matches": [
+        true,
+        false,
+        false,
+        true
+      ]
+    }
+  },
+  {
+    "name": "text-bom-trim",
+    "observed": {
+      "matches": [
+        true,
+        true,
+        true
+      ]
+    }
+  },
+  {
+    "name": "text-case-i",
+    "observed": {
+      "matches": [
+        true,
+        true,
+        false,
+        false
+      ]
+    }
+  },
+  {
+    "name": "text-case-dotted",
+    "observed": {
+      "matches": [
+        false,
+        false,
+        true,
+        false
+      ]
+    }
+  },
+  {
+    "name": "text-case-dotless",
+    "observed": {
+      "matches": [
+        false,
+        false,
+        false,
+        true
+      ]
+    }
+  },
+  {
+    "name": "text-empty-documents",
+    "observed": {
+      "error": {
+        "name": "SessionQueryError",
+        "message": "session text filter must contain non-whitespace text",
+        "code": "SESSION_QUERY_INVALID_FILTER",
+        "sameCause": false,
+        "sameFailure": false
+      }
+    }
+  },
+  {
+    "name": "documents-surface",
+    "observed": {
+      "documents": [
+        {
+          "sessionId": "owned",
+          "seq": 1,
+          "type": "user/message",
+          "time": 2,
+          "surface": "shadowed",
+          "text": "original"
+        },
+        {
+          "sessionId": "owned",
+          "seq": 2,
+          "type": "user/message",
+          "time": 3,
+          "surface": "shadowed",
+          "text": "summary one"
+        },
+        {
+          "sessionId": "owned",
+          "seq": 3,
+          "type": "user/message",
+          "time": 4,
+          "surface": "current",
+          "text": "context"
+        },
+        {
+          "sessionId": "owned",
+          "seq": 4,
+          "type": "user/message",
+          "time": 5,
+          "surface": "current",
+          "text": "summary two"
+        }
+      ]
+    }
+  },
+  {
+    "name": "public-sessions",
+    "observed": {
+      "counters": {
+        "lists": 1,
+        "inspections": 0,
+        "sameSignal": true
+      },
+      "records": [
+        {
+          "id": "live",
+          "live": true,
+          "persisted": false
+        },
+        {
+          "id": "cold",
+          "live": false,
+          "persisted": true
+        }
+      ]
+    }
+  },
+  {
+    "name": "public-sessions-before-await",
+    "observed": {
+      "counters": {
+        "lists": 1,
+        "inspections": 0,
+        "sameSignal": true
+      },
+      "records": [
+        {
+          "id": "live",
+          "live": true,
+          "persisted": false
+        }
+      ]
+    }
+  },
+  {
+    "name": "public-sessions-pre-abort",
+    "observed": {
+      "counters": {
+        "lists": 0,
+        "inspections": 0,
+        "sameSignal": true
+      },
+      "error": {
+        "name": "TypeError",
+        "message": "controlled filter listing failure",
+        "code": null,
+        "sameCause": false,
+        "sameFailure": true
+      }
+    }
+  },
+  {
+    "name": "public-sessions-invalid-before-abort",
+    "observed": {
+      "counters": {
+        "lists": 0,
+        "inspections": 0,
+        "sameSignal": true
+      },
+      "error": {
+        "name": "SessionQueryError",
+        "message": "session created-at filter from must be finite",
+        "code": "SESSION_QUERY_INVALID_FILTER",
+        "sameCause": false,
+        "sameFailure": false
+      }
+    }
+  },
+  {
+    "name": "public-sessions-failure",
+    "observed": {
+      "counters": {
+        "lists": 1,
+        "inspections": 0,
+        "sameSignal": true
+      },
+      "error": {
+        "name": "SessionQueryError",
+        "message": "session persistence listing failed: controlled filter listing failure",
+        "code": "SESSION_QUERY_PERSISTENCE_FAILED",
+        "sameCause": true,
+        "sameFailure": false
+      }
+    }
+  },
+  {
+    "name": "public-events",
+    "observed": {
+      "counters": {
+        "lists": 0,
+        "inspections": 0,
+        "sameSignal": true
+      },
+      "documents": [
+        {
+          "sessionId": "live",
+          "seq": 4,
+          "type": "user/message",
+          "time": 5,
+          "surface": "current",
+          "text": "summary two"
+        }
+      ]
+    }
+  },
+  {
+    "name": "public-events-cold",
+    "observed": {
+      "counters": {
+        "lists": 1,
+        "inspections": 1,
+        "sameSignal": true
+      },
+      "documents": [
+        {
+          "sessionId": "cold",
+          "seq": 1,
+          "type": "user/message",
+          "time": 2,
+          "surface": "shadowed",
+          "text": "original"
+        },
+        {
+          "sessionId": "cold",
+          "seq": 2,
+          "type": "user/message",
+          "time": 3,
+          "surface": "shadowed",
+          "text": "summary one"
+        }
+      ]
+    }
+  },
+  {
+    "name": "public-events-before-await",
+    "observed": {
+      "counters": {
+        "lists": 0,
+        "inspections": 0,
+        "sameSignal": true
+      },
+      "documents": [
+        {
+          "sessionId": "live",
+          "seq": 1,
+          "type": "user/message",
+          "time": 2,
+          "surface": "shadowed",
+          "text": "original"
+        },
+        {
+          "sessionId": "live",
+          "seq": 2,
+          "type": "user/message",
+          "time": 3,
+          "surface": "shadowed",
+          "text": "summary one"
+        },
+        {
+          "sessionId": "live",
+          "seq": 3,
+          "type": "user/message",
+          "time": 4,
+          "surface": "current",
+          "text": "context"
+        },
+        {
+          "sessionId": "live",
+          "seq": 4,
+          "type": "user/message",
+          "time": 5,
+          "surface": "current",
+          "text": "summary two"
+        }
+      ]
+    }
+  }
+]

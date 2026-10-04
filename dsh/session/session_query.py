@@ -148,109 +148,80 @@ def _join_text(parts: List[str]) -> str:
 
 
 def compile_session_text_filter(text: str) -> Pattern[str]:
-    """
-    Compile literal case-insensitive, whitespace-flexible semantic-text match.
-    """
-    trimmed = text.strip()
+    whitespace = r"[\u0009-\u000d\u0020\u00a0\u1680\u2000-\u200a\u2028\u2029\u202f\u205f\u3000\ufeff]"
+    trimmed = re.sub("^" + whitespace + "+|" + whitespace + "+$", "", text)
     if not trimmed:
-        raise SessionQueryError(
-            "session text filter must contain non-whitespace text",
-            "SESSION_QUERY_INVALID_FILTER",
-        )
-    pattern = r"\s+".join(re.escape(part) for part in re.split(r"\s+", trimmed))
+        raise SessionQueryError("session text filter must contain non-whitespace text", "SESSION_QUERY_INVALID_FILTER")
+    def literal(part):
+        return "".join("(?-i:[Ii])" if character in ("I", "i") else
+            "(?-i:" + character + ")" if character in ("\u0130", "\u0131") else re.escape(character)
+            for character in part)
+    pattern = (whitespace + "+").join(literal(part) for part in re.split(whitespace + "+", trimmed))
     return re.compile(pattern, re.IGNORECASE)
 
 
 def materialize_session_result_filters(filters: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
-    if not isinstance(filters, list):
-        raise SessionQueryError("filters must be an array", "SESSION_QUERY_INVALID_FILTER")
-    result: List[Dict[str, Any]] = []
-    for f in filters:
-        if not isinstance(f, dict) or "kind" not in f:
-            raise SessionQueryError("unknown filter kind (missing)", "SESSION_QUERY_INVALID_FILTER")
-        kind = f["kind"]
-        if kind == "id":
-            vals = f.get("values", [])
-            if not isinstance(vals, list) or any(not isinstance(v, str) for v in vals):
-                raise SessionQueryError("id filter values must be an array of strings", "SESSION_QUERY_INVALID_FILTER")
-            result.append({"kind": "id", "values": list(vals)})
-        elif kind == "cwd":
-            vals = f.get("values", [])
-            if not isinstance(vals, list) or any(v is not None and not isinstance(v, str) for v in vals):
-                raise SessionQueryError("cwd filter values must be an array of strings or null", "SESSION_QUERY_INVALID_FILTER")
-            result.append({"kind": "cwd", "values": list(vals)})
-        elif kind == "created-at":
-            result.append(_copy_range("created-at", f))
-        elif kind == "parent":
-            vals = f.get("values", [])
-            if not isinstance(vals, list) or any(v is not None and not isinstance(v, str) for v in vals):
-                raise SessionQueryError("parent filter values must be an array of strings or null", "SESSION_QUERY_INVALID_FILTER")
-            result.append({"kind": "parent", "values": list(vals)})
-        elif kind == "availability":
-            vals = f.get("values", [])
-            if not isinstance(vals, list) or any(not isinstance(v, str) for v in vals):
-                raise SessionQueryError("availability filter values must be an array of strings", "SESSION_QUERY_INVALID_FILTER")
-            for v in vals:
-                if v not in ("live", "persisted"):
-                    raise SessionQueryError(f'session availability filter contains unknown value "{v}"', "SESSION_QUERY_INVALID_FILTER")
-            result.append({"kind": "availability", "values": list(vals)})
-        else:
-            raise SessionQueryError(f'unknown filter kind "{kind}"', "SESSION_QUERY_INVALID_FILTER")
-    return result
+    return _materialize_filters(filters, False)
 
 
 def materialize_session_event_result_filters(filters: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    return _materialize_filters(filters, True)
+
+
+def _materialize_filters(filters, events):
     if not isinstance(filters, list):
-        raise SessionQueryError("filters must be an array", "SESSION_QUERY_INVALID_FILTER")
-    result: List[Dict[str, Any]] = []
-    for f in filters:
-        if not isinstance(f, dict) or "kind" not in f:
-            raise SessionQueryError("unknown filter kind (missing)", "SESSION_QUERY_INVALID_FILTER")
-        kind = f["kind"]
-        if kind in ("seq", "time"):
-            result.append(_copy_range(kind, f))
-        elif kind == "type":
-            vals = f.get("values", [])
-            if not isinstance(vals, list) or any(not isinstance(v, str) for v in vals):
-                raise SessionQueryError("type filter values must be an array of strings", "SESSION_QUERY_INVALID_FILTER")
-            result.append({"kind": "type", "values": list(vals)})
-        elif kind == "surface":
-            vals = f.get("values", [])
-            if not isinstance(vals, list) or any(not isinstance(v, str) for v in vals):
-                raise SessionQueryError("surface filter values must be an array of strings", "SESSION_QUERY_INVALID_FILTER")
-            for v in vals:
-                if v not in ("current", "shadowed", "log-only"):
-                    raise SessionQueryError(f'session surface filter contains unknown value "{v}"', "SESSION_QUERY_INVALID_FILTER")
-            result.append({"kind": "surface", "values": list(vals)})
-        elif kind == "text":
-            txt = f.get("text")
-            if not isinstance(txt, str):
-                raise SessionQueryError("text filter text must be a string", "SESSION_QUERY_INVALID_FILTER")
-            result.append({"kind": "text", "text": txt})
+        raise SessionQueryError("session filters must be an array", "SESSION_QUERY_INVALID_FILTER")
+    result = []
+    ranges = ("seq", "time") if events else ("created-at",)
+    strings = ("type", "surface") if events else ("id", "cwd", "parent", "availability")
+    for clause in filters:
+        kind = clause.get("kind") if isinstance(clause, dict) else None
+        if kind in ranges:
+            result.append(_copy_range(kind, clause))
+        elif kind in strings:
+            values = clause.get("values")
+            nullable = kind in ("cwd", "parent")
+            if (not isinstance(values, list) or
+                    any(not isinstance(value, str) and not (nullable and value is None) for value in values)):
+                raise SessionQueryError("session " + kind + " filter values must be an array of strings" +
+                                        (" or null" if nullable else ""), "SESSION_QUERY_INVALID_FILTER")
+            allowed = ("live", "persisted") if kind == "availability" else (
+                ("current", "shadowed", "log-only") if kind == "surface" else None)
+            if allowed is not None:
+                for value in values:
+                    if value not in allowed:
+                        raise SessionQueryError('session ' + kind + ' filter contains unknown value "' + value + '"',
+                                                "SESSION_QUERY_INVALID_FILTER")
+            result.append(dict(kind=kind, values=list(values)))
+        elif events and kind == "text":
+            text = clause.get("text")
+            if not isinstance(text, str):
+                raise SessionQueryError("session text filter text must be a string", "SESSION_QUERY_INVALID_FILTER")
+            result.append(dict(kind=kind, text=text))
         else:
-            raise SessionQueryError(f'unknown filter kind "{kind}"', "SESSION_QUERY_INVALID_FILTER")
+            detail = '"' + kind + '"' if isinstance(kind, str) else "(missing)"
+            raise SessionQueryError("session unknown filter kind " + detail, "SESSION_QUERY_INVALID_FILTER")
     return result
 
 
 def _copy_range(kind: str, rdict: Dict[str, Any]) -> Dict[str, Any]:
-    copy: Dict[str, Any] = {"kind": kind}
-    if "from" in rdict and rdict["from"] is not None:
-        copy["from"] = rdict["from"]
-    if "to" in rdict and rdict["to"] is not None:
-        copy["to"] = rdict["to"]
-    _validate_range(kind, copy)
-    return copy
+    copied = dict(kind=kind)
+    for name in ("from", "to"):
+        if name in rdict:
+            copied[name] = rdict[name]
+    _validate_range(kind, copied)
+    return copied
 
 
 def _validate_range(name: str, rdict: Dict[str, Any]) -> None:
-    rfrom = rdict.get("from")
-    rto = rdict.get("to")
-    if rfrom is not None and not isinstance(rfrom, (int, float)):
-        raise SessionQueryError(f"session {name} filter from must be finite", "SESSION_QUERY_INVALID_FILTER")
-    if rto is not None and not isinstance(rto, (int, float)):
-        raise SessionQueryError(f"session {name} filter to must be finite", "SESSION_QUERY_INVALID_FILTER")
-    if rfrom is not None and rto is not None and rfrom > rto:
-        raise SessionQueryError(f"session {name} filter from must be less than or equal to to", "SESSION_QUERY_INVALID_FILTER")
+    import math
+    for bound in ("from", "to"):
+        if bound in rdict and (type(rdict[bound]) not in (int, float) or not math.isfinite(rdict[bound])):
+            raise SessionQueryError("session " + name + " filter " + bound + " must be finite",
+                                    "SESSION_QUERY_INVALID_FILTER")
+    if "from" in rdict and "to" in rdict and rdict["from"] > rdict["to"]:
+        raise SessionQueryError("session " + name + " filter from must be less than or equal to to",
+                                "SESSION_QUERY_INVALID_FILTER")
 
 
 def filter_session_results(
@@ -303,10 +274,12 @@ def filter_session_event_documents(
     if not filters:
         return list(documents)
     mat_filters = materialize_session_event_result_filters(filters)
+    text_patterns = {index: compile_session_text_filter(clause['text'])
+                     for index, clause in enumerate(mat_filters) if clause['kind'] == 'text'}
     res = []
     for doc in documents:
         match = True
-        for f in mat_filters:
+        for index, f in enumerate(mat_filters):
             kind = f["kind"]
             if kind == "seq":
                 sq = doc.get("seq", 0)
@@ -321,7 +294,7 @@ def filter_session_event_documents(
             elif kind == "surface" and doc.get("surface") not in f["values"]:
                 match = False; break
             elif kind == "text":
-                pat = compile_session_text_filter(f["text"])
+                pat = text_patterns[index]
                 if not pat.search(doc.get("text", "")):
                     match = False; break
         if match:
@@ -401,33 +374,28 @@ def make_snippet(marked_text: str, max_chars: int) -> str:
 
 
 def build_session_event_records(session_id: str, events: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
-    records = []
-    for ev in events:
-        records.append({
-            "sessionId": session_id,
-            "seq": ev.get("seq", 0),
-            "type": ev.get("type", ""),
-            "time": ev.get("time", 0),
-            "surface": "current" if ev.get("surfaceOp") == "append" else "log-only",
-        })
-    return records
+    from dsh.session.tracing import event_records
+    return event_records(session_id, events)
 
 
 def build_session_event_search_documents(session_id: str, events: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
-    docs = []
-    for ev in events:
-        text = extract_session_event_text(ev)
-        if not text:
-            continue
-        docs.append({
-            "sessionId": session_id,
-            "seq": ev.get("seq", 0),
-            "type": ev.get("type", ""),
-            "time": ev.get("time", 0),
-            "surface": "current" if ev.get("surfaceOp") == "append" else "log-only",
-            "text": text,
-        })
-    return docs
+    records = build_session_event_records(session_id, events)
+    documents = []
+    for record, event in zip(records, events):
+        text = extract_session_event_text(event)
+        if text:
+            documents.append(dict(record, text=text))
+    return documents
+
+
+def _materialized_read(filters, materialize, read):
+    try:
+        owned = materialize(filters)
+    except Exception as error:
+        async def rejected(reason=error):
+            raise reason
+        return rejected()
+    return read(owned)
 
 
 class SessionQueryService:
@@ -516,6 +484,18 @@ class SessionQueryService:
         from dsh.session.tracing import event_records
         loaded = await self._corpus.load(session_id)
         return event_records(session_id, loaded['events'])
+
+    def filterSessions(self, filters, signal=None):
+        async def read(owned):
+            return filter_session_results(await self.listSessions(signal), owned)
+        return _materialized_read(filters, materialize_session_result_filters, read)
+
+    def filterEvents(self, session_id, filters):
+        async def read(owned):
+            loaded = await self._corpus.load(session_id)
+            documents = build_session_event_search_documents(session_id, loaded['events'])
+            return filter_session_event_documents(documents, owned)
+        return _materialized_read(filters, materialize_session_event_result_filters, read)
 
     async def traceEvent(self, request, signal=None):
         from dsh.session.preparations import throw_aborted

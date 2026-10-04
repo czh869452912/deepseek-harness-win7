@@ -30,6 +30,7 @@ from scripts.session_corpus_list_oracle import validate_runtime as validate_sess
 from scripts.session_corpus_read_oracle import validate_runtime as validate_session_corpus_read
 from scripts.session_lineage_oracle import validate_runtime as validate_session_lineage
 from scripts.session_event_trace_oracle import validate_runtime as validate_session_event_trace
+from scripts.session_filters_oracle import validate_runtime as validate_session_filters
 NODE_VERSION = 'v22.22.2'
 PORTABLE_ARCHIVE = 'dist/dsh-win7-portable-v0.1.0.zip'
 PAIRED_DRIVERS = (
@@ -38,10 +39,16 @@ PAIRED_DRIVERS = (
     'pi', 'storage_cache', 'workflow_ralph', 'repeat_tool', 'token_meter',
     'pruner', 'compaction', 'maintenance', 'timeout_policy', 'abort',
     'approval', 'inspect', 'cordis_guard', 'cordis_runner',
-    'cordis_retirement', 'cordis_tools', 'acp_sessions', 'acp_model_output', 'acp_stdio', 'acp_permissions', 'mcp_stdio', 'mcp_http', 'acp_mcp', 'subagent_acp', 'subagent_acp_teardown', 'mcp_disposal', 'subprocess_ownership', 'subprocess_tree', 'projection_cache_failure', 'session_observation_read', 'session_corpus_list', 'session_corpus_read', 'session_lineage', 'session_event_trace',
+    'cordis_retirement', 'cordis_tools', 'acp_sessions', 'acp_model_output', 'acp_stdio', 'acp_permissions', 'mcp_stdio', 'mcp_http', 'acp_mcp', 'subagent_acp', 'subagent_acp_teardown', 'mcp_disposal', 'subprocess_ownership', 'subprocess_tree', 'projection_cache_failure', 'session_observation_read', 'session_corpus_list', 'session_corpus_read', 'session_lineage', 'session_event_trace', 'session_filters',
 )
 OFFICIAL_CONFIGS = ('consumers', 'agent-lifecycle', 'session-recovery', 'session-projection', 'acp', 'acp-app', 'mcp', 'subagent-acp', 'storage-cache', 'session-observation', 'session-corpus')
 REQUIRED_REGRESSION = {
+    'test_session_filters_source': {'test_source_session_filters_contract'},
+    'test_session_filters': {
+        name + '[' + backend + ']' for name in (
+            'test_actual_durable_filters_hold_inputs_before_await_and_classify_surface',
+            'test_actual_durable_filter_pre_abort_and_invalid_bounds_do_not_access_backend')
+        for backend in ('jsonl', 'sqlite')},
     'test_session_lineage_source': {'test_source_session_lineage_contract'},
     'test_session_event_trace_source': {'test_source_session_event_trace_contract'},
     'test_session_lineage': {
@@ -328,7 +335,8 @@ def validate_extracted(path, archive, candidate):
             raise ValueError('Session corpus reads came from a different runtime')
     except (ValueError, KeyError, TypeError) as error:
         raise RuntimeError('Extracted Session corpus read observations are incomplete') from error
-    for name, validate in [('sessionLineage', validate_session_lineage), ('sessionEventTrace', validate_session_event_trace)]:
+    for name, validate in [('sessionLineage', validate_session_lineage), ('sessionEventTrace', validate_session_event_trace),
+                           ('sessionFilters', validate_session_filters)]:
         try:
             validate(report.get(name))
             if report[name]['root'] != report['mcpStdio']['root']:

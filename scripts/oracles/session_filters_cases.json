@@ -1,0 +1,330 @@
+[
+  {
+    "name": "sessions-not-array",
+    "mode": "sessions-materialize",
+    "filters": {}
+  },
+  {
+    "name": "sessions-missing-values",
+    "mode": "sessions-materialize",
+    "filters": [
+      {
+        "kind": "id"
+      }
+    ]
+  },
+  {
+    "name": "sessions-null-range",
+    "mode": "sessions-materialize",
+    "filters": [
+      {
+        "kind": "created-at",
+        "from": null
+      }
+    ]
+  },
+  {
+    "name": "sessions-bool-range",
+    "mode": "sessions-materialize",
+    "filters": [
+      {
+        "kind": "created-at",
+        "from": true
+      }
+    ]
+  },
+  {
+    "name": "sessions-nan-range",
+    "mode": "sessions-materialize",
+    "filters": [
+      {
+        "kind": "created-at",
+        "from": 0
+      }
+    ]
+  },
+  {
+    "name": "sessions-infinite-range",
+    "mode": "sessions-materialize",
+    "filters": [
+      {
+        "kind": "created-at",
+        "to": 0
+      }
+    ]
+  },
+  {
+    "name": "sessions-reversed-range",
+    "mode": "sessions-materialize",
+    "filters": [
+      {
+        "kind": "created-at",
+        "from": 4,
+        "to": 2
+      }
+    ]
+  },
+  {
+    "name": "sessions-invalid-availability",
+    "mode": "sessions-materialize",
+    "filters": [
+      {
+        "kind": "availability",
+        "values": [
+          "stored"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "sessions-numeric-kind",
+    "mode": "sessions-materialize",
+    "filters": [
+      {
+        "kind": 1
+      }
+    ]
+  },
+  {
+    "name": "sessions-detached-values",
+    "mode": "sessions-materialize",
+    "filters": [
+      {
+        "kind": "id",
+        "values": [
+          "live"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "sessions-nullable-values",
+    "mode": "sessions-materialize",
+    "filters": [
+      {
+        "kind": "cwd",
+        "values": [
+          null,
+          "/workspace"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "events-not-array",
+    "mode": "events-materialize",
+    "filters": {}
+  },
+  {
+    "name": "events-missing-values",
+    "mode": "events-materialize",
+    "filters": [
+      {
+        "kind": "type"
+      }
+    ]
+  },
+  {
+    "name": "events-null-range",
+    "mode": "events-materialize",
+    "filters": [
+      {
+        "kind": "seq",
+        "to": null
+      }
+    ]
+  },
+  {
+    "name": "events-invalid-surface",
+    "mode": "events-materialize",
+    "filters": [
+      {
+        "kind": "surface",
+        "values": [
+          "hidden"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "events-invalid-text",
+    "mode": "events-materialize",
+    "filters": [
+      {
+        "kind": "text",
+        "text": 42
+      }
+    ]
+  },
+  {
+    "name": "text-empty",
+    "mode": "text",
+    "text": "  ",
+    "documents": [
+      "a"
+    ]
+  },
+  {
+    "name": "text-literal",
+    "mode": "text",
+    "text": " [tag].* ",
+    "documents": [
+      "[TAG].*",
+      "tagAB",
+      "[tag].x"
+    ]
+  },
+  {
+    "name": "text-whitespace",
+    "mode": "text",
+    "text": " A B ",
+    "documents": [
+      "A\tB",
+      "AB",
+      "A\u001cB",
+      "A﻿B"
+    ]
+  },
+  {
+    "name": "text-bom-trim",
+    "mode": "text",
+    "text": "﻿Alpha﻿",
+    "documents": [
+      "alpha",
+      "ALPHA",
+      "﻿Alpha﻿"
+    ]
+  },
+  {
+    "name": "text-case-i",
+    "mode": "text",
+    "text": "I",
+    "documents": [
+      "I",
+      "i",
+      "İ",
+      "ı"
+    ]
+  },
+  {
+    "name": "text-case-dotted",
+    "mode": "text",
+    "text": "İ",
+    "documents": [
+      "I",
+      "i",
+      "İ",
+      "ı"
+    ]
+  },
+  {
+    "name": "text-case-dotless",
+    "mode": "text",
+    "text": "ı",
+    "documents": [
+      "I",
+      "i",
+      "İ",
+      "ı"
+    ]
+  },
+  {
+    "name": "text-empty-documents",
+    "mode": "events-filter",
+    "filters": [
+      {
+        "kind": "text",
+        "text": "  "
+      }
+    ]
+  },
+  {
+    "name": "documents-surface",
+    "mode": "documents"
+  },
+  {
+    "name": "public-sessions",
+    "mode": "public-sessions",
+    "filters": [
+      {
+        "kind": "availability",
+        "values": [
+          "live",
+          "persisted"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "public-sessions-before-await",
+    "mode": "public-sessions",
+    "filters": [
+      {
+        "kind": "id",
+        "values": [
+          "live"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "public-sessions-pre-abort",
+    "mode": "public-sessions",
+    "filters": []
+  },
+  {
+    "name": "public-sessions-invalid-before-abort",
+    "mode": "public-sessions",
+    "filters": [
+      {
+        "kind": "created-at",
+        "from": null
+      }
+    ]
+  },
+  {
+    "name": "public-sessions-failure",
+    "mode": "public-sessions",
+    "filters": []
+  },
+  {
+    "name": "public-events",
+    "mode": "public-events",
+    "filters": [
+      {
+        "kind": "surface",
+        "values": [
+          "current"
+        ]
+      },
+      {
+        "kind": "text",
+        "text": "summary"
+      }
+    ]
+  },
+  {
+    "name": "public-events-cold",
+    "mode": "public-events",
+    "filters": [
+      {
+        "kind": "surface",
+        "values": [
+          "shadowed"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "public-events-before-await",
+    "mode": "public-events",
+    "filters": [
+      {
+        "kind": "type",
+        "values": [
+          "user/message"
+        ]
+      }
+    ]
+  }
+]

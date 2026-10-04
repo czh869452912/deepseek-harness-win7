@@ -38,6 +38,7 @@ from scripts.webserver_reset_probe import validate as validate_webserver_reset
 from scripts.python_directory_probe import validate as validate_python_directory
 from scripts.session_snapshots_oracle import validate_runtime as validate_session_snapshots
 from scripts.query_schema_oracle import validate_runtime as validate_query_schema
+from scripts.query_engine_oracle import validate_runtime as validate_query_engine
 
 
 def digest(path):
@@ -112,7 +113,8 @@ def main(argv=None):
             'session_snapshots_oracle.py', 'oracles/session_snapshots_python.py', 'oracles/session_snapshots_expected.json',
             'oracles/session_snapshot_fixture.py',
             'python_directory_probe.py', 'query_schema_oracle.py', 'oracles/query_schema_python.py',
-            'oracles/query_schema_expected.json')})
+            'oracles/query_schema_expected.json', 'query_engine_oracle.py', 'oracles/query_engine_python.py',
+            'oracles/query_engine_expected.json')})
     node = shutil.which('node') if args.browser else None
     try:
         if args.browser and not node:
@@ -322,7 +324,8 @@ def main(argv=None):
                                         ('session_filters', 'sessionFilters', validate_session_filters),
                                         ('session_requests', 'sessionRequests', validate_session_requests),
                                         ('session_snapshots', 'sessionSnapshots', validate_session_snapshots),
-                                        ('query_schema', 'querySchema', validate_query_schema)]:
+                                        ('query_schema', 'querySchema', validate_query_schema),
+                                        ('query_engine', 'queryEngine', validate_query_engine)]:
                 trace_path = workspace / (name + '.json')
                 trace = subprocess.run([str(portable / 'python.exe'), '-I', '-u',
                     str(ROOT / 'scripts/oracles' / (name + '_python.py')), str(trace_path), '--root', str(portable)],

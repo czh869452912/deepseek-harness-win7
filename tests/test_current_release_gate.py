@@ -24,6 +24,7 @@ from scripts.session_requests_oracle import expected as expected_session_request
 from scripts.session_snapshots_oracle import expected as expected_session_snapshots
 from scripts.python_directory_probe import EXPECTED as expected_python_directory
 from scripts.query_schema_oracle import expected as expected_query_schema
+from scripts.query_engine_oracle import expected as expected_query_engine
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -334,7 +335,7 @@ def test_extracted_session_corpus_read_requires_exact_sources_and_batch_drain(tm
 def test_regression_requires_browser_portable_and_acp_process_lanes(tmp_path):
     path = tmp_path / 'pytest.xml'
     regression_xml(path)
-    assert GATE.validate_regression(path) == {'required_lanes': 189, 'skipped': 1}
+    assert GATE.validate_regression(path) == {'required_lanes': 224, 'skipped': 1}
 
 
 @pytest.mark.parametrize('module', ['test_native_web_browser', 'test_portable_smoke', 'test_acp_stdio_journey', 'test_acp_permission_process', 'test_mcp_stdio_transport', 'test_mcp_supervisor', 'test_mcp_schema', 'test_mcp_config', 'test_mcp_tools_source', 'test_mcp_image_consumer', 'test_mcp_http_source', 'test_mcp_http_transport', 'test_mcp_supervisor_source', 'test_mcp_factory_source', 'test_acp_mcp_source', 'test_acp_mcp_runtime_source', 'test_acp_mcp_abort_source', 'test_acp_mcp_process', 'test_acp_mcp_runtime'])
@@ -446,11 +447,54 @@ def extracted_receipt(tmp_path):
             sha256='2339b9e7c8b2d4be67d5516fed37aa70c02bdb463386c47ab130d00586751642'))
     report['pythonDirectory'] = dict(root=str(tmp_path), module=str(tmp_path / 'dsh/boot/python_directory_mutation.py'),
         python='3.8.10', platform='win32', observations=copy.deepcopy(expected_python_directory))
+    manifest = json.loads((ROOT / 'dsh/session/bin/sqlite3.json').read_text(encoding='utf-8'))
+    report['queryEngine'] = dict(root=str(tmp_path), moduleFile=str(tmp_path / 'dsh/session/query_engine.py'),
+        python='3.8.10', sqliteVersion=manifest['version'], sqliteSourceId=manifest['source_id'],
+        sqliteDllSha256=manifest['dll_sha256'], manifest=manifest, observations=expected_query_engine())
     report['webServerReset'] = dict(root=str(tmp_path), module=str(tmp_path / 'dsh/host/webserver/socket_server.py'),
         python='3.8.10', platform='win32', observations=[
             dict(mode='http-stream', resets=3, owned=True, alive=True, retired=True, errors=[]),
             dict(mode='upgrade', resets=3, owned=True, alive=True, retired=True, errors=[])])
     return archive, candidate, report
+
+
+@pytest.mark.parametrize('damage', ['omit', 'skip', 'duplicate', 'failure'])
+def test_query_engine_lanes_are_mandatory(tmp_path, damage):
+    for module in ('test_query_engine', 'test_query_engine_source', 'test_session_remote'):
+        for name in GATE.REQUIRED_REGRESSION[module]:
+            path = tmp_path / 'regression.xml'
+            regression_xml(path, **{damage: (module, name)})
+            with pytest.raises(RuntimeError):
+                GATE.validate_regression(path)
+
+
+@pytest.mark.parametrize('damage', ['missing', 'root', 'module', 'runtime', 'sqlite', 'source', 'dll', 'manifest', 'observations'])
+def test_extracted_query_engine_requires_candidate_provider_and_exact_observations(tmp_path, damage):
+    archive, candidate, report = extracted_receipt(tmp_path)
+    engine = report['queryEngine']
+    if damage == 'missing':
+        del report['queryEngine']
+    elif damage == 'root':
+        engine['root'] = str(tmp_path / 'foreign')
+        engine['moduleFile'] = str(tmp_path / 'foreign/dsh/session/query_engine.py')
+    elif damage == 'module':
+        engine['moduleFile'] = str(tmp_path / 'foreign/provider.py')
+    elif damage == 'runtime':
+        engine['python'] = '3.9.0'
+    elif damage == 'sqlite':
+        engine['sqliteVersion'] = '3.35.5'
+    elif damage == 'source':
+        engine['sqliteSourceId'] = 'foreign'
+    elif damage == 'dll':
+        engine['sqliteDllSha256'] = '0' * 64
+    elif damage == 'manifest':
+        engine['manifest'] = {}
+    else:
+        engine['observations'] = []
+    output = tmp_path / 'extracted.json'
+    output.write_text(json.dumps(report), encoding='utf-8')
+    with pytest.raises(RuntimeError, match='queryEngine'):
+        GATE.validate_extracted(output, archive, candidate)
 
 
 @pytest.mark.parametrize('damage', ['omit', 'skip', 'duplicate', 'failure'])

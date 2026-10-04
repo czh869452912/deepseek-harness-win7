@@ -97,7 +97,7 @@ HARNESS_PLUGIN_CLASSES: Dict[str, str] = {
     "@deepseek-ai/dsh-session-persistence-sqlite": "dsh.session.persistence_sqlite:SqliteSessionPersistencePlugin",
     "@deepseek-ai/dsh-session-projection": "dsh.session.projections:SessionProjectionsPlugin",
     "@deepseek-ai/dsh-session-projection-cache": "dsh.session.projection_cache:SessionProjectionCachePlugin",
-    "@deepseek-ai/dsh-session-query-sqlite": "dsh.session.session_query:SessionQueryPlugin",
+    "@deepseek-ai/dsh-session-query-sqlite": "dsh.session.query_engine:SqliteSessionQueryPlugin",
     "@deepseek-ai/dsh-session-checkpoint-policy": "dsh.session.checkpoint_policy:SessionCheckpointPolicyPlugin",
     "@deepseek-ai/dsh-session-log-deepseek": "dsh.session.session_log_deepseek:SessionLogDeepSeekPlugin",
     "@deepseek-ai/dsh-session-stats": "dsh.session.stats:SessionStatsPlugin",

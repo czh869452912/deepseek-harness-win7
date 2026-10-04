@@ -7,6 +7,7 @@ import yaml
 from dsh.boot.profile_boot import run_profile
 from dsh.typert.dispatch import RemoteDispatcher
 from dsh.core.abort import AbortController
+from dsh.session.query_engine import SqliteSessionQueryEngine
 
 
 @pytest.fixture
@@ -54,6 +55,7 @@ async def test_session_remote_create_follow_rename_resume(tmp_path, monkeypatch,
     (tmp_path / 'AGENTS.md').write_text('WORKSPACE_RULE_38: respect Python 3.8.', encoding='utf-8')
     ctx = result['ctx']
     try:
+        assert isinstance(ctx.get('sessionQuery'), SqliteSessionQueryEngine)
         remote = RemoteDispatcher(ctx)
         async def call(method, **args):
             return await remote.invoke(dict(namespace='session', method=method, args=args))
@@ -116,12 +118,15 @@ async def test_session_remote_create_follow_rename_resume(tmp_path, monkeypatch,
     restarted = await run_profile(dict(profile='web', dshHome=str(tmp_path / 'home'), patchFiles=[str(patch)], args=['--no-open', '--port', '0'], waitForExit=False))
     try:
         ctx = restarted['ctx']
+        assert isinstance(ctx.get('sessionQuery'), SqliteSessionQueryEngine)
         remote = RemoteDispatcher(ctx)
         listing = await remote.invoke(dict(namespace='session', method='list', args=dict(_request={})))
         assert created['sessionId'] in [row['sessionId'] for row in listing['items']]
         await ctx.get('sessionController').agents.resolve(created['sessionId'])
         restored = ctx.get('agents').get(created['sessionId'])
         assert any(e['type'] == 'assistant/message' and 'Verified browser reply' in json.dumps(e) for e in restored.session.events)
+        searched = await remote.invoke(dict(namespace='session', method='search', args=dict(request=dict(query='Verified browser reply'))))
+        assert [item['sessionId'] for item in searched['items']] == [forked['sessionId'], created['sessionId']]
     finally:
         restarted['shutdown'].shutdown(0)
         await restarted['shutdown'].wait()

@@ -1,0 +1,18 @@
+[
+  {"name":"persisted-ranked","observed":[{"id":"alpha","live":false,"persisted":true,"seq":0,"snippet":"needle needle"}]},
+  {"name":"persisted-next-page","observed":[{"id":"beta","live":false,"persisted":true,"seq":0,"snippet":"needle"}]},
+  {"name":"unchanged-no-inspect","observed":{"items":[{"id":"alpha","live":false,"persisted":true,"seq":0,"snippet":"needle needle"}],"inspections":0}},
+  {"name":"event-header","observed":{"header":{"version":0,"id":"alpha","createdAt":1},"items":[{"sessionId":"alpha","seq":0,"type":"user/message","time":1,"surface":"current","snippet":"needle needle"}]}},
+  {"name":"cross-session-stale","observed":{"code":"SESSION_QUERY_STALE_CURSOR","message":"session-search cursor is stale because its relevant corpus changed"}},
+  {"name":"event-page","observed":{"seqs":[0],"hasNext":true}},
+  {"name":"unrelated-event-cursor","observed":{"seqs":[1]}},
+  {"name":"live-preference","observed":[{"id":"beta","live":false,"persisted":true,"seq":0,"snippet":"needle"},{"id":"alpha","live":true,"persisted":true,"seq":0,"snippet":"needle LIVE"}]},
+  {"name":"literal-operators","observed":[]},
+  {"name":"empty-availability","observed":[]},
+  {"name":"one-stable-retry","observed":{"items":[{"id":"beta","live":false,"persisted":true,"seq":0,"snippet":"needle"},{"id":"alpha","live":true,"persisted":true,"seq":0,"snippet":"needle LIVE"}],"inspections":0}},
+  {"name":"unstable-refusal","observed":{"code":"SESSION_QUERY_PERSISTENCE_FAILED","message":"session-search persistence observation did not stabilize after one retry"}},
+  {"name":"unmounted-hidden","observed":[]},
+  {"name":"replacement-reloads","observed":{"items":[{"id":"alpha","live":false,"persisted":true,"seq":0,"snippet":"needle needle"},{"id":"beta","live":false,"persisted":true,"seq":0,"snippet":"needle"}],"inspections":2}},
+  {"name":"preabort-zero-observation","observed":{"code":"SESSION_QUERY_ABORTED","message":"session-search aborted","snapshots":0}},
+  {"name":"closed-refusal","observed":{"code":"SESSION_QUERY_INDEX_FAILED","message":"session-search SQLite index is closed"}}
+]

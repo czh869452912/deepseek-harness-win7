@@ -36,6 +36,7 @@ from scripts.webserver_reset_probe import validate as validate_webserver_reset
 from scripts.python_directory_probe import validate as validate_python_directory
 from scripts.session_snapshots_oracle import validate_runtime as validate_session_snapshots
 from scripts.query_schema_oracle import validate_runtime as validate_query_schema
+from scripts.query_engine_oracle import validate_runtime as validate_query_engine
 NODE_VERSION = 'v22.22.2'
 PORTABLE_ARCHIVE = 'dist/dsh-win7-portable-v0.1.0.zip'
 PAIRED_DRIVERS = (
@@ -44,10 +45,51 @@ PAIRED_DRIVERS = (
     'pi', 'storage_cache', 'workflow_ralph', 'repeat_tool', 'token_meter',
     'pruner', 'compaction', 'maintenance', 'timeout_policy', 'abort',
     'approval', 'inspect', 'cordis_guard', 'cordis_runner',
-    'cordis_retirement', 'cordis_tools', 'acp_sessions', 'acp_model_output', 'acp_stdio', 'acp_permissions', 'mcp_stdio', 'mcp_http', 'acp_mcp', 'subagent_acp', 'subagent_acp_teardown', 'mcp_disposal', 'subprocess_ownership', 'subprocess_tree', 'projection_cache_failure', 'session_observation_read', 'session_corpus_list', 'session_corpus_read', 'session_lineage', 'session_event_trace', 'session_filters', 'session_requests', 'session_snapshots', 'query_schema',
+    'cordis_retirement', 'cordis_tools', 'acp_sessions', 'acp_model_output', 'acp_stdio', 'acp_permissions', 'mcp_stdio', 'mcp_http', 'acp_mcp', 'subagent_acp', 'subagent_acp_teardown', 'mcp_disposal', 'subprocess_ownership', 'subprocess_tree', 'projection_cache_failure', 'session_observation_read', 'session_corpus_list', 'session_corpus_read', 'session_lineage', 'session_event_trace', 'session_filters', 'session_requests', 'session_snapshots', 'query_schema', 'query_engine',
 )
-OFFICIAL_CONFIGS = ('consumers', 'agent-lifecycle', 'session-recovery', 'session-projection', 'acp', 'acp-app', 'mcp', 'subagent-acp', 'storage-cache', 'session-observation', 'session-corpus', 'session-sqlite-query')
+OFFICIAL_CONFIGS = ('consumers', 'agent-lifecycle', 'session-recovery', 'session-projection', 'acp', 'acp-app', 'mcp', 'subagent-acp', 'storage-cache', 'session-observation', 'session-corpus', 'session-sqlite-query', 'query-engine-source')
 REQUIRED_REGRESSION = {
+    "test_session_remote": {
+        "test_session_remote_create_follow_rename_resume[minimal]",
+        "test_session_remote_create_follow_rename_resume[standard]",
+        "test_session_remote_create_follow_rename_resume[cordis]",
+    },
+    "test_query_engine": {
+        "test_query_engine_abort_ignoring_source_holds_serialization_until_cleanup[inspect]",
+        "test_query_engine_abort_ignoring_source_holds_serialization_until_cleanup[list]",
+        "test_query_engine_actual_cordis_publication_readiness_and_retirement[first-search]",
+        "test_query_engine_actual_cordis_publication_readiness_and_retirement[never]",
+        "test_query_engine_actual_cordis_publication_readiness_and_retirement[startup]",
+        "test_query_engine_actual_durable_search_incremental_revision_and_live_preference[jsonl]",
+        "test_query_engine_actual_durable_search_incremental_revision_and_live_preference[sqlite]",
+        "test_query_engine_actual_live_events_page_rank_owned_request_and_filter_budgets",
+        "test_query_engine_close_drains_accepted_source_and_refuses_queued_work",
+        "test_query_engine_configuration_refuses_before_context_access[patch0-path must not be blank]",
+        "test_query_engine_configuration_refuses_before_context_access[patch1-path must not be blank]",
+        "test_query_engine_configuration_refuses_before_context_access[patch2-openAt is not supported]",
+        "test_query_engine_configuration_refuses_before_context_access[patch3-defaultLimit must be an integer between 1 and 9007199254740990]",
+        "test_query_engine_configuration_refuses_before_context_access[patch4-maxLimit must be an integer between 1 and 9007199254740990]",
+        "test_query_engine_configuration_refuses_before_context_access[patch5-snippetChars must be a positive integer]",
+        "test_query_engine_configuration_refuses_before_context_access[patch6-readWindowMax must be a non-negative integer]",
+        "test_query_engine_configuration_refuses_before_context_access[patch7-persistedInspectConcurrency must be a positive safe integer]",
+        "test_query_engine_configuration_refuses_before_context_access[patch8-defaultLimit must be less than or equal to maxLimit]",
+        "test_query_engine_configuration_refuses_before_context_access[patch9-journalMode is not supported]",
+        "test_query_engine_cursor_rejects_foreign_or_unsafe_offset[-1]",
+        "test_query_engine_cursor_rejects_foreign_or_unsafe_offset[1.5]",
+        "test_query_engine_cursor_rejects_foreign_or_unsafe_offset[9007199254740992]",
+        "test_query_engine_cursor_rejects_foreign_or_unsafe_offset[None]",
+        "test_query_engine_cursor_rejects_foreign_or_unsafe_offset[True]",
+        "test_query_engine_failed_readiness_is_shared_and_closed_once",
+        "test_query_engine_failed_transaction_preserves_both_fts_generations_and_next_search",
+        "test_query_engine_optional_provider_child_disposal_waits_for_cleanup",
+        "test_query_engine_preabort_disabled_and_invalid_requests_never_open",
+        "test_query_engine_readiness_non_error_value_preserves_source_wait_boundary[False]",
+        "test_query_engine_readiness_non_error_value_preserves_source_wait_boundary[True]",
+        "test_query_engine_shared_readiness_abort_and_close_drain",
+    },
+    "test_query_engine_source": {
+        "test_actual_original_native_query_engine_boundaries",
+    },
     "test_sqlite_database": {
         "test_pinned_database_coexists_with_loaded_stdlib_and_enforces_strict_types",
         "test_pinned_database_preserves_bound_storage_values[None]",
@@ -417,7 +459,7 @@ def validate_extracted(path, archive, candidate):
             raise ValueError('Session corpus reads came from a different runtime')
     except (ValueError, KeyError, TypeError) as error:
         raise RuntimeError('Extracted Session corpus read observations are incomplete') from error
-    for name, validate in [('querySchema', validate_query_schema), ('pythonDirectory', validate_python_directory),
+    for name, validate in [('queryEngine', validate_query_engine), ('querySchema', validate_query_schema), ('pythonDirectory', validate_python_directory),
                            ('sessionLineage', validate_session_lineage), ('sessionEventTrace', validate_session_event_trace),
                            ('sessionFilters', validate_session_filters), ('sessionRequests', validate_session_requests),
                            ('sessionSnapshots', validate_session_snapshots)]:

@@ -20,11 +20,12 @@
   ],
   "expected_paths": ["dsh/session", "scripts", "tests", "migration", "docs/research"],
   "open_findings": [
-    "Isolated eighteen-case source/native driver and native boundaries pass; expanded regression passed 591 tests in 24.03 seconds. Precise main promotion passes 511 contract/gate tests and 48 storage/cache regressions. Earlier raw-v1 native observations exposed a missing asyncio import; it was corrected and raw output retained. Initial regression fixtures attempted JSONL.close, which the provider does not expose; fixtures were corrected. Both preceding clean candidates were rejected and exact archives retained. The additional Gateway closure repair passes all 59 main browser/Gateway tests. Complete clean acceptance remains required."
+    "Isolated eighteen-case source/native driver and native boundaries pass; expanded regression passed 591 tests in 24.03 seconds. Precise main promotion passes 511 contract/gate tests and 48 storage/cache regressions. Earlier raw-v1 native observations exposed a missing asyncio import; it was corrected and raw output retained. Initial regression fixtures attempted JSONL.close, which the provider does not expose; fixtures were corrected. Both preceding clean candidates were rejected and exact archives retained. The additional Gateway closure repair passes all 59 main browser/Gateway tests. Complete clean acceptance remains required.",
+    "Clean 24f9f83d was rejected with 6377 passed, one original-browser startup cancellation failure, six existing skips and one existing warning. The exact failed archive/input/netlog are retained; diagnostics cannot sign it. The canonical FTS engine is now independently promoted with 224 mandatory lanes, thirteen unchanged source groups/980 assertions and 47 paired drivers, awaiting committed clean complete acceptance."
   ],
   "conflicts_with": [],
   "candidate_commit": null,
   "integrated_commit": null,
   "evidence_ids": [],
-  "next_action": "快照已在 bc7028c2 提交，但该候选因独立目录发布 WinError 5 被拒绝；快照与原版浏览器通过。目录修复及相同 ChangeTime 夹具后冻结新候选，至少 189 必需 lane、至少 46 配对、920 原版及实际解压全量通过后才签收。继续完整 FTS/游标/稳定两次校验/代际与 SQLite schema-19，不认证完整 B1 或延期 Win7。"
+  "next_action": "冻结规范 FTS 新候选，全量 pytest / 224 必需 lane / 980 原版 / 47 双侧 / 真实解压通过后签收本有界提供端；24f9 启动取消仍独立开放，继续 Unicode ICU 指纹、完整事件提取、schema-19 与整体迁移，不重跑未改候选碰运气。"
 }

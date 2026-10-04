@@ -42,11 +42,12 @@
     "docs/research"
   ],
   "open_findings": [
-    "The actual nineteen-case source/native driver and 47 isolated regressions pass, including both scoped DLL loads under a controlled rejection of modern search flags. Precise promotion passes 535 main contract/gate regressions. The official SQLite 3.51.2 DLL has observed source identity matching the release, x64 PE subsystem 6.0 and only KERNEL32 direct imports. Main bc7028c2 was rejected for a separate directory publication finding; that repair is committed as 6b488828. A first combined run exposed a clock-dependent snapshot fixture precondition, now controlled identically on both sides with raw failure retained and unchanged provider/predicate. Complete clean acceptance is pending. Full search service still uses the historical carrier until public FTS reconciliation is implemented."
+    "The actual nineteen-case source/native driver and 47 isolated regressions pass, including both scoped DLL loads under a controlled rejection of modern search flags. Precise promotion passes 535 main contract/gate regressions. The official SQLite 3.51.2 DLL has observed source identity matching the release, x64 PE subsystem 6.0 and only KERNEL32 direct imports. Main bc7028c2 was rejected for a separate directory publication finding; that repair is committed as 6b488828. A first combined run exposed a clock-dependent snapshot fixture precondition, now controlled identically on both sides with raw failure retained and unchanged provider/predicate. Complete clean acceptance is pending. Full search service still uses the historical carrier until public FTS reconciliation is implemented.",
+    "Clean 24f9f83d was rejected with 6377 passed, one original-browser startup cancellation failure, six existing skips and one existing warning. The exact failed archive/input/netlog are retained; diagnostics cannot sign it. The canonical FTS engine is now independently promoted with 224 mandatory lanes, thirteen unchanged source groups/980 assertions and 47 paired drivers, awaiting committed clean complete acceptance."
   ],
   "conflicts_with": [],
   "candidate_commit": null,
   "integrated_commit": null,
   "evidence_ids": [],
-  "next_action": "schema/DLL 及解压必需门禁已精准整合，独立提交并冻结新候选；189 必需 lane、46 配对、920 原版及实际解压完整通过后才签收；继续公共 FTS/ranking/cursors/稳定两次校验/代际及 SQLite schema-19，Win7 延期。"
+  "next_action": "冻结规范 FTS 新候选，全量 pytest / 224 必需 lane / 980 原版 / 47 双侧 / 真实解压通过后签收本有界提供端；24f9 启动取消仍独立开放，继续 Unicode ICU 指纹、完整事件提取、schema-19 与整体迁移，不重跑未改候选碰运气。"
 }

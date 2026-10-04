@@ -38,11 +38,12 @@
     "docs/research"
   ],
   "open_findings": [
-    "Clean bc7028c2 is rejected: 6289 passed, one native plugin install publication failure, six skips and one existing warning. The exact ZIP, hashes and diagnostics are retained. Actual controlled root/child handles reproduce the directory-move denial. Isolated repaired tests pass 87 cases in 62.81 seconds. The precise main promotion passes 518 regressions in 75.54 seconds and all four isolated physical observations. Full clean acceptance is pending."
+    "Clean bc7028c2 is rejected: 6289 passed, one native plugin install publication failure, six skips and one existing warning. The exact ZIP, hashes and diagnostics are retained. Actual controlled root/child handles reproduce the directory-move denial. Isolated repaired tests pass 87 cases in 62.81 seconds. The precise main promotion passes 518 regressions in 75.54 seconds and all four isolated physical observations. Full clean acceptance is pending.",
+    "Clean 24f9f83d was rejected with 6377 passed, one original-browser startup cancellation failure, six existing skips and one existing warning. The exact failed archive/input/netlog are retained; diagnostics cannot sign it. The canonical FTS engine is now independently promoted with 224 mandatory lanes, thirteen unchanged source groups/980 assertions and 47 paired drivers, awaiting committed clean complete acceptance."
   ],
   "conflicts_with": [],
   "candidate_commit": null,
   "integrated_commit": null,
   "evidence_ids": [],
-  "next_action": "完成主树精准推广的定向回归并独立提交；继续整合 SQLite schema 能力，冻结新候选完整验收。保留 bc7028c2 精确失败证据；未知外部持有者和全量 C3/Win7 不冒充闭环。"
+  "next_action": "冻结规范 FTS 新候选，全量 pytest / 224 必需 lane / 980 原版 / 47 双侧 / 真实解压通过后签收本有界提供端；24f9 启动取消仍独立开放，继续 Unicode ICU 指纹、完整事件提取、schema-19 与整体迁移，不重跑未改候选碰运气。"
 }

@@ -4,6 +4,8 @@
 
 ## 当前补齐：2026-10-02
 
+2026-10-04 关闭路径继续调查：`ac31cd6a` 也被完整门禁拒绝，**6218 passed、3 failed、6 skipped、1 warning**。三条原版 Python 插件旅程在业务完成后报告对已关闭 socket 的发送；已保存该候选精确 ZIP/回执，并补齐源 Gateway 的锁内关闭检查与迟到迭代器排空。17 项隔离回归、主工作区全部 59 项浏览器/Gateway 定向回归及 414 项门禁回归通过；中间门禁增至 137 必需 lane。此修复仍待新候选完整验收；不屏蔽 warning，不重跑未改候选碰运气。持久化快照在隔离工作区有 18 组双侧和 591 项回归，尚未推广或签收。
+
 2026-10-04 搜索请求候选 `a953a086` 的完整门禁被拒绝：**6195 passed、1 failed、6 skipped、1 warning**。第二个原版浏览器页面关闭后，Python 3.8.10 Proactor 的 `shutdown()` 重置错误跳过 close/detach 并触发 Host fail-loud；精确候选 ZIP 与失败回执已保留。服务自有 socket 清理修复通过 70 项定向回归及两条原版浏览器流程，并增加 7 必需 lane 和实际解压重置观察；必须另行冻结新候选完整验收。最新已签收仍为 `1d9940aa`，没有新增测试绕过；见 `docs/research/2026-10-04-webserver-peer-reset-progress.md`。
 
 2026-10-04 Session filters：干净候选 `1d9940aa` 完整冻结门禁 **6134 passed、6 skipped、1 warning、0 failed**，119 必需 lane、十一组 910 原版断言、43 双侧驱动及真实解压观察通过。`CON-SESSION-FILTERS@1` 有界 integrated，三十一份任务证据归档 `evidence/artifacts/SESSION-FILTERS-20261004-1d9940aa.zip`，包括实际候选 Portable ZIP；见 `reviews/SESSION-FILTERS-CLOSURE-20261004.md`。搜索请求正在单独推进；完整 Unicode/FTS/代际、B/C/D、历史诊断与延期 Win7 仍未完成。

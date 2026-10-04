@@ -64,6 +64,8 @@ class MuxConnection:
 
     async def send_event(self, event):
         async with self.lock:
+            if self.closed or self.writer.is_closing():
+                raise ConnectionError('api gateway: Remote stream socket is closed')
             self.writer.write(self.codec.send(event))
             await self.writer.drain()
 
@@ -92,7 +94,8 @@ class MuxConnection:
             if not controller.signal.aborted:
                 await self.send({"type": "end", "streamId": message["streamId"]})
         except Exception as error:
-            if not controller.signal.aborted and self.codec.state == ConnectionState.OPEN:
+            if (not controller.signal.aborted and not self.closed
+                    and not self.writer.is_closing() and self.codec.state == ConnectionState.OPEN):
                 try:
                     await self.send({"type": "error", "streamId": message["streamId"], "error": self.failure(error)})
                 except Exception:

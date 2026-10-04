@@ -32,7 +32,7 @@
     "docs/research"
   ],
   "open_findings": [
-    "Latest accepted candidate remains 1d9940aa. New search-request candidate a953a086 failed original-browser inspect after a peer reset escaped Python 3.8.10 Proactor cleanup. Its exact failed archive and diagnostics are preserved. Scoped owned-socket cleanup and mandatory extracted reset observations require a new clean full acceptance; historical browser startup cancellations and destructor warnings remain separate."
+    "Latest accepted candidate remains 1d9940aa. Candidates a953a086 and ac31cd6a are rejected; exact failed archives and diagnostics are retained. Owned-socket cleanup fixes the first peer-reset failure. The second candidate exposed Gateway writes after physical closure in three original Python-plugin browser journeys. The lock-owned closure repair passes all 59 targeted browser/Gateway tests and 414 gate regressions; a new clean complete acceptance is still required. Historical browser startup cancellations and destructor warnings remain separate."
   ],
   "conflicts_with": [],
   "candidate_commit": "1d9940aaf1af6454045d5e25aadb6733b13991bd",
@@ -47,5 +47,5 @@
     "RUN-SESSION-TRACING-20261004-CURRENT-RELEASE-GATE-003",
     "RUN-SESSION-FILTERS-20261004-CURRENT-RELEASE-GATE-003"
   ],
-  "next_action": "1d9940aa 为最新已签收候选；a953a086 已拒绝。提交 scoped peer-reset 清理后完整冻结验收 132 必需 lane、920 原版、44 配对及真实解压，不认证全量迁移或 Win7。"
+  "next_action": "1d9940aa 为最新已签收候选；a953a086 与 ac31cd6a 已拒绝。提交 Gateway 关闭修复，整合快照契约后冻结新候选；当前中间门禁为 137 必需 lane、920 原版、44 配对及真实解压，不认证全量迁移或 Win7。"
 }

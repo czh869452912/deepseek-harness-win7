@@ -45,6 +45,12 @@ PAIRED_DRIVERS = (
 )
 OFFICIAL_CONFIGS = ('consumers', 'agent-lifecycle', 'session-recovery', 'session-projection', 'acp', 'acp-app', 'mcp', 'subagent-acp', 'storage-cache', 'session-observation', 'session-corpus', 'session-sqlite-query')
 REQUIRED_REGRESSION = {
+    'test_gateway_mux_write_lifetime': {
+        'test_closed_mux_refuses_item_before_mutating_codec_or_writing[' + value + ']'
+        for value in ('False', 'True')
+    } | {'test_queued_mux_write_rechecks_physical_close_after_prior_delivery',
+         'test_late_stream_item_after_socket_close_drains_without_terminal_or_error_frame',
+         'test_terminate_on_closed_transport_finishes_without_close_frame'},
     'test_webserver_peer_reset': {
         'test_owned_socket_contains_only_windows_peer_reset_at_shutdown[' + value + ']'
         for value in ('10054', '10053', 'None')

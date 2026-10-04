@@ -32,7 +32,7 @@
   "acceptance": [
     "Fifty actual source/native request/SQL/snippet/SQLite Engine refusal observations match their independently declared literals, including real SQLite predicate evaluation and zero index/provider access.",
     "Ten unchanged upstream query.spec.ts assertions and strict observer/gate refusal probes pass. Four actual JSONL/SQLite consumers prove owned public inputs and invalid/pre-abort rejection.",
-    "A new clean complete release gate executes 132 mandatory lanes, twelve source groups totaling 920 assertions, 44 paired drivers and the actual extracted Python 3.8.10 observer including owned WebServer reset cleanup before bounded acceptance."
+    "A new clean complete release gate executes at least 137 mandatory lanes, twelve source groups totaling 920 assertions, at least 44 paired drivers and the actual extracted Python 3.8.10 observer including owned WebServer reset cleanup before bounded acceptance."
   ],
   "expected_paths": [
     "dsh/session",
@@ -42,11 +42,11 @@
     "docs/research"
   ],
   "open_findings": [
-    "Fifty source/native observations and 655 main targeted tests passed. Clean candidate a953a086 is rejected: 6195 passed, one original-browser inspect failure, six platform skips and one existing warning. Closing the second actual browser target exposed WinError 10054 in Python 3.8.10 Proactor shutdown before close/detach, terminating the Host. The exact failed ZIP and receipts are retained. A scoped owned-socket repair passed 70 WebServer/boot tests and both original browser lifecycle/inspect journeys. A new clean complete gate is required; no unchanged-candidate retry or bypass is accepted."
+    "Fifty source/native observations and 655 main targeted tests passed. Candidates a953a086 (6195 passed, one failure) and ac31cd6a (6218 passed, three failures) are rejected; both exact failed ZIPs and receipts are retained. Owned-socket cleanup fixes the first Proactor reset failure. Lock-owned Gateway closure checks and late-iterator cleanup fix the second teardown finding: all 59 targeted original-browser/Gateway tests and 414 gate regressions pass. A new clean complete gate is required; no unchanged-candidate retry or bypass is accepted."
   ],
   "conflicts_with": [],
   "candidate_commit": null,
   "integrated_commit": null,
   "evidence_ids": [],
-  "next_action": "a953a086 全量浏览器因 Proactor peer-reset 退出而拒绝；提交服务自有 socket 清理修复后冻结新候选，完整全量/132 必需 lane/44 配对/920 原版/真实解压重置与请求观察通过后才签收。随后补持久化 revision 和完整 FTS/ranking/cursors/reconciliation/代际，继续整体迁移。"
+  "next_action": "提交 Gateway 关闭修复并整合持久化快照，冻结新候选；完整全量/至少 137 必需 lane/至少 44 配对/920 原版/真实解压重置与请求观察通过后才签收。继续完整 FTS/ranking/cursors/reconciliation/代际及整体迁移。"
 }

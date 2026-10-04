@@ -331,7 +331,7 @@ def test_extracted_session_corpus_read_requires_exact_sources_and_batch_drain(tm
 def test_regression_requires_browser_portable_and_acp_process_lanes(tmp_path):
     path = tmp_path / 'pytest.xml'
     regression_xml(path)
-    assert GATE.validate_regression(path) == {'required_lanes': 132, 'skipped': 1}
+    assert GATE.validate_regression(path) == {'required_lanes': 137, 'skipped': 1}
 
 
 @pytest.mark.parametrize('module', ['test_native_web_browser', 'test_portable_smoke', 'test_acp_stdio_journey', 'test_acp_permission_process', 'test_mcp_stdio_transport', 'test_mcp_supervisor', 'test_mcp_schema', 'test_mcp_config', 'test_mcp_tools_source', 'test_mcp_image_consumer', 'test_mcp_http_source', 'test_mcp_http_transport', 'test_mcp_supervisor_source', 'test_mcp_factory_source', 'test_acp_mcp_source', 'test_acp_mcp_runtime_source', 'test_acp_mcp_abort_source', 'test_acp_mcp_process', 'test_acp_mcp_runtime'])
@@ -446,6 +446,15 @@ def test_webserver_reset_lanes_are_mandatory(tmp_path, damage):
     for name in GATE.REQUIRED_REGRESSION['test_webserver_peer_reset']:
         path = tmp_path / 'pytest.xml'
         regression_xml(path, **{damage: ('test_webserver_peer_reset', name)})
+        with pytest.raises(RuntimeError):
+            GATE.validate_regression(path)
+
+
+@pytest.mark.parametrize('damage', ['omit', 'skip', 'duplicate', 'failure'])
+def test_mux_write_lifetime_lanes_are_mandatory(tmp_path, damage):
+    for name in GATE.REQUIRED_REGRESSION['test_gateway_mux_write_lifetime']:
+        path = tmp_path / 'pytest.xml'
+        regression_xml(path, **{damage: ('test_gateway_mux_write_lifetime', name)})
         with pytest.raises(RuntimeError):
             GATE.validate_regression(path)
 

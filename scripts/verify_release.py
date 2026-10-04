@@ -23,6 +23,7 @@ from scripts.subagent_acp_oracle import validate_process as validate_subagent_ac
 from scripts.subagent_acp_teardown_oracle import validate_runtime as validate_subagent_acp_teardown
 from scripts.mcp_disposal_oracle import validate_runtime as validate_mcp_disposal
 from scripts.subprocess_ownership_oracle import validate_runtime as validate_subprocess_ownership
+from scripts.subprocess_tree_oracle import validate_observations as validate_subprocess_tree
 NODE_VERSION = 'v22.22.2'
 PORTABLE_ARCHIVE = 'dist/dsh-win7-portable-v0.1.0.zip'
 PAIRED_DRIVERS = (
@@ -31,10 +32,13 @@ PAIRED_DRIVERS = (
     'pi', 'storage_cache', 'workflow_ralph', 'repeat_tool', 'token_meter',
     'pruner', 'compaction', 'maintenance', 'timeout_policy', 'abort',
     'approval', 'inspect', 'cordis_guard', 'cordis_runner',
-    'cordis_retirement', 'cordis_tools', 'acp_sessions', 'acp_model_output', 'acp_stdio', 'acp_permissions', 'mcp_stdio', 'mcp_http', 'acp_mcp', 'subagent_acp', 'subagent_acp_teardown', 'mcp_disposal', 'subprocess_ownership',
+    'cordis_retirement', 'cordis_tools', 'acp_sessions', 'acp_model_output', 'acp_stdio', 'acp_permissions', 'mcp_stdio', 'mcp_http', 'acp_mcp', 'subagent_acp', 'subagent_acp_teardown', 'mcp_disposal', 'subprocess_ownership', 'subprocess_tree',
 )
 OFFICIAL_CONFIGS = ('consumers', 'agent-lifecycle', 'session-recovery', 'session-projection', 'acp', 'acp-app', 'mcp', 'subagent-acp')
 REQUIRED_REGRESSION = {
+    'test_subagent_acp_peer_encoding': {'test_acp_peer_reads_utf8_wire_without_inherited_python_encoding'},
+    'test_subprocess_tree_source': {'test_actual_original_and_native_physical_windows_tree_lifecycle'},
+    'test_subprocess_physical_tree': {'test_actual_owned_root_and_descendant_exit[' + name + ']' for name in ('direct', 'dispose', 'abort', 'terminate')},
     'test_subprocess_ownership_source': {'test_actual_original_subprocess_service_pending_exit_and_teardown_failure_ownership'},
     'test_mcp_disposal_source': {'test_actual_original_mcp_disposal_source_native_queue_and_factory_ownership'},
     'test_subagent_acp_teardown_source': {'test_actual_original_subprocess_acp_teardown_failure_aggregate_causes_and_identity'},
@@ -263,6 +267,10 @@ def validate_extracted(path, archive, candidate):
             raise ValueError('Subprocess ownership came from a different runtime')
     except (ValueError, KeyError, TypeError) as error:
         raise RuntimeError('Extracted subprocess ownership observations are incomplete') from error
+    try:
+        validate_subprocess_tree(report.get('subprocessTree'), Path(report['mcpStdio']['root']))
+    except (ValueError, KeyError, TypeError) as error:
+        raise RuntimeError('Extracted physical subprocess tree observations are incomplete') from error
     if report.get('archiveSha256') != digest(archive) or Path(report['archive']).resolve() != archive.resolve():
         raise RuntimeError('Extracted receipt belongs to a different archive')
     provenance = report.get('provenance', {})

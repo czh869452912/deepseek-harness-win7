@@ -1,0 +1,26 @@
+{
+  "id": "MIG-SUBPROCESS-TREE-014",
+  "goal": "对齐 Windows 实际 subprocess root/descendant 退出并修复 Python 3.8 Host 退出钩子死锁",
+  "kind": "implementation",
+  "state": "running",
+  "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
+  "base_product": "34c581a50a8f4f9982269dc4bd77aaa23d4f5cfe",
+  "owner": "current-session-coordinator",
+  "requires": [
+    {"task": "MIG-SUBPROCESS-OWNERSHIP-013", "contract": "CON-SUBPROCESS-OWNERSHIP", "revision": 1},
+    {"task": "MIG-CURRENT-RELEASE-GATE-003", "contract": "CON-CURRENT-RELEASE-GATE", "revision": 1}
+  ],
+  "provides": [{"contract": "CON-SUBPROCESS-TREE", "revision": 1}],
+  "acceptance": [
+    "Four fresh actual original/Native physical Windows root/descendant observations preserve readiness, both live process handles, direct Host exit 23 and dispose/abort/terminate exit 0, with both processes gone before observer cleanup and no diagnostics.",
+    "Independent Host regression reproduces the Python 3.8 delayed thread-executor atexit deadlock before the fix; strict observers reject malformed ownership, surviving descendants, wrong exit and foreign product provenance.",
+    "Actual extracted embedded Python 3.8.10 executes the same four physical journeys; the full clean release gate validates these mandatory lanes and exact candidate-bound source/paired/Portable receipts before integration."
+  ],
+  "expected_paths": ["dsh/subprocess", "tests", "scripts", "migration", "docs/research"],
+  "open_findings": ["Isolated physical source/native four-case driver and 24 targeted encoding/tree/observer checks passed. Main and extracted clean acceptance remain pending. Source uncaught-exception Host settlement and an initial observer recursion failure remain separately unclassified; neither is an upstream bug exception or a claimed fix. Terminal, hard Host kill, unknown orphans, POSIX and deferred Win7 remain outside the bounded contract."],
+  "conflicts_with": [],
+  "candidate_commit": null,
+  "integrated_commit": null,
+  "evidence_ids": [],
+  "next_action": "将编码观察器修复和真实树退出修复分次提交；新共同干净候选完整回归、36 配对与实际解压通过后才有界签收，继续 Jobs、终端和 B/C/D。"
+}

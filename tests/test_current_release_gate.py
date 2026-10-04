@@ -10,6 +10,7 @@ from scripts.mcp_stdio_oracle import MODES as MCP_MODES, expected_row as mcp_exp
 from scripts.mcp_http_oracle import EXPECTED as HTTP_EXPECTED
 from scripts.subagent_acp_oracle import expected_process as expected_subagent_acp_process
 from scripts.subagent_acp_teardown_oracle import expected as expected_subagent_acp_teardown
+from scripts.subprocess_tree_oracle import expected as expected_subprocess_tree
 from scripts.mcp_disposal_oracle import expected as expected_mcp_disposal
 from scripts.subprocess_ownership_oracle import expected as expected_subprocess_ownership
 
@@ -40,10 +41,49 @@ def regression_xml(path, omit=None, skip=None, duplicate=None, failure=None):
     ET.ElementTree(suites).write(str(path), encoding='utf-8')
 
 
+@pytest.mark.parametrize('module', ['test_subprocess_tree_source', 'test_subprocess_physical_tree',
+    'test_subagent_acp_peer_encoding'])
+@pytest.mark.parametrize('damage', ['omit', 'skip', 'duplicate', 'failure'])
+def test_physical_tree_and_utf8_peer_lanes_cannot_be_optional(tmp_path, module, damage):
+    path = tmp_path / 'pytest.xml'
+    key = (module, sorted(GATE.REQUIRED_REGRESSION[module])[0])
+    regression_xml(path, **{damage: key})
+    with pytest.raises(RuntimeError):
+        GATE.validate_regression(path)
+
+
+@pytest.mark.parametrize('damage', ['missing', 'tail', 'root-alive', 'descendant-alive',
+    'wrong-exit', 'foreign-runtime', 'missing-live-barrier', 'missing-physical-identities'])
+def test_extracted_physical_tree_is_required_and_cannot_hide_survivors(tmp_path, damage):
+    archive, candidate, report = extracted_receipt(tmp_path)
+    if damage == 'missing':
+        del report['subprocessTree']
+    elif damage == 'tail':
+        report['subprocessTree'].pop()
+    else:
+        row = report['subprocessTree'][0]
+        if damage == 'root-alive':
+            row['observed']['after']['root'] = True
+        elif damage == 'descendant-alive':
+            row['observed']['after']['descendant'] = True
+        elif damage == 'wrong-exit':
+            row['observed']['exitCode'] = 0
+        elif damage == 'foreign-runtime':
+            row['product']['module'] = str(tmp_path / 'foreign/dsh/__init__.py')
+        elif damage == 'missing-live-barrier':
+            del row['observed']['before']
+        else:
+            del row['physical']
+    path = tmp_path / 'extracted.json'
+    path.write_text(json.dumps(report), encoding='utf-8')
+    with pytest.raises(RuntimeError):
+        GATE.validate_extracted(path, archive, candidate)
+
+
 def test_regression_requires_browser_portable_and_acp_process_lanes(tmp_path):
     path = tmp_path / 'pytest.xml'
     regression_xml(path)
-    assert GATE.validate_regression(path) == {'required_lanes': 86, 'skipped': 1}
+    assert GATE.validate_regression(path) == {'required_lanes': 92, 'skipped': 1}
 
 
 @pytest.mark.parametrize('module', ['test_native_web_browser', 'test_portable_smoke', 'test_acp_stdio_journey', 'test_acp_permission_process', 'test_mcp_stdio_transport', 'test_mcp_supervisor', 'test_mcp_schema', 'test_mcp_config', 'test_mcp_tools_source', 'test_mcp_image_consumer', 'test_mcp_http_source', 'test_mcp_http_transport', 'test_mcp_supervisor_source', 'test_mcp_factory_source', 'test_acp_mcp_source', 'test_acp_mcp_runtime_source', 'test_acp_mcp_abort_source', 'test_acp_mcp_process', 'test_acp_mcp_runtime'])
@@ -116,6 +156,10 @@ def extracted_receipt(tmp_path):
     report['acpMcp'] = {'stdioProcesses': 3, 'stdioCalls': 3, 'stdioReaped': True,
         'httpCalls': 1, 'httpClosed': True, 'acpClosed': True, 'modelRequests': 8,
         'scope': 'Actual canonical ACP process, stdio/HTTP consumers and same-session resume; no external endpoint.'}
+    report['subprocessTree'] = expected_subprocess_tree()
+    for row in report['subprocessTree']:
+        row['physical'] = {'host': 100, 'root': 101, 'descendant': 102, 'cwd': str(tmp_path)}
+        row['product'] = {'root': str(tmp_path), 'module': str(tmp_path / 'dsh/__init__.py'), 'python': [3, 8, 10]}
     report['subagentAcp'] = expected_subagent_acp_process()
     teardown_rows = copy.deepcopy(expected_subagent_acp_teardown(tmp_path))
     for row in teardown_rows:

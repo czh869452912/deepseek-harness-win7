@@ -28,4 +28,3 @@
 严格解压环境不继承 PYTHONIOENCODING。观察peer原先按系统 cp936 读取生产 UTF-8 JSON，中文 cwd 被误解码；未改生产代码、原版前端或放宽任何判据。peer显式设置 stdin/stdout UTF-8，新测试用 -I、无 PYTHON 环境、中文 cwd 验证。隔离修复后，同一实际解压旧产品的四组 ACP teardown、七组 MCP disposal、四组 subprocess ownership 原判据通过，诊断保留于 `.goose/out/acp-a4-work`，不代替新产品干净验收。
 
 失败完整共同回执在 `.goose/out/owned-teardown-clean-34c581a5`，与先前两次浏览器失败共同保留。当前通过的浏览器旅程不证明此前启动取消根因已修复；既有 Proactor warning 和 HTTP 10054 仍未归因。
-

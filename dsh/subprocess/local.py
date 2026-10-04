@@ -6,6 +6,7 @@ Python 3.8.10 compatible.
 
 import asyncio
 import atexit
+import concurrent.futures.thread
 import json
 import math
 import os

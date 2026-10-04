@@ -1,0 +1,22 @@
+{
+  "id": "CON-SUBPROCESS-TREE",
+  "revision": 1,
+  "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
+  "status": "specified",
+  "source_paths": ["reference/packages/subprocess/subprocess-local/src/index.ts", "reference/packages/subprocess/subprocess-local/src/spawn.ts", "reference/packages/subprocess/subprocess-local/tests/process-exit.spec.ts"],
+  "consumers": ["dsh/subprocess/local.py", "scripts/verify_portable.py"],
+  "invariants": [
+    "Actual Windows root and one recorded descendant are alive at the ready barrier and both exit after explicit terminate, running AbortSignal, Cordis fiber disposal and direct Host exit.",
+    "Direct Host exit retains code 23; the other selected journeys exit 0 with empty stdout/stderr.",
+    "Opened process handles preserve exact physical ownership throughout observation and fallback cleanup; success is determined before any observer cleanup.",
+    "Python 3.8 thread-executor exit hook is registered before subprocess runtime finalization, so runtime cleanup precedes blocking worker joins at interpreter exit.",
+    "Actual extracted embedded Python 3.8.10 executes the same four physical journeys with exact declared product-module provenance."
+  ],
+  "identity": "Exact live Windows process handles for the published root and descendant; raw pids and cwd retained separately from namespace-independent comparisons.",
+  "ownership": "The Cordis runtime owns the live tree until normal disposal or observable Host finalization; the observer may clean only the two recorded live handles after failed observations.",
+  "ordering": "Publish readiness, open live process handles, issue selected shutdown trigger, join Host and tree, record outcome before failure cleanup.",
+  "errors": "Readiness, malformed identities, wrong Host exit, surviving children, foreign modules and diagnostics fail the gate; no blanket cleanup masks failures.",
+  "cancellation": "A running source/native AbortSignal terminates the actual tree. Hard-killed Hosts, root-already-exited or unknown descendants are not this contract.",
+  "adaptation": "Pinned TypeScript standard-decorator loading is a development observer only. Native imports the Python 3.8 thread-executor module before registering its reversible atexit hook.",
+  "open_questions": ["Clean shared candidate and actual extracted acceptance remain pending. Terminal/WinPTY, physical unhandled-rejection/crash source paths, unknown orphans, POSIX trees, Jobs and deferred Win7 remain unaccepted."]
+}

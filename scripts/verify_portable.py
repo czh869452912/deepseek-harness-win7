@@ -24,6 +24,8 @@ from scripts.subagent_acp_oracle import validate_process as validate_subagent_ac
 from scripts.subagent_acp_teardown_oracle import validate_runtime as validate_subagent_acp_teardown
 from scripts.mcp_disposal_oracle import validate_runtime as validate_mcp_disposal
 from scripts.subprocess_ownership_oracle import validate_runtime as validate_subprocess_ownership
+from scripts.oracles.subprocess_tree_python import observe as observe_subprocess_tree
+from scripts.subprocess_tree_oracle import validate_observations as validate_subprocess_tree
 
 
 def digest(path):
@@ -81,7 +83,8 @@ def main(argv=None):
             'subagent_acp_teardown_oracle.py', 'oracles/subagent_acp_teardown_python.py',
             'mcp_disposal_oracle.py', 'oracles/mcp_disposal_python.py',
             'subprocess_ownership_oracle.py', 'oracles/subprocess_ownership_python.py',
-            'oracles/subagent_acp_peer.py')})
+            'oracles/subagent_acp_peer.py', 'subprocess_tree_oracle.py', 'oracles/subprocess_tree_python.py',
+            'oracles/subprocess_tree_peer.py', 'oracles/subprocess_host_exit_python.py')})
     node = shutil.which('node') if args.browser else None
     try:
         if args.browser and not node:
@@ -233,6 +236,9 @@ def main(argv=None):
             if ownership_report['root'] != str(portable):
                 raise RuntimeError('Extracted subprocess ownership imported a different product')
             report['subprocessOwnership'] = ownership_report
+            tree_report = observe_subprocess_tree(portable, str(portable / 'python.exe'), environment=env)
+            validate_subprocess_tree(tree_report, portable)
+            report['subprocessTree'] = tree_report
             if args.browser:
                 browser_report = output.with_suffix('.browser.json')
                 # The observer launches the Host with the same restricted env.

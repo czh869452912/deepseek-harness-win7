@@ -91,6 +91,8 @@ def checked_inputs(root_dir, site_packages):
     verify_icu_files(root / 'dsh/session/bin/icu')
     from dsh.session.zstd import verify_zstd_files
     verify_zstd_files(root / 'dsh/session/bin/zstd')
+    from dsh.session.sqlite_sql import verify_sql_files
+    verify_sql_files(root / 'dsh/session/resources/sql')
     from dsh.session.text import verify_case_folding
     verify_case_folding(root / 'dsh/session/bin/unicode/CaseFolding.txt')
     manifest = json.loads((root / 'scripts/frontend-inputs.json').read_text(encoding='utf-8'))

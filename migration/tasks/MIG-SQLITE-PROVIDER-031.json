@@ -1,0 +1,29 @@
+{
+  "id": "MIG-SQLITE-PROVIDER-031",
+  "goal": "闭合规范物理 schema-19 存储提供端与真实消费链",
+  "kind": "implementation",
+  "state": "running",
+  "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
+  "base_product": "15b119157f1f279980de0e708600ebf85c5323b5",
+  "owner": "current-session-coordinator",
+  "requires": [
+    {"task": "MIG-SQLITE-FORMAT-030", "contract": "CON-SQLITE-FORMAT", "revision": 1},
+    {"task": "MIG-SESSION-STORAGE-006", "contract": "CON-SESSION-STORAGE", "revision": 1},
+    {"task": "MIG-SESSION-PREPARED-005", "contract": "CON-SESSION-PREPARATIONS", "revision": 1}
+  ],
+  "provides": [{"contract": "CON-SQLITE-PROVIDER", "revision": 1}],
+  "acceptance": [
+    "The canonical registry mounts a separate sessions-injected schema-19 provider with original Config defaults and refusal behavior, lazy filesystem validation, one shared open reservation and reversible live/prepared cleanup; the old layout is never a fallback or silently migrated.",
+    "All 36 unchanged original SQL resources are closed/hash-qualified and packaged. Application/schema/store identities, STRICT tables, new page65536/existing page4096, journal/security/durability, detached reads and mutation ownership rechecks match the original.",
+    "323 fresh actual Source/native and isolated extracted observations read each other's compressed files and full filesystem/store/incarnation/revision identities. Exact closed malformed metadata/config/logical vectors, stale append/repair, competing-process locks and winning tails are retained.",
+    "Actual canonical Context/profile/model-tools consumers perform committed repair and new-Context cold preparation with unpublished end-seed ownership; optional history query and Remote consumers use the canonical provider.",
+    "A clean committed full release gate passes all tests, 358 mandatory lanes, sixteen unchanged Source groups/1128 assertions, 52 paired drivers and actual extracted/original-browser acceptance with full fresh source/input digests and candidate module/resource closure. Source symlink EPERM and existing platform/built-package skips remain explicit host limitations rather than new skips or a green whole-source-suite claim."
+  ],
+  "expected_paths": ["dsh/session", "dsh/boot/plugin_registry.py", "scripts", "tests", "migration", "docs/research"],
+  "open_findings": ["Canonical provider implementation and qualification are in progress; no new complete frozen candidate has been accepted."],
+  "conflicts_with": [],
+  "candidate_commit": null,
+  "integrated_commit": null,
+  "evidence_ids": [],
+  "next_action": "完成规范提供端实际原版/原生/解压、冷恢复和模型/Remote消费者，再提交冻结完整门禁；保留原版 EPERM 和历史诊断，不认证完整 Session 或整体迁移。"
+}

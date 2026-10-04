@@ -70,6 +70,7 @@ def test_portable_stages_pinned_rg_and_zip_path_matches_runtime_resolver(tmp_pat
     shutil.copytree(ROOT / 'dsh/session/bin/icu', fixture_root / 'dsh/session/bin/icu')
     shutil.copytree(ROOT / 'dsh/session/bin/zstd', fixture_root / 'dsh/session/bin/zstd')
     shutil.copytree(ROOT / 'dsh/session/bin/unicode', fixture_root / 'dsh/session/bin/unicode')
+    shutil.copytree(ROOT / 'dsh/session/resources/sql', fixture_root / 'dsh/session/resources/sql')
     dist = fixture_root / "dist" / "dsh-win7-portable"
     shutil_target = fixture_root / "dsh" / "fs" / "tool_fs_search"
     shutil_target.mkdir(parents=True)

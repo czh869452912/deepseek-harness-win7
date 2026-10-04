@@ -94,7 +94,7 @@ HARNESS_PLUGIN_CLASSES: Dict[str, str] = {
     "@deepseek-ai/dsh-token-meter": "dsh.llm.token_meter:TokenMeterPlugin",
     # Session data, storage, settings, credentials.
     "@deepseek-ai/dsh-session-persistence-jsonl": "dsh.session.persistence_jsonl:JsonlSessionPersistencePlugin",
-    "@deepseek-ai/dsh-session-persistence-sqlite": "dsh.session.persistence_sqlite:SqliteSessionPersistencePlugin",
+    "@deepseek-ai/dsh-session-persistence-sqlite": "dsh.session.persistence_sqlite_canonical:SqliteSessionPersistencePlugin",
     "@deepseek-ai/dsh-session-projection": "dsh.session.projections:SessionProjectionsPlugin",
     "@deepseek-ai/dsh-session-projection-cache": "dsh.session.projection_cache:SessionProjectionCachePlugin",
     "@deepseek-ai/dsh-session-query-sqlite": "dsh.session.query_engine:SqliteSessionQueryPlugin",

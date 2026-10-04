@@ -43,6 +43,7 @@ from scripts.query_unicode_oracle import validate_runtime as validate_query_unic
 from scripts.session_text_oracle import validate_runtime as validate_session_text, source_identity as text_source_identity
 from scripts.session_tools_oracle import validate_runtime as validate_session_tools, source_identity as tools_source_identity
 from scripts.sqlite_format_oracle import validate_runtime as validate_sqlite_format, source_identity as format_source_identity
+from scripts.sqlite_provider_oracle import validate_runtime as validate_sqlite_provider, source_identity as provider_source_identity
 
 
 def digest(path):
@@ -401,6 +402,20 @@ def main(argv=None):
                 raise RuntimeError('Extracted SQLite format failed')
             report['sqliteFormat'] = json.loads(format_path.read_text(encoding='utf-8'))
             validate_sqlite_format(report['sqliteFormat'], portable, format_digest, format_frames)
+            provider_path = output.with_suffix('.sqlite-provider-paired.json')
+            provider_environment = workspace / 'provider-environment.json'
+            provider_environment.write_text(json.dumps(env), encoding='utf-8')
+            provider_result = subprocess.run([sys.executable, str(ROOT / 'scripts/sqlite_provider_oracle.py'),
+                '--output', str(provider_path), '--python', str(portable / 'python.exe'), '--root', str(portable),
+                '--environment', str(provider_environment)], cwd=str(ROOT), capture_output=True, timeout=120)
+            output.with_suffix('.sqlite-provider.log').write_bytes(provider_result.stdout + provider_result.stderr)
+            if provider_result.returncode:
+                raise RuntimeError('Extracted SQLite provider failed')
+            provider_native = json.loads(provider_path.with_name(provider_path.stem + '.native.json').read_text(encoding='utf-8'))
+            provider_source = json.loads(provider_path.with_name(provider_path.stem + '.source.json').read_text(encoding='utf-8'))
+            provider_summary = json.loads(provider_path.read_text(encoding='utf-8'))
+            validate_sqlite_provider(provider_native, portable, provider_source_identity(provider_source), provider_summary['generatedInputsSha256'])
+            report['sqliteProvider'] = provider_native
             for name, key, validate in [('session_lineage', 'sessionLineage', validate_session_lineage),
                                         ('session_event_trace', 'sessionEventTrace', validate_session_event_trace),
                                         ('session_filters', 'sessionFilters', validate_session_filters),

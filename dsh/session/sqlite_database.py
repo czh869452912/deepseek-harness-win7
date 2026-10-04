@@ -66,6 +66,10 @@ def _library():
     return library
 
 
+def load_sqlite():
+    return _library()
+
+
 class SqliteDatabase:
     def __init__(self, path):
         if not isinstance(path, str) or '\0' in path:

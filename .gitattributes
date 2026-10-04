@@ -4,6 +4,7 @@ snapshots/** -text
 apps/web/dist/** -text
 dsh/session/bin/icu/** -text
 dsh/session/bin/zstd/** -text
+dsh/session/resources/sql/** -text
 dsh/session/bin/unicode/** -text
 examples/python-web-echo/** text eol=lf
 # Evidence hashes must survive checkout on Windows and POSIX.

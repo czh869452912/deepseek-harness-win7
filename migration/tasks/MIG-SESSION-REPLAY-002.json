@@ -111,6 +111,11 @@
       "task": "MIG-SQLITE-FORMAT-030",
       "contract": "CON-SQLITE-FORMAT",
       "revision": 1
+    },
+    {
+      "task": "MIG-SQLITE-PROVIDER-031",
+      "contract": "CON-SQLITE-PROVIDER",
+      "revision": 1
     }
   ],
   "provides": [],

@@ -42,13 +42,14 @@ def test_portable_dependency_copy_preserves_native_image_codecs(tmp_path):
     assert all((destination / path).is_file() for path in native)
 
 
-@pytest.mark.parametrize('damage', ['missing-frontend','extra-frontend','wrong-target','missing-runtime', 'missing-icu', 'changed-icu-license', 'missing-case-fold', 'changed-case-fold', 'missing-zstd', 'changed-zstd-license', 'changed-zstd-dictionary'])
+@pytest.mark.parametrize('damage', ['missing-frontend','extra-frontend','wrong-target','missing-runtime', 'missing-icu', 'changed-icu-license', 'missing-case-fold', 'changed-case-fold', 'missing-zstd', 'changed-zstd-license', 'changed-zstd-dictionary', 'missing-sql', 'changed-sql', 'changed-sql-manifest'])
 def test_invalid_input_fails_before_release_replacement(tmp_path, monkeypatch, damage):
     import shutil
     root = tmp_path/'checkout'
     shutil.copytree(ROOT/'dsh/session/bin/icu', root/'dsh/session/bin/icu')
     shutil.copytree(ROOT/'dsh/session/bin/zstd', root/'dsh/session/bin/zstd')
     shutil.copytree(ROOT/'dsh/session/bin/unicode', root/'dsh/session/bin/unicode')
+    shutil.copytree(ROOT/'dsh/session/resources/sql', root/'dsh/session/resources/sql')
     shutil.copytree(ROOT/'apps/web/dist', root/'apps/web/dist')
     (root/'scripts').mkdir()
     shutil.copyfile(ROOT/'scripts/frontend-inputs.json',root/'scripts/frontend-inputs.json')
@@ -67,6 +68,9 @@ def test_invalid_input_fails_before_release_replacement(tmp_path, monkeypatch, d
     if damage=='missing-zstd': (root/'dsh/session/bin/zstd/dsh_zstd.dll').unlink()
     if damage=='changed-zstd-license': (root/'dsh/session/bin/zstd/ZSTD-LICENSE').write_text('changed',encoding='utf-8')
     if damage=='changed-zstd-dictionary': (root/'dsh/session/bin/zstd/zstd-dictionary.bin').write_bytes(b'changed')
+    if damage=='missing-sql': (root/'dsh/session/resources/sql/schema.sql').unlink()
+    if damage=='changed-sql': (root/'dsh/session/resources/sql/schema.sql').write_text('changed',encoding='utf-8')
+    if damage=='changed-sql-manifest': (root/'dsh/session/resources/sql/manifest.json').write_text('{}',encoding='utf-8')
     dist=root/'dist/dsh-win7-portable';dist.mkdir(parents=True)
     (dist/'sentinel').write_text('last successful release',encoding='utf-8')
     monkeypatch.setattr(BUILD,'ROOT_DIR',str(root));monkeypatch.setattr(BUILD,'DIST_DIR',str(dist))

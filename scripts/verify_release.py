@@ -41,6 +41,7 @@ from scripts.query_unicode_oracle import validate_runtime as validate_query_unic
 from scripts.session_text_oracle import validate_runtime as validate_session_text, source_identity as text_source_identity
 from scripts.session_tools_oracle import validate_runtime as validate_session_tools, source_identity as tools_source_identity, module_hashes as tools_module_hashes
 from scripts.sqlite_format_oracle import validate_runtime as validate_sqlite_format, source_identity as format_source_identity, module_hashes as format_module_hashes, asset_hashes as format_asset_hashes
+from scripts.sqlite_provider_oracle import validate_runtime as validate_sqlite_provider, source_identity as provider_source_identity, hashes as provider_hashes, MODULES as PROVIDER_MODULES, ASSETS as PROVIDER_ASSETS
 NODE_VERSION = 'v22.22.2'
 PORTABLE_ARCHIVE = 'dist/dsh-win7-portable-v0.1.0.zip'
 PAIRED_DRIVERS = (
@@ -51,9 +52,30 @@ PAIRED_DRIVERS = (
     'approval', 'inspect', 'cordis_guard', 'cordis_runner',
     'cordis_retirement', 'cordis_tools', 'acp_sessions', 'acp_model_output', 'acp_stdio', 'acp_permissions', 'mcp_stdio', 'mcp_http', 'acp_mcp', 'subagent_acp', 'subagent_acp_teardown', 'mcp_disposal', 'subprocess_ownership', 'subprocess_tree', 'projection_cache_failure', 'session_observation_read', 'session_corpus_list', 'session_corpus_read', 'session_lineage', 'session_event_trace', 'session_filters', 'session_requests', 'session_snapshots', 'query_schema', 'query_engine', 'query_unicode', 'session_text',
 )
-PAIRED_DRIVERS = PAIRED_DRIVERS + ('session_tools', 'sqlite_format')
-OFFICIAL_CONFIGS = ('consumers', 'agent-lifecycle', 'session-recovery', 'session-projection', 'acp', 'acp-app', 'mcp', 'subagent-acp', 'storage-cache', 'session-observation', 'session-corpus', 'session-sqlite-query', 'query-engine-source', 'session-tools-source', 'sqlite-format-source')
+PAIRED_DRIVERS = PAIRED_DRIVERS + ('session_tools', 'sqlite_format', 'sqlite_provider')
+OFFICIAL_CONFIGS = ('consumers', 'agent-lifecycle', 'session-recovery', 'session-projection', 'acp', 'acp-app', 'mcp', 'subagent-acp', 'storage-cache', 'session-observation', 'session-corpus', 'session-sqlite-query', 'query-engine-source', 'session-tools-source', 'sqlite-format-source', 'sqlite-provider-source')
 REQUIRED_REGRESSION = {
+    'test_sqlite_canonical': {
+        'test_canonical_registry_and_unchanged_closed_sql_resources',
+        'test_actual_lazy_store_packed_seek_and_detached_revision',
+        'test_canonical_plugin_cold_torn_repair_and_unpublished_end_seed',
+        'test_existing_page_size_and_revision_survive_reopen',
+        'test_current_mutation_ownership_rechecked_before_writing',
+        'test_cancelled_waiter_does_not_cancel_shared_open',
+        'test_empty_mutations_and_missing_materialization_are_inert',
+        'test_busy_journal_retry_reuses_real_handle_and_keeps_security',
+        'test_failed_transaction_and_rollback_keep_both_causes',
+        *{'test_failed_journal_attempt_preserves_budget_and_retires_real_handle[' + name + ']' for name in (
+            'zero-budget', 'non-busy', 'cutoff')},
+        *{'test_foreign_layout_refusal_preserves_actual_file_and_closes_handle[' + name + ']' for name in (
+            'unversioned', 'old', 'future', 'foreign', 'altered')},
+    },
+    'test_sqlite_provider_source': {'test_actual_source_and_native_schema19_mutual_files_and_consumers'},
+    'test_sqlite_remote': {
+        'test_canonical_sqlite_remote_model_fork_search_and_cold_restart[minimal]',
+        'test_canonical_sqlite_remote_model_fork_search_and_cold_restart[standard]',
+        'test_canonical_sqlite_remote_model_fork_search_and_cold_restart[cordis]',
+    },
     'test_sqlite_format': {
         'test_schema_owned_packed_rows_survive_actual_strict_sqlite_and_detached_reads',
         'test_physical_corruption_is_repairable_only_without_a_later_valid_turn_end[False]',
@@ -618,6 +640,17 @@ def validate_extracted(path, archive, candidate):
             raise ValueError('SQLite format generated inputs differ')
     except (ValueError, KeyError, TypeError) as error:
         raise RuntimeError('Extracted sqliteFormat observations are incomplete') from error
+    try:
+        required = ('sqlite_provider_observations_sha256', 'sqlite_provider_inputs_sha256')
+        if any(not isinstance(candidate[name], str) or not re.fullmatch('[0-9a-f]{64}', candidate[name]) for name in required):
+            raise ValueError('SQLite provider Source identity is missing')
+        if not isinstance(candidate['sqlite_provider_modules'], dict) or not isinstance(candidate['sqlite_provider_assets'], dict):
+            raise ValueError('SQLite provider file closure is missing')
+        validate_sqlite_provider(report.get('sqliteProvider'), report['mcpStdio']['root'],
+            candidate['sqlite_provider_observations_sha256'], candidate['sqlite_provider_inputs_sha256'],
+            candidate['sqlite_provider_modules'], candidate['sqlite_provider_assets'])
+    except (ValueError, KeyError, TypeError) as error:
+        raise RuntimeError('Extracted sqliteProvider observations are incomplete') from error
     for name, validate in [('queryEngine', validate_query_engine), ('querySchema', validate_query_schema), ('pythonDirectory', validate_python_directory),
                            ('sessionLineage', validate_session_lineage), ('sessionEventTrace', validate_session_event_trace),
                            ('sessionFilters', validate_session_filters), ('sessionRequests', validate_session_requests),
@@ -713,6 +746,12 @@ def verify(args, output):
     candidate['sqlite_format_inputs_sha256'] = digest(format_inputs)
     candidate['sqlite_format_modules'] = format_module_hashes(ROOT)
     candidate['sqlite_format_assets'] = format_asset_hashes(ROOT)
+    provider_source = output / 'sqlite-provider-paired.source.json'
+    provider_inputs = output / 'sqlite-provider-paired.inputs.json'
+    candidate['sqlite_provider_observations_sha256'] = provider_source_identity(json.loads(provider_source.read_text(encoding='utf-8')))
+    candidate['sqlite_provider_inputs_sha256'] = digest(provider_inputs)
+    candidate['sqlite_provider_modules'] = provider_hashes(ROOT, PROVIDER_MODULES)
+    candidate['sqlite_provider_assets'] = provider_hashes(ROOT, PROVIDER_ASSETS)
     raw = output / 'cordis-raw.json'
     raw.unlink(missing_ok=True)
     run([python, 'scripts/cordis_oracle.py', '--output', str(raw)],

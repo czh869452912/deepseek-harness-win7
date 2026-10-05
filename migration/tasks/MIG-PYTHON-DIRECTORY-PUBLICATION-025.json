@@ -39,15 +39,16 @@
   ],
   "open_findings": [],
   "conflicts_with": [],
-  "candidate_commit": "6ceef0f93e4e7248819a79b552bb14f6ba11f883",
-  "integrated_commit": "6ceef0f93e4e7248819a79b552bb14f6ba11f883",
+  "candidate_commit": "17c1c521bb6743bcb1bc28942db315a614d4866d",
+  "integrated_commit": "17c1c521bb6743bcb1bc28942db315a614d4866d",
   "evidence_ids": [
     "RUN-SESSION-QUERY-ENGINE-20261004-PYTHON-DIRECTORY-PUBLICATION-025",
     "RUN-SESSION-TEXT-20261005-PYTHON-DIRECTORY-PUBLICATION-025",
     "RUN-SESSION-TOOLS-20261005-PYTHON-DIRECTORY-PUBLICATION-025",
     "RUN-SQLITE-FORMAT-20261005-PYTHON-DIRECTORY-PUBLICATION-025",
     "RUN-SESSION-STORAGE-20261005-PYTHON-DIRECTORY-PUBLICATION-025",
-    "RUN-TOOLS-HTTP-20261005-PYTHON-DIRECTORY-PUBLICATION-025"
+    "RUN-TOOLS-HTTP-20261005-PYTHON-DIRECTORY-PUBLICATION-025",
+    "RUN-JS-WORKFLOW-20261005-PYTHON-DIRECTORY-PUBLICATION-025"
   ],
-  "next_action": "clean candidate 6ceef0f9 全量/原版/真实解压复验已通过。clean candidate 6ceef0f9 的十条实际目录共享/事务回归与四条解压发布/恢复观察已有界验收；保留未知外部持有者与全部失败，不认证全量 Python 包生态、任意竞争或 Win7。"
+  "next_action": "clean candidate 17c1c521 全量/原版/真实解压复验已通过。clean candidate 17c1c521 的十条实际目录共享/事务回归与四条解压发布/恢复观察已有界验收；保留未知外部持有者与全部失败，不认证全量 Python 包生态、任意竞争或 Win7。"
 }

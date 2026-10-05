@@ -7,11 +7,28 @@
   "base_product": "15b119157f1f279980de0e708600ebf85c5323b5",
   "owner": "current-session-coordinator",
   "requires": [
-    {"task": "MIG-SQLITE-FORMAT-030", "contract": "CON-SQLITE-FORMAT", "revision": 1},
-    {"task": "MIG-SESSION-STORAGE-006", "contract": "CON-SESSION-STORAGE", "revision": 1},
-    {"task": "MIG-SESSION-PREPARED-005", "contract": "CON-SESSION-PREPARATIONS", "revision": 1}
+    {
+      "task": "MIG-SQLITE-FORMAT-030",
+      "contract": "CON-SQLITE-FORMAT",
+      "revision": 1
+    },
+    {
+      "task": "MIG-SESSION-STORAGE-006",
+      "contract": "CON-SESSION-STORAGE",
+      "revision": 1
+    },
+    {
+      "task": "MIG-SESSION-PREPARED-005",
+      "contract": "CON-SESSION-PREPARATIONS",
+      "revision": 1
+    }
   ],
-  "provides": [{"contract": "CON-SQLITE-PROVIDER", "revision": 1}],
+  "provides": [
+    {
+      "contract": "CON-SQLITE-PROVIDER",
+      "revision": 1
+    }
+  ],
   "acceptance": [
     "The canonical registry mounts a separate sessions-injected schema-19 provider with original Config defaults and refusal behavior, lazy filesystem validation, one shared open reservation and reversible live/prepared cleanup; the old layout is never a fallback or silently migrated.",
     "All 36 unchanged original SQL resources are closed/hash-qualified and packaged. Application/schema/store identities, STRICT tables, new page65536/existing page4096, journal/security/durability, detached reads and mutation ownership rechecks match the original.",
@@ -19,11 +36,22 @@
     "Actual canonical Context/profile/model-tools consumers perform committed repair and new-Context cold preparation with unpublished end-seed ownership; optional history query and Remote consumers use the canonical provider.",
     "A clean committed full release gate passes all tests, 444 mandatory lanes, eighteen unchanged Source groups/1237 assertions, 54 paired drivers and actual extracted/original-browser acceptance with full fresh source/input digests and candidate module/resource closure. Source symlink EPERM and existing platform/built-package skips remain explicit host limitations rather than new skips or a green whole-source-suite claim."
   ],
-  "expected_paths": ["dsh/session", "dsh/boot/plugin_registry.py", "scripts", "tests", "migration", "docs/research"],
+  "expected_paths": [
+    "dsh/session",
+    "dsh/boot/plugin_registry.py",
+    "scripts",
+    "tests",
+    "migration",
+    "docs/research"
+  ],
   "open_findings": [],
   "conflicts_with": [],
-  "candidate_commit": "6ceef0f93e4e7248819a79b552bb14f6ba11f883",
-  "integrated_commit": "6ceef0f93e4e7248819a79b552bb14f6ba11f883",
-  "evidence_ids": ["RUN-SESSION-STORAGE-20261005-SQLITE-PROVIDER-031", "RUN-TOOLS-HTTP-20261005-SQLITE-PROVIDER-031"],
-  "next_action": "clean candidate 6ceef0f9 全量/原版/真实解压复验已通过。规范 schema19 提供端的 323 原版/原生/真实解压、SQL36/ownership/事务/revision/陈旧修复、模型工具与三 preset Remote 冷消费者已有界签收；继续完整 malformed/public plugin ABI、任意竞争/多工作区/长历史和整体迁移，Win7 延期。"
+  "candidate_commit": "17c1c521bb6743bcb1bc28942db315a614d4866d",
+  "integrated_commit": "17c1c521bb6743bcb1bc28942db315a614d4866d",
+  "evidence_ids": [
+    "RUN-SESSION-STORAGE-20261005-SQLITE-PROVIDER-031",
+    "RUN-TOOLS-HTTP-20261005-SQLITE-PROVIDER-031",
+    "RUN-JS-WORKFLOW-20261005-SQLITE-PROVIDER-031"
+  ],
+  "next_action": "clean candidate 17c1c521 全量/原版/真实解压复验已通过。规范 schema19 提供端的 323 原版/原生/真实解压、SQL36/ownership/事务/revision/陈旧修复、模型工具与三 preset Remote 冷消费者已有界签收；继续完整 malformed/public plugin ABI、任意竞争/多工作区/长历史和整体迁移，Win7 延期。"
 }

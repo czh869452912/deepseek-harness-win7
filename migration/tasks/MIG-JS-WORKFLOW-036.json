@@ -6,19 +6,43 @@
   "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
   "base_product": "a016e434a2ff29f1c74a24eb1361a651d22f47ed",
   "owner": "current-session-coordinator",
-  "requires": [{"task": "MIG-CURRENT-RELEASE-GATE-003", "contract": "CON-CURRENT-RELEASE-GATE", "revision": 1}],
-  "provides": [{"contract": "CON-JS-WORKFLOW", "revision": 1}],
+  "requires": [
+    {
+      "task": "MIG-CURRENT-RELEASE-GATE-003",
+      "contract": "CON-CURRENT-RELEASE-GATE",
+      "revision": 1
+    }
+  ],
+  "provides": [
+    {
+      "contract": "CON-JS-WORKFLOW",
+      "revision": 1
+    }
+  ],
   "acceptance": [
     "Real JavaScript closures/loops/async/promises and separate host/script realm values execute with actual pinned Source observations and immutable private Win6.1-targeted engine/resources.",
     "Original workflow hooks/materialization/caps/FIFO/combinators and child start/result/dispose ownership have actual same-scenario observations; parse and named engine differences remain explicit.",
     "Pre-go abort, initial timeout, post-await nonsettlement, process death, grace/physical disposal, dropped hooks and held runs across engine unload are observed without timing or exception relaxation.",
     "Canonical workflow/Ralph/subagent/model/profile consumers and actual extracted Python3.8.10 run the real engine; a new frozen clean complete gate passes before integration."
   ],
-  "expected_paths": ["dsh/javascript", "dsh/workflow", "dsh/boot", "scripts", "tests", "migration", "docs/research"],
-  "open_findings": ["Eight raw engine/parse error differences remain in the initial22 actual observations; Source-backed process/host observations do not qualify complete Node APIs or C2.", "Thirty Source/private-worker and thirty Source/native WorkerRun observations match. Canonical Windows boot and original Ralph scripts now consume the private engine; full model/profile compositions, broader provider/death/reentrancy competition and frozen complete/extracted qualification remain unfinished."],
+  "expected_paths": [
+    "dsh/javascript",
+    "dsh/workflow",
+    "dsh/boot",
+    "scripts",
+    "tests",
+    "migration",
+    "docs/research"
+  ],
+  "open_findings": [
+    "Eight raw engine/parse differences remain in the original22 observations; full Node APIs/SDK/plugin delivery and C2 remain unaccepted.",
+    "Thirty Source/private-worker and thirty actual Source/native/extracted WorkerRun observations and canonical Windows workflow/Ralph consumers pass the clean full gate. Full model/profile compositions and broader provider/death/reentrancy competition are unfinished."
+  ],
   "conflicts_with": [],
-  "candidate_commit": null,
+  "candidate_commit": "17c1c521bb6743bcb1bc28942db315a614d4866d",
   "integrated_commit": null,
-  "evidence_ids": [],
-  "next_action": "规范Windows启动及Source-backed工作流/Ralph已接入，30组worker及30组原版宿主配对、实际持有run跨engine卸载和迟到provider清理通过；冻结新候选进行全部回归、全量配对与真实解压来源检查，再扩展完整模型/profile及竞争边界。八项原始差异、完整C2和延期Win7继续开放。"
+  "evidence_ids": [
+    "RUN-JS-WORKFLOW-20261005-PARTIAL-036"
+  ],
+  "next_action": "干净候选17c1c521全量与实际解压已通过并归档，仅为036部分验证；继续实际Source配对的宿主竞争和完整model/profile消费者，八项原始差异及完整C2/延期Win7保持开放。"
 }

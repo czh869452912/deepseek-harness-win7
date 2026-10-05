@@ -7,7 +7,12 @@
   "base_product": "566eb5d0d8ccbe89da2ae7c16ff9c938149e9a69",
   "owner": "current-session-coordinator",
   "requires": [],
-  "provides": [{"contract": "CON-UPSTREAM-DELTA", "revision": 1}],
+  "provides": [
+    {
+      "contract": "CON-UPSTREAM-DELTA",
+      "revision": 1
+    }
+  ],
   "acceptance": [
     "Read-only explicit existing-commit Git delta preserves NUL path identity, both rename owners and verified pinned manifest/dependency closure; no checkout/fetch/pin/task state change.",
     "Twenty meaningful tests cover real Git history, drift/inventory/ref/output refusals and actual fixed Source parent-to-pin observation; HEAD/status/inventory remain unchanged.",
@@ -20,8 +25,12 @@
   ],
   "open_findings": [],
   "conflicts_with": [],
-  "candidate_commit": "6ceef0f93e4e7248819a79b552bb14f6ba11f883",
-  "integrated_commit": "6ceef0f93e4e7248819a79b552bb14f6ba11f883",
-  "evidence_ids": ["RUN-SESSION-STORAGE-20261005-UPSTREAM-DELTA-002", "RUN-TOOLS-HTTP-20261005-UPSTREAM-DELTA-002"],
-  "next_action": "clean candidate 6ceef0f9 全量/原版/真实解压复验已通过。二十项只读差分回归与实际 pinned Source 父提交差分已在干净完整门禁绑定；继续完整动态职责图、无缓存准备和远程 Actions，不自动推进 pin 或任务。"
+  "candidate_commit": "17c1c521bb6743bcb1bc28942db315a614d4866d",
+  "integrated_commit": "17c1c521bb6743bcb1bc28942db315a614d4866d",
+  "evidence_ids": [
+    "RUN-SESSION-STORAGE-20261005-UPSTREAM-DELTA-002",
+    "RUN-TOOLS-HTTP-20261005-UPSTREAM-DELTA-002",
+    "RUN-JS-WORKFLOW-20261005-UPSTREAM-DELTA-002"
+  ],
+  "next_action": "clean candidate 17c1c521 全量/原版/真实解压复验已通过。二十项只读差分回归与实际 pinned Source 父提交差分已在干净完整门禁绑定；继续完整动态职责图、无缓存准备和远程 Actions，不自动推进 pin 或任务。"
 }

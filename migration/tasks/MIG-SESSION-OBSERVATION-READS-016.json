@@ -38,8 +38,8 @@
   ],
   "open_findings": [],
   "conflicts_with": [],
-  "candidate_commit": "6ceef0f93e4e7248819a79b552bb14f6ba11f883",
-  "integrated_commit": "6ceef0f93e4e7248819a79b552bb14f6ba11f883",
+  "candidate_commit": "17c1c521bb6743bcb1bc28942db315a614d4866d",
+  "integrated_commit": "17c1c521bb6743bcb1bc28942db315a614d4866d",
   "evidence_ids": [
     "RUN-SESSION-TRACING-20261004-SESSION-OBSERVATION-READS-016",
     "RUN-SESSION-FILTERS-20261004-SESSION-OBSERVATION-READS-016",
@@ -48,7 +48,8 @@
     "RUN-SESSION-TOOLS-20261005-SESSION-OBSERVATION-READS-016",
     "RUN-SQLITE-FORMAT-20261005-SESSION-OBSERVATION-READS-016",
     "RUN-SESSION-STORAGE-20261005-SESSION-OBSERVATION-READS-016",
-    "RUN-TOOLS-HTTP-20261005-SESSION-OBSERVATION-READS-016"
+    "RUN-TOOLS-HTTP-20261005-SESSION-OBSERVATION-READS-016",
+    "RUN-JS-WORKFLOW-20261005-SESSION-OBSERVATION-READS-016"
   ],
-  "next_action": "clean candidate 6ceef0f9 全量/原版/真实解压复验已通过。clean candidate 6ceef0f9 的十六组 point read 错误/cause/cut/租约已有界验收；继续完整 durable/domain/FTS/长期回放和 Web/profile 消费者，不认证完整 B1 或 Win7。"
+  "next_action": "clean candidate 17c1c521 全量/原版/真实解压复验已通过。clean candidate 17c1c521 的十六组 point read 错误/cause/cut/租约已有界验收；继续完整 durable/domain/FTS/长期回放和 Web/profile 消费者，不认证完整 B1 或 Win7。"
 }

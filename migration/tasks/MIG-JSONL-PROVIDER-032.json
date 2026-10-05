@@ -7,22 +7,50 @@
   "base_product": "f11a5849ff1ae4dc65cb206c0cac8ce30680c9b0",
   "owner": "current-session-coordinator",
   "requires": [
-    {"task": "MIG-SQLITE-FORMAT-030", "contract": "CON-SQLITE-FORMAT", "revision": 1},
-    {"task": "MIG-SESSION-STORAGE-006", "contract": "CON-SESSION-STORAGE", "revision": 1},
-    {"task": "MIG-SESSION-PREPARED-005", "contract": "CON-SESSION-PREPARATIONS", "revision": 1}
+    {
+      "task": "MIG-SQLITE-FORMAT-030",
+      "contract": "CON-SQLITE-FORMAT",
+      "revision": 1
+    },
+    {
+      "task": "MIG-SESSION-STORAGE-006",
+      "contract": "CON-SESSION-STORAGE",
+      "revision": 1
+    },
+    {
+      "task": "MIG-SESSION-PREPARED-005",
+      "contract": "CON-SESSION-PREPARATIONS",
+      "revision": 1
+    }
   ],
-  "provides": [{"contract": "CON-JSONL-PROVIDER", "revision": 1}],
+  "provides": [
+    {
+      "contract": "CON-JSONL-PROVIDER",
+      "revision": 1
+    }
+  ],
   "acceptance": [
     "Canonical Config/default zstd/session injection and reversible services match the pinned JSONL provider; root/materialization are lazy, encoding mismatch is refused and original UTF16 paths are retained.",
     "1030 fresh actual Source/native and extracted observations match the original 579 checksummed-frame/mutual-file/cold observations plus 451 bounded metadata observations, with 41 parser/scanner pairs and both encodings' stored/raw/list/suffix/inspect outcomes; artifacts stay unchanged, optional null presence and refusal/error ownership match.",
     "Real canonical model/history-tools profile and original Remote/browser consumers use default compressed storage; torn inspection/committed recovery, revision retries, cancelled read draining and append rollback/both causes are mandatory regressions.",
     "A clean committed complete gate passes all tests, 444 mandatory lanes, eighteen unchanged Source groups/1237 assertions, 54 paired drivers and actual extracted/original-browser qualification. Existing skips/warnings, failed candidates and unrooted diagnostics remain explicit; no new exception or Source/frontend change."
   ],
-  "expected_paths": ["dsh/session", "dsh/boot/plugin_registry.py", "scripts", "tests", "migration", "docs/research"],
+  "expected_paths": [
+    "dsh/session",
+    "dsh/boot/plugin_registry.py",
+    "scripts",
+    "tests",
+    "migration",
+    "docs/research"
+  ],
   "open_findings": [],
   "conflicts_with": [],
-  "candidate_commit": "6ceef0f93e4e7248819a79b552bb14f6ba11f883",
-  "integrated_commit": "6ceef0f93e4e7248819a79b552bb14f6ba11f883",
-  "evidence_ids": ["RUN-SESSION-STORAGE-20261005-JSONL-PROVIDER-032", "RUN-TOOLS-HTTP-20261005-JSONL-PROVIDER-032"],
-  "next_action": "clean candidate 6ceef0f9 全量/原版/真实解压复验已通过。规范默认 zstd 的 1030 原版/原生/真实解压互读、完整 revision、可选元数据 presence/typed refusal/public loadStored、原始导出和冷准备已有界签收；继续任意 malformed/public plugin ABI、竞争/多工作区/长历史和整体迁移，Win7 延期。"
+  "candidate_commit": "17c1c521bb6743bcb1bc28942db315a614d4866d",
+  "integrated_commit": "17c1c521bb6743bcb1bc28942db315a614d4866d",
+  "evidence_ids": [
+    "RUN-SESSION-STORAGE-20261005-JSONL-PROVIDER-032",
+    "RUN-TOOLS-HTTP-20261005-JSONL-PROVIDER-032",
+    "RUN-JS-WORKFLOW-20261005-JSONL-PROVIDER-032"
+  ],
+  "next_action": "clean candidate 17c1c521 全量/原版/真实解压复验已通过。规范默认 zstd 的 1030 原版/原生/真实解压互读、完整 revision、可选元数据 presence/typed refusal/public loadStored、原始导出和冷准备已有界签收；继续任意 malformed/public plugin ABI、竞争/多工作区/长历史和整体迁移，Win7 延期。"
 }

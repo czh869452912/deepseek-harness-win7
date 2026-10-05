@@ -15,7 +15,7 @@
   ],
   "open_questions": [
     "The first engine research has fourteen complete matches and eight retained parse/error-text differences; those raw differences remain open after Source-backed worker/host integration.",
-    "Canonical Windows boot now mounts the private provider; thirty actual Source/native host observations and twelve real workflow/Ralph/held-run/late-provider/physical-disposal regressions pass. Full model/profile compositions and clean complete/extracted acceptance remain pending.",
+    "Canonical Windows boot mounts the private provider; thirty actual Source/native/extracted host observations and twelve real workflow/Ralph/held-run/late-provider/physical-disposal regressions pass on clean candidate17c1c521 with7077 full-suite passes. Full model/profile compositions and broader provider/death/reentrancy competitions remain pending; this is partial verification, not acceptance of this complete contract.",
     "Complete Node/Intl/WebAssembly/SDK/Cordis delivery/preset/trust and Win7 certification remain separate unaccepted scopes."
   ]
 }

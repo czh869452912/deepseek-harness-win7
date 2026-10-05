@@ -1,5 +1,7 @@
 # 持续对齐记录
 
+2026-10-05 最新干净门禁：产品 `17c1c521` 全量7077 passed、6既有 skips、1既有 Proactor warning、0 failed；629必需lane、十八组1237原样Source断言、56实际配对及真实解压Python3.8.10/原版浏览器通过。四十六个既有有界合同重验；真实私有JS、原版worker/宿主算法与规范Windows workflow/Ralph已进入产品并通过30场景完整观察和19项私有资源来源检查，但036只记录部分verification，完整合同仍running。八项原始engine/parse差异、全model/profile及竞争边界、完整C2/B/C/D和accepted_upstream仍开放。见 `reviews/JS-WORKFLOW-GATE-20261005.md`；Win7继续延期。
+
 2026-10-05 最新有界签收：干净产品 `6ceef0f9` 完整门禁6944 passed、6既有 skips、1既有 Proactor warning、0 failed；496必需 lane、十八组1237原样 Source断言、55实际配对和真实解压/原版浏览器通过。dispatch启动前缀034与HTTP重定向035有界 integrated，四十六份任务证据及确切产物归档；见 `reviews/TOOLS-HTTP-CLOSURE-20261005.md`。九项原版缺陷判据、旧失败及此前清理记录保持不变。完整B/C/D与整体 accepted_upstream继续开放，通用JS实际引擎仍在研究，Win7仍延期。
 
 2026-10-05 当前有界签收：干净产品 `1f180e40` 完整门禁通过，6892 passed、6既有 skips、1既有 Proactor warning、0 failed；444必需 lane、十八组1237原样 Source断言、54双侧驱动及真实解压/原版浏览器通过。规范 schema19 SQLite323、默认压缩 JSONL1030、并发/settings22和只读差分已有界 integrated，四十四份任务证据绑定确切产品和输入；见 `reviews/SESSION-STORAGE-CLOSURE-20261005.md`。七个确切拒绝产品、真实诊断和两份授权合成回执清理记录保留。完整B1/B2/B3、C/D、历史未归因问题和整体 accepted_upstream继续开放，Win7仍延期。

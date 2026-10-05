@@ -6,19 +6,39 @@
   "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
   "base_product": "de40ae8e1c1a85808561afae04f7cffa5ae16ae1",
   "owner": "current-session-coordinator",
-  "requires": [{"task": "MIG-TOOL-PARALLELISM-033", "contract": "CON-TOOL-PARALLELISM", "revision": 1}],
-  "provides": [{"contract": "CON-TOOL-START-PREFIX", "revision": 1}],
+  "requires": [
+    {
+      "task": "MIG-TOOL-PARALLELISM-033",
+      "contract": "CON-TOOL-PARALLELISM",
+      "revision": 1
+    }
+  ],
+  "provides": [
+    {
+      "contract": "CON-TOOL-START-PREFIX",
+      "revision": 1
+    }
+  ],
   "acceptance": [
     "Eight actual Source/native observations cover canonical body/custom future and ordinary/abort/reclassify/throw prefixes, preserving complete preparations, ownership, first failure identity and ordered results.",
     "The registered task enters before later preparation without sleep, timeout relaxation, coroutine priming or original browser changes.",
     "The fresh scheduler driver has thirty exact ordered observations, including the existing twenty-two cap/settings/model consumers; runtime modules and helper observer inputs are bound in actual isolated extraction.",
     "A new clean complete gate passes all pytest, 496 mandatory lanes, eighteen unchanged Source groups/1237 assertions, 55 paired drivers and actual extracted/original-browser acceptance before integration."
   ],
-  "expected_paths": ["dsh/core", "scripts", "tests", "migration", "docs/research"],
+  "expected_paths": [
+    "dsh/core",
+    "scripts",
+    "tests",
+    "migration",
+    "docs/research"
+  ],
   "open_findings": [],
   "conflicts_with": [],
-  "candidate_commit": "6ceef0f93e4e7248819a79b552bb14f6ba11f883",
-  "integrated_commit": "6ceef0f93e4e7248819a79b552bb14f6ba11f883",
-  "evidence_ids": ["RUN-TOOLS-HTTP-20261005-TOOL-START-PREFIX-034"],
-  "next_action": "八组启动前缀Source/native/extracted与首错排空已在新干净全量门禁有界签收；继续完整Tools/Wire组合与任意扩展/disposal，不归因历史未知失败或签收全项目。"
+  "candidate_commit": "17c1c521bb6743bcb1bc28942db315a614d4866d",
+  "integrated_commit": "17c1c521bb6743bcb1bc28942db315a614d4866d",
+  "evidence_ids": [
+    "RUN-TOOLS-HTTP-20261005-TOOL-START-PREFIX-034",
+    "RUN-JS-WORKFLOW-20261005-TOOL-START-PREFIX-034"
+  ],
+  "next_action": "clean candidate 17c1c521 全量/原版/真实解压复验已通过。八组启动前缀Source/native/extracted与首错排空已在新干净全量门禁有界签收；继续完整Tools/Wire组合与任意扩展/disposal，不归因历史未知失败或签收全项目。"
 }

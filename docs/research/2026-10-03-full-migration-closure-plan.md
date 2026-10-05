@@ -37,7 +37,7 @@
 
 ## 当前执行项
 
-036通用JS工作流已开始实现真实私有进程提供端：固定QuickJS-NG源码/编译器/许可、真实host/script双realm、parse/ready/go/cancel、初始切片中断与物理终止，25项提供端/资源/创建卸载竞争反例通过。22组原版研究中14组完整匹配、8组解析/错误格式差异仍保留；生产WorkflowEngine仍未接入任意脚本。下一提交实施子代理与工作流消费者并取得新的干净解压验收；036仍running，C2与全项目没有签收。见 `2026-10-05-js-workflow-progress.md`。
+036已把固定QuickJS-NG真实双realm进程、原版worker/session/runtime/realm/schema算法和Python宿主子代理所有权接入规范Windows WorkflowEngine/Ralph；root提供端支持持有run跨engine卸载。30组Source/private-worker、30组实际Source/native/extracted宿主完整观察及12项真实消费者回归通过。干净候选 `17c1c521` 全量7077通过、6既有skip、1既有warning，629必需lane、十八组1237原样断言、56配对和真实解压/原版浏览器通过；46既有有界范围重验，036只有部分verification，仍running。八项原始engine/parse差异、完整model/profile、provider/death/reentrancy竞争、完整Node/SDK/插件/C2和全项目继续开放。下一提交验证并修复实际Source宿主死亡与共享清理边界，之后推进完整消费者；见 `2026-10-05-js-workflow-progress.md` 和 `migration/reviews/JS-WORKFLOW-GATE-20261005.md`。
 
 最新干净产品 `6ceef0f9` 完整门禁6944通过、6既有跳过、1既有warning、0失败；496必需lane、十八组1237原样断言、55配对与真实解压/原版浏览器通过。034启动前缀和035重定向已有界 integrated，四十六份证据及确切ZIP归档于 `TOOLS-HTTP-20261005-6ceef0f9.zip`，见对应review。此前七个拒绝产品和九项原版判据不变；完整B1/B2/B3/C/D继续，通用JS的真实私有引擎与跨realm原型开始独立验证，不以研究代码签收。整体accepted_upstream仍为空，Win7继续延期。
 

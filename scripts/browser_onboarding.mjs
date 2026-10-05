@@ -4,6 +4,12 @@ export function credentialFreeEnvironment(environment) {
     && !/^(?:DSH_HOME|PYTHONPATH|PYTHONHOME)$/i.test(name)));
 }
 
+export function isolatedBrowserArguments(profile, networkLog) {
+  return ['--headless', '--no-sandbox', '--disable-gpu', '--disable-extensions',
+    '--remote-debugging-port=0', `--user-data-dir=${profile}`, '--lang=en-US',
+    ...(networkLog ? [`--log-net-log=${networkLog}`] : []), 'about:blank'];
+}
+
 export async function reloadOriginalPage(connection, waitFor, parameters = {}) {
   const previous = await connection.evaluate('performance.timeOrigin');
   await connection.call('Page.reload', parameters);

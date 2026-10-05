@@ -6,7 +6,7 @@ import {tmpdir} from 'node:os';
 import {basename, dirname, join, resolve} from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {createInterface} from 'node:readline';
-import {closeOriginalBrowser, deferProviderOnboarding, navigateOriginalPage} from './browser_onboarding.mjs';
+import {closeOriginalBrowser, deferProviderOnboarding, isolatedBrowserArguments, navigateOriginalPage} from './browser_onboarding.mjs';
 
 const options = Object.fromEntries(process.argv.slice(2).reduce((rows, value, i, args) => {
   if (value.startsWith('--')) rows.push([value.slice(2), args[i + 1]]); return rows;
@@ -80,8 +80,7 @@ try {
   report.installedClientEntry = boot.graph.entries.find(row => row.id === '@verification/portable-web');
   assert.ok(report.installedClientEntry, 'installed package is declared in the active original module graph');
   report.moduleResponses = [];
-  browser = spawn(resolve(options.browser), ['--headless', '--no-sandbox', '--disable-gpu', '--remote-debugging-port=0',
-    '--user-data-dir=' + privateBrowser, '--lang=en-US', 'about:blank'], {windowsHide: true});
+  browser = spawn(resolve(options.browser), isolatedBrowserArguments(privateBrowser), {windowsHide: true});
   const port = await until(async () => {try {return (await readFile(join(privateBrowser, 'DevToolsActivePort'), 'utf8')).split('\n')[0];} catch {return false;}}, 'browser port');
   const target = (await (await fetch(`http://127.0.0.1:${port}/json/list`)).json()).find(row => row.type === 'page');
   const socket = new WebSocket(target.webSocketDebuggerUrl);

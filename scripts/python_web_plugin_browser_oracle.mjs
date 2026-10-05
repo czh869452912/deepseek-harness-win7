@@ -7,7 +7,7 @@ import { tmpdir } from 'node:os';
 import { basename, dirname, join, resolve } from 'node:path';
 import { createInterface } from 'node:readline';
 import { fileURLToPath } from 'node:url';
-import { closeOriginalBrowser, credentialFreeEnvironment, deferProviderOnboarding, navigateOriginalPage, reloadOriginalPage } from './browser_onboarding.mjs';
+import { closeOriginalBrowser, credentialFreeEnvironment, deferProviderOnboarding, isolatedBrowserArguments, navigateOriginalPage, reloadOriginalPage } from './browser_onboarding.mjs';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const options = Object.fromEntries(process.argv.slice(2).reduce((pairs, value, i, args) => {
@@ -249,7 +249,7 @@ try {
   packageName = boot.name; rpcEndpoint = boot.endpoint; report.exported = boot.exported; report.session = boot.session;
   assert.equal(boot.python, '3.8.10'); assert.equal(boot.descriptor, true); assert.equal(boot.calls, 0);
   report.networkLogPath = networkLog;
-  browser = spawn(resolve(options.browser), ['--headless', '--no-sandbox', '--disable-gpu', '--remote-debugging-port=0', `--user-data-dir=${privateBrowser}`, '--lang=en-US', `--log-net-log=${networkLog}`, 'about:blank'], { windowsHide: true });
+  browser = spawn(resolve(options.browser), isolatedBrowserArguments(privateBrowser, networkLog), { windowsHide: true });
   const port = await until(async () => { try { return (await readFile(join(privateBrowser, 'DevToolsActivePort'), 'utf8')).split('\n')[0]; } catch { return false; } }, 'browser port');
   const target = (await (await fetch(`http://127.0.0.1:${port}/json/list`)).json()).find(row => row.type === 'page');
   const socket = new WebSocket(target.webSocketDebuggerUrl);

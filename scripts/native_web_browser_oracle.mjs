@@ -10,7 +10,7 @@ import { tmpdir } from 'node:os';
 import { basename, dirname, join, resolve } from 'node:path';
 import { createInterface } from 'node:readline';
 import { fileURLToPath } from 'node:url';
-import { closeOriginalBrowser, credentialFreeEnvironment, deferProviderOnboarding, navigateOriginalPage, reloadOriginalPage } from './browser_onboarding.mjs';
+import { closeOriginalBrowser, credentialFreeEnvironment, deferProviderOnboarding, isolatedBrowserArguments, navigateOriginalPage, reloadOriginalPage } from './browser_onboarding.mjs';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const options = Object.fromEntries(process.argv.slice(2).reduce((pairs, value, i, args) => {
@@ -266,7 +266,7 @@ try {
     }
     report.clientArtifacts.push({ name: artifact.name, path: artifact.path.replace(root, '[workspace]'), sha256: createHash('sha256').update(bytes).digest('hex'), sourceMapSha256: createHash('sha256').update(mapBytes).digest('hex'), sources });
   }
-  browser = spawn(resolve(options.browser), ['--headless', '--no-sandbox', '--disable-gpu', '--remote-debugging-port=0', `--user-data-dir=${privateBrowser}`, '--lang=en-US', 'about:blank'], { windowsHide: true });
+  browser = spawn(resolve(options.browser), isolatedBrowserArguments(privateBrowser), { windowsHide: true });
   browser.stderr.on('data', data => { browserErrors += data; });
   browser.on('error', error => { browserErrors += String(error); });
   const port = await until(async () => { try { return (await readFile(join(privateBrowser, 'DevToolsActivePort'), 'utf8')).split('\n')[0]; } catch { return false; } }, 'Chromium DevTools port');

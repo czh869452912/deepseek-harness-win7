@@ -37,6 +37,8 @@
 
 ## 当前执行项
 
+`6b82aebb` 的54双侧预检通过，但完整冻结候选被6890通过/1失败拒绝：原版安装包旅程十二步/六RPC通过，外部 Zotero 扩展脚本错误违反零错误要求，后续阶段未执行。确切 ZIP/输入/XML/浏览器资料保留。实际 Edge 受控扩展/页面异常实验证明进程级扩展隔离保持应用错误可见；统一测试浏览器启动并新增真实 lane，下一门禁为444必需 lane、十八组1237原样断言、54配对。旧取消/1175仍未归因，完整B/C/D继续开放；详见 `2026-10-05-browser-extension-isolation-progress.md`。
+
 2026-10-05：最新完整有界签收产品为 `0edcc616`，6718 passed、6 既有平台 skips、1 既有 warning、0 failed；337 必需 lane、十五组 1124 原版断言、51 双侧驱动及实际解压/原版浏览器通过，见 `migration/reviews/SQLITE-FORMAT-CLOSURE-20261005.md`。可选五个 Session 工具、完整 FTS/schema-8/Unicode/text、schema-19 物理 codec 已有界签收；完整 B1/B2/B3、C/D 和全项目 accepted_upstream 仍未完成。
 
 此后规范 SQLite 提供端 031 和默认压缩 JSONL 提供端 032 已实现。d5cc、865fea84、a6cf 的确切失败 ZIP、输入、XML、日志与浏览器诊断均保留：部分字节流超时的受控根修复、八项启动隔离/审计观察器错误已分别修复；a6cf 的 6808 passed / 1 failed 仍由原版浏览器升级启动请求取消拒绝，根因继续开放，不重跑未改候选。工具调度三处失败边界已提交 `03652743`；存储 null presence、路径/typed error/cold validation 与 public loadStored 已提交 `566eb5d0`，实际 JSONL 驱动扩大到 1030 项并匹配，570 项门禁单元验证通过。

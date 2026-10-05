@@ -489,6 +489,7 @@ REQUIRED_REGRESSION = {
         'test_real_process_eof_cancels_active_turn_and_reopens_durable_session',
     },
     'test_native_web_browser': {
+        'test_browser_extension_isolation_preserves_application_error_observation',
         'test_original_browser_native_host_cordis_lifecycle[lifecycle]',
         'test_original_browser_native_host_cordis_lifecycle[inspect]',
         'test_original_browser_native_host_cordis_lifecycle[inventory-layout-boundary]',

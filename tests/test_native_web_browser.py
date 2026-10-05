@@ -17,6 +17,24 @@ BROWSER = os.environ.get('DSH_TEST_CHROMIUM')
 
 
 @pytest.mark.skipif(not BROWSER, reason='real browser lane: set DSH_TEST_CHROMIUM')
+def test_browser_extension_isolation_preserves_application_error_observation(tmp_path):
+    node = shutil.which('node')
+    assert node is not None, 'real browser developer lane requires Node with global WebSocket'
+    output = tmp_path / 'extension-isolation.json'
+    result = subprocess.run([node, str(ROOT / 'scripts/browser_extension_isolation_oracle.mjs'),
+        BROWSER, str(output)], cwd=str(ROOT), capture_output=True, encoding='utf-8', timeout=90)
+    assert result.returncode == 0, result.stdout + result.stderr
+    report = json.loads(output.read_text(encoding='utf-8'))
+    assert report['passed'] is True
+    enabled, disabled = report['observations']
+    assert enabled['disabled'] is False and enabled['marker'] == 'loaded'
+    assert disabled['disabled'] is True and disabled['marker'] is None
+    assert len(enabled['exceptions']) == 2 and len(disabled['exceptions']) == 1
+    assert any('DSH_CONTROLLED_APP_EXCEPTION' in event['exceptionDetails']['exception']['description']
+               for event in disabled['exceptions'])
+
+
+@pytest.mark.skipif(not BROWSER, reason='real browser lane: set DSH_TEST_CHROMIUM')
 @pytest.mark.parametrize('inspect_mode, inventory_boundary', [(False, False), (True, False), (False, True)],
                          ids=['lifecycle', 'inspect', 'inventory-layout-boundary'])
 def test_original_browser_native_host_cordis_lifecycle(tmp_path, inspect_mode, inventory_boundary):

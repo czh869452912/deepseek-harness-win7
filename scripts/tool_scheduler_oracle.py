@@ -12,6 +12,9 @@ NAMES += ['config-empty-session', 'config-boolean-max-tokens']
 NAMES += ['settings-' + name for name in ['entry', 'updated', 'refused', 'detached', 'replaced', 'unloaded']]
 NAMES += ['model-group-snapshot']
 NAMES += ['model-pool-' + str(cap) for cap in [1, 2, 10]]
+PREFIX_NAMES = [implementation + '-' + action for implementation in ('custom-future', 'canonical-body')
+                for action in ('none', 'abort', 'reclassify', 'throw')]
+NAMES += PREFIX_NAMES
 REQUIRED_MODULES = {'dsh/core/agent_loop.py', 'dsh/core/agent_loop_settings.py', 'dsh/core/tool_calls.py',
                     'dsh/core/tools.py', 'dsh/settings/provider.py', 'dsh/cordis/context.py'}
 
@@ -76,7 +79,7 @@ def main():
                 or subprocess.check_output(['git', '-C', str(ROOT / 'reference'), 'status', '--porcelain'], encoding='utf-8').strip()):
             raise ValueError('tool scheduler Source changed during observation')
         report.update(status='matched', target_upstream=target, cases=len(source), observations_sha256=source_digest,
-                      modules=native['modules'], scope='Bounded parallel caps/settings/factory consumers; full Tools/Wire combinations and arbitrary dispatch prefixes remain open.')
+                      modules=native['modules'], scope='Bounded parallel caps/settings/factory consumers and eight dispatch-prefix observations; full Tools/Wire combinations and general extension ABI remain open.')
     except (OSError, ValueError, KeyError, TypeError, RuntimeError, subprocess.SubprocessError) as error:
         report['error'] = str(error)
     output.write_text(json.dumps(report, ensure_ascii=True, indent=2) + '\n', encoding='utf-8')

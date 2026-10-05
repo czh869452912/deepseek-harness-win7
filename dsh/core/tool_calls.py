@@ -194,8 +194,11 @@ async def run_group(
                 aborted = True
             return
 
+        dispatch_entered = asyncio.Event()
+
         async def _dispatch_task(idx: int, exec_inp: ToolExecutionInput) -> int:
             nonlocal scheduler_failure
+            dispatch_entered.set()
             try:
                 outcome = await tools_service.dispatch(exec_inp)
                 slots[idx] = Slot(
@@ -210,6 +213,7 @@ async def run_group(
 
         task = asyncio.create_task(_dispatch_task(index, prepared_exec))
         in_flight[index] = task
+        await dispatch_entered.wait()
 
     async def fill_pool() -> None:
         nonlocal next_to_start, aborted

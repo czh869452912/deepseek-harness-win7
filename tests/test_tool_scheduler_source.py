@@ -7,7 +7,7 @@ import sys
 
 import pytest
 
-from scripts.tool_scheduler_oracle import identity, validate_runtime
+from scripts.tool_scheduler_oracle import PREFIX_NAMES, identity, validate_runtime
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -19,7 +19,7 @@ def observations(tmp_path_factory):
                    cwd=str(ROOT), env=dict(os.environ), check=True, timeout=45)
     paired = json.loads(output.read_text(encoding='utf-8'))
     native = json.loads(output.with_suffix('.native.json').read_text(encoding='utf-8'))
-    assert paired['status'] == 'matched' and paired['cases'] == 22
+    assert paired['status'] == 'matched' and paired['cases'] == 30
     return native, paired['observations_sha256']
 
 
@@ -37,6 +37,30 @@ def test_actual_source_in_flight_group_keeps_cap_until_exclusive_barrier(observa
     assert row == dict(name='model-group-snapshot', initial=[0, 1], continuation=[0, 1, 2],
                        peaks=[2, 1], started=list(range(7)), cap=1, requests=2,
                        results=['call-' + str(index) for index in range(7)])
+
+
+@pytest.mark.parametrize('name', PREFIX_NAMES)
+def test_actual_source_dispatch_prefix_precedes_later_preparation_and_drains_owned_work(observations, name):
+    native, source_digest = observations
+    validate_runtime(native, ROOT, source_digest, native['modules'])
+    row = next(row for row in native['rows'] if row['name'] == name)
+    custom_failure = name == 'custom-future-throw'
+    aborted = name.endswith('-abort')
+    expected_prefixes = ['c1'] if aborted else ['c1', 'c2'] if custom_failure else ['c1', 'c2', 'c3']
+    assert row['prefixes'] == expected_prefixes
+    assert row['preparations'] == [dict(callId=identity, prefixes=expected_prefixes[:index])
+                                   for index, identity in enumerate(expected_prefixes)]
+    assert row['held'] == dict(settled=False)
+    assert row['terminal'] == (dict(message='prefix failure', sameFailure=True) if custom_failure else None)
+    assert row['calls'] == (['c1', 'c2'] if custom_failure else ['c1', 'c2', 'c3'])
+    assert row['result'] == (None if custom_failure else dict(concluded=False))
+    assert [result['callId'] for result in row['results']] == ([] if custom_failure else row['calls'])
+    if aborted:
+        assert [result['code'] for result in row['results']] == [
+            None if name.startswith('custom-future-') else 'ABORTED',
+            'ABORTED_BEFORE_DISPATCH', 'ABORTED_BEFORE_DISPATCH']
+    if name == 'canonical-body-throw':
+        assert [result['isError'] for result in row['results']] == [False, True, False]
 
 
 @pytest.mark.parametrize('damage', ['missing-module', 'changed-module', 'empty-closure', 'foreign-root',

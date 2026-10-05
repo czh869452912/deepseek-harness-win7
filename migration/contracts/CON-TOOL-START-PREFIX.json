@@ -1,0 +1,22 @@
+{
+  "id": "CON-TOOL-START-PREFIX",
+  "revision": 1,
+  "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
+  "status": "specified",
+  "source_paths": ["reference/packages/core/agent-loop/src/tool-calls.ts", "reference/packages/core/tools/src/index.ts", "reference/vendor/cordis/src/events.ts", "dsh/core/tool_calls.py"],
+  "consumers": ["dsh/core/agent_loop.py", "scripts/tool_scheduler_oracle.py", "scripts/verify_release.py", "scripts/verify_portable.py"],
+  "invariants": [
+    "Before later ordered preparation/classification, an admitted owned dispatch has entered its synchronous prefix up to its first suspension.",
+    "Both a canonical asynchronous tool body and a synchronous extension dispatcher returning an owned future retain actual pre-execute snapshots and ordered call/result identities.",
+    "A prefix-triggered abort prevents subsequent dispatch; changing the next call's concurrency classification is visible at its boundary.",
+    "A synchronous custom dispatch failure prevents late dispatch, drains previously started work and preserves the identical first failure object; canonical body failure remains an ordered tool error.",
+    "Fresh Source/native and isolated extracted observers compare all eight complete observation objects without timing sleeps or error filtering, retaining all candidate-imported module hashes."
+  ],
+  "identity": "Pinned actual Source code, eight ordered implementation/action identities, complete preparations/prefixes/held/terminal/call/result objects and selected runtime module bytes.",
+  "ownership": "Register every owned dispatch task before waiting for admission; retain its future and drain siblings before publishing the first scheduler failure.",
+  "ordering": "Enter the admitted prefix before preparing later calls, with model-order result commits and exclusive barriers preserved.",
+  "errors": "Custom synchronous failure keeps object identity; canonical body failure is converted by the existing Tools boundary. Existing bug predicates are unchanged.",
+  "cancellation": "Prefix-triggered signal abort prevents later starts and waits for already owned dispatch. Arbitrary simultaneous task cancellation/disposal is not certified by these eight cases.",
+  "adaptation": "Python3.8 admission Event transfers control to the registered asyncio task, preserving its natural first suspension without coroutine priming or arbitrary sleeps.",
+  "open_questions": ["Full B2 Tools/Wire/approval/followup/maintenance/disposal combinations and arbitrary extension ABI remain open.", "Overall migration and deferred real Win7 certification remain unaccepted."]
+}

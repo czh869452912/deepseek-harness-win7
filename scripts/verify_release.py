@@ -65,6 +65,8 @@ REQUIRED_REGRESSION = {
         *{'test_factory_model_turn_honors_configured_parallel_pool[' + str(value) + ']' for value in (1, 2, 10)},
     },
     'test_tool_scheduler_source': {
+        *{'test_actual_source_dispatch_prefix_precedes_later_preparation_and_drains_owned_work[' + implementation + '-' + action + ']'
+          for implementation in ('custom-future', 'canonical-body') for action in ('none', 'abort', 'reclassify', 'throw')},
         'test_actual_source_parallel_caps_settings_and_factory_consumers_match',
         'test_actual_source_in_flight_group_keeps_cap_until_exclusive_barrier',
         'test_scheduler_source_order_is_part_of_identity',

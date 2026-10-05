@@ -37,6 +37,8 @@
 
 ## 当前执行项
 
+工具启动前缀034已修复登记task晚于后续prepare的实际差异，canonical body/custom future各四组真实Source/native完整对象一致；正式scheduler驱动22→30，41定向回归通过，下一门禁452必需lane/十八组1237原样断言/54配对。任务仍running，须新干净候选及实际解压/原版浏览器成功后签收；完整B2与全项目仍开放。见 `2026-10-05-tool-start-prefix-progress.md`。
+
 最新有界签收为干净产品 `1f180e40`：6892通过、6既有跳过、1既有warning、0失败；444必需lane、十八组1237原样断言、54实际配对和隔离解压/原版浏览器全部通过。规范SQLite031、默认压缩JSONL032、只读差分和并发/settings033有界 integrated，四十四份证据及七个拒绝产品归档于 `SESSION-STORAGE-20261005-1f180e40.zip`。这结束了该存储/并发批次的验收等待；完整B1/B2/B3和C/D继续实施。新的八组实际Source/native诊断均发现dispatch启动前缀晚于后续prepare，特殊dispatcher还会多开调用，下一部分修复此已观察差异；通用JS仍不可用，源码合同和真实引擎方案在独立研究中准备。整体accepted_upstream为空，Win7仍按用户决定延期。
 
 `6b82aebb` 的54双侧预检通过，但完整冻结候选被6890通过/1失败拒绝：原版安装包旅程十二步/六RPC通过，外部 Zotero 扩展脚本错误违反零错误要求，后续阶段未执行。确切 ZIP/输入/XML/浏览器资料保留。实际 Edge 受控扩展/页面异常实验证明进程级扩展隔离保持应用错误可见；统一测试浏览器启动并新增真实 lane，下一门禁为444必需 lane、十八组1237原样断言、54配对。旧取消/1175仍未归因，完整B/C/D继续开放；详见 `2026-10-05-browser-extension-isolation-progress.md`。

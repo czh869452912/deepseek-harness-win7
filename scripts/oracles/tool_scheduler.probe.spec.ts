@@ -9,6 +9,7 @@ import Prompt from '@deepseek-ai/dsh-system-prompt'
 import Agents from '@deepseek-ai/dsh-agent'
 import Loop from '@deepseek-ai/dsh-agent-loop'
 import {SettingsProvider} from '@deepseek-ai/dsh-settings'
+import {observePrefixes} from './tool_start_prefix_source.ts'
 
 class MemorySettings extends SettingsProvider {
   doc: Record<string,unknown> = {}
@@ -152,5 +153,6 @@ it('observes actual original caps, settings ownership and factory model consumer
           callId:event.data.message.source.callId,isError:event.data.message.content[0].isError}))})
     } finally {release.resolve();await handle.dispose();await ctx.fiber.dispose()}
   }
+  rows.push(...await observePrefixes())
   await writeFile(process.env.TOOL_SCHEDULER_OUTPUT!,JSON.stringify(rows,null,2)+'\n')
 },15000)

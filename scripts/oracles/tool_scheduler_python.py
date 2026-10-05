@@ -12,6 +12,7 @@ parser.add_argument('--output', type=Path, required=True)
 options = parser.parse_args()
 root = (options.root or Path(__file__).resolve().parents[2]).resolve()
 sys.path.insert(0, str(root))
+sys.path.insert(1, str(Path(__file__).resolve().parent))
 
 from dsh.cordis.context import Context
 from dsh.core.agent import AgentPlugin
@@ -19,6 +20,7 @@ from dsh.core.agent_loop import AgentLoopPlugin, AgentLoopService
 from dsh.core.session import SessionPlugin
 from dsh.core.tools import ToolsPlugin
 from dsh.settings.provider import SettingsProvider
+from tool_start_prefix_python import observe_prefixes
 
 
 class MemorySettings(SettingsProvider):
@@ -216,6 +218,7 @@ async def observe():
             release.set()
             await handle.dispose()
             await ctx.fiber.dispose()
+    rows.extend(await observe_prefixes())
     return rows
 
 

@@ -137,6 +137,7 @@ def main(argv=None):
             'oracles/vitest.session-tools-probe.config.mts', 'sqlite_format_oracle.py', 'oracles/sqlite_format_python.py',
             'oracles/sqlite_format_inputs.py', 'oracles/sqlite_format.probe.spec.ts', 'oracles/vitest.sqlite-format-probe.config.mts',
             'tool_scheduler_oracle.py', 'oracles/tool_scheduler_python.py', 'oracles/tool_scheduler.probe.spec.ts',
+            'oracles/tool_start_prefix_python.py', 'oracles/tool_start_prefix_source.ts',
             'oracles/vitest.tool-scheduler-probe.config.mts')})
     node = shutil.which('node') if args.browser else None
     try:

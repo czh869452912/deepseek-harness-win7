@@ -10,10 +10,10 @@
   "provides": [{"contract": "CON-RUNTIME-CONTEXT-CONSUMER", "revision": 1}],
   "acceptance": ["Fresh actual original AgentLoop and native two-step model/tool consumers match complete attributed runtime-context and durable messages for change/clear/same/empty.", "Exact previous accepted Portable reproduces the three context differences; current selected runtime fixes them and preserves the initially empty case.", "Mandatory reject regressions retain full messages and identity correlation, Source identity and actual imported root/bytes. A new clean frozen full gate and actual extracted Python3.8.10 observe the same four cases before integration."],
   "expected_paths": ["dsh/core/agent_loop.py", "scripts", "tests", "migration", "docs/research"],
-  "open_findings": ["The product fix and four actual Source consumers pass focused checks; clean full/extracted acceptance is pending. Full B3/C2, arbitrary contexts and model/profile compositions are not part of this bounded contract."],
+  "open_findings": ["The3be2afde clean gate was rejected by the1800-second total pytest process budget at99%, without final XML or admitted original/paired/extracted gate phases. A distinct candidate with explicitly adjusted2400-second whole-batch budget and repaired empty-write probe must pass the complete gate before integration. Full B3/C2, arbitrary contexts and model/profile compositions remain outside this bounded contract."],
   "conflicts_with": [],
   "candidate_commit": null,
   "integrated_commit": null,
-  "evidence_ids": [],
-  "next_action": "提交提供端/消费者及严格门禁；冻结干净候选执行全量、57配对和真实解压四场景；通过后只签收这个有界合同。"
+  "evidence_ids": ["RUN-RUNTIME-CONTEXT-REJECTED-20261005-037"],
+  "next_action": "旧超时候选已独立保留且拒绝；冻结不同新候选执行完整全量、679必需lane、57配对和真实解压，整批预算2400秒而单项期限/判据保持原样；通过后只签收有界上下文合同。"
 }

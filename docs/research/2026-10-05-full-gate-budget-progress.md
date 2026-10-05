@@ -1,0 +1,11 @@
+# 整批回归预算与空响应探针
+
+干净产品3be2afde的完整门禁在pytest到99%、windows_acl_runner最后几项时触及整批1800秒限时。日志没有失败断言，进程结束后没有最终XML或可靠通过计数；后续原版套件、配对和解压阶段未被准入。不能签收037或推定剩余用例通过，也不重试不变候选。精确拒绝产物归档 `migration/evidence/artifacts/RUNTIME-CONTEXT-REJECTED-20261005-3be2afde.zip`，SHA256 `8b913d3ca2881f26b87dc2640b9f646063c6f5a85134961660201af8d1f535aa`；内嵌Portable SHA256 `c91cbbaf72b3fcc04a9d4c78e4b92e4e78f9f60e63d326fd010e0076b018388e`、输入SHA256 `72c66c65d6a0d51fdf36a7fcd883d448f35c9f991bbb8d57c8f02833e0437dab`。未发现仍运行的该pytest或ACL runner进程。
+
+前一完整批次7087项耗时1769.53秒，已接近整批上限；本次新增39项严格回归。单独性能分析中，三次已预热完整回执构造累计1.212秒，其中0.871秒是保持修改隔离所需的deepcopy；不把此局部测量当作整批耗时归因。整批pytest预算从1800改为2400秒，作为容纳七千多项测试的批次预算调整。单项工具/协议/浏览器、原版断言与消费者期限不变，所有必需lane执行一次，失败/缺失/跳过/重复仍拒绝，没有过滤warning、修改Source判据或接受旧超时候选。新候选必须重新完整验收。
+
+首轮性能分析另遇到HTTP重定向探针的WinError10054：BaseHTTPRequestHandler发送headers后，即使payload为空仍调用wfile.write(b'')；在取消先关闭连接时，这个没有协议内容的额外sendall可触发reset。诊断钩子明确捕获真实探针的空写路径，原始reset和插桩日志保留。探针现在只对非HEAD且非空payload调用write；headers、状态、Content-Length、重定向、取消和stalled-body语义保持不变。实际运行全部29场景的回归禁止任何空body write，验证取消不准入目标、未结束的redirect body仍能到达目标；既有配对继续检查原始完整观察。这里修复的是这个明确空写路径，不宣称归因所有历史10054、Proactor或启动取消。
+
+必需lane由678增为679，57配对不变；037与JS036尚未签收。此前原版前端119文件、九项Source bug判据及C58/C59保持不变，整体accepted_upstream为空，Win7仍为用户延期。
+
+预算/探针、037消费者及门禁的聚焦回归638项通过（245.63秒），日志/XML为 `.goose/out/acp-a4-work/runtime-context-budget-focused-v1.*`；这是定向验证，不代替新的完整门禁。

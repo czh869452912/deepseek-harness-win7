@@ -60,6 +60,7 @@ PAIRED_DRIVERS = (
 PAIRED_DRIVERS = PAIRED_DRIVERS + ('session_tools', 'sqlite_format', 'sqlite_provider', 'jsonl_provider', 'tool_scheduler', 'http_redirect', 'javascript_workflow', 'runtime_context')
 OFFICIAL_CONFIGS = ('consumers', 'agent-lifecycle', 'session-recovery', 'session-projection', 'acp', 'acp-app', 'mcp', 'subagent-acp', 'storage-cache', 'session-observation', 'session-corpus', 'session-sqlite-query', 'query-engine-source', 'session-tools-source', 'sqlite-format-source', 'sqlite-provider-source', 'jsonl-provider-source', 'tool-scheduler-source')
 REQUIRED_REGRESSION = {
+    "test_http_redirect_fixture_lifetime": {"test_actual_redirect_fixture_never_sends_empty_response_body"},
     "test_runtime_context_consumers": {
         "test_model_tool_next_step_retains_complete_attributed_context[change]",
         "test_model_tool_next_step_retains_complete_attributed_context[clear]",
@@ -1013,7 +1014,7 @@ def verify(args, output):
     regression = output / 'pytest.xml'
     run([python, '-m', 'pytest', 'tests', '-ra', '--junitxml=' + str(regression),
          '--basetemp=' + str(output / 'pytest-workspace')],
-        'pytest', output, env=environment, timeout=1800)
+        'pytest', output, env=environment, timeout=2400)
     regression_result = validate_regression(regression)
     for config in OFFICIAL_CONFIGS:
         run(['node', '--expose-internals', 'scripts/oracles/official/node_modules/vitest/vitest.mjs',

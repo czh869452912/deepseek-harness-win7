@@ -80,7 +80,7 @@ async def observe(fixture):
                     payload = b'data: {"choices":[{"delta":{"content":"ok"},"finish_reason":"stop"}]}\n\ndata: [DONE]\n\n'
                 self.send_header('Content-Length', '999999' if fixture.get('stalled') and len(requests) == 1 else str(len(payload)))
                 self.end_headers()
-                if self.command != 'HEAD':
+                if self.command != 'HEAD' and payload:
                     self.wfile.write(payload)
 
             do_POST = receive

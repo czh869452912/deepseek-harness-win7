@@ -43,8 +43,8 @@
   ],
   "open_findings": [],
   "conflicts_with": [],
-  "candidate_commit": "b1b2f7971d904cce7047e7b679f9faf658383e85",
-  "integrated_commit": "b1b2f7971d904cce7047e7b679f9faf658383e85",
+  "candidate_commit": "47adea372613d086c54631344af4944b4ddcf232",
+  "integrated_commit": "47adea372613d086c54631344af4944b4ddcf232",
   "evidence_ids": [
     "RUN-SESSION-QUERY-ENGINE-20261004-SESSION-QUERY-SCHEMA-024",
     "RUN-SESSION-TEXT-20261005-SESSION-QUERY-SCHEMA-024",
@@ -53,7 +53,8 @@
     "RUN-SESSION-STORAGE-20261005-SESSION-QUERY-SCHEMA-024",
     "RUN-TOOLS-HTTP-20261005-SESSION-QUERY-SCHEMA-024",
     "RUN-JS-WORKFLOW-20261005-SESSION-QUERY-SCHEMA-024",
-    "RUN-JS-DEATH-20261005-SESSION-QUERY-SCHEMA-024"
+    "RUN-JS-DEATH-20261005-SESSION-QUERY-SCHEMA-024",
+    "RUN-RUNTIME-CONTEXT-20261006-SESSION-QUERY-SCHEMA-024"
   ],
-  "next_action": "clean candidate b1b2f797 全量/原版/真实解压复验已通过。clean candidate b1b2f797 的十九组实际 schema-8/STRICT/FTS5、私有 DLL 与真实解压已有界验收；规范 FTS、Unicode 身份和有效 Session 文本/locale 顺序另有界验收；继续 malformed/plugin ABI/竞争、持久化 schema-19 和整体迁移，Win7 延期。"
+  "next_action": "clean candidate 47adea37 全量/原版/真实解压复验已通过。clean candidate 47adea37 的十九组实际 schema-8/STRICT/FTS5、私有 DLL 与真实解压已有界验收；规范 FTS、Unicode 身份和有效 Session 文本/locale 顺序另有界验收；继续 malformed/plugin ABI/竞争、持久化 schema-19 和整体迁移，Win7 延期。"
 }

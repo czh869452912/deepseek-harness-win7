@@ -1,5 +1,7 @@
 # Ready交付跨物理退出
 
+2026-10-06：47adea完整干净门禁及实际解压/原版浏览器通过，038两组已发出Ready跨退出已有界integrated，详见 `migration/reviews/RUNTIME-CONTEXT-READ-GATE-20261006.md`。发出前的初始写入研究另复现真实Connection-lost分类差异，仅隔离原型匹配，不属于038或47adea签收；JS036继续running。
+
 原版真实WorkerRun/worker与原生真实Context/JavaScriptRuntime/WorkflowEngine分别持有已经发出的Ready消息，在宿主处理或发布worker前物理终止进程；随后准入该迟到消息。无取消时，原版返回 `workflow worker exited before the run settled (exit code 1)`，旧原生却在Go/send路径返回 `workflow worker failed: JavaScript worker already exited`。另一组先以空原因cancel，再终止，首个取消结果两侧已经一致。原始 `js-ready-delivery-source-v1.json`、`js-ready-delivery-native-v1.json`、对应日志及生产者保留在 `.goose/out/acp-a4-work/`；修正后Native-v2两组完整观察均匹配，独立正式配对 `js-ready-product-paired-v1.*` 也通过。
 
 根因在低层open只等待Ready成功，未检查同一个reader已记录的物理退出失败；宿主opening又把该物理失败归为generic。现open在返回worker前传播已记录失败，WorkflowRun._open按既有WORKER_EXIT类别处理。正常快速terminal、协议失败与既有取消语义由原有实际消费者继续覆盖，没有新增Source bug绕过或修改原版worker算法。原版观察只在实际Ready接收边界控制交付；原生只控制真实stdout.readline交付，均物理终止真实worker，未模拟产品结果。

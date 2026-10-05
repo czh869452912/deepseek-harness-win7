@@ -39,8 +39,8 @@
   ],
   "open_findings": [],
   "conflicts_with": [],
-  "candidate_commit": "b1b2f7971d904cce7047e7b679f9faf658383e85",
-  "integrated_commit": "b1b2f7971d904cce7047e7b679f9faf658383e85",
+  "candidate_commit": "47adea372613d086c54631344af4944b4ddcf232",
+  "integrated_commit": "47adea372613d086c54631344af4944b4ddcf232",
   "evidence_ids": [
     "RUN-SESSION-TRACING-20261004-PROJECTION-CACHE-READS-015",
     "RUN-SESSION-FILTERS-20261004-PROJECTION-CACHE-READS-015",
@@ -51,7 +51,8 @@
     "RUN-SESSION-STORAGE-20261005-PROJECTION-CACHE-READS-015",
     "RUN-TOOLS-HTTP-20261005-PROJECTION-CACHE-READS-015",
     "RUN-JS-WORKFLOW-20261005-PROJECTION-CACHE-READS-015",
-    "RUN-JS-DEATH-20261005-PROJECTION-CACHE-READS-015"
+    "RUN-JS-DEATH-20261005-PROJECTION-CACHE-READS-015",
+    "RUN-RUNTIME-CONTEXT-20261006-PROJECTION-CACHE-READS-015"
   ],
-  "next_action": "clean candidate b1b2f797 全量/原版/真实解压复验已通过。clean candidate b1b2f797 的八组 JSON domain/registry/cache 读取有界验收；继续完整 domain/FTS/长期回放和当前 Web/profile 消费者，未认证完整 B1 或 Win7。"
+  "next_action": "clean candidate 47adea37 全量/原版/真实解压复验已通过。clean candidate 47adea37 的八组 JSON domain/registry/cache 读取有界验收；继续完整 domain/FTS/长期回放和当前 Web/profile 消费者，未认证完整 B1 或 Win7。"
 }

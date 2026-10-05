@@ -1,5 +1,7 @@
 # 规范持久化公共读取
 
+2026-10-06：47adea完整干净门禁7271 passed及823必需lane、59配对、十八组1237原版断言与真实解压/浏览器通过，039的51组已有界integrated，见 `migration/reviews/RUNTIME-CONTEXT-READ-GATE-20261006.md`。公共Session另一组51观察的数值/扩展头部/冻结差异只完成隔离修复和303+107原型回归，不属于本合同或47adea签收；完整B1仍开放。
+
 原版真实Cordis、SessionStore、plaintext/zstd JSONL及SQLite服务与原生规范服务的45组观察，暴露21组逐字段差异：createdAt与append seq的整数值浮点被过度拒绝，readFrom也拒绝0.0/-0.0，append负零和布尔拒绝消息不一致，已完成物理读取后取消仍返回成功；JSONL还漏转发信号。所有原始Source-v1、Native-v1、对照-v1与原生模块身份保留于 `.goose/out/acp-a4-work/persistence-public-*`。
 
 第二组6项实际顺序观察涵盖排队取消、SQLite legacy前缀回读信号和取消后的backend错误优先级。第一版排队探针在新协程真正进入队列前取消，两侧都拒绝，未证明排队分支；原始生产者和v1记录独立保留。v2通过真实Source serialize/原生storage_lock入口屏障确认第二次读已在第一条真实物理读取后排队，再取消。未改实现的三后端均未在释放前结算，释放后还读取第二次；隔离修正在三者释放前保留原始取消理由且不进行第二次物理读取。完整6组均从baseline差异转为匹配，日志/对照为 `persistence-order-*-v2.*`。

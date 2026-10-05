@@ -36,14 +36,15 @@
   ],
   "open_findings": [
     "Eight raw engine/parse differences remain in the original22 observations; full Node APIs/SDK/plugin delivery and C2 remain unaccepted.",
-    "Original thirty direct-worker frame scenarios and thirty-four actual Source/native/extracted WorkerRun observations and canonical Windows workflow/Ralph consumers pass the clean full gate. Physical EOF is distinguished from protocol/runtime failure and retains the actual exit code, first outcome and owned child disposal. Full model/profile compositions, ready-before-publication and broader provider/death/reentrancy competition are unfinished."
+    "Thirty original direct-worker frame scenarios and34 actual Source/native/extracted WorkerRun observations retain private provenance, physical-exit classification, first outcome and owned disposal. Four bounded attributed AgentLoop cases037 and two already-emitted Ready/exit cases038 are now integrated. Full model/profile composition, death before Ready emission and broader callback/reentrancy competition remain unfinished."
   ],
   "conflicts_with": [],
-  "candidate_commit": "b1b2f7971d904cce7047e7b679f9faf658383e85",
+  "candidate_commit": "47adea372613d086c54631344af4944b4ddcf232",
   "integrated_commit": null,
   "evidence_ids": [
     "RUN-JS-WORKFLOW-20261005-PARTIAL-036",
-    "RUN-JS-DEATH-20261005-PARTIAL-036"
+    "RUN-JS-DEATH-20261005-PARTIAL-036",
+    "RUN-RUNTIME-CONTEXT-20261006-PARTIAL-036"
   ],
-  "next_action": "干净候选b1b2f797全量与实际解压已通过并归档，仅为036部分验证；继续ready前准入、实际Source配对的共享清理重入和完整model/profile消费者，八项原始差异及完整C2/延期Win7保持开放。"
+  "next_action": "干净产品47adea37完整验收已通过；上下文归属/每步更新037及已发出Ready跨退出038有界签收，036仍部分verification；继续Ready发出前竞争、共享清理重入与全model/profile，八项原始差异、C2及延期Win7开放。"
 }

@@ -44,8 +44,8 @@
   ],
   "open_findings": [],
   "conflicts_with": [],
-  "candidate_commit": "b1b2f7971d904cce7047e7b679f9faf658383e85",
-  "integrated_commit": "b1b2f7971d904cce7047e7b679f9faf658383e85",
+  "candidate_commit": "47adea372613d086c54631344af4944b4ddcf232",
+  "integrated_commit": "47adea372613d086c54631344af4944b4ddcf232",
   "evidence_ids": [
     "RUN-AGENT-CONFIG-AGENT-CONFIG-003-20260927",
     "RUN-SESSION-PROJECTION-AGENT-CONFIG-003-20260928",
@@ -64,7 +64,8 @@
     "RUN-SESSION-STORAGE-20261005-AGENT-CONFIG-003",
     "RUN-TOOLS-HTTP-20261005-AGENT-CONFIG-003",
     "RUN-JS-WORKFLOW-20261005-AGENT-CONFIG-003",
-    "RUN-JS-DEATH-20261005-AGENT-CONFIG-003"
+    "RUN-JS-DEATH-20261005-AGENT-CONFIG-003",
+    "RUN-RUNTIME-CONTEXT-20261006-AGENT-CONFIG-003"
   ],
-  "next_action": "clean candidate b1b2f797 全量/原版/真实解压复验已通过。Registry accepted; next executable domain definitions and durable projection-cache, then cold Web consumers and complete profile journeys."
+  "next_action": "clean candidate 47adea37 全量/原版/真实解压复验已通过。Registry accepted; next executable domain definitions and durable projection-cache, then cold Web consumers and complete profile journeys."
 }

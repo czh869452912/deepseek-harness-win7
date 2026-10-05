@@ -38,8 +38,8 @@
   ],
   "open_findings": [],
   "conflicts_with": [],
-  "candidate_commit": "b1b2f7971d904cce7047e7b679f9faf658383e85",
-  "integrated_commit": "b1b2f7971d904cce7047e7b679f9faf658383e85",
+  "candidate_commit": "47adea372613d086c54631344af4944b4ddcf232",
+  "integrated_commit": "47adea372613d086c54631344af4944b4ddcf232",
   "evidence_ids": [
     "RUN-SESSION-TEXT-20261005-SESSION-QUERY-UNICODE-027",
     "RUN-SESSION-TOOLS-20261005-SESSION-QUERY-UNICODE-027",
@@ -47,7 +47,8 @@
     "RUN-SESSION-STORAGE-20261005-SESSION-QUERY-UNICODE-027",
     "RUN-TOOLS-HTTP-20261005-SESSION-QUERY-UNICODE-027",
     "RUN-JS-WORKFLOW-20261005-SESSION-QUERY-UNICODE-027",
-    "RUN-JS-DEATH-20261005-SESSION-QUERY-UNICODE-027"
+    "RUN-JS-DEATH-20261005-SESSION-QUERY-UNICODE-027",
+    "RUN-RUNTIME-CONTEXT-20261006-SESSION-QUERY-UNICODE-027"
   ],
-  "next_action": "clean candidate b1b2f797 全量/原版/真实解压复验已通过。clean candidate b1b2f797 的 2034 Unicode 当前默认 locale 双侧/真实解压观察已有界签收；Session 字面匹配/有效提取/列表谱系顺序另有界签收；继续 malformed/plugin ABI、全域/竞争、schema-19、启动取消及整体迁移，Win7 延期。"
+  "next_action": "clean candidate 47adea37 全量/原版/真实解压复验已通过。clean candidate 47adea37 的 2034 Unicode 当前默认 locale 双侧/真实解压观察已有界签收；Session 字面匹配/有效提取/列表谱系顺序另有界签收；继续 malformed/plugin ABI、全域/竞争、schema-19、启动取消及整体迁移，Win7 延期。"
 }

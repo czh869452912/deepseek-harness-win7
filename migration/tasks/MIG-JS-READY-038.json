@@ -2,18 +2,43 @@
   "id": "MIG-JS-READY-038",
   "goal": "修复已发出但尚未准入Ready跨物理退出的结果归属",
   "kind": "implementation",
-  "state": "running",
+  "state": "integrated",
   "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
   "base_product": "3be2afde16b316203f8087e48dde0b0aea293a27",
   "owner": "current-session-coordinator",
-  "requires": [{"task": "MIG-CURRENT-RELEASE-GATE-003", "contract": "CON-CURRENT-RELEASE-GATE", "revision": 1}],
-  "provides": [{"contract": "CON-JS-READY", "revision": 1}],
-  "acceptance": ["Fresh actual original WorkerRun and native WorkflowEngine complete observations match both held-Ready/physical-exit cases.", "Retain the actual generic-send-error baseline, typed physical-exit fix, cancellation winner and no child/phase admission after late Ready.", "All mandatory reject lanes, fresh paired Source and actual extracted Python3.8.10 module/private asset closure pass a distinct clean frozen complete gate before integration."],
-  "expected_paths": ["dsh/javascript/runtime.py", "dsh/workflow/javascript_run.py", "scripts", "tests", "migration", "docs/research"],
-  "open_findings": ["Await the distinct complete clean gate with 722 mandatory lanes and 58 paired drivers. Whole pytest budget is explicitly adjusted to2400 seconds; individual consumer deadlines and Source predicates remain unchanged.", "Ready has already been emitted in these controls. Death before emission, arbitrary schedules, full model/profile, eight engine/parse differences and full C2 remain open."],
+  "requires": [
+    {
+      "task": "MIG-CURRENT-RELEASE-GATE-003",
+      "contract": "CON-CURRENT-RELEASE-GATE",
+      "revision": 1
+    }
+  ],
+  "provides": [
+    {
+      "contract": "CON-JS-READY",
+      "revision": 1
+    }
+  ],
+  "acceptance": [
+    "Fresh actual original WorkerRun and native WorkflowEngine complete observations match both held-Ready/physical-exit cases.",
+    "Retain the actual generic-send-error baseline, typed physical-exit fix, cancellation winner and no child/phase admission after late Ready.",
+    "All mandatory reject lanes, fresh paired Source and actual extracted Python3.8.10 module/private asset closure pass a distinct clean frozen complete gate before integration."
+  ],
+  "expected_paths": [
+    "dsh/javascript/runtime.py",
+    "dsh/workflow/javascript_run.py",
+    "scripts",
+    "tests",
+    "migration",
+    "docs/research"
+  ],
+  "open_findings": [],
   "conflicts_with": [],
-  "candidate_commit": null,
-  "integrated_commit": null,
-  "evidence_ids": ["RUN-RUNTIME-READY-REJECTED-20261005-038"],
-  "next_action": "7060e67b因解释器身份拒绝失败而拒绝；精确选择解释器已补强，冻结含独立公共读取合同的不同候选完成823lane、全量、十八组1237原版断言、59配对与实际解压/浏览器，才签收两组有界Ready合同。"
+  "candidate_commit": "47adea372613d086c54631344af4944b4ddcf232",
+  "integrated_commit": "47adea372613d086c54631344af4944b4ddcf232",
+  "evidence_ids": [
+    "RUN-RUNTIME-READY-REJECTED-20261005-038",
+    "RUN-RUNTIME-CONTEXT-20261006-JS-READY-038"
+  ],
+  "next_action": "两组真实已发出但延迟交付Ready跨物理退出在干净产品47adea37有界签收；继续发出前竞争、共享清理重入、全model/profile与八项原始engine差异，完整C2开放。"
 }

@@ -45,13 +45,14 @@
   ],
   "open_findings": [],
   "conflicts_with": [],
-  "candidate_commit": "b1b2f7971d904cce7047e7b679f9faf658383e85",
-  "integrated_commit": "b1b2f7971d904cce7047e7b679f9faf658383e85",
+  "candidate_commit": "47adea372613d086c54631344af4944b4ddcf232",
+  "integrated_commit": "47adea372613d086c54631344af4944b4ddcf232",
   "evidence_ids": [
     "RUN-SESSION-STORAGE-20261005-JSONL-PROVIDER-032",
     "RUN-TOOLS-HTTP-20261005-JSONL-PROVIDER-032",
     "RUN-JS-WORKFLOW-20261005-JSONL-PROVIDER-032",
-    "RUN-JS-DEATH-20261005-JSONL-PROVIDER-032"
+    "RUN-JS-DEATH-20261005-JSONL-PROVIDER-032",
+    "RUN-RUNTIME-CONTEXT-20261006-JSONL-PROVIDER-032"
   ],
-  "next_action": "clean candidate b1b2f797 全量/原版/真实解压复验已通过。规范默认 zstd 的 1030 原版/原生/真实解压互读、完整 revision、可选元数据 presence/typed refusal/public loadStored、原始导出和冷准备已有界签收；继续任意 malformed/public plugin ABI、竞争/多工作区/长历史和整体迁移，Win7 延期。"
+  "next_action": "clean candidate 47adea37 全量/原版/真实解压复验已通过。规范默认 zstd 的 1030 原版/原生/真实解压互读、完整 revision、可选元数据 presence/typed refusal/public loadStored、原始导出和冷准备已有界签收；继续任意 malformed/public plugin ABI、竞争/多工作区/长历史和整体迁移，Win7 延期。"
 }

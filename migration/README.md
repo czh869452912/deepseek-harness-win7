@@ -1,5 +1,7 @@
 # 持续对齐记录
 
+2026-10-06 最新干净门禁：产品 `47adea37` 全量7271 passed、6既有 skips、1既有 Proactor warning、0 failed；823必需lane、十八组1237原样Source断言、59实际配对及真实解压Python3.8.10/原版浏览器通过。037每步具名运行时上下文、038已发出Ready跨退出及039规范JSONL/SQLite公共读取51组已有界 integrated；49份任务回执绑定确切产物。整批pytest预算显式1800→2400秒，单项期限和九项原版判据/C58/C59不变；旧3be2漏报F及7060解释器拒绝失败独立保留。见 `reviews/RUNTIME-CONTEXT-READ-GATE-20261006.md`。新的初始管道退出和公共Session元数据差异仅完成隔离研究，未进入47adea签收；JS036、完整B/C/D、accepted_upstream及延期Win7仍开放。
+
 2026-10-05 最新干净门禁：产品 `b1b2f797` 全量7087 passed、6既有 skips、1既有 Proactor warning、0 failed；639必需lane、十八组1237原样Source断言、56实际配对与真实解压Python3.8.10/原版浏览器通过。实际进程退出与协议失败的分类已修复；34组Source/native/extracted宿主完整观察验证发布前后、Result后与取消后的退出码、首个结果及child清理。46既有范围重验，036继续只记录部分verification，完整model/profile、ready前竞争、八项原始engine/parse差异及完整C2/B/C/D继续开放。见 `reviews/JS-WORKER-DEATH-GATE-20261005.md`；accepted_upstream仍为空，Win7仍延期。
 
 2026-10-05 最新干净门禁：产品 `17c1c521` 全量7077 passed、6既有 skips、1既有 Proactor warning、0 failed；629必需lane、十八组1237原样Source断言、56实际配对及真实解压Python3.8.10/原版浏览器通过。四十六个既有有界合同重验；真实私有JS、原版worker/宿主算法与规范Windows workflow/Ralph已进入产品并通过30场景完整观察和19项私有资源来源检查，但036只记录部分verification，完整合同仍running。八项原始engine/parse差异、全model/profile及竞争边界、完整C2/B/C/D和accepted_upstream仍开放。见 `reviews/JS-WORKFLOW-GATE-20261005.md`；Win7继续延期。

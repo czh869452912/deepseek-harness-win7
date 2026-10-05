@@ -34,12 +34,13 @@
   ],
   "open_findings": [],
   "conflicts_with": [],
-  "candidate_commit": "b1b2f7971d904cce7047e7b679f9faf658383e85",
-  "integrated_commit": "b1b2f7971d904cce7047e7b679f9faf658383e85",
+  "candidate_commit": "47adea372613d086c54631344af4944b4ddcf232",
+  "integrated_commit": "47adea372613d086c54631344af4944b4ddcf232",
   "evidence_ids": [
     "RUN-TOOLS-HTTP-20261005-TOOL-START-PREFIX-034",
     "RUN-JS-WORKFLOW-20261005-TOOL-START-PREFIX-034",
-    "RUN-JS-DEATH-20261005-TOOL-START-PREFIX-034"
+    "RUN-JS-DEATH-20261005-TOOL-START-PREFIX-034",
+    "RUN-RUNTIME-CONTEXT-20261006-TOOL-START-PREFIX-034"
   ],
-  "next_action": "clean candidate b1b2f797 全量/原版/真实解压复验已通过。八组启动前缀Source/native/extracted与首错排空已在新干净全量门禁有界签收；继续完整Tools/Wire组合与任意扩展/disposal，不归因历史未知失败或签收全项目。"
+  "next_action": "clean candidate 47adea37 全量/原版/真实解压复验已通过。八组启动前缀Source/native/extracted与首错排空已在新干净全量门禁有界签收；继续完整Tools/Wire组合与任意扩展/disposal，不归因历史未知失败或签收全项目。"
 }

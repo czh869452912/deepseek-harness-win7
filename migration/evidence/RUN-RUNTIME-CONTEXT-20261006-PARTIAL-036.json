@@ -1,0 +1,33 @@
+{
+  "id": "RUN-RUNTIME-CONTEXT-20261006-PARTIAL-036",
+  "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
+  "product_commit": "47adea372613d086c54631344af4944b4ddcf232",
+  "kind": "verification",
+  "task_id": "MIG-JS-WORKFLOW-036",
+  "result": "passed",
+  "validity": "current",
+  "commands": [
+    ".venv/Scripts/python.exe scripts/verify_release.py --output-dir .goose/out/runtime-read-clean-47adea37"
+  ],
+  "environment": {
+    "python": "3.8.10 (default, May  6 2021, 17:27:56) [MSC v.1928 64 bit (AMD64)]",
+    "os": "Windows-10-10.0.26200-SP0",
+    "cwd": "C:\\Users\\czh86\\Documents\\Codex\\deepseek-harness-win7",
+    "node": "v22.22.2",
+    "browser": "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe"
+  },
+  "contract_revisions": {
+    "CON-JS-WORKFLOW": 1,
+    "CON-JS-READY": 1,
+    "CON-PERSISTENCE-READ": 1,
+    "CON-RUNTIME-CONTEXT-CONSUMER": 1,
+    "CON-CURRENT-RELEASE-GATE": 1
+  },
+  "artifacts": [
+    {
+      "path": "migration/evidence/artifacts/RUNTIME-CONTEXT-20261006-47adea37.zip",
+      "sha256": "b171e6c7e56cb395572bc4de0a51201b5bb8297fd1bf4eb598022e7fe3c075d9"
+    }
+  ],
+  "scope": "Frozen clean current-Windows candidate: 7271 passed, 6 existing skips, 823 mandatory lanes, eighteen unchanged Source groups/1237 assertions, 59 fresh paired drivers and actual isolated extracted Python3.8.10/original-browser acceptance. All119 frontend inputs and nine Source bug predicates plus C58/C59 remain unchanged. Four actual pinned original AgentLoop model/tool/next-step observations match complete runtime-context and durable messages in selected and extracted runtimes, preserving named attribution, changed/cleared/same/empty behavior and correlated opaque ids. The comparison qualifies only complete context messages, with other model fields retained raw; not complete GenerateOptions/all profiles. Exact old b1b2f797 Portable independently reproduces three differences; observer failures and the accidentally overwritten first native context output are disclosed, with exact old-product baseline-v4 retained. Two actual emitted but transport-held Ready messages crossing physical exit before host admission/publication match complete outcomes/events/requests/exit/first cancellation/owned disposal, with actual imported modules/interpreters and19 private assets. Ready-before-emission and arbitrary schedules are outside this scope. All previous46 bounded scopes reexecute and receive separate named-task revalidation; historical records and exact rejected3be2afde remain preserved. Whole pytest budget explicitly changed1800 to2400 seconds, with no individual consumer deadline or Source predicate relaxation. The owned HTTP redirect fixture avoids zero-byte writes; this does not root all10054/Proactor failures. JS036 remains running;34 Source/native/extracted WorkerRun observations and original private engine provenance reexecute, but eight raw engine/parse differences, broader death/reentry/full model-profile and fullC2 remain open. No new exception/skip, Source/frontend change, paid model, publication or unchanged-candidate retry. Historical unknown failures and deferred Win7 remain open; accepted_upstream is null. The exact7060e67b rejection and earlier missed3be2afde F progress marker are disclosed; neither incomplete batch has a final pass count. Exact selected/extracted interpreter guards now refuse unselected in-tree paths even with identical executable bytes.51 actual canonical JSONL/SQLite numeric, known-queued/physical-return/legacy cancellation and aborted backend failure priority observations match complete rows in selected and extracted runtimes, including exact bounded errors/reason identity/physical hooks. The first insufficient queue control and formal asset-name typo are retained; independent corrected controls match. This does not certify arbitrary metadata/events/ABI or all retirement/multi-process/profile/fullB1 schedules."
+}

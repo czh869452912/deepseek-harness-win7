@@ -43,8 +43,8 @@
   ],
   "open_findings": [],
   "conflicts_with": [],
-  "candidate_commit": "b1b2f7971d904cce7047e7b679f9faf658383e85",
-  "integrated_commit": "b1b2f7971d904cce7047e7b679f9faf658383e85",
+  "candidate_commit": "47adea372613d086c54631344af4944b4ddcf232",
+  "integrated_commit": "47adea372613d086c54631344af4944b4ddcf232",
   "evidence_ids": [
     "RUN-SESSION-FILTERS-20261004-SESSION-FILTERS-021",
     "RUN-SESSION-QUERY-ENGINE-20261004-SESSION-FILTERS-021",
@@ -54,7 +54,8 @@
     "RUN-SESSION-STORAGE-20261005-SESSION-FILTERS-021",
     "RUN-TOOLS-HTTP-20261005-SESSION-FILTERS-021",
     "RUN-JS-WORKFLOW-20261005-SESSION-FILTERS-021",
-    "RUN-JS-DEATH-20261005-SESSION-FILTERS-021"
+    "RUN-JS-DEATH-20261005-SESSION-FILTERS-021",
+    "RUN-RUNTIME-CONTEXT-20261006-SESSION-FILTERS-021"
   ],
-  "next_action": "clean candidate b1b2f797 全量/原版/真实解压复验已通过。clean candidate b1b2f797 的 33 过滤观察、4 真实持久化 lane 与实际解压已有界验收；规范 FTS、Unicode 身份和有效 Session 文本/locale 顺序另有界验收；继续 malformed/plugin ABI、provider/Task/竞争、Web/profile 和整体迁移，不认证完整 B1 或 Win7。"
+  "next_action": "clean candidate 47adea37 全量/原版/真实解压复验已通过。clean candidate 47adea37 的 33 过滤观察、4 真实持久化 lane 与实际解压已有界验收；规范 FTS、Unicode 身份和有效 Session 文本/locale 顺序另有界验收；继续 malformed/plugin ABI、provider/Task/竞争、Web/profile 和整体迁移，不认证完整 B1 或 Win7。"
 }

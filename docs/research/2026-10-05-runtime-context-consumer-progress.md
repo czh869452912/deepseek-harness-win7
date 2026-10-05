@@ -1,5 +1,7 @@
 # 实际AgentLoop每步运行时上下文
 
+2026-10-06：干净产品47adea完整门禁7271 passed、6既有 skips、1既有 Proactor warning；823必需lane、十八组1237原样Source断言、59配对及真实解压/浏览器通过。037只按四组具名上下文合同integrated；完整GenerateOptions、任意middleware/冷恢复/全profile未认证。确切ZIP和此前两个拒绝见 `migration/reviews/RUNTIME-CONTEXT-READ-GATE-20261006.md`。
+
 固定原版真实WorkerRun调用两阶段真实AgentLoop/spawn子代理，在普通文本模型响应后，再调用结构化工具并产生工作流结果。原版与Native结果、发布前agent存在、disposal后移除和root未泄漏structured_output工具相同；原版子代理的模型请求保留subagent:delegation来源sections，而Native只保留正文且sections为空。原始主链观察为 `.goose/out/acp-a4-work/js-in-process-{source-v4,native-v1}.json`。这些完整原始模型请求不是全体LLM协议签收，私有Source编译三次失败均保留。
 
 继续使用实际原版AgentLoop、SystemPrompt、Tools和内存Session，仅模型边界受控，不调用外部模型。真实advance工具在首次请求后改变动态上下文。change/clear/same/empty四组显示：原版分别保留2/2/1/0 durable上下文消息，完整模型消息具有named sections；旧产品分别1/1/1/0且缺失sections。根因是AgentLoop只在step_num==1且contexts非空时投影，并传入空sections。修正在每个proposed step使用现有render_context_sections、join_context_sections与RuntimeContextProjection，投影空内容以发出原版clear marker。

@@ -31,8 +31,8 @@
   ],
   "open_findings": [],
   "conflicts_with": [],
-  "candidate_commit": "1f180e4074355e9b851a22e15617251aeb1ad8ed",
-  "integrated_commit": "1f180e4074355e9b851a22e15617251aeb1ad8ed",
+  "candidate_commit": "6ceef0f93e4e7248819a79b552bb14f6ba11f883",
+  "integrated_commit": "6ceef0f93e4e7248819a79b552bb14f6ba11f883",
   "evidence_ids": [
     "RUN-CORDIS-CLOSURE-20260927",
     "RUN-CORDIS-SCOPE-CLOSURE-20260927",
@@ -56,8 +56,9 @@
     "RUN-SESSION-TEXT-20261005-SPINE-001",
     "RUN-SESSION-TOOLS-20261005-SPINE-001",
     "RUN-SQLITE-FORMAT-20261005-SPINE-001",
-    "RUN-SESSION-STORAGE-20261005-SPINE-001"
+    "RUN-SESSION-STORAGE-20261005-SPINE-001",
+    "RUN-TOOLS-HTTP-20261005-SPINE-001"
   ],
-  "next_action": "clean candidate 1f180e40 全量/原版/真实解压复验已通过。真实 profile、工具调用、JSONL 持久化、全树关闭和新 Context 恢复已通过；Boot/Session 契约与提供端依赖已闭合。",
+  "next_action": "clean candidate 6ceef0f9 全量/原版/真实解压复验已通过。真实 profile、工具调用、JSONL 持久化、全树关闭和新 Context 恢复已通过；Boot/Session 契约与提供端依赖已闭合。",
   "delivery_commit": "be234bfa0aa8c37c9e72117a842afdc8db5c2d3a"
 }

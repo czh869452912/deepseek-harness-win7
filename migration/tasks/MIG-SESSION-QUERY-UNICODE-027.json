@@ -38,13 +38,14 @@
   ],
   "open_findings": [],
   "conflicts_with": [],
-  "candidate_commit": "1f180e4074355e9b851a22e15617251aeb1ad8ed",
-  "integrated_commit": "1f180e4074355e9b851a22e15617251aeb1ad8ed",
+  "candidate_commit": "6ceef0f93e4e7248819a79b552bb14f6ba11f883",
+  "integrated_commit": "6ceef0f93e4e7248819a79b552bb14f6ba11f883",
   "evidence_ids": [
     "RUN-SESSION-TEXT-20261005-SESSION-QUERY-UNICODE-027",
     "RUN-SESSION-TOOLS-20261005-SESSION-QUERY-UNICODE-027",
     "RUN-SQLITE-FORMAT-20261005-SESSION-QUERY-UNICODE-027",
-    "RUN-SESSION-STORAGE-20261005-SESSION-QUERY-UNICODE-027"
+    "RUN-SESSION-STORAGE-20261005-SESSION-QUERY-UNICODE-027",
+    "RUN-TOOLS-HTTP-20261005-SESSION-QUERY-UNICODE-027"
   ],
-  "next_action": "clean candidate 1f180e40 全量/原版/真实解压复验已通过。clean candidate 1f180e40 的 2034 Unicode 当前默认 locale 双侧/真实解压观察已有界签收；Session 字面匹配/有效提取/列表谱系顺序另有界签收；继续 malformed/plugin ABI、全域/竞争、schema-19、启动取消及整体迁移，Win7 延期。"
+  "next_action": "clean candidate 6ceef0f9 全量/原版/真实解压复验已通过。clean candidate 6ceef0f9 的 2034 Unicode 当前默认 locale 双侧/真实解压观察已有界签收；Session 字面匹配/有效提取/列表谱系顺序另有界签收；继续 malformed/plugin ABI、全域/竞争、schema-19、启动取消及整体迁移，Win7 延期。"
 }

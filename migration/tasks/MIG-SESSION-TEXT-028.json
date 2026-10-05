@@ -43,13 +43,14 @@
   ],
   "open_findings": [],
   "conflicts_with": [],
-  "candidate_commit": "1f180e4074355e9b851a22e15617251aeb1ad8ed",
-  "integrated_commit": "1f180e4074355e9b851a22e15617251aeb1ad8ed",
+  "candidate_commit": "6ceef0f93e4e7248819a79b552bb14f6ba11f883",
+  "integrated_commit": "6ceef0f93e4e7248819a79b552bb14f6ba11f883",
   "evidence_ids": [
     "RUN-SESSION-TEXT-20261005-SESSION-TEXT-028",
     "RUN-SESSION-TOOLS-20261005-SESSION-TEXT-028",
     "RUN-SQLITE-FORMAT-20261005-SESSION-TEXT-028",
-    "RUN-SESSION-STORAGE-20261005-SESSION-TEXT-028"
+    "RUN-SESSION-STORAGE-20261005-SESSION-TEXT-028",
+    "RUN-TOOLS-HTTP-20261005-SESSION-TEXT-028"
   ],
-  "next_action": "clean candidate 1f180e40 全量/原版/真实解压复验已通过。clean candidate 1f180e40 的 7883 字面 Unicode/有效语义提取/Session locale 顺序双侧与真实解压观察、两持久化 Context 重启消费者已有界签收；继续 malformed/plugin ABI、全域/竞争、schema-19、profile 主链和整体迁移，Win7 延期。"
+  "next_action": "clean candidate 6ceef0f9 全量/原版/真实解压复验已通过。clean candidate 6ceef0f9 的 7883 字面 Unicode/有效语义提取/Session locale 顺序双侧与真实解压观察、两持久化 Context 重启消费者已有界签收；继续 malformed/plugin ABI、全域/竞争、schema-19、profile 主链和整体迁移，Win7 延期。"
 }

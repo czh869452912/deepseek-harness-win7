@@ -16,4 +16,4 @@
 
 隔离 `python -I` 检查发现新增 observer helper 的导入路径未显式提供，保留失败预检并补齐开发观察器自身目录；选定产品 root 仍优先，helper 输入与产品模块分别哈希。修正后隔离原生观察通过，正式双侧30项 matched；门禁验证与既有模型/便携消费者592项通过（203.83秒），记录为 `tool-start-prefix-gate-v3.*`。v1选错测试路径、v2导入失败诊断均保留，未计入通过。
 
-完整干净候选、实际解压/原版浏览器尚待执行；不增加 Source bug 绕过、跳过或重跑未改候选。任意 task 取消/disposal、所有 Tools/Wire 组合和扩展 ABI 仍独立开放，Win7实机按用户决定延期。
+干净产品 `6ceef0f9` 现已完整通过：6944 passed、6既有 skips、1既有warning、0 failed；496必需lane、十八组1237原样断言、55实际配对和真实解压/原版浏览器通过。034有界 integrated，三十组scheduler实际Source/native/extracted及四十六份当前任务证据归档于 `migration/evidence/artifacts/TOOLS-HTTP-20261005-6ceef0f9.zip`，见对应review。未增加 Source bug 绕过、跳过或重跑未改候选；任意 task 取消/disposal、所有 Tools/Wire 组合和扩展 ABI 仍独立开放，Win7实机按用户决定延期。

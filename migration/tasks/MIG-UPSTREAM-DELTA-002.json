@@ -20,8 +20,8 @@
   ],
   "open_findings": [],
   "conflicts_with": [],
-  "candidate_commit": "1f180e4074355e9b851a22e15617251aeb1ad8ed",
-  "integrated_commit": "1f180e4074355e9b851a22e15617251aeb1ad8ed",
-  "evidence_ids": ["RUN-SESSION-STORAGE-20261005-UPSTREAM-DELTA-002"],
-  "next_action": "二十项只读差分回归与实际 pinned Source 父提交差分已在干净完整门禁绑定；继续完整动态职责图、无缓存准备和远程 Actions，不自动推进 pin 或任务。"
+  "candidate_commit": "6ceef0f93e4e7248819a79b552bb14f6ba11f883",
+  "integrated_commit": "6ceef0f93e4e7248819a79b552bb14f6ba11f883",
+  "evidence_ids": ["RUN-SESSION-STORAGE-20261005-UPSTREAM-DELTA-002", "RUN-TOOLS-HTTP-20261005-UPSTREAM-DELTA-002"],
+  "next_action": "clean candidate 6ceef0f9 全量/原版/真实解压复验已通过。二十项只读差分回归与实际 pinned Source 父提交差分已在干净完整门禁绑定；继续完整动态职责图、无缓存准备和远程 Actions，不自动推进 pin 或任务。"
 }

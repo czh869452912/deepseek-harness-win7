@@ -37,6 +37,8 @@
 
 ## 当前执行项
 
+最新干净产品 `6ceef0f9` 完整门禁6944通过、6既有跳过、1既有warning、0失败；496必需lane、十八组1237原样断言、55配对与真实解压/原版浏览器通过。034启动前缀和035重定向已有界 integrated，四十六份证据及确切ZIP归档于 `TOOLS-HTTP-20261005-6ceef0f9.zip`，见对应review。此前七个拒绝产品和九项原版判据不变；完整B1/B2/B3/C/D继续，通用JS的真实私有引擎与跨realm原型开始独立验证，不以研究代码签收。整体accepted_upstream仍为空，Win7继续延期。
+
 dispatch启动前缀修复已提交 `fed1effe`，新HTTP重定向035有29组实际原版/原生完整对象一致与84定向回归通过；共用新干净候选全量验收。正式门禁现为496必需lane/十八组1237原样Source断言/55配对，034/035仍running，实际解压与原版浏览器成功前不签收。完整B2/HTTP/TLS/URL/代理/压缩及C/D继续，最新历史签收仍1f180e40。见 `2026-10-05-http-redirect-progress.md`。
 
 工具启动前缀034已修复登记task晚于后续prepare的实际差异，canonical body/custom future各四组真实Source/native完整对象一致；正式scheduler驱动22→30，41定向回归通过，下一门禁452必需lane/十八组1237原样断言/54配对。任务仍running，须新干净候选及实际解压/原版浏览器成功后签收；完整B2与全项目仍开放。见 `2026-10-05-tool-start-prefix-progress.md`。

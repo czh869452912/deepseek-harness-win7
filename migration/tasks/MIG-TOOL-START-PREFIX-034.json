@@ -2,7 +2,7 @@
   "id": "MIG-TOOL-START-PREFIX-034",
   "goal": "闭合八组实际原版 dispatch 启动前缀与后续 prepare 的顺序差异",
   "kind": "implementation",
-  "state": "running",
+  "state": "integrated",
   "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
   "base_product": "de40ae8e1c1a85808561afae04f7cffa5ae16ae1",
   "owner": "current-session-coordinator",
@@ -17,8 +17,8 @@
   "expected_paths": ["dsh/core", "scripts", "tests", "migration", "docs/research"],
   "open_findings": [],
   "conflicts_with": [],
-  "candidate_commit": null,
-  "integrated_commit": null,
-  "evidence_ids": [],
-  "next_action": "41定向与592门禁/便携/模型回归通过；正式30项双侧matched，python-I隔离观察通过。提交干净候选并冻结全量、实际解压和原版浏览器验收，未通过前不签收；完整B2及全项目继续开放。"
+  "candidate_commit": "6ceef0f93e4e7248819a79b552bb14f6ba11f883",
+  "integrated_commit": "6ceef0f93e4e7248819a79b552bb14f6ba11f883",
+  "evidence_ids": ["RUN-TOOLS-HTTP-20261005-TOOL-START-PREFIX-034"],
+  "next_action": "八组启动前缀Source/native/extracted与首错排空已在新干净全量门禁有界签收；继续完整Tools/Wire组合与任意扩展/disposal，不归因历史未知失败或签收全项目。"
 }

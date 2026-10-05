@@ -17,8 +17,8 @@
   "expected_paths": ["dsh/core", "dsh/settings", "scripts", "tests", "migration", "docs/research"],
   "open_findings": [],
   "conflicts_with": [],
-  "candidate_commit": "1f180e4074355e9b851a22e15617251aeb1ad8ed",
-  "integrated_commit": "1f180e4074355e9b851a22e15617251aeb1ad8ed",
-  "evidence_ids": ["RUN-SESSION-STORAGE-20261005-TOOL-PARALLELISM-033"],
-  "next_action": "干净产品1f180e40全量6892通过/444必需lane/十八组1237原样断言/54配对/真实解压与原版浏览器已通过；22项并发/settings/实际模型有界签收。七个拒绝产品和扩展隔离证据保留；继续已实测的dispatch启动前缀差异、完整B2和全项目，不签收未归因历史失败。"
+  "candidate_commit": "6ceef0f93e4e7248819a79b552bb14f6ba11f883",
+  "integrated_commit": "6ceef0f93e4e7248819a79b552bb14f6ba11f883",
+  "evidence_ids": ["RUN-SESSION-STORAGE-20261005-TOOL-PARALLELISM-033", "RUN-TOOLS-HTTP-20261005-TOOL-PARALLELISM-033"],
+  "next_action": "clean candidate 6ceef0f9 全量/原版/真实解压复验已通过。22项并发/settings/实际模型与034新增八项dispatch前缀共三十组实际观察已签收；继续完整B2与任意扩展/disposal。七个拒绝产品和扩展隔离证据保留，不签收未归因历史失败或全项目。"
 }

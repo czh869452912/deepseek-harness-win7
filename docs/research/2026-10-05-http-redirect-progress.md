@@ -16,4 +16,4 @@
 
 正式双侧驱动29项 matched；84项 Source/DeepSeek/Pi/文件/图像定向回归通过，日志/XML为 `http-redirect-focused-v1.*`。全部29配对回归、8损坏回执拒绝及7解压来源拒绝均进入mandatory，下一门禁496 lane、十八组1237原样 Source断言、55配对。实际解压通过选定root的Python-I运行并校验完整导入模块哈希；不能以宿主输出代替解压运行。
 
-门禁及调度/settings/首错排空消费者607项通过（226.63秒），记录为 `http-redirect-gate-v1.*`；migration check通过。新干净完整候选和解压/原版浏览器仍待执行。完整 WHATWG URL/Unicode/IDNA、TLS/proxy/compression/framing和其他provider全部实例继续独立开放，没有新增 Source bug 绕过；Win7实机仍按用户决定延期。
+门禁及调度/settings/首错排空消费者607项通过（226.63秒），记录为 `http-redirect-gate-v1.*`；migration check通过。干净产品 `6ceef0f9` 现已完整通过：6944 passed、6既有 skips、1既有warning、0 failed；496必需lane、十八组1237原样断言、55实际配对和真实解压/原版浏览器通过。035有界 integrated，四十六份当前任务证据与确切ZIP归档于 `migration/evidence/artifacts/TOOLS-HTTP-20261005-6ceef0f9.zip`，见对应review。完整 WHATWG URL/Unicode/IDNA、TLS/proxy/compression/framing和其他provider全部实例继续独立开放，没有新增 Source bug 绕过；Win7实机仍按用户决定延期。

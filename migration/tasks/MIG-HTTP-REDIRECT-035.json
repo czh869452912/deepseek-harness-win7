@@ -2,7 +2,7 @@
   "id": "MIG-HTTP-REDIRECT-035",
   "goal": "闭合实际 DeepSeek 与共享 HTTP carrier 的二十九组重定向边界",
   "kind": "implementation",
-  "state": "running",
+  "state": "integrated",
   "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
   "base_product": "fed1effe20c803fa277340e44b5df25c529887f5",
   "owner": "current-session-coordinator",
@@ -17,8 +17,8 @@
   "expected_paths": ["dsh/llm", "scripts", "tests", "migration", "docs/research"],
   "open_findings": [],
   "conflicts_with": [],
-  "candidate_commit": null,
-  "integrated_commit": null,
-  "evidence_ids": [],
-  "next_action": "29实际双侧matched，84定向与607门禁/调度消费者回归通过；migration check通过。提交后冻结全量候选，完成实际解压与原版浏览器验收前不签收；完整HTTP/TLS/URL/压缩及全项目继续开放。"
+  "candidate_commit": "6ceef0f93e4e7248819a79b552bb14f6ba11f883",
+  "integrated_commit": "6ceef0f93e4e7248819a79b552bb14f6ba11f883",
+  "evidence_ids": ["RUN-TOOLS-HTTP-20261005-HTTP-REDIRECT-035"],
+  "next_action": "二十九组真实adapter/Fetch/shared carrier及Source/native/extracted已在新干净全量门禁有界签收；继续完整URL/IDNA/TLS/proxy/compression/framing与其他provider实例，不签收全项目。"
 }

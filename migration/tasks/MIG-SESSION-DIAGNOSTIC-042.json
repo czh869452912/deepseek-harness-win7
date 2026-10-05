@@ -1,0 +1,19 @@
+{
+  "id": "MIG-SESSION-DIAGNOSTIC-042",
+  "goal": "对齐公共Session创建与恢复的76组准入结果和精确错误文本",
+  "kind": "implementation",
+  "state": "running",
+  "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
+  "base_product": "47adea372613d086c54631344af4944b4ddcf232",
+  "owner": "current-session-coordinator",
+  "requires": [{"task": "MIG-CURRENT-RELEASE-GATE-003", "contract": "CON-CURRENT-RELEASE-GATE", "revision": 1}],
+  "provides": [{"contract": "CON-SESSION-DIAGNOSTIC", "revision": 1}],
+  "acceptance": ["Retain the original46-match/30-difference diagnostic baseline and complete fixed observations; exact rows qualify diagnostics only.", "Fresh actual public Source/native76 observations,94 consumer/rejection tests and selected/extracted interpreter guards pass without changing Source criteria.", "A distinct clean complete gate passes1094 mandatory lanes,62 paired drivers, eighteen original groups/1237 assertions and actual extracted ownPython3.8.10/browser before integration."],
+  "expected_paths": ["dsh/core/session/types.py", "scripts", "tests", "migration", "docs/research"],
+  "open_findings": ["Fresh main-tree76 complete diagnostic rows match; exact unchanged4a127b73 Portable retains46 matches/30 differences. 1094 focused regressions pass in387.89 seconds, including actual Source query clone consumers and mandatory exact-error/executable rejection guards. Distinct clean full/extracted qualification remains pending.", "Signed negative-zero restore values and complete public Session ABI are separately open."],
+  "conflicts_with": [],
+  "candidate_commit": null,
+  "integrated_commit": null,
+  "evidence_ids": [],
+  "next_action": "验证主树76完整观察及准入优先级/精确错误拒绝，按独立部分提交；继续恢复负零并冻结新完整候选。"
+}

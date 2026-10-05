@@ -1,0 +1,16 @@
+{
+  "id": "CON-SESSION-DIAGNOSTIC",
+  "revision": 1,
+  "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
+  "status": "specified",
+  "source_paths": ["reference/packages/core/session/src/index.ts", "reference/packages/core/session/src/json.ts", "reference/packages/core/session/src/types.ts", "dsh/core/session/types.py", "dsh/cordis/utils.py"],
+  "consumers": ["scripts/session_diagnostic_oracle.py", "scripts/oracles/session_diagnostic.probe.spec.ts", "scripts/oracles/session_diagnostic_python.py", "tests/test_session_diagnostic_consumers.py", "scripts/verify_release.py", "scripts/verify_portable.py"],
+  "invariants": ["Actual public Session.create/fromRestore id/version admission results and exact errors match all76 complete Source/native rows without filtering or output normalization.", "Lossless creation failures occur before header validation; restore validation retains Source error priority and JavaScript String rendering for tested arrays, objects, numbers and nonfinite values.", "Use the shared Cordis JavaScript String provider; keep the Session-specific UNDEFINED sentinel explicit.", "Fresh clean Source/Node22.22.2 guards and actual selected/extracted ownPython3.8.10 executable/module bytes bind every row, including dsh/cordis/utils.py."],
+  "identity": "Two modes crossed with id/version and nineteen named values; observer NAMES fixes complete ordering. Native ValueError maps to Source Error at this bounded admission boundary; unexpected exception types fail.",
+  "ownership": "Call actual public Session APIs. Record actual acceptance and error name/message, not full header graph or synthetic success.",
+  "ordering": "Compare lossless-snapshot priority, validation order and all complete named result rows.",
+  "errors": "Exact Source String(value) errors are required, including array join/object identity labels and tested exponent thresholds.",
+  "cancellation": "No new cancellation behavior; existing real Session/query/persistence consumers remain required.",
+  "adaptation": "Reuse existing Cordis JS String rendering rather than Python str. Sentinel translation is explicit. Raw Source algorithms and nine bug predicates/C58/C59 remain unchanged.",
+  "open_questions": ["These76 diagnostic rows do not qualify signed-value identity, complete metadata graphs, arbitrary malformed/plugin ABI, all errors or fullB1/profile/Win7.", "The Source input guards are static, not a complete dynamic import closure; the frozen gate binds the wider checkout."]
+}

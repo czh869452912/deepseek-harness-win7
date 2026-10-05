@@ -52,6 +52,7 @@ from scripts.runtime_context_oracle import validate_runtime as validate_runtime_
 from scripts.javascript_ready_oracle import validate_runtime as validate_javascript_ready, identity as ready_identity
 from scripts.javascript_initial_oracle import validate_runtime as validate_javascript_initial, identity as initial_identity
 from scripts.session_number_oracle import validate_runtime as validate_session_number, identity as number_identity
+from scripts.session_diagnostic_oracle import validate_runtime as validate_session_diagnostic, identity as diagnostic_identity
 from scripts.persistence_read_oracle import validate_runtime as validate_persistence_read, identity as read_identity
 
 
@@ -165,6 +166,25 @@ def number_receipts(source, native, output):
     return source, expected_digest, runtime['modules']
 
 
+def diagnostic_receipts(source, native, output):
+    if source or native:
+        if not source or not native:
+            raise RuntimeError('Both Session diagnostic Source and native receipts are required')
+        source, native = Path(source).resolve(), Path(native).resolve()
+    else:
+        paired = output.with_suffix('.session-diagnostic-paired.json')
+        completed = subprocess.run([sys.executable, str(ROOT / 'scripts/session_diagnostic_oracle.py'),
+            '--output', str(paired)], cwd=str(ROOT), capture_output=True, timeout=90)
+        output.with_suffix('.session-diagnostic-source.log').write_bytes(completed.stdout + completed.stderr)
+        if completed.returncode or completed.stderr:
+            raise RuntimeError('Fresh Session diagnostic Source qualification failed')
+        source, native = paired.with_suffix('.source.json'), paired.with_suffix('.native.json')
+    expected_digest = diagnostic_identity(json.loads(source.read_text(encoding='utf-8')))
+    runtime = json.loads(native.read_text(encoding='utf-8'))
+    validate_session_diagnostic(runtime, ROOT, expected_digest, runtime['modules'])
+    return source, expected_digest, runtime['modules']
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--archive', required=True)
@@ -191,6 +211,8 @@ def main(argv=None):
     parser.add_argument('--initial-native', help='Fresh native initial-write module and private asset closure')
     parser.add_argument('--number-source', help='Fresh actual public Session numeric/header Source observations')
     parser.add_argument('--number-native', help='Fresh native public Session module closure')
+    parser.add_argument('--diagnostic-source', help='Fresh actual public Session admission diagnostics')
+    parser.add_argument('--diagnostic-native', help='Fresh native public Session diagnostic module closure')
     parser.add_argument('--read-source', help='Fresh actual Source canonical persistence read observations')
     parser.add_argument('--read-native', help='Fresh canonical persistence read module and private asset closure')
     args = parser.parse_args(argv)
@@ -243,6 +265,8 @@ def main(argv=None):
             'javascript_initial_oracle.py', 'oracles/javascript_initial_python.py', 'oracles/javascript_initial_source.mjs',
             'oracles/javascript_initial_controls.py',
             'session_number_oracle.py', 'oracles/session_number_python.py',
+            'session_diagnostic_oracle.py', 'oracles/session_diagnostic_python.py',
+            'oracles/session_diagnostic.probe.spec.ts', 'oracles/vitest.session-diagnostic-probe.config.mts',
             'oracles/session_number.probe.spec.ts', 'oracles/vitest.session-number-probe.config.mts',
             'persistence_read_oracle.py', 'oracles/persistence_read_python.py', 'oracles/persistence_public_python.py',
             'oracles/persistence_order_python.py', 'oracles/persistence_public.probe.spec.ts',
@@ -369,6 +393,7 @@ def main(argv=None):
         initial_source, initial_digest, initial_modules, initial_assets = initial_receipts(args.initial_source, args.initial_native, output)
         report['javascriptInitialSourceSha256'] = digest(initial_source)
         number_source, number_digest, number_modules = number_receipts(args.number_source, args.number_native, output)
+        diagnostic_source, diagnostic_digest, diagnostic_modules = diagnostic_receipts(args.diagnostic_source, args.diagnostic_native, output)
         report['sessionNumberSourceSha256'] = digest(number_source)
         read_source, read_digest, read_modules, read_assets = read_receipts(args.read_source, args.read_native, output)
         report['persistenceReadSourceSha256'] = digest(read_source)
@@ -723,6 +748,16 @@ def main(argv=None):
             number_report = json.loads(number_path.read_text(encoding='utf-8'))
             validate_session_number(number_report, portable, number_digest, number_modules)
             report['sessionNumber'] = number_report
+            diagnostic_path = workspace / 'session-diagnostic.json'
+            diagnostic_result = subprocess.run([str(portable / 'python.exe'), '-I', '-u',
+                str(ROOT / 'scripts/oracles/session_diagnostic_python.py'), '--root', str(portable), '--output', str(diagnostic_path)],
+                cwd=str(workspace), env=env, capture_output=True, encoding='utf-8', errors='replace', timeout=60)
+            output.with_suffix('.session-diagnostic.log').write_text(diagnostic_result.stdout + '\nSTDERR:\n' + diagnostic_result.stderr, encoding='utf-8')
+            if diagnostic_result.returncode or diagnostic_result.stderr or not diagnostic_path.is_file():
+                raise RuntimeError('Extracted Session diagnostic observations failed')
+            diagnostic_report = json.loads(diagnostic_path.read_text(encoding='utf-8'))
+            validate_session_diagnostic(diagnostic_report, portable, diagnostic_digest, diagnostic_modules)
+            report['sessionDiagnostic'] = diagnostic_report
             read_path = workspace / 'persistence-read.json'
             read_result = subprocess.run([str(portable / 'python.exe'), '-I', '-u',
                 str(ROOT / 'scripts/oracles/persistence_read_python.py'), '--root', str(portable), '--output', str(read_path)],

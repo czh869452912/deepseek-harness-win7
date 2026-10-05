@@ -9,6 +9,7 @@ import math
 import os
 import time
 from typing import Any, Dict, FrozenSet, Iterator, List, Optional, Sequence, Union
+from dsh.cordis.utils import js_to_string
 
 from dsh.core.session.json import (
     UNDEFINED,
@@ -435,17 +436,9 @@ def assert_supported_request_header(etype: str, data: Any, location: str = "requ
 
 def _js_string(value: Any) -> str:
     """`String(value)` for the value kinds a header field can hold."""
-    if value is None:
-        return "null"
-    if value is True:
-        return "true"
-    if value is False:
-        return "false"
-    if isinstance(value, str):
-        return value
-    if type(value) is float and value.is_integer():
-        return str(int(value))
-    return str(value)
+    if value is UNDEFINED:
+        return "undefined"
+    return js_to_string(value)
 
 
 def validate_session_header(session_id: str, input_data: Any) -> SessionHeader:

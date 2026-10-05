@@ -45,6 +45,7 @@ from scripts.session_tools_oracle import validate_runtime as validate_session_to
 from scripts.sqlite_format_oracle import validate_runtime as validate_sqlite_format, source_identity as format_source_identity
 from scripts.sqlite_provider_oracle import validate_runtime as validate_sqlite_provider, source_identity as provider_source_identity
 from scripts.jsonl_provider_oracle import validate_runtime as validate_jsonl_provider, source_identity as jsonl_source_identity
+from scripts.tool_scheduler_oracle import validate_runtime as validate_tool_scheduler, identity as scheduler_identity
 
 
 def digest(path):
@@ -93,6 +94,8 @@ def main(argv=None):
     parser.add_argument('--tools-source', help='Fresh paired optional Session tool source observations from the release gate')
     parser.add_argument('--format-source', help='Fresh actual schema-19 format Source observations')
     parser.add_argument('--format-inputs', help='Exact schema-19 format generated inputs')
+    parser.add_argument('--scheduler-source', help='Fresh tool scheduler Source observations')
+    parser.add_argument('--scheduler-native', help='Fresh host scheduler runtime closure')
     args = parser.parse_args(argv)
     archive, output = Path(args.archive).resolve(), Path(args.output).resolve()
     output.parent.mkdir(parents=True, exist_ok=True)
@@ -132,7 +135,9 @@ def main(argv=None):
             'oracles/session_text.probe.spec.ts', 'oracles/vitest.session-text-probe.config.mts',
             'session_tools_oracle.py', 'oracles/session_tools_python.py', 'oracles/session_tools.probe.spec.ts',
             'oracles/vitest.session-tools-probe.config.mts', 'sqlite_format_oracle.py', 'oracles/sqlite_format_python.py',
-            'oracles/sqlite_format_inputs.py', 'oracles/sqlite_format.probe.spec.ts', 'oracles/vitest.sqlite-format-probe.config.mts')})
+            'oracles/sqlite_format_inputs.py', 'oracles/sqlite_format.probe.spec.ts', 'oracles/vitest.sqlite-format-probe.config.mts',
+            'tool_scheduler_oracle.py', 'oracles/tool_scheduler_python.py', 'oracles/tool_scheduler.probe.spec.ts',
+            'oracles/vitest.tool-scheduler-probe.config.mts')})
     node = shutil.which('node') if args.browser else None
     try:
         if args.browser and not node:
@@ -177,6 +182,24 @@ def main(argv=None):
             tools_source = paired_path.with_name(paired_path.stem + '.source.json')
         tools_digest = tools_source_identity(json.loads(tools_source.read_text(encoding='utf-8')))
         report['sessionToolsSourceSha256'] = digest(tools_source)
+        if args.scheduler_source or args.scheduler_native:
+            if not args.scheduler_source or not args.scheduler_native:
+                raise RuntimeError('Both scheduler Source and native receipts are required')
+            scheduler_source, scheduler_native = Path(args.scheduler_source).resolve(), Path(args.scheduler_native).resolve()
+        else:
+            scheduler_pair = output.with_suffix('.tool-scheduler-paired.json')
+            scheduler_result = subprocess.run([sys.executable, str(ROOT / 'scripts/tool_scheduler_oracle.py'),
+                '--output', str(scheduler_pair)], cwd=str(ROOT), capture_output=True, timeout=60)
+            output.with_suffix('.tool-scheduler-source.log').write_bytes(scheduler_result.stdout + scheduler_result.stderr)
+            if scheduler_result.returncode:
+                raise RuntimeError('Fresh tool scheduler Source qualification failed')
+            scheduler_source, scheduler_native = scheduler_pair.with_suffix('.source.json'), scheduler_pair.with_suffix('.native.json')
+        scheduler_digest = scheduler_identity(json.loads(scheduler_source.read_text(encoding='utf-8')))
+        scheduler_modules = json.loads(scheduler_native.read_text(encoding='utf-8'))['modules']
+        validate_tool_scheduler(json.loads(scheduler_native.read_text(encoding='utf-8')), ROOT, scheduler_digest, scheduler_modules)
+        if scheduler_modules != {name: digest(ROOT / name) for name in scheduler_modules}:
+            raise RuntimeError('Scheduler host receipt differs from current candidate module bytes')
+        report['toolSchedulerSourceSha256'] = digest(scheduler_source)
         if args.format_source or args.format_inputs:
             if not args.format_source or not args.format_inputs:
                 raise RuntimeError('Both SQLite format Source and inputs are required')
@@ -457,6 +480,16 @@ def main(argv=None):
                     raise RuntimeError('Extracted ' + name + ' imported a different product')
                 report[key] = trace_report
             directory_path = workspace / 'python-directory.json'
+            scheduler_path = workspace / 'tool-scheduler.json'
+            scheduler = subprocess.run([str(portable / 'python.exe'), '-I', '-u',
+                str(ROOT / 'scripts/oracles/tool_scheduler_python.py'), '--root', str(portable), '--output', str(scheduler_path)],
+                cwd=str(workspace), env=env, capture_output=True, encoding='utf-8', errors='replace', timeout=45)
+            output.with_suffix('.tool-scheduler.log').write_text(scheduler.stdout + '\nSTDERR:\n' + scheduler.stderr, encoding='utf-8')
+            if scheduler.returncode or scheduler.stderr or not scheduler_path.is_file():
+                raise RuntimeError('Extracted tool scheduler failed')
+            scheduler_report = json.loads(scheduler_path.read_text(encoding='utf-8'))
+            validate_tool_scheduler(scheduler_report, portable, scheduler_digest, scheduler_modules)
+            report['toolScheduler'] = scheduler_report
             directory = subprocess.run([str(portable / 'python.exe'), '-I', '-u',
                 str(ROOT / 'scripts/python_directory_probe.py'), '--root', str(portable), '--output', str(directory_path)],
                 cwd=str(workspace), env=env, capture_output=True, encoding='utf-8', errors='replace', timeout=90)

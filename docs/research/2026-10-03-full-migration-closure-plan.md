@@ -41,9 +41,11 @@
 
 此后规范 SQLite 提供端 031 和默认压缩 JSONL 提供端 032 已实现。d5cc、865fea84、a6cf 的确切失败 ZIP、输入、XML、日志与浏览器诊断均保留：部分字节流超时的受控根修复、八项启动隔离/审计观察器错误已分别修复；a6cf 的 6808 passed / 1 failed 仍由原版浏览器升级启动请求取消拒绝，根因继续开放，不重跑未改候选。工具调度三处失败边界已提交 `03652743`；存储 null presence、路径/typed error/cold validation 与 public loadStored 已提交 `566eb5d0`，实际 JSONL 驱动扩大到 1030 项并匹配，570 项门禁单元验证通过。
 
-只读上游差分 observer 已完成二十项含实际 pinned Source 的回归，任务 `MIG-UPSTREAM-DELTA-002` 按明确有界合同 running，不改变 pin 或自动推进任务。下一完整门禁要求 418 必需 lane、十七组 1210 原样断言、53 双侧驱动以及实际解压/原版浏览器。候选通过才签收 031/032/只读差分的有界证据；浏览器未归因 finding、Session 任意 ABI/事件/竞争/长历史、Tools/Wire/全部 profile/UI 和 C/D 继续按退出条件实施，Win7 与真实认证仍按既有约束另列。
+只读上游差分 observer 已完成二十项含实际 pinned Source 的回归，任务 `MIG-UPSTREAM-DELTA-002` 按明确有界合同 running，不改变 pin 或自动推进任务。当前工具并发/settings 增量把下一完整门禁提升至 443 必需 lane、十八组 1237 原样断言、54 双侧驱动以及实际解压/原版浏览器。候选通过才签收 031/032/只读差分/033 的有界证据；浏览器未归因 finding、Session 任意 ABI/事件/竞争/长历史、Tools/Wire/全部 profile/UI 和 C/D 继续按退出条件实施，Win7 与真实认证仍按既有约束另列。
 
 新干净候选 `5f2a76db` 的完整 pytest 为 6858 passed / 1 failed / 6 既有 skips / 1 既有 warning：普通文件原子替换返回 WinError 1175，原版双浏览器升级/回滚均通过，但后续 Source/配对/解压未执行。确切产物和输入已保留；受控 delete-sharing 双侧只复现 code32，不归因旧 1175。下一实施为原版默认10/可配置并发上限、组间动态 settings 与调度顺序合同，见独立文件发布记录；031/032/只读差分仍未签收。
+
+工具并发增量已修复 Native 默认8与配置未传递的问题。实际 Source/native 二十项观察包含默认10、合法/拒绝数值、settings 挂卸、十二工具模型池，以及七工具跨独占屏障的动态组快照；33 项当前定向回归通过，27 项原样 Source 断言通过。完整 Tools/Wire 的同步 dispatch 前缀和组合仍开放。回执单测遇到磁盘写满，日志保留；用户授权只清理已标识的合成 JSON，真实失败产物不删除。新干净冻结验收待执行，见 `2026-10-05-tool-parallelism-progress.md`。
 
 ## 历史执行项（2026-10-04）
 

@@ -16,6 +16,10 @@ from dsh.core.scope import create_scope, ScopeKey, scope_of, scope_target
 from dsh.core.runtime_context import RuntimeContextProjection
 from dsh.core.session import Session, SessionHeader, SessionStore, canonical_header, header_equals
 from dsh.core.tool_calls import execute_tool_calls
+from dsh.core.agent_loop_settings import (
+    AGENT_LOOP_CONFIG_SCHEMA, AGENT_LOOP_SETTINGS_NAMESPACE, AGENT_LOOP_SETTINGS_SCHEMA,
+    DEFAULT_MAX_PARALLEL_TOOL_CALLS, install_parallel_settings,
+)
 from dsh.core.tools import ToolsService
 from dsh.core.agent_factory import FactoryTransaction
 from dsh.core.abort import AbortController
@@ -372,8 +376,11 @@ class AgentLoopService:
     Concrete Agent Factory and Asynchronous Driver Service mounted at `ctx.agent_loop`.
     """
 
-    def __init__(self, ctx: Context):
+    def __init__(self, ctx: Context, config: Optional[Dict[str, Any]] = None):
         self.ctx = ctx
+        self._config = dict(config or {})
+        self._config.setdefault('agents', [])
+        install_parallel_settings(ctx, self, self._config)
         self._turn_counters: Dict[str, int] = {}
         self._active_tasks: List[asyncio.Task] = []
         self._factory_abort = AbortController()
@@ -383,6 +390,10 @@ class AgentLoopService:
         self._configured = ConfiguredStartup(self)
         self._default_agent: Optional[Agent] = None
         self._request_header_logged: Dict[str, bool] = {}
+
+    @property
+    def config(self) -> Dict[str, Any]:
+        return dict(self._config, maxParallelToolCalls=self._parallel_settings_source()['maxParallelToolCalls'])
 
     def _get_turn_number(self, agent: Agent) -> int:
         session = agent.session
@@ -997,6 +1008,7 @@ class AgentLoopService:
             tool_calls=tool_calls,
             signal=getattr(agent, "_cancel_event", None),
             accept_context=lambda ctx_item: agent.inbox.splice("next-step", len(agent.inbox.next_step), 0, [ctx_item]),
+            max_parallel=lambda: self.config['maxParallelToolCalls'],
         )
 
         return {"kind": "completed"} if outcome.get("concluded") else None
@@ -1041,6 +1053,7 @@ class AgentLoopPlugin(Plugin):
 
     id = "agent-loop"
     name = "@deepseek-ai/dsh-agent-loop"
+    Config = AGENT_LOOP_CONFIG_SCHEMA
 
     def apply(self, ctx: Context) -> None:
         rows = configured_agents(self.config, ctx.get(CONFIGURED_AGENT_IDENTITIES_KEY))
@@ -1056,8 +1069,7 @@ class AgentLoopPlugin(Plugin):
             registry = AgentRegistry(ctx=ctx)
             ctx.set_service("agents", registry)
 
-        agent_loop = AgentLoopService(ctx)
-        agent_loop.config = dict(self.config, agents=rows)
+        agent_loop = AgentLoopService(ctx, dict(self.config, agents=rows))
         ctx.set_service("agent_loop", agent_loop)
         ctx.set_service("agentLoop", agent_loop)
 

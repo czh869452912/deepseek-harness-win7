@@ -1,0 +1,23 @@
+{
+  "id": "CON-TOOL-PARALLELISM",
+  "revision": 1,
+  "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
+  "status": "specified",
+  "source_paths": ["reference/packages/core/agent-loop/src/index.ts", "reference/packages/core/agent-loop/src/constants.ts", "reference/packages/core/agent-loop/src/tool-calls.ts", "reference/packages/core/agent-loop/tests/settings.spec.ts", "reference/packages/core/agent-loop/tests/tool-calls.spec.ts", "dsh/core/agent_loop.py", "dsh/core/agent_loop_settings.py", "dsh/core/tool_calls.py"],
+  "consumers": ["dsh/settings/provider.py", "dsh/core/agent.py", "scripts/tool_scheduler_oracle.py", "scripts/verify_release.py", "scripts/verify_portable.py"],
+  "invariants": [
+    "Original default maximum parallel-safe tool calls is ten, not eight. Deployment configuration and direct service construction refuse non-positive/non-integer/non-number values; whole numeric floats are admitted as original Number integers.",
+    "The optional agent-loop settings section contains only maxParallelToolCalls. Stored updates override composition, invalid writes retain the prior cap, provider detachment falls back to composition and consumer unloading releases the namespace.",
+    "The factory model loop actually passes the current cap to the scheduler; controlled twelve-call consumers at caps one/two/ten retain model-order result identities and perform the next model request.",
+    "The cap is read at each scheduler group boundary; changing settings cannot alter a group already in flight. A separate controlled group-snapshot observation is required before integration.",
+    "Fresh actual Source/native and isolated extracted observations must retain complete ordered identities and all imported candidate runtime module hashes. Omitted/reordered/changed rows, absent modules, foreign roots/Python or stale Source receipts refuse.",
+    "The complete clean candidate must pass all pytest, eighteen unchanged Source groups including the original 27 scheduler/settings assertions, all selected paired drivers and actual extracted/original-browser acceptance. Existing failures and scoped bug predicates are retained without retries or new exceptions."
+  ],
+  "identity": "Pinned original group scheduler/configuration/settings, actual tool call IDs and candidate-imported module bytes identify these bounded observations.",
+  "ownership": "The loop composition owns the base cap and configured agents; optional settings owns stored overrides; reversible injection releases namespace bindings and keeps composed agents out of editable settings.",
+  "ordering": "Read one cap when starting a group, retain it while draining that group, read again after an exclusive barrier; commit results and next-request history in model order.",
+  "errors": "Bounded direct numeric/configuration refusal and invalid settings writes; arbitrary public extension/error ABI and combined Tools/Wire remain separate.",
+  "cancellation": "The existing scheduler abort/first-failure drain behavior is unchanged; this contract does not certify every simultaneous approval/followup/cancel/disposal combination.",
+  "adaptation": "Python3.8 uses finite integer-number validation, owned asyncio pools and the canonical optional SettingsProvider; no product Node or original frontend changes.",
+  "open_questions": ["Full B2 combinations and arbitrary synchronous dispatch prefixes, complete UI/profile journeys and overall migration remain unaccepted.", "Historical ReplaceFileW1175, startup cancellation, unmeasured partial-wire timeout, fixed-wait Source cache failure and Proactor warning remain independently unrooted; real Win7 stays deferred."]
+}

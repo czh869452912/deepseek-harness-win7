@@ -43,6 +43,7 @@ from scripts.session_tools_oracle import validate_runtime as validate_session_to
 from scripts.sqlite_format_oracle import validate_runtime as validate_sqlite_format, source_identity as format_source_identity, module_hashes as format_module_hashes, asset_hashes as format_asset_hashes
 from scripts.sqlite_provider_oracle import validate_runtime as validate_sqlite_provider, source_identity as provider_source_identity, hashes as provider_hashes, MODULES as PROVIDER_MODULES, ASSETS as PROVIDER_ASSETS
 from scripts.jsonl_provider_oracle import validate_runtime as validate_jsonl_provider, source_identity as jsonl_source_identity, MODULES as JSONL_MODULES, ASSETS as JSONL_ASSETS
+from scripts.tool_scheduler_oracle import validate_runtime as validate_tool_scheduler, identity as scheduler_identity
 NODE_VERSION = 'v22.22.2'
 PORTABLE_ARCHIVE = 'dist/dsh-win7-portable-v0.1.0.zip'
 PAIRED_DRIVERS = (
@@ -53,9 +54,23 @@ PAIRED_DRIVERS = (
     'approval', 'inspect', 'cordis_guard', 'cordis_runner',
     'cordis_retirement', 'cordis_tools', 'acp_sessions', 'acp_model_output', 'acp_stdio', 'acp_permissions', 'mcp_stdio', 'mcp_http', 'acp_mcp', 'subagent_acp', 'subagent_acp_teardown', 'mcp_disposal', 'subprocess_ownership', 'subprocess_tree', 'projection_cache_failure', 'session_observation_read', 'session_corpus_list', 'session_corpus_read', 'session_lineage', 'session_event_trace', 'session_filters', 'session_requests', 'session_snapshots', 'query_schema', 'query_engine', 'query_unicode', 'session_text',
 )
-PAIRED_DRIVERS = PAIRED_DRIVERS + ('session_tools', 'sqlite_format', 'sqlite_provider', 'jsonl_provider')
-OFFICIAL_CONFIGS = ('consumers', 'agent-lifecycle', 'session-recovery', 'session-projection', 'acp', 'acp-app', 'mcp', 'subagent-acp', 'storage-cache', 'session-observation', 'session-corpus', 'session-sqlite-query', 'query-engine-source', 'session-tools-source', 'sqlite-format-source', 'sqlite-provider-source', 'jsonl-provider-source')
+PAIRED_DRIVERS = PAIRED_DRIVERS + ('session_tools', 'sqlite_format', 'sqlite_provider', 'jsonl_provider', 'tool_scheduler')
+OFFICIAL_CONFIGS = ('consumers', 'agent-lifecycle', 'session-recovery', 'session-projection', 'acp', 'acp-app', 'mcp', 'subagent-acp', 'storage-cache', 'session-observation', 'session-corpus', 'session-sqlite-query', 'query-engine-source', 'session-tools-source', 'sqlite-format-source', 'sqlite-provider-source', 'jsonl-provider-source', 'tool-scheduler-source')
 REQUIRED_REGRESSION = {
+    'test_agent_loop_parallel_settings': {
+        *{'test_direct_parallel_cap_rejects_invalid_numbers[' + value + ']' for value in ('0', '-1', '1.5', 'True', '2', 'nan', 'inf')},
+        *{'test_direct_parallel_cap_resolves_original_default_and_integer_numbers[config' + str(index) + '-' + str(value) + ']'
+          for index, value in enumerate((10, 1, 2))},
+        'test_parallel_settings_layers_refuses_and_unloads_reversibly',
+        *{'test_factory_model_turn_honors_configured_parallel_pool[' + str(value) + ']' for value in (1, 2, 10)},
+    },
+    'test_tool_scheduler_source': {
+        'test_actual_source_parallel_caps_settings_and_factory_consumers_match',
+        'test_actual_source_in_flight_group_keeps_cap_until_exclusive_barrier',
+        'test_scheduler_source_order_is_part_of_identity',
+        *{'test_scheduler_receipt_refuses_incomplete_or_foreign_observations[' + damage + ']' for damage in (
+            'missing-module', 'changed-module', 'empty-closure', 'foreign-root', 'foreign-python', 'missing-row', 'duplicate-row', 'changed-row')},
+    },
     'test_upstream_delta': {
         'test_real_readonly_delta_preserves_checkout_and_maps_both_rename_owners_and_consumers',
         'test_nul_parser_preserves_whitespace_unicode_and_both_copy_names',
@@ -710,6 +725,11 @@ def validate_extracted(path, archive, candidate):
             candidate['jsonl_provider_modules'], candidate['jsonl_provider_assets'])
     except (ValueError, KeyError, TypeError) as error:
         raise RuntimeError('Extracted jsonlProvider observations are incomplete') from error
+    try:
+        validate_tool_scheduler(report.get('toolScheduler'), Path(report['mcpStdio']['root']),
+                                candidate['tool_scheduler_observations_sha256'], candidate['tool_scheduler_modules'])
+    except (ValueError, KeyError, TypeError) as error:
+        raise RuntimeError('Extracted toolScheduler observations are incomplete') from error
     for name, validate in [('queryEngine', validate_query_engine), ('querySchema', validate_query_schema), ('pythonDirectory', validate_python_directory),
                            ('sessionLineage', validate_session_lineage), ('sessionEventTrace', validate_session_event_trace),
                            ('sessionFilters', validate_session_filters), ('sessionRequests', validate_session_requests),
@@ -827,6 +847,10 @@ def verify(args, output):
     candidate['jsonl_provider_inputs_sha256'] = digest(jsonl_inputs)
     candidate['jsonl_provider_modules'] = provider_hashes(ROOT, JSONL_MODULES)
     candidate['jsonl_provider_assets'] = provider_hashes(ROOT, JSONL_ASSETS)
+    scheduler_source = output / 'tool-scheduler-paired.source.json'
+    scheduler_native = output / 'tool-scheduler-paired.native.json'
+    candidate['tool_scheduler_observations_sha256'] = scheduler_identity(json.loads(scheduler_source.read_text(encoding='utf-8')))
+    candidate['tool_scheduler_modules'] = json.loads(scheduler_native.read_text(encoding='utf-8'))['modules']
     raw = output / 'cordis-raw.json'
     raw.unlink(missing_ok=True)
     run([python, 'scripts/cordis_oracle.py', '--output', str(raw)],
@@ -845,7 +869,8 @@ def verify(args, output):
     command = [python, 'scripts/verify_portable.py', '--archive', str(archive),
                '--browser', str(browser), '--output', str(extracted), '--unicode-source', str(unicode_source),
                '--text-source', str(text_source), '--text-inputs', str(text_inputs), '--tools-source', str(tools_source),
-               '--format-source', str(format_source), '--format-inputs', str(format_inputs)]
+               '--format-source', str(format_source), '--format-inputs', str(format_inputs),
+               '--scheduler-source', str(scheduler_source), '--scheduler-native', str(scheduler_native)]
     if not candidate['worktree_dirty']:
         command += ['--expected-commit', candidate['product_commit']]
     run(command, 'portable-extracted', output, env=environment)

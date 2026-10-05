@@ -10,7 +10,8 @@ import asyncio
 import json
 import time
 import uuid
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Callable, Dict, List, Optional, Union
+from dsh.core.agent_loop_settings import resolve_max_parallel_tool_calls
 from dsh.core.tools import (
     TOOL_ABORTED_BEFORE_DISPATCH,
     ToolExecutionInput,
@@ -57,7 +58,7 @@ async def execute_tool_calls(
     tool_calls: List[Dict[str, Any]],
     signal: Optional[asyncio.Event] = None,
     accept_context: Optional[Callable[[Any], None]] = None,
-    max_parallel: int = 8,
+    max_parallel: Optional[Union[int, Callable[[], int]]] = None,
 ) -> Dict[str, bool]:
     session = agent.session
     tools_service = ctx.get("tools")
@@ -89,6 +90,10 @@ async def execute_tool_calls(
             mode = tools_service.execution_mode(first.exec).get("kind", "parallel")
 
         group = planned[next_idx:] if mode == "parallel" else [first]
+        cap = max_parallel() if callable(max_parallel) else max_parallel
+        if cap is None:
+            owner = ctx.get('agentLoop')
+            cap = owner.config['maxParallelToolCalls'] if owner is not None else None
         outcome = await run_group(
             ctx=ctx,
             agent=agent,
@@ -98,7 +103,7 @@ async def execute_tool_calls(
             mode=mode,
             signal=signal,
             accept_context=accept_context,
-            max_parallel=max_parallel,
+            max_parallel=resolve_max_parallel_tool_calls(cap),
         )
 
         next_idx += outcome.consumed

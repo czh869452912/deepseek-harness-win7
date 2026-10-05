@@ -4,6 +4,8 @@ snapshots/** -text
 apps/web/dist/** -text
 dsh/session/bin/icu/** -text
 dsh/session/bin/zstd/** -text
+dsh/javascript/bin/** -text
+scripts/native/quickjs_worker.c text eol=lf
 dsh/session/resources/sql/** -text
 dsh/session/bin/unicode/** -text
 examples/python-web-echo/** text eol=lf

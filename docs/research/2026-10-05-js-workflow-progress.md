@@ -11,3 +11,5 @@
 22组实际 pinned WorkflowExecution与初始引擎研究记录保留在 `.goose/out/acp-a4-work/js-runtime-{source,prototype}-v1.json`。闭包/循环/Promise、host realm、phase/log、root undefined、own __proto__、null prototype、DAG、getter/Proxy、非canonical数组别名、non-enumerable与自定义抛值共14组完整匹配。其余8组错误和解析文本不同：QuickJS默认stack不含Node形式的错误首行，且宿主/引擎栈和SyntaxError不同。原始差异没有被过滤、豁免或计为通过。
 
 生产WorkflowEngine尚未消费此提供端，仍拒绝未登记的任意脚本。下一实施是Source-backed子代理start/result/disposal、fatal与普通失败、FIFO/caps、parallel/pipeline、materialization、取消/先终态/迟到回执，以及原版builtin/model/profile与持有run跨engine卸载。完成消费者后再签发干净全量和实际解压来源绑定证据。Node/Intl/WebAssembly/任意Cordis插件/SDK/preset/trust与全部C2继续具名开放，`accepted_upstream`仍为空。
+
+提供端实现提交 `696802b3`。首次提交后的Git属性审查发现未固定私有JSON/许可资源字节；自动CRLF转换会令其他checkout与清单哈希不符。现对私有资源设置-text、C wrapper固定LF，并逐个核对index中的原始blob与实际清单/文件字节。此修正保持二进制和manifest原始哈希不变，不能以本机运行通过代替重新检出的便携资源证明。

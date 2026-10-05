@@ -1,5 +1,7 @@
 # 公共Session数值及只读元数据
 
+后续修订：4a127b73完整验收被十项实际查询副本消费者拒绝（7407 passed、10 failed）；初版浅/深复制冻结规则缺少Source依据。CON-SESSION-NUMBERS修订2补充实际Source克隆控制，53组完整匹配，扩大1269项回归通过。精确失败产物及更正见2026-10-06-session-header-clone-progress.md；本页下列51组/969lane/1233项是初版历史结果，不构成最新完整签收。
+
 041已有界进入主树，最新完整签收仍为47adea37。实际原版Session.create与Python公开Session.create执行51组观察：version/createdAt/seedLength/delegationDepth/seq/time六字段各八种数值，再加未知字段、顶层修改及嵌套修改。原始基线42组匹配、九组不同：六组whole浮点过度拒绝、未知元数据丢弃、公开header顶层可变和嵌套字段缺失。研究原始Source/native/fixed及comparison-v1、输入和日志保留于.goose/out/acp-a4-work/session-number-*，不改写失败记录。
 
 JSON提供端在负零/非有限值拒绝之后，将安全整数值的float快照为整数表示；真正字段验证接受安全整数类型，仍拒绝boolean。这是产品内部表示适配，观察输出不删除字段或归一化。validated header保留完整JSON记录，并冻结独立图和已发布属性；用于组装的SessionHeader DTO保持其原有用途。to_dict导出与浅/深复制保留元数据且分离图，由四项独立原生回归验证，不算额外Source配对。

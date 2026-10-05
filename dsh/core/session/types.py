@@ -57,7 +57,7 @@ class SessionForkError(ValueError):
 
 class SessionHeader:
     """
-    Immutable storage metadata for a session.
+    Storage metadata DTO; validated publication uses an immutable header.
     Supports attribute access (header.id, header.createdAt) and mapping access (header['id']).
     """
 
@@ -82,6 +82,7 @@ class SessionHeader:
         self.origin = origin
         self.delegation_depth = delegation_depth
         self.agent_preset = agent_preset
+        self._extra: Dict[str, Any] = {}
 
     @property
     def createdAt(self) -> int:
@@ -104,11 +105,12 @@ class SessionHeader:
         return self.agent_preset
 
     def to_dict(self) -> Dict[str, Any]:
-        result: Dict[str, Any] = {
+        result: Dict[str, Any] = copy.deepcopy(self._extra)
+        result.update({
             "version": self.version,
             "id": self.id,
             "createdAt": self.created_at,
-        }
+        })
         if self.cwd is not None:
             result["cwd"] = self.cwd
         if self.parent_session is not None:
@@ -125,6 +127,8 @@ class SessionHeader:
 
     # Mapping protocol methods for dict compatibility
     def __getitem__(self, key: str) -> Any:
+        if key in self._extra:
+            return self._extra[key]
         d = self.to_dict()
         if key in d:
             return d[key]
@@ -192,7 +196,7 @@ class SessionHeader:
         record.setdefault("id", sid)
         if record.get("createdAt") is None:
             record["createdAt"] = int(time.time() * 1000)
-        return validate_session_header(sid, record)
+        return copy.deepcopy(validate_session_header(sid, record))
 
 
 class _ValidatedSessionHeader(SessionHeader):
@@ -215,10 +219,18 @@ class _ValidatedSessionHeader(SessionHeader):
         return copy.deepcopy(self._record)
 
     def __copy__(self) -> "SessionHeader":
-        return validate_session_header(self.id, dict(self._record))
+        header = SessionHeader(session_id=self.id, version=self.version, created_at=self.created_at,
+            cwd=self.cwd, parent_session=self.parent_session, seed_length=self.seed_length,
+            origin=self.origin, delegation_depth=self.delegation_depth, agent_preset=self.agent_preset)
+        known = {"version", "id", "createdAt", "cwd", "parentSession", "seedLength",
+            "origin", "delegationDepth", "agentPreset"}
+        header._extra = {key: value for key, value in self._record.items() if key not in known}
+        return header
 
     def __deepcopy__(self, memo: Any = None) -> "SessionHeader":
-        return validate_session_header(self.id, copy.deepcopy(self._record, memo if memo is not None else {}))
+        header = self.__copy__()
+        header._extra = copy.deepcopy(header._extra, memo if memo is not None else {})
+        return header
 
     def __getitem__(self, key: str) -> Any:
         if key in self._record:

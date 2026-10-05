@@ -353,7 +353,7 @@ def test_extracted_session_corpus_read_requires_exact_sources_and_batch_drain(tm
 def test_regression_requires_browser_portable_and_acp_process_lanes(tmp_path):
     path = tmp_path / 'pytest.xml'
     regression_xml(path)
-    assert GATE.validate_regression(path) == {'required_lanes': 969, 'skipped': 1}
+    assert GATE.validate_regression(path) == {'required_lanes': 979, 'skipped': 1}
 
 
 @pytest.mark.parametrize('module', ['test_native_web_browser', 'test_portable_smoke', 'test_acp_stdio_journey', 'test_acp_permission_process', 'test_mcp_stdio_transport', 'test_mcp_supervisor', 'test_mcp_schema', 'test_mcp_config', 'test_mcp_tools_source', 'test_mcp_image_consumer', 'test_mcp_http_source', 'test_mcp_http_transport', 'test_mcp_supervisor_source', 'test_mcp_factory_source', 'test_acp_mcp_source', 'test_acp_mcp_runtime_source', 'test_acp_mcp_abort_source', 'test_acp_mcp_process', 'test_acp_mcp_runtime'])
@@ -811,7 +811,8 @@ def number_runtime_fixture():
 
 
 @pytest.mark.parametrize('damage', ['missing', 'source-missing', 'source-changed', 'module-missing',
-    'module-changed', 'root', 'python', 'executable', 'tail', 'duplicate', 'outcome', 'metadata', 'mutation', 'input'])
+    'module-changed', 'root', 'python', 'executable', 'tail', 'duplicate', 'outcome', 'metadata', 'mutation', 'input',
+    'clone-missing', 'clone-deep', 'clone-shallow', 'clone-original'])
 def test_extracted_number_requires_source_and_complete_metadata(tmp_path, damage):
     archive, candidate, report = extracted_receipt(tmp_path)
     runtime = report['sessionNumber']
@@ -837,6 +838,14 @@ def test_extracted_number_requires_source_and_complete_metadata(tmp_path, damage
         runtime['rows'][-1] = copy.deepcopy(runtime['rows'][0])
     elif damage == 'outcome':
         runtime['rows'][0]['accepted'] = False
+    elif damage.startswith('clone-'):
+        row = next(row for row in runtime['rows'] if row['name'] == ('shallow-copy' if damage == 'clone-shallow' else 'deep-copy'))
+        if damage == 'clone-missing':
+            del row['clone']
+        elif damage in ('clone-deep', 'clone-shallow'):
+            row['nestedMutationAccepted'] = damage == 'clone-shallow'
+        else:
+            row['header']['extra']['nested'].append(3)
     else:
         name = 'header-mutation' if damage == 'mutation' else 'unknown-field'
         row = next(row for row in runtime['rows'] if row['name'] == name)

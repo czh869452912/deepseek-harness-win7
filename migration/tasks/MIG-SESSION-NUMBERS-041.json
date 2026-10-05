@@ -1,19 +1,19 @@
 {
   "id": "MIG-SESSION-NUMBERS-041",
-  "goal": "闭合公共Session.create数值准入和只读完整元数据的51组观察",
+  "goal": "闭合公共Session.create数值准入、完整只读元数据与独立克隆的53组观察",
   "kind": "implementation",
   "state": "running",
   "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
   "base_product": "47adea372613d086c54631344af4944b4ddcf232",
   "owner": "current-session-coordinator",
   "requires": [{"task": "MIG-CURRENT-RELEASE-GATE-003", "contract": "CON-CURRENT-RELEASE-GATE", "revision": 1}, {"task": "MIG-PERSISTENCE-READ-039", "contract": "CON-PERSISTENCE-READ", "revision": 1}],
-  "provides": [{"contract": "CON-SESSION-NUMBERS", "revision": 1}],
-  "acceptance": ["Fresh actual public Session.create Source/native51 complete rows match six numeric fields/eight values and three metadata ownership controls without field filtering or output numeric normalization.", "Retain42-match/nine-difference baseline, actual fixed complete rows and isolated public Session/token/query/storage regression evidence. Native published header copies/exports remain detached and immutable while assembly DTOs remain usable.", "A distinct clean complete gate includes969 mandatory lanes,61 fresh paired drivers, eighteen unchanged original Source groups/1237 assertions and actual extracted ownPython3.8.10/browser before integration."],
+  "provides": [{"contract": "CON-SESSION-NUMBERS", "revision": 2}],
+  "acceptance": ["Fresh actual public Session.create Source/native53 complete rows match six numeric fields/eight values and five metadata/clone ownership controls without field filtering or output numeric normalization.", "Retain42-match/nine-difference baseline, exact rejected4a127b73 full gate and actual Source shallow/structured clone controls. Published headers remain frozen; shallow copies retain shared frozen nested values and deep copies/from_dict are mutable detached DTOs. Actual public corpus/list/load/lineage/snapshot consumers must pass.", "A distinct clean complete gate includes979 mandatory lanes,61 fresh paired drivers, eighteen unchanged original Source groups/1237 assertions and actual extracted ownPython3.8.10/browser before integration."],
   "expected_paths": ["dsh/core/session", "scripts", "tests", "migration", "docs/research"],
-  "open_findings": ["51 fresh formal selected Source/native rows match. All1233 focused actual public Session/token/query/canonical storage, numeric read and gate/executable/rejection regressions passed in357.95 seconds. Actual extracted qualification and a distinct frozen complete gate remain pending.", "Public restore/malformed/plugin ABI and fullB1/profile are not signed by Session.create controls."],
+  "open_findings": ["Exact clean4a127b73 gate rejected:7407 passed/10 failed/6 existing skips/one warning in1885.02 seconds; freezing leaked to detached public DTOs. Revision2 fixes clone/from_dict ownership and replaces unsupported immutable-copy guards with two actual Source rows. Fresh53 rows match; exact oldPortable51 match/two clone differences remain archived. Broader1269 regressions including actual Source consumers pass in376.90 seconds; distinct frozen complete/extracted qualification remains pending.", "Public restore/malformed/plugin ABI and fullB1/profile are not signed by Session.create/clone controls."],
   "conflicts_with": [],
   "candidate_commit": null,
   "integrated_commit": null,
   "evidence_ids": [],
-  "next_action": "1233项产品/session/query/persistence及门禁定向回归已通过；独立提交041后冻结不同干净候选完整验收040与041，之后才签收；继续完整公共Session ABI和其他迁移。"
+  "next_action": "4a127b73精确失败产物已保留；完成修订2的53 Source/原生观察、实际query/list/load/lineage/snapshot可变副本回归和979lane拒绝门禁，提交后冻结新完整候选再签收040/041；继续已复现的恢复诊断/负零差异和完整公共Session ABI。"
 }

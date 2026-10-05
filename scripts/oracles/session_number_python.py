@@ -1,4 +1,5 @@
 import argparse
+import copy
 import hashlib
 import json
 from pathlib import Path
@@ -7,7 +8,7 @@ import sys
 
 FIELDS = ('version', 'createdAt', 'seedLength', 'delegationDepth', 'seq', 'time')
 LABELS = ('whole', 'negative-zero', 'fraction', 'negative', 'boolean', 'unsafe', 'nan', 'infinite')
-ACTIONS = ('unknown-field', 'header-mutation', 'nested-header-mutation')
+ACTIONS = ('unknown-field', 'header-mutation', 'nested-header-mutation', 'shallow-copy', 'deep-copy')
 NAMES = tuple(field + '/' + label for field in FIELDS for label in LABELS) + ACTIONS
 
 
@@ -30,6 +31,19 @@ def observe(name):
                 row['mutationAccepted'] = True
             except Exception:
                 row['mutationAccepted'] = False
+        elif name in ('shallow-copy', 'deep-copy'):
+            clone = copy.copy(session.header) if name == 'shallow-copy' else copy.deepcopy(session.header)
+            try:
+                clone.created_at = 9
+                row['topMutationAccepted'] = True
+            except TypeError:
+                row['topMutationAccepted'] = False
+            try:
+                clone['extra']['nested'].append(3)
+                row['nestedMutationAccepted'] = True
+            except TypeError:
+                row['nestedMutationAccepted'] = False
+            row['clone'] = clone.to_dict()
         row.update(header=session.header.to_dict(), input=header)
         return row
     field, label = name.split('/')

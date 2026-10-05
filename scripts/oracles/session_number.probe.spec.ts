@@ -25,7 +25,7 @@ it('observes actual public Session header and seed number boundaries',()=>{
       rows.push(row)
     }
   }
-  for(const action of ['unknown-field','header-mutation','nested-header-mutation']){
+  for(const action of ['unknown-field','header-mutation','nested-header-mutation','shallow-copy','deep-copy']){
     const header:any={id:'s',version:0,createdAt:1,extra:{nested:[1,2]}}
     const session=Session.create('s' as any,[],header)
     const row:any={name:action}
@@ -33,6 +33,11 @@ it('observes actual public Session header and seed number boundaries',()=>{
       try{(session.header as any).createdAt=9;row.mutationAccepted=true}catch{row.mutationAccepted=false}
     }else if(action==='nested-header-mutation'){
       try{(session.header as any).extra.nested.push(3);row.mutationAccepted=true}catch{row.mutationAccepted=false}
+    }else if(action==='shallow-copy'||action==='deep-copy'){
+      const clone:any=action==='shallow-copy'?{...session.header}:structuredClone(session.header)
+      try{clone.createdAt=9;row.topMutationAccepted=true}catch{row.topMutationAccepted=false}
+      try{clone.extra.nested.push(3);row.nestedMutationAccepted=true}catch{row.nestedMutationAccepted=false}
+      row.clone=clone
     }
     row.header=session.header
     row.input=header

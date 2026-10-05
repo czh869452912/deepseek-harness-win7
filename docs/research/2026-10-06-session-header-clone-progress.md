@@ -1,0 +1,13 @@
+# 已发布Header与独立查询副本
+
+干净产品4a127b73完整门禁被拒绝：7407 passed、10 failed、6既有平台skips、1既有warning，1885.02秒。失败为六项真实JSONL/SQLite detached list/lineage/snapshot副本修改，以及四项实际原版/原生corpus list/load/lineage/snapshot消费者。十八组独立原版断言、61配对及解压阶段没有获准执行，不能签收040/041。门禁输出目录中的813235a4是错误的旧占位标签；真实身份由Git、inputs.json和内嵌build-provenance.json统一核验为4a127b7369797c385b9bc52f2cce7ca0ccd98429。
+
+精确拒绝ZIP为migration/evidence/artifacts/SESSION-BOUNDARIES-REJECTED-20261006-4a127b73.zip，SHA256 f83e3e4c608b56c61ddf1f04d29685d5360476d39fe7ec366c9b807be84f1ec4；内嵌Portable SHA256 10ec56f2b24f036cf66036d5710a7c944fb07ed4f6f09bf700fb5b36c50afeb3，输入清单SHA256 8163de065259d7ae0e1ba29e3704f514d3602bde1896396275c92f00ed038b62。原始XML、完整日志、浏览器和四个实际失败消费者输出保留。保留器只成功执行一次；不重跑未修改候选。
+
+根因是我将已发布Header冻结同时传播给了from_dict和deepcopy结果，并加入缺少原版依据的immutable-copy断言。原版SessionCorpus.listSessions/load明确使用structuredClone返回可变独立副本；现有FrozenDict/FrozenList的deepcopy也已约定同样行为。修复使SessionHeader.from_dict和已发布Header的deepcopy返回可变独立DTO并保留未知JSON字段；浅复制只允许改外层，嵌套值仍共享原发布图的冻结状态。已发布原对象继续冻结。
+
+CON-SESSION-NUMBERS修订2增加实际原版object-spread/structuredClone与原生copy/deepcopy两组控制，比较全部clone、top/nested mutation、原始header和借入input。原有51观察加两组克隆共53组完整匹配，正式原始输出为.goose/out/acp-a4-work/session-number-clones-product-paired-v3.*。失败的26项相关真实消费者回归现通过（20.63秒）；扩大回归和新的干净完整验收尚待执行。unsupported native immutable-copy断言已按实际Source行为修正，不改变Source算法或任何原版缺陷判据。
+
+精确4a127b73 Portable重新解压后，以其自己的Python3.8.10运行新增53组观察：51组匹配，仅shallow-copy/deep-copy两组不同；没有修改失败产物。原始输出及完整差分为.goose/out/acp-a4-work/header-clone-baseline-native-v1.json与header-clone-baseline-comparison-v1.json。扩大回归1269 passed（376.90秒），包含实际corpus list/load、lineage/snapshot Source消费者、规范JSONL/SQLite、解释器和完整拒绝门禁；日志/XML为session-header-clone-focused-v2。先前1233项聚焦范围漏掉了这些实际副本消费者，因此不能替代完整验收。
+
+当前要求979必需lane、61配对、十八组1237原样Source断言，九项Source缺陷谓词和C58/C59保持不变。41仍running，新的冻结完整验收尚待执行。完整B1/JS036/B/C/D、accepted_upstream和延期Win7均未闭环。另有76诊断/18恢复符号观察在隔离原型匹配，未进入该拒绝产品或任何完整签收。

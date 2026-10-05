@@ -69,10 +69,11 @@ REQUIRED_REGRESSION = {
         *{'test_actual_public_session_number_and_frozen_metadata_match_source[' + name + ']' for name in NUMBER_NAMES},
         *{'test_session_number_receipt_requires_complete_metadata_and_runtime[' + damage + ']' for damage in (
             'outcome', 'header-field', 'header-mutation', 'nested-mutation', 'input-mutation',
+            'clone-missing', 'clone-deep', 'clone-shallow', 'clone-original',
             'missing-case', 'duplicate', 'root', 'python', 'executable', 'module', 'module-bytes')},
         *{'test_session_number_source_identity_is_required[' + damage + ']' for damage in ('pin', 'node', 'inputs', 'bytes')},
         *{'test_portable_number_cli_refuses_partial_receipts[' + side + ']' for side in ('source', 'native')},
-        *{'test_published_header_copies_remain_detached_and_immutable[' + action + ']' for action in ('copy', 'deepcopy', 'export', 'delete')},
+        *{'test_published_header_copies_and_exports_preserve_source_ownership[' + action + ']' for action in ('copy', 'deepcopy', 'export', 'delete')},
     },
     'test_javascript_initial_consumers': {
         *{'test_actual_entry_exit_precedes_initial_write_failure[' + name + ']' for name in INITIAL_NAMES},
@@ -296,7 +297,8 @@ REQUIRED_REGRESSION = {
             'asset-changed', 'root', 'python', 'executable', 'tail', 'duplicate', 'outcome', 'late-phase', 'entry', 'emission')},
         *{'test_extracted_number_requires_source_and_complete_metadata[' + damage + ']' for damage in (
             'missing', 'source-missing', 'source-changed', 'module-missing', 'module-changed', 'root',
-            'python', 'executable', 'tail', 'duplicate', 'outcome', 'metadata', 'mutation', 'input')},
+            'python', 'executable', 'tail', 'duplicate', 'outcome', 'metadata', 'mutation', 'input',
+            'clone-missing', 'clone-deep', 'clone-shallow', 'clone-original')},
         *{'test_number_consumer_lanes_are_mandatory[' + damage + ']' for damage in ('omit', 'skip', 'duplicate', 'failure')},
         *{'test_initial_consumer_lanes_are_mandatory[' + damage + ']' for damage in ('omit', 'skip', 'duplicate', 'failure')},
         "test_extracted_ready_requires_source_assets_and_complete_observations[missing]",

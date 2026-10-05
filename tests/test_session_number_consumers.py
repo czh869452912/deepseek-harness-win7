@@ -13,6 +13,7 @@ from dsh.core.session import Session
 
 ROOT = Path(__file__).resolve().parents[1]
 DAMAGES = ('outcome', 'header-field', 'header-mutation', 'nested-mutation', 'input-mutation',
+    'clone-missing', 'clone-deep', 'clone-shallow', 'clone-original',
     'missing-case', 'duplicate', 'root', 'python', 'executable', 'module', 'module-bytes')
 
 
@@ -47,6 +48,14 @@ def test_session_number_receipt_requires_complete_metadata_and_runtime(actual_pa
         next(row for row in runtime['rows'] if row['name'] == name)['mutationAccepted'] = True
     elif damage == 'input-mutation':
         next(row for row in runtime['rows'] if row['name'] == 'unknown-field')['input']['extra']['nested'].append(3)
+    elif damage == 'clone-missing':
+        del next(row for row in runtime['rows'] if row['name'] == 'deep-copy')['clone']
+    elif damage == 'clone-deep':
+        next(row for row in runtime['rows'] if row['name'] == 'deep-copy')['nestedMutationAccepted'] = False
+    elif damage == 'clone-shallow':
+        next(row for row in runtime['rows'] if row['name'] == 'shallow-copy')['nestedMutationAccepted'] = True
+    elif damage == 'clone-original':
+        next(row for row in runtime['rows'] if row['name'] == 'deep-copy')['header']['extra']['nested'].append(3)
     elif damage == 'missing-case':
         runtime['rows'].pop()
     elif damage == 'duplicate':
@@ -89,7 +98,7 @@ def test_portable_number_cli_refuses_partial_receipts(tmp_path, side):
 
 
 @pytest.mark.parametrize('action', ['copy', 'deepcopy', 'export', 'delete'])
-def test_published_header_copies_remain_detached_and_immutable(action):
+def test_published_header_copies_and_exports_preserve_source_ownership(action):
     supplied = dict(id='s', version=0, createdAt=1, extra=dict(nested=[1, 2]))
     original = Session.create('s', [], supplied).header
     header = copy.copy(original) if action == 'copy' else copy.deepcopy(original) if action == 'deepcopy' else original
@@ -100,8 +109,13 @@ def test_published_header_copies_remain_detached_and_immutable(action):
         with pytest.raises(TypeError):
             del header.created_at
     else:
-        with pytest.raises(TypeError):
-            header.created_at = 9
-        with pytest.raises(TypeError):
+        header.created_at = 9
+        if action == 'copy':
+            with pytest.raises(TypeError):
+                header['extra']['nested'].append(3)
+        else:
             header['extra']['nested'].append(3)
-    assert header.to_dict() == original.to_dict() == supplied
+        assert header.created_at == 9
+    assert original.to_dict() == supplied
+    if action in ('export', 'delete'):
+        assert header.to_dict() == supplied

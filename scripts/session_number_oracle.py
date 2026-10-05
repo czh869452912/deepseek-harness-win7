@@ -102,7 +102,7 @@ def main():
         source_pin()
         report.update(status='matched', target_upstream=SOURCE_COMMIT, cases=len(NAMES),
             observations_sha256=expected_digest, modules=modules,
-            scope='51 actual public Session.create numeric header/seed and retained deeply immutable header observations. Complete rows match without output filtering or numeric normalization. Python ValueError corresponds to Source Error at this admission boundary; unexpected exceptions fail the observer. Guard inventory is not a full dynamic Source closure. Mutable construction DTOs remain separate from published validated headers. Not arbitrary restore/plugin ABI, every malformed/ownership schedule, fullB1 or Win7 certification.')
+            scope='53 actual public Session.create numeric header/seed, retained deeply immutable published header and shallow/deep clone observations. Complete rows match without output filtering or numeric normalization. Python ValueError corresponds to Source Error at this admission boundary; unexpected exceptions fail the observer. Guard inventory is not a full dynamic Source closure. Mutable construction/from_dict/deepclone DTOs remain separate from published validated headers. Shallow clones retain shared frozen nested values; structuredClone/deepcopy returns a fully mutable detached graph. Actual corpus/list/load/lineage/snapshot consumers additionally verify this boundary. Not arbitrary restore/plugin ABI, every malformed/ownership schedule, fullB1 or Win7 certification.')
     except (OSError, ValueError, KeyError, TypeError, RuntimeError, subprocess.SubprocessError) as error:
         report['error'] = str(error)
     with output.open('x', encoding='utf-8') as stream:

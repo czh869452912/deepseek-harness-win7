@@ -1,0 +1,24 @@
+{
+  "id": "MIG-JS-WORKFLOW-036",
+  "goal": "交付真实私有JavaScript进程并闭合工作流提供端与消费者",
+  "kind": "implementation",
+  "state": "running",
+  "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
+  "base_product": "a016e434a2ff29f1c74a24eb1361a651d22f47ed",
+  "owner": "current-session-coordinator",
+  "requires": [{"task": "MIG-CURRENT-RELEASE-GATE-003", "contract": "CON-CURRENT-RELEASE-GATE", "revision": 1}],
+  "provides": [{"contract": "CON-JS-WORKFLOW", "revision": 1}],
+  "acceptance": [
+    "Real JavaScript closures/loops/async/promises and separate host/script realm values execute with actual pinned Source observations and immutable private Win6.1-targeted engine/resources.",
+    "Original workflow hooks/materialization/caps/FIFO/combinators and child start/result/dispose ownership have actual same-scenario observations; parse and named engine differences remain explicit.",
+    "Pre-go abort, initial timeout, post-await nonsettlement, process death, grace/physical disposal, dropped hooks and held runs across engine unload are observed without timing or exception relaxation.",
+    "Canonical workflow/Ralph/subagent/model/profile consumers and actual extracted Python3.8.10 run the real engine; a new frozen clean complete gate passes before integration."
+  ],
+  "expected_paths": ["dsh/javascript", "dsh/workflow", "dsh/boot", "scripts", "tests", "migration", "docs/research"],
+  "open_findings": ["Eight raw engine/parse error differences remain in the initial22 actual observations; private process provider alone does not qualify general workflow or C2.", "Child RPC, canonical consumers, original builtin retirement, precise engine-unload ownership and actual extracted qualification remain unfinished."],
+  "conflicts_with": [],
+  "candidate_commit": null,
+  "integrated_commit": null,
+  "evidence_ids": [],
+  "next_action": "真实双realm私有进程已可挂载，先完成子代理/工作流桥接并调查八项原始差异，再冻结新候选全量及真实解压验收；不签收完整C2或延期Win7。"
+}

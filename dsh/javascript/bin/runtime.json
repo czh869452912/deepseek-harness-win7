@@ -1,0 +1,17 @@
+{
+  "version": "0.17.0",
+  "source_commit": "6d46d07d04041b40f4f49eaa7fdebe44c314c699",
+  "binary_sha256": "7bfad5d6b20510e9827f466358080f02bdd4fa8f1a4666d27ae6bece4b091740",
+  "resources": {
+    "build-provenance.json": "0b96eade884813fc785728262673ff6f8f17bfa00804b2c08bab5f6e5ad54bde",
+    "LLVM-LICENSE.txt": "8d85c1057d742e597985c7d4e6320b015a9139385cff4cbae06ffc0ebe89afee",
+    "MinGW-COPYING": "99a69660981156c21336fdb5661f89341b013c94e4bf9e1c7467b4745718397f",
+    "MinGW-COPYING.MinGW-w64-runtime.txt": "1db8da07b436c68833c0673ffee3d9fcb2526047f3820b81661865dfedc79a1f",
+    "MinGW-COPYING.MinGW-w64.txt": "f38e6194bd3bfa1b654f118e5acefe0aead437bbe669eee43957ccc65a7127f1",
+    "MinGW-COPYING.winpthreads.txt": "63263614cdd29f2f93cba85e992f041b31f9fc7b4033692f31269489a8a1b177",
+    "MinGW-COPYING.winstorecompat.txt": "fa7368d1f93d890c173177475d8ec7aff265a7d08f1f364d66f74d138978ce36",
+    "pe-audit.txt": "fc7790a4ccdea596e2abd4ffb9166828a35a5bf60653a55f0cce6784bb841bc6",
+    "QUICKJS-LICENSE": "96f73f9d2a16c21a36b418f06073be26e7d6d5e7c1bc99756b21a4f2c74ef171",
+    "QUICKJS-NOTICES.txt": "be728370de6fb630804ebe13f1cc109767fae9bfde1a484519366a9514619d7e"
+  }
+}

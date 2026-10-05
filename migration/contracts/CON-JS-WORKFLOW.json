@@ -1,0 +1,21 @@
+{
+  "id": "CON-JS-WORKFLOW",
+  "revision": 1,
+  "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
+  "status": "draft",
+  "source_paths": ["reference/packages/workflow/workflow-worker-thread/src/index.ts", "reference/packages/workflow/workflow-worker-thread/src/runtime.ts", "reference/packages/workflow/workflow-worker-thread/src/realm.ts", "reference/packages/workflow/workflow-worker-thread/src/session.ts", "reference/packages/workflow/workflow-worker-thread/src/host.ts", "dsh/workflow/workflow_service.py", "dsh/javascript/runtime.py", "scripts/native/quickjs_worker.c"],
+  "consumers": ["dsh/workflow/tool_workflow.py", "dsh/workflow/tool_ralph.py", "tests/test_javascript_runtime.py", "tests/test_ralph_and_workflow.py"],
+  "invariants": [
+    "Execute trusted caller JavaScript through a real fresh private engine rather than an expression interpreter or exact-source Python mapping.",
+    "Parse the same async wrapper before workflow publication; preserve a separate host realm for args and frozen hooks and materialize results with Source getter/proxy/prototype/symbol/cycle behavior.",
+    "Ready/go/pre-abort admission, first settlement, initial-only synchronous timeout, forced post-await termination and physical process cleanup retain explicit ownership.",
+    "Bridge child start/result/disposal separately; preserve fatal host WorkflowErrors, ordinary per-item nulls, FIFO slots, total caps, actual caller functions and pipeline order without cross-stage barriers.",
+    "Keep original raw Source/native differences; arbitrary language/runtime APIs, errors, engine-specific stack and Node escape differences are findings, not new upstream bug exceptions.",
+    "Fresh selected host and extracted observers bind all imported modules and private executable/build/compiler/source/license resources; full clean release acceptance is required before integration."
+  ],
+  "open_questions": [
+    "The first engine research has fourteen complete matches and eight retained parse/error-text differences; production WorkflowEngine still refuses arbitrary unregistered bodies.",
+    "Child RPC, full workflow consumers, held runs across engine unload, builtin translation retirement and actual extracted execution remain pending.",
+    "Complete Node/Intl/WebAssembly/SDK/Cordis delivery/preset/trust and Win7 certification remain separate unaccepted scopes."
+  ]
+}

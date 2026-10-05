@@ -37,6 +37,8 @@
 
 ## 当前执行项
 
+036通用JS工作流已开始实现真实私有进程提供端：固定QuickJS-NG源码/编译器/许可、真实host/script双realm、parse/ready/go/cancel、初始切片中断与物理终止，25项提供端/资源/创建卸载竞争反例通过。22组原版研究中14组完整匹配、8组解析/错误格式差异仍保留；生产WorkflowEngine仍未接入任意脚本。下一提交实施子代理与工作流消费者并取得新的干净解压验收；036仍running，C2与全项目没有签收。见 `2026-10-05-js-workflow-progress.md`。
+
 最新干净产品 `6ceef0f9` 完整门禁6944通过、6既有跳过、1既有warning、0失败；496必需lane、十八组1237原样断言、55配对与真实解压/原版浏览器通过。034启动前缀和035重定向已有界 integrated，四十六份证据及确切ZIP归档于 `TOOLS-HTTP-20261005-6ceef0f9.zip`，见对应review。此前七个拒绝产品和九项原版判据不变；完整B1/B2/B3/C/D继续，通用JS的真实私有引擎与跨realm原型开始独立验证，不以研究代码签收。整体accepted_upstream仍为空，Win7继续延期。
 
 dispatch启动前缀修复已提交 `fed1effe`，新HTTP重定向035有29组实际原版/原生完整对象一致与84定向回归通过；共用新干净候选全量验收。正式门禁现为496必需lane/十八组1237原样Source断言/55配对，034/035仍running，实际解压与原版浏览器成功前不签收。完整B2/HTTP/TLS/URL/代理/压缩及C/D继续，最新历史签收仍1f180e40。见 `2026-10-05-http-redirect-progress.md`。

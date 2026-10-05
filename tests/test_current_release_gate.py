@@ -37,6 +37,7 @@ from scripts.sqlite_provider_oracle import observation_digest as provider_observ
 from scripts.jsonl_provider_oracle import observation_digest as jsonl_observation_digest
 from scripts.tool_scheduler_oracle import identity as scheduler_observation_digest
 from scripts.http_redirect_oracle import identity as redirect_observation_digest
+from scripts.javascript_workflow_oracle import observation_digest as javascript_observation_digest
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -347,7 +348,7 @@ def test_extracted_session_corpus_read_requires_exact_sources_and_batch_drain(tm
 def test_regression_requires_browser_portable_and_acp_process_lanes(tmp_path):
     path = tmp_path / 'pytest.xml'
     regression_xml(path)
-    assert GATE.validate_regression(path) == {'required_lanes': 496, 'skipped': 1}
+    assert GATE.validate_regression(path) == {'required_lanes': 629, 'skipped': 1}
 
 
 @pytest.mark.parametrize('module', ['test_native_web_browser', 'test_portable_smoke', 'test_acp_stdio_journey', 'test_acp_permission_process', 'test_mcp_stdio_transport', 'test_mcp_supervisor', 'test_mcp_schema', 'test_mcp_config', 'test_mcp_tools_source', 'test_mcp_image_consumer', 'test_mcp_http_source', 'test_mcp_http_transport', 'test_mcp_supervisor_source', 'test_mcp_factory_source', 'test_acp_mcp_source', 'test_acp_mcp_runtime_source', 'test_acp_mcp_abort_source', 'test_acp_mcp_process', 'test_acp_mcp_runtime'])
@@ -485,6 +486,69 @@ def test_extracted_redirect_requires_fresh_source_and_owned_runtime(tmp_path, da
         GATE.validate_extracted(path, archive, candidate)
 
 
+@functools.lru_cache(maxsize=1)
+def javascript_runtime_fixture():
+    with tempfile.TemporaryDirectory(prefix='javascript-workflow-receipt-') as folder:
+        output = Path(folder) / 'paired.json'
+        result = subprocess.run([sys.executable, str(ROOT / 'scripts/javascript_workflow_oracle.py'),
+                                 '--output', str(output)], cwd=str(ROOT), capture_output=True, timeout=120)
+        if result.returncode:
+            raise RuntimeError(result.stdout.decode('utf-8', errors='replace') + result.stderr.decode('utf-8', errors='replace'))
+        paired = json.loads(output.read_text(encoding='utf-8'))
+        assert paired['status'] == 'matched'
+        return json.loads(output.with_suffix('.native.json').read_text(encoding='utf-8'))
+
+
+@pytest.mark.parametrize('damage', ['missing', 'source-missing', 'source-changed', 'module-missing',
+    'module-changed', 'assets-missing', 'asset-changed', 'root', 'python', 'executable', 'tail', 'duplicate', 'changed', 'late-log'])
+def test_extracted_javascript_requires_fresh_source_modules_assets_and_whole_observations(tmp_path, damage):
+    archive, candidate, report = extracted_receipt(tmp_path)
+    runtime = report['javascriptWorkflow']
+    if damage == 'missing':
+        del report['javascriptWorkflow']
+    elif damage == 'source-missing':
+        del candidate['javascript_workflow_observations_sha256']
+    elif damage == 'source-changed':
+        candidate['javascript_workflow_observations_sha256'] = '0' * 64
+    elif damage == 'module-missing':
+        del runtime['modules']['dsh/workflow/javascript_run.py']
+    elif damage == 'module-changed':
+        runtime['modules']['dsh/workflow/javascript_run.py'] = '0' * 64
+    elif damage == 'assets-missing':
+        del runtime['assets']['dsh/javascript/bin/dsh_js_worker.exe']
+    elif damage == 'asset-changed':
+        runtime['assets']['dsh/javascript/workflow/source.js'] = '0' * 64
+    elif damage == 'root':
+        runtime['root'] = str(tmp_path.parent)
+    elif damage == 'python':
+        runtime['python'] = '3.9.0 foreign runtime'
+    elif damage == 'executable':
+        runtime['executable'] = str(tmp_path.parent / 'python.exe')
+    elif damage == 'tail':
+        runtime['observations'].pop()
+    elif damage == 'duplicate':
+        runtime['observations'][-1] = copy.deepcopy(runtime['observations'][0])
+    elif damage == 'changed':
+        runtime['observations'][0]['result']['value'][0] = 'forged'
+    else:
+        runtime['observations'][-1]['events'].pop()
+    output = tmp_path / 'extracted.json'
+    output.write_text(json.dumps(report), encoding='utf-8')
+    with pytest.raises(RuntimeError, match='javascriptWorkflow'):
+        GATE.validate_extracted(output, archive, candidate)
+
+
+@pytest.mark.parametrize('module', ['test_javascript_runtime', 'test_javascript_workflow_session',
+    'test_javascript_workflow_host', 'test_javascript_workflow_consumers'])
+@pytest.mark.parametrize('damage', ['omit', 'skip', 'duplicate', 'failure'])
+def test_javascript_runtime_and_source_consumer_lanes_are_mandatory(tmp_path, module, damage):
+    path = tmp_path / 'pytest.xml'
+    key = (module, sorted(GATE.REQUIRED_REGRESSION[module])[0])
+    regression_xml(path, **{damage: key})
+    with pytest.raises(RuntimeError):
+        GATE.validate_regression(path)
+
+
 def extracted_receipt(tmp_path):
     archive = tmp_path / 'portable.zip'
     archive.write_bytes(b'exact candidate archive')
@@ -497,12 +561,18 @@ def extracted_receipt(tmp_path):
     redirect['root'] = str(tmp_path)
     candidate['http_redirect_observations_sha256'] = redirect_observation_digest(redirect['rows'])
     candidate['http_redirect_modules'] = redirect['modules'].copy()
+    javascript = copy.deepcopy(javascript_runtime_fixture())
+    javascript['root'], javascript['executable'] = str(tmp_path), str(tmp_path / 'python.exe')
+    candidate['javascript_workflow_observations_sha256'] = javascript_observation_digest(javascript['observations'])
+    candidate['javascript_workflow_modules'] = javascript['modules'].copy()
+    candidate['javascript_workflow_assets'] = javascript['assets'].copy()
     report = {'result': 'passed', 'browser': {'passed': True}, 'runtime': {'checks': ['actual runtime']},
               'acp': {'processes': 2, 'steps': ['initialize-0', 'invalid-params-before-effects',
                   'persistent-new', 'close-list-0', 'eof-0', 'initialize-1',
                   'new-process-resume-no-history-updates', 'close-list-1', 'eof-1']},
               'runtimeStderr': '', 'frontendFilesChecked': 119, 'archive': str(archive),
-              'archiveSha256': GATE.digest(archive), 'provenance': dict(candidate), 'toolScheduler': scheduler, 'httpRedirect': redirect}
+              'archiveSha256': GATE.digest(archive), 'provenance': dict(candidate), 'toolScheduler': scheduler,
+              'httpRedirect': redirect, 'javascriptWorkflow': javascript}
     modes = ['allow', 'reject', 'malformed', 'cancel-late', 'close-late', 'eof']
     report['acpPermissions'] = {'processes': 6, 'modes': modes, 'observations': [
         {'mode': mode, 'executed': mode == 'allow', 'modelRequests': 2 if mode in modes[:3] else 1, 'stderr': [''],

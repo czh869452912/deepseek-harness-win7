@@ -1,13 +1,10 @@
-"""Workflow run seam and native orchestration host (Python 3.8 / Win7).
-
-Deployment-owned programs may have a reviewed Python translation. This is not
-a JavaScript interpreter: arbitrary script bodies fail before publishing a run.
-"""
+"""Workflow seam for the private JavaScript provider and historical native programs."""
 
 import asyncio
 import inspect
 import logging
 import os
+import re
 import uuid
 from collections import deque
 
@@ -145,8 +142,18 @@ class WorkflowEngine(Service):
         script = request.get("script")
         if type(script) is not str:
             raise WorkflowError("workflow script must be a string", "SCRIPT_PARSE")
+        runtime = self.ctx.get('jsRuntime')
         program = self._native_programs.get(script)
-        if program is None:
+        if runtime is not None:
+            if re.match(r'^\s*export\s+const\s+meta\b', script):
+                raise WorkflowError('workflow meta rides the `meta` request field, not the script: remove the `export const meta = {...}` statement from the body', 'SCRIPT_PARSE')
+            try:
+                runtime.parse(script, 'workflow:' + meta['name'])
+            except Exception as error:
+                if getattr(error, 'code', None) != 'SCRIPT_PARSE':
+                    raise
+                raise WorkflowError('workflow script does not parse: ' + str(error), 'SCRIPT_PARSE') from error
+        elif program is None:
             raise WorkflowError("JavaScript workflow execution is not available in this Python host; no reviewed native translation is registered for this script", "SCRIPT_RUNTIME_UNAVAILABLE")
         subagents = self.ctx.get("subagents")
         route = request.get("subagentProvider", self.config["provider"])
@@ -167,8 +174,13 @@ class WorkflowEngine(Service):
             raise WorkflowError("workflow args must be plain JSON data", "INVALID_ARGUMENT") from error
         limits = dict(self.config, maxTotalAgents=int(cap))
         limits["maxConcurrentAgents"] = int(limits["maxConcurrentAgents"] or min(16, max(1, (os.cpu_count() or 1) - 2)))
-        run = WorkflowRun(self.ctx, subagents, str(uuid.uuid4()), meta, request["parent"],
-                          route, program, args, limits, request.get("signal"))
+        if runtime is None:
+            run = WorkflowRun(self.ctx, subagents, str(uuid.uuid4()), meta, request["parent"],
+                              route, program, args, limits, request.get("signal"))
+        else:
+            from .javascript_run import JavaScriptWorkflowRun
+            run = JavaScriptWorkflowRun(self.ctx, runtime, subagents, str(uuid.uuid4()), meta, request['parent'],
+                                        route, script, args if 'args' in request else _UNDEFINED, limits, request.get('signal'))
         self._active_runs[run.id] = run
         active = self._active_runs
         run.result.add_done_callback(lambda _: active.pop(run.id, None))

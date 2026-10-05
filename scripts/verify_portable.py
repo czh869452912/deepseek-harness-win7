@@ -47,6 +47,7 @@ from scripts.sqlite_provider_oracle import validate_runtime as validate_sqlite_p
 from scripts.jsonl_provider_oracle import validate_runtime as validate_jsonl_provider, source_identity as jsonl_source_identity
 from scripts.tool_scheduler_oracle import validate_runtime as validate_tool_scheduler, identity as scheduler_identity
 from scripts.http_redirect_oracle import validate_runtime as validate_http_redirect, identity as redirect_identity
+from scripts.javascript_workflow_oracle import validate_runtime as validate_javascript_workflow, identity as javascript_identity
 
 
 def digest(path):
@@ -99,6 +100,8 @@ def main(argv=None):
     parser.add_argument('--scheduler-native', help='Fresh host scheduler runtime closure')
     parser.add_argument('--redirect-source', help='Fresh HTTP redirect Source observations')
     parser.add_argument('--redirect-native', help='Fresh host HTTP redirect runtime closure')
+    parser.add_argument('--javascript-source', help='Fresh actual Source workflow host observations')
+    parser.add_argument('--javascript-native', help='Fresh host JavaScript runtime module and private asset closure')
     args = parser.parse_args(argv)
     archive, output = Path(args.archive).resolve(), Path(args.output).resolve()
     output.parent.mkdir(parents=True, exist_ok=True)
@@ -143,6 +146,8 @@ def main(argv=None):
             'oracles/tool_start_prefix_python.py', 'oracles/tool_start_prefix_source.ts',
             'http_redirect_oracle.py', 'oracles/http_redirect_python.py', 'oracles/http_redirect.probe.spec.ts',
             'oracles/vitest.http-redirect-probe.config.mts',
+            'javascript_workflow_oracle.py', 'oracles/javascript_workflow_python.py',
+            'oracles/javascript_workflow_host_source.mjs', 'oracles/javascript_workflow_session.ts',
             'oracles/vitest.tool-scheduler-probe.config.mts')})
     node = shutil.which('node') if args.browser else None
     try:
@@ -224,6 +229,23 @@ def main(argv=None):
         if redirect_modules != {name: digest(ROOT / name) for name in redirect_modules}:
             raise RuntimeError('HTTP redirect host receipt differs from current candidate module bytes')
         report['httpRedirectSourceSha256'] = digest(redirect_source)
+        if args.javascript_source or args.javascript_native:
+            if not args.javascript_source or not args.javascript_native:
+                raise RuntimeError('Both JavaScript workflow Source and native receipts are required')
+            javascript_source, javascript_native = Path(args.javascript_source).resolve(), Path(args.javascript_native).resolve()
+        else:
+            javascript_pair = output.with_suffix('.javascript-workflow-paired.json')
+            javascript_result = subprocess.run([sys.executable, str(ROOT / 'scripts/javascript_workflow_oracle.py'),
+                '--output', str(javascript_pair)], cwd=str(ROOT), capture_output=True, timeout=120)
+            output.with_suffix('.javascript-workflow-source.log').write_bytes(javascript_result.stdout + javascript_result.stderr)
+            if javascript_result.returncode:
+                raise RuntimeError('Fresh JavaScript workflow Source qualification failed')
+            javascript_source, javascript_native = javascript_pair.with_suffix('.source.json'), javascript_pair.with_suffix('.native.json')
+        javascript_digest = javascript_identity(json.loads(javascript_source.read_text(encoding='utf-8')))
+        javascript_native_report = json.loads(javascript_native.read_text(encoding='utf-8'))
+        javascript_modules, javascript_assets = javascript_native_report['modules'], javascript_native_report['assets']
+        validate_javascript_workflow(javascript_native_report, ROOT, javascript_digest, javascript_modules, javascript_assets)
+        report['javascriptWorkflowSourceSha256'] = digest(javascript_source)
         if args.format_source or args.format_inputs:
             if not args.format_source or not args.format_inputs:
                 raise RuntimeError('Both SQLite format Source and inputs are required')
@@ -524,6 +546,17 @@ def main(argv=None):
             redirect_report = json.loads(redirect_path.read_text(encoding='utf-8'))
             validate_http_redirect(redirect_report, portable, redirect_digest, redirect_modules)
             report['httpRedirect'] = redirect_report
+            javascript_path = workspace / 'javascript-workflow.json'
+            javascript = subprocess.run([str(portable / 'python.exe'), '-I', '-u',
+                str(ROOT / 'scripts/oracles/javascript_workflow_python.py'), '--root', str(portable),
+                '--cases', str(ROOT / 'tests/fixtures/javascript-workflow/cases.json'), '--output', str(javascript_path)],
+                cwd=str(workspace), env=env, capture_output=True, encoding='utf-8', errors='replace', timeout=120)
+            output.with_suffix('.javascript-workflow.log').write_text(javascript.stdout + '\nSTDERR:\n' + javascript.stderr, encoding='utf-8')
+            if javascript.returncode or javascript.stderr or not javascript_path.is_file():
+                raise RuntimeError('Extracted JavaScript workflow failed')
+            javascript_report = json.loads(javascript_path.read_text(encoding='utf-8'))
+            validate_javascript_workflow(javascript_report, portable, javascript_digest, javascript_modules, javascript_assets)
+            report['javascriptWorkflow'] = javascript_report
             directory = subprocess.run([str(portable / 'python.exe'), '-I', '-u',
                 str(ROOT / 'scripts/python_directory_probe.py'), '--root', str(portable), '--output', str(directory_path)],
                 cwd=str(workspace), env=env, capture_output=True, encoding='utf-8', errors='replace', timeout=90)

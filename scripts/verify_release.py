@@ -45,6 +45,7 @@ from scripts.sqlite_provider_oracle import validate_runtime as validate_sqlite_p
 from scripts.jsonl_provider_oracle import validate_runtime as validate_jsonl_provider, source_identity as jsonl_source_identity, MODULES as JSONL_MODULES, ASSETS as JSONL_ASSETS
 from scripts.tool_scheduler_oracle import validate_runtime as validate_tool_scheduler, identity as scheduler_identity
 from scripts.http_redirect_oracle import NAMES as REDIRECT_NAMES, validate_runtime as validate_http_redirect, identity as redirect_identity
+from scripts.javascript_workflow_oracle import validate_runtime as validate_javascript_workflow, identity as javascript_identity
 NODE_VERSION = 'v22.22.2'
 PORTABLE_ARCHIVE = 'dist/dsh-win7-portable-v0.1.0.zip'
 PAIRED_DRIVERS = (
@@ -55,15 +56,156 @@ PAIRED_DRIVERS = (
     'approval', 'inspect', 'cordis_guard', 'cordis_runner',
     'cordis_retirement', 'cordis_tools', 'acp_sessions', 'acp_model_output', 'acp_stdio', 'acp_permissions', 'mcp_stdio', 'mcp_http', 'acp_mcp', 'subagent_acp', 'subagent_acp_teardown', 'mcp_disposal', 'subprocess_ownership', 'subprocess_tree', 'projection_cache_failure', 'session_observation_read', 'session_corpus_list', 'session_corpus_read', 'session_lineage', 'session_event_trace', 'session_filters', 'session_requests', 'session_snapshots', 'query_schema', 'query_engine', 'query_unicode', 'session_text',
 )
-PAIRED_DRIVERS = PAIRED_DRIVERS + ('session_tools', 'sqlite_format', 'sqlite_provider', 'jsonl_provider', 'tool_scheduler', 'http_redirect')
+PAIRED_DRIVERS = PAIRED_DRIVERS + ('session_tools', 'sqlite_format', 'sqlite_provider', 'jsonl_provider', 'tool_scheduler', 'http_redirect', 'javascript_workflow')
 OFFICIAL_CONFIGS = ('consumers', 'agent-lifecycle', 'session-recovery', 'session-projection', 'acp', 'acp-app', 'mcp', 'subagent-acp', 'storage-cache', 'session-observation', 'session-corpus', 'session-sqlite-query', 'query-engine-source', 'session-tools-source', 'sqlite-format-source', 'sqlite-provider-source', 'jsonl-provider-source', 'tool-scheduler-source')
 REQUIRED_REGRESSION = {
+    "test_javascript_runtime": {
+        "test_actual_engine_executes_language_promises_and_two_realms[closure-loop]",
+        "test_actual_engine_executes_language_promises_and_two_realms[host-realm]",
+        "test_actual_engine_executes_language_promises_and_two_realms[large-result]",
+        "test_actual_engine_executes_language_promises_and_two_realms[promise-await]",
+        "test_actual_engine_executes_language_promises_and_two_realms[unicode-language]",
+        "test_build_refuses_unpinned_or_injected_archive_inputs[archive-bytes]",
+        "test_build_refuses_unpinned_or_injected_archive_inputs[extra-header]",
+        "test_build_refuses_unpinned_or_injected_archive_inputs[extracted-bytes]",
+        "test_build_refuses_unpinned_or_injected_archive_inputs[traversal]",
+        "test_build_refuses_unpinned_or_injected_archive_inputs[wrong-prefix]",
+        "test_cancel_during_spawn_waits_for_owned_process_cleanup",
+        "test_initial_cpu_slice_is_interrupted_without_blocking_host_loop",
+        "test_modified_private_resource_is_refused_before_execution[MinGW-COPYING.winpthreads.txt]",
+        "test_modified_private_resource_is_refused_before_execution[QUICKJS-NOTICES.txt]",
+        "test_modified_private_resource_is_refused_before_execution[build-provenance.json]",
+        "test_modified_private_resource_is_refused_before_execution[dsh_js_worker.exe]",
+        "test_modified_private_resource_is_refused_before_execution[runtime.json]",
+        "test_only_source_worker_temp_environment_is_forwarded",
+        "test_parser_compiles_without_executing[for(;;){}]",
+        "test_parser_compiles_without_executing[return {value:await Promise.resolve(7)}]",
+        "test_parser_compiles_without_executing[throw new Error(\"not executed\")]",
+        "test_provider_unload_owns_late_spawn_and_refuses_new_work",
+        "test_startup_cancel_does_not_execute_body_and_disposal_is_shared",
+        "test_unsettled_async_body_is_physically_terminated_on_owner_unload[await Promise.resolve(); for(;;){}]",
+        "test_unsettled_async_body_is_physically_terminated_on_owner_unload[await new Promise(()=>{})]",
+    },
+    "test_javascript_workflow_session": {
+        "test_actual_source_session_child_rpc_and_retained_process[active-child-cancel]",
+        "test_actual_source_session_child_rpc_and_retained_process[bad-option]",
+        "test_actual_source_session_child_rpc_and_retained_process[bad-parallel]",
+        "test_actual_source_session_child_rpc_and_retained_process[bad-pipeline]",
+        "test_actual_source_session_child_rpc_and_retained_process[bad-prompt]",
+        "test_actual_source_session_child_rpc_and_retained_process[bad-schema-exotic]",
+        "test_actual_source_session_child_rpc_and_retained_process[bad-schema]",
+        "test_actual_source_session_child_rpc_and_retained_process[child-blocks]",
+        "test_actual_source_session_child_rpc_and_retained_process[child-route]",
+        "test_actual_source_session_child_rpc_and_retained_process[child-schema]",
+        "test_actual_source_session_child_rpc_and_retained_process[child-stop-failed]",
+        "test_actual_source_session_child_rpc_and_retained_process[child-text]",
+        "test_actual_source_session_child_rpc_and_retained_process[child-total-cap]",
+        "test_actual_source_session_child_rpc_and_retained_process[child-unhonored-schema]",
+        "test_actual_source_session_child_rpc_and_retained_process[dropped-child-after-result]",
+        "test_actual_source_session_child_rpc_and_retained_process[dropped-child-continuation]",
+        "test_actual_source_session_child_rpc_and_retained_process[empty-combinators]",
+        "test_actual_source_session_child_rpc_and_retained_process[host-intrinsic-string]",
+        "test_actual_source_session_child_rpc_and_retained_process[host-realm-schema]",
+        "test_actual_source_session_child_rpc_and_retained_process[intrinsic-descriptor]",
+        "test_actual_source_session_child_rpc_and_retained_process[intrinsic-strings]",
+        "test_actual_source_session_child_rpc_and_retained_process[item-cap]",
+        "test_actual_source_session_child_rpc_and_retained_process[parallel-children]",
+        "test_actual_source_session_child_rpc_and_retained_process[parallel-ordinary-failure]",
+        "test_actual_source_session_child_rpc_and_retained_process[pipeline-children]",
+        "test_actual_source_session_child_rpc_and_retained_process[pipeline-ordinary-failure]",
+        "test_actual_source_session_child_rpc_and_retained_process[pre-go-cancel]",
+        "test_actual_source_session_child_rpc_and_retained_process[renamed-intrinsic-schema]",
+        "test_actual_source_session_child_rpc_and_retained_process[signed-zero]",
+        "test_actual_source_session_child_rpc_and_retained_process[spoof-intrinsic-schema]",
+        "test_corrupt_source_session_resources_are_refused[SOURCE-LICENSE]",
+        "test_corrupt_source_session_resources_are_refused[build-provenance.json]",
+        "test_corrupt_source_session_resources_are_refused[driver.js]",
+        "test_corrupt_source_session_resources_are_refused[source.js]",
+        "test_corrupt_source_session_resources_are_refused[workflow.json]",
+        "test_owner_unload_physically_terminates_unsettled_source_session",
+    },
+    "test_javascript_workflow_host": {
+        "test_workflow_engine_actual_source_host_events_and_children[active-child-cancel]",
+        "test_workflow_engine_actual_source_host_events_and_children[bad-option]",
+        "test_workflow_engine_actual_source_host_events_and_children[bad-parallel]",
+        "test_workflow_engine_actual_source_host_events_and_children[bad-pipeline]",
+        "test_workflow_engine_actual_source_host_events_and_children[bad-prompt]",
+        "test_workflow_engine_actual_source_host_events_and_children[bad-schema-exotic]",
+        "test_workflow_engine_actual_source_host_events_and_children[bad-schema]",
+        "test_workflow_engine_actual_source_host_events_and_children[child-blocks]",
+        "test_workflow_engine_actual_source_host_events_and_children[child-route]",
+        "test_workflow_engine_actual_source_host_events_and_children[child-schema]",
+        "test_workflow_engine_actual_source_host_events_and_children[child-stop-failed]",
+        "test_workflow_engine_actual_source_host_events_and_children[child-text]",
+        "test_workflow_engine_actual_source_host_events_and_children[child-total-cap]",
+        "test_workflow_engine_actual_source_host_events_and_children[child-unhonored-schema]",
+        "test_workflow_engine_actual_source_host_events_and_children[dropped-child-after-result]",
+        "test_workflow_engine_actual_source_host_events_and_children[dropped-child-continuation]",
+        "test_workflow_engine_actual_source_host_events_and_children[empty-combinators]",
+        "test_workflow_engine_actual_source_host_events_and_children[host-intrinsic-string]",
+        "test_workflow_engine_actual_source_host_events_and_children[host-realm-schema]",
+        "test_workflow_engine_actual_source_host_events_and_children[intrinsic-descriptor]",
+        "test_workflow_engine_actual_source_host_events_and_children[intrinsic-strings]",
+        "test_workflow_engine_actual_source_host_events_and_children[item-cap]",
+        "test_workflow_engine_actual_source_host_events_and_children[parallel-children]",
+        "test_workflow_engine_actual_source_host_events_and_children[parallel-ordinary-failure]",
+        "test_workflow_engine_actual_source_host_events_and_children[pipeline-children]",
+        "test_workflow_engine_actual_source_host_events_and_children[pipeline-ordinary-failure]",
+        "test_workflow_engine_actual_source_host_events_and_children[pre-go-cancel]",
+        "test_workflow_engine_actual_source_host_events_and_children[renamed-intrinsic-schema]",
+        "test_workflow_engine_actual_source_host_events_and_children[signed-zero]",
+        "test_workflow_engine_actual_source_host_events_and_children[spoof-intrinsic-schema]",
+    },
+    "test_javascript_workflow_consumers": {
+        "test_cancellation_grace_physically_terminates_unsettled_script[await Promise.resolve();for(;;){}]",
+        "test_cancellation_grace_physically_terminates_unsettled_script[await new Promise(()=>{})]",
+        "test_held_javascript_run_starts_and_disposes_children_after_engine_unload",
+        "test_late_provider_is_refused_before_slow_disposal_finishes",
+        "test_missing_args_remain_javascript_undefined",
+        "test_original_ralph_script_executes_without_native_translation[reports0-complete]",
+        "test_original_ralph_script_executes_without_native_translation[reports1-blocked]",
+        "test_original_ralph_script_executes_without_native_translation[reports2-complete]",
+        "test_original_ralph_script_executes_without_native_translation[reports3-budget-limited]",
+        "test_script_parse_fails_before_publication[export const meta = {};return 1]",
+        "test_script_parse_fails_before_publication[return {]",
+        "test_workflow_tool_executes_caller_functions_and_records_real_children",
+    },
     'test_http_redirect_source': {
         *{'test_actual_source_redirect_method_body_headers_limit_and_abort_match[' + name + ']' for name in REDIRECT_NAMES},
         *{'test_redirect_receipt_refuses_incomplete_or_foreign_runtime[' + damage + ']' for damage in (
             'missing-module', 'changed-module', 'empty-closure', 'foreign-root', 'foreign-python', 'missing-row', 'duplicate-row', 'changed-row')},
     },
     'test_current_release_gate': {
+        "test_extracted_javascript_requires_fresh_source_modules_assets_and_whole_observations[missing]",
+        "test_extracted_javascript_requires_fresh_source_modules_assets_and_whole_observations[source-missing]",
+        "test_extracted_javascript_requires_fresh_source_modules_assets_and_whole_observations[source-changed]",
+        "test_extracted_javascript_requires_fresh_source_modules_assets_and_whole_observations[module-missing]",
+        "test_extracted_javascript_requires_fresh_source_modules_assets_and_whole_observations[module-changed]",
+        "test_extracted_javascript_requires_fresh_source_modules_assets_and_whole_observations[assets-missing]",
+        "test_extracted_javascript_requires_fresh_source_modules_assets_and_whole_observations[asset-changed]",
+        "test_extracted_javascript_requires_fresh_source_modules_assets_and_whole_observations[root]",
+        "test_extracted_javascript_requires_fresh_source_modules_assets_and_whole_observations[python]",
+        "test_extracted_javascript_requires_fresh_source_modules_assets_and_whole_observations[executable]",
+        "test_extracted_javascript_requires_fresh_source_modules_assets_and_whole_observations[tail]",
+        "test_extracted_javascript_requires_fresh_source_modules_assets_and_whole_observations[duplicate]",
+        "test_extracted_javascript_requires_fresh_source_modules_assets_and_whole_observations[changed]",
+        "test_extracted_javascript_requires_fresh_source_modules_assets_and_whole_observations[late-log]",
+        "test_javascript_runtime_and_source_consumer_lanes_are_mandatory[omit-test_javascript_runtime]",
+        "test_javascript_runtime_and_source_consumer_lanes_are_mandatory[omit-test_javascript_workflow_session]",
+        "test_javascript_runtime_and_source_consumer_lanes_are_mandatory[omit-test_javascript_workflow_host]",
+        "test_javascript_runtime_and_source_consumer_lanes_are_mandatory[omit-test_javascript_workflow_consumers]",
+        "test_javascript_runtime_and_source_consumer_lanes_are_mandatory[skip-test_javascript_runtime]",
+        "test_javascript_runtime_and_source_consumer_lanes_are_mandatory[skip-test_javascript_workflow_session]",
+        "test_javascript_runtime_and_source_consumer_lanes_are_mandatory[skip-test_javascript_workflow_host]",
+        "test_javascript_runtime_and_source_consumer_lanes_are_mandatory[skip-test_javascript_workflow_consumers]",
+        "test_javascript_runtime_and_source_consumer_lanes_are_mandatory[duplicate-test_javascript_runtime]",
+        "test_javascript_runtime_and_source_consumer_lanes_are_mandatory[duplicate-test_javascript_workflow_session]",
+        "test_javascript_runtime_and_source_consumer_lanes_are_mandatory[duplicate-test_javascript_workflow_host]",
+        "test_javascript_runtime_and_source_consumer_lanes_are_mandatory[duplicate-test_javascript_workflow_consumers]",
+        "test_javascript_runtime_and_source_consumer_lanes_are_mandatory[failure-test_javascript_runtime]",
+        "test_javascript_runtime_and_source_consumer_lanes_are_mandatory[failure-test_javascript_workflow_session]",
+        "test_javascript_runtime_and_source_consumer_lanes_are_mandatory[failure-test_javascript_workflow_host]",
+        "test_javascript_runtime_and_source_consumer_lanes_are_mandatory[failure-test_javascript_workflow_consumers]",
         *{'test_extracted_redirect_requires_fresh_source_and_owned_runtime[' + damage + ']' for damage in (
             'missing', 'source-missing', 'source-changed', 'modules-missing', 'module-changed', 'foreign-root', 'missing-observation')},
     },
@@ -748,6 +890,12 @@ def validate_extracted(path, archive, candidate):
                                candidate['http_redirect_observations_sha256'], candidate['http_redirect_modules'])
     except (ValueError, KeyError, TypeError) as error:
         raise RuntimeError('Extracted httpRedirect observations are incomplete') from error
+    try:
+        validate_javascript_workflow(report.get('javascriptWorkflow'), Path(report['mcpStdio']['root']),
+            candidate['javascript_workflow_observations_sha256'], candidate['javascript_workflow_modules'],
+            candidate['javascript_workflow_assets'], check_files=False)
+    except (ValueError, KeyError, TypeError) as error:
+        raise RuntimeError('Extracted javascriptWorkflow observations are incomplete') from error
     for name, validate in [('queryEngine', validate_query_engine), ('querySchema', validate_query_schema), ('pythonDirectory', validate_python_directory),
                            ('sessionLineage', validate_session_lineage), ('sessionEventTrace', validate_session_event_trace),
                            ('sessionFilters', validate_session_filters), ('sessionRequests', validate_session_requests),
@@ -873,6 +1021,12 @@ def verify(args, output):
     redirect_native = output / 'http-redirect-paired.native.json'
     candidate['http_redirect_observations_sha256'] = redirect_identity(json.loads(redirect_source.read_text(encoding='utf-8')))
     candidate['http_redirect_modules'] = json.loads(redirect_native.read_text(encoding='utf-8'))['modules']
+    javascript_source = output / 'javascript-workflow-paired.source.json'
+    javascript_native = output / 'javascript-workflow-paired.native.json'
+    javascript_report = json.loads(javascript_native.read_text(encoding='utf-8'))
+    candidate['javascript_workflow_observations_sha256'] = javascript_identity(json.loads(javascript_source.read_text(encoding='utf-8')))
+    candidate['javascript_workflow_modules'] = javascript_report['modules']
+    candidate['javascript_workflow_assets'] = javascript_report['assets']
     raw = output / 'cordis-raw.json'
     raw.unlink(missing_ok=True)
     run([python, 'scripts/cordis_oracle.py', '--output', str(raw)],
@@ -893,7 +1047,8 @@ def verify(args, output):
                '--text-source', str(text_source), '--text-inputs', str(text_inputs), '--tools-source', str(tools_source),
                '--format-source', str(format_source), '--format-inputs', str(format_inputs),
                '--scheduler-source', str(scheduler_source), '--scheduler-native', str(scheduler_native),
-               '--redirect-source', str(redirect_source), '--redirect-native', str(redirect_native)]
+               '--redirect-source', str(redirect_source), '--redirect-native', str(redirect_native),
+               '--javascript-source', str(javascript_source), '--javascript-native', str(javascript_native)]
     if not candidate['worktree_dirty']:
         command += ['--expected-commit', candidate['product_commit']]
     run(command, 'portable-extracted', output, env=environment)

@@ -21,7 +21,7 @@ class JavaScriptRuntimeError(RuntimeError):
 
 
 class JavaScriptParseError(JavaScriptRuntimeError):
-    pass
+    code = 'SCRIPT_PARSE'
 
 
 def digest(path):

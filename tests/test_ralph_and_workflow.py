@@ -669,11 +669,9 @@ async def test_workflow_real_web_profile_records_survive_cold_restart(tmp_path):
         ctx.get("subagents").registerProvider(provider)
         engine = service_for_agent(ctx, parent, "workflowEngine")
         engine.config["provider"] = provider.name
-        async def program(run):
-            run.phase("actual records")
-            return dict(answer=await run.agent("recorded child"))
-        engine.register_native_program("native-web-record", program)
-        result = await execute(ctx, parent, dict(script="native-web-record", meta=META), "workflow")
+        script = 'phase("actual records");return {answer:await agent("recorded child")}'
+        assert ctx.get('jsRuntime') is not None
+        result = await execute(ctx, parent, dict(script=script, meta=META), "workflow")
         assert not result.is_error, result.content
         assert result.value["result"] == dict(answer="child answer")
         assert await parent.session.flush()

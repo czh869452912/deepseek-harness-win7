@@ -42,7 +42,7 @@ class ToolRalphPlugin(Plugin):
             cfg[key] = int(cfg[key])
         engine = ctx.get("workflowEngine")
         # Only this fixed, deployment-owned script has a native translation.
-        if hasattr(engine, "register_native_program"):
+        if ctx.get('jsRuntime') is None and hasattr(engine, "register_native_program"):
             engine.register_native_program(RALPH_SCRIPT, execute_ralph)
         ctx.get("systemPrompt").section(dict(name="tool:ralph", order=FIRST_PARTY_SECTION_ORDER["TOOL_RALPH"],
             text="Use the ralph tool ONLY when the direct human explicitly asks for a Ralph loop or fresh-agent iterative execution. Each Ralph round starts a fresh child with no conversation seed and uses the shared workspace as durable memory. Completion and blockers are worker reports, not independent evaluation. Use same-session goal tools for ordinary long-running objectives, and plain subagents or workflows for bounded delegation and fan-out."))

@@ -116,7 +116,7 @@ async def serialize_images(request, versions, resolve_file=None, access=None):
     for index, message in enumerate(request["messages"], 1):
         if message["role"] != "user":
             if any(images(message.get("content"))):
-                raise LlmError("DeepSeek cannot represent image content in a {} message".format(message["role"]), "UNSUPPORTED_CONTENT")
+                raise LlmError("The DeepSeek chat-completions adapter cannot represent image content in a {} message.".format(message["role"]), "UNSUPPORTED_CONTENT")
             flush()
             wire.extend(serialize_request(dict(request, messages=[message], system=None))["messages"])
             continue

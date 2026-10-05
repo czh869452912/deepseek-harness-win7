@@ -1,0 +1,44 @@
+{
+  "id": "CON-DEEPSEEK-CAPTURE",
+  "revision": 1,
+  "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
+  "status": "specified",
+  "source_paths": [
+    "reference/packages/llm/llm-deepseek/src/index.ts",
+    "reference/packages/llm/llm-deepseek/src/serialize.ts",
+    "reference/packages/llm/llm-deepseek/src/adapter.ts",
+    "reference/packages/llm/llm-deepseek/src/files-api.ts",
+    "reference/packages/llm/llm/src/retry-policy.ts",
+    "reference/packages/llm/llm-retry/src/index.ts",
+    "dsh/llm/deepseek_config.py",
+    "dsh/llm/deepseek_wire.py",
+    "dsh/llm/deepseek_request.py",
+    "dsh/llm/image_content.py",
+    "dsh/llm/retry_policy.py"
+  ],
+  "consumers": [
+    "scripts/deepseek_capture_oracle.py",
+    "scripts/oracles/deepseek_capture_python.py",
+    "scripts/oracles/deepseek_capture.probe.spec.ts",
+    "tests/test_deepseek_capture_consumers.py",
+    "scripts/verify_release.py",
+    "scripts/verify_portable.py"
+  ],
+  "invariants": [
+    "76 selected actual pinned/native captures compare every captured config/model/serialize/usage/SSE/HTTP/Files/Settings field and exact selected error name/message/failure/quota/status.",
+    "Opaque actual UUID4 retry identities map bijectively across every captured value occurrence, preserving within-chain identity and cross-fixture uniqueness. All raw identities, failure prose and other values remain unchanged.",
+    "HTTP and Files independently bind actual ephemeral loopback listeners; complete observed host/port/configured endpoint relations must be coherent. Only these declared allocation identities map across complete captured values; raw URLs/prose/ports remain retained.",
+    "Configuration diagnostic classes preserve Python ValueError catch compatibility while exposing actual Source Error name/message. Retry errors retain their provider-owned diagnostic path.",
+    "Unknown Source/Node identity, imported module bytes, selected/extracted ownPython3.8.10, missing/reordered/duplicate captures and changed captured values reject receipts."
+  ],
+  "identity": "Fixture76 ids/order and complete captured values are exact. Whole JSON numeric spellings canonicalize only for digest; random retry UUIDs have a correlated bijection with chain and uniqueness checks. Independently allocated loopback origins map with listener/configured endpoint coherence, including all actual endpoint occurrences in captured prose. No field deletion or general prose normalization.",
+  "ownership": "Actual Source adapters and retry plugin have explicit controlled dependencies; native adapters, extension registry, retry plugin and file-backed settings use scoped Context ownership. Servers/streams/contexts are retired before the next fixture. Copied observers orchestrate public providers, not product algorithms.",
+  "ordering": "Serial observations retain partial chunks, failed acceptance, retry scheduled/started data, actual request headers/body and settings snapshots across updates/disposal.",
+  "errors": "Selected17 config/adapter diagnostic differences are retained in the exact unmodified54361bd9 ownPortable baseline; no Source exception is added. Independent mutations reject prose/values, changed/split/shared/invalid retry identities and Source/runtime identity changes.",
+  "cancellation": "Existing actual adapter caller abort and idle controls are retained. Retry uses a controlled recovery probe invoking the real retry plugin, not a canonical AgentLoop; all cancellation/reentry/lifetime races remain outside this range.",
+  "adaptation": "Native configuration errors remain ValueError subclasses with name/message matching Source. Preparation errors are wrapped inside the actual prepare boundary; base-field collision stays outside that catch and retains the offending JSON field. Deployment reasoning and unsupported image-role messages match their actual original branches. Numeric and opaque-id digest adaptations preserve all raw reports.",
+  "open_questions": [
+    "Extra exception properties/cause/stack, internal settings fallback logs, full immutable/public graph ABI, arbitrary malformed transport/configuration and full canonical provider/profile/retry/error recovery remain unqualified.",
+    "Static Source guards do not prove complete dynamic import closure; exact Source pin/cleanliness and wider frozen gate inputs are mandatory. OAuth/cloud/paid model and realWin7 remain separate open scopes."
+  ]
+}

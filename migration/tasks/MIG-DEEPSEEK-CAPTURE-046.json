@@ -1,0 +1,53 @@
+{
+  "id": "MIG-DEEPSEEK-CAPTURE-046",
+  "goal": "正式闭合76既有DeepSeek有界观察并对齐17项完整诊断差异",
+  "kind": "implementation",
+  "state": "running",
+  "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
+  "base_product": "54361bd9e098d287c85e76253b4fcbaa2468a68a",
+  "owner": "current-session-coordinator",
+  "requires": [
+    {
+      "task": "MIG-CURRENT-RELEASE-GATE-003",
+      "contract": "CON-CURRENT-RELEASE-GATE",
+      "revision": 1
+    },
+    {
+      "task": "MIG-DEEPSEEK-ERROR-045",
+      "contract": "CON-DEEPSEEK-ERROR",
+      "revision": 1
+    }
+  ],
+  "provides": [
+    {
+      "contract": "CON-DEEPSEEK-CAPTURE",
+      "revision": 1
+    }
+  ],
+  "acceptance": [
+    "Retain complete raw76 expanded original/Root/native/exact unmodified543 ownPortable baseline and17 diagnostic differences; every actual baseline module equals exact ZIP, published and frozen Root bytes.",
+    "Fresh selected Source/native76 captures match every captured field/prose with only correlated opaque retry UUID, coherent observed loopback origin and identical JSON numeric spelling adaptations; value/identity/interpreter/module/lane mutations reject receipts.",
+    "Independent clean full pytest/unchanged Source/fresh paired/actual extracted ownPython3.8.10/original-browser gate passes before integration."
+  ],
+  "expected_paths": [
+    "dsh/llm/deepseek_config.py",
+    "dsh/llm/deepseek_request.py",
+    "dsh/llm/deepseek_wire.py",
+    "dsh/llm/retry_policy.py",
+    "dsh/llm/image_content.py",
+    "scripts",
+    "tests",
+    "migration",
+    "docs/research"
+  ],
+  "open_findings": [
+    "Exact unmodified543 ownPortable baseline retains17 config/adapter diagnostic differences. Main-tree76 captures and120 actual row/value/identity/Source/runtime rejection consumers pass. Expanded1115 regressions finish1113 passed/two failed: stale lane count and deep Git-tree retention WinError5. Ordinary/extended path controls reproduce the retention cause; four affected controls pass after correction. Independent clean full/extracted/browser qualification remains pending.",
+    "The initial prototype omitted six required bundle patch files and failed import before observation. Raw failure and exact controlled metadata repair remain retained; not a Source bug or product acceptance.",
+    "Full Wire/profile/AgentLoop retry, immutable/public graph ABI, arbitrary malformed transport/configuration/cancellation/reentry and cloud/OAuth/paid/Win7 remain open."
+  ],
+  "conflicts_with": [],
+  "candidate_commit": null,
+  "integrated_commit": null,
+  "evidence_ids": [],
+  "next_action": "五模块诊断、严格76对照、完整值/关联/解释器/导入模块拒绝测试及深Git回执保留修复已实施；分段提交后冻结1474必需lane/66配对/19组1683原样Source的完整及真实解压/原版浏览器验收。保留前两次失败与独立精确543基线，全部通过后才有界integrated。"
+}

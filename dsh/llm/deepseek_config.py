@@ -20,9 +20,22 @@ DEFAULTS = dict(apiKeyEnv="DEEPSEEK_API_KEY", maxTokens=256000, defaultContextWi
                 fileRefreshMarginSeconds=3600, fileQuotaCleanupBatch=100)
 
 
+class DeepSeekConfigError(ValueError):
+    name = "Error"
+
+    def __init__(self, message):
+        super().__init__(message)
+        self.message = message
+
+
 def integer(value, field, minimum=1, maximum=9007199254740991):
     if type(value) is not int or not minimum <= value <= maximum:
-        raise ValueError("llm-deepseek: " + field + " is outside its integer range")
+        message = " is outside its integer range"
+        if field == "fileExpiresAfterSeconds":
+            message = " must be an integer from 3600 through 2592000"
+        elif field == "fileQuotaCleanupBatch":
+            message = " must be an integer from 1 through 1000"
+        raise DeepSeekConfigError("llm-deepseek: " + field + message)
     return value
 
 
@@ -42,7 +55,7 @@ def resolve_options(config, environment):
     if options.get("reasoningEffort") not in (None, "off", "low", "high", "max"):
         raise ValueError("llm-deepseek: invalid reasoningEffort")
     if options.get("thinking") == "disabled" and options.get("reasoningEffort") not in (None, "off"):
-        raise ValueError("llm-deepseek: thinking disabled requires effort off")
+        raise DeepSeekConfigError('llm-deepseek: only reasoningEffort "off" can be configured when thinking is disabled')
     for field in DEFAULTS:
         if field in ("apiKeyEnv", "streamIdleTimeoutMs", "filesApiTimeoutMs"):
             continue
@@ -50,16 +63,16 @@ def resolve_options(config, environment):
     for field in ("streamIdleTimeoutMs", "filesApiTimeoutMs"):
         value = options[field]
         if type(value) not in (int, float) or not math.isfinite(value) or not 0 < value <= MAX_TIMER_DELAY_MS:
-            raise ValueError("llm-deepseek: " + field + " must be a positive bounded timer")
+            raise DeepSeekConfigError("llm-deepseek: " + field + " must be a positive finite number no greater than " + str(MAX_TIMER_DELAY_MS))
     for quantum, limit in (("imageOffloadByteQuantum", "maxRequestFilesBytes"),
                            ("inlineImageOffloadByteQuantum", "maxInlineRequestImageBytes"),
                            ("imageOffloadCountQuantum", "maxImagesPerRequest")):
         if options[quantum] > options[limit]:
-            raise ValueError("llm-deepseek: " + quantum + " exceeds " + limit)
+            raise DeepSeekConfigError("llm-deepseek: " + quantum + " must not exceed " + limit)
     integer(options["fileExpiresAfterSeconds"], "fileExpiresAfterSeconds", 3600, 2592000)
     integer(options["fileQuotaCleanupBatch"], "fileQuotaCleanupBatch", 1, 1000)
     if options["fileRefreshMarginSeconds"] >= options["fileExpiresAfterSeconds"]:
-        raise ValueError("llm-deepseek: file refresh margin must be below expiry")
+        raise DeepSeekConfigError("llm-deepseek: fileRefreshMarginSeconds must be a non-negative integer below fileExpiresAfterSeconds")
     models, seen = copy.deepcopy(options.get("models", DEFAULT_MODELS)), set()
     if not isinstance(models, list):
         raise ValueError("llm-deepseek: models must be a list")
@@ -67,7 +80,7 @@ def resolve_options(config, environment):
         if not isinstance(model, dict) or not isinstance(model.get("id"), str) or not model["id"]:
             raise ValueError("llm-deepseek: model ids must be non-empty")
         if model["id"] in seen:
-            raise ValueError("llm-deepseek: duplicate model id")
+            raise DeepSeekConfigError('llm-deepseek: duplicate catalog model "{}"'.format(model["id"]))
         seen.add(model["id"])
         if "imageDetail" in model:
             raise ValueError("llm-deepseek: use imagePixelBudget instead of imageDetail")
@@ -78,15 +91,17 @@ def resolve_options(config, environment):
             if field in model:
                 integer(model[field], "model." + field)
         modalities = model.setdefault("inputModalities", ["text"])
-        if not isinstance(modalities, list) or not modalities or any(m not in ("text", "image") for m in modalities) or len(set(modalities)) != len(modalities):
+        if not isinstance(modalities, list) or not modalities or any(m not in ("text", "image") for m in modalities):
             raise ValueError("llm-deepseek: invalid inputModalities")
+        if len(set(modalities)) != len(modalities):
+            raise DeepSeekConfigError('llm-deepseek: catalog model "{}" inputModalities must not contain duplicates'.format(model["id"]))
         if "image" not in modalities:
             if "imageMaxBytes" in model or "imagePixelBudget" in model:
-                raise ValueError("llm-deepseek: text model cannot declare image limits")
+                raise DeepSeekConfigError('llm-deepseek: text-only catalog model "{}" cannot declare image request limits'.format(model["id"]))
         else:
             pixel = model.get("imagePixelBudget", 640000)
             model["imagePixelBudget"] = 262144 if pixel == "low" else integer(pixel, "model.imagePixelBudget")
             model.setdefault("imageMaxBytes", 1048576)
     options["models"] = models
-    options["retryPolicy"] = resolve_retry_policy(options.get("retryPolicy"))
+    options["retryPolicy"] = resolve_retry_policy(options.get("retryPolicy"), "llm-deepseek: retryPolicy")
     return options

@@ -64,8 +64,10 @@ def serialize_request(options, defaults=None):
     if options.get("purpose") == "session-title":
         thinking, effort = "disabled", None
     elif effort is not None:
-        if effort not in ("off", "low", "high", "max") or (thinking == "disabled" and effort != "off"):
-            raise _error("DeepSeek does not support reasoning effort {!r}".format(effort), "UNSUPPORTED_REASONING_EFFORT")
+        if effort not in ("off", "low", "high", "max"):
+            raise _error('DeepSeek does not support reasoning effort "{}"'.format(effort), "UNSUPPORTED_REASONING_EFFORT")
+        if thinking == "disabled" and effort != "off":
+            raise _error('DeepSeek deployment does not support reasoning effort "{}"'.format(effort), "UNSUPPORTED_REASONING_EFFORT")
         thinking = "disabled" if effort == "off" else "enabled"
     if thinking is not None:
         payload["thinking"] = {"type": thinking}

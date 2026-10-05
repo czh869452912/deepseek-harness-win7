@@ -64,3 +64,5 @@ def test_short_pytest_workspace_runs_actual_shared_checkpoint_git_consumer(tmp_p
     mapping = json.loads((output / 'pytest-workspace-mapping.json').read_text(encoding='utf-8'))
     assert not Path(mapping['execution_path']).exists()
     assert Path(mapping['retained_path']) == retained
+    if os.name == 'nt':
+        assert max(len(str(path)) for path in retained.rglob('*') if path.is_file()) > 260

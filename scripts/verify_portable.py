@@ -56,6 +56,7 @@ from scripts.session_diagnostic_oracle import validate_runtime as validate_sessi
 from scripts.session_restore_sign_oracle import validate_runtime as validate_session_restore_sign, identity as restore_sign_identity
 from scripts.runtime_full_request_oracle import validate_runtime as validate_runtime_full_request, identity as full_request_identity
 from scripts.deepseek_error_oracle import validate_runtime as validate_deepseek_error, identity as deepseek_error_identity
+from scripts.deepseek_capture_oracle import validate_runtime as validate_deepseek_capture, identity as deepseek_capture_identity
 from scripts.persistence_read_oracle import validate_runtime as validate_persistence_read, identity as read_identity
 
 
@@ -245,6 +246,25 @@ def deepseek_error_receipts(source, native, output):
     return source, expected_digest, runtime['modules']
 
 
+def deepseek_capture_receipts(source, native, output):
+    if source or native:
+        if not source or not native:
+            raise RuntimeError('Both DeepSeek capture Source and native receipts are required')
+        source, native = Path(source).resolve(), Path(native).resolve()
+    else:
+        paired = output.with_suffix('.deepseek-capture-paired.json')
+        completed = subprocess.run([sys.executable, str(ROOT / 'scripts/deepseek_capture_oracle.py'),
+            '--output', str(paired)], cwd=str(ROOT), capture_output=True, timeout=90)
+        output.with_suffix('.deepseek-capture-source.log').write_bytes(completed.stdout + completed.stderr)
+        if completed.returncode or completed.stderr:
+            raise RuntimeError('Fresh DeepSeek capture Source qualification failed')
+        source, native = paired.with_suffix('.source.json'), paired.with_suffix('.native.json')
+    expected_digest = deepseek_capture_identity(json.loads(source.read_text(encoding='utf-8')))
+    runtime = json.loads(native.read_text(encoding='utf-8'))
+    validate_deepseek_capture(runtime, ROOT, expected_digest, runtime['modules'])
+    return source, expected_digest, runtime['modules']
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--archive', required=True)
@@ -279,6 +299,8 @@ def main(argv=None):
     parser.add_argument('--full-request-native', help='Fresh native complete AgentLoop request module closure')
     parser.add_argument('--deepseek-error-source', help='Fresh complete actual DeepSeek HTTP failure observations')
     parser.add_argument('--deepseek-error-native', help='Fresh native DeepSeek error module closure')
+    parser.add_argument('--deepseek-capture-source', help='Fresh strict76 actual DeepSeek captures')
+    parser.add_argument('--deepseek-capture-native', help='Fresh native DeepSeek capture module closure')
     parser.add_argument('--read-source', help='Fresh actual Source canonical persistence read observations')
     parser.add_argument('--read-native', help='Fresh canonical persistence read module and private asset closure')
     args = parser.parse_args(argv)
@@ -338,6 +360,11 @@ def main(argv=None):
             'deepseek_error_oracle.py', 'oracles/deepseek_error_python.py', 'oracles/deepseek_error_http.ts',
             'oracles/deepseek_error.probe.spec.ts', 'oracles/vitest.deepseek-error-probe.config.mts', 'oracles/deepseek-error-fixtures.json',
             'oracles/vitest.deepseek-source.config.mts',
+            'deepseek_capture_oracle.py', 'oracles/deepseek_capture_python.py', 'oracles/deepseek_capture_http.ts',
+            'oracles/deepseek_capture_files.ts', 'oracles/deepseek_capture_settings.ts',
+            'oracles/deepseek_capture_http_python.py', 'oracles/deepseek_capture_files_python.py',
+            'oracles/deepseek_capture_settings_python.py', 'oracles/deepseek_capture.probe.spec.ts',
+            'oracles/vitest.deepseek-capture-probe.config.mts', 'oracles/deepseek-fixtures.json',
             'oracles/session_restore_sign.probe.spec.ts', 'oracles/vitest.session-restore-sign-probe.config.mts',
             'oracles/session_diagnostic.probe.spec.ts', 'oracles/vitest.session-diagnostic-probe.config.mts',
             'oracles/session_number.probe.spec.ts', 'oracles/vitest.session-number-probe.config.mts',
@@ -470,6 +497,7 @@ def main(argv=None):
         restore_sign_source, restore_sign_digest, restore_sign_modules = restore_sign_receipts(args.restore_sign_source, args.restore_sign_native, output)
         full_request_source, full_request_digest, full_request_modules = full_request_receipts(args.full_request_source, args.full_request_native, output)
         deepseek_error_source, deepseek_error_digest, deepseek_error_modules = deepseek_error_receipts(args.deepseek_error_source, args.deepseek_error_native, output)
+        deepseek_capture_source, deepseek_capture_digest, deepseek_capture_modules = deepseek_capture_receipts(args.deepseek_capture_source, args.deepseek_capture_native, output)
         report['sessionNumberSourceSha256'] = digest(number_source)
         read_source, read_digest, read_modules, read_assets = read_receipts(args.read_source, args.read_native, output)
         report['persistenceReadSourceSha256'] = digest(read_source)
@@ -864,6 +892,17 @@ def main(argv=None):
             deepseek_error_report = json.loads(deepseek_error_path.read_text(encoding='utf-8'))
             validate_deepseek_error(deepseek_error_report, portable, deepseek_error_digest, deepseek_error_modules)
             report['deepseekError'] = deepseek_error_report
+            deepseek_capture_path = workspace / 'deepseek-capture.json'
+            deepseek_capture_result = subprocess.run([str(portable / 'python.exe'), '-I', '-u',
+                str(ROOT / 'scripts/oracles/deepseek_capture_python.py'), '--root', str(portable),
+                '--source', str(deepseek_capture_source), '--output', str(deepseek_capture_path)],
+                cwd=str(workspace), env=env, capture_output=True, encoding='utf-8', errors='replace', timeout=60)
+            output.with_suffix('.deepseek-capture.log').write_text(deepseek_capture_result.stdout + '\nSTDERR:\n' + deepseek_capture_result.stderr, encoding='utf-8')
+            if deepseek_capture_result.returncode or not deepseek_capture_path.is_file():
+                raise RuntimeError('Extracted complete DeepSeek captures failed')
+            deepseek_capture_report = json.loads(deepseek_capture_path.read_text(encoding='utf-8'))
+            validate_deepseek_capture(deepseek_capture_report, portable, deepseek_capture_digest, deepseek_capture_modules)
+            report['deepseekCapture'] = deepseek_capture_report
             read_path = workspace / 'persistence-read.json'
             read_result = subprocess.run([str(portable / 'python.exe'), '-I', '-u',
                 str(ROOT / 'scripts/oracles/persistence_read_python.py'), '--root', str(portable), '--output', str(read_path)],

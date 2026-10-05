@@ -102,11 +102,13 @@ async def request_stream(adapter, transport, request, options):
                     extension_request = {"body": body, "signal": signal}
                     extension_request.update({key: request[key] for key in ("sessionId", "purpose") if request.get(key) is not None})
                     prepared = await extensions.prepare(extension_request)
-                    if any(field in body for field in prepared.fields):
-                        raise ValueError("extension field collides with base request")
-                    body = dict(body, **prepared.fields)
                 except Exception as error:
                     raise LlmError("DeepSeek request extension preparation failed", "REQUEST_EXTENSION") from error
+                for field in prepared.fields:
+                    if field in body:
+                        from dsh.cordis.json_text import stringify_json
+                        raise LlmError("DeepSeek request extension field {} collides with the base request".format(stringify_json(field)), "REQUEST_EXTENSION")
+                body = dict(body, **prepared.fields)
             loop = asyncio.get_running_loop()
             def accepted():
                 if prepared is None:

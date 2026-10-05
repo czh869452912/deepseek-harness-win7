@@ -38,15 +38,16 @@
   ],
   "open_findings": [],
   "conflicts_with": [],
-  "candidate_commit": "0edcc616613eb95f35d5ff27abe5d76591de23b1",
-  "integrated_commit": "0edcc616613eb95f35d5ff27abe5d76591de23b1",
+  "candidate_commit": "1f180e4074355e9b851a22e15617251aeb1ad8ed",
+  "integrated_commit": "1f180e4074355e9b851a22e15617251aeb1ad8ed",
   "evidence_ids": [
     "RUN-SESSION-TRACING-20261004-SESSION-OBSERVATION-READS-016",
     "RUN-SESSION-FILTERS-20261004-SESSION-OBSERVATION-READS-016",
     "RUN-SESSION-QUERY-ENGINE-20261004-SESSION-OBSERVATION-READS-016",
     "RUN-SESSION-TEXT-20261005-SESSION-OBSERVATION-READS-016",
     "RUN-SESSION-TOOLS-20261005-SESSION-OBSERVATION-READS-016",
-    "RUN-SQLITE-FORMAT-20261005-SESSION-OBSERVATION-READS-016"
+    "RUN-SQLITE-FORMAT-20261005-SESSION-OBSERVATION-READS-016",
+    "RUN-SESSION-STORAGE-20261005-SESSION-OBSERVATION-READS-016"
   ],
-  "next_action": "clean candidate 0edcc616 全量/原版/真实解压复验已通过。clean candidate 0edcc616 的十六组 point read 错误/cause/cut/租约已有界验收；继续完整 durable/domain/FTS/长期回放和 Web/profile 消费者，不认证完整 B1 或 Win7。"
+  "next_action": "clean candidate 1f180e40 全量/原版/真实解压复验已通过。clean candidate 1f180e40 的十六组 point read 错误/cause/cut/租约已有界验收；继续完整 durable/domain/FTS/长期回放和 Web/profile 消费者，不认证完整 B1 或 Win7。"
 }

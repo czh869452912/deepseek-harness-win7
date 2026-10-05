@@ -49,8 +49,8 @@
   ],
   "open_findings": [],
   "conflicts_with": [],
-  "candidate_commit": "0edcc616613eb95f35d5ff27abe5d76591de23b1",
-  "integrated_commit": "0edcc616613eb95f35d5ff27abe5d76591de23b1",
+  "candidate_commit": "1f180e4074355e9b851a22e15617251aeb1ad8ed",
+  "integrated_commit": "1f180e4074355e9b851a22e15617251aeb1ad8ed",
   "evidence_ids": [
     "RUN-ACP-MCP-20261004-ACP-MCP-009",
     "RUN-SESSION-TRACING-20261004-ACP-MCP-009",
@@ -58,7 +58,8 @@
     "RUN-SESSION-QUERY-ENGINE-20261004-ACP-MCP-009",
     "RUN-SESSION-TEXT-20261005-ACP-MCP-009",
     "RUN-SESSION-TOOLS-20261005-ACP-MCP-009",
-    "RUN-SQLITE-FORMAT-20261005-ACP-MCP-009"
+    "RUN-SQLITE-FORMAT-20261005-ACP-MCP-009",
+    "RUN-SESSION-STORAGE-20261005-ACP-MCP-009"
   ],
-  "next_action": "clean candidate 0edcc616 全量/原版/真实解压复验已通过。有界提供端合同在 clean candidate 0edcc616 验收；继续其余 SDK/生命周期/URL/无限阻塞初始化边缘、subprocess tree/pathological streams/background Jobs 和整体迁移。本轮 scoped owned-WebServer shutdown 的 WinError 10054 路径已修复；其余浏览器启动取消/Proactor destructor/HTTP 诊断未认证根因，Win7 仍延期。"
+  "next_action": "clean candidate 1f180e40 全量/原版/真实解压复验已通过。有界提供端合同在 clean candidate 1f180e40 验收；继续其余 SDK/生命周期/URL/无限阻塞初始化边缘、subprocess tree/pathological streams/background Jobs 和整体迁移。本轮 scoped owned-WebServer shutdown 的 WinError 10054 路径已修复；其余浏览器启动取消/Proactor destructor/HTTP 诊断未认证根因，Win7 仍延期。"
 }

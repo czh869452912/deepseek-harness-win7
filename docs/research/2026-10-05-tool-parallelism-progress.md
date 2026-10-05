@@ -18,6 +18,8 @@ Loop 组合拥有基础配置，规范可选 SettingsProvider 仅覆盖 `maxPara
 
 ## 拒绝样本与后续
 
+干净候选 `1f180e40` 完整冻结验收成功：6892通过、6既有跳过、1既有warning、0失败；444必需lane、十八组1237原样断言、54配对及真实解压/原版浏览器全部通过。22项原版/原生/包内实际并发/settings观察绑定候选模块闭包，033按声明范围 integrated；见 `migration/reviews/SESSION-STORAGE-CLOSURE-20261005.md`。此前所有拒绝记录保留。完整同步dispatch前缀、Tools/Wire组合、profile/UI与全项目仍未签收；下一部分的八组新鲜Source/native诊断已实际观察启动顺序差异，不扩展本合同。
+
 `6b82aebb` 完整 pytest 为6890 passed、1 failed、6既有 skipped、1既有 warning；唯一失败是原版安装包浏览器被外部 Zotero 扩展 Runtime/console 错误污染，业务十二步和六RPC通过。确切失败包保留，后续阶段未执行；实际受控扩展与页面异常实验支持仅对测试进程禁用扩展，严格零错误要求不变。下一完整门禁为444必需 lane，其余十八组1237原样 Source/54配对不变，详见独立浏览器隔离记录。
 
 候选 `18d605664588d984a2a008dcbd0ced49c5c9fd7d` 完整 pytest 为6889 passed、2 failed、6既有 skipped、1既有 Proactor warning，1724.43秒。新增完整 Config 在发布前以原版 `ValidationError` 拒绝空 sessionId 和布尔 maxTokens；两条旧用例却期待手工 `ValueError`，因此完整门禁拒绝。补上这两条实际原版/原生异常类型、对应消息语义及零 agent 发布观察后，配对扩大为二十二项且匹配；测试现在分别严格指定 `ValidationError` 和 `ValueError`，不是接受任意异常。49项定向回归通过。此次原版浏览器和普通文件替换均通过，但不归因历史启动取消/1175。后续独立 Source/配对/解压阶段未执行。

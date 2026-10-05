@@ -13,3 +13,5 @@
 下一完整冻结门禁增加到444必需 lane，仍为十八组1237原样 Source 断言及54实际配对驱动。通过全量、新鲜 Source、配对与真实隔离解压之前，031/032/只读差分/033仍未签收，整体 `accepted_upstream` 为空。
 
 定向验证：真实扩展隔离、三种原版 Native lifecycle、原版 Python 安装包和导航/关闭回归25项通过，61.39秒；门禁拒绝规则及创意包 build/host/session 升级回滚571项通过，343.76秒。日志分别为 `.goose/out/acp-a4-work/browser-isolation-focused-v1.log` 与 `browser-isolation-gate-v1.log`。迁移 check 有效、ready 无待领取项，均不等同完整验收。
+
+修改后的新干净候选 `1f180e40` 完整门禁通过：6892 passed、6既有 skipped、1既有 warning、0失败，444必需lane/十八组1237断言/54配对/真实解压和原版浏览器均通过。扩展隔离有实际门禁证据，且不归因旧启动取消或1175；完整存储/并发批次的有界签收见 `migration/reviews/SESSION-STORAGE-CLOSURE-20261005.md`。

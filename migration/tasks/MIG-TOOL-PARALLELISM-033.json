@@ -2,7 +2,7 @@
   "id": "MIG-TOOL-PARALLELISM-033",
   "goal": "闭合原版工具并发上限、可逆 settings 与实际模型消费链",
   "kind": "implementation",
-  "state": "running",
+  "state": "integrated",
   "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
   "base_product": "16cd7150416970c5c40c9ce172c5a2211d5aa5f0",
   "owner": "current-session-coordinator",
@@ -15,10 +15,10 @@
     "A new clean complete gate passes full pytest, all 444 mandatory lanes, eighteen unchanged Source groups/1237 assertions, 54 selected paired drivers and actual extracted/original-browser consumers, binding fresh Source/input/module digests and the exact product archive."
   ],
   "expected_paths": ["dsh/core", "dsh/settings", "scripts", "tests", "migration", "docs/research"],
-  "open_findings": ["Source27 assertions pass; original/native twenty-two fresh bounded observations match, including a seven-call model group snapshot and exact ValidationError ownership for empty sessionId and boolean maxTokens with no published agent. Candidate18d60566 full pytest: 6889 passed, two legacy ValueError assertions failed, six existing skips and one Proactor warning; exact ZIP/input/XML/browser receipts retained. After Source-backed strict exception assertions, 49 focused regressions pass. The disk-full validator failure remains retained; user-authorized marker-qualified synthetic receipt cleanup recovered space. Clean complete/extracted acceptance remains pending; full Tools/Wire is not accepted."],
+  "open_findings": [],
   "conflicts_with": [],
-  "candidate_commit": null,
-  "integrated_commit": null,
-  "evidence_ids": [],
-  "next_action": "54实际配对预检通过；6b82aebb全量6890通过/1失败由外部Zotero扩展错误拒绝，确切失败ZIP/输入保留。受控真实扩展/页面异常证明测试进程隔离且应用错误仍可见；新增444必需lane后提交新干净候选完整验收，继续完整B2、同步前缀及全项目，不签收未归因历史失败。"
+  "candidate_commit": "1f180e4074355e9b851a22e15617251aeb1ad8ed",
+  "integrated_commit": "1f180e4074355e9b851a22e15617251aeb1ad8ed",
+  "evidence_ids": ["RUN-SESSION-STORAGE-20261005-TOOL-PARALLELISM-033"],
+  "next_action": "干净产品1f180e40全量6892通过/444必需lane/十八组1237原样断言/54配对/真实解压与原版浏览器已通过；22项并发/settings/实际模型有界签收。七个拒绝产品和扩展隔离证据保留；继续已实测的dispatch启动前缀差异、完整B2和全项目，不签收未归因历史失败。"
 }

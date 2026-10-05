@@ -2,7 +2,7 @@
   "id": "MIG-JSONL-PROVIDER-032",
   "goal": "闭合规范默认压缩 JSONL 提供端及互读、冷恢复与解压消费者",
   "kind": "implementation",
-  "state": "running",
+  "state": "integrated",
   "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
   "base_product": "f11a5849ff1ae4dc65cb206c0cac8ce30680c9b0",
   "owner": "current-session-coordinator",
@@ -19,10 +19,10 @@
     "A clean committed complete gate passes all tests, 444 mandatory lanes, eighteen unchanged Source groups/1237 assertions, 54 paired drivers and actual extracted/original-browser qualification. Existing skips/warnings, failed candidates and unrooted diagnostics remain explicit; no new exception or Source/frontend change."
   ],
   "expected_paths": ["dsh/session", "dsh/boot/plugin_registry.py", "scripts", "tests", "migration", "docs/research"],
-  "open_findings": ["865fea84 rejected with eight fixture failures; those fixes passed 16 focused tests. New a6cf3dcd complete gate rejected: 6808 passed, 1 failed, 6 existing skips, 1 existing warning; exact ZIP/input/XML/browser/netlog retained. Host original-browser upgrade startup cancels five POSTs/HMR SSE; all 17 business steps complete but two original console errors reject the candidate. Root remains unproven; Source/paired/extracted phases did not run. Arbitrary malformed optional metadata, concurrency/histories and overall migration are not accepted. New clean candidate 5f2a76db was rejected with 6858 passed and one ReplaceFileW WinError1175; exact product/input/XML/logs/browser reports retained. Both browser journeys pass; Source/paired/extracted phases did not run. Controlled sharing observers yield code32, not1175, and do not root this failure."],
+  "open_findings": [],
   "conflicts_with": [],
-  "candidate_commit": null,
-  "integrated_commit": null,
-  "evidence_ids": [],
-  "next_action": "追踪 a6cf 启动请求取消的完整生命周期并受控复现根因，完成存储公共 ABI 缺口后提交新候选再完整冻结验收；保留 d5cc/865fea84/a6cf 精确拒绝产物，不重跑未改候选或放宽判据。"
+  "candidate_commit": "1f180e4074355e9b851a22e15617251aeb1ad8ed",
+  "integrated_commit": "1f180e4074355e9b851a22e15617251aeb1ad8ed",
+  "evidence_ids": ["RUN-SESSION-STORAGE-20261005-JSONL-PROVIDER-032"],
+  "next_action": "规范默认 zstd 的 1030 原版/原生/真实解压互读、完整 revision、可选元数据 presence/typed refusal/public loadStored、原始导出和冷准备已有界签收；继续任意 malformed/public plugin ABI、竞争/多工作区/长历史和整体迁移，Win7 延期。"
 }

@@ -1,5 +1,7 @@
 # 规范压缩 JSONL 提供端推进
 
+最新有界签收：干净产品 `1f180e40` 的6892通过/6既有跳过/1既有warning完整门禁成功，444必需lane、十八组1237原样断言、54双侧及实际解压/原版浏览器通过。1030项互读/元数据/冷准备观察、26模块和11资源绑定实际包内运行，032已integrated；见 `migration/reviews/SESSION-STORAGE-CLOSURE-20261005.md`。以下实施与拒绝历史保留；完整ABI/事件/竞争/多工作区/长历史和整体迁移仍开放，Win7延期。
+
 原版 JSONL 默认 compression 为 zstd；先前规范 registry 的原生提供端仍只写 plaintext，compression 参数也不改变 suffix。新 `persistence_jsonl_canonical.py`、`jsonl_store.py`、`jsonl_format.py`、`jsonl_zstd.py` 独立实现该物理边界，registry 和公共导出切换到规范默认值。历史 `persistence_jsonl.py` 仅保留明确导入的旧测试/适配接口，不作为正式 profile 的回退。产品 preset 不通过 compression:none 绕过缺失的压缩能力。
 
 沿用已经验收、逐字节固定的私有 MSVCRT Zstandard1.5.7 DLL 和许可证。JSONL 使用无字典、未知大小的流压缩和 checksum；SQLite 使用独立的已有字典压缩格式。已知大小的一次性压缩会改变 frame header，不能替代 Node createZstdCompress。路径严格按原版 UTF16 code unit 和 ASCII 安全集合转义，包含 astral 和 lone surrogate。首次 durable append 原子发布独立 header frame 和事件 batch frame，后续只追加自己的 batch；读取忽略 packChunks 开关并保留原始 JSONL key 顺序、换行和逻辑文件名。

@@ -33,8 +33,8 @@
   ],
   "open_findings": [],
   "conflicts_with": [],
-  "candidate_commit": "0edcc616613eb95f35d5ff27abe5d76591de23b1",
-  "integrated_commit": "0edcc616613eb95f35d5ff27abe5d76591de23b1",
+  "candidate_commit": "1f180e4074355e9b851a22e15617251aeb1ad8ed",
+  "integrated_commit": "1f180e4074355e9b851a22e15617251aeb1ad8ed",
   "evidence_ids": [
     "RUN-CURRENT-20261003-CURRENT-RELEASE-GATE-003",
     "RUN-ACP-CONFIG-20261003-CURRENT-RELEASE-GATE-003",
@@ -47,7 +47,8 @@
     "RUN-SESSION-QUERY-ENGINE-20261004-CURRENT-RELEASE-GATE-003",
     "RUN-SESSION-TEXT-20261005-CURRENT-RELEASE-GATE-003",
     "RUN-SESSION-TOOLS-20261005-CURRENT-RELEASE-GATE-003",
-    "RUN-SQLITE-FORMAT-20261005-CURRENT-RELEASE-GATE-003"
+    "RUN-SQLITE-FORMAT-20261005-CURRENT-RELEASE-GATE-003",
+    "RUN-SESSION-STORAGE-20261005-CURRENT-RELEASE-GATE-003"
   ],
-  "next_action": "clean candidate 0edcc616 当前 Windows 完整门禁通过；337 必需 lane、1124 原版断言、51 配对、实际 Portable/格式/消费者与浏览器通过，不认证全量迁移或 Win7。"
+  "next_action": "444 必需 lane、十八组 1237 原样断言、54 双侧驱动及真实解压/原版浏览器在此干净产品复验；继续全范围合同和外部平台认证，不设置 accepted_upstream。"
 }

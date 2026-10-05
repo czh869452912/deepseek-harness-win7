@@ -1,5 +1,7 @@
 # 规范 SQLite 提供端推进
 
+最新有界签收：干净产品 `1f180e40` 的6892通过/6既有跳过/1既有warning完整门禁成功，444必需lane、十八组1237原样断言、54双侧及实际解压/原版浏览器通过。323项提供端观察、29模块和50资源绑定实际包内运行，031已integrated；见 `migration/reviews/SESSION-STORAGE-CLOSURE-20261005.md`。以下实施与拒绝历史保留；完整ABI/竞争/多工作区/长历史和整体迁移仍开放，Win7延期。
+
 独立 schema-19 格式已在干净产品 `0edcc616613eb95f35d5ff27abe5d76591de23b1` 完整验收，台账提交为 `15b119157f1f279980de0e708600ebf85c5323b5`。本次规范提供端位于 `persistence_sqlite_canonical.py`、`sqlite_store.py`、`sqlite_schema.py`、`sqlite_sql.py` 和 `sqlite_logical.py`；正式 registry 和 `dsh.session` 公共导出均指向它。旧 `persistence_sqlite.py` 仅保留明确导入的历史适配边界，不作为产品回退，不静默转换旧库。
 
 原版的 36 个 SQL 资源逐字节复制，清单与每项内容均闭合校验；`-text` 保存 Git/Portable 字节。插件声明 sessions 注入和原版 Config，初始化仅验证路径，一次共享 open reservation 在首次使用时打开私有 SQLite 3.51.2。读事务获取 detached physical rows，写事务重新检查 application/schema 所有权；schema19、UUID、整数主键、STRICT ANY、65536 新页/4096 既有页、四种 journal、安全/同步设置、来源限定 revision、批次内压缩和陈旧尾段修复均单独实现。

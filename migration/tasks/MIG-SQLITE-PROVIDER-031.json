@@ -2,7 +2,7 @@
   "id": "MIG-SQLITE-PROVIDER-031",
   "goal": "闭合规范物理 schema-19 存储提供端与真实消费链",
   "kind": "implementation",
-  "state": "running",
+  "state": "integrated",
   "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
   "base_product": "15b119157f1f279980de0e708600ebf85c5323b5",
   "owner": "current-session-coordinator",
@@ -20,10 +20,10 @@
     "A clean committed full release gate passes all tests, 444 mandatory lanes, eighteen unchanged Source groups/1237 assertions, 54 paired drivers and actual extracted/original-browser acceptance with full fresh source/input digests and candidate module/resource closure. Source symlink EPERM and existing platform/built-package skips remain explicit host limitations rather than new skips or a green whole-source-suite claim."
   ],
   "expected_paths": ["dsh/session", "dsh/boot/plugin_registry.py", "scripts", "tests", "migration", "docs/research"],
-  "open_findings": ["Canonical provider implementation and focused qualification are committed in d5cc655471febc74203ab3a6a93c023e5f95fd90; its complete gate was rejected with 6769 passed, 2 failed and 6 existing platform skips. A separately controlled settled-read delivery bug is repaired in f11a5849ff1ae4dc65cb206c0cac8ce30680c9b0; the original unmeasured partial-wire failure remains unrooted. Candidate a6cf3dcd78a3be9b48192e83703da347cb8566ae was rejected with 6808 passed and one original-browser startup cancellation failure. Shared stored-header presence and cold validation ownership are repaired in 566eb5d0d8ccbe89da2ae7c16ff9c938149e9a69 and adjacent provider regressions pass. Exact rejected archives/inputs/logs are retained; the browser root remains unproven. No unchanged-candidate retry, new exception or passing acceptance is authorized by these failures. New clean candidate 5f2a76db was rejected with 6858 passed and one ReplaceFileW WinError1175; exact product/input/XML/logs/browser reports retained. Both browser journeys pass; Source/paired/extracted phases did not run. Controlled sharing observers yield code32, not1175, and do not root this failure."],
+  "open_findings": [],
   "conflicts_with": [],
-  "candidate_commit": null,
-  "integrated_commit": null,
-  "evidence_ids": [],
-  "next_action": "完成规范提供端实际原版/原生/解压、冷恢复和模型/Remote消费者，再提交冻结完整门禁；保留原版 EPERM 和历史诊断，不认证完整 Session 或整体迁移。"
+  "candidate_commit": "1f180e4074355e9b851a22e15617251aeb1ad8ed",
+  "integrated_commit": "1f180e4074355e9b851a22e15617251aeb1ad8ed",
+  "evidence_ids": ["RUN-SESSION-STORAGE-20261005-SQLITE-PROVIDER-031"],
+  "next_action": "规范 schema19 提供端的 323 原版/原生/真实解压、SQL36/ownership/事务/revision/陈旧修复、模型工具与三 preset Remote 冷消费者已有界签收；继续完整 malformed/public plugin ABI、任意竞争/多工作区/长历史和整体迁移，Win7 延期。"
 }

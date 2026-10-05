@@ -43,13 +43,14 @@
   ],
   "open_findings": [],
   "conflicts_with": [],
-  "candidate_commit": "0edcc616613eb95f35d5ff27abe5d76591de23b1",
-  "integrated_commit": "0edcc616613eb95f35d5ff27abe5d76591de23b1",
+  "candidate_commit": "1f180e4074355e9b851a22e15617251aeb1ad8ed",
+  "integrated_commit": "1f180e4074355e9b851a22e15617251aeb1ad8ed",
   "evidence_ids": [
     "RUN-SESSION-QUERY-ENGINE-20261004-SESSION-QUERY-SCHEMA-024",
     "RUN-SESSION-TEXT-20261005-SESSION-QUERY-SCHEMA-024",
     "RUN-SESSION-TOOLS-20261005-SESSION-QUERY-SCHEMA-024",
-    "RUN-SQLITE-FORMAT-20261005-SESSION-QUERY-SCHEMA-024"
+    "RUN-SQLITE-FORMAT-20261005-SESSION-QUERY-SCHEMA-024",
+    "RUN-SESSION-STORAGE-20261005-SESSION-QUERY-SCHEMA-024"
   ],
-  "next_action": "clean candidate 0edcc616 全量/原版/真实解压复验已通过。clean candidate 0edcc616 的十九组实际 schema-8/STRICT/FTS5、私有 DLL 与真实解压已有界验收；规范 FTS、Unicode 身份和有效 Session 文本/locale 顺序另有界验收；继续 malformed/plugin ABI/竞争、持久化 schema-19 和整体迁移，Win7 延期。"
+  "next_action": "clean candidate 1f180e40 全量/原版/真实解压复验已通过。clean candidate 1f180e40 的十九组实际 schema-8/STRICT/FTS5、私有 DLL 与真实解压已有界验收；规范 FTS、Unicode 身份和有效 Session 文本/locale 顺序另有界验收；继续 malformed/plugin ABI/竞争、持久化 schema-19 和整体迁移，Win7 延期。"
 }

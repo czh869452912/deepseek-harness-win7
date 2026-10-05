@@ -2,7 +2,7 @@
   "id": "MIG-UPSTREAM-DELTA-002",
   "goal": "执行只读上游差分观察与影响分析演练",
   "kind": "implementation",
-  "state": "running",
+  "state": "integrated",
   "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
   "base_product": "566eb5d0d8ccbe89da2ae7c16ff9c938149e9a69",
   "owner": "current-session-coordinator",
@@ -18,10 +18,10 @@
     "tests",
     "migration"
   ],
-  "open_findings": ["Implemented read-only observer; all 20 focused tests including actual parent-to-pin exercise pass. Clean candidate 5f2a76db was rejected with 6858 passed and one native ReplaceFileW WinError1175; exact archive/input/XML/logs retained. Source/paired/extracted phases did not run. Clean complete qualification remains pending; no acceptance or upstream pin change."],
+  "open_findings": [],
   "conflicts_with": [],
-  "candidate_commit": null,
-  "integrated_commit": null,
-  "evidence_ids": [],
-  "next_action": "运行包含实际 Source 演练的二十项回归，独立提交并在下一干净完整门禁绑定证据；该工具只给建议性影响，不自动推进未来 pin/任务或认证动态职责。"
+  "candidate_commit": "1f180e4074355e9b851a22e15617251aeb1ad8ed",
+  "integrated_commit": "1f180e4074355e9b851a22e15617251aeb1ad8ed",
+  "evidence_ids": ["RUN-SESSION-STORAGE-20261005-UPSTREAM-DELTA-002"],
+  "next_action": "二十项只读差分回归与实际 pinned Source 父提交差分已在干净完整门禁绑定；继续完整动态职责图、无缓存准备和远程 Actions，不自动推进 pin 或任务。"
 }

@@ -39,13 +39,14 @@
   ],
   "open_findings": [],
   "conflicts_with": [],
-  "candidate_commit": "0edcc616613eb95f35d5ff27abe5d76591de23b1",
-  "integrated_commit": "0edcc616613eb95f35d5ff27abe5d76591de23b1",
+  "candidate_commit": "1f180e4074355e9b851a22e15617251aeb1ad8ed",
+  "integrated_commit": "1f180e4074355e9b851a22e15617251aeb1ad8ed",
   "evidence_ids": [
     "RUN-SESSION-QUERY-ENGINE-20261004-PYTHON-DIRECTORY-PUBLICATION-025",
     "RUN-SESSION-TEXT-20261005-PYTHON-DIRECTORY-PUBLICATION-025",
     "RUN-SESSION-TOOLS-20261005-PYTHON-DIRECTORY-PUBLICATION-025",
-    "RUN-SQLITE-FORMAT-20261005-PYTHON-DIRECTORY-PUBLICATION-025"
+    "RUN-SQLITE-FORMAT-20261005-PYTHON-DIRECTORY-PUBLICATION-025",
+    "RUN-SESSION-STORAGE-20261005-PYTHON-DIRECTORY-PUBLICATION-025"
   ],
-  "next_action": "clean candidate 0edcc616 全量/原版/真实解压复验已通过。clean candidate 0edcc616 的十条实际目录共享/事务回归与四条解压发布/恢复观察已有界验收；保留未知外部持有者与全部失败，不认证全量 Python 包生态、任意竞争或 Win7。"
+  "next_action": "clean candidate 1f180e40 全量/原版/真实解压复验已通过。clean candidate 1f180e40 的十条实际目录共享/事务回归与四条解压发布/恢复观察已有界验收；保留未知外部持有者与全部失败，不认证全量 Python 包生态、任意竞争或 Win7。"
 }

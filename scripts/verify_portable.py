@@ -50,6 +50,7 @@ from scripts.http_redirect_oracle import validate_runtime as validate_http_redir
 from scripts.javascript_workflow_oracle import validate_runtime as validate_javascript_workflow, identity as javascript_identity
 from scripts.runtime_context_oracle import validate_runtime as validate_runtime_context, identity as runtime_context_identity
 from scripts.javascript_ready_oracle import validate_runtime as validate_javascript_ready, identity as ready_identity
+from scripts.javascript_initial_oracle import validate_runtime as validate_javascript_initial, identity as initial_identity
 from scripts.persistence_read_oracle import validate_runtime as validate_persistence_read, identity as read_identity
 
 
@@ -106,6 +107,25 @@ def ready_receipts(source, native, output):
     return source, expected_digest, runtime['modules'], runtime['assets']
 
 
+def initial_receipts(source, native, output):
+    if source or native:
+        if not source or not native:
+            raise RuntimeError('Both JavaScript initial write Source and native receipts are required')
+        source, native = Path(source).resolve(), Path(native).resolve()
+    else:
+        paired = output.with_suffix('.javascript-initial-paired.json')
+        completed = subprocess.run([sys.executable, str(ROOT / 'scripts/javascript_initial_oracle.py'),
+            '--output', str(paired)], cwd=str(ROOT), capture_output=True, timeout=60)
+        output.with_suffix('.javascript-initial-source.log').write_bytes(completed.stdout + completed.stderr)
+        if completed.returncode or completed.stderr:
+            raise RuntimeError('Fresh JavaScript initial write Source qualification failed')
+        source, native = paired.with_suffix('.source.json'), paired.with_suffix('.native.json')
+    expected_digest = initial_identity(json.loads(source.read_text(encoding='utf-8')))
+    runtime = json.loads(native.read_text(encoding='utf-8'))
+    validate_javascript_initial(runtime, ROOT, expected_digest, runtime['modules'], runtime['assets'])
+    return source, expected_digest, runtime['modules'], runtime['assets']
+
+
 def read_receipts(source, native, output):
     if source or native:
         if not source or not native:
@@ -147,6 +167,8 @@ def main(argv=None):
     parser.add_argument('--context-native', help='Fresh host actual AgentLoop runtime module closure')
     parser.add_argument('--ready-source', help='Fresh actual Source Ready delivery/physical exit observations')
     parser.add_argument('--ready-native', help='Fresh host JavaScript Ready module and private asset closure')
+    parser.add_argument('--initial-source', help='Fresh Source physical exit before initial Ready emission')
+    parser.add_argument('--initial-native', help='Fresh native initial-write module and private asset closure')
     parser.add_argument('--read-source', help='Fresh actual Source canonical persistence read observations')
     parser.add_argument('--read-native', help='Fresh canonical persistence read module and private asset closure')
     args = parser.parse_args(argv)
@@ -196,6 +218,8 @@ def main(argv=None):
             'javascript_workflow_oracle.py', 'oracles/javascript_workflow_python.py',
             'runtime_context_oracle.py', 'oracles/runtime_context_python.py', 'oracles/runtime_context.probe.spec.ts',
             'javascript_ready_oracle.py', 'oracles/javascript_ready_python.py', 'oracles/javascript_ready_source.mjs',
+            'javascript_initial_oracle.py', 'oracles/javascript_initial_python.py', 'oracles/javascript_initial_source.mjs',
+            'oracles/javascript_initial_controls.py',
             'persistence_read_oracle.py', 'oracles/persistence_read_python.py', 'oracles/persistence_public_python.py',
             'oracles/persistence_order_python.py', 'oracles/persistence_public.probe.spec.ts',
             'oracles/persistence_order.probe.spec.ts', 'oracles/vitest.persistence-read-probe.config.mts',
@@ -318,6 +342,8 @@ def main(argv=None):
         report['runtimeContextSourceSha256'] = digest(context_source)
         ready_source, ready_digest, ready_modules, ready_assets = ready_receipts(args.ready_source, args.ready_native, output)
         report['javascriptReadySourceSha256'] = digest(ready_source)
+        initial_source, initial_digest, initial_modules, initial_assets = initial_receipts(args.initial_source, args.initial_native, output)
+        report['javascriptInitialSourceSha256'] = digest(initial_source)
         read_source, read_digest, read_modules, read_assets = read_receipts(args.read_source, args.read_native, output)
         report['persistenceReadSourceSha256'] = digest(read_source)
         if args.format_source or args.format_inputs:
@@ -651,6 +677,16 @@ def main(argv=None):
             ready_report = json.loads(ready_path.read_text(encoding='utf-8'))
             validate_javascript_ready(ready_report, portable, ready_digest, ready_modules, ready_assets)
             report['javascriptReady'] = ready_report
+            initial_path = workspace / 'javascript-initial.json'
+            initial_result = subprocess.run([str(portable / 'python.exe'), '-I', '-u',
+                str(ROOT / 'scripts/oracles/javascript_initial_python.py'), '--root', str(portable), '--output', str(initial_path)],
+                cwd=str(workspace), env=env, capture_output=True, encoding='utf-8', errors='replace', timeout=30)
+            output.with_suffix('.javascript-initial.log').write_text(initial_result.stdout + '\nSTDERR:\n' + initial_result.stderr, encoding='utf-8')
+            if initial_result.returncode or initial_result.stderr or not initial_path.is_file():
+                raise RuntimeError('Extracted JavaScript initial write observations failed')
+            initial_report = json.loads(initial_path.read_text(encoding='utf-8'))
+            validate_javascript_initial(initial_report, portable, initial_digest, initial_modules, initial_assets)
+            report['javascriptInitial'] = initial_report
             read_path = workspace / 'persistence-read.json'
             read_result = subprocess.run([str(portable / 'python.exe'), '-I', '-u',
                 str(ROOT / 'scripts/oracles/persistence_read_python.py'), '--root', str(portable), '--output', str(read_path)],

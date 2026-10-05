@@ -1,0 +1,23 @@
+{
+  "id": "CON-JS-INITIAL-WRITE",
+  "revision": 1,
+  "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
+  "status": "specified",
+  "source_paths": ["reference/packages/workflow/workflow-worker-thread/src/host.ts", "reference/packages/workflow/workflow-worker-thread/src/worker.ts", "dsh/javascript/runtime.py", "dsh/workflow/javascript_run.py"],
+  "consumers": ["scripts/javascript_initial_oracle.py", "scripts/oracles/javascript_initial_source.mjs", "scripts/oracles/javascript_initial_python.py", "scripts/oracles/javascript_initial_controls.py", "tests/test_javascript_initial_consumers.py", "scripts/verify_release.py", "scripts/verify_portable.py"],
+  "invariants": [
+    "Actual Source WorkerRun starts a real Node Worker through a disclosed timing bootstrap that blocks before requiring its separately retained unchanged original worker bundle. Ready is never emitted before physical termination.",
+    "Native actual JavaScriptRuntime and WorkflowEngine hold the original initial bytes before delivery, physically kill and wait for the owned private process, then resume the real initial drain. No Ready is emitted or admitted.",
+    "When the actual exit is already observed before cleanup, an initial BrokenPipeError or ConnectionResetError retains the recorded typed physical failure and actual exit code rather than replacing the workflow outcome with a generic pipe failure.",
+    "A live pipe failure is not promoted into physical failure merely because owner cleanup subsequently kills its worker; the original exception identity is retained. Other error types and cancellation retain their existing handling.",
+    "Two ordered Source/native/extracted complete observations preserve exit outcome, first empty cancellation, lifecycle values, empty child requests, entry barrier and zero Ready messages, first result and owned disposal without field filtering or normalization.",
+    "Exact selected/extracted Python3.8.10 executable, all actual imported module bytes, nineteen private assets, clean pinned Source/Node and original-plus-bootstrap bundle provenance are required by the complete clean gate."
+  ],
+  "identity": "before-entry-exit and cancel-before-entry-exit. Four separate native guards cover BrokenPipeError/ConnectionResetError crossed with live/already-exited owned processes; those guards are not additional Source parity rows.",
+  "ownership": "The barrier changes observer timing only. Source worker algorithm bytes remain separate and unchanged; native initial writes and drains remain actual StreamWriter operations. Real owned processes, futures and Context disposal are observed.",
+  "ordering": "Entry or initial-byte barrier, optional first cancellation, actual physical exit and wait, original native drain resumption, typed outcome and shared disposal. The known exit is recorded before owner cleanup.",
+  "errors": "Only a known actual exit, one of the two initial pipe error classes and an actual recorded JavaScriptWorkerExitError select physical failure. Forced cleanup of a previously live process cannot satisfy the known-exit condition.",
+  "cancellation": "First empty-reason cancellation wins and remains the first result after physical exit and disposal.",
+  "adaptation": "Python initial stdin delivery substitutes for Node structured-clone workerData delivery. Both controlled cases block before any original worker Ready emission; the Source bootstrap is disclosed and its original bundle bytes retained. Neither control rewrites original worker or host algorithms.",
+  "open_questions": ["Every spawn/initial-write/Ready schedule, exits whose code has not yet been observed, protocol failures, callbacks/reentry, complete model/profile/Node delivery, eight original engine/parse differences, complete C2 and deferred real Win7 remain outside this contract."]
+}

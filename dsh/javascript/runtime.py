@@ -139,8 +139,12 @@ class JavaScriptRuntime(Service):
             if worker.failure is not None:
                 raise worker.failure
             return worker
-        except BaseException:
+        except BaseException as error:
+            exited = worker.process.returncode is not None
             await worker.terminate()
+            if (exited and isinstance(error, (BrokenPipeError, ConnectionResetError))
+                    and isinstance(worker.failure, JavaScriptWorkerExitError)):
+                raise worker.failure from error
             raise
 
     async def open_workflow(self, initial, observer=None, grace_ms=5000):

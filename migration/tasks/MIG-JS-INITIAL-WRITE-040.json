@@ -1,0 +1,19 @@
+{
+  "id": "MIG-JS-INITIAL-WRITE-040",
+  "goal": "在Ready发出前的初始管道失败中保留已经观察到的真实退出归属",
+  "kind": "implementation",
+  "state": "running",
+  "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
+  "base_product": "47adea372613d086c54631344af4944b4ddcf232",
+  "owner": "current-session-coordinator",
+  "requires": [{"task": "MIG-CURRENT-RELEASE-GATE-003", "contract": "CON-CURRENT-RELEASE-GATE", "revision": 1}, {"task": "MIG-JS-READY-038", "contract": "CON-JS-READY", "revision": 1}],
+  "provides": [{"contract": "CON-JS-INITIAL-WRITE", "revision": 1}],
+  "acceptance": ["Fresh actual Source/native complete rows match both entry-blocked physical-exit cases with zero emitted Ready messages.", "Retain exact generic Connection-lost baseline and isolated fixed observations; live pipe errors keep original exception identity and observed physical exits keep recorded WORKER_EXIT identity/cause with no leaked owner state.", "All mandatory rejection lanes, fresh paired Source and actual extracted Python3.8.10 module/private-asset closure pass a distinct clean complete gate before integration."],
+  "expected_paths": ["dsh/javascript/runtime.py", "scripts", "tests", "migration", "docs/research"],
+  "open_findings": ["Fresh formal two-row Source/native comparison and four native known-exit guards pass. Product integration, exact selected/extracted rejection lanes and 157 focused consumers pass. The 762-test gate regression retained one stale 823-lane assertion (761 passed); its explicit 876-lane correction is separately verified. A distinct frozen complete gate remains pending.", "The barrier is before original worker entry; this is not038's already-emitted Ready control and does not certify all spawn/Ready/reentry or complete model/profile/C2."],
+  "conflicts_with": [],
+  "candidate_commit": null,
+  "integrated_commit": null,
+  "evidence_ids": [],
+  "next_action": "040修复与31实际消费者已整合，门禁要求876必需lane、60配对及十八组1237原版断言；冻结不同干净完整候选并验证真实解压后才签收040，继续公共Session元数据和完整JS036/其余迁移。"
+}

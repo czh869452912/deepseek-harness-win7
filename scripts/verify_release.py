@@ -48,6 +48,7 @@ from scripts.http_redirect_oracle import NAMES as REDIRECT_NAMES, validate_runti
 from scripts.javascript_workflow_oracle import validate_runtime as validate_javascript_workflow, identity as javascript_identity
 from scripts.runtime_context_oracle import validate_runtime as validate_runtime_context, identity as runtime_context_identity
 from scripts.javascript_ready_oracle import validate_runtime as validate_javascript_ready, identity as ready_identity
+from scripts.javascript_initial_oracle import validate_runtime as validate_javascript_initial, identity as initial_identity, NAMES as INITIAL_NAMES
 from scripts.persistence_read_oracle import validate_runtime as validate_persistence_read, identity as read_identity, NAMES as READ_NAMES
 NODE_VERSION = 'v22.22.2'
 PORTABLE_ARCHIVE = 'dist/dsh-win7-portable-v0.1.0.zip'
@@ -60,8 +61,19 @@ PAIRED_DRIVERS = (
     'cordis_retirement', 'cordis_tools', 'acp_sessions', 'acp_model_output', 'acp_stdio', 'acp_permissions', 'mcp_stdio', 'mcp_http', 'acp_mcp', 'subagent_acp', 'subagent_acp_teardown', 'mcp_disposal', 'subprocess_ownership', 'subprocess_tree', 'projection_cache_failure', 'session_observation_read', 'session_corpus_list', 'session_corpus_read', 'session_lineage', 'session_event_trace', 'session_filters', 'session_requests', 'session_snapshots', 'query_schema', 'query_engine', 'query_unicode', 'session_text',
 )
 PAIRED_DRIVERS = PAIRED_DRIVERS + ('session_tools', 'sqlite_format', 'sqlite_provider', 'jsonl_provider', 'tool_scheduler', 'http_redirect', 'javascript_workflow', 'runtime_context', 'javascript_ready', 'persistence_read')
+PAIRED_DRIVERS = PAIRED_DRIVERS + ('javascript_initial',)
 OFFICIAL_CONFIGS = ('consumers', 'agent-lifecycle', 'session-recovery', 'session-projection', 'acp', 'acp-app', 'mcp', 'subagent-acp', 'storage-cache', 'session-observation', 'session-corpus', 'session-sqlite-query', 'query-engine-source', 'session-tools-source', 'sqlite-format-source', 'sqlite-provider-source', 'jsonl-provider-source', 'tool-scheduler-source')
 REQUIRED_REGRESSION = {
+    'test_javascript_initial_consumers': {
+        *{'test_actual_entry_exit_precedes_initial_write_failure[' + name + ']' for name in INITIAL_NAMES},
+        *{'test_initial_receipt_requires_complete_outcome_and_ownership[' + damage + ']' for damage in (
+            'outcome', 'cancel', 'late-event', 'child', 'exit', 'admitted', 'entry', 'emission', 'first',
+            'disposed', 'tail', 'duplicate', 'root', 'python', 'executable', 'module', 'bytes', 'asset-missing', 'asset-bytes')},
+        *{'test_initial_source_identity_is_required[' + damage + ']' for damage in ('pin', 'node', 'inputs', 'bytes')},
+        *{'test_portable_initial_cli_refuses_partial_receipts[' + side + ']' for side in ('source', 'native')},
+        *{'test_live_initial_pipe_failure_keeps_original_identity[' + error + ']' for error in ('BrokenPipeError', 'ConnectionResetError')},
+        *{'test_exited_initial_pipe_failure_uses_recorded_physical_outcome[' + error + ']' for error in ('BrokenPipeError', 'ConnectionResetError')},
+    },
     'test_persistence_read_consumers': {
         *{'test_actual_canonical_persistence_numeric_and_cancelled_reads_match_source[' + name + ']' for name in READ_NAMES},
         *{'test_persistence_read_receipt_refuses_lost_semantics_and_foreign_runtime[' + damage + ']' for damage in (
@@ -76,10 +88,12 @@ REQUIRED_REGRESSION = {
         'test_unselected_in_tree_interpreter_is_refused_even_with_identical_bytes[selected-ready]',
         'test_unselected_in_tree_interpreter_is_refused_even_with_identical_bytes[selected-workflow]',
         'test_unselected_in_tree_interpreter_is_refused_even_with_identical_bytes[selected-read]',
+        'test_unselected_in_tree_interpreter_is_refused_even_with_identical_bytes[selected-initial]',
         'test_unselected_in_tree_interpreter_is_refused_even_with_identical_bytes[extracted-context]',
         'test_unselected_in_tree_interpreter_is_refused_even_with_identical_bytes[extracted-ready]',
         'test_unselected_in_tree_interpreter_is_refused_even_with_identical_bytes[extracted-workflow]',
         'test_unselected_in_tree_interpreter_is_refused_even_with_identical_bytes[extracted-read]',
+        'test_unselected_in_tree_interpreter_is_refused_even_with_identical_bytes[extracted-initial]',
     },
     "test_javascript_ready_consumers": {
         "test_actual_held_ready_crosses_exit_before_admission[held-ready-exit]",
@@ -265,6 +279,10 @@ REQUIRED_REGRESSION = {
             'missing', 'source-missing', 'source-changed', 'module-missing', 'module-changed', 'assets-missing',
             'asset-changed', 'root', 'python', 'executable', 'tail', 'duplicate', 'outcome', 'late-return', 'signal', 'queue', 'legacy')},
         *{'test_read_consumer_lanes_are_mandatory[' + damage + ']' for damage in ('omit', 'skip', 'duplicate', 'failure')},
+        *{'test_extracted_initial_requires_source_assets_and_complete_observations[' + damage + ']' for damage in (
+            'missing', 'source-missing', 'source-changed', 'module-missing', 'module-changed', 'assets-missing',
+            'asset-changed', 'root', 'python', 'executable', 'tail', 'duplicate', 'outcome', 'late-phase', 'entry', 'emission')},
+        *{'test_initial_consumer_lanes_are_mandatory[' + damage + ']' for damage in ('omit', 'skip', 'duplicate', 'failure')},
         "test_extracted_ready_requires_source_assets_and_complete_observations[missing]",
         "test_extracted_ready_requires_source_assets_and_complete_observations[source-missing]",
         "test_extracted_ready_requires_source_assets_and_complete_observations[source-changed]",
@@ -1031,6 +1049,12 @@ def validate_extracted(path, archive, candidate):
     except (ValueError, KeyError, TypeError) as error:
         raise RuntimeError('Extracted javascriptReady observations are incomplete') from error
     try:
+        validate_javascript_initial(report.get('javascriptInitial'), Path(report['mcpStdio']['root']),
+            candidate['javascript_initial_observations_sha256'], candidate['javascript_initial_modules'],
+            candidate['javascript_initial_assets'], check_files=False)
+    except (ValueError, KeyError, TypeError) as error:
+        raise RuntimeError('Extracted javascriptInitial observations are incomplete') from error
+    try:
         validate_persistence_read(report.get('persistenceRead'), Path(report['mcpStdio']['root']),
             candidate['persistence_read_observations_sha256'], candidate['persistence_read_modules'],
             candidate['persistence_read_assets'], check_files=False)
@@ -1177,6 +1201,12 @@ def verify(args, output):
     candidate['javascript_ready_observations_sha256'] = ready_identity(json.loads(ready_source.read_text(encoding='utf-8')))
     candidate['javascript_ready_modules'] = ready_report['modules']
     candidate['javascript_ready_assets'] = ready_report['assets']
+    initial_source = output / 'javascript-initial-paired.source.json'
+    initial_native = output / 'javascript-initial-paired.native.json'
+    initial_report = json.loads(initial_native.read_text(encoding='utf-8'))
+    candidate['javascript_initial_observations_sha256'] = initial_identity(json.loads(initial_source.read_text(encoding='utf-8')))
+    candidate['javascript_initial_modules'] = initial_report['modules']
+    candidate['javascript_initial_assets'] = initial_report['assets']
     read_source = output / 'persistence-read-paired.source.json'
     read_native = output / 'persistence-read-paired.native.json'
     read_report = json.loads(read_native.read_text(encoding='utf-8'))
@@ -1207,6 +1237,7 @@ def verify(args, output):
                '--javascript-source', str(javascript_source), '--javascript-native', str(javascript_native),
                '--context-source', str(runtime_context_source), '--context-native', str(runtime_context_native),
                '--ready-source', str(ready_source), '--ready-native', str(ready_native),
+               '--initial-source', str(initial_source), '--initial-native', str(initial_native),
                '--read-source', str(read_source), '--read-native', str(read_native)]
     if not candidate['worktree_dirty']:
         command += ['--expected-commit', candidate['product_commit']]

@@ -7,19 +7,22 @@ import tempfile
 import pytest
 
 from scripts import runtime_context_oracle, javascript_ready_oracle, javascript_workflow_oracle, persistence_read_oracle
+from scripts import javascript_initial_oracle
 from test_current_release_gate import context_runtime_fixture, ready_runtime_fixture, javascript_runtime_fixture, read_runtime_fixture
+from test_current_release_gate import initial_runtime_fixture
 
 
 ROOT = Path(__file__).resolve().parents[1]
 
 
-@pytest.mark.parametrize('consumer', ['context', 'ready', 'workflow', 'read'])
+@pytest.mark.parametrize('consumer', ['context', 'ready', 'workflow', 'read', 'initial'])
 @pytest.mark.parametrize('mode', ['selected', 'extracted'])
 def test_unselected_in_tree_interpreter_is_refused_even_with_identical_bytes(consumer, mode):
     fixture, oracle = {'context': (context_runtime_fixture, runtime_context_oracle),
         'ready': (ready_runtime_fixture, javascript_ready_oracle),
         'workflow': (javascript_runtime_fixture, javascript_workflow_oracle),
-        'read': (read_runtime_fixture, persistence_read_oracle)}[consumer]
+        'read': (read_runtime_fixture, persistence_read_oracle),
+        'initial': (initial_runtime_fixture, javascript_initial_oracle)}[consumer]
     runtime = copy.deepcopy(fixture())
     with tempfile.TemporaryDirectory(prefix='unselected-interpreter-', dir=str(ROOT / '.goose/out')) as directory:
         foreign = Path(directory) / 'python.exe'

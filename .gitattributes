@@ -4,7 +4,7 @@ snapshots/** -text
 apps/web/dist/** -text
 dsh/session/bin/icu/** -text
 dsh/session/bin/zstd/** -text
-dsh/javascript/bin/** -text
+dsh/javascript/bin/** -text whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol
 scripts/native/quickjs_worker.c text eol=lf
 dsh/session/resources/sql/** -text
 dsh/session/bin/unicode/** -text

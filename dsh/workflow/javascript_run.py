@@ -53,9 +53,7 @@ class JavaScriptWorkflowRun:
         try:
             worker = await self.runtime.open_workflow(initial, self._message, self.limits['disposeGraceMs'])
             self._worker = worker
-            worker.closed.add_done_callback(lambda _: self._death(
-                'workflow worker failed: ' + render_error(worker.failure) if worker.failure is not None
-                else 'workflow worker exited before the run settled (exit code {})'.format(worker.process.returncode)))
+            worker.closed.add_done_callback(lambda _: self._worker_closed())
             if self._terminal or self._death_observed:
                 await worker.terminate()
             elif self._reason is not None:
@@ -66,6 +64,13 @@ class JavaScriptWorkflowRun:
             raise
         except Exception as error:
             self._death('workflow worker failed: ' + render_error(error))
+
+    def _worker_closed(self):
+        failure = self._worker.failure
+        if failure is not None and getattr(failure, 'code', None) != 'WORKER_EXIT':
+            self._death('workflow worker failed: ' + render_error(failure))
+        else:
+            self._death('workflow worker exited before the run settled (exit code {})'.format(self._worker.process.returncode))
 
     def _post(self, kind, **payload):
         async def post():

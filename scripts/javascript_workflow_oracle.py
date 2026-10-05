@@ -94,7 +94,7 @@ def main():
         validate_runtime(native, ROOT, source_digest, modules, expected_assets)
         report.update(status='matched', target_upstream=SOURCE_COMMIT, cases=len(NAMES),
                       observations_sha256=source_digest, modules=modules, assets=expected_assets,
-                      scope='Thirty actual unchanged Source WorkerRun/session/runtime/schema and canonical native engine observations. Engine-specific raw errors, arbitrary Node APIs, all workflow consumers and real Win7 remain unqualified.')
+                      scope='Thirty-four actual unchanged Source WorkerRun/session/runtime/schema and canonical native engine observations, including controlled physical exit before/after publication, after first result and after cancellation. Engine-specific raw errors, arbitrary Node APIs, all workflow consumers and real Win7 remain unqualified.')
     except (OSError, ValueError, KeyError, TypeError, RuntimeError, subprocess.SubprocessError) as error:
         report['error'] = str(error)
     output.write_text(json.dumps(report, ensure_ascii=True, indent=2) + '\n', encoding='utf-8')

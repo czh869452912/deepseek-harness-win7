@@ -111,6 +111,33 @@ async def test_startup_cancel_does_not_execute_body_and_disposal_is_shared():
 
 @pytest.mark.skipif(os.name != 'nt', reason='Private MSVCRT worker targets Windows')
 @pytest.mark.asyncio
+@pytest.mark.parametrize('failure', ['exit', 'protocol'])
+async def test_actual_process_exit_remains_distinct_from_protocol_failure(failure):
+    ctx = Context()
+    await ctx.plugin(JavaScriptRuntime)
+    try:
+        worker = await ctx.get('jsRuntime').open(request('await new Promise(()=>{})'))
+        if failure == 'exit':
+            worker.process.kill()
+        else:
+            worker.process.stdin.write(b'not-json\n')
+            await worker.process.stdin.drain()
+        await asyncio.wait_for(asyncio.shield(worker.closed), 5)
+        with pytest.raises(JavaScriptRuntimeError) as caught:
+            await asyncio.shield(worker.result)
+        assert caught.value is worker.failure
+        if failure == 'exit':
+            assert caught.value.code == 'WORKER_EXIT'
+            assert caught.value.exit_code == worker.process.returncode == 1
+        else:
+            assert getattr(caught.value, 'code', None) != 'WORKER_EXIT'
+        assert not ctx.get('jsRuntime')._workers
+    finally:
+        await ctx.fiber.dispose()
+
+
+@pytest.mark.skipif(os.name != 'nt', reason='Private MSVCRT worker targets Windows')
+@pytest.mark.asyncio
 async def test_initial_cpu_slice_is_interrupted_without_blocking_host_loop():
     ctx = Context()
     await ctx.plugin(JavaScriptRuntime)

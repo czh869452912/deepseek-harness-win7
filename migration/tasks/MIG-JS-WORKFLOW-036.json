@@ -36,7 +36,7 @@
   ],
   "open_findings": [
     "Eight raw engine/parse differences remain in the original22 observations; full Node APIs/SDK/plugin delivery and C2 remain unaccepted.",
-    "Thirty Source/private-worker and thirty actual Source/native/extracted WorkerRun observations and canonical Windows workflow/Ralph consumers pass the clean full gate. Full model/profile compositions and broader provider/death/reentrancy competition are unfinished."
+    "Candidate17c1c521 has thirty Source/native/extracted observations and a complete clean gate. A later controlled physical-exit classification fix has thirty-four Source/native observations,113 JS regressions and598 gate regressions; new full/extracted acceptance is pending. Ready-before-publication/death/reentrancy and full model/profile compositions remain unfinished."
   ],
   "conflicts_with": [],
   "candidate_commit": "17c1c521bb6743bcb1bc28942db315a614d4866d",
@@ -44,5 +44,5 @@
   "evidence_ids": [
     "RUN-JS-WORKFLOW-20261005-PARTIAL-036"
   ],
-  "next_action": "干净候选17c1c521全量与实际解压已通过并归档，仅为036部分验证；继续实际Source配对的宿主竞争和完整model/profile消费者，八项原始差异及完整C2/延期Win7保持开放。"
+  "next_action": "17c1c521部分验证已归档；物理退出分类根修复与34配对/113 JS及598门禁回归通过，冻结新候选完成639必需lane的全量/解压，再继续ready前竞争、共享disposal重入及完整model/profile。036仍running，八项原始差异/C2/延期Win7保持开放。"
 }

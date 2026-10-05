@@ -60,6 +60,8 @@ PAIRED_DRIVERS = PAIRED_DRIVERS + ('session_tools', 'sqlite_format', 'sqlite_pro
 OFFICIAL_CONFIGS = ('consumers', 'agent-lifecycle', 'session-recovery', 'session-projection', 'acp', 'acp-app', 'mcp', 'subagent-acp', 'storage-cache', 'session-observation', 'session-corpus', 'session-sqlite-query', 'query-engine-source', 'session-tools-source', 'sqlite-format-source', 'sqlite-provider-source', 'jsonl-provider-source', 'tool-scheduler-source')
 REQUIRED_REGRESSION = {
     "test_javascript_runtime": {
+        "test_actual_process_exit_remains_distinct_from_protocol_failure[exit]",
+        "test_actual_process_exit_remains_distinct_from_protocol_failure[protocol]",
         "test_actual_engine_executes_language_promises_and_two_realms[closure-loop]",
         "test_actual_engine_executes_language_promises_and_two_realms[host-realm]",
         "test_actual_engine_executes_language_promises_and_two_realms[large-result]",
@@ -87,6 +89,10 @@ REQUIRED_REGRESSION = {
         "test_unsettled_async_body_is_physically_terminated_on_owner_unload[await new Promise(()=>{})]",
     },
     "test_javascript_workflow_session": {
+        "test_actual_source_session_child_rpc_and_retained_process[death-before-provider-publication]",
+        "test_actual_source_session_child_rpc_and_retained_process[death-after-child-publication]",
+        "test_actual_source_session_child_rpc_and_retained_process[death-after-result]",
+        "test_actual_source_session_child_rpc_and_retained_process[cancel-before-process-death]",
         "test_actual_source_session_child_rpc_and_retained_process[active-child-cancel]",
         "test_actual_source_session_child_rpc_and_retained_process[bad-option]",
         "test_actual_source_session_child_rpc_and_retained_process[bad-parallel]",
@@ -125,6 +131,10 @@ REQUIRED_REGRESSION = {
         "test_owner_unload_physically_terminates_unsettled_source_session",
     },
     "test_javascript_workflow_host": {
+        "test_workflow_engine_actual_source_host_events_and_children[death-before-provider-publication]",
+        "test_workflow_engine_actual_source_host_events_and_children[death-after-child-publication]",
+        "test_workflow_engine_actual_source_host_events_and_children[death-after-result]",
+        "test_workflow_engine_actual_source_host_events_and_children[cancel-before-process-death]",
         "test_workflow_engine_actual_source_host_events_and_children[active-child-cancel]",
         "test_workflow_engine_actual_source_host_events_and_children[bad-option]",
         "test_workflow_engine_actual_source_host_events_and_children[bad-parallel]",

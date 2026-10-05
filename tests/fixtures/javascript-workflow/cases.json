@@ -28,5 +28,9 @@
   {"name":"pre-go-cancel","body":"phase('must not execute');return 5","cancelBeforeGo":true},
   {"name":"active-child-cancel","body":"return await agent('cancelled')","cancelAtStart":true},
   {"name":"dropped-child-after-result","body":"void agent('late');return 'done'","waitDisposals":1},
-  {"name":"dropped-child-continuation","body":"void agent('late').then(value=>log(value));return 'done'","waitDisposals":1}
+  {"name":"dropped-child-continuation","body":"void agent('late').then(value=>log(value));return 'done'","waitDisposals":1},
+  {"name":"death-before-provider-publication","body":"return await agent('pending')","death":"pending-start"},
+  {"name":"death-after-child-publication","body":"return await agent('pending')","death":"published-child"},
+  {"name":"death-after-result","body":"return 'done'","death":"settled"},
+  {"name":"cancel-before-process-death","body":"return await agent('pending')","death":"pending-start","cancelBeforeDeath":true}
 ]

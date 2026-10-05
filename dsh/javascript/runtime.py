@@ -24,6 +24,14 @@ class JavaScriptParseError(JavaScriptRuntimeError):
     code = 'SCRIPT_PARSE'
 
 
+class JavaScriptWorkerExitError(JavaScriptRuntimeError):
+    code = 'WORKER_EXIT'
+
+    def __init__(self, message, exit_code):
+        super().__init__(message)
+        self.exit_code = exit_code
+
+
 def digest(path):
     value = hashlib.sha256()
     with path.open('rb') as stream:
@@ -208,9 +216,9 @@ class JavaScriptWorker:
                         await observed
             await self.process.wait()
             if not terminal:
-                raise JavaScriptRuntimeError('JavaScript worker exited without a terminal result')
+                raise JavaScriptWorkerExitError('JavaScript worker exited without a terminal result', self.process.returncode)
             if self.process.returncode != 0 and not self._termination_requested:
-                raise JavaScriptRuntimeError('JavaScript worker exited with code ' + str(self.process.returncode))
+                raise JavaScriptWorkerExitError('JavaScript worker exited with code ' + str(self.process.returncode), self.process.returncode)
         except BaseException as error:
             failure = error
             self.failure = error

@@ -33,6 +33,11 @@ for(const scenario of cases){
   const events=[],requests=[],children=[]
   let finishLate
   const late=new Promise(accept=>{finishLate=accept})
+  let enteredProvider,enteredAgent,releaseProvider,finishedDispose
+  const providerEntered=new Promise(accept=>{enteredProvider=accept})
+  const agentEntered=new Promise(accept=>{enteredAgent=accept})
+  const providerReleased=new Promise(accept=>{releaseProvider=accept})
+  const childDisposed=new Promise(accept=>{finishedDispose=accept})
   const meta={name:scenario.name,description:'actual Source host RPC'}
   const signal=new AbortController()
   if(scenario.cancelBeforeGo) signal.abort()
@@ -41,14 +46,16 @@ for(const scenario of cases){
   const provider={async start(route,request){
     requests.push({route,prompt:request.prompt,outputSchema:request.outputSchema,agentOptions:request.agentOptions,
       parentSame:request.parent===parent,abortedAtStart:request.signal.aborted})
+    enteredProvider()
+    if(scenario.death==='pending-start') await providerReleased
     if(scenario.cancelAtStart) run.cancel('active child cancellation')
     const prompt=request.prompt[0].text
     const result=prompt==='failed'?{output:[],stopReason:'error'}:prompt==='blocks'?{
       output:[{type:'text',text:'first'},{type:'image',data:'ignored'},{type:'text',text:'second'}],stopReason:'completed'}:{
       output:[{type:'text',text:prompt}],stopReason:'completed',
       ...request.outputSchema&&prompt!=='unhonored'?{structured:{answer:42}}:{}}
-    const child={id:'child-'+requests.length,result:Promise.resolve(result),disposed:0,
-      async dispose(){child.disposed++}}
+    const child={id:'child-'+requests.length,result:scenario.death==='published-child'?new Promise(()=>{}):Promise.resolve(result),disposed:0,
+      async dispose(){child.disposed++;finishedDispose()}}
     children.push(child)
     return child
   }}
@@ -56,22 +63,39 @@ for(const scenario of cases){
     maxTotalAgents:scenario.total??10,maxItemsPerCall:scenario.items??30,syncTimeoutMs:200}}
   run=new WorkerRun({logger:{warn:message=>events.push({type:'warning',message})}},provider,'run',meta,parent,init,'spawn',200,
     {phase:title=>events.push({type:'phase',title}),log:message=>{events.push({type:'log',message});finishLate()},
-      agentStart:info=>events.push({type:'agent-start',info}),agentEnd:info=>{events.push({type:'agent-end',info});
+      agentStart:info=>{events.push({type:'agent-start',info});enteredAgent()},agentEnd:info=>{events.push({type:'agent-end',info});
         if(scenario.name==='dropped-child-after-result') finishLate()}},signal.signal)
   events.push({type:'start'})
   run.result.then(result=>events.push({type:'end',outcome:{stopReason:result.stopReason,
     ...result.error!==undefined?{error:result.error}:{},agentsStarted:result.agentsStarted}}))
   let deadline
+  let exitCode
+  if(scenario.death&&scenario.death!=='settled'){
+    await Promise.race([scenario.death==='published-child'?agentEntered:providerEntered,new Promise((_,reject)=>{
+      deadline=setTimeout(()=>reject(new Error('death boundary deadline '+scenario.name)),5000)
+    })])
+    clearTimeout(deadline)
+    if(scenario.cancelBeforeDeath) run.cancel('')
+    exitCode=await run.worker.terminate()
+  }
   const result=await Promise.race([run.result,new Promise((_,reject)=>{deadline=setTimeout(()=>reject(new Error('deadline '+scenario.name)),5000)})])
   clearTimeout(deadline)
   const aliveAfterResult=run.worker.threadId!==-1
+  if(scenario.death==='pending-start') releaseProvider()
+  if(scenario.death&&scenario.death!=='settled'){
+    await Promise.race([childDisposed,new Promise((_,reject)=>{
+      deadline=setTimeout(()=>reject(new Error('death disposal deadline '+scenario.name)),5000)
+    })])
+    clearTimeout(deadline)
+  }
+  if(scenario.death==='settled') exitCode=await run.worker.terminate()
   if(scenario.waitDisposals) await Promise.race([late,new Promise((_,reject)=>{
     deadline=setTimeout(()=>reject(new Error('late observation deadline '+scenario.name)),5000)
   })])
   clearTimeout(deadline)
   await run.dispose()
   observations.push({name:scenario.name,result,events,requests,aliveAfterResult,disposed:children.map(child=>child.disposed),
-    signalAborted:run.controller.signal.aborted})
+    signalAborted:run.controller.signal.aborted,...scenario.death?{exitCode,firstResultRetained:result===await run.result}:{}})
   console.log(JSON.stringify({name:scenario.name,events:events.length,children:children.length}))
 }
 writeFileSync(resolve(output,'source.json'),encodeSource({sourceCommit,inputs,observations})+'\n','utf8')

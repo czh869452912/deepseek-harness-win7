@@ -29,6 +29,7 @@ async def observe(scenario):
     await ctx.plugin(JavaScriptRuntime)
     await ctx.plugin(SubagentRuntime)
     events, requests, children = [], [], []
+    provider_entered, agent_entered, provider_released, child_disposed = [asyncio.Event() for _ in range(4)]
     parent = SimpleNamespace(id='parent', options={}, ctx=ctx)
     run = None
     class Provider:
@@ -41,6 +42,9 @@ async def observe(scenario):
                 if key in request:
                     recorded[key] = request[key]
             requests.append(recorded)
+            provider_entered.set()
+            if scenario.get('death') == 'pending-start':
+                await provider_released.wait()
             if scenario.get('cancelAtStart'):
                 run.cancel('active child cancellation')
             prompt = request['prompt'][0]['text']
@@ -52,9 +56,11 @@ async def observe(scenario):
             if 'outputSchema' in request and prompt != 'unhonored':
                 result['structured'] = dict(answer=42)
             child = SimpleNamespace(id='child-' + str(len(requests)), disposed=0, result=asyncio.get_event_loop().create_future())
-            child.result.set_result(result)
+            if scenario.get('death') != 'published-child':
+                child.result.set_result(result)
             async def dispose():
                 child.disposed += 1
+                child_disposed.set()
             child.dispose = dispose
             children.append(child)
             return child
@@ -75,6 +81,8 @@ async def observe(scenario):
             elif name == 'log':
                 message['message'] = value
             events.append(message)
+            if name == 'agent-start':
+                agent_entered.set()
             if (scenario['name'] == 'dropped-child-after-result' and name == 'agent-end'
                     or scenario['name'] == 'dropped-child-continuation' and name == 'log'):
                 late.set()
@@ -86,14 +94,30 @@ async def observe(scenario):
         run = ctx.get('workflowEngine').start(dict(script=scenario['body'],
             meta=dict(name=scenario['name'], description='actual Source host RPC'), parent=parent,
             args=dict(nested=dict(value=2)), signal=signal.signal))
+        if scenario.get('death') and scenario['death'] != 'settled':
+            await asyncio.wait_for((agent_entered if scenario['death'] == 'published-child' else provider_entered).wait(), 5)
+            if scenario.get('cancelBeforeDeath'):
+                run.cancel('')
+            run._worker.process.kill()
         result = await asyncio.wait_for(asyncio.shield(run.result), 5)
         alive = run._worker is not None and run._worker.process.returncode is None
+        if scenario.get('death') == 'pending-start':
+            provider_released.set()
+        if scenario.get('death') and scenario['death'] != 'settled':
+            await asyncio.wait_for(child_disposed.wait(), 5)
+        if scenario.get('death') == 'settled':
+            run._worker.process.kill()
+            await asyncio.wait_for(asyncio.shield(run._worker.closed), 5)
         if scenario.get('waitDisposals'):
             await asyncio.wait_for(late.wait(), 5)
         await asyncio.wait_for(run.dispose(), 5)
-        return dict(name=scenario['name'], result=result, events=events, requests=requests, aliveAfterResult=alive,
-                    disposed=[child.disposed for child in children], signalAborted=run.controller.signal.aborted)
+        report = dict(name=scenario['name'], result=result, events=events, requests=requests, aliveAfterResult=alive,
+                      disposed=[child.disposed for child in children], signalAborted=run.controller.signal.aborted)
+        if scenario.get('death'):
+            report.update(exitCode=run._worker.process.returncode, firstResultRetained=result is await asyncio.shield(run.result))
+        return report
     finally:
+        provider_released.set()
         await ctx.fiber.dispose()
 
 

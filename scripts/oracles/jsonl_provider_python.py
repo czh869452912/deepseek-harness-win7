@@ -22,6 +22,8 @@ from dsh.session.sqlite_logical import header_from_stored, logical_numbers
 from dsh.session.persistence_jsonl_canonical import JsonlSessionPersistencePlugin
 from dsh.session import jsonl_store
 from dsh.session.jsonl_zstd import compress_frame, decompress_frame, scan_frames
+from dsh.session.jsonl_format import parse_header_meta, scan_log
+from dsh.cordis.json_text import stringify_json
 
 
 def sha(data):
@@ -79,6 +81,81 @@ async def mount(root, item):
     return context, context.get('sessionPersistence')
 
 
+def metadata_detached(value):
+    if hasattr(value, 'to_dict'):
+        return metadata_detached(value.to_dict())
+    if hasattr(value, 'meta') and hasattr(value, 'events'):
+        return dict(meta=metadata_detached(value.meta), events=metadata_detached(value.events))
+    if isinstance(value, dict):
+        return {name: metadata_detached(item) for name, item in value.items() if name != 'revision'}
+    if isinstance(value, list):
+        return [metadata_detached(item) for item in value]
+    return value
+
+
+def metadata_value(value, root=None):
+    encoded = stringify_json(dict(value=metadata_detached(value)))
+    if root is not None:
+        encoded = encoded.replace(str(root).replace('\\', '\\\\'), '<root>')
+    return json.loads(encoded)
+
+
+def metadata_error(error, root=None):
+    message = str(error)
+    if root is not None:
+        message = message.replace(str(root), '<root>')
+    failure = dict(name=getattr(error, 'name', 'TypeError' if isinstance(error, TypeError) else 'Error'), message=message)
+    if getattr(error, 'location', None) is not None:
+        failure['location'] = error.location.to_dict()
+        failure['location']['path'] = failure['location']['path'].replace(str(root), '<root>')
+    return dict(error=failure)
+
+
+def metadata_format_observed(operation):
+    try:
+        return metadata_value(operation())
+    except Exception as error:
+        return metadata_error(error)
+
+
+async def metadata_rows(directory, fixtures):
+    rows = []
+    for index, item in enumerate(fixtures):
+        identity, line = item['id'], item['line']
+        rows.append(dict(id='metadata-format/' + identity,
+            metadata=metadata_format_observed(lambda: parse_header_meta(line)),
+            scan=metadata_format_observed(lambda: scan_log((line + '\n').encode('utf-8')))))
+        for compression in ('zstd', 'none'):
+            relative = Path(compression) / str(index) / '_no-cwd/raw' / (
+                'session.jsonl.zstd' if compression == 'zstd' else 'session.jsonl')
+            encoded = (directory / 'source-metadata' / relative).read_bytes()
+            root = directory / 'native-metadata' / compression / str(index)
+            path = directory / 'native-metadata' / relative
+            path.parent.mkdir(parents=True)
+            path.write_bytes(encoded)
+            context, provider = await mount(root, dict(compression=compression, packChunks=True))
+            operations = [
+                ('stored', lambda: provider.loadStored('raw')),
+                ('raw', lambda: provider.read_raw('raw')),
+                ('list', lambda: provider.list()),
+                ('suffix', lambda: provider.read_from('raw', 0)),
+                ('inspect', lambda: provider.inspect('raw')),
+            ]
+            try:
+                for name, operation in operations:
+                    try:
+                        observation = metadata_value(await operation(), root)
+                    except Exception as error:
+                        observation = metadata_error(error, root)
+                    rows.append(dict(id='metadata-public/' + compression + '/' + identity + '/' + name,
+                        observation=observation, artifactSha256=sha(encoded), unchanged=path.read_bytes() == encoded))
+            finally:
+                await context.fiber.dispose()
+            if path.read_bytes() != encoded:
+                raise ValueError('Metadata observation changed the source artifact')
+    return rows
+
+
 async def main():
     directory = arguments.directory.resolve()
     inputs = json.loads(arguments.inputs.read_text(encoding='utf-8'))
@@ -88,6 +165,9 @@ async def main():
     fixtures = [{key: item[key] for key in ('key', 'compression', 'packChunks', 'metadata', 'events')} for item in original['inputs']]
     if fixtures != inputs['providerFixtures']:
         raise ValueError('Generated JSONL provider fixtures differ')
+    metadata = json.loads((directory / 'source-metadata.json').read_text(encoding='utf-8'))
+    if metadata['inputs'] != inputs['metadataFixtures']:
+        raise ValueError('Generated JSONL metadata fixtures differ')
     source_frames = json.loads((directory / 'frames/source.json').read_text(encoding='utf-8'))
     rows, cross = frames(directory / 'frames', source_frames)
     materialized, mutual, revisions = [], [], {}
@@ -129,6 +209,7 @@ async def main():
         finally:
             await context.fiber.dispose()
     rows.extend(materialized + mutual + cross)
+    rows.extend(await metadata_rows(directory, inputs['metadataFixtures']))
     (directory / 'native-revisions.json').write_text(json.dumps(revisions), encoding='utf-8')
     if any(sha((directory / name).read_bytes()) != expected for name, expected in inputs['generated'].items()):
         raise ValueError('Generated JSONL Source fixtures changed during observation')

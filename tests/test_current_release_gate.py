@@ -345,7 +345,7 @@ def test_extracted_session_corpus_read_requires_exact_sources_and_batch_drain(tm
 def test_regression_requires_browser_portable_and_acp_process_lanes(tmp_path):
     path = tmp_path / 'pytest.xml'
     regression_xml(path)
-    assert GATE.validate_regression(path) == {'required_lanes': 378, 'skipped': 1}
+    assert GATE.validate_regression(path) == {'required_lanes': 398, 'skipped': 1}
 
 
 @pytest.mark.parametrize('module', ['test_native_web_browser', 'test_portable_smoke', 'test_acp_stdio_journey', 'test_acp_permission_process', 'test_mcp_stdio_transport', 'test_mcp_supervisor', 'test_mcp_schema', 'test_mcp_config', 'test_mcp_tools_source', 'test_mcp_image_consumer', 'test_mcp_http_source', 'test_mcp_http_transport', 'test_mcp_supervisor_source', 'test_mcp_factory_source', 'test_acp_mcp_source', 'test_acp_mcp_runtime_source', 'test_acp_mcp_abort_source', 'test_acp_mcp_process', 'test_acp_mcp_runtime'])
@@ -566,7 +566,7 @@ def jsonl_provider_runtime_fixture():
 
 @pytest.mark.parametrize('damage', ['omit', 'skip', 'duplicate', 'failure'])
 def test_jsonl_provider_lanes_are_mandatory(tmp_path, damage):
-    for module in ('test_jsonl_canonical', 'test_jsonl_provider_source'):
+    for module in ('test_jsonl_canonical', 'test_jsonl_provider_source', 'test_jsonl_metadata_boundaries'):
         for name in GATE.REQUIRED_REGRESSION[module]:
             path = tmp_path / 'jsonl-regression.xml'
             regression_xml(path, **{damage: (module, name)})

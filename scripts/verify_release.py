@@ -81,6 +81,14 @@ REQUIRED_REGRESSION = {
         'test_append_sync_failure_restores_prefix_or_retains_both_causes[True]',
     },
     'test_jsonl_provider_source': {'test_actual_source_and_native_compressed_jsonl_mutual_files_and_cold_consumers'},
+    'test_jsonl_metadata_boundaries': {
+        *{'test_present_null_survives_physical_reads_and_is_refused_at_its_owned_boundary[' + field + '-' + compression + ']'
+          for field in ('cwd', 'parentSession', 'seedLength') for compression in ('zstd', 'none')},
+        *{'test_nonstring_cwd_preserves_original_project_identity_refusal[' + value + '-' + compression + ']'
+          for value in ('False', '1', 'cwd2') for compression in ('zstd', 'none')},
+        *{'test_unsupported_format_retains_public_name_and_actual_raw_location[' + version + '-' + compression + ']'
+          for version in ('-1', '1', '0.5', '1e999') for compression in ('zstd', 'none')},
+    },
     'test_sqlite_canonical': {
         'test_canonical_registry_and_unchanged_closed_sql_resources',
         'test_actual_lazy_store_packed_seek_and_detached_revision',

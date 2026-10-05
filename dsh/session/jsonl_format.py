@@ -30,6 +30,19 @@ def encode_segment(raw):
 
 
 def project_key(cwd):
+    if cwd is None:
+        raise TypeError("Cannot read properties of null (reading 'length')")
+    if not isinstance(cwd, str):
+        length = len(cwd) if isinstance(cwd, list) else cwd.get('length') if isinstance(cwd, dict) else None
+        if type(length) in (int, float) and length == 0:
+            raise ValueError('cannot encode an empty project path')
+        try:
+            positive = float(length) > 0 if length is not None else False
+        except (TypeError, ValueError, OverflowError):
+            positive = False
+        if positive:
+            raise TypeError('cwd.charCodeAt is not a function')
+        return '--root--'
     if not cwd:
         raise ValueError('cannot encode an empty project path')
     readable = []
@@ -106,12 +119,13 @@ def parse_header_record(record):
 
 def header_bytes(meta):
     value = dict(type='session', version=meta.version, id=meta.id, createdAt=meta.created_at)
-    for name, item in [('cwd', meta.cwd), ('parentSession', meta.parent_session), ('seedLength', meta.seed_length), ('origin', meta.origin)]:
-        if item is not None:
-            value[name] = item
+    metadata = meta.to_dict()
+    for name in ('cwd', 'parentSession', 'seedLength', 'origin'):
+        if name in metadata:
+            value[name] = metadata[name]
     value['delegationDepth'] = meta.delegation_depth or 0
-    if meta.agent_preset is not None:
-        value['agentPreset'] = meta.agent_preset
+    if 'agentPreset' in metadata:
+        value['agentPreset'] = metadata['agentPreset']
     return (stringify_json(value) + '\n').encode('utf-8')
 
 

@@ -4,6 +4,7 @@ from dsh.session.persistence import SessionPersistence, SessionInspection, Sessi
 from dsh.session.sqlite_logical import header_from_stored, validate_inspection, SessionPersistenceNotFoundError, SessionPersistenceCorruptionError
 from dsh.session.repair import interrupted_turn_closers
 from dsh.session.jsonl_store import JsonlStore
+from dsh.core.session.types import validate_restored_session_header
 
 
 class JsonlSessionPersistence(SessionPersistence):
@@ -45,6 +46,17 @@ class JsonlSessionPersistence(SessionPersistence):
         inspection = SessionInspection(header_from_stored(stored['meta']), stored['events'])
         return validate_inspection(inspection, identity)
 
+    async def load_stored(self, identity):
+        stored = await self.store.load_stored(identity)
+        if stored is None:
+            return None
+        result = dict(meta=header_from_stored(stored['meta']), events=stored['events'], revision=stored['revision'])
+        if 'tornMarker' in stored:
+            result['tornMarker'] = stored['tornMarker']
+        return result
+
+    loadStored = load_stored
+
     async def stored_revision(self, identity):
         return await self.store.read_revision(identity)
 
@@ -62,6 +74,7 @@ class JsonlSessionPersistence(SessionPersistence):
             raise SessionPersistenceNotFoundError(identity)
         try:
             inspection = validate_inspection(SessionInspection(header_from_stored(stored['meta']), stored['events']), identity)
+            inspection.meta = validate_restored_session_header(identity, inspection.meta)
             return inspection, interrupted_turn_closers(inspection.events)
         except SessionFormatUnsupportedError:
             raise

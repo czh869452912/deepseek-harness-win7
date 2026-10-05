@@ -22,7 +22,7 @@ def reports(tmp_path):
         summary = json.loads(output.read_text(encoding='utf-8'))
         source = json.loads(output.with_name('jsonl.source.json').read_text(encoding='utf-8'))
         native = json.loads(output.with_name('jsonl.native.json').read_text(encoding='utf-8'))
-        assert summary['status'] == 'passed' and summary['cases'] == 579
+        assert summary['status'] == 'passed' and summary['cases'] == 1030
         _REPORTS = summary, source, native
     return copy.deepcopy(_REPORTS)
 
@@ -35,7 +35,7 @@ def test_actual_source_and_native_compressed_jsonl_mutual_files_and_cold_consume
     assert len(mutual) == 4 and all(row['revisionMatched'] and row['unpublished'] for row in mutual)
 
 
-@pytest.mark.parametrize('damage', ['root', 'python', 'moduleFile', 'modules', 'assets', 'input', 'source', 'missing', 'duplicate', 'reordered', 'outcome'])
+@pytest.mark.parametrize('damage', ['root', 'python', 'moduleFile', 'modules', 'assets', 'input', 'source', 'missing', 'duplicate', 'reordered', 'outcome', 'metadata-omit', 'metadata-changed', 'metadata-mutated', 'metadata-reordered'])
 def test_jsonl_receipt_refuses_damaged_source_and_owned_file_closure(tmp_path, damage):
     summary, source, native = reports(tmp_path)
     if damage in ('root', 'python', 'moduleFile'):
@@ -52,6 +52,14 @@ def test_jsonl_receipt_refuses_damaged_source_and_owned_file_closure(tmp_path, d
         native['rows'].append(native['rows'][-1])
     elif damage == 'reordered':
         native['rows'][-1], native['rows'][-2] = native['rows'][-2], native['rows'][-1]
+    elif damage == 'metadata-omit':
+        del native['rows'][579]
+    elif damage == 'metadata-changed':
+        native['rows'][579]['metadata']['value']['createdAt'] = 2
+    elif damage == 'metadata-mutated':
+        native['rows'][580]['unchanged'] = False
+    elif damage == 'metadata-reordered':
+        native['rows'][580], native['rows'][581] = native['rows'][581], native['rows'][580]
     else:
         native['rows'][0]['encoded'] = '0' * 64
     with pytest.raises(ValueError):

@@ -10,12 +10,12 @@ from dsh.core.session import SessionHeader
 
 class SessionFormatUnsupportedError(ValueError):
     """Refusal on loading a log written by a newer/unsupported version."""
-    pass
+    name = 'SessionFormatUnsupportedError'
 
 
 class SessionPersistenceCorruptionError(ValueError):
     """Error on reading a corrupt log."""
-    pass
+    name = 'SessionPersistenceCorruptionError'
 
 
 def session_format_version_refusal(session_id: str, version: int) -> str:

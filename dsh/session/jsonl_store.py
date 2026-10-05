@@ -41,7 +41,7 @@ class JsonlStore:
         return '.jsonl.zstd' if compressed else '.jsonl'
 
     def locate(self, meta, opposite=False):
-        project = '_no-cwd' if meta.get('cwd') is None else project_key(meta['cwd'])
+        project = '_no-cwd' if 'cwd' not in meta else project_key(meta['cwd'])
         return os.path.join(self.root, project, encode_segment(meta['id']), 'session' + self.suffix(opposite))
 
     def _encoding_error(self, path):

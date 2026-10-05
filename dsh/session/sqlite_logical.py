@@ -22,10 +22,23 @@ class SessionPersistenceCorruptionError(CorruptionError):
         self.cause = cause
 
 
+class StoredSessionHeader(SessionHeader):
+    def __init__(self, metadata):
+        super().__init__(session_id=metadata['id'], version=metadata['version'], created_at=metadata['createdAt'],
+            cwd=metadata.get('cwd'), parent_session=metadata.get('parentSession'), seed_length=metadata.get('seedLength'),
+            origin=metadata.get('origin'), delegation_depth=metadata.get('delegationDepth'), agent_preset=metadata.get('agentPreset'))
+        self.present_optional = frozenset(metadata) & frozenset([
+            'cwd', 'parentSession', 'seedLength', 'origin', 'delegationDepth', 'agentPreset'])
+
+    def to_dict(self):
+        result = super().to_dict()
+        for name in self.present_optional:
+            result.setdefault(name, None)
+        return result
+
+
 def header_from_stored(metadata):
-    return SessionHeader(session_id=metadata['id'], version=metadata['version'], created_at=metadata['createdAt'],
-        cwd=metadata.get('cwd'), parent_session=metadata.get('parentSession'), seed_length=metadata.get('seedLength'),
-        origin=metadata.get('origin'), delegation_depth=metadata.get('delegationDepth'), agent_preset=metadata.get('agentPreset'))
+    return StoredSessionHeader(metadata)
 
 
 def logical_numbers(value):

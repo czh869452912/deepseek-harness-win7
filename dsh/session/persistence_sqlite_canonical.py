@@ -67,6 +67,8 @@ class SqliteSessionPersistence(SessionPersistence):
             raise SessionPersistenceNotFoundError(identity)
         try:
             inspection = validate_inspection(SessionInspection(header_from_stored(stored['meta']), stored['events']), identity)
+            from dsh.core.session.types import validate_restored_session_header
+            inspection.meta = validate_restored_session_header(identity, inspection.meta)
             return inspection, interrupted_turn_closers(inspection.events)
         except SessionFormatUnsupportedError:
             raise

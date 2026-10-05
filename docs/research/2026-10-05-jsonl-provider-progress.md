@@ -19,3 +19,5 @@
 任意 malformed optional metadata/public plugin ABI、跨进程/多工作区/长历史和完整 B/C/D 范围继续开放。accepted_upstream 为空，Win7 真机按用户决定延期；本记录不宣称整体迁移闭环。
 
 隔离和观察器修复后的干净候选 a6cf3dcd 完整 tests 为 6808 passed、1 failed、6 既有平台 skipped、1 既有 warning（1610.05 秒）。前述八项夹具问题已通过；唯一失败是原版浏览器 host 插件升级启动请求取消，两条原版 console error 拒绝，17 步业务仍完成。精确 ZIP SHA256 `a42207b435f87cb4c555be8b0ce445789acbd288c2cfc449a23a7bf89de0de9a`，输入 SHA256 `affb1d48d1e0ccfafab9d6680a34615ff7351928ae6101961f51dc4636cd9308`；完整失败产物保存在 `.goose/out/session-storage-clean-a6cf3dcd/`。Source/配对/解压阶段未执行。无新的存储签收，浏览器取消继续追踪，后续工具失败边界见 `2026-10-05-tools-scheduler-failure-progress.md`。
+
+后续实际 malformed 观察揭示 45 处 optional presence、路径和 cold error 归属差异，根修复后正式 JSONL 驱动扩至 1030 观察并全部匹配；增加双 encoding/no-mutation 与 source-bound receipt 拒绝用例，当前门禁 398 必需 lane。精确范围、首轮失败和开发验证见 `2026-10-05-session-metadata-progress.md`；仍须干净提交后的完整解压/浏览器门禁，不据开发样本签收。

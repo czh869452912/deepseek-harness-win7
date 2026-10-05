@@ -27,23 +27,41 @@ ASSETS = ['dsh/session/bin/zstd/' + name for name in FORMAT_ASSETS]
 KEYS = [compression + '-' + str(pack).lower() for compression in ('zstd', 'none') for pack in (True, False)]
 INPUTS = MODULES + ASSETS + ['scripts/jsonl_provider_oracle.py', 'scripts/oracles/jsonl_provider_python.py',
     'scripts/oracles/jsonl_provider.probe.spec.ts', 'scripts/oracles/jsonl_frames.mjs',
+    'scripts/oracles/jsonl_metadata.probe.spec.ts', 'scripts/oracles/vitest.jsonl-metadata.config.mts',
     'scripts/oracles/vitest.jsonl-provider-probe.config.mts', 'scripts/oracles/vitest.jsonl-provider-source.config.mts'] + [
     'reference/packages/session/session-persistence-jsonl/src/' + name + '.ts'
     for name in ('index', 'format', 'zstd', 'zstd-public-decoder', 'zstd-private-decoder', 'win32', 'invariant')]
 
 
 def observation_digest(rows):
-    if not isinstance(rows, list) or len(rows) != 579 or any(not isinstance(row, dict) or not isinstance(row.get('id'), str) for row in rows):
+    if not isinstance(rows, list) or len(rows) != 1030 or any(not isinstance(row, dict) or not isinstance(row.get('id'), str) for row in rows):
         raise ValueError('JSONL observations are incomplete')
     identities = [row['id'] for row in rows]
     if len(set(identities)) != len(identities):
         raise ValueError('JSONL observations are duplicated')
-    if identities[561:] != ['materialization/' + key for key in KEYS] + ['mutual/' + key for key in KEYS] + ['cross-frame/' + str(index) for index in range(10)]:
+    if identities[561:579] != ['materialization/' + key for key in KEYS] + ['mutual/' + key for key in KEYS] + ['cross-frame/' + str(index) for index in range(10)]:
         raise ValueError('JSONL provider observation order differs')
     families = {'frame': 10, 'cut': 285, 'checksum': 10, 'descriptor': 256}
     for prefix, count in families.items():
         if sum(identity.startswith(prefix + '/') for identity in identities[:561]) != count:
             raise ValueError('JSONL frame fixture family differs')
+    metadata_ids = ['base']
+    for field, count in [('cwd', 6), ('parentSession', 4), ('seedLength', 4), ('origin', 3),
+            ('agentPreset', 3), ('createdAt', 4), ('delegationDepth', 3), ('version', 4)]:
+        metadata_ids.extend(field + '/' + str(index) for index in range(count))
+    for field in ('createdAt', 'delegationDepth', 'version'):
+        metadata_ids.extend([field + '/negative-zero', field + '/missing'])
+    metadata_ids.extend(['version/infinite', 'retired-sandbox', 'retired-approval'])
+    expected = []
+    for identity in metadata_ids:
+        expected.append('metadata-format/' + identity)
+        expected.extend('metadata-public/' + compression + '/' + identity + '/' + operation
+            for compression in ('zstd', 'none') for operation in ('stored', 'raw', 'list', 'suffix', 'inspect'))
+    if identities[579:] != expected:
+        raise ValueError('JSONL metadata observation order differs')
+    if any(row.get('unchanged') is not True or not re.fullmatch('[0-9a-f]{64}', row.get('artifactSha256', ''))
+            for row in rows[579:] if row['id'].startswith('metadata-public/')):
+        raise ValueError('JSONL metadata observation changed its source artifact')
     return digest(rows)
 
 
@@ -109,11 +127,17 @@ def main():
         probe_command = [node, str(ROOT / 'scripts/oracles/official/node_modules/vitest/vitest.mjs'), 'run', '--config', str(ROOT / 'scripts/oracles/vitest.jsonl-provider-probe.config.mts')]
         environment['JSONL_PROVIDER_PHASE'] = 'produce'
         run(probe_command)
+        run([node, str(ROOT / 'scripts/oracles/official/node_modules/vitest/vitest.mjs'), 'run',
+            '--config', str(ROOT / 'scripts/oracles/vitest.jsonl-metadata.config.mts')])
         produced = json.loads((workspace / 'source-produce.json').read_text(encoding='utf-8'))
+        metadata = json.loads((workspace / 'source-metadata.json').read_text(encoding='utf-8'))
         fixtures = [{key: item[key] for key in ('key', 'compression', 'packChunks', 'metadata', 'events')} for item in produced['inputs']]
-        inputs = dict(modules=MODULES, assets=ASSETS, providerFixtures=fixtures, generated=hashes(workspace,
+        inputs = dict(modules=MODULES, assets=ASSETS, providerFixtures=fixtures, metadataFixtures=metadata['inputs'], generated=hashes(workspace,
             ['frames/source.json'] + ['frames/' + prefix + '-' + str(index) + '.bin'
-                for prefix in ('plain', 'frame') for index in range(10)]))
+                for prefix in ('plain', 'frame') for index in range(10)] + ['source-metadata.json'] + [
+                'source-metadata/' + compression + '/' + str(index) + '/_no-cwd/raw/session.jsonl'
+                + ('.zstd' if compression == 'zstd' else '')
+                for index in range(len(metadata['inputs'])) for compression in ('zstd', 'none')]))
         input_path = output.with_name(output.stem + '.inputs.json')
         input_path.write_text(json.dumps(inputs, ensure_ascii=True), encoding='utf-8')
         native_path = output.with_name(output.stem + '.native.json')
@@ -126,9 +150,9 @@ def main():
         produced = json.loads((workspace / 'source-produce.json').read_text(encoding='utf-8'))
         consumed = json.loads((workspace / 'source-consume.json').read_text(encoding='utf-8'))
         cross = json.loads((workspace / 'frames/source-consume.json').read_text(encoding='utf-8'))
-        if any(value.get('node') not in ('22.22.2', 'v22.22.2') for value in (frames, produced, consumed, cross)):
+        if any(value.get('node') not in ('22.22.2', 'v22.22.2') for value in (frames, produced, consumed, cross, metadata)):
             raise ValueError('JSONL observers use a different Node')
-        source = dict(node='v22.22.2', rows=normalize(frames['rows'] + produced['rows'] + consumed['rows'] + cross['rows'], workspace))
+        source = dict(node='v22.22.2', rows=normalize(frames['rows'] + produced['rows'] + consumed['rows'] + cross['rows'] + metadata['rows'], workspace))
         source_path = output.with_name(output.stem + '.source.json')
         source_path.write_text(json.dumps(source, ensure_ascii=True), encoding='utf-8')
         native = json.loads(native_path.read_text(encoding='utf-8'))
@@ -138,7 +162,7 @@ def main():
         validate_runtime(native, product, expected, generated)
         if native['rows'] != source['rows'] or report['inputSha256'] != hashes(ROOT, INPUTS):
             raise ValueError('JSONL observations/owned inputs changed')
-        report.update(status='passed', cases=579, observationsSha256=expected, generatedInputsSha256=generated,
+        report.update(status='passed', cases=1030, observationsSha256=expected, generatedInputsSha256=generated,
             modules=native['modules'], assets=native['assets'], nativeRoot=str(product),
             scope='Bounded checksummed frames/UTF16 paths and actual Source/native mutual files, revisions, raw export, cold preparation; arbitrary histories/competition and real Win7 remain unaccepted.')
     except Exception as error:

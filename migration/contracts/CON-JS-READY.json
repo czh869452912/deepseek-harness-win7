@@ -1,0 +1,22 @@
+{
+  "id": "CON-JS-READY",
+  "revision": 1,
+  "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
+  "status": "specified",
+  "source_paths": ["reference/packages/workflow/workflow-worker-thread/src/host.ts", "reference/packages/workflow/workflow-worker-thread/src/worker.ts", "dsh/javascript/runtime.py", "dsh/workflow/javascript_run.py"],
+  "consumers": ["scripts/javascript_ready_oracle.py", "scripts/oracles/javascript_ready_source.mjs", "scripts/oracles/javascript_ready_python.py", "tests/test_javascript_ready_consumers.py", "scripts/verify_release.py", "scripts/verify_portable.py"],
+  "invariants": [
+    "Hold an actual emitted Ready transport message before host admission and publication, then physically terminate its actual owned worker.",
+    "Without cancellation, physical exit preserves the original workflow exited-before-settled outcome including exit code 1 rather than a generic Go/send failure.",
+    "Cancellation with an empty reason before physical exit keeps the first cancelled result and its complete original error value.",
+    "Late delivery of the held Ready admits no Go execution, phase or child request; complete ordered lifecycle events, first-result retention, actual exit and owned disposal match Source.",
+    "Both ordered observations match fresh clean pinned Source, actual selected and extracted Python3.8.10 runtimes, imported module bytes and all 19 private assets. No fields within either observation are removed or normalized."
+  ],
+  "identity": "Two actual cases: held-ready-exit and cancel-before-held-ready-exit. The controlled boundary holds the emitted transport Ready before host admission, not before worker emission.",
+  "ownership": "Original Source WorkerRun owns its real Node Worker; native Context/JavaScriptRuntime/WorkflowEngine own their real private process. Observation controls only transport delivery and physical termination, with an unused provider refusing any child admission.",
+  "ordering": "Ready emission, held delivery, optional first cancellation, physical exit, late Ready reception, first-result observation and owner disposal.",
+  "errors": "Do not publish an opened worker whose reader has already recorded a failure. Workflow opening uses the existing typed WORKER_EXIT contract for physical death and retains generic handling for other failures.",
+  "cancellation": "An already settled cancellation wins over later physical exit. Late Ready and disposal do not replace the first result.",
+  "adaptation": "The Source WorkerRun and worker algorithms are bundled unchanged. Native uses existing Python3.8 futures and dynamic typed failure attributes; browser code and Source predicates remain unchanged.",
+  "open_questions": ["This does not cover death before Ready emission, every readiness/reentry schedule, arbitrary Node APIs, full model/profile or C2, engine-specific raw error differences, or deferred real Win7 certification."]
+}

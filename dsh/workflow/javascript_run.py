@@ -63,7 +63,10 @@ class JavaScriptWorkflowRun:
         except asyncio.CancelledError:
             raise
         except Exception as error:
-            self._death('workflow worker failed: ' + render_error(error))
+            if getattr(error, 'code', None) == 'WORKER_EXIT':
+                self._death('workflow worker exited before the run settled (exit code {})'.format(error.exit_code))
+            else:
+                self._death('workflow worker failed: ' + render_error(error))
 
     def _worker_closed(self):
         failure = self._worker.failure

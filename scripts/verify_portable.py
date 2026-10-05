@@ -49,6 +49,7 @@ from scripts.tool_scheduler_oracle import validate_runtime as validate_tool_sche
 from scripts.http_redirect_oracle import validate_runtime as validate_http_redirect, identity as redirect_identity
 from scripts.javascript_workflow_oracle import validate_runtime as validate_javascript_workflow, identity as javascript_identity
 from scripts.runtime_context_oracle import validate_runtime as validate_runtime_context, identity as runtime_context_identity
+from scripts.javascript_ready_oracle import validate_runtime as validate_javascript_ready, identity as ready_identity
 
 
 def digest(path):
@@ -85,6 +86,25 @@ def product_environment(portable, workspace):
     return env
 
 
+def ready_receipts(source, native, output):
+    if source or native:
+        if not source or not native:
+            raise RuntimeError('Both JavaScript Ready Source and native receipts are required')
+        source, native = Path(source).resolve(), Path(native).resolve()
+    else:
+        paired = output.with_suffix('.javascript-ready-paired.json')
+        completed = subprocess.run([sys.executable, str(ROOT / 'scripts/javascript_ready_oracle.py'),
+            '--output', str(paired)], cwd=str(ROOT), capture_output=True, timeout=60)
+        output.with_suffix('.javascript-ready-source.log').write_bytes(completed.stdout + completed.stderr)
+        if completed.returncode or completed.stderr:
+            raise RuntimeError('Fresh JavaScript Ready Source qualification failed')
+        source, native = paired.with_suffix('.source.json'), paired.with_suffix('.native.json')
+    expected_digest = ready_identity(json.loads(source.read_text(encoding='utf-8')))
+    runtime = json.loads(native.read_text(encoding='utf-8'))
+    validate_javascript_ready(runtime, ROOT, expected_digest, runtime['modules'], runtime['assets'])
+    return source, expected_digest, runtime['modules'], runtime['assets']
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--archive', required=True)
@@ -105,6 +125,8 @@ def main(argv=None):
     parser.add_argument('--javascript-native', help='Fresh host JavaScript runtime module and private asset closure')
     parser.add_argument('--context-source', help='Fresh actual Source attributed runtime-context observations')
     parser.add_argument('--context-native', help='Fresh host actual AgentLoop runtime module closure')
+    parser.add_argument('--ready-source', help='Fresh actual Source Ready delivery/physical exit observations')
+    parser.add_argument('--ready-native', help='Fresh host JavaScript Ready module and private asset closure')
     args = parser.parse_args(argv)
     archive, output = Path(args.archive).resolve(), Path(args.output).resolve()
     output.parent.mkdir(parents=True, exist_ok=True)
@@ -151,6 +173,7 @@ def main(argv=None):
             'oracles/vitest.http-redirect-probe.config.mts',
             'javascript_workflow_oracle.py', 'oracles/javascript_workflow_python.py',
             'runtime_context_oracle.py', 'oracles/runtime_context_python.py', 'oracles/runtime_context.probe.spec.ts',
+            'javascript_ready_oracle.py', 'oracles/javascript_ready_python.py', 'oracles/javascript_ready_source.mjs',
             'oracles/vitest.runtime-context-probe.config.mts',
             'oracles/javascript_workflow_host_source.mjs', 'oracles/javascript_workflow_session.ts',
             'oracles/vitest.tool-scheduler-probe.config.mts')})
@@ -268,6 +291,8 @@ def main(argv=None):
         context_modules = context_native_report['modules']
         validate_runtime_context(context_native_report, ROOT, context_digest, context_modules)
         report['runtimeContextSourceSha256'] = digest(context_source)
+        ready_source, ready_digest, ready_modules, ready_assets = ready_receipts(args.ready_source, args.ready_native, output)
+        report['javascriptReadySourceSha256'] = digest(ready_source)
         if args.format_source or args.format_inputs:
             if not args.format_source or not args.format_inputs:
                 raise RuntimeError('Both SQLite format Source and inputs are required')
@@ -589,6 +614,16 @@ def main(argv=None):
             context_report = json.loads(context_path.read_text(encoding='utf-8'))
             validate_runtime_context(context_report, portable, context_digest, context_modules)
             report['runtimeContext'] = context_report
+            ready_path = workspace / 'javascript-ready.json'
+            ready_result = subprocess.run([str(portable / 'python.exe'), '-I', '-u',
+                str(ROOT / 'scripts/oracles/javascript_ready_python.py'), '--root', str(portable), '--output', str(ready_path)],
+                cwd=str(workspace), env=env, capture_output=True, encoding='utf-8', errors='replace', timeout=30)
+            output.with_suffix('.javascript-ready.log').write_text(ready_result.stdout + '\nSTDERR:\n' + ready_result.stderr, encoding='utf-8')
+            if ready_result.returncode or ready_result.stderr or not ready_path.is_file():
+                raise RuntimeError('Extracted JavaScript Ready observations failed')
+            ready_report = json.loads(ready_path.read_text(encoding='utf-8'))
+            validate_javascript_ready(ready_report, portable, ready_digest, ready_modules, ready_assets)
+            report['javascriptReady'] = ready_report
             directory = subprocess.run([str(portable / 'python.exe'), '-I', '-u',
                 str(ROOT / 'scripts/python_directory_probe.py'), '--root', str(portable), '--output', str(directory_path)],
                 cwd=str(workspace), env=env, capture_output=True, encoding='utf-8', errors='replace', timeout=90)

@@ -136,6 +136,8 @@ class JavaScriptRuntime(Service):
         try:
             await worker.send(request)
             await asyncio.shield(worker.ready)
+            if worker.failure is not None:
+                raise worker.failure
             return worker
         except BaseException:
             await worker.terminate()

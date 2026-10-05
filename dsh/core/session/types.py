@@ -524,19 +524,16 @@ def validate_session_header(session_id: str, input_data: Any) -> SessionHeader:
         agent_preset = raw_preset
 
     record = dict(input_data)
-    for field in ("version", "createdAt", "seedLength", "delegationDepth"):
-        if field in record:
-            record[field] = int(record[field])
     return _ValidatedSessionHeader(
         record,
         session_id=session_id,
-        version=int(raw_version),
-        created_at=int(created_at),
+        version=raw_version,
+        created_at=created_at,
         cwd=cwd,
         parent_session=parent_session,
-        seed_length=int(seed_length) if seed_length is not None else None,
+        seed_length=seed_length,
         origin=origin,
-        delegation_depth=int(delegation_depth) if delegation_depth is not None else None,
+        delegation_depth=delegation_depth,
         agent_preset=agent_preset,
     )
 

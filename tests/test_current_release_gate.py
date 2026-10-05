@@ -43,6 +43,7 @@ from scripts.javascript_ready_oracle import observation_digest as ready_observat
 from scripts.javascript_initial_oracle import observation_digest as initial_observation_digest
 from scripts.session_number_oracle import observation_digest as number_observation_digest
 from scripts.session_diagnostic_oracle import observation_digest as diagnostic_observation_digest
+from scripts.session_restore_sign_oracle import observation_digest as restore_sign_observation_digest
 from scripts.persistence_read_oracle import observation_digest as read_observation_digest
 
 
@@ -354,7 +355,7 @@ def test_extracted_session_corpus_read_requires_exact_sources_and_batch_drain(tm
 def test_regression_requires_browser_portable_and_acp_process_lanes(tmp_path):
     path = tmp_path / 'pytest.xml'
     regression_xml(path)
-    assert GATE.validate_regression(path) == {'required_lanes': 1094, 'skipped': 1}
+    assert GATE.validate_regression(path) == {'required_lanes': 1167, 'skipped': 1}
 
 
 @pytest.mark.parametrize('module', ['test_native_web_browser', 'test_portable_smoke', 'test_acp_stdio_journey', 'test_acp_permission_process', 'test_mcp_stdio_transport', 'test_mcp_supervisor', 'test_mcp_schema', 'test_mcp_config', 'test_mcp_tools_source', 'test_mcp_image_consumer', 'test_mcp_http_source', 'test_mcp_http_transport', 'test_mcp_supervisor_source', 'test_mcp_factory_source', 'test_acp_mcp_source', 'test_acp_mcp_runtime_source', 'test_acp_mcp_abort_source', 'test_acp_mcp_process', 'test_acp_mcp_runtime'])
@@ -933,6 +934,65 @@ def test_diagnostic_consumer_lanes_are_mandatory(tmp_path, damage):
         GATE.validate_regression(path)
 
 
+@functools.lru_cache(maxsize=1)
+def restore_sign_runtime_fixture():
+    with tempfile.TemporaryDirectory(prefix='session-restore-sign-receipt-') as folder:
+        output = Path(folder) / 'paired.json'
+        completed = subprocess.run([sys.executable, str(ROOT / 'scripts/session_restore_sign_oracle.py'),
+            '--output', str(output)], cwd=str(ROOT), capture_output=True, timeout=90)
+        if completed.returncode:
+            raise RuntimeError(output.read_text(encoding='utf-8'))
+        return json.loads(output.with_suffix('.native.json').read_text(encoding='utf-8'))
+
+
+@pytest.mark.parametrize('damage', ['missing', 'source-missing', 'source-changed', 'module-missing',
+    'module-changed', 'root', 'python', 'executable', 'tail', 'duplicate', 'accepted',
+    'signed-zero', 'input-value', 'safe-integer', 'error-text'])
+def test_extracted_restore_sign_requires_numeric_identity_and_source(tmp_path, damage):
+    archive, candidate, report = extracted_receipt(tmp_path)
+    runtime = report['sessionRestoreSign']
+    if damage == 'missing':
+        del report['sessionRestoreSign']
+    elif damage == 'source-missing':
+        del candidate['session_restore_sign_observations_sha256']
+    elif damage == 'source-changed':
+        candidate['session_restore_sign_observations_sha256'] = '0' * 64
+    elif damage == 'module-missing':
+        del runtime['modules']['dsh/core/session/types.py']
+    elif damage == 'module-changed':
+        runtime['modules']['dsh/core/session/types.py'] = '0' * 64
+    elif damage == 'root':
+        runtime['root'] = str(tmp_path.parent)
+    elif damage == 'python':
+        runtime['python'] = '3.9.0 foreign runtime'
+    elif damage == 'executable':
+        runtime['executable'] = str(tmp_path / 'nested/python.exe')
+    elif damage == 'tail':
+        runtime['rows'].pop()
+    elif damage == 'duplicate':
+        runtime['rows'][-1] = copy.deepcopy(runtime['rows'][0])
+    elif damage == 'accepted':
+        runtime['rows'][0]['accepted'] = False
+    elif damage in ('signed-zero', 'input-value', 'safe-integer'):
+        row = next(row for row in runtime['rows'] if row['name'] == 'createdAt/negative-zero')
+        row[{'signed-zero': 'negativeZero', 'input-value': 'equalInput', 'safe-integer': 'safeInteger'}[damage]] = False
+    else:
+        next(row for row in runtime['rows'] if row['name'] == 'version/fraction')['error']['message'] = 'wrong version'
+    output = tmp_path / 'extracted.json'
+    output.write_text(json.dumps(report), encoding='utf-8')
+    with pytest.raises(RuntimeError, match='sessionRestoreSign'):
+        GATE.validate_extracted(output, archive, candidate)
+
+
+@pytest.mark.parametrize('damage', ['omit', 'skip', 'duplicate', 'failure'])
+def test_restore_sign_consumer_lanes_are_mandatory(tmp_path, damage):
+    path = tmp_path / 'pytest.xml'
+    key = ('test_session_restore_sign_consumers', sorted(GATE.REQUIRED_REGRESSION['test_session_restore_sign_consumers'])[0])
+    regression_xml(path, **{damage: key})
+    with pytest.raises(RuntimeError):
+        GATE.validate_regression(path)
+
+
 def extracted_receipt(tmp_path):
     archive = tmp_path / 'portable.zip'
     archive.write_bytes(b'exact candidate archive')
@@ -977,6 +1037,10 @@ def extracted_receipt(tmp_path):
     diagnostic['root'], diagnostic['executable'] = str(tmp_path), str(tmp_path / 'python.exe')
     candidate['session_diagnostic_observations_sha256'] = diagnostic_observation_digest(diagnostic['rows'])
     candidate['session_diagnostic_modules'] = diagnostic['modules'].copy()
+    restore_sign = copy.deepcopy(restore_sign_runtime_fixture())
+    restore_sign['root'], restore_sign['executable'] = str(tmp_path), str(tmp_path / 'python.exe')
+    candidate['session_restore_sign_observations_sha256'] = restore_sign_observation_digest(restore_sign['rows'])
+    candidate['session_restore_sign_modules'] = restore_sign['modules'].copy()
     report = {'result': 'passed', 'browser': {'passed': True}, 'runtime': {'checks': ['actual runtime']},
               'acp': {'processes': 2, 'steps': ['initialize-0', 'invalid-params-before-effects',
                   'persistent-new', 'close-list-0', 'eof-0', 'initialize-1',
@@ -984,7 +1048,7 @@ def extracted_receipt(tmp_path):
               'runtimeStderr': '', 'frontendFilesChecked': 119, 'archive': str(archive),
               'archiveSha256': GATE.digest(archive), 'provenance': dict(candidate), 'toolScheduler': scheduler,
               'httpRedirect': redirect, 'javascriptWorkflow': javascript, 'runtimeContext': context, 'javascriptReady': ready,
-              'persistenceRead': read, 'javascriptInitial': initial, 'sessionNumber': number, 'sessionDiagnostic': diagnostic}
+              'persistenceRead': read, 'javascriptInitial': initial, 'sessionNumber': number, 'sessionDiagnostic': diagnostic, 'sessionRestoreSign': restore_sign}
     modes = ['allow', 'reject', 'malformed', 'cancel-late', 'close-late', 'eof']
     report['acpPermissions'] = {'processes': 6, 'modes': modes, 'observations': [
         {'mode': mode, 'executed': mode == 'allow', 'modelRequests': 2 if mode in modes[:3] else 1, 'stderr': [''],

@@ -1,0 +1,19 @@
+{
+  "id": "MIG-SESSION-RESTORE-SIGN-043",
+  "goal": "保留实际公共Session恢复后数值符号与输入值的18组Source语义",
+  "kind": "implementation",
+  "state": "running",
+  "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
+  "base_product": "47adea372613d086c54631344af4944b4ddcf232",
+  "owner": "current-session-coordinator",
+  "requires": [{"task": "MIG-CURRENT-RELEASE-GATE-003", "contract": "CON-CURRENT-RELEASE-GATE", "revision": 1}],
+  "provides": [{"contract": "CON-SESSION-RESTORE-SIGN", "revision": 1}],
+  "acceptance": ["Retain14-match/four-difference baseline, including exact unchanged4a127b73 Portable; actual safe-number and signed-zero/input-value Source predicates match all18 fixed rows.", "Fresh formal Source/native18 controls,52 consumer/rejection tests and selected/extracted interpreter guards pass. Creation53 controls and actual detached corpus/query consumers retain their distinct semantics.", "A distinct clean complete gate passes1167 mandatory lanes,63 paired drivers, eighteen unchanged original groups/1237 assertions and actual extracted ownPython3.8.10/browser before integration."],
+  "expected_paths": ["dsh/core/session/types.py", "scripts", "tests", "migration", "docs/research"],
+  "open_findings": ["Four restored header fields lost admitted negative-zero through int coercion; the main-tree fix preserves actual validated values and fresh18 complete Source rows match. Expanded1457 regressions pass in454.71 seconds, including creation53, diagnostic76, restore18, actual query clone consumers and all exact rejection/executable guards. Distinct clean full/extracted qualification remains pending.", "Complete restore graph/object identity/wire ABI and fullB1/profile remain open."],
+  "conflicts_with": [],
+  "candidate_commit": null,
+  "integrated_commit": null,
+  "evidence_ids": [],
+  "next_action": "移除恢复字段验证后的数值强制转换，验证18完整Source观察、创建53组及真实查询副本；独立提交后冻结040至043完整候选。"
+}

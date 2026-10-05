@@ -51,6 +51,7 @@ from scripts.javascript_ready_oracle import validate_runtime as validate_javascr
 from scripts.javascript_initial_oracle import validate_runtime as validate_javascript_initial, identity as initial_identity, NAMES as INITIAL_NAMES
 from scripts.session_number_oracle import validate_runtime as validate_session_number, identity as number_identity, NAMES as NUMBER_NAMES
 from scripts.session_diagnostic_oracle import validate_runtime as validate_session_diagnostic, identity as diagnostic_identity, NAMES as DIAGNOSTIC_NAMES
+from scripts.session_restore_sign_oracle import validate_runtime as validate_session_restore_sign, identity as restore_sign_identity, NAMES as RESTORE_SIGN_NAMES
 from scripts.persistence_read_oracle import validate_runtime as validate_persistence_read, identity as read_identity, NAMES as READ_NAMES
 NODE_VERSION = 'v22.22.2'
 PORTABLE_ARCHIVE = 'dist/dsh-win7-portable-v0.1.0.zip'
@@ -63,9 +64,19 @@ PAIRED_DRIVERS = (
     'cordis_retirement', 'cordis_tools', 'acp_sessions', 'acp_model_output', 'acp_stdio', 'acp_permissions', 'mcp_stdio', 'mcp_http', 'acp_mcp', 'subagent_acp', 'subagent_acp_teardown', 'mcp_disposal', 'subprocess_ownership', 'subprocess_tree', 'projection_cache_failure', 'session_observation_read', 'session_corpus_list', 'session_corpus_read', 'session_lineage', 'session_event_trace', 'session_filters', 'session_requests', 'session_snapshots', 'query_schema', 'query_engine', 'query_unicode', 'session_text',
 )
 PAIRED_DRIVERS = PAIRED_DRIVERS + ('session_tools', 'sqlite_format', 'sqlite_provider', 'jsonl_provider', 'tool_scheduler', 'http_redirect', 'javascript_workflow', 'runtime_context', 'javascript_ready', 'persistence_read')
-PAIRED_DRIVERS = PAIRED_DRIVERS + ('javascript_initial', 'session_number', 'session_diagnostic')
+PAIRED_DRIVERS = PAIRED_DRIVERS + ('javascript_initial', 'session_number', 'session_diagnostic', 'session_restore_sign')
 OFFICIAL_CONFIGS = ('consumers', 'agent-lifecycle', 'session-recovery', 'session-projection', 'acp', 'acp-app', 'mcp', 'subagent-acp', 'storage-cache', 'session-observation', 'session-corpus', 'session-sqlite-query', 'query-engine-source', 'session-tools-source', 'sqlite-format-source', 'sqlite-provider-source', 'jsonl-provider-source', 'tool-scheduler-source')
 REQUIRED_REGRESSION = {
+    'test_session_restore_sign_consumers': {
+        *{'test_actual_public_session_restore_numeric_values_match_source[' + name + ']' for name in RESTORE_SIGN_NAMES},
+        *{'test_session_restore_sign_receipt_requires_numeric_identity_and_runtime[' + damage + ']' for damage in (
+            'accepted', 'signed-zero', 'input-value', 'safe-integer', 'error-text',
+            'missing-case', 'duplicate', 'root', 'python', 'executable', 'module', 'module-bytes')},
+        *{'test_session_restore_sign_source_identity_is_required[' + damage + ']' for damage in ('pin', 'node', 'inputs', 'bytes')},
+        *{'test_portable_restore_sign_cli_refuses_partial_receipts[' + side + ']' for side in ('source', 'native')},
+        *{'test_restored_header_signed_zero_survives_public_consumers[' + consumer + '-' + field + '-' + attribute + ']' for consumer in ('attribute', 'copy', 'deepcopy', 'export')
+            for field, attribute in (('version', 'version'), ('createdAt', 'created_at'), ('seedLength', 'seed_length'), ('delegationDepth', 'delegation_depth'))},
+    },
     'test_session_diagnostic_consumers': {
         *{'test_actual_public_session_admission_diagnostics_match_source[' + name + ']' for name in DIAGNOSTIC_NAMES},
         *{'test_session_diagnostic_receipt_requires_exact_errors_and_runtime[' + damage + ']' for damage in (
@@ -111,6 +122,7 @@ REQUIRED_REGRESSION = {
         'test_unselected_in_tree_interpreter_is_refused_even_with_identical_bytes[selected-initial]',
         'test_unselected_in_tree_interpreter_is_refused_even_with_identical_bytes[selected-number]',
         'test_unselected_in_tree_interpreter_is_refused_even_with_identical_bytes[selected-diagnostic]',
+        'test_unselected_in_tree_interpreter_is_refused_even_with_identical_bytes[selected-restore-sign]',
         'test_unselected_in_tree_interpreter_is_refused_even_with_identical_bytes[extracted-context]',
         'test_unselected_in_tree_interpreter_is_refused_even_with_identical_bytes[extracted-ready]',
         'test_unselected_in_tree_interpreter_is_refused_even_with_identical_bytes[extracted-workflow]',
@@ -118,6 +130,7 @@ REQUIRED_REGRESSION = {
         'test_unselected_in_tree_interpreter_is_refused_even_with_identical_bytes[extracted-initial]',
         'test_unselected_in_tree_interpreter_is_refused_even_with_identical_bytes[extracted-number]',
         'test_unselected_in_tree_interpreter_is_refused_even_with_identical_bytes[extracted-diagnostic]',
+        'test_unselected_in_tree_interpreter_is_refused_even_with_identical_bytes[extracted-restore-sign]',
     },
     "test_javascript_ready_consumers": {
         "test_actual_held_ready_crosses_exit_before_admission[held-ready-exit]",
@@ -315,6 +328,10 @@ REQUIRED_REGRESSION = {
             'missing', 'source-missing', 'source-changed', 'module-missing', 'module-changed', 'root',
             'python', 'executable', 'tail', 'duplicate', 'accepted', 'error-name', 'error-text', 'lossless-first', 'restore-negative-zero')},
         *{'test_diagnostic_consumer_lanes_are_mandatory[' + damage + ']' for damage in ('omit', 'skip', 'duplicate', 'failure')},
+        *{'test_extracted_restore_sign_requires_numeric_identity_and_source[' + damage + ']' for damage in (
+            'missing', 'source-missing', 'source-changed', 'module-missing', 'module-changed', 'root',
+            'python', 'executable', 'tail', 'duplicate', 'accepted', 'signed-zero', 'input-value', 'safe-integer', 'error-text')},
+        *{'test_restore_sign_consumer_lanes_are_mandatory[' + damage + ']' for damage in ('omit', 'skip', 'duplicate', 'failure')},
         *{'test_initial_consumer_lanes_are_mandatory[' + damage + ']' for damage in ('omit', 'skip', 'duplicate', 'failure')},
         "test_extracted_ready_requires_source_assets_and_complete_observations[missing]",
         "test_extracted_ready_requires_source_assets_and_complete_observations[source-missing]",
@@ -1103,6 +1120,11 @@ def validate_extracted(path, archive, candidate):
             candidate['session_diagnostic_observations_sha256'], candidate['session_diagnostic_modules'], check_files=False)
     except (ValueError, KeyError, TypeError) as error:
         raise RuntimeError('Extracted sessionDiagnostic observations are incomplete') from error
+    try:
+        validate_session_restore_sign(report.get('sessionRestoreSign'), Path(report['mcpStdio']['root']),
+            candidate['session_restore_sign_observations_sha256'], candidate['session_restore_sign_modules'], check_files=False)
+    except (ValueError, KeyError, TypeError) as error:
+        raise RuntimeError('Extracted sessionRestoreSign observations are incomplete') from error
     for name, validate in [('queryEngine', validate_query_engine), ('querySchema', validate_query_schema), ('pythonDirectory', validate_python_directory),
                            ('sessionLineage', validate_session_lineage), ('sessionEventTrace', validate_session_event_trace),
                            ('sessionFilters', validate_session_filters), ('sessionRequests', validate_session_requests),
@@ -1266,6 +1288,11 @@ def verify(args, output):
     diagnostic_report = json.loads(diagnostic_native.read_text(encoding='utf-8'))
     candidate['session_diagnostic_observations_sha256'] = diagnostic_identity(json.loads(diagnostic_source.read_text(encoding='utf-8')))
     candidate['session_diagnostic_modules'] = diagnostic_report['modules']
+    restore_sign_source = output / 'session-restore-sign-paired.source.json'
+    restore_sign_native = output / 'session-restore-sign-paired.native.json'
+    restore_sign_report = json.loads(restore_sign_native.read_text(encoding='utf-8'))
+    candidate['session_restore_sign_observations_sha256'] = restore_sign_identity(json.loads(restore_sign_source.read_text(encoding='utf-8')))
+    candidate['session_restore_sign_modules'] = restore_sign_report['modules']
     raw = output / 'cordis-raw.json'
     raw.unlink(missing_ok=True)
     run([python, 'scripts/cordis_oracle.py', '--output', str(raw)],
@@ -1293,7 +1320,8 @@ def verify(args, output):
                '--initial-source', str(initial_source), '--initial-native', str(initial_native),
                '--read-source', str(read_source), '--read-native', str(read_native),
                '--number-source', str(number_source), '--number-native', str(number_native),
-               '--diagnostic-source', str(diagnostic_source), '--diagnostic-native', str(diagnostic_native)]
+               '--diagnostic-source', str(diagnostic_source), '--diagnostic-native', str(diagnostic_native),
+               '--restore-sign-source', str(restore_sign_source), '--restore-sign-native', str(restore_sign_native)]
     if not candidate['worktree_dirty']:
         command += ['--expected-commit', candidate['product_commit']]
     run(command, 'portable-extracted', output, env=environment)

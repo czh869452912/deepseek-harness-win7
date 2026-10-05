@@ -1,0 +1,16 @@
+{
+  "id": "CON-SESSION-RESTORE-SIGN",
+  "revision": 1,
+  "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
+  "status": "specified",
+  "source_paths": ["reference/packages/core/session/src/index.ts", "reference/packages/core/session/src/json.ts", "reference/packages/core/session/src/types.ts", "dsh/core/session/types.py", "dsh/core/session/session.py"],
+  "consumers": ["scripts/session_restore_sign_oracle.py", "scripts/oracles/session_restore_sign.probe.spec.ts", "scripts/oracles/session_restore_sign_python.py", "tests/test_session_restore_sign_consumers.py", "scripts/verify_release.py", "scripts/verify_portable.py"],
+  "invariants": ["Actual public Source Session.fromRestore and native Session.from_restore compare all18 numeric result rows without filtering or output normalization.", "For six header/event fields crossed with whole, negative-zero and fractional values, compare acceptance, exact error and actual safe-integer/Object.is(value,-0)/Object.is(value,input) predicates.", "Validated restored numbers retain the original admitted numeric values. Do not cast away signed zero after validation. Creation continues using its lossless snapshot and rejecting negative zero.", "Published header attributes, exports, shallow and detached deep copies preserve restored signs. These independent native controls are not additional Source rows.", "Fresh Source/Node22.22.2 guards and complete selected/extracted ownPython3.8.10 imported module and executable identities are required."],
+  "identity": "Six fields version/createdAt/seedLength/delegationDepth/seq/time crossed with whole/negative-zero/fraction. Observer NAMES fixes complete ordering. Python numeric equality plus zero sign expresses the actual Source Object.is number predicates.",
+  "ownership": "Use actual public restore and inspect published numeric values; preserve frozen publication and mutable detached query clones.",
+  "ordering": "Field validation precedes publication without a second numeric coercion. Creation snapshot remains a separate boundary.",
+  "errors": "Native ValueError corresponds to Source Error only at this admission boundary; exact error text is compared and unexpected exceptions fail.",
+  "cancellation": "No new cancellation semantics; existing real Session/query/persistence consumers remain required.",
+  "adaptation": "Source JavaScript has one number type. Python accepts safe integer-valued int/float excluding bool, and preserves their actual value/sign at restore. This contract claims numeric predicates only, not JavaScript object identity or JSON wire serialization identity.",
+  "open_questions": ["Complete restore graphs, alias ownership, arbitrary malformed/plugin ABI, metadata copy cycles, persisted JSON signed-zero serialization, all numeric fields/values and completeB1/profile/Win7 remain outside these18 controls.", "Static Source input guards are not a full dynamic import closure; the frozen gate binds the wider checkout."]
+}

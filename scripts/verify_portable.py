@@ -53,6 +53,7 @@ from scripts.javascript_ready_oracle import validate_runtime as validate_javascr
 from scripts.javascript_initial_oracle import validate_runtime as validate_javascript_initial, identity as initial_identity
 from scripts.session_number_oracle import validate_runtime as validate_session_number, identity as number_identity
 from scripts.session_diagnostic_oracle import validate_runtime as validate_session_diagnostic, identity as diagnostic_identity
+from scripts.session_restore_sign_oracle import validate_runtime as validate_session_restore_sign, identity as restore_sign_identity
 from scripts.persistence_read_oracle import validate_runtime as validate_persistence_read, identity as read_identity
 
 
@@ -185,6 +186,25 @@ def diagnostic_receipts(source, native, output):
     return source, expected_digest, runtime['modules']
 
 
+def restore_sign_receipts(source, native, output):
+    if source or native:
+        if not source or not native:
+            raise RuntimeError('Both Session restore sign Source and native receipts are required')
+        source, native = Path(source).resolve(), Path(native).resolve()
+    else:
+        paired = output.with_suffix('.session-restore-sign-paired.json')
+        completed = subprocess.run([sys.executable, str(ROOT / 'scripts/session_restore_sign_oracle.py'),
+            '--output', str(paired)], cwd=str(ROOT), capture_output=True, timeout=90)
+        output.with_suffix('.session-restore-sign-source.log').write_bytes(completed.stdout + completed.stderr)
+        if completed.returncode or completed.stderr:
+            raise RuntimeError('Fresh Session restore sign Source qualification failed')
+        source, native = paired.with_suffix('.source.json'), paired.with_suffix('.native.json')
+    expected_digest = restore_sign_identity(json.loads(source.read_text(encoding='utf-8')))
+    runtime = json.loads(native.read_text(encoding='utf-8'))
+    validate_session_restore_sign(runtime, ROOT, expected_digest, runtime['modules'])
+    return source, expected_digest, runtime['modules']
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--archive', required=True)
@@ -213,6 +233,8 @@ def main(argv=None):
     parser.add_argument('--number-native', help='Fresh native public Session module closure')
     parser.add_argument('--diagnostic-source', help='Fresh actual public Session admission diagnostics')
     parser.add_argument('--diagnostic-native', help='Fresh native public Session diagnostic module closure')
+    parser.add_argument('--restore-sign-source', help='Fresh actual public Session restore numeric predicates')
+    parser.add_argument('--restore-sign-native', help='Fresh native public Session restore module closure')
     parser.add_argument('--read-source', help='Fresh actual Source canonical persistence read observations')
     parser.add_argument('--read-native', help='Fresh canonical persistence read module and private asset closure')
     args = parser.parse_args(argv)
@@ -266,6 +288,8 @@ def main(argv=None):
             'oracles/javascript_initial_controls.py',
             'session_number_oracle.py', 'oracles/session_number_python.py',
             'session_diagnostic_oracle.py', 'oracles/session_diagnostic_python.py',
+            'session_restore_sign_oracle.py', 'oracles/session_restore_sign_python.py',
+            'oracles/session_restore_sign.probe.spec.ts', 'oracles/vitest.session-restore-sign-probe.config.mts',
             'oracles/session_diagnostic.probe.spec.ts', 'oracles/vitest.session-diagnostic-probe.config.mts',
             'oracles/session_number.probe.spec.ts', 'oracles/vitest.session-number-probe.config.mts',
             'persistence_read_oracle.py', 'oracles/persistence_read_python.py', 'oracles/persistence_public_python.py',
@@ -394,6 +418,7 @@ def main(argv=None):
         report['javascriptInitialSourceSha256'] = digest(initial_source)
         number_source, number_digest, number_modules = number_receipts(args.number_source, args.number_native, output)
         diagnostic_source, diagnostic_digest, diagnostic_modules = diagnostic_receipts(args.diagnostic_source, args.diagnostic_native, output)
+        restore_sign_source, restore_sign_digest, restore_sign_modules = restore_sign_receipts(args.restore_sign_source, args.restore_sign_native, output)
         report['sessionNumberSourceSha256'] = digest(number_source)
         read_source, read_digest, read_modules, read_assets = read_receipts(args.read_source, args.read_native, output)
         report['persistenceReadSourceSha256'] = digest(read_source)
@@ -758,6 +783,16 @@ def main(argv=None):
             diagnostic_report = json.loads(diagnostic_path.read_text(encoding='utf-8'))
             validate_session_diagnostic(diagnostic_report, portable, diagnostic_digest, diagnostic_modules)
             report['sessionDiagnostic'] = diagnostic_report
+            restore_sign_path = workspace / 'session-restore-sign.json'
+            restore_sign_result = subprocess.run([str(portable / 'python.exe'), '-I', '-u',
+                str(ROOT / 'scripts/oracles/session_restore_sign_python.py'), '--root', str(portable), '--output', str(restore_sign_path)],
+                cwd=str(workspace), env=env, capture_output=True, encoding='utf-8', errors='replace', timeout=60)
+            output.with_suffix('.session-restore-sign.log').write_text(restore_sign_result.stdout + '\nSTDERR:\n' + restore_sign_result.stderr, encoding='utf-8')
+            if restore_sign_result.returncode or restore_sign_result.stderr or not restore_sign_path.is_file():
+                raise RuntimeError('Extracted Session restore sign observations failed')
+            restore_sign_report = json.loads(restore_sign_path.read_text(encoding='utf-8'))
+            validate_session_restore_sign(restore_sign_report, portable, restore_sign_digest, restore_sign_modules)
+            report['sessionRestoreSign'] = restore_sign_report
             read_path = workspace / 'persistence-read.json'
             read_result = subprocess.run([str(portable / 'python.exe'), '-I', '-u',
                 str(ROOT / 'scripts/oracles/persistence_read_python.py'), '--root', str(portable), '--output', str(read_path)],

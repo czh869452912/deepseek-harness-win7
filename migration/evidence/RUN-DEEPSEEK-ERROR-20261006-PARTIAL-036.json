@@ -1,0 +1,38 @@
+{
+  "id": "RUN-DEEPSEEK-ERROR-20261006-PARTIAL-036",
+  "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
+  "product_commit": "54361bd9e098d287c85e76253b4fcbaa2468a68a",
+  "kind": "verification",
+  "task_id": "MIG-JS-WORKFLOW-036",
+  "result": "passed",
+  "validity": "current",
+  "commands": [
+    ".venv/Scripts/python.exe scripts/verify_release.py --output-dir .goose/out/deepseek-error-clean-54361bd9"
+  ],
+  "environment": {
+    "python": "3.8.10 (default, May  6 2021, 17:27:56) [MSC v.1928 64 bit (AMD64)]",
+    "os": "Windows-10-10.0.26200-SP0",
+    "cwd": "C:\\Users\\czh86\\Documents\\Codex\\deepseek-harness-win7",
+    "node": "v22.22.2",
+    "browser": "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe"
+  },
+  "contract_revisions": {
+    "CON-JS-WORKFLOW": 1,
+    "CON-JS-READY": 1,
+    "CON-PERSISTENCE-READ": 1,
+    "CON-RUNTIME-CONTEXT-CONSUMER": 1,
+    "CON-CURRENT-RELEASE-GATE": 1,
+    "CON-JS-INITIAL-WRITE": 1,
+    "CON-SESSION-NUMBERS": 2,
+    "CON-SESSION-DIAGNOSTIC": 1,
+    "CON-SESSION-RESTORE-SIGN": 1,
+    "CON-RUNTIME-FULL-REQUEST": 1
+  },
+  "artifacts": [
+    {
+      "path": "migration/evidence/artifacts/DEEPSEEK-ERROR-20261006-54361bd9.zip",
+      "sha256": "3ef96f03f46a3ab4b0de74cc60e01ca3f0c756a8857fab937d89e9efcddbf10e"
+    }
+  ],
+  "scope": "Frozen clean current-Windows candidate: 7760 passed, 6 existing platform skips,1312 mandatory lanes, nineteen unchanged Source groups/1683 assertions,65 fresh actual paired drivers and actual extracted ownPython3.8.10/original-browser. Previous53 bounded ranges revalidate, with044 and045 newly accepted against exact product and unchanged Source/frontend119. Runtime full requests044 execute16 real original AgentLoop and native canonical LlmRuntime/LLMService context/configuration combinations. Both complete serialized GenerateOptions and every durable context snapshot match, with only opaque message ids mapped bijectively across each whole row; concrete tool/call ids and all other fields remain exact. Actual signal facade records platform/native AbortSignal instance, aborted state and shared-with-first ownership. Source wrapper observes before delegating to unchanged MockAdapter. Native declared AgentOptions carries the same config values. Persisted assistant messages no longer add tool_calls; canonical requests retain maxTokens/reasoningEffort without snake-case aliases. Three independent native actual fixed-parameter model consumers preserve token/reasoning/both arguments only at invocation; they are not additional Source rows. Exact previous7f9e87e4 acceptedPortable/inputs remains unchanged and its16 alias differences are retained as a separate baseline, not silently rewritten. Earlier4a127b73 full rejection and clone/diagnostic/sign reproductions remain independent;040-043 stay within their specified ranges. Early observer mistakes and prototype missing metadata/incorrect type assumptions remain disclosed in raw logs. Full arbitrary model/provider/profile/middleware, signal/cancellation/reentry, request defaults/recovery and graph/plugin ABI/multiprocess/workspace/long-history remain open. JS036 remains partial with eight raw engine/parse differences and complete C2/B/C/D unaccepted. Wholepytest2400, individual deadlines, all nine Source bug predicates and C58/C59 stay unchanged. No new bypass, required skip, Source/frontend patch, paid model, push/publication or unchanged-candidate retry. RealWin7 remains user-deferred and accepted_upstream is null. A fresh exact unmodified accepted7f9e87e4 Portable baseline runs the new16 controls under its ownPython3.8.10. Every actual imported module matches both exact candidateZIP and published directory bytes; complete baseline differences remain independently retained. No currentProduct bytes are substituted for the baseline. DeepSeek error045 bounded acceptance executes24 actual original/native/extracted local HTTP adapter rows retaining every captured request/chunk/extension acceptance/error name/message/complete failure/code/status/retry-after/request-id value. Source and native read flattened metadata from their actual failure objects; extra language exception properties and traceback/cause-stack are not qualified. Malformed diagnostics retain120 UTF16 units, including a split surrogate; watchdog text preserves Source integer/whole-float/fractional millisecond rendering. Existing lossless JSON snapshot canonicalizes only semantically identical whole numeric token spellings2000/2000.0 for digesting; raw reports remain unchanged. Exact unmodified afd85f4e ownPortable baseline independently matches16/24 with five preview and three duration differences; isolated prototype matched24 before promotion. The prototype copier initially assumed packaged rg.exe had a Root path; the first simplified Source observer incorrectly looked for failure metadata on exception properties. Actual failures/corrected observations remain independently retained, not Source exceptions. Sixteen unchanged DeepSeek/retry Source files add446 original assertions; these Source-only assertions are not themselves native parity. Full retry/AgentLoop/provider/profile/cancellation/malformed transport, image/files, cloud/OAuth/paid service and realWin7 remain open. Short owned pytest execution directories are independent of output label, and mapping preserves original paths while retaining success/failure artifacts. Whole suite budget2400, all individual deadlines and nine defect predicates remain unchanged. Additional unaccepted76-row research during the frozen gate expands config/adapter/Files/Settings errors and retains full retry data. Current frozenRoot has17 exact diagnostic differences and three opaque random retry-id differences. A separate five-module prototype matches76 after preserving all fields/prose and bijectively mapping UUID4 identities across complete rows; five damage controls reject changed failure/delay/policy/split/shared chain identity. Six omitted bundle patch files caused one research import failure before observation and were then copied as exact controlled inputs. These prototype bytes are not in this product and do not enter045 acceptance or certify full Wire; raw research and setup failure are independently retained."
+}

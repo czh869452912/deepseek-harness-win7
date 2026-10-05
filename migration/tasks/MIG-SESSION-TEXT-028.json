@@ -43,8 +43,8 @@
   ],
   "open_findings": [],
   "conflicts_with": [],
-  "candidate_commit": "7f9e87e49690f94b3b2e9982d233c37785ea2137",
-  "integrated_commit": "7f9e87e49690f94b3b2e9982d233c37785ea2137",
+  "candidate_commit": "54361bd9e098d287c85e76253b4fcbaa2468a68a",
+  "integrated_commit": "54361bd9e098d287c85e76253b4fcbaa2468a68a",
   "evidence_ids": [
     "RUN-SESSION-TEXT-20261005-SESSION-TEXT-028",
     "RUN-SESSION-TOOLS-20261005-SESSION-TEXT-028",
@@ -54,7 +54,8 @@
     "RUN-JS-WORKFLOW-20261005-SESSION-TEXT-028",
     "RUN-JS-DEATH-20261005-SESSION-TEXT-028",
     "RUN-RUNTIME-CONTEXT-20261006-SESSION-TEXT-028",
-    "RUN-SESSION-BOUNDARIES-20261006-SESSION-TEXT-028"
+    "RUN-SESSION-BOUNDARIES-20261006-SESSION-TEXT-028",
+    "RUN-DEEPSEEK-ERROR-20261006-SESSION-TEXT-028"
   ],
-  "next_action": "clean candidate 7f9e87e4 全量/原版/真实解压复验已通过。clean candidate 7f9e87e4 的 7883 字面 Unicode/有效语义提取/Session locale 顺序双侧与真实解压观察、两持久化 Context 重启消费者已有界签收；继续 malformed/plugin ABI、全域/竞争、schema-19、profile 主链和整体迁移，Win7 延期。"
+  "next_action": "clean candidate 54361bd9 全量/原版/真实解压复验已通过。clean candidate 54361bd9 的 7883 字面 Unicode/有效语义提取/Session locale 顺序双侧与真实解压观察、两持久化 Context 重启消费者已有界签收；继续 malformed/plugin ABI、全域/竞争、schema-19、profile 主链和整体迁移，Win7 延期。"
 }

@@ -2,7 +2,7 @@
   "id": "MIG-DEEPSEEK-ERROR-045",
   "goal": "对齐实际DeepSeek错误完整文本、畸形SSE截断与超时时限",
   "kind": "implementation",
-  "state": "running",
+  "state": "integrated",
   "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
   "base_product": "afd85f4e4fd0c404ad53fc206348c3a92ebd9165",
   "owner": "current-session-coordinator",
@@ -32,14 +32,12 @@
     "migration",
     "docs/research"
   ],
-  "open_findings": [
-    "Exact frozen afd85f4e ownPortable baseline matches16/24; five malformed-preview and three idle-duration rows differ. Isolated two-module candidate and simplified actual observers match24. Main-tree fresh24 complete rows match;914 related regressions pass in478.02 seconds, and446 unchanged original DeepSeek/retry assertions pass. Distinct clean full/extracted/browser qualification pending.",
-    "Observer prototype preparation initially assumed packaged rg.exe existed at Root. The first simplified Source observer also incorrectly read flattened metadata from exception properties instead of Source failure. Both actual mistakes and corrected observations remain independently retained; neither is a Source bug exception.",
-    "Full retry/profile/cloud/cancellation/malformed graph scope remains open."
-  ],
+  "open_findings": [],
   "conflicts_with": [],
-  "candidate_commit": null,
-  "integrated_commit": null,
-  "evidence_ids": [],
-  "next_action": "推广两处Source支撑的诊断修复和24组完整真实HTTP消费者，扩大相关模型/流/重试/门禁回归；分段提交后冻结完整及真实解压验收。"
+  "candidate_commit": "54361bd9e098d287c85e76253b4fcbaa2468a68a",
+  "integrated_commit": "54361bd9e098d287c85e76253b4fcbaa2468a68a",
+  "evidence_ids": [
+    "RUN-DEEPSEEK-ERROR-20261006-DEEPSEEK-ERROR-045"
+  ],
+  "next_action": "24实际Source/native/extracted完整HTTP错误观察在干净产品54361bd9有界签收；精确afd基线16/24差异保留，446原样Source断言不扩大native范围。继续76旧wire正式合同、canonical真实重试/profile/取消和任意传输/图边界；云/OAuth/付费/Win7仍开放。"
 }

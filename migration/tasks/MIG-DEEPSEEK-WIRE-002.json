@@ -6,7 +6,13 @@
   "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
   "base_product": "a4ff8ac41fa37b5463b0ce8b7f420d0973e8d840",
   "owner": null,
-  "requires": [],
+  "requires": [
+    {
+      "task": "MIG-DEEPSEEK-ERROR-045",
+      "contract": "CON-DEEPSEEK-ERROR",
+      "revision": 1
+    }
+  ],
   "provides": [],
   "acceptance": [
     "Specify source-backed contract and required provider revisions before entering ready."
@@ -16,10 +22,12 @@
     "tests",
     "migration"
   ],
-  "open_findings": [],
+  "open_findings": [
+    "24 complete local HTTP adapter error controls045 are bounded accepted in clean54361bd9, with exact oldafd ownPortable baseline retained. Every captured request/chunk/error/failure value compares; only JSON whole numeric token spelling is canonicalized for digest.446 unchanged Source assertions add reference coverage but are not extra native parity. Existing76 historical wire/config/model/files/settings observations still need their full Source-backed contract and selected/extracted runtime closure; full canonical retry/profile/cancellation/malformed transport and OAuth/cloud/paid scope remain open."
+  ],
   "conflicts_with": [],
   "candidate_commit": null,
   "integrated_commit": null,
   "evidence_ids": [],
-  "next_action": "当前 DeepSeek/Pi 本地 wire 双侧驱动已通过，补齐历史 draft 与近期实现之间的 source-backed contracts/范围证据；OAuth/刷新、专属云协议和真实付费 API smoke 另列，不将 catalog 或 mock 视为远程认证完成。"
+  "next_action": "错误045已有界签收；回填76既有local wire/配置/模型/files/settings合同及精确解释器/模块/实际解压消费者，补canonical AgentLoop重试/恢复/取消/关闭和动态图边界。父Wire保持draft，不以446 Source-only断言或24错误范围宣称整个provider认证。"
 }

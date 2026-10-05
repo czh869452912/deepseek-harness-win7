@@ -38,10 +38,11 @@
   ],
   "open_findings": [],
   "conflicts_with": [],
-  "candidate_commit": "7f9e87e49690f94b3b2e9982d233c37785ea2137",
-  "integrated_commit": "7f9e87e49690f94b3b2e9982d233c37785ea2137",
+  "candidate_commit": "54361bd9e098d287c85e76253b4fcbaa2468a68a",
+  "integrated_commit": "54361bd9e098d287c85e76253b4fcbaa2468a68a",
   "evidence_ids": [
-    "RUN-SESSION-BOUNDARIES-20261006-JS-INITIAL-WRITE-040"
+    "RUN-SESSION-BOUNDARIES-20261006-JS-INITIAL-WRITE-040",
+    "RUN-DEEPSEEK-ERROR-20261006-JS-INITIAL-WRITE-040"
   ],
-  "next_action": "两组真实入口阻塞/Ready未发出退出及四项live/known-exit控制在干净产品7f9e87e4有界签收；继续未观察退出/所有spawn/Ready竞争、重入/全model/profile及完整C2。"
+  "next_action": "两组真实入口阻塞/Ready未发出退出及四项live/known-exit控制在干净产品54361bd9有界签收；继续未观察退出/所有spawn/Ready竞争、重入/全model/profile及完整C2。"
 }

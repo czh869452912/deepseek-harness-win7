@@ -37,8 +37,8 @@
   ],
   "open_findings": [],
   "conflicts_with": [],
-  "candidate_commit": "7f9e87e49690f94b3b2e9982d233c37785ea2137",
-  "integrated_commit": "7f9e87e49690f94b3b2e9982d233c37785ea2137",
+  "candidate_commit": "54361bd9e098d287c85e76253b4fcbaa2468a68a",
+  "integrated_commit": "54361bd9e098d287c85e76253b4fcbaa2468a68a",
   "evidence_ids": [
     "RUN-SESSION-PROJECTION-SESSION-PROJECTION-007-20260928",
     "RUN-CURRENT-20261003-SESSION-PROJECTION-007",
@@ -58,7 +58,8 @@
     "RUN-JS-WORKFLOW-20261005-SESSION-PROJECTION-007",
     "RUN-JS-DEATH-20261005-SESSION-PROJECTION-007",
     "RUN-RUNTIME-CONTEXT-20261006-SESSION-PROJECTION-007",
-    "RUN-SESSION-BOUNDARIES-20261006-SESSION-PROJECTION-007"
+    "RUN-SESSION-BOUNDARIES-20261006-SESSION-PROJECTION-007",
+    "RUN-DEEPSEEK-ERROR-20261006-SESSION-PROJECTION-007"
   ],
-  "next_action": "clean candidate 7f9e87e4 全量/原版/真实解压复验已通过。Registry accepted; next executable domain definitions and durable projection-cache, then cold Web consumers and complete profile journeys."
+  "next_action": "clean candidate 54361bd9 全量/原版/真实解压复验已通过。Registry accepted; next executable domain definitions and durable projection-cache, then cold Web consumers and complete profile journeys."
 }

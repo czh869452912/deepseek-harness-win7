@@ -40,8 +40,8 @@
   ],
   "open_findings": [],
   "conflicts_with": [],
-  "candidate_commit": "7f9e87e49690f94b3b2e9982d233c37785ea2137",
-  "integrated_commit": "7f9e87e49690f94b3b2e9982d233c37785ea2137",
+  "candidate_commit": "54361bd9e098d287c85e76253b4fcbaa2468a68a",
+  "integrated_commit": "54361bd9e098d287c85e76253b4fcbaa2468a68a",
   "evidence_ids": [
     "RUN-SQLITE-FORMAT-20261005-SQLITE-FORMAT-030",
     "RUN-SESSION-STORAGE-20261005-SQLITE-FORMAT-030",
@@ -49,7 +49,8 @@
     "RUN-JS-WORKFLOW-20261005-SQLITE-FORMAT-030",
     "RUN-JS-DEATH-20261005-SQLITE-FORMAT-030",
     "RUN-RUNTIME-CONTEXT-20261006-SQLITE-FORMAT-030",
-    "RUN-SESSION-BOUNDARIES-20261006-SQLITE-FORMAT-030"
+    "RUN-SESSION-BOUNDARIES-20261006-SQLITE-FORMAT-030",
+    "RUN-DEEPSEEK-ERROR-20261006-SQLITE-FORMAT-030"
   ],
-  "next_action": "clean candidate 7f9e87e4 全量/原版/真实解压复验已通过。独立 schema-19 格式的 826 原版/原生/真实解压、42 原版断言与私有 licensed/hash-pinned 运行时已有界签收；继续规范物理提供端 ownership/lazy/事务/revision/修复/冷消费者与整体迁移，Win7 延期。"
+  "next_action": "clean candidate 54361bd9 全量/原版/真实解压复验已通过。独立 schema-19 格式的 826 原版/原生/真实解压、42 原版断言与私有 licensed/hash-pinned 运行时已有界签收；继续规范物理提供端 ownership/lazy/事务/revision/修复/冷消费者与整体迁移，Win7 延期。"
 }

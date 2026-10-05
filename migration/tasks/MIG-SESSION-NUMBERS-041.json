@@ -38,10 +38,11 @@
   ],
   "open_findings": [],
   "conflicts_with": [],
-  "candidate_commit": "7f9e87e49690f94b3b2e9982d233c37785ea2137",
-  "integrated_commit": "7f9e87e49690f94b3b2e9982d233c37785ea2137",
+  "candidate_commit": "54361bd9e098d287c85e76253b4fcbaa2468a68a",
+  "integrated_commit": "54361bd9e098d287c85e76253b4fcbaa2468a68a",
   "evidence_ids": [
-    "RUN-SESSION-BOUNDARIES-20261006-SESSION-NUMBERS-041"
+    "RUN-SESSION-BOUNDARIES-20261006-SESSION-NUMBERS-041",
+    "RUN-DEEPSEEK-ERROR-20261006-SESSION-NUMBERS-041"
   ],
-  "next_action": "53组真实公共Session.create数值/完整冻结元数据/浅深克隆修订2在干净产品7f9e87e4有界签收；实际查询副本消费者通过，独立4a127b73拒绝产物保留。继续完整fromRestore/malformed/public plugin ABI、任意竞争/长历史/profile与完整B1。"
+  "next_action": "53组真实公共Session.create数值/完整冻结元数据/浅深克隆修订2在干净产品54361bd9有界签收；实际查询副本消费者通过，独立4a127b73拒绝产物保留。继续完整fromRestore/malformed/public plugin ABI、任意竞争/长历史/profile与完整B1。"
 }

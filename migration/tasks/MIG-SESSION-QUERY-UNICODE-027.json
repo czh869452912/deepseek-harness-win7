@@ -38,8 +38,8 @@
   ],
   "open_findings": [],
   "conflicts_with": [],
-  "candidate_commit": "7f9e87e49690f94b3b2e9982d233c37785ea2137",
-  "integrated_commit": "7f9e87e49690f94b3b2e9982d233c37785ea2137",
+  "candidate_commit": "54361bd9e098d287c85e76253b4fcbaa2468a68a",
+  "integrated_commit": "54361bd9e098d287c85e76253b4fcbaa2468a68a",
   "evidence_ids": [
     "RUN-SESSION-TEXT-20261005-SESSION-QUERY-UNICODE-027",
     "RUN-SESSION-TOOLS-20261005-SESSION-QUERY-UNICODE-027",
@@ -49,7 +49,8 @@
     "RUN-JS-WORKFLOW-20261005-SESSION-QUERY-UNICODE-027",
     "RUN-JS-DEATH-20261005-SESSION-QUERY-UNICODE-027",
     "RUN-RUNTIME-CONTEXT-20261006-SESSION-QUERY-UNICODE-027",
-    "RUN-SESSION-BOUNDARIES-20261006-SESSION-QUERY-UNICODE-027"
+    "RUN-SESSION-BOUNDARIES-20261006-SESSION-QUERY-UNICODE-027",
+    "RUN-DEEPSEEK-ERROR-20261006-SESSION-QUERY-UNICODE-027"
   ],
-  "next_action": "clean candidate 7f9e87e4 全量/原版/真实解压复验已通过。clean candidate 7f9e87e4 的 2034 Unicode 当前默认 locale 双侧/真实解压观察已有界签收；Session 字面匹配/有效提取/列表谱系顺序另有界签收；继续 malformed/plugin ABI、全域/竞争、schema-19、启动取消及整体迁移，Win7 延期。"
+  "next_action": "clean candidate 54361bd9 全量/原版/真实解压复验已通过。clean candidate 54361bd9 的 2034 Unicode 当前默认 locale 双侧/真实解压观察已有界签收；Session 字面匹配/有效提取/列表谱系顺序另有界签收；继续 malformed/plugin ABI、全域/竞争、schema-19、启动取消及整体迁移，Win7 延期。"
 }

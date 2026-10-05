@@ -39,8 +39,8 @@
   ],
   "open_findings": [],
   "conflicts_with": [],
-  "candidate_commit": "7f9e87e49690f94b3b2e9982d233c37785ea2137",
-  "integrated_commit": "7f9e87e49690f94b3b2e9982d233c37785ea2137",
+  "candidate_commit": "54361bd9e098d287c85e76253b4fcbaa2468a68a",
+  "integrated_commit": "54361bd9e098d287c85e76253b4fcbaa2468a68a",
   "evidence_ids": [
     "RUN-SESSION-PREPARED-SESSION-PREPARED-005-20260927",
     "RUN-SESSION-STORAGE-SESSION-PREPARED-005-20260927",
@@ -63,7 +63,8 @@
     "RUN-JS-WORKFLOW-20261005-SESSION-PREPARED-005",
     "RUN-JS-DEATH-20261005-SESSION-PREPARED-005",
     "RUN-RUNTIME-CONTEXT-20261006-SESSION-PREPARED-005",
-    "RUN-SESSION-BOUNDARIES-20261006-SESSION-PREPARED-005"
+    "RUN-SESSION-BOUNDARIES-20261006-SESSION-PREPARED-005",
+    "RUN-DEEPSEEK-ERROR-20261006-SESSION-PREPARED-005"
   ],
-  "next_action": "clean candidate 7f9e87e4 全量/原版/真实解压复验已通过。Bounded contract revalidated with CON-AGENT-CONFIG@1; next full Session projection/replay before Web consumers and complete profile journeys."
+  "next_action": "clean candidate 54361bd9 全量/原版/真实解压复验已通过。Bounded contract revalidated with CON-AGENT-CONFIG@1; next full Session projection/replay before Web consumers and complete profile journeys."
 }

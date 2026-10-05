@@ -1,5 +1,7 @@
 # 持续对齐记录
 
+2026-10-06 最新干净签收 `54361bd9`：全量7760 passed、6既有skip、1既有Proactor warning、0失败/错误，2045.67秒；1312必需lane、十九组1683原样Source断言、65实际配对及真实解压自有Python3.8.10/原版浏览器通过。044完整请求与045错误诊断已有界integrated，共55份独立验收；精确afd失败与此前产物不改写。见 `migration/reviews/DEEPSEEK-ERROR-GATE-20261006.md`。下一76旧wire范围的精确543自有Portable仍有17诊断差异，隔离副本匹配76并通过78旧消费者，尚未推广签收；继续七个父范围、八项JS差异和完整B/C/D。九项判据/C58/C59、accepted_upstream空和延期Win7不变。
+
 2026-10-06 DeepSeek错误045已推广：24实际原版/原生完整HTTP观察匹配，914相关回归通过；五个畸形SSE/三个超时文本差异由精确未修改afd85f4e自有Portable复现。新增446原样DeepSeek/retry断言通过。现1312必需lane、十九组1683原样断言、65配对；独立提交后须完整冻结及真实解压/浏览器验收，044/045仍running。JSON只对同值整数token2000/2000.0统一摘要，完整错误/请求/块/失败值与原始报告保留，额外语言异常属性/堆栈未认证。路径部分已提交3a7b2da5，最新签收仍7f9e87e4/53范围。见 `docs/research/2026-10-06-deepseek-error-progress.md`；全部父范围、八项JS差异、九项判据与延期Win7不变。
 
 2026-10-06 完整请求候选 `afd85f4e` 被门禁拒绝：7678 passed、1真实Git路径失败、6既有skip、1既有warning，1978.05秒；精确Portable/输入/XML/失败fixture已独立归档。输出标签扩大pytest执行路径触发 `$GIT_DIR too big`；相同长度复现失败，短路径通过。门禁改用自有短执行目录并保存原路径→归档路径映射，87项相关回归通过；现1234必需lane/64配对/十八组1237原样断言，新完整验收待执行。044保持running，最新签收仍7f9e87e4/53有界范围。下一部分DeepSeek错误24观察有8真实差异、隔离匹配24，446原样Source断言通过，尚未推广签收；见 `docs/research/2026-10-06-release-pytest-path-progress.md`。九项判据、整体与延期Win7不变。

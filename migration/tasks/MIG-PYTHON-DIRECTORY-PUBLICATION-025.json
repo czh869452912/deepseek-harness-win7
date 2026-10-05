@@ -39,8 +39,8 @@
   ],
   "open_findings": [],
   "conflicts_with": [],
-  "candidate_commit": "7f9e87e49690f94b3b2e9982d233c37785ea2137",
-  "integrated_commit": "7f9e87e49690f94b3b2e9982d233c37785ea2137",
+  "candidate_commit": "54361bd9e098d287c85e76253b4fcbaa2468a68a",
+  "integrated_commit": "54361bd9e098d287c85e76253b4fcbaa2468a68a",
   "evidence_ids": [
     "RUN-SESSION-QUERY-ENGINE-20261004-PYTHON-DIRECTORY-PUBLICATION-025",
     "RUN-SESSION-TEXT-20261005-PYTHON-DIRECTORY-PUBLICATION-025",
@@ -51,7 +51,8 @@
     "RUN-JS-WORKFLOW-20261005-PYTHON-DIRECTORY-PUBLICATION-025",
     "RUN-JS-DEATH-20261005-PYTHON-DIRECTORY-PUBLICATION-025",
     "RUN-RUNTIME-CONTEXT-20261006-PYTHON-DIRECTORY-PUBLICATION-025",
-    "RUN-SESSION-BOUNDARIES-20261006-PYTHON-DIRECTORY-PUBLICATION-025"
+    "RUN-SESSION-BOUNDARIES-20261006-PYTHON-DIRECTORY-PUBLICATION-025",
+    "RUN-DEEPSEEK-ERROR-20261006-PYTHON-DIRECTORY-PUBLICATION-025"
   ],
-  "next_action": "clean candidate 7f9e87e4 全量/原版/真实解压复验已通过。clean candidate 7f9e87e4 的十条实际目录共享/事务回归与四条解压发布/恢复观察已有界验收；保留未知外部持有者与全部失败，不认证全量 Python 包生态、任意竞争或 Win7。"
+  "next_action": "clean candidate 54361bd9 全量/原版/真实解压复验已通过。clean candidate 54361bd9 的十条实际目录共享/事务回归与四条解压发布/恢复观察已有界验收；保留未知外部持有者与全部失败，不认证全量 Python 包生态、任意竞争或 Win7。"
 }

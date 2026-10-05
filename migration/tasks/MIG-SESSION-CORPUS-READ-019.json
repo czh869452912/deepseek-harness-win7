@@ -38,8 +38,8 @@
   ],
   "open_findings": [],
   "conflicts_with": [],
-  "candidate_commit": "7f9e87e49690f94b3b2e9982d233c37785ea2137",
-  "integrated_commit": "7f9e87e49690f94b3b2e9982d233c37785ea2137",
+  "candidate_commit": "54361bd9e098d287c85e76253b4fcbaa2468a68a",
+  "integrated_commit": "54361bd9e098d287c85e76253b4fcbaa2468a68a",
   "evidence_ids": [
     "RUN-SESSION-TRACING-20261004-SESSION-CORPUS-READ-019",
     "RUN-SESSION-FILTERS-20261004-SESSION-CORPUS-READ-019",
@@ -52,7 +52,8 @@
     "RUN-JS-WORKFLOW-20261005-SESSION-CORPUS-READ-019",
     "RUN-JS-DEATH-20261005-SESSION-CORPUS-READ-019",
     "RUN-RUNTIME-CONTEXT-20261006-SESSION-CORPUS-READ-019",
-    "RUN-SESSION-BOUNDARIES-20261006-SESSION-CORPUS-READ-019"
+    "RUN-SESSION-BOUNDARIES-20261006-SESSION-CORPUS-READ-019",
+    "RUN-DEEPSEEK-ERROR-20261006-SESSION-CORPUS-READ-019"
   ],
-  "next_action": "clean candidate 7f9e87e4 全量/原版/真实解压复验已通过。clean candidate 7f9e87e4 的十九组 corpus/title 读取和取消排空已有界验收；继续完整 FTS/filter/event tracing/长期历史、全部 title/provider epoch、Web/profile 和整体迁移，不认证完整 B1 或 Win7。"
+  "next_action": "clean candidate 54361bd9 全量/原版/真实解压复验已通过。clean candidate 54361bd9 的十九组 corpus/title 读取和取消排空已有界验收；继续完整 FTS/filter/event tracing/长期历史、全部 title/provider epoch、Web/profile 和整体迁移，不认证完整 B1 或 Win7。"
 }

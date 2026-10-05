@@ -2,7 +2,7 @@
   "id": "MIG-RUNTIME-FULL-REQUEST-044",
   "goal": "对齐真实AgentLoop两次完整模型请求，移除持久消息及规范配置中的旧别名",
   "kind": "implementation",
-  "state": "running",
+  "state": "integrated",
   "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
   "base_product": "7f9e87e49690f94b3b2e9982d233c37785ea2137",
   "owner": "current-session-coordinator",
@@ -36,15 +36,13 @@
     "migration",
     "docs/research"
   ],
-  "open_findings": [
-    "All16 exact unchanged7f9e87e4 ownPortablePython3.8.10 baseline rows differ because of durable tool_calls and canonical max_tokens/reasoning_effort aliases; every actual imported module matches exactZIP/directory bytes. Fresh main-tree16 complete rows plus actual signal facade predicates match. Expanded929 regressions pass in438.58 seconds, including actual model/tool/next-request, canonical localHTTP, ACP, JS, profile cold recovery and all rejection/executable guards. Distinct clean full/extracted qualification pending. Distinct frozen afd85f4e complete gate is rejected:7678 passed/one shared-checkpoint Git path failure/six existing skips/one existing warning. Exact artifact/input/XML are preserved; no standalone Source/paired/extracted acceptance. Same-length real Git reproduction fails with $GIT_DIR too big, short execution succeeds.",
-    "This does not sign fullmodel/profile/stream cancellation/reentry or completeB3/C2."
-  ],
+  "open_findings": [],
   "conflicts_with": [],
-  "candidate_commit": "afd85f4e4fd0c404ad53fc206348c3a92ebd9165",
-  "integrated_commit": null,
+  "candidate_commit": "54361bd9e098d287c85e76253b4fcbaa2468a68a",
+  "integrated_commit": "54361bd9e098d287c85e76253b4fcbaa2468a68a",
   "evidence_ids": [
-    "RUN-RUNTIME-FULL-REQUEST-REJECTED-20261006-AFD85F4E"
+    "RUN-RUNTIME-FULL-REQUEST-REJECTED-20261006-AFD85F4E",
+    "RUN-DEEPSEEK-ERROR-20261006-RUNTIME-FULL-REQUEST-044"
   ],
-  "next_action": "保留精确afd85f4e拒绝产物；修复门禁输出标签扩大真实Git执行路径的问题，三个隔离控制已通过。044继续running，须新的干净完整及真实解压门禁后签收；整体/Win7不自动完成。"
+  "next_action": "16组完整规范模型请求、全部持久上下文和信号共享谓词在干净产品54361bd9有界签收；三个native固定参数消费者保留Python边界适配。继续canonical全profile/模型/取消/重入与完整B3/C2。"
 }

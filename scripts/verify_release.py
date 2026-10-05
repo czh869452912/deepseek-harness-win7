@@ -44,6 +44,7 @@ from scripts.sqlite_format_oracle import validate_runtime as validate_sqlite_for
 from scripts.sqlite_provider_oracle import validate_runtime as validate_sqlite_provider, source_identity as provider_source_identity, hashes as provider_hashes, MODULES as PROVIDER_MODULES, ASSETS as PROVIDER_ASSETS
 from scripts.jsonl_provider_oracle import validate_runtime as validate_jsonl_provider, source_identity as jsonl_source_identity, MODULES as JSONL_MODULES, ASSETS as JSONL_ASSETS
 from scripts.tool_scheduler_oracle import validate_runtime as validate_tool_scheduler, identity as scheduler_identity
+from scripts.http_redirect_oracle import NAMES as REDIRECT_NAMES, validate_runtime as validate_http_redirect, identity as redirect_identity
 NODE_VERSION = 'v22.22.2'
 PORTABLE_ARCHIVE = 'dist/dsh-win7-portable-v0.1.0.zip'
 PAIRED_DRIVERS = (
@@ -54,9 +55,18 @@ PAIRED_DRIVERS = (
     'approval', 'inspect', 'cordis_guard', 'cordis_runner',
     'cordis_retirement', 'cordis_tools', 'acp_sessions', 'acp_model_output', 'acp_stdio', 'acp_permissions', 'mcp_stdio', 'mcp_http', 'acp_mcp', 'subagent_acp', 'subagent_acp_teardown', 'mcp_disposal', 'subprocess_ownership', 'subprocess_tree', 'projection_cache_failure', 'session_observation_read', 'session_corpus_list', 'session_corpus_read', 'session_lineage', 'session_event_trace', 'session_filters', 'session_requests', 'session_snapshots', 'query_schema', 'query_engine', 'query_unicode', 'session_text',
 )
-PAIRED_DRIVERS = PAIRED_DRIVERS + ('session_tools', 'sqlite_format', 'sqlite_provider', 'jsonl_provider', 'tool_scheduler')
+PAIRED_DRIVERS = PAIRED_DRIVERS + ('session_tools', 'sqlite_format', 'sqlite_provider', 'jsonl_provider', 'tool_scheduler', 'http_redirect')
 OFFICIAL_CONFIGS = ('consumers', 'agent-lifecycle', 'session-recovery', 'session-projection', 'acp', 'acp-app', 'mcp', 'subagent-acp', 'storage-cache', 'session-observation', 'session-corpus', 'session-sqlite-query', 'query-engine-source', 'session-tools-source', 'sqlite-format-source', 'sqlite-provider-source', 'jsonl-provider-source', 'tool-scheduler-source')
 REQUIRED_REGRESSION = {
+    'test_http_redirect_source': {
+        *{'test_actual_source_redirect_method_body_headers_limit_and_abort_match[' + name + ']' for name in REDIRECT_NAMES},
+        *{'test_redirect_receipt_refuses_incomplete_or_foreign_runtime[' + damage + ']' for damage in (
+            'missing-module', 'changed-module', 'empty-closure', 'foreign-root', 'foreign-python', 'missing-row', 'duplicate-row', 'changed-row')},
+    },
+    'test_current_release_gate': {
+        *{'test_extracted_redirect_requires_fresh_source_and_owned_runtime[' + damage + ']' for damage in (
+            'missing', 'source-missing', 'source-changed', 'modules-missing', 'module-changed', 'foreign-root', 'missing-observation')},
+    },
     'test_agent_loop_parallel_settings': {
         *{'test_direct_parallel_cap_rejects_invalid_numbers[' + value + ']' for value in ('0', '-1', '1.5', 'True', '2', 'nan', 'inf')},
         *{'test_direct_parallel_cap_resolves_original_default_and_integer_numbers[config' + str(index) + '-' + str(value) + ']'
@@ -733,6 +743,11 @@ def validate_extracted(path, archive, candidate):
                                 candidate['tool_scheduler_observations_sha256'], candidate['tool_scheduler_modules'])
     except (ValueError, KeyError, TypeError) as error:
         raise RuntimeError('Extracted toolScheduler observations are incomplete') from error
+    try:
+        validate_http_redirect(report.get('httpRedirect'), Path(report['mcpStdio']['root']),
+                               candidate['http_redirect_observations_sha256'], candidate['http_redirect_modules'])
+    except (ValueError, KeyError, TypeError) as error:
+        raise RuntimeError('Extracted httpRedirect observations are incomplete') from error
     for name, validate in [('queryEngine', validate_query_engine), ('querySchema', validate_query_schema), ('pythonDirectory', validate_python_directory),
                            ('sessionLineage', validate_session_lineage), ('sessionEventTrace', validate_session_event_trace),
                            ('sessionFilters', validate_session_filters), ('sessionRequests', validate_session_requests),
@@ -854,6 +869,10 @@ def verify(args, output):
     scheduler_native = output / 'tool-scheduler-paired.native.json'
     candidate['tool_scheduler_observations_sha256'] = scheduler_identity(json.loads(scheduler_source.read_text(encoding='utf-8')))
     candidate['tool_scheduler_modules'] = json.loads(scheduler_native.read_text(encoding='utf-8'))['modules']
+    redirect_source = output / 'http-redirect-paired.source.json'
+    redirect_native = output / 'http-redirect-paired.native.json'
+    candidate['http_redirect_observations_sha256'] = redirect_identity(json.loads(redirect_source.read_text(encoding='utf-8')))
+    candidate['http_redirect_modules'] = json.loads(redirect_native.read_text(encoding='utf-8'))['modules']
     raw = output / 'cordis-raw.json'
     raw.unlink(missing_ok=True)
     run([python, 'scripts/cordis_oracle.py', '--output', str(raw)],
@@ -873,7 +892,8 @@ def verify(args, output):
                '--browser', str(browser), '--output', str(extracted), '--unicode-source', str(unicode_source),
                '--text-source', str(text_source), '--text-inputs', str(text_inputs), '--tools-source', str(tools_source),
                '--format-source', str(format_source), '--format-inputs', str(format_inputs),
-               '--scheduler-source', str(scheduler_source), '--scheduler-native', str(scheduler_native)]
+               '--scheduler-source', str(scheduler_source), '--scheduler-native', str(scheduler_native),
+               '--redirect-source', str(redirect_source), '--redirect-native', str(redirect_native)]
     if not candidate['worktree_dirty']:
         command += ['--expected-commit', candidate['product_commit']]
     run(command, 'portable-extracted', output, env=environment)

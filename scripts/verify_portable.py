@@ -46,6 +46,7 @@ from scripts.sqlite_format_oracle import validate_runtime as validate_sqlite_for
 from scripts.sqlite_provider_oracle import validate_runtime as validate_sqlite_provider, source_identity as provider_source_identity
 from scripts.jsonl_provider_oracle import validate_runtime as validate_jsonl_provider, source_identity as jsonl_source_identity
 from scripts.tool_scheduler_oracle import validate_runtime as validate_tool_scheduler, identity as scheduler_identity
+from scripts.http_redirect_oracle import validate_runtime as validate_http_redirect, identity as redirect_identity
 
 
 def digest(path):
@@ -96,6 +97,8 @@ def main(argv=None):
     parser.add_argument('--format-inputs', help='Exact schema-19 format generated inputs')
     parser.add_argument('--scheduler-source', help='Fresh tool scheduler Source observations')
     parser.add_argument('--scheduler-native', help='Fresh host scheduler runtime closure')
+    parser.add_argument('--redirect-source', help='Fresh HTTP redirect Source observations')
+    parser.add_argument('--redirect-native', help='Fresh host HTTP redirect runtime closure')
     args = parser.parse_args(argv)
     archive, output = Path(args.archive).resolve(), Path(args.output).resolve()
     output.parent.mkdir(parents=True, exist_ok=True)
@@ -138,6 +141,8 @@ def main(argv=None):
             'oracles/sqlite_format_inputs.py', 'oracles/sqlite_format.probe.spec.ts', 'oracles/vitest.sqlite-format-probe.config.mts',
             'tool_scheduler_oracle.py', 'oracles/tool_scheduler_python.py', 'oracles/tool_scheduler.probe.spec.ts',
             'oracles/tool_start_prefix_python.py', 'oracles/tool_start_prefix_source.ts',
+            'http_redirect_oracle.py', 'oracles/http_redirect_python.py', 'oracles/http_redirect.probe.spec.ts',
+            'oracles/vitest.http-redirect-probe.config.mts',
             'oracles/vitest.tool-scheduler-probe.config.mts')})
     node = shutil.which('node') if args.browser else None
     try:
@@ -201,6 +206,24 @@ def main(argv=None):
         if scheduler_modules != {name: digest(ROOT / name) for name in scheduler_modules}:
             raise RuntimeError('Scheduler host receipt differs from current candidate module bytes')
         report['toolSchedulerSourceSha256'] = digest(scheduler_source)
+        if args.redirect_source or args.redirect_native:
+            if not args.redirect_source or not args.redirect_native:
+                raise RuntimeError('Both HTTP redirect Source and native receipts are required')
+            redirect_source, redirect_native = Path(args.redirect_source).resolve(), Path(args.redirect_native).resolve()
+        else:
+            redirect_pair = output.with_suffix('.http-redirect-paired.json')
+            redirect_result = subprocess.run([sys.executable, str(ROOT / 'scripts/http_redirect_oracle.py'),
+                '--output', str(redirect_pair)], cwd=str(ROOT), capture_output=True, timeout=60)
+            output.with_suffix('.http-redirect-source.log').write_bytes(redirect_result.stdout + redirect_result.stderr)
+            if redirect_result.returncode:
+                raise RuntimeError('Fresh HTTP redirect Source qualification failed')
+            redirect_source, redirect_native = redirect_pair.with_suffix('.source.json'), redirect_pair.with_suffix('.native.json')
+        redirect_digest = redirect_identity(json.loads(redirect_source.read_text(encoding='utf-8')))
+        redirect_modules = json.loads(redirect_native.read_text(encoding='utf-8'))['modules']
+        validate_http_redirect(json.loads(redirect_native.read_text(encoding='utf-8')), ROOT, redirect_digest, redirect_modules)
+        if redirect_modules != {name: digest(ROOT / name) for name in redirect_modules}:
+            raise RuntimeError('HTTP redirect host receipt differs from current candidate module bytes')
+        report['httpRedirectSourceSha256'] = digest(redirect_source)
         if args.format_source or args.format_inputs:
             if not args.format_source or not args.format_inputs:
                 raise RuntimeError('Both SQLite format Source and inputs are required')
@@ -491,6 +514,16 @@ def main(argv=None):
             scheduler_report = json.loads(scheduler_path.read_text(encoding='utf-8'))
             validate_tool_scheduler(scheduler_report, portable, scheduler_digest, scheduler_modules)
             report['toolScheduler'] = scheduler_report
+            redirect_path = workspace / 'http-redirect.json'
+            redirect = subprocess.run([str(portable / 'python.exe'), '-I', '-u',
+                str(ROOT / 'scripts/oracles/http_redirect_python.py'), '--root', str(portable), '--output', str(redirect_path)],
+                cwd=str(workspace), env=env, capture_output=True, encoding='utf-8', errors='replace', timeout=45)
+            output.with_suffix('.http-redirect.log').write_text(redirect.stdout + '\nSTDERR:\n' + redirect.stderr, encoding='utf-8')
+            if redirect.returncode or redirect.stderr or not redirect_path.is_file():
+                raise RuntimeError('Extracted HTTP redirects failed')
+            redirect_report = json.loads(redirect_path.read_text(encoding='utf-8'))
+            validate_http_redirect(redirect_report, portable, redirect_digest, redirect_modules)
+            report['httpRedirect'] = redirect_report
             directory = subprocess.run([str(portable / 'python.exe'), '-I', '-u',
                 str(ROOT / 'scripts/python_directory_probe.py'), '--root', str(portable), '--output', str(directory_path)],
                 cwd=str(workspace), env=env, capture_output=True, encoding='utf-8', errors='replace', timeout=90)

@@ -36,6 +36,7 @@ from scripts.sqlite_format_oracle import observation_digest as format_observatio
 from scripts.sqlite_provider_oracle import observation_digest as provider_observation_digest
 from scripts.jsonl_provider_oracle import observation_digest as jsonl_observation_digest
 from scripts.tool_scheduler_oracle import identity as scheduler_observation_digest
+from scripts.http_redirect_oracle import identity as redirect_observation_digest
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -346,7 +347,7 @@ def test_extracted_session_corpus_read_requires_exact_sources_and_batch_drain(tm
 def test_regression_requires_browser_portable_and_acp_process_lanes(tmp_path):
     path = tmp_path / 'pytest.xml'
     regression_xml(path)
-    assert GATE.validate_regression(path) == {'required_lanes': 452, 'skipped': 1}
+    assert GATE.validate_regression(path) == {'required_lanes': 496, 'skipped': 1}
 
 
 @pytest.mark.parametrize('module', ['test_native_web_browser', 'test_portable_smoke', 'test_acp_stdio_journey', 'test_acp_permission_process', 'test_mcp_stdio_transport', 'test_mcp_supervisor', 'test_mcp_schema', 'test_mcp_config', 'test_mcp_tools_source', 'test_mcp_image_consumer', 'test_mcp_http_source', 'test_mcp_http_transport', 'test_mcp_supervisor_source', 'test_mcp_factory_source', 'test_acp_mcp_source', 'test_acp_mcp_runtime_source', 'test_acp_mcp_abort_source', 'test_acp_mcp_process', 'test_acp_mcp_runtime'])
@@ -450,6 +451,40 @@ def test_extracted_scheduler_requires_fresh_source_and_owned_runtime(tmp_path, d
         GATE.validate_extracted(path, archive, candidate)
 
 
+@functools.lru_cache(maxsize=1)
+def redirect_runtime_fixture():
+    with tempfile.TemporaryDirectory(prefix='redirect-validator-fixture-') as directory:
+        output = Path(directory) / 'native.json'
+        result = subprocess.run([sys.executable, '-I', str(ROOT / 'scripts/oracles/http_redirect_python.py'),
+                                 '--root', str(ROOT), '--output', str(output)], capture_output=True, timeout=45)
+        assert result.returncode == 0 and not result.stderr, result.stderr
+        return json.loads(output.read_text(encoding='utf-8'))
+
+
+@pytest.mark.parametrize('damage', ['missing', 'source-missing', 'source-changed', 'modules-missing',
+                                   'module-changed', 'foreign-root', 'missing-observation'])
+def test_extracted_redirect_requires_fresh_source_and_owned_runtime(tmp_path, damage):
+    archive, candidate, report = extracted_receipt(tmp_path)
+    if damage == 'missing':
+        del report['httpRedirect']
+    elif damage == 'source-missing':
+        del candidate['http_redirect_observations_sha256']
+    elif damage == 'source-changed':
+        candidate['http_redirect_observations_sha256'] = '0' * 64
+    elif damage == 'modules-missing':
+        del candidate['http_redirect_modules']
+    elif damage == 'module-changed':
+        report['httpRedirect']['modules']['dsh/llm/http_stream.py'] = '0' * 64
+    elif damage == 'foreign-root':
+        report['httpRedirect']['root'] = str(tmp_path.parent)
+    else:
+        report['httpRedirect']['rows'].pop()
+    path = tmp_path / 'extracted.json'
+    path.write_text(json.dumps(report), encoding='utf-8')
+    with pytest.raises(RuntimeError, match='httpRedirect'):
+        GATE.validate_extracted(path, archive, candidate)
+
+
 def extracted_receipt(tmp_path):
     archive = tmp_path / 'portable.zip'
     archive.write_bytes(b'exact candidate archive')
@@ -458,12 +493,16 @@ def extracted_receipt(tmp_path):
     scheduler['root'] = str(tmp_path)
     candidate['tool_scheduler_observations_sha256'] = scheduler_observation_digest(scheduler['rows'])
     candidate['tool_scheduler_modules'] = scheduler['modules'].copy()
+    redirect = copy.deepcopy(redirect_runtime_fixture())
+    redirect['root'] = str(tmp_path)
+    candidate['http_redirect_observations_sha256'] = redirect_observation_digest(redirect['rows'])
+    candidate['http_redirect_modules'] = redirect['modules'].copy()
     report = {'result': 'passed', 'browser': {'passed': True}, 'runtime': {'checks': ['actual runtime']},
               'acp': {'processes': 2, 'steps': ['initialize-0', 'invalid-params-before-effects',
                   'persistent-new', 'close-list-0', 'eof-0', 'initialize-1',
                   'new-process-resume-no-history-updates', 'close-list-1', 'eof-1']},
               'runtimeStderr': '', 'frontendFilesChecked': 119, 'archive': str(archive),
-              'archiveSha256': GATE.digest(archive), 'provenance': dict(candidate), 'toolScheduler': scheduler}
+              'archiveSha256': GATE.digest(archive), 'provenance': dict(candidate), 'toolScheduler': scheduler, 'httpRedirect': redirect}
     modes = ['allow', 'reject', 'malformed', 'cancel-late', 'close-late', 'eof']
     report['acpPermissions'] = {'processes': 6, 'modes': modes, 'observations': [
         {'mode': mode, 'executed': mode == 'allow', 'modelRequests': 2 if mode in modes[:3] else 1, 'stderr': [''],

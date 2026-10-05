@@ -1,0 +1,23 @@
+{
+  "id": "CON-HTTP-REDIRECT",
+  "revision": 1,
+  "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
+  "status": "specified",
+  "source_paths": ["reference/packages/llm/llm-deepseek/src/adapter.ts", "dsh/llm/http_stream.py", "dsh/llm/llm_deepseek.py", "dsh/llm/llm_service.py"],
+  "consumers": ["dsh/llm/deepseek_files.py", "dsh/llm/pi_completions_stream.py", "dsh/llm/pi_responses_stream.py", "dsh/llm/pi_anthropic_stream.py", "scripts/http_redirect_oracle.py", "scripts/verify_release.py", "scripts/verify_portable.py"],
+  "invariants": [
+    "Actual pinned DeepSeek Fetch and the selected native adapter retain POST body on 307/308 and rewrite POST on 301/302/303; PUT and HEAD boundaries have separate actual raw Fetch/shared-carrier observations.",
+    "Authorization, proxy authorization and cookies disappear across origin changes and do not return when redirecting back. Attribution headers persist; body header removal follows actual method rewrite.",
+    "Twenty redirects are admitted; the twenty-first redirect and repeated-URL loop fail as transport errors after exactly twenty-one requests.",
+    "Observed credential-bearing or unsupported-protocol targets refuse without another request; relative path/query space/fragment and Host override observations match actual pinned Fetch.",
+    "An owned abort before follow admits no target; a response with unfinished redirect body does not block reaching the target. Previous response and all owned transport resources close on termination.",
+    "All twenty-nine complete ordered Source/native/extracted observation objects and imported runtime module hashes must match fresh Source identity. Error prose and full transport protocol are outside this bounded contract."
+  ],
+  "identity": "Fifteen actual adapter cases and fourteen actual pinned raw Fetch/shared carrier cases; request origin index, method/path, selected headers, JSON body, terminal chunks/status/error and candidate module closure.",
+  "ownership": "Clone the initial Request rather than mutating its caller; close the old redirect response before following through the same owned connection/cancellation machinery.",
+  "ordering": "Apply rewrite and sensitive-header removal before target admission; bound the whole redirect chain with one count and preserve retained body bytes.",
+  "errors": "Observed invalid target/count failures are URLError at the carrier and TRANSPORT at the adapter; controller cancellation remains ABORTED. No original bug predicates are broadened.",
+  "cancellation": "The current owned signal/idle checks govern each follow-up connection and read; explicit pre-follow abort and unfinished redirect-body observations are required.",
+  "adaptation": "Python3.8 stdlib owned HTTP/HTTPS handlers receive a Fetch-compatible redirect handler; no product Node, frontend modifications or external credentials.",
+  "open_questions": ["Full WHATWG URL/IDNA/unicode, TLS, proxies, all compression/framing, authentication and every provider route remain separate transport contracts.", "Complete Tools/Wire/profile combinations, general JS, overall migration and deferred real Win7 remain unaccepted."]
+}

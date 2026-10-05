@@ -1,5 +1,6 @@
 """Owned urllib stream reads with idle timeout and active socket cancellation."""
 import contextlib
+import copy
 import http.client
 import io
 import math
@@ -12,13 +13,57 @@ import threading
 import time
 import urllib.request
 import urllib.error
+import urllib.parse
 
 from dsh.core.cancellation import aborted
+
+
+class _FetchRedirectHandler(urllib.request.HTTPRedirectHandler):
+    def http_error_302(self, request, response, code, message, headers):
+        location = headers.get('location')
+        if location is None:
+            return None
+        try:
+            target = urllib.parse.urljoin(request.full_url, location.replace(' ', '%20'))
+            destination = urllib.parse.urlsplit(target)
+            source = urllib.parse.urlsplit(request.full_url)
+            if destination.scheme not in ('http', 'https'):
+                raise ValueError('redirect target protocol is unsupported')
+            if destination.username or destination.password:
+                raise ValueError('redirect target credentials are unsupported')
+            source_origin = (source.scheme, source.hostname, source.port or (443 if source.scheme == 'https' else 80))
+            destination_origin = (destination.scheme, destination.hostname,
+                                  destination.port or (443 if destination.scheme == 'https' else 80))
+            count = getattr(request, '_dsh_redirect_count', 0)
+            if count >= 20:
+                raise ValueError('redirect count exceeded')
+            method = request.get_method()
+            rewrite = (code in (301, 302) and method == 'POST') or (code == 303 and method not in ('GET', 'HEAD'))
+            excluded = {'host', 'content-length'}
+            if rewrite:
+                excluded.update(('content-type', 'content-encoding', 'content-language', 'content-location'))
+            if source_origin != destination_origin:
+                excluded.update(('authorization', 'proxy-authorization', 'cookie'))
+            forwarded = {name: value for name, value in request.header_items() if name.lower() not in excluded}
+            redirected = urllib.request.Request(target, data=None if rewrite else request.data, headers=forwarded,
+                                                origin_req_host=request.origin_req_host, unverifiable=True,
+                                                method='GET' if rewrite else method)
+            redirected._dsh_redirect_count = count + 1
+        except ValueError as error:
+            response.close()
+            raise urllib.error.URLError(str(error)) from error
+        response.close()
+        return self.parent.open(redirected, timeout=request.timeout)
+
+    http_error_301 = http_error_303 = http_error_307 = http_error_308 = http_error_302
 
 
 @contextlib.contextmanager
 def open_stream(request, signal=None, idle_timeout_ms=300000, on_activity=None, read_error_body=True):
     from dsh.llm.llm_service import LlmError
+    request = urllib.request.Request(request) if isinstance(request, str) else copy.copy(request)
+    request.headers = {name: value for name, value in request.headers.items() if name.lower() != 'host'}
+    request.unredirected_hdrs = {name: value for name, value in request.unredirected_hdrs.items() if name.lower() != 'host'}
     if type(idle_timeout_ms) not in (int, float) or not math.isfinite(idle_timeout_ms) or not 0 < idle_timeout_ms <= 2147483647:
         raise ValueError("streamIdleTimeoutMs must be a positive bounded timer")
     state = {"reading": False, "since": time.monotonic(), "code": None, "response": None}
@@ -240,7 +285,7 @@ def open_stream(request, signal=None, idle_timeout_ms=300000, on_activity=None, 
     try:
         state.update(reading=True, since=time.monotonic())
         try:
-            response = urllib.request.build_opener(Http(), Https()).open(request, timeout=idle_timeout_ms / 1000)
+            response = urllib.request.build_opener(Http(), Https(), _FetchRedirectHandler()).open(request, timeout=idle_timeout_ms / 1000)
         except urllib.error.HTTPError as error:
             response = state["response"] = error
             error._dsh_body = b"".join(read_chunks(error)) if read_error_body else b""

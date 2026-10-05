@@ -1,0 +1,24 @@
+{
+  "id": "MIG-HTTP-REDIRECT-035",
+  "goal": "闭合实际 DeepSeek 与共享 HTTP carrier 的二十九组重定向边界",
+  "kind": "implementation",
+  "state": "running",
+  "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
+  "base_product": "fed1effe20c803fa277340e44b5df25c529887f5",
+  "owner": "current-session-coordinator",
+  "requires": [{"task": "MIG-CURRENT-RELEASE-GATE-003", "contract": "CON-CURRENT-RELEASE-GATE", "revision": 1}],
+  "provides": [{"contract": "CON-HTTP-REDIRECT", "revision": 1}],
+  "acceptance": [
+    "Fifteen real adapter observations match pinned Source for same/cross-origin 301/302/303/307/308, twenty/twenty-one/loop chains, cross-back and rewrite-then-preserve.",
+    "Fourteen actual pinned raw Fetch/shared carrier observations cover sensitive/body headers, PUT/HEAD, credential/protocol refusal, relative query/fragment, Host, pre-follow cancellation and unfinished redirect body.",
+    "Preserve original Request ownership and existing idle/socket cancellation; all twenty-nine Source/native/extracted objects and imported module bytes match.",
+    "A clean complete candidate passes full pytest, 496 mandatory lanes, eighteen unchanged Source groups/1237 assertions, 55 paired drivers and actual extracted/original-browser acceptance."
+  ],
+  "expected_paths": ["dsh/llm", "scripts", "tests", "migration", "docs/research"],
+  "open_findings": [],
+  "conflicts_with": [],
+  "candidate_commit": null,
+  "integrated_commit": null,
+  "evidence_ids": [],
+  "next_action": "29实际双侧matched，84定向与607门禁/调度消费者回归通过；migration check通过。提交后冻结全量候选，完成实际解压与原版浏览器验收前不签收；完整HTTP/TLS/URL/压缩及全项目继续开放。"
+}

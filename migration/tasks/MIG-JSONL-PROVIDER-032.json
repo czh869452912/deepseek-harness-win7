@@ -19,10 +19,10 @@
     "A clean committed complete gate passes all tests, 372 mandatory lanes, seventeen unchanged Source groups/1210 assertions, 53 paired drivers and actual extracted/original-browser qualification. Existing skips/warnings, failed candidates and unrooted diagnostics remain explicit; no new exception or Source/frontend change."
   ],
   "expected_paths": ["dsh/session", "dsh/boot/plugin_registry.py", "scripts", "tests", "migration", "docs/research"],
-  "open_findings": ["579 formal development observations and canonical consumers passed; complete committed/extracted acceptance is pending. Arbitrary malformed optional metadata, concurrency/histories and overall migration are not accepted."],
+  "open_findings": ["865fea84 complete gate rejected: 6801 passed, 8 failed, 6 existing skips, 1 existing warning; exact ZIP/input/XML/logs retained. Six ACP audit observers assumed plaintext and two Web boot fixtures read the real user home. Corrected observers/isolation passed 16 focused tests; a new clean committed complete/extracted gate is required. Arbitrary malformed optional metadata, concurrency/histories and overall migration are not accepted."],
   "conflicts_with": [],
   "candidate_commit": null,
   "integrated_commit": null,
   "evidence_ids": [],
-  "next_action": "完成定向回归与门禁所有权校验，提交产品后执行新的完整冻结门禁；保留 d5cc 失败记录和原版不变的错误判据。"
+  "next_action": "提交已通过定向验证的观察器/启动隔离修复，执行新的完整冻结门禁；保留 d5cc 与 865fea84 精确失败产物，不重跑未改候选或放宽判据。"
 }

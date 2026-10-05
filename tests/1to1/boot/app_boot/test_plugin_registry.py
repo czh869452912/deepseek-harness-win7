@@ -737,6 +737,7 @@ async def test_run_profile_reports_exactly_the_shipped_provider_gap(profile, mon
     stdin = os.fdopen(read_fd, 'rb', buffering=0)
     monkeypatch.setattr(internals, 'stdin', stdin)
     home = tmp()
+    monkeypatch.setenv('DSH_HOME', home)
     try:
         if not SHIPPED_PROVIDER_GAP[profile]:
             result = await asyncio.wait_for(run_profile(dict(profile=profile, dshHome=home,

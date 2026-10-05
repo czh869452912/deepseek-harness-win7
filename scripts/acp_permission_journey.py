@@ -124,6 +124,7 @@ class Peer:
 
 def journey(root, workspace, modes=None):
     home = prepare_profile(root, workspace)
+    from dsh.session.jsonl_zstd import decompress_frame, scan_frames
     selected = modes or ['allow', 'reject', 'malformed', 'cancel-late', 'close-late', 'eof']
     rows, requests = [], []
     class Handler(BaseHTTPRequestHandler):
@@ -200,9 +201,14 @@ def journey(root, workspace, modes=None):
                 assert marker.exists() is (mode == 'allow')
                 if mode in ('cancel-late', 'close-late', 'eof'):
                     assert len(requests) == first + 1
-                files = [path for path in (workspace / 'sessions').rglob('session.jsonl') if path.parent.name == session_id]
+                files = [path for path in (workspace / 'sessions').rglob('session.jsonl.zstd') if path.parent.name == session_id]
                 assert len(files) == 1, files
-                events = [json.loads(line) for line in files[0].read_text(encoding='utf-8').splitlines()[1:]]
+                buffer = files[0].read_bytes()
+                scanned = scan_frames(buffer)
+                assert 'tornStart' not in scanned and scanned['frames'], scanned
+                text = b''.join(decompress_frame(buffer[frame['start']:frame['end']])
+                                for frame in scanned['frames']).decode('utf-8')
+                events = [json.loads(line) for line in text.splitlines()[1:]]
                 audit = [event for event in events if event['type'] in ('approval/asked', 'approval/decided')]
                 expected = {'allow': 'allowed-once', 'reject': 'rejected', 'malformed': 'unavailable'}.get(mode, 'cancelled')
                 assert [event['type'] for event in audit] == ['approval/asked', 'approval/decided']

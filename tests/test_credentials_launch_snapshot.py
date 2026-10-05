@@ -44,6 +44,7 @@ def test_canonical_snapshot_owns_reference_precedence_and_writes(tmp_path, monke
 async def test_web_credentials_remote_uses_launch_layers_and_preserves_them_on_restart(tmp_path, monkeypatch):
     inherited, fallback = 'WEB_LAUNCH_KEY', 'WEB_DOTENV_KEY'
     monkeypatch.setenv('DSH_TELEMETRY_DISABLED', '1')
+    monkeypatch.setenv('DSH_HOME', str(tmp_path))
     monkeypatch.setenv(inherited, 'inherited-fixture')
     snapshot = BootSnapshot([
         dict(source='process', values=dict(os.environ)),

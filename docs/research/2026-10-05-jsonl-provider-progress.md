@@ -12,4 +12,8 @@
 
 提交前的定向验证包含 593 个实际测试：592 passed、1 failed；唯一失败是新断言错误地将 sdk-minimal 的显式 plaintext 配置视为默认压缩。按原版 bundle 配置纠正后，两项 SDK 定向测试均通过。原版 sdk-minimal bundle 未修改，其他 592 项已经通过的回归无需因这个测试断言变更重跑；提交后的完整冻结门禁仍须执行全部 tests。
 
+产品候选 `865fea84e9845c196219d1ce4fe2c7ffcdb977e8` 的首次完整冻结门禁被拒绝：6801 passed、8 failed、6 既有平台 skipped、1 既有 warning；Source/配对/解压阶段未执行。精确 ZIP SHA256 为 `47fab1e4f888064b4a8d90f759a6e1609a0e00578bd44fa801830957a589330c`，输入清单 SHA256 为 `4056a305e9c49aff8e5047603bfb32be2f071f9a7f312377437b1cd73993c646`；ZIP、XML、完整日志和拒绝来源保存在 `.goose/out/session-storage-clean-865fea84/`，须进入后续证据归档。
+
+六条 ACP 权限进程旅程的业务、取消、迟到响应、EOF 和关闭均已完成，观察器仍查找旧 plaintext suffix。观察器改为读取实际默认 `session.jsonl.zstd`，要求全部 frame 完整、checksum 解压成功，再检查原有批准审计事件。另两条 Web 启动测试未设置隔离 launch DSH_HOME，误读用户既有 plaintext 日志；规范 encoding refusal 正确阻止混用。夹具在快照捕获和启动前显式设置临时 DSH_HOME，不更改用户日志、产品默认值或 profile 参数语义。修复后 16 项定向测试通过（25.99 秒）；无新增 skip、例外、放宽时限或错误判据。该变更须独立提交并冻结新候选，不能签收或重跑 865fea84。
+
 任意 malformed optional metadata/public plugin ABI、跨进程/多工作区/长历史和完整 B/C/D 范围继续开放。accepted_upstream 为空，Win7 真机按用户决定延期；本记录不宣称整体迁移闭环。

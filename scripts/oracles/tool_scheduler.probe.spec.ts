@@ -44,6 +44,19 @@ it('observes actual original caps, settings ownership and factory model consumer
     } catch (error: any) {rows.push({name:'cap-'+name,error:error.message})}
     finally {await ctx.fiber.dispose()}
   }
+  for (const [name,config,expected] of [
+    ['config-empty-session',{agents:[{id:'main',sessionId:''}]},'expected string length >= 1'],
+    ['config-boolean-max-tokens',{agents:[{id:'main',maxTokens:true}]},'expected number but got true'],
+  ] as const) {
+    const ctx = new Context(), published: boolean[] = []
+    ctx.on('agent/created',() => {published.push(true)})
+    await ctx.plugin(Llm);await ctx.plugin(Sessions);await ctx.plugin(Tools);await ctx.plugin(Prompt);await ctx.plugin(Agents)
+    try {
+      await ctx.plugin(Loop,config as any)
+      rows.push({name,admitted:true,published})
+    } catch (error: any) {rows.push({name,error:error.name,expected:error.message.includes(expected),published})}
+    finally {await ctx.fiber.dispose()}
+  }
   {
     const {ctx,settingsFiber,loopFiber} = await boot(4,true)
     const cap = () => ctx.agentLoop.config.maxParallelToolCalls

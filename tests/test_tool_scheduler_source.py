@@ -19,13 +19,16 @@ def observations(tmp_path_factory):
                    cwd=str(ROOT), env=dict(os.environ), check=True, timeout=45)
     paired = json.loads(output.read_text(encoding='utf-8'))
     native = json.loads(output.with_suffix('.native.json').read_text(encoding='utf-8'))
-    assert paired['status'] == 'matched' and paired['cases'] == 20
+    assert paired['status'] == 'matched' and paired['cases'] == 22
     return native, paired['observations_sha256']
 
 
 def test_actual_source_parallel_caps_settings_and_factory_consumers_match(observations):
     native, source_digest = observations
     validate_runtime(native, ROOT, source_digest, native['modules'])
+    for name in ('config-empty-session', 'config-boolean-max-tokens'):
+        assert next(row for row in native['rows'] if row['name'] == name) == dict(
+            name=name, error='ValidationError', expected=True, published=[])
 
 
 def test_actual_source_in_flight_group_keeps_cap_until_exclusive_barrier(observations):

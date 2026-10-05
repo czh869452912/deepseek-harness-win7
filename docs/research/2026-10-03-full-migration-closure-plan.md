@@ -47,6 +47,8 @@
 
 工具并发增量已修复 Native 默认8与配置未传递的问题。实际 Source/native 二十项观察包含默认10、合法/拒绝数值、settings 挂卸、十二工具模型池，以及七工具跨独占屏障的动态组快照；33 项当前定向回归通过，27 项原样 Source 断言通过。完整 Tools/Wire 的同步 dispatch 前缀和组合仍开放。回执单测遇到磁盘写满，日志保留；用户授权只清理已标识的合成 JSON，真实失败产物不删除。新干净冻结验收待执行，见 `2026-10-05-tool-parallelism-progress.md`。
 
+`18d60566` 完整门禁记录6889通过、2旧配置错误断言失败、6既有跳过和1既有warning；新 Config 的原版 ValidationError 与旧 ValueError 断言冲突。实际 Source/native 两条拒绝观察证明类型/消息及零 agent 发布一致，配对现为22项，严格修正断言后49定向通过。确切ZIP/输入/XML/浏览器均已保留，独立 Source/配对/解压仍待新候选完整验证；无原版判据放宽或未改候选重跑。
+
 ## 历史执行项（2026-10-04）
 
 2026-10-04：最近完整有界验收已推进到 `1d9940aa`，6134 passed、6 skipped、1 warning、0 failed；119 必需 lane、十一组 910 原版断言、43 双侧驱动与真实解压 Python 3.8.10/原版浏览器通过。三十一个有界子任务按精确产品、输入和产物重签；见 `migration/reviews/SESSION-FILTERS-CLOSURE-20261004.md`。这不是完整 ACP、Session 或全项目验收。

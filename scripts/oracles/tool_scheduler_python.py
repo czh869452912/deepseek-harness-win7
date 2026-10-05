@@ -66,6 +66,24 @@ async def observe():
             rows.append(dict(name='cap-' + name, error=str(error)))
         finally:
             await ctx.fiber.dispose()
+    for name, config, expected in [
+        ('config-empty-session', {'agents': [{'id': 'main', 'sessionId': ''}]}, 'expected string length >= 1'),
+        ('config-boolean-max-tokens', {'agents': [{'id': 'main', 'maxTokens': True}]}, 'expected number but got true'),
+    ]:
+        ctx = Context()
+        published = []
+        ctx.on('agent/created', lambda *arguments: published.append(True))
+        await ctx.plugin(SessionPlugin)
+        await ctx.plugin(ToolsPlugin)
+        await ctx.plugin(AgentPlugin)
+        try:
+            await ctx.plugin(AgentLoopPlugin, config)
+            rows.append(dict(name=name, admitted=True, published=published))
+        except Exception as error:
+            rows.append(dict(name=name, error=getattr(error, 'name', type(error).__name__),
+                             expected=expected in str(error), published=published))
+        finally:
+            await ctx.fiber.dispose()
     ctx = Context()
     try:
         settings_fiber = await ctx.plugin(MemorySettings)

@@ -3,6 +3,7 @@ import asyncio
 import re
 import pytest
 from dsh.cordis.context import Context
+from dsh.cordis.schema import ValidationError
 from dsh.core.agent import AgentPlugin
 from dsh.core.agent_loop import AgentLoopPlugin, CONFIGURED_AGENT_IDENTITIES_KEY
 from dsh.core.session import SessionPlugin, SessionHeader
@@ -35,17 +36,17 @@ async def test_launcher_identities_override_both_keys():
     finally: await ctx.fiber.dispose()
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize('rows,match',[
-    ([{'id':'a','sessionId':''}],'string length'),
-    ([{'id':'a','sessionId':'s','resumeSessionId':'old'}],'mutually exclusive'),
-    ([{'id':'a','sessionId':'s'},{'id':'b','resumeSessionId':'s'}],'duplicate exact'),
-    ([{'id':'a','maxTokens':True}],'positive safe'),
+@pytest.mark.parametrize('rows,match,exception',[
+    ([{'id':'a','sessionId':''}],'string length',ValidationError),
+    ([{'id':'a','sessionId':'s','resumeSessionId':'old'}],'mutually exclusive',ValueError),
+    ([{'id':'a','sessionId':'s'},{'id':'b','resumeSessionId':'s'}],'duplicate exact',ValueError),
+    ([{'id':'a','maxTokens':True}],'expected number but got true',ValidationError),
 ])
-async def test_invalid_config_never_publishes(rows,match):
+async def test_invalid_config_never_publishes(rows,match,exception):
     ctx=await core()
     seen=[];ctx.on('agent/created',lambda *args:seen.append(True))
     try:
-        with pytest.raises(ValueError,match=match):await ctx.plugin(AgentLoopPlugin,{'agents':rows})
+        with pytest.raises(exception,match=match):await ctx.plugin(AgentLoopPlugin,{'agents':rows})
         assert seen==[]
     finally: await ctx.fiber.dispose()
 

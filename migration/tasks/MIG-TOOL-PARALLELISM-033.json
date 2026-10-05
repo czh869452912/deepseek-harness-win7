@@ -15,10 +15,10 @@
     "A new clean complete gate passes full pytest, all mandatory lanes, eighteen unchanged Source groups/1237 assertions, 54 selected paired drivers and actual extracted/original-browser consumers, binding fresh Source/input/module digests and the exact product archive."
   ],
   "expected_paths": ["dsh/core", "dsh/settings", "scripts", "tests", "migration", "docs/research"],
-  "open_findings": ["Source27 assertions pass; original/native twenty fresh bounded observations match after the root cap/settings repair, including a seven-call model consumer changing settings while the first group remains in flight and crossing an exclusive barrier. Native54 prior focused consumers and 33 current scheduler regressions pass. The first validator run failed with disk-full errors; exact logs remain retained and user-authorized marker-qualified synthetic receipt cleanup recovered space. Clean complete/extracted acceptance remains pending; full Tools/Wire is not accepted."],
+  "open_findings": ["Source27 assertions pass; original/native twenty-two fresh bounded observations match, including a seven-call model group snapshot and exact ValidationError ownership for empty sessionId and boolean maxTokens with no published agent. Candidate18d60566 full pytest: 6889 passed, two legacy ValueError assertions failed, six existing skips and one Proactor warning; exact ZIP/input/XML/browser receipts retained. After Source-backed strict exception assertions, 49 focused regressions pass. The disk-full validator failure remains retained; user-authorized marker-qualified synthetic receipt cleanup recovered space. Clean complete/extracted acceptance remains pending; full Tools/Wire is not accepted."],
   "conflicts_with": [],
   "candidate_commit": null,
   "integrated_commit": null,
   "evidence_ids": [],
-  "next_action": "完成组间动态 cap 的受控双侧反例和实际解压验收，提交干净候选后冻结完整门禁；继续完整 B2 组合、同步前缀及全项目，不签收未归因历史失败。"
+  "next_action": "组间 cap 与声明式 Config 异常已由实际 Source/native 观察对齐；提交新的严格回归断言候选后完整冻结验收，继续完整 B2、同步前缀及全项目，不签收未归因历史失败。"
 }

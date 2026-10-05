@@ -8,6 +8,7 @@ import sys
 
 ROOT = Path(__file__).resolve().parents[1]
 NAMES = ['cap-' + name for name in ['default', 'one', 'whole-float', 'zero', 'negative', 'fraction', 'boolean', 'text', 'nan', 'infinite']]
+NAMES += ['config-empty-session', 'config-boolean-max-tokens']
 NAMES += ['settings-' + name for name in ['entry', 'updated', 'refused', 'detached', 'replaced', 'unloaded']]
 NAMES += ['model-group-snapshot']
 NAMES += ['model-pool-' + str(cap) for cap in [1, 2, 10]]

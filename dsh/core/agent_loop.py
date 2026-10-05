@@ -342,13 +342,17 @@ def _invoke_llm_callable(
 
     if sig is not None:
         params = list(sig.parameters.values())
+        call_inputs = dict(req_dict)
+        for canonical_name, legacy_name in (("maxTokens", "max_tokens"), ("reasoningEffort", "reasoning_effort")):
+            if legacy_name in sig.parameters and canonical_name in call_inputs:
+                call_inputs.setdefault(legacy_name, call_inputs[canonical_name])
         if len(params) == 1 and params[0].name in ("request", "req", "call_request"):
             return fn(req_dict)
         if "request" in sig.parameters:
             return fn(req_dict)
         has_varkw = any(p.kind == inspect.Parameter.VAR_KEYWORD for p in sig.parameters.values())
         if "messages" in sig.parameters:
-            call_kwargs = req_dict if has_varkw else {k: v for k, v in req_dict.items() if k in sig.parameters}
+            call_kwargs = call_inputs if has_varkw else {k: v for k, v in call_inputs.items() if k in sig.parameters}
             if "system" not in sig.parameters and system:
                 msg_list = list(call_kwargs.get("messages", []))
                 if not any(isinstance(m, dict) and m.get("role") == "system" for m in msg_list):
@@ -356,7 +360,7 @@ def _invoke_llm_callable(
             return fn(**call_kwargs)
         if len(params) == 1 and params[0].kind in (inspect.Parameter.POSITIONAL_ONLY, inspect.Parameter.POSITIONAL_OR_KEYWORD):
             return fn(req_dict)
-        call_kwargs = req_dict if has_varkw else {k: v for k, v in req_dict.items() if k in sig.parameters}
+        call_kwargs = call_inputs if has_varkw else {k: v for k, v in call_inputs.items() if k in sig.parameters}
         return fn(**call_kwargs)
     else:
         try:
@@ -812,8 +816,8 @@ class AgentLoopService:
             "model": model_name,
             **({"tools": tool_schemas} if tool_schemas else {}),
             **({"system": system_prompt} if system_prompt else {}),
-            **({"maxTokens": agent.options.max_tokens, "max_tokens": agent.options.max_tokens} if getattr(agent.options, "max_tokens", None) is not None else {}),
-            **({"reasoningEffort": agent.options.reasoning_effort, "reasoning_effort": agent.options.reasoning_effort} if getattr(agent.options, "reasoning_effort", None) is not None else {}),
+            **({"maxTokens": agent.options.max_tokens} if getattr(agent.options, "max_tokens", None) is not None else {}),
+            **({"reasoningEffort": agent.options.reasoning_effort} if getattr(agent.options, "reasoning_effort", None) is not None else {}),
         }
 
         from dsh.llm.agent_request import mark_agent_loop_request
@@ -979,8 +983,6 @@ class AgentLoopService:
             "source": source,
         }
         tool_calls = [b for b in blocks if b.get("type") == "tool-call"]
-        if tool_calls:
-            assistant_msg["tool_calls"] = tool_calls
 
         session.append_assistant_message(
             assistant_msg,

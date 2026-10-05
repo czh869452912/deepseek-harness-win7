@@ -1,0 +1,16 @@
+{
+  "id": "CON-RUNTIME-FULL-REQUEST",
+  "revision": 1,
+  "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
+  "status": "specified",
+  "source_paths": ["reference/packages/core/agent-loop/src/agent.ts", "reference/packages/core/agent-loop/src/runtime-context.ts", "reference/packages/core/system-prompt/src/index.ts", "reference/packages/llm/llm/src/index.ts", "reference/packages/llm/llm/src/types.ts", "dsh/core/agent_loop.py", "dsh/llm/llm_service.py"],
+  "consumers": ["scripts/runtime_full_request_oracle.py", "scripts/oracles/runtime_full_request.probe.spec.ts", "scripts/oracles/runtime_full_request_python.py", "tests/test_runtime_full_request_consumers.py", "scripts/verify_release.py", "scripts/verify_portable.py"],
+  "invariants": ["Actual Source AgentLoop and native canonical LlmRuntime/LLMService execute16 context action/configuration pairs and compare both complete serialized GenerateOptions plus every durable context snapshot.", "No field filtering or arbitrary output normalization. Only opaque message ids receive a bijection consistent across every request and snapshot; concrete call/tool ids and all values remain exact.", "Native durable assistant messages have Source content blocks and no legacy tool_calls alias. Canonical adapter requests use maxTokens/reasoningEffort without Python max_tokens/reasoning_effort aliases.", "Native fixed-parameter compatibility maps canonical names only at the Python callable boundary. Complete request-object adapters retain the canonical graph.", "Compare actual AbortSignal instance presence, aborted state and shared ownership across two requests; broader cancellation schedules are outside this contract.", "Fresh unchanged Source/Node22.22.2, selected/extracted ownPython3.8.10 and actual native imported module bytes are mandatory."],
+  "identity": "Four context actions change/clear/same/empty crossed with base/max-tokens/reasoning/both. All names, ordering, tools, configs, complete message graphs and durable context snapshots are retained.",
+  "ownership": "Observe Source original MockAdapter stream arguments before delegating without altering algorithm. Native uses canonical LlmRuntime and prepared adapter. Only the recorded signal facade and opaque identity bijection are language adaptations.",
+  "ordering": "Both actual model requests straddle actual tool execution and context update/clear; all shared message identities remain correlated with snapshots.",
+  "errors": "Unexpected Source/native observer exceptions fail. Damaged graph fields, omitted/duplicated cases, signal ownership or foreign runtime/Source are rejected.",
+  "cancellation": "Actual present/nonaborted same signal identity is observed; full abort/close/reentry competition remains open.",
+  "adaptation": "Source object options map to native declared AgentOptions. Snake-case arguments belong to fixed-parameter Python invocation only, not canonical GenerateOptions or persisted messages.",
+  "open_questions": ["All models/providers/profiles, arbitrary middleware/config defaults/stream recovery, cancellation/reentry/late callbacks and fullB3/C2/Win7 are unqualified.", "Static Source guards are not complete dynamic import closure; frozen gate inputs bind wider bundles. Native prototype extraction failures and unsupported observer assumptions remain retained."]
+}

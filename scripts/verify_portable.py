@@ -54,6 +54,7 @@ from scripts.javascript_initial_oracle import validate_runtime as validate_javas
 from scripts.session_number_oracle import validate_runtime as validate_session_number, identity as number_identity
 from scripts.session_diagnostic_oracle import validate_runtime as validate_session_diagnostic, identity as diagnostic_identity
 from scripts.session_restore_sign_oracle import validate_runtime as validate_session_restore_sign, identity as restore_sign_identity
+from scripts.runtime_full_request_oracle import validate_runtime as validate_runtime_full_request, identity as full_request_identity
 from scripts.persistence_read_oracle import validate_runtime as validate_persistence_read, identity as read_identity
 
 
@@ -205,6 +206,25 @@ def restore_sign_receipts(source, native, output):
     return source, expected_digest, runtime['modules']
 
 
+def full_request_receipts(source, native, output):
+    if source or native:
+        if not source or not native:
+            raise RuntimeError('Both runtime full request Source and native receipts are required')
+        source, native = Path(source).resolve(), Path(native).resolve()
+    else:
+        paired = output.with_suffix('.runtime-full-request-paired.json')
+        completed = subprocess.run([sys.executable, str(ROOT / 'scripts/runtime_full_request_oracle.py'),
+            '--output', str(paired)], cwd=str(ROOT), capture_output=True, timeout=90)
+        output.with_suffix('.runtime-full-request-source.log').write_bytes(completed.stdout + completed.stderr)
+        if completed.returncode or completed.stderr:
+            raise RuntimeError('Fresh runtime full request Source qualification failed')
+        source, native = paired.with_suffix('.source.json'), paired.with_suffix('.native.json')
+    expected_digest = full_request_identity(json.loads(source.read_text(encoding='utf-8')))
+    runtime = json.loads(native.read_text(encoding='utf-8'))
+    validate_runtime_full_request(runtime, ROOT, expected_digest, runtime['modules'])
+    return source, expected_digest, runtime['modules']
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--archive', required=True)
@@ -235,6 +255,8 @@ def main(argv=None):
     parser.add_argument('--diagnostic-native', help='Fresh native public Session diagnostic module closure')
     parser.add_argument('--restore-sign-source', help='Fresh actual public Session restore numeric predicates')
     parser.add_argument('--restore-sign-native', help='Fresh native public Session restore module closure')
+    parser.add_argument('--full-request-source', help='Fresh actual complete AgentLoop model request observations')
+    parser.add_argument('--full-request-native', help='Fresh native complete AgentLoop request module closure')
     parser.add_argument('--read-source', help='Fresh actual Source canonical persistence read observations')
     parser.add_argument('--read-native', help='Fresh canonical persistence read module and private asset closure')
     args = parser.parse_args(argv)
@@ -289,6 +311,8 @@ def main(argv=None):
             'session_number_oracle.py', 'oracles/session_number_python.py',
             'session_diagnostic_oracle.py', 'oracles/session_diagnostic_python.py',
             'session_restore_sign_oracle.py', 'oracles/session_restore_sign_python.py',
+            'runtime_full_request_oracle.py', 'oracles/runtime_full_request_python.py',
+            'oracles/runtime_full_request.probe.spec.ts', 'oracles/vitest.runtime-full-request-probe.config.mts',
             'oracles/session_restore_sign.probe.spec.ts', 'oracles/vitest.session-restore-sign-probe.config.mts',
             'oracles/session_diagnostic.probe.spec.ts', 'oracles/vitest.session-diagnostic-probe.config.mts',
             'oracles/session_number.probe.spec.ts', 'oracles/vitest.session-number-probe.config.mts',
@@ -419,6 +443,7 @@ def main(argv=None):
         number_source, number_digest, number_modules = number_receipts(args.number_source, args.number_native, output)
         diagnostic_source, diagnostic_digest, diagnostic_modules = diagnostic_receipts(args.diagnostic_source, args.diagnostic_native, output)
         restore_sign_source, restore_sign_digest, restore_sign_modules = restore_sign_receipts(args.restore_sign_source, args.restore_sign_native, output)
+        full_request_source, full_request_digest, full_request_modules = full_request_receipts(args.full_request_source, args.full_request_native, output)
         report['sessionNumberSourceSha256'] = digest(number_source)
         read_source, read_digest, read_modules, read_assets = read_receipts(args.read_source, args.read_native, output)
         report['persistenceReadSourceSha256'] = digest(read_source)
@@ -793,6 +818,16 @@ def main(argv=None):
             restore_sign_report = json.loads(restore_sign_path.read_text(encoding='utf-8'))
             validate_session_restore_sign(restore_sign_report, portable, restore_sign_digest, restore_sign_modules)
             report['sessionRestoreSign'] = restore_sign_report
+            full_request_path = workspace / 'runtime-full-request.json'
+            full_request_result = subprocess.run([str(portable / 'python.exe'), '-I', '-u',
+                str(ROOT / 'scripts/oracles/runtime_full_request_python.py'), '--root', str(portable), '--output', str(full_request_path)],
+                cwd=str(workspace), env=env, capture_output=True, encoding='utf-8', errors='replace', timeout=60)
+            output.with_suffix('.runtime-full-request.log').write_text(full_request_result.stdout + '\nSTDERR:\n' + full_request_result.stderr, encoding='utf-8')
+            if full_request_result.returncode or full_request_result.stderr or not full_request_path.is_file():
+                raise RuntimeError('Extracted complete AgentLoop request observations failed')
+            full_request_report = json.loads(full_request_path.read_text(encoding='utf-8'))
+            validate_runtime_full_request(full_request_report, portable, full_request_digest, full_request_modules)
+            report['runtimeFullRequest'] = full_request_report
             read_path = workspace / 'persistence-read.json'
             read_result = subprocess.run([str(portable / 'python.exe'), '-I', '-u',
                 str(ROOT / 'scripts/oracles/persistence_read_python.py'), '--root', str(portable), '--output', str(read_path)],

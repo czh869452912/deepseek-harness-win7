@@ -1,0 +1,19 @@
+{
+  "id": "MIG-RUNTIME-FULL-REQUEST-044",
+  "goal": "对齐真实AgentLoop两次完整模型请求，移除持久消息及规范配置中的旧别名",
+  "kind": "implementation",
+  "state": "running",
+  "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
+  "base_product": "7f9e87e49690f94b3b2e9982d233c37785ea2137",
+  "owner": "current-session-coordinator",
+  "requires": [{"task": "MIG-CURRENT-RELEASE-GATE-003", "contract": "CON-CURRENT-RELEASE-GATE", "revision": 1}, {"task": "MIG-RUNTIME-CONTEXT-CONSUMER-037", "contract": "CON-RUNTIME-CONTEXT-CONSUMER", "revision": 1}],
+  "provides": [{"contract": "CON-RUNTIME-FULL-REQUEST", "revision": 1}],
+  "acceptance": ["Retain original16 complete request differences and isolated16 matched observations. All request/message/snapshot fields compare; only opaque message ids receive a correlated bijection.", "Fresh actual Source/native16 controls and selected/extracted module/interpreter/graph rejection guards pass. A native fixed-parameter compatibility consumer receives17/high without contaminating canonical request-object fields.", "A distinct clean complete gate, eighteen unchanged Source groups/1237 assertions, all fresh paired drivers and actual extracted ownPython3.8.10/browser pass before integration."],
+  "expected_paths": ["dsh/core/agent_loop.py", "scripts", "tests", "migration", "docs/research"],
+  "open_findings": ["All16 exact unchanged7f9e87e4 ownPortablePython3.8.10 baseline rows differ because of durable tool_calls and canonical max_tokens/reasoning_effort aliases; every actual imported module matches exactZIP/directory bytes. Fresh main-tree16 complete rows plus actual signal facade predicates match. Expanded929 regressions pass in438.58 seconds, including actual model/tool/next-request, canonical localHTTP, ACP, JS, profile cold recovery and all rejection/executable guards. Distinct clean full/extracted qualification pending.", "This does not sign fullmodel/profile/stream cancellation/reentry or completeB3/C2."],
+  "conflicts_with": [],
+  "candidate_commit": null,
+  "integrated_commit": null,
+  "evidence_ids": [],
+  "next_action": "推广Source支撑的消息/规范配置别名修复，保留固定参数调用适配；验证16完整请求与实际模型/工具/下一步/持久恢复消费者，独立提交后完整冻结验收。"
+}

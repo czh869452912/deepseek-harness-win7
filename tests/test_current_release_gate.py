@@ -44,6 +44,7 @@ from scripts.javascript_initial_oracle import observation_digest as initial_obse
 from scripts.session_number_oracle import observation_digest as number_observation_digest
 from scripts.session_diagnostic_oracle import observation_digest as diagnostic_observation_digest
 from scripts.session_restore_sign_oracle import observation_digest as restore_sign_observation_digest
+from scripts.runtime_full_request_oracle import observation_digest as full_request_observation_digest
 from scripts.persistence_read_oracle import observation_digest as read_observation_digest
 
 
@@ -355,7 +356,7 @@ def test_extracted_session_corpus_read_requires_exact_sources_and_batch_drain(tm
 def test_regression_requires_browser_portable_and_acp_process_lanes(tmp_path):
     path = tmp_path / 'pytest.xml'
     regression_xml(path)
-    assert GATE.validate_regression(path) == {'required_lanes': 1167, 'skipped': 1}
+    assert GATE.validate_regression(path) == {'required_lanes': 1231, 'skipped': 1}
 
 
 @pytest.mark.parametrize('module', ['test_native_web_browser', 'test_portable_smoke', 'test_acp_stdio_journey', 'test_acp_permission_process', 'test_mcp_stdio_transport', 'test_mcp_supervisor', 'test_mcp_schema', 'test_mcp_config', 'test_mcp_tools_source', 'test_mcp_image_consumer', 'test_mcp_http_source', 'test_mcp_http_transport', 'test_mcp_supervisor_source', 'test_mcp_factory_source', 'test_acp_mcp_source', 'test_acp_mcp_runtime_source', 'test_acp_mcp_abort_source', 'test_acp_mcp_process', 'test_acp_mcp_runtime'])
@@ -993,6 +994,74 @@ def test_restore_sign_consumer_lanes_are_mandatory(tmp_path, damage):
         GATE.validate_regression(path)
 
 
+@functools.lru_cache(maxsize=1)
+def full_request_runtime_fixture():
+    with tempfile.TemporaryDirectory(prefix='runtime-full-request-receipt-') as folder:
+        output = Path(folder) / 'paired.json'
+        completed = subprocess.run([sys.executable, str(ROOT / 'scripts/runtime_full_request_oracle.py'),
+            '--output', str(output)], cwd=str(ROOT), capture_output=True, timeout=90)
+        if completed.returncode:
+            raise RuntimeError(output.read_text(encoding='utf-8'))
+        return json.loads(output.with_suffix('.native.json').read_text(encoding='utf-8'))
+
+
+@pytest.mark.parametrize('damage', ['missing', 'source-missing', 'source-changed', 'module-missing',
+    'module-changed', 'root', 'python', 'executable', 'tail', 'duplicate', 'provider',
+    'assistant-alias', 'token-alias', 'reasoning-alias', 'message-owner', 'signal-owner', 'signal-state'])
+def test_extracted_full_request_requires_complete_graph_and_source(tmp_path, damage):
+    archive, candidate, report = extracted_receipt(tmp_path)
+    runtime = report['runtimeFullRequest']
+    if damage == 'missing':
+        del report['runtimeFullRequest']
+    elif damage == 'source-missing':
+        del candidate['runtime_full_request_observations_sha256']
+    elif damage == 'source-changed':
+        candidate['runtime_full_request_observations_sha256'] = '0' * 64
+    elif damage == 'module-missing':
+        del runtime['modules']['dsh/llm/llm_service.py']
+    elif damage == 'module-changed':
+        runtime['modules']['dsh/llm/llm_service.py'] = '0' * 64
+    elif damage == 'root':
+        runtime['root'] = str(tmp_path.parent)
+    elif damage == 'python':
+        runtime['python'] = '3.9.0 foreign runtime'
+    elif damage == 'executable':
+        runtime['executable'] = str(tmp_path / 'nested/python.exe')
+    elif damage == 'tail':
+        runtime['observations'].pop()
+    elif damage == 'duplicate':
+        runtime['observations'][-1] = copy.deepcopy(runtime['observations'][0])
+    else:
+        row = runtime['observations'][0]
+        if damage == 'provider':
+            row['requests'][0]['provider'] = 'foreign'
+        elif damage == 'assistant-alias':
+            next(message for message in row['requests'][1]['messages'] if message['role'] == 'assistant')['tool_calls'] = []
+        elif damage == 'token-alias':
+            next(row for row in runtime['observations'] if row['name'] == 'change/max-tokens')['requests'][0]['max_tokens'] = 17
+        elif damage == 'reasoning-alias':
+            next(row for row in runtime['observations'] if row['name'] == 'change/reasoning')['requests'][0]['reasoning_effort'] = 'high'
+        elif damage == 'message-owner':
+            row['requests'][1]['messages'][0]['id'] = 'foreign-detached-id'
+        elif damage == 'signal-owner':
+            row['requests'][1]['signal']['sameAsFirst'] = False
+        else:
+            row['requests'][0]['signal']['aborted'] = True
+    output = tmp_path / 'extracted.json'
+    output.write_text(json.dumps(report), encoding='utf-8')
+    with pytest.raises(RuntimeError, match='runtimeFullRequest'):
+        GATE.validate_extracted(output, archive, candidate)
+
+
+@pytest.mark.parametrize('damage', ['omit', 'skip', 'duplicate', 'failure'])
+def test_full_request_consumer_lanes_are_mandatory(tmp_path, damage):
+    path = tmp_path / 'pytest.xml'
+    key = ('test_runtime_full_request_consumers', sorted(GATE.REQUIRED_REGRESSION['test_runtime_full_request_consumers'])[0])
+    regression_xml(path, **{damage: key})
+    with pytest.raises(RuntimeError):
+        GATE.validate_regression(path)
+
+
 def extracted_receipt(tmp_path):
     archive = tmp_path / 'portable.zip'
     archive.write_bytes(b'exact candidate archive')
@@ -1041,6 +1110,10 @@ def extracted_receipt(tmp_path):
     restore_sign['root'], restore_sign['executable'] = str(tmp_path), str(tmp_path / 'python.exe')
     candidate['session_restore_sign_observations_sha256'] = restore_sign_observation_digest(restore_sign['rows'])
     candidate['session_restore_sign_modules'] = restore_sign['modules'].copy()
+    full_request = copy.deepcopy(full_request_runtime_fixture())
+    full_request['root'], full_request['executable'] = str(tmp_path), str(tmp_path / 'python.exe')
+    candidate['runtime_full_request_observations_sha256'] = full_request_observation_digest(full_request['observations'])
+    candidate['runtime_full_request_modules'] = full_request['modules'].copy()
     report = {'result': 'passed', 'browser': {'passed': True}, 'runtime': {'checks': ['actual runtime']},
               'acp': {'processes': 2, 'steps': ['initialize-0', 'invalid-params-before-effects',
                   'persistent-new', 'close-list-0', 'eof-0', 'initialize-1',
@@ -1048,7 +1121,8 @@ def extracted_receipt(tmp_path):
               'runtimeStderr': '', 'frontendFilesChecked': 119, 'archive': str(archive),
               'archiveSha256': GATE.digest(archive), 'provenance': dict(candidate), 'toolScheduler': scheduler,
               'httpRedirect': redirect, 'javascriptWorkflow': javascript, 'runtimeContext': context, 'javascriptReady': ready,
-              'persistenceRead': read, 'javascriptInitial': initial, 'sessionNumber': number, 'sessionDiagnostic': diagnostic, 'sessionRestoreSign': restore_sign}
+              'persistenceRead': read, 'javascriptInitial': initial, 'sessionNumber': number, 'sessionDiagnostic': diagnostic,
+              'sessionRestoreSign': restore_sign, 'runtimeFullRequest': full_request}
     modes = ['allow', 'reject', 'malformed', 'cancel-late', 'close-late', 'eof']
     report['acpPermissions'] = {'processes': 6, 'modes': modes, 'observations': [
         {'mode': mode, 'executed': mode == 'allow', 'modelRequests': 2 if mode in modes[:3] else 1, 'stderr': [''],

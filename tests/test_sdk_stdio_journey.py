@@ -1,5 +1,6 @@
 """Canonical launcher, real stdio frames, native HTTP model, and durable Session."""
 import json
+from jsonl_test_support import read_jsonl_text
 import os
 from pathlib import Path
 import queue
@@ -88,9 +89,9 @@ def test_sdk_launcher_prompt_notifications_shutdown_and_persistence(tmp_path, de
         if default_profile:
             assert len(requests) == 2
             assert any(message.get('role') == 'tool' and 'TOOL-RESULT' in str(message) for message in requests[1]['messages'])
-        logs = list((tmp_path / ('home/sessions' if default_profile else 'sessions')).rglob('*.jsonl'))
+        logs = list((tmp_path / ('home/sessions' if default_profile else 'sessions')).rglob('*.jsonl' if default_profile else '*.jsonl.zstd'))
         assert len(logs) == 1
-        assert 'SDK journey complete' in logs[0].read_text(encoding='utf-8')
+        assert 'SDK journey complete' in read_jsonl_text(logs[0])
         assert any(frame.get('method') == 'session.status' for frame in observed)
     finally:
         if process.poll() is None:

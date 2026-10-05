@@ -1,5 +1,6 @@
 """Real launcher -> Loader -> Agent -> editor -> HTTP SSE -> JSONL."""
 import json
+from jsonl_test_support import read_jsonl_text
 import os
 from pathlib import Path
 import subprocess
@@ -87,12 +88,12 @@ def test_headless_runner_http_tool_roundtrip_and_exit(tmp_path, truncated, defau
             results = [m for m in requests[1]["messages"] if m["role"] == "tool"]
             assert results[0]["tool_call_id"] == "call-read"
             assert "unique file evidence" in results[0]["content"]
-            logs = list((tmp_path / ("home/sessions" if default_profile else "sessions")).rglob("*.jsonl"))
+            logs = list((tmp_path / ("home/sessions" if default_profile else "sessions")).rglob("*.jsonl.zstd"))
             assert len(logs) == 1
-            assert '"tool/result"' in logs[0].read_text(encoding="utf-8")
+            assert '"tool/result"' in read_jsonl_text(logs[0])
             if default_profile == 'headless':
                 repo = Path(__file__).resolve().parents[1]
-                session_id = json.loads(logs[0].read_text(encoding='utf-8').splitlines()[0])['id']
+                session_id = json.loads(read_jsonl_text(logs[0]).splitlines()[0])['id']
                 restored = subprocess.run([sys.executable, str(repo / 'tests/headless_resume_process.py'), session_id],
                     cwd=str(tmp_path), env=dict(env, PYTHONPATH=str(repo)), capture_output=True, encoding='utf-8', timeout=25)
                 assert restored.returncode == 0, restored.stdout + restored.stderr

@@ -40,7 +40,7 @@ async def test_profile_tool_turn_persists_and_resumes_after_shutdown(tmp_path):
         await handle.dispose()
         first['shutdown'].shutdown(0)
         await first['shutdown'].wait()
-    assert list((tmp_path / 'sessions').rglob('*.jsonl'))
+    assert list((tmp_path / 'sessions').rglob('*.jsonl.zstd'))
     second = await run_profile(options)
     fresh = second['ctx']
     assert fresh is not ctx

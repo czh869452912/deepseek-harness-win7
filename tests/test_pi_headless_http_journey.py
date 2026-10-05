@@ -1,5 +1,6 @@
 """Real default headless consumer of each native pi-ai wire protocol."""
 import json
+from jsonl_test_support import read_jsonl_text
 import os
 from pathlib import Path
 import subprocess
@@ -75,9 +76,9 @@ def test_headless_pi_provider_tool_result_replay_and_persistence(tmp_path, proto
         assert result.stdout.strip() == final
         assert len(calls) == 2
         assert 'PI-NATIVE-TOOL-EVIDENCE' in json.dumps(calls[1])
-        logs = list((tmp_path / 'home/sessions').rglob('session.jsonl'))
+        logs = list((tmp_path / 'home/sessions').rglob('session.jsonl.zstd'))
         assert len(logs) == 1
-        events = [json.loads(line) for line in logs[0].read_text(encoding='utf-8').splitlines()]
+        events = [json.loads(line) for line in read_jsonl_text(logs[0]).splitlines()]
         results = [event for event in events if event['type'] == 'tool/result']
         assert len(results) == 1 and 'PI-NATIVE-TOOL-EVIDENCE' in json.dumps(results)
         assert 'pi-ai' in json.dumps(events) and protocol in json.dumps(events)

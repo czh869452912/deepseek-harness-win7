@@ -42,6 +42,7 @@ from scripts.session_text_oracle import validate_runtime as validate_session_tex
 from scripts.session_tools_oracle import validate_runtime as validate_session_tools, source_identity as tools_source_identity, module_hashes as tools_module_hashes
 from scripts.sqlite_format_oracle import validate_runtime as validate_sqlite_format, source_identity as format_source_identity, module_hashes as format_module_hashes, asset_hashes as format_asset_hashes
 from scripts.sqlite_provider_oracle import validate_runtime as validate_sqlite_provider, source_identity as provider_source_identity, hashes as provider_hashes, MODULES as PROVIDER_MODULES, ASSETS as PROVIDER_ASSETS
+from scripts.jsonl_provider_oracle import validate_runtime as validate_jsonl_provider, source_identity as jsonl_source_identity, MODULES as JSONL_MODULES, ASSETS as JSONL_ASSETS
 NODE_VERSION = 'v22.22.2'
 PORTABLE_ARCHIVE = 'dist/dsh-win7-portable-v0.1.0.zip'
 PAIRED_DRIVERS = (
@@ -52,9 +53,26 @@ PAIRED_DRIVERS = (
     'approval', 'inspect', 'cordis_guard', 'cordis_runner',
     'cordis_retirement', 'cordis_tools', 'acp_sessions', 'acp_model_output', 'acp_stdio', 'acp_permissions', 'mcp_stdio', 'mcp_http', 'acp_mcp', 'subagent_acp', 'subagent_acp_teardown', 'mcp_disposal', 'subprocess_ownership', 'subprocess_tree', 'projection_cache_failure', 'session_observation_read', 'session_corpus_list', 'session_corpus_read', 'session_lineage', 'session_event_trace', 'session_filters', 'session_requests', 'session_snapshots', 'query_schema', 'query_engine', 'query_unicode', 'session_text',
 )
-PAIRED_DRIVERS = PAIRED_DRIVERS + ('session_tools', 'sqlite_format', 'sqlite_provider')
-OFFICIAL_CONFIGS = ('consumers', 'agent-lifecycle', 'session-recovery', 'session-projection', 'acp', 'acp-app', 'mcp', 'subagent-acp', 'storage-cache', 'session-observation', 'session-corpus', 'session-sqlite-query', 'query-engine-source', 'session-tools-source', 'sqlite-format-source', 'sqlite-provider-source')
+PAIRED_DRIVERS = PAIRED_DRIVERS + ('session_tools', 'sqlite_format', 'sqlite_provider', 'jsonl_provider')
+OFFICIAL_CONFIGS = ('consumers', 'agent-lifecycle', 'session-recovery', 'session-projection', 'acp', 'acp-app', 'mcp', 'subagent-acp', 'storage-cache', 'session-observation', 'session-corpus', 'session-sqlite-query', 'query-engine-source', 'session-tools-source', 'sqlite-format-source', 'sqlite-provider-source', 'jsonl-provider-source')
 REQUIRED_REGRESSION = {
+    'test_deepseek_image_journey': {
+        'test_extension_request_idle_watchdog_tracks_partial_wire_activity',
+        'test_extension_idle_watchdog_does_not_charge_settled_reader_delivery',
+    },
+    'test_profile_spine_recovery': {'test_profile_tool_turn_persists_and_resumes_after_shutdown'},
+    'test_jsonl_canonical': {
+        'test_canonical_registry_uses_lazy_default_checksummed_zstd',
+        'test_torn_tail_inspection_is_inert_and_load_commits_repair[zstd]',
+        'test_torn_tail_inspection_is_inert_and_load_commits_repair[none]',
+        'test_encoding_refusal_preserves_original_artifact',
+        'test_jsonl_paths_encode_original_utf16_units',
+        'test_cancelled_read_drains_actual_worker_before_return',
+        'test_revision_change_retries_actual_file_read',
+        'test_append_sync_failure_restores_prefix_or_retains_both_causes[False]',
+        'test_append_sync_failure_restores_prefix_or_retains_both_causes[True]',
+    },
+    'test_jsonl_provider_source': {'test_actual_source_and_native_compressed_jsonl_mutual_files_and_cold_consumers'},
     'test_sqlite_canonical': {
         'test_canonical_registry_and_unchanged_closed_sql_resources',
         'test_actual_lazy_store_packed_seek_and_detached_revision',
@@ -107,6 +125,7 @@ REQUIRED_REGRESSION = {
     'test_session_tools_source': {'test_actual_optional_session_tools_source_native_pair'},
     'test_session_tools_profile': {
         'test_optional_profile_model_tools_next_request_and_cold_restart[jsonl]',
+        'test_optional_profile_model_tools_next_request_and_cold_restart[jsonl-zstd]',
         'test_optional_profile_model_tools_next_request_and_cold_restart[sqlite]',
     },
     "test_session_text": {
@@ -651,6 +670,17 @@ def validate_extracted(path, archive, candidate):
             candidate['sqlite_provider_modules'], candidate['sqlite_provider_assets'])
     except (ValueError, KeyError, TypeError) as error:
         raise RuntimeError('Extracted sqliteProvider observations are incomplete') from error
+    try:
+        required = ('jsonl_provider_observations_sha256', 'jsonl_provider_inputs_sha256')
+        if any(not isinstance(candidate[name], str) or not re.fullmatch('[0-9a-f]{64}', candidate[name]) for name in required):
+            raise ValueError('JSONL provider Source identity is missing')
+        if not isinstance(candidate['jsonl_provider_modules'], dict) or not isinstance(candidate['jsonl_provider_assets'], dict):
+            raise ValueError('JSONL provider file closure is missing')
+        validate_jsonl_provider(report.get('jsonlProvider'), report['mcpStdio']['root'],
+            candidate['jsonl_provider_observations_sha256'], candidate['jsonl_provider_inputs_sha256'],
+            candidate['jsonl_provider_modules'], candidate['jsonl_provider_assets'])
+    except (ValueError, KeyError, TypeError) as error:
+        raise RuntimeError('Extracted jsonlProvider observations are incomplete') from error
     for name, validate in [('queryEngine', validate_query_engine), ('querySchema', validate_query_schema), ('pythonDirectory', validate_python_directory),
                            ('sessionLineage', validate_session_lineage), ('sessionEventTrace', validate_session_event_trace),
                            ('sessionFilters', validate_session_filters), ('sessionRequests', validate_session_requests),
@@ -752,6 +782,12 @@ def verify(args, output):
     candidate['sqlite_provider_inputs_sha256'] = digest(provider_inputs)
     candidate['sqlite_provider_modules'] = provider_hashes(ROOT, PROVIDER_MODULES)
     candidate['sqlite_provider_assets'] = provider_hashes(ROOT, PROVIDER_ASSETS)
+    jsonl_source = output / 'jsonl-provider-paired.source.json'
+    jsonl_inputs = output / 'jsonl-provider-paired.inputs.json'
+    candidate['jsonl_provider_observations_sha256'] = jsonl_source_identity(json.loads(jsonl_source.read_text(encoding='utf-8')))
+    candidate['jsonl_provider_inputs_sha256'] = digest(jsonl_inputs)
+    candidate['jsonl_provider_modules'] = provider_hashes(ROOT, JSONL_MODULES)
+    candidate['jsonl_provider_assets'] = provider_hashes(ROOT, JSONL_ASSETS)
     raw = output / 'cordis-raw.json'
     raw.unlink(missing_ok=True)
     run([python, 'scripts/cordis_oracle.py', '--output', str(raw)],

@@ -58,6 +58,8 @@ def library():
     signatures = {
         'ZSTD_createCCtx': (pointer, []), 'ZSTD_freeCCtx': (size_type, [pointer]),
         'ZSTD_compressBound': (size_type, [size_type]),
+        'ZSTD_CCtx_setParameter': (size_type, [pointer, integer, integer]),
+        'ZSTD_compressStream2': (size_type, [pointer, ctypes.POINTER(Output), ctypes.POINTER(Input), integer]),
         'ZSTD_compress_usingDict': (size_type, [pointer, pointer, size_type, pointer, size_type, pointer, size_type, integer]),
         'ZSTD_createDCtx': (pointer, []), 'ZSTD_freeDCtx': (size_type, [pointer]),
         'ZSTD_DCtx_loadDictionary': (size_type, [pointer, pointer, size_type]),

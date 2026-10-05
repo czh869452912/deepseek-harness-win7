@@ -116,6 +116,11 @@
       "task": "MIG-SQLITE-PROVIDER-031",
       "contract": "CON-SQLITE-PROVIDER",
       "revision": 1
+    },
+    {
+      "task": "MIG-JSONL-PROVIDER-032",
+      "contract": "CON-JSONL-PROVIDER",
+      "revision": 1
     }
   ],
   "provides": [],

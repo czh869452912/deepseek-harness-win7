@@ -12,13 +12,13 @@ from test_e2e_core_spine_strict_parity import StrictMockLlmAdapter
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize('backend', ['jsonl', 'sqlite'])
+@pytest.mark.parametrize('backend', ['jsonl', 'jsonl-zstd', 'sqlite'])
 async def test_optional_profile_model_tools_next_request_and_cold_restart(tmp_path, backend):
     profile = tmp_path / 'profiles' / 'session-tools'
     init_profile(str(profile), [], 'startup')
     rows = [dict(id=name, name='@deepseek-ai/dsh-' + name) for name in ['session', 'tools', 'system-prompt', 'agent', 'agent-loop']]
-    persistence_config = dict(root=str(tmp_path / 'sessions'), compression='none') if backend == 'jsonl' else dict(path=str(tmp_path / 'sessions.db'))
-    rows.extend([dict(id='storage', name='@deepseek-ai/dsh-session-persistence-' + backend, config=persistence_config),
+    persistence_config = dict(root=str(tmp_path / 'sessions'), compression='none' if backend == 'jsonl' else 'zstd') if backend.startswith('jsonl') else dict(path=str(tmp_path / 'sessions.db'))
+    rows.extend([dict(id='storage', name='@deepseek-ai/dsh-session-persistence-' + ('jsonl' if backend.startswith('jsonl') else backend), config=persistence_config),
                  dict(id='query', name='@deepseek-ai/dsh-session-query-sqlite', config=dict(path=str(tmp_path / 'query.db'), defaultLimit=1)),
                  dict(id='history-tools', name='@deepseek-ai/dsh-tool-session-query', config=dict(maxSearchResults=2))])
     (profile / 'cordis.patch.yml').write_text(yaml.safe_dump([dict(insert=rows)]), encoding='utf-8')

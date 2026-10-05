@@ -1,0 +1,28 @@
+{
+  "id": "MIG-JSONL-PROVIDER-032",
+  "goal": "闭合规范默认压缩 JSONL 提供端及互读、冷恢复与解压消费者",
+  "kind": "implementation",
+  "state": "running",
+  "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
+  "base_product": "f11a5849ff1ae4dc65cb206c0cac8ce30680c9b0",
+  "owner": "current-session-coordinator",
+  "requires": [
+    {"task": "MIG-SQLITE-FORMAT-030", "contract": "CON-SQLITE-FORMAT", "revision": 1},
+    {"task": "MIG-SESSION-STORAGE-006", "contract": "CON-SESSION-STORAGE", "revision": 1},
+    {"task": "MIG-SESSION-PREPARED-005", "contract": "CON-SESSION-PREPARATIONS", "revision": 1}
+  ],
+  "provides": [{"contract": "CON-JSONL-PROVIDER", "revision": 1}],
+  "acceptance": [
+    "Canonical Config/default zstd/session injection and reversible services match the pinned JSONL provider; root/materialization are lazy, encoding mismatch is refused and original UTF16 paths are retained.",
+    "579 fresh actual Source/native and extracted observations match original checksummed frames, malformed frame descriptors/cuts/checksums, source consumption of native frames, compressed/plaintext packed/unpacked mutual artifacts and full revisions, raw export and unpublished cold end-seed.",
+    "Real canonical model/history-tools profile and original Remote/browser consumers use default compressed storage; torn inspection/committed recovery, revision retries, cancelled read draining and append rollback/both causes are mandatory regressions.",
+    "A clean committed complete gate passes all tests, 372 mandatory lanes, seventeen unchanged Source groups/1210 assertions, 53 paired drivers and actual extracted/original-browser qualification. Existing skips/warnings, failed candidates and unrooted diagnostics remain explicit; no new exception or Source/frontend change."
+  ],
+  "expected_paths": ["dsh/session", "dsh/boot/plugin_registry.py", "scripts", "tests", "migration", "docs/research"],
+  "open_findings": ["579 formal development observations and canonical consumers passed; complete committed/extracted acceptance is pending. Arbitrary malformed optional metadata, concurrency/histories and overall migration are not accepted."],
+  "conflicts_with": [],
+  "candidate_commit": null,
+  "integrated_commit": null,
+  "evidence_ids": [],
+  "next_action": "完成定向回归与门禁所有权校验，提交产品后执行新的完整冻结门禁；保留 d5cc 失败记录和原版不变的错误判据。"
+}

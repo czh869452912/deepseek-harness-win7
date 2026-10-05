@@ -44,6 +44,7 @@ from scripts.session_text_oracle import validate_runtime as validate_session_tex
 from scripts.session_tools_oracle import validate_runtime as validate_session_tools, source_identity as tools_source_identity
 from scripts.sqlite_format_oracle import validate_runtime as validate_sqlite_format, source_identity as format_source_identity
 from scripts.sqlite_provider_oracle import validate_runtime as validate_sqlite_provider, source_identity as provider_source_identity
+from scripts.jsonl_provider_oracle import validate_runtime as validate_jsonl_provider, source_identity as jsonl_source_identity
 
 
 def digest(path):
@@ -416,6 +417,18 @@ def main(argv=None):
             provider_summary = json.loads(provider_path.read_text(encoding='utf-8'))
             validate_sqlite_provider(provider_native, portable, provider_source_identity(provider_source), provider_summary['generatedInputsSha256'])
             report['sqliteProvider'] = provider_native
+            jsonl_path = output.with_suffix('.jsonl-provider-paired.json')
+            jsonl_result = subprocess.run([sys.executable, str(ROOT / 'scripts/jsonl_provider_oracle.py'),
+                '--output', str(jsonl_path), '--python', str(portable / 'python.exe'), '--root', str(portable),
+                '--environment', str(provider_environment)], cwd=str(ROOT), capture_output=True, timeout=120)
+            output.with_suffix('.jsonl-provider.log').write_bytes(jsonl_result.stdout + jsonl_result.stderr)
+            if jsonl_result.returncode:
+                raise RuntimeError('Extracted JSONL provider failed')
+            jsonl_native = json.loads(jsonl_path.with_name(jsonl_path.stem + '.native.json').read_text(encoding='utf-8'))
+            jsonl_source = json.loads(jsonl_path.with_name(jsonl_path.stem + '.source.json').read_text(encoding='utf-8'))
+            jsonl_summary = json.loads(jsonl_path.read_text(encoding='utf-8'))
+            validate_jsonl_provider(jsonl_native, portable, jsonl_source_identity(jsonl_source), jsonl_summary['generatedInputsSha256'])
+            report['jsonlProvider'] = jsonl_native
             for name, key, validate in [('session_lineage', 'sessionLineage', validate_session_lineage),
                                         ('session_event_trace', 'sessionEventTrace', validate_session_event_trace),
                                         ('session_filters', 'sessionFilters', validate_session_filters),

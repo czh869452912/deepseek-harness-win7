@@ -4,7 +4,7 @@ from dsh.session.persistence import (
     SessionPersistence,
     SessionPersistenceSnapshot,
 )
-from dsh.session.persistence_jsonl import JsonlSessionPersistence, JsonlSessionPersistencePlugin
+from dsh.session.persistence_jsonl_canonical import JsonlSessionPersistence, JsonlSessionPersistencePlugin
 from dsh.session.persistence_sqlite_canonical import SqliteSessionPersistence, SqliteSessionPersistencePlugin
 from dsh.session.projections import (
     ProjectionDefinition,

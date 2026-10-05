@@ -34,6 +34,7 @@ from scripts.session_text_oracle import observation_digest as text_observation_d
 from scripts.session_tools_oracle import observation_digest as tools_observation_digest
 from scripts.sqlite_format_oracle import observation_digest as format_observation_digest
 from scripts.sqlite_provider_oracle import observation_digest as provider_observation_digest
+from scripts.jsonl_provider_oracle import observation_digest as jsonl_observation_digest
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -344,7 +345,7 @@ def test_extracted_session_corpus_read_requires_exact_sources_and_batch_drain(tm
 def test_regression_requires_browser_portable_and_acp_process_lanes(tmp_path):
     path = tmp_path / 'pytest.xml'
     regression_xml(path)
-    assert GATE.validate_regression(path) == {'required_lanes': 358, 'skipped': 1}
+    assert GATE.validate_regression(path) == {'required_lanes': 372, 'skipped': 1}
 
 
 @pytest.mark.parametrize('module', ['test_native_web_browser', 'test_portable_smoke', 'test_acp_stdio_journey', 'test_acp_permission_process', 'test_mcp_stdio_transport', 'test_mcp_supervisor', 'test_mcp_schema', 'test_mcp_config', 'test_mcp_tools_source', 'test_mcp_image_consumer', 'test_mcp_http_source', 'test_mcp_http_transport', 'test_mcp_supervisor_source', 'test_mcp_factory_source', 'test_acp_mcp_source', 'test_acp_mcp_runtime_source', 'test_acp_mcp_abort_source', 'test_acp_mcp_process', 'test_acp_mcp_runtime'])
@@ -526,6 +527,14 @@ def extracted_receipt(tmp_path):
     candidate['sqlite_provider_inputs_sha256'] = provider_inputs_digest
     candidate['sqlite_provider_modules'] = provider['modules'].copy()
     candidate['sqlite_provider_assets'] = provider['assets'].copy()
+    jsonl, jsonl_inputs_digest = copy.deepcopy(jsonl_provider_runtime_fixture())
+    jsonl['root'] = str(tmp_path)
+    jsonl['moduleFile'] = str(tmp_path / 'dsh/session/jsonl_store.py')
+    report['jsonlProvider'] = jsonl
+    candidate['jsonl_provider_observations_sha256'] = jsonl_observation_digest(jsonl['rows'])
+    candidate['jsonl_provider_inputs_sha256'] = jsonl_inputs_digest
+    candidate['jsonl_provider_modules'] = jsonl['modules'].copy()
+    candidate['jsonl_provider_assets'] = jsonl['assets'].copy()
     report['webServerReset'] = dict(root=str(tmp_path), module=str(tmp_path / 'dsh/host/webserver/socket_server.py'),
         python='3.8.10', platform='win32', observations=[
             dict(mode='http-stream', resets=3, owned=True, alive=True, retired=True, errors=[]),
@@ -541,6 +550,54 @@ def test_session_text_lanes_are_mandatory(tmp_path, damage):
             regression_xml(path, **{damage: (module, name)})
             with pytest.raises(RuntimeError):
                 GATE.validate_regression(path)
+
+
+@functools.lru_cache(maxsize=1)
+def jsonl_provider_runtime_fixture():
+    with tempfile.TemporaryDirectory(prefix='jsonl-provider-validator-fixture-') as directory:
+        output = Path(directory) / 'paired.json'
+        result = subprocess.run([sys.executable, str(ROOT / 'scripts/jsonl_provider_oracle.py'), '--output', str(output)],
+            capture_output=True, timeout=150)
+        assert result.returncode == 0 and not result.stderr, result.stderr
+        paired = json.loads(output.read_text(encoding='utf-8'))
+        native = json.loads(output.with_name('paired.native.json').read_text(encoding='utf-8'))
+        return native, paired['generatedInputsSha256']
+
+
+@pytest.mark.parametrize('damage', ['omit', 'skip', 'duplicate', 'failure'])
+def test_jsonl_provider_lanes_are_mandatory(tmp_path, damage):
+    for module in ('test_jsonl_canonical', 'test_jsonl_provider_source'):
+        for name in GATE.REQUIRED_REGRESSION[module]:
+            path = tmp_path / 'jsonl-regression.xml'
+            regression_xml(path, **{damage: (module, name)})
+            with pytest.raises(RuntimeError):
+                GATE.validate_regression(path)
+
+
+@pytest.mark.parametrize('damage', ['receipt', 'root', 'moduleFile', 'python', 'modules', 'assets', 'rows', 'input', 'source', 'module-source', 'asset-source'])
+def test_extracted_jsonl_provider_requires_fresh_source_and_owned_resources(tmp_path, damage):
+    archive, candidate, report = extracted_receipt(tmp_path)
+    current = report['jsonlProvider']
+    if damage == 'receipt':
+        del report['jsonlProvider']
+    elif damage in ('root', 'moduleFile', 'python'):
+        current[damage] = 'different'
+    elif damage in ('modules', 'assets'):
+        current[damage].pop(next(iter(current[damage])))
+    elif damage == 'rows':
+        current['rows'].pop()
+    elif damage == 'input':
+        candidate['jsonl_provider_inputs_sha256'] = '0' * 64
+    elif damage == 'source':
+        candidate['jsonl_provider_observations_sha256'] = '0' * 64
+    elif damage == 'module-source':
+        candidate['jsonl_provider_modules'] = None
+    else:
+        candidate['jsonl_provider_assets'] = None
+    output = tmp_path / 'jsonl-extracted.json'
+    output.write_text(json.dumps(report), encoding='utf-8')
+    with pytest.raises(RuntimeError, match='jsonlProvider'):
+        GATE.validate_extracted(output, archive, candidate)
 
 
 @functools.lru_cache(maxsize=1)

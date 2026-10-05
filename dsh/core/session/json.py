@@ -217,7 +217,7 @@ def walk_json_value(value: Any, detach: bool = False, undefined_sentinel: Any = 
             if type(curr) is float:
                 if math.isnan(curr) or math.isinf(curr) or _is_negative_zero(curr):
                     return undefined_sentinel if detach else False
-                _assign(curr)
+                _assign(int(curr) if curr.is_integer() and abs(curr) <= 9007199254740991 else curr)
                 continue
 
             # Containers: strict list

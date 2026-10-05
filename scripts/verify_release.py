@@ -49,6 +49,7 @@ from scripts.javascript_workflow_oracle import validate_runtime as validate_java
 from scripts.runtime_context_oracle import validate_runtime as validate_runtime_context, identity as runtime_context_identity
 from scripts.javascript_ready_oracle import validate_runtime as validate_javascript_ready, identity as ready_identity
 from scripts.javascript_initial_oracle import validate_runtime as validate_javascript_initial, identity as initial_identity, NAMES as INITIAL_NAMES
+from scripts.session_number_oracle import validate_runtime as validate_session_number, identity as number_identity, NAMES as NUMBER_NAMES
 from scripts.persistence_read_oracle import validate_runtime as validate_persistence_read, identity as read_identity, NAMES as READ_NAMES
 NODE_VERSION = 'v22.22.2'
 PORTABLE_ARCHIVE = 'dist/dsh-win7-portable-v0.1.0.zip'
@@ -61,9 +62,18 @@ PAIRED_DRIVERS = (
     'cordis_retirement', 'cordis_tools', 'acp_sessions', 'acp_model_output', 'acp_stdio', 'acp_permissions', 'mcp_stdio', 'mcp_http', 'acp_mcp', 'subagent_acp', 'subagent_acp_teardown', 'mcp_disposal', 'subprocess_ownership', 'subprocess_tree', 'projection_cache_failure', 'session_observation_read', 'session_corpus_list', 'session_corpus_read', 'session_lineage', 'session_event_trace', 'session_filters', 'session_requests', 'session_snapshots', 'query_schema', 'query_engine', 'query_unicode', 'session_text',
 )
 PAIRED_DRIVERS = PAIRED_DRIVERS + ('session_tools', 'sqlite_format', 'sqlite_provider', 'jsonl_provider', 'tool_scheduler', 'http_redirect', 'javascript_workflow', 'runtime_context', 'javascript_ready', 'persistence_read')
-PAIRED_DRIVERS = PAIRED_DRIVERS + ('javascript_initial',)
+PAIRED_DRIVERS = PAIRED_DRIVERS + ('javascript_initial', 'session_number')
 OFFICIAL_CONFIGS = ('consumers', 'agent-lifecycle', 'session-recovery', 'session-projection', 'acp', 'acp-app', 'mcp', 'subagent-acp', 'storage-cache', 'session-observation', 'session-corpus', 'session-sqlite-query', 'query-engine-source', 'session-tools-source', 'sqlite-format-source', 'sqlite-provider-source', 'jsonl-provider-source', 'tool-scheduler-source')
 REQUIRED_REGRESSION = {
+    'test_session_number_consumers': {
+        *{'test_actual_public_session_number_and_frozen_metadata_match_source[' + name + ']' for name in NUMBER_NAMES},
+        *{'test_session_number_receipt_requires_complete_metadata_and_runtime[' + damage + ']' for damage in (
+            'outcome', 'header-field', 'header-mutation', 'nested-mutation', 'input-mutation',
+            'missing-case', 'duplicate', 'root', 'python', 'executable', 'module', 'module-bytes')},
+        *{'test_session_number_source_identity_is_required[' + damage + ']' for damage in ('pin', 'node', 'inputs', 'bytes')},
+        *{'test_portable_number_cli_refuses_partial_receipts[' + side + ']' for side in ('source', 'native')},
+        *{'test_published_header_copies_remain_detached_and_immutable[' + action + ']' for action in ('copy', 'deepcopy', 'export', 'delete')},
+    },
     'test_javascript_initial_consumers': {
         *{'test_actual_entry_exit_precedes_initial_write_failure[' + name + ']' for name in INITIAL_NAMES},
         *{'test_initial_receipt_requires_complete_outcome_and_ownership[' + damage + ']' for damage in (
@@ -89,11 +99,13 @@ REQUIRED_REGRESSION = {
         'test_unselected_in_tree_interpreter_is_refused_even_with_identical_bytes[selected-workflow]',
         'test_unselected_in_tree_interpreter_is_refused_even_with_identical_bytes[selected-read]',
         'test_unselected_in_tree_interpreter_is_refused_even_with_identical_bytes[selected-initial]',
+        'test_unselected_in_tree_interpreter_is_refused_even_with_identical_bytes[selected-number]',
         'test_unselected_in_tree_interpreter_is_refused_even_with_identical_bytes[extracted-context]',
         'test_unselected_in_tree_interpreter_is_refused_even_with_identical_bytes[extracted-ready]',
         'test_unselected_in_tree_interpreter_is_refused_even_with_identical_bytes[extracted-workflow]',
         'test_unselected_in_tree_interpreter_is_refused_even_with_identical_bytes[extracted-read]',
         'test_unselected_in_tree_interpreter_is_refused_even_with_identical_bytes[extracted-initial]',
+        'test_unselected_in_tree_interpreter_is_refused_even_with_identical_bytes[extracted-number]',
     },
     "test_javascript_ready_consumers": {
         "test_actual_held_ready_crosses_exit_before_admission[held-ready-exit]",
@@ -282,6 +294,10 @@ REQUIRED_REGRESSION = {
         *{'test_extracted_initial_requires_source_assets_and_complete_observations[' + damage + ']' for damage in (
             'missing', 'source-missing', 'source-changed', 'module-missing', 'module-changed', 'assets-missing',
             'asset-changed', 'root', 'python', 'executable', 'tail', 'duplicate', 'outcome', 'late-phase', 'entry', 'emission')},
+        *{'test_extracted_number_requires_source_and_complete_metadata[' + damage + ']' for damage in (
+            'missing', 'source-missing', 'source-changed', 'module-missing', 'module-changed', 'root',
+            'python', 'executable', 'tail', 'duplicate', 'outcome', 'metadata', 'mutation', 'input')},
+        *{'test_number_consumer_lanes_are_mandatory[' + damage + ']' for damage in ('omit', 'skip', 'duplicate', 'failure')},
         *{'test_initial_consumer_lanes_are_mandatory[' + damage + ']' for damage in ('omit', 'skip', 'duplicate', 'failure')},
         "test_extracted_ready_requires_source_assets_and_complete_observations[missing]",
         "test_extracted_ready_requires_source_assets_and_complete_observations[source-missing]",
@@ -1060,6 +1076,11 @@ def validate_extracted(path, archive, candidate):
             candidate['persistence_read_assets'], check_files=False)
     except (ValueError, KeyError, TypeError) as error:
         raise RuntimeError('Extracted persistenceRead observations are incomplete') from error
+    try:
+        validate_session_number(report.get('sessionNumber'), Path(report['mcpStdio']['root']),
+            candidate['session_number_observations_sha256'], candidate['session_number_modules'], check_files=False)
+    except (ValueError, KeyError, TypeError) as error:
+        raise RuntimeError('Extracted sessionNumber observations are incomplete') from error
     for name, validate in [('queryEngine', validate_query_engine), ('querySchema', validate_query_schema), ('pythonDirectory', validate_python_directory),
                            ('sessionLineage', validate_session_lineage), ('sessionEventTrace', validate_session_event_trace),
                            ('sessionFilters', validate_session_filters), ('sessionRequests', validate_session_requests),
@@ -1213,6 +1234,11 @@ def verify(args, output):
     candidate['persistence_read_observations_sha256'] = read_identity(json.loads(read_source.read_text(encoding='utf-8')))
     candidate['persistence_read_modules'] = read_report['modules']
     candidate['persistence_read_assets'] = read_report['assets']
+    number_source = output / 'session-number-paired.source.json'
+    number_native = output / 'session-number-paired.native.json'
+    number_report = json.loads(number_native.read_text(encoding='utf-8'))
+    candidate['session_number_observations_sha256'] = number_identity(json.loads(number_source.read_text(encoding='utf-8')))
+    candidate['session_number_modules'] = number_report['modules']
     raw = output / 'cordis-raw.json'
     raw.unlink(missing_ok=True)
     run([python, 'scripts/cordis_oracle.py', '--output', str(raw)],
@@ -1238,7 +1264,8 @@ def verify(args, output):
                '--context-source', str(runtime_context_source), '--context-native', str(runtime_context_native),
                '--ready-source', str(ready_source), '--ready-native', str(ready_native),
                '--initial-source', str(initial_source), '--initial-native', str(initial_native),
-               '--read-source', str(read_source), '--read-native', str(read_native)]
+               '--read-source', str(read_source), '--read-native', str(read_native),
+               '--number-source', str(number_source), '--number-native', str(number_native)]
     if not candidate['worktree_dirty']:
         command += ['--expected-commit', candidate['product_commit']]
     run(command, 'portable-extracted', output, env=environment)

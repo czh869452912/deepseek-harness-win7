@@ -5,6 +5,7 @@ Compatible with Python 3.8.10 and Windows 7 SP1.
 """
 
 import copy
+import math
 import os
 import time
 from typing import Any, Dict, FrozenSet, Iterator, List, Optional, Sequence, Union
@@ -194,9 +195,49 @@ class SessionHeader:
         return validate_session_header(sid, record)
 
 
+class _ValidatedSessionHeader(SessionHeader):
+    def __init__(self, record: Dict[str, Any], **values: Any):
+        super().__init__(**values)
+        self._record = deep_freeze(record)
+        self._sealed = True
+
+    def __setattr__(self, name: str, value: Any) -> None:
+        if getattr(self, "_sealed", False):
+            raise TypeError("frozen session header does not support attribute assignment")
+        object.__setattr__(self, name, value)
+
+    def __delattr__(self, name: str) -> None:
+        if getattr(self, "_sealed", False):
+            raise TypeError("frozen session header does not support attribute deletion")
+        object.__delattr__(self, name)
+
+    def to_dict(self) -> Dict[str, Any]:
+        return copy.deepcopy(self._record)
+
+    def __copy__(self) -> "SessionHeader":
+        return validate_session_header(self.id, dict(self._record))
+
+    def __deepcopy__(self, memo: Any = None) -> "SessionHeader":
+        return validate_session_header(self.id, copy.deepcopy(self._record, memo if memo is not None else {}))
+
+    def __getitem__(self, key: str) -> Any:
+        if key in self._record:
+            return self._record[key]
+        return super().__getitem__(key)
+
+    def keys(self) -> Any:
+        return self._record.keys()
+
+    def values(self) -> Any:
+        return self._record.values()
+
+    def items(self) -> Any:
+        return self._record.items()
+
+
 def _is_safe_int(val: Any) -> bool:
     """`Number.isSafeInteger(val)` for the value kinds a JSON number can hold."""
-    return isinstance(val, int) and not isinstance(val, bool) and -0x1FFFFFFFFFFFFF <= val <= 0x1FFFFFFFFFFFFF
+    return type(val) in (int, float) and -0x1FFFFFFFFFFFFF <= val <= 0x1FFFFFFFFFFFFF and math.isfinite(val) and int(val) == val
 
 
 def _is_safe_non_negative_int(val: Any) -> bool:
@@ -417,7 +458,7 @@ def validate_session_header(session_id: str, input_data: Any) -> SessionHeader:
         raise ValueError("session header is not a plain JSON record")
 
     raw_version = input_data.get("version", UNDEFINED)
-    if type(raw_version) is not int or raw_version != SESSION_FORMAT_VERSION:
+    if type(raw_version) not in (int, float) or raw_version != SESSION_FORMAT_VERSION:
         raise ValueError(
             f"session header version must be {SESSION_FORMAT_VERSION}, got {_js_string(raw_version)}"
         )
@@ -477,15 +518,20 @@ def validate_session_header(session_id: str, input_data: Any) -> SessionHeader:
             raise ValueError("session header agentPreset must be a string")
         agent_preset = raw_preset
 
-    return SessionHeader(
+    record = dict(input_data)
+    for field in ("version", "createdAt", "seedLength", "delegationDepth"):
+        if field in record:
+            record[field] = int(record[field])
+    return _ValidatedSessionHeader(
+        record,
         session_id=session_id,
-        version=raw_version,
-        created_at=created_at,
+        version=int(raw_version),
+        created_at=int(created_at),
         cwd=cwd,
         parent_session=parent_session,
-        seed_length=seed_length,
+        seed_length=int(seed_length) if seed_length is not None else None,
         origin=origin,
-        delegation_depth=delegation_depth,
+        delegation_depth=int(delegation_depth) if delegation_depth is not None else None,
         agent_preset=agent_preset,
     )
 

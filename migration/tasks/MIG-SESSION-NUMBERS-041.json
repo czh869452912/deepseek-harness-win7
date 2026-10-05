@@ -1,0 +1,19 @@
+{
+  "id": "MIG-SESSION-NUMBERS-041",
+  "goal": "闭合公共Session.create数值准入和只读完整元数据的51组观察",
+  "kind": "implementation",
+  "state": "running",
+  "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
+  "base_product": "47adea372613d086c54631344af4944b4ddcf232",
+  "owner": "current-session-coordinator",
+  "requires": [{"task": "MIG-CURRENT-RELEASE-GATE-003", "contract": "CON-CURRENT-RELEASE-GATE", "revision": 1}, {"task": "MIG-PERSISTENCE-READ-039", "contract": "CON-PERSISTENCE-READ", "revision": 1}],
+  "provides": [{"contract": "CON-SESSION-NUMBERS", "revision": 1}],
+  "acceptance": ["Fresh actual public Session.create Source/native51 complete rows match six numeric fields/eight values and three metadata ownership controls without field filtering or output numeric normalization.", "Retain42-match/nine-difference baseline, actual fixed complete rows and isolated public Session/token/query/storage regression evidence. Native published header copies/exports remain detached and immutable while assembly DTOs remain usable.", "A distinct clean complete gate includes969 mandatory lanes,61 fresh paired drivers, eighteen unchanged original Source groups/1237 assertions and actual extracted ownPython3.8.10/browser before integration."],
+  "expected_paths": ["dsh/core/session", "scripts", "tests", "migration", "docs/research"],
+  "open_findings": ["51 fresh formal selected Source/native rows match. All1233 focused actual public Session/token/query/canonical storage, numeric read and gate/executable/rejection regressions passed in357.95 seconds. Actual extracted qualification and a distinct frozen complete gate remain pending.", "Public restore/malformed/plugin ABI and fullB1/profile are not signed by Session.create controls."],
+  "conflicts_with": [],
+  "candidate_commit": null,
+  "integrated_commit": null,
+  "evidence_ids": [],
+  "next_action": "1233项产品/session/query/persistence及门禁定向回归已通过；独立提交041后冻结不同干净候选完整验收040与041，之后才签收；继续完整公共Session ABI和其他迁移。"
+}

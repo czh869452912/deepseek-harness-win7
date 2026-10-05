@@ -1,0 +1,22 @@
+{
+  "id": "CON-SESSION-NUMBERS",
+  "revision": 1,
+  "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
+  "status": "specified",
+  "source_paths": ["reference/packages/core/session/src/index.ts", "reference/packages/core/session/src/json.ts", "reference/packages/core/session/src/types.ts", "dsh/core/session/session.py", "dsh/core/session/json.py", "dsh/core/session/types.py"],
+  "consumers": ["scripts/session_number_oracle.py", "scripts/oracles/session_number.probe.spec.ts", "scripts/oracles/session_number_python.py", "tests/test_session_number_consumers.py", "scripts/verify_release.py", "scripts/verify_portable.py"],
+  "invariants": [
+    "Actual public Source Session.create and native Session.create execute the same51 named header/seed numeric and published metadata controls. Complete rows compare without filtering or output numeric normalization.",
+    "Safe integer-valued Python floats adapt inside the actual lossless JSON snapshot to integer representation. Boolean, fractional, unsafe, nonfinite and negative-zero values retain the tested lossless/field-specific Source admission results and exact messages.",
+    "Validated published headers retain unknown JSON metadata fields and freeze the complete detached graph. Both attribute and nested mapping mutations cannot alter the published header or caller-owned input.",
+    "The Python header constructor remains a mutable assembly DTO. Public validated headers are immutable; their mapping export and shallow/deep copies are detached and preserve metadata. Separate native controls verify those Python API operations, not additional Source parity rows.",
+    "Fresh clean pinned Source, Node22.22.2, explicit static Source guard inputs and all actual selected/extracted native imported module bytes bind the observations. Exact Python3.8.10 executable identity is mandatory."
+  ],
+  "identity": "Six fields version/createdAt/seedLength/delegationDepth/seq/time crossed with eight numeric cases, followed by unknown-field/header-mutation/nested-header-mutation. NAMES in the native observer is authoritative.",
+  "ownership": "Source uses the real Session.create and original deepFreeze/lossless admission algorithms. Native uses actual public Session.create; caller metadata remains detached. Error/mutation output records actual outcomes, never synthetic success.",
+  "ordering": "Lossless snapshot precedes public validation and publication. Only safe whole floats receive internal representation adaptation; negative-zero/nonfinite rejection occurs first. Freeze after validated fields are assembled.",
+  "errors": "ValueError corresponds to the Source Error at this bounded admission boundary. Unexpected native exception classes abort the observer. Actual exact error text is compared.",
+  "cancellation": "No new cancellation semantics; existing Session/query/persistence consumers must continue to pass.",
+  "adaptation": "Python separates int/float/bool unlike JavaScript numbers. Known validated header numeric attributes use safe integer representation; JSON extras retain their full graph and mapping access. Freeze applies to published validation results, not every construction DTO.",
+  "open_questions": ["Session.fromRestore identity/number-sign and all malformed/public plugin ABI operations, arbitrary metadata graphs, all consumer mutation/copy cycles, multi-process/workspace/long histories, fullB1/profile and deferred real Win7 remain outside these51 cases.", "The Source input inventory is a static guard, not a full dynamic import closure; clean pinned checkout and frozen full gate input manifests bind the wider source tree."]
+}

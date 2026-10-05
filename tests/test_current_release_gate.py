@@ -40,6 +40,7 @@ from scripts.http_redirect_oracle import identity as redirect_observation_digest
 from scripts.javascript_workflow_oracle import observation_digest as javascript_observation_digest
 from scripts.runtime_context_oracle import observation_digest as context_observation_digest
 from scripts.javascript_ready_oracle import observation_digest as ready_observation_digest
+from scripts.persistence_read_oracle import observation_digest as read_observation_digest
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -350,7 +351,7 @@ def test_extracted_session_corpus_read_requires_exact_sources_and_batch_drain(tm
 def test_regression_requires_browser_portable_and_acp_process_lanes(tmp_path):
     path = tmp_path / 'pytest.xml'
     regression_xml(path)
-    assert GATE.validate_regression(path) == {'required_lanes': 728, 'skipped': 1}
+    assert GATE.validate_regression(path) == {'required_lanes': 823, 'skipped': 1}
 
 
 @pytest.mark.parametrize('module', ['test_native_web_browser', 'test_portable_smoke', 'test_acp_stdio_journey', 'test_acp_permission_process', 'test_mcp_stdio_transport', 'test_mcp_supervisor', 'test_mcp_schema', 'test_mcp_config', 'test_mcp_tools_source', 'test_mcp_image_consumer', 'test_mcp_http_source', 'test_mcp_http_transport', 'test_mcp_supervisor_source', 'test_mcp_factory_source', 'test_acp_mcp_source', 'test_acp_mcp_runtime_source', 'test_acp_mcp_abort_source', 'test_acp_mcp_process', 'test_acp_mcp_runtime'])
@@ -666,6 +667,72 @@ def test_ready_consumer_lanes_are_mandatory(tmp_path, damage):
         GATE.validate_regression(path)
 
 
+@functools.lru_cache(maxsize=1)
+def read_runtime_fixture():
+    with tempfile.TemporaryDirectory(prefix='persistence-read-receipt-') as folder:
+        output = Path(folder) / 'paired.json'
+        completed = subprocess.run([sys.executable, str(ROOT / 'scripts/persistence_read_oracle.py'),
+            '--output', str(output)], cwd=str(ROOT), capture_output=True, timeout=90)
+        if completed.returncode:
+            raise RuntimeError(output.read_text(encoding='utf-8'))
+        return json.loads(output.with_suffix('.native.json').read_text(encoding='utf-8'))
+
+
+@pytest.mark.parametrize('damage', ['missing', 'source-missing', 'source-changed', 'module-missing',
+    'module-changed', 'assets-missing', 'asset-changed', 'root', 'python', 'executable', 'tail', 'duplicate',
+    'outcome', 'late-return', 'signal', 'queue', 'legacy'])
+def test_extracted_read_requires_source_assets_and_complete_observations(tmp_path, damage):
+    archive, candidate, report = extracted_receipt(tmp_path)
+    runtime = report['persistenceRead']
+    if damage == 'missing':
+        del report['persistenceRead']
+    elif damage == 'source-missing':
+        del candidate['persistence_read_observations_sha256']
+    elif damage == 'source-changed':
+        candidate['persistence_read_observations_sha256'] = '0' * 64
+    elif damage == 'module-missing':
+        del runtime['modules']['dsh/session/coordinator.py']
+    elif damage == 'module-changed':
+        runtime['modules']['dsh/session/coordinator.py'] = '0' * 64
+    elif damage == 'assets-missing':
+        del runtime['assets']['dsh/session/bin/zstd/dsh_zstd.dll']
+    elif damage == 'asset-changed':
+        runtime['assets']['dsh/session/bin/zstd/dsh_zstd.dll'] = '0' * 64
+    elif damage == 'root':
+        runtime['root'] = str(tmp_path.parent)
+    elif damage == 'python':
+        runtime['python'] = '3.9.0 foreign runtime'
+    elif damage == 'executable':
+        runtime['executable'] = str(tmp_path / 'nested/python.exe')
+    elif damage == 'tail':
+        runtime['rows'].pop()
+    elif damage == 'duplicate':
+        runtime['rows'][-1] = copy.deepcopy(runtime['rows'][0])
+    elif damage == 'outcome':
+        runtime['rows'][0]['accepted'] = False
+    elif damage == 'late-return':
+        del next(row for row in runtime['rows'] if row['name'] == 'jsonl-none/abort/after-read')['error']
+    elif damage == 'signal':
+        next(row for row in runtime['rows'] if row['name'] == 'jsonl-none/abort/after-read')['calls'][0]['signalForwarded'] = False
+    elif damage == 'queue':
+        next(row for row in runtime['rows'] if row['name'] == 'sqlite/queued')['settledBeforeRelease'] = False
+    else:
+        next(row for row in runtime['rows'] if row['name'] == 'sqlite/legacy-forward')['calls'][0]['signalForwarded'] = False
+    output = tmp_path / 'extracted.json'
+    output.write_text(json.dumps(report), encoding='utf-8')
+    with pytest.raises(RuntimeError, match='persistenceRead'):
+        GATE.validate_extracted(output, archive, candidate)
+
+
+@pytest.mark.parametrize('damage', ['omit', 'skip', 'duplicate', 'failure'])
+def test_read_consumer_lanes_are_mandatory(tmp_path, damage):
+    path = tmp_path / 'pytest.xml'
+    key = ('test_persistence_read_consumers', sorted(GATE.REQUIRED_REGRESSION['test_persistence_read_consumers'])[0])
+    regression_xml(path, **{damage: key})
+    with pytest.raises(RuntimeError):
+        GATE.validate_regression(path)
+
+
 def extracted_receipt(tmp_path):
     archive = tmp_path / 'portable.zip'
     archive.write_bytes(b'exact candidate archive')
@@ -692,13 +759,19 @@ def extracted_receipt(tmp_path):
     candidate['javascript_ready_observations_sha256'] = ready_observation_digest(ready['observations'])
     candidate['javascript_ready_modules'] = ready['modules'].copy()
     candidate['javascript_ready_assets'] = ready['assets'].copy()
+    read = copy.deepcopy(read_runtime_fixture())
+    read['root'], read['executable'] = str(tmp_path), str(tmp_path / 'python.exe')
+    candidate['persistence_read_observations_sha256'] = read_observation_digest(read['rows'])
+    candidate['persistence_read_modules'] = read['modules'].copy()
+    candidate['persistence_read_assets'] = read['assets'].copy()
     report = {'result': 'passed', 'browser': {'passed': True}, 'runtime': {'checks': ['actual runtime']},
               'acp': {'processes': 2, 'steps': ['initialize-0', 'invalid-params-before-effects',
                   'persistent-new', 'close-list-0', 'eof-0', 'initialize-1',
                   'new-process-resume-no-history-updates', 'close-list-1', 'eof-1']},
               'runtimeStderr': '', 'frontendFilesChecked': 119, 'archive': str(archive),
               'archiveSha256': GATE.digest(archive), 'provenance': dict(candidate), 'toolScheduler': scheduler,
-              'httpRedirect': redirect, 'javascriptWorkflow': javascript, 'runtimeContext': context, 'javascriptReady': ready}
+              'httpRedirect': redirect, 'javascriptWorkflow': javascript, 'runtimeContext': context, 'javascriptReady': ready,
+              'persistenceRead': read}
     modes = ['allow', 'reject', 'malformed', 'cancel-late', 'close-late', 'eof']
     report['acpPermissions'] = {'processes': 6, 'modes': modes, 'observations': [
         {'mode': mode, 'executed': mode == 'allow', 'modelRequests': 2 if mode in modes[:3] else 1, 'stderr': [''],

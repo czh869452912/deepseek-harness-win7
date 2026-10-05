@@ -1,0 +1,23 @@
+{
+  "id": "CON-PERSISTENCE-READ",
+  "revision": 1,
+  "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
+  "status": "specified",
+  "source_paths": ["reference/packages/session/session-persistence/src/coordinator.ts", "reference/packages/session/session-persistence-jsonl/src/index.ts", "reference/packages/session/session-persistence-sqlite/src/index.ts", "reference/packages/session/session-persistence-sqlite/src/store.ts", "dsh/session/coordinator.py", "dsh/session/persistence_jsonl_canonical.py", "dsh/session/persistence_sqlite_canonical.py"],
+  "consumers": ["scripts/persistence_read_oracle.py", "scripts/oracles/persistence_read_python.py", "tests/test_persistence_read_consumers.py", "scripts/verify_release.py", "scripts/verify_portable.py"],
+  "invariants": [
+    "Real canonical Cordis/SessionStore/plaintext and compressed JSONL/SQLite services execute51 ordered same-scenario observations with all row fields compared.",
+    "After lossless snapshot validation, integer-valued float createdAt and contiguous seq are admitted as JavaScript numbers; boolean/fraction/negative-zero snapshot refusals retain the exact bounded Source errors. readFrom accepts0.0/-0.0 and refuses tested boolean/fraction/unsafe values.",
+    "Read signals reach actual physical hooks; cancellation before or after the physical read preserves the caller's exact reason identity and never returns a successful suffix after cancellation.",
+    "A second read known to be queued behind an actual held physical read settles its cancellation before releasing the first, and enters no second physical read.",
+    "SQLite legacy suffix normalization forwards the signal to the complete prefix fallback and checks it afterward; a cancelled suffix backend failure yields the original cancellation reason.",
+    "Fresh pinned clean Source with Node22.22.2 and the static guard inventory, actual selected and extracted Python3.8.10 interpreters, imported modules and private SQL/SQLite/Zstd assets bind these observations. No observation fields receive normalization or filtering."
+  ],
+  "identity": "45 numeric/pre-read/post-read cases across three physical modes, then6 ordered queued/legacy/error-priority cases; NAMES in persistence_read_oracle is authoritative. The first unsuccessful queue observer did not reach the queue and is retained separately.",
+  "ownership": "Actual first-party providers own physical storage and Context teardown. Test controls only real physical-read return and serialization/lock admission, retaining real backend work and values; abort reason identity is compared within each runtime.",
+  "ordering": "Lossless snapshot before numeric adaptation and lazy metadata registration. Validate fromSeq, wait retirement, observe queued cancellation, check signal on lock admission, pass it through physical reads and check after return before publishing.",
+  "errors": "Retain Source's tested lossless-batch and seq diagnostics; Source negative-zero snapshots remain refused. Cancellation priority is the original SQLite coordinator rule, not a new bug exception.",
+  "cancellation": "Pre-read, post-physical-read, known queued read, SQLite legacy prefix and aborted suffix failure preserve reason identity and physical admission ownership. Broader retirement/unload/multi-process schedules are outside these51 cases.",
+  "adaptation": "Python3.8 distinguishesint/float/bool; safe integer-valued numbers adapt to physical integer slots after lossless snapshot, using original numeric bounds. Actual private SQLite/Zstd formats and all Source/frontend algorithms are unchanged.",
+  "open_questions": ["Arbitrary metadata/event graphs, complete public plugin ABI, all signal values/retirement/unload schedules, multi-process/multi-workspace/long histories, profiles/fullB1 and deferred Win7 remain unaccepted.", "The Source guard inventory is static, not a complete dynamic import inventory; clean pinned Source and frozen release input manifests bind the full checkout."]
+}

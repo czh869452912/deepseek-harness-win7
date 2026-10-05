@@ -6,19 +6,20 @@ import tempfile
 
 import pytest
 
-from scripts import runtime_context_oracle, javascript_ready_oracle, javascript_workflow_oracle
-from test_current_release_gate import context_runtime_fixture, ready_runtime_fixture, javascript_runtime_fixture
+from scripts import runtime_context_oracle, javascript_ready_oracle, javascript_workflow_oracle, persistence_read_oracle
+from test_current_release_gate import context_runtime_fixture, ready_runtime_fixture, javascript_runtime_fixture, read_runtime_fixture
 
 
 ROOT = Path(__file__).resolve().parents[1]
 
 
-@pytest.mark.parametrize('consumer', ['context', 'ready', 'workflow'])
+@pytest.mark.parametrize('consumer', ['context', 'ready', 'workflow', 'read'])
 @pytest.mark.parametrize('mode', ['selected', 'extracted'])
 def test_unselected_in_tree_interpreter_is_refused_even_with_identical_bytes(consumer, mode):
     fixture, oracle = {'context': (context_runtime_fixture, runtime_context_oracle),
         'ready': (ready_runtime_fixture, javascript_ready_oracle),
-        'workflow': (javascript_runtime_fixture, javascript_workflow_oracle)}[consumer]
+        'workflow': (javascript_runtime_fixture, javascript_workflow_oracle),
+        'read': (read_runtime_fixture, persistence_read_oracle)}[consumer]
     runtime = copy.deepcopy(fixture())
     with tempfile.TemporaryDirectory(prefix='unselected-interpreter-', dir=str(ROOT / '.goose/out')) as directory:
         foreign = Path(directory) / 'python.exe'
@@ -33,5 +34,5 @@ def test_unselected_in_tree_interpreter_is_refused_even_with_identical_bytes(con
         runtime['executable'] = str(foreign)
         extra = [] if consumer == 'context' else [runtime['assets']]
         with pytest.raises(ValueError, match='selected interpreter'):
-            oracle.validate_runtime(runtime, root, oracle.observation_digest(runtime['observations']),
+            oracle.validate_runtime(runtime, root, oracle.observation_digest(runtime['rows' if consumer == 'read' else 'observations']),
                 runtime['modules'], *extra, check_files=mode == 'selected')

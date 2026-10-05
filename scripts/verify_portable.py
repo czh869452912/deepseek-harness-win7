@@ -50,6 +50,7 @@ from scripts.http_redirect_oracle import validate_runtime as validate_http_redir
 from scripts.javascript_workflow_oracle import validate_runtime as validate_javascript_workflow, identity as javascript_identity
 from scripts.runtime_context_oracle import validate_runtime as validate_runtime_context, identity as runtime_context_identity
 from scripts.javascript_ready_oracle import validate_runtime as validate_javascript_ready, identity as ready_identity
+from scripts.persistence_read_oracle import validate_runtime as validate_persistence_read, identity as read_identity
 
 
 def digest(path):
@@ -105,6 +106,25 @@ def ready_receipts(source, native, output):
     return source, expected_digest, runtime['modules'], runtime['assets']
 
 
+def read_receipts(source, native, output):
+    if source or native:
+        if not source or not native:
+            raise RuntimeError('Both persistence read Source and native receipts are required')
+        source, native = Path(source).resolve(), Path(native).resolve()
+    else:
+        paired = output.with_suffix('.persistence-read-paired.json')
+        completed = subprocess.run([sys.executable, str(ROOT / 'scripts/persistence_read_oracle.py'),
+            '--output', str(paired)], cwd=str(ROOT), capture_output=True, timeout=90)
+        output.with_suffix('.persistence-read-source.log').write_bytes(completed.stdout + completed.stderr)
+        if completed.returncode or completed.stderr:
+            raise RuntimeError('Fresh persistence read Source qualification failed')
+        source, native = paired.with_suffix('.source.json'), paired.with_suffix('.native.json')
+    expected_digest = read_identity(json.loads(source.read_text(encoding='utf-8')))
+    runtime = json.loads(native.read_text(encoding='utf-8'))
+    validate_persistence_read(runtime, ROOT, expected_digest, runtime['modules'], runtime['assets'])
+    return source, expected_digest, runtime['modules'], runtime['assets']
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--archive', required=True)
@@ -127,6 +147,8 @@ def main(argv=None):
     parser.add_argument('--context-native', help='Fresh host actual AgentLoop runtime module closure')
     parser.add_argument('--ready-source', help='Fresh actual Source Ready delivery/physical exit observations')
     parser.add_argument('--ready-native', help='Fresh host JavaScript Ready module and private asset closure')
+    parser.add_argument('--read-source', help='Fresh actual Source canonical persistence read observations')
+    parser.add_argument('--read-native', help='Fresh canonical persistence read module and private asset closure')
     args = parser.parse_args(argv)
     archive, output = Path(args.archive).resolve(), Path(args.output).resolve()
     output.parent.mkdir(parents=True, exist_ok=True)
@@ -174,6 +196,9 @@ def main(argv=None):
             'javascript_workflow_oracle.py', 'oracles/javascript_workflow_python.py',
             'runtime_context_oracle.py', 'oracles/runtime_context_python.py', 'oracles/runtime_context.probe.spec.ts',
             'javascript_ready_oracle.py', 'oracles/javascript_ready_python.py', 'oracles/javascript_ready_source.mjs',
+            'persistence_read_oracle.py', 'oracles/persistence_read_python.py', 'oracles/persistence_public_python.py',
+            'oracles/persistence_order_python.py', 'oracles/persistence_public.probe.spec.ts',
+            'oracles/persistence_order.probe.spec.ts', 'oracles/vitest.persistence-read-probe.config.mts',
             'oracles/vitest.runtime-context-probe.config.mts',
             'oracles/javascript_workflow_host_source.mjs', 'oracles/javascript_workflow_session.ts',
             'oracles/vitest.tool-scheduler-probe.config.mts')})
@@ -293,6 +318,8 @@ def main(argv=None):
         report['runtimeContextSourceSha256'] = digest(context_source)
         ready_source, ready_digest, ready_modules, ready_assets = ready_receipts(args.ready_source, args.ready_native, output)
         report['javascriptReadySourceSha256'] = digest(ready_source)
+        read_source, read_digest, read_modules, read_assets = read_receipts(args.read_source, args.read_native, output)
+        report['persistenceReadSourceSha256'] = digest(read_source)
         if args.format_source or args.format_inputs:
             if not args.format_source or not args.format_inputs:
                 raise RuntimeError('Both SQLite format Source and inputs are required')
@@ -624,6 +651,16 @@ def main(argv=None):
             ready_report = json.loads(ready_path.read_text(encoding='utf-8'))
             validate_javascript_ready(ready_report, portable, ready_digest, ready_modules, ready_assets)
             report['javascriptReady'] = ready_report
+            read_path = workspace / 'persistence-read.json'
+            read_result = subprocess.run([str(portable / 'python.exe'), '-I', '-u',
+                str(ROOT / 'scripts/oracles/persistence_read_python.py'), '--root', str(portable), '--output', str(read_path)],
+                cwd=str(workspace), env=env, capture_output=True, encoding='utf-8', errors='replace', timeout=60)
+            output.with_suffix('.persistence-read.log').write_text(read_result.stdout + '\nSTDERR:\n' + read_result.stderr, encoding='utf-8')
+            if read_result.returncode or read_result.stderr or not read_path.is_file():
+                raise RuntimeError('Extracted persistence read observations failed')
+            read_report = json.loads(read_path.read_text(encoding='utf-8'))
+            validate_persistence_read(read_report, portable, read_digest, read_modules, read_assets)
+            report['persistenceRead'] = read_report
             directory = subprocess.run([str(portable / 'python.exe'), '-I', '-u',
                 str(ROOT / 'scripts/python_directory_probe.py'), '--root', str(portable), '--output', str(directory_path)],
                 cwd=str(workspace), env=env, capture_output=True, encoding='utf-8', errors='replace', timeout=90)

@@ -1,8 +1,15 @@
 """Shared public storage cursor and lazy creation, independent of physical backend."""
+import math
+
+from dsh.cordis.utils import js_to_string
 from dsh.core.session import SessionHeader, SESSION_FORMAT_VERSION, KNOWN_SESSION_EVENT_TYPES
 from dsh.core.session.json import snapshot_json_value, UNDEFINED
 from dsh.core.session.types import assert_message_event_shape
 from dsh.session.persistence import SessionFormatUnsupportedError
+
+
+def safe_integer(value):
+    return type(value) in (int, float) and -9007199254740991 <= value <= 9007199254740991 and math.isfinite(value) and int(value) == value
 
 
 def assert_supported_events(events):
@@ -46,8 +53,9 @@ class PersistenceCoordinator:
         if raw is UNDEFINED:
             raise TypeError('session metadata must be losslessly JSON-serializable')
         value = raw.get('createdAt')
-        if type(value) is not int or not 0 <= value <= 9007199254740991:
+        if not safe_integer(value) or value < 0:
             raise TypeError('session metadata createdAt must be a non-negative safe integer')
+        raw['createdAt'] = int(value)
         meta = SessionHeader.from_dict(raw)
         async with self.backend.storage_lock(meta.id):
             self._writable(meta.id)
@@ -65,7 +73,7 @@ class PersistenceCoordinator:
     async def append(self, sid, events):
         events = snapshot_json_value(events, UNDEFINED)
         if events is UNDEFINED or not isinstance(events, list):
-            raise TypeError('session event batch is not losslessly JSON-serializable')
+            raise TypeError('session event batch is not losslessly JSON-serializable because it contains non-JSON-serializable data')
         assert_supported_events(events)
         if not events:
             return
@@ -85,8 +93,9 @@ class PersistenceCoordinator:
                         break
                 state = self.states[sid]
             for index, event in enumerate(events):
-                if type(event.get('seq')) is not int or event['seq'] != state['cursor'] + index:
-                    raise ValueError('append seq mismatch for "{}": expected {} at index {}, got {}'.format(sid, state['cursor'] + index, index, event.get('seq')))
+                if not safe_integer(event.get('seq')) or event['seq'] != state['cursor'] + index:
+                    raise ValueError('append seq mismatch for "{}": expected {} at index {}, got {}'.format(sid, state['cursor'] + index, index, js_to_string(event.get('seq', UNDEFINED))))
+                event['seq'] = int(event['seq'])
             await self.backend.append_batch(state['meta'], events, state['materialized'])
             state['materialized'] = True
             state['cursor'] += len(events)

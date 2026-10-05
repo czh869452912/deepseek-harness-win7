@@ -39,8 +39,8 @@ class JsonlSessionPersistence(SessionPersistence):
 
     ensureMaterialized = ensure_materialized
 
-    async def read_stored(self, identity):
-        stored = await self.store.load_stored(identity)
+    async def read_stored(self, identity, signal=None):
+        stored = await self.store.load_stored(identity, signal)
         if stored is None:
             raise SessionPersistenceNotFoundError(identity)
         inspection = SessionInspection(header_from_stored(stored['meta']), stored['events'])
@@ -113,14 +113,23 @@ class JsonlSessionPersistence(SessionPersistence):
         return await self.prepared().load(identity)
 
     async def read_from(self, identity, sequence, signal=None):
-        if type(sequence) is not int or not 0 <= sequence <= 9007199254740991:
+        from dsh.session.coordinator import safe_integer
+        from dsh.session.preparations import observe_queued_abort, throw_aborted
+        if not safe_integer(sequence) or sequence < 0:
             from dsh.cordis.utils import js_to_string
             raise TypeError('readFrom fromSeq must be a non-negative safe integer, got ' + js_to_string(sequence))
+        sequence = int(sequence)
         await self.prepared()._retired(identity, signal)
-        async with self.storage_lock(identity):
-            stored = await self.read_stored(identity)
-            stored.events = [event for event in stored.events if event['seq'] >= sequence]
-            return stored
+        started = [False]
+        async def read():
+            async with self.storage_lock(identity):
+                started[0] = True
+                throw_aborted(signal)
+                stored = await self.read_stored(identity, signal)
+                throw_aborted(signal)
+                stored.events = [event for event in stored.events if event['seq'] >= sequence]
+                return stored
+        return await observe_queued_abort(read(), signal, lambda: started[0])
 
     async def list(self, signal=None):
         return [header_from_stored(value) for value in await self.store.list(signal)]

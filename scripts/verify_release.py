@@ -56,6 +56,14 @@ PAIRED_DRIVERS = (
 PAIRED_DRIVERS = PAIRED_DRIVERS + ('session_tools', 'sqlite_format', 'sqlite_provider', 'jsonl_provider')
 OFFICIAL_CONFIGS = ('consumers', 'agent-lifecycle', 'session-recovery', 'session-projection', 'acp', 'acp-app', 'mcp', 'subagent-acp', 'storage-cache', 'session-observation', 'session-corpus', 'session-sqlite-query', 'query-engine-source', 'session-tools-source', 'sqlite-format-source', 'sqlite-provider-source', 'jsonl-provider-source')
 REQUIRED_REGRESSION = {
+    'test_tool_scheduler_failure_boundaries': {
+        'test_ordered_scheduler_finishes_actual_prepared_and_dispatched_results[pre-error-expected0]',
+        'test_ordered_scheduler_finishes_actual_prepared_and_dispatched_results[around-error-expected1]',
+        'test_ordered_scheduler_finishes_actual_prepared_and_dispatched_results[pre-deny-expected2]',
+        'test_ordered_scheduler_finishes_actual_prepared_and_dispatched_results[success-expected3]',
+        'test_scheduler_preserves_first_failure_and_drains_without_late_dispatch[False]',
+        'test_scheduler_preserves_first_failure_and_drains_without_late_dispatch[True]',
+    },
     'test_deepseek_image_journey': {
         'test_extension_request_idle_watchdog_tracks_partial_wire_activity',
         'test_extension_idle_watchdog_does_not_charge_settled_reader_delivery',

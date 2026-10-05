@@ -22,7 +22,7 @@
     "tests",
     "migration"
   ],
-  "open_findings": [],
+  "open_findings": ["Pinned actual Source six scheduler observations expose missing final-result finish/notification, late dispatch after prepare and overwritten first failure. Root fixes passed 119 focused native tests and six fresh Source observations; full B2 combinations, synchronous dispatch prefixes and clean complete/extracted qualification remain open. See docs/research/2026-10-05-tools-scheduler-failure-progress.md."],
   "conflicts_with": [],
   "candidate_commit": null,
   "integrated_commit": null,

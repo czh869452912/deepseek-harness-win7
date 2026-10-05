@@ -17,3 +17,5 @@
 六条 ACP 权限进程旅程的业务、取消、迟到响应、EOF 和关闭均已完成，观察器仍查找旧 plaintext suffix。观察器改为读取实际默认 `session.jsonl.zstd`，要求全部 frame 完整、checksum 解压成功，再检查原有批准审计事件。另两条 Web 启动测试未设置隔离 launch DSH_HOME，误读用户既有 plaintext 日志；规范 encoding refusal 正确阻止混用。夹具在快照捕获和启动前显式设置临时 DSH_HOME，不更改用户日志、产品默认值或 profile 参数语义。修复后 16 项定向测试通过（25.99 秒）；无新增 skip、例外、放宽时限或错误判据。该变更须独立提交并冻结新候选，不能签收或重跑 865fea84。
 
 任意 malformed optional metadata/public plugin ABI、跨进程/多工作区/长历史和完整 B/C/D 范围继续开放。accepted_upstream 为空，Win7 真机按用户决定延期；本记录不宣称整体迁移闭环。
+
+隔离和观察器修复后的干净候选 a6cf3dcd 完整 tests 为 6808 passed、1 failed、6 既有平台 skipped、1 既有 warning（1610.05 秒）。前述八项夹具问题已通过；唯一失败是原版浏览器 host 插件升级启动请求取消，两条原版 console error 拒绝，17 步业务仍完成。精确 ZIP SHA256 `a42207b435f87cb4c555be8b0ce445789acbd288c2cfc449a23a7bf89de0de9a`，输入 SHA256 `affb1d48d1e0ccfafab9d6680a34615ff7351928ae6101961f51dc4636cd9308`；完整失败产物保存在 `.goose/out/session-storage-clean-a6cf3dcd/`。Source/配对/解压阶段未执行。无新的存储签收，浏览器取消继续追踪，后续工具失败边界见 `2026-10-05-tools-scheduler-failure-progress.md`。

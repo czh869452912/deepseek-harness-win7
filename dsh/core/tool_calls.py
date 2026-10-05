@@ -143,8 +143,11 @@ async def run_group(
                 break
             call = group[committed]
             result = slot.result
-            if tools_service and slot.needs_post:
-                result = await tools_service.finalize(slot.exec, slot.result)
+            if tools_service:
+                if slot.needs_post:
+                    result = await tools_service.finalize(slot.exec, slot.result)
+                else:
+                    result = tools_service.finish(slot.exec, slot.result)
 
             append_tool_result(session, turn, step, call.block, result, call_seqs[committed])
             if accept_context and result.additional_contexts:
@@ -157,7 +160,7 @@ async def run_group(
     in_flight: Dict[int, asyncio.Task] = {}
 
     async def start_call(index: int) -> None:
-        nonlocal started, scheduler_failure
+        nonlocal started, scheduler_failure, aborted
         call = group[index]
         call_seqs[index] = append_tool_call(session, turn, step, call.block)
         started += 1
@@ -170,15 +173,20 @@ async def run_group(
         try:
             prep = await tools_service.prepare(call.exec)
         except Exception as e:
-            scheduler_failure = e
+            if scheduler_failure is None:
+                scheduler_failure = e
             return
 
-        if prep.get("kind") == "skip":
-            slots[index] = Slot(exec_input=call.exec, result=prep.get("result"), needs_post=False)
+        if scheduler_failure is not None:
             return
-        elif prep.get("kind") == "abort":
-            slots[index] = Slot(exec_input=call.exec, result=prep.get("result"), needs_post=False)
-            aborted = True
+
+        prepared_exec = prep.get("exec", call.exec)
+        prepared_kind = prep.get("kind")
+        if prepared_kind in ("post-result", "final-result", "skip", "abort"):
+            slots[index] = Slot(exec_input=prepared_exec, result=prep.get("result"),
+                                needs_post=(prepared_kind == "post-result"))
+            if prepared_kind == "abort":
+                aborted = True
             return
 
         async def _dispatch_task(idx: int, exec_inp: ToolExecutionInput) -> int:
@@ -191,10 +199,11 @@ async def run_group(
                     needs_post=(outcome.get("kind") == "post-result"),
                 )
             except Exception as e:
-                scheduler_failure = e
+                if scheduler_failure is None:
+                    scheduler_failure = e
             return idx
 
-        task = asyncio.create_task(_dispatch_task(index, prep.get("exec", call.exec)))
+        task = asyncio.create_task(_dispatch_task(index, prepared_exec))
         in_flight[index] = task
 
     async def fill_pool() -> None:
@@ -242,10 +251,11 @@ async def run_group(
                 aborted = True
             await fill_pool()
     except Exception as err:
-        scheduler_failure = err
+        if scheduler_failure is None:
+            scheduler_failure = err
         if in_flight:
             await asyncio.gather(*in_flight.values(), return_exceptions=True)
-        raise err
+        raise scheduler_failure
 
     if aborted:
         for call in group[started:]:

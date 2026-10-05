@@ -1,0 +1,19 @@
+{
+  "id": "MIG-RUNTIME-CONTEXT-CONSUMER-037",
+  "goal": "修复实际AgentLoop每步运行时上下文及来源归属",
+  "kind": "implementation",
+  "state": "running",
+  "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
+  "base_product": "b1b2f7971d904cce7047e7b679f9faf658383e85",
+  "owner": "current-session-coordinator",
+  "requires": [{"task": "MIG-AGENT-CONFIG-003", "contract": "CON-AGENT-CONFIG", "revision": 1}, {"task": "MIG-CURRENT-RELEASE-GATE-003", "contract": "CON-CURRENT-RELEASE-GATE", "revision": 1}],
+  "provides": [{"contract": "CON-RUNTIME-CONTEXT-CONSUMER", "revision": 1}],
+  "acceptance": ["Fresh actual original AgentLoop and native two-step model/tool consumers match complete attributed runtime-context and durable messages for change/clear/same/empty.", "Exact previous accepted Portable reproduces the three context differences; current selected runtime fixes them and preserves the initially empty case.", "Mandatory reject regressions retain full messages and identity correlation, Source identity and actual imported root/bytes. A new clean frozen full gate and actual extracted Python3.8.10 observe the same four cases before integration."],
+  "expected_paths": ["dsh/core/agent_loop.py", "scripts", "tests", "migration", "docs/research"],
+  "open_findings": ["The product fix and four actual Source consumers pass focused checks; clean full/extracted acceptance is pending. Full B3/C2, arbitrary contexts and model/profile compositions are not part of this bounded contract."],
+  "conflicts_with": [],
+  "candidate_commit": null,
+  "integrated_commit": null,
+  "evidence_ids": [],
+  "next_action": "提交提供端/消费者及严格门禁；冻结干净候选执行全量、57配对和真实解压四场景；通过后只签收这个有界合同。"
+}

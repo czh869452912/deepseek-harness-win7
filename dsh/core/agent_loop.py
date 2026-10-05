@@ -581,19 +581,17 @@ class AgentLoopService:
 
                 sp_svc = self.ctx.get("systemPrompt") or self.ctx.get("system_prompt")
                 if sp_svc and hasattr(sp_svc, "assemble"):
-                    from dsh.core.system_prompt import render_prompt, render_context_snapshot
+                    from dsh.core.system_prompt import render_prompt, render_context_sections, join_context_sections
                     assembly = await sp_svc.assemble({
                         "agent": agent,
                         "session": session,
                         "scope": scope_of(agent.ctx),
                     })
                     system_prompt = render_prompt(assembly)
-                    if assembly.get("contexts") and step_num == 1:
-                        rt_snapshot = render_context_snapshot(assembly)
-                        if rt_snapshot:
-                            candidate_ctx = runtime_context_proj.project(rt_snapshot, [])
-                            if candidate_ctx:
-                                decision_messages.append(candidate_ctx)
+                    context_sections = render_context_sections(assembly)
+                    candidate_ctx = runtime_context_proj.project(join_context_sections(context_sections), context_sections)
+                    if candidate_ctx:
+                        decision_messages.append(candidate_ctx)
                 else:
                     system_prompt = "You are a helpful software engineer assistant."
                     persona = self.ctx.get("persona")

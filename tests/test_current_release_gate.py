@@ -38,6 +38,7 @@ from scripts.jsonl_provider_oracle import observation_digest as jsonl_observatio
 from scripts.tool_scheduler_oracle import identity as scheduler_observation_digest
 from scripts.http_redirect_oracle import identity as redirect_observation_digest
 from scripts.javascript_workflow_oracle import observation_digest as javascript_observation_digest
+from scripts.runtime_context_oracle import observation_digest as context_observation_digest
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -348,7 +349,7 @@ def test_extracted_session_corpus_read_requires_exact_sources_and_batch_drain(tm
 def test_regression_requires_browser_portable_and_acp_process_lanes(tmp_path):
     path = tmp_path / 'pytest.xml'
     regression_xml(path)
-    assert GATE.validate_regression(path) == {'required_lanes': 639, 'skipped': 1}
+    assert GATE.validate_regression(path) == {'required_lanes': 678, 'skipped': 1}
 
 
 @pytest.mark.parametrize('module', ['test_native_web_browser', 'test_portable_smoke', 'test_acp_stdio_journey', 'test_acp_permission_process', 'test_mcp_stdio_transport', 'test_mcp_supervisor', 'test_mcp_schema', 'test_mcp_config', 'test_mcp_tools_source', 'test_mcp_image_consumer', 'test_mcp_http_source', 'test_mcp_http_transport', 'test_mcp_supervisor_source', 'test_mcp_factory_source', 'test_acp_mcp_source', 'test_acp_mcp_runtime_source', 'test_acp_mcp_abort_source', 'test_acp_mcp_process', 'test_acp_mcp_runtime'])
@@ -550,6 +551,61 @@ def test_javascript_runtime_and_source_consumer_lanes_are_mandatory(tmp_path, mo
         GATE.validate_regression(path)
 
 
+@functools.lru_cache(maxsize=1)
+def context_runtime_fixture():
+    with tempfile.TemporaryDirectory(prefix='runtime-context-receipt-') as folder:
+        output = Path(folder) / 'paired.json'
+        completed = subprocess.run([sys.executable, str(ROOT / 'scripts/runtime_context_oracle.py'),
+            '--output', str(output)], cwd=str(ROOT), capture_output=True, timeout=60)
+        if completed.returncode:
+            raise RuntimeError(output.read_text(encoding='utf-8'))
+        return json.loads(output.with_suffix('.native.json').read_text(encoding='utf-8'))
+
+
+@pytest.mark.parametrize('damage', ['missing', 'source-missing', 'source-changed', 'module-missing',
+    'module-changed', 'root', 'python', 'executable', 'tail', 'duplicate', 'attribution', 'identity-correlation'])
+def test_extracted_context_requires_source_identity_and_complete_messages(tmp_path, damage):
+    archive, candidate, report = extracted_receipt(tmp_path)
+    runtime = report['runtimeContext']
+    if damage == 'missing':
+        del report['runtimeContext']
+    elif damage == 'source-missing':
+        del candidate['runtime_context_observations_sha256']
+    elif damage == 'source-changed':
+        candidate['runtime_context_observations_sha256'] = '0' * 64
+    elif damage == 'module-missing':
+        del runtime['modules']['dsh/core/agent_loop.py']
+    elif damage == 'module-changed':
+        runtime['modules']['dsh/core/agent_loop.py'] = '0' * 64
+    elif damage == 'root':
+        runtime['root'] = str(tmp_path.parent)
+    elif damage == 'python':
+        runtime['python'] = '3.9.0 foreign runtime'
+    elif damage == 'executable':
+        runtime['executable'] = str(tmp_path.parent / 'python.exe')
+    elif damage == 'tail':
+        runtime['observations'].pop()
+    elif damage == 'duplicate':
+        runtime['observations'][-1] = copy.deepcopy(runtime['observations'][0])
+    elif damage == 'attribution':
+        runtime['observations'][0]['snapshots'][0]['source']['sections'] = []
+    else:
+        runtime['observations'][0]['snapshots'][0]['id'] = 'foreign-message-identity'
+    output = tmp_path / 'extracted.json'
+    output.write_text(json.dumps(report), encoding='utf-8')
+    with pytest.raises(RuntimeError, match='runtimeContext'):
+        GATE.validate_extracted(output, archive, candidate)
+
+
+@pytest.mark.parametrize('damage', ['omit', 'skip', 'duplicate', 'failure'])
+def test_runtime_context_consumer_lanes_are_mandatory(tmp_path, damage):
+    path = tmp_path / 'pytest.xml'
+    key = ('test_runtime_context_consumers', sorted(GATE.REQUIRED_REGRESSION['test_runtime_context_consumers'])[0])
+    regression_xml(path, **{damage: key})
+    with pytest.raises(RuntimeError):
+        GATE.validate_regression(path)
+
+
 def extracted_receipt(tmp_path):
     archive = tmp_path / 'portable.zip'
     archive.write_bytes(b'exact candidate archive')
@@ -567,13 +623,17 @@ def extracted_receipt(tmp_path):
     candidate['javascript_workflow_observations_sha256'] = javascript_observation_digest(javascript['observations'])
     candidate['javascript_workflow_modules'] = javascript['modules'].copy()
     candidate['javascript_workflow_assets'] = javascript['assets'].copy()
+    context = copy.deepcopy(context_runtime_fixture())
+    context['root'], context['executable'] = str(tmp_path), str(tmp_path / 'python.exe')
+    candidate['runtime_context_observations_sha256'] = context_observation_digest(context['observations'])
+    candidate['runtime_context_modules'] = context['modules'].copy()
     report = {'result': 'passed', 'browser': {'passed': True}, 'runtime': {'checks': ['actual runtime']},
               'acp': {'processes': 2, 'steps': ['initialize-0', 'invalid-params-before-effects',
                   'persistent-new', 'close-list-0', 'eof-0', 'initialize-1',
                   'new-process-resume-no-history-updates', 'close-list-1', 'eof-1']},
               'runtimeStderr': '', 'frontendFilesChecked': 119, 'archive': str(archive),
               'archiveSha256': GATE.digest(archive), 'provenance': dict(candidate), 'toolScheduler': scheduler,
-              'httpRedirect': redirect, 'javascriptWorkflow': javascript}
+              'httpRedirect': redirect, 'javascriptWorkflow': javascript, 'runtimeContext': context}
     modes = ['allow', 'reject', 'malformed', 'cancel-late', 'close-late', 'eof']
     report['acpPermissions'] = {'processes': 6, 'modes': modes, 'observations': [
         {'mode': mode, 'executed': mode == 'allow', 'modelRequests': 2 if mode in modes[:3] else 1, 'stderr': [''],

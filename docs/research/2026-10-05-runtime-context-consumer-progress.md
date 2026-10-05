@@ -1,0 +1,13 @@
+# 实际AgentLoop每步运行时上下文
+
+固定原版真实WorkerRun调用两阶段真实AgentLoop/spawn子代理，在普通文本模型响应后，再调用结构化工具并产生工作流结果。原版与Native结果、发布前agent存在、disposal后移除和root未泄漏structured_output工具相同；原版子代理的模型请求保留subagent:delegation来源sections，而Native只保留正文且sections为空。原始主链观察为 `.goose/out/acp-a4-work/js-in-process-{source-v4,native-v1}.json`。这些完整原始模型请求不是全体LLM协议签收，私有Source编译三次失败均保留。
+
+继续使用实际原版AgentLoop、SystemPrompt、Tools和内存Session，仅模型边界受控，不调用外部模型。真实advance工具在首次请求后改变动态上下文。change/clear/same/empty四组显示：原版分别保留2/2/1/0 durable上下文消息，完整模型消息具有named sections；旧产品分别1/1/1/0且缺失sections。根因是AgentLoop只在step_num==1且contexts非空时投影，并传入空sections。修正在每个proposed step使用现有render_context_sections、join_context_sections与RuntimeContextProjection，投影空内容以发出原版clear marker。
+
+当前Source观察器通过标准Vitest模块加载未修改原版，不需要研究bundle的LLM attribution定位桥。Node22.22.2、固定干净Source pin、九项明确guard输入和完整冻结Source checkout绑定观察。guard清单不是完整动态import closure。Native观察器在实际选定root和解释器执行真实AgentLoop；受控模型只发tool-call/text块，记录原始请求。全部已导入dsh模块必须来自选定root且字节匹配。比较范围仅完整runtime-context消息与durable runtime-context消息；只把opaque message id作跨请求与历史共同的一一别名，其余消息字段全部比较。Source全体GenerateOptions与Native adapter请求还有语言/API差别，保留原始数据且不宣称完整模型协议一致。
+
+研究记录的两处错误已明确纠正：第一版Source直接传字符串followup，改为原版createUserMessage后另建v2记录；首次Native四场景输出被我在修正后误覆盖，原始two-stage native-v1仍保留。没有把覆盖后的文件当旧产品证明：另从精确b1b2f797 Portable（SHA256 `6b193c4e0a4f246cd8962cada830b57999b5f7f1a7ce8ff4a461e26ce8e8ace2`）安全解压，以包内Python3.8.10和未改旧模块独立重取baseline-v4。完整比较runtime-context-comparison-v1表明change/clear/same旧版不匹配、修正后匹配，empty两者匹配。新的产品observer使用exclusive输出，拒绝覆写。
+
+首轮产品配对因误把已迁为包的session写成session.py，来源校验拒绝；首次回归又因我假定两侧id均完整UUID而拒绝Native的既有msg-短随机id。只修正observer必要路径和opaque字符串身份校验；不改产品id格式，不改Source，失败日志与回执保留。四组实际消费者、来源与拒绝回归加既有spine共29项通过。新的必需门禁为678 lane、57配对，实际解压必须再由包内Python执行相同四场景并校验导入字节。
+
+643项提供端/消费者/门禁/spine定向回归全部通过，242.99秒；678必需lane及57配对清单已核验。完整干净候选验收尚待执行，037保持running。原版前端119文件、九项Source例外和C58/C59不变，Win7继续用户延期、accepted_upstream为空；完整JS036、ready前竞争、八项原始engine/parse差异、所有model/profile以及完整B/C/D继续开放。

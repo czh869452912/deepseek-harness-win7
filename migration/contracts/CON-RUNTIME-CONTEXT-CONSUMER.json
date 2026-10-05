@@ -1,0 +1,22 @@
+{
+  "id": "CON-RUNTIME-CONTEXT-CONSUMER",
+  "revision": 1,
+  "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
+  "status": "specified",
+  "source_paths": ["reference/packages/core/agent-loop/src/agent.ts", "reference/packages/core/agent-loop/src/runtime-context.ts", "reference/packages/core/system-prompt/src/index.ts", "dsh/core/agent_loop.py", "dsh/core/runtime_context.py", "dsh/core/system_prompt/types.py"],
+  "consumers": ["scripts/runtime_context_oracle.py", "scripts/oracles/runtime_context_python.py", "tests/test_runtime_context_consumers.py", "scripts/verify_release.py", "scripts/verify_portable.py"],
+  "invariants": [
+    "A real AgentLoop assembles dynamic SystemPrompt before each proposed step, including the step after actual tool execution.",
+    "Complete model-bound and durable runtime-context messages preserve rendered body, role, source kind/plugin/form, named rendered sections and message identity correlation.",
+    "Changed context creates a second attributed snapshot; clearing creates the original cleared marker; unchanged context retains one snapshot; initially empty context creates none.",
+    "Two actual model requests and the complete durable runtime-context message arrays match all four fresh pinned Source observations. Only opaque message ids receive a bijective normalization shared across requests and durable snapshots.",
+    "Actual selected and extracted Python3.8.10 interpreters own all imported dsh module paths and bytes; missing observations, attribution, clears, identity correlation or foreign runtime receipts fail the gate."
+  ],
+  "identity": "Four ordered cases: change, clear, same, empty. The observed contract contains complete runtime-context messages within two model requests and complete durable runtime-context messages. Other model request fields remain raw and outside this bounded comparison.",
+  "ownership": "SystemPrompt owns context/variable registrations; the real AgentLoop and owned agent/session commit projected messages. Controlled local model responses replace only the external model boundary.",
+  "ordering": "Render named context sections after assembly; project their joined text on every proposed step, before the actual next model call. Do not gate projection on first-step or nonempty contexts.",
+  "errors": "Source pin, Node version, guard input bytes and candidate imported module closure must validate. The gate rejects absent, duplicated, reordered or altered complete messages without adding bug predicates.",
+  "cancellation": "Existing agent/Context disposal owns the two-step observation. General cancellation/reentry and public extension ABI remain outside these four cases.",
+  "adaptation": "Use existing Python3.8 render_context_sections/join_context_sections and RuntimeContextProjection. Opaque random ids normalize by a one-to-one mapping preserving request/history correlations; no frontend or Source algorithm change.",
+  "open_questions": ["Arbitrary context middleware, surface replacement/resume/cancel competition, persistent cold restoration and all canonical model/profile/Web/PTC consumers require their own actual observations.", "The two-stage real JavaScript child consumer exposed this issue but full JavaScript model/profile and complete B3/C2 remain unfinished. The Source guard inventory is not a complete dynamic import inventory; clean pinned Source and frozen release inputs bind the full checkout."]
+}

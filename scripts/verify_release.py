@@ -46,6 +46,7 @@ from scripts.jsonl_provider_oracle import validate_runtime as validate_jsonl_pro
 from scripts.tool_scheduler_oracle import validate_runtime as validate_tool_scheduler, identity as scheduler_identity
 from scripts.http_redirect_oracle import NAMES as REDIRECT_NAMES, validate_runtime as validate_http_redirect, identity as redirect_identity
 from scripts.javascript_workflow_oracle import validate_runtime as validate_javascript_workflow, identity as javascript_identity
+from scripts.runtime_context_oracle import validate_runtime as validate_runtime_context, identity as runtime_context_identity
 NODE_VERSION = 'v22.22.2'
 PORTABLE_ARCHIVE = 'dist/dsh-win7-portable-v0.1.0.zip'
 PAIRED_DRIVERS = (
@@ -56,9 +57,34 @@ PAIRED_DRIVERS = (
     'approval', 'inspect', 'cordis_guard', 'cordis_runner',
     'cordis_retirement', 'cordis_tools', 'acp_sessions', 'acp_model_output', 'acp_stdio', 'acp_permissions', 'mcp_stdio', 'mcp_http', 'acp_mcp', 'subagent_acp', 'subagent_acp_teardown', 'mcp_disposal', 'subprocess_ownership', 'subprocess_tree', 'projection_cache_failure', 'session_observation_read', 'session_corpus_list', 'session_corpus_read', 'session_lineage', 'session_event_trace', 'session_filters', 'session_requests', 'session_snapshots', 'query_schema', 'query_engine', 'query_unicode', 'session_text',
 )
-PAIRED_DRIVERS = PAIRED_DRIVERS + ('session_tools', 'sqlite_format', 'sqlite_provider', 'jsonl_provider', 'tool_scheduler', 'http_redirect', 'javascript_workflow')
+PAIRED_DRIVERS = PAIRED_DRIVERS + ('session_tools', 'sqlite_format', 'sqlite_provider', 'jsonl_provider', 'tool_scheduler', 'http_redirect', 'javascript_workflow', 'runtime_context')
 OFFICIAL_CONFIGS = ('consumers', 'agent-lifecycle', 'session-recovery', 'session-projection', 'acp', 'acp-app', 'mcp', 'subagent-acp', 'storage-cache', 'session-observation', 'session-corpus', 'session-sqlite-query', 'query-engine-source', 'session-tools-source', 'sqlite-format-source', 'sqlite-provider-source', 'jsonl-provider-source', 'tool-scheduler-source')
 REQUIRED_REGRESSION = {
+    "test_runtime_context_consumers": {
+        "test_model_tool_next_step_retains_complete_attributed_context[change]",
+        "test_model_tool_next_step_retains_complete_attributed_context[clear]",
+        "test_model_tool_next_step_retains_complete_attributed_context[same]",
+        "test_model_tool_next_step_retains_complete_attributed_context[empty]",
+        "test_runtime_context_receipt_rejects_lost_messages_or_foreign_runtime[attribution]",
+        "test_runtime_context_receipt_rejects_lost_messages_or_foreign_runtime[second-step]",
+        "test_runtime_context_receipt_rejects_lost_messages_or_foreign_runtime[clear]",
+        "test_runtime_context_receipt_rejects_lost_messages_or_foreign_runtime[unchanged-duplicate]",
+        "test_runtime_context_receipt_rejects_lost_messages_or_foreign_runtime[identity-correlation]",
+        "test_runtime_context_receipt_rejects_lost_messages_or_foreign_runtime[snapshot]",
+        "test_runtime_context_receipt_rejects_lost_messages_or_foreign_runtime[missing-request]",
+        "test_runtime_context_receipt_rejects_lost_messages_or_foreign_runtime[missing-case]",
+        "test_runtime_context_receipt_rejects_lost_messages_or_foreign_runtime[duplicate]",
+        "test_runtime_context_receipt_rejects_lost_messages_or_foreign_runtime[root]",
+        "test_runtime_context_receipt_rejects_lost_messages_or_foreign_runtime[python]",
+        "test_runtime_context_receipt_rejects_lost_messages_or_foreign_runtime[executable]",
+        "test_runtime_context_receipt_rejects_lost_messages_or_foreign_runtime[module]",
+        "test_runtime_context_receipt_rejects_lost_messages_or_foreign_runtime[module-path]",
+        "test_runtime_context_receipt_rejects_lost_messages_or_foreign_runtime[module-bytes]",
+        "test_runtime_context_source_identity_is_required[pin]",
+        "test_runtime_context_source_identity_is_required[node]",
+        "test_runtime_context_source_identity_is_required[inputs]",
+        "test_runtime_context_source_identity_is_required[guard-bytes]",
+    },
     "test_javascript_runtime": {
         "test_actual_process_exit_remains_distinct_from_protocol_failure[exit]",
         "test_actual_process_exit_remains_distinct_from_protocol_failure[protocol]",
@@ -186,6 +212,22 @@ REQUIRED_REGRESSION = {
             'missing-module', 'changed-module', 'empty-closure', 'foreign-root', 'foreign-python', 'missing-row', 'duplicate-row', 'changed-row')},
     },
     'test_current_release_gate': {
+        "test_extracted_context_requires_source_identity_and_complete_messages[missing]",
+        "test_extracted_context_requires_source_identity_and_complete_messages[source-missing]",
+        "test_extracted_context_requires_source_identity_and_complete_messages[source-changed]",
+        "test_extracted_context_requires_source_identity_and_complete_messages[module-missing]",
+        "test_extracted_context_requires_source_identity_and_complete_messages[module-changed]",
+        "test_extracted_context_requires_source_identity_and_complete_messages[root]",
+        "test_extracted_context_requires_source_identity_and_complete_messages[python]",
+        "test_extracted_context_requires_source_identity_and_complete_messages[executable]",
+        "test_extracted_context_requires_source_identity_and_complete_messages[tail]",
+        "test_extracted_context_requires_source_identity_and_complete_messages[duplicate]",
+        "test_extracted_context_requires_source_identity_and_complete_messages[attribution]",
+        "test_extracted_context_requires_source_identity_and_complete_messages[identity-correlation]",
+        "test_runtime_context_consumer_lanes_are_mandatory[omit]",
+        "test_runtime_context_consumer_lanes_are_mandatory[skip]",
+        "test_runtime_context_consumer_lanes_are_mandatory[duplicate]",
+        "test_runtime_context_consumer_lanes_are_mandatory[failure]",
         "test_extracted_javascript_requires_fresh_source_modules_assets_and_whole_observations[missing]",
         "test_extracted_javascript_requires_fresh_source_modules_assets_and_whole_observations[source-missing]",
         "test_extracted_javascript_requires_fresh_source_modules_assets_and_whole_observations[source-changed]",
@@ -906,6 +948,11 @@ def validate_extracted(path, archive, candidate):
             candidate['javascript_workflow_assets'], check_files=False)
     except (ValueError, KeyError, TypeError) as error:
         raise RuntimeError('Extracted javascriptWorkflow observations are incomplete') from error
+    try:
+        validate_runtime_context(report.get('runtimeContext'), Path(report['mcpStdio']['root']),
+            candidate['runtime_context_observations_sha256'], candidate['runtime_context_modules'], check_files=False)
+    except (ValueError, KeyError, TypeError) as error:
+        raise RuntimeError('Extracted runtimeContext observations are incomplete') from error
     for name, validate in [('queryEngine', validate_query_engine), ('querySchema', validate_query_schema), ('pythonDirectory', validate_python_directory),
                            ('sessionLineage', validate_session_lineage), ('sessionEventTrace', validate_session_event_trace),
                            ('sessionFilters', validate_session_filters), ('sessionRequests', validate_session_requests),
@@ -1037,6 +1084,10 @@ def verify(args, output):
     candidate['javascript_workflow_observations_sha256'] = javascript_identity(json.loads(javascript_source.read_text(encoding='utf-8')))
     candidate['javascript_workflow_modules'] = javascript_report['modules']
     candidate['javascript_workflow_assets'] = javascript_report['assets']
+    runtime_context_source = output / 'runtime-context-paired.source.json'
+    runtime_context_native = output / 'runtime-context-paired.native.json'
+    candidate['runtime_context_observations_sha256'] = runtime_context_identity(json.loads(runtime_context_source.read_text(encoding='utf-8')))
+    candidate['runtime_context_modules'] = json.loads(runtime_context_native.read_text(encoding='utf-8'))['modules']
     raw = output / 'cordis-raw.json'
     raw.unlink(missing_ok=True)
     run([python, 'scripts/cordis_oracle.py', '--output', str(raw)],
@@ -1058,7 +1109,8 @@ def verify(args, output):
                '--format-source', str(format_source), '--format-inputs', str(format_inputs),
                '--scheduler-source', str(scheduler_source), '--scheduler-native', str(scheduler_native),
                '--redirect-source', str(redirect_source), '--redirect-native', str(redirect_native),
-               '--javascript-source', str(javascript_source), '--javascript-native', str(javascript_native)]
+               '--javascript-source', str(javascript_source), '--javascript-native', str(javascript_native),
+               '--context-source', str(runtime_context_source), '--context-native', str(runtime_context_native)]
     if not candidate['worktree_dirty']:
         command += ['--expected-commit', candidate['product_commit']]
     run(command, 'portable-extracted', output, env=environment)

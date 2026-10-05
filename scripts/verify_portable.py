@@ -48,6 +48,7 @@ from scripts.jsonl_provider_oracle import validate_runtime as validate_jsonl_pro
 from scripts.tool_scheduler_oracle import validate_runtime as validate_tool_scheduler, identity as scheduler_identity
 from scripts.http_redirect_oracle import validate_runtime as validate_http_redirect, identity as redirect_identity
 from scripts.javascript_workflow_oracle import validate_runtime as validate_javascript_workflow, identity as javascript_identity
+from scripts.runtime_context_oracle import validate_runtime as validate_runtime_context, identity as runtime_context_identity
 
 
 def digest(path):
@@ -102,6 +103,8 @@ def main(argv=None):
     parser.add_argument('--redirect-native', help='Fresh host HTTP redirect runtime closure')
     parser.add_argument('--javascript-source', help='Fresh actual Source workflow host observations')
     parser.add_argument('--javascript-native', help='Fresh host JavaScript runtime module and private asset closure')
+    parser.add_argument('--context-source', help='Fresh actual Source attributed runtime-context observations')
+    parser.add_argument('--context-native', help='Fresh host actual AgentLoop runtime module closure')
     args = parser.parse_args(argv)
     archive, output = Path(args.archive).resolve(), Path(args.output).resolve()
     output.parent.mkdir(parents=True, exist_ok=True)
@@ -147,6 +150,8 @@ def main(argv=None):
             'http_redirect_oracle.py', 'oracles/http_redirect_python.py', 'oracles/http_redirect.probe.spec.ts',
             'oracles/vitest.http-redirect-probe.config.mts',
             'javascript_workflow_oracle.py', 'oracles/javascript_workflow_python.py',
+            'runtime_context_oracle.py', 'oracles/runtime_context_python.py', 'oracles/runtime_context.probe.spec.ts',
+            'oracles/vitest.runtime-context-probe.config.mts',
             'oracles/javascript_workflow_host_source.mjs', 'oracles/javascript_workflow_session.ts',
             'oracles/vitest.tool-scheduler-probe.config.mts')})
     node = shutil.which('node') if args.browser else None
@@ -246,6 +251,23 @@ def main(argv=None):
         javascript_modules, javascript_assets = javascript_native_report['modules'], javascript_native_report['assets']
         validate_javascript_workflow(javascript_native_report, ROOT, javascript_digest, javascript_modules, javascript_assets)
         report['javascriptWorkflowSourceSha256'] = digest(javascript_source)
+        if args.context_source or args.context_native:
+            if not args.context_source or not args.context_native:
+                raise RuntimeError('Both runtime context Source and native receipts are required')
+            context_source, context_native = Path(args.context_source).resolve(), Path(args.context_native).resolve()
+        else:
+            context_pair = output.with_suffix('.runtime-context-paired.json')
+            context_result = subprocess.run([sys.executable, str(ROOT / 'scripts/runtime_context_oracle.py'),
+                '--output', str(context_pair)], cwd=str(ROOT), capture_output=True, timeout=60)
+            output.with_suffix('.runtime-context-source.log').write_bytes(context_result.stdout + context_result.stderr)
+            if context_result.returncode:
+                raise RuntimeError('Fresh runtime context Source qualification failed')
+            context_source, context_native = context_pair.with_suffix('.source.json'), context_pair.with_suffix('.native.json')
+        context_digest = runtime_context_identity(json.loads(context_source.read_text(encoding='utf-8')))
+        context_native_report = json.loads(context_native.read_text(encoding='utf-8'))
+        context_modules = context_native_report['modules']
+        validate_runtime_context(context_native_report, ROOT, context_digest, context_modules)
+        report['runtimeContextSourceSha256'] = digest(context_source)
         if args.format_source or args.format_inputs:
             if not args.format_source or not args.format_inputs:
                 raise RuntimeError('Both SQLite format Source and inputs are required')
@@ -557,6 +579,16 @@ def main(argv=None):
             javascript_report = json.loads(javascript_path.read_text(encoding='utf-8'))
             validate_javascript_workflow(javascript_report, portable, javascript_digest, javascript_modules, javascript_assets)
             report['javascriptWorkflow'] = javascript_report
+            context_path = workspace / 'runtime-context.json'
+            context_result = subprocess.run([str(portable / 'python.exe'), '-I', '-u',
+                str(ROOT / 'scripts/oracles/runtime_context_python.py'), '--root', str(portable), '--output', str(context_path)],
+                cwd=str(workspace), env=env, capture_output=True, encoding='utf-8', errors='replace', timeout=30)
+            output.with_suffix('.runtime-context.log').write_text(context_result.stdout + '\nSTDERR:\n' + context_result.stderr, encoding='utf-8')
+            if context_result.returncode or context_result.stderr or not context_path.is_file():
+                raise RuntimeError('Extracted runtime context failed')
+            context_report = json.loads(context_path.read_text(encoding='utf-8'))
+            validate_runtime_context(context_report, portable, context_digest, context_modules)
+            report['runtimeContext'] = context_report
             directory = subprocess.run([str(portable / 'python.exe'), '-I', '-u',
                 str(ROOT / 'scripts/python_directory_probe.py'), '--root', str(portable), '--output', str(directory_path)],
                 cwd=str(workspace), env=env, capture_output=True, encoding='utf-8', errors='replace', timeout=90)

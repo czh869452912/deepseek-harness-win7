@@ -37,6 +37,14 @@
 
 ## 当前执行项
 
+2026-10-05：最新完整有界签收产品为 `0edcc616`，6718 passed、6 既有平台 skips、1 既有 warning、0 failed；337 必需 lane、十五组 1124 原版断言、51 双侧驱动及实际解压/原版浏览器通过，见 `migration/reviews/SQLITE-FORMAT-CLOSURE-20261005.md`。可选五个 Session 工具、完整 FTS/schema-8/Unicode/text、schema-19 物理 codec 已有界签收；完整 B1/B2/B3、C/D 和全项目 accepted_upstream 仍未完成。
+
+此后规范 SQLite 提供端 031 和默认压缩 JSONL 提供端 032 已实现。d5cc、865fea84、a6cf 的确切失败 ZIP、输入、XML、日志与浏览器诊断均保留：部分字节流超时的受控根修复、八项启动隔离/审计观察器错误已分别修复；a6cf 的 6808 passed / 1 failed 仍由原版浏览器升级启动请求取消拒绝，根因继续开放，不重跑未改候选。工具调度三处失败边界已提交 `03652743`；存储 null presence、路径/typed error/cold validation 与 public loadStored 已提交 `566eb5d0`，实际 JSONL 驱动扩大到 1030 项并匹配，570 项门禁单元验证通过。
+
+只读上游差分 observer 已完成二十项含实际 pinned Source 的回归，任务 `MIG-UPSTREAM-DELTA-002` 按明确有界合同 running，不改变 pin 或自动推进任务。下一完整门禁要求 418 必需 lane、十七组 1210 原样断言、53 双侧驱动以及实际解压/原版浏览器。候选通过才签收 031/032/只读差分的有界证据；浏览器未归因 finding、Session 任意 ABI/事件/竞争/长历史、Tools/Wire/全部 profile/UI 和 C/D 继续按退出条件实施，Win7 与真实认证仍按既有约束另列。
+
+## 历史执行项（2026-10-04）
+
 2026-10-04：最近完整有界验收已推进到 `1d9940aa`，6134 passed、6 skipped、1 warning、0 failed；119 必需 lane、十一组 910 原版断言、43 双侧驱动与真实解压 Python 3.8.10/原版浏览器通过。三十一个有界子任务按精确产品、输入和产物重签；见 `migration/reviews/SESSION-FILTERS-CLOSURE-20261004.md`。这不是完整 ACP、Session 或全项目验收。
 
 此后已逐项提交 subprocess ACP、teardown、MCP disposal、进程所有权/实际树、缓存与 point/corpus 读取、ZIP 暂存和标题批量。未签收的共同候选经历真实浏览器取消、ACP 中文 wire 观察编码、wrapped ZIP 暂存失败，以及用户中断；原始证据均保留。`d81dee16` 本次全量 5970 passed、6 skipped、1 warning，但随后原版 storage/cache 的固定 40ms 创建行检查失败（45 passed、1 failed），门禁拒绝且没有重签。受控 100ms fsync 延迟可复现相同断言，实际失败的具体延迟仍未测得；这不是新增 bug 绕过或已修复根因。

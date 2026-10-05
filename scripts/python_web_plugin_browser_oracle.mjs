@@ -49,6 +49,9 @@ class CDP {
     if (['Page.navigate', 'Page.reload', 'Browser.close'].includes(method)) {
       (report.browserTransitions ??= []).push({method, phase, steps: report.steps.length, at: Date.now()});
     }
+    if (method === 'Input.dispatchMouseEvent') {
+      (report.physicalClicks ??= []).push({type:params.type, x:params.x, y:params.y, phase, steps:report.steps.length, at:Date.now()});
+    }
     return await new Promise((yes, no) => {
       const timer = setTimeout(() => { this.pending.delete(id); no(new Error('CDP timeout: ' + method)); }, 15000);
       this.pending.set(id, { resolve: yes, reject: no, timer }); this.socket.send(JSON.stringify({ id, method, params }));
@@ -265,19 +268,22 @@ try {
       const nativeFetch = window.fetch;
       window.fetch = function (...args) {
         const signal = args[1]?.signal;
-        const details = {url: String(args[0]), state: document.readyState, origin: performance.timeOrigin};
+        const details = {url: String(args[0]), state: document.readyState, origin: performance.timeOrigin, at: performance.now(), stack: new Error().stack};
         signal?.addEventListener('abort', () => console.debug('DSH_FETCH_ABORT', JSON.stringify({...details, reason: String(signal.reason)})), {once: true});
         return Reflect.apply(nativeFetch, this, args).catch(error => {
           console.debug('DSH_FETCH_REJECT', JSON.stringify({...details, stateAfter: document.readyState, aborted: signal?.aborted, reason: String(signal?.reason), name: error.name, message: error.message}));
           throw error;
         });
       };
-      for (const [owner, name] of [[AbortController.prototype, 'abort'], [EventSource.prototype, 'close'], [window, 'stop']]) {
+      for (const [owner, name] of [[AbortController.prototype, 'abort'], [EventSource.prototype, 'close'], [window, 'stop'], [Document.prototype, 'open'], [Document.prototype, 'write'], [Document.prototype, 'writeln']]) {
         const original = owner[name];
         owner[name] = function (...args) {
           console.debug('DSH_ABORT_DIAGNOSTIC', name, new Error().stack);
           return Reflect.apply(original, this, args);
         };
+      }
+      for (const name of ['beforeunload', 'pagehide', 'freeze', 'load', 'DOMContentLoaded']) {
+        window.addEventListener(name, () => console.debug('DSH_PAGE_DIAGNOSTIC', name, JSON.stringify({at:performance.now(), origin:performance.timeOrigin, state:document.readyState})), true);
       }
     `});
   }
@@ -287,9 +293,9 @@ try {
       (report.contextLifecycle ??= []).push({method: message.method, params: message.params, phase, steps: report.steps.length, at: Date.now()});
     }
     if (message.method === 'Runtime.consoleAPICalled') {
-      (report.consoleDiagnostics ??= []).push({type: message.params.type, args: message.params.args.map(value => value.value ?? value.description), phase, steps: report.steps.length, at: Date.now()});
+      (report.consoleDiagnostics ??= []).push({type: message.params.type, args: message.params.args.map(value => value.value ?? value.description), executionContextId: message.params.executionContextId, timestamp: message.params.timestamp, phase, steps: report.steps.length, at: Date.now()});
     }
-    if (['Page.frameStartedLoading', 'Page.frameStoppedLoading', 'Page.frameRequestedNavigation', 'Page.lifecycleEvent'].includes(message.method)) {
+    if (['Page.frameStartedLoading', 'Page.frameStoppedLoading', 'Page.frameRequestedNavigation', 'Page.frameStartedNavigating', 'Page.frameScheduledNavigation', 'Page.frameClearedScheduledNavigation', 'Page.frameDetached', 'Page.domContentEventFired', 'Page.loadEventFired', 'Page.lifecycleEvent', 'Inspector.targetCrashed'].includes(message.method)) {
       (report.pageLifecycle ??= []).push({method: message.method, params: message.params, phase, steps: report.steps.length, at: Date.now()});
     }
     if (message.method === 'Network.eventSourceMessageReceived') {
@@ -302,7 +308,9 @@ try {
     if (message.method === 'Network.requestWillBeSent') {
       const params = message.params;
       const target = new URL(params.request.url);
-      requestDetails.set(params.requestId, {path: target.origin + target.pathname, method: params.request.method, phase, at: Date.now(), loaderId: params.loaderId});
+      const details = {requestId: params.requestId, path: target.origin + target.pathname, method: params.request.method, phase, steps: report.steps.length, at: Date.now(), timestamp: params.timestamp, wallTime: params.wallTime, loaderId: params.loaderId, frameId: params.frameId, type: params.type, initiator: params.initiator};
+      requestDetails.set(params.requestId, details);
+      (report.requestLifecycle ??= []).push(details);
       if (!['EventSource', 'WebSocket'].includes(params.type) && !new URL(params.request.url).pathname.endsWith('/plugins/events')) {
         finiteRequests.add(params.requestId);
         networkChanged = Date.now();
@@ -310,11 +318,14 @@ try {
     }
     if (['Network.loadingFinished', 'Network.loadingFailed'].includes(message.method)
         && finiteRequests.delete(message.params.requestId)) networkChanged = Date.now();
+    if (message.method === 'Network.loadingFinished') {
+      (report.requestCompletions ??= []).push({requestId: message.params.requestId, timestamp: message.params.timestamp, encodedDataLength: message.params.encodedDataLength, phase, steps: report.steps.length, at: Date.now()});
+    }
     if (message.method === 'Network.responseReceived') {
       const response = message.params.response;
       const target = new URL(response.url);
       if (target.pathname.startsWith('/api/')) {
-        (report.httpResponses ??= []).push({path: target.origin + target.pathname, status: response.status,
+        (report.httpResponses ??= []).push({requestId: message.params.requestId, timestamp: message.params.timestamp, loaderId: message.params.loaderId, path: target.origin + target.pathname, status: response.status,
           contentType: response.mimeType, phase, steps: report.steps.length});
       }
     }
@@ -349,13 +360,19 @@ try {
       }).catch(error => report.errors.push(String(error))).finally(() => replyJobs.delete(job)); replyJobs.add(job);
     }
     if (message.method === 'Network.loadingFailed') {
-      (report.networkFailures ??= []).push({...requestDetails.get(message.params.requestId), failedAt: Date.now(), failurePhase: phase, steps: report.steps.length, error: message.params.errorText, canceled: message.params.canceled, blocked: message.params.blockedReason, cors: message.params.corsErrorStatus});
+      (report.networkFailures ??= []).push({...requestDetails.get(message.params.requestId), failureTimestamp: message.params.timestamp, failedAt: Date.now(), failurePhase: phase, steps: report.steps.length, error: message.params.errorText, canceled: message.params.canceled, blocked: message.params.blockedReason, cors: message.params.corsErrorStatus});
       if (!message.params.canceled) report.requests.push(message.params.errorText);
     }
   });
   await cdp.call('Runtime.enable'); await cdp.call('Page.enable'); await cdp.call('Network.enable');
   await cdp.call('Page.setLifecycleEventsEnabled', {enabled: true});
   await cdp.call('Emulation.setDeviceMetricsOverride', { width: 1680, height: 1000, deviceScaleFactor: 1, mobile: false });
+  if (options['debug-cpu']) {
+    const rate = Number(options['debug-cpu']);
+    assert.ok(Number.isInteger(rate) && rate >= 1 && rate <= 20);
+    report.diagnosticCpuRate = rate;
+    await cdp.call('Emulation.setCPUThrottlingRate', {rate});
+  }
   if (report.session) await sessionJourney(boot);
   else {
   await open(boot); await echo('1.0.0', 1);

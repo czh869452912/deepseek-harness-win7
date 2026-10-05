@@ -37,6 +37,8 @@
 
 ## 当前执行项
 
+2026-10-06 最新签收为干净 `7f9e87e4`：7615 passed、6既有skip、1既有warning、1167必需lane、十八组1237原样断言、63双侧观察与真实解压/原版浏览器全部通过。040至043四个限定范围连同49旧范围重验，共53份单独回执；4a127b73冻结副本失败和精确Portable仍保留。JS036与父Session保持开放，详见SESSION-BOUNDARIES-GATE-20261006 review。后续完整请求研究复现16组均有旧消息/配置别名残留；隔离移除tool_calls/max_tokens/reasoning_effort后完整行匹配，Python固定参数调用在边界保留适配。下一实施044推广并验证真实模型/工具/下一请求/冷恢复消费者，之后继续malformed/plugin ABI、canonical profile全链、完整B/C/D。九项判据/C58/C59不变，无付费调用/推送/公开发布；Win7仍按既有决定延期。
+
 036的后续物理退出分类已修复：干净产品 `b1b2f797` 全量7087通过、6既有skip、1既有warning，639必需lane、十八组1237原样断言、56配对和真实解压/原版浏览器全部通过。34组实际Source/native/extracted宿主完整观察验证发布前后、Result后和取消后的物理退出及共享清理；46既有合同重验，036只记录部分verification并保持running。下一实施执行真实AgentLoop/spawn的普通→结构化两阶段与null失败主链，再补ready前竞争和清理重入；八项原始差异和完整C2/B/C/D仍开放。见 `2026-10-05-js-worker-death-progress.md` 与 `migration/reviews/JS-WORKER-DEATH-GATE-20261005.md`。
 
 036已把固定QuickJS-NG真实双realm进程、原版worker/session/runtime/realm/schema算法和Python宿主子代理所有权接入规范Windows WorkflowEngine/Ralph；root提供端支持持有run跨engine卸载。30组Source/private-worker、30组实际Source/native/extracted宿主完整观察及12项真实消费者回归通过。干净候选 `17c1c521` 全量7077通过、6既有skip、1既有warning，629必需lane、十八组1237原样断言、56配对和真实解压/原版浏览器通过；46既有有界范围重验，036只有部分verification，仍running。八项原始engine/parse差异、完整model/profile、provider/death/reentrancy竞争、完整Node/SDK/插件/C2和全项目继续开放。下一提交验证并修复实际Source宿主死亡与共享清理边界，之后推进完整消费者；见 `2026-10-05-js-workflow-progress.md` 和 `migration/reviews/JS-WORKFLOW-GATE-20261005.md`。

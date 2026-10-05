@@ -121,6 +121,26 @@
       "task": "MIG-JSONL-PROVIDER-032",
       "contract": "CON-JSONL-PROVIDER",
       "revision": 1
+    },
+    {
+      "task": "MIG-PERSISTENCE-READ-039",
+      "contract": "CON-PERSISTENCE-READ",
+      "revision": 1
+    },
+    {
+      "task": "MIG-SESSION-NUMBERS-041",
+      "contract": "CON-SESSION-NUMBERS",
+      "revision": 2
+    },
+    {
+      "task": "MIG-SESSION-DIAGNOSTIC-042",
+      "contract": "CON-SESSION-DIAGNOSTIC",
+      "revision": 1
+    },
+    {
+      "task": "MIG-SESSION-RESTORE-SIGN-043",
+      "contract": "CON-SESSION-RESTORE-SIGN",
+      "revision": 1
     }
   ],
   "provides": [],
@@ -133,13 +153,13 @@
     "migration"
   ],
   "open_findings": [
-    "Cold/live/prepared/storage/projection, bounded cache/point/corpus/title reads, lineage/event windows, filtering/search requests, snapshots and the canonical FTS engine are revalidated in clean ae2c1abe. The 2034 Unicode identity and 7883 literal/valid extraction/current-locale order observations are bounded accepted. They do not certify the complete Session domain.",
-    "Sixteen FTS/ranking/cursor/reconciliation/index-generation observations, three preset Remote restart consumers and five optional model-facing tools remain bounded accepted. The tools have 78 actual Source/native/extracted observations, 102 original assertions and two model/profile cold-restart consumers. Full malformed/extension event ABI and private error diagnostics, other domains/locales, arbitrary provider/index races and Task cancellation, compressed JSONL and cross-process/multi-cwd recovery remain unaccepted.",
-    "Independent schema-19 format is bounded accepted in clean 0edcc616: 826 actual Source/native/extracted observations, 42 original assertions, private pinned licensed Zstandard and detached STRICT ANY round-trips. Canonical SQLite provider ownership/lazy transactions/revisions/repair, long-history scale, complete current Web/profile/reconnect journeys and deferred Win7 remain separate unaccepted scopes."
+    "Clean7f9e87e4 revalidates canonical SQLite323/default compressed or plaintext JSONL1030, independent schema-19 format826, FTS16, Unicode2034/text7883, optional tools78 and existing core/cold/live/prepared/projection/cache/corpus/title/lineage/snapshot ranges. These are distinct bounded Source contracts, not complete Session-domain certification.",
+    "Public canonical persistence51 numeric/cancelled read controls039, public create/metadata/clone53 revision2 controls041, create/restore76 exact admission diagnostics042 and restore18 signed-number predicates043 are now bounded integrated. Exact rejected4a127b73 and its clone/diagnostic/sign baselines remain preserved. Actual detached list/load/lineage/snapshot Source consumers pass.",
+    "Complete arbitrary malformed/extension event and public plugin ABI, alias/graph/copy-cycle ownership, private errors beyond specified rows, remaining provider/index/Task cancellation races, other domains/locales, long-history scale and independent cross-process/multi-cwd/profile/Web reconnect combinations remain unqualified. Source cache40ms timing, historical startup cancellation/WinError1175 and Proactor diagnostics remain separately recorded; real Win7 is user-deferred."
   ],
   "conflicts_with": [],
   "candidate_commit": null,
   "integrated_commit": null,
   "evidence_ids": [],
-  "next_action": "以 0edcc616 已签收的规范 FTS、Unicode/文本、五个可选会话工具和独立 schema-19 格式为基础，补齐规范存储提供端与跨进程长期恢复；继续 malformed/plugin ABI、全域/竞争和 Web/profile 主链。父范围仍 draft；24f9 启动取消、原版 cache 固定等待与 Proactor 仍独立开放。"
+  "next_action": "以干净7f9e87e4已重验的规范SQLite/压缩JSONL、FTS/Unicode/工具及039至043公共边界为基线；正式定义剩余malformed/extension/plugin ABI与图归属的Source消费者合同，再实现多进程/多cwd/长历史及canonical profile/原版Web组合。父任务保持draft，不把子任务数量或ZIP当作完整B1验收。"
 }

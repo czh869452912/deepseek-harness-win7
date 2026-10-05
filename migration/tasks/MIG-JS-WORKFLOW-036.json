@@ -36,15 +36,16 @@
   ],
   "open_findings": [
     "Eight raw engine/parse differences remain in the original22 observations; full Node APIs/SDK/plugin delivery and C2 remain unaccepted.",
-    "Thirty original direct-worker frame scenarios and34 actual Source/native/extracted WorkerRun observations retain private provenance, physical-exit classification, first outcome and owned disposal. Four bounded attributed AgentLoop cases037 and two already-emitted Ready/exit cases038 are now integrated. Full model/profile composition, death before Ready emission and broader callback/reentrancy competition remain unfinished."
+    "Thirty original direct-worker frame scenarios and34 actual Source/native/extracted WorkerRun observations retain private provenance, physical-exit classification, first outcome and owned disposal. Four bounded attributed AgentLoop cases037 and two already-emitted Ready/exit cases038 are now integrated. Two entry-blocked physical-exit cases before Ready emission040 are now bounded integrated. Full model/profile composition, all spawn/Ready schedules and broader callback/reentrancy competition remain unfinished."
   ],
   "conflicts_with": [],
-  "candidate_commit": "47adea372613d086c54631344af4944b4ddcf232",
+  "candidate_commit": "7f9e87e49690f94b3b2e9982d233c37785ea2137",
   "integrated_commit": null,
   "evidence_ids": [
     "RUN-JS-WORKFLOW-20261005-PARTIAL-036",
     "RUN-JS-DEATH-20261005-PARTIAL-036",
-    "RUN-RUNTIME-CONTEXT-20261006-PARTIAL-036"
+    "RUN-RUNTIME-CONTEXT-20261006-PARTIAL-036",
+    "RUN-SESSION-BOUNDARIES-20261006-PARTIAL-036"
   ],
-  "next_action": "干净产品47adea37完整验收已通过；上下文归属/每步更新037及已发出Ready跨退出038有界签收，036仍部分verification；继续Ready发出前竞争、共享清理重入与全model/profile，八项原始差异、C2及延期Win7开放。"
+  "next_action": "干净产品7f9e87e4完整验收已通过；上下文归属/每步更新037及已发出Ready跨退出038有界签收，036仍部分verification；040入口阻塞/Ready未发出两组有界签收，继续全部spawn/Ready竞争、共享清理重入与全model/profile，八项原始差异、C2及延期Win7开放。"
 }

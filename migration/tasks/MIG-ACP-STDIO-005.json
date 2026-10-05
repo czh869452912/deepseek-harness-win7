@@ -51,8 +51,8 @@
   ],
   "open_findings": [],
   "conflicts_with": [],
-  "candidate_commit": "47adea372613d086c54631344af4944b4ddcf232",
-  "integrated_commit": "47adea372613d086c54631344af4944b4ddcf232",
+  "candidate_commit": "7f9e87e49690f94b3b2e9982d233c37785ea2137",
+  "integrated_commit": "7f9e87e49690f94b3b2e9982d233c37785ea2137",
   "evidence_ids": [
     "RUN-ACP-STDIO-20261003-ACP-STDIO-005",
     "RUN-ACP-PERMISSIONS-20261004-ACP-STDIO-005",
@@ -68,7 +68,8 @@
     "RUN-TOOLS-HTTP-20261005-ACP-STDIO-005",
     "RUN-JS-WORKFLOW-20261005-ACP-STDIO-005",
     "RUN-JS-DEATH-20261005-ACP-STDIO-005",
-    "RUN-RUNTIME-CONTEXT-20261006-ACP-STDIO-005"
+    "RUN-RUNTIME-CONTEXT-20261006-ACP-STDIO-005",
+    "RUN-SESSION-BOUNDARIES-20261006-ACP-STDIO-005"
   ],
-  "next_action": "clean candidate 47adea37 全量/原版/真实解压复验已通过。canonical stdio、九方法 SDK 参数/协议、真实并发取消 EOF 与解压包 stdio 在 clean candidate 47adea37 有界验收；一次性权限独立合同验收；继续 A4 MCP/subagent 和 B/C/D，不认证全部 ACP。"
+  "next_action": "clean candidate 7f9e87e4 全量/原版/真实解压复验已通过。canonical stdio、九方法 SDK 参数/协议、真实并发取消 EOF 与解压包 stdio 在 clean candidate 7f9e87e4 有界验收；一次性权限独立合同验收；继续 A4 MCP/subagent 和 B/C/D，不认证全部 ACP。"
 }

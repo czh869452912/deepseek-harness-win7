@@ -34,13 +34,14 @@
   ],
   "open_findings": [],
   "conflicts_with": [],
-  "candidate_commit": "47adea372613d086c54631344af4944b4ddcf232",
-  "integrated_commit": "47adea372613d086c54631344af4944b4ddcf232",
+  "candidate_commit": "7f9e87e49690f94b3b2e9982d233c37785ea2137",
+  "integrated_commit": "7f9e87e49690f94b3b2e9982d233c37785ea2137",
   "evidence_ids": [
     "RUN-TOOLS-HTTP-20261005-HTTP-REDIRECT-035",
     "RUN-JS-WORKFLOW-20261005-HTTP-REDIRECT-035",
     "RUN-JS-DEATH-20261005-HTTP-REDIRECT-035",
-    "RUN-RUNTIME-CONTEXT-20261006-HTTP-REDIRECT-035"
+    "RUN-RUNTIME-CONTEXT-20261006-HTTP-REDIRECT-035",
+    "RUN-SESSION-BOUNDARIES-20261006-HTTP-REDIRECT-035"
   ],
-  "next_action": "clean candidate 47adea37 全量/原版/真实解压复验已通过。二十九组真实adapter/Fetch/shared carrier及Source/native/extracted已在新干净全量门禁有界签收；继续完整URL/IDNA/TLS/proxy/compression/framing与其他provider实例，不签收全项目。"
+  "next_action": "clean candidate 7f9e87e4 全量/原版/真实解压复验已通过。二十九组真实adapter/Fetch/shared carrier及Source/native/extracted已在新干净全量门禁有界签收；继续完整URL/IDNA/TLS/proxy/compression/framing与其他provider实例，不签收全项目。"
 }

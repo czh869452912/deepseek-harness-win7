@@ -1,5 +1,7 @@
 # 持续对齐记录
 
+2026-10-06 最新干净门禁：产品 `7f9e87e4` 全量7615 passed、6既有 skips、1既有 Proactor warning、0 failed；1167必需lane、十八组1237原样Source断言、63实际配对及真实解压自有Python3.8.10/原版浏览器全部通过。040入口/初始管道退出、041修订2数值/冻结发布/可变克隆、042精确准入错误和043恢复数值符号已有界 integrated；53份单独回执及精确产物归档，4a127b73失败仍独立保留。见 `reviews/SESSION-BOUNDARIES-GATE-20261006.md`。下一部分已复现完整模型请求中的tool_calls/max_tokens/reasoning_effort旧别名，隔离16观察匹配但未进入本签收。父Session/JS036/完整B/C/D、accepted_upstream与延期Win7仍开放；九项原版缺陷判据/C58/C59不变。
+
 2026-10-06 待冻结的新产品部分：副本修复ddc45529、精确准入错误b76d42f5已分别提交；恢复数值符号修复的18 Source观察匹配，扩大1457项回归通过。当前1167必需lane、63配对和十八组1237原样Source断言，040至043须共同通过不同干净候选全量/实际解压/原版浏览器后才签收；最新完整签收仍为47adea37。精确4a127b73的克隆两项、诊断30项、恢复符号四项差异均由其未修改Portable重新解压复现，旧失败不改写。见三个2026-10-06 Session进展记录；父Session/JS036/完整B/C/D及延期Win7保持开放。
 
 2026-10-06 新候选 `4a127b73` 被完整门禁拒绝：7407 passed、10 failed、6既有 skips、1既有 warning；冻结错误传播到实际查询副本。精确失败Portable/输入/XML/日志保留。修订2按实际Source的浅复制/structuredClone修复归属，53组完整观察匹配，扩大1269项回归通过；当前979必需lane、61配对，新的完整冻结验收仍待执行。040/041保持running，最新完整签收仍为47adea37。见 `docs/research/2026-10-06-session-header-clone-progress.md`；九项原版缺陷判据与延期Win7不变。

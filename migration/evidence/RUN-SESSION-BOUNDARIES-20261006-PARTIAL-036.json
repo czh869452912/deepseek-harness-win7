@@ -1,0 +1,37 @@
+{
+  "id": "RUN-SESSION-BOUNDARIES-20261006-PARTIAL-036",
+  "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
+  "product_commit": "7f9e87e49690f94b3b2e9982d233c37785ea2137",
+  "kind": "verification",
+  "task_id": "MIG-JS-WORKFLOW-036",
+  "result": "passed",
+  "validity": "current",
+  "commands": [
+    ".venv/Scripts/python.exe scripts/verify_release.py --output-dir .goose/out/session-boundaries-clean-7f9e87e4"
+  ],
+  "environment": {
+    "python": "3.8.10 (default, May  6 2021, 17:27:56) [MSC v.1928 64 bit (AMD64)]",
+    "os": "Windows-10-10.0.26200-SP0",
+    "cwd": "C:\\Users\\czh86\\Documents\\Codex\\deepseek-harness-win7",
+    "node": "v22.22.2",
+    "browser": "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe"
+  },
+  "contract_revisions": {
+    "CON-JS-WORKFLOW": 1,
+    "CON-JS-READY": 1,
+    "CON-PERSISTENCE-READ": 1,
+    "CON-RUNTIME-CONTEXT-CONSUMER": 1,
+    "CON-CURRENT-RELEASE-GATE": 1,
+    "CON-JS-INITIAL-WRITE": 1,
+    "CON-SESSION-NUMBERS": 2,
+    "CON-SESSION-DIAGNOSTIC": 1,
+    "CON-SESSION-RESTORE-SIGN": 1
+  },
+  "artifacts": [
+    {
+      "path": "migration/evidence/artifacts/SESSION-BOUNDARIES-20261006-7f9e87e4.zip",
+      "sha256": "b85b937eded8611bbd33f330f8e0c58f1c7192556b4cbaf14dd62507d0815188"
+    }
+  ],
+  "scope": "Frozen clean current-Windows candidate: 7615 passed, 6 existing platform skips,1167 mandatory lanes, eighteen unchanged Source groups/1237 assertions,63 fresh actual paired drivers and own-executable extracted Python3.8.10/original-browser acceptance. All119 original frontend inputs and nine Source bug predicates plus C58/C59 are unchanged. Previous49 bounded scopes reexecute with individual task evidence. Two entry-blocked WorkerRun physical-exit cases040 compare all outcomes, events, first cancellation and owned disposal before any Ready emission; the unchanged original worker bundle is separate from the disclosed timing bootstrap. Four native live/known-exit pipe controls are not additional Source rows. Session.create numeric/metadata/clone53 controls041 revision2 retain frozen published graphs while shallow copies have mutable outer DTOs with shared frozen children, and deepcopy/from_dict/query consumers receive mutable detached graphs. Exact4a127b73 rejected7407-pass/10-failure Portable remains independently archived; its53-control baseline retains two actual clone differences. All corpus/list/load/lineage/snapshot Source consumers pass. Session diagnostic76 controls042 compare exact acceptance/error name/message and lossless priority using the shared JS String provider; they do not qualify metadata graph or numeric identity. Session.fromRestore18 controls043 compare safe-number admission and actual Object.is-equivalent signed-zero/input value predicates; no wire/header identity claim. Creation still rejects negative zero before publication. All observation rows compare without filtering or output normalization. Native ValueError corresponds to Source Error only at these admission boundaries; unexpected exceptions fail. The original040 stale-count regression and earlier3be2 timeout/missed F and7060 interpreter rejection remain retained. Whole pytest2400 and individual deadlines/Source criteria remain unchanged. JS036 remains partial verification with eight raw engine/parse differences and complete spawn/Ready/model/profile/reentry open. Full public Session malformed/plugin ABI, arbitrary metadata/copy cycles/multiprocess/workspace/long histories and complete B/C/D remain open. No new bug exception, required skip, Source/frontend patch, paid model, push/publication or unchanged-candidate retry. Real Win7 remains user-deferred; accepted_upstream is null. Separate follow-up research during this frozen gate retains16 complete serialized AgentLoop requests crossed with context action and token/reasoning configuration. All16 unmodified7f9e87e4 rows differ through extra tool_calls/max_tokens/reasoning_effort fields; an isolated dsh-tree prototype matches all16 with message-id bijection and actual AbortSignal facade predicates. A native legacy fixed-parameter control preserves17/high at the invocation boundary. Early observer mistakes (awaiting synchronous ctx.dispose, omitted six bundle metadata files, assuming asyncio.Event rather than actual AbortSignal, and supplying a dictionary instead of declared native AgentOptions) remain in raw failure logs. None of this prototype or broader model/profile behavior is signed by the present040-043 acceptance; product7f9e87e4 still contains those follow-up alias differences."
+}

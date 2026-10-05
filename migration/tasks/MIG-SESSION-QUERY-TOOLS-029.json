@@ -42,8 +42,8 @@
   ],
   "open_findings": [],
   "conflicts_with": [],
-  "candidate_commit": "47adea372613d086c54631344af4944b4ddcf232",
-  "integrated_commit": "47adea372613d086c54631344af4944b4ddcf232",
+  "candidate_commit": "7f9e87e49690f94b3b2e9982d233c37785ea2137",
+  "integrated_commit": "7f9e87e49690f94b3b2e9982d233c37785ea2137",
   "evidence_ids": [
     "RUN-SESSION-TOOLS-20261005-SESSION-QUERY-TOOLS-029",
     "RUN-SQLITE-FORMAT-20261005-SESSION-QUERY-TOOLS-029",
@@ -51,7 +51,8 @@
     "RUN-TOOLS-HTTP-20261005-SESSION-QUERY-TOOLS-029",
     "RUN-JS-WORKFLOW-20261005-SESSION-QUERY-TOOLS-029",
     "RUN-JS-DEATH-20261005-SESSION-QUERY-TOOLS-029",
-    "RUN-RUNTIME-CONTEXT-20261006-SESSION-QUERY-TOOLS-029"
+    "RUN-RUNTIME-CONTEXT-20261006-SESSION-QUERY-TOOLS-029",
+    "RUN-SESSION-BOUNDARIES-20261006-SESSION-QUERY-TOOLS-029"
   ],
-  "next_action": "clean candidate 47adea37 全量/原版/真实解压复验已通过。五个 opt-in 规范工具的 78 双侧/真实解压、102 原版断言及两个模型/profile 冷恢复消费者已有界签收；继续物理 schema-19、malformed/public plugin ABI、全部领域/竞争和整体迁移，Win7 延期。"
+  "next_action": "clean candidate 7f9e87e4 全量/原版/真实解压复验已通过。五个 opt-in 规范工具的 78 双侧/真实解压、102 原版断言及两个模型/profile 冷恢复消费者已有界签收；继续物理 schema-19、malformed/public plugin ABI、全部领域/竞争和整体迁移，Win7 延期。"
 }

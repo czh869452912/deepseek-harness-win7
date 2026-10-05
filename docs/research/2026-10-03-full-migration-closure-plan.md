@@ -49,6 +49,10 @@
 
 `18d60566` 完整门禁记录6889通过、2旧配置错误断言失败、6既有跳过和1既有warning；新 Config 的原版 ValidationError 与旧 ValueError 断言冲突。实际 Source/native 两条拒绝观察证明类型/消息及零 agent 发布一致，配对现为22项，严格修正断言后49定向通过。确切ZIP/输入/XML/浏览器均已保留，独立 Source/配对/解压仍待新候选完整验证；无原版判据放宽或未改候选重跑。
 
+`2f3b8aa7` 全量6891通过、6既有跳过/1warning、十八组1237原版断言通过；第二配对因旧 Native configured-agent observer 只捕获ValueError而逃出ValidationError被拒绝，剩余配对/解压未执行。严格修正各案例异常与消息后七项Source/native匹配，全部配对预检与新候选验收继续，拒绝ZIP/输入/HTTP10054日志保持独立。
+
+严格 observer 修正后全部54个实际双侧驱动顺序预检通过，包括规范SQLite323/JSONL1030与并发22观察；预检明确非发布，用户授权清理两次运行的460个合成回执后空间恢复。提交该 observer 修正后，冻结新的干净完整候选做全部解压/浏览器验收；031/032/差分/033仍须完整成功才签收。
+
 ## 历史执行项（2026-10-04）
 
 2026-10-04：最近完整有界验收已推进到 `1d9940aa`，6134 passed、6 skipped、1 warning、0 failed；119 必需 lane、十一组 910 原版断言、43 双侧驱动与真实解压 Python 3.8.10/原版浏览器通过。三十一个有界子任务按精确产品、输入和产物重签；见 `migration/reviews/SESSION-FILTERS-CLOSURE-20261004.md`。这不是完整 ACP、Session 或全项目验收。

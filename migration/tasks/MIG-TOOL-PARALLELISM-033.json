@@ -20,5 +20,5 @@
   "candidate_commit": null,
   "integrated_commit": null,
   "evidence_ids": [],
-  "next_action": "组间 cap 与声明式 Config 异常已由实际 Source/native 观察对齐；提交新的严格回归断言候选后完整冻结验收，继续完整 B2、同步前缀及全项目，不签收未归因历史失败。"
+  "next_action": "2f3b8aa7全量6891通过/十八组1237原版通过，但第二配对的旧Native observer漏捕ValidationError；精确拒绝产物已保留，七项严格Source/native重新匹配。先预检其余全部配对再提交新的干净候选完整验收，继续完整B2、同步前缀及全项目，不签收未归因历史失败。"
 }

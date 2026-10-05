@@ -24,11 +24,18 @@ it('observes configured identity and owned reload through real services',async()
     await ctx.plugin(Loop,{agents:[{id:'main',sessionId:'ignored'},{id:'other',sessionId:'unchanged'}]} as any)
     rows.push({mode,chosen:!!ctx.agents.get('chosen' as any),unchanged:!!ctx.agents.get('unchanged' as any),ignored:!!ctx.agents.get('ignored' as any)})
    }else if(mode==='invalid'){
-    let rejected=0
-    for(const agents of [[{id:'a',sessionId:''}],[{id:'a',sessionId:'s',resumeSessionId:'r'}],[{id:'a',sessionId:'s'},{id:'b',sessionId:'s'}]]){
-     try{await ctx.plugin(Loop,{agents} as any)}catch{rejected++}
+    let rejected=0;const errors:string[]=[]
+    for(const [agents,name,message] of [
+     [[{id:'a',sessionId:''}],'ValidationError','expected string length >= 1'],
+     [[{id:'a',sessionId:'s',resumeSessionId:'r'}],'Error','mutually exclusive'],
+     [[{id:'a',sessionId:'s'},{id:'b',sessionId:'s'}],'Error','duplicate exact'],
+    ] as const){
+     try{await ctx.plugin(Loop,{agents} as any)}catch(error:any){
+      if(error.name!==name || !error.message.includes(message))throw error
+      rejected++;errors.push(error.name)
+     }
     }
-    rows.push({mode,rejected,published:ctx.agents.list().length})
+    rows.push({mode,rejected,errors,published:ctx.agents.list().length})
    }else if(mode==='missing'){
     const failures:any[]=[];ctx.on('agent-loop/config-start-failed',v=>{failures.push(v)})
     await ctx.plugin(Loop,{agents:[{id:'a',resumeSessionId:'missing'}]} as any);await wait(()=>failures.length)

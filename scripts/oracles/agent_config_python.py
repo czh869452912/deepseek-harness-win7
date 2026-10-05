@@ -2,6 +2,7 @@ import asyncio,json,sys,tempfile
 from pathlib import Path
 sys.path.insert(0,str(Path(__file__).resolve().parents[2]))
 from dsh.cordis.context import Context
+from dsh.cordis.schema import ValidationError
 from dsh.core.session import SessionPlugin
 from dsh.core.agent import AgentPlugin
 from dsh.core.agent_loop import AgentLoopPlugin,CONFIGURED_AGENT_IDENTITIES_KEY
@@ -24,11 +25,16 @@ async def observe():
      await ctx.plugin(AgentLoopPlugin,{'agents':[{'id':'main','sessionId':'ignored'},{'id':'other','sessionId':'unchanged'}]})
      rows.append(dict(mode=mode,chosen=agents.get('chosen') is not None,unchanged=agents.get('unchanged') is not None,ignored=agents.get('ignored') is not None))
     elif mode=='invalid':
-     rejected=0
-     for config in [[{'id':'a','sessionId':''}],[{'id':'a','sessionId':'s','resumeSessionId':'r'}],[{'id':'a','sessionId':'s'},{'id':'b','sessionId':'s'}]]:
+     rejected=0;errors=[]
+     for config,exception,message in [
+      ([{'id':'a','sessionId':''}],ValidationError,'expected string length >= 1'),
+      ([{'id':'a','sessionId':'s','resumeSessionId':'r'}],ValueError,'mutually exclusive'),
+      ([{'id':'a','sessionId':'s'},{'id':'b','sessionId':'s'}],ValueError,'duplicate exact')]:
       try:await ctx.plugin(AgentLoopPlugin,{'agents':config})
-      except ValueError:rejected+=1
-     rows.append(dict(mode=mode,rejected=rejected,published=len(agents.list())))
+      except exception as error:
+       assert message in str(error)
+       rejected+=1;errors.append('ValidationError' if isinstance(error,ValidationError) else 'Error')
+     rows.append(dict(mode=mode,rejected=rejected,errors=errors,published=len(agents.list())))
     elif mode=='missing':
      failures=[];ctx.on('agent-loop/config-start-failed',lambda value:failures.append(value))
      await ctx.plugin(AgentLoopPlugin,{'agents':[{'id':'a','resumeSessionId':'missing'}]});await wait(lambda:failures)

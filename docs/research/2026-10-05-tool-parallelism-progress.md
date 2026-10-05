@@ -22,6 +22,12 @@ Loop 组合拥有基础配置，规范可选 SettingsProvider 仅覆盖 `maxPara
 
 确切拒绝ZIP SHA256 `25979b01ee5e63d0fdedf5a3a103799ebf8f7e3c011dd4d40a077e498d17cd73`，输入SHA256 `f1b30ce43810b35b672120a1af46583b58b357d27a27cdbd4c7f6a1a37c2434b`，位于 `.goose/out/session-storage-clean-18d60566/`；XML、原始日志和浏览器观测独立保留。修改后的新候选须重新完整冻结验收，旧候选不重跑、不签收。
 
+下一候选 `2f3b8aa7e1069ce73599c40d582cca25cb971105` 的完整 pytest 为6891 passed、6既有 skipped、1既有 Proactor warning，1727.52秒；十八组1237原样 Source 断言、只读差分及 Agent factory 配对也通过。但是第二个配对驱动 `agent-config` 的 Native observer 仍只捕获旧 ValueError，空 sessionId 的实际 ValidationError 逃出 runner，完整门禁按原规则拒绝。修复 observer 为每个案例指定异常类和消息，原版研究 probe 同时严格核对名称/消息；七项实际 Source/native 观察匹配，非法配置仍零发布。原版实现、bug 谓词和超时未改。全部剩余配对预检与新候选完整验收继续执行。
+
+该候选确切拒绝ZIP SHA256 `66cd818e0e411320953b65509ce5cdc5217467f3c9b415a06aa1f79593734faf`，输入SHA256 `67133da8fb107314afb7ba9714c3476c86ae82b26b7836ccf95b48bd719a68dd`，位于 `.goose/out/session-storage-clean-2f3b8aa7/`。原版浏览器通过，pytest退出后 HTTP10054 traceback 独立保留，不改成新豁免；剩余配对及真实解压没有执行，不能以全量绿色代替完整发布签收。
+
+observer 修正后，全部54个实际 Source/native 驱动按顺序新鲜执行通过，结果 `.goose/out/tool-scheduler-all-pairs-preview-v1/summary.json` 明确为 `development-preview` / `publishable=false`，每份回执SHA256独立记录。含七项严格配置观察、SQLite323、JSONL1030和并发22项；此预检没有跳过完整门禁，下一新干净候选仍须全量、Source、配对、原版浏览器与隔离解压全部通过。用户再次授权按新清单只删除460个合成JSON，释放4818820761字节；真实拒绝/验收材料保留。
+
 初始回执套件544项通过、41项因 `No space left on device` 失败，原始 `tool-scheduler-gate-v2.log` 保留。用户授权后，按 `unit-receipt-cleanup-687.json` 清单核验路径、字节数、非 reparse 和明确合成标记，清理1081个可重建 receipt/extracted JSON，释放11191684654字节；真实失败 ZIP、输入、XML、Source/浏览器观测不删除。新回执验证仍须通过，磁盘失败不计为绿色验收。
 
 下一干净冻结门禁要求全量 pytest、443必需 lane、十八组1237原样断言、54配对驱动及实际解压/原版浏览器。031/032/只读差分/033在该新候选通过后才转入有界集成。保留 `5f2a76db` WinError1175、旧启动请求取消、未测量 partial-wire、Source 固定等待和 Proactor warning，受控 sharing code32不归因1175。同步 dispatch 前缀、完整取消/批准/followup/maintenance/compaction/disposal 组合、Session 任意 ABI、C/D 和延期 Win7继续具名开放，`accepted_upstream`为空。

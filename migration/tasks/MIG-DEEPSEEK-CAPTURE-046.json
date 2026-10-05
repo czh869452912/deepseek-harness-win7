@@ -41,13 +41,15 @@
     "docs/research"
   ],
   "open_findings": [
-    "Exact unmodified543 ownPortable baseline retains17 config/adapter diagnostic differences. Main-tree76 captures and120 actual row/value/identity/Source/runtime rejection consumers pass. Expanded1115 regressions finish1113 passed/two failed: stale lane count and deep Git-tree retention WinError5. Ordinary/extended path controls reproduce the retention cause; four affected controls pass after correction. Independent clean full/extracted/browser qualification remains pending.",
+    "Exact unmodified543 ownPortable baseline retains17 config/adapter diagnostic differences. Main-tree76 captures and120 actual row/value/identity/Source/runtime rejection consumers pass. Expanded1115 regressions finish1113 passed/two failed: stale lane count and deep Git-tree retention WinError5. Ordinary/extended path controls reproduce the retention cause; four affected controls pass after correction. Independent clean full/extracted/browser qualification remains pending. Distinct clean eaa8bb05 complete gate rejected:7921 passed/one actual forked-session compressed-log listing Errno13/six skips/one warning2168.22 seconds. Exact rejected artifacts retained before mutation;separate047 qualifies compatible shared read handles without identifying the original transient owner.",
     "The initial prototype omitted six required bundle patch files and failed import before observation. Raw failure and exact controlled metadata repair remain retained; not a Source bug or product acceptance.",
     "Full Wire/profile/AgentLoop retry, immutable/public graph ABI, arbitrary malformed transport/configuration/cancellation/reentry and cloud/OAuth/paid/Win7 remain open."
   ],
   "conflicts_with": [],
-  "candidate_commit": null,
+  "candidate_commit": "eaa8bb0518ae8afb374b991f234fcb7442066252",
   "integrated_commit": null,
-  "evidence_ids": [],
-  "next_action": "五模块诊断、严格76对照、完整值/关联/解释器/导入模块拒绝测试及深Git回执保留修复已实施；分段提交后冻结1474必需lane/66配对/19组1683原样Source的完整及真实解压/原版浏览器验收。保留前两次失败与独立精确543基线，全部通过后才有界integrated。"
+  "evidence_ids": [
+    "RUN-DEEPSEEK-CAPTURE-REJECTED-20261006-EAA8BB05"
+  ],
+  "next_action": "保留精确eaa8拒绝；047共享读取修复完成扩大回归后提交新的干净候选，1519必需lane/67配对/19组1683原样Source及真实解压/原版浏览器全部通过才签收046/047。最新签收54361bd9与整体/延期Win7不变。"
 }

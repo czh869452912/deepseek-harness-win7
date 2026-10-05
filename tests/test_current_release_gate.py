@@ -50,6 +50,8 @@ from test_deepseek_error_consumers import damage_observations
 from scripts.deepseek_capture_oracle import observation_digest as deepseek_capture_observation_digest
 from test_deepseek_capture_consumers import damage_observations as damage_capture_observations
 from scripts.persistence_read_oracle import observation_digest as read_observation_digest
+from scripts.jsonl_sharing_oracle import observation_digest as sharing_observation_digest
+from test_jsonl_sharing_consumers import damage_observations as damage_sharing_observations
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -360,7 +362,7 @@ def test_extracted_session_corpus_read_requires_exact_sources_and_batch_drain(tm
 def test_regression_requires_browser_portable_and_acp_process_lanes(tmp_path):
     path = tmp_path / 'pytest.xml'
     regression_xml(path)
-    assert GATE.validate_regression(path) == {'required_lanes': 1474, 'skipped': 1}
+    assert GATE.validate_regression(path) == {'required_lanes': 1519, 'skipped': 1}
 
 
 @pytest.mark.parametrize('module', ['test_native_web_browser', 'test_portable_smoke', 'test_acp_stdio_journey', 'test_acp_permission_process', 'test_mcp_stdio_transport', 'test_mcp_supervisor', 'test_mcp_schema', 'test_mcp_config', 'test_mcp_tools_source', 'test_mcp_image_consumer', 'test_mcp_http_source', 'test_mcp_http_transport', 'test_mcp_supervisor_source', 'test_mcp_factory_source', 'test_acp_mcp_source', 'test_acp_mcp_runtime_source', 'test_acp_mcp_abort_source', 'test_acp_mcp_process', 'test_acp_mcp_runtime'])
@@ -1165,6 +1167,55 @@ def test_deepseek_capture_consumer_lanes_are_mandatory(tmp_path, damage):
         GATE.validate_regression(path)
 
 
+@functools.lru_cache(maxsize=1)
+def sharing_runtime_fixture():
+    with tempfile.TemporaryDirectory(prefix='jsonl-sharing-receipt-') as folder:
+        output = Path(folder) / 'paired.json'
+        completed = subprocess.run([sys.executable, str(ROOT / 'scripts/jsonl_sharing_oracle.py'),
+            '--output', str(output)], cwd=str(ROOT), capture_output=True, timeout=180)
+        if completed.returncode:
+            raise RuntimeError(output.read_text(encoding='utf-8'))
+        return json.loads(output.with_suffix('.native.json').read_text(encoding='utf-8'))
+
+
+@pytest.mark.parametrize('damage', ('missing', 'source-missing', 'source-changed', 'module-missing',
+    'module-changed', 'root', 'python', 'executable', 'header', 'event', 'raw', 'filename', 'tail', 'duplicate', 'order'))
+def test_extracted_jsonl_sharing_requires_complete_values_and_runtime(tmp_path, damage):
+    archive, candidate, report = extracted_receipt(tmp_path)
+    runtime = report['jsonlSharing']
+    if damage == 'missing':
+        del report['jsonlSharing']
+    elif damage == 'source-missing':
+        del candidate['jsonl_sharing_observations_sha256']
+    elif damage == 'source-changed':
+        candidate['jsonl_sharing_observations_sha256'] = '0' * 64
+    elif damage == 'module-missing':
+        del runtime['modules']['dsh/session/file_io.py']
+    elif damage == 'module-changed':
+        runtime['modules']['dsh/session/file_io.py'] = '0' * 64
+    elif damage == 'root':
+        runtime['root'] = str(tmp_path.parent)
+    elif damage == 'python':
+        runtime['python'] = '3.9.0 foreign runtime'
+    elif damage == 'executable':
+        runtime['executable'] = str(tmp_path / 'nested/python.exe')
+    else:
+        damage_sharing_observations(runtime, damage)
+    output = tmp_path / 'extracted.json'
+    output.write_text(json.dumps(report), encoding='utf-8')
+    with pytest.raises(RuntimeError, match='jsonlSharing'):
+        GATE.validate_extracted(output, archive, candidate)
+
+
+@pytest.mark.parametrize('damage', ('omit', 'skip', 'duplicate', 'failure'))
+def test_jsonl_sharing_consumer_lanes_are_mandatory(tmp_path, damage):
+    path = tmp_path / 'pytest.xml'
+    key = ('test_jsonl_sharing_consumers', sorted(GATE.REQUIRED_REGRESSION['test_jsonl_sharing_consumers'])[0])
+    regression_xml(path, **{damage: key})
+    with pytest.raises(RuntimeError):
+        GATE.validate_regression(path)
+
+
 def extracted_receipt(tmp_path):
     archive = tmp_path / 'portable.zip'
     archive.write_bytes(b'exact candidate archive')
@@ -1225,6 +1276,10 @@ def extracted_receipt(tmp_path):
     deepseek_capture['root'], deepseek_capture['executable'] = str(tmp_path), str(tmp_path / 'python.exe')
     candidate['deepseek_capture_observations_sha256'] = deepseek_capture_observation_digest(deepseek_capture['rows'])
     candidate['deepseek_capture_modules'] = deepseek_capture['modules'].copy()
+    sharing = copy.deepcopy(sharing_runtime_fixture())
+    sharing['root'], sharing['executable'] = str(tmp_path), str(tmp_path / 'python.exe')
+    candidate['jsonl_sharing_observations_sha256'] = sharing_observation_digest(sharing['rows'])
+    candidate['jsonl_sharing_modules'] = sharing['modules'].copy()
     report = {'result': 'passed', 'browser': {'passed': True}, 'runtime': {'checks': ['actual runtime']},
               'acp': {'processes': 2, 'steps': ['initialize-0', 'invalid-params-before-effects',
                   'persistent-new', 'close-list-0', 'eof-0', 'initialize-1',
@@ -1233,7 +1288,7 @@ def extracted_receipt(tmp_path):
               'archiveSha256': GATE.digest(archive), 'provenance': dict(candidate), 'toolScheduler': scheduler,
               'httpRedirect': redirect, 'javascriptWorkflow': javascript, 'runtimeContext': context, 'javascriptReady': ready,
               'persistenceRead': read, 'javascriptInitial': initial, 'sessionNumber': number, 'sessionDiagnostic': diagnostic,
-              'sessionRestoreSign': restore_sign, 'runtimeFullRequest': full_request, 'deepseekError': deepseek_error, 'deepseekCapture': deepseek_capture}
+              'sessionRestoreSign': restore_sign, 'runtimeFullRequest': full_request, 'deepseekError': deepseek_error, 'deepseekCapture': deepseek_capture, 'jsonlSharing': sharing}
     modes = ['allow', 'reject', 'malformed', 'cancel-late', 'close-late', 'eof']
     report['acpPermissions'] = {'processes': 6, 'modes': modes, 'observations': [
         {'mode': mode, 'executed': mode == 'allow', 'modelRequests': 2 if mode in modes[:3] else 1, 'stderr': [''],

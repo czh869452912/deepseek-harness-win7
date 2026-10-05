@@ -57,6 +57,7 @@ from scripts.session_restore_sign_oracle import validate_runtime as validate_ses
 from scripts.runtime_full_request_oracle import validate_runtime as validate_runtime_full_request, identity as full_request_identity
 from scripts.deepseek_error_oracle import validate_runtime as validate_deepseek_error, identity as deepseek_error_identity
 from scripts.deepseek_capture_oracle import validate_runtime as validate_deepseek_capture, identity as deepseek_capture_identity
+from scripts.jsonl_sharing_oracle import validate_runtime as validate_jsonl_sharing, identity as sharing_identity
 from scripts.persistence_read_oracle import validate_runtime as validate_persistence_read, identity as read_identity
 
 
@@ -265,6 +266,25 @@ def deepseek_capture_receipts(source, native, output):
     return source, expected_digest, runtime['modules']
 
 
+def sharing_receipts(source, native, output):
+    if source or native:
+        if not source or not native:
+            raise RuntimeError('Both JSONL sharing Source and native receipts are required')
+        source, native = Path(source).resolve(), Path(native).resolve()
+    else:
+        paired = output.with_suffix('.jsonl-sharing-paired.json')
+        completed = subprocess.run([sys.executable, str(ROOT / 'scripts/jsonl_sharing_oracle.py'),
+            '--output', str(paired)], cwd=str(ROOT), capture_output=True, timeout=180)
+        output.with_suffix('.jsonl-sharing-source.log').write_bytes(completed.stdout + completed.stderr)
+        if completed.returncode or completed.stderr:
+            raise RuntimeError('Fresh JSONL sharing Source qualification failed')
+        source, native = paired.with_suffix('.source.json'), paired.with_suffix('.native.json')
+    expected = sharing_identity(json.loads(source.read_text(encoding='utf-8')))
+    runtime = json.loads(native.read_text(encoding='utf-8'))
+    validate_jsonl_sharing(runtime, ROOT, expected, runtime['modules'])
+    return source, expected, runtime['modules']
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--archive', required=True)
@@ -303,6 +323,8 @@ def main(argv=None):
     parser.add_argument('--deepseek-capture-native', help='Fresh native DeepSeek capture module closure')
     parser.add_argument('--read-source', help='Fresh actual Source canonical persistence read observations')
     parser.add_argument('--read-native', help='Fresh canonical persistence read module and private asset closure')
+    parser.add_argument('--sharing-source', help='Fresh actual Source JSONL shared-reader observations')
+    parser.add_argument('--sharing-native', help='Fresh native JSONL shared-reader module closure')
     args = parser.parse_args(argv)
     archive, output = Path(args.archive).resolve(), Path(args.output).resolve()
     output.parent.mkdir(parents=True, exist_ok=True)
@@ -360,6 +382,8 @@ def main(argv=None):
             'deepseek_error_oracle.py', 'oracles/deepseek_error_python.py', 'oracles/deepseek_error_http.ts',
             'oracles/deepseek_error.probe.spec.ts', 'oracles/vitest.deepseek-error-probe.config.mts', 'oracles/deepseek-error-fixtures.json',
             'oracles/vitest.deepseek-source.config.mts',
+            'jsonl_sharing_oracle.py', 'oracles/jsonl_sharing_python.py', 'oracles/jsonl_sharing.probe.spec.ts',
+            'oracles/vitest.jsonl-sharing-probe.config.mts',
             'deepseek_capture_oracle.py', 'oracles/deepseek_capture_python.py', 'oracles/deepseek_capture_http.ts',
             'oracles/deepseek_capture_files.ts', 'oracles/deepseek_capture_settings.ts',
             'oracles/deepseek_capture_http_python.py', 'oracles/deepseek_capture_files_python.py',
@@ -501,6 +525,8 @@ def main(argv=None):
         report['sessionNumberSourceSha256'] = digest(number_source)
         read_source, read_digest, read_modules, read_assets = read_receipts(args.read_source, args.read_native, output)
         report['persistenceReadSourceSha256'] = digest(read_source)
+        sharing_source, sharing_digest, sharing_modules = sharing_receipts(args.sharing_source, args.sharing_native, output)
+        report['jsonlSharingSourceSha256'] = digest(sharing_source)
         if args.format_source or args.format_inputs:
             if not args.format_source or not args.format_inputs:
                 raise RuntimeError('Both SQLite format Source and inputs are required')
@@ -913,6 +939,16 @@ def main(argv=None):
             read_report = json.loads(read_path.read_text(encoding='utf-8'))
             validate_persistence_read(read_report, portable, read_digest, read_modules, read_assets)
             report['persistenceRead'] = read_report
+            sharing_path = workspace / 'jsonl-sharing.json'
+            sharing_result = subprocess.run([str(portable / 'python.exe'), '-I', '-u',
+                str(ROOT / 'scripts/oracles/jsonl_sharing_python.py'), '--root', str(portable), '--output', str(sharing_path)],
+                cwd=str(workspace), env=env, capture_output=True, encoding='utf-8', errors='replace', timeout=60)
+            output.with_suffix('.jsonl-sharing.log').write_text(sharing_result.stdout + '\nSTDERR:\n' + sharing_result.stderr, encoding='utf-8')
+            if sharing_result.returncode or sharing_result.stderr or not sharing_path.is_file():
+                raise RuntimeError('Extracted JSONL sharing observations failed')
+            sharing_report = json.loads(sharing_path.read_text(encoding='utf-8'))
+            validate_jsonl_sharing(sharing_report, portable, sharing_digest, sharing_modules)
+            report['jsonlSharing'] = sharing_report
             directory = subprocess.run([str(portable / 'python.exe'), '-I', '-u',
                 str(ROOT / 'scripts/python_directory_probe.py'), '--root', str(portable), '--output', str(directory_path)],
                 cwd=str(workspace), env=env, capture_output=True, encoding='utf-8', errors='replace', timeout=90)

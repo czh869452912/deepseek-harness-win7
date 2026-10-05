@@ -1,0 +1,54 @@
+{
+  "id": "RUN-DEEPSEEK-CAPTURE-REJECTED-20261006-EAA8BB05",
+  "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
+  "product_commit": "eaa8bb0518ae8afb374b991f234fcb7442066252",
+  "kind": "verification",
+  "task_id": "MIG-DEEPSEEK-CAPTURE-046",
+  "acceptance_digest": "68f0456194851ab30d38ff0e0f122a8d5a9e8980568d3c58c917071d54696d88",
+  "result": "failed",
+  "validity": "current",
+  "exit_code": 1,
+  "commands": [
+    ".venv/Scripts/python.exe scripts/verify_release.py --browser \"C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe\" --output-dir .goose/out/deepseek-capture-clean-eaa8bb05"
+  ],
+  "environment": {
+    "python": "3.8.10 (default, May  6 2021, 17:27:56) [MSC v.1928 64 bit (AMD64)]",
+    "os": "Windows-10-10.0.26200-SP0",
+    "cwd": "C:\\Users\\czh86\\Documents\\Codex\\deepseek-harness-win7",
+    "node": "v22.22.2"
+  },
+  "contract_revisions": {
+    "CON-DEEPSEEK-CAPTURE": 1,
+    "CON-CURRENT-RELEASE-GATE": 1,
+    "CON-DEEPSEEK-ERROR": 1
+  },
+  "inputs": [
+    {
+      "path": "dsh/session/jsonl_store.py",
+      "sha256": "d02c945e38095945c057658746b8e6f63e3e42db9811254ad30694ebaf199a15"
+    },
+    {
+      "path": "dsh/session/persistence_jsonl_canonical.py",
+      "sha256": "cfcb5f1ab8e41609d896d35d6856911d57f3325296c87dbd506da5a24001914b"
+    },
+    {
+      "path": "tests/test_session_remote.py",
+      "sha256": "f1df4dcc18ef8bc12cf6d0a3ad8ca81263675c652cad5627c9d97ea2ba99dd58"
+    },
+    {
+      "path": "scripts/verify_release.py",
+      "sha256": "cd288dfdec2c53ef79edf3a7d5658b28f512f4e18878f08f0521945bced9579b"
+    },
+    {
+      "path": "scripts/verify_portable.py",
+      "sha256": "c6c72af5f05d6de82ac79ec584aa103fb541e54c64f8908f2cd68f35a6d1ad6b"
+    }
+  ],
+  "artifacts": [
+    {
+      "path": "migration/evidence/artifacts/DEEPSEEK-CAPTURE-REJECTED-20261006-eaa8bb05.zip",
+      "sha256": "5cc7368c99b64baecd48d06813d6eb4f269d29725103f21f86740d3b0d250820"
+    }
+  ],
+  "scope": "Exact clean eaa8bb05 full pytest7921 passed/one actual creative Web forked-session JSONL listing Errno13/six existing skips/one warning2168.22 seconds. Exact Portable/input/XML/failed fixtures retained before mutation. Standalone Source/paired/extracted acceptance not admitted;046 remains running. Owned delete-access controls reproduce native CRT sharing error32 and original none/zstd readers pass;original transient holder remains unidentified. No unchanged full-candidate retry,Source predicate/frontend change or general permission retry. Latest accepted54361bd9 and deferred realWin7 remain unchanged."
+}

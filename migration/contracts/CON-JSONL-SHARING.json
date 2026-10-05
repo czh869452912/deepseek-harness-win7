@@ -1,0 +1,36 @@
+{
+  "id": "CON-JSONL-SHARING",
+  "revision": 1,
+  "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
+  "status": "specified",
+  "source_paths": [
+    "reference/packages/session/session-persistence-jsonl/src/index.ts",
+    "reference/packages/session/session-persistence-jsonl/src/format.ts",
+    "dsh/session/file_io.py",
+    "dsh/session/jsonl_store.py"
+  ],
+  "consumers": [
+    "scripts/jsonl_sharing_oracle.py",
+    "scripts/oracles/jsonl_sharing_python.py",
+    "scripts/oracles/jsonl_sharing.probe.spec.ts",
+    "tests/test_jsonl_sharing_consumers.py",
+    "scripts/verify_release.py",
+    "scripts/verify_portable.py"
+  ],
+  "invariants": [
+    "Four complete original/native none/zstd list/inspect/raw captures match beside owned live delete/read-write handles permitting read/write/delete sharing.",
+    "Win7 CreateFileW reader ownership transfers once to the Python descriptor;transfer failures retire owned resources.",
+    "Real exclusive denial,missing file,reader close and beyond260-character paths retain actual results;no retry or skipped session.",
+    "Exact Source/guard bytes,complete values,actual module imports and selected ownPython3.8.10 are mandatory;partial/changed receipts reject."
+  ],
+  "identity": "Every listed,inspected and raw field is exact. Joint preproduced files qualify readers,not writer/session ABI parity;all raw errors remain retained.",
+  "ownership": "Observer owns and verifies a live real Win32 fixture handle throughout both provider reads. Contexts own services;holders retire before disposal.",
+  "ordering": "Actual list/inspect/raw occur while the owned holder remains admitted;GetFileInformationByHandle verifies its continued existence afterward.",
+  "errors": "Exact rejected eaa8 records transient Errno13. Controlled compatible delete-access holders reproduce CRT error32;original readers pass. Original transient holder is unidentified. Genuine exclusive owners still fail and missing files remain FileNotFoundError.",
+  "cancellation": "Existing canonical read cancellation/worker retirement remain required;no external-holder waiting semantics.",
+  "adaptation": "Node readers share delete access;Python CRT readers do not. Native Win7 API shim supplies sharing with extended absolute paths and descriptor cleanup. Header DTOs use public to_dict;raw JSONL content remains unchanged.",
+  "open_questions": [
+    "Original transient holder is unidentified;arbitrary external exclusive locks,full mutable/public graph ABI,lifetime races and all canonical profiles remain open.",
+    "Current Windows does not certify realWin7/browser. Source predicates/frontend remain unchanged."
+  ]
+}

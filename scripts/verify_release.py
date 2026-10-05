@@ -57,6 +57,7 @@ from scripts.runtime_full_request_oracle import validate_runtime as validate_run
 from scripts.deepseek_error_oracle import validate_runtime as validate_deepseek_error, identity as deepseek_error_identity, NAMES as DEEPSEEK_ERROR_NAMES
 from scripts.deepseek_capture_oracle import validate_runtime as validate_deepseek_capture, identity as deepseek_capture_identity, NAMES as DEEPSEEK_CAPTURE_NAMES
 from scripts.persistence_read_oracle import validate_runtime as validate_persistence_read, identity as read_identity, NAMES as READ_NAMES
+from scripts.jsonl_sharing_oracle import validate_runtime as validate_jsonl_sharing, identity as sharing_identity, NAMES as SHARING_NAMES
 NODE_VERSION = 'v22.22.2'
 PORTABLE_ARCHIVE = 'dist/dsh-win7-portable-v0.1.0.zip'
 PAIRED_DRIVERS = (
@@ -69,9 +70,20 @@ PAIRED_DRIVERS = (
 )
 PAIRED_DRIVERS = PAIRED_DRIVERS + ('session_tools', 'sqlite_format', 'sqlite_provider', 'jsonl_provider', 'tool_scheduler', 'http_redirect', 'javascript_workflow', 'runtime_context', 'javascript_ready', 'persistence_read')
 PAIRED_DRIVERS = PAIRED_DRIVERS + ('javascript_initial', 'session_number', 'session_diagnostic', 'session_restore_sign')
-PAIRED_DRIVERS = PAIRED_DRIVERS + ('runtime_full_request', 'deepseek_error', 'deepseek_capture')
+PAIRED_DRIVERS = PAIRED_DRIVERS + ('runtime_full_request', 'deepseek_error', 'deepseek_capture', 'jsonl_sharing')
 OFFICIAL_CONFIGS = ('consumers', 'agent-lifecycle', 'session-recovery', 'session-projection', 'acp', 'acp-app', 'mcp', 'subagent-acp', 'storage-cache', 'session-observation', 'session-corpus', 'session-sqlite-query', 'query-engine-source', 'session-tools-source', 'sqlite-format-source', 'sqlite-provider-source', 'jsonl-provider-source', 'tool-scheduler-source', 'deepseek-source')
 REQUIRED_REGRESSION = {
+    'test_jsonl_sharing_consumers': {
+        *{'test_actual_original_and_native_jsonl_shared_readers_match[' + name + ']' for name in SHARING_NAMES},
+        *{'test_jsonl_sharing_receipt_requires_complete_values_and_runtime[' + damage + ']' for damage in (
+            'header', 'event', 'raw', 'filename', 'tail', 'duplicate', 'order', 'root', 'python', 'executable', 'module', 'bytes')},
+        *{'test_jsonl_sharing_source_identity_is_required[' + damage + ']' for damage in ('pin', 'node', 'inputs', 'bytes')},
+        *{'test_portable_jsonl_sharing_refuses_partial_receipts[' + side + ']' for side in ('source', 'native')},
+        'test_real_exclusive_holder_remains_a_sharing_error',
+        'test_reader_close_releases_actual_handle_for_exclusive_owner',
+        'test_missing_shared_reader_stays_file_not_found',
+        'test_shared_reader_handles_long_owned_paths',
+    },
     'test_deepseek_capture_consumers': {
         *{'test_actual_deepseek_capture_matches_source[' + name + ']' for name in DEEPSEEK_CAPTURE_NAMES},
         *{'test_deepseek_capture_receipt_requires_complete_rows_and_runtime[' + damage + ']' for damage in ('config-name', 'config-message', 'error-name', 'error-message', 'failure-message', 'error-code', 'file-message', 'file-failure', 'file-quota', 'file-status', 'settings-model', 'settings-provider', 'settings-retry', 'stream', 'serialization', 'usage', 'request-body', 'accepted', 'origin', 'retry-failure', 'retry-delay', 'retry-policy', 'retry-number', 'retry-split', 'retry-shared', 'retry-form', 'tail', 'duplicate', 'root', 'python', 'executable', 'module', 'bytes')},
@@ -355,6 +367,10 @@ REQUIRED_REGRESSION = {
             'missing-module', 'changed-module', 'empty-closure', 'foreign-root', 'foreign-python', 'missing-row', 'duplicate-row', 'changed-row')},
     },
     'test_current_release_gate': {
+        *{'test_extracted_jsonl_sharing_requires_complete_values_and_runtime[' + damage + ']' for damage in (
+            'missing', 'source-missing', 'source-changed', 'module-missing', 'module-changed', 'root', 'python', 'executable',
+            'header', 'event', 'raw', 'filename', 'tail', 'duplicate', 'order')},
+        *{'test_jsonl_sharing_consumer_lanes_are_mandatory[' + damage + ']' for damage in ('omit', 'skip', 'duplicate', 'failure')},
         *{'test_extracted_read_requires_source_assets_and_complete_observations[' + damage + ']' for damage in (
             'missing', 'source-missing', 'source-changed', 'module-missing', 'module-changed', 'assets-missing',
             'asset-changed', 'root', 'python', 'executable', 'tail', 'duplicate', 'outcome', 'late-return', 'signal', 'queue', 'legacy')},
@@ -1195,6 +1211,11 @@ def validate_extracted(path, archive, candidate):
             candidate['deepseek_capture_observations_sha256'], candidate['deepseek_capture_modules'], check_files=False)
     except (ValueError, KeyError, TypeError) as error:
         raise RuntimeError('Extracted deepseekCapture consumer differs') from error
+    try:
+        validate_jsonl_sharing(report.get('jsonlSharing'), Path(report['mcpStdio']['root']),
+            candidate['jsonl_sharing_observations_sha256'], candidate['jsonl_sharing_modules'], check_files=False)
+    except (ValueError, KeyError, TypeError) as error:
+        raise RuntimeError('Extracted jsonlSharing consumer differs') from error
     for name, validate in [('queryEngine', validate_query_engine), ('querySchema', validate_query_schema), ('pythonDirectory', validate_python_directory),
                            ('sessionLineage', validate_session_lineage), ('sessionEventTrace', validate_session_event_trace),
                            ('sessionFilters', validate_session_filters), ('sessionRequests', validate_session_requests),
@@ -1403,6 +1424,11 @@ def verify(args, output):
     deepseek_capture_report = json.loads(deepseek_capture_native.read_text(encoding='utf-8'))
     candidate['deepseek_capture_observations_sha256'] = deepseek_capture_identity(json.loads(deepseek_capture_source.read_text(encoding='utf-8')))
     candidate['deepseek_capture_modules'] = deepseek_capture_report['modules']
+    sharing_source = output / 'jsonl-sharing-paired.source.json'
+    sharing_native = output / 'jsonl-sharing-paired.native.json'
+    sharing_report = json.loads(sharing_native.read_text(encoding='utf-8'))
+    candidate['jsonl_sharing_observations_sha256'] = sharing_identity(json.loads(sharing_source.read_text(encoding='utf-8')))
+    candidate['jsonl_sharing_modules'] = sharing_report['modules']
     raw = output / 'cordis-raw.json'
     raw.unlink(missing_ok=True)
     run([python, 'scripts/cordis_oracle.py', '--output', str(raw)],
@@ -1434,7 +1460,8 @@ def verify(args, output):
                '--restore-sign-source', str(restore_sign_source), '--restore-sign-native', str(restore_sign_native),
                '--full-request-source', str(full_request_source), '--full-request-native', str(full_request_native),
                '--deepseek-error-source', str(deepseek_error_source), '--deepseek-error-native', str(deepseek_error_native),
-               '--deepseek-capture-source', str(deepseek_capture_source), '--deepseek-capture-native', str(deepseek_capture_native)]
+               '--deepseek-capture-source', str(deepseek_capture_source), '--deepseek-capture-native', str(deepseek_capture_native),
+               '--sharing-source', str(sharing_source), '--sharing-native', str(sharing_native)]
     if not candidate['worktree_dirty']:
         command += ['--expected-commit', candidate['product_commit']]
     run(command, 'portable-extracted', output, env=environment)

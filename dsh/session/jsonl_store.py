@@ -7,6 +7,7 @@ import time
 from dsh.cordis.json_text import stringify_json
 from dsh.session.durable_publish import ensure_durable_directory, publish_new_file, discard_staging
 from dsh.session.file_revision import file_revision
+from dsh.session.file_io import open_shared_read
 from dsh.session.persistence import SessionFormatUnsupportedError, SessionLocation
 from dsh.session.preparations import throw_aborted
 from dsh.session.jsonl_format import SessionLogScanner, encode_segment, project_key, header_bytes, event_bytes, parse_header_meta, scan_log
@@ -54,7 +55,7 @@ class JsonlStore:
 
     def _exists(self, path):
         try:
-            with open(path, 'rb'):
+            with open_shared_read(path):
                 return True
         except FileNotFoundError:
             parent = os.path.dirname(path)
@@ -152,7 +153,7 @@ class JsonlStore:
         throw_aborted(signal)
         before = file_revision(path)
         parts = []
-        with open(path, 'rb') as stream:
+        with open_shared_read(path) as stream:
             while True:
                 throw_aborted(signal)
                 chunk = stream.read(65536)
@@ -317,7 +318,7 @@ class JsonlStore:
             self._append(path, self._event_frame(recovered))
 
     def _first_line(self, path):
-        with open(path, 'rb') as stream:
+        with open_shared_read(path) as stream:
             if self.compression == 'none':
                 parts = []
                 while True:

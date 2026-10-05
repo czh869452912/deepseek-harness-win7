@@ -43,6 +43,8 @@
 
 只读上游差分 observer 已完成二十项含实际 pinned Source 的回归，任务 `MIG-UPSTREAM-DELTA-002` 按明确有界合同 running，不改变 pin 或自动推进任务。下一完整门禁要求 418 必需 lane、十七组 1210 原样断言、53 双侧驱动以及实际解压/原版浏览器。候选通过才签收 031/032/只读差分的有界证据；浏览器未归因 finding、Session 任意 ABI/事件/竞争/长历史、Tools/Wire/全部 profile/UI 和 C/D 继续按退出条件实施，Win7 与真实认证仍按既有约束另列。
 
+新干净候选 `5f2a76db` 的完整 pytest 为 6858 passed / 1 failed / 6 既有 skips / 1 既有 warning：普通文件原子替换返回 WinError 1175，原版双浏览器升级/回滚均通过，但后续 Source/配对/解压未执行。确切产物和输入已保留；受控 delete-sharing 双侧只复现 code32，不归因旧 1175。下一实施为原版默认10/可配置并发上限、组间动态 settings 与调度顺序合同，见独立文件发布记录；031/032/只读差分仍未签收。
+
 ## 历史执行项（2026-10-04）
 
 2026-10-04：最近完整有界验收已推进到 `1d9940aa`，6134 passed、6 skipped、1 warning、0 failed；119 必需 lane、十一组 910 原版断言、43 双侧驱动与真实解压 Python 3.8.10/原版浏览器通过。三十一个有界子任务按精确产品、输入和产物重签；见 `migration/reviews/SESSION-FILTERS-CLOSURE-20261004.md`。这不是完整 ACP、Session 或全项目验收。

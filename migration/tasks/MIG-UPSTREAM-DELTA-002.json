@@ -18,7 +18,7 @@
     "tests",
     "migration"
   ],
-  "open_findings": ["Implemented read-only observer; all 20 focused tests including actual parent-to-pin exercise pass. Clean complete qualification remains pending; no acceptance or upstream pin change."],
+  "open_findings": ["Implemented read-only observer; all 20 focused tests including actual parent-to-pin exercise pass. Clean candidate 5f2a76db was rejected with 6858 passed and one native ReplaceFileW WinError1175; exact archive/input/XML/logs retained. Source/paired/extracted phases did not run. Clean complete qualification remains pending; no acceptance or upstream pin change."],
   "conflicts_with": [],
   "candidate_commit": null,
   "integrated_commit": null,

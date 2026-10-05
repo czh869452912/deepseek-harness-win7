@@ -40,13 +40,14 @@
   ],
   "open_findings": [],
   "conflicts_with": [],
-  "candidate_commit": "17c1c521bb6743bcb1bc28942db315a614d4866d",
-  "integrated_commit": "17c1c521bb6743bcb1bc28942db315a614d4866d",
+  "candidate_commit": "b1b2f7971d904cce7047e7b679f9faf658383e85",
+  "integrated_commit": "b1b2f7971d904cce7047e7b679f9faf658383e85",
   "evidence_ids": [
     "RUN-SQLITE-FORMAT-20261005-SQLITE-FORMAT-030",
     "RUN-SESSION-STORAGE-20261005-SQLITE-FORMAT-030",
     "RUN-TOOLS-HTTP-20261005-SQLITE-FORMAT-030",
-    "RUN-JS-WORKFLOW-20261005-SQLITE-FORMAT-030"
+    "RUN-JS-WORKFLOW-20261005-SQLITE-FORMAT-030",
+    "RUN-JS-DEATH-20261005-SQLITE-FORMAT-030"
   ],
-  "next_action": "clean candidate 17c1c521 全量/原版/真实解压复验已通过。独立 schema-19 格式的 826 原版/原生/真实解压、42 原版断言与私有 licensed/hash-pinned 运行时已有界签收；继续规范物理提供端 ownership/lazy/事务/revision/修复/冷消费者与整体迁移，Win7 延期。"
+  "next_action": "clean candidate b1b2f797 全量/原版/真实解压复验已通过。独立 schema-19 格式的 826 原版/原生/真实解压、42 原版断言与私有 licensed/hash-pinned 运行时已有界签收；继续规范物理提供端 ownership/lazy/事务/revision/修复/冷消费者与整体迁移，Win7 延期。"
 }

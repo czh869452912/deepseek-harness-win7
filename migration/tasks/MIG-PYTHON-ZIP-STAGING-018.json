@@ -33,8 +33,8 @@
   ],
   "open_findings": [],
   "conflicts_with": [],
-  "candidate_commit": "17c1c521bb6743bcb1bc28942db315a614d4866d",
-  "integrated_commit": "17c1c521bb6743bcb1bc28942db315a614d4866d",
+  "candidate_commit": "b1b2f7971d904cce7047e7b679f9faf658383e85",
+  "integrated_commit": "b1b2f7971d904cce7047e7b679f9faf658383e85",
   "evidence_ids": [
     "RUN-SESSION-TRACING-20261004-PYTHON-ZIP-STAGING-018",
     "RUN-SESSION-FILTERS-20261004-PYTHON-ZIP-STAGING-018",
@@ -44,7 +44,8 @@
     "RUN-SQLITE-FORMAT-20261005-PYTHON-ZIP-STAGING-018",
     "RUN-SESSION-STORAGE-20261005-PYTHON-ZIP-STAGING-018",
     "RUN-TOOLS-HTTP-20261005-PYTHON-ZIP-STAGING-018",
-    "RUN-JS-WORKFLOW-20261005-PYTHON-ZIP-STAGING-018"
+    "RUN-JS-WORKFLOW-20261005-PYTHON-ZIP-STAGING-018",
+    "RUN-JS-DEATH-20261005-PYTHON-ZIP-STAGING-018"
   ],
-  "next_action": "clean candidate 17c1c521 全量/原版/真实解压复验已通过。clean candidate 17c1c521 的 Python ZIP 规范化暂存扩展已有界验收；继续完整插件生态/ABI/依赖/信任和用户主链；历史 WinError 5 外部持有者仍未归因。"
+  "next_action": "clean candidate b1b2f797 全量/原版/真实解压复验已通过。clean candidate b1b2f797 的 Python ZIP 规范化暂存扩展已有界验收；继续完整插件生态/ABI/依赖/信任和用户主链；历史 WinError 5 外部持有者仍未归因。"
 }

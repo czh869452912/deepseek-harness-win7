@@ -46,12 +46,13 @@
   ],
   "open_findings": [],
   "conflicts_with": [],
-  "candidate_commit": "17c1c521bb6743bcb1bc28942db315a614d4866d",
-  "integrated_commit": "17c1c521bb6743bcb1bc28942db315a614d4866d",
+  "candidate_commit": "b1b2f7971d904cce7047e7b679f9faf658383e85",
+  "integrated_commit": "b1b2f7971d904cce7047e7b679f9faf658383e85",
   "evidence_ids": [
     "RUN-SESSION-STORAGE-20261005-SQLITE-PROVIDER-031",
     "RUN-TOOLS-HTTP-20261005-SQLITE-PROVIDER-031",
-    "RUN-JS-WORKFLOW-20261005-SQLITE-PROVIDER-031"
+    "RUN-JS-WORKFLOW-20261005-SQLITE-PROVIDER-031",
+    "RUN-JS-DEATH-20261005-SQLITE-PROVIDER-031"
   ],
-  "next_action": "clean candidate 17c1c521 全量/原版/真实解压复验已通过。规范 schema19 提供端的 323 原版/原生/真实解压、SQL36/ownership/事务/revision/陈旧修复、模型工具与三 preset Remote 冷消费者已有界签收；继续完整 malformed/public plugin ABI、任意竞争/多工作区/长历史和整体迁移，Win7 延期。"
+  "next_action": "clean candidate b1b2f797 全量/原版/真实解压复验已通过。规范 schema19 提供端的 323 原版/原生/真实解压、SQL36/ownership/事务/revision/陈旧修复、模型工具与三 preset Remote 冷消费者已有界签收；继续完整 malformed/public plugin ABI、任意竞争/多工作区/长历史和整体迁移，Win7 延期。"
 }

@@ -1,0 +1,30 @@
+{
+  "id": "RUN-JS-DEATH-20261005-PARTIAL-036",
+  "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
+  "product_commit": "b1b2f7971d904cce7047e7b679f9faf658383e85",
+  "kind": "verification",
+  "result": "passed",
+  "validity": "current",
+  "task_id": "MIG-JS-WORKFLOW-036",
+  "commands": [
+    ".venv/Scripts/python.exe scripts/verify_release.py --output-dir .goose/out/js-death-clean-b1b2f797"
+  ],
+  "environment": {
+    "python": "3.8.10 (default, May  6 2021, 17:27:56) [MSC v.1928 64 bit (AMD64)]",
+    "os": "Windows-10-10.0.26200-SP0",
+    "cwd": "C:\\Users\\czh86\\Documents\\Codex\\deepseek-harness-win7",
+    "node": "v22.22.2",
+    "browser": "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe"
+  },
+  "contract_revisions": {
+    "CON-JS-WORKFLOW": 1,
+    "CON-CURRENT-RELEASE-GATE": 1
+  },
+  "artifacts": [
+    {
+      "path": "migration/evidence/artifacts/JS-DEATH-20261005-b1b2f797.zip",
+      "sha256": "b362bfd251c30eff466f3f17b6cd8a3dea4bb6fdf46d0309a6125f3b00ac9f73"
+    }
+  ],
+  "scope": "Frozen clean current-Windows candidate: 7087 passed, 6 existing skips, 639 mandatory lanes, eighteen unchanged Source groups/1237 assertions, 56 fresh paired drivers and actual isolated extracted Python3.8.10/original-browser acceptance. All119 frontend inputs are unchanged. Only previously declared bounded contracts are revalidated. Thirty-four actual pinned WorkerRun and private-engine host scenarios match complete observations in selected and extracted runtimes, including physical death before/after child publication, after Result and after first cancellation; nineteen private Source/compiler/engine/adapter/license assets and actual imported module closures bind this candidate. Original Source session/runtime/realm/schema algorithms execute on the actual private engine. Canonical Windows workflow/Ralph consumers execute real JavaScript; held runs, late provider refusal and physical termination have twelve focused regressions. The complete MIG-JS-WORKFLOW-036 contract remains running: eight original engine/parse differences, all model/profile compositions and broader provider/death/reentrancy competitions are not accepted. Prior exact accepted/rejected products are independently retained; changed candidate success does not root historical startup cancellation,1175, unmeasured wire failures, cache timing, Proactor/HTTP10054 or unknown holders. No Source pin/frontend/predicate/timing/skip/new exception change, paid model call, publication or unchanged-candidate retry. Full B1/B2/B3, arbitrary plugin/public ABI, general Node/Intl/WebAssembly/SDK/preset/trust/packaging, uncached preparation and remote Actions remain unaccepted. Win7 is user-deferred and global accepted_upstream stays null."
+}

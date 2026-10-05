@@ -49,8 +49,8 @@
   ],
   "open_findings": [],
   "conflicts_with": [],
-  "candidate_commit": "17c1c521bb6743bcb1bc28942db315a614d4866d",
-  "integrated_commit": "17c1c521bb6743bcb1bc28942db315a614d4866d",
+  "candidate_commit": "b1b2f7971d904cce7047e7b679f9faf658383e85",
+  "integrated_commit": "b1b2f7971d904cce7047e7b679f9faf658383e85",
   "evidence_ids": [
     "RUN-ACP-CONFIG-20261003-ACP-SESSION-CONTROLS-003",
     "RUN-ACP-STDIO-20261003-ACP-SESSION-CONTROLS-003",
@@ -65,7 +65,8 @@
     "RUN-SQLITE-FORMAT-20261005-ACP-SESSION-CONTROLS-003",
     "RUN-SESSION-STORAGE-20261005-ACP-SESSION-CONTROLS-003",
     "RUN-TOOLS-HTTP-20261005-ACP-SESSION-CONTROLS-003",
-    "RUN-JS-WORKFLOW-20261005-ACP-SESSION-CONTROLS-003"
+    "RUN-JS-WORKFLOW-20261005-ACP-SESSION-CONTROLS-003",
+    "RUN-JS-DEATH-20261005-ACP-SESSION-CONTROLS-003"
   ],
-  "next_action": "clean candidate 17c1c521 全量/原版/真实解压复验已通过。new/list/resume/close 持久生命周期的有界合同在 clean candidate 17c1c521 验收；A2 模型配置/语义输出独立合同同时验收；一次性权限独立合同验收；继续 A4 MCP/subagent。父范围与 Win7 不自动完成。"
+  "next_action": "clean candidate b1b2f797 全量/原版/真实解压复验已通过。new/list/resume/close 持久生命周期的有界合同在 clean candidate b1b2f797 验收；A2 模型配置/语义输出独立合同同时验收；一次性权限独立合同验收；继续 A4 MCP/subagent。父范围与 Win7 不自动完成。"
 }

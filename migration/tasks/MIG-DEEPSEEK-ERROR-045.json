@@ -1,0 +1,45 @@
+{
+  "id": "MIG-DEEPSEEK-ERROR-045",
+  "goal": "对齐实际DeepSeek错误完整文本、畸形SSE截断与超时时限",
+  "kind": "implementation",
+  "state": "running",
+  "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
+  "base_product": "afd85f4e4fd0c404ad53fc206348c3a92ebd9165",
+  "owner": "current-session-coordinator",
+  "requires": [
+    {
+      "task": "MIG-CURRENT-RELEASE-GATE-003",
+      "contract": "CON-CURRENT-RELEASE-GATE",
+      "revision": 1
+    }
+  ],
+  "provides": [
+    {
+      "contract": "CON-DEEPSEEK-ERROR",
+      "revision": 1
+    }
+  ],
+  "acceptance": [
+    "Retain24 original baseline rows and eight exact raw prose differences under unchanged ownPortablePython3.8.10; all actual module bytes match exact archive and published directory.",
+    "Fresh Source/native24 complete rows match without filtering; selected/extracted Source/module/interpreter/full-row rejection controls pass.",
+    "A distinct clean complete pytest/unchanged Source/fresh paired/actual extracted ownPython3.8.10/original-browser gate passes before integration."
+  ],
+  "expected_paths": [
+    "dsh/llm/deepseek_wire.py",
+    "dsh/llm/deepseek_request.py",
+    "scripts",
+    "tests",
+    "migration",
+    "docs/research"
+  ],
+  "open_findings": [
+    "Exact frozen afd85f4e ownPortable baseline matches16/24; five malformed-preview and three idle-duration rows differ. Isolated two-module candidate and simplified actual observers match24. Main-tree fresh24 complete rows match;914 related regressions pass in478.02 seconds, and446 unchanged original DeepSeek/retry assertions pass. Distinct clean full/extracted/browser qualification pending.",
+    "Observer prototype preparation initially assumed packaged rg.exe existed at Root. The first simplified Source observer also incorrectly read flattened metadata from exception properties instead of Source failure. Both actual mistakes and corrected observations remain independently retained; neither is a Source bug exception.",
+    "Full retry/profile/cloud/cancellation/malformed graph scope remains open."
+  ],
+  "conflicts_with": [],
+  "candidate_commit": null,
+  "integrated_commit": null,
+  "evidence_ids": [],
+  "next_action": "推广两处Source支撑的诊断修复和24组完整真实HTTP消费者，扩大相关模型/流/重试/门禁回归；分段提交后冻结完整及真实解压验收。"
+}

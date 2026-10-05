@@ -1,0 +1,38 @@
+{
+  "id": "CON-DEEPSEEK-ERROR",
+  "revision": 1,
+  "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
+  "status": "specified",
+  "source_paths": [
+    "reference/packages/llm/llm-deepseek/src/adapter.ts",
+    "reference/packages/llm/llm-deepseek/src/translate.ts",
+    "reference/packages/llm/llm-deepseek/src/sse.ts",
+    "dsh/llm/deepseek_request.py",
+    "dsh/llm/deepseek_wire.py"
+  ],
+  "consumers": [
+    "scripts/deepseek_error_oracle.py",
+    "scripts/oracles/deepseek_error_python.py",
+    "scripts/oracles/deepseek_error.probe.spec.ts",
+    "tests/test_deepseek_error_consumers.py",
+    "scripts/verify_release.py",
+    "scripts/verify_portable.py"
+  ],
+  "invariants": [
+    "24 actual original/native loopback adapter observations compare every captured HTTP request, streamed chunk, extension acceptance and error name/message/failure/code/status/retry-after/request-id value.",
+    "Every field/value is retained without prose filtering or identity mapping. Only semantically identical JSON whole-number token spellings2000/2000.0 share a canonical digest; raw reports remain unchanged. Actual lone surrogates survive JSON serialization.",
+    "Malformed SSE diagnostics contain the first120 UTF16 units of the actual payload, including split/full surrogate controls.",
+    "Idle watchdog diagnostics include configured milliseconds using Source number rendering for integer, whole-float and fractional values.",
+    "Fresh unchanged pinned Source/Node22.22.2, selected/extracted ownPython3.8.10 and actual native imported module bytes are mandatory."
+  ],
+  "identity": "Fixture24 names/order are exact; HTTP authorization/user/session/compaction headers, all body/chunk/error/failure values and extension acceptance are retained. Flattened status/retry-after/request-id are observed from the complete actual failure object on both sides, not extra language exception properties.",
+  "ownership": "Source actual adapter is constructed with controlled public dependency inputs; native actual adapter uses a scoped Context/API-extension registry and owns stream/server cleanup. No product algorithm is copied into the observer.",
+  "ordering": "Each local request completes or aborts before the next fixture; captured partial chunks and acceptance remain visible even when an error follows.",
+  "errors": "Unexpected error classes fail the observer. Complete row mutations, omissions/duplicates and Source/module/interpreter changes reject receipts.",
+  "cancellation": "Caller cancellation and configured per-read idle watchdog use actual adapter paths; arbitrary races/late callbacks/consumer closure remain outside this bounded contract.",
+  "adaptation": "Python SSE preview explicitly slices UTF16 code units and idle configuration interpolates through existing Cordis JS String. Digests use existing lossless JSON snapshot to canonicalize only whole numeric token spellings; comparison retains decoded JSON values without platform traceback/cause-stack or extra language exception-property claims.",
+  "open_questions": [
+    "Retry orchestration/full AgentLoop/profile boot, arbitrary malformed graphs/transport/cancellation schedules, images/files and full B2/B3 remain unqualified.",
+    "Static Source guards are not complete dynamic import closure; wider frozen full-gate inputs are still required. OAuth/cloud/paid API and realWin7 remain separately open."
+  ]
+}

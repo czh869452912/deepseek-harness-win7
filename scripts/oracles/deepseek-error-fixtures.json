@@ -1,0 +1,138 @@
+[
+  {
+    "id": "http-400",
+    "status": 400,
+    "error": {
+      "message": "fixture failure 400"
+    }
+  },
+  {
+    "id": "http-401",
+    "status": 401,
+    "error": {
+      "message": "fixture failure 401"
+    }
+  },
+  {
+    "id": "http-402",
+    "status": 402,
+    "error": {
+      "message": "fixture failure 402"
+    }
+  },
+  {
+    "id": "http-403",
+    "status": 403,
+    "error": {
+      "message": "fixture failure 403"
+    }
+  },
+  {
+    "id": "http-404",
+    "status": 404,
+    "error": {
+      "message": "fixture failure 404"
+    }
+  },
+  {
+    "id": "http-429",
+    "status": 429,
+    "error": {
+      "message": "fixture failure 429"
+    }
+  },
+  {
+    "id": "http-500",
+    "status": 500,
+    "error": {
+      "message": "fixture failure 500"
+    }
+  },
+  {
+    "id": "http-503",
+    "status": 503,
+    "error": {
+      "message": "fixture failure 503"
+    }
+  },
+  {
+    "id": "context-overflow",
+    "status": 400,
+    "error": {
+      "message": "context length exceeded",
+      "code": "context_length_exceeded"
+    }
+  },
+  {
+    "id": "quota-explicit",
+    "status": 429,
+    "error": {
+      "message": "insufficient quota",
+      "code": "insufficient_quota"
+    }
+  },
+  {
+    "id": "rate-header",
+    "status": 429,
+    "error": {
+      "message": "rate limited"
+    },
+    "headers": {
+      "retry-after": "2",
+      "x-request-id": "fixture-id"
+    }
+  },
+  {
+    "id": "empty",
+    "sse": "data: [DONE]\n\n"
+  },
+  {
+    "id": "invalid-data",
+    "sse": "data: {broken}\n\ndata: [DONE]\n\n"
+  },
+  {
+    "id": "truncated",
+    "sse": "data: {\"choices\":[{\"delta\":{\"content\":\"ok\"},\"finish_reason\":\"stop\"}]}\n\n"
+  },
+  {
+    "id": "extension-failure",
+    "extension": "accept-failed"
+  },
+  {
+    "id": "cancel",
+    "behavior": "cancel"
+  },
+  {
+    "id": "idle",
+    "behavior": "idle"
+  },
+  {
+    "id": "invalid-long-ascii",
+    "sse": "data: {aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\n\ndata: [DONE]\n\n"
+  },
+  {
+    "id": "invalid-long-bmp",
+    "sse": "data: {\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\u4e2d\n\ndata: [DONE]\n\n"
+  },
+  {
+    "id": "invalid-split-surrogate",
+    "sse": "data: {aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\ud83d\ude00tail\n\ndata: [DONE]\n\n"
+  },
+  {
+    "id": "invalid-full-surrogate",
+    "sse": "data: {aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\ud83d\ude00tail\n\ndata: [DONE]\n\n"
+  },
+  {
+    "id": "idle-whole-float",
+    "behavior": "idle",
+    "idleTimeoutMs": 150.0
+  },
+  {
+    "id": "idle-fraction",
+    "behavior": "idle",
+    "idleTimeoutMs": 150.5
+  },
+  {
+    "id": "success"
+  }
+]

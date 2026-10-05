@@ -134,7 +134,8 @@ def translate(payloads):
             if not isinstance(chunk, dict):
                 raise ValueError("expected an object")
         except (ValueError, TypeError) as error:
-            raise _error("malformed SSE payload: {}".format(str(error)), "MALFORMED_RESPONSE") from error
+            preview = payload.encode("utf-16-le", "surrogatepass")[:240].decode("utf-16-le", "surrogatepass")
+            raise _error("malformed SSE payload: {}".format(preview), "MALFORMED_RESPONSE") from error
         for choice in chunk.get("choices", []):
             delta = choice.get("delta") or {}
             for field, kind in (("reasoning_content", "reasoning"), ("content", "text")):

@@ -6,6 +6,7 @@ import re
 import time
 
 from dsh.core.abort import AbortController
+from dsh.cordis.utils import js_to_string
 from dsh.core.cancellation import aborted
 from dsh.llm.deepseek_wire import serialize_request
 from dsh.llm.image_content import images, offload, serialize_images
@@ -175,7 +176,7 @@ async def request_stream(adapter, transport, request, options):
                 reader = None
     except Exception as error:
         if state["timeout"]:
-            raise LlmError("DeepSeek stream idle timeout", "TIMEOUT") from error
+            raise LlmError("DeepSeek stream idle timeout after {}ms".format(js_to_string(options["streamIdleTimeoutMs"])), "TIMEOUT") from error
         if aborted(caller):
             raise LlmError("DeepSeek request aborted by caller", "ABORTED") from error
         raise

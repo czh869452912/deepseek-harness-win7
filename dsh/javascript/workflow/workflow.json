@@ -1,0 +1,11 @@
+{
+  "sourceCommit": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
+  "resources": {
+    "source.js": "e93b2b6c3828902aa62b3d7a53b5defe075a7e7dad2ab2db0d3af6ff6eef1660",
+    "driver.js": "c654b2304f2bbd1143b038394b3bf17f099484435ea99bf24d32bad595889e97",
+    "build-provenance.json": "6ed74d3bf41fd6f832195248c3ccf0bfc9efa280659852951dfd3cbd0df32c0b",
+    "SOURCE-LICENSE": "ebb4f09972aee8608be255debaf78451a68e95c290f55c240dec2ecfa16ea6be",
+    "CORDIS-LICENSE": "034fb52b1d57360ecbae6cb1632a88f86fd7c3d3f5631a5f082710203dda0be7",
+    "COSMOKIT-LICENSE": "034fb52b1d57360ecbae6cb1632a88f86fd7c3d3f5631a5f082710203dda0be7"
+  }
+}

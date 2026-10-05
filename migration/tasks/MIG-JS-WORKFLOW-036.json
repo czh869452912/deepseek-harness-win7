@@ -15,10 +15,10 @@
     "Canonical workflow/Ralph/subagent/model/profile consumers and actual extracted Python3.8.10 run the real engine; a new frozen clean complete gate passes before integration."
   ],
   "expected_paths": ["dsh/javascript", "dsh/workflow", "dsh/boot", "scripts", "tests", "migration", "docs/research"],
-  "open_findings": ["Eight raw engine/parse error differences remain in the initial22 actual observations; private process provider alone does not qualify general workflow or C2.", "Child RPC, canonical consumers, original builtin retirement, precise engine-unload ownership and actual extracted qualification remain unfinished."],
+  "open_findings": ["Eight raw engine/parse error differences remain in the initial22 actual observations; private process provider alone does not qualify general workflow or C2.", "Thirty actual Source/private-worker child RPC observations match with unchanged Source algorithms; host SubagentRuntime publication/late-provider/disposal/death ownership, canonical consumers, original builtin retirement, precise engine-unload ownership and actual extracted qualification remain unfinished."],
   "conflicts_with": [],
   "candidate_commit": null,
   "integrated_commit": null,
   "evidence_ids": [],
-  "next_action": "真实双realm私有进程已可挂载，先完成子代理/工作流桥接并调查八项原始差异，再冻结新候选全量及真实解压验收；不签收完整C2或延期Win7。"
+  "next_action": "真实Source-backed worker及30组子代理RPC已接入，下一步完成Python宿主与规范WorkflowEngine/Ralph消费者的发布、取消/死亡和disposal所有权；八项原始差异保持开放，须冻结新候选全量及真实解压验收，不签收完整C2或延期Win7。"
 }

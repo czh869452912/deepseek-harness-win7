@@ -10,8 +10,10 @@ from dsh.cordis.service import Service
 
 
 RESOURCE_ROOT = Path(__file__).resolve().parent / 'bin'
-BINARY_SHA256 = '7bfad5d6b20510e9827f466358080f02bdd4fa8f1a4666d27ae6bece4b091740'
-MANIFEST_SHA256 = '5fc871398defa594c0f94849b04a7b22949325cff18b8d54f903eed5936463b9'
+BINARY_SHA256 = '26609aa1d86b3d4f8509859ad94d79229b40abd9978f4faf0d237c45e88259aa'
+MANIFEST_SHA256 = '234dce43f6963a751b8024b7133a271f0cde12bd96fec215d91ad9404a4967d9'
+WORKFLOW_ROOT = Path(__file__).resolve().parent / 'workflow'
+WORKFLOW_MANIFEST_SHA256 = 'cc42006bfdbfb86cc0e32bc031d86dc35ff06b6c239674594fa42ec1ceaca686'
 
 
 class JavaScriptRuntimeError(RuntimeError):
@@ -55,6 +57,22 @@ def verify_resources():
 
 def encode(value):
     return (json.dumps(value, ensure_ascii=True, allow_nan=False, separators=(',', ':')) + '\n').encode('utf-8')
+
+
+def workflow_bootstrap():
+    if digest(WORKFLOW_ROOT / 'workflow.json') != WORKFLOW_MANIFEST_SHA256:
+        raise JavaScriptRuntimeError('JavaScript workflow manifest bytes differ')
+    manifest = json.loads((WORKFLOW_ROOT / 'workflow.json').read_text(encoding='utf-8'))
+    if manifest.get('sourceCommit') != 'cd5ef8148158c3a752a658978873241fdf8e2bbc':
+        raise JavaScriptRuntimeError('JavaScript workflow Source pin differs')
+    for name, expected in manifest['resources'].items():
+        relative = Path(name)
+        if relative.is_absolute() or '..' in relative.parts or ':' in name:
+            raise JavaScriptRuntimeError('JavaScript workflow resource path differs')
+        if digest(WORKFLOW_ROOT / relative) != expected:
+            raise JavaScriptRuntimeError('JavaScript workflow resource differs: ' + name)
+    return (WORKFLOW_ROOT / 'source.js').read_text(encoding='utf-8') + '\n' + (
+        WORKFLOW_ROOT / 'driver.js').read_text(encoding='utf-8')
 
 
 class JavaScriptRuntime(Service):
@@ -103,7 +121,7 @@ class JavaScriptRuntime(Service):
         except BaseException:
             await asyncio.shield(self._close_spawn(record))
             raise
-        worker = JavaScriptWorker(process, observer, grace_ms)
+        worker = JavaScriptWorker(process, observer, grace_ms, request.get('deferScript') is True)
         self._workers.add(worker)
         self._spawns.pop(spawn, None)
         worker.closed.add_done_callback(lambda _: self._workers.discard(worker))
@@ -114,6 +132,11 @@ class JavaScriptRuntime(Service):
         except BaseException:
             await worker.terminate()
             raise
+
+    async def open_workflow(self, initial, observer=None, grace_ms=5000):
+        request = dict(initial, name='workflow:' + initial['meta']['name'],
+                       deferScript=True, bootstrap=workflow_bootstrap())
+        return await self.open(request, observer, grace_ms)
 
     def _close_spawn(self, record):
         if record['cleanup'] is None:
@@ -129,12 +152,13 @@ class JavaScriptRuntime(Service):
 
 
 class JavaScriptWorker:
-    def __init__(self, process, observer, grace_ms):
+    def __init__(self, process, observer, grace_ms, source_session=False):
         self.process, self.observer, self.grace_ms = process, observer, grace_ms
         loop = asyncio.get_event_loop()
         self.ready, self.result, self.closed = loop.create_future(), loop.create_future(), loop.create_future()
         self._cancel_reason, self._disposal = None, None
         self.failure = None
+        self._source_session, self._termination_requested = source_session, False
         self._writer = asyncio.Lock()
         self._stderr = asyncio.create_task(process.stderr.read())
         self._reader = asyncio.create_task(self._read())
@@ -165,13 +189,18 @@ class JavaScriptWorker:
                         raise JavaScriptRuntimeError('JavaScript worker repeated its startup handshake')
                     self.ready.set_result(None)
                 elif kind == 'terminal':
-                    if terminal or not self.ready.done():
+                    if not self.ready.done() or terminal and not self._source_session:
                         raise JavaScriptRuntimeError('JavaScript worker returned an invalid terminal sequence')
-                    terminal = True
-                    self.result.set_result(message['result'])
+                    if self._source_session and self.observer is not None:
+                        observed = self.observer(message)
+                        if inspect.isawaitable(observed):
+                            await observed
+                    if not terminal:
+                        terminal = True
+                        self.result.set_result(message['result'])
                 elif kind.endswith('-error'):
                     raise JavaScriptRuntimeError(message.get('error', kind))
-                elif terminal or not self.ready.done() or self.observer is None:
+                elif terminal and not self._source_session or not self.ready.done() or self.observer is None:
                     raise JavaScriptRuntimeError('JavaScript worker returned an unexpected message: ' + kind)
                 else:
                     observed = self.observer(message)
@@ -180,7 +209,7 @@ class JavaScriptWorker:
             await self.process.wait()
             if not terminal:
                 raise JavaScriptRuntimeError('JavaScript worker exited without a terminal result')
-            if self.process.returncode != 0:
+            if self.process.returncode != 0 and not self._termination_requested:
                 raise JavaScriptRuntimeError('JavaScript worker exited with code ' + str(self.process.returncode))
         except BaseException as error:
             failure = error
@@ -203,6 +232,7 @@ class JavaScriptWorker:
             await self.send(dict(type='cancel', reason=reason))
 
     async def terminate(self):
+        self._termination_requested = True
         if self.process.returncode is None:
             self.process.kill()
         await asyncio.shield(self.closed)
@@ -216,8 +246,11 @@ class JavaScriptWorker:
                     except (BrokenPipeError, ConnectionResetError, JavaScriptRuntimeError):
                         pass
                 try:
-                    await asyncio.wait_for(asyncio.shield(self.closed), self.grace_ms / 1000)
+                    boundary = self.result if self._source_session else self.closed
+                    await asyncio.wait_for(asyncio.shield(boundary), self.grace_ms / 1000)
                 except asyncio.TimeoutError:
+                    await self.terminate()
+                if self._source_session:
                     await self.terminate()
             self._disposal = asyncio.create_task(dispose())
         return self._disposal

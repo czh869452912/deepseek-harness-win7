@@ -6,6 +6,9 @@ dsh/session/bin/icu/** -text
 dsh/session/bin/zstd/** -text
 dsh/javascript/bin/** -text whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol
 scripts/native/quickjs_worker.c text eol=lf
+scripts/native/workflow/** text eol=lf
+scripts/build_workflow.mjs text eol=lf
+dsh/javascript/workflow/** -text whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol
 dsh/session/resources/sql/** -text
 dsh/session/bin/unicode/** -text
 examples/python-web-echo/** text eol=lf

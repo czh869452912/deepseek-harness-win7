@@ -1,5 +1,5 @@
 
-File: C:\Users\czh86\Documents\Codex\deepseek-harness-win7\.goose\out\acp-a4-work\quickjs-build-v2\dsh_js_worker.exe
+File: C:\Users\czh86\Documents\Codex\deepseek-harness-win7\.goose\out\acp-a4-work\quickjs-build-v4\dsh_js_worker.exe
 Format: COFF-x86-64
 Arch: x86_64
 AddressSize: 64bit
@@ -7,9 +7,9 @@ ImageFileHeader {
   Machine: IMAGE_FILE_MACHINE_AMD64 (0x8664)
   SectionCount: 13
   TimeDateStamp: 1970-01-01 00:00:00 (0x0)
-  PointerToSymbolTable: 0x14BA00
-  SymbolCount: 1957
-  StringTableSize: 34741
+  PointerToSymbolTable: 0x14C800
+  SymbolCount: 1960
+  StringTableSize: 34800
   OptionalHeaderSize: 240
   Characteristics [ (0x22)
     IMAGE_FILE_EXECUTABLE_IMAGE (0x2)
@@ -20,8 +20,8 @@ ImageOptionalHeader {
   Magic: 0x20B
   MajorLinkerVersion: 14
   MinorLinkerVersion: 0
-  SizeOfCode: 929792
-  SizeOfInitializedData: 427520
+  SizeOfCode: 932352
+  SizeOfInitializedData: 428544
   SizeOfUninitializedData: 0
   AddressOfEntryPoint: 0x13A0
   BaseOfCode: 0x1000
@@ -34,7 +34,7 @@ ImageOptionalHeader {
   MinorImageVersion: 0
   MajorSubsystemVersion: 6
   MinorSubsystemVersion: 1
-  SizeOfImage: 1388544
+  SizeOfImage: 1392640
   SizeOfHeaders: 1024
   CheckSum: 0x0
   Subsystem: IMAGE_SUBSYSTEM_WINDOWS_CUI (0x3)
@@ -52,17 +52,17 @@ ImageOptionalHeader {
   DataDirectory {
     ExportTableRVA: 0x0
     ExportTableSize: 0x0
-    ImportTableRVA: 0x103C90
+    ImportTableRVA: 0x104E60
     ImportTableSize: 0x3C
     ResourceTableRVA: 0x0
     ResourceTableSize: 0x0
-    ExceptionTableRVA: 0x10C000
-    ExceptionTableSize: 0x38F4
+    ExceptionTableRVA: 0x10D000
+    ExceptionTableSize: 0x3918
     CertificateTableRVA: 0x0
     CertificateTableSize: 0x0
-    BaseRelocationTableRVA: 0x110000
-    BaseRelocationTableSize: 0xEE4
-    DebugRVA: 0x10A000
+    BaseRelocationTableRVA: 0x111000
+    BaseRelocationTableSize: 0xEE0
+    DebugRVA: 0x10B000
     DebugSize: 0x1C
     ArchitectureRVA: 0x0
     ArchitectureSize: 0x0
@@ -70,11 +70,11 @@ ImageOptionalHeader {
     GlobalPtrSize: 0x0
     TLSTableRVA: 0x0
     TLSTableSize: 0x0
-    LoadConfigTableRVA: 0x103B00
+    LoadConfigTableRVA: 0x104CD0
     LoadConfigTableSize: 0x138
     BoundImportRVA: 0x0
     BoundImportSize: 0x0
-    IATRVA: 0x103F70
+    IATRVA: 0x105140
     IATSize: 0x2A0
     DelayImportDescriptorRVA: 0x0
     DelayImportDescriptorSize: 0x0
@@ -105,8 +105,8 @@ DOSHeader {
 }
 Import {
   Name: msvcrt.dll
-  ImportLookupTableRVA: 0x103CD0
-  ImportAddressTableRVA: 0x103F70
+  ImportLookupTableRVA: 0x104EA0
+  ImportAddressTableRVA: 0x105140
   Symbol: _XcptFilter (0)
   Symbol: ___lc_codepage_func (0)
   Symbol: ___mb_cur_max_func (0)
@@ -168,8 +168,8 @@ Import {
 }
 Import {
   Name: KERNEL32.dll
-  ImportLookupTableRVA: 0x103EA8
-  ImportAddressTableRVA: 0x104148
+  ImportLookupTableRVA: 0x105078
+  ImportAddressTableRVA: 0x105318
   Symbol: DeleteCriticalSection (0)
   Symbol: EnterCriticalSection (0)
   Symbol: GetCPInfo (0)

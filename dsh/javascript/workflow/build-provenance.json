@@ -1,0 +1,582 @@
+{
+  "sourceCommit": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
+  "inputs": {
+    "reference/packages/core/session/src/json.ts": "cbb271dadd2f476a4d19a2b22ac606db6887ed70367b86d6c13ddf1d102d36ba",
+    "reference/packages/core/session/src/types.ts": "7ed2740ccaafab51de43afa31e579fc27e51b1755ffd57da657ce2ceda8c13ed",
+    "reference/packages/core/tools/src/json-schema.ts": "d6d3203900c1d31e6a03b5b56a1de02effa4356ee933d274704c5bdfdb9f8784",
+    "reference/packages/llm/llm/src/error.ts": "d5a46153de9293456b7c998f849b4e3f1a95c3830777aab932cdc5acf036b1b1",
+    "reference/packages/llm/llm/src/never.ts": "58db227354ee8cf5e27e7c8258a35a1f258baad837459a65c5e64d10a9a7cff5",
+    "reference/packages/workflow/workflow-worker-thread/src/protocol.ts": "511f345ea56d8c76791dd8f19a24084d7b039565c2a4a13373efdbcbc6f84a9d",
+    "reference/packages/workflow/workflow-worker-thread/src/realm.ts": "5bbfbbcf80bb3ff4212d53b013b15571a23fa2bccadb97a696d6f01575bd8109",
+    "reference/packages/workflow/workflow-worker-thread/src/runtime.ts": "3ecbd893fc8b776ab6e93a7e5edd99c8ce5d3da255bb9b378242b80131138c78",
+    "reference/packages/workflow/workflow-worker-thread/src/session.ts": "71b351562ddea8bbbdff6fa0057a3d7f5a969a6f34598cc5d3badc24622f0b70",
+    "reference/packages/workflow/workflow/src/index.ts": "a7cf7dc7b367f18a9945883fe259f96ef031aa45a7a4e2c216cfcaa9a64b0685",
+    "reference/packages/workflow/workflow/src/types.ts": "8e2a56e4141886dab23922311053082cdb090068dfadf12b9c5f0003261dc302",
+    "reference/vendor/cordis/src/context.ts": "96b388162d6013c1898de61e35f28917abb93809de24174980f2a1a348d0b115",
+    "reference/vendor/cordis/src/events.ts": "96565a2b5fbf35c26b78cbdc785b2b2e3f01fa55a9fd1f6af5355ab35ccc343c",
+    "reference/vendor/cordis/src/fiber.ts": "750555b47603f88e7ef7a05d1a8d629b355c176a1185af411aac6e3e1e2b7ba3",
+    "reference/vendor/cordis/src/index.ts": "c2232f082c763488225eafcd33530640ad26af0c7d6ea871a4f7e8ebf0eb3704",
+    "reference/vendor/cordis/src/logger.ts": "5121e76fd9f55b9b90dfea09d6e60d122e7530246b8b19970ddebd9c35ccf7d8",
+    "reference/vendor/cordis/src/reflect.ts": "6847b9781044023d65aebb5896a873b9f0a3d777eaf7fa0dd2a7a408eb6b74a6",
+    "reference/vendor/cordis/src/registry.ts": "34bbd60ae502b4f85201c204afb52a9acabde6878d9278493478c1b2183debd3",
+    "reference/vendor/cordis/src/service.ts": "614205c6ce7cf1a057b8b352e96aa4fcd734c967a3d2283a126c9c61f268e3be",
+    "reference/vendor/cordis/src/utils.ts": "8fe273424583d21267ef13f248840e97454d09d836a0ac08323a9482c2069263",
+    "reference/vendor/cosmokit/src/array.ts": "cf4de899ecffd66a90d8cef6f4c7d127d31f77f776d8e173d41c30d2d7632cf7",
+    "reference/vendor/cosmokit/src/index.ts": "51dd173c70001d7d7891d3aab7e26594da65f7cb6671253f6d457ac889326b3c",
+    "reference/vendor/cosmokit/src/misc.ts": "117617943074ea57c15f216905dacd2f6d1c4c2ff16586f97a7a7a87dbf2141f",
+    "reference/vendor/cosmokit/src/string.ts": "5564272b3e15e49235cbe3a8b453f27306baf282d23a893982841670f65d3c04",
+    "reference/vendor/cosmokit/src/time.ts": "49957c4608465a1fbd738186a92c47fffcd1fc4ba59dbf89524f8a773fe16fe2",
+    "reference/vendor/cosmokit/src/types.ts": "09d72a91052105e88500bfb99a8e8ce0c9ebf6f6e7df569053e114bc77aa019c",
+    "scripts/native/workflow/entry.ts": "0c16542c84c439bdf4f6384d9ac4f9c93bea4cf1c37fb32baf2fd1d00aa891ab",
+    "scripts/native/workflow/llm.ts": "25f382cb92a7bca91a6314600ba76f0f08ed3a121f3bf7b9ed58222820ae195e",
+    "scripts/native/workflow/session.ts": "0d3eaf2a0cdc62edab0cc0bc79f5ebe2b5fbf48016bba28b5d31d2b5e292d084",
+    "scripts/native/workflow/vm.js": "3647c4e47e7c7a8e380b1442ad7e44ec3b2566b1e00e798dfb789d3f41fbd064",
+    "scripts/build_workflow.mjs": "dd45eb678569191ca02697121c8686c7e23c87ccf175afbd48098d7695a490e7",
+    "scripts/native/workflow/driver.js": "c654b2304f2bbd1143b038394b3bf17f099484435ea99bf24d32bad595889e97",
+    "reference/tsconfig.base.json": "9094e8dd1e3ad3b9c179ff4651330d25013ce681f7da738b50cdb9d6f4ea5e73",
+    "reference/LICENSE": "ebb4f09972aee8608be255debaf78451a68e95c290f55c240dec2ecfa16ea6be",
+    "reference/vendor/cordis/LICENSE": "034fb52b1d57360ecbae6cb1632a88f86fd7c3d3f5631a5f082710203dda0be7",
+    "reference/vendor/cosmokit/LICENSE": "034fb52b1d57360ecbae6cb1632a88f86fd7c3d3f5631a5f082710203dda0be7"
+  },
+  "buildInputs": {
+    "scripts/oracles/node_modules/esbuild/lib/main.js": "61ec0ba144ff93f4bf0e96ad6fab6f430ede0aa13e27ace8063ed63ba416b3cd",
+    "scripts/oracles/node_modules/@esbuild/win32-x64/esbuild.exe": "c7bee37877d0aa6a046e52783fa0a2cf1a9ce5579d68bb3083bda99d4bff18ef",
+    "scripts/oracles/node_modules/esbuild/package.json": "9d0bc453f4e791553c4cc2298ba023b409241fd9801e494741666eb0f6051490"
+  },
+  "node": "v22.22.2",
+  "esbuild": "0.28.2",
+  "metafile": {
+    "inputs": {
+      "reference/packages/llm/llm/src/error.ts": {
+        "bytes": 7683,
+        "imports": [],
+        "format": "esm"
+      },
+      "reference/packages/llm/llm/src/never.ts": {
+        "bytes": 1253,
+        "imports": [],
+        "format": "esm"
+      },
+      "scripts/native/workflow/llm.ts": {
+        "bytes": 159,
+        "imports": [
+          {
+            "path": "reference/packages/llm/llm/src/error.ts",
+            "kind": "import-statement",
+            "original": "../../../reference/packages/llm/llm/src/error.ts"
+          },
+          {
+            "path": "reference/packages/llm/llm/src/never.ts",
+            "kind": "import-statement",
+            "original": "../../../reference/packages/llm/llm/src/never.ts"
+          }
+        ],
+        "format": "esm"
+      },
+      "reference/packages/workflow/workflow-worker-thread/src/protocol.ts": {
+        "bytes": 4932,
+        "imports": [],
+        "format": "esm"
+      },
+      "reference/packages/workflow/workflow-worker-thread/src/realm.ts": {
+        "bytes": 6670,
+        "imports": [],
+        "format": "esm"
+      },
+      "scripts/native/workflow/vm.js": {
+        "bytes": 392,
+        "imports": [],
+        "format": "esm"
+      },
+      "reference/packages/core/session/src/types.ts": {
+        "bytes": 18259,
+        "imports": [],
+        "format": "esm"
+      },
+      "reference/packages/core/session/src/json.ts": {
+        "bytes": 8120,
+        "imports": [],
+        "format": "esm"
+      },
+      "scripts/native/workflow/session.ts": {
+        "bytes": 165,
+        "imports": [
+          {
+            "path": "reference/packages/core/session/src/types.ts",
+            "kind": "import-statement",
+            "original": "../../../reference/packages/core/session/src/types.ts"
+          },
+          {
+            "path": "reference/packages/core/session/src/json.ts",
+            "kind": "import-statement",
+            "original": "../../../reference/packages/core/session/src/json.ts"
+          }
+        ],
+        "format": "esm"
+      },
+      "reference/packages/core/tools/src/json-schema.ts": {
+        "bytes": 26285,
+        "imports": [
+          {
+            "path": "scripts/native/workflow/llm.ts",
+            "kind": "import-statement",
+            "original": "@deepseek-ai/dsh-llm"
+          },
+          {
+            "path": "scripts/native/workflow/session.ts",
+            "kind": "import-statement",
+            "original": "@deepseek-ai/dsh-session"
+          }
+        ],
+        "format": "esm"
+      },
+      "reference/vendor/cosmokit/src/misc.ts": {
+        "bytes": 3865,
+        "imports": [],
+        "format": "esm"
+      },
+      "reference/vendor/cosmokit/src/array.ts": {
+        "bytes": 1453,
+        "imports": [
+          {
+            "path": "reference/vendor/cosmokit/src/misc.ts",
+            "kind": "import-statement",
+            "original": "./misc.ts"
+          }
+        ],
+        "format": "esm"
+      },
+      "reference/vendor/cosmokit/src/types.ts": {
+        "bytes": 5927,
+        "imports": [
+          {
+            "path": "reference/vendor/cosmokit/src/misc.ts",
+            "kind": "import-statement",
+            "original": "./misc.ts"
+          }
+        ],
+        "format": "esm"
+      },
+      "reference/vendor/cosmokit/src/string.ts": {
+        "bytes": 3928,
+        "imports": [],
+        "format": "esm"
+      },
+      "reference/vendor/cosmokit/src/time.ts": {
+        "bytes": 3054,
+        "imports": [],
+        "format": "esm"
+      },
+      "reference/vendor/cosmokit/src/index.ts": {
+        "bytes": 399,
+        "imports": [
+          {
+            "path": "reference/vendor/cosmokit/src/array.ts",
+            "kind": "import-statement",
+            "original": "./array.ts"
+          },
+          {
+            "path": "reference/vendor/cosmokit/src/types.ts",
+            "kind": "import-statement",
+            "original": "./types.ts"
+          },
+          {
+            "path": "reference/vendor/cosmokit/src/misc.ts",
+            "kind": "import-statement",
+            "original": "./misc.ts"
+          },
+          {
+            "path": "reference/vendor/cosmokit/src/string.ts",
+            "kind": "import-statement",
+            "original": "./string.ts"
+          },
+          {
+            "path": "reference/vendor/cosmokit/src/time.ts",
+            "kind": "import-statement",
+            "original": "./time.ts"
+          }
+        ],
+        "format": "esm"
+      },
+      "reference/vendor/cordis/src/utils.ts": {
+        "bytes": 10236,
+        "imports": [
+          {
+            "path": "reference/vendor/cosmokit/src/index.ts",
+            "kind": "import-statement",
+            "original": "@deepseek-ai/cosmokit"
+          }
+        ],
+        "format": "esm"
+      },
+      "reference/vendor/cordis/src/events.ts": {
+        "bytes": 14949,
+        "imports": [
+          {
+            "path": "reference/vendor/cosmokit/src/index.ts",
+            "kind": "import-statement",
+            "original": "@deepseek-ai/cosmokit"
+          },
+          {
+            "path": "reference/vendor/cordis/src/context.ts",
+            "kind": "import-statement",
+            "original": "./context.ts"
+          },
+          {
+            "path": "./fiber.ts",
+            "kind": "import-statement",
+            "external": true
+          },
+          {
+            "path": "reference/vendor/cordis/src/utils.ts",
+            "kind": "import-statement",
+            "original": "./utils.ts"
+          }
+        ],
+        "format": "esm"
+      },
+      "reference/vendor/cordis/src/logger.ts": {
+        "bytes": 8638,
+        "imports": [
+          {
+            "path": "reference/vendor/cosmokit/src/index.ts",
+            "kind": "import-statement",
+            "original": "@deepseek-ai/cosmokit"
+          },
+          {
+            "path": "./context.ts",
+            "kind": "import-statement",
+            "external": true
+          },
+          {
+            "path": "./fiber.ts",
+            "kind": "import-statement",
+            "external": true
+          },
+          {
+            "path": "reference/vendor/cordis/src/utils.ts",
+            "kind": "import-statement",
+            "original": "./utils.ts"
+          }
+        ],
+        "format": "esm"
+      },
+      "reference/vendor/cordis/src/fiber.ts": {
+        "bytes": 24981,
+        "imports": [
+          {
+            "path": "reference/vendor/cosmokit/src/index.ts",
+            "kind": "import-statement",
+            "original": "@deepseek-ai/cosmokit"
+          },
+          {
+            "path": "reference/vendor/cordis/src/context.ts",
+            "kind": "import-statement",
+            "original": "./context.ts"
+          },
+          {
+            "path": "reference/vendor/cordis/src/utils.ts",
+            "kind": "import-statement",
+            "original": "./utils.ts"
+          }
+        ],
+        "format": "esm"
+      },
+      "reference/vendor/cordis/src/reflect.ts": {
+        "bytes": 15434,
+        "imports": [
+          {
+            "path": "reference/vendor/cosmokit/src/index.ts",
+            "kind": "import-statement",
+            "original": "@deepseek-ai/cosmokit"
+          },
+          {
+            "path": "./context.ts",
+            "kind": "import-statement",
+            "external": true
+          },
+          {
+            "path": "reference/vendor/cordis/src/utils.ts",
+            "kind": "import-statement",
+            "original": "./utils.ts"
+          },
+          {
+            "path": "reference/vendor/cordis/src/fiber.ts",
+            "kind": "import-statement",
+            "original": "./fiber.ts"
+          }
+        ],
+        "format": "esm"
+      },
+      "reference/vendor/cordis/src/registry.ts": {
+        "bytes": 11753,
+        "imports": [
+          {
+            "path": "reference/vendor/cosmokit/src/index.ts",
+            "kind": "import-statement",
+            "original": "@deepseek-ai/cosmokit"
+          },
+          {
+            "path": "./context.ts",
+            "kind": "import-statement",
+            "external": true
+          },
+          {
+            "path": "reference/vendor/cordis/src/fiber.ts",
+            "kind": "import-statement",
+            "original": "./fiber.ts"
+          },
+          {
+            "path": "reference/vendor/cordis/src/utils.ts",
+            "kind": "import-statement",
+            "original": "./utils.ts"
+          }
+        ],
+        "format": "esm"
+      },
+      "reference/vendor/cordis/src/context.ts": {
+        "bytes": 6153,
+        "imports": [
+          {
+            "path": "reference/vendor/cordis/src/events.ts",
+            "kind": "import-statement",
+            "original": "./events.ts"
+          },
+          {
+            "path": "reference/vendor/cordis/src/logger.ts",
+            "kind": "import-statement",
+            "original": "./logger.ts"
+          },
+          {
+            "path": "reference/vendor/cordis/src/reflect.ts",
+            "kind": "import-statement",
+            "original": "./reflect.ts"
+          },
+          {
+            "path": "reference/vendor/cordis/src/registry.ts",
+            "kind": "import-statement",
+            "original": "./registry.ts"
+          },
+          {
+            "path": "reference/vendor/cordis/src/utils.ts",
+            "kind": "import-statement",
+            "original": "./utils.ts"
+          },
+          {
+            "path": "reference/vendor/cordis/src/fiber.ts",
+            "kind": "import-statement",
+            "original": "./fiber.ts"
+          }
+        ],
+        "format": "esm"
+      },
+      "reference/vendor/cordis/src/service.ts": {
+        "bytes": 4263,
+        "imports": [
+          {
+            "path": "reference/vendor/cosmokit/src/index.ts",
+            "kind": "import-statement",
+            "original": "@deepseek-ai/cosmokit"
+          },
+          {
+            "path": "reference/vendor/cordis/src/context.ts",
+            "kind": "import-statement",
+            "original": "./context.ts"
+          },
+          {
+            "path": "reference/vendor/cordis/src/utils.ts",
+            "kind": "import-statement",
+            "original": "./utils.ts"
+          }
+        ],
+        "format": "esm"
+      },
+      "reference/vendor/cordis/src/index.ts": {
+        "bytes": 679,
+        "imports": [
+          {
+            "path": "reference/vendor/cordis/src/context.ts",
+            "kind": "import-statement",
+            "original": "./context.ts"
+          },
+          {
+            "path": "reference/vendor/cordis/src/events.ts",
+            "kind": "import-statement",
+            "original": "./events.ts"
+          },
+          {
+            "path": "reference/vendor/cordis/src/fiber.ts",
+            "kind": "import-statement",
+            "original": "./fiber.ts"
+          },
+          {
+            "path": "reference/vendor/cordis/src/logger.ts",
+            "kind": "import-statement",
+            "original": "./logger.ts"
+          },
+          {
+            "path": "reference/vendor/cordis/src/registry.ts",
+            "kind": "import-statement",
+            "original": "./registry.ts"
+          },
+          {
+            "path": "reference/vendor/cordis/src/service.ts",
+            "kind": "import-statement",
+            "original": "./service.ts"
+          },
+          {
+            "path": "reference/vendor/cordis/src/utils.ts",
+            "kind": "import-statement",
+            "original": "./utils.ts"
+          }
+        ],
+        "format": "esm"
+      },
+      "reference/packages/workflow/workflow/src/types.ts": {
+        "bytes": 5260,
+        "imports": [],
+        "format": "esm"
+      },
+      "reference/packages/workflow/workflow/src/index.ts": {
+        "bytes": 7507,
+        "imports": [
+          {
+            "path": "reference/vendor/cordis/src/index.ts",
+            "kind": "import-statement",
+            "original": "@deepseek-ai/cordis"
+          },
+          {
+            "path": "scripts/native/workflow/llm.ts",
+            "kind": "import-statement",
+            "original": "@deepseek-ai/dsh-llm"
+          },
+          {
+            "path": "reference/packages/workflow/workflow/src/types.ts",
+            "kind": "import-statement",
+            "original": "./types.ts"
+          }
+        ],
+        "format": "esm"
+      },
+      "reference/packages/workflow/workflow-worker-thread/src/runtime.ts": {
+        "bytes": 22039,
+        "imports": [
+          {
+            "path": "scripts/native/workflow/vm.js",
+            "kind": "import-statement",
+            "original": "node:vm"
+          },
+          {
+            "path": "scripts/native/workflow/session.ts",
+            "kind": "import-statement",
+            "original": "@deepseek-ai/dsh-session"
+          },
+          {
+            "path": "reference/packages/core/tools/src/json-schema.ts",
+            "kind": "import-statement",
+            "original": "@deepseek-ai/dsh-tools"
+          },
+          {
+            "path": "reference/packages/workflow/workflow/src/index.ts",
+            "kind": "import-statement",
+            "original": "@deepseek-ai/dsh-workflow"
+          },
+          {
+            "path": "reference/packages/workflow/workflow-worker-thread/src/realm.ts",
+            "kind": "import-statement",
+            "original": "./realm.ts"
+          }
+        ],
+        "format": "esm"
+      },
+      "reference/packages/workflow/workflow-worker-thread/src/session.ts": {
+        "bytes": 8099,
+        "imports": [
+          {
+            "path": "scripts/native/workflow/llm.ts",
+            "kind": "import-statement",
+            "original": "@deepseek-ai/dsh-llm"
+          },
+          {
+            "path": "reference/packages/workflow/workflow-worker-thread/src/protocol.ts",
+            "kind": "import-statement",
+            "original": "./protocol.ts"
+          },
+          {
+            "path": "reference/packages/workflow/workflow-worker-thread/src/realm.ts",
+            "kind": "import-statement",
+            "original": "./realm.ts"
+          },
+          {
+            "path": "reference/packages/workflow/workflow-worker-thread/src/runtime.ts",
+            "kind": "import-statement",
+            "original": "./runtime.ts"
+          }
+        ],
+        "format": "esm"
+      },
+      "scripts/native/workflow/entry.ts": {
+        "bytes": 110,
+        "imports": [
+          {
+            "path": "reference/packages/workflow/workflow-worker-thread/src/session.ts",
+            "kind": "import-statement",
+            "original": "../../../reference/packages/workflow/workflow-worker-thread/src/session.ts"
+          }
+        ],
+        "format": "esm"
+      }
+    },
+    "outputs": {
+      "entry.js": {
+        "imports": [],
+        "exports": [],
+        "entryPoint": "scripts/native/workflow/entry.ts",
+        "inputs": {
+          "scripts/native/workflow/entry.ts": {
+            "bytesInOutput": 105
+          },
+          "reference/packages/llm/llm/src/error.ts": {
+            "bytesInOutput": 1050
+          },
+          "scripts/native/workflow/llm.ts": {
+            "bytesInOutput": 0
+          },
+          "reference/packages/llm/llm/src/never.ts": {
+            "bytesInOutput": 197
+          },
+          "reference/packages/workflow/workflow-worker-thread/src/realm.ts": {
+            "bytesInOutput": 3673
+          },
+          "scripts/native/workflow/vm.js": {
+            "bytesInOutput": 415
+          },
+          "reference/packages/core/session/src/types.ts": {
+            "bytesInOutput": 46
+          },
+          "scripts/native/workflow/session.ts": {
+            "bytesInOutput": 0
+          },
+          "reference/packages/core/session/src/json.ts": {
+            "bytesInOutput": 4867
+          },
+          "reference/packages/core/tools/src/json-schema.ts": {
+            "bytesInOutput": 10839
+          },
+          "reference/packages/workflow/workflow/src/index.ts": {
+            "bytesInOutput": 419
+          },
+          "reference/packages/workflow/workflow-worker-thread/src/runtime.ts": {
+            "bytesInOutput": 15150
+          },
+          "reference/packages/workflow/workflow-worker-thread/src/session.ts": {
+            "bytesInOutput": 4350
+          }
+        },
+        "bytes": 42613
+      }
+    }
+  },
+  "nodeBinarySha256": "ae1a50511be58e987483fdbc12125407443926d2d394669ade2352776e920dd3",
+  "scope": "Unchanged pinned workflow session/runtime/realm/schema algorithms; owned vm/port substrate. Full Node APIs and engine-specific error stacks remain unqualified."
+}

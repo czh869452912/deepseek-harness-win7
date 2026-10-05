@@ -1,5 +1,7 @@
 # 持续对齐记录
 
+2026-10-06 完整请求候选 `afd85f4e` 被门禁拒绝：7678 passed、1真实Git路径失败、6既有skip、1既有warning，1978.05秒；精确Portable/输入/XML/失败fixture已独立归档。输出标签扩大pytest执行路径触发 `$GIT_DIR too big`；相同长度复现失败，短路径通过。门禁改用自有短执行目录并保存原路径→归档路径映射，87项相关回归通过；现1234必需lane/64配对/十八组1237原样断言，新完整验收待执行。044保持running，最新签收仍7f9e87e4/53有界范围。下一部分DeepSeek错误24观察有8真实差异、隔离匹配24，446原样Source断言通过，尚未推广签收；见 `docs/research/2026-10-06-release-pytest-path-progress.md`。九项判据、整体与延期Win7不变。
+
 2026-10-06 最新干净门禁：产品 `7f9e87e4` 全量7615 passed、6既有 skips、1既有 Proactor warning、0 failed；1167必需lane、十八组1237原样Source断言、63实际配对及真实解压自有Python3.8.10/原版浏览器全部通过。040入口/初始管道退出、041修订2数值/冻结发布/可变克隆、042精确准入错误和043恢复数值符号已有界 integrated；53份单独回执及精确产物归档，4a127b73失败仍独立保留。见 `reviews/SESSION-BOUNDARIES-GATE-20261006.md`。下一部分已复现完整模型请求中的tool_calls/max_tokens/reasoning_effort旧别名，隔离16观察匹配但未进入本签收。父Session/JS036/完整B/C/D、accepted_upstream与延期Win7仍开放；九项原版缺陷判据/C58/C59不变。
 
 2026-10-06 待冻结的新产品部分：副本修复ddc45529、精确准入错误b76d42f5已分别提交；恢复数值符号修复的18 Source观察匹配，扩大1457项回归通过。当前1167必需lane、63配对和十八组1237原样Source断言，040至043须共同通过不同干净候选全量/实际解压/原版浏览器后才签收；最新完整签收仍为47adea37。精确4a127b73的克隆两项、诊断30项、恢复符号四项差异均由其未修改Portable重新解压复现，旧失败不改写。见三个2026-10-06 Session进展记录；父Session/JS036/完整B/C/D及延期Win7保持开放。

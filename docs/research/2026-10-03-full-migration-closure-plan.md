@@ -37,6 +37,8 @@
 
 ## 当前执行项
 
+2026-10-06 候选afd85f4e完整门禁7678通过/1失败/6既有skip/1既有warning，1978.05秒；真实共享checkpoint Git因输出路径长度报 `$GIT_DIR too big`。精确拒绝产物和输入已保留；改用自有短执行路径及归档映射，87相关回归通过，门禁为1234必需lane/64配对/十八组1237原样断言。044仍running，最新签收仍7f9e87e4。下一独立部分推广DeepSeek畸形SSE/超时诊断：24实际Source/native观察有8差异，隔离两模块匹配24；另446原样DeepSeek/retry断言通过。分别提交后由新的完整/真实解压/浏览器候选共同验收，继续七个父范围和八项JS原始差异；不降低判据或恢复延期Win7。
+
 2026-10-06 最新签收为干净 `7f9e87e4`：7615 passed、6既有skip、1既有warning、1167必需lane、十八组1237原样断言、63双侧观察与真实解压/原版浏览器全部通过。040至043四个限定范围连同49旧范围重验，共53份单独回执；4a127b73冻结副本失败和精确Portable仍保留。JS036与父Session保持开放，详见SESSION-BOUNDARIES-GATE-20261006 review。后续完整请求研究复现16组均有旧消息/配置别名残留；隔离移除tool_calls/max_tokens/reasoning_effort后完整行匹配，Python固定参数调用在边界保留适配。下一实施044推广并验证真实模型/工具/下一请求/冷恢复消费者，之后继续malformed/plugin ABI、canonical profile全链、完整B/C/D。九项判据/C58/C59不变，无付费调用/推送/公开发布；Win7仍按既有决定延期。
 
 036的后续物理退出分类已修复：干净产品 `b1b2f797` 全量7087通过、6既有skip、1既有warning，639必需lane、十八组1237原样断言、56配对和真实解压/原版浏览器全部通过。34组实际Source/native/extracted宿主完整观察验证发布前后、Result后和取消后的物理退出及共享清理；46既有合同重验，036只记录部分verification并保持running。下一实施执行真实AgentLoop/spawn的普通→结构化两阶段与null失败主链，再补ready前竞争和清理重入；八项原始差异和完整C2/B/C/D仍开放。见 `2026-10-05-js-worker-death-progress.md` 与 `migration/reviews/JS-WORKER-DEATH-GATE-20261005.md`。

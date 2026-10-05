@@ -1,5 +1,7 @@
 # 完整AgentLoop模型请求
 
+后续冻结候选afd85f4e被完整门禁拒绝：7678通过、1共享checkpoint Git路径失败、6既有skip、1既有warning，1978.05秒。真实复现 `$GIT_DIR too big`，不是完整请求字段断言失败；Source/paired/extracted独立阶段未获准执行，044不签收。精确产物/输入/XML/失败fixture归档于RUNTIME-FULL-REQUEST-REJECTED-20261006-afd85f4e.zip；短执行路径及保存映射的门禁修复通过87相关回归，现1234必需lane。见2026-10-06-release-pytest-path-progress；最新签收仍7f9e87e4。
+
 当前最新完整签收7f9e87e4验证040至043，保留16组后续研究差异：完整模型请求中的助手消息包含Source没有的tool_calls；设置maxTokens/reasoningEffort时又携带max_tokens/reasoning_effort旧别名。037只验证具名runtime-context消息及持久快照，不能据其通过宣称其余请求字段已对齐。基线及原始Source/native/隔离fix保留于.goose/out/acp-a4-work/runtime-full-request-*，已收入上一签收证据档案但明确未签收该研究范围。
 
 实际Source AgentLoop和canonical native LlmRuntime/LLMService执行change/clear/same/empty各四种配置（base/max-tokens/reasoning/both），共16组，比较两次完整GenerateOptions和全部持久上下文消息。仅将不透明message id作全行相关双射；tool/call id与所有其他字段/值保留，未按有利子集过滤。signal观察实际AbortSignal实例、aborted和与首请求同一实例的谓词，不以空JSON对象假定信号正确，也不扩张为完整取消/重入ABI。

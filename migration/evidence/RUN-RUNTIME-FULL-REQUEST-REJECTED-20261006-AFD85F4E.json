@@ -1,0 +1,222 @@
+{
+  "id": "RUN-RUNTIME-FULL-REQUEST-REJECTED-20261006-AFD85F4E",
+  "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
+  "product_commit": "afd85f4e4fd0c404ad53fc206348c3a92ebd9165",
+  "kind": "verification",
+  "task_id": "MIG-RUNTIME-FULL-REQUEST-044",
+  "acceptance_digest": "eb4bbe905cd2cebf7f60b70da1a6bd69ef0465ec3ac8639d6c134f41816239e8",
+  "result": "failed",
+  "validity": "current",
+  "exit_code": 1,
+  "commands": [
+    ".venv/Scripts/python.exe scripts/verify_release.py --browser \"C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe\" --output-dir .goose/out/runtime-full-request-clean-afd85f4e"
+  ],
+  "environment": {
+    "python": "3.8.10 (default, May  6 2021, 17:27:56) [MSC v.1928 64 bit (AMD64)]",
+    "os": "Windows-10-10.0.26200-SP0",
+    "cwd": "C:\\Users\\czh86\\Documents\\Codex\\deepseek-harness-win7",
+    "node": "v22.22.2"
+  },
+  "contract_revisions": {
+    "CON-RUNTIME-FULL-REQUEST": 1,
+    "CON-CURRENT-RELEASE-GATE": 1,
+    "CON-RUNTIME-CONTEXT-CONSUMER": 1
+  },
+  "inputs": [
+    {
+      "path": "dsh/core/__init__.py",
+      "sha256": "cac353cc3fbc26ecb6bd1547c91189edfadfb3373aa41340bcfd691369942cb9"
+    },
+    {
+      "path": "dsh/core/abort.py",
+      "sha256": "cb6f979fb2cb3d1fe92283297da4c23aa6e97192201ec8a34b584776ebc74f1c"
+    },
+    {
+      "path": "dsh/core/agent.py",
+      "sha256": "f5ec013125b7e620d10a800606ca57bd68171ce8d4291de4e4c35eff08c13de7"
+    },
+    {
+      "path": "dsh/core/agent_default_model.py",
+      "sha256": "40b1e40670a26c972697f11d84675b3263dd6a860da5a7971c69fc515f1ab9f1"
+    },
+    {
+      "path": "dsh/core/agent_default_model_invariant.py",
+      "sha256": "24939b6f6e7e99380541718cf57193f0b11c67e867963d9c38e2abd110e854ca"
+    },
+    {
+      "path": "dsh/core/agent_factory.py",
+      "sha256": "dbaf5e4c5b91e5c2e0f7211477d23a72b10f8db1f3a30306deab25959aca5573"
+    },
+    {
+      "path": "dsh/core/agent_loop.py",
+      "sha256": "8ef6fc020d612d2f4cd6390e539f9f021fd5d32758b2b6e6da3decfd4a721ecb"
+    },
+    {
+      "path": "dsh/core/agent_loop_settings.py",
+      "sha256": "7fef390997b4e6596fbe7044b3df94fc502e7f36f50c8e9972a58b37da0a603d"
+    },
+    {
+      "path": "dsh/core/agent_tool_presentation.py",
+      "sha256": "ef2ba2956038f90adb6b34fc204d637c6595f90c52e472b83ab046c6078d6c18"
+    },
+    {
+      "path": "dsh/core/cancellation.py",
+      "sha256": "68258bef0db7f425e0de6cc401088ff9cb98cf94eed735ba51c947859e93e66c"
+    },
+    {
+      "path": "dsh/core/configured_agents.py",
+      "sha256": "585ae73e428da55faf3c82ccccfe14d8b8a0727d07fc566d21892fb755941424"
+    },
+    {
+      "path": "dsh/core/consumed_work.py",
+      "sha256": "c2127c5dd09a9184bf380bd4b598e65d11c7fc9c520f1b59b775db01fc40c1e9"
+    },
+    {
+      "path": "dsh/core/inbox.py",
+      "sha256": "cb6ad4f23a1689637270ea18da6bbf6e07472a16a5232b5ce790824d0aea629f"
+    },
+    {
+      "path": "dsh/core/json_schema.py",
+      "sha256": "087ae5e73f1d51a87a098e18677ac5a1cbcb92ffb0252484f6c6a383084a84f0"
+    },
+    {
+      "path": "dsh/core/model_selection.py",
+      "sha256": "2543b5d07a894e196a4b492cd14ab0d917e8c53d6af2beb74152b898995b7b54"
+    },
+    {
+      "path": "dsh/core/notifications.py",
+      "sha256": "a95fabe28e7da7de4971147d5597bfcf72136f179a7ea0bce6db4ba1ba19617b"
+    },
+    {
+      "path": "dsh/core/persona.py",
+      "sha256": "bf1079327234adcf554bafaad276a7e4ca6b19c8e792a6506c633a4de103bb43"
+    },
+    {
+      "path": "dsh/core/runtime_context.py",
+      "sha256": "1ae9f545ae20aa24b50090c001383af02152ae793e356d25db469572f3946d54"
+    },
+    {
+      "path": "dsh/core/scope.py",
+      "sha256": "8bd72f48b3966c3ee294ed193899f36ade92b0fa336f8586c093ca3230216ef9"
+    },
+    {
+      "path": "dsh/core/session/__init__.py",
+      "sha256": "de6c0ff802f648157221a7802adbd5120ae4f4e02a3248a3831717e781b0bbe7"
+    },
+    {
+      "path": "dsh/core/session/chunk_rows.py",
+      "sha256": "abee181632b6e9f6df67ebffd1a8aed8af8e2f6ac7ea9990430472a5a40638a7"
+    },
+    {
+      "path": "dsh/core/session/invariant.py",
+      "sha256": "a8e032b80c79cfa60ca58a7e049d09729c6844c76693534ae84c617bd628814b"
+    },
+    {
+      "path": "dsh/core/session/json.py",
+      "sha256": "30317e97a76226347a4cc051a11cfa9500135126ee7a9c438e250c7919d52462"
+    },
+    {
+      "path": "dsh/core/session/known_event_types.py",
+      "sha256": "42d1f8250272191869eb33033082da2e07b86e78c7247c812c9579ef4f32718e"
+    },
+    {
+      "path": "dsh/core/session/preparation.py",
+      "sha256": "d95ca75eba1641f0a02f760c8ede4ee4b1ef936f8ed6c4311d7126e5dbf7966a"
+    },
+    {
+      "path": "dsh/core/session/repair.py",
+      "sha256": "317f9e521d729d69d7a48e015cddc14eb543769e3621b8ebb03a603a54804c4d"
+    },
+    {
+      "path": "dsh/core/session/request_header.py",
+      "sha256": "57a4c90348c0b2f4892c60e3ec07701b52027e6f3856299ce0343c833310325d"
+    },
+    {
+      "path": "dsh/core/session/seq_ranges.py",
+      "sha256": "2dfb0787b5feababe09309b9e58870ab4b22cb58e5d1a4b9c50d09804bb44310"
+    },
+    {
+      "path": "dsh/core/session/session.py",
+      "sha256": "5de1e18fe524b40922fb546881ec58a93467cbc105ca54c3ac2d3fe62091ae53"
+    },
+    {
+      "path": "dsh/core/session/surface.py",
+      "sha256": "9ac9b784a4e8b3859f64ddafbf6e6e88d45dd0776c6b41d3b6dbfbcc6c5c461f"
+    },
+    {
+      "path": "dsh/core/session/types.py",
+      "sha256": "3414678825389c86f2dda75f2a531362cefbb3606c8039545798f5bcaa28cc9d"
+    },
+    {
+      "path": "dsh/core/surface.py",
+      "sha256": "37ddc5915a1586dcf91acc89b67f546571797406af409aea7d1db3e999830a59"
+    },
+    {
+      "path": "dsh/core/system_prompt.py",
+      "sha256": "a4a1840afa4fe563582815a266d895d0a98baa9f1dfc4e40f6702db27565f832"
+    },
+    {
+      "path": "dsh/core/system_prompt/__init__.py",
+      "sha256": "a56e0e391d67e7684bbea887a6edab5d2227112040d82d01262b8e226eb7b14a"
+    },
+    {
+      "path": "dsh/core/system_prompt/invariant.py",
+      "sha256": "239cda63e363f6f460a6a00ad381c5d74c572c16e718421db6824f45f65cf70d"
+    },
+    {
+      "path": "dsh/core/system_prompt/layer.py",
+      "sha256": "18d88da39f203731337bd4efec2531a4447aead734ad714678b00d61b722d3d7"
+    },
+    {
+      "path": "dsh/core/system_prompt/service.py",
+      "sha256": "df9f64b2107c799826ac95527ffbd363304dd3b0d76f9739e8f331a466c039aa"
+    },
+    {
+      "path": "dsh/core/system_prompt/types.py",
+      "sha256": "4f673f14e8fbccd6f4d12a6445fd6acac137fa2793d08f79ba8e9dbbd1fb0bb8"
+    },
+    {
+      "path": "dsh/core/timeout.py",
+      "sha256": "2bd08a19b0c3e8291f72d79ad4e50d8d50bada59bff3a76425fc52f7fa2faa64"
+    },
+    {
+      "path": "dsh/core/tool_calls.py",
+      "sha256": "a8f129fe9c23b6c79a7e4607c288cbf4a54e75ad5af7c045902c87b5609b163b"
+    },
+    {
+      "path": "dsh/core/tools.py",
+      "sha256": "755013fdeb508604e87e64504db3cedc215d5699b034fd36c2a63f950070b65f"
+    },
+    {
+      "path": "scripts/oracles/runtime_full_request.probe.spec.ts",
+      "sha256": "3cd28fa01c27e54f1592a96f7e384be5f398cdd5b6fd803d9b166d07e5cb2632"
+    },
+    {
+      "path": "scripts/oracles/runtime_full_request_python.py",
+      "sha256": "4e4b88e4162be720e3907aec9e09f3ac345ccbaf4d877ddc1deadd7e135fbe01"
+    },
+    {
+      "path": "scripts/runtime_full_request_oracle.py",
+      "sha256": "c2806dff2d75808bddd87bbe29baf330728e6089821913c9af3a58c1a20d9218"
+    },
+    {
+      "path": "scripts/verify_portable.py",
+      "sha256": "3018c0fecf08d5ff759da8286aa7aad7acba7efd50b502a7c70ecedaca9f8570"
+    },
+    {
+      "path": "scripts/verify_release.py",
+      "sha256": "721fe4fc32d0ac65a17ab0c16540fa407ec99b3bee83793adddc5dc549f7bfcb"
+    },
+    {
+      "path": "tests/test_runtime_full_request_consumers.py",
+      "sha256": "540f820e5e108cdf31da10332b1172506f4a670511fa90424376479313bdb465"
+    }
+  ],
+  "artifacts": [
+    {
+      "path": "migration/evidence/artifacts/RUNTIME-FULL-REQUEST-REJECTED-20261006-afd85f4e.zip",
+      "sha256": "7cf3f1b14b3235c4c85ab3cec0c5ac53abc8f87f2fc37df52874e00d8fa2558e"
+    }
+  ],
+  "scope": "Frozen clean afd85f4e complete pytest7678 passed/one failed/six existing skips/one existing Proactor warning in1978.05 seconds. Only failure is actual shared-checkpoint Git worktree admission: $GIT_DIR too big under the descriptive output-root pytest path. Exact same-length targeted reproduction also fails; shortening execution path passes. First targeted reproduction omitted its parent and failed at setup; corrected raw outputs remain retained. Complete standalone Source/paired/extracted phases were not admitted. Full-request16/focused929 evidence stays partial; no acceptance or unchanged-candidate retry. ExactPortable78b8476d, inputs a978c964 and rejected archive are independently retained before Root mutation. Latest accepted product remains7f9e87e4; all nine Source exceptions/C58/C59/frontend/pin and deferredWin7 remain unchanged."
+}

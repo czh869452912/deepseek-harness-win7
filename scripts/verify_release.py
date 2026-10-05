@@ -12,6 +12,7 @@ import re
 import shutil
 import subprocess
 import sys
+import tempfile
 import xml.etree.ElementTree as ET
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -69,6 +70,11 @@ PAIRED_DRIVERS = PAIRED_DRIVERS + ('javascript_initial', 'session_number', 'sess
 PAIRED_DRIVERS = PAIRED_DRIVERS + ('runtime_full_request',)
 OFFICIAL_CONFIGS = ('consumers', 'agent-lifecycle', 'session-recovery', 'session-projection', 'acp', 'acp-app', 'mcp', 'subagent-acp', 'storage-cache', 'session-observation', 'session-corpus', 'session-sqlite-query', 'query-engine-source', 'session-tools-source', 'sqlite-format-source', 'sqlite-provider-source', 'jsonl-provider-source', 'tool-scheduler-source')
 REQUIRED_REGRESSION = {
+    'test_release_workspace': {
+        'test_short_pytest_workspace_retains_owned_success_and_failure_artifacts[passed]',
+        'test_short_pytest_workspace_retains_owned_success_and_failure_artifacts[failed]',
+        'test_short_pytest_workspace_runs_actual_shared_checkpoint_git_consumer',
+    },
     'test_runtime_full_request_consumers': {
         *{'test_actual_complete_agent_model_requests_match_source[' + name + ']' for name in FULL_REQUEST_NAMES},
         *{'test_full_request_receipt_requires_complete_graph_and_runtime[' + damage + ']' for damage in (
@@ -1172,6 +1178,26 @@ def validate_extracted(path, archive, candidate):
     return report
 
 
+def run_python_regression(python, output, environment):
+    retained = (output / 'pytest-workspace').resolve()
+    retained.relative_to(output.resolve())
+    if retained.exists():
+        raise RuntimeError('Fresh retained pytest workspace required')
+    parent = (ROOT / '.goose/out').resolve()
+    parent.mkdir(parents=True, exist_ok=True)
+    workspace = Path(tempfile.mkdtemp(prefix='g-', dir=str(parent))).resolve()
+    workspace.relative_to(parent)
+    (output / 'pytest-workspace-mapping.json').write_text(json.dumps(dict(
+        execution_path=str(workspace), retained_path=str(retained),
+        scope='Fresh owned short Windows execution path is independent of the output label. Artifacts move to the retained path after pytest, including failure/timeout; raw observations retain execution paths.'), indent=2) + '\n', encoding='utf-8')
+    try:
+        run([python, '-m', 'pytest', 'tests', '-ra', '--junitxml=' + str(output / 'pytest.xml'),
+            '--basetemp=' + str(workspace)], 'pytest', output, env=environment, timeout=2400)
+    finally:
+        if workspace.exists():
+            workspace.rename(retained)
+
+
 def verify(args, output):
     if sys.platform != 'win32' or sys.version_info[:3] != (3, 8, 10):
         raise RuntimeError('run this gate with Windows Python 3.8.10')
@@ -1206,9 +1232,7 @@ def verify(args, output):
          'scripts/oracles/official/node_modules/@vscode/ripgrep-win32-x64/bin/rg.exe'],
         'portable-build', output, env=environment)
     regression = output / 'pytest.xml'
-    run([python, '-m', 'pytest', 'tests', '-ra', '--junitxml=' + str(regression),
-         '--basetemp=' + str(output / 'pytest-workspace')],
-        'pytest', output, env=environment, timeout=2400)
+    run_python_regression(python, output, environment)
     regression_result = validate_regression(regression)
     for config in OFFICIAL_CONFIGS:
         run(['node', '--expose-internals', 'scripts/oracles/official/node_modules/vitest/vitest.mjs',

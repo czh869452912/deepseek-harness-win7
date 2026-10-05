@@ -1,0 +1,22 @@
+{
+  "id": "CON-UPSTREAM-DELTA",
+  "revision": 1,
+  "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
+  "status": "specified",
+  "source_paths": ["migration/modules.json", "scripts/migration_inventory.py", "scripts/upstream_delta.py", "reference/package.json"],
+  "consumers": ["tests/test_upstream_delta.py", "migration/tasks/MIG-UPSTREAM-DELTA-002.json"],
+  "invariants": [
+    "Observe explicit existing base/target commit references without checkout, fetch, source/index write, upstream pin change or task state transition; require the unchanged clean pinned Source checkout.",
+    "NUL-delimited Git name-status preserves Unicode/whitespace paths and both rename/copy owners; invalid or incomplete streams fail closed.",
+    "All pinned tracked manifests, exact bytes, names, nearest owners and declared dependencies/peer/optional/dev edges are checked against actual Source before reporting advisory direct/transitive reverse impacts and independent non-package surfaces.",
+    "Source HEAD/status and inventory bytes must remain unchanged across observation; optional output is exclusive and cannot write source, Git or migration state.",
+    "Twenty meaningful tests include actual source parent-to-pin exercise (250 manifest changes, 250 direct owners and one transitive owner), real temporary Git rename/deletion/addition history and invalid/ref-injection/drift/output refusals. Complete tests must pass before bounded integration."
+  ],
+  "identity": "Full base/target commit IDs, unchanged pinned checkout and SHA256 of the exact manifest inventory identify an observation.",
+  "ownership": "The caller chooses existing Git references and owns a new report file; the observer owns no migration states or runtime services.",
+  "ordering": "Verify pin and manifest closure, resolve commits, parse immutable Git diff, map both paths and reverse declared dependencies, recheck source/inventory, then write an exclusive report.",
+  "errors": "Dirty/wrong pin, changed/missing/duplicate manifest inventory, malformed stream, invalid references, mid-observation drift and protected/occupied output all refuse.",
+  "cancellation": "No background watcher or scheduled side effect is installed; an interrupted invocation cannot claim parity or advance task state.",
+  "adaptation": "Python3.8 standard library plus development Git; no new Portable runtime dependency.",
+  "open_questions": ["Advisory pinned-manifest impacts do not resolve arbitrary dynamic runtime edges or certify a future upstream migration; full D1 export/role coverage and D2 uncached/remote Actions remain separate."]
+}

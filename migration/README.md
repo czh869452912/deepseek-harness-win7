@@ -4,6 +4,8 @@
 
 本目录以 `tasks/*.json` 为状态权威，`status.md` 由工具生成。当前交付是单一协调者、契约依赖和只读门禁；分布式调度器、原子租约、自动上游巡检不属于本批次实现。
 
+只读差分工具：`.venv\Scripts\python.exe scripts/upstream_delta.py --base <existing-ref> --target <existing-ref> [--output <new-file>]`。要求 unchanged pinned Source，输出原版 Git 差分、两侧最邻近 package、反向声明依赖和 non-package surfaces；不 fetch/checkout、修改 pin 或自动推进任务。影响是建议性资料，不是完整动态职责图或迁移签收。见 `docs/research/2026-10-05-upstream-delta-progress.md`；完整无缓存和外部验证另列。
+
 ## 当前补齐：2026-10-02
 
 2026-10-05 可选 Session 工具完整签收：干净产品 `ae2c1abe` **6657 passed、6 既有平台 skipped、1 既有 Proactor warning、0 failed**；**312 必需 lane、十四组 1082 原版断言、50 配对与真实解压/原版浏览器**全部通过。五个工具的 78 实际原版/原生/解压观察和两种规范 profile 的模型调用/新 Context 冷恢复已有界验收；共同 `INVALID_ARGS` 消息在 Tools 提供端修正。39 份任务证据归档于 `evidence/artifacts/SESSION-TOOLS-20261005-ae2c1abe.zip`，历史拒绝产物保持独立可查。见 `reviews/SESSION-TOOLS-CLOSURE-20261005.md`。物理 schema-19、压缩、malformed/plugin ABI、竞争、B/C/D 与整体范围继续开放，`accepted_upstream` 仍为空。

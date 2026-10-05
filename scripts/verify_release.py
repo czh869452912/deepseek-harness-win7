@@ -56,6 +56,19 @@ PAIRED_DRIVERS = (
 PAIRED_DRIVERS = PAIRED_DRIVERS + ('session_tools', 'sqlite_format', 'sqlite_provider', 'jsonl_provider')
 OFFICIAL_CONFIGS = ('consumers', 'agent-lifecycle', 'session-recovery', 'session-projection', 'acp', 'acp-app', 'mcp', 'subagent-acp', 'storage-cache', 'session-observation', 'session-corpus', 'session-sqlite-query', 'query-engine-source', 'session-tools-source', 'sqlite-format-source', 'sqlite-provider-source', 'jsonl-provider-source')
 REQUIRED_REGRESSION = {
+    'test_upstream_delta': {
+        'test_real_readonly_delta_preserves_checkout_and_maps_both_rename_owners_and_consumers',
+        'test_nul_parser_preserves_whitespace_unicode_and_both_copy_names',
+        *{'test_invalid_git_stream_is_refused[' + name + ']' for name in (
+            'M\\x00name', 'R100\\x00old\\x00', 'A\\x00\\x00', 'R101\\x00old\\x00new\\x00',
+            'Q\\x00name\\x00', 'M\\x00../outside\\x00', 'M\\x00/absolute\\x00')},
+        *{'test_readonly_observer_refuses_changed_or_incomplete_inventory[' + damage + ']'
+          for damage in ('dirty', 'wrong-pin', 'hash', 'dependency', 'name', 'missing', 'duplicate')},
+        'test_invalid_revision_cannot_become_a_git_option_or_write',
+        'test_source_drift_during_observation_is_refused',
+        'test_report_output_is_exclusive_and_cannot_change_source_git_or_migration',
+        'test_actual_pinned_source_parent_delta_is_readonly_and_source_qualified',
+    },
     'test_tool_scheduler_failure_boundaries': {
         'test_ordered_scheduler_finishes_actual_prepared_and_dispatched_results[pre-error-expected0]',
         'test_ordered_scheduler_finishes_actual_prepared_and_dispatched_results[around-error-expected1]',
@@ -764,6 +777,16 @@ def verify(args, output):
              'run', '--config', 'scripts/oracles/vitest.' + config + '.config.mts'],
             'official-' + config, output, env=environment)
     receipts = {}
+    upstream_delta = output / 'upstream-delta.json'
+    run([python, 'scripts/upstream_delta.py', '--base', actual + '^', '--target', actual,
+         '--output', str(upstream_delta)], 'upstream-delta', output, env=environment)
+    delta_report = json.loads(upstream_delta.read_text(encoding='utf-8'))
+    if (delta_report.get('result') != 'observed' or delta_report.get('source_pin') != actual
+            or delta_report.get('target_commit') != actual or delta_report.get('unchanged_checkout') != actual
+            or delta_report.get('base_commit') != git('rev-parse', actual + '^', root=ROOT / 'reference')
+            or delta_report.get('inventory_sha256') != digest(ROOT / 'migration/modules.json')):
+        raise RuntimeError('Read-only upstream delta Source identity differs')
+    receipts['upstream-delta'] = digest(upstream_delta)
     for driver in PAIRED_DRIVERS:
         name = driver.replace('_', '-') + '-paired'
         path = output / (name + '.json')

@@ -1,25 +1,27 @@
 {
   "id": "MIG-UPSTREAM-DELTA-002",
   "goal": "执行只读上游差分观察与影响分析演练",
-  "kind": "verification",
-  "state": "draft",
+  "kind": "implementation",
+  "state": "running",
   "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
-  "base_product": "a4ff8ac41fa37b5463b0ce8b7f420d0973e8d840",
-  "owner": null,
+  "base_product": "566eb5d0d8ccbe89da2ae7c16ff9c938149e9a69",
+  "owner": "current-session-coordinator",
   "requires": [],
-  "provides": [],
+  "provides": [{"contract": "CON-UPSTREAM-DELTA", "revision": 1}],
   "acceptance": [
-    "Specify source-backed contract and required provider revisions before entering ready."
+    "Read-only explicit existing-commit Git delta preserves NUL path identity, both rename owners and verified pinned manifest/dependency closure; no checkout/fetch/pin/task state change.",
+    "Twenty meaningful tests cover real Git history, drift/inventory/ref/output refusals and actual fixed Source parent-to-pin observation; HEAD/status/inventory remain unchanged.",
+    "New clean complete tests and source/input-qualified evidence are required for bounded integration; future migration/full dynamic D1 graph, uncached install and remote Actions are not accepted by this observer."
   ],
   "expected_paths": [
     "dsh",
     "tests",
     "migration"
   ],
-  "open_findings": [],
+  "open_findings": ["Implemented read-only observer; all 20 focused tests including actual parent-to-pin exercise pass. Clean complete qualification remains pending; no acceptance or upstream pin change."],
   "conflicts_with": [],
   "candidate_commit": null,
   "integrated_commit": null,
   "evidence_ids": [],
-  "next_action": "按已认可研究计划定义契约与依赖；分析可提前，接口实现等待提供端验收。"
+  "next_action": "运行包含实际 Source 演练的二十项回归，独立提交并在下一干净完整门禁绑定证据；该工具只给建议性影响，不自动推进未来 pin/任务或认证动态职责。"
 }

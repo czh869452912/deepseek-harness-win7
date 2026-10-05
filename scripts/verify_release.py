@@ -61,6 +61,14 @@ PAIRED_DRIVERS = (
 PAIRED_DRIVERS = PAIRED_DRIVERS + ('session_tools', 'sqlite_format', 'sqlite_provider', 'jsonl_provider', 'tool_scheduler', 'http_redirect', 'javascript_workflow', 'runtime_context', 'javascript_ready')
 OFFICIAL_CONFIGS = ('consumers', 'agent-lifecycle', 'session-recovery', 'session-projection', 'acp', 'acp-app', 'mcp', 'subagent-acp', 'storage-cache', 'session-observation', 'session-corpus', 'session-sqlite-query', 'query-engine-source', 'session-tools-source', 'sqlite-format-source', 'sqlite-provider-source', 'jsonl-provider-source', 'tool-scheduler-source')
 REQUIRED_REGRESSION = {
+    'test_runtime_observer_interpreter_identity': {
+        'test_unselected_in_tree_interpreter_is_refused_even_with_identical_bytes[selected-context]',
+        'test_unselected_in_tree_interpreter_is_refused_even_with_identical_bytes[selected-ready]',
+        'test_unselected_in_tree_interpreter_is_refused_even_with_identical_bytes[selected-workflow]',
+        'test_unselected_in_tree_interpreter_is_refused_even_with_identical_bytes[extracted-context]',
+        'test_unselected_in_tree_interpreter_is_refused_even_with_identical_bytes[extracted-ready]',
+        'test_unselected_in_tree_interpreter_is_refused_even_with_identical_bytes[extracted-workflow]',
+    },
     "test_javascript_ready_consumers": {
         "test_actual_held_ready_crosses_exit_before_admission[held-ready-exit]",
         "test_actual_held_ready_crosses_exit_before_admission[cancel-before-held-ready-exit]",

@@ -72,11 +72,19 @@ def identity(source, check_files=True):
     return observation_digest(source['observations'])
 
 
+def validate_executable(executable, root, check_files=True):
+    root = Path(root).resolve()
+    selected = Path(sys.executable).resolve() if root == ROOT and check_files else (root / 'python.exe').resolve()
+    if Path(executable).resolve() != selected:
+        raise ValueError('Observer executable is not the selected interpreter')
+    selected.relative_to(root)
+
+
 def validate_runtime(report, root, expected_digest, modules, check_files=True):
     root = Path(root).resolve()
     if not isinstance(report, dict) or Path(report['root']).resolve() != root or not report['python'].startswith('3.8.10 '):
         raise ValueError('Runtime context selected root or Python differs')
-    Path(report['executable']).resolve().relative_to(root)
+    validate_executable(report['executable'], root, check_files)
     if not isinstance(modules, dict) or not REQUIRED_MODULES.issubset(modules) or report['modules'] != modules:
         raise ValueError('Runtime context actual imported module closure differs')
     for name, expected in modules.items():

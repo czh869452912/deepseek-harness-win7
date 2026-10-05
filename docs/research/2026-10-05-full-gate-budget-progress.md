@@ -9,3 +9,5 @@
 必需lane由678增为679，57配对不变；037与JS036尚未签收。此前原版前端119文件、九项Source bug判据及C58/C59保持不变，整体accepted_upstream为空，Win7仍为用户延期。
 
 预算/探针、037消费者及门禁的聚焦回归638项通过（245.63秒），日志/XML为 `.goose/out/acp-a4-work/runtime-context-budget-focused-v1.*`；这是定向验证，不代替新的完整门禁。
+
+后续解释器路径诊断时复查原始3be2afde pytest.log，451行明确包含 `test_runtime_context_consumers.py ...............F.......`。此前仅检查最终失败断言/摘要，漏报了这个进度失败标记；“没有失败断言”不能解读为没有测试失败。旧门禁同时有运行中失败标记及整批超时，没有最终失败详情/XML或可靠计数；确切旧ZIP、输入和原始日志仍不变。仓库内夹具的解释器身份缺口已有独立两项实际复现，见 `2026-10-05-observer-interpreter-progress.md`。

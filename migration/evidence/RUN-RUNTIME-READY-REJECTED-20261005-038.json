@@ -1,0 +1,14 @@
+{
+  "id": "RUN-RUNTIME-READY-REJECTED-20261005-038",
+  "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
+  "product_commit": "7060e67bc2dd87388b739be786c20684a7423bb6",
+  "kind": "verification",
+  "result": "failed",
+  "validity": "historical",
+  "task_id": "MIG-JS-READY-038",
+  "commands": [".venv/Scripts/python.exe scripts/verify_release.py --browser \"C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe\" --output-dir .goose/out/runtime-ready-clean-7060e67b", ".venv/Scripts/python.exe -m pytest tests/test_javascript_ready_consumers.py tests/test_runtime_context_consumers.py -k executable --basetemp .goose/out/acp-a4-work/runtime-executable-reproduction-v1"],
+  "environment": {"python": "3.8.10", "os": "Windows-10-10.0.26200-SP0", "cwd": "C:\\Users\\czh86\\Documents\\Codex\\deepseek-harness-win7", "node": "v22.22.2"},
+  "contract_revisions": {"CON-JS-READY": 1, "CON-RUNTIME-CONTEXT-CONSUMER": 1, "CON-CURRENT-RELEASE-GATE": 1},
+  "artifacts": [{"path": "migration/evidence/artifacts/RUNTIME-READY-REJECTED-20261005-7060e67b.zip", "sha256": "aed98aa86cf44a89b5f49d39d84a665f3d3e5f064be7c45a7f53ac06f74f4275"}],
+  "scope": "Exact clean7060e67b rejected after actual mandatory Ready executable-path rejection failed; independent in-workspace diagnostic reproduces both Ready and context acceptance defects,2failed. Own pytest subtree stopped after confirmation, without final full XML or pass count. Original/paired/extracted phases not admitted. Exact Portable SHA77c2e70bcf1f7e8b974b99518b12766cccbbf1b5d83929546241bcaaeb3b41f5 and inputs SHA6a3346b32459ce527314bf816f8e7a89f32ccd0019819b36970cacd6d24314bf retained. New selected/extracted exact interpreter identity guards require a distinct complete clean candidate. No unchanged-candidate retry, new Source predicate or skip. Overall migration, fullJS036 and deferred Win7 remain open."
+}

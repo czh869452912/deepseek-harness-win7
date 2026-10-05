@@ -9,7 +9,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
 from scripts.javascript_workflow_oracle import digest, assets
-from scripts.runtime_context_oracle import source_pin
+from scripts.runtime_context_oracle import source_pin, validate_executable
 
 SOURCE_COMMIT = 'cd5ef8148158c3a752a658978873241fdf8e2bbc'
 NAMES = ('held-ready-exit', 'cancel-before-held-ready-exit')
@@ -40,7 +40,7 @@ def validate_runtime(report, root, expected_digest, modules, expected_assets, ch
     root = Path(root).resolve()
     if not isinstance(report, dict) or Path(report['root']).resolve() != root or not report['python'].startswith('3.8.10 '):
         raise ValueError('JavaScript Ready selected runtime differs')
-    Path(report['executable']).resolve().relative_to(root)
+    validate_executable(report['executable'], root, check_files)
     required = {'dsh/javascript/runtime.py', 'dsh/workflow/javascript_run.py',
         'dsh/workflow/workflow_service.py', 'dsh/subagent/runtime.py', 'dsh/cordis/context.py'}
     if not isinstance(modules, dict) or not required.issubset(modules) or report['modules'] != modules:

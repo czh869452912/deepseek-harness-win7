@@ -7,6 +7,8 @@ import sys
 
 
 ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT))
+from scripts.runtime_context_oracle import validate_executable
 SOURCE_COMMIT = 'cd5ef8148158c3a752a658978873241fdf8e2bbc'
 CASES = ROOT / 'tests/fixtures/javascript-workflow/cases.json'
 NAMES = tuple(row['name'] for row in json.loads(CASES.read_text(encoding='utf-8')))
@@ -45,10 +47,7 @@ def validate_runtime(report, root, expected_digest, modules, expected_assets, ch
     root = root.resolve()
     if Path(report['root']).resolve() != root or not report['python'].startswith('3.8.10 '):
         raise ValueError('JavaScript workflow runtime root or Python differs')
-    try:
-        Path(report['executable']).resolve().relative_to(root)
-    except ValueError as error:
-        raise ValueError('JavaScript workflow executable has a foreign root') from error
+    validate_executable(report['executable'], root, check_files)
     if not REQUIRED_MODULES.issubset(report['modules']) or report['modules'] != modules:
         raise ValueError('JavaScript workflow imported module closure differs')
     for name, expected in modules.items():

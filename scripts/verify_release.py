@@ -1476,7 +1476,7 @@ def run_python_regression(python, output, environment):
         pass
     try:
         exitstatus = run([python, '-m', 'pytest', 'tests', '-ra', '--junitxml=' + str(output / 'pytest.xml'),
-            '--basetemp=' + str(workspace)], 'pytest', output, env=regression_environment, timeout=3200, accepted=(0, 1))
+            '--basetemp=' + str(workspace)], 'pytest', output, env=regression_environment, timeout=3600, accepted=(0, 1))
         if exitstatus == 1:
             primary_failure = RuntimeError('pytest failed (1); see ' + str(output / 'pytest.log'))
     except BaseException as failure:

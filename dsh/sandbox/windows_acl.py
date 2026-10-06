@@ -272,8 +272,11 @@ class WinApi:
                 self.check(self.SetHandleInformation(handle, 1, 1), "SetHandleInformation")
                 setattr(startup, field, handle)
             command = c.create_unicode_buffer(subprocess.list2cmdline(argv))
+            self.kernel.GetConsoleWindow.argtypes = []
+            self.kernel.GetConsoleWindow.restype = P
+            creation_flags = 4 | (0 if self.kernel.GetConsoleWindow() else 0x08000000)
             self.check(self.CreateProcessAsUserW(token, None, command, None, None, True,
-                       4 | 0x08000000, None, cwd, c.byref(startup), c.byref(process)), "CreateProcessAsUserW")
+                       creation_flags, None, cwd, c.byref(startup), c.byref(process)), "CreateProcessAsUserW")
             self.check(self.AssignProcessToJobObject(job, process.process), "AssignProcessToJobObject")
             if self.ResumeThread(process.thread) == 0xffffffff:
                 self.error("ResumeThread", c.get_last_error())

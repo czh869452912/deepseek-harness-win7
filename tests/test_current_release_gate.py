@@ -1659,6 +1659,15 @@ def test_preflight_copy_retention_lanes_are_mandatory(tmp_path, damage):
             GATE.validate_regression(path)
 
 
+@pytest.mark.parametrize('damage', ('omit', 'skip', 'duplicate', 'failure'))
+def test_windows_confined_console_lanes_are_mandatory(tmp_path, damage):
+    path = tmp_path / 'pytest.xml'
+    for name in GATE.REQUIRED_REGRESSION['test_windows_confined_console']:
+        regression_xml(path, **{damage: ('test_windows_confined_console', name)})
+        with pytest.raises(RuntimeError):
+            GATE.validate_regression(path)
+
+
 @functools.lru_cache(maxsize=1)
 def javascript_errors_runtime_fixture():
     with tempfile.TemporaryDirectory(prefix='javascript-errors-receipt-') as folder:

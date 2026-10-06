@@ -69,7 +69,7 @@ class LocalTerminalBackend:
             marker = '__DSH_READY_{}__'.format(uuid.uuid4().hex)
             setup = ("if ($ExecutionContext.SessionState.LanguageMode -ne 'FullLanguage') { exit 1 }; "
                      "[Console]::OutputEncoding = New-Object System.Text.UTF8Encoding; $OutputEncoding = [Console]::OutputEncoding; "
-                     "function prompt { 'dsh> ' }; Write-Output '" + marker + "'") if config['shellDialect'] == 'pwsh' else "PS1='dsh> '; unset PROMPT_COMMAND; printf '\\n%s\\n' '" + marker + "'"
+                     "function prompt { 'dsh> ' }; Write-Output ''; Write-Output '" + marker + "'") if config['shellDialect'] == 'pwsh' else "PS1='dsh> '; unset PROMPT_COMMAND; printf '\\n%s\\n' '" + marker + "'"
             expires = time.monotonic() + config['timeoutMs'] / 1000
             first = True
             while True:

@@ -434,6 +434,13 @@ REQUIRED_REGRESSION = {
         *{'test_actual_fixture_prunes_between_tests_and_after_failed_body[' + str(owned) + '-' + str(failed) + ']'
           for owned in (False, True) for failed in (False, True)},
     },
+    "test_windows_confined_console": {
+        'test_confined_console_retains_state_unicode_and_actual_write_boundary',
+        'test_confined_console_deadline_abort_and_unload_close_owned_jobs',
+        'test_confined_pipe_runner_has_no_console_and_retains_captured_stdio',
+        *{'test_startup_nonce_requires_its_own_live_output_line[' + observation + ']'
+          for observation in ('own-output-line', 'input-echo', 'prefixed-token', 'exited-before-ready')},
+    },
     "test_workflow_session_boundary": {
         *{'test_dropped_child_observation_requires_result_semantics_and_disposal[' + order + '-' + semantic + ']'
           for order in ('semantic-first', 'dispose-first') for semantic in ('agent-end', 'log')},
@@ -553,6 +560,8 @@ REQUIRED_REGRESSION = {
         *{'test_workflow_session_boundary_lanes_are_mandatory[' + damage + ']'
           for damage in ('omit', 'skip', 'duplicate', 'failure')},
         *{'test_preflight_copy_retention_lanes_are_mandatory[' + damage + ']'
+          for damage in ('omit', 'skip', 'duplicate', 'failure')},
+        *{'test_windows_confined_console_lanes_are_mandatory[' + damage + ']'
           for damage in ('omit', 'skip', 'duplicate', 'failure')},
         *{'test_actual_pytest_unicode_lane_identity_remains_mandatory[' + damage + ']' for damage in ('none', 'omit', 'skip', 'duplicate', 'failure')},
         *{'test_extracted_llm_config_requires_complete_values_and_runtime[' + damage + ']' for damage in ('missing', 'source-missing', 'source-changed', 'module-changed', 'config', 'boolean', 'max-null', 'reason-null', 'same', 'same-stop', 'input', 'after-change', 'error', 'code', 'hook', 'signal', 'trace', 'tail', 'duplicate', 'order', 'type', 'unknown', 'root', 'python', 'executable', 'module', 'group-missing', 'group-rows', 'group-root', 'group-executable', 'group-module')},

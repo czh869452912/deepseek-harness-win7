@@ -1,0 +1,11 @@
+# Windows受限控制台启动与所有权
+
+Root过去给所有受限进程设置CREATE_NO_WINDOW，实际WinPTY控制台中的受限PowerShell因此不能达到启动就绪。固定原版win32-process/process.ts的spawnInheritedJobProcess继承stdio并使用CREATE_SUSPENDED。当前提供端在存在控制台时继承控制台；无控制台的管道路径继续使用CREATE_NO_WINDOW，仍先挂载kill-on-close Job再恢复线程。限制token、ACL、句柄关闭及无非受限fallback保持。
+
+受限PSReadLine的真实history访问拒绝诊断可能紧接启动nonce。启动脚本先输出空行，使nonce成为自己的完整输出行；验收仍要求新鲜nonce的严格换行边界。输入回显、前缀相连的nonce、已退出进程均拒绝，未吞掉history诊断或增加期限。
+
+修复前两条实际Root控制确定失败，五项其他控制通过；隔离两个提供端修复后七项通过。独立包自有Python3.8.10资格记录十一条实际状态/Unicode/写边界/取消/Job关闭行为、126实际模块字节。当前Root七项通过8.17秒；35项真实控制台、既有terminal/subprocess/sandbox及逐lane缺失跳过重复失败门禁回归通过18.53秒。
+
+414文件研究资格包CONFINED-CONSOLE-WEB-QUALIFICATION-20261007-94A34B5D.zip，SHA256 ed53a061c755a99fe527bb3ceee1efc5b97684b5538a8c28e4a50b145c1da78e，保存两个提供端前后、输入、导入集合、修复前后失败日志/XML及原版/隔离候选浏览器观察。这里的minimal/standard/cordis功能旅程和冷启动成功是研究证据，不是完整Web合同签收；standard/cordis工具schema、注册顺序、完整event/request/wire DTO、真实选择请求竞争及计时差异继续开放。没有修改原版浏览器或增加Source缺陷豁免。
+
+当前正式门禁增加七条控制台lane及四条逐lane拒绝控制；待干净完整tests、全部2738必需lane、75实际配对、原样Source及真实解压/原版浏览器一同复验。此修复不证明Win7真机认证、1175/5根因或全部profile迁移完成。最新完整签收仍83026446/65、056 running、七父范围及036partial保持。

@@ -1,0 +1,36 @@
+{
+  "id": "CON-LLM-METADATA",
+  "revision": 1,
+  "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
+  "status": "specified",
+  "source_paths": [
+    "reference/packages/llm/llm/src/index.ts",
+    "reference/packages/llm/llm/tests/service.spec.ts",
+    "dsh/llm/model_info.py",
+    "dsh/llm/llm_service.py"
+  ],
+  "consumers": [
+    "scripts/llm_metadata_oracle.py",
+    "scripts/oracles/llm_metadata_python.py",
+    "tests/test_llm_metadata_consumers.py",
+    "scripts/verify_release.py",
+    "scripts/verify_portable.py"
+  ],
+  "invariants": [
+    "137 complete actual captures:92 catalog/exact model/detachment,45 final metadata/default/error dispatch controls.",
+    "Catalog returns only provider/id/name/optional description/modalities,retains empty optional values and detaches the modality array;exact model strips unknown fields and detaches context/reasoning/efforts.",
+    "Exact context requires a positive integer but is not restricted to safe integers;adapter defaultMaxTokens requires a positive safe integer. Boolean numbers are invalid. Reasoning efforts require distinct nonempty id/name strings and optional string description;unknown defaultEffort rejects.",
+    "Final metadata validation precedes provider I/O,with complete terminal failure and no dispatch for invalid values. String iterable modalities are cloned as actual Source;no invented modality enum restriction.",
+    "Every child actual import closure equals the explicitly measured registry. All selected runtime identities and child/aggregate values/modules agree. Complete captured errors/prose/trace/requests/chunks remain exact."
+  ],
+  "identity": "Ordered named fixtures and complete JSON values compare exactly;no allocated runtime identities exist in these selected captures. Sourcepin/Node and all selected provider/observer inputs remain guarded.",
+  "ownership": "Actual scoped Context and registered adapter own metadata/dispatch. Adapter-owned mutation cannot change captured public catalog or resolved context/reasoning/modalities.",
+  "ordering": "Public lookup trace and middleware/prepare/dispatch order are retained;invalid metadata never reaches SDK dispatch.",
+  "errors": "Source exact INVALID_CATALOG/INVALID_MODEL_INFO/CONTEXT/MAX_TOKENS/REASONING and full terminal failure message/code remain literal. Arbitrary null/accessor/hostile object diagnostics are outside selected rows.",
+  "cancellation": "Existing real cancellation/compaction/canonical retry consumers remain mandatory;this scope does not qualify every lookup cancellation schedule.",
+  "adaptation": "Python model dictionaries normalize at the shared public/final boundary. Established legacy settings-derived catalog remains outside canonical parity. A stale test adapter effort list is corrected to the actual upstream object shape;no production string-effort alias is added.",
+  "open_questions": [
+    "Full public prepared-call one-shot/deep freezing/config equality/registration generation remains a separate part.",
+    "Arbitrary malformed/accessor/null/noniterable objects,identity/graph ABI,full model/profile/races and user-deferred realWin7 remain unqualified."
+  ]
+}

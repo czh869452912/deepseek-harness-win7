@@ -57,6 +57,7 @@ from scripts.session_restore_sign_oracle import validate_runtime as validate_ses
 from scripts.runtime_full_request_oracle import validate_runtime as validate_runtime_full_request, identity as full_request_identity
 from scripts.deepseek_error_oracle import validate_runtime as validate_deepseek_error, identity as deepseek_error_identity
 from scripts.deepseek_capture_oracle import validate_runtime as validate_deepseek_capture, identity as deepseek_capture_identity
+from scripts.llm_metadata_oracle import validate_runtime as validate_llm_metadata, identity as llm_metadata_identity
 from scripts.canonical_llm_oracle import validate_runtime as validate_canonical_llm, identity as canonical_llm_identity
 from scripts.jsonl_sharing_oracle import validate_runtime as validate_jsonl_sharing, identity as sharing_identity
 from scripts.persistence_read_oracle import validate_runtime as validate_persistence_read, identity as read_identity
@@ -305,6 +306,25 @@ def canonical_llm_receipts(source, native, output):
     return source, expected, runtime['modules']
 
 
+def llm_metadata_receipts(source, native, output):
+    if source or native:
+        if not source or not native:
+            raise RuntimeError('Both LLM metadata Source and native receipts are required')
+        source, native = Path(source).resolve(), Path(native).resolve()
+    else:
+        paired = output.with_suffix('.llm-metadata-paired.json')
+        completed = subprocess.run([sys.executable, str(ROOT / 'scripts/llm_metadata_oracle.py'),
+            '--output', str(paired)], cwd=str(ROOT), capture_output=True, timeout=600)
+        output.with_suffix('.llm-metadata-source.log').write_bytes(completed.stdout + completed.stderr)
+        if completed.returncode or completed.stderr:
+            raise RuntimeError('Fresh LLM metadata Source qualification failed')
+        source, native = paired.with_suffix('.source.json'), paired.with_suffix('.native.json')
+    expected = llm_metadata_identity(json.loads(source.read_text(encoding='utf-8')))
+    runtime = json.loads(native.read_text(encoding='utf-8'))
+    validate_llm_metadata(runtime, ROOT, expected, runtime['modules'])
+    return source, expected, runtime['modules']
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--archive', required=True)
@@ -345,6 +365,8 @@ def main(argv=None):
     parser.add_argument('--read-native', help='Fresh canonical persistence read module and private asset closure')
     parser.add_argument('--canonical-llm-source', help='Fresh actual Source canonical LLM observations')
     parser.add_argument('--canonical-llm-native', help='Fresh native canonical LLM child/import receipts')
+    parser.add_argument('--llm-metadata-source', help='Fresh actual Source model metadata observations')
+    parser.add_argument('--llm-metadata-native', help='Fresh native model metadata child/import receipts')
     parser.add_argument('--sharing-source', help='Fresh actual Source JSONL shared-reader observations')
     parser.add_argument('--sharing-native', help='Fresh native JSONL shared-reader module closure')
     args = parser.parse_args(argv)
@@ -404,7 +426,7 @@ def main(argv=None):
             'deepseek_error_oracle.py', 'oracles/deepseek_error_python.py', 'oracles/deepseek_error_http.ts',
             'oracles/deepseek_error.probe.spec.ts', 'oracles/vitest.deepseek-error-probe.config.mts', 'oracles/deepseek-error-fixtures.json',
             'oracles/vitest.deepseek-source.config.mts',
-            'oracles/canonical_llm_retry.probe.spec.ts', 'oracles/canonical_llm_retry_python.py', 'oracles/canonical_llm_auxiliary.probe.spec.ts', 'oracles/canonical_llm_auxiliary_python.py', 'oracles/canonical_llm_failure.probe.spec.ts', 'oracles/canonical_llm_failure_python.py', 'oracles/canonical_llm_boundary.probe.spec.ts', 'oracles/canonical_llm_boundary_python.py', 'oracles/canonical_llm_iterator.probe.spec.ts', 'oracles/canonical_llm_iterator_python.py', 'oracles/canonical-llm-fixtures.json', 'oracles/vitest.canonical-llm-probe.config.mts', 'canonical_llm_values.py', 'oracles/canonical_llm_python.py', 'canonical_llm_oracle.py',
+            'oracles/canonical_llm_retry.probe.spec.ts', 'oracles/canonical_llm_retry_python.py', 'oracles/canonical_llm_auxiliary.probe.spec.ts', 'oracles/canonical_llm_auxiliary_python.py', 'oracles/canonical_llm_failure.probe.spec.ts', 'oracles/canonical_llm_failure_python.py', 'oracles/canonical_llm_boundary.probe.spec.ts', 'oracles/canonical_llm_boundary_python.py', 'oracles/canonical_llm_iterator.probe.spec.ts', 'oracles/canonical_llm_iterator_python.py', 'oracles/canonical-llm-fixtures.json', 'oracles/vitest.canonical-llm-probe.config.mts', 'canonical_llm_values.py', 'oracles/canonical_llm_python.py', 'canonical_llm_oracle.py', 'llm_metadata_oracle.py', 'oracles/llm-metadata-fixtures.json', 'oracles/llm_metadata_catalog.probe.spec.ts', 'oracles/llm_metadata_catalog_python.py', 'oracles/llm_metadata_stream.probe.spec.ts', 'oracles/llm_metadata_stream_python.py', 'oracles/llm_metadata_python.py', 'oracles/vitest.llm-metadata-probe.config.mts',
             'jsonl_sharing_oracle.py', 'oracles/jsonl_sharing_python.py', 'oracles/jsonl_sharing.probe.spec.ts',
             'oracles/vitest.jsonl-sharing-probe.config.mts',
             'deepseek_capture_oracle.py', 'oracles/deepseek_capture_python.py', 'oracles/deepseek_capture_http.ts',
@@ -552,6 +574,8 @@ def main(argv=None):
         report['jsonlSharingSourceSha256'] = digest(sharing_source)
         canonical_llm_source, canonical_llm_digest, canonical_llm_modules = canonical_llm_receipts(args.canonical_llm_source, args.canonical_llm_native, output)
         report['canonicalLlmSourceSha256'] = digest(canonical_llm_source)
+        llm_metadata_source, llm_metadata_digest, llm_metadata_modules = llm_metadata_receipts(args.llm_metadata_source, args.llm_metadata_native, output)
+        report['llmMetadataSourceSha256'] = digest(llm_metadata_source)
         if args.format_source or args.format_inputs:
             if not args.format_source or not args.format_inputs:
                 raise RuntimeError('Both SQLite format Source and inputs are required')
@@ -984,6 +1008,17 @@ def main(argv=None):
             canonical_llm_report = json.loads(canonical_llm_path.read_text(encoding='utf-8'))
             validate_canonical_llm(canonical_llm_report, portable, canonical_llm_digest, canonical_llm_modules)
             report['canonicalLlm'] = canonical_llm_report
+            llm_metadata_path = workspace / 'llm-metadata.json'
+            llm_metadata_result = subprocess.run([str(portable / 'python.exe'), '-I', '-u',
+                str(ROOT / 'scripts/oracles/llm_metadata_python.py'), '--root', str(portable), '--output', str(llm_metadata_path)],
+                cwd=str(workspace), env=env, capture_output=True, encoding='utf-8', errors='replace', timeout=300)
+            output.with_suffix('.llm-metadata.log').write_text(llm_metadata_result.stdout + '\nSTDERR:\n' + llm_metadata_result.stderr, encoding='utf-8')
+            if llm_metadata_result.returncode or llm_metadata_result.stderr or not llm_metadata_path.is_file():
+                raise RuntimeError('Extracted LLM metadata observations failed')
+            llm_metadata_report = json.loads(llm_metadata_path.read_text(encoding='utf-8'))
+            validate_llm_metadata(llm_metadata_report, portable, llm_metadata_digest, llm_metadata_modules)
+            report['llmMetadata'] = llm_metadata_report
+
 
             directory = subprocess.run([str(portable / 'python.exe'), '-I', '-u',
                 str(ROOT / 'scripts/python_directory_probe.py'), '--root', str(portable), '--output', str(directory_path)],

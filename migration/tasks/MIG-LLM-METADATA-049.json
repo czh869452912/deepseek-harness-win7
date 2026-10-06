@@ -1,0 +1,51 @@
+{
+  "id": "MIG-LLM-METADATA-049",
+  "goal": "闭合137组公共LLM目录/精确元数据/分离归属与最终流式准入观察",
+  "kind": "implementation",
+  "state": "running",
+  "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
+  "base_product": "55a5ba87b608fdd0d9c94feb16f258d77ace9929",
+  "owner": "current-session-coordinator",
+  "requires": [
+    {
+      "task": "MIG-CURRENT-RELEASE-GATE-003",
+      "contract": "CON-CURRENT-RELEASE-GATE",
+      "revision": 1
+    },
+    {
+      "task": "MIG-CANONICAL-LLM-048",
+      "contract": "CON-CANONICAL-LLM",
+      "revision": 1
+    }
+  ],
+  "provides": [
+    {
+      "contract": "CON-LLM-METADATA",
+      "revision": 1
+    }
+  ],
+  "acceptance": [
+    "Retain complete actual pinned Source/native and exact immutable ownPortable baselines with actual import/executable identity and all observer/setup failures.",
+    "137 complete catalog/exact metadata/detachment/final stream observations match without deleting fields,loosening errors,or filtering prose.",
+    "Complete values,Source guards,selected ownPython3.8.10,child/aggregate and actual measured module closures plus partial/altered extracted receipts and mandatory lane controls remain strict.",
+    "Independent clean frozen full pytest,unchanged Source,fresh actual pairs,real extracted ownPython3.8.10 and original browser pass before bounded integration."
+  ],
+  "expected_paths": [
+    "dsh/llm/model_info.py",
+    "dsh/llm/llm_service.py",
+    "scripts",
+    "tests",
+    "migration",
+    "docs/research"
+  ],
+  "open_findings": [
+    "92 actual catalog/exact model/detachment observations show44 differences in current55a. Isolated selectedPython3.8.10 repair matches those92 plus45 actual final streaming observations,all81 existing canonical consumers and336 related regressions27.77 seconds without skips/failures.",
+    "First fixture producer name collision and dependent missing fixtures,missing six canonical bundle patches,missing nonPython frozen resources,legacy catalog overreach and stale string-only reasoning efforts in a test adapter remain retained. Exact frozen package/app/nonPython resources repair isolated boot. Existing legacy settings catalog boundary stays separate;the test adapter now supplies actual id/name effort objects.",
+    "Exact frozen55a ZIP5373f1f7873b2080f39f2349298ce9dede01eba4e8d3b718aa0ee44a083f8bbd is independently retained and extracted before promotion. Its ownPython3.8.10 reproduces44/92 catalog/exact and23/45 final-stream differences;all26/102 imports equal exact ZIP,frozen inputs and extraction.137 formal complete Source/native and strict Source/child/value/runtime/extracted/lane controls require fresh qualification after promotion. Public prepared-call15 actual Source controls are separate research;arbitrary getter/null/graph ABI/profile/race scopes remain open."
+  ],
+  "conflicts_with": [],
+  "candidate_commit": null,
+  "integrated_commit": null,
+  "evidence_ids": [],
+  "next_action": "137正式完整观察匹配；193定向控制、336既有消费者和完整正向解压收据通过。提交后执行独立干净产品1853lane/69配对/20组1911Source及真实解压/浏览器门禁，全部通过才有界签收049；准备句柄扩展研究已发现并隔离修复9项归属差异，继续七父范围。"
+}

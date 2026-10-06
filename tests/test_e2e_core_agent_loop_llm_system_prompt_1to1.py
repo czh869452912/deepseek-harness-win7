@@ -581,7 +581,7 @@ async def test_llm_prepare_call_materializes_defaults_and_validates():
         "name": "Mock R1",
         "defaultMaxTokens": 8192,
         "reasoning": {
-            "efforts": ["low", "medium", "high"],
+            "efforts": [{"id": "low", "name": "Low"}, {"id": "medium", "name": "Medium"}, {"id": "high", "name": "High"}],
             "defaultEffort": "high",
         },
     }

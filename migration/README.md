@@ -1,5 +1,7 @@
 # 持续对齐记录
 
+2026-10-06 下一独立部分049：公共LLM元数据137完整观察隔离匹配，81既有规范消费者与336定向回归通过；精确55a自有Portable保留44/92公共和23/45最终流式差异，逐项导入匹配ZIP/冻结输入。正式137与192新必需控制已推广待定向/完整验证；规划1853lane、69配对、20组1911原样Source，049保持running。准备句柄15原版观察为下一部分研究；七父范围/八项JS差异/九判据/C58/C59/accepted_upstream空及延期Win7不变。见docs/research/2026-10-06-llm-metadata-progress.md。
+
 2026-10-06 最新干净签收 `55a5ba87`：全量8109 passed、6既有skip、1既有Proactor warning、0失败/错误，2297.10秒；1661必需lane、20组1911原样Source断言、68实际配对及真实解压自有Python3.8.10/原版浏览器通过。048选定81组规范重试/失败/准备/迭代归属已有界integrated，共58份独立验收；所有精确旧产物/正式v1缺项拒绝保留，未放宽九项判据/C58/C59。见 `migration/reviews/CANONICAL-LLM-GATE-20261006.md`。下一公共元数据137完整观察隔离匹配、81既有规范消费者及336回归通过，尚未进入本签收。七父范围、八项原始JS差异、accepted_upstream空与延期Win7继续开放。
 
 2026-10-06 下一独立部分048：canonical LLM四模块隔离81组完整Source观察匹配，305相关消费者通过；精确拒绝eaa8自有Portable新54/9/7控制保留51/9/4差异并核验每个实际导入。正式81组/逐组模块/篡改/解压收据推广后须定向及独立干净完整验收；规划1661必需lane、68配对、20组1911原样Source。048仍running，最新签收b2398db9/57有界范围；七父范围、八项JS差异、九项判据/C58/C59、accepted_upstream空和延期Win7不变。见docs/research/2026-10-06-canonical-llm-progress.md。

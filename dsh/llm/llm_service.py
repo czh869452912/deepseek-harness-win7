@@ -532,31 +532,13 @@ class LLMService:
             adapter = entry["adapter"]
             fn = getattr(adapter, "list_models", getattr(adapter, "listModels", None))
             if fn:
-                try:
-                    import inspect as _ins
-                    res = fn(provider_id)
-                    if _ins.isawaitable(res):
-                        res = await res
-                    # validate per spec
-                    seen = set()
-                    out = []
-                    for m in (res or []):
-                        if not isinstance(m, dict) or m.get("provider") != provider_id or not m.get("id") or not m.get("name") or m["id"] in seen:
-                            raise LlmError('adapter returned invalid or duplicate model metadata for provider "{}"'.format(provider_id), "INVALID_CATALOG")
-                        seen.add(m["id"])
-                        item = {"provider": provider_id, "id": m["id"], "name": m["name"]}
-                        if m.get("description"):
-                            item["description"] = m["description"]
-                        if m.get("inputModalities"):
-                            item["inputModalities"] = list(m["inputModalities"])
-                        if m.get("reasoning"):
-                            item["reasoning"] = m["reasoning"]
-                        out.append(item)
-                    return out
-                except LlmError:
-                    raise
-                except Exception as e:
-                    raise LlmError(str(e), "INVALID_CATALOG")
+                import inspect
+                from dsh.llm.model_info import normalize_catalog
+                result = fn(provider_id)
+                if inspect.isawaitable(result):
+                    result = await result
+                return normalize_catalog(provider_id, result, LlmError)
+            return []
 
         # Check settings for custom models configured under provider
         if self.ctx and hasattr(self.ctx, "has") and self.ctx.has("settings"):
@@ -605,33 +587,18 @@ class LLMService:
         return []
 
     async def resolve_model_info(self, provider_id, model_id, signal=None):
-        # try adapter
         entry = self._adapters.get(provider_id)
         if entry:
             adapter = entry["adapter"]
             fn = getattr(adapter, "resolve_model", getattr(adapter, "resolveModel", None))
             if fn:
-                try:
-                    import inspect as _ins
-                    import inspect
-                    sig = inspect.signature(fn)
-                    if len(sig.parameters) >= 3 or "signal" in sig.parameters:
-                        res = fn(provider_id, model_id, signal)
-                    else:
-                        res = fn(provider_id, model_id)
-                    if _ins.isawaitable(res):
-                        res = await res
-                    if isinstance(res, dict):
-                        p = res.get("provider")
-                        m_id = res.get("id")
-                        name = res.get("name")
-                        if p != provider_id or m_id != model_id or not isinstance(name, str) or not name:
-                            raise LlmError(f'adapter returned invalid exact model metadata for provider "{provider_id}" model "{model_id}"', "INVALID_MODEL_INFO")
-                        return res
-                except LlmError:
-                    raise
-                except Exception as e:
-                    raise LlmError(str(e), "INVALID_MODEL_INFO")
+                import inspect
+                from dsh.llm.model_info import normalize_model_info
+                signature = inspect.signature(fn)
+                result = fn(provider_id, model_id, signal) if len(signature.parameters) >= 3 or 'signal' in signature.parameters else fn(provider_id, model_id)
+                if inspect.isawaitable(result):
+                    result = await result
+                return normalize_model_info(provider_id, model_id, result, LlmError)
         return {"provider": provider_id, "id": model_id, "name": model_id}
 
     def retry_policy(self, provider):
@@ -689,9 +656,9 @@ class LLMService:
         if not callable(method):
             return None
         prepared = await method(provider, model, signal)
-        info = prepared['model']
-        if not isinstance(info, dict) or info.get('provider') != provider or info.get('id') != model or not isinstance(info.get('name'), str) or not info['name']:
-            raise LlmError('adapter returned invalid exact model metadata for provider "{}" model "{}"'.format(provider, model), 'INVALID_MODEL_INFO')
+        from dsh.llm.model_info import normalize_model_info
+        info = normalize_model_info(provider, model, prepared['model'], LlmError)
+        prepared = dict(prepared, model=info)
         if 'inputModalities' in info and "image" not in info['inputModalities']:
             from dsh.llm.image_content import project_text_only
             original_stream = prepared["stream"]

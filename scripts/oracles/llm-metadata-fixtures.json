@@ -1,0 +1,656 @@
+{
+  "fixtures": [
+    {
+      "name": "plain",
+      "model": {
+        "provider": "fixture",
+        "id": "model",
+        "name": "Model"
+      }
+    },
+    {
+      "name": "complete",
+      "model": {
+        "provider": "fixture",
+        "id": "model",
+        "name": "Model",
+        "description": "",
+        "inputModalities": [],
+        "context": {
+          "contextWindow": 32000,
+          "ignored": "context extra"
+        },
+        "defaultMaxTokens": 256,
+        "reasoning": {
+          "efforts": [
+            {
+              "id": "low",
+              "name": "Low",
+              "description": "",
+              "ignored": "effort extra"
+            }
+          ],
+          "defaultEffort": "low",
+          "ignored": "reasoning extra"
+        },
+        "ignored": "model extra"
+      }
+    },
+    {
+      "name": "provider-foreign",
+      "model": {
+        "provider": "foreign",
+        "id": "model",
+        "name": "Model"
+      }
+    },
+    {
+      "name": "provider-number",
+      "model": {
+        "provider": 7,
+        "id": "model",
+        "name": "Model"
+      }
+    },
+    {
+      "name": "id-foreign",
+      "model": {
+        "provider": "fixture",
+        "id": "foreign",
+        "name": "Model"
+      }
+    },
+    {
+      "name": "id-empty",
+      "model": {
+        "provider": "fixture",
+        "id": "",
+        "name": "Model"
+      }
+    },
+    {
+      "name": "id-number",
+      "model": {
+        "provider": "fixture",
+        "id": 7,
+        "name": "Model"
+      }
+    },
+    {
+      "name": "name-empty",
+      "model": {
+        "provider": "fixture",
+        "id": "model",
+        "name": ""
+      }
+    },
+    {
+      "name": "name-number",
+      "model": {
+        "provider": "fixture",
+        "id": "model",
+        "name": 7
+      }
+    },
+    {
+      "name": "name-null",
+      "model": {
+        "provider": "fixture",
+        "id": "model",
+        "name": null
+      }
+    },
+    {
+      "name": "description-empty",
+      "model": {
+        "provider": "fixture",
+        "id": "model",
+        "name": "Model",
+        "description": ""
+      }
+    },
+    {
+      "name": "description-text",
+      "model": {
+        "provider": "fixture",
+        "id": "model",
+        "name": "Model",
+        "description": "description"
+      }
+    },
+    {
+      "name": "description-number",
+      "model": {
+        "provider": "fixture",
+        "id": "model",
+        "name": "Model",
+        "description": 7
+      }
+    },
+    {
+      "name": "description-null",
+      "model": {
+        "provider": "fixture",
+        "id": "model",
+        "name": "Model",
+        "description": null
+      }
+    },
+    {
+      "name": "inputModalities-empty",
+      "model": {
+        "provider": "fixture",
+        "id": "model",
+        "name": "Model",
+        "inputModalities": []
+      }
+    },
+    {
+      "name": "inputModalities-text",
+      "model": {
+        "provider": "fixture",
+        "id": "model",
+        "name": "Model",
+        "inputModalities": [
+          "text"
+        ]
+      }
+    },
+    {
+      "name": "inputModalities-image",
+      "model": {
+        "provider": "fixture",
+        "id": "model",
+        "name": "Model",
+        "inputModalities": [
+          "text",
+          "image"
+        ]
+      }
+    },
+    {
+      "name": "inputModalities-custom",
+      "model": {
+        "provider": "fixture",
+        "id": "model",
+        "name": "Model",
+        "inputModalities": [
+          "future"
+        ]
+      }
+    },
+    {
+      "name": "inputModalities-string",
+      "model": {
+        "provider": "fixture",
+        "id": "model",
+        "name": "Model",
+        "inputModalities": "xy"
+      }
+    },
+    {
+      "name": "context-valid",
+      "model": {
+        "provider": "fixture",
+        "id": "model",
+        "name": "Model",
+        "context": {
+          "contextWindow": 32000
+        }
+      }
+    },
+    {
+      "name": "context-fraction",
+      "model": {
+        "provider": "fixture",
+        "id": "model",
+        "name": "Model",
+        "context": {
+          "contextWindow": 1.5
+        }
+      }
+    },
+    {
+      "name": "context-zero",
+      "model": {
+        "provider": "fixture",
+        "id": "model",
+        "name": "Model",
+        "context": {
+          "contextWindow": 0
+        }
+      }
+    },
+    {
+      "name": "context-negative",
+      "model": {
+        "provider": "fixture",
+        "id": "model",
+        "name": "Model",
+        "context": {
+          "contextWindow": -1
+        }
+      }
+    },
+    {
+      "name": "context-string",
+      "model": {
+        "provider": "fixture",
+        "id": "model",
+        "name": "Model",
+        "context": {
+          "contextWindow": "32000"
+        }
+      }
+    },
+    {
+      "name": "context-boolean",
+      "model": {
+        "provider": "fixture",
+        "id": "model",
+        "name": "Model",
+        "context": {
+          "contextWindow": true
+        }
+      }
+    },
+    {
+      "name": "context-large",
+      "model": {
+        "provider": "fixture",
+        "id": "model",
+        "name": "Model",
+        "context": {
+          "contextWindow": 9007199254740992
+        }
+      }
+    },
+    {
+      "name": "defaultMaxTokens-valid",
+      "model": {
+        "provider": "fixture",
+        "id": "model",
+        "name": "Model",
+        "defaultMaxTokens": 256
+      }
+    },
+    {
+      "name": "defaultMaxTokens-fraction",
+      "model": {
+        "provider": "fixture",
+        "id": "model",
+        "name": "Model",
+        "defaultMaxTokens": 1.5
+      }
+    },
+    {
+      "name": "defaultMaxTokens-zero",
+      "model": {
+        "provider": "fixture",
+        "id": "model",
+        "name": "Model",
+        "defaultMaxTokens": 0
+      }
+    },
+    {
+      "name": "defaultMaxTokens-negative",
+      "model": {
+        "provider": "fixture",
+        "id": "model",
+        "name": "Model",
+        "defaultMaxTokens": -1
+      }
+    },
+    {
+      "name": "defaultMaxTokens-string",
+      "model": {
+        "provider": "fixture",
+        "id": "model",
+        "name": "Model",
+        "defaultMaxTokens": "256"
+      }
+    },
+    {
+      "name": "defaultMaxTokens-boolean",
+      "model": {
+        "provider": "fixture",
+        "id": "model",
+        "name": "Model",
+        "defaultMaxTokens": true
+      }
+    },
+    {
+      "name": "defaultMaxTokens-unsafe",
+      "model": {
+        "provider": "fixture",
+        "id": "model",
+        "name": "Model",
+        "defaultMaxTokens": 9007199254740992
+      }
+    },
+    {
+      "name": "defaultMaxTokens-safe",
+      "model": {
+        "provider": "fixture",
+        "id": "model",
+        "name": "Model",
+        "defaultMaxTokens": 9007199254740991
+      }
+    },
+    {
+      "name": "defaultMaxTokens-null",
+      "model": {
+        "provider": "fixture",
+        "id": "model",
+        "name": "Model",
+        "defaultMaxTokens": null
+      }
+    },
+    {
+      "name": "reasoning-valid",
+      "model": {
+        "provider": "fixture",
+        "id": "model",
+        "name": "Model",
+        "reasoning": {
+          "efforts": [
+            {
+              "id": "low",
+              "name": "Low"
+            }
+          ],
+          "defaultEffort": "low"
+        }
+      }
+    },
+    {
+      "name": "reasoning-empty",
+      "model": {
+        "provider": "fixture",
+        "id": "model",
+        "name": "Model",
+        "reasoning": {
+          "efforts": []
+        }
+      }
+    },
+    {
+      "name": "reasoning-empty-id",
+      "model": {
+        "provider": "fixture",
+        "id": "model",
+        "name": "Model",
+        "reasoning": {
+          "efforts": [
+            {
+              "id": "",
+              "name": "Low"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "reasoning-empty-name",
+      "model": {
+        "provider": "fixture",
+        "id": "model",
+        "name": "Model",
+        "reasoning": {
+          "efforts": [
+            {
+              "id": "low",
+              "name": ""
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "reasoning-number-id",
+      "model": {
+        "provider": "fixture",
+        "id": "model",
+        "name": "Model",
+        "reasoning": {
+          "efforts": [
+            {
+              "id": 7,
+              "name": "Low"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "reasoning-number-name",
+      "model": {
+        "provider": "fixture",
+        "id": "model",
+        "name": "Model",
+        "reasoning": {
+          "efforts": [
+            {
+              "id": "low",
+              "name": 7
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "reasoning-number-description",
+      "model": {
+        "provider": "fixture",
+        "id": "model",
+        "name": "Model",
+        "reasoning": {
+          "efforts": [
+            {
+              "id": "low",
+              "name": "Low",
+              "description": 7
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "reasoning-null-description",
+      "model": {
+        "provider": "fixture",
+        "id": "model",
+        "name": "Model",
+        "reasoning": {
+          "efforts": [
+            {
+              "id": "low",
+              "name": "Low",
+              "description": null
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "reasoning-duplicate",
+      "model": {
+        "provider": "fixture",
+        "id": "model",
+        "name": "Model",
+        "reasoning": {
+          "efforts": [
+            {
+              "id": "low",
+              "name": "Low"
+            },
+            {
+              "id": "low",
+              "name": "Other"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "reasoning-unknown-default",
+      "model": {
+        "provider": "fixture",
+        "id": "model",
+        "name": "Model",
+        "reasoning": {
+          "efforts": [
+            {
+              "id": "low",
+              "name": "Low"
+            }
+          ],
+          "defaultEffort": "unknown"
+        }
+      }
+    }
+  ],
+  "names": {
+    "catalog": [
+      "plain-catalog",
+      "plain-resolve",
+      "complete-catalog",
+      "complete-resolve",
+      "provider-foreign-catalog",
+      "provider-foreign-resolve",
+      "provider-number-catalog",
+      "provider-number-resolve",
+      "id-foreign-catalog",
+      "id-foreign-resolve",
+      "id-empty-catalog",
+      "id-empty-resolve",
+      "id-number-catalog",
+      "id-number-resolve",
+      "name-empty-catalog",
+      "name-empty-resolve",
+      "name-number-catalog",
+      "name-number-resolve",
+      "name-null-catalog",
+      "name-null-resolve",
+      "description-empty-catalog",
+      "description-empty-resolve",
+      "description-text-catalog",
+      "description-text-resolve",
+      "description-number-catalog",
+      "description-number-resolve",
+      "description-null-catalog",
+      "description-null-resolve",
+      "inputModalities-empty-catalog",
+      "inputModalities-empty-resolve",
+      "inputModalities-text-catalog",
+      "inputModalities-text-resolve",
+      "inputModalities-image-catalog",
+      "inputModalities-image-resolve",
+      "inputModalities-custom-catalog",
+      "inputModalities-custom-resolve",
+      "inputModalities-string-catalog",
+      "inputModalities-string-resolve",
+      "context-valid-catalog",
+      "context-valid-resolve",
+      "context-fraction-catalog",
+      "context-fraction-resolve",
+      "context-zero-catalog",
+      "context-zero-resolve",
+      "context-negative-catalog",
+      "context-negative-resolve",
+      "context-string-catalog",
+      "context-string-resolve",
+      "context-boolean-catalog",
+      "context-boolean-resolve",
+      "context-large-catalog",
+      "context-large-resolve",
+      "defaultMaxTokens-valid-catalog",
+      "defaultMaxTokens-valid-resolve",
+      "defaultMaxTokens-fraction-catalog",
+      "defaultMaxTokens-fraction-resolve",
+      "defaultMaxTokens-zero-catalog",
+      "defaultMaxTokens-zero-resolve",
+      "defaultMaxTokens-negative-catalog",
+      "defaultMaxTokens-negative-resolve",
+      "defaultMaxTokens-string-catalog",
+      "defaultMaxTokens-string-resolve",
+      "defaultMaxTokens-boolean-catalog",
+      "defaultMaxTokens-boolean-resolve",
+      "defaultMaxTokens-unsafe-catalog",
+      "defaultMaxTokens-unsafe-resolve",
+      "defaultMaxTokens-safe-catalog",
+      "defaultMaxTokens-safe-resolve",
+      "defaultMaxTokens-null-catalog",
+      "defaultMaxTokens-null-resolve",
+      "reasoning-valid-catalog",
+      "reasoning-valid-resolve",
+      "reasoning-empty-catalog",
+      "reasoning-empty-resolve",
+      "reasoning-empty-id-catalog",
+      "reasoning-empty-id-resolve",
+      "reasoning-empty-name-catalog",
+      "reasoning-empty-name-resolve",
+      "reasoning-number-id-catalog",
+      "reasoning-number-id-resolve",
+      "reasoning-number-name-catalog",
+      "reasoning-number-name-resolve",
+      "reasoning-number-description-catalog",
+      "reasoning-number-description-resolve",
+      "reasoning-null-description-catalog",
+      "reasoning-null-description-resolve",
+      "reasoning-duplicate-catalog",
+      "reasoning-duplicate-resolve",
+      "reasoning-unknown-default-catalog",
+      "reasoning-unknown-default-resolve",
+      "detach-catalog",
+      "detach-resolve"
+    ],
+    "stream": [
+      "plain",
+      "complete",
+      "provider-foreign",
+      "provider-number",
+      "id-foreign",
+      "id-empty",
+      "id-number",
+      "name-empty",
+      "name-number",
+      "name-null",
+      "description-empty",
+      "description-text",
+      "description-number",
+      "description-null",
+      "inputModalities-empty",
+      "inputModalities-text",
+      "inputModalities-image",
+      "inputModalities-custom",
+      "inputModalities-string",
+      "context-valid",
+      "context-fraction",
+      "context-zero",
+      "context-negative",
+      "context-string",
+      "context-boolean",
+      "context-large",
+      "defaultMaxTokens-valid",
+      "defaultMaxTokens-fraction",
+      "defaultMaxTokens-zero",
+      "defaultMaxTokens-negative",
+      "defaultMaxTokens-string",
+      "defaultMaxTokens-boolean",
+      "defaultMaxTokens-unsafe",
+      "defaultMaxTokens-safe",
+      "defaultMaxTokens-null",
+      "reasoning-valid",
+      "reasoning-empty",
+      "reasoning-empty-id",
+      "reasoning-empty-name",
+      "reasoning-number-id",
+      "reasoning-number-name",
+      "reasoning-number-description",
+      "reasoning-null-description",
+      "reasoning-duplicate",
+      "reasoning-unknown-default"
+    ]
+  }
+}

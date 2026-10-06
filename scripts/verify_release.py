@@ -59,6 +59,7 @@ from scripts.deepseek_capture_oracle import validate_runtime as validate_deepsee
 from scripts.persistence_read_oracle import validate_runtime as validate_persistence_read, identity as read_identity, NAMES as READ_NAMES
 from scripts.jsonl_sharing_oracle import validate_runtime as validate_jsonl_sharing, identity as sharing_identity, NAMES as SHARING_NAMES
 from scripts.canonical_llm_oracle import validate_runtime as validate_canonical_llm, identity as canonical_llm_identity, NAMES as CANONICAL_LLM_NAMES
+from scripts.llm_metadata_oracle import validate_runtime as validate_llm_metadata, identity as llm_metadata_identity, NAMES as LLM_METADATA_NAMES
 NODE_VERSION = 'v22.22.2'
 PORTABLE_ARCHIVE = 'dist/dsh-win7-portable-v0.1.0.zip'
 PAIRED_DRIVERS = (
@@ -71,9 +72,16 @@ PAIRED_DRIVERS = (
 )
 PAIRED_DRIVERS = PAIRED_DRIVERS + ('session_tools', 'sqlite_format', 'sqlite_provider', 'jsonl_provider', 'tool_scheduler', 'http_redirect', 'javascript_workflow', 'runtime_context', 'javascript_ready', 'persistence_read')
 PAIRED_DRIVERS = PAIRED_DRIVERS + ('javascript_initial', 'session_number', 'session_diagnostic', 'session_restore_sign')
-PAIRED_DRIVERS = PAIRED_DRIVERS + ('runtime_full_request', 'deepseek_error', 'deepseek_capture', 'jsonl_sharing', 'canonical_llm')
+PAIRED_DRIVERS = PAIRED_DRIVERS + ('runtime_full_request', 'deepseek_error', 'deepseek_capture', 'jsonl_sharing', 'canonical_llm', 'llm_metadata')
 OFFICIAL_CONFIGS = ('consumers', 'agent-lifecycle', 'session-recovery', 'session-projection', 'acp', 'acp-app', 'mcp', 'subagent-acp', 'storage-cache', 'session-observation', 'session-corpus', 'session-sqlite-query', 'query-engine-source', 'session-tools-source', 'sqlite-format-source', 'sqlite-provider-source', 'jsonl-provider-source', 'tool-scheduler-source', 'deepseek-source', 'llm-public-source')
 REQUIRED_REGRESSION = {
+    'test_llm_metadata_consumers': {
+        *{'test_actual_original_and_native_llm_metadata_match[' + name + ']' for name in LLM_METADATA_NAMES},
+        *{'test_llm_metadata_requires_complete_values_and_runtime[' + damage + ']' for damage in ('model', 'context', 'reasoning', 'description', 'max-tokens', 'modalities', 'trace', 'tail', 'duplicate', 'order', 'type', 'root', 'python', 'executable', 'module', 'bytes', 'group-missing', 'group-rows', 'group-root', 'group-executable', 'group-module')},
+        *{'test_llm_metadata_source_identity_is_required[' + damage + ']' for damage in ('pin', 'node', 'inputs', 'bytes')},
+        *{'test_portable_llm_metadata_refuses_partial_receipts[' + side + ']' for side in ('source', 'native')},
+    },
+
     'test_canonical_llm_consumers': {
         *{'test_actual_original_and_native_canonical_llm_match[' + name + ']' for name in CANONICAL_LLM_NAMES},
         *{'test_canonical_llm_requires_complete_values_identity_and_runtime[' + damage + ']' for damage in ('request', 'event', 'tool-id', 'message-form', 'message-split', 'message-cross-fixture', 'retry-form', 'retry-split', 'retry-cross-fixture', 'tail', 'duplicate', 'order', 'type', 'root', 'python', 'executable', 'module', 'bytes', 'group-missing', 'group-rows', 'group-root', 'group-executable', 'group-module')},
@@ -377,6 +385,8 @@ REQUIRED_REGRESSION = {
             'missing-module', 'changed-module', 'empty-closure', 'foreign-root', 'foreign-python', 'missing-row', 'duplicate-row', 'changed-row')},
     },
     'test_current_release_gate': {
+        *{'test_extracted_llm_metadata_requires_complete_values_and_runtime[' + damage + ']' for damage in ('missing', 'source-missing', 'source-changed', 'module-changed', 'model', 'context', 'reasoning', 'description', 'max-tokens', 'modalities', 'trace', 'tail', 'duplicate', 'order', 'type', 'root', 'python', 'executable', 'module', 'group-missing', 'group-rows', 'group-root', 'group-executable', 'group-module')},
+        *{'test_llm_metadata_consumer_lanes_are_mandatory[' + damage + ']' for damage in ('omit', 'skip', 'duplicate', 'failure')},
         *{'test_extracted_canonical_llm_requires_complete_values_and_runtime[' + damage + ']' for damage in ('missing', 'source-missing', 'source-changed', 'module-changed', 'request', 'event', 'tool-id', 'message-form', 'message-split', 'message-cross-fixture', 'retry-form', 'retry-split', 'retry-cross-fixture', 'tail', 'duplicate', 'order', 'type', 'root', 'python', 'executable', 'module', 'group-missing', 'group-rows', 'group-root', 'group-executable', 'group-module')},
         *{'test_canonical_llm_consumer_lanes_are_mandatory[' + damage + ']' for damage in ('omit','skip','duplicate','failure')},
         *{'test_extracted_jsonl_sharing_requires_complete_values_and_runtime[' + damage + ']' for damage in (
@@ -1233,6 +1243,11 @@ def validate_extracted(path, archive, candidate):
             candidate['canonical_llm_observations_sha256'], candidate['canonical_llm_modules'], check_files=False)
     except (ValueError, KeyError, TypeError) as error:
         raise RuntimeError('Extracted canonicalLlm consumer differs') from error
+    try:
+        validate_llm_metadata(report.get('llmMetadata'), Path(report['mcpStdio']['root']),
+            candidate['llm_metadata_observations_sha256'], candidate['llm_metadata_modules'], check_files=False)
+    except (ValueError, KeyError, TypeError) as error:
+        raise RuntimeError('Extracted llmMetadata consumer differs') from error
     for name, validate in [('queryEngine', validate_query_engine), ('querySchema', validate_query_schema), ('pythonDirectory', validate_python_directory),
                            ('sessionLineage', validate_session_lineage), ('sessionEventTrace', validate_session_event_trace),
                            ('sessionFilters', validate_session_filters), ('sessionRequests', validate_session_requests),
@@ -1451,6 +1466,11 @@ def verify(args, output):
     canonical_llm_report = json.loads(canonical_llm_native.read_text(encoding='utf-8'))
     candidate['canonical_llm_observations_sha256'] = canonical_llm_identity(json.loads(canonical_llm_source.read_text(encoding='utf-8')))
     candidate['canonical_llm_modules'] = canonical_llm_report['modules']
+    llm_metadata_source = output / 'llm-metadata-paired.source.json'
+    llm_metadata_native = output / 'llm-metadata-paired.native.json'
+    llm_metadata_report = json.loads(llm_metadata_native.read_text(encoding='utf-8'))
+    candidate['llm_metadata_observations_sha256'] = llm_metadata_identity(json.loads(llm_metadata_source.read_text(encoding='utf-8')))
+    candidate['llm_metadata_modules'] = llm_metadata_report['modules']
     raw = output / 'cordis-raw.json'
     raw.unlink(missing_ok=True)
     run([python, 'scripts/cordis_oracle.py', '--output', str(raw)],
@@ -1484,7 +1504,8 @@ def verify(args, output):
                '--deepseek-error-source', str(deepseek_error_source), '--deepseek-error-native', str(deepseek_error_native),
                '--deepseek-capture-source', str(deepseek_capture_source), '--deepseek-capture-native', str(deepseek_capture_native),
                '--sharing-source', str(sharing_source), '--sharing-native', str(sharing_native),
-               '--canonical-llm-source', str(canonical_llm_source), '--canonical-llm-native', str(canonical_llm_native)]
+               '--canonical-llm-source', str(canonical_llm_source), '--canonical-llm-native', str(canonical_llm_native),
+               '--llm-metadata-source', str(llm_metadata_source), '--llm-metadata-native', str(llm_metadata_native)]
     if not candidate['worktree_dirty']:
         command += ['--expected-commit', candidate['product_commit']]
     run(command, 'portable-extracted', output, env=environment)

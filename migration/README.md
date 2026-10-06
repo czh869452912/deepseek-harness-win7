@@ -1,5 +1,7 @@
 # 持续对齐记录
 
+2026-10-07 流断开fixture责任另闭合一部分：真实创建栈定位模拟LLM服务器client_closed路径仍进入下一次HTTP读取；两条实际断流控制修复前确定失败。现client_closed/reset及主动销毁均结束handler读取，正常completed仍可复用同连接两次；48项相关回归通过。原始诊断/失败/前后字节独立归档。另有stall关闭及正常请求后的idle reset诊断仍保留，未吞错或宣称全局socket异常消除；最新完整签收仍83026446/65。
+
 2026-10-07 Proactor既有warning已定位到WebServer契约测试自身：实际创建栈证明成功升级后的客户端writer未关闭，直到下一项测试所在循环已关闭后析构。原有客户端所有权控制确定失败；成功和中断两条关闭控制加入回归，固定fixture终于关闭并等待，不修改提供端/Source或屏蔽warning。修复后240项同范围实际诊断回归通过且没有Proactor异常记录；原始前后日志/XML/创建栈独立归档。socketserver10054及1175/5原因继续开放；最新完整签收仍83026446/65，fixture修复待下一完整门禁。见 `docs/research/2026-10-07-proactor-fixture-progress.md`。
 
 2026-10-07 最新干净签收 `83026446`：完整8975 passed、6既有skip、1既有warning、0失败/错误，3088.56秒；2522必需lane、74实际配对、20组1911原样Source断言及真实解压自有Python3.8.10/原版浏览器均通过。052选定JS异常边界、054 Windows元数据、055 minimal SDK三链已有界integrated，共65份独立验收；036保持partial、七父范围继续开放。独立精确ZIP/输入/XML/观察及32份历史归档哈希核验保留。本轮自动清理660个合成JSON9030378843字节、1817个重复预检副本744448390字节；真实证据、失败变体及未知文件保留。Proactor warning、WinError1175及WinError5原因尚未闭合，不新增绕过；延期Win7与accepted_upstream空不变。见 `reviews/SDK-RETENTION-GATE-20261007.md`。

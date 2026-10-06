@@ -1,0 +1,9 @@
+# 模拟LLM流结束后的连接所有权
+
+实际socketserver诊断栈定位到模拟LLM测试服务器：客户端中断流后，fixture已记录client_closed，但HTTP/1.1 handler仍进入下一次请求读取，造成额外WinError10053/10054。实际慢流与partial_disconnect两条所有权控制在修复前均确定失败，handler读取次数为二而非一。
+
+fixture现对client_closed/reset终止该连接的请求循环，主动销毁socket时也明确结束循环；成功completed路径继续支持连接复用。两条真实中断回归和同连接两个成功请求控制连同45项既有fixture回归共48 passed、16.75秒。没有业务提供端、Source、异常过滤或自动重试改动。
+
+18文件独立归档migration/evidence/artifacts/MOCK-STREAM-FIXTURE-20261007-27DEA08D.zip，SHA-256为d0098b231ce6d0c5ef76b8bd1f0faedc6e9f4bc2960f8b04968f93886c772262，保留原始创建栈、两项失败XML/日志、前后fixture与控制、完整诊断回归、逐项哈希。另有stall关闭时10058以及正常请求后idle读取10054原始诊断保留；本部分不声称这些也消除。后续应证明其精确读边界/关闭责任，不能吞掉未知服务异常。
+
+最新完整门禁签收仍83026446、65有界范围；本fixture修复须进入下一次完整门禁。七父范围和036partial保持开放。

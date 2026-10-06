@@ -279,6 +279,8 @@ class _MockLlmHandler(http.server.BaseHTTPRequestHandler):
         if record.outcome is not None:
             return
         record.outcome = outcome
+        if outcome in ("client_closed", "reset"):
+            self.close_connection = True
         self._safe_emit({
             "type": "result",
             "attempt": record.attempt,
@@ -387,6 +389,7 @@ class _MockLlmHandler(http.server.BaseHTTPRequestHandler):
 
 
     def _destroy_socket(self) -> None:
+        self.close_connection = True
         try:
             self.connection.setsockopt(socket.SOL_SOCKET, socket.SO_LINGER, struct.pack("ii", 1, 0))
         except Exception:

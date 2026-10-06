@@ -1,6 +1,6 @@
 # Automatic completed process artifact retention — 2026-10-06
 
-The completed51-test gate retained51 folders and47 completed per-test cleanup audits, removing637909631 bytes of47 synthetic JSONs;no receipt.json/extracted.json remains. All real data and audits remain. Four mandatory-lane cases create no synthetic receipt. The updated3200-second workspace/timeout/parent cleanup regressions pass14 cases8.68 seconds; eleven new retention controls are mandatory.
+The completed51-test gate retained51 folders and47 completed per-test cleanup audits, removing637909631 bytes of47 synthetic JSONs;no receipt.json/extracted.json remains. All real data and audits remain. Four mandatory-lane cases create no synthetic receipt. The updated3200-second workspace/timeout/parent cleanup regressions pass12 cases8.65 seconds; eleven new retention controls are mandatory.
 
 The final51-case SDK/extracted/positive gate revalidation passes327.45 seconds, compared with286.62 seconds before per-test cleanup. The prior complete8715-case XML took2678.481 seconds; the new collection has8843 tests, including106 SDK controls and eleven completed-folder retention controls. Whole-batch verification allocation is prospectively expanded2800→3200 seconds for this added actual Source/import coverage and immediate disk maintenance. Individual process deadlines, Source comparison/refusal criteria and original rejected evidence remain unchanged; the extra budget does not accept any prior timeout. Full clean execution must still finish normally and pass all required lanes.
 

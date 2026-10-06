@@ -20,7 +20,7 @@ def test_short_pytest_workspace_retains_owned_success_and_failure_artifacts(tmp_
         assert selected.name.startswith('g-')
         assert selected.parent == gate.ROOT / '.goose/out'
         assert command[1:4] == ['-m', 'pytest', 'tests']
-        assert timeout == 2800 and name == 'pytest' and selected_output == output
+        assert timeout == 3200 and name == 'pytest' and selected_output == output
         assert accepted == (0, 1)
         executions.append(selected)
         (selected / 'owned-observation.json').write_text('{"result":"retained"}\n', encoding='utf-8')

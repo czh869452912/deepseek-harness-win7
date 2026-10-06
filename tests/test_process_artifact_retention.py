@@ -3,6 +3,8 @@ import os
 from pathlib import Path
 import subprocess
 import sys
+import shutil
+import tempfile
 from types import SimpleNamespace
 
 import pytest
@@ -34,6 +36,45 @@ def receipt(workspace, label='test_control0', name='receipt.json', runtime=None)
 
 
 @pytest.mark.parametrize('name', ['receipt.json', 'extracted.json'])
+def test_finished_test_folder_prunes_only_its_own_synthetic_outputs(tmp_path, name):
+    root, output, workspace = completed(tmp_path)
+    selected = receipt(workspace, name=name)
+    other = receipt(workspace, label='test_still_active0')
+    real = selected.parent / 'actual-source.json'
+    real.write_text('{"source":"retained"}', encoding='utf-8')
+    result = retention.prune_finished_test_folder(root, workspace, selected.parent)
+    assert result['removed_files'] == 1
+    assert not selected.exists() and other.exists()
+    assert real.read_text(encoding='utf-8') == '{"source":"retained"}'
+    audit = json.loads((selected.parent / 'unit-receipts-pruned.json').read_text(encoding='utf-8'))
+    assert audit['status'] == 'completed' and audit['expected_files'] == 1
+    assert (output / 'pytest.xml').exists()
+
+
+@pytest.mark.parametrize('damage', ['external', 'nested', 'wrong-owner', 'real-zip', 'unknown-runtime'])
+def test_finished_test_folder_preserves_unowned_or_real_outputs(tmp_path, damage):
+    root, output, workspace = completed(tmp_path)
+    selected = receipt(workspace)
+    owner = workspace
+    if damage == 'external':
+        root = tmp_path / 'other-root'
+        root.mkdir()
+    elif damage == 'nested':
+        owner = workspace.parent
+    elif damage == 'wrong-owner':
+        owner = workspace / 'test_other0'
+        owner.mkdir()
+    elif damage == 'real-zip':
+        (selected.parent / 'portable.zip').write_bytes(b'PK actual archive')
+    else:
+        selected.write_text('{"runtime":{"checks":["original Source"]}}', encoding='utf-8')
+    before = selected.read_bytes()
+    result = retention.prune_finished_test_folder(root, owner, selected.parent)
+    assert result is None or result['removed_files'] == 0
+    assert selected.read_bytes() == before
+
+
+@pytest.mark.parametrize('name', ['receipt.json', 'extracted.json'])
 def test_finished_synthetic_receipts_are_pruned_with_bounded_audit(tmp_path, name):
     root, output, workspace = completed(tmp_path)
     selected = receipt(workspace, name=name)
@@ -46,6 +87,50 @@ def test_finished_synthetic_receipts_are_pruned_with_bounded_audit(tmp_path, nam
     assert audit['status'] == 'completed' and audit['expected_files'] == 1
     assert retention.prune_completed_regression(root, output)['removed_files'] == 0
     assert json.loads((output / 'unit-receipts-pruned.json').read_text(encoding='utf-8')) == audit
+
+
+@pytest.mark.parametrize('placement', ['owned', 'external'])
+@pytest.mark.parametrize('outcome', ['passed', 'failed'])
+def test_actual_gate_teardown_prunes_finished_test_before_next_test(tmp_path, placement, outcome):
+    root = Path(__file__).resolve().parents[1]
+    child = tmp_path / 'gate-teardown'
+    child.mkdir()
+    workspace = child / 'workspace' if placement == 'owned' else Path(tempfile.mkdtemp(prefix='gate-external-'))
+    record = child / 'first.txt'
+    script = child / 'test_teardown.py'
+    script.write_text(
+        "import json\nimport sys\nfrom pathlib import Path\n"
+        + "sys.path.insert(0, " + repr(str(root)) + ")\n"
+        + "sys.path.insert(0, " + repr(str(root / 'tests')) + ")\n"
+        + "from test_current_release_gate import prune_completed_gate_test\n"
+        + "RECORD = Path(" + repr(str(record)) + ")\n"
+        + "def test_first(tmp_path):\n"
+        + "    (tmp_path / 'portable.zip').write_bytes(b'exact candidate archive')\n"
+        + "    (tmp_path / 'receipt.json').write_text(json.dumps({'runtime': {'checks': ['actual runtime']}}), encoding='utf-8')\n"
+        + "    (tmp_path / 'actual-source.json').write_text('retained', encoding='utf-8')\n"
+        + "    RECORD.write_text(str(tmp_path), encoding='utf-8')\n"
+        + "    assert (tmp_path / 'receipt.json').exists()\n"
+        + ("    assert False, 'retained original failure'\n" if outcome == 'failed' else '')
+        + "def test_second(tmp_path):\n"
+        + "    previous = Path(RECORD.read_text(encoding='utf-8'))\n"
+        + "    assert (previous / 'receipt.json').exists() is " + str(placement == 'external') + "\n"
+        + "    assert (previous / 'actual-source.json').read_text(encoding='utf-8') == 'retained'\n"
+        + "    assert (previous / 'portable.zip').read_bytes() == b'exact candidate archive'\n"
+        + ("    assert json.loads((previous / 'unit-receipts-pruned.json').read_text(encoding='utf-8'))['status'] == 'completed'\n" if placement == 'owned' else ''),
+        encoding='utf-8')
+    try:
+        result = subprocess.run([sys.executable, '-m', 'pytest', str(script), '-q',
+            '--confcutdir=' + str(child), '--basetemp=' + str(workspace), '--junitxml=' + str(child / 'pytest.xml')],
+            cwd=str(root), capture_output=True, timeout=60)
+        (child / 'pytest.log').write_bytes(result.stdout + result.stderr)
+        assert result.returncode == (1 if outcome == 'failed' else 0), result.stdout + result.stderr
+        if outcome == 'failed':
+            assert b'retained original failure' in result.stdout
+            assert 'retained original failure' in (child / 'pytest.xml').read_text(encoding='utf-8')
+    finally:
+        if placement == 'external':
+            assert workspace.resolve() == workspace and workspace.name.startswith('gate-external-')
+            shutil.rmtree(str(workspace))
 
 
 @pytest.mark.parametrize('damage', ['real-zip', 'foreign-runtime', 'missing-runtime', 'invalid-json', 'unknown-name', 'nested-folder', 'unowned-folder'])

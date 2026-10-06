@@ -58,6 +58,7 @@ from test_llm_config_consumers import damage_observations as damage_llm_config_o
 from test_win32_stat_consumers import damage_runtime as damage_win32_stat_runtime
 from test_sdk_profile_consumers import damage_runtime as damage_sdk_profile_runtime
 from scripts.sdk_profile_cases import EXTRACTED_DAMAGES as SDK_EXTRACTED_DAMAGES
+from scripts.process_artifact_retention import prune_finished_test_folder
 from scripts.llm_metadata_oracle import observation_digest as llm_metadata_observation_digest
 from test_llm_metadata_consumers import damage_observations as damage_llm_metadata_observations
 from scripts.canonical_llm_oracle import observation_digest as canonical_llm_observation_digest
@@ -70,6 +71,16 @@ ROOT = Path(__file__).resolve().parents[1]
 SPEC = importlib.util.spec_from_file_location('current_release_gate', ROOT / 'scripts/verify_release.py')
 GATE = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(GATE)
+
+
+@pytest.fixture(autouse=True)
+def prune_completed_gate_test(request):
+    yield
+    folder = request.node.funcargs.get('tmp_path')
+    factory = getattr(request.config, '_tmp_path_factory', None)
+    workspace = getattr(factory, '_basetemp', None)
+    if folder is not None and workspace is not None:
+        prune_finished_test_folder(ROOT / '.goose/out', workspace, folder)
 
 
 def regression_xml(path, omit=None, skip=None, duplicate=None, failure=None):

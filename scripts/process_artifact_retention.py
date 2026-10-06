@@ -124,6 +124,26 @@ def prune_synthetic_workspace(output_root, workspace, audit):
             item = candidate(output_root, folder / name)
             if item is not None:
                 candidates.append(item)
+    return prune_candidates(output_root, candidates, audit)
+
+
+def prune_finished_test_folder(output_root, workspace, folder):
+    try:
+        workspace = owned_path(output_root, workspace)
+        folder = owned_path(output_root, folder)
+    except (OSError, ValueError, TypeError):
+        return None
+    if folder.parent != workspace or not folder.name.startswith('test_') or not folder.is_dir():
+        return None
+    candidates = []
+    for name in ('receipt.json', 'extracted.json'):
+        item = candidate(output_root, folder / name)
+        if item is not None:
+            candidates.append(item)
+    return prune_candidates(output_root, candidates, folder / 'unit-receipts-pruned.json')
+
+
+def prune_candidates(output_root, candidates, audit):
     candidates.sort(key=lambda item: item['path'])
     result = dict(removed_files=0, removed_bytes=0,
         manifest_sha256=hashlib.sha256(json.dumps(candidates, sort_keys=True, separators=(',', ':')).encode('utf-8')).hexdigest(),

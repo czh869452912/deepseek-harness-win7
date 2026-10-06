@@ -90,6 +90,9 @@ REQUIRED_REGRESSION = {
         for code, expected in ((1, 'EIO'), (2, 'ENOENT'), (3, 'ENOENT'), (5, 'EACCES'), (20, 'EIO'), (32, 'EIO'), (1175, 'EIO'), (1176, 'EIO'), (1177, 'EIO'))
     },
     'test_process_artifact_retention': {
+        *{'test_finished_test_folder_prunes_only_its_own_synthetic_outputs[' + name + ']' for name in ('receipt.json', 'extracted.json')},
+        *{'test_finished_test_folder_preserves_unowned_or_real_outputs[' + damage + ']' for damage in ('external', 'nested', 'wrong-owner', 'real-zip', 'unknown-runtime')},
+        *{'test_actual_gate_teardown_prunes_finished_test_before_next_test[' + outcome + '-' + placement + ']' for outcome in ('passed', 'failed') for placement in ('owned', 'external')},
         'test_interrupted_cleanup_resumes_without_rewriting_previous_audit[planned]',
         'test_interrupted_cleanup_resumes_without_rewriting_previous_audit[failed]',
         'test_synthetic_content_is_parsed_once_but_rechecked_before_deletion',
@@ -1473,7 +1476,7 @@ def run_python_regression(python, output, environment):
         pass
     try:
         exitstatus = run([python, '-m', 'pytest', 'tests', '-ra', '--junitxml=' + str(output / 'pytest.xml'),
-            '--basetemp=' + str(workspace)], 'pytest', output, env=regression_environment, timeout=2800, accepted=(0, 1))
+            '--basetemp=' + str(workspace)], 'pytest', output, env=regression_environment, timeout=3200, accepted=(0, 1))
         if exitstatus == 1:
             primary_failure = RuntimeError('pytest failed (1); see ' + str(output / 'pytest.log'))
     except BaseException as failure:

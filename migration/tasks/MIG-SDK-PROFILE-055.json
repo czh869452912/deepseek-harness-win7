@@ -27,5 +27,5 @@
   "candidate_commit": null,
   "integrated_commit": null,
   "evidence_ids": [],
-  "next_action": "f5087dcd全量正常8841pass/1fail/6skip/1warning/3413.28秒，SDK消费者通过；JS dropped-child观察在agent-end/child-dispose间竞争使门禁拒绝。精确完整证据和633项清理审计保留，双方改为等待完整处置边界并固定快照，50项实际会话及边界控制、四项逐lane门禁拒绝控制通过。2403必需lane/73配对待新的干净全量/20组1911Source/实际解压及原版浏览器；最新842/62及七父范围不变。"
+  "next_action": "f5087dcd全量正常8841pass/1fail/6skip/1warning/3413.28秒，SDK消费者通过；JS观察边界竞争拒绝证据保留，修正50项/四项拒绝控制已通过。过期预检副本自动维护79项、工作区12项及四项门禁拒绝通过，十一份历史执行19987副本/8188932290字节已清理；两次收取WinError5原始证据保留且原因未确认。执行新的干净全量、全部现行必需lane/配对、20组1911Source、实际解压及原版浏览器后才签收；最新842/62及七父范围不变。"
 }

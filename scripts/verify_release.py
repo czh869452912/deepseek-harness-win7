@@ -68,6 +68,7 @@ from scripts.sdk_profile_cases import VALUE_DAMAGES as SDK_PROFILE_DAMAGES, SOUR
 from scripts.llm_prepared_oracle import validate_runtime as validate_llm_prepared, identity as llm_prepared_identity, NAMES as LLM_PREPARED_NAMES
 from scripts.llm_metadata_oracle import validate_runtime as validate_llm_metadata, identity as llm_metadata_identity, NAMES as LLM_METADATA_NAMES
 from scripts.process_artifact_retention import prune_previous_regressions, prune_finished_focus_runs, expire_finished_manifests, prune_completed_regression
+from scripts.process_artifact_retention import prune_preflight_copies, prune_previous_preflight_copies
 NODE_VERSION = 'v22.22.2'
 PORTABLE_ARCHIVE = 'dist/dsh-win7-portable-v0.1.0.zip'
 PAIRED_DRIVERS = (
@@ -390,6 +391,18 @@ REQUIRED_REGRESSION = {
         "test_unsettled_async_body_is_physically_terminated_on_owner_unload[await Promise.resolve(); for(;;){}]",
         "test_unsettled_async_body_is_physically_terminated_on_owner_unload[await new Promise(()=>{})]",
     },
+    "test_preflight_copy_retention": {
+        'test_completed_preflight_prunes_only_unchanged_reconstructible_copies',
+        *{'test_unfinished_unowned_or_changed_preflight_inputs_stay_retained[' + damage + ']'
+          for damage in ('missing-case', 'duplicate-case', 'failed-case', 'skipped-case', 'unfinished', 'active', 'changed-original', 'external-owner')},
+        *{'test_previous_preflight_maintenance_requires_completed_release_state[' + state + ']'
+          for state in ('passed', 'failed', 'running', 'missing')},
+        'test_preflight_copy_changed_after_classification_is_preserved',
+        *{'test_malformed_frozen_preflight_manifest_never_deletes_copies[' + damage + ']'
+          for damage in ('wrong-type', 'aliased-input')},
+        *{'test_actual_maintenance_cli_prunes_completed_preflight_copies[' + mode + ']'
+          for mode in ('previous', 'output')},
+    },
     "test_workflow_session_boundary": {
         *{'test_dropped_child_observation_requires_result_semantics_and_disposal[' + order + '-' + semantic + ']'
           for order in ('semantic-first', 'dispose-first') for semantic in ('agent-end', 'log')},
@@ -503,6 +516,8 @@ REQUIRED_REGRESSION = {
         *{'test_extracted_sdk_profile_requires_complete_values_and_runtime[' + damage + ']' for damage in SDK_EXTRACTED_DAMAGES},
         *{'test_sdk_profile_consumer_lanes_are_mandatory[' + damage + ']' for damage in ('omit', 'skip', 'duplicate', 'failure')},
         *{'test_workflow_session_boundary_lanes_are_mandatory[' + damage + ']'
+          for damage in ('omit', 'skip', 'duplicate', 'failure')},
+        *{'test_preflight_copy_retention_lanes_are_mandatory[' + damage + ']'
           for damage in ('omit', 'skip', 'duplicate', 'failure')},
         *{'test_actual_pytest_unicode_lane_identity_remains_mandatory[' + damage + ']' for damage in ('none', 'omit', 'skip', 'duplicate', 'failure')},
         *{'test_extracted_llm_config_requires_complete_values_and_runtime[' + damage + ']' for damage in ('missing', 'source-missing', 'source-changed', 'module-changed', 'config', 'boolean', 'max-null', 'reason-null', 'same', 'same-stop', 'input', 'after-change', 'error', 'code', 'hook', 'signal', 'trace', 'tail', 'duplicate', 'order', 'type', 'unknown', 'root', 'python', 'executable', 'module', 'group-missing', 'group-rows', 'group-root', 'group-executable', 'group-module')},
@@ -1510,6 +1525,7 @@ def run_python_regression(python, output, environment):
     if owned_output and exitstatus in (0, 1):
         try:
             prune_completed_regression(parent, output)
+            prune_preflight_copies(parent, output, ROOT)
         except Exception as cleanup_failure:
             if exitstatus != 1:
                 raise
@@ -1550,6 +1566,7 @@ def verify(args, output):
         prepare_node_dependencies(output, environment)
     output_root = ROOT / '.goose/out'
     cleanup = dict(regressions=prune_previous_regressions(output_root), focused=[], expired_manifests=[])
+    cleanup['preflight_copies'] = prune_previous_preflight_copies(output_root, ROOT)
     focus_folder = output_root / 'acp-a4-work'
     if focus_folder.is_dir():
         cleanup['focused'] = prune_finished_focus_runs(output_root, focus_folder)

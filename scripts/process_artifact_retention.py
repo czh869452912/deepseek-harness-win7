@@ -298,6 +298,105 @@ def prune_previous_regressions(output_root):
     return reports
 
 
+PREFLIGHT_DAMAGE_CASES = ('missing-frontend', 'extra-frontend', 'wrong-target', 'missing-runtime',
+    'missing-icu', 'changed-icu-license', 'missing-case-fold', 'changed-case-fold',
+    'missing-zstd', 'changed-zstd-license', 'changed-zstd-dictionary', 'missing-sql',
+    'changed-sql', 'changed-sql-manifest')
+
+
+def prune_preflight_copies(output_root, output, product_root):
+    output = owned_path(output_root, output)
+    workspace = completed_workspace(output_root, output)
+    with open(native_path(owned_path(output_root, output / 'pytest.xml')), 'rb') as stream:
+        report = ET.parse(stream).getroot()
+    cases = [case for case in report.iter('testcase') if case.attrib.get('classname') == 'tests.test_release_preflight'
+        and case.attrib.get('name', '').startswith('test_invalid_input_fails_before_release_replacement[')]
+    required = {'test_invalid_input_fails_before_release_replacement[' + damage + ']' for damage in PREFLIGHT_DAMAGE_CASES}
+    if len(cases) != len(required) or {case.attrib['name'] for case in cases} != required or any(case.find(tag) is not None for case in cases for tag in ('failure', 'error', 'skipped')):
+        return None
+    frozen = read_json(owned_path(output_root, output / 'inputs.json'))
+    if not isinstance(frozen, dict):
+        raise ValueError('Frozen preflight inputs must be a mapping')
+    product_root = Path(os.path.abspath(str(product_root)))
+    sources = {}
+    for name, expected in frozen.items():
+        if not name.startswith(('apps/web/dist/', 'dsh/session/bin/icu/')):
+            continue
+        if '\\' in name or ':' in name or '..' in Path(name).parts:
+            raise ValueError('Invalid frozen preflight input path')
+        path = owned_path(product_root, product_root / name)
+        if path.relative_to(product_root).as_posix() != name or not stat.S_ISREG(os.lstat(native_path(path)).st_mode) or digest_file(path) != expected:
+            raise ValueError('Preserved preflight original differs from frozen input')
+        sources[name] = expected
+    if not sources:
+        return None
+    candidates = []
+    for child in os.scandir(native_path(workspace)):
+        if not re.fullmatch(r'test_invalid_input_fails_befor[0-9]+', child.name) or not child.is_dir(follow_symlinks=False):
+            continue
+        folder = owned_path(output_root, workspace / child.name)
+        for name, expected in sources.items():
+            try:
+                path = owned_path(output_root, folder / 'checkout' / name)
+                information = os.lstat(native_path(path))
+                if stat.S_ISREG(information.st_mode) and digest_file(path) == expected:
+                    candidates.append(dict(path=str(path), source=name, size=information.st_size, sha256=expected))
+            except FileNotFoundError:
+                continue
+    if not candidates:
+        return None
+    candidates.sort(key=lambda item: item['path'])
+    audit = output / 'preflight-copies-pruned.json'
+    suffix = 0
+    while os.path.lexists(native_path(audit)):
+        suffix += 1
+        audit = output / ('preflight-copies-pruned-retry-' + str(suffix) + '.json')
+    owned_path(output_root, audit, missing=True)
+    result = dict(status='planned', removed_files=0, removed_bytes=0, expected_files=len(candidates),
+        manifest_sha256=hashlib.sha256(json.dumps(candidates, sort_keys=True, separators=(',', ':')).encode('utf-8')).hexdigest(),
+        examples=candidates[-32:], scope='Only unchanged frontend/ICU copies in completed successful owned preflight cases; frozen inputs and preserved originals must match. Modified variants, unknown files, actual observations, logs, XML and ZIPs remain.')
+    with open(native_path(audit), 'x', encoding='utf-8') as stream:
+        json.dump(result, stream, indent=2)
+        stream.write('\n')
+    result['status'] = 'failed'
+    try:
+        for item in candidates:
+            path = owned_path(output_root, item['path'])
+            source = owned_path(product_root, product_root / item['source'])
+            information = os.lstat(native_path(path))
+            if not stat.S_ISREG(information.st_mode) or information.st_size != item['size'] or digest_file(path) != item['sha256'] or digest_file(source) != item['sha256']:
+                raise RuntimeError('Preflight copy or preserved original changed before cleanup')
+            os.unlink(native_path(path))
+            result['removed_files'] += 1
+            result['removed_bytes'] += item['size']
+        result['status'] = 'completed'
+    finally:
+        owned_path(output_root, audit)
+        with open(native_path(audit), 'w', encoding='utf-8') as stream:
+            json.dump(result, stream, indent=2)
+            stream.write('\n')
+    return result
+
+
+def prune_previous_preflight_copies(output_root, product_root):
+    root = owned_path(output_root, output_root)
+    reports = []
+    for child in os.scandir(native_path(root)):
+        if not child.is_dir(follow_symlinks=False):
+            continue
+        output = root / child.name
+        try:
+            summary = read_json(owned_path(root, output / 'summary.json'))
+            if summary.get('result') not in ('passed', 'failed'):
+                continue
+            result = prune_preflight_copies(root, output, product_root)
+            if result is not None:
+                reports.append(dict(output=str(output), **result))
+        except (OSError, ValueError, TypeError, KeyError, ET.ParseError):
+            continue
+    return reports
+
+
 def main():
     parser = argparse.ArgumentParser(description='Prune reconstructible completed process test receipts.')
     parser.add_argument('--output', type=Path)
@@ -307,7 +406,9 @@ def main():
     folder = output_root / 'acp-a4-work'
     expired = expire_finished_manifests(output_root, folder) if folder.is_dir() else []
     focused = prune_finished_focus_runs(output_root, folder) if folder.is_dir() else []
-    print(json.dumps(dict(regressions=result, focused=focused, expired_manifests=expired), ensure_ascii=False, indent=2))
+    product_root = Path(__file__).resolve().parents[1]
+    copies = prune_preflight_copies(output_root, arguments.output, product_root) if arguments.output else prune_previous_preflight_copies(output_root, product_root)
+    print(json.dumps(dict(regressions=result, focused=focused, expired_manifests=expired, preflight_copies=copies), ensure_ascii=False, indent=2))
 
 
 if __name__ == '__main__':

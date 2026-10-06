@@ -53,7 +53,7 @@ def test_short_pytest_workspace_runs_actual_shared_checkpoint_git_consumer(tmp_p
         commands.append(command)
         command = list(command)
         command[3] = 'tests/test_goose_project.py::test_split_tasks_fork_shared_checkpoint_without_losing_progress'
-        original_run(command, name, selected_output, **arguments)
+        return original_run(command, name, selected_output, **arguments)
 
     monkeypatch.setattr(gate, 'run', selected_consumer)
     gate.run_python_regression(sys.executable, output, dict(os.environ))

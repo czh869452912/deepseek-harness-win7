@@ -38,11 +38,14 @@
     "docs/research"
   ],
   "open_findings": [
-    "Provider, Source observers, consumer/refusal controls and extracted portable gate have been promoted; fresh Root26 Source/native observations match, but full frozen acceptance and actual own candidate extraction remain pending."
+    "Provider, Source observers, consumer/refusal controls and extracted portable gate have been promoted; fresh Root26 Source/native observations match, but full frozen acceptance and actual own candidate extraction remain pending.",
+    "Clean2d8fed63 full gate rejected:8634passed,one stale subagent preflight expected not registered instead of canonical NO_ADAPTER,no errors,six existing skips,one Proactor warning,2754.16sec. Exact ZIP/inputs/full XML/logs and559JSON6473952361B cleanup audit archived. Actual Source/native typed public error matches. Strict fixture type/code/message/rendered diagnostics corrected; fresh full acceptance pending."
   ],
   "conflicts_with": [],
-  "candidate_commit": null,
+  "candidate_commit": "2d8fed633833eb419cbdec41fbe36bdc96a90e50",
   "integrated_commit": null,
-  "evidence_ids": [],
-  "next_action": "必要提供端/观察/消费者/便携与门禁已推广，Root26完整Source/native、108prepared、95拒绝消费者与336相关回归通过，旧包17差异资格归档保留。提交后执行8641项新干净完整验收、2185必需lane/71配对/20组1911原样Source及真实解压；051依赖未签收前不称integrated，七父范围继续开放。"
+  "evidence_ids": [
+    "RUN-LLM-CONFIG-REJECTED-20261006-2D8FED63"
+  ],
+  "next_action": "2d8精确拒绝及实际原版preflight诊断保留；严格消费者断言与31项定向回归通过，提供端不变。提交后冻结新8641项完整验收、2185必需lane/71配对/20组1911Source及真实解压；051/053未签收，七父范围与延期Win7开放。"
 }

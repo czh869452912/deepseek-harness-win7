@@ -2,7 +2,7 @@ import pytest
 from dsh.cordis.context import Context
 from dsh.core.session import Session
 from dsh.core.abort import AbortController
-from dsh.llm.llm_service import LlmRuntime
+from dsh.llm.llm_service import LlmError, LlmRuntime
 from dsh.llm.llm_deepseek import LLMDeepSeekPlugin
 from dsh.subagent.model_selection import (requested_options, allowed_selection, preflight, read_policy,
                                          record_policy, ModelSelectionSettings)
@@ -62,7 +62,10 @@ async def test_native_adapter_preflight_returns_official_effort_metadata_and_rej
         await preflight(llm, parent, {'reasoningEffort': 'max'}, AbortController().signal)
         with pytest.raises(Exception, match='does not support'):
             await preflight(llm, parent, {'reasoningEffort': 'unknown'}, AbortController().signal)
-        with pytest.raises(Exception, match='not registered'):
+        with pytest.raises(LlmError) as missing_adapter:
             await preflight(llm, parent, dict(provider='missing', model='model'), AbortController().signal)
+        assert missing_adapter.value.code == 'NO_ADAPTER'
+        assert missing_adapter.value.message == 'no adapter registered for provider "missing"'
+        assert str(missing_adapter.value) == '[NO_ADAPTER] no adapter registered for provider "missing"'
     finally:
         await ctx.fiber.dispose()

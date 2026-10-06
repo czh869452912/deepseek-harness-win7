@@ -1,0 +1,478 @@
+{
+  "id": "RUN-LLM-CONFIG-REJECTED-20261006-2D8FED63",
+  "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
+  "product_commit": "2d8fed633833eb419cbdec41fbe36bdc96a90e50",
+  "kind": "verification",
+  "task_id": "MIG-LLM-CONFIG-053",
+  "acceptance_digest": "34a9eac273fa015ed6086c64f24a504cb6787175ddd985b82153245e6902a28f",
+  "result": "failed",
+  "validity": "current",
+  "exit_code": 1,
+  "commands": [
+    ".venv/Scripts/python.exe scripts/verify_release.py --browser \"C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe\" --output-dir .goose/out/llm-config-clean-2d8fed63"
+  ],
+  "environment": {
+    "python": "3.8.10 (default, May  6 2021, 17:27:56) [MSC v.1928 64 bit (AMD64)]",
+    "os": "Windows-10-10.0.26200-SP0",
+    "cwd": "C:\\Users\\czh86\\Documents\\Codex\\deepseek-harness-win7",
+    "node": "v22.22.2"
+  },
+  "contract_revisions": {
+    "CON-LLM-PREPARED": 1,
+    "CON-LLM-METADATA": 1,
+    "CON-LLM-CONFIG": 1
+  },
+  "inputs": [
+    {
+      "path": "dsh/__init__.py",
+      "sha256": "af32ce70975f927244a1a02f58fab22d94a9f1325dd15a54e2856fe214b15722"
+    },
+    {
+      "path": "dsh/cordis/__init__.py",
+      "sha256": "c44353c21dad0603727420ee072685308046a323c13ebb1b99af211257ba33b2"
+    },
+    {
+      "path": "dsh/cordis/awaiting.py",
+      "sha256": "e269f145cb0998f126bd82ca41fc915059c9a43696edf354391ad2d46c679eb4"
+    },
+    {
+      "path": "dsh/cordis/context.py",
+      "sha256": "19621431da94d988c35e290b10bde44f5e14e6cde6dbee95a66bf49ad24ed8b3"
+    },
+    {
+      "path": "dsh/cordis/environment.py",
+      "sha256": "18303b36ea02507e5f43c6b1cfa26eb12fc18a9c5f96d1b27a2436b82db2fd19"
+    },
+    {
+      "path": "dsh/cordis/errors.py",
+      "sha256": "3728def5ce3dde76e0a3f89630704d0e9596e132c35ef58949c7e5235b482997"
+    },
+    {
+      "path": "dsh/cordis/events.py",
+      "sha256": "2c7386b4b96a2720e73fd5f6a80b7917b44da248a67b47031ae4b04e2f0ddcd1"
+    },
+    {
+      "path": "dsh/cordis/fiber.py",
+      "sha256": "9dfe7c32a6c58e9b30e43a77c3a126188b0957874c7b9046d8f25060003f0801"
+    },
+    {
+      "path": "dsh/cordis/hmr.py",
+      "sha256": "42e1f383ef3f58b75605425332f19e738a784825a0363e00fc0d34d9cfeaabd1"
+    },
+    {
+      "path": "dsh/cordis/include.py",
+      "sha256": "0e54cb546eba5af5fc8d8c6872fd75e75502c9300b82258565014a8e5b23126d"
+    },
+    {
+      "path": "dsh/cordis/json_text.py",
+      "sha256": "94f5c115afa030616f15dd12e2d99c8b763515ee09d37881be774ef85812f13c"
+    },
+    {
+      "path": "dsh/cordis/loader.py",
+      "sha256": "c79077e2b0469c2ef5db44b91b7497189d2d81ca30f0f81701ce40382ac510da"
+    },
+    {
+      "path": "dsh/cordis/logger.py",
+      "sha256": "99b55c49b4ea640e29ed2b6abf53a41370d32bcee94fb25ebfba0cab1b588ab4"
+    },
+    {
+      "path": "dsh/cordis/plugin.py",
+      "sha256": "56b7cd4d672d3ee94de0773fc329fdd590f2a19a56533052486a41107f447bb5"
+    },
+    {
+      "path": "dsh/cordis/profile.py",
+      "sha256": "4de2af790c7887c2c370ed3624f80d8bec49d0226d5d19990906d5f2ceb4eda2"
+    },
+    {
+      "path": "dsh/cordis/reflect.py",
+      "sha256": "b60ab339ddc1d1b5a2d68109f93eba573bf26ddf862d3590de41dddab71ffc85"
+    },
+    {
+      "path": "dsh/cordis/registry.py",
+      "sha256": "0514660725fdbcb7e3ebf35c3ec81d37f6241efa9bc7cb244cc28a4c1e78b127"
+    },
+    {
+      "path": "dsh/cordis/schema.py",
+      "sha256": "f4e012dce51ae78d9ccd17358949bdde31af45d28db040df4d189cfb33cbb408"
+    },
+    {
+      "path": "dsh/cordis/service.py",
+      "sha256": "d2fa2b85605d2f4af9a48099c3998940a8db58fe7dcf4e4a2ae96fb11c9b3103"
+    },
+    {
+      "path": "dsh/cordis/timer.py",
+      "sha256": "37e79028fe50d925a5d904d297c66f9fc15e2efe53b7af64f7def4791987caac"
+    },
+    {
+      "path": "dsh/cordis/utils.py",
+      "sha256": "bd03ffd8ce4dbcc86bb2092f72e7059827af94e333336c8b0ceb8d312f61af2e"
+    },
+    {
+      "path": "dsh/core/__init__.py",
+      "sha256": "cac353cc3fbc26ecb6bd1547c91189edfadfb3373aa41340bcfd691369942cb9"
+    },
+    {
+      "path": "dsh/core/abort.py",
+      "sha256": "cb6f979fb2cb3d1fe92283297da4c23aa6e97192201ec8a34b584776ebc74f1c"
+    },
+    {
+      "path": "dsh/core/agent.py",
+      "sha256": "f5ec013125b7e620d10a800606ca57bd68171ce8d4291de4e4c35eff08c13de7"
+    },
+    {
+      "path": "dsh/core/agent_default_model_invariant.py",
+      "sha256": "24939b6f6e7e99380541718cf57193f0b11c67e867963d9c38e2abd110e854ca"
+    },
+    {
+      "path": "dsh/core/agent_factory.py",
+      "sha256": "dbaf5e4c5b91e5c2e0f7211477d23a72b10f8db1f3a30306deab25959aca5573"
+    },
+    {
+      "path": "dsh/core/agent_loop.py",
+      "sha256": "6e975a402bd5046b2b95d02ba60d1066cdc80d2527c41c96ef0a124a05e383de"
+    },
+    {
+      "path": "dsh/core/agent_loop_settings.py",
+      "sha256": "7fef390997b4e6596fbe7044b3df94fc502e7f36f50c8e9972a58b37da0a603d"
+    },
+    {
+      "path": "dsh/core/configured_agents.py",
+      "sha256": "585ae73e428da55faf3c82ccccfe14d8b8a0727d07fc566d21892fb755941424"
+    },
+    {
+      "path": "dsh/core/consumed_work.py",
+      "sha256": "c2127c5dd09a9184bf380bd4b598e65d11c7fc9c520f1b59b775db01fc40c1e9"
+    },
+    {
+      "path": "dsh/core/inbox.py",
+      "sha256": "cb6ad4f23a1689637270ea18da6bbf6e07472a16a5232b5ce790824d0aea629f"
+    },
+    {
+      "path": "dsh/core/json_schema.py",
+      "sha256": "087ae5e73f1d51a87a098e18677ac5a1cbcb92ffb0252484f6c6a383084a84f0"
+    },
+    {
+      "path": "dsh/core/model_selection.py",
+      "sha256": "2543b5d07a894e196a4b492cd14ab0d917e8c53d6af2beb74152b898995b7b54"
+    },
+    {
+      "path": "dsh/core/runtime_context.py",
+      "sha256": "1ae9f545ae20aa24b50090c001383af02152ae793e356d25db469572f3946d54"
+    },
+    {
+      "path": "dsh/core/scope.py",
+      "sha256": "8bd72f48b3966c3ee294ed193899f36ade92b0fa336f8586c093ca3230216ef9"
+    },
+    {
+      "path": "dsh/core/session/__init__.py",
+      "sha256": "de6c0ff802f648157221a7802adbd5120ae4f4e02a3248a3831717e781b0bbe7"
+    },
+    {
+      "path": "dsh/core/session/chunk_rows.py",
+      "sha256": "abee181632b6e9f6df67ebffd1a8aed8af8e2f6ac7ea9990430472a5a40638a7"
+    },
+    {
+      "path": "dsh/core/session/invariant.py",
+      "sha256": "a8e032b80c79cfa60ca58a7e049d09729c6844c76693534ae84c617bd628814b"
+    },
+    {
+      "path": "dsh/core/session/json.py",
+      "sha256": "30317e97a76226347a4cc051a11cfa9500135126ee7a9c438e250c7919d52462"
+    },
+    {
+      "path": "dsh/core/session/known_event_types.py",
+      "sha256": "42d1f8250272191869eb33033082da2e07b86e78c7247c812c9579ef4f32718e"
+    },
+    {
+      "path": "dsh/core/session/preparation.py",
+      "sha256": "d95ca75eba1641f0a02f760c8ede4ee4b1ef936f8ed6c4311d7126e5dbf7966a"
+    },
+    {
+      "path": "dsh/core/session/repair.py",
+      "sha256": "317f9e521d729d69d7a48e015cddc14eb543769e3621b8ebb03a603a54804c4d"
+    },
+    {
+      "path": "dsh/core/session/request_header.py",
+      "sha256": "065829a01a3b5d0639f7d6bf37bb7aba864582df1dc758456b4ceaaaf99f8618"
+    },
+    {
+      "path": "dsh/core/session/seq_ranges.py",
+      "sha256": "2dfb0787b5feababe09309b9e58870ab4b22cb58e5d1a4b9c50d09804bb44310"
+    },
+    {
+      "path": "dsh/core/session/session.py",
+      "sha256": "5de1e18fe524b40922fb546881ec58a93467cbc105ca54c3ac2d3fe62091ae53"
+    },
+    {
+      "path": "dsh/core/session/surface.py",
+      "sha256": "9ac9b784a4e8b3859f64ddafbf6e6e88d45dd0776c6b41d3b6dbfbcc6c5c461f"
+    },
+    {
+      "path": "dsh/core/session/types.py",
+      "sha256": "3414678825389c86f2dda75f2a531362cefbb3606c8039545798f5bcaa28cc9d"
+    },
+    {
+      "path": "dsh/core/surface.py",
+      "sha256": "37ddc5915a1586dcf91acc89b67f546571797406af409aea7d1db3e999830a59"
+    },
+    {
+      "path": "dsh/core/tool_calls.py",
+      "sha256": "a8f129fe9c23b6c79a7e4607c288cbf4a54e75ad5af7c045902c87b5609b163b"
+    },
+    {
+      "path": "dsh/core/tools.py",
+      "sha256": "755013fdeb508604e87e64504db3cedc215d5699b034fd36c2a63f950070b65f"
+    },
+    {
+      "path": "dsh/diagnostics/__init__.py",
+      "sha256": "5ada1a49078955bc864b87b38150c0d93b835faa0198889bb5e9024a2c221774"
+    },
+    {
+      "path": "dsh/diagnostics/invariants.py",
+      "sha256": "4d14056f10ae5a9d08e538a7fe989c7fb752c7e0aa0e40f7b1ff769ee1f6e65e"
+    },
+    {
+      "path": "dsh/llm/call_config.py",
+      "sha256": "1bb58f015f3fd22c3189ec333ac2d60adf401df7a57eed6992d7ae23e87e9c78"
+    },
+    {
+      "path": "dsh/llm/error.py",
+      "sha256": "9b7acee8f5582ad78aa7870c3598c419b8545fd6e0934df8b7b6400d1d8373e5"
+    },
+    {
+      "path": "dsh/llm/llm_service.py",
+      "sha256": "927ec704f884e50d8189f3c3363dcae4e189a7b1bd866dc274c2c05ad4113af9"
+    },
+    {
+      "path": "dsh/llm/message.py",
+      "sha256": "64525d7dccbb0c1788ef4ee2411d82434900d272902a7416beeaab738ccf4841"
+    },
+    {
+      "path": "dsh/llm/stream_bridge.py",
+      "sha256": "f42d819023ce28868a20f57398e67cf3e8151a617c6f63e3df2126dc58d05f25"
+    },
+    {
+      "path": "dsh/session/__init__.py",
+      "sha256": "e7b75be7b965f925d80d5a3ab1e6aefa31ea4323ff6db3616b0478a61679edcb"
+    },
+    {
+      "path": "dsh/session/checkpoint_policy.py",
+      "sha256": "4e14bf61055e25a06335169484755a204e34e5472df548ad945e307a94853f3f"
+    },
+    {
+      "path": "dsh/session/checkpoint_policy_invariant.py",
+      "sha256": "688ab52032fe0e16d8e5ebb9848eb0ea921af3e0c9145ccd3d3da8cccc859c96"
+    },
+    {
+      "path": "dsh/session/durable_publish.py",
+      "sha256": "48c51420072c4e05d0ff2b8aab874a6d7b439ee7cfc583912e44256270c76e9b"
+    },
+    {
+      "path": "dsh/session/file_io.py",
+      "sha256": "9a8688a9e106da2435a3e8c86baec5841543548aa987bc4e41ad10abae404d8a"
+    },
+    {
+      "path": "dsh/session/file_revision.py",
+      "sha256": "1a41d91ed2803292485b1a3f7fbd066ae57c714d9cbaaa9960dfe8193c29dfd9"
+    },
+    {
+      "path": "dsh/session/icu_collation.py",
+      "sha256": "7b0fc1bd9751bf7502dcbd4ffbbde2430ee162306833962abf054241b3275169"
+    },
+    {
+      "path": "dsh/session/jsonl_format.py",
+      "sha256": "eb075bae6689c08c7a478519661ce661107ff06cd2fff0e88534c109f229d250"
+    },
+    {
+      "path": "dsh/session/jsonl_store.py",
+      "sha256": "9a19c1449fa8d71ca7142d581383fcbaf6f5756d120efc8ab6b8353f2534b811"
+    },
+    {
+      "path": "dsh/session/jsonl_zstd.py",
+      "sha256": "23937f97f1a71e4c10ef672a2882579a88ba795d5bdb3c02a6bf6ceb36aa57a0"
+    },
+    {
+      "path": "dsh/session/persistence.py",
+      "sha256": "62efff843e0bb9da0c678b36e8b90d92ac4a0537166664b728f5f405d806ead6"
+    },
+    {
+      "path": "dsh/session/persistence_jsonl_canonical.py",
+      "sha256": "cfcb5f1ab8e41609d896d35d6856911d57f3325296c87dbd506da5a24001914b"
+    },
+    {
+      "path": "dsh/session/persistence_sqlite_canonical.py",
+      "sha256": "e5f5ec550325ce3316c8d52ddfd6902979a715ce3de60a4694ef32e6ec7c2845"
+    },
+    {
+      "path": "dsh/session/preparations.py",
+      "sha256": "81ef56a4ed074a2429c0ce691d237cc49f07a6f149989eee390b43af152e4d25"
+    },
+    {
+      "path": "dsh/session/projections.py",
+      "sha256": "d88ebd82c7a1127ef0f8ebd0423d563eb4aec82f6eff6e8847292d191053eaec"
+    },
+    {
+      "path": "dsh/session/repair.py",
+      "sha256": "cb0e73852a76a265b79cedd33b0b0603b0fb6c526b836528c2066cb87277e561"
+    },
+    {
+      "path": "dsh/session/seq_ranges.py",
+      "sha256": "07f95d044b4e4268a1c91f6fcd5fda0f05ec7699c4929152cb2b3d0cebc183ab"
+    },
+    {
+      "path": "dsh/session/session_log_deepseek.py",
+      "sha256": "83becd6c45f1c3ef120088981a05ea5537e78ae1b7ed6c9820bbe96a5cc32c1c"
+    },
+    {
+      "path": "dsh/session/session_log_deepseek_invariant.py",
+      "sha256": "3a27821f2240de0cd899d1de5cd43b10ff923d78405e89f5da3e4fa674d2b460"
+    },
+    {
+      "path": "dsh/session/session_query.py",
+      "sha256": "1df79e912832ff911a6298512f415f19b84787d63af338ffcaa642aacf09e833"
+    },
+    {
+      "path": "dsh/session/sqlite_codec.py",
+      "sha256": "36b9907f9948d83e85659c4f7919545893b24b4069a3fcdf7a155b2f91540bee"
+    },
+    {
+      "path": "dsh/session/sqlite_compression.py",
+      "sha256": "4f004c454e007a8d2b132312ed7dc92bf3e3512078fe8b8e8d8cfaceff574021"
+    },
+    {
+      "path": "dsh/session/sqlite_database.py",
+      "sha256": "4f8c33ad0fadaf6e988f41e647dad85f2c77edfe55da79071bc0536f63068851"
+    },
+    {
+      "path": "dsh/session/sqlite_json.py",
+      "sha256": "4e07cce2de51dca34ec45633572675959484f6258957ed8611943eb218321380"
+    },
+    {
+      "path": "dsh/session/sqlite_logical.py",
+      "sha256": "7d2d298fa26c374189d8c2b5ca03c2bf52293ce61e3920943fa427d48d2ab95d"
+    },
+    {
+      "path": "dsh/session/sqlite_schema.py",
+      "sha256": "c46410ed6f0805fd31a00e42e8de0809379898963ca4eeb0227151b629180fd8"
+    },
+    {
+      "path": "dsh/session/sqlite_source_seqs.py",
+      "sha256": "ca9453ae92dff88795a710eee6f72d154e708e1cdad132c8cfbf7330e2f4b07c"
+    },
+    {
+      "path": "dsh/session/sqlite_sql.py",
+      "sha256": "913e14c09b87391caaaa140090feb8a34e500bdd34a8517ea1bc297f2e761206"
+    },
+    {
+      "path": "dsh/session/sqlite_store.py",
+      "sha256": "86225940751dc092cfe16f2560d92e470eab151ebb7c3ba00f1ed0a46e0f2efc"
+    },
+    {
+      "path": "dsh/session/stats.py",
+      "sha256": "f1daf41c962351c52306d3d85f3cbc5f9d6bdf4f7edce197baf55804085be209"
+    },
+    {
+      "path": "dsh/session/text.py",
+      "sha256": "484dc0d614aab99dc7ec0a00904d54c236327e6deaa0391d097b62314ee0d094"
+    },
+    {
+      "path": "dsh/session/title.py",
+      "sha256": "ffc096d9348ab5d0169a5d8bc66fd321fab656d1aa60c3a00e4972c220d6c86c"
+    },
+    {
+      "path": "dsh/session/zstd.py",
+      "sha256": "81d92695107bb246db8dad7d96824a27f175d4129897d5bf8174e886df1b1d70"
+    },
+    {
+      "path": "dsh/settings/__init__.py",
+      "sha256": "bc01f4c91f61dc3e3b3449eb9293aa48bc8056d99f289e03513d327c3ff0e72a"
+    },
+    {
+      "path": "dsh/settings/provider.py",
+      "sha256": "c8ec104efebeaaf1d1c64bf9e48c22b7539c27a24d8db6891c55189d674edd99"
+    },
+    {
+      "path": "dsh/settings/redact.py",
+      "sha256": "573231cf64bf1fa00a0a4d372d4e92db7e0197248114927d3528c71eadd88c0f"
+    },
+    {
+      "path": "dsh/settings/settings_file.py",
+      "sha256": "e8cbf2c8684f3446ddcd530bfef2d75e23303f4a7661770ba2a190a400b51d37"
+    },
+    {
+      "path": "dsh/settings/types.py",
+      "sha256": "5d3969a33a70fe392e7a4d6b234d0473f9c54f81f99657de2313e08053866f2d"
+    },
+    {
+      "path": "dsh/subagent/__init__.py",
+      "sha256": "df95ecc2679086ee5197afcffd6c0f7ad9ef2872f8315590eaf957e0e3e4be3b"
+    },
+    {
+      "path": "dsh/subagent/model_selection.py",
+      "sha256": "ddffd85702edcf1c80cfecfeda137abb2ca0a52180ae6c3c4c5f90cdf073ec72"
+    },
+    {
+      "path": "dsh/subagent/subagent_service.py",
+      "sha256": "b49d673de1a0545411a5631d657862e71ac2c5689fe78699d5107b54ad130e0a"
+    },
+    {
+      "path": "dsh/subagent/tool_subagent.py",
+      "sha256": "1a353e709ab6056ed8c887958ef881276c437f040875dae7be6a2eb9f66f9c1b"
+    },
+    {
+      "path": "dsh/typert/__init__.py",
+      "sha256": "b04ebb43016b2a9c55687d9d3552f637f9663087dd392103bc341872ffb291e1"
+    },
+    {
+      "path": "dsh/typert/protocol.py",
+      "sha256": "58507b7265834163f0baa193bb83f025fe8662b505184eefae50b8db94b9385d"
+    },
+    {
+      "path": "dsh/typert/registry.py",
+      "sha256": "964dca489e5bd5ad3095ede4aa8f759d9d751e0d2ee3906af961870560916e74"
+    },
+    {
+      "path": "dsh/typert/remote.py",
+      "sha256": "4ef2b33899d4993ba149adb23f33d6e6d76d85a308762cb2d6d61eccf664cbe0"
+    },
+    {
+      "path": "dsh/typert/stores.py",
+      "sha256": "bb8a4a8b4a3f7cb70c5a6863cd1ccaee050ee4248c92896e87258d7d997eeb75"
+    },
+    {
+      "path": "scripts/frontend-inputs.json",
+      "sha256": "0828db10d08b0e46fd2b505212cab269313a6fbeb4500a0a3f63186d8b768c9a"
+    },
+    {
+      "path": "scripts/llm_config_oracle.py",
+      "sha256": "96fe2721dabf76aa608c6936cf581b665eeb6dc15d9f292859e1aa3a1b0ce948"
+    },
+    {
+      "path": "scripts/migration.py",
+      "sha256": "68d542b42a5c0d41ba53a1968c260ebc46e2d208e20a16caf8d739031992ab44"
+    },
+    {
+      "path": "scripts/process_artifact_retention.py",
+      "sha256": "b75d237bdada32b76ebcd92f769189d5683ff07c38b1b2b43044d2c2bc7de9c6"
+    },
+    {
+      "path": "scripts/verify_release.py",
+      "sha256": "010deb28aa7921c27bef146b947e73867faf79ef56ef082cef22b9e12e585be1"
+    },
+    {
+      "path": "tests/test_subagent_model_selection.py",
+      "sha256": "7e009e3218ce4ec8f958ddc44a4609a05b4cd57aed05d51da73fda1a8eb45b15"
+    }
+  ],
+  "artifacts": [
+    {
+      "path": "migration/evidence/artifacts/LLM-CONFIG-REJECTED-20261006-2d8fed63.zip",
+      "sha256": "9b1b0264acfdd39da99c4b83cc73bc0abb68a831b80f7ab9bad63a6dfb446dc0"
+    },
+    {
+      "path": "migration/evidence/artifacts/SUBAGENT-PREFLIGHT-DIAGNOSTICS-20261006-2d8fed63.zip",
+      "sha256": "1b7ee7dd9fcce44eba9cc93cfac365cece4a535601730c72c5e8d62134260ae9"
+    }
+  ],
+  "scope": "Exact clean2d8fed63 candidate rejected:8634passed,one subagent preflight expectation mismatch,six existing platform skips,one Proactor warning; complete full pytest terminated normally in2754.16sec. Missing adapter now rejects with canonical Source NO_ADAPTER; old test expects not registered. Actual failed test bytes,complete frozen inputs,ownPortable,XML/logs and559JSON6473952361B completed cleanup audit retained before mutation. Root and Source clean. No downstream Source groups,pairs,browser/extracted or051/053 acceptance follows. Actual clean pinned Source preflight and native public name/message/code literally match NO_ADAPTER. Companion independently retains actual Source bytes and frozen native imports. The consumer correction tightens type/code/full message instead of broad regex. The old failed fixture,Python rendering observer error and separate historical TS origins are retained. Full clean acceptance after correction remains required;051/053 and seven broad parents stay open."
+}

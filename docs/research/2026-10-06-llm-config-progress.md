@@ -1,5 +1,9 @@
 # 独立LLM配置查询与空值归属
 
+干净产品 `2d8fed63` 的首次完整门禁被拒绝：**8634 passed、1 failed、6 skipped、1 warning**，2754.16秒正常结束。单项失败是subagent原生适配器预检测试仍匹配旧文案“not registered”；新独立查询及实际原版 `preflightChildLlmRoute` 都返回 `LlmError`、`NO_ADAPTER` 和完整公共消息 `no adapter registered for provider "missing"`。提供端不变，消费者现在严格断言错误类型、代码、完整公共消息和Python诊断表示，31项定向回归通过。没有跳过失败、宽化正则或增加原版bug例外。
+
+精确拒绝ZIP、全量冻结输入、完整XML/日志与失败测试原始字节保留在 `migration/evidence/artifacts/LLM-CONFIG-REJECTED-20261006-2d8fed63.zip`，SHA256 `9b1b0264acfdd39da99c4b83cc73bc0abb68a831b80f7ab9bad63a6dfb446dc0`。实际原版及原生预检公共错误、观察器诊断、原版输入和冻结原生导入字节另存 `SUBAGENT-PREFLIGHT-DIAGNOSTICS-20261006-2d8fed63.zip`，SHA256 `1b7ee7dd9fcce44eba9cc93cfac365cece4a535601730c72c5e8d62134260ae9`。原版reference工作副本与历史Root TS副本分别记录来源，不假定二者字节相等。门禁收尾自动删除559个合成JSON、释放6473952361字节，审计保留。后续原样Source组、配对、浏览器和实际解压阶段未执行；051/053继续running，需新干净完整验收。
+
 053修正独立 `resolveCallConfig` 的模型查询和公共 `prepareCall` 的配置校验。此前独立查询走内部准备流程，额外执行适配器准备，并无条件复制配置；现在只查询绑定注册的模型信息，没有默认值需补齐时返回原配置对象，补齐默认值时仅浅拷贝。调用者的共享stop数组、查询等待期间配置修改、适配器注册更换及原始错误都纳入实际原版观察。
 
 共享校验保持缺字段与显式null的差别：`maxTokens: null` 和零不替换为默认值；带默认推理级别的null解析到默认级别，无默认但支持推理时保留null，不支持推理时拒绝。推理级别比较严格区分boolean与number，错误消息使用原版JavaScript值表示。公共准备仍拷贝并冻结最终配置，独立查询的对象归属不传递到准备句柄。

@@ -547,6 +547,39 @@ def test_namespaced_path_preserves_existing_prefix_and_handles_unc():
     assert fs_local_module._to_namespaced_path(r"\\?\UNC\server\share\file.txt") == r"\\?\UNC\server\share\file.txt"
 
 
+@pytest.mark.skipif(os.name != 'nt', reason='Windows security replacement errors')
+@pytest.mark.parametrize('code,expected', [(1, 'EIO'), (2, 'ENOENT'), (3, 'ENOENT'), (5, 'EACCES'), (20, 'EIO'), (32, 'EIO'), (1175, 'EIO'), (1176, 'EIO'), (1177, 'EIO')])
+def test_windows_replacement_errors_preserve_source_metadata_without_retry(tmp_path, monkeypatch, code, expected):
+    import ctypes
+    destination, replacement = tmp_path / 'target.txt', tmp_path / 'replacement.txt'
+    destination.write_text('old', encoding='utf-8')
+    replacement.write_text('new', encoding='utf-8')
+    calls = []
+
+    class Failure:
+        def __call__(self, *arguments):
+            calls.append(arguments)
+            return 0
+
+    class Library:
+        ReplaceFileW = Failure()
+
+    monkeypatch.setattr(ctypes, 'WinDLL', lambda *arguments, **options: Library())
+    monkeypatch.setattr(ctypes, 'get_last_error', lambda: code)
+    with pytest.raises(fs_local_module.Win32FsError) as caught:
+        FsService._replace_windows(str(destination), str(replacement))
+    failure = caught.value
+    assert failure.name == 'Error'
+    assert failure.code == expected and failure.errno == code and failure.win32Code == code
+    assert failure.syscall == 'ReplaceFileW' and failure.path == str(destination)
+    assert str(failure) == 'ReplaceFileW %s (Win32 %s): %s' % (expected, code, destination)
+    assert len(calls) == 1
+    assert destination.read_text(encoding='utf-8') == 'old'
+    assert replacement.read_text(encoding='utf-8') == 'new'
+    assert fs_local_module._is_missing(failure) is (expected == 'ENOENT')
+    assert fs_local_module._is_permission(failure) is (expected == 'EACCES')
+
+
 @pytest.mark.skipif(os.name != "nt", reason="Win32 extended-length ordinary I/O")
 @pytest.mark.asyncio
 async def test_atomic_write_passes_namespaced_paths_to_ordinary_windows_io(tmp_path, fs, monkeypatch):

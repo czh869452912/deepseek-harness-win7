@@ -78,6 +78,10 @@ PAIRED_DRIVERS = PAIRED_DRIVERS + ('javascript_initial', 'session_number', 'sess
 PAIRED_DRIVERS = PAIRED_DRIVERS + ('runtime_full_request', 'deepseek_error', 'deepseek_capture', 'jsonl_sharing', 'canonical_llm', 'llm_metadata', 'llm_prepared')
 OFFICIAL_CONFIGS = ('consumers', 'agent-lifecycle', 'session-recovery', 'session-projection', 'acp', 'acp-app', 'mcp', 'subagent-acp', 'storage-cache', 'session-observation', 'session-corpus', 'session-sqlite-query', 'query-engine-source', 'session-tools-source', 'sqlite-format-source', 'sqlite-provider-source', 'jsonl-provider-source', 'tool-scheduler-source', 'deepseek-source', 'llm-public-source')
 REQUIRED_REGRESSION = {
+    'test_fs_local_upstream_parity': {
+        'test_windows_replacement_errors_preserve_source_metadata_without_retry[%s-%s]' % (code, expected)
+        for code, expected in ((1, 'EIO'), (2, 'ENOENT'), (3, 'ENOENT'), (5, 'EACCES'), (20, 'EIO'), (32, 'EIO'), (1175, 'EIO'), (1176, 'EIO'), (1177, 'EIO'))
+    },
     'test_process_artifact_retention': {
         'test_interrupted_cleanup_resumes_without_rewriting_previous_audit[planned]',
         'test_interrupted_cleanup_resumes_without_rewriting_previous_audit[failed]',

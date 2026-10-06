@@ -29,6 +29,23 @@ class FsError(Exception):
         self.cause = cause
 
 
+class Win32FsError(OSError):
+    name = 'Error'
+
+    def __init__(self, syscall: str, win32_code: int, path: str):
+        super().__init__()
+        self.code = 'ENOENT' if win32_code in (2, 3) else 'EACCES' if win32_code == 5 else 'EIO'
+        self.errno = win32_code
+        self.winerror = win32_code
+        self.win32Code = win32_code
+        self.syscall = syscall
+        self.path = path
+        self.message = '%s %s (Win32 %s): %s' % (syscall, self.code, win32_code, path)
+
+    def __str__(self) -> str:
+        return self.message
+
+
 class FsTarget:
     def __init__(self, target_key: str, display_path: str):
         self.targetKey = target_key
@@ -162,11 +179,11 @@ def _decode_utf8(raw: bytes, verb: str, display_path: str) -> str:
 
 
 def _is_missing(error: OSError) -> bool:
-    return error.errno in (errno.ENOENT, errno.ENOTDIR)
+    return error.code == 'ENOENT' if isinstance(error, Win32FsError) else error.errno in (errno.ENOENT, errno.ENOTDIR)
 
 
 def _is_permission(error: OSError) -> bool:
-    return error.errno in (errno.EACCES, errno.EPERM)
+    return error.code == 'EACCES' if isinstance(error, Win32FsError) else error.errno in (errno.EACCES, errno.EPERM)
 
 
 def _to_namespaced_path(path: str) -> str:
@@ -500,13 +517,13 @@ class FsService:
         destination_native = _to_namespaced_path(destination)
         get_security(source_native, dacl_information, None, 0, ctypes.byref(needed))
         if needed.value == 0:
-            raise ctypes.WinError(ctypes.get_last_error())
+            raise Win32FsError('GetFileSecurityW', ctypes.get_last_error(), source)
         descriptor = ctypes.create_string_buffer(needed.value)
         if not get_security(source_native, dacl_information, descriptor, needed.value, ctypes.byref(needed)):
-            raise ctypes.WinError(ctypes.get_last_error())
+            raise Win32FsError('GetFileSecurityW', ctypes.get_last_error(), source)
         information = dacl_information | protected_dacl_information
         if not set_security(destination_native, information, descriptor):
-            raise ctypes.WinError(ctypes.get_last_error())
+            raise Win32FsError('SetFileSecurityW', ctypes.get_last_error(), destination)
 
     @staticmethod
     def _replace_windows(destination: str, replacement: str) -> None:
@@ -517,10 +534,7 @@ class FsService:
         replace_file.restype = ctypes.c_int
         if not replace_file(_to_namespaced_path(destination), _to_namespaced_path(replacement), None, 0, None, None):
             code = ctypes.get_last_error()
-            if code in (2, 3):
-                os.replace(_native_path(replacement), _native_path(destination))
-                return
-            raise ctypes.WinError(code)
+            raise Win32FsError('ReplaceFileW', code, destination)
 
     async def _remove_staging(self, staging: str) -> None:
         if self.internals.removeStagingDir is not None:

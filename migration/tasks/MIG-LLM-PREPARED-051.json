@@ -42,15 +42,17 @@
   "open_findings": [
     "Cleanb93 full gate rejected4 stale test integration failures; exact ownPortable and actual ACP fixtures preserved. Corrected fixtures and strict2077 positive registry assertion pass107 focused Root tests; fresh complete acceptance remains pending.",
     "Clean c0 gate rejected:8516 passed,nine shared Source input-scan fixture errors,six existing skips,zero failures; complete XML2666.098s then cleanup exceeded2800s. Source pnpm cyclic junctions exposed unrestricted rglob. Frozen inputs/exact ownPortable/full raw errors and interrupted cleanup audit retained. Tracked Source input enumeration and rehash-only deletion/resume fixes pass50 focused cases; fresh full acceptance remains pending.",
-    "Clean fb3ba8d9 gate rejected:8527 passed,two module fallback fixture failures,six existing skips,one Proactor warning; full pytest2650.16s terminated normally. Independent expected closure omitted reachable installed Source dependencies and hardcoded scan count below20. Exact ZIP/frozen inputs/full XML/logs and completed528-file synthetic cleanup retained; Source pin unchanged. Node nearest-anchor dependency/peer expectations and unique-root cache assertions corrected with deterministic regression cases. Full acceptance remains pending."
+    "Clean fb3ba8d9 gate rejected:8527 passed,two module fallback fixture failures,six existing skips,one Proactor warning; full pytest2650.16s terminated normally. Independent expected closure omitted reachable installed Source dependencies and hardcoded scan count below20. Exact ZIP/frozen inputs/full XML/logs and completed528-file synthetic cleanup retained; Source pin unchanged. Node nearest-anchor dependency/peer expectations and unique-root cache assertions corrected with deterministic regression cases. Full acceptance remains pending.",
+    "Clean011 complete gate rejected8530pass/one WinError1175/six existing skips. Exact frozen evidence and failed destination preserved. Controlled owned reader reproduces32 in both Source/native;1175 holder/cause remains unclassified. Bounded Source Win32 error fields aligned; no retry or new Source bug exception."
   ],
   "conflicts_with": [],
-  "candidate_commit": "fb3ba8d919308319a387997b235a7d429e38c9fe",
+  "candidate_commit": "011c3a9509c838370cbd9e7d39f5da775ad045da",
   "integrated_commit": null,
   "evidence_ids": [
     "RUN-LLM-PREPARED-REJECTED-20261006-B93D1CD8",
     "RUN-LLM-PREPARED-REJECTED-20261006-C0B12C55",
-    "RUN-LLM-PREPARED-REJECTED-20261006-FB3BA8D9"
+    "RUN-LLM-PREPARED-REJECTED-20261006-FB3BA8D9",
+    "RUN-LLM-PREPARED-REJECTED-20261006-011C3A95"
   ],
-  "next_action": "精确fb拒绝已保留；对齐独立Node依赖预期及缓存断言后，冻结新的干净8537项全量/2081必需lane/20组1911原样Source/70配对/真实解压与原版浏览器。自动清理成功528个合成JSON，真实证据保留；051仍running，七父范围及后续配置/权限/图片/完整profile继续推进。"
+  "next_action": "011精确拒绝、原始目标与528项自动清理审计保留；Win32公共错误按原版字段对齐并添加九条严格必需控制。1175尚未归因，不称修复或增加重试；继续053配置查询及完整profile，再冻结新全量/实际解压验收。051仍running，七父范围与延期Win7开放。"
 }

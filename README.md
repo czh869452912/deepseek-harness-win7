@@ -4,7 +4,7 @@
 
 [README.md](README.md) | [AGENTS.md](AGENTS.md)
 
-当前迁移验收：干净产品 `0edcc616` 的全量 **6718 项测试**、原版对照、真实解压与浏览器门禁通过；独立 schema-19 编码和私有压缩格式已有界签收。规范 SQLite 存储提供端和其他整体遗留项仍在推进，详见 [迁移台账](migration/README.md) 与 [本阶段验收](migration/reviews/SQLITE-FORMAT-CLOSURE-20261005.md)。
+当前迁移验收：最新完整签收仍为干净产品 `2a67ae84` 的60个有界范围。新候选 `011c3a95` 全量 **8530 passed、1 failed、6既有skip**，Windows受保护覆盖返回1175，精确失败产物已保留；整体迁移尚未闭环。可重建过程测试结果已自动清理，真实验收与失败证据保留。详见 [迁移台账](migration/README.md) 和 [当前替换诊断](docs/research/2026-10-06-win32-replacement-progress.md)。
 
 规范 JSONL 与原版一致，默认写 `session.jsonl.zstd`，逻辑导出仍为 `session.jsonl`。已有 plaintext 根目录须显式配置 `compression: none`，或为默认压缩选择单独的 root；两种物理格式不能混用同一个 root，也不会静默转换已有日志。新提供端的完整发布验收仍在执行，见 [推进记录](docs/research/2026-10-05-jsonl-provider-progress.md)。
 

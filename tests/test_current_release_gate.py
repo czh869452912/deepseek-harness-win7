@@ -1598,6 +1598,15 @@ def test_sdk_profile_consumer_lanes_are_mandatory(tmp_path, damage):
         GATE.validate_regression(path)
 
 
+@pytest.mark.parametrize('damage', ('omit', 'skip', 'duplicate', 'failure'))
+def test_workflow_session_boundary_lanes_are_mandatory(tmp_path, damage):
+    path = tmp_path / 'pytest.xml'
+    for name in GATE.REQUIRED_REGRESSION['test_workflow_session_boundary']:
+        regression_xml(path, **{damage: ('test_workflow_session_boundary', name)})
+        with pytest.raises(RuntimeError):
+            GATE.validate_regression(path)
+
+
 def extracted_receipt(tmp_path):
     archive = tmp_path / 'portable.zip'
     archive.write_bytes(b'exact candidate archive')

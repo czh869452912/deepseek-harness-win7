@@ -27,5 +27,5 @@
   "candidate_commit": null,
   "integrated_commit": null,
   "evidence_ids": [],
-  "next_action": "14be4e66全量正常8837pass/6skip/1warning/3093.13秒，SDK消费者通过，但stat中文参数注册ID不匹配使门禁拒绝；精确完整证据保留，五项注册ID实际子进程控制通过。单独执行新的干净全量/20组1911Source/73配对/解压及原版浏览器后才有界签收；最新842/62不变。"
+  "next_action": "f5087dcd全量正常8841pass/1fail/6skip/1warning/3413.28秒，SDK消费者通过；JS dropped-child观察在agent-end/child-dispose间竞争使门禁拒绝。精确完整证据和633项清理审计保留，双方改为等待完整处置边界并固定快照，50项实际会话及边界控制、四项逐lane门禁拒绝控制通过。2403必需lane/73配对待新的干净全量/20组1911Source/实际解压及原版浏览器；最新842/62及七父范围不变。"
 }

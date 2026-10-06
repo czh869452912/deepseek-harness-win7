@@ -390,6 +390,14 @@ REQUIRED_REGRESSION = {
         "test_unsettled_async_body_is_physically_terminated_on_owner_unload[await Promise.resolve(); for(;;){}]",
         "test_unsettled_async_body_is_physically_terminated_on_owner_unload[await new Promise(()=>{})]",
     },
+    "test_workflow_session_boundary": {
+        *{'test_dropped_child_observation_requires_result_semantics_and_disposal[' + order + '-' + semantic + ']'
+          for order in ('semantic-first', 'dispose-first') for semantic in ('agent-end', 'log')},
+        'test_duplicate_disposal_never_satisfies_another_owned_child',
+        'test_semantics_and_disposal_without_terminal_result_never_complete',
+        'test_recorded_frame_and_snapshot_do_not_alias_mutable_transport_payload',
+        *{'test_invalid_expected_disposal_count_is_refused[' + value + ']' for value in ('-1', 'True', '1')},
+    },
     "test_javascript_workflow_session": {
         "test_actual_source_session_child_rpc_and_retained_process[death-before-provider-publication]",
         "test_actual_source_session_child_rpc_and_retained_process[death-after-child-publication]",
@@ -494,6 +502,8 @@ REQUIRED_REGRESSION = {
         'test_process_artifact_retention_lanes_are_mandatory[failure]',
         *{'test_extracted_sdk_profile_requires_complete_values_and_runtime[' + damage + ']' for damage in SDK_EXTRACTED_DAMAGES},
         *{'test_sdk_profile_consumer_lanes_are_mandatory[' + damage + ']' for damage in ('omit', 'skip', 'duplicate', 'failure')},
+        *{'test_workflow_session_boundary_lanes_are_mandatory[' + damage + ']'
+          for damage in ('omit', 'skip', 'duplicate', 'failure')},
         *{'test_actual_pytest_unicode_lane_identity_remains_mandatory[' + damage + ']' for damage in ('none', 'omit', 'skip', 'duplicate', 'failure')},
         *{'test_extracted_llm_config_requires_complete_values_and_runtime[' + damage + ']' for damage in ('missing', 'source-missing', 'source-changed', 'module-changed', 'config', 'boolean', 'max-null', 'reason-null', 'same', 'same-stop', 'input', 'after-change', 'error', 'code', 'hook', 'signal', 'trace', 'tail', 'duplicate', 'order', 'type', 'unknown', 'root', 'python', 'executable', 'module', 'group-missing', 'group-rows', 'group-root', 'group-executable', 'group-module')},
         *{'test_llm_config_consumer_lanes_are_mandatory[' + damage + ']' for damage in ('omit','skip','duplicate','failure')},

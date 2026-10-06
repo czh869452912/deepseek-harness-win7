@@ -28,6 +28,7 @@ const workerPath = resolve(output, 'worker.cjs')
 writeFileSync(workerPath, bundle.outputFiles[0].contents)
 const cases = JSON.parse(readFileSync('tests/fixtures/javascript-workflow/cases.json', 'utf8'))
 const observations = []
+const rawObservations = []
 for (const scenario of cases) {
   const frames = []
   const init = {
@@ -37,6 +38,9 @@ for (const scenario of cases) {
   }
   const worker = new Worker(workerPath, { workerData: init, execArgv: [], env: { TMP: tmpdir(), TEMP: tmpdir() } })
   let terminal = false
+  let semanticSeen = !scenario.waitDisposals
+  const disposals = new Set()
+  let snapshot
   const completed = new Promise((accept, reject) => {
     const deadline = setTimeout(() => reject(new Error('Source observation deadline: ' + scenario.name)), 5000)
     worker.on('error', error => { clearTimeout(deadline); reject(error) })
@@ -61,21 +65,27 @@ for (const scenario of cases) {
       } else if (message.type === 'result') {
         terminal = true
       }
-      const boundary = !scenario.waitDisposals || (scenario.name === 'dropped-child-continuation'
-        ? message.type === 'log' : message.type === 'agent-end')
-      if (terminal && boundary) { clearTimeout(deadline); accept() }
+      if (message.type === (scenario.name === 'dropped-child-continuation' ? 'log' : 'agent-end')) semanticSeen = true
+      if (message.type === 'child-dispose') disposals.add(message.callId)
+      if (!snapshot && terminal && semanticSeen && disposals.size >= (scenario.waitDisposals ?? 0)) {
+        snapshot = structuredClone(frames)
+        clearTimeout(deadline)
+        accept()
+      }
     })
   })
   try {
     await completed
-    observations.push({ name: scenario.name, frames, aliveAfterResult: worker.threadId !== -1 })
+    observations.push({ name: scenario.name, frames: snapshot, aliveAfterResult: worker.threadId !== -1 })
   } finally {
     await worker.terminate()
+    rawObservations.push({ name: scenario.name, frames: structuredClone(frames) })
   }
 }
 const inputs = Object.fromEntries(Object.keys(bundle.metafile.inputs).sort().map(path => [path,
   createHash('sha256').update(readFileSync(path)).digest('hex')]))
 writeFileSync(resolve(output, 'source.json'), encodeSource({ sourceCommit, inputs, observations }) + '\n', 'utf8')
+writeFileSync(resolve(output, 'raw-observations-after-terminate.json'), encodeSource(rawObservations) + '\n', 'utf8')
 console.log(JSON.stringify({ sourceCommit, observations: observations.length }))
 
 function encodeSource(value) {

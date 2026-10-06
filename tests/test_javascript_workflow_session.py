@@ -12,6 +12,7 @@ import pytest
 from dsh.cordis.context import Context
 from dsh.javascript import runtime as implementation
 from dsh.javascript.runtime import JavaScriptRuntime, JavaScriptRuntimeError, workflow_bootstrap
+from scripts.oracles.workflow_session_boundary import WorkflowSessionBoundary
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -38,13 +39,14 @@ async def test_actual_source_session_child_rpc_and_retained_process(scenario, so
         args=dict(nested=dict(value=2)), limits=dict(maxConcurrentAgents=scenario.get('concurrent', 2),
             maxTotalAgents=scenario.get('total', 10), maxItemsPerCall=scenario.get('items', 30), syncTimeoutMs=200))
     original = copy.deepcopy(initial)
-    frames, worker = [dict(type='ready')], None
+    recorder, worker = WorkflowSessionBoundary(scenario), None
+    recorder.record(dict(type='ready'))
     boundary = asyncio.Event()
     async def observe(message):
         message = dict(message)
         if message['type'] == 'terminal':
             message['type'] = 'result'
-        frames.append(message)
+        finished = recorder.record(message)
         if message['type'] == 'child-start':
             if scenario.get('cancelAtStart'):
                 await worker.cancel('active child cancellation')
@@ -60,9 +62,7 @@ async def test_actual_source_session_child_rpc_and_retained_process(scenario, so
             await worker.send(dict(type='child-settled', callId=message['callId'], result=result))
         elif message['type'] == 'child-dispose':
             await worker.send(dict(type='child-disposed', callId=message['callId']))
-        if (not scenario.get('waitDisposals') and message['type'] == 'result'
-                or scenario['name'] == 'dropped-child-after-result' and message['type'] == 'agent-end'
-                or scenario['name'] == 'dropped-child-continuation' and message['type'] == 'log'):
+        if finished:
             boundary.set()
     try:
         worker = await ctx.get('jsRuntime').open_workflow(initial, observe)
@@ -72,7 +72,7 @@ async def test_actual_source_session_child_rpc_and_retained_process(scenario, so
             await worker.send(dict(type='go'))
         await asyncio.wait_for(boundary.wait(), 5)
         await asyncio.wait_for(asyncio.shield(worker.result), 5)
-        native = dict(name=scenario['name'], frames=frames, aliveAfterResult=worker.process.returncode is None)
+        native = dict(name=scenario['name'], frames=recorder.snapshot, aliveAfterResult=worker.process.returncode is None)
         source = next(record for record in source_observations['observations'] if record['name'] == scenario['name'])
         (tmp_path / 'native.json').write_text(json.dumps(native, ensure_ascii=True, indent=2) + '\n', encoding='utf-8')
         assert native == source
@@ -87,6 +87,7 @@ async def test_actual_source_session_child_rpc_and_retained_process(scenario, so
         assert worker.failure is None
     finally:
         await ctx.fiber.dispose()
+        (tmp_path / 'raw-frames-after-dispose.json').write_text(json.dumps(recorder.frames, ensure_ascii=True, indent=2) + '\n', encoding='utf-8')
 
 
 @pytest.mark.parametrize('name', ['source.js', 'driver.js', 'workflow.json', 'build-provenance.json', 'SOURCE-LICENSE'])

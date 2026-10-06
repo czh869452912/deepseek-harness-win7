@@ -198,8 +198,9 @@ def test_unfinished_pytest_sessions_are_not_pruned(tmp_path, status):
     assert selected.exists()
 
 
+@pytest.mark.parametrize('placement', ['owned', 'default', 'external'])
 @pytest.mark.parametrize('outcome', ['passed', 'failed'])
-def test_actual_pytest_end_hook_prunes_synthetic_data_and_preserves_diagnostics(tmp_path, outcome):
+def test_actual_pytest_end_hook_prunes_synthetic_data_and_preserves_diagnostics(tmp_path, outcome, placement):
     child = tmp_path / 'child'
     child.mkdir()
     output_root = child / '.goose/out'
@@ -216,18 +217,55 @@ def test_actual_pytest_end_hook_prunes_synthetic_data_and_preserves_diagnostics(
         "    (tmp_path / 'portable.zip').write_bytes(b'exact candidate archive')\n"
         "    (tmp_path / 'receipt.json').write_text('{\"runtime\":{\"checks\":[\"actual runtime\"]}}', encoding='utf-8')\n"
         "    (tmp_path / 'actual-source.json').write_text('{\"source\":\"retained\"}', encoding='utf-8')\n"
+        "    from pathlib import Path\n"
+        "    (Path(__file__).resolve().parents[1] / 'workspace.txt').write_text(str(tmp_path.parent), encoding='utf-8')\n"
         + ("    assert False, 'retained failure diagnosis'\n" if outcome == 'failed' else ''), encoding='utf-8')
-    result = subprocess.run([sys.executable, '-m', 'pytest', str(test_folder / 'test_process.py'), '-q',
-        '--basetemp=' + str(output_root / 'g-own'), '--junitxml=' + str(child / 'pytest.xml')],
+    arguments = [sys.executable, '-m', 'pytest', str(test_folder / 'test_process.py'), '-q',
+        '--junitxml=' + str(child / 'pytest.xml')]
+    if placement != 'default':
+        arguments.append('--basetemp=' + str(output_root / 'g-own' if placement == 'owned' else child / 'external'))
+    result = subprocess.run(arguments,
         cwd=str(child), capture_output=True, timeout=60)
     assert result.returncode == (0 if outcome == 'passed' else 1), result.stdout + result.stderr
-    assert not list((output_root / 'g-own').glob('test_process*/receipt.json'))
-    assert list((output_root / 'g-own').glob('test_process*/actual-source.json'))
+    workspace = Path((child / 'workspace.txt').read_text(encoding='utf-8'))
+    assert list(workspace.glob('test_process*/actual-source.json'))
     assert (child / 'pytest.xml').is_file()
     if outcome == 'failed':
         assert b'retained failure diagnosis' in result.stdout
-    audit = json.loads((output_root / 'g-own/unit-receipts-pruned.json').read_text(encoding='utf-8'))
+    if placement == 'external':
+        assert workspace == child / 'external'
+        assert list(workspace.glob('test_process*/receipt.json'))
+        assert not (workspace / 'unit-receipts-pruned.json').exists()
+        return
+    assert workspace.parent == output_root
+    assert workspace.name.startswith('t-') if placement == 'default' else workspace.name == 'g-own'
+    assert not list(workspace.glob('test_process*/receipt.json'))
+    audit = json.loads((workspace / 'unit-receipts-pruned.json').read_text(encoding='utf-8'))
     assert audit['status'] == 'completed' and audit['removed_files'] == 1
+
+
+def test_default_pytest_workspaces_are_unique_and_preserve_previous_outputs(tmp_path):
+    root = tmp_path / '.goose/out'
+    config = SimpleNamespace(option=SimpleNamespace(basetemp=None))
+    first = retention.configure_pytest_workspace(config, root)
+    retained = first / 'actual-source.json'
+    retained.write_text('{"source":"retained"}', encoding='utf-8')
+    second_config = SimpleNamespace(option=SimpleNamespace(basetemp=None))
+    second = retention.configure_pytest_workspace(second_config, root)
+    assert first != second and first.parent == second.parent == root
+    assert config.option.basetemp == str(first) and second_config.option.basetemp == str(second)
+    assert retained.read_text(encoding='utf-8') == '{"source":"retained"}'
+    assert retention.configure_pytest_workspace(config, root) is None
+    assert retained.exists()
+
+
+def test_explicit_pytest_workspace_is_preserved_without_creating_an_output_root(tmp_path):
+    explicit = tmp_path / 'user-temp'
+    config = SimpleNamespace(option=SimpleNamespace(basetemp=str(explicit)))
+    root = tmp_path / '.goose/out'
+    assert retention.configure_pytest_workspace(config, root) is None
+    assert config.option.basetemp == str(explicit)
+    assert not root.exists()
 
 
 def test_expired_cleanup_manifests_keep_latest_two_and_pending_data(tmp_path):

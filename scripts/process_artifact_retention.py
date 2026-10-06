@@ -5,6 +5,7 @@ import os
 from pathlib import Path
 import re
 import stat
+import tempfile
 import xml.etree.ElementTree as ET
 
 
@@ -160,6 +161,17 @@ def prune_synthetic_workspace(output_root, workspace, audit):
 def prune_completed_regression(output_root, output):
     workspace = completed_workspace(output_root, output)
     return prune_synthetic_workspace(output_root, workspace, Path(output) / 'unit-receipts-pruned.json')
+
+
+def configure_pytest_workspace(config, output_root):
+    if config.option.basetemp is not None:
+        return None
+    root = owned_path(output_root, output_root, missing=True)
+    root.mkdir(parents=True, exist_ok=True)
+    owned_path(root, root)
+    workspace = owned_path(root, tempfile.mkdtemp(prefix='t-', dir=str(root)))
+    config.option.basetemp = str(workspace)
+    return workspace
 
 
 def prune_pytest_session(session, exitstatus, output_root):

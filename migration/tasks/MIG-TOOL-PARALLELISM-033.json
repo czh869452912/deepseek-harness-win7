@@ -35,8 +35,8 @@
   ],
   "open_findings": [],
   "conflicts_with": [],
-  "candidate_commit": "55a5ba87b608fdd0d9c94feb16f258d77ace9929",
-  "integrated_commit": "55a5ba87b608fdd0d9c94feb16f258d77ace9929",
+  "candidate_commit": "2a67ae84400b755d17dfebd83cc43265497726e8",
+  "integrated_commit": "2a67ae84400b755d17dfebd83cc43265497726e8",
   "evidence_ids": [
     "RUN-SESSION-STORAGE-20261005-TOOL-PARALLELISM-033",
     "RUN-TOOLS-HTTP-20261005-TOOL-PARALLELISM-033",
@@ -46,7 +46,8 @@
     "RUN-SESSION-BOUNDARIES-20261006-TOOL-PARALLELISM-033",
     "RUN-DEEPSEEK-ERROR-20261006-TOOL-PARALLELISM-033",
     "RUN-JSONL-SHARING-V3-20261006-TOOL-PARALLELISM-033",
-    "RUN-CANONICAL-LLM-20261006-TOOL-PARALLELISM-033"
+    "RUN-CANONICAL-LLM-20261006-TOOL-PARALLELISM-033",
+    "RUN-METADATA-RETENTION-20261006-TOOL-PARALLELISM-033"
   ],
-  "next_action": "clean candidate 55a5ba87 全量/原版/真实解压复验已通过。22项并发/settings/实际模型与034新增八项dispatch前缀共三十组实际观察已签收；继续完整B2与任意扩展/disposal。七个拒绝产品和扩展隔离证据保留，不签收未归因历史失败或全项目。"
+  "next_action": "clean candidate 2a67ae84 全量/原版/真实解压复验已通过。22项并发/settings/实际模型与034新增八项dispatch前缀共三十组实际观察已签收；继续完整B2与任意扩展/disposal。七个拒绝产品和扩展隔离证据保留，不签收未归因历史失败或全项目。"
 }

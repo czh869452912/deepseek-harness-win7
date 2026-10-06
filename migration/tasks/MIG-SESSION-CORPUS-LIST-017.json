@@ -38,8 +38,8 @@
   ],
   "open_findings": [],
   "conflicts_with": [],
-  "candidate_commit": "55a5ba87b608fdd0d9c94feb16f258d77ace9929",
-  "integrated_commit": "55a5ba87b608fdd0d9c94feb16f258d77ace9929",
+  "candidate_commit": "2a67ae84400b755d17dfebd83cc43265497726e8",
+  "integrated_commit": "2a67ae84400b755d17dfebd83cc43265497726e8",
   "evidence_ids": [
     "RUN-SESSION-TRACING-20261004-SESSION-CORPUS-LIST-017",
     "RUN-SESSION-FILTERS-20261004-SESSION-CORPUS-LIST-017",
@@ -55,7 +55,8 @@
     "RUN-SESSION-BOUNDARIES-20261006-SESSION-CORPUS-LIST-017",
     "RUN-DEEPSEEK-ERROR-20261006-SESSION-CORPUS-LIST-017",
     "RUN-JSONL-SHARING-V3-20261006-SESSION-CORPUS-LIST-017",
-    "RUN-CANONICAL-LLM-20261006-SESSION-CORPUS-LIST-017"
+    "RUN-CANONICAL-LLM-20261006-SESSION-CORPUS-LIST-017",
+    "RUN-METADATA-RETENTION-20261006-SESSION-CORPUS-LIST-017"
   ],
-  "next_action": "clean candidate 55a5ba87 全量/原版/真实解压复验已通过。clean candidate 55a5ba87 的十二组 corpus listing 信号/错误/来源已有界验收；继续完整 exact/title/concurrent/FTS/长期回放/Web/profile，不认证完整 B1 或 Win7。"
+  "next_action": "clean candidate 2a67ae84 全量/原版/真实解压复验已通过。clean candidate 2a67ae84 的十二组 corpus listing 信号/错误/来源已有界验收；继续完整 exact/title/concurrent/FTS/长期回放/Web/profile，不认证完整 B1 或 Win7。"
 }

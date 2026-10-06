@@ -38,13 +38,14 @@
   ],
   "open_findings": [],
   "conflicts_with": [],
-  "candidate_commit": "55a5ba87b608fdd0d9c94feb16f258d77ace9929",
-  "integrated_commit": "55a5ba87b608fdd0d9c94feb16f258d77ace9929",
+  "candidate_commit": "2a67ae84400b755d17dfebd83cc43265497726e8",
+  "integrated_commit": "2a67ae84400b755d17dfebd83cc43265497726e8",
   "evidence_ids": [
     "RUN-SESSION-BOUNDARIES-20261006-SESSION-NUMBERS-041",
     "RUN-DEEPSEEK-ERROR-20261006-SESSION-NUMBERS-041",
     "RUN-JSONL-SHARING-V3-20261006-SESSION-NUMBERS-041",
-    "RUN-CANONICAL-LLM-20261006-SESSION-NUMBERS-041"
+    "RUN-CANONICAL-LLM-20261006-SESSION-NUMBERS-041",
+    "RUN-METADATA-RETENTION-20261006-SESSION-NUMBERS-041"
   ],
-  "next_action": "clean candidate 55a5ba87 全量/原版/真实解压复验已通过。53组真实公共Session.create数值/完整冻结元数据/浅深克隆修订2在干净产品b2398db9有界签收；实际查询副本消费者通过，独立4a127b73拒绝产物保留。继续完整fromRestore/malformed/public plugin ABI、任意竞争/长历史/profile与完整B1。"
+  "next_action": "clean candidate 2a67ae84 全量/原版/真实解压复验已通过。53组真实公共Session.create数值/完整冻结元数据/浅深克隆修订2在干净产品b2398db9有界签收；实际查询副本消费者通过，独立4a127b73拒绝产物保留。继续完整fromRestore/malformed/public plugin ABI、任意竞争/长历史/profile与完整B1。"
 }

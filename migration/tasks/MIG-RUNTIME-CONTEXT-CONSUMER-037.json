@@ -38,15 +38,16 @@
   ],
   "open_findings": [],
   "conflicts_with": [],
-  "candidate_commit": "55a5ba87b608fdd0d9c94feb16f258d77ace9929",
-  "integrated_commit": "55a5ba87b608fdd0d9c94feb16f258d77ace9929",
+  "candidate_commit": "2a67ae84400b755d17dfebd83cc43265497726e8",
+  "integrated_commit": "2a67ae84400b755d17dfebd83cc43265497726e8",
   "evidence_ids": [
     "RUN-RUNTIME-CONTEXT-REJECTED-20261005-037",
     "RUN-RUNTIME-CONTEXT-20261006-RUNTIME-CONTEXT-CONSUMER-037",
     "RUN-SESSION-BOUNDARIES-20261006-RUNTIME-CONTEXT-CONSUMER-037",
     "RUN-DEEPSEEK-ERROR-20261006-RUNTIME-CONTEXT-CONSUMER-037",
     "RUN-JSONL-SHARING-V3-20261006-RUNTIME-CONTEXT-CONSUMER-037",
-    "RUN-CANONICAL-LLM-20261006-RUNTIME-CONTEXT-CONSUMER-037"
+    "RUN-CANONICAL-LLM-20261006-RUNTIME-CONTEXT-CONSUMER-037",
+    "RUN-METADATA-RETENTION-20261006-RUNTIME-CONTEXT-CONSUMER-037"
   ],
-  "next_action": "clean candidate 55a5ba87 全量/原版/真实解压复验已通过。四组实际原版/原生/解压AgentLoop上下文消费者已在干净产品b2398db9有界签收；继续任意middleware/竞争/冷恢复与全model/profile、JS036及整体迁移。"
+  "next_action": "clean candidate 2a67ae84 全量/原版/真实解压复验已通过。四组实际原版/原生/解压AgentLoop上下文消费者已在干净产品b2398db9有界签收；继续任意middleware/竞争/冷恢复与全model/profile、JS036及整体迁移。"
 }

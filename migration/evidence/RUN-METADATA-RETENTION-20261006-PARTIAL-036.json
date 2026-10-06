@@ -1,0 +1,30 @@
+{
+  "id": "RUN-METADATA-RETENTION-20261006-PARTIAL-036",
+  "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
+  "product_commit": "2a67ae84400b755d17dfebd83cc43265497726e8",
+  "kind": "verification",
+  "task_id": "MIG-JS-WORKFLOW-036",
+  "result": "passed",
+  "validity": "current",
+  "commands": [
+    ".venv/Scripts/python.exe scripts/verify_release.py --output-dir .goose/out/metadata-retention-clean-2a67ae84"
+  ],
+  "environment": {
+    "python": "3.8.10 (default, May  6 2021, 17:27:56) [MSC v.1928 64 bit (AMD64)]",
+    "os": "Windows-10-10.0.26200-SP0",
+    "cwd": "C:\\Users\\czh86\\Documents\\Codex\\deepseek-harness-win7",
+    "node": "v22.22.2",
+    "browser": "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe"
+  },
+  "contract_revisions": {
+    "CON-JS-WORKFLOW": 1,
+    "CON-CURRENT-RELEASE-GATE": 1
+  },
+  "artifacts": [
+    {
+      "path": "migration/evidence/artifacts/METADATA-RETENTION-20261006-2a67ae84.zip",
+      "sha256": "b207dc5d44ccc2ae8c793bda4c8f0c56c744d8044a32b2cefb4d11ea48c0ac42"
+    }
+  ],
+  "scope": "Frozen clean current-Windows candidate 2a67ae84: 8347 passed,six existing platform skips,one existing Proactor warning,zero failures/errors;1899 mandatory lanes,20 unchanged Source groups/1911 assertions,69 fresh actual paired drivers and actual extracted ownPython3.8.10/original-browser. Previous58 bounded acceptances revalidate;050 independently qualifies automatic completed synthetic artifact cleanup and release process/retention ownership.049 qualifies137 complete actual original/native/extracted selected public metadata observations:92 catalog/exact validation and detachment,45 final streaming boundaries. Complete values,errors,requests,dispatch traces and mutation results remain exact. Empty optional metadata is retained;unknown metadata is detached/stripped under the actual upstream contract;invalid exact metadata rejects before SDK dispatch. Explicit Source input guards and actual catalog27/stream103 imported module closures,selected ownPython3.8.10/executable/root,and child/aggregate agreement remain strict. The frozen55a independent ownPortable has44/92 public and23/45 final-stream differences;all26/102 actual imports match exact retained ZIP,frozen inputs and selected extraction. Initial fixture/boot/resource/catalog-overreach/stale-test-fixture failures remain retained. Corrected137 formal matches,193 focused/336 existing/112 canonical controls and complete positive extracted receipt pass. 050 actual production pytest hook and CLI,symlink/junction/changed-file guards,active output exclusion,real redirected timeout child/CWD release,normal/rejected statuses and primary-error preservation are mandatory. Whole-suite budget explicitly2800 seconds after exact9b rejected2400 seconds at94 percent;individual deadlines and Source criteria unchanged. No complete counts or acceptance are inferred from that rejection. Actual full-suite synthetic pruning audit is completed with bounded32 examples;real evidence remains retained. Original frontend and all nine Source defect predicates/C58/C59 are unchanged. Seven broad parents,eight raw original JS differences,arbitrary accessor/null/graph ABI,full prepared-call/profile/race scopes and raw HTTP Win10054/Proactor diagnosis remain open. RealWin7/browser is user-deferred;accepted_upstream remains null. No paid API/push/publication."
+}

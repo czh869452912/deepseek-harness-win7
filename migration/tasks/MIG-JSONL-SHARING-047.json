@@ -38,11 +38,12 @@
   ],
   "open_findings": [],
   "conflicts_with": [],
-  "candidate_commit": "55a5ba87b608fdd0d9c94feb16f258d77ace9929",
-  "integrated_commit": "55a5ba87b608fdd0d9c94feb16f258d77ace9929",
+  "candidate_commit": "2a67ae84400b755d17dfebd83cc43265497726e8",
+  "integrated_commit": "2a67ae84400b755d17dfebd83cc43265497726e8",
   "evidence_ids": [
     "RUN-JSONL-SHARING-V3-20261006-JSONL-SHARING-047",
-    "RUN-CANONICAL-LLM-20261006-JSONL-SHARING-047"
+    "RUN-CANONICAL-LLM-20261006-JSONL-SHARING-047",
+    "RUN-METADATA-RETENTION-20261006-JSONL-SHARING-047"
   ],
-  "next_action": "clean candidate 55a5ba87 全量/原版/真实解压复验已通过。四组真实Source/native/extracted共享读取及真实拒绝/退休/长路径控制在干净产品b2398db9有界签收；精确eaa8拒绝保留，原始临时持有者未识别。继续任意锁竞争、公共Session图/ABI、多进程/profile和完整B1。"
+  "next_action": "clean candidate 2a67ae84 全量/原版/真实解压复验已通过。四组真实Source/native/extracted共享读取及真实拒绝/退休/长路径控制在干净产品b2398db9有界签收；精确eaa8拒绝保留，原始临时持有者未识别。继续任意锁竞争、公共Session图/ABI、多进程/profile和完整B1。"
 }

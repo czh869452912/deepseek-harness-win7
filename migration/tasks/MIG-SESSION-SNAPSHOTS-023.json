@@ -48,8 +48,8 @@
   ],
   "open_findings": [],
   "conflicts_with": [],
-  "candidate_commit": "55a5ba87b608fdd0d9c94feb16f258d77ace9929",
-  "integrated_commit": "55a5ba87b608fdd0d9c94feb16f258d77ace9929",
+  "candidate_commit": "2a67ae84400b755d17dfebd83cc43265497726e8",
+  "integrated_commit": "2a67ae84400b755d17dfebd83cc43265497726e8",
   "evidence_ids": [
     "RUN-SESSION-QUERY-ENGINE-20261004-SESSION-SNAPSHOTS-023",
     "RUN-SESSION-TEXT-20261005-SESSION-SNAPSHOTS-023",
@@ -63,7 +63,8 @@
     "RUN-SESSION-BOUNDARIES-20261006-SESSION-SNAPSHOTS-023",
     "RUN-DEEPSEEK-ERROR-20261006-SESSION-SNAPSHOTS-023",
     "RUN-JSONL-SHARING-V3-20261006-SESSION-SNAPSHOTS-023",
-    "RUN-CANONICAL-LLM-20261006-SESSION-SNAPSHOTS-023"
+    "RUN-CANONICAL-LLM-20261006-SESSION-SNAPSHOTS-023",
+    "RUN-METADATA-RETENTION-20261006-SESSION-SNAPSHOTS-023"
   ],
-  "next_action": "clean candidate 55a5ba87 全量/原版/真实解压复验已通过。clean candidate 55a5ba87 的 18 来源限定快照、事务 counter/回滚/共享实例、Windows ChangeTime/句柄/长路径及真实解压已有界验收；规范 FTS/Unicode 身份/有效 Session 文本另有界验收；继续 malformed/plugin ABI/竞争、SQLite schema-19/压缩/外来数据库、跨进程长期恢复与整体迁移，不认证完整 B1 或延期 Win7。"
+  "next_action": "clean candidate 2a67ae84 全量/原版/真实解压复验已通过。clean candidate 2a67ae84 的 18 来源限定快照、事务 counter/回滚/共享实例、Windows ChangeTime/句柄/长路径及真实解压已有界验收；规范 FTS/Unicode 身份/有效 Session 文本另有界验收；继续 malformed/plugin ABI/竞争、SQLite schema-19/压缩/外来数据库、跨进程长期恢复与整体迁移，不认证完整 B1 或延期 Win7。"
 }

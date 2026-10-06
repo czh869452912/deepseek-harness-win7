@@ -47,10 +47,11 @@
   ],
   "open_findings": [],
   "conflicts_with": [],
-  "candidate_commit": "55a5ba87b608fdd0d9c94feb16f258d77ace9929",
-  "integrated_commit": "55a5ba87b608fdd0d9c94feb16f258d77ace9929",
+  "candidate_commit": "2a67ae84400b755d17dfebd83cc43265497726e8",
+  "integrated_commit": "2a67ae84400b755d17dfebd83cc43265497726e8",
   "evidence_ids": [
-    "RUN-CANONICAL-LLM-20261006-CANONICAL-LLM-048"
+    "RUN-CANONICAL-LLM-20261006-CANONICAL-LLM-048",
+    "RUN-METADATA-RETENTION-20261006-CANONICAL-LLM-048"
   ],
-  "next_action": "81组完整canonical LLM重试/辅助失败/SDK边界与迭代归属在干净产品55a5ba87有界签收；精确拒绝eaa8与正式v1观察器拒绝保留。继续公共元数据/准备句柄与完整Wire/profile/图ABI/竞争；七父范围与八项JS差异仍开放。"
+  "next_action": "clean candidate 2a67ae84 全量/原版/真实解压复验已通过。81组完整canonical LLM重试/辅助失败/SDK边界与迭代归属在干净产品55a5ba87有界签收；精确拒绝eaa8与正式v1观察器拒绝保留。继续公共元数据/准备句柄与完整Wire/profile/图ABI/竞争；七父范围与八项JS差异仍开放。"
 }

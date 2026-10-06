@@ -33,8 +33,8 @@
   ],
   "open_findings": [],
   "conflicts_with": [],
-  "candidate_commit": "55a5ba87b608fdd0d9c94feb16f258d77ace9929",
-  "integrated_commit": "55a5ba87b608fdd0d9c94feb16f258d77ace9929",
+  "candidate_commit": "2a67ae84400b755d17dfebd83cc43265497726e8",
+  "integrated_commit": "2a67ae84400b755d17dfebd83cc43265497726e8",
   "evidence_ids": [
     "RUN-CURRENT-20261003-CURRENT-RELEASE-GATE-003",
     "RUN-ACP-CONFIG-20261003-CURRENT-RELEASE-GATE-003",
@@ -56,7 +56,8 @@
     "RUN-SESSION-BOUNDARIES-20261006-CURRENT-RELEASE-GATE-003",
     "RUN-DEEPSEEK-ERROR-20261006-CURRENT-RELEASE-GATE-003",
     "RUN-JSONL-SHARING-V3-20261006-CURRENT-RELEASE-GATE-003",
-    "RUN-CANONICAL-LLM-20261006-CURRENT-RELEASE-GATE-003"
+    "RUN-CANONICAL-LLM-20261006-CURRENT-RELEASE-GATE-003",
+    "RUN-METADATA-RETENTION-20261006-CURRENT-RELEASE-GATE-003"
   ],
-  "next_action": "干净产品55a5ba87的1661必需lane、68配对、20组1911原样Source及真实解压/浏览器通过；整批预算2400秒和判据不变，继续完整迁移，Win7延期且accepted_upstream空。"
+  "next_action": "干净产品2a67ae84的1899必需lane、69配对、20组1911原样Source及真实解压/浏览器通过；整批预算明确2800秒，单项期限/Source判据不变，继续完整迁移，Win7延期且accepted_upstream空。"
 }

@@ -1,5 +1,7 @@
 # Public LLM metadata progress — 2026-10-06
 
+2026-10-06 最新干净签收 `2a67ae84`：全量8347 passed、6既有skip、1 warning、0失败/错误，2539.22秒；1899必需lane、20组1911原样Source断言、69实际配对及真实解压自有Python3.8.10/原版浏览器通过。049选定137组公共元数据/最终请求及050自动清理/进程超时维护已有界integrated，共60份独立验收。上次9b全量超时与精确ZIP独立保留；本次整批预算明确2800秒。见 `migration/reviews/METADATA-RETENTION-GATE-20261006.md`。公共prepared-call的101完整隔离观察和336回归通过，尚未推广签收。七父范围、原始JS诊断差异、九项判据/C58/C59、accepted_upstream空和延期Win7继续开放。
+
 The promoted Root formal driver matches all137 complete observations, digest fd54f54561c59f90532e9a8f539b5cae4276170e3f7c2fa38f87cc02c7e80065. All193 focused metadata/value/runtime/extraction/lane controls pass206.23 seconds;336 existing consumers pass24.21 seconds;the complete positive extracted receipt passes168.27 seconds. Fresh actual Root canonical observations match all81 with their previous complete-value digest;112 canonical consumer controls pass29.23 seconds. The measured canonical import registry adds only model_info in each of its five groups, preserving existing registrations and rejection checks. No full acceptance of this new product is claimed yet.
 
 137 complete selected actual Source observations match isolated selectedPython3.8.10:92 public catalog/exact metadata/detachment and45 final streaming boundaries. Current frozen55a has44 differences among92 public observations.81 existing canonical consumers also match;each actual child adds only model_info to its measured closure.336 related consumers pass27.77 seconds with no skips/failures.

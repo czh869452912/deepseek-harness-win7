@@ -1,5 +1,7 @@
 # Automatic completed process artifact retention — 2026-10-06
 
+2026-10-06 最新干净签收 `2a67ae84`：全量8347 passed、6既有skip、1 warning、0失败/错误，2539.22秒；1899必需lane、20组1911原样Source断言、69实际配对及真实解压自有Python3.8.10/原版浏览器通过。049选定137组公共元数据/最终请求及050自动清理/进程超时维护已有界integrated，共60份独立验收。上次9b全量超时与精确ZIP独立保留；本次整批预算明确2800秒。见 `migration/reviews/METADATA-RETENTION-GATE-20261006.md`。公共prepared-call的101完整隔离观察和336回归通过，尚未推广签收。七父范围、原始JS诊断差异、九项判据/C58/C59、accepted_upstream空和延期Win7继续开放。
+
 The user explicitly authorized continuing automatic cleanup of expired reconstructible process-test outputs. .goose/out is ignored by Git,but classification and ownership checks remain necessary. The fifth authorized batch removed918 synthetic JSONs/10192096667 bytes. Automatic historical cleanup removed2905 completed synthetic JSONs/31492248890 bytes and one completed obsolete manifest. Actual acceptance/rejection ZIPs,inputs,XML,logs and Source/browser observations remain retained.
 
 Production pytest_sessionfinish now prunes synthetic receipt.json/extracted.json after normal completed pass/fail sessions within owned .goose/out. Release-gate startup also prunes independently completed historical/focused runs and expires classified completed cleanup manifests,retaining the newest two. CLI: `.venv/Scripts/python.exe scripts/process_artifact_retention.py [--output <completed-gate-directory>]`.

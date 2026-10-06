@@ -2,7 +2,7 @@
   "id": "MIG-PROCESS-RETENTION-050",
   "goal": "自动清理已完成可重建过程测试JSON与过期清理清单，保留验收与失败证据",
   "kind": "implementation",
-  "state": "running",
+  "state": "integrated",
   "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
   "base_product": "9b3f773bfe7faa990dde07a9cc26e8f3f408a5a9",
   "owner": "current-session-coordinator",
@@ -33,13 +33,12 @@
     "migration/contracts/CON-PROCESS-ARTIFACT-RETENTION.json",
     "docs/research/2026-10-06-process-artifact-retention-progress.md"
   ],
-  "open_findings": [
-    "User authorized continuing automatic cleanup;fifth manual batch918/10192096667 bytes and historical completed batch2905/31492248890 bytes completed with bounded audits.37 isolated staging tests pass;production integration requires fresh validation.",
-    "9b3f773b full gate reached94% then exceeded existing2400-second whole-suite budget;retention WinError5 masked primary timeout. Exact immutable rejected artifact retained. Owned tree termination and primary-failure preservation require actual tests;expanded1899 mandatory lanes justify explicit2800 whole-suite seconds,with individual deadlines and Source criteria unchanged."
-  ],
+  "open_findings": [],
   "conflicts_with": [],
-  "candidate_commit": null,
-  "integrated_commit": null,
-  "evidence_ids": [],
-  "next_action": "正式Root50项定向测试全部通过10.01秒，包括真实转发子进程超时退出、目录释放、主错误保留、37清理与四lane控制；单独提交后执行1899lane/69配对/20组1911Source和实际解压/原版浏览器完整门禁。整批预算明确2800秒，单项判据不变；全部通过才有界签收维护050及元数据049。"
+  "candidate_commit": "2a67ae84400b755d17dfebd83cc43265497726e8",
+  "integrated_commit": "2a67ae84400b755d17dfebd83cc43265497726e8",
+  "evidence_ids": [
+    "RUN-METADATA-RETENTION-20261006-PROCESS-RETENTION-050"
+  ],
+  "next_action": "干净产品2a67ae84全量、1899必需lane、69配对、原版Source及实际解压/浏览器通过；自动清理已完成测试合成回执并保留真实证据，转发子进程超时退出/目录释放及主错误保留有界签收。继续其余迁移；不把维护当作额外业务同等性。"
 }

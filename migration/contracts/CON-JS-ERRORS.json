@@ -1,0 +1,24 @@
+{
+  "id": "CON-JS-ERRORS",
+  "revision": 1,
+  "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
+  "status": "specified",
+  "source_paths": ["reference/packages/workflow/workflow-worker-thread/src/session.ts", "reference/packages/workflow/workflow-worker-thread/src/realm.ts", "reference/packages/llm/llm/src/error.ts", "dsh/javascript/runtime.py", "scripts/native/quickjs_worker.c", "scripts/native/workflow/vm.js", "scripts/native/workflow/error-stack.js"],
+  "consumers": ["scripts/javascript_errors_oracle.py", "scripts/oracles/js-error-fixtures.json", "scripts/oracles/javascript_errors_python.py", "tests/test_javascript_errors_consumers.py", "scripts/verify_release.py", "scripts/verify_portable.py"],
+  "invariants": [
+    "Thirty-two actual original Session/realm/error observations execute unchanged pinned Source modules and actual private native processes; ordered scripts, results, events, Ready admission and child-group closure are retained.",
+    "Workflow syntax errors reach the original Session constructor through the actual compiled exception. They resolve the result before Ready; generic parse-only and generic worker compile failure contracts remain unchanged.",
+    "Native inherited Error.stack prefixes the actual business name/message while preserving actual native frames, native constructors and explicit own stack properties.",
+    "Native engine diagnostic text and stack descriptor ownership remain disclosed platform adaptations with exact side-specific values, rather than fabricated Source frames or silently dropped observations.",
+    "The canonical C and workflow build scripts reproduce the qualified artifacts from guarded original engine/toolchain/Source inputs. Generated provenance uses repository-owned input paths.",
+    "Actual extracted ownPython3.8.10 repeats the scenarios with approved imported bytes and the complete twenty-file private asset inventory; offline validation requires an independently approved asset map.",
+    "A new clean complete gate, mandatory rejection controls and unchanged original Source groups must pass before bounded integration."
+  ],
+  "identity": "The literal scenario names, scripts and ordered rows are specified by js-error-fixtures.json. Only the exact named native diagnostic and stack descriptor adaptations are comparison labels; raw values remain in both receipts.",
+  "ownership": "Session/error child observers use the selected interpreter and actual isolated private worker. Aggregate rows, imported bytes and assets must agree with both child receipts.",
+  "ordering": "Syntax errors finish before Ready. Ordinary execution and guest errors preserve original result/event order; constructor and runtime errors are distinct boundaries.",
+  "errors": "Business error prefixes, explicit stacks, result kinds, Ready outcomes, negative zero and exact native diagnostic frames are mandatory. Modified observations, foreign runtimes, altered assets or incomplete Source identity are refused.",
+  "cancellation": "Existing physical exit, first cancellation and owned-disposal contracts remain mandatory regressions; this contract adds no new cancellation schedules.",
+  "adaptation": "QuickJS supplies native frame formatting and stack descriptor ownership; Node supplies its original values. Each disclosed exception is limited to its exact scenario and side-specific raw observation. This is not full Node API compatibility.",
+  "open_questions": ["Complete arbitrary Node APIs/plugin delivery, model/profile combinations and all spawn/Ready/reentry schedules remain in MIG-JS-WORKFLOW-036.", "Actual Windows7 certification remains user-deferred."]
+}

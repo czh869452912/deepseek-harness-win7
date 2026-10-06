@@ -10,10 +10,10 @@ from dsh.cordis.service import Service
 
 
 RESOURCE_ROOT = Path(__file__).resolve().parent / 'bin'
-BINARY_SHA256 = '26609aa1d86b3d4f8509859ad94d79229b40abd9978f4faf0d237c45e88259aa'
-MANIFEST_SHA256 = '234dce43f6963a751b8024b7133a271f0cde12bd96fec215d91ad9404a4967d9'
+BINARY_SHA256 = '032d3ad64ccdd38e0b7afb35153db156fe6469a385f707f31234dc9d2982b7e9'
+MANIFEST_SHA256 = '1ca94baf686d00971c0b35a331948de5a478353b2262a4154e378fa0a1d06dfb'
 WORKFLOW_ROOT = Path(__file__).resolve().parent / 'workflow'
-WORKFLOW_MANIFEST_SHA256 = 'cc42006bfdbfb86cc0e32bc031d86dc35ff06b6c239674594fa42ec1ceaca686'
+WORKFLOW_MANIFEST_SHA256 = 'c151658c0832e62dae18c804ef052ed022fb061303a918e900ff2facd244af14'
 
 
 class JavaScriptRuntimeError(RuntimeError):
@@ -79,7 +79,8 @@ def workflow_bootstrap():
             raise JavaScriptRuntimeError('JavaScript workflow resource path differs')
         if digest(WORKFLOW_ROOT / relative) != expected:
             raise JavaScriptRuntimeError('JavaScript workflow resource differs: ' + name)
-    return (WORKFLOW_ROOT / 'source.js').read_text(encoding='utf-8') + '\n' + (
+    return (WORKFLOW_ROOT / 'error-stack.js').read_text(encoding='utf-8') + '\n' + (
+        WORKFLOW_ROOT / 'source.js').read_text(encoding='utf-8') + '\n' + (
         WORKFLOW_ROOT / 'driver.js').read_text(encoding='utf-8')
 
 
@@ -135,7 +136,10 @@ class JavaScriptRuntime(Service):
         worker.closed.add_done_callback(lambda _: self._workers.discard(worker))
         try:
             await worker.send(request)
-            await asyncio.shield(worker.ready)
+            if worker._source_session:
+                await asyncio.wait((worker.ready, worker.result), return_when=asyncio.FIRST_COMPLETED)
+            else:
+                await asyncio.shield(worker.ready)
             if worker.failure is not None:
                 raise worker.failure
             return worker
@@ -149,7 +153,8 @@ class JavaScriptRuntime(Service):
 
     async def open_workflow(self, initial, observer=None, grace_ms=5000):
         request = dict(initial, name='workflow:' + initial['meta']['name'],
-                       deferScript=True, bootstrap=workflow_bootstrap())
+                       deferScript=True, bootstrap=workflow_bootstrap(),
+                       errorPrelude=(WORKFLOW_ROOT / 'error-stack.js').read_text(encoding='utf-8'))
         return await self.open(request, observer, grace_ms)
 
     def _close_spawn(self, record):
@@ -203,7 +208,7 @@ class JavaScriptWorker:
                         raise JavaScriptRuntimeError('JavaScript worker repeated its startup handshake')
                     self.ready.set_result(None)
                 elif kind == 'terminal':
-                    if not self.ready.done() or terminal and not self._source_session:
+                    if not self._source_session and (not self.ready.done() or terminal):
                         raise JavaScriptRuntimeError('JavaScript worker returned an invalid terminal sequence')
                     if self._source_session and self.observer is not None:
                         observed = self.observer(message)

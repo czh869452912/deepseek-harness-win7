@@ -5657,7 +5657,7 @@
     "bin/aarch64-w64-mingw32uwp-windres.exe": "13b3f7794df163bddf4194ab2216519229538100d801f7d936bb539cbb20f1ca"
   },
   "wrapper_path": "scripts/native/quickjs_worker.c",
-  "wrapper_sha256": "d9a47f2db6a95334b883507685b299f4abf62cabdff49e3f627bfb4c45ae91ef",
+  "wrapper_sha256": "fc4d321459a6d0fbe2feaae78f1bea350756540f41aaab7dab2c2164c5b7e993",
   "command": [
     "C:\\Users\\czh86\\Documents\\Codex\\deepseek-harness-win7\\.goose\\out\\acp-a4-work\\icu-build-inputs\\llvm-mingw-20260922-msvcrt-x86_64\\bin\\x86_64-w64-mingw32-clang.exe",
     "-O2",
@@ -5678,11 +5678,11 @@
     "-Wl,--no-insert-timestamp",
     "-Wl,--major-os-version,6,--minor-os-version,1,--major-subsystem-version,6,--minor-subsystem-version,1",
     "-o",
-    "C:\\Users\\czh86\\Documents\\Codex\\deepseek-harness-win7\\.goose\\out\\acp-a4-work\\quickjs-build-v4\\dsh_js_worker.exe"
+    "C:\\Users\\czh86\\Documents\\Codex\\deepseek-harness-win7\\.goose\\out\\acp-a4-work\\js-root-native-build-v1\\dsh_js_worker.exe"
   ],
-  "binary_sha256": "26609aa1d86b3d4f8509859ad94d79229b40abd9978f4faf0d237c45e88259aa",
-  "binary_size": 1432064,
-  "audit_sha256": "a27e8e3cb782777d86585190e4f722585603666d15213b2d78332204fa79d0d6",
+  "binary_sha256": "032d3ad64ccdd38e0b7afb35153db156fe6469a385f707f31234dc9d2982b7e9",
+  "binary_size": 1432576,
+  "audit_sha256": "46763e85cbfdca0221cfc868130b58b7e7e992bc3c73da6700b33ae0179c5802",
   "imported_dlls": [
     "msvcrt.dll",
     "KERNEL32.dll"

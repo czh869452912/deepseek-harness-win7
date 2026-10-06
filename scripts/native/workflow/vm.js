@@ -1,5 +1,6 @@
 export class Script {
   constructor(source, options) {
+    if (globalThis.__compiledParseError) throw globalThis.__compiledParseError
     if (source !== '(async () => {\n' + globalThis.__request.body + '\n})()') {
       throw new Error('owned workflow wrapper differs')
     }

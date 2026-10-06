@@ -1,16 +1,16 @@
 {
   "version": "0.17.0",
   "source_commit": "6d46d07d04041b40f4f49eaa7fdebe44c314c699",
-  "binary_sha256": "26609aa1d86b3d4f8509859ad94d79229b40abd9978f4faf0d237c45e88259aa",
+  "binary_sha256": "032d3ad64ccdd38e0b7afb35153db156fe6469a385f707f31234dc9d2982b7e9",
   "resources": {
-    "build-provenance.json": "a2bf60252703d83f1d1cad70bdc766059251de371fb8967da42939398f4e14d8",
+    "build-provenance.json": "499e791a07c55e1840498192dffb59f1ce31ede424ae47e3405afa23a7ee41ab",
     "LLVM-LICENSE.txt": "8d85c1057d742e597985c7d4e6320b015a9139385cff4cbae06ffc0ebe89afee",
     "MinGW-COPYING": "99a69660981156c21336fdb5661f89341b013c94e4bf9e1c7467b4745718397f",
     "MinGW-COPYING.MinGW-w64-runtime.txt": "1db8da07b436c68833c0673ffee3d9fcb2526047f3820b81661865dfedc79a1f",
     "MinGW-COPYING.MinGW-w64.txt": "f38e6194bd3bfa1b654f118e5acefe0aead437bbe669eee43957ccc65a7127f1",
     "MinGW-COPYING.winpthreads.txt": "63263614cdd29f2f93cba85e992f041b31f9fc7b4033692f31269489a8a1b177",
     "MinGW-COPYING.winstorecompat.txt": "fa7368d1f93d890c173177475d8ec7aff265a7d08f1f364d66f74d138978ce36",
-    "pe-audit.txt": "a27e8e3cb782777d86585190e4f722585603666d15213b2d78332204fa79d0d6",
+    "pe-audit.txt": "46763e85cbfdca0221cfc868130b58b7e7e992bc3c73da6700b33ae0179c5802",
     "QUICKJS-LICENSE": "96f73f9d2a16c21a36b418f06073be26e7d6d5e7c1bc99756b21a4f2c74ef171",
     "QUICKJS-NOTICES.txt": "be728370de6fb630804ebe13f1cc109767fae9bfde1a484519366a9514619d7e"
   }

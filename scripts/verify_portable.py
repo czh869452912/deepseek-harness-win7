@@ -51,6 +51,7 @@ from scripts.javascript_workflow_oracle import validate_runtime as validate_java
 from scripts.runtime_context_oracle import validate_runtime as validate_runtime_context, identity as runtime_context_identity
 from scripts.javascript_ready_oracle import validate_runtime as validate_javascript_ready, identity as ready_identity
 from scripts.javascript_initial_oracle import validate_runtime as validate_javascript_initial, identity as initial_identity
+from scripts.javascript_errors_oracle import validate_runtime as validate_javascript_errors, identity as errors_identity
 from scripts.session_number_oracle import validate_runtime as validate_session_number, identity as number_identity
 from scripts.session_diagnostic_oracle import validate_runtime as validate_session_diagnostic, identity as diagnostic_identity
 from scripts.session_restore_sign_oracle import validate_runtime as validate_session_restore_sign, identity as restore_sign_identity
@@ -136,6 +137,25 @@ def initial_receipts(source, native, output):
     expected_digest = initial_identity(json.loads(source.read_text(encoding='utf-8')))
     runtime = json.loads(native.read_text(encoding='utf-8'))
     validate_javascript_initial(runtime, ROOT, expected_digest, runtime['modules'], runtime['assets'])
+    return source, expected_digest, runtime['modules'], runtime['assets']
+
+
+def errors_receipts(source, native, output):
+    if source or native:
+        if not source or not native:
+            raise RuntimeError('Both JavaScript errors Source and native receipts are required')
+        source, native = Path(source).resolve(), Path(native).resolve()
+    else:
+        paired = output.with_suffix('.javascript-errors-paired.json')
+        completed = subprocess.run([sys.executable, str(ROOT / 'scripts/javascript_errors_oracle.py'),
+            '--output', str(paired)], cwd=str(ROOT), capture_output=True, timeout=360)
+        output.with_suffix('.javascript-errors-source.log').write_bytes(completed.stdout + completed.stderr)
+        if completed.returncode or completed.stderr:
+            raise RuntimeError('Fresh JavaScript errors Source qualification failed')
+        source, native = paired.with_suffix('.source.json'), paired.with_suffix('.native.json')
+    expected_digest = errors_identity(json.loads(source.read_text(encoding='utf-8')))
+    runtime = json.loads(native.read_text(encoding='utf-8'))
+    validate_javascript_errors(runtime, ROOT, expected_digest, runtime['modules'], runtime['assets'])
     return source, expected_digest, runtime['modules'], runtime['assets']
 
 
@@ -453,6 +473,8 @@ def main(argv=None):
     parser.add_argument('--win32-stat-native', help='Fresh native metadata/import/handle ownership receipt')
     parser.add_argument('--sdk-profile-source', help='Fresh actual original minimal SDK normal/cancel/error observations')
     parser.add_argument('--sdk-profile-native', help='Fresh native SDK profile child/import/durable receipts')
+    parser.add_argument('--javascript-errors-source', help='Fresh original JavaScript error boundary observations')
+    parser.add_argument('--javascript-errors-native', help='Fresh native JavaScript child/import/private asset receipts')
     parser.add_argument('--llm-prepared-source', help='Fresh actual Source prepared call observations')
     parser.add_argument('--llm-prepared-native', help='Fresh native prepared call child/import receipts')
     parser.add_argument('--llm-metadata-source', help='Fresh actual Source model metadata observations')
@@ -508,6 +530,11 @@ def main(argv=None):
             'javascript_ready_oracle.py', 'oracles/javascript_ready_python.py', 'oracles/javascript_ready_source.mjs',
             'javascript_initial_oracle.py', 'oracles/javascript_initial_python.py', 'oracles/javascript_initial_source.mjs',
             'oracles/javascript_initial_controls.py',
+            'javascript_errors_oracle.py', 'javascript_errors_cases.py', 'oracles/js-error-fixtures.json',
+            'oracles/javascript_errors_python.py', 'oracles/javascript_errors_observer.py',
+            'oracles/javascript_errors_session_python.py', 'oracles/javascript_errors_errors_python.py',
+            'oracles/javascript_errors_session.probe.spec.ts', 'oracles/javascript_errors_errors.probe.spec.ts',
+            'oracles/vitest.javascript-errors-probe.config.mts',
             'session_number_oracle.py', 'oracles/session_number_python.py',
             'session_diagnostic_oracle.py', 'oracles/session_diagnostic_python.py',
             'session_restore_sign_oracle.py', 'oracles/session_restore_sign_python.py',
@@ -656,6 +683,8 @@ def main(argv=None):
         report['javascriptReadySourceSha256'] = digest(ready_source)
         initial_source, initial_digest, initial_modules, initial_assets = initial_receipts(args.initial_source, args.initial_native, output)
         report['javascriptInitialSourceSha256'] = digest(initial_source)
+        errors_source, errors_digest, errors_modules, errors_assets = errors_receipts(args.javascript_errors_source, args.javascript_errors_native, output)
+        report['javascriptErrorsSourceSha256'] = digest(errors_source)
         number_source, number_digest, number_modules = number_receipts(args.number_source, args.number_native, output)
         diagnostic_source, diagnostic_digest, diagnostic_modules = diagnostic_receipts(args.diagnostic_source, args.diagnostic_native, output)
         restore_sign_source, restore_sign_digest, restore_sign_modules = restore_sign_receipts(args.restore_sign_source, args.restore_sign_native, output)
@@ -1020,6 +1049,16 @@ def main(argv=None):
             initial_report = json.loads(initial_path.read_text(encoding='utf-8'))
             validate_javascript_initial(initial_report, portable, initial_digest, initial_modules, initial_assets)
             report['javascriptInitial'] = initial_report
+            errors_path = workspace / 'javascript-errors.json'
+            errors_result = subprocess.run([str(portable / 'python.exe'), '-I', '-u',
+                str(ROOT / 'scripts/oracles/javascript_errors_python.py'), '--root', str(portable), '--output', str(errors_path)],
+                cwd=str(workspace), env=env, capture_output=True, encoding='utf-8', errors='replace', timeout=180)
+            output.with_suffix('.javascript-errors.log').write_text(errors_result.stdout + '\nSTDERR:\n' + errors_result.stderr, encoding='utf-8')
+            if errors_result.returncode or errors_result.stderr or not errors_path.is_file():
+                raise RuntimeError('Extracted JavaScript error boundary observations failed')
+            errors_report = json.loads(errors_path.read_text(encoding='utf-8'))
+            validate_javascript_errors(errors_report, portable, errors_digest, errors_modules, errors_assets)
+            report['javascriptErrors'] = errors_report
             number_path = workspace / 'session-number.json'
             number_result = subprocess.run([str(portable / 'python.exe'), '-I', '-u',
                 str(ROOT / 'scripts/oracles/session_number_python.py'), '--root', str(portable), '--output', str(number_path)],

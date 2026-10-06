@@ -8,7 +8,7 @@ import sys
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
-from scripts.javascript_workflow_oracle import digest, assets
+from scripts.javascript_workflow_oracle import digest, assets, PRIVATE_ASSET_PATHS
 from scripts.runtime_context_oracle import source_pin, validate_executable
 
 SOURCE_COMMIT = 'cd5ef8148158c3a752a658978873241fdf8e2bbc'
@@ -53,7 +53,7 @@ def validate_runtime(report, root, expected_digest, modules, expected_assets, ch
             raise ValueError('JavaScript initial write imported module identity invalid')
         if check_files and digest(path) != expected:
             raise ValueError('JavaScript initial write imported module bytes differ')
-    if not isinstance(expected_assets, dict) or len(expected_assets) != 19:
+    if not isinstance(expected_assets, dict) or set(expected_assets) != PRIVATE_ASSET_PATHS:
         raise ValueError('JavaScript initial write private asset closure differs')
     for name, expected in expected_assets.items():
         if not name.startswith(('dsh/javascript/bin/', 'dsh/javascript/workflow/')) or '..' in Path(name).parts or ':' in name or '\\' in name or not isinstance(expected, str) or len(expected) != 64 or any(character not in '0123456789abcdef' for character in expected):

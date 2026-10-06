@@ -231,18 +231,39 @@ int main(void) {
     memcpy(wrapped, prefix, strlen(prefix));
     memcpy(wrapped + strlen(prefix), body, body_length);
     memcpy(wrapped + strlen(prefix) + body_length, suffix, strlen(suffix) + 1);
-    compiled = JS_Eval(script, wrapped, wrapped_length, name, JS_EVAL_TYPE_GLOBAL | JS_EVAL_FLAG_COMPILE_ONLY);
-    if (JS_IsException(compiled)) { emit_exception(script, "parse-error"); exit_code = 7; goto cleanup; }
     JSValue mode = JS_GetPropertyStr(host, request, "mode");
     const char *mode_name = JS_ToCString(host, mode);
     int parse_only = mode_name != NULL && strcmp(mode_name, "parse") == 0;
     JS_FreeCString(host, mode_name);
     JS_FreeValue(host, mode);
-    if (parse_only) { puts("{\"type\":\"parsed\",\"ok\":true}"); fflush(stdout); goto cleanup; }
     host_global = JS_GetGlobalObject(host);
     JSValue deferred_value = JS_GetPropertyStr(host, request, "deferScript");
     int deferred = JS_ToBool(host, deferred_value);
     JS_FreeValue(host, deferred_value);
+    if (deferred) {
+        JSValue error_prelude = JS_GetPropertyStr(host, request, "errorPrelude");
+        size_t error_prelude_length;
+        const char *error_prelude_source = JS_ToCStringLen(host, &error_prelude_length, error_prelude);
+        if (!JS_IsString(error_prelude) || error_prelude_source == NULL) {
+            JS_FreeCString(host, error_prelude_source);
+            JS_FreeValue(host, error_prelude);
+            JS_ThrowTypeError(host, "workflow error prelude must be a string");
+            emit_exception(host, "bootstrap-error"); exit_code = 9; goto cleanup;
+        }
+        JSValue error_boot = JS_Eval(script, error_prelude_source, error_prelude_length, "script-error-prelude", JS_EVAL_TYPE_GLOBAL);
+        JS_FreeCString(host, error_prelude_source);
+        JS_FreeValue(host, error_prelude);
+        int error_boot_failed = JS_IsException(error_boot);
+        JS_FreeValue(script, error_boot);
+        if (error_boot_failed) { emit_exception(script, "bootstrap-error"); exit_code = 9; goto cleanup; }
+    }
+    compiled = JS_Eval(script, wrapped, wrapped_length, name, JS_EVAL_TYPE_GLOBAL | JS_EVAL_FLAG_COMPILE_ONLY);
+    if (JS_IsException(compiled)) {
+        if (parse_only || !deferred) { emit_exception(script, "parse-error"); exit_code = 7; goto cleanup; }
+        JS_SetPropertyStr(host, host_global, "__compiledParseError", JS_GetException(script));
+        compiled = JS_UNDEFINED;
+    }
+    if (parse_only) { puts("{\"type\":\"parsed\",\"ok\":true}"); fflush(stdout); goto cleanup; }
     if (deferred && install_intrinsic_strings(host, script) < 0) {
         emit_exception(host, "bootstrap-error"); exit_code = 9; goto cleanup;
     }

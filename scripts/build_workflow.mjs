@@ -49,12 +49,13 @@ for (const path of Object.keys(result.metafile.inputs).sort()) {
   }
   inputs[path] = digest(path)
 }
-for (const path of ['scripts/build_workflow.mjs', 'scripts/native/workflow/driver.js', 'reference/tsconfig.base.json']) {
+for (const path of ['scripts/build_workflow.mjs', 'scripts/native/workflow/driver.js', 'scripts/native/workflow/error-stack.js', 'reference/tsconfig.base.json']) {
   inputs[path] = digest(path)
 }
 mkdirSync(output)
 writeFileSync(resolve(output, 'source.js'), result.outputFiles[0].contents)
 copyFileSync('scripts/native/workflow/driver.js', resolve(output, 'driver.js'))
+copyFileSync('scripts/native/workflow/error-stack.js', resolve(output, 'error-stack.js'))
 const licenses = {
   'SOURCE-LICENSE': 'reference/LICENSE',
   'CORDIS-LICENSE': 'reference/vendor/cordis/LICENSE',
@@ -67,10 +68,10 @@ for (const [name, path] of Object.entries(licenses)) {
 writeFileSync(resolve(output, 'build-provenance.json'), JSON.stringify({
   sourceCommit, inputs, buildInputs, node: process.version, esbuild: '0.28.2', metafile: result.metafile,
   nodeBinarySha256: digest(process.execPath),
-  scope: 'Unchanged pinned workflow session/runtime/realm/schema algorithms; owned vm/port substrate. Full Node APIs and engine-specific error stacks remain unqualified.',
+  scope: 'Unchanged pinned workflow session/runtime/realm/schema algorithms; owned vm parse handoff/port substrate and native inherited stack getter. Raw native frames, engine descriptors and generated wording remain explicit platform observations; full Node/V8 APIs and actual Win7 remain unqualified.',
 }, null, 2) + '\n')
 const resources = {}
-for (const name of ['source.js', 'driver.js', 'build-provenance.json', ...Object.keys(licenses)]) {
+for (const name of ['source.js', 'driver.js', 'error-stack.js', 'build-provenance.json', ...Object.keys(licenses)]) {
   resources[name] = digest(resolve(output, name))
 }
 writeFileSync(resolve(output, 'workflow.json'), JSON.stringify({ sourceCommit, resources }, null, 2) + '\n')

@@ -51,6 +51,8 @@ from scripts.javascript_workflow_oracle import validate_runtime as validate_java
 from scripts.runtime_context_oracle import validate_runtime as validate_runtime_context, identity as runtime_context_identity
 from scripts.javascript_ready_oracle import validate_runtime as validate_javascript_ready, identity as ready_identity
 from scripts.javascript_initial_oracle import validate_runtime as validate_javascript_initial, identity as initial_identity, NAMES as INITIAL_NAMES
+from scripts.javascript_errors_oracle import validate_runtime as validate_javascript_errors, identity as errors_identity, NAMES as ERROR_NAMES
+from scripts.javascript_errors_cases import VALUE_DAMAGES as JS_ERROR_DAMAGES, SOURCE_DAMAGES as JS_ERROR_SOURCE_DAMAGES
 from scripts.session_number_oracle import validate_runtime as validate_session_number, identity as number_identity, NAMES as NUMBER_NAMES
 from scripts.session_diagnostic_oracle import validate_runtime as validate_session_diagnostic, identity as diagnostic_identity, NAMES as DIAGNOSTIC_NAMES
 from scripts.session_restore_sign_oracle import validate_runtime as validate_session_restore_sign, identity as restore_sign_identity, NAMES as RESTORE_SIGN_NAMES
@@ -84,6 +86,7 @@ PAIRED_DRIVERS = PAIRED_DRIVERS + ('javascript_initial', 'session_number', 'sess
 PAIRED_DRIVERS = PAIRED_DRIVERS + ('runtime_full_request', 'deepseek_error', 'deepseek_capture', 'jsonl_sharing', 'canonical_llm', 'llm_metadata', 'llm_prepared', 'llm_config')
 PAIRED_DRIVERS = PAIRED_DRIVERS + ('win32_stat',)
 PAIRED_DRIVERS = PAIRED_DRIVERS + ('sdk_profile',)
+PAIRED_DRIVERS = PAIRED_DRIVERS + ('javascript_errors',)
 OFFICIAL_CONFIGS = ('consumers', 'agent-lifecycle', 'session-recovery', 'session-projection', 'acp', 'acp-app', 'mcp', 'subagent-acp', 'storage-cache', 'session-observation', 'session-corpus', 'session-sqlite-query', 'query-engine-source', 'session-tools-source', 'sqlite-format-source', 'sqlite-provider-source', 'jsonl-provider-source', 'tool-scheduler-source', 'deepseek-source', 'llm-public-source')
 REQUIRED_REGRESSION = {
     'test_fs_local_upstream_parity': {
@@ -275,6 +278,13 @@ REQUIRED_REGRESSION = {
         *{'test_portable_initial_cli_refuses_partial_receipts[' + side + ']' for side in ('source', 'native')},
         *{'test_live_initial_pipe_failure_keeps_original_identity[' + error + ']' for error in ('BrokenPipeError', 'ConnectionResetError')},
         *{'test_exited_initial_pipe_failure_uses_recorded_physical_outcome[' + error + ']' for error in ('BrokenPipeError', 'ConnectionResetError')},
+    },
+    'test_javascript_errors_consumers': {
+        *{'test_actual_original_and_native_javascript_error_boundaries_match[' + name + ']' for name in ERROR_NAMES},
+        *{'test_javascript_error_receipt_requires_complete_values_and_owned_runtime[' + damage + ']' for damage in JS_ERROR_DAMAGES},
+        *{'test_javascript_error_source_requires_pinned_complete_inputs[' + damage + ']' for damage in JS_ERROR_SOURCE_DAMAGES},
+        *{'test_portable_javascript_errors_refuses_partial_receipts[' + side + ']' for side in ('source', 'native')},
+        'test_extracted_javascript_errors_requires_independently_approved_assets',
     },
     'test_persistence_read_consumers': {
         *{'test_actual_canonical_persistence_numeric_and_cancelled_reads_match_source[' + name + ']' for name in READ_NAMES},
@@ -515,6 +525,8 @@ REQUIRED_REGRESSION = {
         'test_process_artifact_retention_lanes_are_mandatory[failure]',
         *{'test_extracted_sdk_profile_requires_complete_values_and_runtime[' + damage + ']' for damage in SDK_EXTRACTED_DAMAGES},
         *{'test_sdk_profile_consumer_lanes_are_mandatory[' + damage + ']' for damage in ('omit', 'skip', 'duplicate', 'failure')},
+        *{'test_extracted_javascript_errors_requires_complete_values_and_assets[' + damage + ']' for damage in JS_ERROR_DAMAGES + ('missing', 'source-missing', 'source-changed', 'source-file')},
+        *{'test_javascript_errors_consumer_lanes_are_mandatory[' + damage + ']' for damage in ('omit', 'skip', 'duplicate', 'failure')},
         *{'test_workflow_session_boundary_lanes_are_mandatory[' + damage + ']'
           for damage in ('omit', 'skip', 'duplicate', 'failure')},
         *{'test_preflight_copy_retention_lanes_are_mandatory[' + damage + ']'
@@ -1370,6 +1382,16 @@ def validate_extracted(path, archive, candidate):
     except (ValueError, KeyError, TypeError) as error:
         raise RuntimeError('Extracted javascriptInitial observations are incomplete') from error
     try:
+        if report.get('javascriptErrorsSourceSha256') != candidate['javascript_errors_source_sha256']:
+            raise ValueError('JavaScript errors Source file differs')
+        if errors_identity(candidate['javascript_errors_source'], check_files=False) != candidate['javascript_errors_observations_sha256']:
+            raise ValueError('JavaScript errors approved Source observations differ')
+        validate_javascript_errors(report.get('javascriptErrors'), Path(report['mcpStdio']['root']),
+            candidate['javascript_errors_observations_sha256'], candidate['javascript_errors_modules'],
+            candidate['javascript_errors_assets'], check_files=False)
+    except (ValueError, KeyError, TypeError) as error:
+        raise RuntimeError('Extracted javascriptErrors observations are incomplete') from error
+    try:
         validate_persistence_read(report.get('persistenceRead'), Path(report['mcpStdio']['root']),
             candidate['persistence_read_observations_sha256'], candidate['persistence_read_modules'],
             candidate['persistence_read_assets'], check_files=False)
@@ -1667,6 +1689,14 @@ def verify(args, output):
     candidate['javascript_initial_observations_sha256'] = initial_identity(json.loads(initial_source.read_text(encoding='utf-8')))
     candidate['javascript_initial_modules'] = initial_report['modules']
     candidate['javascript_initial_assets'] = initial_report['assets']
+    errors_source = output / 'javascript-errors-paired.source.json'
+    errors_native = output / 'javascript-errors-paired.native.json'
+    errors_report = json.loads(errors_native.read_text(encoding='utf-8'))
+    candidate['javascript_errors_source'] = json.loads(errors_source.read_text(encoding='utf-8'))
+    candidate['javascript_errors_observations_sha256'] = errors_identity(candidate['javascript_errors_source'])
+    candidate['javascript_errors_source_sha256'] = digest(errors_source)
+    candidate['javascript_errors_modules'] = errors_report['modules']
+    candidate['javascript_errors_assets'] = errors_report['assets']
     read_source = output / 'persistence-read-paired.source.json'
     read_native = output / 'persistence-read-paired.native.json'
     read_report = json.loads(read_native.read_text(encoding='utf-8'))
@@ -1780,7 +1810,8 @@ def verify(args, output):
                '--llm-prepared-source', str(llm_prepared_source), '--llm-prepared-native', str(llm_prepared_native),
                '--llm-config-source', str(llm_config_source), '--llm-config-native', str(llm_config_native),
                '--win32-stat-source', str(win32_stat_source), '--win32-stat-native', str(win32_stat_native),
-               '--sdk-profile-source', str(sdk_profile_source), '--sdk-profile-native', str(sdk_profile_native)]
+               '--sdk-profile-source', str(sdk_profile_source), '--sdk-profile-native', str(sdk_profile_native),
+               '--javascript-errors-source', str(errors_source), '--javascript-errors-native', str(errors_native)]
     if not candidate['worktree_dirty']:
         command += ['--expected-commit', candidate['product_commit']]
     run(command, 'portable-extracted', output, env=environment)

@@ -1,0 +1,264 @@
+{
+  "session": [
+    {
+      "name": "scalars",
+      "body": "return [null,true,false,42,\"\u4e2d\u6587\ud83d\ude00\",-0]"
+    },
+    {
+      "name": "closure-loop",
+      "body": "const seed=3; const add=value=>value+seed; let total=0; for(let index=0;index<5;index++) total+=add(index); return {total}"
+    },
+    {
+      "name": "promise-await",
+      "body": "return {value:await Promise.resolve(7).then(value=>value*3)}"
+    },
+    {
+      "name": "host-realm",
+      "body": "return {argsRealm:args instanceof Object,hookRealm:phase instanceof Function,frozen:Object.isFrozen(phase),args:args}"
+    },
+    {
+      "name": "phase-log",
+      "body": "phase(\"\u5206\u6790\"); log(\"\u51c6\u5907\ud83d\ude00\"); return \"\u7ed3\u675f\""
+    },
+    {
+      "name": "root-undefined",
+      "body": "return undefined"
+    },
+    {
+      "name": "own-proto",
+      "body": "return JSON.parse('{\"__proto__\":{\"polluted\":1},\"ok\":2}')"
+    },
+    {
+      "name": "null-proto",
+      "body": "return Object.assign(Object.create(null),{ok:3})"
+    },
+    {
+      "name": "dag",
+      "body": "const leaf={value:1}; return {first:leaf,second:leaf}"
+    },
+    {
+      "name": "getter",
+      "body": "let reads=0; return {get value(){return ++reads}}"
+    },
+    {
+      "name": "proxy",
+      "body": "return new Proxy({value:4},{get(target,key){return Reflect.get(target,key)}})"
+    },
+    {
+      "name": "array-alias",
+      "body": "const value=[1,2]; value[\"01\"]=9; return value"
+    },
+    {
+      "name": "hidden",
+      "body": "const value={visible:1}; Object.defineProperty(value,\"hidden\",{value:()=>7}); return value"
+    },
+    {
+      "name": "throw-custom",
+      "body": "throw {stack:\"exact-custom-stack\",message:\"ignored\"}"
+    },
+    {
+      "name": "nested-undefined",
+      "body": "return {value:undefined}"
+    },
+    {
+      "name": "bigint",
+      "body": "return 1n"
+    },
+    {
+      "name": "cycle",
+      "body": "const value={}; value.self=value; return value"
+    },
+    {
+      "name": "sparse",
+      "body": "return [1,,3]"
+    },
+    {
+      "name": "symbol-key",
+      "body": "return {[Symbol(\"key\")]:1}"
+    },
+    {
+      "name": "exotic",
+      "body": "return new Date(0)"
+    },
+    {
+      "name": "getter-throw",
+      "body": "return {get value(){throw {stack:\"getter-custom-stack\"}}}"
+    },
+    {
+      "name": "parse",
+      "body": "return {"
+    }
+  ],
+  "sessionNativeDiagnostics": {
+    "nested-undefined": {
+      "sourceFirstLine": "WorkflowError: the workflow's return value is not plain JSON data \u2014 workflow result.value: undefined is not JSON data. Return only JSON-serializable objects/arrays/scalars.",
+      "nativeError": "WorkflowError: the workflow's return value is not plain JSON data \u2014 workflow result.value: undefined is not JSON data. Return only JSON-serializable objects/arrays/scalars.\n    at HarnessError (host-bootstrap:49:22)\n    at WorkflowError (host-bootstrap:584:28)\n    at materializeResult (host-bootstrap:731:20)\n    at drive (host-bootstrap:699:70)\n"
+    },
+    "bigint": {
+      "sourceFirstLine": "WorkflowError: the workflow's return value is not plain JSON data \u2014 workflow result: bigints are not JSON data. Return only JSON-serializable objects/arrays/scalars.",
+      "nativeError": "WorkflowError: the workflow's return value is not plain JSON data \u2014 workflow result: bigints are not JSON data. Return only JSON-serializable objects/arrays/scalars.\n    at HarnessError (host-bootstrap:49:22)\n    at WorkflowError (host-bootstrap:584:28)\n    at materializeResult (host-bootstrap:731:20)\n    at drive (host-bootstrap:699:70)\n"
+    },
+    "cycle": {
+      "sourceFirstLine": "WorkflowError: the workflow's return value is not plain JSON data \u2014 workflow result.self: circular references are not JSON data. Return only JSON-serializable objects/arrays/scalars.",
+      "nativeError": "WorkflowError: the workflow's return value is not plain JSON data \u2014 workflow result.self: circular references are not JSON data. Return only JSON-serializable objects/arrays/scalars.\n    at HarnessError (host-bootstrap:49:22)\n    at WorkflowError (host-bootstrap:584:28)\n    at materializeResult (host-bootstrap:731:20)\n    at drive (host-bootstrap:699:70)\n"
+    },
+    "sparse": {
+      "sourceFirstLine": "WorkflowError: the workflow's return value is not plain JSON data \u2014 workflow result[1]: sparse arrays are not JSON data. Return only JSON-serializable objects/arrays/scalars.",
+      "nativeError": "WorkflowError: the workflow's return value is not plain JSON data \u2014 workflow result[1]: sparse arrays are not JSON data. Return only JSON-serializable objects/arrays/scalars.\n    at HarnessError (host-bootstrap:49:22)\n    at WorkflowError (host-bootstrap:584:28)\n    at materializeResult (host-bootstrap:731:20)\n    at drive (host-bootstrap:699:70)\n"
+    },
+    "symbol-key": {
+      "sourceFirstLine": "WorkflowError: the workflow's return value is not plain JSON data \u2014 workflow result: symbol-keyed properties are not plain JSON data. Return only JSON-serializable objects/arrays/scalars.",
+      "nativeError": "WorkflowError: the workflow's return value is not plain JSON data \u2014 workflow result: symbol-keyed properties are not plain JSON data. Return only JSON-serializable objects/arrays/scalars.\n    at HarnessError (host-bootstrap:49:22)\n    at WorkflowError (host-bootstrap:584:28)\n    at materializeResult (host-bootstrap:731:20)\n    at drive (host-bootstrap:699:70)\n"
+    },
+    "exotic": {
+      "sourceFirstLine": "WorkflowError: the workflow's return value is not plain JSON data \u2014 workflow result: only plain objects and arrays are JSON data (exotic prototype). Return only JSON-serializable objects/arrays/scalars.",
+      "nativeError": "WorkflowError: the workflow's return value is not plain JSON data \u2014 workflow result: only plain objects and arrays are JSON data (exotic prototype). Return only JSON-serializable objects/arrays/scalars.\n    at HarnessError (host-bootstrap:49:22)\n    at WorkflowError (host-bootstrap:584:28)\n    at materializeResult (host-bootstrap:731:20)\n    at drive (host-bootstrap:699:70)\n"
+    },
+    "getter-throw": {
+      "sourceFirstLine": "WorkflowError: the workflow's return value is not plain JSON data \u2014 workflow result: reading the value threw: getter-custom-stack. Return only JSON-serializable objects/arrays/scalars.",
+      "nativeError": "WorkflowError: the workflow's return value is not plain JSON data \u2014 workflow result: reading the value threw: getter-custom-stack. Return only JSON-serializable objects/arrays/scalars.\n    at HarnessError (host-bootstrap:49:22)\n    at WorkflowError (host-bootstrap:584:28)\n    at materializeResult (host-bootstrap:731:20)\n    at drive (host-bootstrap:699:70)\n"
+    },
+    "parse": {
+      "sourceFirstLine": "WorkflowError: workflow script does not parse: SyntaxError: Unexpected token ')'",
+      "nativeError": "WorkflowError: workflow script does not parse: SyntaxError: expecting ';'\n    at HarnessError (host-bootstrap:49:22)\n    at WorkflowError (host-bootstrap:584:28)\n    at WorkflowExecution (host-bootstrap:617:110)\n    at runWorkerSession (host-bootstrap:1044:97)\n    at <eval> (host-bootstrap:1106:77)\n"
+    }
+  },
+  "errors": [
+    {
+      "name": "guest-error",
+      "body": "throw new Error('guest failure')"
+    },
+    {
+      "name": "guest-type",
+      "body": "throw new TypeError('typed failure')"
+    },
+    {
+      "name": "guest-reference",
+      "body": "return missingIdentifier"
+    },
+    {
+      "name": "guest-property",
+      "body": "return null.value"
+    },
+    {
+      "name": "guest-range",
+      "body": "return new Array(-1)"
+    },
+    {
+      "name": "guest-uri",
+      "body": "return decodeURIComponent('%')"
+    },
+    {
+      "name": "guest-custom-name",
+      "body": "const error=new Error('custom failure');error.name='OwnedError';throw error"
+    },
+    {
+      "name": "guest-literal-stack",
+      "body": "const error=new Error('literal failure');error.stack='owned literal stack';throw error"
+    },
+    {
+      "name": "guest-subclass",
+      "body": "class OwnedError extends Error {constructor(){super('subclass failure');this.name='OwnedError'}};throw new OwnedError()"
+    },
+    {
+      "name": "guest-stack-properties",
+      "body": "const error=new Error('shape');const own=Object.getOwnPropertyDescriptor(error,'stack');const inherited=Object.getOwnPropertyDescriptor(Error.prototype,'stack');return {instance:error instanceof Error,own:own?{enumerable:own.enumerable,configurable:own.configurable,writable:own.writable??null,get:typeof own.get,set:typeof own.set}:null,inherited:inherited?{enumerable:inherited.enumerable,configurable:inherited.configurable,writable:inherited.writable??null,get:typeof inherited.get,set:typeof inherited.set}:null}"
+    }
+  ],
+  "errorsNativeDiagnostics": {
+    "guest-error": {
+      "sourceFirstLine": "Error: guest failure",
+      "nativeError": "Error: guest failure\n    at <anonymous> (workflow:guest-error:2:11)\n    at <eval> (workflow:guest-error:3:1)\n    at runCompiled (native)\n    at runInContext (host-bootstrap:186:48)\n    at drive (host-bootstrap:696:58)\n    at runWorkerSession (host-bootstrap:1081:36)\n"
+    },
+    "guest-type": {
+      "sourceFirstLine": "TypeError: typed failure",
+      "nativeError": "TypeError: typed failure\n    at <anonymous> (workflow:guest-type:2:11)\n    at <eval> (workflow:guest-type:3:1)\n    at runCompiled (native)\n    at runInContext (host-bootstrap:186:48)\n    at drive (host-bootstrap:696:58)\n    at runWorkerSession (host-bootstrap:1081:36)\n"
+    },
+    "guest-reference": {
+      "sourceFirstLine": "ReferenceError: missingIdentifier is not defined",
+      "nativeError": "ReferenceError: missingIdentifier is not defined\n    at <anonymous> (workflow:guest-reference:2:8)\n    at <eval> (workflow:guest-reference:3:1)\n    at runCompiled (native)\n    at runInContext (host-bootstrap:186:48)\n    at drive (host-bootstrap:696:58)\n    at runWorkerSession (host-bootstrap:1081:36)\n"
+    },
+    "guest-property": {
+      "sourceFirstLine": "TypeError: Cannot read properties of null (reading 'value')",
+      "nativeError": "TypeError: cannot read property 'value' of null\n    at <anonymous> (workflow:guest-property:1:1)\n    at <eval> (workflow:guest-property:3:1)\n    at runCompiled (native)\n    at runInContext (host-bootstrap:186:48)\n    at drive (host-bootstrap:696:58)\n    at runWorkerSession (host-bootstrap:1081:36)\n"
+    },
+    "guest-range": {
+      "sourceFirstLine": "RangeError: Invalid array length",
+      "nativeError": "RangeError: invalid array length\n    at Array (native)\n    at <anonymous> (workflow:guest-range:2:12)\n    at <eval> (workflow:guest-range:3:1)\n    at runCompiled (native)\n    at runInContext (host-bootstrap:186:48)\n    at drive (host-bootstrap:696:58)\n    at runWorkerSession (host-bootstrap:1081:36)\n"
+    },
+    "guest-uri": {
+      "sourceFirstLine": "URIError: URI malformed",
+      "nativeError": "URIError: expecting hex digit\n    at decodeURIComponent (native)\n    at <anonymous> (workflow:guest-uri:2:8)\n    at <eval> (workflow:guest-uri:3:1)\n    at runCompiled (native)\n    at runInContext (host-bootstrap:186:48)\n    at drive (host-bootstrap:696:58)\n    at runWorkerSession (host-bootstrap:1081:36)\n"
+    },
+    "guest-custom-name": {
+      "sourceFirstLine": "OwnedError: custom failure",
+      "nativeError": "OwnedError: custom failure\n    at <anonymous> (workflow:guest-custom-name:2:17)\n    at <eval> (workflow:guest-custom-name:3:1)\n    at runCompiled (native)\n    at runInContext (host-bootstrap:186:48)\n    at drive (host-bootstrap:696:58)\n    at runWorkerSession (host-bootstrap:1081:36)\n"
+    },
+    "guest-subclass": {
+      "sourceFirstLine": "OwnedError: subclass failure",
+      "nativeError": "OwnedError: subclass failure\n    at OwnedError (workflow:guest-subclass:2:47)\n    at <anonymous> (workflow:guest-subclass:2:108)\n    at <eval> (workflow:guest-subclass:3:1)\n    at runCompiled (native)\n    at runInContext (host-bootstrap:186:48)\n    at drive (host-bootstrap:696:58)\n    at runWorkerSession (host-bootstrap:1081:36)\n"
+    }
+  },
+  "names": {
+    "session": [
+      "scalars",
+      "closure-loop",
+      "promise-await",
+      "host-realm",
+      "phase-log",
+      "root-undefined",
+      "own-proto",
+      "null-proto",
+      "dag",
+      "getter",
+      "proxy",
+      "array-alias",
+      "hidden",
+      "throw-custom",
+      "nested-undefined",
+      "bigint",
+      "cycle",
+      "sparse",
+      "symbol-key",
+      "exotic",
+      "getter-throw",
+      "parse"
+    ],
+    "errors": [
+      "guest-error",
+      "guest-type",
+      "guest-reference",
+      "guest-property",
+      "guest-range",
+      "guest-uri",
+      "guest-custom-name",
+      "guest-literal-stack",
+      "guest-subclass",
+      "guest-stack-properties"
+    ]
+  },
+  "stackOwnership": {
+    "source": {
+      "instance": true,
+      "own": {
+        "enumerable": false,
+        "configurable": true,
+        "writable": null,
+        "get": "function",
+        "set": "function"
+      },
+      "inherited": null
+    },
+    "native": {
+      "instance": true,
+      "own": null,
+      "inherited": {
+        "enumerable": false,
+        "configurable": true,
+        "writable": null,
+        "get": "function",
+        "set": "function"
+      }
+    }
+  }
+}

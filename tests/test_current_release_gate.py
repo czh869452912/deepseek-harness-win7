@@ -1616,6 +1616,47 @@ def test_preflight_copy_retention_lanes_are_mandatory(tmp_path, damage):
             GATE.validate_regression(path)
 
 
+@functools.lru_cache(maxsize=1)
+def javascript_errors_runtime_fixture():
+    with tempfile.TemporaryDirectory(prefix='javascript-errors-receipt-') as folder:
+        output = Path(folder) / 'paired.json'
+        completed = subprocess.run([sys.executable, str(ROOT / 'scripts/javascript_errors_oracle.py'),
+            '--output', str(output)], cwd=str(ROOT), capture_output=True, timeout=360)
+        if completed.returncode:
+            raise RuntimeError(output.read_text(encoding='utf-8'))
+        return dict(source=json.loads(output.with_suffix('.source.json').read_text(encoding='utf-8')),
+            native=json.loads(output.with_suffix('.native.json').read_text(encoding='utf-8')))
+
+
+@pytest.mark.parametrize('damage', GATE.JS_ERROR_DAMAGES + ('missing', 'source-missing', 'source-changed', 'source-file'))
+def test_extracted_javascript_errors_requires_complete_values_and_assets(tmp_path, damage):
+    from scripts.javascript_errors_cases import damage_runtime
+    archive, candidate, report = extracted_receipt(tmp_path)
+    if damage == 'missing':
+        del report['javascriptErrors']
+    elif damage == 'source-missing':
+        del candidate['javascript_errors_source']
+    elif damage == 'source-changed':
+        candidate['javascript_errors_source']['rows'][0]['body'] = 'return 42'
+    elif damage == 'source-file':
+        report['javascriptErrorsSourceSha256'] = '0' * 64
+    else:
+        report['javascriptErrors'] = damage_runtime(report['javascriptErrors'], damage, tmp_path / 'foreign')
+    output = tmp_path / 'extracted.json'
+    output.write_text(json.dumps(report), encoding='utf-8')
+    with pytest.raises(RuntimeError, match='javascriptErrors'):
+        GATE.validate_extracted(output, archive, candidate)
+
+
+@pytest.mark.parametrize('damage', ('omit', 'skip', 'duplicate', 'failure'))
+def test_javascript_errors_consumer_lanes_are_mandatory(tmp_path, damage):
+    path = tmp_path / 'pytest.xml'
+    for name in GATE.REQUIRED_REGRESSION['test_javascript_errors_consumers']:
+        regression_xml(path, **{damage: ('test_javascript_errors_consumers', name)})
+        with pytest.raises(RuntimeError):
+            GATE.validate_regression(path)
+
+
 def extracted_receipt(tmp_path):
     archive = tmp_path / 'portable.zip'
     archive.write_bytes(b'exact candidate archive')
@@ -1647,6 +1688,16 @@ def extracted_receipt(tmp_path):
     candidate['javascript_initial_observations_sha256'] = initial_observation_digest(initial['observations'])
     candidate['javascript_initial_modules'] = initial['modules'].copy()
     candidate['javascript_initial_assets'] = initial['assets'].copy()
+    errors_pair = copy.deepcopy(javascript_errors_runtime_fixture())
+    errors = errors_pair['native']
+    errors['root'], errors['executable'] = str(tmp_path), str(tmp_path / 'python.exe')
+    for child in errors['groups'].values():
+        child['root'], child['executable'] = errors['root'], errors['executable']
+    candidate['javascript_errors_source'] = errors_pair['source']
+    candidate['javascript_errors_source_sha256'] = hashlib.sha256(json.dumps(errors_pair['source'], sort_keys=True).encode('utf-8')).hexdigest()
+    candidate['javascript_errors_observations_sha256'] = GATE.errors_identity(errors_pair['source'])
+    candidate['javascript_errors_modules'] = copy.deepcopy(errors['modules'])
+    candidate['javascript_errors_assets'] = copy.deepcopy(errors['assets'])
     read = copy.deepcopy(read_runtime_fixture())
     read['root'], read['executable'] = str(tmp_path), str(tmp_path / 'python.exe')
     candidate['persistence_read_observations_sha256'] = read_observation_digest(read['rows'])
@@ -1734,7 +1785,8 @@ def extracted_receipt(tmp_path):
               'persistenceRead': read, 'javascriptInitial': initial, 'sessionNumber': number, 'sessionDiagnostic': diagnostic,
               'sessionRestoreSign': restore_sign, 'runtimeFullRequest': full_request, 'deepseekError': deepseek_error, 'deepseekCapture': deepseek_capture, 'jsonlSharing': sharing, 'canonicalLlm': canonical_llm, 'llmMetadata': llm_metadata, 'llmPrepared': llm_prepared, 'llmConfig': llm_config,
               'win32Stat': win32_stat, 'win32StatSourceSha256': candidate['win32_stat_source_sha256'],
-              'sdkProfile': sdk_profile, 'sdkProfileSourceSha256': candidate['sdk_profile_source_sha256']}
+              'sdkProfile': sdk_profile, 'sdkProfileSourceSha256': candidate['sdk_profile_source_sha256'],
+              'javascriptErrors': errors, 'javascriptErrorsSourceSha256': candidate['javascript_errors_source_sha256']}
     modes = ['allow', 'reject', 'malformed', 'cancel-late', 'close-late', 'eof']
     report['acpPermissions'] = {'processes': 6, 'modes': modes, 'observations': [
         {'mode': mode, 'executed': mode == 'allow', 'modelRequests': 2 if mode in modes[:3] else 1, 'stderr': [''],

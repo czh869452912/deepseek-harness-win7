@@ -14,6 +14,17 @@ CASES = ROOT / 'tests/fixtures/javascript-workflow/cases.json'
 NAMES = tuple(row['name'] for row in json.loads(CASES.read_text(encoding='utf-8')))
 REQUIRED_MODULES = {'dsh/javascript/runtime.py', 'dsh/workflow/javascript_run.py',
                     'dsh/workflow/workflow_service.py', 'dsh/subagent/runtime.py', 'dsh/cordis/context.py'}
+PRIVATE_ASSET_PATHS = {
+    'dsh/javascript/bin/' + name for name in (
+        'build-provenance.json', 'dsh_js_worker.exe', 'LLVM-LICENSE.txt', 'MinGW-COPYING',
+        'MinGW-COPYING.MinGW-w64-runtime.txt', 'MinGW-COPYING.MinGW-w64.txt',
+        'MinGW-COPYING.winpthreads.txt', 'MinGW-COPYING.winstorecompat.txt',
+        'pe-audit.txt', 'QUICKJS-LICENSE', 'QUICKJS-NOTICES.txt', 'runtime.json')
+} | {
+    'dsh/javascript/workflow/' + name for name in (
+        'build-provenance.json', 'CORDIS-LICENSE', 'COSMOKIT-LICENSE', 'driver.js',
+        'error-stack.js', 'SOURCE-LICENSE', 'source.js', 'workflow.json')
+}
 
 
 def digest(path):

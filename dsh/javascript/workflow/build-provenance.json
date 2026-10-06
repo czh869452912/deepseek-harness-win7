@@ -30,9 +30,10 @@
     "scripts/native/workflow/entry.ts": "0c16542c84c439bdf4f6384d9ac4f9c93bea4cf1c37fb32baf2fd1d00aa891ab",
     "scripts/native/workflow/llm.ts": "25f382cb92a7bca91a6314600ba76f0f08ed3a121f3bf7b9ed58222820ae195e",
     "scripts/native/workflow/session.ts": "0d3eaf2a0cdc62edab0cc0bc79f5ebe2b5fbf48016bba28b5d31d2b5e292d084",
-    "scripts/native/workflow/vm.js": "3647c4e47e7c7a8e380b1442ad7e44ec3b2566b1e00e798dfb789d3f41fbd064",
-    "scripts/build_workflow.mjs": "dd45eb678569191ca02697121c8686c7e23c87ccf175afbd48098d7695a490e7",
+    "scripts/native/workflow/vm.js": "1cfb81b48cd6e0c4a05f6eaa75ce157735ddcd12ade09da6ccd2a0fdcf93dd30",
+    "scripts/build_workflow.mjs": "16b4c78941265b4bf8d3b52589e5a1ee0f7e032922e71e3ee90ee6068a0e793e",
     "scripts/native/workflow/driver.js": "c654b2304f2bbd1143b038394b3bf17f099484435ea99bf24d32bad595889e97",
+    "scripts/native/workflow/error-stack.js": "7be209e48673472e6d14b9cff3d7fee4ac90a624378e9a6e49364f101f2d858b",
     "reference/tsconfig.base.json": "9094e8dd1e3ad3b9c179ff4651330d25013ce681f7da738b50cdb9d6f4ea5e73",
     "reference/LICENSE": "ebb4f09972aee8608be255debaf78451a68e95c290f55c240dec2ecfa16ea6be",
     "reference/vendor/cordis/LICENSE": "034fb52b1d57360ecbae6cb1632a88f86fd7c3d3f5631a5f082710203dda0be7",
@@ -84,7 +85,7 @@
         "format": "esm"
       },
       "scripts/native/workflow/vm.js": {
-        "bytes": 392,
+        "bytes": 471,
         "imports": [],
         "format": "esm"
       },
@@ -549,7 +550,7 @@
             "bytesInOutput": 3673
           },
           "scripts/native/workflow/vm.js": {
-            "bytesInOutput": 415
+            "bytesInOutput": 497
           },
           "reference/packages/core/session/src/types.ts": {
             "bytesInOutput": 46
@@ -573,10 +574,10 @@
             "bytesInOutput": 4350
           }
         },
-        "bytes": 42613
+        "bytes": 42695
       }
     }
   },
   "nodeBinarySha256": "ae1a50511be58e987483fdbc12125407443926d2d394669ade2352776e920dd3",
-  "scope": "Unchanged pinned workflow session/runtime/realm/schema algorithms; owned vm/port substrate. Full Node APIs and engine-specific error stacks remain unqualified."
+  "scope": "Unchanged pinned workflow session/runtime/realm/schema algorithms; owned vm parse handoff/port substrate and native inherited stack getter. Raw native frames, engine descriptors and generated wording remain explicit platform observations; full Node/V8 APIs and actual Win7 remain unqualified."
 }

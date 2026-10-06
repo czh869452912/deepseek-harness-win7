@@ -1,5 +1,7 @@
 # 持续对齐记录
 
+2026-10-06 干净fb3ba8d9全量正常结束但拒绝：8527 passed、2项module-fallback测试预期失败、6既有skip、1既有Proactor warning，2650.16秒。精确ZIP/冻结输入/完整XML/日志及528项合成JSON清理审计已独立归档。原版依赖安装后可见的Node依赖被旧预期遗漏，扫描上限20也不是原版合同；现独立按最近anchor解析dependencies/peers，缓存检查唯一workspace和再次零扫描，并增加两项确定性回归。新的干净8537项/2081必需lane/70配对验收待完成；最新签收仍2a/60，051及七父范围开放。隔离图片34完整观察、29原样Source断言、139相关回归通过，真实headless已注册齐25个工具，仍有17项参数及权限/组合差异；这些尚未签收。
+
 2026-10-06 干净c0b12c55门禁再次拒绝：完整8531项XML为8516 passed、9共享Source输入扫描错误、6既有skip、0 failed；测试2666.098秒后清理达到2800秒期限。精确ZIP/冻结输入/原始错误/中断审计已归档；Git tracked输入枚举、清理避免重复JSON解析及中断续清修复50定向通过，恢复清理实际299项约3.2 GiB。新全量8535项/2081必需lane/70配对待干净验收，051仍running；最新签收仍2a/60，七父范围和延期Win7开放。完整headless实际工具研究确认新的权限/调度/组合差异，仍隔离未签收；见 `docs/research/2026-10-06-llm-prepared-progress.md`。
 
 2026-10-06 `b93d1cd8` 完整8531项门禁被拒绝：8521 passed、4 failed、6既有skip、2 warnings，2686.04秒。三项ACP fixture改用规范适配器注册、正向门禁计数从严格2077注册表计算后107定向通过；精确拒绝ZIP/完整冻结输入/XML/日志/18份ACP实际fixture独立保留。自动清理528个合成JSON释放约5.66 GiB并保留真实证据。051仍running，下一干净全量/Source/实际解压待执行；最新签收仍2a/60，七父范围和延期Win7保持开放。见 `docs/research/2026-10-06-llm-prepared-progress.md`。

@@ -53,7 +53,7 @@ def _repository_root() -> str:
 REPOSITORY_ROOT = _repository_root()
 
 
-def _inventory() -> Dict[str, str]:
+def _inventory(workspace_root: str) -> Dict[str, str]:
     """
     Every package the checkout carries, by name.
 
@@ -62,12 +62,9 @@ def _inventory() -> Dict[str, str]:
     """
     found: Dict[str, str] = {}
     roots = [
-        os.path.join(REPOSITORY_ROOT, "packages"),
-        os.path.join(REPOSITORY_ROOT, "reference", "packages"),
-        os.path.join(REPOSITORY_ROOT, "apps"),
-        os.path.join(REPOSITORY_ROOT, "reference", "apps"),
-        os.path.join(REPOSITORY_ROOT, "vendor"),
-        os.path.join(REPOSITORY_ROOT, "reference", "vendor"),
+        os.path.join(workspace_root, "packages"),
+        os.path.join(workspace_root, "apps"),
+        os.path.join(workspace_root, "vendor"),
     ]
     for base in roots:
         if not os.path.isdir(base):
@@ -93,6 +90,25 @@ def _inventory() -> Dict[str, str]:
     return found
 
 
+def _expected_directory(anchor: str, package_name: str):
+    current = os.path.dirname(os.path.abspath(anchor))
+    workspace_root = None
+    while True:
+        candidate = os.path.join(current, "node_modules", *package_name.split("/"))
+        if os.path.isfile(os.path.join(candidate, "package.json")):
+            return candidate
+        if workspace_root is None and any(
+            os.path.isdir(os.path.join(current, marker))
+            for marker in ("packages", "apps", "vendor", "node_modules")
+        ):
+            workspace_root = current
+        parent = os.path.dirname(current)
+        if parent == current:
+            break
+        current = parent
+    return _inventory(workspace_root).get(package_name) if workspace_root else None
+
+
 def expected_closure(anchor: str) -> Set[str]:
     """
     Every dependency and peer dependency reachable from `anchor`, nearest-wins.
@@ -100,19 +116,18 @@ def expected_closure(anchor: str) -> Set[str]:
     @param anchor: absolute path of the install anchor manifest.
     @returns: the package names the healed closure must carry.
     """
-    inventory = _inventory()
     manifest = read_module_fallback_manifest(anchor)
     links: Dict[str, str] = {}
     if isinstance(manifest.get("name"), str):
         links[manifest["name"]] = os.path.dirname(os.path.abspath(anchor))
     queue = [(anchor, manifest)]
     while queue:
-        _, current = queue.pop(0)
+        current_anchor, current = queue.pop(0)
         names = list(current.get("dependencies", {})) + list(current.get("peerDependencies", {}))
         for name in names:
             if name in links:
                 continue
-            directory = inventory.get(name)
+            directory = _expected_directory(current_anchor, name)
             # A declared-but-uninstalled dependency cannot be loader-visible and
             # is skipped, exactly as the healing pass skips it.
             if directory is None:
@@ -240,16 +255,51 @@ def test_the_workspace_scan_runs_once_per_workspace(monkeypatch):
     entries, names = resolve_module_fallback_entries(INSTALL_ANCHOR)
     assert len(names) > 100
     first_pass = len(scans)
-    # One scan per ancestor the resolution scope carries, never one per anchor:
-    # 219 packages resolved by ~320 lookups cost the same scan as the anchor's
-    # own first lookup.
-    assert 0 < first_pass < 20
+    assert first_pass > 0
+    assert first_pass == len(set(scans))
 
     # A second resolution reuses the index: no further filesystem walk at all.
     entries_again, names_again = resolve_module_fallback_entries(INSTALL_ANCHOR)
     assert names_again == names
     assert len(entries_again) == len(entries)
     assert len(scans) == first_pass
+
+
+def test_installed_dependency_and_peer_closure_uses_the_nearest_anchor(tmp_path):
+    def publish(relative, manifest):
+        directory = tmp_path / relative
+        directory.mkdir(parents=True)
+        (directory / "package.json").write_text(json.dumps(manifest), encoding="utf-8")
+        return directory
+
+    app = publish("apps/cli", {"name": "fixture-app", "dependencies": {"fixture-dep": "*"}})
+    nearest = publish("apps/cli/node_modules/fixture-dep", {
+        "name": "fixture-dep", "peerDependencies": {"fixture-peer": "*", "fixture-missing": "*"},
+    })
+    publish("node_modules/fixture-dep", {"name": "fixture-dep", "dependencies": {"fixture-far-only": "*"}})
+    peer = publish("apps/cli/node_modules/fixture-peer", {"name": "fixture-peer"})
+    publish("node_modules/fixture-far-only", {"name": "fixture-far-only"})
+    anchor = str(app / "package.json")
+    entries, names = resolve_module_fallback_entries(anchor)
+    assert names == expected_closure(anchor) == {"fixture-app", "fixture-dep", "fixture-peer"}
+    directories = {entry["packageName"]: entry["packageDir"] for entry in entries}
+    assert directories["fixture-dep"] == str(nearest)
+    assert directories["fixture-peer"] == str(peer)
+
+
+def test_workspace_inventory_never_answers_from_an_enclosing_checkout(tmp_path):
+    outer = tmp_path / "packages/outer"
+    outer.mkdir(parents=True)
+    (outer / "package.json").write_text(json.dumps({"name": "fixture-outer"}), encoding="utf-8")
+    app = tmp_path / "nested/apps/cli"
+    app.mkdir(parents=True)
+    (app / "package.json").write_text(json.dumps({
+        "name": "fixture-app", "dependencies": {"fixture-outer": "*"},
+    }), encoding="utf-8")
+    anchor = str(app / "package.json")
+    entries, names = resolve_module_fallback_entries(anchor)
+    assert names == expected_closure(anchor) == {"fixture-app"}
+    assert len(entries) == 1
 
 
 @pytest.mark.asyncio

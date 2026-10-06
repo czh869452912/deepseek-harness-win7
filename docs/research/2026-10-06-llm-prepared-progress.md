@@ -33,3 +33,12 @@ Root推广后的336回归通过24.28秒，新增143完整值/归属/Source/缺�
 用户授权的自动清理050已有完整签收：过期已完成可重建合成回执及清单自动删除，真实ZIP/输入/XML/日志/Source/浏览器与未知研究保留。此次后续测试遵循同一清理授权，不逐批重复询问；gitignore不意味着任意文件都可删除。
 
 任意malformed/accessor/null/noniterable图、全部取消/注册/竞争排程、真实五种规范profile全主链及七个广义父范围继续执行。八项原始JS引擎/解析诊断另有独立候选研究，不进入本部分签收；实际Win7仍按用户决定延期，accepted_upstream仍未建立。
+# 2026-10-06 fb3ba8d9完整门禁与独立预期修复
+
+干净候选fb3ba8d919308319a387997b235a7d429e38c9fe全量8535项正常结束：8527 passed、2 failed、6既有平台skip、1既有Proactor warning；日志2650.16秒，XML测试部分2544.089秒。后续独立Source/配对/解压阶段未执行，051保持running。精确产物归档`migration/evidence/artifacts/LLM-PREPARED-REJECTED-20261006-fb3ba8d9.zip`，SHA256 a9a586d428c46a6a96fe9acba2a34c738a6b53a0d807150d8cd7b99f6a4c8c42；失败证据`RUN-LLM-PREPARED-REJECTED-20261006-FB3BA8D9`保留完整冻结输入、ZIP、XML和原始日志。
+
+两项失败来自独立module-fallback预期：此前只读workspace清单，没有考虑为真实原版profile安装后可从anchor的node_modules解析的第三方依赖；另一项将workspace扫描硬编码为小于20。原版profile.ts明确按每个anchor的Node最近依赖路径解析dependencies与peers。修复仅对齐测试预期及缓存不变量：独立最近路径探测、仅最近workspace回退、每个workspace最多扫描一次、重复解析零新增扫描；加入安装依赖/peer/最近优先与外层checkout不可见两项确定性控制。没有移除原版依赖、改动原版源码、增加原版bug例外或提高2800秒期限。
+
+自动清理正常结束：528个严格识别的合成JSON，6080014005字节（约5.66 GiB）；审计随拒绝归档保存，真实ZIP/冻结输入/XML/日志和Source/浏览器证据保留。依赖预期11项隔离通过；Root依赖/清理/Source/迁移组合88项通过（12.98秒）。首次组合命令缺少Node路径导致9项Source准备错误，原始日志保留；修正终端环境后不改断言通过。下一干净门禁收集8537项，2081必需lane、20组1911原样Source、70实际配对均不变。最新签收仍2a67ae84/60有界验收，七父范围、accepted_upstream空与延期真实Win7继续开放。
+
+并行隔离研究：图片工具34完整实际Source/native观察逐字匹配，原版29断言通过，139相关回归通过/4既有Windows skip。精确fb自有Python3.8.10基线显示34差异；ChangeTime文件版本修复尚需独立正式provider/错误/所有权控制，首次WinError1175未复现且未增加重试。新headless实际shell→下一请求→结束旅程注册齐25个原版工具，Goal三项参数已对齐，17项其他参数差异仍开放。108既有prepared-call观察摘要保持a368fe6de581b70c854dd07292ea4b149ed2364a199860f6974ffde83fa80254。这些隔离变更尚未推广Root或签收，不能代替完整profile或迁移闭环。

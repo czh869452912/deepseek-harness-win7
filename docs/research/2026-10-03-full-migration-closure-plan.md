@@ -104,3 +104,8 @@ A1 的 `MIG-ACP-SESSION-CONTROLS-003` / `CON-ACP-SESSION-CONTROLS@1` 已有界�
 针对 A1 必须覆盖：空 Session materialization、关闭后 list/resume、稳定 newest-first + UTF-8 id 排序与严格 cursor、活动/正在激活/子 Session 排除、工作区物理/词法身份、未知/重复 resume、pre-abort、迟到激活、flush/dispose 失败、并发 close 共享、close 期间拒绝新 prompt、多个 Session 全部取消后汇总清理错误、真实 JSONL/SQLite 和新 Context 恢复。
 
 后续每单元更新实际证据和下一项，不用“计划已写”冒充“实现已完成”。无法认证的范围保留具名 finding 与所需环境/决策，最终整体 accepted_upstream 仅在全范围证据齐全时考虑设置。
+# 2026-10-06 当前推进覆盖
+
+fb3ba8d9完整门禁拒绝已独立留存：8527 passed、2项独立module-fallback预期失败、6既有skip、1 warning；自动清理正常释放528项约5.66 GiB。对齐最近anchor的实际Node依赖/peer预期与唯一workspace缓存不变量，增加两项确定性回归后，再执行新干净8537项/2081必需lane/20组1911原样Source/70实际配对/实际解压和原版浏览器验收。051仍running，最新正式签收仍2a67ae84/60；不可按隔离观察或候选提交宣布整体完成。
+
+后续独立部分保持：053公开配置/query/null、052真实JS诊断/parse生命周期、权限preset的settings/command/projection完整生命周期、图片及Win32 ChangeTime/provider所有权、LLM已解析await边界、工具必需SystemPrompt及请求指令组合、17项实际工具参数差异，随后五种完整profile和七父范围验收。图片34完整实际观察/29原样Source/139回归已在隔离候选通过，真实headless25工具注册齐；这些须按正式合同、真实解压及独立干净门禁逐段推广并提交。真实Win7按用户延期，accepted_upstream仍为空，九项原版bug判据/C58/C59不变。

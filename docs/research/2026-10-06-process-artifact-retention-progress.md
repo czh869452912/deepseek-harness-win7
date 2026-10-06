@@ -21,3 +21,8 @@ Clean9b3f773b reached94% of full pytest before the existing whole-suite2400 seco
 This changes repository maintenance only;seven broad migration scopes,eight raw JavaScript differences,accepted_upstream null and deferred realWin7/browser status remain unchanged.
 
 Real immutable evidence and unclassified research copies remain retained. Their long-term archival policy is separate from this exact synthetic-output cleanup;no blanket ignored-directory removal is performed.
+# 2026-10-06 fb3ba8d9正常收尾清理
+
+最新全量8535项正常结束（8527通过、两项module-fallback预期失败、6既有skip），收尾清理成功528个合成JSON/6080014005字节，约5.66 GiB。完整审计、实际失败XML/日志/冻结输入/精确ZIP存入不可变`LLM-PREPARED-REJECTED-20261006-fb3ba8d9.zip`，SHA256 a9a586d428c46a6a96fe9acba2a34c738a6b53a0d807150d8cd7b99f6a4c8c42。此前c0中断后实际299项恢复清理及原始planned审计保持独立，不改写历史数量。
+
+持续使用用户授权自动清理严格识别、可重建且已结束的合成JSON和过期清理清单；真实回执、失败ZIP、输入、XML、日志、Source/浏览器观察及活动/未分类研究保留。gitignore仅说明版本控制边界，不作为删除分类依据。无需逐批再次请求许可。新门禁将继续执行同一自动维护，预算和验收标准不放宽。

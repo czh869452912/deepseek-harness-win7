@@ -61,6 +61,7 @@ from scripts.deepseek_capture_oracle import validate_runtime as validate_deepsee
 from scripts.llm_config_oracle import validate_runtime as validate_llm_config, identity as llm_config_identity
 from scripts.win32_stat_oracle import validate_runtime as validate_win32_stat, identity as win32_stat_identity
 from scripts.sdk_profile_oracle import validate_runtime as validate_sdk_profile, identity as sdk_profile_identity, observe_native as observe_sdk_profile
+from scripts.permission_presets_oracle import validate_runtime as validate_permission_presets, identity as permission_presets_identity, observe_native as observe_permission_presets
 from scripts.llm_prepared_oracle import validate_runtime as validate_llm_prepared, identity as llm_prepared_identity
 from scripts.llm_metadata_oracle import validate_runtime as validate_llm_metadata, identity as llm_metadata_identity
 from scripts.canonical_llm_oracle import validate_runtime as validate_canonical_llm, identity as canonical_llm_identity
@@ -427,6 +428,26 @@ def sdk_profile_receipts(source, native, output):
     return source, observed, runtime['modules']
 
 
+def permission_presets_receipts(source, native, output):
+    if source or native:
+        if not source or not native:
+            raise RuntimeError('Both permission presets Source and native receipts are required')
+        source, native = Path(source).resolve(), Path(native).resolve()
+    else:
+        paired = output.with_suffix('.permission-presets-paired.json')
+        completed = subprocess.run([sys.executable, str(ROOT / 'scripts/permission_presets_oracle.py'),
+            '--output', str(paired)], cwd=str(ROOT), capture_output=True, timeout=240)
+        output.with_suffix('.permission-presets-source.log').write_bytes(completed.stdout + completed.stderr)
+        if completed.returncode or completed.stderr:
+            raise RuntimeError('Fresh permission presets Source qualification failed')
+        source, native = paired.with_suffix('.source.json'), paired.with_suffix('.native.json')
+    observed = json.loads(source.read_text(encoding='utf-8'))
+    permission_presets_identity(observed, ROOT / 'reference')
+    runtime = json.loads(native.read_text(encoding='utf-8'))
+    validate_permission_presets(runtime, ROOT, sys.executable, observed, runtime['modules'])
+    return source, observed, runtime['modules']
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--archive', required=True)
@@ -473,6 +494,8 @@ def main(argv=None):
     parser.add_argument('--win32-stat-native', help='Fresh native metadata/import/handle ownership receipt')
     parser.add_argument('--sdk-profile-source', help='Fresh actual original minimal SDK normal/cancel/error observations')
     parser.add_argument('--sdk-profile-native', help='Fresh native SDK profile child/import/durable receipts')
+    parser.add_argument('--permission-presets-source', help='Fresh original permission settings/lifecycle/domain receipts')
+    parser.add_argument('--permission-presets-native', help='Fresh native permission child/import receipts')
     parser.add_argument('--javascript-errors-source', help='Fresh original JavaScript error boundary observations')
     parser.add_argument('--javascript-errors-native', help='Fresh native JavaScript child/import/private asset receipts')
     parser.add_argument('--llm-prepared-source', help='Fresh actual Source prepared call observations')
@@ -547,6 +570,11 @@ def main(argv=None):
             'llm_config_oracle.py', 'oracles/llm-config-fixtures.json', 'oracles/llm_config_nullable.probe.spec.ts', 'oracles/llm_config_nullable_python.py', 'oracles/llm_config_python.py', 'oracles/llm_config_query.probe.spec.ts', 'oracles/llm_config_query_python.py', 'oracles/vitest.llm-config-probe.config.mts', 'verify_portable.py',
             'win32_stat_oracle.py', 'oracles/win32_stat_source.mts', 'oracles/win32_stat_python.py',
             'sdk_profile_oracle.py', 'sdk_profile_values.py', 'sdk_profile_imports.json', 'sdk_profile_cases.py',
+            'permission_presets_oracle.py', 'permission_presets_values.py', 'permission_presets_cases.py',
+            'oracles/permission_presets_source.mts', 'oracles/permission_presets.probe.spec.ts',
+            'oracles/permission_presets_domain_source.mts', 'oracles/permission_presets_domain.probe.spec.ts',
+            'oracles/permission_presets_python.py', 'oracles/permission_presets_lifecycle_python.py',
+            'oracles/permission_presets_domain_python.py', 'oracles/vitest.permission-presets-probe.config.mts',
             'oracles/sdk_profile_driver.py', 'oracles/sdk_profile_source.mts', 'oracles/sdk_profile_python.py',
             'oracles/canonical_llm_retry.probe.spec.ts', 'oracles/canonical_llm_retry_python.py', 'oracles/canonical_llm_auxiliary.probe.spec.ts', 'oracles/canonical_llm_auxiliary_python.py', 'oracles/canonical_llm_failure.probe.spec.ts', 'oracles/canonical_llm_failure_python.py', 'oracles/canonical_llm_boundary.probe.spec.ts', 'oracles/canonical_llm_boundary_python.py', 'oracles/canonical_llm_iterator.probe.spec.ts', 'oracles/canonical_llm_iterator_python.py', 'oracles/canonical-llm-fixtures.json', 'oracles/vitest.canonical-llm-probe.config.mts', 'canonical_llm_values.py', 'oracles/canonical_llm_python.py', 'canonical_llm_oracle.py', 'llm_metadata_oracle.py', 'oracles/llm-metadata-fixtures.json', 'oracles/llm_metadata_catalog.probe.spec.ts', 'oracles/llm_metadata_catalog_python.py', 'oracles/llm_metadata_stream.probe.spec.ts', 'oracles/llm_metadata_stream_python.py', 'oracles/llm_metadata_python.py', 'oracles/vitest.llm-metadata-probe.config.mts',
             'jsonl_sharing_oracle.py', 'oracles/jsonl_sharing_python.py', 'oracles/jsonl_sharing.probe.spec.ts',
@@ -708,6 +736,9 @@ def main(argv=None):
         report['win32StatSourceSha256'] = digest(win32_stat_source)
         sdk_profile_source, sdk_profile_observed, sdk_profile_modules = sdk_profile_receipts(args.sdk_profile_source, args.sdk_profile_native, output)
         report['sdkProfileSourceSha256'] = digest(sdk_profile_source)
+        permission_presets_source, permission_presets_observed, permission_presets_modules = permission_presets_receipts(
+            args.permission_presets_source, args.permission_presets_native, output)
+        report['permissionPresetsSourceSha256'] = digest(permission_presets_source)
         if args.format_source or args.format_inputs:
             if not args.format_source or not args.format_inputs:
                 raise RuntimeError('Both SQLite format Source and inputs are required')
@@ -1201,6 +1232,10 @@ def main(argv=None):
                 workspace / 'sdk-profile.json', 'extracted-sdk-profile')
             validate_sdk_profile(sdk_profile_report, portable, portable / 'python.exe', sdk_profile_observed, sdk_profile_modules)
             report['sdkProfile'] = sdk_profile_report
+            permission_presets_report = observe_permission_presets(portable, portable / 'python.exe', workspace / 'permission-presets.json')
+            validate_permission_presets(permission_presets_report, portable, portable / 'python.exe',
+                permission_presets_observed, permission_presets_modules, owned_runtime=True)
+            report['permissionPresets'] = permission_presets_report
 
 
             directory = subprocess.run([str(portable / 'python.exe'), '-I', '-u',

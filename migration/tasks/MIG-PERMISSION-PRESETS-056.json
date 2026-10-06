@@ -1,0 +1,24 @@
+{
+  "id": "MIG-PERMISSION-PRESETS-056",
+  "goal": "对齐权限默认值、设置/命令/投影归属及数值和空键表行为",
+  "kind": "implementation",
+  "state": "running",
+  "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
+  "base_product": "83026446716b18b0f8cb185d177ae971473deff8",
+  "owner": "current-session-coordinator",
+  "requires": [{"task": "MIG-CURRENT-RELEASE-GATE-003", "contract": "CON-CURRENT-RELEASE-GATE", "revision": 1}],
+  "provides": [{"contract": "CON-PERMISSION-PRESETS", "revision": 1}],
+  "acceptance": [
+    "Thirty actual original/native/extracted settings/projection/command/lifecycle observations and twenty-five complete domain observations match with exact documented identity and validation-carrier mappings.",
+    "Existing live schema graph identity and plugin-owned settings/commands/projections survive changes and dispose correctly; numeric and empty keys follow actual original behavior.",
+    "Fresh Source/runtime/input/child/import refusal controls pass; malformed helpers are constructed outside expected-refusal blocks.",
+    "A new clean complete frozen gate with all current mandatory lanes, paired drivers, unchanged Source groups, real ownPython3.8.10 extraction and original browser passes before bounded integration."
+  ],
+  "expected_paths": ["dsh/interaction/permission_presets.py", "scripts", "tests", "migration", "docs/research"],
+  "open_findings": ["Provider and consumers promoted. Fifty-five fresh actual pinned Source/Root/independently extracted ownPython3.8.10 observations match, including numeric and empty-key boundaries; 119 imported modules match the actual ZIP. 192 focused mandatory/extracted/Source/runtime controls and 227 existing regressions pass. Historical failed controls/preparations are retained. New clean full release gate remains required; no bounded integration yet."],
+  "conflicts_with": [],
+  "candidate_commit": null,
+  "integrated_commit": null,
+  "evidence_ids": [],
+  "next_action": "提交本部分提供端、消费者和正式门禁后，执行新的干净完整验收；核对全部必需lane、75实际配对、20组原样Source、自有Python3.8.10解压和原版浏览器，再按有界合同签收。完整Web权限/工具/预设旅程仍留在父合同。"
+}

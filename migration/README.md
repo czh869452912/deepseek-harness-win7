@@ -1,5 +1,7 @@
 # 持续对齐记录
 
+2026-10-07 下一部分056已推广：权限默认推导、严格投影、设置schema图及可逆命令/设置/投影所有权按实际原版对齐，空/数值表键边界保留。55组新鲜Source/Root/独立新ZIP自有Python3.8.10完整匹配，119实际导入字节核验；192消费者/解压/必需门禁控制与227既有回归通过，70文件资格包含精确ZIP和历史失败。056仍running，75实际配对与新的干净全量门禁待签收；最新完整仍83026446/65，七父范围、036partial及延期Win7不变。见 `docs/research/2026-10-07-permission-presets-progress.md`。
+
 2026-10-07 流断开fixture责任另闭合一部分：真实创建栈定位模拟LLM服务器client_closed路径仍进入下一次HTTP读取；两条实际断流控制修复前确定失败。现client_closed/reset及主动销毁均结束handler读取，正常completed仍可复用同连接两次；48项相关回归通过。原始诊断/失败/前后字节独立归档。另有stall关闭及正常请求后的idle reset诊断仍保留，未吞错或宣称全局socket异常消除；最新完整签收仍83026446/65。
 
 2026-10-07 Proactor既有warning已定位到WebServer契约测试自身：实际创建栈证明成功升级后的客户端writer未关闭，直到下一项测试所在循环已关闭后析构。原有客户端所有权控制确定失败；成功和中断两条关闭控制加入回归，固定fixture终于关闭并等待，不修改提供端/Source或屏蔽warning。修复后240项同范围实际诊断回归通过且没有Proactor异常记录；原始前后日志/XML/创建栈独立归档。socketserver10054及1175/5原因继续开放；最新完整签收仍83026446/65，fixture修复待下一完整门禁。见 `docs/research/2026-10-07-proactor-fixture-progress.md`。

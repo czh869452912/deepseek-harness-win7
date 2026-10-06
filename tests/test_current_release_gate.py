@@ -58,6 +58,7 @@ from test_llm_config_consumers import damage_observations as damage_llm_config_o
 from test_win32_stat_consumers import damage_runtime as damage_win32_stat_runtime
 from test_sdk_profile_consumers import damage_runtime as damage_sdk_profile_runtime
 from scripts.sdk_profile_cases import EXTRACTED_DAMAGES as SDK_EXTRACTED_DAMAGES
+from scripts.permission_presets_cases import damage_runtime as damage_permission_runtime, damage_source as damage_permission_source
 from scripts.process_artifact_retention import prune_finished_test_folder
 from scripts.llm_metadata_oracle import observation_digest as llm_metadata_observation_digest
 from test_llm_metadata_consumers import damage_observations as damage_llm_metadata_observations
@@ -1566,6 +1567,48 @@ def sdk_profile_runtime_fixture():
             native=json.loads(output.with_suffix('.native.json').read_text(encoding='utf-8')))
 
 
+@functools.lru_cache(maxsize=1)
+def permission_presets_runtime_fixture():
+    with tempfile.TemporaryDirectory(prefix='dsh-permission-presets-source-') as folder:
+        output = Path(folder) / 'paired.json'
+        completed = subprocess.run([sys.executable, str(ROOT / 'scripts/permission_presets_oracle.py'),
+            '--output', str(output)], cwd=str(ROOT), capture_output=True, timeout=240)
+        if completed.returncode:
+            raise RuntimeError((completed.stdout + completed.stderr).decode('utf-8', errors='replace'))
+        return dict(source=json.loads(output.with_suffix('.source.json').read_text(encoding='utf-8')),
+            native=json.loads(output.with_suffix('.native.json').read_text(encoding='utf-8')))
+
+
+@pytest.mark.parametrize('damage', GATE.PERMISSION_EXTRACTED_DAMAGES)
+def test_extracted_permission_presets_requires_complete_values_and_runtime(tmp_path, damage):
+    archive, candidate, report = extracted_receipt(tmp_path)
+    if damage == 'missing':
+        del report['permissionPresets']
+    elif damage == 'source-missing':
+        del candidate['permission_presets_source']
+    elif damage == 'source-hash':
+        candidate['permission_presets_source_sha256'] = '0' * 64
+    elif damage == 'source-stamp':
+        del report['permissionPresetsSourceSha256']
+    elif damage.startswith('source-'):
+        candidate['permission_presets_source'] = damage_permission_source(candidate['permission_presets_source'], damage[len('source-'):])
+    else:
+        report['permissionPresets'] = damage_permission_runtime(report['permissionPresets'], damage, tmp_path / 'foreign-runtime')
+    output = tmp_path / 'extracted.json'
+    output.write_text(json.dumps(report), encoding='utf-8')
+    with pytest.raises(RuntimeError, match='permissionPresets'):
+        GATE.validate_extracted(output, archive, candidate)
+
+
+@pytest.mark.parametrize('damage', ('omit', 'skip', 'duplicate', 'failure'))
+def test_permission_presets_consumer_lanes_are_mandatory(tmp_path, damage):
+    path = tmp_path / 'pytest.xml'
+    for name in GATE.REQUIRED_REGRESSION['test_permission_presets_consumers']:
+        regression_xml(path, **{damage: ('test_permission_presets_consumers', name)})
+        with pytest.raises(RuntimeError):
+            GATE.validate_regression(path)
+
+
 @pytest.mark.parametrize('damage', SDK_EXTRACTED_DAMAGES)
 def test_extracted_sdk_profile_requires_complete_values_and_runtime(tmp_path, damage):
     archive, candidate, report = extracted_receipt(tmp_path)
@@ -1773,6 +1816,15 @@ def extracted_receipt(tmp_path):
     candidate['sdk_profile_source'] = sdk_profile_pair['source']
     candidate['sdk_profile_source_sha256'] = hashlib.sha256(json.dumps(sdk_profile_pair['source'], sort_keys=True).encode('utf-8')).hexdigest()
     candidate['sdk_profile_modules'] = copy.deepcopy(sdk_profile['modules'])
+    permission_pair = copy.deepcopy(permission_presets_runtime_fixture())
+    permission_presets = permission_pair['native']
+    permission_presets['root'], permission_presets['executable'] = str(tmp_path), str(tmp_path / 'python.exe')
+    for child in permission_presets['groups'].values():
+        child['root'], child['executable'] = permission_presets['root'], permission_presets['executable']
+    candidate['permission_presets_source'] = permission_pair['source']
+    candidate['permission_presets_source_sha256'] = hashlib.sha256(json.dumps(permission_pair['source'], sort_keys=True).encode('utf-8')).hexdigest()
+    candidate['permission_presets_source_identity_sha256'] = GATE.permission_presets_source_digest(permission_pair['source'])
+    candidate['permission_presets_modules'] = copy.deepcopy(permission_presets['modules'])
 
 
     report = {'result': 'passed', 'browser': {'passed': True}, 'runtime': {'checks': ['actual runtime']},
@@ -1786,6 +1838,7 @@ def extracted_receipt(tmp_path):
               'sessionRestoreSign': restore_sign, 'runtimeFullRequest': full_request, 'deepseekError': deepseek_error, 'deepseekCapture': deepseek_capture, 'jsonlSharing': sharing, 'canonicalLlm': canonical_llm, 'llmMetadata': llm_metadata, 'llmPrepared': llm_prepared, 'llmConfig': llm_config,
               'win32Stat': win32_stat, 'win32StatSourceSha256': candidate['win32_stat_source_sha256'],
               'sdkProfile': sdk_profile, 'sdkProfileSourceSha256': candidate['sdk_profile_source_sha256'],
+              'permissionPresets': permission_presets, 'permissionPresetsSourceSha256': candidate['permission_presets_source_sha256'],
               'javascriptErrors': errors, 'javascriptErrorsSourceSha256': candidate['javascript_errors_source_sha256']}
     modes = ['allow', 'reject', 'malformed', 'cancel-late', 'close-late', 'eof']
     report['acpPermissions'] = {'processes': 6, 'modes': modes, 'observations': [

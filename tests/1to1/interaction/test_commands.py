@@ -883,11 +883,17 @@ async def test_the_permission_presets_row_registers_its_command_through_the_regi
     `(name, description, handler)`).
     """
     from dsh.interaction.permission_presets import PermissionPresetsPlugin
+    from dsh.interaction.user_approval import UserApprovalPlugin
+    from dsh.session.projections import SessionProjectionsPlugin
+    from types import SimpleNamespace
 
     ctx = await mount()
+    ctx.provide('shell', SimpleNamespace(sandboxMode='workspace-write'))
+    await ctx.plugin(UserApprovalPlugin)
+    await ctx.plugin(SessionProjectionsPlugin)
     await ctx.plugin(PermissionPresetsPlugin)
-    session = ctx.get("sessions").create("permission-session")
-    agent = Agent(session=session, ctx=ctx, agent_id="permission-session")
+    _scope, agent = await mint_agent_scope(ctx, 'permission-session')
+    session = agent.session
 
     descriptor = {d.name: d for d in ctx.commands.list(agent)}["permission"]
     assert descriptor.to_dict() == {

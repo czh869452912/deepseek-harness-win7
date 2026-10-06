@@ -1,0 +1,24 @@
+{
+  "id": "CON-PERMISSION-PRESETS",
+  "revision": 1,
+  "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
+  "status": "specified",
+  "source_paths": ["reference/packages/interaction/permission-presets/src/index.ts", "reference/packages/interaction/permission-presets/src/types.ts", "reference/packages/interaction/user-approval/src/index.ts", "reference/packages/sandbox/sandbox-policy/src/index.ts", "reference/packages/settings/settings/src/index.ts", "dsh/interaction/permission_presets.py"],
+  "consumers": ["scripts/permission_presets_oracle.py", "scripts/permission_presets_values.py", "scripts/oracles/permission_presets_python.py", "tests/test_permission_presets_consumers.py", "scripts/verify_release.py", "scripts/verify_portable.py"],
+  "invariants": [
+    "Thirty ordered actual original settings/projection/command/lifecycle observations and twenty-five ordered default/seed/table domain observations retain full business outcomes, error carriers and domain raw event data.",
+    "Schema graphs retain complete reachable nodes, metadata, defaults and reference aliasing; live settings updates preserve the original allocated schema identity within each capture.",
+    "Exact thirteen observed strict-state/select refusal decisions match while original Zod issues and native ValueError diagnostics remain in raw receipts.",
+    "Default inference, durable selected aliases, seeded sessions, empty string table keys and JavaScript own numeric-key enumeration use actual Source behavior.",
+    "Session-local writes do not alter the global approval configuration; no-op switches, changed knob ordering, command narration, future session defaults, settings detach and plugin unload preserve ownership.",
+    "Actual selected Python3.8.10 runs both child observers with approved imported bytes and an independently approved aggregate import closure; real ownZIP extraction repeats all scenarios.",
+    "Fresh pinned Source input guards, complete child groups, required consumer/rejection lanes and the complete clean release gate must pass before bounded integration."
+  ],
+  "identity": "The literal thirty lifecycle and twenty-five domain names in permission_presets_values.py define this finite observation matrix. Schema allocation IDs are compared by reference-preserving graph renaming across runtimes and by exact identity within a runtime. Existing typed allocated-message identity comparison applies; table names and business values remain literal.",
+  "ownership": "Both actual child observers use the selected root/interpreter and contribute matching approved module hashes to the aggregate. Unload reverses settings, command and projection registrations owned by the plugin.",
+  "ordering": "Ordered lifecycle rows, exact command knob event order and complete controlled-clock domain raw events are mandatory. Numeric preset keys follow the original Object.keys/Object.entries order, including its 2^32-1 boundary.",
+  "errors": "Reserved/custom table names, unknown defaults or selections, unconfined executors, unmatched defaults and strict projection validation retain observed outcomes. Partial, altered, foreign-root or unguarded receipts are refused.",
+  "cancellation": "This contract adds no new cancellation schedule; real approval/question/cancellation user journeys remain separate profile consumer work.",
+  "adaptation": "Python strict-state/select validation uses ValueError while Source uses its actual ZodError with issues. Both raw diagnostics remain present, and only the thirteen named observed refusal decisions use this platform mapping; no upstream bug predicate is added.",
+  "open_questions": ["Complete browser permission switching, approval arbitration, multi-agent scope competition and full profile flows remain in their parent contracts.", "Actual Windows7 certification remains user-deferred."]
+}

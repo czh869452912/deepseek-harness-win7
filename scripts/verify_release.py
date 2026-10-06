@@ -67,6 +67,10 @@ from scripts.win32_stat_oracle import validate_runtime as validate_win32_stat, i
 from scripts.sdk_profile_oracle import validate_runtime as validate_sdk_profile, identity as sdk_profile_identity
 from scripts.sdk_profile_values import SCENARIOS as SDK_PROFILE_SCENARIOS
 from scripts.sdk_profile_cases import VALUE_DAMAGES as SDK_PROFILE_DAMAGES, SOURCE_DAMAGES as SDK_SOURCE_DAMAGES, EXTRACTED_DAMAGES as SDK_EXTRACTED_DAMAGES
+from scripts.permission_presets_oracle import validate_runtime as validate_permission_presets, identity as permission_presets_identity, source_digest as permission_presets_source_digest
+from scripts.permission_presets_values import ALL_NAMES as PERMISSION_PRESET_NAMES
+from scripts.permission_presets_cases import VALUE_DAMAGES as PERMISSION_PRESET_DAMAGES, SOURCE_DAMAGES as PERMISSION_SOURCE_DAMAGES
+PERMISSION_EXTRACTED_DAMAGES = PERMISSION_PRESET_DAMAGES + tuple('source-' + name for name in PERMISSION_SOURCE_DAMAGES) + ('missing', 'source-missing', 'source-hash', 'source-stamp')
 from scripts.llm_prepared_oracle import validate_runtime as validate_llm_prepared, identity as llm_prepared_identity, NAMES as LLM_PREPARED_NAMES
 from scripts.llm_metadata_oracle import validate_runtime as validate_llm_metadata, identity as llm_metadata_identity, NAMES as LLM_METADATA_NAMES
 from scripts.process_artifact_retention import prune_previous_regressions, prune_finished_focus_runs, expire_finished_manifests, prune_completed_regression
@@ -87,6 +91,7 @@ PAIRED_DRIVERS = PAIRED_DRIVERS + ('runtime_full_request', 'deepseek_error', 'de
 PAIRED_DRIVERS = PAIRED_DRIVERS + ('win32_stat',)
 PAIRED_DRIVERS = PAIRED_DRIVERS + ('sdk_profile',)
 PAIRED_DRIVERS = PAIRED_DRIVERS + ('javascript_errors',)
+PAIRED_DRIVERS = PAIRED_DRIVERS + ('permission_presets',)
 OFFICIAL_CONFIGS = ('consumers', 'agent-lifecycle', 'session-recovery', 'session-projection', 'acp', 'acp-app', 'mcp', 'subagent-acp', 'storage-cache', 'session-observation', 'session-corpus', 'session-sqlite-query', 'query-engine-source', 'session-tools-source', 'sqlite-format-source', 'sqlite-provider-source', 'jsonl-provider-source', 'tool-scheduler-source', 'deepseek-source', 'llm-public-source')
 REQUIRED_REGRESSION = {
     'test_fs_local_upstream_parity': {
@@ -152,6 +157,15 @@ REQUIRED_REGRESSION = {
         *{'test_sdk_profile_requires_actual_source_identity[' + damage + ']' for damage in SDK_SOURCE_DAMAGES},
         *{'test_cancelled_sdk_observed_import_variants_preserve_approved_bytes[' + value + ']' for value in ('False', 'True')},
         *{'test_portable_sdk_profile_refuses_partial_receipts[' + side + ']' for side in ('source', 'native')},
+    },
+    'test_permission_presets_consumers': {
+        *{'test_actual_source_native_permission_presets_complete_observations[' + name + ']' for name in PERMISSION_PRESET_NAMES},
+        *{'test_permission_presets_requires_complete_observations_and_owned_runtime[' + damage + ']' for damage in PERMISSION_PRESET_DAMAGES},
+        *{'test_permission_presets_source_requires_pinned_guarded_inputs[' + damage + ']' for damage in PERMISSION_SOURCE_DAMAGES},
+        'test_permission_presets_extracted_requires_independently_approved_imports',
+        *{'test_permission_presets_complete_digest_refuses_missing_group[' + group + ']' for group in ('lifecycle', 'domain')},
+        'test_permission_presets_selected_interpreter_must_belong_to_root',
+        *{'test_portable_permission_presets_refuses_partial_receipts[' + side + ']' for side in ('source', 'native')},
     },
     'test_llm_config_consumers': {
         *{'test_actual_original_and_native_llm_config_match[' + name + ']' for name in LLM_CONFIG_NAMES},
@@ -519,6 +533,8 @@ REQUIRED_REGRESSION = {
             'missing-module', 'changed-module', 'empty-closure', 'foreign-root', 'foreign-python', 'missing-row', 'duplicate-row', 'changed-row')},
     },
     'test_current_release_gate': {
+        *{'test_extracted_permission_presets_requires_complete_values_and_runtime[' + damage + ']' for damage in PERMISSION_EXTRACTED_DAMAGES},
+        *{'test_permission_presets_consumer_lanes_are_mandatory[' + damage + ']' for damage in ('omit', 'skip', 'duplicate', 'failure')},
         'test_process_artifact_retention_lanes_are_mandatory[omit]',
         'test_process_artifact_retention_lanes_are_mandatory[skip]',
         'test_process_artifact_retention_lanes_are_mandatory[duplicate]',
@@ -1468,6 +1484,16 @@ def validate_extracted(path, archive, candidate):
             candidate['sdk_profile_modules'], check_files=False)
     except (ValueError, KeyError, TypeError) as error:
         raise RuntimeError('Extracted sdkProfile consumer differs') from error
+    try:
+        if report.get('permissionPresetsSourceSha256') != candidate['permission_presets_source_sha256']:
+            raise ValueError('Permission presets Source receipt identity differs')
+        if permission_presets_source_digest(candidate['permission_presets_source']) != candidate['permission_presets_source_identity_sha256']:
+            raise ValueError('Permission presets frozen Source values or input identities differ')
+        validate_permission_presets(report.get('permissionPresets'), Path(report['mcpStdio']['root']),
+            Path(report['mcpStdio']['root']) / 'python.exe', candidate['permission_presets_source'],
+            candidate['permission_presets_modules'], check_files=False, owned_runtime=True)
+    except (ValueError, KeyError, TypeError) as error:
+        raise RuntimeError('Extracted permissionPresets consumer differs') from error
     for name, validate in [('queryEngine', validate_query_engine), ('querySchema', validate_query_schema), ('pythonDirectory', validate_python_directory),
                            ('sessionLineage', validate_session_lineage), ('sessionEventTrace', validate_session_event_trace),
                            ('sessionFilters', validate_session_filters), ('sessionRequests', validate_session_requests),
@@ -1772,6 +1798,14 @@ def verify(args, output):
     sdk_profile_identity(candidate['sdk_profile_source'], ROOT / 'reference')
     candidate['sdk_profile_source_sha256'] = digest(sdk_profile_source)
     candidate['sdk_profile_modules'] = sdk_profile_report['modules']
+    permission_presets_source = output / 'permission-presets-paired.source.json'
+    permission_presets_native = output / 'permission-presets-paired.native.json'
+    permission_presets_report = json.loads(permission_presets_native.read_text(encoding='utf-8'))
+    candidate['permission_presets_source'] = json.loads(permission_presets_source.read_text(encoding='utf-8'))
+    permission_presets_identity(candidate['permission_presets_source'], ROOT / 'reference')
+    candidate['permission_presets_source_sha256'] = digest(permission_presets_source)
+    candidate['permission_presets_source_identity_sha256'] = permission_presets_source_digest(candidate['permission_presets_source'])
+    candidate['permission_presets_modules'] = permission_presets_report['modules']
     raw = output / 'cordis-raw.json'
     raw.unlink(missing_ok=True)
     run([python, 'scripts/cordis_oracle.py', '--output', str(raw)],
@@ -1811,6 +1845,7 @@ def verify(args, output):
                '--llm-config-source', str(llm_config_source), '--llm-config-native', str(llm_config_native),
                '--win32-stat-source', str(win32_stat_source), '--win32-stat-native', str(win32_stat_native),
                '--sdk-profile-source', str(sdk_profile_source), '--sdk-profile-native', str(sdk_profile_native),
+               '--permission-presets-source', str(permission_presets_source), '--permission-presets-native', str(permission_presets_native),
                '--javascript-errors-source', str(errors_source), '--javascript-errors-native', str(errors_native)]
     if not candidate['worktree_dirty']:
         command += ['--expected-commit', candidate['product_commit']]

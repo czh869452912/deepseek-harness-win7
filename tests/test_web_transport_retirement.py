@@ -203,9 +203,10 @@ async def test_scoped_human_request_uses_gateway_event_result_and_cancellation(t
             assert not gateway.events.pending
         if kind == 'approval':
             audit = [entry for entry in agent.session.events if entry['type'].startswith('approval/')]
-            assert [entry['type'] for entry in audit] == ['approval/asked', 'approval/decided']
-            assert audit[0]['data']['id'] == audit[1]['data']['id']
-            assert audit[1]['data']['outcome'] == ('cancelled' if abort else 'allowed-once')
+            assert [entry['type'] for entry in audit] == ['approval/policy', 'approval/asked', 'approval/decided']
+            assert audit[0]['data'] == dict(policy='ask')
+            assert audit[1]['data']['id'] == audit[2]['data']['id']
+            assert audit[2]['data']['outcome'] == ('cancelled' if abort else 'allowed-once')
             agent.session.append('turn/end', {})
             await agent.session.flush()
     finally:

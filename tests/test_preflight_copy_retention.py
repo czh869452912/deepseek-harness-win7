@@ -158,3 +158,125 @@ def test_actual_maintenance_cli_prunes_completed_preflight_copies(tmp_path, mode
     assert (report if mode == 'output' else report[0])['removed_files'] == 28
     assert (product / 'apps/web/dist/index.html').read_bytes() == b'original frontend'
     assert not (workspace / 'test_invalid_input_fails_befor0/checkout/apps/web/dist/index.html').exists()
+
+
+def test_finished_case_cleanup_does_not_touch_next_active_case(tmp_path):
+    product, output_root, output, workspace = completed_fixture(tmp_path)
+    frozen = retention.read_json(output / 'inputs.json')
+    folder = workspace / 'test_invalid_input_fails_befor0'
+    changed = folder / 'checkout/apps/web/dist/index.html'
+    changed.write_bytes(b'damaged frontend evidence')
+    unknown = folder / 'checkout/apps/web/dist/unknown.bin'
+    unknown.write_bytes(b'unknown evidence')
+    result = retention.prune_finished_preflight_folder(output_root, workspace, folder, product, frozen)
+    assert result['removed_files'] == 1
+    assert changed.read_bytes() == b'damaged frontend evidence'
+    assert unknown.read_bytes() == b'unknown evidence'
+    assert (workspace / 'test_invalid_input_fails_befor1/checkout/dsh/session/bin/icu/dsh_icudt78.dll').exists()
+    assert retention.prune_finished_preflight_folder(output_root, workspace, folder, product, frozen) is None
+
+
+@pytest.mark.parametrize('damage', ['foreign-workspace', 'nested-case', 'unknown-case', 'changed-original', 'invalid-hash'])
+def test_finished_case_cleanup_rejects_owner_and_source_changes(tmp_path, damage):
+    product, output_root, output, workspace = completed_fixture(tmp_path)
+    folder = workspace / 'test_invalid_input_fails_befor0'
+    frozen = retention.read_json(output / 'inputs.json')
+    if damage == 'foreign-workspace':
+        workspace = tmp_path / 'foreign'
+        workspace.mkdir()
+    elif damage == 'nested-case':
+        workspace = output
+    elif damage == 'unknown-case':
+        folder = workspace / 'test_other0'
+        folder.mkdir()
+    elif damage == 'changed-original':
+        (product / 'apps/web/dist/index.html').write_bytes(b'changed original')
+    else:
+        frozen['apps/web/dist/index.html'] = 'untrusted'
+    with pytest.raises(ValueError):
+        retention.prune_finished_preflight_folder(output_root, workspace, folder, product, frozen)
+    assert (output / 'pytest-workspace/test_invalid_input_fails_befor0/checkout/dsh/session/bin/icu/dsh_icudt78.dll').exists()
+
+
+@pytest.mark.parametrize('damage', ['none', 'execution-owner', 'retained-owner', 'changed-original'])
+def test_active_release_preflight_snapshot_requires_frozen_owner(tmp_path, damage):
+    product, output_root, output, retained = completed_fixture(tmp_path)
+    workspace = output_root / 'g-finished'
+    workspace.mkdir()
+    mapping = retention.read_json(output / 'pytest-workspace-mapping.json')
+    if damage == 'execution-owner':
+        mapping['execution_path'] = str(retained)
+    elif damage == 'retained-owner':
+        mapping['retained_path'] = str(output / 'foreign')
+    elif damage == 'changed-original':
+        (product / 'apps/web/dist/index.html').write_bytes(b'changed original')
+    (output / 'pytest-workspace-mapping.json').write_text(json.dumps(mapping), encoding='utf-8')
+    if damage == 'none':
+        assert retention.preflight_test_inputs(output_root, workspace, product, str(output)) == retention.read_json(output / 'inputs.json')
+    else:
+        with pytest.raises(ValueError):
+            retention.preflight_test_inputs(output_root, workspace, product, str(output))
+
+
+@pytest.mark.parametrize('failed', [False, True])
+@pytest.mark.parametrize('owned', [False, True])
+def test_actual_fixture_prunes_between_tests_and_after_failed_body(tmp_path, failed, owned):
+    product = tmp_path / 'product'
+    output_root = product / '.goose/out'
+    workspace = (output_root if owned else tmp_path / 'foreign') / 't-actual'
+    workspace.parent.mkdir(parents=True)
+    frontend = product / 'apps/web/dist/index.html'
+    frontend.parent.mkdir(parents=True)
+    frontend.write_bytes(b'original frontend')
+    scripts = product / 'scripts'
+    scripts.mkdir()
+    (scripts / 'frontend-inputs.json').write_text(json.dumps(dict(files=[dict(
+        path='apps/web/dist/index.html', sha256=retention.digest_file(frontend))])), encoding='utf-8')
+    icu = product / 'dsh/session/bin/icu'
+    icu.mkdir(parents=True)
+    (icu / 'icu.json').write_text('{"dll_sha256":{},"license_sha256":{}}', encoding='utf-8')
+    provider = Path(__file__).with_name('test_release_preflight.py')
+    module = tmp_path / 'test_fixture_consumer.py'
+    module.write_text('''import importlib.util
+from pathlib import Path
+import shutil
+import pytest
+spec = importlib.util.spec_from_file_location('preflight_provider', %r)
+provider = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(provider)
+provider.ROOT = Path(%r)
+prune_finished_preflight_case = provider.prune_finished_preflight_case
+first = None
+@pytest.mark.parametrize('step', [0, 1])
+def test_invalid_input_fails_before_release_replacement(tmp_path, step):
+    global first
+    if step == 1:
+        assert first is not None
+        assert (first / 'checkout/apps/web/dist/index.html').exists() is %r
+        assert (first / 'checkout/apps/web/dist/damaged.bin').read_bytes() == b'failed variant'
+        assert (first / 'observations.json').read_bytes() == b'real observation'
+    shutil.copytree(provider.ROOT / 'apps/web/dist', tmp_path / 'checkout/apps/web/dist')
+    shutil.copytree(provider.ROOT / 'dsh/session/bin/icu', tmp_path / 'checkout/dsh/session/bin/icu')
+    (tmp_path / 'checkout/apps/web/dist/damaged.bin').write_bytes(b'failed variant')
+    (tmp_path / 'observations.json').write_bytes(b'real observation')
+    if step == 0:
+        first = tmp_path
+        assert %r, 'intentional failed body'
+''' % (str(provider), str(product), not owned, not failed), encoding='utf-8')
+    import os
+    environment = dict(os.environ)
+    environment.pop('DSH_RELEASE_PYTEST_OUTPUT', None)
+    environment['PYTHONPATH'] = str(Path(retention.__file__).resolve().parents[1])
+    result = subprocess.run([sys.executable, '-m', 'pytest', str(module), '-q', '--basetemp=' + str(workspace),
+        '--junitxml=' + str(tmp_path / 'actual.xml')], cwd=str(tmp_path), env=environment, capture_output=True, timeout=60)
+    assert result.returncode == (1 if failed else 0), result.stdout + result.stderr
+    suite = ET.parse(tmp_path / 'actual.xml').getroot().find('testsuite')
+    assert suite.attrib['tests'] == '2' and suite.attrib['errors'] == '0'
+    assert suite.attrib['failures'] == ('1' if failed else '0')
+    for folder in workspace.iterdir():
+        if folder.is_dir() and folder.name.startswith('test_invalid_input_fails_befor'):
+            assert (folder / 'checkout/apps/web/dist/index.html').exists() is (not owned)
+            assert (folder / 'observations.json').read_bytes() == b'real observation'
+            if owned:
+                audit = retention.read_json(folder / 'preflight-copies-pruned.json')
+                assert audit['status'] == 'completed' and audit['removed_files'] == 2

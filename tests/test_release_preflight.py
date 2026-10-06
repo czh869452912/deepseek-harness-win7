@@ -4,6 +4,7 @@ from pathlib import Path
 import subprocess
 import sys
 import json
+import os
 from types import SimpleNamespace
 import pytest
 
@@ -11,6 +12,21 @@ ROOT = Path(__file__).resolve().parents[1]
 SPEC = importlib.util.spec_from_file_location('portable_preflight', ROOT/'scripts/build_portable.py')
 BUILD = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(BUILD)
+
+
+@pytest.fixture(autouse=True)
+def prune_finished_preflight_case(request):
+    if request.node.originalname != 'test_invalid_input_fails_before_release_replacement':
+        yield
+        return
+    from scripts.process_artifact_retention import preflight_test_inputs, prune_finished_preflight_folder
+    folder = request.getfixturevalue('tmp_path')
+    workspace = request.config._tmp_path_factory._basetemp
+    output_root = ROOT / '.goose/out'
+    frozen = preflight_test_inputs(output_root, workspace, ROOT, os.environ.get('DSH_RELEASE_PYTEST_OUTPUT'))
+    yield
+    if frozen is not None:
+        prune_finished_preflight_folder(output_root, workspace, folder, ROOT, frozen)
 
 
 def test_real_frontend_and_runtime_lock_are_resolvable():

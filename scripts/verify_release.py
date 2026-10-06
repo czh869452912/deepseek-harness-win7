@@ -426,6 +426,13 @@ REQUIRED_REGRESSION = {
           for damage in ('wrong-type', 'aliased-input')},
         *{'test_actual_maintenance_cli_prunes_completed_preflight_copies[' + mode + ']'
           for mode in ('previous', 'output')},
+        'test_finished_case_cleanup_does_not_touch_next_active_case',
+        *{'test_finished_case_cleanup_rejects_owner_and_source_changes[' + damage + ']'
+          for damage in ('foreign-workspace', 'nested-case', 'unknown-case', 'changed-original', 'invalid-hash')},
+        *{'test_active_release_preflight_snapshot_requires_frozen_owner[' + damage + ']'
+          for damage in ('none', 'execution-owner', 'retained-owner', 'changed-original')},
+        *{'test_actual_fixture_prunes_between_tests_and_after_failed_body[' + str(owned) + '-' + str(failed) + ']'
+          for owned in (False, True) for failed in (False, True)},
     },
     "test_workflow_session_boundary": {
         *{'test_dropped_child_observation_requires_result_semantics_and_disposal[' + order + '-' + semantic + ']'

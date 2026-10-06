@@ -304,17 +304,7 @@ PREFLIGHT_DAMAGE_CASES = ('missing-frontend', 'extra-frontend', 'wrong-target', 
     'changed-sql', 'changed-sql-manifest')
 
 
-def prune_preflight_copies(output_root, output, product_root):
-    output = owned_path(output_root, output)
-    workspace = completed_workspace(output_root, output)
-    with open(native_path(owned_path(output_root, output / 'pytest.xml')), 'rb') as stream:
-        report = ET.parse(stream).getroot()
-    cases = [case for case in report.iter('testcase') if case.attrib.get('classname') == 'tests.test_release_preflight'
-        and case.attrib.get('name', '').startswith('test_invalid_input_fails_before_release_replacement[')]
-    required = {'test_invalid_input_fails_before_release_replacement[' + damage + ']' for damage in PREFLIGHT_DAMAGE_CASES}
-    if len(cases) != len(required) or {case.attrib['name'] for case in cases} != required or any(case.find(tag) is not None for case in cases for tag in ('failure', 'error', 'skipped')):
-        return None
-    frozen = read_json(owned_path(output_root, output / 'inputs.json'))
+def preflight_sources(product_root, frozen):
     if not isinstance(frozen, dict):
         raise ValueError('Frozen preflight inputs must be a mapping')
     product_root = Path(os.path.abspath(str(product_root)))
@@ -324,17 +314,53 @@ def prune_preflight_copies(output_root, output, product_root):
             continue
         if '\\' in name or ':' in name or '..' in Path(name).parts:
             raise ValueError('Invalid frozen preflight input path')
+        if not isinstance(expected, str) or not re.fullmatch('[0-9a-f]{64}', expected):
+            raise ValueError('Invalid frozen preflight input hash')
         path = owned_path(product_root, product_root / name)
         if path.relative_to(product_root).as_posix() != name or not stat.S_ISREG(os.lstat(native_path(path)).st_mode) or digest_file(path) != expected:
             raise ValueError('Preserved preflight original differs from frozen input')
         sources[name] = expected
+    return sources
+
+
+def preflight_test_inputs(output_root, workspace, product_root, owner=None):
+    try:
+        workspace = owned_path(output_root, workspace)
+    except (OSError, ValueError):
+        return None
+    product_root = Path(os.path.abspath(str(product_root)))
+    if owner:
+        output = owned_path(output_root, owner)
+        mapping = read_json(owned_path(output_root, output / 'pytest-workspace-mapping.json'))
+        execution = owned_path(output_root, mapping['execution_path'])
+        retained = owned_path(output_root, mapping['retained_path'], missing=True)
+        if execution != workspace or execution.parent != Path(os.path.abspath(str(output_root))) or not execution.name.startswith('g-') or retained != output / 'pytest-workspace':
+            raise ValueError('Active preflight test owner differs')
+        frozen = read_json(owned_path(output_root, output / 'inputs.json'))
+    else:
+        frontend = read_json(owned_path(product_root, product_root / 'scripts/frontend-inputs.json'))
+        frozen = {item['path']: item['sha256'] for item in frontend['files']}
+        icu_path = owned_path(product_root, product_root / 'dsh/session/bin/icu/icu.json')
+        icu = read_json(icu_path)
+        frozen['dsh/session/bin/icu/icu.json'] = digest_file(icu_path)
+        for group in ('dll_sha256', 'license_sha256'):
+            for name, expected in icu[group].items():
+                if Path(name).name != name or '/' in name or '\\' in name:
+                    raise ValueError('Invalid ICU input name')
+                frozen['dsh/session/bin/icu/' + name] = expected
+    return preflight_sources(product_root, frozen)
+
+
+def prune_preflight_folders(output_root, folders, product_root, frozen, audit):
+    product_root = Path(os.path.abspath(str(product_root)))
+    sources = preflight_sources(product_root, frozen)
     if not sources:
         return None
     candidates = []
-    for child in os.scandir(native_path(workspace)):
-        if not re.fullmatch(r'test_invalid_input_fails_befor[0-9]+', child.name) or not child.is_dir(follow_symlinks=False):
-            continue
-        folder = owned_path(output_root, workspace / child.name)
+    for folder in folders:
+        folder = owned_path(output_root, folder)
+        if not re.fullmatch(r'test_invalid_input_fails_befor[0-9]+', folder.name) or not folder.is_dir():
+            raise ValueError('Finished preflight folder differs')
         for name, expected in sources.items():
             try:
                 path = owned_path(output_root, folder / 'checkout' / name)
@@ -346,15 +372,16 @@ def prune_preflight_copies(output_root, output, product_root):
     if not candidates:
         return None
     candidates.sort(key=lambda item: item['path'])
-    audit = output / 'preflight-copies-pruned.json'
+    audit = Path(audit)
+    original_audit = audit
     suffix = 0
     while os.path.lexists(native_path(audit)):
         suffix += 1
-        audit = output / ('preflight-copies-pruned-retry-' + str(suffix) + '.json')
+        audit = original_audit.with_name(original_audit.stem + '-retry-' + str(suffix) + '.json')
     owned_path(output_root, audit, missing=True)
     result = dict(status='planned', removed_files=0, removed_bytes=0, expected_files=len(candidates),
         manifest_sha256=hashlib.sha256(json.dumps(candidates, sort_keys=True, separators=(',', ':')).encode('utf-8')).hexdigest(),
-        examples=candidates[-32:], scope='Only unchanged frontend/ICU copies in completed successful owned preflight cases; frozen inputs and preserved originals must match. Modified variants, unknown files, actual observations, logs, XML and ZIPs remain.')
+        examples=candidates[-32:], scope='Only unchanged frontend/ICU copies after an owned preflight test body finishes; frozen inputs and preserved originals must match. Modified variants, unknown files, active tests, actual observations, logs, XML and ZIPs remain.')
     with open(native_path(audit), 'x', encoding='utf-8') as stream:
         json.dump(result, stream, indent=2)
         stream.write('\n')
@@ -376,6 +403,30 @@ def prune_preflight_copies(output_root, output, product_root):
             json.dump(result, stream, indent=2)
             stream.write('\n')
     return result
+
+
+def prune_finished_preflight_folder(output_root, workspace, folder, product_root, frozen):
+    workspace = owned_path(output_root, workspace)
+    folder = owned_path(output_root, folder)
+    if folder.parent != workspace:
+        raise ValueError('Finished preflight folder owner differs')
+    return prune_preflight_folders(output_root, [folder], product_root, frozen, folder / 'preflight-copies-pruned.json')
+
+
+def prune_preflight_copies(output_root, output, product_root):
+    output = owned_path(output_root, output)
+    workspace = completed_workspace(output_root, output)
+    with open(native_path(owned_path(output_root, output / 'pytest.xml')), 'rb') as stream:
+        report = ET.parse(stream).getroot()
+    cases = [case for case in report.iter('testcase') if case.attrib.get('classname') == 'tests.test_release_preflight'
+        and case.attrib.get('name', '').startswith('test_invalid_input_fails_before_release_replacement[')]
+    required = {'test_invalid_input_fails_before_release_replacement[' + damage + ']' for damage in PREFLIGHT_DAMAGE_CASES}
+    if len(cases) != len(required) or {case.attrib['name'] for case in cases} != required or any(case.find(tag) is not None for case in cases for tag in ('failure', 'error', 'skipped')):
+        return None
+    frozen = read_json(owned_path(output_root, output / 'inputs.json'))
+    folders = [workspace / child.name for child in os.scandir(native_path(workspace))
+        if re.fullmatch(r'test_invalid_input_fails_befor[0-9]+', child.name) and child.is_dir(follow_symlinks=False)]
+    return prune_preflight_folders(output_root, folders, product_root, frozen, output / 'preflight-copies-pruned.json')
 
 
 def prune_previous_preflight_copies(output_root, product_root):

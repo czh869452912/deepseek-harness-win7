@@ -1,5 +1,7 @@
 # 持续对齐记录
 
+2026-10-06 `b93d1cd8` 完整8531项门禁被拒绝：8521 passed、4 failed、6既有skip、2 warnings，2686.04秒。三项ACP fixture改用规范适配器注册、正向门禁计数从严格2077注册表计算后107定向通过；精确拒绝ZIP/完整冻结输入/XML/日志/18份ACP实际fixture独立保留。自动清理528个合成JSON释放约5.66 GiB并保留真实证据。051仍running，下一干净全量/Source/实际解压待执行；最新签收仍2a/60，七父范围和延期Win7保持开放。见 `docs/research/2026-10-06-llm-prepared-progress.md`。
+
 2026-10-06 下一部分051：108完整公共prepared-call/代际/严格配置/规范AgentLoop观察隔离匹配，精确2a自有Portable确认49真实差异。正式143新控制及419公共消费者、336相关回归通过；178新必需lane预计总2077/70实际配对，六个新增真实导入已严格测量补齐。051仍running，须新干净全量/实际解压/原版浏览器后才签收；见 `docs/research/2026-10-06-llm-prepared-progress.md`。最新签收仍2a67ae84/60有界合同，七父范围、原始JS诊断和延期Win7继续开放。
 
 2026-10-06 最新干净签收 `2a67ae84`：全量8347 passed、6既有skip、1 warning、0失败/错误，2539.22秒；1899必需lane、20组1911原样Source断言、69实际配对及真实解压自有Python3.8.10/原版浏览器通过。049选定137组公共元数据/最终请求及050自动清理/进程超时维护已有界integrated，共60份独立验收。上次9b全量超时与精确ZIP独立保留；本次整批预算明确2800秒。见 `migration/reviews/METADATA-RETENTION-GATE-20261006.md`。公共prepared-call的101完整隔离观察和336回归通过，尚未推广签收。七父范围、原始JS诊断差异、九项判据/C58/C59、accepted_upstream空和延期Win7继续开放。

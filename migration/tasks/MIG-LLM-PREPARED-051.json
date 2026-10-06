@@ -40,11 +40,13 @@
     "docs/research"
   ],
   "open_findings": [
-    "Own candidate extraction and the new clean frozen full gate remain pending."
+    "Cleanb93 full gate rejected4 stale test integration failures; exact ownPortable and actual ACP fixtures preserved. Corrected fixtures and strict2077 positive registry assertion pass107 focused Root tests; fresh complete acceptance remains pending."
   ],
   "conflicts_with": [],
-  "candidate_commit": null,
+  "candidate_commit": "b93d1cd8cae8d5a326b42df7b4076adda78f2e71",
   "integrated_commit": null,
-  "evidence_ids": [],
-  "next_action": "Root336回归/419公共消费者/35新拒绝控制/完整正向回执/28迁移回归与check已通过；70组配对的两项导入清单按六个真实child补齐并复验。提交产品后执行干净冻结全量/实际解压/原版浏览器验收。七父范围和完整profile不由选定108观察推定关闭。"
+  "evidence_ids": [
+    "RUN-LLM-PREPARED-REJECTED-20261006-B93D1CD8"
+  ],
+  "next_action": "规范适配器fixture及严格门禁正向计数已修复，107定向通过；提交拒绝证据与修复后执行新的干净完整8531回归/20组1911原样Source/70配对/实际解压与原版浏览器。051仍running，七父范围继续开放。"
 }

@@ -134,7 +134,7 @@ async def test_canonical_agent_tool_permission_and_next_request_preserve_machine
     bridge.connection = AcpRpc(lambda frame: output.append(json.loads(frame)))
     adapter = StrictMockLlmAdapter([{'tool_calls': [{'id': 'call-9', 'name': 'guarded_echo', 'arguments': {}}]},
                                    {'text': 'finished after decision'}])
-    monkeypatch.setattr(ctx.get('llm'), 'chat_completion_stream', adapter.chat_completion_stream)
+    ctx.get('llm').register_adapter(['openai'], adapter)
     async def execute(arguments, execution):
         effects.append('executed')
         return 'permission tool result'

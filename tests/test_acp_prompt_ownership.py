@@ -215,7 +215,7 @@ async def test_canonical_profile_acp_prompt_claims_real_turn_and_releases_agent(
     bridge = next(entry for entry in ctx.get('loader').entries
                   if entry.options.get('name') == '@deepseek-ai/dsh-acp').fiber.plugin
     adapter = StrictMockLlmAdapter([{'text': 'owned answer'}])
-    monkeypatch.setattr(ctx.get('llm'), 'chat_completion_stream', adapter.chat_completion_stream)
+    ctx.get('llm').register_adapter(['openai'], adapter)
     try:
         created = await bridge.new_session(ctx, {'cwd': str(tmp_path)})
         assert await asyncio.wait_for(send(bridge, ctx, created['sessionId']), 5) == {'stopReason': 'end_turn'}

@@ -1,0 +1,23 @@
+# Public prepared call 与规范 AgentLoop
+
+13:41 追加：35新拒绝/必需lane控制通过213.10秒，完整正向回执通过179.48秒，28迁移回归通过0.28秒，migration check通过。Root实测2077必需lane、70配对；六个导入清单更新后的canonical81与metadata137重新配对通过，既有观察digest保持不变。全量/真实解压/原版浏览器仍待新的冻结候选执行。
+
+固定原版仍为 `cd5ef8148158c3a752a658978873241fdf8e2bbc`，原版前端119输入未修改。当前新增 `MIG-LLM-PREPARED-051 / CON-LLM-PREPARED@1` 为 running；最近完整签收仍是 `2a67ae84` 的60份有界合同。本部分需新的干净冻结全量、实际解压自有Python3.8.10及原版浏览器通过后才能 integrated。
+
+实际原版七个观察器和Python3.8.10隔离候选V7的108完整观察匹配：public15、generation11、failure54、iterator7、equality14、agent5、default2。所有配置、完整错误、请求、trace、chunk、事件、header、停止结果和顺序保留。既有有限JSON数字表示规则不将布尔值视为数字。规范AgentLoop动态消息ID采用既有 typed correlation：原版UUID4形状严格，原生只允许既有消息ID形式，关联/跨fixture不能改变；稳定ID和普通文本不重命名。
+
+精确已签收2a自有Portable SHA256 `494eaff47773e218244c686f930a657f3d92de06ceae10a88399fc7dce5cce22`，冻结输入SHA256 `9b3f3751ae37f2af18ad397fec8425a85fcc85c95ca74b183985b8cb97fb15e3`。新目录解压后的每个原始ZIP文件、完整108观察、七个child、导入字节、运行根、自有解释器均独立核验；49项实际差异为15/11/2/0/14/5/2。隔离候选与旧包的原始结果分别保留，不能用当前dist包冒充旧产物。隔离候选336项相关回归通过28.72秒；这不是候选自有Python解压签收。
+
+公共 `prepareCall` 捕获await之前的adapter注册对象；默认准备根据await之后的当前model名称规范校验模型，分离并冻结配置/defaults/context/retryPolicy。句柄在stream创建时只消耗一次，初始配置不一致不消耗，最终不一致产生原版failure chunk。配置的严格比较共享给request-header，区分布尔与数字、缺省与null；stop逐项比较。SDK EOF/next拒绝不调用aclose，下游提前停止只关闭一次。middleware只遍历一次，错误保持原版传播归属。
+
+默认adapter句柄调用捕获对象当时的stream方法，允许同对象晚替换方法，不能重新选择后来注册的adapter。原生snake-case hook和既有ScriptedMockAdapter的chat_completion_stream在同一个捕获对象上适配。历史assistant私有replay只对当前仍指向捕获对象的provider保留。文本投影与冻结请求保持live signal的身份，不复制opaque signal。
+
+已挂载的规范AgentLoop消费公共准备结果，header/defaults/request基于同一冻结配置，live signal在请求冻结之前注入；不再被较早agent.options覆盖或双次进入llm/stream middleware。没有provider时允许middleware提供流，finish-only assistant content保持原版空数组。独立ctx-less旧测试stub仍走其原有内部准备接口。
+
+Root推广后的336回归通过24.28秒，新增143完整值/归属/Source/缺边回执控制通过41.20秒；canonical81、metadata137与prepared108的419公共消费者共同通过87秒。第一轮70组实际配对为68通过、2拒绝：canonical和metadata拒绝真实新增call_config导入，按五个canonical child及一个metadata stream child的实测严格补齐，仅增加对应模块；catalog仍27个不变。新canonical与metadata配对重新执行，元数据137的既有观察digest不变。178新增必需控制预计总2077，70配对；二十组1911原样Source断言与单项期限不变。
+
+全部失败保留：早期Source observer误用async middleware/不存在的agent.signal；原生共享UNDEFINED造成的cold import循环；默认adapter遗漏legacy stream；晚方法替换V6真实差异；生产观察driver误用输出环境变量导致七个Source producer失败；拒绝测试误读user/message形状及非字符串name切片。Root观察driver改为实际PREPARED输出变量，拒绝控制在实际派生messages上损坏ID，并同步完整child/aggregate，避免只靠聚合不一致拒绝。V5旧adapter回归的owned redirector/child挂起已停止，没有完整XML或通过计数。所有诊断与原始观察均在 `.goose/out/acp-a4-work` 独立保存。
+
+用户授权的自动清理050已有完整签收：过期已完成可重建合成回执及清单自动删除，真实ZIP/输入/XML/日志/Source/浏览器与未知研究保留。此次后续测试遵循同一清理授权，不逐批重复询问；gitignore不意味着任意文件都可删除。
+
+任意malformed/accessor/null/noniterable图、全部取消/注册/竞争排程、真实五种规范profile全主链及七个广义父范围继续执行。八项原始JS引擎/解析诊断另有独立候选研究，不进入本部分签收；实际Win7仍按用户决定延期，accepted_upstream仍未建立。

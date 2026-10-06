@@ -1,0 +1,50 @@
+{
+  "id": "MIG-LLM-PREPARED-051",
+  "goal": "闭合108组公共准备句柄、代际、严格配置比较和规范AgentLoop消费者观察",
+  "kind": "implementation",
+  "state": "running",
+  "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
+  "base_product": "2a67ae84400b755d17dfebd83cc43265497726e8",
+  "owner": "current-session-coordinator",
+  "requires": [
+    {
+      "task": "MIG-LLM-METADATA-049",
+      "contract": "CON-LLM-METADATA",
+      "revision": 1
+    },
+    {
+      "task": "MIG-CANONICAL-LLM-048",
+      "contract": "CON-CANONICAL-LLM",
+      "revision": 1
+    }
+  ],
+  "provides": [
+    {
+      "contract": "CON-LLM-PREPARED",
+      "revision": 1
+    }
+  ],
+  "acceptance": [
+    "108 actual pinned Source/native/extracted complete selected observations match with exact errors and full child/aggregate/import/runtime identity.",
+    "One-shot dispatch captures adapter registration, snapshots metadata/config/defaults/retry/context, preserves live signal, uses one middleware traversal and exact SDK iterator ownership.",
+    "Canonical AgentLoop consumes the public snapshot; request header, defaults, signal, missing-provider middleware and finish-only empty assistant match actual Source.",
+    "Immutable exact2a ownPortable baseline and every failed observer/prototype remain independently preserved. Mandatory value/runtime/Source/extracted/lane refusal controls stay strict.",
+    "New frozen clean full pytest, unchanged Source, fresh pairs, real extracted ownPython3.8.10 and original browser pass before bounded integration."
+  ],
+  "expected_paths": [
+    "dsh/llm/model_info.py",
+    "dsh/llm/llm_service.py",
+    "scripts",
+    "tests",
+    "migration",
+    "docs/research"
+  ],
+  "open_findings": [
+    "Own candidate extraction and the new clean frozen full gate remain pending."
+  ],
+  "conflicts_with": [],
+  "candidate_commit": null,
+  "integrated_commit": null,
+  "evidence_ids": [],
+  "next_action": "Root336回归/419公共消费者/35新拒绝控制/完整正向回执/28迁移回归与check已通过；70组配对的两项导入清单按六个真实child补齐并复验。提交产品后执行干净冻结全量/实际解压/原版浏览器验收。七父范围和完整profile不由选定108观察推定关闭。"
+}

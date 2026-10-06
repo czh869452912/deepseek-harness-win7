@@ -1,0 +1,40 @@
+{
+  "id": "CON-LLM-PREPARED",
+  "revision": 1,
+  "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
+  "status": "specified",
+  "source_paths": [
+    "reference/packages/llm/llm/src/index.ts",
+    "reference/packages/llm/llm/src/call-config.ts",
+    "reference/packages/core/agent-loop/src/index.ts",
+    "reference/packages/core/session/src/request-header.ts",
+    "dsh/llm/llm_service.py",
+    "dsh/core/agent_loop.py"
+  ],
+  "consumers": [
+    "scripts/llm_prepared_oracle.py",
+    "scripts/oracles/llm_prepared_python.py",
+    "tests/test_llm_prepared_consumers.py",
+    "scripts/verify_portable.py",
+    "scripts/verify_release.py"
+  ],
+  "invariants": [
+    "108 complete selected captures:15 public handle,11 generation/replay/signal,54 failure/middleware/consumer,7 iterator,14 strict equality,5 canonical AgentLoop,2 default late-method dispatch.",
+    "Adapter registration is captured before awaiting preparation. Model validation uses the post-await current model name. Public result/config/defaults/context/retry policy are detached and frozen.",
+    "A prepared call is consumed at stream creation exactly once. Initial config mismatch does not consume it. Final mismatch becomes a failure chunk; SDK construction/rejection and consumer/middleware failures have their original distinct ownership.",
+    "Default preparation dispatches the current stream method on its captured adapter object, even after await or method replacement, without selecting a newly registered adapter.",
+    "Configuration scalars compare with JavaScript strict equality; booleans differ from numbers, absent differs from null, stop elements use strict equality.",
+    "Text-only projection preserves frozen requests and live opaque signal. Private replay is retained only when its current provider registration points to the captured adapter.",
+    "Canonical AgentLoop owns the public prepared configuration and passes live signal before freezing. Header/defaults reflect that snapshot. Missing provider can be fulfilled by stream middleware and finish-only content stays empty."
+  ],
+  "identity": "All complete ordered JSON fields remain exact. Existing finite JSON numeric representation rule applies. Allocated AgentLoop UUIDs are typed and correlated across full fields; Source requires UUID4, native permits established message forms. Stable IDs and prose remain literal.",
+  "ownership": "Captured adapter object and one-shot stream own SDK traversal; middleware is traversed once. EOF/rejected next does not call SDK aclose; downstream early close calls it once. Live signal is not deep-cloned.",
+  "ordering": "Complete preparation, middleware, SDK, chunks, closing and AgentLoop events/header order remain observed and strict.",
+  "errors": "Full original NO_ADAPTER, UNSUPPORTED_REASONING_EFFORT, INVALID_PREPARED_CALL and SDK failure chunk/message/code are retained. Consumer and middleware exceptions propagate as observed.",
+  "cancellation": "Selected live-signal observations and existing actual cancellation/compaction/retry controls remain mandatory. Arbitrary cancellation/registration schedules are not inferred.",
+  "adaptation": "Python snake-case adapter hooks and legacy ScriptedMockAdapter chat_completion_stream are dispatched on the captured object. Legacy ctx-less standalone AgentLoop stubs preserve internal preparation; canonical mounted services use public prepareCall.",
+  "open_questions": [
+    "Arbitrary malformed/accessor/null/noniterable graphs, all cancellation/registration schedules and complete five-profile chains remain in broad migration parents.",
+    "Actual Win7 remains user-deferred. No accepted_upstream certification follows from this bounded scope."
+  ]
+}

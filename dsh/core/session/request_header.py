@@ -6,25 +6,7 @@ Compatible with Python 3.8.10 and Windows 7 SP1.
 
 from dsh.cordis.json_text import stringify_json
 from typing import Any, Dict, List, Optional, Sequence
-
-
-def call_config_equals(a: Dict[str, Any], b: Dict[str, Any]) -> bool:
-    """
-    Compare two LLM call configurations for equality.
-    """
-    if (
-        a.get("provider") != b.get("provider")
-        or a.get("model") != b.get("model")
-        or a.get("reasoningEffort") != b.get("reasoningEffort")
-        or a.get("temperature") != b.get("temperature")
-        or a.get("maxTokens") != b.get("maxTokens")
-    ):
-        return False
-    a_stop = a.get("stop")
-    b_stop = b.get("stop")
-    if a_stop is None or b_stop is None:
-        return a_stop == b_stop
-    return list(a_stop) == list(b_stop)
+from dsh.llm.call_config import call_config_equals
 
 
 def canonical_header(header: Dict[str, Any]) -> Dict[str, Any]:

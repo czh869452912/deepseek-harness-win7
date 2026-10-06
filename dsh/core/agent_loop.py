@@ -746,6 +746,8 @@ class AgentLoopService:
         request_context.update(agent=agent, turn=turn, step=step, signal=getattr(agent, "signal", None))
         proposed_config = await agent.ctx.waterfall(
             "agent/request", request_context, lambda *_args: dict(seed_config))
+        if agent.is_cancelled():
+            raise asyncio.CancelledError()
         config_fields = ("provider", "model", "reasoningEffort", "maxTokens", "temperature", "stop")
         effective_config = {key: value for key, value in (proposed_config or seed_config).items()
                             if key in config_fields}
@@ -753,13 +755,26 @@ class AgentLoopService:
             provider_name = str(proposed_config.get("provider", provider_name))
             model_name = str(proposed_config.get("model", model_name))
 
-        prepare = getattr(llm_service, "prepare_call", None)
+        public_prepare = getattr(llm_service, "prepareCall", None) if getattr(llm_service, "ctx", None) is not None else None
+        canonical_prepared = callable(public_prepare)
+        prepare = public_prepare if canonical_prepared else getattr(llm_service, "prepare_call", None)
         prepared_adapter = None
         if callable(prepare):
-            prepared_adapter = await prepare(effective_config, getattr(agent, "_cancel_event", None))
-            for field in ('maxTokens', 'reasoningEffort'):
-                if prepared_adapter.get(field) is not None:
-                    effective_config[field] = prepared_adapter[field]
+            try:
+                prepared_adapter = await prepare(effective_config, agent.signal)
+            except LlmError as error:
+                if not canonical_prepared or error.code != 'NO_ADAPTER':
+                    raise
+            if prepared_adapter is not None:
+                if canonical_prepared:
+                    effective_config = dict(prepared_adapter['config'])
+                    provider_name, model_name = effective_config['provider'], effective_config['model']
+                else:
+                    for field in ('maxTokens', 'reasoningEffort'):
+                        if prepared_adapter.get(field) is not None:
+                            effective_config[field] = prepared_adapter[field]
+        if agent.is_cancelled():
+            raise asyncio.CancelledError()
 
         header_data = canonical_header({
             "system": system_prompt,
@@ -810,15 +825,16 @@ class AgentLoopService:
             retry_policy = prepared_adapter.get("retryPolicy")
 
         request_obj = {
-            **effective_config,
+            **header_data['config'],
             "sessionId": session.id,
             "messages": messages,
             "provider": provider_name,
             "model": model_name,
             **({"tools": tool_schemas} if tool_schemas else {}),
             **({"system": system_prompt} if system_prompt else {}),
-            **({"maxTokens": agent.options.max_tokens} if getattr(agent.options, "max_tokens", None) is not None else {}),
-            **({"reasoningEffort": agent.options.reasoning_effort} if getattr(agent.options, "reasoning_effort", None) is not None else {}),
+            **({"maxTokens": agent.options.max_tokens} if not canonical_prepared and getattr(agent.options, "max_tokens", None) is not None else {}),
+            **({"reasoningEffort": agent.options.reasoning_effort} if not canonical_prepared and getattr(agent.options, "reasoning_effort", None) is not None else {}),
+            **({'signal': agent.signal} if canonical_prepared else {}),
         }
 
         from dsh.llm.agent_request import mark_agent_loop_request
@@ -836,19 +852,24 @@ class AgentLoopService:
             return isinstance(recovery, dict) and recovery.get("kind") == "retry"
 
         try:
-            stream_fn = getattr(llm_service, "chat_completion_stream", None) or getattr(llm_service, "stream", None)
+            stream_fn = getattr(llm_service, "stream", None) if canonical_prepared else (
+                getattr(llm_service, "chat_completion_stream", None) or getattr(llm_service, "stream", None))
             used_stream = False
             if stream_fn and callable(stream_fn):
                 try:
                     def open_stream(*_args):
                         if prepared_adapter is not None and 'stream' in prepared_adapter:
+                            if canonical_prepared:
+                                return prepared_adapter['stream'](request_obj)
                             return prepared_adapter["stream"](dict(request_obj, signal=getattr(agent, "_cancel_event", None)))
+                        if canonical_prepared:
+                            return stream_fn(request_obj)
                         return _invoke_llm_callable(
                             stream_fn, messages=request_obj["messages"],
                             tools=request_obj.get("tools"), system=request_obj.get("system"),
                             request=request_obj)
 
-                    stream_iter = await self.ctx.waterfall("llm/stream", request_obj, open_stream)
+                    stream_iter = open_stream() if canonical_prepared else await self.ctx.waterfall("llm/stream", request_obj, open_stream)
                     reader = _async_iter_chunks(stream_iter, cancel_check=agent.is_cancelled)
                     try:
                         async for chunk in reader:
@@ -966,7 +987,6 @@ class AgentLoopService:
             failure = assembler.finish["failure"]
             if await recover_request(failure):
                 return {"kind": "retry"}
-            from dsh.llm.llm_service import LlmError
             error = LlmError(failure["message"], failure["code"])
             error.failure = dict(failure)
             raise error
@@ -980,7 +1000,7 @@ class AgentLoopService:
         }
         assistant_msg = {
             "role": "assistant",
-            "content": blocks if blocks else [{"type": "text", "text": ""}],
+            "content": blocks if canonical_prepared or blocks else [{"type": "text", "text": ""}],
             "source": source,
         }
         tool_calls = [b for b in blocks if b.get("type") == "tool-call"]

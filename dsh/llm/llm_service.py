@@ -743,7 +743,129 @@ class LLMService:
         }
 
     async def prepareCall(self, config: Dict[str, Any], signal: Any = None) -> Dict[str, Any]:
-        return await self.prepare_call(config, signal=signal)
+        import inspect
+        from dsh.llm.call_config import call_config_equals
+        from dsh.core.session.json import FrozenDict, deep_freeze
+        from dsh.llm.model_info import normalize_model_info
+        from dsh.llm.retry_policy import resolve_retry_policy
+        from dsh.llm.stream_bridge import iter_chunks
+        provider = config['provider']
+        registration = self._adapters.get(provider)
+        if registration is None:
+            raise LlmError('no adapter registered for provider "{}"'.format(provider), 'NO_ADAPTER')
+        adapter = registration['adapter']
+        prepare = getattr(adapter, 'prepare_call', getattr(adapter, 'prepareCall', None))
+        if callable(prepare):
+            adapter_call = await prepare(provider, config['model'], signal)
+        else:
+            resolve = getattr(adapter, 'resolve_model', getattr(adapter, 'resolveModel', None))
+            if callable(resolve):
+                signature = inspect.signature(resolve)
+                info = resolve(provider, config['model'], signal) if len(signature.parameters) >= 3 or 'signal' in signature.parameters else resolve(provider, config['model'])
+                if inspect.isawaitable(info):
+                    info = await info
+            else:
+                info = dict(provider=provider, id=config['model'], name=config['model'])
+            def dispatch(options):
+                current_stream = getattr(adapter, 'stream', None)
+                if callable(current_stream):
+                    return current_stream(options)
+                from dsh.llm.adapter_dispatch import invoke_adapter_stream
+                return invoke_adapter_stream(adapter.chat_completion_stream, options)
+            adapter_call = dict(model=info, stream=dispatch)
+        model_info = normalize_model_info(provider, config['model'], adapter_call['model'], LlmError)
+        resolved = copy.deepcopy(config)
+        defaults = {}
+        if 'maxTokens' not in config and 'defaultMaxTokens' in model_info:
+            resolved['maxTokens'] = model_info['defaultMaxTokens']
+            defaults['maxTokens'] = True
+        reasoning = model_info.get('reasoning')
+        if 'reasoningEffort' not in config and reasoning and 'defaultEffort' in reasoning:
+            resolved['reasoningEffort'] = reasoning['defaultEffort']
+            defaults['reasoningEffort'] = True
+        if 'reasoningEffort' in resolved and (not reasoning or resolved['reasoningEffort'] not in [effort['id'] for effort in reasoning['efforts']]):
+            raise LlmError('provider "{}" model "{}" does not support reasoning effort "{}"'.format(provider, config['model'], resolved['reasoningEffort']), 'UNSUPPORTED_REASONING_EFFORT')
+        frozen_config = deep_freeze(resolved)
+        dispatch = adapter_call['stream']
+        dispatched = False
+
+        def matches(options):
+            return call_config_equals(options, frozen_config)
+
+        async def open_stream(options):
+            async def adapter_stream(*arguments):
+                try:
+                    if not matches(options):
+                        raise LlmError('prepared LLM call config changed before adapter dispatch', 'INVALID_PREPARED_CALL')
+                    request = options
+                    if 'inputModalities' in model_info and 'image' not in model_info['inputModalities']:
+                        from dsh.llm.image_content import project_text_only
+                        projected = project_text_only(request['messages'])
+                        if projected is not request['messages']:
+                            request = dict(request, messages=projected)
+                            if isinstance(options, FrozenDict):
+                                request = deep_freeze(request)
+                    messages = []
+                    filtered = False
+                    for message in request['messages']:
+                        source = message.get('source', {})
+                        current = self._adapters.get(source.get('provider'), {})
+                        if message.get('role') == 'assistant' and source.get('kind') == 'model' and 'replayState' in source and current.get('adapter') is not adapter:
+                            retained_source = dict(kind='model', provider=source['provider'], model=source['model'])
+                            message = deep_freeze(dict(message, source=retained_source))
+                            filtered = True
+                        messages.append(message)
+                    if filtered:
+                        request = dict(request, messages=messages)
+                        if isinstance(options, FrozenDict):
+                            request = deep_freeze(request)
+                    raw = dispatch(request)
+                    reader = raw.__aiter__() if hasattr(raw, '__aiter__') else iter_chunks(raw)
+                except Exception as caught:
+                    yield self._adapter_failure_chunk(caught, options.get('signal'))
+                    return
+                completed = False
+                try:
+                    while True:
+                        try:
+                            chunk = await reader.__anext__()
+                        except StopAsyncIteration:
+                            completed = True
+                            return
+                        except Exception as caught:
+                            completed = True
+                            yield self._adapter_failure_chunk(caught, options.get('signal'))
+                            return
+                        yield chunk
+                finally:
+                    if not completed:
+                        close = getattr(reader, 'aclose', None)
+                        if close is not None:
+                            await close()
+            selected = await self.ctx.waterfall('llm/stream', options, adapter_stream) if self.ctx else adapter_stream()
+            reader = iter_chunks(selected)
+            try:
+                async for chunk in reader:
+                    yield chunk
+            finally:
+                await reader.aclose()
+
+        def stream(options):
+            nonlocal dispatched
+            if dispatched:
+                raise LlmError('a prepared LLM call can only be dispatched once', 'INVALID_PREPARED_CALL')
+            if not matches(options):
+                raise LlmError('prepared LLM call config changed before adapter dispatch', 'INVALID_PREPARED_CALL')
+            dispatched = True
+            return open_stream(options)
+
+        result = dict(config=frozen_config, adapterDefaults=deep_freeze(defaults),
+            retryPolicy=deep_freeze(copy.deepcopy(registration['retryPolicy'] or resolve_retry_policy())), stream=stream)
+        if 'context' in model_info:
+            result['context'] = deep_freeze(copy.deepcopy(model_info['context']))
+        if 'inputModalities' in model_info:
+            result['inputModalities'] = deep_freeze(copy.deepcopy(model_info['inputModalities']))
+        return deep_freeze(result)
 
     async def resolveCallConfig(self, config, signal=None):
         if config['provider'] not in self._adapters:
@@ -839,20 +961,8 @@ class LLMService:
             adapter = self._adapters[provider]["adapter"]
             fn = getattr(adapter, "chat_completion_stream", None) or getattr(adapter, "stream", None)
             if callable(fn):
-                import inspect
-                parameters = inspect.signature(fn).parameters
-                if "request" in parameters and "messages" not in parameters:
-                    return fn(request=request)
-                if "options" in parameters and "messages" not in parameters:
-                    return fn(options=request)
-                if any(p.kind == inspect.Parameter.VAR_KEYWORD for p in parameters.values()):
-                    return fn(**request)
-                selected = {key: value for key, value in request.items() if key in parameters}
-                if "request" in parameters:
-                    selected["request"] = request
-                if not selected and len(parameters) == 1:
-                    return fn(request)
-                return fn(**selected)
+                from dsh.llm.adapter_dispatch import invoke_adapter_stream
+                return invoke_adapter_stream(fn, request)
         return self._default_chat_completion_stream(
             messages=messages, tools=tools, model=model, temperature=temperature,
             provider=provider, system=system, options=request)

@@ -366,7 +366,7 @@ def test_extracted_session_corpus_read_requires_exact_sources_and_batch_drain(tm
 def test_regression_requires_browser_portable_and_acp_process_lanes(tmp_path):
     path = tmp_path / 'pytest.xml'
     regression_xml(path)
-    assert GATE.validate_regression(path) == {'required_lanes': 1853, 'skipped': 1}
+    assert GATE.validate_regression(path) == {'required_lanes': 1899, 'skipped': 1}
 
 
 @pytest.mark.parametrize('module', ['test_native_web_browser', 'test_portable_smoke', 'test_acp_stdio_journey', 'test_acp_permission_process', 'test_mcp_stdio_transport', 'test_mcp_supervisor', 'test_mcp_schema', 'test_mcp_config', 'test_mcp_tools_source', 'test_mcp_image_consumer', 'test_mcp_http_source', 'test_mcp_http_transport', 'test_mcp_supervisor_source', 'test_mcp_factory_source', 'test_acp_mcp_source', 'test_acp_mcp_runtime_source', 'test_acp_mcp_abort_source', 'test_acp_mcp_process', 'test_acp_mcp_runtime'])
@@ -2397,6 +2397,15 @@ def test_extracted_session_tracing_requires_exact_observations_and_runtime(tmp_p
     path.write_text(json.dumps(report),encoding='utf-8')
     with pytest.raises(RuntimeError):
         GATE.validate_extracted(path,archive,candidate)
+
+
+@pytest.mark.parametrize('damage', ('omit', 'skip', 'duplicate', 'failure'))
+def test_process_artifact_retention_lanes_are_mandatory(tmp_path, damage):
+    path = tmp_path / 'pytest.xml'
+    key = ('test_process_artifact_retention', sorted(GATE.REQUIRED_REGRESSION['test_process_artifact_retention'])[0])
+    regression_xml(path, **{damage: key})
+    with pytest.raises(RuntimeError):
+        GATE.validate_regression(path)
 
 @pytest.mark.parametrize('module',['test_session_requests_source','test_session_sqlite_query_source','test_session_requests'])
 @pytest.mark.parametrize('damage',['omit','skip','duplicate','failure'])

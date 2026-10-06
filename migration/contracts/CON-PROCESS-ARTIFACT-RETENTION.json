@@ -1,0 +1,32 @@
+{
+  "id": "CON-PROCESS-ARTIFACT-RETENTION",
+  "revision": 1,
+  "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
+  "status": "specified",
+  "source_paths": [
+    "scripts/process_artifact_retention.py",
+    "tests/conftest.py",
+    "scripts/verify_release.py"
+  ],
+  "consumers": [
+    "tests/test_process_artifact_retention.py",
+    "tests/test_current_release_gate.py"
+  ],
+  "invariants": [
+    "Automatic cleanup is confined to owned .goose/out paths without symlink/reparse traversal.",
+    "Delete only direct completed pytest test directories receipt.json/extracted.json with exact fake portable.zip bytes and explicit synthetic runtime marker or negative runtime fixture.",
+    "Retain real ZIPs,inputs,XML,logs,Source/browser observations,unknown files,active/interrupted workspaces and failed-test diagnostics.",
+    "Audit before deletion with fresh byte/hash validation and bounded examples;keep the newest two completed classified cleanup manifests.",
+    "Actual production pytest_sessionfinish runs only for normal completed pass/fail status;gate startup prunes only independently completed prior/focused runs.",
+    "Gate interruption retires the owned process tree before moving its workspace;retention errors cannot hide the primary failure. Expanded whole-suite budget is explicitly2800 seconds;individual deadlines and Source criteria remain unchanged."
+  ],
+  "identity": "Owned literal absolute paths,exact synthetic archive bytes and revalidated size/SHA256 determine deletion candidates.",
+  "ownership": "User explicitly authorized ongoing cleanup of expired reconstructible .goose/out process results;no external path or alias is owned.",
+  "ordering": "Classify all candidates,audit planned state,revalidate immediately before unlink,then record completed or partial failed counts.",
+  "errors": "Changed files refuse removal and retain partial audit. Unknown/malformed historical data stays retained. No cleanup hides original test failure.",
+  "cancellation": "Interrupted/internal-error/not-run pytest statuses are preserved;active execution paths and incomplete XML/log are excluded.",
+  "adaptation": "Independent repository maintenance,not upstream parity. Standard library and native literal extended Windows paths remain Python3.8/Win7 compatible.",
+  "open_questions": [
+    "Immutable real acceptance/rejection evidence and unclassified research artifacts are retained;this does not authorize blanket removal of .goose/out."
+  ]
+}

@@ -10,6 +10,7 @@ import os
 from pathlib import Path
 import re
 import shutil
+import signal
 import subprocess
 import sys
 import tempfile
@@ -60,6 +61,7 @@ from scripts.persistence_read_oracle import validate_runtime as validate_persist
 from scripts.jsonl_sharing_oracle import validate_runtime as validate_jsonl_sharing, identity as sharing_identity, NAMES as SHARING_NAMES
 from scripts.canonical_llm_oracle import validate_runtime as validate_canonical_llm, identity as canonical_llm_identity, NAMES as CANONICAL_LLM_NAMES
 from scripts.llm_metadata_oracle import validate_runtime as validate_llm_metadata, identity as llm_metadata_identity, NAMES as LLM_METADATA_NAMES
+from scripts.process_artifact_retention import prune_previous_regressions, prune_finished_focus_runs, expire_finished_manifests
 NODE_VERSION = 'v22.22.2'
 PORTABLE_ARCHIVE = 'dist/dsh-win7-portable-v0.1.0.zip'
 PAIRED_DRIVERS = (
@@ -75,6 +77,45 @@ PAIRED_DRIVERS = PAIRED_DRIVERS + ('javascript_initial', 'session_number', 'sess
 PAIRED_DRIVERS = PAIRED_DRIVERS + ('runtime_full_request', 'deepseek_error', 'deepseek_capture', 'jsonl_sharing', 'canonical_llm', 'llm_metadata')
 OFFICIAL_CONFIGS = ('consumers', 'agent-lifecycle', 'session-recovery', 'session-projection', 'acp', 'acp-app', 'mcp', 'subagent-acp', 'storage-cache', 'session-observation', 'session-corpus', 'session-sqlite-query', 'query-engine-source', 'session-tools-source', 'sqlite-format-source', 'sqlite-provider-source', 'jsonl-provider-source', 'tool-scheduler-source', 'deepseek-source', 'llm-public-source')
 REQUIRED_REGRESSION = {
+    'test_process_artifact_retention': {
+        'test_active_or_unowned_workspaces_are_refused[active]',
+        'test_active_or_unowned_workspaces_are_refused[foreign-execution]',
+        'test_active_or_unowned_workspaces_are_refused[foreign-retained]',
+        'test_active_or_unowned_workspaces_are_refused[incomplete-xml]',
+        'test_active_or_unowned_workspaces_are_refused[missing-xml]',
+        'test_actual_cli_keeps_real_files_and_prunes_completed_receipts[output]',
+        'test_actual_cli_keeps_real_files_and_prunes_completed_receipts[previous]',
+        'test_actual_pytest_end_hook_prunes_synthetic_data_and_preserves_diagnostics[failed]',
+        'test_actual_pytest_end_hook_prunes_synthetic_data_and_preserves_diagnostics[passed]',
+        'test_audit_examples_are_bounded',
+        'test_changed_file_is_preserved_and_partial_failure_is_audited',
+        'test_expired_cleanup_manifests_keep_latest_two_and_pending_data',
+        'test_finished_synthetic_receipts_are_pruned_with_bounded_audit[extracted.json]',
+        'test_finished_synthetic_receipts_are_pruned_with_bounded_audit[receipt.json]',
+        'test_focused_results_require_finished_log_and_complete_xml[active]',
+        'test_focused_results_require_finished_log_and_complete_xml[finished]',
+        'test_focused_results_require_finished_log_and_complete_xml[partial-xml]',
+        'test_junction_or_symlink_never_deletes_foreign_receipts',
+        'test_missing_runtime_negative_fixture_is_still_synthetic',
+        'test_startup_cleanup_ignores_unfinished_outputs',
+        'test_unclassified_cleanup_manifests_are_preserved[count]',
+        'test_unclassified_cleanup_manifests_are_preserved[invalid-json]',
+        'test_unclassified_cleanup_manifests_are_preserved[outside]',
+        'test_unclassified_cleanup_manifests_are_preserved[root-list]',
+        'test_unclassified_cleanup_manifests_are_preserved[unknown-name]',
+        'test_unclassified_or_real_artifacts_are_preserved[foreign-runtime]',
+        'test_unclassified_or_real_artifacts_are_preserved[invalid-json]',
+        'test_unclassified_or_real_artifacts_are_preserved[missing-runtime]',
+        'test_unclassified_or_real_artifacts_are_preserved[nested-folder]',
+        'test_unclassified_or_real_artifacts_are_preserved[real-zip]',
+        'test_unclassified_or_real_artifacts_are_preserved[unknown-name]',
+        'test_unclassified_or_real_artifacts_are_preserved[unowned-folder]',
+        'test_unfinished_pytest_sessions_are_not_pruned[2]',
+        'test_unfinished_pytest_sessions_are_not_pruned[3]',
+        'test_unfinished_pytest_sessions_are_not_pruned[4]',
+        'test_unfinished_pytest_sessions_are_not_pruned[5]',
+        'test_unfinished_pytest_sessions_are_not_pruned[False]',
+    },
     'test_llm_metadata_consumers': {
         *{'test_actual_original_and_native_llm_metadata_match[' + name + ']' for name in LLM_METADATA_NAMES},
         *{'test_llm_metadata_requires_complete_values_and_runtime[' + damage + ']' for damage in ('model', 'context', 'reasoning', 'description', 'max-tokens', 'modalities', 'trace', 'tail', 'duplicate', 'order', 'type', 'root', 'python', 'executable', 'module', 'bytes', 'group-missing', 'group-rows', 'group-root', 'group-executable', 'group-module')},
@@ -121,6 +162,11 @@ REQUIRED_REGRESSION = {
         *{'test_portable_deepseek_error_cli_refuses_partial_receipts[' + side + ']' for side in ('source', 'native')},
     },
     'test_release_workspace': {
+        'test_retention_error_never_hides_primary_regression_failure[passed]',
+        'test_retention_error_never_hides_primary_regression_failure[failed]',
+        'test_actual_release_process_preserves_exit_status_and_logs[0]',
+        'test_actual_release_process_preserves_exit_status_and_logs[7]',
+        'test_actual_timeout_retires_redirector_descendants_before_workspace_move',
         'test_short_pytest_workspace_retains_owned_success_and_failure_artifacts[passed]',
         'test_short_pytest_workspace_retains_owned_success_and_failure_artifacts[failed]',
         'test_short_pytest_workspace_runs_actual_shared_checkpoint_git_consumer',
@@ -385,6 +431,10 @@ REQUIRED_REGRESSION = {
             'missing-module', 'changed-module', 'empty-closure', 'foreign-root', 'foreign-python', 'missing-row', 'duplicate-row', 'changed-row')},
     },
     'test_current_release_gate': {
+        'test_process_artifact_retention_lanes_are_mandatory[omit]',
+        'test_process_artifact_retention_lanes_are_mandatory[skip]',
+        'test_process_artifact_retention_lanes_are_mandatory[duplicate]',
+        'test_process_artifact_retention_lanes_are_mandatory[failure]',
         *{'test_extracted_llm_metadata_requires_complete_values_and_runtime[' + damage + ']' for damage in ('missing', 'source-missing', 'source-changed', 'module-changed', 'model', 'context', 'reasoning', 'description', 'max-tokens', 'modalities', 'trace', 'tail', 'duplicate', 'order', 'type', 'root', 'python', 'executable', 'module', 'group-missing', 'group-rows', 'group-root', 'group-executable', 'group-module')},
         *{'test_llm_metadata_consumer_lanes_are_mandatory[' + damage + ']' for damage in ('omit', 'skip', 'duplicate', 'failure')},
         *{'test_extracted_canonical_llm_requires_complete_values_and_runtime[' + damage + ']' for damage in ('missing', 'source-missing', 'source-changed', 'module-changed', 'request', 'event', 'tool-id', 'message-form', 'message-split', 'message-cross-fixture', 'retry-form', 'retry-split', 'retry-cross-fixture', 'tail', 'duplicate', 'order', 'type', 'root', 'python', 'executable', 'module', 'group-missing', 'group-rows', 'group-root', 'group-executable', 'group-module')},
@@ -972,11 +1022,37 @@ def release_environment(browser):
 def run(command, name, output, accepted=(0,), env=None, timeout=600, cwd=None):
     print(name, flush=True)
     with (output / (name + '.log')).open('w', encoding='utf-8') as stream:
-        result = subprocess.run(command, cwd=str(cwd or ROOT), stdout=stream,
-                                stderr=subprocess.STDOUT, env=env, timeout=timeout)
-    if result.returncode not in accepted:
-        raise RuntimeError('%s failed (%d); see %s' % (name, result.returncode, output / (name + '.log')))
-    return result.returncode
+        process = subprocess.Popen(command, cwd=str(cwd or ROOT), stdout=stream,
+                                   stderr=subprocess.STDOUT, env=env, start_new_session=os.name != 'nt')
+        try:
+            return_code = process.wait(timeout=timeout)
+        except BaseException as failure:
+            cleanup = dict(root_pid=process.pid, primary_failure=type(failure).__name__)
+            try:
+                if process.poll() is None:
+                    if os.name == 'nt':
+                        stopped = subprocess.run(['taskkill.exe', '/PID', str(process.pid), '/T', '/F'],
+                            stdout=subprocess.PIPE, stderr=subprocess.STDOUT, timeout=30)
+                        cleanup.update(tree_exit_code=stopped.returncode, tree_output_hex=stopped.stdout.hex())
+                        if stopped.returncode != 0 and process.poll() is None:
+                            raise RuntimeError('Owned release process tree did not stop')
+                    else:
+                        os.killpg(process.pid, signal.SIGKILL)
+            except Exception as cleanup_failure:
+                cleanup['cleanup_failure'] = dict(name=type(cleanup_failure).__name__, message=str(cleanup_failure))
+            finally:
+                if process.poll() is None:
+                    process.kill()
+                process.wait()
+                cleanup['root_exit_code'] = process.returncode
+                try:
+                    (output / (name + '-cleanup.json')).write_text(json.dumps(cleanup, indent=2) + '\n', encoding='utf-8')
+                except OSError as audit_failure:
+                    failure.cleanup_audit_failure = str(audit_failure)
+            raise
+    if return_code not in accepted:
+        raise RuntimeError('%s failed (%d); see %s' % (name, return_code, output / (name + '.log')))
+    return return_code
 
 
 def prepare_node_dependencies(output, environment):
@@ -1291,12 +1367,26 @@ def run_python_regression(python, output, environment):
     (output / 'pytest-workspace-mapping.json').write_text(json.dumps(dict(
         execution_path=str(workspace), retained_path=str(retained),
         scope='Fresh owned short Windows execution path is independent of the output label. Artifacts move to the retained path after pytest, including failure/timeout; raw observations retain execution paths.'), indent=2) + '\n', encoding='utf-8')
+    primary_failure = None
     try:
         run([python, '-m', 'pytest', 'tests', '-ra', '--junitxml=' + str(output / 'pytest.xml'),
-            '--basetemp=' + str(workspace)], 'pytest', output, env=environment, timeout=2400)
+            '--basetemp=' + str(workspace)], 'pytest', output, env=environment, timeout=2800)
+    except BaseException as failure:
+        primary_failure = failure
+        raise
     finally:
         if workspace.exists():
-            os.rename(regression_retention_path(workspace), regression_retention_path(retained))
+            try:
+                os.rename(regression_retention_path(workspace), regression_retention_path(retained))
+            except OSError as retention_failure:
+                try:
+                    (output / 'pytest-retention-failure.json').write_text(json.dumps(dict(
+                        name=type(retention_failure).__name__, message=str(retention_failure)), indent=2) + '\n', encoding='utf-8')
+                except OSError:
+                    if primary_failure is None:
+                        raise
+                if primary_failure is None:
+                    raise
 
 
 def verify(args, output):
@@ -1325,6 +1415,13 @@ def verify(args, output):
         run([python, '-m', 'pip', 'install', '--only-binary=:all:', '-r', 'requirements-dev.lock'],
             'python-dependencies', output, env=environment, timeout=1200)
         prepare_node_dependencies(output, environment)
+    output_root = ROOT / '.goose/out'
+    cleanup = dict(regressions=prune_previous_regressions(output_root), focused=[], expired_manifests=[])
+    focus_folder = output_root / 'acp-a4-work'
+    if focus_folder.is_dir():
+        cleanup['focused'] = prune_finished_focus_runs(output_root, focus_folder)
+        cleanup['expired_manifests'] = expire_finished_manifests(output_root, focus_folder)
+    (output / 'process-artifacts-pruned.json').write_text(json.dumps(cleanup, indent=2) + '\n', encoding='utf-8')
     before = source_snapshot()
     inputs = output / 'inputs.json'
     inputs.write_text(json.dumps(before, indent=2) + '\n', encoding='utf-8')

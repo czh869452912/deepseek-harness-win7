@@ -2,7 +2,7 @@
   "id": "MIG-LLM-CONFIG-053",
   "goal": "闭合独立LLM配置查询与公共准备的空值、严格类型和对象归属",
   "kind": "implementation",
-  "state": "running",
+  "state": "integrated",
   "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
   "base_product": "f8b96744ffaa1491031c02dfd20bb15c71f49596",
   "owner": "current-session-coordinator",
@@ -37,15 +37,13 @@
     "migration",
     "docs/research"
   ],
-  "open_findings": [
-    "Provider, Source observers, consumer/refusal controls and extracted portable gate have been promoted; fresh Root26 Source/native observations match, but full frozen acceptance and actual own candidate extraction remain pending.",
-    "Clean2d8fed63 full gate rejected:8634passed,one stale subagent preflight expected not registered instead of canonical NO_ADAPTER,no errors,six existing skips,one Proactor warning,2754.16sec. Exact ZIP/inputs/full XML/logs and559JSON6473952361B cleanup audit archived. Actual Source/native typed public error matches. Strict fixture type/code/message/rendered diagnostics corrected; fresh full acceptance pending."
-  ],
+  "open_findings": [],
   "conflicts_with": [],
-  "candidate_commit": "2d8fed633833eb419cbdec41fbe36bdc96a90e50",
-  "integrated_commit": null,
+  "candidate_commit": "842d637369707a4c85cca6d3706566278de37afd",
+  "integrated_commit": "842d637369707a4c85cca6d3706566278de37afd",
   "evidence_ids": [
-    "RUN-LLM-CONFIG-REJECTED-20261006-2D8FED63"
+    "RUN-LLM-CONFIG-REJECTED-20261006-2D8FED63",
+    "RUN-LLM-CONFIG-20261006-LLM-CONFIG-053"
   ],
-  "next_action": "2d8精确拒绝及实际原版preflight诊断保留；严格消费者断言与31项定向回归通过，提供端不变。提交后冻结新8641项完整验收、2185必需lane/71配对/20组1911Source及真实解压；051/053未签收，七父范围与延期Win7开放。"
+  "next_action": "26组完整独立查询/空值/严格类型/对象归属及实际解压在干净产品842d6373有界签收；精确b93旧包17差异、旧失败证据及未提交资格归档保持。继续任意ABI、完整profile/Wire及竞争；七父范围保持开放。"
 }

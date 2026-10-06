@@ -45,8 +45,8 @@
   ],
   "open_findings": [],
   "conflicts_with": [],
-  "candidate_commit": "2a67ae84400b755d17dfebd83cc43265497726e8",
-  "integrated_commit": "2a67ae84400b755d17dfebd83cc43265497726e8",
+  "candidate_commit": "842d637369707a4c85cca6d3706566278de37afd",
+  "integrated_commit": "842d637369707a4c85cca6d3706566278de37afd",
   "evidence_ids": [
     "RUN-SESSION-STORAGE-20261005-JSONL-PROVIDER-032",
     "RUN-TOOLS-HTTP-20261005-JSONL-PROVIDER-032",
@@ -57,7 +57,8 @@
     "RUN-DEEPSEEK-ERROR-20261006-JSONL-PROVIDER-032",
     "RUN-JSONL-SHARING-V3-20261006-JSONL-PROVIDER-032",
     "RUN-CANONICAL-LLM-20261006-JSONL-PROVIDER-032",
-    "RUN-METADATA-RETENTION-20261006-JSONL-PROVIDER-032"
+    "RUN-METADATA-RETENTION-20261006-JSONL-PROVIDER-032",
+    "RUN-LLM-CONFIG-20261006-JSONL-PROVIDER-032"
   ],
-  "next_action": "clean candidate 2a67ae84 全量/原版/真实解压复验已通过。规范默认 zstd 的 1030 原版/原生/真实解压互读、完整 revision、可选元数据 presence/typed refusal/public loadStored、原始导出和冷准备已有界签收；继续任意 malformed/public plugin ABI、竞争/多工作区/长历史和整体迁移，Win7 延期。"
+  "next_action": "clean candidate 842d6373 全量/原版/真实解压复验已通过。规范默认 zstd 的 1030 原版/原生/真实解压互读、完整 revision、可选元数据 presence/typed refusal/public loadStored、原始导出和冷准备已有界签收；继续任意 malformed/public plugin ABI、竞争/多工作区/长历史和整体迁移，Win7 延期。"
 }

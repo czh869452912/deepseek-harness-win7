@@ -34,13 +34,14 @@
   ],
   "open_findings": [],
   "conflicts_with": [],
-  "candidate_commit": "2a67ae84400b755d17dfebd83cc43265497726e8",
-  "integrated_commit": "2a67ae84400b755d17dfebd83cc43265497726e8",
+  "candidate_commit": "842d637369707a4c85cca6d3706566278de37afd",
+  "integrated_commit": "842d637369707a4c85cca6d3706566278de37afd",
   "evidence_ids": [
     "RUN-DEEPSEEK-ERROR-20261006-DEEPSEEK-ERROR-045",
     "RUN-JSONL-SHARING-V3-20261006-DEEPSEEK-ERROR-045",
     "RUN-CANONICAL-LLM-20261006-DEEPSEEK-ERROR-045",
-    "RUN-METADATA-RETENTION-20261006-DEEPSEEK-ERROR-045"
+    "RUN-METADATA-RETENTION-20261006-DEEPSEEK-ERROR-045",
+    "RUN-LLM-CONFIG-20261006-DEEPSEEK-ERROR-045"
   ],
-  "next_action": "clean candidate 2a67ae84 全量/原版/真实解压复验已通过。24实际Source/native/extracted完整HTTP错误观察在干净产品b2398db9有界签收；精确afd基线16/24匹配、8项差异保留，446原样Source断言不扩大native范围。继续canonical真实重试/profile/取消和任意传输/图边界；云/OAuth/付费/Win7仍开放。"
+  "next_action": "clean candidate 842d6373 全量/原版/真实解压复验已通过。24实际Source/native/extracted完整HTTP错误观察在干净产品b2398db9有界签收；精确afd基线16/24匹配、8项差异保留，446原样Source断言不扩大native范围。继续canonical真实重试/profile/取消和任意传输/图边界；云/OAuth/付费/Win7仍开放。"
 }

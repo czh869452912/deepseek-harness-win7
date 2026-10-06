@@ -2,7 +2,7 @@
   "id": "MIG-LLM-PREPARED-051",
   "goal": "闭合108组公共准备句柄、代际、严格配置比较和规范AgentLoop消费者观察",
   "kind": "implementation",
-  "state": "running",
+  "state": "integrated",
   "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
   "base_product": "2a67ae84400b755d17dfebd83cc43265497726e8",
   "owner": "current-session-coordinator",
@@ -39,21 +39,16 @@
     "migration",
     "docs/research"
   ],
-  "open_findings": [
-    "Cleanb93 full gate rejected4 stale test integration failures; exact ownPortable and actual ACP fixtures preserved. Corrected fixtures and strict2077 positive registry assertion pass107 focused Root tests; fresh complete acceptance remains pending.",
-    "Clean c0 gate rejected:8516 passed,nine shared Source input-scan fixture errors,six existing skips,zero failures; complete XML2666.098s then cleanup exceeded2800s. Source pnpm cyclic junctions exposed unrestricted rglob. Frozen inputs/exact ownPortable/full raw errors and interrupted cleanup audit retained. Tracked Source input enumeration and rehash-only deletion/resume fixes pass50 focused cases; fresh full acceptance remains pending.",
-    "Clean fb3ba8d9 gate rejected:8527 passed,two module fallback fixture failures,six existing skips,one Proactor warning; full pytest2650.16s terminated normally. Independent expected closure omitted reachable installed Source dependencies and hardcoded scan count below20. Exact ZIP/frozen inputs/full XML/logs and completed528-file synthetic cleanup retained; Source pin unchanged. Node nearest-anchor dependency/peer expectations and unique-root cache assertions corrected with deterministic regression cases. Full acceptance remains pending.",
-    "Clean011 complete gate rejected8530pass/one WinError1175/six existing skips. Exact frozen evidence and failed destination preserved. Controlled owned reader reproduces32 in both Source/native;1175 holder/cause remains unclassified. Bounded Source Win32 error fields aligned; no retry or new Source bug exception.",
-    "Clean2d8fed63 successor full gate rejected only a stale standalone-query consumer NO_ADAPTER wording expectation; original1175 cause still open. 8634passed/six existing skips,exact ZIP/full frozen/XML/Source diagnostics and559-file automatic cleanup audit retained by053 rejection record. Fresh clean full acceptance remains pending."
-  ],
+  "open_findings": [],
   "conflicts_with": [],
-  "candidate_commit": "011c3a9509c838370cbd9e7d39f5da775ad045da",
-  "integrated_commit": null,
+  "candidate_commit": "842d637369707a4c85cca6d3706566278de37afd",
+  "integrated_commit": "842d637369707a4c85cca6d3706566278de37afd",
   "evidence_ids": [
     "RUN-LLM-PREPARED-REJECTED-20261006-B93D1CD8",
     "RUN-LLM-PREPARED-REJECTED-20261006-C0B12C55",
     "RUN-LLM-PREPARED-REJECTED-20261006-FB3BA8D9",
-    "RUN-LLM-PREPARED-REJECTED-20261006-011C3A95"
+    "RUN-LLM-PREPARED-REJECTED-20261006-011C3A95",
+    "RUN-LLM-CONFIG-20261006-LLM-PREPARED-051"
   ],
-  "next_action": "053独立查询已推广，2d8完整门禁单项旧NO_ADAPTER测试预期拒绝并已严格修正；精确旧包与失败证据保留。冻结新完整/Source/实际解压验收后才签收051；1175原因、完整profile与七父范围仍开放。"
+  "next_action": "108组完整公共准备句柄、代际、配置严格比较、规范AgentLoop及实际解压在干净产品842d6373有界签收；精确2a旧包及b93拒绝ZIP/ACP失败fixture保持。继续任意配置图ABI及完整profile/Wire/图ABI/竞争；七父范围与036保持开放。"
 }

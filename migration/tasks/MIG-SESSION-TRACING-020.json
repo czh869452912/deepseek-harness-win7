@@ -44,8 +44,8 @@
   ],
   "open_findings": [],
   "conflicts_with": [],
-  "candidate_commit": "2a67ae84400b755d17dfebd83cc43265497726e8",
-  "integrated_commit": "2a67ae84400b755d17dfebd83cc43265497726e8",
+  "candidate_commit": "842d637369707a4c85cca6d3706566278de37afd",
+  "integrated_commit": "842d637369707a4c85cca6d3706566278de37afd",
   "evidence_ids": [
     "RUN-SESSION-TRACING-20261004-SESSION-TRACING-020",
     "RUN-SESSION-FILTERS-20261004-SESSION-TRACING-020",
@@ -62,7 +62,8 @@
     "RUN-DEEPSEEK-ERROR-20261006-SESSION-TRACING-020",
     "RUN-JSONL-SHARING-V3-20261006-SESSION-TRACING-020",
     "RUN-CANONICAL-LLM-20261006-SESSION-TRACING-020",
-    "RUN-METADATA-RETENTION-20261006-SESSION-TRACING-020"
+    "RUN-METADATA-RETENTION-20261006-SESSION-TRACING-020",
+    "RUN-LLM-CONFIG-20261006-SESSION-TRACING-020"
   ],
-  "next_action": "clean candidate 2a67ae84 全量/原版/真实解压复验已通过。clean candidate 2a67ae84 的 14 谱系/30 事件观察及 6 真实持久化 lane 有界验收；当前 locale 的非 ASCII 顺序及规范 FTS/filter 另有界验收；继续 malformed/plugin ABI、Task/provider epochs/竞争、Web/profile 和整体迁移。原版 40ms 断言的历史失败不因本次通过而视为根因已修复。"
+  "next_action": "clean candidate 842d6373 全量/原版/真实解压复验已通过。clean candidate 842d6373 的 14 谱系/30 事件观察及 6 真实持久化 lane 有界验收；当前 locale 的非 ASCII 顺序及规范 FTS/filter 另有界验收；继续 malformed/plugin ABI、Task/provider epochs/竞争、Web/profile 和整体迁移。原版 40ms 断言的历史失败不因本次通过而视为根因已修复。"
 }

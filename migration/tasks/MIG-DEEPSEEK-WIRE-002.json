@@ -26,6 +26,16 @@
       "task": "MIG-LLM-METADATA-049",
       "contract": "CON-LLM-METADATA",
       "revision": 1
+    },
+    {
+      "task": "MIG-LLM-PREPARED-051",
+      "contract": "CON-LLM-PREPARED",
+      "revision": 1
+    },
+    {
+      "task": "MIG-LLM-CONFIG-053",
+      "contract": "CON-LLM-CONFIG",
+      "revision": 1
     }
   ],
   "provides": [],
@@ -41,11 +51,13 @@
     "24 complete local HTTP adapter error controls045 are bounded accepted in clean54361bd9, with exact oldafd ownPortable baseline retained. Every captured request/chunk/error/failure value compares; only JSON whole numeric token spelling is canonicalized for digest.446 unchanged Source assertions add reference coverage but are not extra native parity. Existing76 historical wire/config/model/files/settings observations still need their full Source-backed contract and selected/extracted runtime closure; full canonical retry/profile/cancellation/malformed transport and OAuth/cloud/paid scope remain open.",
     "76 complete selected config/model/serialize/usage/SSE/HTTP/Files/Settings captures046 are bounded accepted in cleanb2398db9. Exact543 ownPortable17 diagnostics and raw retry/origin identities remain retained. Full canonical AgentLoop retry/profile/cancellation/error recovery, arbitrary malformed transport/config and immutable/public graph ABI remain open.",
     "81 complete selected canonical LLM retry/auxiliary failure/public boundary/iterator ownership observations048 are bounded accepted in clean55a5ba87. Arbitrary metadata,prepared one-shot/config ownership,full model/profile,public graph ABI and concurrency remain open.",
-    "137 complete selected public metadata/catalog/exact detachment/final stream observations049 are bounded accepted in clean2a67ae84. Prepared one-shot/config/generation/replay ownership,arbitrary accessors/null/graph ABI,full model/profile and concurrency remain open."
+    "137 complete selected public metadata/catalog/exact detachment/final stream observations049 are bounded accepted in clean2a67ae84. Prepared one-shot/config/generation/replay ownership,arbitrary accessors/null/graph ABI,full model/profile and concurrency remain open.",
+    "053 selected26 complete standalone config query/nullable/strict identity observations bounded accepted in clean842d6373; arbitrary graphs/schedules/fullprofiles still open.",
+    "108 complete selected public prepared-call/config/generation/iterator/canonical AgentLoop observations051 are bounded accepted in clean842d6373. Arbitrary standalone configuration/accessor/graph ABI,full model/profile and concurrency remain open."
   ],
   "conflicts_with": [],
   "candidate_commit": null,
   "integrated_commit": null,
   "evidence_ids": [],
-  "next_action": "049选定137元数据/分离归属/最终流式观察已有界签收；继续prepareCall一次性/冻结/代际/历史重放契约、全profile主链及任意动态图/传输/配置边界后才关闭完整Wire。"
+  "next_action": "051/053选定108组公共准备与26组独立查询/空值范围已有界签收；继续五profile实际主链、任意动态图/传输/配置及竞争边界后才关闭完整Wire。"
 }

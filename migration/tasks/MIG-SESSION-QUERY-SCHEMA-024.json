@@ -43,8 +43,8 @@
   ],
   "open_findings": [],
   "conflicts_with": [],
-  "candidate_commit": "2a67ae84400b755d17dfebd83cc43265497726e8",
-  "integrated_commit": "2a67ae84400b755d17dfebd83cc43265497726e8",
+  "candidate_commit": "842d637369707a4c85cca6d3706566278de37afd",
+  "integrated_commit": "842d637369707a4c85cca6d3706566278de37afd",
   "evidence_ids": [
     "RUN-SESSION-QUERY-ENGINE-20261004-SESSION-QUERY-SCHEMA-024",
     "RUN-SESSION-TEXT-20261005-SESSION-QUERY-SCHEMA-024",
@@ -59,7 +59,8 @@
     "RUN-DEEPSEEK-ERROR-20261006-SESSION-QUERY-SCHEMA-024",
     "RUN-JSONL-SHARING-V3-20261006-SESSION-QUERY-SCHEMA-024",
     "RUN-CANONICAL-LLM-20261006-SESSION-QUERY-SCHEMA-024",
-    "RUN-METADATA-RETENTION-20261006-SESSION-QUERY-SCHEMA-024"
+    "RUN-METADATA-RETENTION-20261006-SESSION-QUERY-SCHEMA-024",
+    "RUN-LLM-CONFIG-20261006-SESSION-QUERY-SCHEMA-024"
   ],
-  "next_action": "clean candidate 2a67ae84 全量/原版/真实解压复验已通过。clean candidate 2a67ae84 的十九组实际 schema-8/STRICT/FTS5、私有 DLL 与真实解压已有界验收；规范 FTS、Unicode 身份和有效 Session 文本/locale 顺序另有界验收；继续 malformed/plugin ABI/竞争、持久化 schema-19 和整体迁移，Win7 延期。"
+  "next_action": "clean candidate 842d6373 全量/原版/真实解压复验已通过。clean candidate 842d6373 的十九组实际 schema-8/STRICT/FTS5、私有 DLL 与真实解压已有界验收；规范 FTS、Unicode 身份和有效 Session 文本/locale 顺序另有界验收；继续 malformed/plugin ABI/竞争、持久化 schema-19 和整体迁移，Win7 延期。"
 }

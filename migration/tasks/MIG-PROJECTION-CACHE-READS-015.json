@@ -39,8 +39,8 @@
   ],
   "open_findings": [],
   "conflicts_with": [],
-  "candidate_commit": "2a67ae84400b755d17dfebd83cc43265497726e8",
-  "integrated_commit": "2a67ae84400b755d17dfebd83cc43265497726e8",
+  "candidate_commit": "842d637369707a4c85cca6d3706566278de37afd",
+  "integrated_commit": "842d637369707a4c85cca6d3706566278de37afd",
   "evidence_ids": [
     "RUN-SESSION-TRACING-20261004-PROJECTION-CACHE-READS-015",
     "RUN-SESSION-FILTERS-20261004-PROJECTION-CACHE-READS-015",
@@ -57,7 +57,8 @@
     "RUN-DEEPSEEK-ERROR-20261006-PROJECTION-CACHE-READS-015",
     "RUN-JSONL-SHARING-V3-20261006-PROJECTION-CACHE-READS-015",
     "RUN-CANONICAL-LLM-20261006-PROJECTION-CACHE-READS-015",
-    "RUN-METADATA-RETENTION-20261006-PROJECTION-CACHE-READS-015"
+    "RUN-METADATA-RETENTION-20261006-PROJECTION-CACHE-READS-015",
+    "RUN-LLM-CONFIG-20261006-PROJECTION-CACHE-READS-015"
   ],
-  "next_action": "clean candidate 2a67ae84 全量/原版/真实解压复验已通过。clean candidate 2a67ae84 的八组 JSON domain/registry/cache 读取有界验收；继续完整 domain/FTS/长期回放和当前 Web/profile 消费者，未认证完整 B1 或 Win7。"
+  "next_action": "clean candidate 842d6373 全量/原版/真实解压复验已通过。clean candidate 842d6373 的八组 JSON domain/registry/cache 读取有界验收；继续完整 domain/FTS/长期回放和当前 Web/profile 消费者，未认证完整 B1 或 Win7。"
 }

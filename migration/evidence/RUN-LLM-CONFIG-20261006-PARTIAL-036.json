@@ -1,0 +1,30 @@
+{
+  "id": "RUN-LLM-CONFIG-20261006-PARTIAL-036",
+  "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
+  "product_commit": "842d637369707a4c85cca6d3706566278de37afd",
+  "kind": "verification",
+  "task_id": "MIG-JS-WORKFLOW-036",
+  "result": "passed",
+  "validity": "current",
+  "commands": [
+    ".venv/Scripts/python.exe scripts/verify_release.py --browser \"C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe\" --output-dir .goose/out/llm-config-clean-842d6373"
+  ],
+  "environment": {
+    "python": "3.8.10 (default, May  6 2021, 17:27:56) [MSC v.1928 64 bit (AMD64)]",
+    "os": "Windows-10-10.0.26200-SP0",
+    "cwd": "C:\\Users\\czh86\\Documents\\Codex\\deepseek-harness-win7",
+    "node": "v22.22.2",
+    "browser": "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe"
+  },
+  "contract_revisions": {
+    "CON-JS-WORKFLOW": 1,
+    "CON-CURRENT-RELEASE-GATE": 1
+  },
+  "artifacts": [
+    {
+      "path": "migration/evidence/artifacts/LLM-CONFIG-20261006-842d6373.zip",
+      "sha256": "b922a99acb95d970dacec302c426d9119ff438f4fdfd75862a4dcde1665ee36d"
+    }
+  ],
+  "scope": "Frozen clean current-Windows candidate 842d6373: 8635 passed,six existing platform skips,zero failures/errors;2185 mandatory lanes,20 unchanged Source groups/1911 assertions,71 fresh actual paired drivers and actual extracted ownPython3.8.10/original-browser. Previous60 bounded acceptances revalidate.051 qualifies108 complete selected actual Source/native/extracted public prepared-call observations:15 public,11 generation,54 failure,7 iterator,14 strict equality,5 canonical AgentLoop and2 late-default dispatch. Complete configs,errors,requests,chunks,dispatch/iterator traces,headers,events and mutation results match;established typed Source UUID correspondence is retained. Public snapshot captures registration/adapter before await,post-await model validation,one-shot stream consumption,detached frozen defaults/retry/context,live opaque signal,one middleware traversal and selected replay/iterator ownership. Canonical mounted AgentLoop uses the same public snapshot and finish-only empty assistant contract. Exact2a independent ownPortable baseline has49 selected differences;every baseline archive byte and actual imported module is guarded. Rejected b93 exact ownPortable/full XML/logs and companion18 ACP failure fixtures remain immutable. Four integration failures were corrected by canonical public adapter fixtures and a positive mandatory-count assertion derived from the strict registry;required lane omission/skip/duplicate/failure controls remain unchanged. Rejected c0 exact candidate/full frozen inputs/complete XML/nine common Source input-scan errors and interrupted cleanup audit remain immutable. Git-tracked src/tests input enumeration excludes ignored cyclic dependency junctions while retaining missing tracked entries for hash refusal. Cleanup classifies and parses once,then verifies exact hashes/ownership/fake archives before deletion and preserves prior audits on numbered resumption. No Source product exception was added. 050 automatic completed synthetic artifact cleanup remains active: this full run removed559 synthetic files/6473952361 bytes with bounded32 audit examples;real evidence and active/unclassified outputs are retained. Whole-suite budget2800 seconds and all individual deadlines remain unchanged. Original119 frontend inputs,nine Source defect predicates/C58/C59 and20 Source assertion groups are unchanged. Seven broad parents,raw JS engine/parse adaptations,arbitrary standalone query/nullable ABI,arbitrary accessor/graph ABI,full five-profile chains and race/transport scopes remain open.036 remains partial. RealWin7/browser is user-deferred;accepted_upstream remains null. No paid API/push/publication.Exact2d8 rejected full candidate,8634 passes/one stale preflight wording mismatch/six platform skips,its559-file6473952361B completed cleanup audit,and actual Source/native NO_ADAPTER companion remain immutable. Strict consumer type/code/public-message/Python-rendering assertions retain rejection instead of a broad regex. No provider or Source business relaxation.053 qualifies26 complete selected actual Source/native/extracted standalone config query and null/default/strict equality observations. Conditional original-object versus shallow-copy ownership, shared stop, post-query mutation, pending registration binding and exact errors are retained. Exact oldb93 ownPortable independently has17 selected differences. The precommit qualification archive is diagnostic only. Rejected011 complete XML/1175 target/Source32 controlled diagnostics remain immutable; original1175 cause remains open and no retry/suppression/broad rename fallback or new Source bug exemption was added."
+}

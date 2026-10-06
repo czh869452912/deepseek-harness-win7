@@ -27,8 +27,8 @@
   ],
   "open_findings": [],
   "conflicts_with": [],
-  "candidate_commit": "2a67ae84400b755d17dfebd83cc43265497726e8",
-  "integrated_commit": "2a67ae84400b755d17dfebd83cc43265497726e8",
+  "candidate_commit": "842d637369707a4c85cca6d3706566278de37afd",
+  "integrated_commit": "842d637369707a4c85cca6d3706566278de37afd",
   "evidence_ids": [
     "RUN-CORDIS-20260927",
     "RUN-CORDIS-WAVE2-20260927",
@@ -67,8 +67,9 @@
     "RUN-DEEPSEEK-ERROR-20261006-CORDIS-001",
     "RUN-JSONL-SHARING-V3-20261006-CORDIS-001",
     "RUN-CANONICAL-LLM-20261006-CORDIS-001",
-    "RUN-METADATA-RETENTION-20261006-CORDIS-001"
+    "RUN-METADATA-RETENTION-20261006-CORDIS-001",
+    "RUN-LLM-CONFIG-20261006-CORDIS-001"
   ],
-  "next_action": "clean candidate 2a67ae84 全量/原版/真实解压复验已通过。本批次核心/关键消费者闭包已验收；C58 原生 Python 适配按精确签名单独记录，范围外业务模块不据此认证。",
+  "next_action": "clean candidate 842d6373 全量/原版/真实解压复验已通过。本批次核心/关键消费者闭包已验收；C58 原生 Python 适配按精确签名单独记录，范围外业务模块不据此认证。",
   "delivery_commit": "072cbcd68a56d7241b0a1a93581f9d38924c3932"
 }

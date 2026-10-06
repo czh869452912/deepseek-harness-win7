@@ -42,13 +42,14 @@
   ],
   "open_findings": [],
   "conflicts_with": [],
-  "candidate_commit": "2a67ae84400b755d17dfebd83cc43265497726e8",
-  "integrated_commit": "2a67ae84400b755d17dfebd83cc43265497726e8",
+  "candidate_commit": "842d637369707a4c85cca6d3706566278de37afd",
+  "integrated_commit": "842d637369707a4c85cca6d3706566278de37afd",
   "evidence_ids": [
     "RUN-DEEPSEEK-CAPTURE-REJECTED-20261006-EAA8BB05",
     "RUN-JSONL-SHARING-V3-20261006-DEEPSEEK-CAPTURE-046",
     "RUN-CANONICAL-LLM-20261006-DEEPSEEK-CAPTURE-046",
-    "RUN-METADATA-RETENTION-20261006-DEEPSEEK-CAPTURE-046"
+    "RUN-METADATA-RETENTION-20261006-DEEPSEEK-CAPTURE-046",
+    "RUN-LLM-CONFIG-20261006-DEEPSEEK-CAPTURE-046"
   ],
-  "next_action": "clean candidate 2a67ae84 全量/原版/真实解压复验已通过。76实际Source/native/extracted完整选定观察在干净产品b2398db9有界签收；精确543 ownPortable17诊断差异与两轮观察器/归档失败保留。继续canonical AgentLoop重试/profile/取消/关闭、任意malformed/config/图ABI及完整Wire；云/OAuth/付费/Win7仍开放。"
+  "next_action": "clean candidate 842d6373 全量/原版/真实解压复验已通过。76实际Source/native/extracted完整选定观察在干净产品b2398db9有界签收；精确543 ownPortable17诊断差异与两轮观察器/归档失败保留。继续canonical AgentLoop重试/profile/取消/关闭、任意malformed/config/图ABI及完整Wire；云/OAuth/付费/Win7仍开放。"
 }

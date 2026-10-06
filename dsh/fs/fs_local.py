@@ -318,6 +318,9 @@ class FsService:
         try:
             native = _native_path(path)
             info = os.stat(native) if follow else os.lstat(native)
+            if os.name == 'nt':
+                from dsh.fs.win32_stat import node_stat
+                info = node_stat(native, info, follow)
         except OSError as error:
             if _is_missing(error):
                 return None
@@ -333,7 +336,7 @@ class FsService:
         if probed is None:
             return None
         info, type_ = probed
-        return FsInfo(_version_of(info), type_, info.st_size if type_ == "file" else None)
+        return FsInfo(_version_of(info), type_, info.st_size)
 
     async def lstat(self, path: str, opts: Optional[Dict[str, Any]] = None, signal: Optional[Any] = None) -> Optional[FsPathInfo]:
         _throw_if_aborted(signal, "lstat")

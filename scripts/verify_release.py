@@ -61,6 +61,7 @@ from scripts.persistence_read_oracle import validate_runtime as validate_persist
 from scripts.jsonl_sharing_oracle import validate_runtime as validate_jsonl_sharing, identity as sharing_identity, NAMES as SHARING_NAMES
 from scripts.canonical_llm_oracle import validate_runtime as validate_canonical_llm, identity as canonical_llm_identity, NAMES as CANONICAL_LLM_NAMES
 from scripts.llm_config_oracle import validate_runtime as validate_llm_config, identity as llm_config_identity, NAMES as LLM_CONFIG_NAMES
+from scripts.win32_stat_oracle import validate_runtime as validate_win32_stat, identity as win32_stat_identity, NAMES as WIN32_STAT_NAMES
 from scripts.llm_prepared_oracle import validate_runtime as validate_llm_prepared, identity as llm_prepared_identity, NAMES as LLM_PREPARED_NAMES
 from scripts.llm_metadata_oracle import validate_runtime as validate_llm_metadata, identity as llm_metadata_identity, NAMES as LLM_METADATA_NAMES
 from scripts.process_artifact_retention import prune_previous_regressions, prune_finished_focus_runs, expire_finished_manifests
@@ -77,6 +78,7 @@ PAIRED_DRIVERS = (
 PAIRED_DRIVERS = PAIRED_DRIVERS + ('session_tools', 'sqlite_format', 'sqlite_provider', 'jsonl_provider', 'tool_scheduler', 'http_redirect', 'javascript_workflow', 'runtime_context', 'javascript_ready', 'persistence_read')
 PAIRED_DRIVERS = PAIRED_DRIVERS + ('javascript_initial', 'session_number', 'session_diagnostic', 'session_restore_sign')
 PAIRED_DRIVERS = PAIRED_DRIVERS + ('runtime_full_request', 'deepseek_error', 'deepseek_capture', 'jsonl_sharing', 'canonical_llm', 'llm_metadata', 'llm_prepared', 'llm_config')
+PAIRED_DRIVERS = PAIRED_DRIVERS + ('win32_stat',)
 OFFICIAL_CONFIGS = ('consumers', 'agent-lifecycle', 'session-recovery', 'session-projection', 'acp', 'acp-app', 'mcp', 'subagent-acp', 'storage-cache', 'session-observation', 'session-corpus', 'session-sqlite-query', 'query-engine-source', 'session-tools-source', 'sqlite-format-source', 'sqlite-provider-source', 'jsonl-provider-source', 'tool-scheduler-source', 'deepseek-source', 'llm-public-source')
 REQUIRED_REGRESSION = {
     'test_fs_local_upstream_parity': {
@@ -130,6 +132,15 @@ REQUIRED_REGRESSION = {
         *{'test_llm_config_requires_complete_values_and_runtime[' + damage + ']' for damage in ('config', 'boolean', 'max-null', 'reason-null', 'same', 'same-stop', 'input', 'after-change', 'error', 'code', 'hook', 'signal', 'trace', 'tail', 'duplicate', 'order', 'type', 'unknown', 'root', 'python', 'executable', 'module', 'bytes', 'group-missing', 'group-rows', 'group-root', 'group-executable', 'group-module')},
         *{'test_llm_config_source_identity_is_required[' + damage + ']' for damage in ('pin','node','inputs','bytes')},
         *{'test_portable_llm_config_refuses_partial_receipts[' + side + ']' for side in ('source','native')},
+    },
+    'test_win32_stat_consumers': {
+        *{'test_actual_original_and_native_windows_stat_match[' + name + ']' for name in WIN32_STAT_NAMES},
+        *{'test_windows_stat_requires_complete_values_and_handle_ownership[' + damage + ']' for damage in (
+            'stat-version', 'lstat-version', 'directory-size', 'change-time', 'file-identity', 'missing', 'order',
+            'row', 'unknown', 'size-type', 'module', 'bytes', 'root', 'python', 'executable', 'workspace',
+            'probe-count', 'handle-leak', 'failure-missing', 'failure-code', 'failure-close', 'failure-order', 'failure-type')},
+        *{'test_windows_stat_requires_actual_source_identity[' + damage + ']' for damage in ('pin', 'node', 'inputs', 'bytes')},
+        *{'test_portable_windows_stat_refuses_partial_receipts[' + side + ']' for side in ('source', 'native')},
     },
     'test_llm_prepared_consumers': {
         *{'test_actual_original_and_native_llm_prepared_match[' + name + ']' for name in LLM_PREPARED_NAMES},
@@ -459,6 +470,12 @@ REQUIRED_REGRESSION = {
         'test_process_artifact_retention_lanes_are_mandatory[failure]',
         *{'test_extracted_llm_config_requires_complete_values_and_runtime[' + damage + ']' for damage in ('missing', 'source-missing', 'source-changed', 'module-changed', 'config', 'boolean', 'max-null', 'reason-null', 'same', 'same-stop', 'input', 'after-change', 'error', 'code', 'hook', 'signal', 'trace', 'tail', 'duplicate', 'order', 'type', 'unknown', 'root', 'python', 'executable', 'module', 'group-missing', 'group-rows', 'group-root', 'group-executable', 'group-module')},
         *{'test_llm_config_consumer_lanes_are_mandatory[' + damage + ']' for damage in ('omit','skip','duplicate','failure')},
+        *{'test_extracted_windows_stat_requires_complete_values_and_runtime[' + damage + ']' for damage in (
+            'missing', 'source-missing', 'source-hash', 'source-row', 'source-stamp', 'module-changed',
+            'stat-version', 'lstat-version', 'directory-size', 'change-time', 'file-identity', 'missing-file',
+            'order', 'row', 'unknown', 'size-type', 'module', 'root', 'python', 'executable', 'workspace',
+            'probe-count', 'handle-leak', 'failure-missing', 'failure-code', 'failure-close', 'failure-order', 'failure-type')},
+        *{'test_windows_stat_consumer_lanes_are_mandatory[' + damage + ']' for damage in ('omit', 'skip', 'duplicate', 'failure')},
         *{'test_extracted_llm_prepared_requires_complete_values_and_runtime[' + damage + ']' for damage in ('missing', 'source-missing', 'source-changed', 'module-changed', 'config', 'boolean', 'defaults', 'context', 'error', 'dispatch', 'trace', 'replay', 'signal', 'frozen', 'header', 'empty', 'message-form', 'message-split', 'tail', 'duplicate', 'order', 'type', 'root', 'python', 'executable', 'module', 'group-missing', 'group-rows', 'group-root', 'group-executable', 'group-module')},
         *{'test_llm_prepared_consumer_lanes_are_mandatory[' + damage + ']' for damage in ('omit','skip','duplicate','failure')},
         *{'test_extracted_llm_metadata_requires_complete_values_and_runtime[' + damage + ']' for damage in ('missing', 'source-missing', 'source-changed', 'module-changed', 'model', 'context', 'reasoning', 'description', 'max-tokens', 'modalities', 'trace', 'tail', 'duplicate', 'order', 'type', 'root', 'python', 'executable', 'module', 'group-missing', 'group-rows', 'group-root', 'group-executable', 'group-module')},
@@ -1361,6 +1378,14 @@ def validate_extracted(path, archive, candidate):
             candidate['llm_config_observations_sha256'], candidate['llm_config_modules'], check_files=False)
     except (ValueError, KeyError, TypeError) as error:
         raise RuntimeError('Extracted llmConfig consumer differs') from error
+    try:
+        if report.get('win32StatSourceSha256') != candidate['win32_stat_source_sha256']:
+            raise ValueError('Windows stat Source receipt identity differs')
+        validate_win32_stat(report.get('win32Stat'), Path(report['mcpStdio']['root']),
+            Path(report['mcpStdio']['root']) / 'python.exe', candidate['win32_stat_source'],
+            candidate['win32_stat_modules'], check_files=False)
+    except (ValueError, KeyError, TypeError) as error:
+        raise RuntimeError('Extracted win32Stat consumer differs') from error
     for name, validate in [('queryEngine', validate_query_engine), ('querySchema', validate_query_schema), ('pythonDirectory', validate_python_directory),
                            ('sessionLineage', validate_session_lineage), ('sessionEventTrace', validate_session_event_trace),
                            ('sessionFilters', validate_session_filters), ('sessionRequests', validate_session_requests),
@@ -1615,6 +1640,13 @@ def verify(args, output):
     llm_config_report = json.loads(llm_config_native.read_text(encoding='utf-8'))
     candidate['llm_config_observations_sha256'] = llm_config_identity(json.loads(llm_config_source.read_text(encoding='utf-8')))
     candidate['llm_config_modules'] = llm_config_report['modules']
+    win32_stat_source = output / 'win32-stat-paired.source.json'
+    win32_stat_native = output / 'win32-stat-paired.native.json'
+    win32_stat_report = json.loads(win32_stat_native.read_text(encoding='utf-8'))
+    candidate['win32_stat_source'] = json.loads(win32_stat_source.read_text(encoding='utf-8'))
+    win32_stat_identity(candidate['win32_stat_source'], ROOT / 'reference')
+    candidate['win32_stat_source_sha256'] = digest(win32_stat_source)
+    candidate['win32_stat_modules'] = win32_stat_report['modules']
     raw = output / 'cordis-raw.json'
     raw.unlink(missing_ok=True)
     run([python, 'scripts/cordis_oracle.py', '--output', str(raw)],
@@ -1651,7 +1683,8 @@ def verify(args, output):
                '--canonical-llm-source', str(canonical_llm_source), '--canonical-llm-native', str(canonical_llm_native),
                '--llm-metadata-source', str(llm_metadata_source), '--llm-metadata-native', str(llm_metadata_native),
                '--llm-prepared-source', str(llm_prepared_source), '--llm-prepared-native', str(llm_prepared_native),
-               '--llm-config-source', str(llm_config_source), '--llm-config-native', str(llm_config_native)]
+               '--llm-config-source', str(llm_config_source), '--llm-config-native', str(llm_config_native),
+               '--win32-stat-source', str(win32_stat_source), '--win32-stat-native', str(win32_stat_native)]
     if not candidate['worktree_dirty']:
         command += ['--expected-commit', candidate['product_commit']]
     run(command, 'portable-extracted', output, env=environment)

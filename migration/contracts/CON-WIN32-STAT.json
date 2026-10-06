@@ -1,0 +1,37 @@
+{
+  "id": "CON-WIN32-STAT",
+  "revision": 1,
+  "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
+  "status": "specified",
+  "source_paths": [
+    "reference/packages/fs/fs-local/src/index.ts",
+    "reference/packages/fs/fs-local/src/fsio.ts",
+    "dsh/fs/fs_local.py",
+    "dsh/fs/win32_stat.py"
+  ],
+  "consumers": [
+    "scripts/win32_stat_oracle.py",
+    "scripts/oracles/win32_stat_python.py",
+    "tests/test_win32_stat_consumers.py",
+    "scripts/verify_portable.py",
+    "scripts/verify_release.py"
+  ],
+  "invariants": [
+    "Seven actual shared-physical-workspace Source/native/extracted observations retain complete stat/lstat/type/size/version and raw device/inode/size/mtimeNs/ctimeNs fields.",
+    "Windows versions use native ChangeTime rather than Python3.8 creation time, and preserve 100-nanosecond file timestamps without a float round trip.",
+    "Public stat/lstat includes the actual directory size. listDir directory size remains absent as in Source.",
+    "Win32 metadata queries retain volume serial, file index and file size, request read attributes and share read/write/delete, and always close their owned handle.",
+    "256 actual successful probes and two controlled native-query failure boundaries retain identical before/after handle counts and exactly one CloseHandle on each failure.",
+    "Full public/raw values, actual imported bytes, selected runtime, physical workspace, Source identity, extracted receipt and mandatory-lane refusal controls remain strict."
+  ],
+  "identity": "The complete ordered JSON rows compare literally on the same physical paths. No timestamp, inode, directory-size or diagnostic field is normalized away.",
+  "ownership": "Each successful CreateFileW handle is closed in finally, including GetFileInformationByHandle and GetFileInformationByHandleEx failures.",
+  "ordering": "Existing path/type classification is followed by native metadata capture. Metadata-only changes remain visible to version guards; the selected observers do not infer arbitrary concurrent path replacement atomicity.",
+  "errors": "Missing paths retain the existing FsLocal contract. Actual metadata-query failures propagate; no retry, fallback to stale creation time or new Source defect predicate is added.",
+  "cancellation": "Existing filesystem cancellation checks remain in place; the synchronous scoped metadata handle is released before return or error.",
+  "adaptation": "Python3.8 ctypes supplies Win32 file metadata unavailable through os.stat. Only longstanding Windows APIs are used; actual Windows7 runtime certification is user-deferred.",
+  "open_questions": [
+    "Arbitrary concurrent rename/reparse/permissions and non-observed filesystem/error schedules remain in the broader tool/profile contracts.",
+    "The original WinError1175 holder/cause is not identified by these successful metadata observations; no causality or Win7 certificate is inferred."
+  ]
+}

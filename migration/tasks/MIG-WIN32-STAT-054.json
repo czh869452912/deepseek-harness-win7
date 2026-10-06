@@ -1,0 +1,38 @@
+{
+  "id": "MIG-WIN32-STAT-054",
+  "goal": "对齐实际Windows文件版本、目录大小和原生句柄归属",
+  "kind": "implementation",
+  "state": "running",
+  "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
+  "base_product": "842d637369707a4c85cca6d3706566278de37afd",
+  "owner": "current-session-coordinator",
+  "requires": [
+    {
+      "task": "MIG-CURRENT-RELEASE-GATE-003",
+      "contract": "CON-CURRENT-RELEASE-GATE",
+      "revision": 1
+    }
+  ],
+  "provides": [
+    {
+      "contract": "CON-WIN32-STAT",
+      "revision": 1
+    }
+  ],
+  "acceptance": [
+    "Seven complete actual pinned Source/native/extracted stat/lstat/raw metadata rows match literally on the same physical workspace, including directory size and metadata-only ChangeTime.",
+    "Exact frozen842 Root imports match its independently retained portable ZIP and reproduce the directory/ChangeTime differences; original observations and failed qualification diagnostics remain archived.",
+    "256 real successful handle probes and two actual-handle query failure cleanup controls preserve ownership; complete-value/runtime/Source/extracted/mandatory-lane refusal controls stay strict.",
+    "A new clean frozen full suite, unchanged Source groups, fresh actual paired receipts and real extracted ownPython3.8.10/original browser pass before bounded integration."
+  ],
+  "expected_paths": ["dsh/fs", "scripts", "tests", "migration", "docs/research"],
+  "open_findings": [
+    "Provider and formal Source/native/consumer/portable hooks promoted. Isolated34 strict controls,Root80 filesystem regressions,101 related consumers,all68 new consumer/extracted/mandatory refusal controls and1000 current-release gate regressions passed. Strict registry2253lanes/72pairs,full collection8709. Fresh dirty precommit ownZIP/extractedPython3.8.10 matches seven full Source rows and256/two handle boundaries;separate qualification archive retained. Clean full acceptance remains pending.",
+    "The original WinError1175 holder/cause, arbitrary path/reparse/permission races, broad profile/tool composition and actual user-deferred Win7 remain outside this selected scope."
+  ],
+  "conflicts_with": [],
+  "candidate_commit": null,
+  "integrated_commit": null,
+  "evidence_ids": [],
+  "next_action": "独立提交已验证的提供端、68新控制、1000门禁回归与真实解压资格证据；新的干净全量/72配对/20组1911Source/原版浏览器全通过后才签收054。继续SDK/profile及七父范围。"
+}

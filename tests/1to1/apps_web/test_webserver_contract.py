@@ -124,6 +124,7 @@ async def read_or_reset(reader, size=10):
 async def test_serves_registered_routes_index_taps_and_the_fallback_seat_semantics():
     server = await start_server()
     port = server.listened_port
+    upgraded_writer = None
     try:
         assert port > 0
 
@@ -251,6 +252,7 @@ async def test_serves_registered_routes_index_taps_and_the_fallback_seat_semanti
         dispose_exact_only = server.register_upgrade("/exact-only/", exact_only)
         exact_reader, exact_writer = await raw_upgrade(port, "/exact-only/")
         exact_writer.close()
+        await exact_writer.wait_closed()
         assert await read_or_reset(exact_reader) == b""
         missing_reader, missing_writer = await asyncio.open_connection("127.0.0.1", port)
         missing_writer.write(
@@ -321,6 +323,9 @@ async def test_serves_registered_routes_index_taps_and_the_fallback_seat_semanti
             await asyncio.wait_for(raw_request(port, "/probe"), 2)
     finally:
         await server.stop()
+        if upgraded_writer is not None:
+            upgraded_writer.close()
+            await upgraded_writer.wait_closed()
 
 
 @pytest.mark.asyncio

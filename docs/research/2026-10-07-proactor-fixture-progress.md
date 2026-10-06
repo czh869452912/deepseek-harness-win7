@@ -1,0 +1,9 @@
+# Web 升级测试的客户端关闭责任
+
+先前完整门禁中的Proactor析构warning挂在injection测试上，但实际创建栈指向前一项WebServer路由测试调用raw_upgrade的客户端。原版服务端关闭责任与产品提供端已等待关闭；测试保留的upgraded_writer自身未close，在循环关闭之后析构才尝试调度connection_lost。
+
+诊断包装保留CPython原始析构函数、重新抛出原始异常，仅记录实际创建栈；原始238项回归明确复现warning。独立客户端所有权断言也确定失败。现由拥有客户端的fixture在finally关闭并等待该writer，另一成功升级writer也立即等待关闭。新增正常完成和成功升级后中断两条实际测试断言。相同诊断范围加两项回归共240 passed、78.59秒，无Proactor异常记录；不使用warning过滤、重试或产品行为替换。
+
+独立14文件归档migration/evidence/artifacts/WEB-UPGRADE-FIXTURE-20261007-CB780F2A.zip，SHA-256为05523f663a4cda0e7865b1626e68df9a4a51e78220045a791cf8e7a7d3fb2055。包含前后fixture、诊断包装、真实创建栈、失败控制、完整前后XML/日志及逐项哈希。修复后的日志仍保留另一socketserver WinError10054及pytest-asyncio配置弃用提示，未声称它们闭合；1175/5原始持有者原因也未识别。
+
+这是一部分独立fixture修复，尚非新产品完整发布验收；最新完整签收仍83026446、65有界范围。七个父范围、036partial及延期Win7保持开放。下一完整门禁必须重新运行全部测试并保存原始警告/异常，不沿用此定向结果冒充整批签收。

@@ -1,5 +1,7 @@
 # 持续对齐记录
 
+2026-10-07 Proactor既有warning已定位到WebServer契约测试自身：实际创建栈证明成功升级后的客户端writer未关闭，直到下一项测试所在循环已关闭后析构。原有客户端所有权控制确定失败；成功和中断两条关闭控制加入回归，固定fixture终于关闭并等待，不修改提供端/Source或屏蔽warning。修复后240项同范围实际诊断回归通过且没有Proactor异常记录；原始前后日志/XML/创建栈独立归档。socketserver10054及1175/5原因继续开放；最新完整签收仍83026446/65，fixture修复待下一完整门禁。见 `docs/research/2026-10-07-proactor-fixture-progress.md`。
+
 2026-10-07 最新干净签收 `83026446`：完整8975 passed、6既有skip、1既有warning、0失败/错误，3088.56秒；2522必需lane、74实际配对、20组1911原样Source断言及真实解压自有Python3.8.10/原版浏览器均通过。052选定JS异常边界、054 Windows元数据、055 minimal SDK三链已有界integrated，共65份独立验收；036保持partial、七父范围继续开放。独立精确ZIP/输入/XML/观察及32份历史归档哈希核验保留。本轮自动清理660个合成JSON9030378843字节、1817个重复预检副本744448390字节；真实证据、失败变体及未知文件保留。Proactor warning、WinError1175及WinError5原因尚未闭合，不新增绕过；延期Win7与accepted_upstream空不变。见 `reviews/SDK-RETENTION-GATE-20261007.md`。
 
 2026-10-07 下一部分052已推广：JS编译异常在原版Session边界于Ready前返回，原生继承stack保留真实业务消息/帧与own属性。规范C/workflow构建实际复现，无忽略候选输入路径。32实际Source/native及新ownZIP自有Python3.8.10观察匹配，22导入/20私有资源核验ZIP；191兼容/解压/必需拒绝控制与181既有回归通过。首次接入28失败原始XML日志保留，修正离线控制解释器模型及旧固定19资源检查，不修改Source/九条缺陷豁免。2522必需lane/74配对、全量8981项；052/054/055待新的干净完整签收，最新842/62及七父范围不变。见 `docs/research/2026-10-07-js-errors-progress.md`。

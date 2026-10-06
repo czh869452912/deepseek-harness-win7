@@ -744,6 +744,7 @@ class LLMService:
 
     async def prepareCall(self, config: Dict[str, Any], signal: Any = None) -> Dict[str, Any]:
         import inspect
+        from dsh.cordis.awaiting import await_callback_result
         from dsh.llm.call_config import call_config_equals
         from dsh.core.session.json import FrozenDict, deep_freeze
         from dsh.llm.model_info import normalize_model_info
@@ -756,14 +757,13 @@ class LLMService:
         adapter = registration['adapter']
         prepare = getattr(adapter, 'prepare_call', getattr(adapter, 'prepareCall', None))
         if callable(prepare):
-            adapter_call = await prepare(provider, config['model'], signal)
+            adapter_call = await await_callback_result(prepare(provider, config['model'], signal))
         else:
             resolve = getattr(adapter, 'resolve_model', getattr(adapter, 'resolveModel', None))
             if callable(resolve):
                 signature = inspect.signature(resolve)
                 info = resolve(provider, config['model'], signal) if len(signature.parameters) >= 3 or 'signal' in signature.parameters else resolve(provider, config['model'])
-                if inspect.isawaitable(info):
-                    info = await info
+                info = await await_callback_result(info)
             else:
                 info = dict(provider=provider, id=config['model'], name=config['model'])
             def dispatch(options):

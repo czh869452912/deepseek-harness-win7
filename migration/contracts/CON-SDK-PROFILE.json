@@ -1,0 +1,24 @@
+{
+  "id": "CON-SDK-PROFILE",
+  "revision": 1,
+  "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
+  "status": "specified",
+  "source_paths": ["reference/apps/cli/src/bin.ts", "reference/packages/sdk/server/src/index.ts", "reference/packages/core/agent-loop/src/agent.ts", "dsh/sdk/plugin.py", "dsh/sdk/server.py", "dsh/core/agent_loop.py", "dsh/llm/llm_service.py", "dsh/fs/tool_str_replace_editor.py"],
+  "consumers": ["scripts/sdk_profile_oracle.py", "scripts/sdk_profile_values.py", "tests/test_sdk_profile_consumers.py", "scripts/verify_portable.py", "scripts/verify_release.py"],
+  "invariants": [
+    "Three actual minimal-profile SDK chains use the pinned original CLI and native canonical launcher: a real persistent shell tool followed by a second model request, cancellation after partial output, and a missing-DONE stream error.",
+    "Complete ordered wire frames, reply positions, emitted and durable facts, session header, JSONL sequences, HTTP requests and all registered tool definitions compare without dropping DTO fields.",
+    "Normal/cancel/error retain respectively30/14/18 frames. Cancellation persists actual provider/model/usage and interrupted=true; an ordinary non-cancellation stream error does not persist a partial assistant.",
+    "Callbacks used during preparation and SDK dispatch are awaited through the canonical coroutine carrier; pre-step receives claimed messages and shutdown owns the durable drain after turn/end.",
+    "All8958 tracked Source inputs and eight observer inputs are guarded before and after actual capture. Every actual native imported byte must match the approved scenario closure and selected interpreter.",
+    "Cancellation may import adapter_failure.py or omit it, as independently observed; it is the sole optional import and, when present, must match the error-scenario approved bytes.",
+    "Fresh real extracted ownPython3.8.10 repeats all three chains; source identity, complete values, runtime, closure and mandatory-lane refusal controls remain strict."
+  ],
+  "identity": "Literal DTOs and order are preserved. Typed UUID graphs retain alias relationships. Raw live integer clocks are retained and validated against a90-second window before comparison labels are assigned.",
+  "ownership": "The SDK-created session, persistent terminal, model HTTP fixture and child processes belong to this capture. Shutdown must drain durable facts and dispose the terminal; fixture threads are joined.",
+  "ordering": "Complete request/reply/event sequences and next-model context are compared; no extra post-turn durable flush is inserted ahead of Source shutdown.",
+  "errors": "The Source SDK child stderr must be empty. One recorded Source cancel HTTP-fixture idle preconnect ConnectionResetError10054 is accepted only after owned shutdown, with one request; raw diagnostics remain visible. Native fixture errors must be empty. No product defect predicate or suppression is introduced.",
+  "cancellation": "The actual partial-output cancellation chain must retain the original interrupted assistant and source usage while releasing its owned terminal and process.",
+  "adaptation": "Python3.8 coroutine driving and typed native message identifiers preserve the observed Source semantics. The original browser bundle and Source pin remain unchanged.",
+  "open_questions": ["SDK resume, arbitrary plugins/transports, standard/creative full journeys and Web user chains remain in broader contracts.", "Actual Windows7 certification is user-deferred; these current-host observations do not certify it."]
+}

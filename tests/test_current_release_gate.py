@@ -56,6 +56,8 @@ from test_llm_prepared_consumers import damage_observations as damage_llm_prepar
 from scripts.llm_config_oracle import observation_digest as llm_config_observation_digest
 from test_llm_config_consumers import damage_observations as damage_llm_config_observations
 from test_win32_stat_consumers import damage_runtime as damage_win32_stat_runtime
+from test_sdk_profile_consumers import damage_runtime as damage_sdk_profile_runtime
+from scripts.sdk_profile_cases import EXTRACTED_DAMAGES as SDK_EXTRACTED_DAMAGES
 from scripts.llm_metadata_oracle import observation_digest as llm_metadata_observation_digest
 from test_llm_metadata_consumers import damage_observations as damage_llm_metadata_observations
 from scripts.canonical_llm_oracle import observation_digest as canonical_llm_observation_digest
@@ -1506,6 +1508,50 @@ def test_windows_stat_consumer_lanes_are_mandatory(tmp_path, damage):
         GATE.validate_regression(path)
 
 
+@functools.lru_cache(maxsize=1)
+def sdk_profile_runtime_fixture():
+    with tempfile.TemporaryDirectory(prefix='dsh-sdk-profile-source-') as folder:
+        output = Path(folder) / 'paired.json'
+        completed = subprocess.run([sys.executable, str(ROOT / 'scripts/sdk_profile_oracle.py'),
+            '--output', str(output)], cwd=str(ROOT), capture_output=True, timeout=600)
+        if completed.returncode:
+            raise RuntimeError(output.read_text(encoding='utf-8'))
+        return dict(source=json.loads(output.with_suffix('.source.json').read_text(encoding='utf-8')),
+            native=json.loads(output.with_suffix('.native.json').read_text(encoding='utf-8')))
+
+
+@pytest.mark.parametrize('damage', SDK_EXTRACTED_DAMAGES)
+def test_extracted_sdk_profile_requires_complete_values_and_runtime(tmp_path, damage):
+    archive, candidate, report = extracted_receipt(tmp_path)
+    if damage == 'missing':
+        del report['sdkProfile']
+    elif damage == 'source-missing':
+        del candidate['sdk_profile_source']
+    elif damage == 'source-hash':
+        candidate['sdk_profile_source_sha256'] = '0' * 64
+    elif damage == 'source-row':
+        candidate['sdk_profile_source']['rows'].pop()
+    elif damage == 'source-stamp':
+        del report['sdkProfileSourceSha256']
+    elif damage == 'source-input-shape':
+        candidate['sdk_profile_source']['inputs']['reference/apps/cli/src/bin.ts'] = True
+    else:
+        damage_sdk_profile_runtime(report['sdkProfile'], damage)
+    output = tmp_path / 'extracted.json'
+    output.write_text(json.dumps(report), encoding='utf-8')
+    with pytest.raises(RuntimeError, match='sdkProfile'):
+        GATE.validate_extracted(output, archive, candidate)
+
+
+@pytest.mark.parametrize('damage', ('omit', 'skip', 'duplicate', 'failure'))
+def test_sdk_profile_consumer_lanes_are_mandatory(tmp_path, damage):
+    path = tmp_path / 'pytest.xml'
+    key = ('test_sdk_profile_consumers', sorted(GATE.REQUIRED_REGRESSION['test_sdk_profile_consumers'])[0])
+    regression_xml(path, **{damage: key})
+    with pytest.raises(RuntimeError):
+        GATE.validate_regression(path)
+
+
 def extracted_receipt(tmp_path):
     archive = tmp_path / 'portable.zip'
     archive.write_bytes(b'exact candidate archive')
@@ -1604,6 +1650,14 @@ def extracted_receipt(tmp_path):
     candidate['win32_stat_source'] = win32_stat_pair['source']
     candidate['win32_stat_source_sha256'] = hashlib.sha256(json.dumps(win32_stat_pair['source'], sort_keys=True).encode('utf-8')).hexdigest()
     candidate['win32_stat_modules'] = win32_stat['modules'].copy()
+    sdk_profile_pair = copy.deepcopy(sdk_profile_runtime_fixture())
+    sdk_profile = sdk_profile_pair['native']
+    sdk_profile['root'], sdk_profile['executable'] = str(tmp_path), str(tmp_path / 'python.exe')
+    for capture in sdk_profile['captures'].values():
+        capture['runtime']['root'], capture['runtime']['executable'] = sdk_profile['root'], sdk_profile['executable']
+    candidate['sdk_profile_source'] = sdk_profile_pair['source']
+    candidate['sdk_profile_source_sha256'] = hashlib.sha256(json.dumps(sdk_profile_pair['source'], sort_keys=True).encode('utf-8')).hexdigest()
+    candidate['sdk_profile_modules'] = copy.deepcopy(sdk_profile['modules'])
 
 
     report = {'result': 'passed', 'browser': {'passed': True}, 'runtime': {'checks': ['actual runtime']},
@@ -1615,7 +1669,8 @@ def extracted_receipt(tmp_path):
               'httpRedirect': redirect, 'javascriptWorkflow': javascript, 'runtimeContext': context, 'javascriptReady': ready,
               'persistenceRead': read, 'javascriptInitial': initial, 'sessionNumber': number, 'sessionDiagnostic': diagnostic,
               'sessionRestoreSign': restore_sign, 'runtimeFullRequest': full_request, 'deepseekError': deepseek_error, 'deepseekCapture': deepseek_capture, 'jsonlSharing': sharing, 'canonicalLlm': canonical_llm, 'llmMetadata': llm_metadata, 'llmPrepared': llm_prepared, 'llmConfig': llm_config,
-              'win32Stat': win32_stat, 'win32StatSourceSha256': candidate['win32_stat_source_sha256']}
+              'win32Stat': win32_stat, 'win32StatSourceSha256': candidate['win32_stat_source_sha256'],
+              'sdkProfile': sdk_profile, 'sdkProfileSourceSha256': candidate['sdk_profile_source_sha256']}
     modes = ['allow', 'reject', 'malformed', 'cancel-late', 'close-late', 'eof']
     report['acpPermissions'] = {'processes': 6, 'modes': modes, 'observations': [
         {'mode': mode, 'executed': mode == 'allow', 'modelRequests': 2 if mode in modes[:3] else 1, 'stderr': [''],

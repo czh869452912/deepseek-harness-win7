@@ -3,6 +3,7 @@ import asyncio
 import sys
 
 from dsh.cordis.plugin import Plugin
+from dsh.cordis.awaiting import await_callback_result
 from dsh.cordis.schema import Schema
 from dsh.sdk.server import HarnessSdkJsonRpcServer
 from dsh.sdk.transport import JsonRpcLineTransport
@@ -46,7 +47,7 @@ class SdkJsonRpcPlugin(Plugin):
                 loader = ctx.get('loader')
                 if loader is not None:
                     await loader.await_()
-            result = await server.handle_request(method, params)
+            result = await await_callback_result(server.handle_request(method, params))
             if method == 'shutdown':
                 # The handler returns and writes its response synchronously
                 # before this next-loop callback starts the flush barrier.

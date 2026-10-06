@@ -10,6 +10,7 @@ import time
 import uuid
 from typing import Any, Callable, Dict, List, Optional, Union
 from dsh.cordis.context import Context
+from dsh.cordis.awaiting import await_callback_result
 from dsh.cordis.plugin import Plugin
 from dsh.core.agent import Agent, AgentHandle, AgentOptions, AgentRegistry
 from dsh.core.scope import create_scope, ScopeKey, scope_of, scope_target
@@ -586,11 +587,11 @@ class AgentLoopService:
                 sp_svc = self.ctx.get("systemPrompt") or self.ctx.get("system_prompt")
                 if sp_svc and hasattr(sp_svc, "assemble"):
                     from dsh.core.system_prompt import render_prompt, render_context_sections, join_context_sections
-                    assembly = await sp_svc.assemble({
+                    assembly = await await_callback_result(sp_svc.assemble({
                         "agent": agent,
                         "session": session,
                         "scope": scope_of(agent.ctx),
-                    })
+                    }))
                     system_prompt = render_prompt(assembly)
                     context_sections = render_context_sections(assembly)
                     candidate_ctx = runtime_context_proj.project(join_context_sections(context_sections), context_sections)
@@ -613,7 +614,7 @@ class AgentLoopService:
 
                 request_payload = {
                     "agent": agent,
-                    "messages": decision_messages,
+                    "messages": claimed,
                     "turn": turn_num,
                     "step": step_num,
                 }
@@ -689,7 +690,6 @@ class AgentLoopService:
             final_reason = turn_ends or {"kind": "completed"}
             session.append("turn/end", {"turn": turn_num, "reason": final_reason})
             self.ctx.emit("agent/turn-stopped", {"agent": agent, "turn": turn_num, "session": session})
-            await session.flush()
 
         if turn_ends and turn_ends.get("kind") == "aborted":
             return False
@@ -915,22 +915,30 @@ class AgentLoopService:
                     content = assembler.interrupted_blocks()
                     if content:
                         session.append_assistant_message(
-                            {"content": content, "role": "assistant"},
+                            {"content": content, "role": "assistant", **({"source": {
+                                "kind": "model", "provider": request_obj['provider'], "model": request_obj['model']
+                            }} if canonical_prepared else {})},
                             turn=turn,
                             step=step,
+                            usage=assembler.usage if canonical_prepared else None,
+                            interrupted=canonical_prepared,
                             surface_op="append",
                             source_event_seqs=chunk_seqs if chunk_seqs else None,
                         )
                     raise
                 except Exception as e:
                     # If partial chunks were already emitted before failure, preserve them
-                    if assembler._order:
+                    if assembler._order and (not canonical_prepared or agent.is_cancelled()):
                         content = assembler.interrupted_blocks()
                         if content:
                             session.append_assistant_message(
-                                {"content": content, "role": "assistant"},
+                                {"content": content, "role": "assistant", **({"source": {
+                                    "kind": "model", "provider": request_obj['provider'], "model": request_obj['model']
+                                }} if canonical_prepared else {})},
                                 turn=turn,
                                 step=step,
+                                usage=assembler.usage if canonical_prepared else None,
+                                interrupted=canonical_prepared,
                                 surface_op="append",
                                 source_event_seqs=chunk_seqs if chunk_seqs else None,
                             )

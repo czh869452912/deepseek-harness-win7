@@ -68,6 +68,41 @@ def editor(tmp_path):
 
 
 @pytest.mark.asyncio
+async def test_registered_view_accepts_unused_null_placeholders(editor, tmp_path):
+    ctx, tools, _ = editor
+    path = tmp_path / "nullable.txt"
+    path.write_text("original", encoding="utf-8")
+    result = await invoke(tools, ctx, {
+        "command": "view", "path": str(path), "file_text": None,
+        "insert_line": None, "new_str": None, "old_str": None, "view_range": None,
+    })
+    assert "original" in result
+    assert path.read_text(encoding="utf-8") == "original"
+
+
+@pytest.mark.asyncio
+async def test_registered_replacement_distinguishes_null_from_omitted(editor, tmp_path):
+    ctx, tools, _ = editor
+    path = tmp_path / "replacement.txt"
+    path.write_text("before match after", encoding="utf-8")
+    arguments = {"command": "str_replace", "path": str(path), "old_str": "match"}
+    with pytest.raises(ValueError, match="must be omitted or contain a string"):
+        await invoke(tools, ctx, dict(arguments, new_str=None))
+    assert path.read_text(encoding="utf-8") == "before match after"
+    await invoke(tools, ctx, arguments)
+    assert path.read_text(encoding="utf-8") == "before  after"
+
+
+@pytest.mark.asyncio
+async def test_registered_create_still_requires_non_null_content(editor, tmp_path):
+    ctx, tools, _ = editor
+    path = tmp_path / "missing-content.txt"
+    with pytest.raises(ValueError, match="Parameter `file_text` is required"):
+        await invoke(tools, ctx, {"command": "create", "path": str(path), "file_text": None})
+    assert not path.exists()
+
+
+@pytest.mark.asyncio
 async def test_create_waterfall_receives_target_actor_and_forwarding_default(editor, tmp_path):
     ctx, tools, _ = editor
     seen = []

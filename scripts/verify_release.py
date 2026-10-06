@@ -62,6 +62,9 @@ from scripts.jsonl_sharing_oracle import validate_runtime as validate_jsonl_shar
 from scripts.canonical_llm_oracle import validate_runtime as validate_canonical_llm, identity as canonical_llm_identity, NAMES as CANONICAL_LLM_NAMES
 from scripts.llm_config_oracle import validate_runtime as validate_llm_config, identity as llm_config_identity, NAMES as LLM_CONFIG_NAMES
 from scripts.win32_stat_oracle import validate_runtime as validate_win32_stat, identity as win32_stat_identity, NAMES as WIN32_STAT_NAMES
+from scripts.sdk_profile_oracle import validate_runtime as validate_sdk_profile, identity as sdk_profile_identity
+from scripts.sdk_profile_values import SCENARIOS as SDK_PROFILE_SCENARIOS
+from scripts.sdk_profile_cases import VALUE_DAMAGES as SDK_PROFILE_DAMAGES, SOURCE_DAMAGES as SDK_SOURCE_DAMAGES, EXTRACTED_DAMAGES as SDK_EXTRACTED_DAMAGES
 from scripts.llm_prepared_oracle import validate_runtime as validate_llm_prepared, identity as llm_prepared_identity, NAMES as LLM_PREPARED_NAMES
 from scripts.llm_metadata_oracle import validate_runtime as validate_llm_metadata, identity as llm_metadata_identity, NAMES as LLM_METADATA_NAMES
 from scripts.process_artifact_retention import prune_previous_regressions, prune_finished_focus_runs, expire_finished_manifests, prune_completed_regression
@@ -79,6 +82,7 @@ PAIRED_DRIVERS = PAIRED_DRIVERS + ('session_tools', 'sqlite_format', 'sqlite_pro
 PAIRED_DRIVERS = PAIRED_DRIVERS + ('javascript_initial', 'session_number', 'session_diagnostic', 'session_restore_sign')
 PAIRED_DRIVERS = PAIRED_DRIVERS + ('runtime_full_request', 'deepseek_error', 'deepseek_capture', 'jsonl_sharing', 'canonical_llm', 'llm_metadata', 'llm_prepared', 'llm_config')
 PAIRED_DRIVERS = PAIRED_DRIVERS + ('win32_stat',)
+PAIRED_DRIVERS = PAIRED_DRIVERS + ('sdk_profile',)
 OFFICIAL_CONFIGS = ('consumers', 'agent-lifecycle', 'session-recovery', 'session-projection', 'acp', 'acp-app', 'mcp', 'subagent-acp', 'storage-cache', 'session-observation', 'session-corpus', 'session-sqlite-query', 'query-engine-source', 'session-tools-source', 'sqlite-format-source', 'sqlite-provider-source', 'jsonl-provider-source', 'tool-scheduler-source', 'deepseek-source', 'llm-public-source')
 REQUIRED_REGRESSION = {
     'test_fs_local_upstream_parity': {
@@ -134,6 +138,13 @@ REQUIRED_REGRESSION = {
         'test_unfinished_pytest_sessions_are_not_pruned[4]',
         'test_unfinished_pytest_sessions_are_not_pruned[5]',
         'test_unfinished_pytest_sessions_are_not_pruned[False]',
+    },
+    'test_sdk_profile_consumers': {
+        *{'test_actual_original_and_native_sdk_profile_match[' + name + ']' for name in SDK_PROFILE_SCENARIOS},
+        *{'test_sdk_profile_requires_complete_values_runtime_and_closures[' + damage + ']' for damage in SDK_PROFILE_DAMAGES},
+        *{'test_sdk_profile_requires_actual_source_identity[' + damage + ']' for damage in SDK_SOURCE_DAMAGES},
+        *{'test_cancelled_sdk_observed_import_variants_preserve_approved_bytes[' + value + ']' for value in ('False', 'True')},
+        *{'test_portable_sdk_profile_refuses_partial_receipts[' + side + ']' for side in ('source', 'native')},
     },
     'test_llm_config_consumers': {
         *{'test_actual_original_and_native_llm_config_match[' + name + ']' for name in LLM_CONFIG_NAMES},
@@ -478,6 +489,8 @@ REQUIRED_REGRESSION = {
         'test_process_artifact_retention_lanes_are_mandatory[skip]',
         'test_process_artifact_retention_lanes_are_mandatory[duplicate]',
         'test_process_artifact_retention_lanes_are_mandatory[failure]',
+        *{'test_extracted_sdk_profile_requires_complete_values_and_runtime[' + damage + ']' for damage in SDK_EXTRACTED_DAMAGES},
+        *{'test_sdk_profile_consumer_lanes_are_mandatory[' + damage + ']' for damage in ('omit', 'skip', 'duplicate', 'failure')},
         *{'test_extracted_llm_config_requires_complete_values_and_runtime[' + damage + ']' for damage in ('missing', 'source-missing', 'source-changed', 'module-changed', 'config', 'boolean', 'max-null', 'reason-null', 'same', 'same-stop', 'input', 'after-change', 'error', 'code', 'hook', 'signal', 'trace', 'tail', 'duplicate', 'order', 'type', 'unknown', 'root', 'python', 'executable', 'module', 'group-missing', 'group-rows', 'group-root', 'group-executable', 'group-module')},
         *{'test_llm_config_consumer_lanes_are_mandatory[' + damage + ']' for damage in ('omit','skip','duplicate','failure')},
         *{'test_extracted_windows_stat_requires_complete_values_and_runtime[' + damage + ']' for damage in (
@@ -1396,6 +1409,14 @@ def validate_extracted(path, archive, candidate):
             candidate['win32_stat_modules'], check_files=False)
     except (ValueError, KeyError, TypeError) as error:
         raise RuntimeError('Extracted win32Stat consumer differs') from error
+    try:
+        if report.get('sdkProfileSourceSha256') != candidate['sdk_profile_source_sha256']:
+            raise ValueError('SDK profile Source receipt identity differs')
+        validate_sdk_profile(report.get('sdkProfile'), Path(report['mcpStdio']['root']),
+            Path(report['mcpStdio']['root']) / 'python.exe', candidate['sdk_profile_source'],
+            candidate['sdk_profile_modules'], check_files=False)
+    except (ValueError, KeyError, TypeError) as error:
+        raise RuntimeError('Extracted sdkProfile consumer differs') from error
     for name, validate in [('queryEngine', validate_query_engine), ('querySchema', validate_query_schema), ('pythonDirectory', validate_python_directory),
                            ('sessionLineage', validate_session_lineage), ('sessionEventTrace', validate_session_event_trace),
                            ('sessionFilters', validate_session_filters), ('sessionRequests', validate_session_requests),
@@ -1683,6 +1704,13 @@ def verify(args, output):
     win32_stat_identity(candidate['win32_stat_source'], ROOT / 'reference')
     candidate['win32_stat_source_sha256'] = digest(win32_stat_source)
     candidate['win32_stat_modules'] = win32_stat_report['modules']
+    sdk_profile_source = output / 'sdk-profile-paired.source.json'
+    sdk_profile_native = output / 'sdk-profile-paired.native.json'
+    sdk_profile_report = json.loads(sdk_profile_native.read_text(encoding='utf-8'))
+    candidate['sdk_profile_source'] = json.loads(sdk_profile_source.read_text(encoding='utf-8'))
+    sdk_profile_identity(candidate['sdk_profile_source'], ROOT / 'reference')
+    candidate['sdk_profile_source_sha256'] = digest(sdk_profile_source)
+    candidate['sdk_profile_modules'] = sdk_profile_report['modules']
     raw = output / 'cordis-raw.json'
     raw.unlink(missing_ok=True)
     run([python, 'scripts/cordis_oracle.py', '--output', str(raw)],
@@ -1720,7 +1748,8 @@ def verify(args, output):
                '--llm-metadata-source', str(llm_metadata_source), '--llm-metadata-native', str(llm_metadata_native),
                '--llm-prepared-source', str(llm_prepared_source), '--llm-prepared-native', str(llm_prepared_native),
                '--llm-config-source', str(llm_config_source), '--llm-config-native', str(llm_config_native),
-               '--win32-stat-source', str(win32_stat_source), '--win32-stat-native', str(win32_stat_native)]
+               '--win32-stat-source', str(win32_stat_source), '--win32-stat-native', str(win32_stat_native),
+               '--sdk-profile-source', str(sdk_profile_source), '--sdk-profile-native', str(sdk_profile_native)]
     if not candidate['worktree_dirty']:
         command += ['--expected-commit', candidate['product_commit']]
     run(command, 'portable-extracted', output, env=environment)

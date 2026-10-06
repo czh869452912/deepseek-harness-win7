@@ -1,0 +1,31 @@
+{
+  "id": "MIG-SDK-PROFILE-055",
+  "goal": "闭合minimal SDK正常工具、取消和断流三条完整链",
+  "kind": "implementation",
+  "state": "running",
+  "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
+  "base_product": "f6b384fbff02a2a2afe1f9a632597cb7cda7469e",
+  "owner": "current-session-coordinator",
+  "requires": [
+    {"task": "MIG-CURRENT-RELEASE-GATE-003", "contract": "CON-CURRENT-RELEASE-GATE", "revision": 1},
+    {"task": "MIG-LLM-PREPARED-051", "contract": "CON-LLM-PREPARED", "revision": 1},
+    {"task": "MIG-LLM-CONFIG-053", "contract": "CON-LLM-CONFIG", "revision": 1}
+  ],
+  "provides": [{"contract": "CON-SDK-PROFILE", "revision": 1}],
+  "acceptance": [
+    "Three complete actual pinned Source/native/extracted minimal SDK chains match all wire/request/durable observations and real shell ownership.",
+    "The exact accepted842 portable counterexample and five-provider minimal qualification remain independently archived with frozen/imported bytes and raw observations.",
+    "Complete-value/runtime/Source/closure/extracted/mandatory-lane refusals and existing SDK/lifecycle/cancellation/editor regressions pass without new Source defect predicates.",
+    "A new clean frozen full suite, unchanged Source groups, all fresh paired receipts and real ownPython3.8.10/original browser pass before bounded integration."
+  ],
+  "expected_paths": ["dsh/sdk", "dsh/core/agent_loop.py", "dsh/llm/llm_service.py", "dsh/fs/tool_str_replace_editor.py", "scripts", "tests", "migration", "docs/research"],
+  "open_findings": [
+    "Five provider changes and formal/portable/current-release hooks promoted.54 strict consumers plus two partial-receipt controls,51 extracted/mandatory/positive gate controls and54 existing regressions passed;12 editor behavior regressions and28 migration controls passed. Fresh dirty Root-built ownZIP/extractedPython3.8.10 matches all30/14/18 frames and every actual imported byte;94-file independent qualification retained. Registry2373mandatory/73pairs and collection8832;clean full acceptance remains pending.",
+    "Accepted product remains842d6373 with62 bounded scopes. This qualification does not close seven broader parents, arbitrary SDK resume/profile/Web journeys, the1175 cause or deferred Win7."
+  ],
+  "conflicts_with": [],
+  "candidate_commit": null,
+  "integrated_commit": null,
+  "evidence_ids": [],
+  "next_action": "三份独立资格归档及实际新构建包自有Python三条链保留；新的干净全量/20组1911Source/73配对/解压及原版浏览器全部通过才有界签收。先控制过期测试JSON峰值，避免工作空间持续扩增。"
+}

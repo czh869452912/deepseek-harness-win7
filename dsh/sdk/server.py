@@ -5,6 +5,7 @@ import os
 from dsh.attachment.admission import admit_encoded_images
 from dsh.core.scope import carrier_key_of
 from dsh.cordis.events import AggregateError
+from dsh.cordis.awaiting import await_callback_result
 from dsh.llm.message import create_user_message
 
 
@@ -126,7 +127,7 @@ class HarnessSdkJsonRpcServer:
 
     async def perform_shutdown(self):
         self.shutting_down = True
-        await asyncio.gather(*list(self.creations.values()), return_exceptions=True)
+        await await_callback_result(asyncio.gather(*list(self.creations.values()), return_exceptions=True))
         self.creations.clear()
         handles, self.sessions = list(self.sessions.values()), {}
         failures = []

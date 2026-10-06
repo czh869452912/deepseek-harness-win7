@@ -2,7 +2,7 @@
   "id": "MIG-JSONL-SHARING-047",
   "goal": "对齐Windows会话日志读取共享模式并保留真实拒绝与句柄归属",
   "kind": "implementation",
-  "state": "running",
+  "state": "integrated",
   "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
   "base_product": "eaa8bb0518ae8afb374b991f234fcb7442066252",
   "owner": "current-session-coordinator",
@@ -36,14 +36,12 @@
     "migration",
     "docs/research"
   ],
-  "open_findings": [
-    "Exact ownPortable none/zstd controls fail Errno13 beside a compatible delete-access holder;original readers pass. Original transient holder is unidentified;no generic retry or Source defect exception.",
-    "Four complete main-tree captures match;24 new controls and four unchanged Web session cases pass. Expanded970 related regressions pass583.95 seconds with zero skips/failures. Independent full/extracted/browser qualification remains pending. Formal observer v1 initially omits public StoredSessionHeader.to_dict and fails serialization after readers complete;partial output retained. Fresh corrected v2 matches.",
-    "Full session/public graph ABI,external exclusive owners,canonical retry/profile,seven broad parents and deferred realWin7 remain open."
-  ],
+  "open_findings": [],
   "conflicts_with": [],
-  "candidate_commit": null,
-  "integrated_commit": null,
-  "evidence_ids": [],
-  "next_action": "970扩大回归全通过；提交共享读取产品并冻结新的干净候选，1519必需lane/67配对/19组1683原样Source、全量pytest及真实解压/原版浏览器全部通过后才与046有界签收。canonical retry仍为独立下一部分。"
+  "candidate_commit": "b2398db95470f25543dc4bd52d92e03449550d73",
+  "integrated_commit": "b2398db95470f25543dc4bd52d92e03449550d73",
+  "evidence_ids": [
+    "RUN-JSONL-SHARING-V3-20261006-JSONL-SHARING-047"
+  ],
+  "next_action": "四组真实Source/native/extracted共享读取及真实拒绝/退休/长路径控制在干净产品b2398db9有界签收；精确eaa8拒绝保留，原始临时持有者未识别。继续任意锁竞争、公共Session图/ABI、多进程/profile和完整B1。"
 }

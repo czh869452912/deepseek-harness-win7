@@ -38,13 +38,14 @@
   ],
   "open_findings": [],
   "conflicts_with": [],
-  "candidate_commit": "54361bd9e098d287c85e76253b4fcbaa2468a68a",
-  "integrated_commit": "54361bd9e098d287c85e76253b4fcbaa2468a68a",
+  "candidate_commit": "b2398db95470f25543dc4bd52d92e03449550d73",
+  "integrated_commit": "b2398db95470f25543dc4bd52d92e03449550d73",
   "evidence_ids": [
     "RUN-RUNTIME-CONTEXT-REJECTED-20261005-037",
     "RUN-RUNTIME-CONTEXT-20261006-RUNTIME-CONTEXT-CONSUMER-037",
     "RUN-SESSION-BOUNDARIES-20261006-RUNTIME-CONTEXT-CONSUMER-037",
-    "RUN-DEEPSEEK-ERROR-20261006-RUNTIME-CONTEXT-CONSUMER-037"
+    "RUN-DEEPSEEK-ERROR-20261006-RUNTIME-CONTEXT-CONSUMER-037",
+    "RUN-JSONL-SHARING-V3-20261006-RUNTIME-CONTEXT-CONSUMER-037"
   ],
-  "next_action": "四组实际原版/原生/解压AgentLoop上下文消费者已在干净产品54361bd9有界签收；继续任意middleware/竞争/冷恢复与全model/profile、JS036及整体迁移。"
+  "next_action": "四组实际原版/原生/解压AgentLoop上下文消费者已在干净产品b2398db9有界签收；继续任意middleware/竞争/冷恢复与全model/profile、JS036及整体迁移。"
 }

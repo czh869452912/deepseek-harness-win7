@@ -46,8 +46,8 @@
   ],
   "open_findings": [],
   "conflicts_with": [],
-  "candidate_commit": "54361bd9e098d287c85e76253b4fcbaa2468a68a",
-  "integrated_commit": "54361bd9e098d287c85e76253b4fcbaa2468a68a",
+  "candidate_commit": "b2398db95470f25543dc4bd52d92e03449550d73",
+  "integrated_commit": "b2398db95470f25543dc4bd52d92e03449550d73",
   "evidence_ids": [
     "RUN-SESSION-STORAGE-20261005-SQLITE-PROVIDER-031",
     "RUN-TOOLS-HTTP-20261005-SQLITE-PROVIDER-031",
@@ -55,7 +55,8 @@
     "RUN-JS-DEATH-20261005-SQLITE-PROVIDER-031",
     "RUN-RUNTIME-CONTEXT-20261006-SQLITE-PROVIDER-031",
     "RUN-SESSION-BOUNDARIES-20261006-SQLITE-PROVIDER-031",
-    "RUN-DEEPSEEK-ERROR-20261006-SQLITE-PROVIDER-031"
+    "RUN-DEEPSEEK-ERROR-20261006-SQLITE-PROVIDER-031",
+    "RUN-JSONL-SHARING-V3-20261006-SQLITE-PROVIDER-031"
   ],
-  "next_action": "clean candidate 54361bd9 全量/原版/真实解压复验已通过。规范 schema19 提供端的 323 原版/原生/真实解压、SQL36/ownership/事务/revision/陈旧修复、模型工具与三 preset Remote 冷消费者已有界签收；继续完整 malformed/public plugin ABI、任意竞争/多工作区/长历史和整体迁移，Win7 延期。"
+  "next_action": "clean candidate b2398db9 全量/原版/真实解压复验已通过。规范 schema19 提供端的 323 原版/原生/真实解压、SQL36/ownership/事务/revision/陈旧修复、模型工具与三 preset Remote 冷消费者已有界签收；继续完整 malformed/public plugin ABI、任意竞争/多工作区/长历史和整体迁移，Win7 延期。"
 }

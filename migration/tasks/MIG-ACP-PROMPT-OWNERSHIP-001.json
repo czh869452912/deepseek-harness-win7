@@ -27,8 +27,8 @@
   ],
   "open_findings": [],
   "conflicts_with": [],
-  "candidate_commit": "54361bd9e098d287c85e76253b4fcbaa2468a68a",
-  "integrated_commit": "54361bd9e098d287c85e76253b4fcbaa2468a68a",
+  "candidate_commit": "b2398db95470f25543dc4bd52d92e03449550d73",
+  "integrated_commit": "b2398db95470f25543dc4bd52d92e03449550d73",
   "evidence_ids": [
     "RUN-CURRENT-20261003-ACP-PROMPT-OWNERSHIP-001",
     "RUN-ACP-CONFIG-20261003-ACP-PROMPT-OWNERSHIP-001",
@@ -48,7 +48,8 @@
     "RUN-JS-DEATH-20261005-ACP-PROMPT-OWNERSHIP-001",
     "RUN-RUNTIME-CONTEXT-20261006-ACP-PROMPT-OWNERSHIP-001",
     "RUN-SESSION-BOUNDARIES-20261006-ACP-PROMPT-OWNERSHIP-001",
-    "RUN-DEEPSEEK-ERROR-20261006-ACP-PROMPT-OWNERSHIP-001"
+    "RUN-DEEPSEEK-ERROR-20261006-ACP-PROMPT-OWNERSHIP-001",
+    "RUN-JSONL-SHARING-V3-20261006-ACP-PROMPT-OWNERSHIP-001"
   ],
-  "next_action": "clean candidate 54361bd9 全量/原版/真实解压复验已通过。精确 prompt ownership 在持久 controls 候选重验；模型配置/有序语义输出已按子合同验收；一次性权限独立合同同时验收；继续 MCP/subagent 的必要消费者闭包。"
+  "next_action": "clean candidate b2398db9 全量/原版/真实解压复验已通过。精确 prompt ownership 在持久 controls 候选重验；模型配置/有序语义输出已按子合同验收；一次性权限独立合同同时验收；继续 MCP/subagent 的必要消费者闭包。"
 }

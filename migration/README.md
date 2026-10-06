@@ -1,5 +1,7 @@
 # 持续对齐记录
 
+2026-10-06 最新干净签收 `b2398db9`：全量7967 passed、6既有skip、1既有Proactor warning、0失败/错误，2212.32秒；1519必需lane、十九组1683原样Source断言、67实际配对及真实解压自有Python3.8.10/原版浏览器通过。046完整选定76诊断、047四组JSONL共享读取已有界integrated，共57份独立验收；精确eaa8拒绝与历史产物不改写，原始临时持有者未识别。见 `migration/reviews/JSONL-SHARING-GATE-20261006.md`。下一canonical LLM四模块隔离研究81完整观察匹配，305相关回归通过，尚未进入本签收。七父范围、八项JS差异、九项判据/C58/C59、accepted_upstream空及延期Win7不变。
+
 2026-10-06 新候选eaa8bb05全量被拒绝：7921 passed、1 forked-session JSONL列举Errno13、6既有skip、1既有warning，2168.22秒；精确产物已归档。受控Win32持有者复现CRT共享差异，原版读取成功；原始临时持有者未识别。047修复四组观察匹配、28定向回归通过，970扩大回归全通过（583.95秒、0 skip/failed）；下一独立干净候选1519必需lane/67配对/19组1683原样Source和真实解压/原版浏览器须全通过。046/047仍running；最新签收54361bd9/55有界范围。canonical retry四模块修复仅隔离研究，七父范围与整体/延期Win7仍开放，九项判据/C58/C59不变。见docs/research/2026-10-06-jsonl-sharing-progress.md。
 
 2026-10-06 最新干净签收 `54361bd9`：全量7760 passed、6既有skip、1既有Proactor warning、0失败/错误，2045.67秒；1312必需lane、十九组1683原样Source断言、65实际配对及真实解压自有Python3.8.10/原版浏览器通过。044完整请求与045错误诊断已有界integrated，共55份独立验收；精确afd失败与此前产物不改写。见 `migration/reviews/DEEPSEEK-ERROR-GATE-20261006.md`。下一76旧wire范围的精确543自有Portable仍有17诊断差异，隔离副本匹配76并通过78旧消费者，尚未推广签收；继续七个父范围、八项JS差异和完整B/C/D。九项判据/C58/C59、accepted_upstream空和延期Win7不变。

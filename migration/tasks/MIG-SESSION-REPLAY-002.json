@@ -146,6 +146,11 @@
       "task": "MIG-RUNTIME-FULL-REQUEST-044",
       "contract": "CON-RUNTIME-FULL-REQUEST",
       "revision": 1
+    },
+    {
+      "task": "MIG-JSONL-SHARING-047",
+      "contract": "CON-JSONL-SHARING",
+      "revision": 1
     }
   ],
   "provides": [],
@@ -161,11 +166,12 @@
     "Clean7f9e87e4 revalidates canonical SQLite323/default compressed or plaintext JSONL1030, independent schema-19 format826, FTS16, Unicode2034/text7883, optional tools78 and existing core/cold/live/prepared/projection/cache/corpus/title/lineage/snapshot ranges. These are distinct bounded Source contracts, not complete Session-domain certification.",
     "Public canonical persistence51 numeric/cancelled read controls039, public create/metadata/clone53 revision2 controls041, create/restore76 exact admission diagnostics042 and restore18 signed-number predicates043 are now bounded integrated. Exact rejected4a127b73 and its clone/diagnostic/sign baselines remain preserved. Actual detached list/load/lineage/snapshot Source consumers pass.",
     "Complete arbitrary malformed/extension event and public plugin ABI, alias/graph/copy-cycle ownership, private errors beyond specified rows, remaining provider/index/Task cancellation races, other domains/locales, long-history scale and independent cross-process/multi-cwd/profile/Web reconnect combinations remain unqualified. Source cache40ms timing, historical startup cancellation/WinError1175 and Proactor diagnostics remain separately recorded; real Win7 is user-deferred.",
-    "Sixteen complete canonical AgentLoop request/context graphs044 are bounded accepted in clean54361bd9; durable assistant messages retain Source content blocks without the oldtool_calls alias. This is not arbitrary extension/message ABI or every model/profile/cancellation schedule."
+    "Sixteen complete canonical AgentLoop request/context graphs044 are bounded accepted in clean54361bd9; durable assistant messages retain Source content blocks without the oldtool_calls alias. This is not arbitrary extension/message ABI or every model/profile/cancellation schedule.",
+    "Four complete actual JSONL none/zstd list/inspect/raw shared-reader observations047 are bounded accepted in cleanb2398db9. Actual exclusive denial, reader retirement, missing paths and extended paths remain strict. The rejected eaa8 transient holder is unidentified; arbitrary holder schedules, writers, public graph ABI and full Session/profile scopes remain open."
   ],
   "conflicts_with": [],
   "candidate_commit": null,
   "integrated_commit": null,
   "evidence_ids": [],
-  "next_action": "规范完整请求044已有界签收，继续独立malformed/extension/public plugin ABI和图归属，跨进程/multi-cwd/长历史与全profile/Web恢复。父Session保持draft；不得把完整行的16控制扩大为所有模型/profile/取消认证。"
+  "next_action": "047规范JSONL共享读取四组已有界签收；继续任意锁竞争/写入者、公共Session图与插件ABI、多进程/multi-cwd/长历史及完整profile/Web恢复后才关闭父任务。"
 }

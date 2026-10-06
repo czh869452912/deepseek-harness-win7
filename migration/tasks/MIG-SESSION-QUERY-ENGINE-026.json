@@ -50,8 +50,8 @@
   ],
   "open_findings": [],
   "conflicts_with": [],
-  "candidate_commit": "54361bd9e098d287c85e76253b4fcbaa2468a68a",
-  "integrated_commit": "54361bd9e098d287c85e76253b4fcbaa2468a68a",
+  "candidate_commit": "b2398db95470f25543dc4bd52d92e03449550d73",
+  "integrated_commit": "b2398db95470f25543dc4bd52d92e03449550d73",
   "evidence_ids": [
     "RUN-SESSION-QUERY-ENGINE-20261004-SESSION-QUERY-ENGINE-026",
     "RUN-SESSION-TEXT-20261005-SESSION-QUERY-ENGINE-026",
@@ -63,7 +63,8 @@
     "RUN-JS-DEATH-20261005-SESSION-QUERY-ENGINE-026",
     "RUN-RUNTIME-CONTEXT-20261006-SESSION-QUERY-ENGINE-026",
     "RUN-SESSION-BOUNDARIES-20261006-SESSION-QUERY-ENGINE-026",
-    "RUN-DEEPSEEK-ERROR-20261006-SESSION-QUERY-ENGINE-026"
+    "RUN-DEEPSEEK-ERROR-20261006-SESSION-QUERY-ENGINE-026",
+    "RUN-JSONL-SHARING-V3-20261006-SESSION-QUERY-ENGINE-026"
   ],
-  "next_action": "clean candidate 54361bd9 全量/原版/真实解压复验已通过。clean candidate 54361bd9 的 16 组实际规范 FTS 双侧/解压及三套 preset Remote 重启搜索已有界验收；Unicode 请求身份和有效 Session 文本/locale 顺序另有界签收；继续 malformed/plugin ABI、竞争/公共工具、持久化 schema-19、启动取消根因与整体迁移；整体 accepted_upstream 保持空，Win7 延期。"
+  "next_action": "clean candidate b2398db9 全量/原版/真实解压复验已通过。clean candidate b2398db9 的 16 组实际规范 FTS 双侧/解压及三套 preset Remote 重启搜索已有界验收；Unicode 请求身份和有效 Session 文本/locale 顺序另有界签收；继续 malformed/plugin ABI、竞争/公共工具、持久化 schema-19、启动取消根因与整体迁移；整体 accepted_upstream 保持空，Win7 延期。"
 }

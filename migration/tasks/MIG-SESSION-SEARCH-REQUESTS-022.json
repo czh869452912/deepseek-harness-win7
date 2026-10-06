@@ -43,8 +43,8 @@
   ],
   "open_findings": [],
   "conflicts_with": [],
-  "candidate_commit": "54361bd9e098d287c85e76253b4fcbaa2468a68a",
-  "integrated_commit": "54361bd9e098d287c85e76253b4fcbaa2468a68a",
+  "candidate_commit": "b2398db95470f25543dc4bd52d92e03449550d73",
+  "integrated_commit": "b2398db95470f25543dc4bd52d92e03449550d73",
   "evidence_ids": [
     "RUN-SESSION-QUERY-ENGINE-20261004-SESSION-SEARCH-REQUESTS-022",
     "RUN-SESSION-TEXT-20261005-SESSION-SEARCH-REQUESTS-022",
@@ -56,7 +56,8 @@
     "RUN-JS-DEATH-20261005-SESSION-SEARCH-REQUESTS-022",
     "RUN-RUNTIME-CONTEXT-20261006-SESSION-SEARCH-REQUESTS-022",
     "RUN-SESSION-BOUNDARIES-20261006-SESSION-SEARCH-REQUESTS-022",
-    "RUN-DEEPSEEK-ERROR-20261006-SESSION-SEARCH-REQUESTS-022"
+    "RUN-DEEPSEEK-ERROR-20261006-SESSION-SEARCH-REQUESTS-022",
+    "RUN-JSONL-SHARING-V3-20261006-SESSION-SEARCH-REQUESTS-022"
   ],
-  "next_action": "clean candidate 54361bd9 全量/原版/真实解压复验已通过。clean candidate 54361bd9 的 50 搜索请求观察、4 真实持久化 lane、10 原样 query 断言与真实解压已有界验收；规范 FTS、Unicode 身份和有效 Session 文本/locale 顺序另有界验收；继续 malformed/plugin ABI/竞争、Web/profile 和整体迁移，不认证完整 B1 或 Win7。"
+  "next_action": "clean candidate b2398db9 全量/原版/真实解压复验已通过。clean candidate b2398db9 的 50 搜索请求观察、4 真实持久化 lane、10 原样 query 断言与真实解压已有界验收；规范 FTS、Unicode 身份和有效 Session 文本/locale 顺序另有界验收；继续 malformed/plugin ABI/竞争、Web/profile 和整体迁移，不认证完整 B1 或 Win7。"
 }

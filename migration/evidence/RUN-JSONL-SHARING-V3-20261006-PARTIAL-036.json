@@ -1,0 +1,38 @@
+{
+  "id": "RUN-JSONL-SHARING-V3-20261006-PARTIAL-036",
+  "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
+  "product_commit": "b2398db95470f25543dc4bd52d92e03449550d73",
+  "kind": "verification",
+  "task_id": "MIG-JS-WORKFLOW-036",
+  "result": "passed",
+  "validity": "current",
+  "commands": [
+    ".venv/Scripts/python.exe scripts/verify_release.py --output-dir .goose/out/jsonl-sharing-clean-b2398db9"
+  ],
+  "environment": {
+    "python": "3.8.10 (default, May  6 2021, 17:27:56) [MSC v.1928 64 bit (AMD64)]",
+    "os": "Windows-10-10.0.26200-SP0",
+    "cwd": "C:\\Users\\czh86\\Documents\\Codex\\deepseek-harness-win7",
+    "node": "v22.22.2",
+    "browser": "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe"
+  },
+  "contract_revisions": {
+    "CON-JS-WORKFLOW": 1,
+    "CON-JS-READY": 1,
+    "CON-PERSISTENCE-READ": 1,
+    "CON-RUNTIME-CONTEXT-CONSUMER": 1,
+    "CON-CURRENT-RELEASE-GATE": 1,
+    "CON-JS-INITIAL-WRITE": 1,
+    "CON-SESSION-NUMBERS": 2,
+    "CON-SESSION-DIAGNOSTIC": 1,
+    "CON-SESSION-RESTORE-SIGN": 1,
+    "CON-RUNTIME-FULL-REQUEST": 1
+  },
+  "artifacts": [
+    {
+      "path": "migration/evidence/artifacts/JSONL-SHARING-20261006-b2398db9-v3.zip",
+      "sha256": "c61359d2dbcf69707aa26a778edf1dfb7009042c1034b138c860609f274a6d88"
+    }
+  ],
+  "scope": "Frozen clean current-Windows candidate: 7967 passed, 6 existing platform skips,1519 mandatory lanes,19 unchanged Source groups/1683 assertions,67 fresh actual paired drivers and actual extracted ownPython3.8.10/original-browser. Previous55 bounded acceptances revalidate;046 closes only the selected76 expanded DeepSeek config/model/serialize/usage/SSE/HTTP/Files/Settings captures against exact Source/native/extracted providers. Every captured value remains exact apart from whole JSON numeric spelling and declared correlated UUID4 retry/independently allocated coherent loopback origin identities, with all raw values and prose retained. Exact unmodified54361bd9 ownPortable baseline retains17 real diagnostic differences and all actual module bytes match its exact ZIP, published bytes and frozen inputs. Selected error name/message/failure/quota/status and complete retry event data are retained; extra exception properties/cause/stack, internal last-good settings logs, full graph ABI and canonical AgentLoop retry/profile remain outside this scope.120 real-row/value/Source/module/interpreter/UUID/origin/partial-receipt controls pass; expanded1115 preliminary regressions finish1113 passed/two failed, with stale lane count and deep Git-tree retention failures preserved. Actual Git consumer passed before retention failed. Identical copied trees reproduce ordinary Windows path WinError5 and pass with extended paths, with both empty-directory controls passing. Four affected controls pass after owned retention correction; this distinct frozen full gate revalidates them without timeout/Source criterion relaxation or skipped failures. Earlier incomplete shared released-port observer failed WinError10013 and was stopped after114 setup errors; both sides now allocate their own listener and strictly retain host/listener/configured endpoint coherence, rather than rebinding an unowned Source port. Prototype missing six patch files and initial promotion output environment errors are independently retained observer mistakes. All old accepted/rejected products and nine Source defect predicates/C58/C59 remain unchanged. Full ACP/session/tools/Web/profile/JS scopes and eight raw engine/parse differences remain open; realWin7 stays user-deferred and accepted_upstream null. No paid API/push/publication.047 bounded qualifies four complete actual original/native/extracted none/zstd list/inspect/raw observations beside live owned delete/read-write holders. Joint preproduced physical fixtures qualify readers,not Source/native writers or full session ABI. Canonical existence/header/stable reads use Win7 read/write/delete sharing and extended absolute paths with descriptor transfer ownership. Actual exclusive denial,missing file,closed reader and long-path controls remain strict. Original eaa8 transient holder is unidentified;no generic retry,Source exception or skipped session. Formal observerv1 serialized a native header directly after readers completed;raw partial output retained and fresh correctedv2 uses public to_dict. Distinct full/extracted/browser qualification revalidates every control. Independent228 unchanged public LLM assertions are diagnostic only,not added to the19 frozen Source groups. Independent unaccepted next-part research executes nine real original/native AgentLoop HTTP retry/partial-tool/backoff-cancel controls and two auxiliary stream/summary cause controls. Exact unmodifiedeaa8 ownPortablePython3.8.10 and every imported ZIP/published/frozen module byte reproduce differences; isolated modified providers match all eleven controls. Existing143 prototype consumers pass; one test-only Web boot setup initially lacks metadata, then exact metadata repair exposes an old compaction chained-message assertion. Two actual Source controls prove primary-only summary diagnostics, and the isolated updated Web restart assertion passes while direct Web errors retain their full chain. A moved test fixture initially computes the wrong research Root and fails collection; its exact path correction is retained. Strengthened45 actual public failure/ownership controls match an isolated dedicated normalizer;305 related isolated regressions pass after a real legacy tuple/list compatibility repair. Its earlier304/one failure and moved fixture setup errors remain retained. The isolated repair changes four product modules. This research is not in the frozen product, not046/047 acceptance, and not a Source bug/exception/predicate relaxation. Root stays unchanged. Further independent research adds nine explicit-null carried-failure controls, nine final public stream routing/preparation/default-capability/projection controls and seven actual iterator completion/rejection/downstream-close ownership controls. The five groups total81 complete captured observations; strict typed literal strings and validated correlated generated message/retry identities reject12 whole-value/shape/correlation controls. Stable tool identifiers remain literal; sequence/time and uncaptured HTTP headers are excluded. Latest isolated305 regressions pass in28.14 seconds without skips after these changes. Source explicit maxTokens0 remains accepted. Exact immutableeaa8 is independently re-extracted for54 failure controls, with all29 imported modules checked against ZIP and frozen inputs;51 actual differences remain. The additional9 public-boundary and7 iterator observations use that extraction ownPython3.8.10. These research observations do not expand frozen product acceptance or its19 Source groups."
+}

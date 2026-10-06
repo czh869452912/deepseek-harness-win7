@@ -83,6 +83,41 @@ def prune_completed_gate_test(request):
         prune_finished_test_folder(ROOT / '.goose/out', workspace, folder)
 
 
+@pytest.mark.parametrize('damage', ['none', 'omit', 'skip', 'duplicate', 'failure'])
+def test_actual_pytest_unicode_lane_identity_remains_mandatory(tmp_path, monkeypatch, damage):
+    child = tmp_path / 'unicode-child'
+    child.mkdir()
+    test = child / 'test_win32_stat_consumers.py'
+    test.write_text("import pytest\n@pytest.mark.parametrize('name', ['中文.txt'])\n"
+                    "def test_actual_original_and_native_windows_stat_match(name):\n"
+                    "    assert name == '中文.txt'\n", encoding='utf-8')
+    output = child / 'pytest.xml'
+    completed = subprocess.run([sys.executable, '-m', 'pytest', str(test), '-q',
+        '--confcutdir=' + str(child), '--junitxml=' + str(output)], cwd=str(child), capture_output=True, timeout=60)
+    assert completed.returncode == 0, completed.stdout + completed.stderr
+    report = ET.parse(str(output))
+    suite = report.getroot().find('testsuite')
+    case = suite.find('testcase')
+    expected = 'test_actual_original_and_native_windows_stat_match[\\u4e2d\\u6587.txt]'
+    assert case.get('name') == expected
+    assert expected in GATE.REQUIRED_REGRESSION['test_win32_stat_consumers']
+    monkeypatch.setattr(GATE, 'REQUIRED_REGRESSION', {'test_win32_stat_consumers': {expected}})
+    if damage == 'omit':
+        suite.remove(case)
+    elif damage == 'skip':
+        ET.SubElement(case, 'skipped')
+    elif damage == 'duplicate':
+        suite.append(copy.deepcopy(case))
+    elif damage == 'failure':
+        ET.SubElement(case, 'failure')
+    report.write(str(output), encoding='utf-8')
+    if damage == 'none':
+        assert GATE.validate_regression(output) == {'required_lanes': 1, 'skipped': 0}
+    else:
+        with pytest.raises(RuntimeError):
+            GATE.validate_regression(output)
+
+
 def regression_xml(path, omit=None, skip=None, duplicate=None, failure=None):
     suites = ET.Element('testsuites')
     suite = ET.SubElement(suites, 'testsuite')

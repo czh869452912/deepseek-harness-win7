@@ -156,7 +156,7 @@ REQUIRED_REGRESSION = {
         *{'test_portable_llm_config_refuses_partial_receipts[' + side + ']' for side in ('source','native')},
     },
     'test_win32_stat_consumers': {
-        *{'test_actual_original_and_native_windows_stat_match[' + name + ']' for name in WIN32_STAT_NAMES},
+        *{'test_actual_original_and_native_windows_stat_match[' + name.encode('unicode_escape').decode('ascii') + ']' for name in WIN32_STAT_NAMES},
         *{'test_windows_stat_requires_complete_values_and_handle_ownership[' + damage + ']' for damage in (
             'stat-version', 'lstat-version', 'directory-size', 'change-time', 'file-identity', 'missing', 'order',
             'row', 'unknown', 'size-type', 'module', 'bytes', 'root', 'python', 'executable', 'workspace',
@@ -494,6 +494,7 @@ REQUIRED_REGRESSION = {
         'test_process_artifact_retention_lanes_are_mandatory[failure]',
         *{'test_extracted_sdk_profile_requires_complete_values_and_runtime[' + damage + ']' for damage in SDK_EXTRACTED_DAMAGES},
         *{'test_sdk_profile_consumer_lanes_are_mandatory[' + damage + ']' for damage in ('omit', 'skip', 'duplicate', 'failure')},
+        *{'test_actual_pytest_unicode_lane_identity_remains_mandatory[' + damage + ']' for damage in ('none', 'omit', 'skip', 'duplicate', 'failure')},
         *{'test_extracted_llm_config_requires_complete_values_and_runtime[' + damage + ']' for damage in ('missing', 'source-missing', 'source-changed', 'module-changed', 'config', 'boolean', 'max-null', 'reason-null', 'same', 'same-stop', 'input', 'after-change', 'error', 'code', 'hook', 'signal', 'trace', 'tail', 'duplicate', 'order', 'type', 'unknown', 'root', 'python', 'executable', 'module', 'group-missing', 'group-rows', 'group-root', 'group-executable', 'group-module')},
         *{'test_llm_config_consumer_lanes_are_mandatory[' + damage + ']' for damage in ('omit','skip','duplicate','failure')},
         *{'test_extracted_windows_stat_requires_complete_values_and_runtime[' + damage + ']' for damage in (

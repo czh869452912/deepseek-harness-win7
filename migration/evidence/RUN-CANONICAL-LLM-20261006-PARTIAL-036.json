@@ -1,0 +1,30 @@
+{
+  "id": "RUN-CANONICAL-LLM-20261006-PARTIAL-036",
+  "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
+  "product_commit": "55a5ba87b608fdd0d9c94feb16f258d77ace9929",
+  "kind": "verification",
+  "task_id": "MIG-JS-WORKFLOW-036",
+  "result": "passed",
+  "validity": "current",
+  "commands": [
+    ".venv/Scripts/python.exe scripts/verify_release.py --output-dir .goose/out/canonical-llm-clean-55a5ba87"
+  ],
+  "environment": {
+    "python": "3.8.10 (default, May  6 2021, 17:27:56) [MSC v.1928 64 bit (AMD64)]",
+    "os": "Windows-10-10.0.26200-SP0",
+    "cwd": "C:\\Users\\czh86\\Documents\\Codex\\deepseek-harness-win7",
+    "node": "v22.22.2",
+    "browser": "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe"
+  },
+  "contract_revisions": {
+    "CON-JS-WORKFLOW": 1,
+    "CON-CURRENT-RELEASE-GATE": 1
+  },
+  "artifacts": [
+    {
+      "path": "migration/evidence/artifacts/CANONICAL-LLM-20261006-55a5ba87.zip",
+      "sha256": "b36474adac326cf27061a700dd634f49431e13c6be4b662df34ddb9468c3f4f5"
+    }
+  ],
+  "scope": "Frozen clean current-Windows candidate 55a5ba87: 8109 passed,six existing platform skips,one existing Proactor warning,zero failures/errors;1661 mandatory lanes,20 unchanged Source groups/1911 assertions,68 fresh actual paired drivers and actual extracted ownPython3.8.10/original-browser. Previous57 bounded acceptances revalidate.048 qualifies81 complete actual original/native/extracted selected observations:9 canonical AgentLoop real HTTP retry/partial-tool/backoff-cancel,2 auxiliary summary failures,54 final SDK failure/middleware/consumer,9 public route/preparation/default/config/projection,7 SDK iterator ownership. All captured values/prose remain exact except typed correlated generated message/retry identities and same-valued finite JSON number spelling. Stable tool identifiers and literal marker strings remain literal. Every selected child executable/root/version and actual imported module closure is verified,with child/aggregate values/modules agreeing. Formalv1 correctly refused a staged registry omitting the already committed047 file_io module in every group;initial109 passed/109 setup errors remain. Explicit measured registry adds only that module,no checks removed. Fresh formalv2,218 focused and448 expanded regressions pass with no skips/failures;228 unchanged public Source assertions are not additional native parity. Exact immutable rejected eaa8 ownPortablePython3.8.10 retains51 of54 failure differences,9 of9 boundary differences and4 of7 iterator differences. Actual imported modules match authoritative archived ZIP/frozen inputs/extraction. All prior failed candidates and observer/setup/collection errors remain retained. Final provider failures produce terminal error/aborted chunks while middleware/consumer/cleanup errors retain their own propagation. Normal completion/rejected SDK next do not close,downstream close retires once when available. Auxiliary summary uses primary-only error;direct Web error chains unchanged. Explicit maxTokens0 stays accepted as actual Source. Raw event sequence/time,uncaptured headers/origin,arbitrary malformed metadata/graph/plugin ABI/concurrency and full Wire/ACP/Session/tools/Web/profile/JS scopes remain open. Eight original engine/parse differences,nine Source defect predicates/C58/C59 unchanged. RealWin7/browser is user-deferred;accepted_upstream remains null. No paid API/push/publication."
+}

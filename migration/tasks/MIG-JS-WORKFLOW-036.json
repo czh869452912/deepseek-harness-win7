@@ -39,7 +39,7 @@
     "Thirty original direct-worker frame scenarios and34 actual Source/native/extracted WorkerRun observations retain private provenance, physical-exit classification, first outcome and owned disposal. Four bounded attributed AgentLoop cases037 and two already-emitted Ready/exit cases038 are now integrated. Two entry-blocked physical-exit cases before Ready emission040 and16 complete canonical model request graphs044 are now bounded integrated. These controls do not qualify arbitrary profiles or cancellation schedules. Full model/profile composition, all spawn/Ready schedules and broader callback/reentrancy competition remain unfinished."
   ],
   "conflicts_with": [],
-  "candidate_commit": "b2398db95470f25543dc4bd52d92e03449550d73",
+  "candidate_commit": "55a5ba87b608fdd0d9c94feb16f258d77ace9929",
   "integrated_commit": null,
   "evidence_ids": [
     "RUN-JS-WORKFLOW-20261005-PARTIAL-036",
@@ -47,7 +47,8 @@
     "RUN-RUNTIME-CONTEXT-20261006-PARTIAL-036",
     "RUN-SESSION-BOUNDARIES-20261006-PARTIAL-036",
     "RUN-DEEPSEEK-ERROR-20261006-PARTIAL-036",
-    "RUN-JSONL-SHARING-V3-20261006-PARTIAL-036"
+    "RUN-JSONL-SHARING-V3-20261006-PARTIAL-036",
+    "RUN-CANONICAL-LLM-20261006-PARTIAL-036"
   ],
-  "next_action": "干净产品b2398db9完整验收已通过；上下文归属/每步更新037及已发出Ready跨退出038有界签收，036仍部分verification；040入口阻塞/Ready未发出两组有界签收，继续全部spawn/Ready竞争、共享清理重入与全model/profile，八项原始差异、C2及延期Win7开放。"
+  "next_action": "干净产品55a5ba87完整验收通过，036仍部分verification；继续全model/profile、spawn/Ready竞争与清理重入，八项原始engine/parse差异与完整C2保持开放。"
 }

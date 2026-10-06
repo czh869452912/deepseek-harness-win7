@@ -24,8 +24,8 @@
   ],
   "open_findings": [],
   "conflicts_with": [],
-  "candidate_commit": "b2398db95470f25543dc4bd52d92e03449550d73",
-  "integrated_commit": "b2398db95470f25543dc4bd52d92e03449550d73",
+  "candidate_commit": "55a5ba87b608fdd0d9c94feb16f258d77ace9929",
+  "integrated_commit": "55a5ba87b608fdd0d9c94feb16f258d77ace9929",
   "evidence_ids": [
     "RUN-BASELINE-20260927",
     "RUN-PORTABLE-ACCEPTANCE-20260927",
@@ -57,7 +57,8 @@
     "RUN-RUNTIME-CONTEXT-20261006-PORTABLE-001",
     "RUN-SESSION-BOUNDARIES-20261006-PORTABLE-001",
     "RUN-DEEPSEEK-ERROR-20261006-PORTABLE-001",
-    "RUN-JSONL-SHARING-V3-20261006-PORTABLE-001"
+    "RUN-JSONL-SHARING-V3-20261006-PORTABLE-001",
+    "RUN-CANONICAL-LLM-20261006-PORTABLE-001"
   ],
-  "next_action": "clean candidate b2398db9 全量/原版/真实解压复验已通过。当前候选已重新构建，包内 Python 隔离启动及五个 profile 验证通过；Win7 真机验证按用户要求暂缓。"
+  "next_action": "clean candidate 55a5ba87 全量/原版/真实解压复验已通过。当前候选已重新构建，包内 Python 隔离启动及五个 profile 验证通过；Win7 真机验证按用户要求暂缓。"
 }

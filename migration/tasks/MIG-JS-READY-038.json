@@ -34,14 +34,15 @@
   ],
   "open_findings": [],
   "conflicts_with": [],
-  "candidate_commit": "b2398db95470f25543dc4bd52d92e03449550d73",
-  "integrated_commit": "b2398db95470f25543dc4bd52d92e03449550d73",
+  "candidate_commit": "55a5ba87b608fdd0d9c94feb16f258d77ace9929",
+  "integrated_commit": "55a5ba87b608fdd0d9c94feb16f258d77ace9929",
   "evidence_ids": [
     "RUN-RUNTIME-READY-REJECTED-20261005-038",
     "RUN-RUNTIME-CONTEXT-20261006-JS-READY-038",
     "RUN-SESSION-BOUNDARIES-20261006-JS-READY-038",
     "RUN-DEEPSEEK-ERROR-20261006-JS-READY-038",
-    "RUN-JSONL-SHARING-V3-20261006-JS-READY-038"
+    "RUN-JSONL-SHARING-V3-20261006-JS-READY-038",
+    "RUN-CANONICAL-LLM-20261006-JS-READY-038"
   ],
-  "next_action": "两组真实已发出但延迟交付Ready跨物理退出在干净产品b2398db9有界签收；继续发出前竞争、共享清理重入、全model/profile与八项原始engine差异，完整C2开放。"
+  "next_action": "clean candidate 55a5ba87 全量/原版/真实解压复验已通过。两组真实已发出但延迟交付Ready跨物理退出在干净产品b2398db9有界签收；继续发出前竞争、共享清理重入、全model/profile与八项原始engine差异，完整C2开放。"
 }

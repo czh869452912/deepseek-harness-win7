@@ -38,12 +38,13 @@
   ],
   "open_findings": [],
   "conflicts_with": [],
-  "candidate_commit": "b2398db95470f25543dc4bd52d92e03449550d73",
-  "integrated_commit": "b2398db95470f25543dc4bd52d92e03449550d73",
+  "candidate_commit": "55a5ba87b608fdd0d9c94feb16f258d77ace9929",
+  "integrated_commit": "55a5ba87b608fdd0d9c94feb16f258d77ace9929",
   "evidence_ids": [
     "RUN-SESSION-BOUNDARIES-20261006-JS-INITIAL-WRITE-040",
     "RUN-DEEPSEEK-ERROR-20261006-JS-INITIAL-WRITE-040",
-    "RUN-JSONL-SHARING-V3-20261006-JS-INITIAL-WRITE-040"
+    "RUN-JSONL-SHARING-V3-20261006-JS-INITIAL-WRITE-040",
+    "RUN-CANONICAL-LLM-20261006-JS-INITIAL-WRITE-040"
   ],
-  "next_action": "两组真实入口阻塞/Ready未发出退出及四项live/known-exit控制在干净产品b2398db9有界签收；继续未观察退出/所有spawn/Ready竞争、重入/全model/profile及完整C2。"
+  "next_action": "clean candidate 55a5ba87 全量/原版/真实解压复验已通过。两组真实入口阻塞/Ready未发出退出及四项live/known-exit控制在干净产品b2398db9有界签收；继续未观察退出/所有spawn/Ready竞争、重入/全model/profile及完整C2。"
 }

@@ -39,8 +39,8 @@
   ],
   "open_findings": [],
   "conflicts_with": [],
-  "candidate_commit": "b2398db95470f25543dc4bd52d92e03449550d73",
-  "integrated_commit": "b2398db95470f25543dc4bd52d92e03449550d73",
+  "candidate_commit": "55a5ba87b608fdd0d9c94feb16f258d77ace9929",
+  "integrated_commit": "55a5ba87b608fdd0d9c94feb16f258d77ace9929",
   "evidence_ids": [
     "RUN-SESSION-LIVE-SESSION-LIVE-004-20260927",
     "RUN-SESSION-PREPARED-SESSION-LIVE-004-20260927",
@@ -66,7 +66,8 @@
     "RUN-RUNTIME-CONTEXT-20261006-SESSION-LIVE-004",
     "RUN-SESSION-BOUNDARIES-20261006-SESSION-LIVE-004",
     "RUN-DEEPSEEK-ERROR-20261006-SESSION-LIVE-004",
-    "RUN-JSONL-SHARING-V3-20261006-SESSION-LIVE-004"
+    "RUN-JSONL-SHARING-V3-20261006-SESSION-LIVE-004",
+    "RUN-CANONICAL-LLM-20261006-SESSION-LIVE-004"
   ],
-  "next_action": "clean candidate b2398db9 全量/原版/真实解压复验已通过。Bounded contract revalidated with CON-AGENT-CONFIG@1; next full Session projection/replay before Web consumers and complete profile journeys."
+  "next_action": "clean candidate 55a5ba87 全量/原版/真实解压复验已通过。Bounded contract revalidated with CON-AGENT-CONFIG@1; next full Session projection/replay before Web consumers and complete profile journeys."
 }

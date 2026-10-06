@@ -16,6 +16,11 @@
       "task": "MIG-DEEPSEEK-CAPTURE-046",
       "contract": "CON-DEEPSEEK-CAPTURE",
       "revision": 1
+    },
+    {
+      "task": "MIG-CANONICAL-LLM-048",
+      "contract": "CON-CANONICAL-LLM",
+      "revision": 1
     }
   ],
   "provides": [],
@@ -29,11 +34,12 @@
   ],
   "open_findings": [
     "24 complete local HTTP adapter error controls045 are bounded accepted in clean54361bd9, with exact oldafd ownPortable baseline retained. Every captured request/chunk/error/failure value compares; only JSON whole numeric token spelling is canonicalized for digest.446 unchanged Source assertions add reference coverage but are not extra native parity. Existing76 historical wire/config/model/files/settings observations still need their full Source-backed contract and selected/extracted runtime closure; full canonical retry/profile/cancellation/malformed transport and OAuth/cloud/paid scope remain open.",
-    "76 complete selected config/model/serialize/usage/SSE/HTTP/Files/Settings captures046 are bounded accepted in cleanb2398db9. Exact543 ownPortable17 diagnostics and raw retry/origin identities remain retained. Full canonical AgentLoop retry/profile/cancellation/error recovery, arbitrary malformed transport/config and immutable/public graph ABI remain open."
+    "76 complete selected config/model/serialize/usage/SSE/HTTP/Files/Settings captures046 are bounded accepted in cleanb2398db9. Exact543 ownPortable17 diagnostics and raw retry/origin identities remain retained. Full canonical AgentLoop retry/profile/cancellation/error recovery, arbitrary malformed transport/config and immutable/public graph ABI remain open.",
+    "81 complete selected canonical LLM retry/auxiliary failure/public boundary/iterator ownership observations048 are bounded accepted in clean55a5ba87. Arbitrary metadata,prepared one-shot/config ownership,full model/profile,public graph ABI and concurrency remain open."
   ],
   "conflicts_with": [],
   "candidate_commit": null,
   "integrated_commit": null,
   "evidence_ids": [],
-  "next_action": "045错误与046选定76观察已有界签收；继续canonical AgentLoop重试/恢复/取消/关闭、完整profile组合与任意动态图/传输/配置边界，补齐完整Wire合同后才关闭父任务。"
+  "next_action": "048选定canonical重试/失败/迭代归属已有界签收；继续公共元数据和prepareCall一次性/冻结/代际契约、全profile主链及任意动态图/传输/配置边界后才关闭完整Wire。"
 }

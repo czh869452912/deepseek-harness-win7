@@ -38,12 +38,13 @@
   ],
   "open_findings": [],
   "conflicts_with": [],
-  "candidate_commit": "b2398db95470f25543dc4bd52d92e03449550d73",
-  "integrated_commit": "b2398db95470f25543dc4bd52d92e03449550d73",
+  "candidate_commit": "55a5ba87b608fdd0d9c94feb16f258d77ace9929",
+  "integrated_commit": "55a5ba87b608fdd0d9c94feb16f258d77ace9929",
   "evidence_ids": [
     "RUN-RUNTIME-FULL-REQUEST-REJECTED-20261006-AFD85F4E",
     "RUN-DEEPSEEK-ERROR-20261006-RUNTIME-FULL-REQUEST-044",
-    "RUN-JSONL-SHARING-V3-20261006-RUNTIME-FULL-REQUEST-044"
+    "RUN-JSONL-SHARING-V3-20261006-RUNTIME-FULL-REQUEST-044",
+    "RUN-CANONICAL-LLM-20261006-RUNTIME-FULL-REQUEST-044"
   ],
-  "next_action": "16组完整规范模型请求、全部持久上下文和信号共享谓词在干净产品b2398db9有界签收；三个native固定参数消费者保留Python边界适配。继续canonical全profile/模型/取消/重入与完整B3/C2。"
+  "next_action": "clean candidate 55a5ba87 全量/原版/真实解压复验已通过。16组完整规范模型请求、全部持久上下文和信号共享谓词在干净产品b2398db9有界签收；三个native固定参数消费者保留Python边界适配。继续canonical全profile/模型/取消/重入与完整B3/C2。"
 }

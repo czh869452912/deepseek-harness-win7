@@ -2,7 +2,7 @@
   "id": "MIG-CANONICAL-LLM-048",
   "goal": "闭合81组canonical LLM重试/失败/准备及SDK迭代归属选定观察",
   "kind": "implementation",
-  "state": "running",
+  "state": "integrated",
   "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
   "base_product": "b2398db95470f25543dc4bd52d92e03449550d73",
   "owner": "current-session-coordinator",
@@ -45,14 +45,12 @@
     "migration",
     "docs/research"
   ],
-  "open_findings": [
-    "Fresh promoted formalv2 matches81 complete selected Source captures with strict child import/runtime/Source checks.218 focused regressions pass43.26 seconds;448 expanded real consumers,altered/partial/extracted/lane controls pass235.53 seconds without skips/failures.12 unchanged original public LLM files/228 assertions pass3.67 seconds. Formalv1 correctly refuses a staged registry omitting047 file_io in each group;initial109 passed/109 fixture setup errors remain. Explicit actual measured registry adds only that already committed module,with no removed checks. Separate clean full/extracted/browser qualification remains pending.",
-    "Exact immutable eaa8 re-extraction records54 public failure controls with51 differences;new9 public selection/preparation controls have9 differences and7 iterator ownership controls have4 differences. All actual imports are verified against authoritative archived inputs/ZIP/extraction. Older canonical retry and auxiliary differences and initial setup/observer errors are retained.",
-    "Full Wire/Session/profile/JS scopes and arbitrary malformed/public graph/ABI/concurrency remain open;no Source exception,paid API,push or realWin7 claim."
-  ],
+  "open_findings": [],
   "conflicts_with": [],
-  "candidate_commit": null,
-  "integrated_commit": null,
-  "evidence_ids": [],
-  "next_action": "81正式Source/native观察、218定向/448扩大回归和228原样LLM断言已通过；提交后运行独立干净完整门禁，1661必需lane/68配对/20组1911原样Source及真实解压自有Python3.8.10/原版浏览器全部通过才有界签收048；继续七父范围与八项JS差异。"
+  "candidate_commit": "55a5ba87b608fdd0d9c94feb16f258d77ace9929",
+  "integrated_commit": "55a5ba87b608fdd0d9c94feb16f258d77ace9929",
+  "evidence_ids": [
+    "RUN-CANONICAL-LLM-20261006-CANONICAL-LLM-048"
+  ],
+  "next_action": "81组完整canonical LLM重试/辅助失败/SDK边界与迭代归属在干净产品55a5ba87有界签收；精确拒绝eaa8与正式v1观察器拒绝保留。继续公共元数据/准备句柄与完整Wire/profile/图ABI/竞争；七父范围与八项JS差异仍开放。"
 }

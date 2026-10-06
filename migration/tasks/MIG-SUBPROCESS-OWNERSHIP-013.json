@@ -38,8 +38,8 @@
   ],
   "open_findings": [],
   "conflicts_with": [],
-  "candidate_commit": "b2398db95470f25543dc4bd52d92e03449550d73",
-  "integrated_commit": "b2398db95470f25543dc4bd52d92e03449550d73",
+  "candidate_commit": "55a5ba87b608fdd0d9c94feb16f258d77ace9929",
+  "integrated_commit": "55a5ba87b608fdd0d9c94feb16f258d77ace9929",
   "evidence_ids": [
     "RUN-SESSION-TRACING-20261004-SUBPROCESS-OWNERSHIP-013",
     "RUN-SESSION-FILTERS-20261004-SUBPROCESS-OWNERSHIP-013",
@@ -54,7 +54,8 @@
     "RUN-RUNTIME-CONTEXT-20261006-SUBPROCESS-OWNERSHIP-013",
     "RUN-SESSION-BOUNDARIES-20261006-SUBPROCESS-OWNERSHIP-013",
     "RUN-DEEPSEEK-ERROR-20261006-SUBPROCESS-OWNERSHIP-013",
-    "RUN-JSONL-SHARING-V3-20261006-SUBPROCESS-OWNERSHIP-013"
+    "RUN-JSONL-SHARING-V3-20261006-SUBPROCESS-OWNERSHIP-013",
+    "RUN-CANONICAL-LLM-20261006-SUBPROCESS-OWNERSHIP-013"
   ],
-  "next_action": "clean candidate b2398db9 全量/原版/真实解压复验已通过。有界提供端合同在 clean candidate b2398db9 验收；继续其余 SDK/生命周期/URL/无限阻塞初始化边缘、subprocess tree/pathological streams/background Jobs 和整体迁移。本轮 scoped owned-WebServer shutdown 的 WinError 10054 路径已修复；其余浏览器启动取消/Proactor destructor/HTTP 诊断未认证根因，Win7 仍延期。"
+  "next_action": "clean candidate 55a5ba87 全量/原版/真实解压复验已通过。有界提供端合同在 clean candidate 55a5ba87 验收；继续其余 SDK/生命周期/URL/无限阻塞初始化边缘、subprocess tree/pathological streams/background Jobs 和整体迁移。本轮 scoped owned-WebServer shutdown 的 WinError 10054 路径已修复；其余浏览器启动取消/Proactor destructor/HTTP 诊断未认证根因，Win7 仍延期。"
 }

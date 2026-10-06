@@ -45,8 +45,8 @@
   ],
   "open_findings": [],
   "conflicts_with": [],
-  "candidate_commit": "b2398db95470f25543dc4bd52d92e03449550d73",
-  "integrated_commit": "b2398db95470f25543dc4bd52d92e03449550d73",
+  "candidate_commit": "55a5ba87b608fdd0d9c94feb16f258d77ace9929",
+  "integrated_commit": "55a5ba87b608fdd0d9c94feb16f258d77ace9929",
   "evidence_ids": [
     "RUN-SESSION-STORAGE-20261005-JSONL-PROVIDER-032",
     "RUN-TOOLS-HTTP-20261005-JSONL-PROVIDER-032",
@@ -55,7 +55,8 @@
     "RUN-RUNTIME-CONTEXT-20261006-JSONL-PROVIDER-032",
     "RUN-SESSION-BOUNDARIES-20261006-JSONL-PROVIDER-032",
     "RUN-DEEPSEEK-ERROR-20261006-JSONL-PROVIDER-032",
-    "RUN-JSONL-SHARING-V3-20261006-JSONL-PROVIDER-032"
+    "RUN-JSONL-SHARING-V3-20261006-JSONL-PROVIDER-032",
+    "RUN-CANONICAL-LLM-20261006-JSONL-PROVIDER-032"
   ],
-  "next_action": "clean candidate b2398db9 全量/原版/真实解压复验已通过。规范默认 zstd 的 1030 原版/原生/真实解压互读、完整 revision、可选元数据 presence/typed refusal/public loadStored、原始导出和冷准备已有界签收；继续任意 malformed/public plugin ABI、竞争/多工作区/长历史和整体迁移，Win7 延期。"
+  "next_action": "clean candidate 55a5ba87 全量/原版/真实解压复验已通过。规范默认 zstd 的 1030 原版/原生/真实解压互读、完整 revision、可选元数据 presence/typed refusal/public loadStored、原始导出和冷准备已有界签收；继续任意 malformed/public plugin ABI、竞争/多工作区/长历史和整体迁移，Win7 延期。"
 }

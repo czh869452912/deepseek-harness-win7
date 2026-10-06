@@ -33,12 +33,13 @@
   ],
   "open_findings": [],
   "conflicts_with": [],
-  "candidate_commit": "b2398db95470f25543dc4bd52d92e03449550d73",
-  "integrated_commit": "b2398db95470f25543dc4bd52d92e03449550d73",
+  "candidate_commit": "55a5ba87b608fdd0d9c94feb16f258d77ace9929",
+  "integrated_commit": "55a5ba87b608fdd0d9c94feb16f258d77ace9929",
   "evidence_ids": [
     "RUN-SESSION-BOUNDARIES-20261006-SESSION-DIAGNOSTIC-042",
     "RUN-DEEPSEEK-ERROR-20261006-SESSION-DIAGNOSTIC-042",
-    "RUN-JSONL-SHARING-V3-20261006-SESSION-DIAGNOSTIC-042"
+    "RUN-JSONL-SHARING-V3-20261006-SESSION-DIAGNOSTIC-042",
+    "RUN-CANONICAL-LLM-20261006-SESSION-DIAGNOSTIC-042"
   ],
-  "next_action": "76组真实创建/恢复准入结果及精确错误文本在干净产品b2398db9有界签收；仅诊断范围，继续任意malformed/public plugin ABI与完整B1。"
+  "next_action": "clean candidate 55a5ba87 全量/原版/真实解压复验已通过。76组真实创建/恢复准入结果及精确错误文本在干净产品b2398db9有界签收；仅诊断范围，继续任意malformed/public plugin ABI与完整B1。"
 }

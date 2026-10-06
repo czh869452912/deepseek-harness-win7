@@ -1,5 +1,7 @@
 # 全部迁移遗留项的闭环计划
 
+2026-10-06 最新干净签收 `55a5ba87`：全量8109 passed、6既有skip、1既有Proactor warning、0失败/错误，2297.10秒；1661必需lane、20组1911原样Source断言、68实际配对及真实解压自有Python3.8.10/原版浏览器通过。048选定81组规范重试/失败/准备/迭代归属已有界integrated，共58份独立验收；所有精确旧产物/正式v1缺项拒绝保留，未放宽九项判据/C58/C59。见 `migration/reviews/CANONICAL-LLM-GATE-20261006.md`。下一公共元数据137完整观察隔离匹配、81既有规范消费者及336回归通过，尚未进入本签收。七父范围、八项原始JS差异、accepted_upstream空与延期Win7继续开放。
+
 2026-10-06 下一独立部分048：canonical LLM四模块隔离81组完整Source观察匹配，305相关消费者通过；精确拒绝eaa8自有Portable新54/9/7控制保留51/9/4差异并核验每个实际导入。正式81组/逐组模块/篡改/解压收据推广后须定向及独立干净完整验收；规划1661必需lane、68配对、20组1911原样Source。048仍running，最新签收b2398db9/57有界范围；七父范围、八项JS差异、九项判据/C58/C59、accepted_upstream空和延期Win7不变。见docs/research/2026-10-06-canonical-llm-progress.md。
 
 2026-10-06 最新干净签收 `b2398db9`：全量7967 passed、6既有skip、1既有Proactor warning、0失败/错误，2212.32秒；1519必需lane、十九组1683原样Source断言、67实际配对及真实解压自有Python3.8.10/原版浏览器通过。046完整选定76诊断、047四组JSONL共享读取已有界integrated，共57份独立验收；精确eaa8拒绝与历史产物不改写，原始临时持有者未识别。见 `migration/reviews/JSONL-SHARING-GATE-20261006.md`。下一canonical LLM四模块隔离研究81完整观察匹配，305相关回归通过，尚未进入本签收。七父范围、八项JS差异、九项判据/C58/C59、accepted_upstream空及延期Win7不变。

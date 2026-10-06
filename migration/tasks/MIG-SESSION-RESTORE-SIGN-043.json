@@ -33,12 +33,13 @@
   ],
   "open_findings": [],
   "conflicts_with": [],
-  "candidate_commit": "b2398db95470f25543dc4bd52d92e03449550d73",
-  "integrated_commit": "b2398db95470f25543dc4bd52d92e03449550d73",
+  "candidate_commit": "55a5ba87b608fdd0d9c94feb16f258d77ace9929",
+  "integrated_commit": "55a5ba87b608fdd0d9c94feb16f258d77ace9929",
   "evidence_ids": [
     "RUN-SESSION-BOUNDARIES-20261006-SESSION-RESTORE-SIGN-043",
     "RUN-DEEPSEEK-ERROR-20261006-SESSION-RESTORE-SIGN-043",
-    "RUN-JSONL-SHARING-V3-20261006-SESSION-RESTORE-SIGN-043"
+    "RUN-JSONL-SHARING-V3-20261006-SESSION-RESTORE-SIGN-043",
+    "RUN-CANONICAL-LLM-20261006-SESSION-RESTORE-SIGN-043"
   ],
-  "next_action": "18组真实恢复数值及Object.is等价符号/输入值观察在干净产品b2398db9有界签收；不代表完整图/对象身份或wire ABI，继续公共Session/B1。"
+  "next_action": "clean candidate 55a5ba87 全量/原版/真实解压复验已通过。18组真实恢复数值及Object.is等价符号/输入值观察在干净产品b2398db9有界签收；不代表完整图/对象身份或wire ABI，继续公共Session/B1。"
 }

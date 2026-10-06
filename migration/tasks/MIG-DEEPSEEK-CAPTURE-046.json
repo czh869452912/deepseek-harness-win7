@@ -42,11 +42,12 @@
   ],
   "open_findings": [],
   "conflicts_with": [],
-  "candidate_commit": "b2398db95470f25543dc4bd52d92e03449550d73",
-  "integrated_commit": "b2398db95470f25543dc4bd52d92e03449550d73",
+  "candidate_commit": "55a5ba87b608fdd0d9c94feb16f258d77ace9929",
+  "integrated_commit": "55a5ba87b608fdd0d9c94feb16f258d77ace9929",
   "evidence_ids": [
     "RUN-DEEPSEEK-CAPTURE-REJECTED-20261006-EAA8BB05",
-    "RUN-JSONL-SHARING-V3-20261006-DEEPSEEK-CAPTURE-046"
+    "RUN-JSONL-SHARING-V3-20261006-DEEPSEEK-CAPTURE-046",
+    "RUN-CANONICAL-LLM-20261006-DEEPSEEK-CAPTURE-046"
   ],
-  "next_action": "76实际Source/native/extracted完整选定观察在干净产品b2398db9有界签收；精确543 ownPortable17诊断差异与两轮观察器/归档失败保留。继续canonical AgentLoop重试/profile/取消/关闭、任意malformed/config/图ABI及完整Wire；云/OAuth/付费/Win7仍开放。"
+  "next_action": "clean candidate 55a5ba87 全量/原版/真实解压复验已通过。76实际Source/native/extracted完整选定观察在干净产品b2398db9有界签收；精确543 ownPortable17诊断差异与两轮观察器/归档失败保留。继续canonical AgentLoop重试/profile/取消/关闭、任意malformed/config/图ABI及完整Wire；云/OAuth/付费/Win7仍开放。"
 }

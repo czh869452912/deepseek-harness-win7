@@ -1,0 +1,48 @@
+{
+  "id": "MIG-LLM-CONFIG-053",
+  "goal": "闭合独立LLM配置查询与公共准备的空值、严格类型和对象归属",
+  "kind": "implementation",
+  "state": "running",
+  "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
+  "base_product": "f8b96744ffaa1491031c02dfd20bb15c71f49596",
+  "owner": "current-session-coordinator",
+  "requires": [
+    {
+      "task": "MIG-LLM-PREPARED-051",
+      "contract": "CON-LLM-PREPARED",
+      "revision": 1
+    },
+    {
+      "task": "MIG-LLM-METADATA-049",
+      "contract": "CON-LLM-METADATA",
+      "revision": 1
+    }
+  ],
+  "provides": [
+    {
+      "contract": "CON-LLM-CONFIG",
+      "revision": 1
+    }
+  ],
+  "acceptance": [
+    "26 complete actual pinned Source/native/extracted selected query and nullable/strict observations match, including every error, trace, identity and post-query mutation.",
+    "Exact unmodifiedb93 ownPortable independently reproduces17 differences; actual import/runtime identity is checked against frozen inputs and archive bytes.",
+    "Existing108 prepared observations and336 related regressions remain passing; complete-value, runtime, Source, extracted and mandatory-lane refusal controls remain strict.",
+    "A new clean frozen full suite, unchanged Source groups, fresh paired receipts, real extracted ownPython3.8.10 and original browser pass before bounded integration."
+  ],
+  "expected_paths": [
+    "dsh/llm/llm_service.py",
+    "scripts",
+    "tests",
+    "migration",
+    "docs/research"
+  ],
+  "open_findings": [
+    "Provider, Source observers, consumer/refusal controls and extracted portable gate have been promoted; fresh Root26 Source/native observations match, but full frozen acceptance and actual own candidate extraction remain pending."
+  ],
+  "conflicts_with": [],
+  "candidate_commit": null,
+  "integrated_commit": null,
+  "evidence_ids": [],
+  "next_action": "必要提供端/观察/消费者/便携与门禁已推广，Root26完整Source/native、108prepared、95拒绝消费者与336相关回归通过，旧包17差异资格归档保留。提交后执行8641项新干净完整验收、2185必需lane/71配对/20组1911原样Source及真实解压；051依赖未签收前不称integrated，七父范围继续开放。"
+}

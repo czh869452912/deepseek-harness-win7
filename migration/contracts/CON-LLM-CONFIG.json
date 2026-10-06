@@ -1,0 +1,36 @@
+{
+  "id": "CON-LLM-CONFIG",
+  "revision": 1,
+  "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
+  "status": "specified",
+  "source_paths": [
+    "reference/packages/llm/llm/src/index.ts",
+    "reference/packages/llm/llm/src/call-config.ts",
+    "dsh/llm/llm_service.py"
+  ],
+  "consumers": [
+    "scripts/llm_config_oracle.py",
+    "scripts/oracles/llm_config_python.py",
+    "tests/test_llm_config_consumers.py",
+    "scripts/verify_portable.py",
+    "scripts/verify_release.py"
+  ],
+  "invariants": [
+    "26 complete selected actual Source observations:10 standalone queries and16 nullable/strict configuration queries or public preparations.",
+    "Standalone resolveCallConfig uses exact model lookup on the registration captured before awaiting; it does not call the adapter preparation or streaming hook.",
+    "A query retains the caller configuration object and shared stop array unless a default must be materialized; result mutation affects the original only under that observed ownership.",
+    "Public preparation and standalone query share exact default and strict reasoning-effort validation; absent and null remain distinct, and boolean versus number is strict.",
+    "Null reasoning with a declared default resolves that default; null without a default remains null when reasoning exists, but is rejected when reasoning is absent. Explicit maxTokens null and zero retain their values.",
+    "Full errors, codes, signal identity, hook traces, input mutations, pending route replacement and mutable configuration observations remain recorded and exact."
+  ],
+  "identity": "Complete ordered selected JSON fields are compared under the established finite numeric representation rule, with booleans distinct from numbers and all field presence retained.",
+  "ownership": "The standalone query has conditional shallow-copy ownership. Prepared configuration remains detached and frozen as specified by CON-LLM-PREPARED.",
+  "ordering": "Registration/model lookup precedes awaiting; the current mutable config is validated after resolution. No prepare or stream hook is introduced by a query.",
+  "errors": "Original NO_ADAPTER and UNSUPPORTED_REASONING_EFFORT names, codes and full JavaScript-rendered messages are mandatory.",
+  "cancellation": "Selected lookup signal identity and pending-query observations remain strict; arbitrary cancellation schedules are not inferred.",
+  "adaptation": "Python snake-case adapter lookup hooks implement the original public query contract; existing108 prepared observations remain unchanged.",
+  "open_questions": [
+    "Arbitrary malformed/accessor/non-JSON call graphs, all callback/registration/cancellation schedules and complete canonical profiles remain in broad migration parents.",
+    "Actual Win7 remains user-deferred; no accepted_upstream or full API certification follows from selected26 captures."
+  ]
+}

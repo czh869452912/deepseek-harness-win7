@@ -52,6 +52,8 @@ from test_deepseek_capture_consumers import damage_observations as damage_captur
 from scripts.persistence_read_oracle import observation_digest as read_observation_digest
 from scripts.llm_prepared_oracle import observation_digest as llm_prepared_observation_digest
 from test_llm_prepared_consumers import damage_observations as damage_llm_prepared_observations
+from scripts.llm_config_oracle import observation_digest as llm_config_observation_digest
+from test_llm_config_consumers import damage_observations as damage_llm_config_observations
 from scripts.llm_metadata_oracle import observation_digest as llm_metadata_observation_digest
 from test_llm_metadata_consumers import damage_observations as damage_llm_metadata_observations
 from scripts.canonical_llm_oracle import observation_digest as canonical_llm_observation_digest
@@ -1396,6 +1398,64 @@ def test_llm_prepared_consumer_lanes_are_mandatory(tmp_path, damage):
         GATE.validate_regression(path)
 
 
+@functools.lru_cache(maxsize=1)
+def llm_config_runtime_fixture():
+    with tempfile.TemporaryDirectory(prefix='llm-config-receipt-') as folder:
+        output = Path(folder) / 'paired.json'
+        completed = subprocess.run([sys.executable, str(ROOT / 'scripts/llm_config_oracle.py'),
+            '--output', str(output)], cwd=str(ROOT), capture_output=True, timeout=600)
+        if completed.returncode:
+            raise RuntimeError(output.read_text(encoding='utf-8'))
+        return json.loads(output.with_suffix('.native.json').read_text(encoding='utf-8'))
+
+
+@pytest.mark.parametrize('damage', ('missing', 'source-missing', 'source-changed', 'module-changed', 'config', 'boolean', 'max-null', 'reason-null', 'same', 'same-stop', 'input', 'after-change', 'error', 'code', 'hook', 'signal', 'trace', 'tail', 'duplicate', 'order', 'type', 'unknown', 'root', 'python', 'executable', 'module', 'group-missing', 'group-rows', 'group-root', 'group-executable', 'group-module'))
+def test_extracted_llm_config_requires_complete_values_and_runtime(tmp_path, damage):
+    archive, candidate, report = extracted_receipt(tmp_path)
+    runtime = report['llmConfig']
+    if damage == 'missing':
+        del report['llmConfig']
+    elif damage == 'source-missing':
+        del candidate['llm_config_observations_sha256']
+    elif damage == 'source-changed':
+        candidate['llm_config_observations_sha256'] = '0' * 64
+    elif damage == 'module-changed':
+        runtime['modules']['dsh/llm/call_config.py'] = '0' * 64
+    elif damage == 'module':
+        del runtime['modules']['dsh/llm/call_config.py']
+    elif damage == 'root':
+        runtime['root'] = str(tmp_path.parent)
+    elif damage == 'python':
+        runtime['python'] = '3.9.0 foreign runtime'
+    elif damage == 'executable':
+        runtime['executable'] = str(tmp_path / 'nested/python.exe')
+    elif damage == 'group-missing':
+        del runtime['groups']['query']
+    elif damage == 'group-rows':
+        runtime['groups']['query']['rows'].pop()
+    elif damage == 'group-root':
+        runtime['groups']['query']['root'] = str(tmp_path.parent)
+    elif damage == 'group-executable':
+        runtime['groups']['query']['executable'] = str(tmp_path / 'nested/python.exe')
+    elif damage == 'group-module':
+        del runtime['groups']['query']['modules']['dsh/llm/llm_service.py']
+    else:
+        damage_llm_config_observations(runtime, damage)
+    output = tmp_path / 'extracted.json'
+    output.write_text(json.dumps(report), encoding='utf-8')
+    with pytest.raises(RuntimeError, match='llmConfig'):
+        GATE.validate_extracted(output, archive, candidate)
+
+
+@pytest.mark.parametrize('damage', ('omit', 'skip', 'duplicate', 'failure'))
+def test_llm_config_consumer_lanes_are_mandatory(tmp_path, damage):
+    path = tmp_path / 'pytest.xml'
+    key = ('test_llm_config_consumers', sorted(GATE.REQUIRED_REGRESSION['test_llm_config_consumers'])[0])
+    regression_xml(path, **{damage: key})
+    with pytest.raises(RuntimeError):
+        GATE.validate_regression(path)
+
+
 def extracted_receipt(tmp_path):
     archive = tmp_path / 'portable.zip'
     archive.write_bytes(b'exact candidate archive')
@@ -1482,6 +1542,14 @@ def extracted_receipt(tmp_path):
     candidate['llm_prepared_modules'] = llm_prepared['modules'].copy()
 
 
+    llm_config = copy.deepcopy(llm_config_runtime_fixture())
+    llm_config['root'], llm_config['executable'] = str(tmp_path), str(tmp_path / 'python.exe')
+    for child in llm_config['groups'].values():
+        child['root'], child['executable'] = llm_config['root'], llm_config['executable']
+    candidate['llm_config_observations_sha256'] = llm_config_observation_digest(llm_config['rows'])
+    candidate['llm_config_modules'] = llm_config['modules'].copy()
+
+
     report = {'result': 'passed', 'browser': {'passed': True}, 'runtime': {'checks': ['actual runtime']},
               'acp': {'processes': 2, 'steps': ['initialize-0', 'invalid-params-before-effects',
                   'persistent-new', 'close-list-0', 'eof-0', 'initialize-1',
@@ -1490,7 +1558,7 @@ def extracted_receipt(tmp_path):
               'archiveSha256': GATE.digest(archive), 'provenance': dict(candidate), 'toolScheduler': scheduler,
               'httpRedirect': redirect, 'javascriptWorkflow': javascript, 'runtimeContext': context, 'javascriptReady': ready,
               'persistenceRead': read, 'javascriptInitial': initial, 'sessionNumber': number, 'sessionDiagnostic': diagnostic,
-              'sessionRestoreSign': restore_sign, 'runtimeFullRequest': full_request, 'deepseekError': deepseek_error, 'deepseekCapture': deepseek_capture, 'jsonlSharing': sharing, 'canonicalLlm': canonical_llm, 'llmMetadata': llm_metadata, 'llmPrepared': llm_prepared}
+              'sessionRestoreSign': restore_sign, 'runtimeFullRequest': full_request, 'deepseekError': deepseek_error, 'deepseekCapture': deepseek_capture, 'jsonlSharing': sharing, 'canonicalLlm': canonical_llm, 'llmMetadata': llm_metadata, 'llmPrepared': llm_prepared, 'llmConfig': llm_config}
     modes = ['allow', 'reject', 'malformed', 'cancel-late', 'close-late', 'eof']
     report['acpPermissions'] = {'processes': 6, 'modes': modes, 'observations': [
         {'mode': mode, 'executed': mode == 'allow', 'modelRequests': 2 if mode in modes[:3] else 1, 'stderr': [''],

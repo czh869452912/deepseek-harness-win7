@@ -774,17 +774,8 @@ class LLMService:
                 return invoke_adapter_stream(adapter.chat_completion_stream, options)
             adapter_call = dict(model=info, stream=dispatch)
         model_info = normalize_model_info(provider, config['model'], adapter_call['model'], LlmError)
-        resolved = copy.deepcopy(config)
-        defaults = {}
-        if 'maxTokens' not in config and 'defaultMaxTokens' in model_info:
-            resolved['maxTokens'] = model_info['defaultMaxTokens']
-            defaults['maxTokens'] = True
-        reasoning = model_info.get('reasoning')
-        if 'reasoningEffort' not in config and reasoning and 'defaultEffort' in reasoning:
-            resolved['reasoningEffort'] = reasoning['defaultEffort']
-            defaults['reasoningEffort'] = True
-        if 'reasoningEffort' in resolved and (not reasoning or resolved['reasoningEffort'] not in [effort['id'] for effort in reasoning['efforts']]):
-            raise LlmError('provider "{}" model "{}" does not support reasoning effort "{}"'.format(provider, config['model'], resolved['reasoningEffort']), 'UNSUPPORTED_REASONING_EFFORT')
+        resolved = copy.deepcopy(self._resolve_call_with_info(config, model_info))
+        defaults = {field: True for field in ('maxTokens', 'reasoningEffort') if field not in config and field in resolved}
         frozen_config = deep_freeze(resolved)
         dispatch = adapter_call['stream']
         dispatched = False
@@ -867,15 +858,30 @@ class LLMService:
             result['inputModalities'] = deep_freeze(copy.deepcopy(model_info['inputModalities']))
         return deep_freeze(result)
 
-    async def resolveCallConfig(self, config, signal=None):
-        if config['provider'] not in self._adapters:
-            raise LlmError('LLM provider is not registered: ' + config['provider'], 'NO_ADAPTER')
-        prepared = await self.prepare_call(config, signal)
-        resolved = dict(config)
-        for field in ('maxTokens', 'reasoningEffort'):
-            if prepared.get(field) is not None:
-                resolved[field] = prepared[field]
+    def _resolve_call_with_info(self, config, info):
+        from dsh.llm.call_config import UNDEFINED, scalar_equals
+        from dsh.cordis.utils import js_to_string
+        resolved = dict(config, maxTokens=info['defaultMaxTokens']) if 'maxTokens' not in config and 'defaultMaxTokens' in info else config
+        requested = resolved.get('reasoningEffort', UNDEFINED)
+        reasoning = info.get('reasoning')
+        effective = requested
+        if reasoning is None:
+            unsupported = requested is not UNDEFINED
+        else:
+            effective = reasoning.get('defaultEffort', UNDEFINED) if requested is UNDEFINED or requested is None else requested
+            unsupported = effective is not UNDEFINED and not any(scalar_equals(effort['id'], effective) for effort in reasoning['efforts'])
+        if unsupported:
+            raise LlmError('provider "{}" model "{}" does not support reasoning effort "{}"'.format(config['provider'], config['model'], js_to_string(effective)), 'UNSUPPORTED_REASONING_EFFORT')
+        if reasoning is not None and effective is not UNDEFINED and not scalar_equals(requested, effective):
+            resolved = dict(resolved, reasoningEffort=effective)
         return resolved
+
+    async def resolveCallConfig(self, config, signal=None):
+        provider, model = config['provider'], config['model']
+        if provider not in self._adapters:
+            raise LlmError('no adapter registered for provider "{}"'.format(provider), 'NO_ADAPTER')
+        info = await self.resolve_model_info(provider, model, signal)
+        return self._resolve_call_with_info(config, info)
 
     # backward compat alias
     def list_configurable_providers_sync(self):

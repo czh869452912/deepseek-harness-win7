@@ -1,0 +1,34 @@
+{
+  "names": {
+    "query": [
+      "plain",
+      "defaults",
+      "override",
+      "custom-prepare",
+      "no-adapter",
+      "unsupported",
+      "null-with-default",
+      "null-without-reasoning",
+      "pending-replace",
+      "pending-input"
+    ],
+    "nullable": [
+      "resolveCallConfig/absent-default",
+      "resolveCallConfig/null-default",
+      "resolveCallConfig/null-no-default",
+      "resolveCallConfig/null-no-reasoning",
+      "resolveCallConfig/bool-default",
+      "resolveCallConfig/number-default",
+      "resolveCallConfig/null-max",
+      "resolveCallConfig/explicit-zero",
+      "prepareCall/absent-default",
+      "prepareCall/null-default",
+      "prepareCall/null-no-default",
+      "prepareCall/null-no-reasoning",
+      "prepareCall/bool-default",
+      "prepareCall/number-default",
+      "prepareCall/null-max",
+      "prepareCall/explicit-zero"
+    ]
+  }
+}

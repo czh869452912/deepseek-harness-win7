@@ -35,11 +35,12 @@
   ],
   "open_findings": [],
   "conflicts_with": [],
-  "candidate_commit": "842d637369707a4c85cca6d3706566278de37afd",
-  "integrated_commit": "842d637369707a4c85cca6d3706566278de37afd",
+  "candidate_commit": "83026446716b18b0f8cb185d177ae971473deff8",
+  "integrated_commit": "83026446716b18b0f8cb185d177ae971473deff8",
   "evidence_ids": [
     "RUN-METADATA-RETENTION-20261006-PROCESS-RETENTION-050",
-    "RUN-LLM-CONFIG-20261006-PROCESS-RETENTION-050"
+    "RUN-LLM-CONFIG-20261006-PROCESS-RETENTION-050",
+    "RUN-SDK-RETENTION-20261007-PROCESS-RETENTION-050"
   ],
-  "next_action": "clean candidate 842d6373 全量/原版/真实解压复验已通过。干净产品2a67ae84全量、1899必需lane、69配对、原版Source及实际解压/浏览器通过；自动清理已完成测试合成回执并保留真实证据，转发子进程超时退出/目录释放及主错误保留有界签收。继续其余迁移；不把维护当作额外业务同等性。"
+  "next_action": "clean candidate 83026446 全量/原版/真实解压复验已通过。干净产品2a67ae84全量、1899必需lane、69配对、原版Source及实际解压/浏览器通过；自动清理已完成测试合成回执并保留真实证据，转发子进程超时退出/目录释放及主错误保留有界签收。继续其余迁移；不把维护当作额外业务同等性。"
 }

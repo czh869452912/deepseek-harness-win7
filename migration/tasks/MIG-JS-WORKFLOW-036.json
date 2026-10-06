@@ -39,7 +39,7 @@
     "Thirty original direct-worker frame scenarios and34 actual Source/native/extracted WorkerRun observations retain private provenance, physical-exit classification, first outcome and owned disposal. Four bounded attributed AgentLoop cases037 and two already-emitted Ready/exit cases038 are now integrated. Two entry-blocked physical-exit cases before Ready emission040 and16 complete canonical model request graphs044 are now bounded integrated. These controls do not qualify arbitrary profiles or cancellation schedules. Full model/profile composition, all spawn/Ready schedules and broader callback/reentrancy competition remain unfinished."
   ],
   "conflicts_with": [],
-  "candidate_commit": "842d637369707a4c85cca6d3706566278de37afd",
+  "candidate_commit": "83026446716b18b0f8cb185d177ae971473deff8",
   "integrated_commit": null,
   "evidence_ids": [
     "RUN-JS-WORKFLOW-20261005-PARTIAL-036",
@@ -50,7 +50,8 @@
     "RUN-JSONL-SHARING-V3-20261006-PARTIAL-036",
     "RUN-CANONICAL-LLM-20261006-PARTIAL-036",
     "RUN-METADATA-RETENTION-20261006-PARTIAL-036",
-    "RUN-LLM-CONFIG-20261006-PARTIAL-036"
+    "RUN-LLM-CONFIG-20261006-PARTIAL-036",
+    "RUN-SDK-RETENTION-20261007-PARTIAL-036"
   ],
-  "next_action": "干净产品842d6373完整验收通过，036仍部分verification；继续有明确原版观测的JS engine/parse适配、完整model/profile、spawn/Ready竞争与清理重入。"
+  "next_action": "干净产品83026446完整验收通过，036仍部分verification；继续有明确原版观测的JS engine/parse适配、完整model/profile、spawn/Ready竞争与清理重入。"
 }

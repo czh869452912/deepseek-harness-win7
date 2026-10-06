@@ -39,11 +39,12 @@
   ],
   "open_findings": [],
   "conflicts_with": [],
-  "candidate_commit": "842d637369707a4c85cca6d3706566278de37afd",
-  "integrated_commit": "842d637369707a4c85cca6d3706566278de37afd",
+  "candidate_commit": "83026446716b18b0f8cb185d177ae971473deff8",
+  "integrated_commit": "83026446716b18b0f8cb185d177ae971473deff8",
   "evidence_ids": [
     "RUN-LLM-CONFIG-REJECTED-20261006-2D8FED63",
-    "RUN-LLM-CONFIG-20261006-LLM-CONFIG-053"
+    "RUN-LLM-CONFIG-20261006-LLM-CONFIG-053",
+    "RUN-SDK-RETENTION-20261007-LLM-CONFIG-053"
   ],
-  "next_action": "26组完整独立查询/空值/严格类型/对象归属及实际解压在干净产品842d6373有界签收；精确b93旧包17差异、旧失败证据及未提交资格归档保持。继续任意ABI、完整profile/Wire及竞争；七父范围保持开放。"
+  "next_action": "clean candidate 83026446 全量/原版/真实解压复验已通过。26组完整独立查询/空值/严格类型/对象归属及实际解压在干净产品842d6373有界签收；精确b93旧包17差异、旧失败证据及未提交资格归档保持。继续任意ABI、完整profile/Wire及竞争；七父范围保持开放。"
 }

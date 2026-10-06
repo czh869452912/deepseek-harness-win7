@@ -2,23 +2,47 @@
   "id": "MIG-JS-ERRORS-052",
   "goal": "补齐实际JS解析结果、Ready和业务错误边界并复现私有构建",
   "kind": "implementation",
-  "state": "running",
+  "state": "integrated",
   "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
   "base_product": "49b118df0da9447f717011c393390820891b136d",
   "owner": "current-session-coordinator",
-  "requires": [{"task": "MIG-CURRENT-RELEASE-GATE-003", "contract": "CON-CURRENT-RELEASE-GATE", "revision": 1}, {"task": "MIG-JS-INITIAL-WRITE-040", "contract": "CON-JS-INITIAL-WRITE", "revision": 1}],
-  "provides": [{"contract": "CON-JS-ERRORS", "revision": 1}],
+  "requires": [
+    {
+      "task": "MIG-CURRENT-RELEASE-GATE-003",
+      "contract": "CON-CURRENT-RELEASE-GATE",
+      "revision": 1
+    },
+    {
+      "task": "MIG-JS-INITIAL-WRITE-040",
+      "contract": "CON-JS-INITIAL-WRITE",
+      "revision": 1
+    }
+  ],
+  "provides": [
+    {
+      "contract": "CON-JS-ERRORS",
+      "revision": 1
+    }
+  ],
   "acceptance": [
     "Thirty-two actual pinned Source/native/extracted Session/realm/error observations match complete business outcomes and exact disclosed platform diagnostics.",
     "Canonical guarded C and workflow builds reproduce qualified private artifacts without ignored candidate input paths or post-build provenance rewriting.",
     "Complete values, Source identity, selected ownPython, child/import/private asset closures, offline approved assets and mandatory-lane refusal controls pass alongside existing worker/session regressions.",
     "A distinct clean complete frozen gate with all current required lanes, paired observers, unchanged Source groups, real extracted Python3.8.10 and original browser passes before bounded integration."
   ],
-  "expected_paths": ["dsh/javascript", "scripts", "tests", "migration", "docs/research"],
-  "open_findings": ["Provider/canonical rebuilds and formal portable/current-release hooks promoted.32 actual Source/native and new ownZIP ownPython3.8.10 scenarios match22 imported bytes/20 resources;191 consumers/Ready/initial/extracted/mandatory controls and181 existing regressions pass. First28 failed controls retained; fixed offline fixture interpreter model and old19-resource inventory, not Source algorithms.2522 mandatory lanes/74 pairs and8981 full collection; clean complete acceptance pending.", "Native engine frames and stack descriptor ownership remain exact disclosed platform adaptations; broader JS/Node/profile scope remains open."],
+  "expected_paths": [
+    "dsh/javascript",
+    "scripts",
+    "tests",
+    "migration",
+    "docs/research"
+  ],
+  "open_findings": [],
   "conflicts_with": [],
-  "candidate_commit": null,
-  "integrated_commit": null,
-  "evidence_ids": [],
-  "next_action": "完成Root消费者/解压/必需lane拒绝回归及新真实ownZIP资格归档，分段提交后执行新的干净全量门禁。最新签收842d6373/62及七父范围不变。"
+  "candidate_commit": "83026446716b18b0f8cb185d177ae971473deff8",
+  "integrated_commit": "83026446716b18b0f8cb185d177ae971473deff8",
+  "evidence_ids": [
+    "RUN-SDK-RETENTION-20261007-JS-ERRORS-052"
+  ],
+  "next_action": "32实际解析/Ready/业务错误与资源归属场景在干净产品83026446有界签收；保留精确原生帧/生成诊断/descriptor平台适配，完整Node/profile/竞争及036继续开放。"
 }

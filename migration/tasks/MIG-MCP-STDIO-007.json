@@ -34,8 +34,8 @@
   ],
   "open_findings": [],
   "conflicts_with": [],
-  "candidate_commit": "842d637369707a4c85cca6d3706566278de37afd",
-  "integrated_commit": "842d637369707a4c85cca6d3706566278de37afd",
+  "candidate_commit": "83026446716b18b0f8cb185d177ae971473deff8",
+  "integrated_commit": "83026446716b18b0f8cb185d177ae971473deff8",
   "evidence_ids": [
     "RUN-MCP-20261004-MCP-STDIO-007",
     "RUN-ACP-MCP-20261004-MCP-STDIO-007",
@@ -55,7 +55,8 @@
     "RUN-JSONL-SHARING-V3-20261006-MCP-STDIO-007",
     "RUN-CANONICAL-LLM-20261006-MCP-STDIO-007",
     "RUN-METADATA-RETENTION-20261006-MCP-STDIO-007",
-    "RUN-LLM-CONFIG-20261006-MCP-STDIO-007"
+    "RUN-LLM-CONFIG-20261006-MCP-STDIO-007",
+    "RUN-SDK-RETENTION-20261007-MCP-STDIO-007"
   ],
-  "next_action": "clean candidate 842d6373 全量/原版/真实解压复验已通过。有界提供端合同在 clean candidate 842d6373 验收；继续其余 SDK/生命周期/URL/无限阻塞初始化边缘、subprocess tree/pathological streams/background Jobs 和整体迁移。本轮 scoped owned-WebServer shutdown 的 WinError 10054 路径已修复；其余浏览器启动取消/Proactor destructor/HTTP 诊断未认证根因，Win7 仍延期。"
+  "next_action": "clean candidate 83026446 全量/原版/真实解压复验已通过。有界提供端合同在 clean candidate 83026446 验收；继续其余 SDK/生命周期/URL/无限阻塞初始化边缘、subprocess tree/pathological streams/background Jobs 和整体迁移。本轮 scoped owned-WebServer shutdown 的 WinError 10054 路径已修复；其余浏览器启动取消/Proactor destructor/HTTP 诊断未认证根因，Win7 仍延期。"
 }

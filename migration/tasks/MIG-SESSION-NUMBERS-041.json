@@ -38,15 +38,16 @@
   ],
   "open_findings": [],
   "conflicts_with": [],
-  "candidate_commit": "842d637369707a4c85cca6d3706566278de37afd",
-  "integrated_commit": "842d637369707a4c85cca6d3706566278de37afd",
+  "candidate_commit": "83026446716b18b0f8cb185d177ae971473deff8",
+  "integrated_commit": "83026446716b18b0f8cb185d177ae971473deff8",
   "evidence_ids": [
     "RUN-SESSION-BOUNDARIES-20261006-SESSION-NUMBERS-041",
     "RUN-DEEPSEEK-ERROR-20261006-SESSION-NUMBERS-041",
     "RUN-JSONL-SHARING-V3-20261006-SESSION-NUMBERS-041",
     "RUN-CANONICAL-LLM-20261006-SESSION-NUMBERS-041",
     "RUN-METADATA-RETENTION-20261006-SESSION-NUMBERS-041",
-    "RUN-LLM-CONFIG-20261006-SESSION-NUMBERS-041"
+    "RUN-LLM-CONFIG-20261006-SESSION-NUMBERS-041",
+    "RUN-SDK-RETENTION-20261007-SESSION-NUMBERS-041"
   ],
-  "next_action": "clean candidate 842d6373 全量/原版/真实解压复验已通过。53组真实公共Session.create数值/完整冻结元数据/浅深克隆修订2在干净产品b2398db9有界签收；实际查询副本消费者通过，独立4a127b73拒绝产物保留。继续完整fromRestore/malformed/public plugin ABI、任意竞争/长历史/profile与完整B1。"
+  "next_action": "clean candidate 83026446 全量/原版/真实解压复验已通过。53组真实公共Session.create数值/完整冻结元数据/浅深克隆修订2在干净产品b2398db9有界签收；实际查询副本消费者通过，独立4a127b73拒绝产物保留。继续完整fromRestore/malformed/public plugin ABI、任意竞争/长历史/profile与完整B1。"
 }

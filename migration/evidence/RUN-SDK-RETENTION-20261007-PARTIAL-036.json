@@ -1,0 +1,30 @@
+{
+  "id": "RUN-SDK-RETENTION-20261007-PARTIAL-036",
+  "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
+  "product_commit": "83026446716b18b0f8cb185d177ae971473deff8",
+  "kind": "verification",
+  "task_id": "MIG-JS-WORKFLOW-036",
+  "result": "passed",
+  "validity": "current",
+  "commands": [
+    ".venv/Scripts/python.exe scripts/verify_release.py --browser \"C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe\" --output-dir .goose/out/js-sdk-retention-clean-v4"
+  ],
+  "environment": {
+    "python": "3.8.10 (default, May  6 2021, 17:27:56) [MSC v.1928 64 bit (AMD64)]",
+    "os": "Windows-10-10.0.26200-SP0",
+    "cwd": "C:\\Users\\czh86\\Documents\\Codex\\deepseek-harness-win7",
+    "node": "v22.22.2",
+    "browser": "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe"
+  },
+  "contract_revisions": {
+    "CON-JS-WORKFLOW": 1,
+    "CON-CURRENT-RELEASE-GATE": 1
+  },
+  "artifacts": [
+    {
+      "path": "migration/evidence/artifacts/SDK-RETENTION-20261007-83026446.zip",
+      "sha256": "2ea3f28a8c96cda75a13c1560b06493a4d77b823a26d514022d6c814839fa579"
+    }
+  ],
+  "scope": "Frozen clean current-Windows candidate83026446: 8975 passes,six existing skips,zero failures/errors;2522 mandatory lanes,20 unchanged original Source groups/1911 assertions,74 fresh paired drivers and actual extracted ownPython3.8.10/original browser. Previous62 bounded acceptances revalidate. 052 qualifies32 actual original/native/extracted Session/realm/error boundaries with canonical rebuilt worker/workflow artifacts,22 actual imported modules and20 private resources. Parse failure precedes Ready; actual native business prefixes and frames remain preserved. Exact disclosed native generated diagnostics/descriptor ownership adaptations remain platform limitations,not full Node equivalence. 054 qualifies seven complete same-physical-path stat/lstat/raw metadata observations, directory size, 100ns mtime and native ChangeTime,256 real successful probes and two real query-failure handle releases. Exact842 counterexample and dirty portable qualifications remain separate. 055 qualifies minimal SDK real persistent shell and next-model request,cancel after partial output,and missing-DONE error:30/14/18 full ordered frames,all HTTP requests/tool definitions,session headers,JSONL sequences and durable facts. Cancellation retains actual provider/model/usage/interrupted;ordinary non-cancel stream errors create no partial assistant. All8958 tracked Source and eight observer inputs are guarded; actual native and extracted imported bytes match their scenario closures and ZIP. Only independently observed optional cancellation adapter_failure import is allowed with approved bytes. Live raw clocks and typed UUID alias graphs remain checked;DTO fields remain complete. Original Source SDK stderr stays empty;the narrowly classified owned cancel fixture10054 descriptor remains raw-visible and is not a product defect exemption. Maintenance prunes only completed owned synthetic test receipts after test teardown or normal parent retention,with exact adjacent fakeZIP/marker/hash guards and planned/completed audits. This execution removed660 JSONs/9030378843 bytes. Active tests, external paths, real ZIPs, frozen inputs,XML/logs and Source/browser observations remain. Whole-batch budget was prospectively expanded2800 to3200 then3600 seconds for added coverage after exact dc825e18 was rejected at99percent with no complete XML;individual deadlines and Source criteria remain unchanged. The rejected run stays unaccepted. Normal owned-parent completion also pruned1817 unchanged frontend/ICU preflight copies/744448390 bytes after all14 required preflight controls passed; exact frozen preserved-original hashes, immediate rechecks and bounded planned/completed audits guard every unlink. Modified failure variants and actual evidence remain. All119 original frontend inputs,nine Source predicates/C58/C59 and previous rejection/qualification archives remain unchanged. Seven broad parents,036 raw JS adaptations,full profile/Web/transport/plugin/resume/race scopes and the1175 cause remain open;actual Win7 is user-deferred and accepted_upstream stays null. No paid API,push or publication."
+}

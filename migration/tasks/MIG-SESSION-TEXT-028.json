@@ -43,8 +43,8 @@
   ],
   "open_findings": [],
   "conflicts_with": [],
-  "candidate_commit": "842d637369707a4c85cca6d3706566278de37afd",
-  "integrated_commit": "842d637369707a4c85cca6d3706566278de37afd",
+  "candidate_commit": "83026446716b18b0f8cb185d177ae971473deff8",
+  "integrated_commit": "83026446716b18b0f8cb185d177ae971473deff8",
   "evidence_ids": [
     "RUN-SESSION-TEXT-20261005-SESSION-TEXT-028",
     "RUN-SESSION-TOOLS-20261005-SESSION-TEXT-028",
@@ -59,7 +59,8 @@
     "RUN-JSONL-SHARING-V3-20261006-SESSION-TEXT-028",
     "RUN-CANONICAL-LLM-20261006-SESSION-TEXT-028",
     "RUN-METADATA-RETENTION-20261006-SESSION-TEXT-028",
-    "RUN-LLM-CONFIG-20261006-SESSION-TEXT-028"
+    "RUN-LLM-CONFIG-20261006-SESSION-TEXT-028",
+    "RUN-SDK-RETENTION-20261007-SESSION-TEXT-028"
   ],
-  "next_action": "clean candidate 842d6373 全量/原版/真实解压复验已通过。clean candidate 842d6373 的 7883 字面 Unicode/有效语义提取/Session locale 顺序双侧与真实解压观察、两持久化 Context 重启消费者已有界签收；继续 malformed/plugin ABI、全域/竞争、schema-19、profile 主链和整体迁移，Win7 延期。"
+  "next_action": "clean candidate 83026446 全量/原版/真实解压复验已通过。clean candidate 83026446 的 7883 字面 Unicode/有效语义提取/Session locale 顺序双侧与真实解压观察、两持久化 Context 重启消费者已有界签收；继续 malformed/plugin ABI、全域/竞争、schema-19、profile 主链和整体迁移，Win7 延期。"
 }

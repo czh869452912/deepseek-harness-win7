@@ -41,14 +41,15 @@
   ],
   "open_findings": [],
   "conflicts_with": [],
-  "candidate_commit": "842d637369707a4c85cca6d3706566278de37afd",
-  "integrated_commit": "842d637369707a4c85cca6d3706566278de37afd",
+  "candidate_commit": "83026446716b18b0f8cb185d177ae971473deff8",
+  "integrated_commit": "83026446716b18b0f8cb185d177ae971473deff8",
   "evidence_ids": [
     "RUN-LLM-PREPARED-REJECTED-20261006-B93D1CD8",
     "RUN-LLM-PREPARED-REJECTED-20261006-C0B12C55",
     "RUN-LLM-PREPARED-REJECTED-20261006-FB3BA8D9",
     "RUN-LLM-PREPARED-REJECTED-20261006-011C3A95",
-    "RUN-LLM-CONFIG-20261006-LLM-PREPARED-051"
+    "RUN-LLM-CONFIG-20261006-LLM-PREPARED-051",
+    "RUN-SDK-RETENTION-20261007-LLM-PREPARED-051"
   ],
-  "next_action": "108组完整公共准备句柄、代际、配置严格比较、规范AgentLoop及实际解压在干净产品842d6373有界签收；精确2a旧包及b93拒绝ZIP/ACP失败fixture保持。继续任意配置图ABI及完整profile/Wire/图ABI/竞争；七父范围与036保持开放。"
+  "next_action": "clean candidate 83026446 全量/原版/真实解压复验已通过。108组完整公共准备句柄、代际、配置严格比较、规范AgentLoop及实际解压在干净产品842d6373有界签收；精确2a旧包及b93拒绝ZIP/ACP失败fixture保持。继续任意配置图ABI及完整profile/Wire/图ABI/竞争；七父范围与036保持开放。"
 }

@@ -34,8 +34,8 @@
   ],
   "open_findings": [],
   "conflicts_with": [],
-  "candidate_commit": "842d637369707a4c85cca6d3706566278de37afd",
-  "integrated_commit": "842d637369707a4c85cca6d3706566278de37afd",
+  "candidate_commit": "83026446716b18b0f8cb185d177ae971473deff8",
+  "integrated_commit": "83026446716b18b0f8cb185d177ae971473deff8",
   "evidence_ids": [
     "RUN-RUNTIME-READY-REJECTED-20261005-038",
     "RUN-RUNTIME-CONTEXT-20261006-JS-READY-038",
@@ -44,7 +44,8 @@
     "RUN-JSONL-SHARING-V3-20261006-JS-READY-038",
     "RUN-CANONICAL-LLM-20261006-JS-READY-038",
     "RUN-METADATA-RETENTION-20261006-JS-READY-038",
-    "RUN-LLM-CONFIG-20261006-JS-READY-038"
+    "RUN-LLM-CONFIG-20261006-JS-READY-038",
+    "RUN-SDK-RETENTION-20261007-JS-READY-038"
   ],
-  "next_action": "clean candidate 842d6373 全量/原版/真实解压复验已通过。两组真实已发出但延迟交付Ready跨物理退出在干净产品b2398db9有界签收；继续发出前竞争、共享清理重入、全model/profile与八项原始engine差异，完整C2开放。"
+  "next_action": "clean candidate 83026446 全量/原版/真实解压复验已通过。两组真实已发出但延迟交付Ready跨物理退出在干净产品b2398db9有界签收；继续发出前竞争、共享清理重入、全model/profile与八项原始engine差异，完整C2开放。"
 }

@@ -25,8 +25,8 @@
   ],
   "open_findings": [],
   "conflicts_with": [],
-  "candidate_commit": "842d637369707a4c85cca6d3706566278de37afd",
-  "integrated_commit": "842d637369707a4c85cca6d3706566278de37afd",
+  "candidate_commit": "83026446716b18b0f8cb185d177ae971473deff8",
+  "integrated_commit": "83026446716b18b0f8cb185d177ae971473deff8",
   "evidence_ids": [
     "RUN-SESSION-STORAGE-20261005-UPSTREAM-DELTA-002",
     "RUN-TOOLS-HTTP-20261005-UPSTREAM-DELTA-002",
@@ -38,7 +38,8 @@
     "RUN-JSONL-SHARING-V3-20261006-UPSTREAM-DELTA-002",
     "RUN-CANONICAL-LLM-20261006-UPSTREAM-DELTA-002",
     "RUN-METADATA-RETENTION-20261006-UPSTREAM-DELTA-002",
-    "RUN-LLM-CONFIG-20261006-UPSTREAM-DELTA-002"
+    "RUN-LLM-CONFIG-20261006-UPSTREAM-DELTA-002",
+    "RUN-SDK-RETENTION-20261007-UPSTREAM-DELTA-002"
   ],
-  "next_action": "clean candidate 842d6373 全量/原版/真实解压复验已通过。二十项只读差分回归与实际 pinned Source 父提交差分已在干净完整门禁绑定；继续完整动态职责图、无缓存准备和远程 Actions，不自动推进 pin 或任务。"
+  "next_action": "clean candidate 83026446 全量/原版/真实解压复验已通过。二十项只读差分回归与实际 pinned Source 父提交差分已在干净完整门禁绑定；继续完整动态职责图、无缓存准备和远程 Actions，不自动推进 pin 或任务。"
 }

@@ -2,7 +2,7 @@
   "id": "MIG-WIN32-STAT-054",
   "goal": "对齐实际Windows文件版本、目录大小和原生句柄归属",
   "kind": "implementation",
-  "state": "running",
+  "state": "integrated",
   "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
   "base_product": "842d637369707a4c85cca6d3706566278de37afd",
   "owner": "current-session-coordinator",
@@ -25,15 +25,19 @@
     "256 real successful handle probes and two actual-handle query failure cleanup controls preserve ownership; complete-value/runtime/Source/extracted/mandatory-lane refusal controls stay strict.",
     "A new clean frozen full suite, unchanged Source groups, fresh actual paired receipts and real extracted ownPython3.8.10/original browser pass before bounded integration."
   ],
-  "expected_paths": ["dsh/fs", "scripts", "tests", "migration", "docs/research"],
-  "open_findings": [
-    "Clean0076ec43 complete XML records8709 passed,6 existing skips,0 failures/errors in2678.481s;pytest process rejected at2800s during synthetic cleanup. Exact ZIP/frozen16156 inputs/XML/logs/process cleanup and original planned/resumed audits are archived independently. Parent-owned post-exit cleanup is a prospective repair;no Source/paired/extracted/browser acceptance or integration is inferred.",
-    "Provider and formal Source/native/consumer/portable hooks promoted. Isolated34 strict controls,Root80 filesystem regressions,101 related consumers,all68 new consumer/extracted/mandatory refusal controls and1000 current-release gate regressions passed. Strict registry2253lanes/72pairs,full collection8709. Fresh dirty precommit ownZIP/extractedPython3.8.10 matches seven full Source rows and256/two handle boundaries;separate qualification archive retained. Clean full acceptance remains pending.",
-    "The original WinError1175 holder/cause, arbitrary path/reparse/permission races, broad profile/tool composition and actual user-deferred Win7 remain outside this selected scope."
+  "expected_paths": [
+    "dsh/fs",
+    "scripts",
+    "tests",
+    "migration",
+    "docs/research"
   ],
+  "open_findings": [],
   "conflicts_with": [],
-  "candidate_commit": null,
-  "integrated_commit": null,
-  "evidence_ids": [],
-  "next_action": "f5087dcd全量正常8841pass/1fail/6skip/1warning/3413.28秒；stat注册ID和SDK消费者通过，JS观察边界竞争拒绝证据保留，修正50项/四项拒绝控制已通过。过期预检副本自动维护79项、工作区12项及四项门禁拒绝通过，十一份历史执行19987副本/8188932290字节已清理；两次收取WinError5原始证据保留且原因未确认。执行新的干净全量、全部现行必需lane/配对、20组1911Source、实际解压及原版浏览器后才签收；最新842/62及七父范围不变。"
+  "candidate_commit": "83026446716b18b0f8cb185d177ae971473deff8",
+  "integrated_commit": "83026446716b18b0f8cb185d177ae971473deff8",
+  "evidence_ids": [
+    "RUN-SDK-RETENTION-20261007-WIN32-STAT-054"
+  ],
+  "next_action": "七组完整stat/lstat/100ns/ChangeTime及目录大小、256成功和两条失败句柄释放在干净产品83026446有界签收；精确原包反证及0076/dc825拒绝ZIP不变。继续任意文件系统竞争/profile工具及1175归因；七父范围与延期Win7开放。"
 }

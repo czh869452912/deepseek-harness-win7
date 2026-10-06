@@ -40,12 +40,13 @@
   ],
   "open_findings": [],
   "conflicts_with": [],
-  "candidate_commit": "842d637369707a4c85cca6d3706566278de37afd",
-  "integrated_commit": "842d637369707a4c85cca6d3706566278de37afd",
+  "candidate_commit": "83026446716b18b0f8cb185d177ae971473deff8",
+  "integrated_commit": "83026446716b18b0f8cb185d177ae971473deff8",
   "evidence_ids": [
     "RUN-LLM-METADATA-REJECTED-20261006-9B3F773B",
     "RUN-METADATA-RETENTION-20261006-LLM-METADATA-049",
-    "RUN-LLM-CONFIG-20261006-LLM-METADATA-049"
+    "RUN-LLM-CONFIG-20261006-LLM-METADATA-049",
+    "RUN-SDK-RETENTION-20261007-LLM-METADATA-049"
   ],
-  "next_action": "clean candidate 842d6373 全量/原版/真实解压复验已通过。137组完整公共元数据/分离归属与最终流式边界在干净产品2a67ae84有界签收；精确55a旧Portable和全部观察器/初轮控制失败保留。继续准备句柄完整归属及完整Wire/profile/图ABI/竞争；七父范围与八项JS差异仍开放。"
+  "next_action": "clean candidate 83026446 全量/原版/真实解压复验已通过。137组完整公共元数据/分离归属与最终流式边界在干净产品2a67ae84有界签收；精确55a旧Portable和全部观察器/初轮控制失败保留。继续准备句柄完整归属及完整Wire/profile/图ABI/竞争；七父范围与八项JS差异仍开放。"
 }

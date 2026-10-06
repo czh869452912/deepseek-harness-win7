@@ -39,8 +39,8 @@
   ],
   "open_findings": [],
   "conflicts_with": [],
-  "candidate_commit": "842d637369707a4c85cca6d3706566278de37afd",
-  "integrated_commit": "842d637369707a4c85cca6d3706566278de37afd",
+  "candidate_commit": "83026446716b18b0f8cb185d177ae971473deff8",
+  "integrated_commit": "83026446716b18b0f8cb185d177ae971473deff8",
   "evidence_ids": [
     "RUN-SESSION-QUERY-ENGINE-20261004-PYTHON-DIRECTORY-PUBLICATION-025",
     "RUN-SESSION-TEXT-20261005-PYTHON-DIRECTORY-PUBLICATION-025",
@@ -56,7 +56,8 @@
     "RUN-JSONL-SHARING-V3-20261006-PYTHON-DIRECTORY-PUBLICATION-025",
     "RUN-CANONICAL-LLM-20261006-PYTHON-DIRECTORY-PUBLICATION-025",
     "RUN-METADATA-RETENTION-20261006-PYTHON-DIRECTORY-PUBLICATION-025",
-    "RUN-LLM-CONFIG-20261006-PYTHON-DIRECTORY-PUBLICATION-025"
+    "RUN-LLM-CONFIG-20261006-PYTHON-DIRECTORY-PUBLICATION-025",
+    "RUN-SDK-RETENTION-20261007-PYTHON-DIRECTORY-PUBLICATION-025"
   ],
-  "next_action": "clean candidate 842d6373 全量/原版/真实解压复验已通过。clean candidate 842d6373 的十条实际目录共享/事务回归与四条解压发布/恢复观察已有界验收；保留未知外部持有者与全部失败，不认证全量 Python 包生态、任意竞争或 Win7。"
+  "next_action": "clean candidate 83026446 全量/原版/真实解压复验已通过。clean candidate 83026446 的十条实际目录共享/事务回归与四条解压发布/恢复观察已有界验收；保留未知外部持有者与全部失败，不认证全量 Python 包生态、任意竞争或 Win7。"
 }

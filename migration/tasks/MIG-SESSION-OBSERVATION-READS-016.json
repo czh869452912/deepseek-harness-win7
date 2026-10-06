@@ -38,8 +38,8 @@
   ],
   "open_findings": [],
   "conflicts_with": [],
-  "candidate_commit": "842d637369707a4c85cca6d3706566278de37afd",
-  "integrated_commit": "842d637369707a4c85cca6d3706566278de37afd",
+  "candidate_commit": "83026446716b18b0f8cb185d177ae971473deff8",
+  "integrated_commit": "83026446716b18b0f8cb185d177ae971473deff8",
   "evidence_ids": [
     "RUN-SESSION-TRACING-20261004-SESSION-OBSERVATION-READS-016",
     "RUN-SESSION-FILTERS-20261004-SESSION-OBSERVATION-READS-016",
@@ -57,7 +57,8 @@
     "RUN-JSONL-SHARING-V3-20261006-SESSION-OBSERVATION-READS-016",
     "RUN-CANONICAL-LLM-20261006-SESSION-OBSERVATION-READS-016",
     "RUN-METADATA-RETENTION-20261006-SESSION-OBSERVATION-READS-016",
-    "RUN-LLM-CONFIG-20261006-SESSION-OBSERVATION-READS-016"
+    "RUN-LLM-CONFIG-20261006-SESSION-OBSERVATION-READS-016",
+    "RUN-SDK-RETENTION-20261007-SESSION-OBSERVATION-READS-016"
   ],
-  "next_action": "clean candidate 842d6373 全量/原版/真实解压复验已通过。clean candidate 842d6373 的十六组 point read 错误/cause/cut/租约已有界验收；继续完整 durable/domain/FTS/长期回放和 Web/profile 消费者，不认证完整 B1 或 Win7。"
+  "next_action": "clean candidate 83026446 全量/原版/真实解压复验已通过。clean candidate 83026446 的十六组 point read 错误/cause/cut/租约已有界验收；继续完整 durable/domain/FTS/长期回放和 Web/profile 消费者，不认证完整 B1 或 Win7。"
 }

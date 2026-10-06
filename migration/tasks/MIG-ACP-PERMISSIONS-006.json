@@ -40,8 +40,8 @@
   ],
   "open_findings": [],
   "conflicts_with": [],
-  "candidate_commit": "842d637369707a4c85cca6d3706566278de37afd",
-  "integrated_commit": "842d637369707a4c85cca6d3706566278de37afd",
+  "candidate_commit": "83026446716b18b0f8cb185d177ae971473deff8",
+  "integrated_commit": "83026446716b18b0f8cb185d177ae971473deff8",
   "evidence_ids": [
     "RUN-ACP-PERMISSIONS-20261004-ACP-PERMISSIONS-006",
     "RUN-MCP-20261004-ACP-PERMISSIONS-006",
@@ -62,7 +62,8 @@
     "RUN-JSONL-SHARING-V3-20261006-ACP-PERMISSIONS-006",
     "RUN-CANONICAL-LLM-20261006-ACP-PERMISSIONS-006",
     "RUN-METADATA-RETENTION-20261006-ACP-PERMISSIONS-006",
-    "RUN-LLM-CONFIG-20261006-ACP-PERMISSIONS-006"
+    "RUN-LLM-CONFIG-20261006-ACP-PERMISSIONS-006",
+    "RUN-SDK-RETENTION-20261007-ACP-PERMISSIONS-006"
   ],
-  "next_action": "clean candidate 842d6373 全量/原版/真实解压复验已通过。一次性 permission wire、native Event cancellation、真实工具/next-model/late grant/close/EOF 和实际解压六进程在 clean candidate 842d6373 有界验收；继续实际 MCP/HTTP/SSE/supervisor/subagent；完整 ACP 未认证。"
+  "next_action": "clean candidate 83026446 全量/原版/真实解压复验已通过。一次性 permission wire、native Event cancellation、真实工具/next-model/late grant/close/EOF 和实际解压六进程在 clean candidate 83026446 有界验收；继续实际 MCP/HTTP/SSE/supervisor/subagent；完整 ACP 未认证。"
 }

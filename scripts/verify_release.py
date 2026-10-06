@@ -64,7 +64,7 @@ from scripts.llm_config_oracle import validate_runtime as validate_llm_config, i
 from scripts.win32_stat_oracle import validate_runtime as validate_win32_stat, identity as win32_stat_identity, NAMES as WIN32_STAT_NAMES
 from scripts.llm_prepared_oracle import validate_runtime as validate_llm_prepared, identity as llm_prepared_identity, NAMES as LLM_PREPARED_NAMES
 from scripts.llm_metadata_oracle import validate_runtime as validate_llm_metadata, identity as llm_metadata_identity, NAMES as LLM_METADATA_NAMES
-from scripts.process_artifact_retention import prune_previous_regressions, prune_finished_focus_runs, expire_finished_manifests
+from scripts.process_artifact_retention import prune_previous_regressions, prune_finished_focus_runs, expire_finished_manifests, prune_completed_regression
 NODE_VERSION = 'v22.22.2'
 PORTABLE_ARCHIVE = 'dist/dsh-win7-portable-v0.1.0.zip'
 PAIRED_DRIVERS = (
@@ -104,6 +104,8 @@ REQUIRED_REGRESSION = {
         'test_actual_pytest_end_hook_prunes_synthetic_data_and_preserves_diagnostics[passed-external]',
         'test_default_pytest_workspaces_are_unique_and_preserve_previous_outputs',
         'test_explicit_pytest_workspace_is_preserved_without_creating_an_output_root',
+        *{'test_verified_release_owner_defers_only_its_actual_pytest_workspace[' + status + ']' for status in ('0', '1')},
+        *{'test_inherited_release_owner_cannot_defer_nested_pytest_cleanup[' + owner + ']' for owner in ('external', 'different-workspace')},
         'test_audit_examples_are_bounded',
         'test_changed_file_is_preserved_and_partial_failure_is_audited',
         'test_expired_cleanup_manifests_keep_latest_two_and_pending_data',
@@ -201,6 +203,8 @@ REQUIRED_REGRESSION = {
         *{'test_portable_deepseek_error_cli_refuses_partial_receipts[' + side + ']' for side in ('source', 'native')},
     },
     'test_release_workspace': {
+        *{'test_normal_failed_pytest_status_survives_secondary_housekeeping_failure[' + failure + ']' for failure in ('retention', 'cleanup-audit')},
+        *{'test_actual_release_pytest_exits_before_owned_artifact_cleanup[' + outcome + ']' for outcome in ('passed', 'failed')},
         'test_retention_error_never_hides_primary_regression_failure[passed]',
         'test_retention_error_never_hides_primary_regression_failure[failed]',
         'test_actual_release_process_preserves_exit_status_and_logs[0]',
@@ -1436,9 +1440,21 @@ def run_python_regression(python, output, environment):
         execution_path=str(workspace), retained_path=str(retained),
         scope='Fresh owned short Windows execution path is independent of the output label. Artifacts move to the retained path after pytest, including failure/timeout; raw observations retain execution paths.'), indent=2) + '\n', encoding='utf-8')
     primary_failure = None
+    exitstatus = None
+    owned_output = False
+    regression_environment = dict(environment)
+    regression_environment.pop('DSH_RELEASE_PYTEST_OUTPUT', None)
     try:
-        run([python, '-m', 'pytest', 'tests', '-ra', '--junitxml=' + str(output / 'pytest.xml'),
-            '--basetemp=' + str(workspace)], 'pytest', output, env=environment, timeout=2800)
+        output.resolve().relative_to(parent)
+        owned_output = True
+        regression_environment['DSH_RELEASE_PYTEST_OUTPUT'] = str(output.resolve())
+    except ValueError:
+        pass
+    try:
+        exitstatus = run([python, '-m', 'pytest', 'tests', '-ra', '--junitxml=' + str(output / 'pytest.xml'),
+            '--basetemp=' + str(workspace)], 'pytest', output, env=regression_environment, timeout=2800, accepted=(0, 1))
+        if exitstatus == 1:
+            primary_failure = RuntimeError('pytest failed (1); see ' + str(output / 'pytest.log'))
     except BaseException as failure:
         primary_failure = failure
         raise
@@ -1455,6 +1471,20 @@ def run_python_regression(python, output, environment):
                         raise
                 if primary_failure is None:
                     raise
+
+    if owned_output and exitstatus in (0, 1):
+        try:
+            prune_completed_regression(parent, output)
+        except Exception as cleanup_failure:
+            if exitstatus != 1:
+                raise
+            try:
+                (output / 'pytest-artifact-cleanup-failure.json').write_text(json.dumps(dict(
+                    name=type(cleanup_failure).__name__, message=str(cleanup_failure)), indent=2) + '\n', encoding='utf-8')
+            except OSError:
+                pass
+    if exitstatus == 1:
+        raise primary_failure
 
 
 def verify(args, output):

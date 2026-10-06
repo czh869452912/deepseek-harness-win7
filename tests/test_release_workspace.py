@@ -14,13 +14,14 @@ def test_short_pytest_workspace_retains_owned_success_and_failure_artifacts(tmp_
     output.mkdir()
     executions = []
 
-    def observe_run(command, name, selected_output, env=None, timeout=None):
+    def observe_run(command, name, selected_output, env=None, timeout=None, accepted=None):
         selected = Path(next(argument.split('=', 1)[1] for argument in command if argument.startswith('--basetemp=')))
         selected.relative_to(gate.ROOT / '.goose/out')
         assert selected.name.startswith('g-')
         assert selected.parent == gate.ROOT / '.goose/out'
         assert command[1:4] == ['-m', 'pytest', 'tests']
         assert timeout == 2800 and name == 'pytest' and selected_output == output
+        assert accepted == (0, 1)
         executions.append(selected)
         (selected / 'owned-observation.json').write_text('{"result":"retained"}\n', encoding='utf-8')
         if outcome == 'failed':
@@ -105,6 +106,70 @@ def test_actual_release_process_preserves_exit_status_and_logs(tmp_path, status)
         assert gate.run(command, 'owned-process', tmp_path, timeout=10) == 0
     assert 'actual retained subprocess output' in (tmp_path / 'owned-process.log').read_text(encoding='utf-8')
     assert not (tmp_path / 'owned-process-cleanup.json').exists()
+
+
+@pytest.mark.parametrize('failure', ['retention', 'cleanup-audit'])
+def test_normal_failed_pytest_status_survives_secondary_housekeeping_failure(tmp_path, monkeypatch, failure):
+    monkeypatch.setattr(gate, 'ROOT', tmp_path)
+    output = tmp_path / '.goose/out/release'
+    output.mkdir(parents=True)
+    monkeypatch.setattr(gate, 'run', lambda *arguments, **keywords: 1)
+    if failure == 'retention':
+        def refuse_move(source, target):
+            raise PermissionError('retained folder locked')
+        monkeypatch.setattr(gate.os, 'rename', refuse_move)
+    else:
+        def refuse_cleanup(*arguments):
+            raise PermissionError('cleanup locked')
+        original_write = Path.write_text
+        def refuse_audit(path, *arguments, **keywords):
+            if path.name == 'pytest-artifact-cleanup-failure.json':
+                raise OSError('diagnostic disk write failed')
+            return original_write(path, *arguments, **keywords)
+        monkeypatch.setattr(gate, 'prune_completed_regression', refuse_cleanup)
+        monkeypatch.setattr(Path, 'write_text', refuse_audit)
+    with pytest.raises(RuntimeError, match=r'pytest failed \(1\)'):
+        gate.run_python_regression(sys.executable, output, {})
+
+
+@pytest.mark.parametrize('outcome', ['passed', 'failed'])
+def test_actual_release_pytest_exits_before_owned_artifact_cleanup(tmp_path, monkeypatch, outcome):
+    child = tmp_path / 'child'
+    scripts = child / 'scripts'
+    tests = child / 'tests'
+    scripts.mkdir(parents=True)
+    tests.mkdir()
+    (scripts / '__init__.py').write_text('', encoding='utf-8')
+    (scripts / 'process_artifact_retention.py').write_bytes((gate.ROOT / 'scripts/process_artifact_retention.py').read_bytes())
+    (tests / 'conftest.py').write_bytes((gate.ROOT / 'tests/conftest.py').read_bytes())
+    (tests / 'test_process.py').write_text(
+        "def test_process(tmp_path):\n"
+        "    import os\n"
+        "    assert os.environ['DSH_RELEASE_PYTEST_OUTPUT']\n"
+        "    (tmp_path / 'portable.zip').write_bytes(b'exact candidate archive')\n"
+        "    (tmp_path / 'receipt.json').write_text('{\"runtime\":{\"checks\":[\"actual runtime\"]}}', encoding='utf-8')\n"
+        "    (tmp_path / 'actual-source.json').write_text('{\"source\":\"retained\"}', encoding='utf-8')\n"
+        + ("    assert False, 'retained child failure'\n" if outcome == 'failed' else ''), encoding='utf-8')
+    output = child / '.goose/out/release'
+    output.mkdir(parents=True)
+    monkeypatch.setattr(gate, 'ROOT', child)
+    environment = dict(os.environ)
+    environment['DSH_RELEASE_PYTEST_OUTPUT'] = 'inherited owner must be replaced'
+    if outcome == 'failed':
+        with pytest.raises(RuntimeError, match=r'pytest failed \(1\)'):
+            gate.run_python_regression(sys.executable, output, environment)
+    else:
+        gate.run_python_regression(sys.executable, output, environment)
+    assert environment['DSH_RELEASE_PYTEST_OUTPUT'] == 'inherited owner must be replaced'
+    retained = output / 'pytest-workspace'
+    assert not list(retained.glob('test_process*/receipt.json'))
+    assert list(retained.glob('test_process*/actual-source.json'))
+    audit = json.loads((output / 'unit-receipts-pruned.json').read_text(encoding='utf-8'))
+    assert audit['status'] == 'completed' and audit['removed_files'] == 1
+    assert not (retained / 'unit-receipts-pruned.json').exists()
+    log = (output / 'pytest.log').read_text(encoding='utf-8')
+    assert ('1 passed' if outcome == 'passed' else 'retained child failure') in log
+    assert (output / 'pytest.xml').is_file()
 
 
 def test_actual_timeout_retires_redirector_descendants_before_workspace_move(tmp_path):

@@ -185,6 +185,20 @@ def prune_pytest_session(session, exitstatus, output_root):
         selected = owned_path(output_root, workspace)
     except (ValueError, OSError):
         return None
+    owner = os.environ.get('DSH_RELEASE_PYTEST_OUTPUT')
+    if owner:
+        try:
+            output = owned_path(output_root, owner)
+        except (ValueError, OSError):
+            output = None
+        if output is not None:
+            mapping = read_json(owned_path(output_root, output / 'pytest-workspace-mapping.json'))
+            execution = owned_path(output_root, mapping['execution_path'])
+            if execution == selected:
+                retained = owned_path(output_root, mapping['retained_path'], missing=True)
+                if execution.parent != Path(output_root) or not execution.name.startswith('g-') or retained != output / 'pytest-workspace':
+                    raise ValueError('Deferred pytest cleanup owner differs')
+                return dict(status='deferred', owner=str(output), workspace=str(selected), exitstatus=int(exitstatus))
     return prune_synthetic_workspace(output_root, selected, selected / 'unit-receipts-pruned.json')
 
 

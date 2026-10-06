@@ -1,5 +1,7 @@
 # Windows file version and handle ownership
 
+Clean0076ec43 completed XML with8709 passes,6 existing skips and0 failures/errors in2678.481 seconds, but its pytest process was terminated at2800 seconds during synthetic cleanup. The gate is rejected; Source/paired/extracted/browser stages did not run. Exact ownZIP/frozen inputs/XML/logs and interrupted/resumed cleanup are retained in `WIN32-STAT-REJECTED-20261006-0076ec43.zip`, SHA256 `7c67acd4ca80e3999de37abebde72e6fdfebb7effdf575f8e00b568415bc3e3c`. Task054 remains running and latest complete acceptance remains842d6373. Prospective parent-owned cleanup preserves the existing2800-second test deadline; another clean complete gate is required.
+
 Actual pinned Node Source and Python 3.8.10 were observed on the same seven physical paths: text, empty, Unicode, fixed mtime, directory, metadata-only attribute change and missing file. The old Python provider used creation time for ctime and omitted public stat directory size. Exact clean product842 imports match its independently retained portable ZIP/frozen inputs and reproduce two differences: directory and metadata-change.
 
 The provider now obtains volume/file identity, size and 100ns mtime/ChangeTime through owned Win32 handles. It preserves read/write/delete sharing and closes every acquired handle in finally. Public stat includes directory size; listDir directory size remains absent. There is no stale creation-time fallback, retry or new Source defect predicate. The original1175 failure cause is still unidentified and is not explained by this correction.

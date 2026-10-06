@@ -259,6 +259,40 @@ def test_default_pytest_workspaces_are_unique_and_preserve_previous_outputs(tmp_
     assert retained.exists()
 
 
+@pytest.mark.parametrize('status', [0, 1])
+def test_verified_release_owner_defers_only_its_actual_pytest_workspace(tmp_path, monkeypatch, status):
+    root = tmp_path / '.goose/out'
+    output = root / 'release'
+    workspace = root / 'g-current'
+    output.mkdir(parents=True)
+    workspace.mkdir()
+    selected = receipt(workspace)
+    (output / 'pytest-workspace-mapping.json').write_text(json.dumps(dict(execution_path=str(workspace),
+        retained_path=str(output / 'pytest-workspace'))), encoding='utf-8')
+    monkeypatch.setenv('DSH_RELEASE_PYTEST_OUTPUT', str(output))
+    session = SimpleNamespace(config=SimpleNamespace(_tmp_path_factory=SimpleNamespace(_basetemp=workspace)))
+    result = retention.prune_pytest_session(session, status, root)
+    assert result == dict(status='deferred', owner=str(output), workspace=str(workspace), exitstatus=status)
+    assert selected.exists() and not (workspace / 'unit-receipts-pruned.json').exists()
+
+
+@pytest.mark.parametrize('owner', ['external', 'different-workspace'])
+def test_inherited_release_owner_cannot_defer_nested_pytest_cleanup(tmp_path, monkeypatch, owner):
+    root, output, workspace = completed(tmp_path)
+    selected = receipt(workspace)
+    if owner == 'external':
+        monkeypatch.setenv('DSH_RELEASE_PYTEST_OUTPUT', str(tmp_path / 'parent-release'))
+    else:
+        execution = root / 'g-parent'
+        execution.mkdir()
+        (output / 'pytest-workspace-mapping.json').write_text(json.dumps(dict(execution_path=str(execution),
+            retained_path=str(output / 'pytest-workspace'))), encoding='utf-8')
+        monkeypatch.setenv('DSH_RELEASE_PYTEST_OUTPUT', str(output))
+    session = SimpleNamespace(config=SimpleNamespace(_tmp_path_factory=SimpleNamespace(_basetemp=workspace)))
+    result = retention.prune_pytest_session(session, 0, root)
+    assert result['removed_files'] == 1 and not selected.exists()
+
+
 def test_explicit_pytest_workspace_is_preserved_without_creating_an_output_root(tmp_path):
     explicit = tmp_path / 'user-temp'
     config = SimpleNamespace(option=SimpleNamespace(basetemp=str(explicit)))

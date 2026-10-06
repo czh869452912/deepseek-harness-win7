@@ -192,7 +192,7 @@ async def test_canonical_web_errors_and_failed_compaction_survive_restart(tmp_pa
         await agent.session.flush()
         expected = [event for event in agent.session.events if event['type'].startswith('compaction/')]
         assert [event['type'] for event in expected] == ['compaction/start', 'compaction/end']
-        assert expected[-1]['data']['error'] == 'provider failed: socket closed'
+        assert expected[-1]['data']['error'] == 'provider failed'
         assert agent.session.surface.replace_generation == 0
     finally:
         await ctx.get('sessionProjectionCache').close()

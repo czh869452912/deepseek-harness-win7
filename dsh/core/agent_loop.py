@@ -738,6 +738,7 @@ class AgentLoopService:
                 "provider": provider_name,
                 "model": model_name,
                 **({"maxTokens": agent.options.max_tokens} if agent.options.max_tokens is not None else {}),
+                **({"reasoningEffort": agent.options.reasoning_effort} if agent.options.reasoning_effort is not None else {}),
             }
         )
 
@@ -871,7 +872,7 @@ class AgentLoopService:
                                 "turn": turn,
                                 "step": step,
                                 "chunk": ev_payload,
-                                **ev_payload,
+                                **(ev_payload if isinstance(chunk, (list, tuple)) else {}),
                             }
                             chunk_ev = session.append(
                                 "assistant/chunk",

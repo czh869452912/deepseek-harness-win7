@@ -1,0 +1,42 @@
+{
+  "id": "CON-CANONICAL-LLM",
+  "revision": 1,
+  "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
+  "status": "specified",
+  "source_paths": [
+    "reference/packages/core/agent-loop/src/agent.ts",
+    "reference/packages/llm/llm/src/index.ts",
+    "reference/packages/llm/llm/src/error.ts",
+    "reference/packages/llm/llm-retry/src/index.ts",
+    "reference/packages/compaction/compaction-basic/src/summarizer.ts",
+    "dsh/core/agent_loop.py",
+    "dsh/llm/llm_service.py",
+    "dsh/llm/adapter_failure.py",
+    "dsh/compaction/native_summary.py"
+  ],
+  "consumers": [
+    "scripts/canonical_llm_oracle.py",
+    "scripts/oracles/canonical_llm_python.py",
+    "tests/test_canonical_llm_consumers.py",
+    "scripts/verify_release.py",
+    "scripts/verify_portable.py"
+  ],
+  "invariants": [
+    "81 complete actual original/native captures cover9 canonical AgentLoop real HTTP retry/partial-tool/cancel cases,2 auxiliary summary failures,54 final adapter failure/middleware/consumer controls,9 routing/preparation/config/projection cases and7 SDK iterator completion/cleanup ownership cases.",
+    "Final adapter preparation/dispatch/iteration failures produce one finish error/aborted chunk. Downstream middleware/consumer and cleanup failures retain their own propagation boundary.",
+    "Final middleware routing precedes preparation and capability defaults. Explicit maxTokens0 remains accepted as in actual Source; unknown image modalities retain images and declared text-only metadata projects them.",
+    "Normal SDK completion and rejected next do not invoke iterator return; consumer close retires once when available, and cleanup failures remain thrown.",
+    "Every captured request body/authorization,event type/data,tool effect,derived message,chunk,trace and error literal remains exact. Partial tool output discarded by a failed stream never executes;accepted tool executes once.",
+    "Each actual child provider report validates its selected executable/root/version and measured imported module closure. Aggregate and child values/modules must agree; exact files,complete names/order and all receipts are mandatory."
+  ],
+  "identity": "Generated Source message identities remain UUID4; native allocated msg UUID4/8hex and assistant8hex retain their declared form. Retry UUID4 remains correlated. Typed identity tokens preserve all value occurrences, cross-fixture uniqueness and distinction from literal marker strings. Stable tool identifiers remain literal. Only same-valued finite JSON numeric spellings additionally canonicalize for digest; all raw values are retained.",
+  "ownership": "Actual scoped Context owns adapters,retry,tools,agent and summary services. Controlled actual loopback servers and streams retire before the next fixture. The SDK iterator controls use actual public LlmRuntime providers, not copied product algorithms. Native downstream close explicitly awaits Python async-generator aclose.",
+  "ordering": "Actual retry scheduled/start,request/partial-output/tool/follow-up ordering is captured through full event type/data and requests. SDK next/return counts and stream chunks are exact. Raw event sequence/time and uncaptured HTTP headers/origin are not included in this bounded capture contract.",
+  "errors": "Exact immutable rejected eaa8 Portable ownPython3.8.10 reproduces selected differences. Coherent foreign failure snapshots are validated; malformed/mismatched/null/accessor snapshots fall back safely. Auxiliary terminal failures expose Source primary-only summary Error while direct Web error chains remain unchanged. Original Source bug predicates remain unchanged.",
+  "cancellation": "Actual canonical cancel during retry backoff issues one HTTP request and reaches turn/end without a further attempt. Existing abort regressions remain required. Arbitrary concurrency/reentry/all cancellation schedules are outside these selected observations.",
+  "adaptation": "Python thrown-value and attribute-access exceptions preserve captured Source failure semantics without changing generic error_chain. Canonical assistant/chunk data retains turn/step/chunk only; legacy Python tuple/list chunk consumers retain their established flattened boundary. No browser/Source edits.",
+  "open_questions": [
+    "Arbitrary malformed metadata/failure properties,exception identity/stack/cause/public graph ABI,all request headers,all model/profile journeys and all concurrency schedules remain unqualified.",
+    "Unchanged original public LLM assertions qualify their original implementation;their pass count is not additional native parity. RealWin7/browser remains user-deferred and accepted_upstream null."
+  ]
+}

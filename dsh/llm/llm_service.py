@@ -647,12 +647,28 @@ class LLMService:
     async def stream(self, options):
         """Auxiliary plugin calls use the same route and stream hooks as agents."""
         from dsh.llm.stream_bridge import iter_chunks
-        prepared = await self.prepare_adapter_call(options["provider"], options["model"], options.get("signal"))
-        def open_stream(*_args):
-            if prepared:
-                return prepared["stream"](options)
-            return self.chat_completion_stream(options["messages"], tools=options.get("tools"),
-                model=options["model"], provider=options["provider"], system=options.get("system"), request=options)
+        async def open_stream(*_args):
+            try:
+                if self.ctx is not None and options['provider'] not in self._adapters:
+                    raise LlmError('no adapter registered for provider "{}"'.format(options['provider']), 'NO_ADAPTER')
+                prepared = await self.prepare_call(options, options.get('signal'))
+                request = dict(options)
+                for field in ('maxTokens', 'reasoningEffort'):
+                    if prepared.get(field) is not None:
+                        request[field] = prepared[field]
+                dispatch = prepared.get('stream')
+                stream = dispatch(request) if dispatch else self.chat_completion_stream(request['messages'],
+                    tools=request.get('tools'), model=request['model'], provider=request['provider'],
+                    system=request.get('system'), request=request)
+                reader = iter_chunks(stream)
+            except Exception as error:
+                yield self._adapter_failure_chunk(error, options.get('signal'))
+                return
+            try:
+                async for chunk in reader:
+                    yield chunk
+            finally:
+                await reader.aclose()
         stream = await self.ctx.waterfall("llm/stream", options, open_stream) if self.ctx else open_stream()
         reader = iter_chunks(stream)
         try:
@@ -661,18 +677,57 @@ class LLMService:
         finally:
             await reader.aclose()
 
+    def _adapter_failure_chunk(self, error, signal=None):
+        from dsh.core.cancellation import aborted
+        from dsh.llm.adapter_failure import normalize_llm_failure
+        failure = normalize_llm_failure(error)
+        return dict(type='finish', reason=dict(kind='aborted' if aborted(signal) or failure['code'] == 'ABORTED' else 'error', failure=failure))
+
     async def prepare_adapter_call(self, provider, model, signal=None):
         adapter = self._adapters.get(provider, {}).get("adapter")
         method = getattr(adapter, "prepare_call", None)
         if not callable(method):
             return None
         prepared = await method(provider, model, signal)
-        if "image" not in prepared["model"].get("inputModalities", []):
+        info = prepared['model']
+        if not isinstance(info, dict) or info.get('provider') != provider or info.get('id') != model or not isinstance(info.get('name'), str) or not info['name']:
+            raise LlmError('adapter returned invalid exact model metadata for provider "{}" model "{}"'.format(provider, model), 'INVALID_MODEL_INFO')
+        if 'inputModalities' in info and "image" not in info['inputModalities']:
             from dsh.llm.image_content import project_text_only
             original_stream = prepared["stream"]
             def stream(request):
                 return original_stream(dict(request, messages=project_text_only(request["messages"])))
             prepared = dict(prepared, stream=stream)
+        dispatch = prepared['stream']
+        async def adapter_stream(request):
+            from dsh.llm.stream_bridge import iter_chunks
+            def failure_chunk(error):
+                return self._adapter_failure_chunk(error, request.get('signal'))
+            try:
+                stream = dispatch(request)
+                reader = stream.__aiter__() if hasattr(stream, '__aiter__') else iter_chunks(stream)
+            except Exception as error:
+                yield failure_chunk(error)
+                return
+            completed = False
+            try:
+                while True:
+                    try:
+                        chunk = await reader.__anext__()
+                    except StopAsyncIteration:
+                        completed = True
+                        return
+                    except Exception as error:
+                        completed = True
+                        yield failure_chunk(error)
+                        return
+                    yield chunk
+            finally:
+                if not completed:
+                    close = getattr(reader, 'aclose', None)
+                    if close is not None:
+                        await close()
+        prepared = dict(prepared, stream=adapter_stream)
         return prepared
 
     async def prepare_call(self, config: Dict[str, Any], signal: Any = None) -> Dict[str, Any]:
@@ -696,12 +751,12 @@ class LLMService:
                 allowed_efforts = [effort.get("id") if isinstance(effort, dict) else effort for effort in allowed_efforts]
                 if reasoning_effort not in allowed_efforts:
                     raise LlmError(
-                        f'Model "{model_id}" does not support reasoning effort "{reasoning_effort}"; allowed: {allowed_efforts}',
+                        f'provider "{provider_id}" model "{model_id}" does not support reasoning effort "{reasoning_effort}"',
                         "UNSUPPORTED_REASONING_EFFORT",
                     )
         elif reasoning_effort is not None:
             raise LlmError(
-                f'Model "{model_id}" does not declare reasoning capabilities but requested effort "{reasoning_effort}"',
+                f'provider "{provider_id}" model "{model_id}" does not support reasoning effort "{reasoning_effort}"',
                 "UNSUPPORTED_REASONING_EFFORT",
             )
 

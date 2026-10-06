@@ -1,5 +1,7 @@
 # 持续对齐记录
 
+2026-10-06 下一独立部分048：canonical LLM四模块隔离81组完整Source观察匹配，305相关消费者通过；精确拒绝eaa8自有Portable新54/9/7控制保留51/9/4差异并核验每个实际导入。正式81组/逐组模块/篡改/解压收据推广后须定向及独立干净完整验收；规划1661必需lane、68配对、20组1911原样Source。048仍running，最新签收b2398db9/57有界范围；七父范围、八项JS差异、九项判据/C58/C59、accepted_upstream空和延期Win7不变。见docs/research/2026-10-06-canonical-llm-progress.md。
+
 2026-10-06 最新干净签收 `b2398db9`：全量7967 passed、6既有skip、1既有Proactor warning、0失败/错误，2212.32秒；1519必需lane、十九组1683原样Source断言、67实际配对及真实解压自有Python3.8.10/原版浏览器通过。046完整选定76诊断、047四组JSONL共享读取已有界integrated，共57份独立验收；精确eaa8拒绝与历史产物不改写，原始临时持有者未识别。见 `migration/reviews/JSONL-SHARING-GATE-20261006.md`。下一canonical LLM四模块隔离研究81完整观察匹配，305相关回归通过，尚未进入本签收。七父范围、八项JS差异、九项判据/C58/C59、accepted_upstream空及延期Win7不变。
 
 2026-10-06 新候选eaa8bb05全量被拒绝：7921 passed、1 forked-session JSONL列举Errno13、6既有skip、1既有warning，2168.22秒；精确产物已归档。受控Win32持有者复现CRT共享差异，原版读取成功；原始临时持有者未识别。047修复四组观察匹配、28定向回归通过，970扩大回归全通过（583.95秒、0 skip/failed）；下一独立干净候选1519必需lane/67配对/19组1683原样Source和真实解压/原版浏览器须全通过。046/047仍running；最新签收54361bd9/55有界范围。canonical retry四模块修复仅隔离研究，七父范围与整体/延期Win7仍开放，九项判据/C58/C59不变。见docs/research/2026-10-06-jsonl-sharing-progress.md。

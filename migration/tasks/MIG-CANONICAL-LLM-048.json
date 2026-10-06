@@ -1,0 +1,58 @@
+{
+  "id": "MIG-CANONICAL-LLM-048",
+  "goal": "闭合81组canonical LLM重试/失败/准备及SDK迭代归属选定观察",
+  "kind": "implementation",
+  "state": "running",
+  "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
+  "base_product": "b2398db95470f25543dc4bd52d92e03449550d73",
+  "owner": "current-session-coordinator",
+  "requires": [
+    {
+      "task": "MIG-CURRENT-RELEASE-GATE-003",
+      "contract": "CON-CURRENT-RELEASE-GATE",
+      "revision": 1
+    },
+    {
+      "task": "MIG-RUNTIME-FULL-REQUEST-044",
+      "contract": "CON-RUNTIME-FULL-REQUEST",
+      "revision": 1
+    },
+    {
+      "task": "MIG-DEEPSEEK-CAPTURE-046",
+      "contract": "CON-DEEPSEEK-CAPTURE",
+      "revision": 1
+    }
+  ],
+  "provides": [
+    {
+      "contract": "CON-CANONICAL-LLM",
+      "revision": 1
+    }
+  ],
+  "acceptance": [
+    "Retain complete raw Source/native/exact immutable rejected Portable baselines and observer/setup failures. Every actual baseline import equals archived exact ZIP, selected extraction and frozen input bytes.",
+    "Fresh81 complete actual original/native observations match with only typed correlated generated identities and finite same-valued JSON number spelling adaptations. Literal/tool identifiers and all captured prose/values remain exact.",
+    "Value/correlation/shape,Source identity,selected ownPython3.8.10,child/aggregate,module/interpreter and mandatory lane controls reject altered or partial receipts.",
+    "Separate clean frozen complete pytest,unchanged Source,fresh paired,actual extracted ownPython3.8.10 and original browser qualification passes before bounded integration."
+  ],
+  "expected_paths": [
+    "dsh/core/agent_loop.py",
+    "dsh/llm/llm_service.py",
+    "dsh/llm/adapter_failure.py",
+    "dsh/compaction/native_summary.py",
+    "scripts",
+    "tests",
+    "migration",
+    "docs/research"
+  ],
+  "open_findings": [
+    "Fresh promoted formalv2 matches81 complete selected Source captures with strict child import/runtime/Source checks.218 focused regressions pass43.26 seconds;448 expanded real consumers,altered/partial/extracted/lane controls pass235.53 seconds without skips/failures.12 unchanged original public LLM files/228 assertions pass3.67 seconds. Formalv1 correctly refuses a staged registry omitting047 file_io in each group;initial109 passed/109 fixture setup errors remain. Explicit actual measured registry adds only that already committed module,with no removed checks. Separate clean full/extracted/browser qualification remains pending.",
+    "Exact immutable eaa8 re-extraction records54 public failure controls with51 differences;new9 public selection/preparation controls have9 differences and7 iterator ownership controls have4 differences. All actual imports are verified against authoritative archived inputs/ZIP/extraction. Older canonical retry and auxiliary differences and initial setup/observer errors are retained.",
+    "Full Wire/Session/profile/JS scopes and arbitrary malformed/public graph/ABI/concurrency remain open;no Source exception,paid API,push or realWin7 claim."
+  ],
+  "conflicts_with": [],
+  "candidate_commit": null,
+  "integrated_commit": null,
+  "evidence_ids": [],
+  "next_action": "81正式Source/native观察、218定向/448扩大回归和228原样LLM断言已通过；提交后运行独立干净完整门禁，1661必需lane/68配对/20组1911原样Source及真实解压自有Python3.8.10/原版浏览器全部通过才有界签收048；继续七父范围与八项JS差异。"
+}

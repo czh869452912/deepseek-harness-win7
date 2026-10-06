@@ -82,7 +82,11 @@ async def summarize(engine, input, agent, signal):
     finish = assembler.finish
     if finish["kind"] in ("error", "aborted"):
         failure = finish.get("failure") or {}
-        raise LlmError(failure.get("message", "summarization did not complete"), failure.get("code", "UNKNOWN"))
+        error = RuntimeError(failure.get("message", "summarization did not complete"))
+        error.name = 'Error'
+        error.message = str(error)
+        error.code = failure.get('code', 'UNKNOWN')
+        raise error
     if finish["kind"] == "max-tokens":
         raise LlmError("summarization truncated at the token cap", "MAX_TOKENS")
     raw = assembler.blocks()

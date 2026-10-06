@@ -58,6 +58,7 @@ from scripts.deepseek_error_oracle import validate_runtime as validate_deepseek_
 from scripts.deepseek_capture_oracle import validate_runtime as validate_deepseek_capture, identity as deepseek_capture_identity, NAMES as DEEPSEEK_CAPTURE_NAMES
 from scripts.persistence_read_oracle import validate_runtime as validate_persistence_read, identity as read_identity, NAMES as READ_NAMES
 from scripts.jsonl_sharing_oracle import validate_runtime as validate_jsonl_sharing, identity as sharing_identity, NAMES as SHARING_NAMES
+from scripts.canonical_llm_oracle import validate_runtime as validate_canonical_llm, identity as canonical_llm_identity, NAMES as CANONICAL_LLM_NAMES
 NODE_VERSION = 'v22.22.2'
 PORTABLE_ARCHIVE = 'dist/dsh-win7-portable-v0.1.0.zip'
 PAIRED_DRIVERS = (
@@ -70,9 +71,18 @@ PAIRED_DRIVERS = (
 )
 PAIRED_DRIVERS = PAIRED_DRIVERS + ('session_tools', 'sqlite_format', 'sqlite_provider', 'jsonl_provider', 'tool_scheduler', 'http_redirect', 'javascript_workflow', 'runtime_context', 'javascript_ready', 'persistence_read')
 PAIRED_DRIVERS = PAIRED_DRIVERS + ('javascript_initial', 'session_number', 'session_diagnostic', 'session_restore_sign')
-PAIRED_DRIVERS = PAIRED_DRIVERS + ('runtime_full_request', 'deepseek_error', 'deepseek_capture', 'jsonl_sharing')
-OFFICIAL_CONFIGS = ('consumers', 'agent-lifecycle', 'session-recovery', 'session-projection', 'acp', 'acp-app', 'mcp', 'subagent-acp', 'storage-cache', 'session-observation', 'session-corpus', 'session-sqlite-query', 'query-engine-source', 'session-tools-source', 'sqlite-format-source', 'sqlite-provider-source', 'jsonl-provider-source', 'tool-scheduler-source', 'deepseek-source')
+PAIRED_DRIVERS = PAIRED_DRIVERS + ('runtime_full_request', 'deepseek_error', 'deepseek_capture', 'jsonl_sharing', 'canonical_llm')
+OFFICIAL_CONFIGS = ('consumers', 'agent-lifecycle', 'session-recovery', 'session-projection', 'acp', 'acp-app', 'mcp', 'subagent-acp', 'storage-cache', 'session-observation', 'session-corpus', 'session-sqlite-query', 'query-engine-source', 'session-tools-source', 'sqlite-format-source', 'sqlite-provider-source', 'jsonl-provider-source', 'tool-scheduler-source', 'deepseek-source', 'llm-public-source')
 REQUIRED_REGRESSION = {
+    'test_canonical_llm_consumers': {
+        *{'test_actual_original_and_native_canonical_llm_match[' + name + ']' for name in CANONICAL_LLM_NAMES},
+        *{'test_canonical_llm_requires_complete_values_identity_and_runtime[' + damage + ']' for damage in ('request', 'event', 'tool-id', 'message-form', 'message-split', 'message-cross-fixture', 'retry-form', 'retry-split', 'retry-cross-fixture', 'tail', 'duplicate', 'order', 'type', 'root', 'python', 'executable', 'module', 'bytes', 'group-missing', 'group-rows', 'group-root', 'group-executable', 'group-module')},
+        *{'test_canonical_llm_source_identity_is_required[' + damage + ']' for damage in ('pin', 'node', 'inputs', 'bytes')},
+        *{'test_portable_canonical_llm_refuses_partial_receipts[' + side + ']' for side in ('source', 'native')},
+        'test_literal_identity_marker_remains_a_literal_value',
+        'test_source_message_identity_retains_uuid_shape',
+    },
+
     'test_jsonl_sharing_consumers': {
         *{'test_actual_original_and_native_jsonl_shared_readers_match[' + name + ']' for name in SHARING_NAMES},
         *{'test_jsonl_sharing_receipt_requires_complete_values_and_runtime[' + damage + ']' for damage in (
@@ -367,6 +377,8 @@ REQUIRED_REGRESSION = {
             'missing-module', 'changed-module', 'empty-closure', 'foreign-root', 'foreign-python', 'missing-row', 'duplicate-row', 'changed-row')},
     },
     'test_current_release_gate': {
+        *{'test_extracted_canonical_llm_requires_complete_values_and_runtime[' + damage + ']' for damage in ('missing', 'source-missing', 'source-changed', 'module-changed', 'request', 'event', 'tool-id', 'message-form', 'message-split', 'message-cross-fixture', 'retry-form', 'retry-split', 'retry-cross-fixture', 'tail', 'duplicate', 'order', 'type', 'root', 'python', 'executable', 'module', 'group-missing', 'group-rows', 'group-root', 'group-executable', 'group-module')},
+        *{'test_canonical_llm_consumer_lanes_are_mandatory[' + damage + ']' for damage in ('omit','skip','duplicate','failure')},
         *{'test_extracted_jsonl_sharing_requires_complete_values_and_runtime[' + damage + ']' for damage in (
             'missing', 'source-missing', 'source-changed', 'module-missing', 'module-changed', 'root', 'python', 'executable',
             'header', 'event', 'raw', 'filename', 'tail', 'duplicate', 'order')},
@@ -1216,6 +1228,11 @@ def validate_extracted(path, archive, candidate):
             candidate['jsonl_sharing_observations_sha256'], candidate['jsonl_sharing_modules'], check_files=False)
     except (ValueError, KeyError, TypeError) as error:
         raise RuntimeError('Extracted jsonlSharing consumer differs') from error
+    try:
+        validate_canonical_llm(report.get('canonicalLlm'), Path(report['mcpStdio']['root']),
+            candidate['canonical_llm_observations_sha256'], candidate['canonical_llm_modules'], check_files=False)
+    except (ValueError, KeyError, TypeError) as error:
+        raise RuntimeError('Extracted canonicalLlm consumer differs') from error
     for name, validate in [('queryEngine', validate_query_engine), ('querySchema', validate_query_schema), ('pythonDirectory', validate_python_directory),
                            ('sessionLineage', validate_session_lineage), ('sessionEventTrace', validate_session_event_trace),
                            ('sessionFilters', validate_session_filters), ('sessionRequests', validate_session_requests),
@@ -1429,6 +1446,11 @@ def verify(args, output):
     sharing_report = json.loads(sharing_native.read_text(encoding='utf-8'))
     candidate['jsonl_sharing_observations_sha256'] = sharing_identity(json.loads(sharing_source.read_text(encoding='utf-8')))
     candidate['jsonl_sharing_modules'] = sharing_report['modules']
+    canonical_llm_source = output / 'canonical-llm-paired.source.json'
+    canonical_llm_native = output / 'canonical-llm-paired.native.json'
+    canonical_llm_report = json.loads(canonical_llm_native.read_text(encoding='utf-8'))
+    candidate['canonical_llm_observations_sha256'] = canonical_llm_identity(json.loads(canonical_llm_source.read_text(encoding='utf-8')))
+    candidate['canonical_llm_modules'] = canonical_llm_report['modules']
     raw = output / 'cordis-raw.json'
     raw.unlink(missing_ok=True)
     run([python, 'scripts/cordis_oracle.py', '--output', str(raw)],
@@ -1461,7 +1483,8 @@ def verify(args, output):
                '--full-request-source', str(full_request_source), '--full-request-native', str(full_request_native),
                '--deepseek-error-source', str(deepseek_error_source), '--deepseek-error-native', str(deepseek_error_native),
                '--deepseek-capture-source', str(deepseek_capture_source), '--deepseek-capture-native', str(deepseek_capture_native),
-               '--sharing-source', str(sharing_source), '--sharing-native', str(sharing_native)]
+               '--sharing-source', str(sharing_source), '--sharing-native', str(sharing_native),
+               '--canonical-llm-source', str(canonical_llm_source), '--canonical-llm-native', str(canonical_llm_native)]
     if not candidate['worktree_dirty']:
         command += ['--expected-commit', candidate['product_commit']]
     run(command, 'portable-extracted', output, env=environment)

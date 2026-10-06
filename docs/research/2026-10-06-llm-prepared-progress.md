@@ -1,5 +1,11 @@
 # Public prepared call 与规范 AgentLoop
 
+15:48 补记：干净 `c0b12c55` 第二次门禁被拒绝，完整XML为8531项、8516 passed、9 errors、6既有skip、0 failures，测试阶段2666.098秒。准备完整profile研究时安装原版固定pnpm依赖，暴露观察器在导入阶段递归整个package并进入循环junction的错误；九项错误共享这一原因，原版tracked源码、固定commit与前端未改。随后自动清理阶段达到2800秒整批期限，后续独立Source/配对/实际解压验收未执行。精确自有ZIP、完整冻结输入、XML/原始错误、计划清理审计与Source/profile研究已归档到 `LLM-PREPARED-REJECTED-20261006-c0b12c55.zip`（SHA256 `7a67801aee520f5a86c1039264a552435f0ccd877d9b2bbb1f44fafb883eb6a6`），不记作原版产品bug或通过。
+
+输入枚举改为Git tracked的Source src/tests，保留真实九个输入并排除依赖和未跟踪生成文件；循环目录及缺失tracked文件的回归控制通过。合成JSON只解析一次，删除前仍检查归属、reparse、相邻假ZIP、大小和完整SHA256；中断恢复使用新审计文件保留旧记录。50项定向测试通过。原中断审计计划528项但未及时写回完成数量；恢复操作实际删除299项、3443318798字节，独立审计保留，不能从旧计划推断完整清理数量。新的必需注册表为2081项，预计全量8535项；051仍running，须新的干净完整验收。
+
+完整headless实际Loader研究已执行原版和隔离Python的真实本地pwsh工具回合，记录完整请求和事件。发现权限初始knob遗漏、LLM已完成await的调度边界、Tools未等待systemPrompt导致提供端缺失、指令插入位置/基线序列化及read_image缺失；前五处已有隔离候选，其中21组权限观察匹配，既有108 prepared观察保持不变。原始请求775处未规范化差异包含分配ID/时间/路径和业务差异，不能按数量宣称775个bug或完整profile一致。read_image与其余schema/组合消费者、五profile旅程、取消/恢复/真实解压仍未签收；研究日志中的一次checkpoint WinError5未复现，保持原始记录，不加入重试绕过。
+
 14:40 补记：干净 `b93d1cd8` 全量8531项执行结束，8521 passed、4 failed、6既有skip、2 warnings，2686.04秒；完整XML记录2500.395秒测试阶段。三项ACP规范profile测试仍在旧内部 `chat_completion_stream` 方法注入模拟器，公共准备/流式路径要求规范适配器注册；仅更新fixture后30项隔离和107项Root相关控制通过。另一失败来自我漏更新的1899正向计数，现从严格必需注册表计算期望，实际2077项及缺失/skip/重复/failure拒绝控制未放宽。精确失败ZIP、冻结输入、完整XML/日志和18份真实ACP失败fixture文件已分别独立归档；051保持running，须新的干净全量及实际解压验收。
 
 本次自动收尾删除528个合成测试JSON、6080014005字节（约5.66 GiB）；真实回执、ZIP、输入、日志、Source与浏览器数据保留，审计有摘要与有界示例。持续自动清理沿用用户授权，无需每批确认。

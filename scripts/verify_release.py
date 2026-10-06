@@ -79,6 +79,9 @@ PAIRED_DRIVERS = PAIRED_DRIVERS + ('runtime_full_request', 'deepseek_error', 'de
 OFFICIAL_CONFIGS = ('consumers', 'agent-lifecycle', 'session-recovery', 'session-projection', 'acp', 'acp-app', 'mcp', 'subagent-acp', 'storage-cache', 'session-observation', 'session-corpus', 'session-sqlite-query', 'query-engine-source', 'session-tools-source', 'sqlite-format-source', 'sqlite-provider-source', 'jsonl-provider-source', 'tool-scheduler-source', 'deepseek-source', 'llm-public-source')
 REQUIRED_REGRESSION = {
     'test_process_artifact_retention': {
+        'test_interrupted_cleanup_resumes_without_rewriting_previous_audit[planned]',
+        'test_interrupted_cleanup_resumes_without_rewriting_previous_audit[failed]',
+        'test_synthetic_content_is_parsed_once_but_rechecked_before_deletion',
         'test_active_or_unowned_workspaces_are_refused[active]',
         'test_active_or_unowned_workspaces_are_refused[foreign-execution]',
         'test_active_or_unowned_workspaces_are_refused[foreign-retained]',
@@ -664,7 +667,8 @@ REQUIRED_REGRESSION = {
         'test_deep_lineage_prunes_foreign_subtrees_without_recursion_or_hidden_ids',
         'test_search_deadline_reaches_authorization_and_waits_for_owned_cleanup',
     },
-    'test_session_tools_source': {'test_actual_optional_session_tools_source_native_pair'},
+    'test_session_tools_source': {'test_actual_optional_session_tools_source_native_pair',
+        'test_source_inventory_ignores_generated_files_and_cyclic_dependencies'},
     'test_session_tools_profile': {
         'test_optional_profile_model_tools_next_request_and_cold_restart[jsonl]',
         'test_optional_profile_model_tools_next_request_and_cold_restart[jsonl-zstd]',

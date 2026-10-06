@@ -111,12 +111,12 @@ def test_changed_file_is_preserved_and_partial_failure_is_audited(tmp_path, monk
     original = retention.candidate
     calls = []
 
-    def changed_candidate(output_root, path):
+    def changed_candidate(output_root, path, expected=None):
         if Path(path) == selected:
             calls.append(path)
             if len(calls) == 2:
                 selected.write_text('{"runtime":{"checks":["real observation"]}}', encoding='utf-8')
-        return original(output_root, path)
+        return original(output_root, path, expected=expected)
 
     monkeypatch.setattr(retention, 'candidate', changed_candidate)
     with pytest.raises(RuntimeError, match='changed before cleanup'):
@@ -124,6 +124,36 @@ def test_changed_file_is_preserved_and_partial_failure_is_audited(tmp_path, monk
     assert selected.exists()
     audit = json.loads((output / 'unit-receipts-pruned.json').read_text(encoding='utf-8'))
     assert audit['status'] == 'failed' and audit['removed_files'] == 0
+
+
+@pytest.mark.parametrize('status', ['planned', 'failed'])
+def test_interrupted_cleanup_resumes_without_rewriting_previous_audit(tmp_path, status):
+    root, output, workspace = completed(tmp_path)
+    selected = receipt(workspace)
+    audit = output / 'unit-receipts-pruned.json'
+    previous = json.dumps(dict(status=status, expected_files=1, removed_files=0))
+    audit.write_text(previous, encoding='utf-8')
+    result = retention.prune_completed_regression(root, output)
+    assert result['removed_files'] == 1 and not selected.exists()
+    assert audit.read_text(encoding='utf-8') == previous
+    resumed = json.loads((output / 'unit-receipts-pruned-retry-1.json').read_text(encoding='utf-8'))
+    assert resumed['status'] == 'completed' and resumed['removed_files'] == 1
+
+
+def test_synthetic_content_is_parsed_once_but_rechecked_before_deletion(tmp_path, monkeypatch):
+    root, output, workspace = completed(tmp_path)
+    selected = receipt(workspace)
+    original = retention.json.loads
+    parsed = []
+
+    def observe(value, *arguments, **options):
+        if 'actual runtime' in value:
+            parsed.append(value)
+        return original(value, *arguments, **options)
+
+    monkeypatch.setattr(retention.json, 'loads', observe)
+    assert retention.prune_completed_regression(root, output)['removed_files'] == 1
+    assert len(parsed) == 1 and not selected.exists()
 
 
 def test_junction_or_symlink_never_deletes_foreign_receipts(tmp_path):

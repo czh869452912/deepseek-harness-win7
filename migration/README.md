@@ -1,5 +1,7 @@
 # 持续对齐记录
 
+2026-10-06 干净c0b12c55门禁再次拒绝：完整8531项XML为8516 passed、9共享Source输入扫描错误、6既有skip、0 failed；测试2666.098秒后清理达到2800秒期限。精确ZIP/冻结输入/原始错误/中断审计已归档；Git tracked输入枚举、清理避免重复JSON解析及中断续清修复50定向通过，恢复清理实际299项约3.2 GiB。新全量8535项/2081必需lane/70配对待干净验收，051仍running；最新签收仍2a/60，七父范围和延期Win7开放。完整headless实际工具研究确认新的权限/调度/组合差异，仍隔离未签收；见 `docs/research/2026-10-06-llm-prepared-progress.md`。
+
 2026-10-06 `b93d1cd8` 完整8531项门禁被拒绝：8521 passed、4 failed、6既有skip、2 warnings，2686.04秒。三项ACP fixture改用规范适配器注册、正向门禁计数从严格2077注册表计算后107定向通过；精确拒绝ZIP/完整冻结输入/XML/日志/18份ACP实际fixture独立保留。自动清理528个合成JSON释放约5.66 GiB并保留真实证据。051仍running，下一干净全量/Source/实际解压待执行；最新签收仍2a/60，七父范围和延期Win7保持开放。见 `docs/research/2026-10-06-llm-prepared-progress.md`。
 
 2026-10-06 下一部分051：108完整公共prepared-call/代际/严格配置/规范AgentLoop观察隔离匹配，精确2a自有Portable确认49真实差异。正式143新控制及419公共消费者、336相关回归通过；178新必需lane预计总2077/70实际配对，六个新增真实导入已严格测量补齐。051仍running，须新干净全量/实际解压/原版浏览器后才签收；见 `docs/research/2026-10-06-llm-prepared-progress.md`。最新签收仍2a67ae84/60有界合同，七父范围、原始JS诊断和延期Win7继续开放。

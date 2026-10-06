@@ -23,8 +23,17 @@ INPUTS = MODULES + ['scripts/session_tools_oracle.py', 'scripts/oracles/session_
                    'scripts/oracles/session_tools.probe.spec.ts', 'scripts/oracles/vitest.session-tools-probe.config.mts',
                    'scripts/oracles/vitest.session-tools-source.config.mts', 'tests/test_session_tools.py',
                    'tests/test_session_tools_source.py', 'tests/test_session_tools_profile.py', 'dsh/boot/plugin_registry.py']
-INPUTS += [path.relative_to(ROOT).as_posix() for path in sorted((ROOT / 'reference/packages/session-query/tool-session-query').rglob('*'))
-           if path.is_file() and ('src' in path.parts or 'tests' in path.parts)]
+
+
+def source_inputs(source_root=None):
+    source = Path(source_root) if source_root is not None else ROOT / 'reference'
+    package = 'packages/session-query/tool-session-query/'
+    names = subprocess.check_output(['git', '-C', str(source), 'ls-files', '--cached', '-z', '--',
+        package + 'src/', package + 'tests/'], encoding='utf-8').split('\0')
+    return ['reference/' + name for name in sorted(set(names)) if name]
+
+
+INPUTS += source_inputs()
 
 
 def module_hashes(root):

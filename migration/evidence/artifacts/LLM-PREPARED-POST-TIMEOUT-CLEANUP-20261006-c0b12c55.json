@@ -1,0 +1,170 @@
+{
+  "removed_files": 299,
+  "removed_bytes": 3443318798,
+  "manifest_sha256": "151a204a39b12debe93c9681939ded48463c4e0fd5f0e0803435142ca1458997",
+  "examples": [
+    {
+      "path": "C:\\Users\\czh86\\Documents\\Codex\\deepseek-harness-win7\\.goose\\out\\llm-prepared-clean-c0b12c55\\pytest-workspace\\test_extracted_subprocess_acp_10\\receipt.json",
+      "size": 11517350,
+      "sha256": "016b49383b5eb51270b93f425f3ebcea235f5adfe1fedb6c6fa7f25739b5d86c"
+    },
+    {
+      "path": "C:\\Users\\czh86\\Documents\\Codex\\deepseek-harness-win7\\.goose\\out\\llm-prepared-clean-c0b12c55\\pytest-workspace\\test_extracted_subprocess_acp_11\\receipt.json",
+      "size": 11517359,
+      "sha256": "0140a3727e9c481c6ebbb66896db1335dd9748b1e971f64c00ead8ccba700495"
+    },
+    {
+      "path": "C:\\Users\\czh86\\Documents\\Codex\\deepseek-harness-win7\\.goose\\out\\llm-prepared-clean-c0b12c55\\pytest-workspace\\test_extracted_subprocess_acp_12\\receipt.json",
+      "size": 11517368,
+      "sha256": "bce5820e42e59b8ae1e2a0812e2d96a5ecfa865f15dbf4330289ad56507c05d6"
+    },
+    {
+      "path": "C:\\Users\\czh86\\Documents\\Codex\\deepseek-harness-win7\\.goose\\out\\llm-prepared-clean-c0b12c55\\pytest-workspace\\test_extracted_subprocess_acp_1\\receipt.json",
+      "size": 11517210,
+      "sha256": "82b80d961dd07074befb7182a35eff4b3969d93c64d6de9778982b95f6659150"
+    },
+    {
+      "path": "C:\\Users\\czh86\\Documents\\Codex\\deepseek-harness-win7\\.goose\\out\\llm-prepared-clean-c0b12c55\\pytest-workspace\\test_extracted_subprocess_acp_2\\receipt.json",
+      "size": 11517213,
+      "sha256": "0a8b60ea97e53d1bc1054605b0c7bd820745def7cf2dc01460724d3f13794feb"
+    },
+    {
+      "path": "C:\\Users\\czh86\\Documents\\Codex\\deepseek-harness-win7\\.goose\\out\\llm-prepared-clean-c0b12c55\\pytest-workspace\\test_extracted_subprocess_acp_3\\receipt.json",
+      "size": 11517214,
+      "sha256": "a152e4821582811a11de4570521e33fb77f841b84cc3576e717a4af2f2d20d99"
+    },
+    {
+      "path": "C:\\Users\\czh86\\Documents\\Codex\\deepseek-harness-win7\\.goose\\out\\llm-prepared-clean-c0b12c55\\pytest-workspace\\test_extracted_subprocess_acp_4\\receipt.json",
+      "size": 11517214,
+      "sha256": "b63bf30b6916013b8de064854a332e49a64b71d0384abadffe2af4c28cbd4736"
+    },
+    {
+      "path": "C:\\Users\\czh86\\Documents\\Codex\\deepseek-harness-win7\\.goose\\out\\llm-prepared-clean-c0b12c55\\pytest-workspace\\test_extracted_subprocess_acp_5\\receipt.json",
+      "size": 11517214,
+      "sha256": "d27a52cbdaee908a73199441aa96bee7b938b66a4d9252000a4c117055e1ad7b"
+    },
+    {
+      "path": "C:\\Users\\czh86\\Documents\\Codex\\deepseek-harness-win7\\.goose\\out\\llm-prepared-clean-c0b12c55\\pytest-workspace\\test_extracted_subprocess_acp_6\\receipt.json",
+      "size": 11512530,
+      "sha256": "68b212c9b7df913ad398814fea76c16bb2e35bb4fea68a888befd6d5cffa371f"
+    },
+    {
+      "path": "C:\\Users\\czh86\\Documents\\Codex\\deepseek-harness-win7\\.goose\\out\\llm-prepared-clean-c0b12c55\\pytest-workspace\\test_extracted_subprocess_acp_7\\receipt.json",
+      "size": 11512871,
+      "sha256": "d51bc38eba79f152cf8d498d42b158ffd7adef2edd49ed85e5a8ceba2c374eb0"
+    },
+    {
+      "path": "C:\\Users\\czh86\\Documents\\Codex\\deepseek-harness-win7\\.goose\\out\\llm-prepared-clean-c0b12c55\\pytest-workspace\\test_extracted_subprocess_acp_8\\receipt.json",
+      "size": 11517048,
+      "sha256": "7df2547bc114c1eb6d084e93c1fc2b5304c5bfde3e552122dfbabb9319eb9c70"
+    },
+    {
+      "path": "C:\\Users\\czh86\\Documents\\Codex\\deepseek-harness-win7\\.goose\\out\\llm-prepared-clean-c0b12c55\\pytest-workspace\\test_extracted_subprocess_acp_9\\receipt.json",
+      "size": 11517214,
+      "sha256": "1eb9a3410ebebcd3ad419806008db036bfab70d225593cfc0e8ac31954faacb3"
+    },
+    {
+      "path": "C:\\Users\\czh86\\Documents\\Codex\\deepseek-harness-win7\\.goose\\out\\llm-prepared-clean-c0b12c55\\pytest-workspace\\test_extracted_subprocess_owne0\\receipt.json",
+      "size": 11515729,
+      "sha256": "e2ca652044825b51ec1858e04d8863d7cd9b59bab0e1a7e5230e9f512d770c23"
+    },
+    {
+      "path": "C:\\Users\\czh86\\Documents\\Codex\\deepseek-harness-win7\\.goose\\out\\llm-prepared-clean-c0b12c55\\pytest-workspace\\test_extracted_subprocess_owne1\\receipt.json",
+      "size": 11517213,
+      "sha256": "f69fc3710745f526b89e40e3a58cf23961a6fad77a3f8f304a5f68c7f8327c7e"
+    },
+    {
+      "path": "C:\\Users\\czh86\\Documents\\Codex\\deepseek-harness-win7\\.goose\\out\\llm-prepared-clean-c0b12c55\\pytest-workspace\\test_extracted_subprocess_owne2\\receipt.json",
+      "size": 11517190,
+      "sha256": "0d61d34ac2a6b16822bacd6a7be649fd139196629b48ff372f5d25e496ce35b4"
+    },
+    {
+      "path": "C:\\Users\\czh86\\Documents\\Codex\\deepseek-harness-win7\\.goose\\out\\llm-prepared-clean-c0b12c55\\pytest-workspace\\test_extracted_subprocess_owne3\\receipt.json",
+      "size": 11517152,
+      "sha256": "c05dd1742f75c2055259000ca17c79ff501177224de7249e33acf949fc4fd8a4"
+    },
+    {
+      "path": "C:\\Users\\czh86\\Documents\\Codex\\deepseek-harness-win7\\.goose\\out\\llm-prepared-clean-c0b12c55\\pytest-workspace\\test_extracted_subprocess_owne4\\receipt.json",
+      "size": 11517231,
+      "sha256": "2096901b8f4037cc8d4c1197c194a4e9288a7fb603c571e6505a05e630e7dc40"
+    },
+    {
+      "path": "C:\\Users\\czh86\\Documents\\Codex\\deepseek-harness-win7\\.goose\\out\\llm-prepared-clean-c0b12c55\\pytest-workspace\\test_extracted_subprocess_owne5\\receipt.json",
+      "size": 11517219,
+      "sha256": "fcb85dfc66c576a3d91a85ce3879249cf33815ea91ebc841b86a0b8580c05073"
+    },
+    {
+      "path": "C:\\Users\\czh86\\Documents\\Codex\\deepseek-harness-win7\\.goose\\out\\llm-prepared-clean-c0b12c55\\pytest-workspace\\test_extracted_webserver_reset0\\extracted.json",
+      "size": 11516644,
+      "sha256": "6ccc4f4f7d58fb37fba7838687db5e2811efc4235939437e2642d46fa008107f"
+    },
+    {
+      "path": "C:\\Users\\czh86\\Documents\\Codex\\deepseek-harness-win7\\.goose\\out\\llm-prepared-clean-c0b12c55\\pytest-workspace\\test_extracted_webserver_reset10\\extracted.json",
+      "size": 11517349,
+      "sha256": "51445d8fe66b1fe65b3d5f484e4001217bb30df58ed5d8ee3de4e70d9bd0dfa4"
+    },
+    {
+      "path": "C:\\Users\\czh86\\Documents\\Codex\\deepseek-harness-win7\\.goose\\out\\llm-prepared-clean-c0b12c55\\pytest-workspace\\test_extracted_webserver_reset11\\extracted.json",
+      "size": 11517350,
+      "sha256": "98ffe6ab21fcce0aa53a068255e69246c473185e43b0e622a3c94d1f9e71e089"
+    },
+    {
+      "path": "C:\\Users\\czh86\\Documents\\Codex\\deepseek-harness-win7\\.goose\\out\\llm-prepared-clean-c0b12c55\\pytest-workspace\\test_extracted_webserver_reset12\\extracted.json",
+      "size": 11517367,
+      "sha256": "3f5d2d2c2f59ec425073d5369bc7a3441446dbf36c9b3352890a460535802c16"
+    },
+    {
+      "path": "C:\\Users\\czh86\\Documents\\Codex\\deepseek-harness-win7\\.goose\\out\\llm-prepared-clean-c0b12c55\\pytest-workspace\\test_extracted_webserver_reset13\\extracted.json",
+      "size": 11517347,
+      "sha256": "bbf5c864ce1c888fd07287a5bcd05c07fe9b782cdb233892b824e8710d5c2deb"
+    },
+    {
+      "path": "C:\\Users\\czh86\\Documents\\Codex\\deepseek-harness-win7\\.goose\\out\\llm-prepared-clean-c0b12c55\\pytest-workspace\\test_extracted_webserver_reset1\\extracted.json",
+      "size": 11517021,
+      "sha256": "deed5d19cbf67bc543e473a20cd1ab7c6567b530f77caaea8f5cf28b8338b623"
+    },
+    {
+      "path": "C:\\Users\\czh86\\Documents\\Codex\\deepseek-harness-win7\\.goose\\out\\llm-prepared-clean-c0b12c55\\pytest-workspace\\test_extracted_webserver_reset2\\extracted.json",
+      "size": 11517213,
+      "sha256": "3f79ce8045e05094c9477e21419563c86a6ed61ef24722605393f988878eddae"
+    },
+    {
+      "path": "C:\\Users\\czh86\\Documents\\Codex\\deepseek-harness-win7\\.goose\\out\\llm-prepared-clean-c0b12c55\\pytest-workspace\\test_extracted_webserver_reset3\\extracted.json",
+      "size": 11517118,
+      "sha256": "a8b55628a869e2ef96d1a8700f087533c4864db651bba9e04af7c343522bd093"
+    },
+    {
+      "path": "C:\\Users\\czh86\\Documents\\Codex\\deepseek-harness-win7\\.goose\\out\\llm-prepared-clean-c0b12c55\\pytest-workspace\\test_extracted_webserver_reset4\\extracted.json",
+      "size": 11517213,
+      "sha256": "d7ddfdb9d2ff080810a7ef286dfb3dbd409071690265e4ce7524a6feb6168851"
+    },
+    {
+      "path": "C:\\Users\\czh86\\Documents\\Codex\\deepseek-harness-win7\\.goose\\out\\llm-prepared-clean-c0b12c55\\pytest-workspace\\test_extracted_webserver_reset5\\extracted.json",
+      "size": 11517214,
+      "sha256": "74783ef07a374624f386a4828921d15c3e999bf464f1837203b7d38fe4a140bc"
+    },
+    {
+      "path": "C:\\Users\\czh86\\Documents\\Codex\\deepseek-harness-win7\\.goose\\out\\llm-prepared-clean-c0b12c55\\pytest-workspace\\test_extracted_webserver_reset6\\extracted.json",
+      "size": 11517214,
+      "sha256": "7df1b6612ba2e004653910cb46a79ce2a676971ad17e25308a071d513099b9f0"
+    },
+    {
+      "path": "C:\\Users\\czh86\\Documents\\Codex\\deepseek-harness-win7\\.goose\\out\\llm-prepared-clean-c0b12c55\\pytest-workspace\\test_extracted_webserver_reset7\\extracted.json",
+      "size": 11517228,
+      "sha256": "8616fc5b363254824e83f7dc044eeaa2ed435718a02ce17874c921ca3cc848b4"
+    },
+    {
+      "path": "C:\\Users\\czh86\\Documents\\Codex\\deepseek-harness-win7\\.goose\\out\\llm-prepared-clean-c0b12c55\\pytest-workspace\\test_extracted_webserver_reset8\\extracted.json",
+      "size": 11517222,
+      "sha256": "f70a5ec1e097dfade1a891dd7687b7034f8d068ca2fa5c3e9d1913dc2b9bc4b1"
+    },
+    {
+      "path": "C:\\Users\\czh86\\Documents\\Codex\\deepseek-harness-win7\\.goose\\out\\llm-prepared-clean-c0b12c55\\pytest-workspace\\test_extracted_webserver_reset9\\extracted.json",
+      "size": 11517222,
+      "sha256": "b0ad26774e836d3eb89aee4e1a24b540090a510b6bf7f598c4281f73bee9fbb1"
+    }
+  ],
+  "scope": "Only completed owned pytest direct test folders,synthetic runtime marker or explicitly missing runtime,and exact adjacent fake archive. Real archives,inputs,XML,logs,Source/browser observations and unclassified files stay retained.",
+  "status": "completed",
+  "expected_files": 299
+}

@@ -40,13 +40,15 @@
     "docs/research"
   ],
   "open_findings": [
-    "Cleanb93 full gate rejected4 stale test integration failures; exact ownPortable and actual ACP fixtures preserved. Corrected fixtures and strict2077 positive registry assertion pass107 focused Root tests; fresh complete acceptance remains pending."
+    "Cleanb93 full gate rejected4 stale test integration failures; exact ownPortable and actual ACP fixtures preserved. Corrected fixtures and strict2077 positive registry assertion pass107 focused Root tests; fresh complete acceptance remains pending.",
+    "Clean c0 gate rejected:8516 passed,nine shared Source input-scan fixture errors,six existing skips,zero failures; complete XML2666.098s then cleanup exceeded2800s. Source pnpm cyclic junctions exposed unrestricted rglob. Frozen inputs/exact ownPortable/full raw errors and interrupted cleanup audit retained. Tracked Source input enumeration and rehash-only deletion/resume fixes pass50 focused cases; fresh full acceptance remains pending."
   ],
   "conflicts_with": [],
-  "candidate_commit": "b93d1cd8cae8d5a326b42df7b4076adda78f2e71",
+  "candidate_commit": "c0b12c556c20edfd34ac4469bb5039dabd5f058e",
   "integrated_commit": null,
   "evidence_ids": [
-    "RUN-LLM-PREPARED-REJECTED-20261006-B93D1CD8"
+    "RUN-LLM-PREPARED-REJECTED-20261006-B93D1CD8",
+    "RUN-LLM-PREPARED-REJECTED-20261006-C0B12C55"
   ],
-  "next_action": "规范适配器fixture及严格门禁正向计数已修复，107定向通过；提交拒绝证据与修复后执行新的干净完整8531回归/20组1911原样Source/70配对/实际解压与原版浏览器。051仍running，七父范围继续开放。"
+  "next_action": "输入扫描与自动清理已修复，50定向通过；保留精确c0拒绝证据后提交，再冻结新的干净8535项全量/2081必需lane/20组1911原样Source/70配对/真实解压与原版浏览器。051仍running，七父范围及后续配置/权限/完整profile继续推进。"
 }

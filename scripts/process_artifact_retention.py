@@ -54,7 +54,7 @@ def read_json(path):
         return json.load(stream)
 
 
-def candidate(output_root, path):
+def candidate(output_root, path, expected=None):
     try:
         selected = owned_path(output_root, path)
         if selected.name not in ('receipt.json', 'extracted.json'):
@@ -69,14 +69,21 @@ def candidate(output_root, path):
         with open(native_path(archive), 'rb') as stream:
             if stream.read() != FAKE_ARCHIVE:
                 return None
-        report = read_json(selected)
+        if expected is not None:
+            result = dict(path=str(selected), size=information.st_size, sha256=digest_file(selected))
+            return result if result == expected else None
+        with open(native_path(selected), 'rb') as stream:
+            payload = stream.read(MAX_RECEIPT_BYTES + 1)
+        if len(payload) != information.st_size:
+            return None
+        report = json.loads(payload.decode('utf-8'))
         if not isinstance(report, dict) or 'runtime' not in report:
             return None
         runtime = report['runtime']
         if runtime is not None and (not isinstance(runtime, dict) or runtime.get('checks') != ['actual runtime']):
             return None
-        return dict(path=str(selected), size=information.st_size, sha256=digest_file(selected))
-    except (OSError, ValueError, TypeError):
+        return dict(path=str(selected), size=information.st_size, sha256=hashlib.sha256(payload).hexdigest())
+    except (OSError, ValueError, TypeError, UnicodeError):
         return None
 
 
@@ -124,13 +131,19 @@ def prune_synthetic_workspace(output_root, workspace, audit):
     audit = Path(audit)
     if candidates:
         owned_path(output_root, audit, missing=True)
+        original_audit = audit
+        retry = 0
+        while os.path.lexists(native_path(audit)):
+            retry += 1
+            audit = original_audit.with_name(original_audit.stem + '-retry-' + str(retry) + original_audit.suffix)
+            owned_path(output_root, audit, missing=True)
         with open(native_path(audit), 'x', encoding='utf-8') as stream:
             json.dump(dict(result, status='planned', expected_files=len(candidates)), stream, ensure_ascii=False, indent=2)
             stream.write('\n')
         status = 'failed'
         try:
             for item in candidates:
-                if candidate(output_root, Path(item['path'])) != item:
+                if candidate(output_root, Path(item['path']), expected=item) != item:
                     raise RuntimeError('Synthetic receipt changed before cleanup')
                 os.unlink(native_path(item['path']))
                 result['removed_files'] += 1

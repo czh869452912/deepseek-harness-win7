@@ -10,6 +10,7 @@ import sys
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 from scripts.permission_presets_values import ALL_NAMES, GROUPS, complete_digest
+from scripts.import_paths import resolve_import_path
 
 
 SOURCE_COMMIT = 'cd5ef8148158c3a752a658978873241fdf8e2bbc'
@@ -17,7 +18,8 @@ OBSERVER_INPUTS = ('scripts/permission_presets_oracle.py', 'scripts/permission_p
     'scripts/oracles/permission_presets_source.mts', 'scripts/oracles/permission_presets.probe.spec.ts',
     'scripts/oracles/permission_presets_python.py', 'scripts/oracles/permission_presets_lifecycle_python.py',
     'scripts/oracles/permission_presets_domain_python.py', 'scripts/oracles/permission_presets_domain_source.mts',
-    'scripts/oracles/permission_presets_domain.probe.spec.ts', 'scripts/oracles/vitest.permission-presets-probe.config.mts')
+    'scripts/oracles/permission_presets_domain.probe.spec.ts', 'scripts/oracles/vitest.permission-presets-probe.config.mts',
+    'scripts/import_paths.py')
 REQUIRED_IMPORTS = {'dsh/interaction/permission_presets.py', 'dsh/interaction/user_approval.py',
     'dsh/sandbox/sandbox_policy.py', 'dsh/core/session/__init__.py', 'dsh/session/projections.py',
     'dsh/settings/__init__.py', 'dsh/settings/provider.py', 'dsh/interaction/commands.py'}
@@ -86,12 +88,13 @@ def validate_runtime(report, root, executable, source, modules, check_files=True
             raise ValueError('Permission portable interpreter does not belong to the selected root')
     if not isinstance(modules, dict) or not REQUIRED_IMPORTS.issubset(modules) or report.get('modules') != modules:
         raise ValueError('Permission actual imported closure differs')
+    missing_prefixes = None if check_files else {}
     for name, expected in modules.items():
         if (not isinstance(name, str) or not name.startswith('dsh/') or '\\' in name or ':' in name
                 or '..' in Path(name).parts or not isinstance(expected, str) or len(expected) != 64
                 or any(character not in '0123456789abcdef' for character in expected)):
             raise ValueError('Permission imported identity invalid')
-        path = (root / name).resolve()
+        path = resolve_import_path(root, name, missing_prefixes)
         if path.relative_to(root).as_posix() != name or check_files and digest(path) != expected:
             raise ValueError('Permission actual imported bytes differ')
     child_modules = {}

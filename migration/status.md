@@ -307,6 +307,7 @@ Evidence:
 - RUN-DEEPSEEK-ERROR-20261006-TOOL-START-PREFIX-034: acceptance / passed / stale-inputs
 - RUN-DEEPSEEK-ERROR-20261006-UPSTREAM-DELTA-002: acceptance / passed / stale-inputs
 - RUN-EXPIRED-PROCESS-20261007-46645625: verification / passed / current
+- RUN-IMPORT-PATHS-QUALIFICATION-20261007-77C74AEB: verification / passed / current
 - RUN-INVENTORY-FINISH-20260927: acceptance / passed / stale-inputs
 - RUN-JS-DEATH-20261005-ACP-CONFIG-OUTPUT-004: acceptance / passed / stale-inputs
 - RUN-JS-DEATH-20261005-ACP-MCP-009: acceptance / passed / stale-inputs

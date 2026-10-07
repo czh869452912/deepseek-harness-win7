@@ -1,0 +1,23 @@
+{
+  "id": "RUN-IMPORT-PATHS-QUALIFICATION-20261007-77C74AEB",
+  "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
+  "product_commit": "77c74aeb75a6143014fd07da5b18a89cfbdc4816",
+  "kind": "verification",
+  "task_id": "MIG-TOOL-ERRORS-SDK-METADATA-057",
+  "result": "passed",
+  "validity": "current",
+  "exit_code": 0,
+  "commands": [
+    ".venv/Scripts/python.exe -m pytest tests/test_import_paths.py tests/test_sdk_profile_consumers.py tests/test_permission_presets_consumers.py tests/test_current_release_gate.py -k \"import_paths or sdk_profile or permission_presets\" -q --junitxml=.goose/out/acp-a4-work/import-paths-focused-v1.xml",
+    ".venv/Scripts/python.exe .goose/out/acp-a4-work/collect_import_paths_qualification_v1.py",
+    ".venv/Scripts/python.exe -m pytest tests/test_current_release_gate.py -k \"lane or regression or mandatory\" -q --junitxml=.goose/out/acp-a4-work/import-paths-mandatory-v1.xml",
+    ".venv/Scripts/python.exe .goose/out/acp-a4-work/collect_import_paths_mandatory_v1.py"
+  ],
+  "environment": {"python": "3.8.10", "os": "Windows-10-10.0.26200-SP0", "node": "v22.22.2"},
+  "contract_revisions": {"CON-TOOL-ERRORS-PROMPT-OWNERSHIP": 2, "CON-PYTHON-HOST-STATIC-INJECT": 1},
+  "artifacts": [
+    {"path": "migration/evidence/artifacts/IMPORT-PATHS-QUALIFICATION-20261007-77C74AEB.zip", "sha256": "7bde30c2a82c6dc23c417d442fd763cb3ec6cba7284bdb1bb1b8645e95625253"},
+    {"path": "migration/evidence/artifacts/IMPORT-PATHS-MANDATORY-20261007-77C74AEB.zip", "sha256": "201c3695b708e3d04609d83b7565954d13fe9917ab11dc25f4a22b9f62359921"}
+  ],
+  "scope": "307 actual Source/native, import/runtime, real normal/dangling Windows junction and mandatory/extracted controls pass with zero failures/errors/skips;600.68 console seconds/600.547 XML seconds. Only a local memo for absent metadata prefixes; every true live-file check and existing/reparse prefix retains original physical resolution/hashes. Ten regressions are mandatory,helper bytes join full fresh observer guards and portable oracle staging. First dangling-prefix proposal is rejected and preserved.44 archived files retain actual Source/native receipts,full XML/log and proposed bytes. No full release acceptance,speedup claim for the entire suite or parent closure."
+}

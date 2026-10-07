@@ -11,7 +11,7 @@ ROOT = Path(__file__).resolve().parents[1]
 SOURCE_COMMIT = 'cd5ef8148158c3a752a658978873241fdf8e2bbc'
 OBSERVER_INPUTS = ('scripts/sdk_profile_oracle.py', 'scripts/sdk_profile_values.py', 'scripts/oracles/sdk_profile_driver.py',
     'scripts/oracles/sdk_profile_source.mts', 'scripts/oracles/sdk_profile_python.py', 'scripts/canonical_llm_values.py',
-    'scripts/sdk_profile_imports.json', 'scripts/sdk_profile_cases.py')
+    'scripts/sdk_profile_imports.json', 'scripts/sdk_profile_cases.py', 'scripts/import_paths.py')
 
 
 def digest(path):

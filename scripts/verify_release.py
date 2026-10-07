@@ -99,6 +99,12 @@ PAIRED_DRIVERS = PAIRED_DRIVERS + ('permission_presets',)
 PAIRED_DRIVERS = PAIRED_DRIVERS + ('tool_errors',)
 OFFICIAL_CONFIGS = ('consumers', 'agent-lifecycle', 'session-recovery', 'session-projection', 'acp', 'acp-app', 'mcp', 'subagent-acp', 'storage-cache', 'session-observation', 'session-corpus', 'session-sqlite-query', 'query-engine-source', 'session-tools-source', 'sqlite-format-source', 'sqlite-provider-source', 'jsonl-provider-source', 'tool-scheduler-source', 'deepseek-source', 'llm-public-source')
 REQUIRED_REGRESSION = {
+    'test_import_paths': {
+        *{'test_import_paths_preserves_original_physical_resolution[' + state + '-' + str(check_files) + ']'
+          for state in ('missing', 'existing', 'junction', 'dangling-junction') for check_files in (True, False)},
+        *{'test_import_paths_live_prefix_never_uses_missing_tree_shortcut[' + str(check_files) + ']'
+          for check_files in (True, False)},
+    },
     'test_tools_upstream_parity': {'test_agent_loop_waits_for_owned_tools_and_retires_on_loss'},
     'test_tool_errors_consumers': {
         *{'test_actual_source_native_tool_errors_and_prompt_ownership[' + name + ']' for name in TOOL_ERROR_NAMES},

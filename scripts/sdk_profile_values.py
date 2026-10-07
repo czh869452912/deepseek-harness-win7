@@ -6,6 +6,7 @@ from pathlib import Path
 from scripts.canonical_llm_values import observation_digest as value_digest
 from dsh.session.seq_ranges import encode_seq_ranges
 from scripts.sdk_profile_cases import SCENARIOS
+from scripts.import_paths import resolve_import_path
 
 
 FRAME_COUNTS = dict(normal=30, cancel=14, error=18)
@@ -98,10 +99,11 @@ def validate_imports(capture, root, executable, expected_modules, check_files=Tr
     allowed = required | ({OPTIONAL_CANCEL_IMPORT} if capture['scenario'] == 'cancel' else set())
     if not isinstance(modules, dict) or not required.issubset(modules) or not set(modules).issubset(allowed):
         raise ValueError('SDK actual imported closure differs')
+    missing_prefixes = None if check_files else {}
     for name, expected in modules.items():
         if expected != expected_modules.get(name):
             raise ValueError('SDK imported bytes disagree with approved closure')
-        path = (root / name).resolve()
+        path = resolve_import_path(root, name, missing_prefixes)
         if path.relative_to(root).as_posix() != name or not name.startswith(('dsh/', 'apps/')) or '\\' in name or ':' in name or '..' in Path(name).parts or not isinstance(expected, str) or len(expected) != 64 or any(value not in '0123456789abcdef' for value in expected):
             raise ValueError('SDK imported identity invalid')
         if check_files and digest(path) != expected:

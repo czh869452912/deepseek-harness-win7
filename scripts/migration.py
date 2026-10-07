@@ -5,6 +5,7 @@ workers submit changes for review and never acquire leases through this CLI.
 """
 import argparse
 import hashlib
+import importlib.util
 import json
 import re
 import subprocess
@@ -313,12 +314,21 @@ def validate_checkout(data, root):
     actual = {r["path"]: r["sha256"] for r in source_inventory(root)}
     recorded = {r["path"]: r["sha256"] for r in data["modules"]["manifests"]}
     need(actual == recorded, "manifest inventory drift: inspect additions/removals/hash changes")
+    aliases = {}
+    if (root / "migration/storage/lfs-transport.json").exists():
+        spec = importlib.util.spec_from_file_location("migration_storage", Path(__file__).with_name("migration_storage.py"))
+        storage = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(storage)
+        try:
+            aliases = storage.verify_rewrite(root)
+        except (ValueError, OSError, KeyError) as exc:
+            raise RecordError("storage conversion proof: " + str(exc))
     subprocess.check_call(["git", "-C", str(root), "merge-base", "--is-ancestor",
-                           data["baseline"]["product_commit"], "HEAD"])
+                           aliases.get(data["baseline"]["product_commit"], data["baseline"]["product_commit"]), "HEAD"])
     for task in data["tasks"].values():
         if task["state"] == "integrated":
             subprocess.check_call(["git", "-C", str(root), "merge-base", "--is-ancestor",
-                                   task["integrated_commit"], "HEAD"])
+                                   aliases.get(task["integrated_commit"], task["integrated_commit"]), "HEAD"])
 
 
 def render_status(data):

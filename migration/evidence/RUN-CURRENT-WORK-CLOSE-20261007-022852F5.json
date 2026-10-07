@@ -1,0 +1,31 @@
+{
+  "id": "RUN-CURRENT-WORK-CLOSE-20261007-022852F5",
+  "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
+  "product_commit": "022852f5f508b792f289a86c82e7865d4f3dd24b",
+  "kind": "analysis",
+  "task_id": "MIG-CURRENT-RELEASE-GATE-003",
+  "result": "unknown",
+  "validity": "current",
+  "commands": [
+    ".venv/Scripts/python.exe .goose/out/acp-a4-work/measure_release_fixture_v2.py",
+    ".venv/Scripts/python.exe scripts/process_artifact_retention.py",
+    ".venv/Scripts/python.exe .goose/out/acp-a4-work/collect_current_work_close_v1.py"
+  ],
+  "environment": {
+    "python": "3.8.10",
+    "node": "22.22.2",
+    "os": "Windows-10-10.0.26200-SP0"
+  },
+  "contract_revisions": {},
+  "artifacts": [
+    {
+      "path": "migration/evidence/artifacts/RELEASE-FIXTURE-MEASUREMENT-20261007-022852F5.zip",
+      "sha256": "daf504c784479ea41538881474afe69a8c082915198f59340efdf40c1c3586c3"
+    },
+    {
+      "path": "migration/evidence/artifacts/ROUTE-PATH-BROWSER-RESEARCH-20261007-6AABEA10.zip",
+      "sha256": "a6d37689e5b2f51c4e89cc543dadf14d4cce7c77b8b8bd142dae1d7baf0694c8"
+    }
+  ],
+  "scope": "Evidence and status close-out only. Full synthetic positive receipt measured and profiled over clean 022852f5; repeated path resolution cost identified, no optimization implemented. Separate 6aabea10-based routed/terminal/path/browser proposals retained with raw failures and exact baseline reconstruction; not promoted to Root. Browser comparison remains different with four raw registration-order differences. Archives validated member-by-member; no new clean full release acceptance, task integration, Source exception, budget increase or platform certification. Result unknown denotes unfinished migration acceptance, not an archive verification failure."
+}

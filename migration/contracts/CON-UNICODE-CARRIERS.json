@@ -1,0 +1,22 @@
+{
+  "id": "CON-UNICODE-CARRIERS",
+  "revision": 1,
+  "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
+  "status": "specified",
+  "source_paths": ["reference/packages/api/gateway/src/stream-server.ts", "reference/packages/client/connection/src/rpc-host.ts", "reference/packages/client/connection/src/http-bridge.ts", "reference/packages/fs/tool-fs/src/read-render.ts", "reference/packages/llm/llm-deepseek/src/index.ts"],
+  "consumers": ["dsh/typert/stream_mux.py", "dsh/host/connection/rpc_host.py", "dsh/llm/llm_service.py", "scripts/unicode_carrier_oracle.py", "scripts/unicode_carrier_cases.py", "tests/test_unicode_carrier_consumers.py", "scripts/verify_release.py", "scripts/verify_portable.py", "tests/test_current_release_gate.py"],
+  "invariants": [
+    "Seven actual Unicode inputs produce21 complete ordered Source/Root/owned observations through physical WebSocket, Connection RPC HTTP and local DeepSeek HTTP adapter: high surrogate, low surrogate, surrogate key/value, paired representation, astral/Chinese, ASCII and actual FS UTF16 capped output.",
+    "Exact mux item/end JSON text and decoded values and RPC status/text/decoded envelope match JSON.stringify/Response.json. Lone UTF16 units are escaped; complete surrogate pairs form their actual scalar; no replacement character or discarded data.",
+    "Complete actual local DeepSeek request body/headers and response chunks/extension acceptance match. Network sends occur for lone surrogate and paired input, instead of prior pre-request UnicodeEncodeError.",
+    "Fixed upstream checkout and all tracked/observer/helper/case and actual ws dependency bytes guarded; independently approved imported Root bytes and complete owned Python3.8.10 files guarded before/after.",
+    "Partial/changed/foreign Source, native runtime, imports, text, public fields, missing terminal frames and omitted/skipped/duplicate/failed mandatory/extracted lanes are refused. Every extracted damage validates its complete positive receipt before mutation."
+  ],
+  "identity": "Exact unicode_carrier_oracle.NAMES21; literal stream/RPC IDs and fixture path; no UUID/path/time/error aliases.",
+  "ownership": "Gateway owns real socket and stream iterator; Connection owns HTTP envelope and response; canonical DeepSeek transport owns local request; codecs reuse existing normative JSON formatter.",
+  "ordering": "Seven inputs, each actual mux then RPC then LLM; item precedes end; full ordered model chunks retained.",
+  "errors": "Prior real mux internal UTF8 refusal, RPC400 and pre-request model failure preserved. No upstream bug exception added.",
+  "cancellation": "Existing real socket cancellation/reset/write-lifetime regressions retained; broader profile and transport races are separate parent qualification.",
+  "adaptation": "Python3.8 JSON serialization follows existing stringify_json UTF16 normalization and well-formed JSON escaping; LLM imports the helper only when actual HTTP streaming is used.",
+  "open_questions": ["Complete Session persistence/reopen to model and original browser rendering composition remains wider parent work.", "Actual paid provider and user-deferred Win7 certification are not covered."]
+}

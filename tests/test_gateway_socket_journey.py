@@ -38,6 +38,10 @@ class Streams(TypertRemoteService):
     async def once(self):
         yield "finished"
 
+    @Remote({"mode": "stream"})
+    async def echo_stream(self, value):
+        yield value
+
 
 class Client:
     async def connect(self, port):

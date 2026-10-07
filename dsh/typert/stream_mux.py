@@ -7,6 +7,7 @@ from wsproto.connection import ConnectionState
 from wsproto.events import AcceptConnection, TextMessage, BytesMessage, Ping, CloseConnection
 
 from dsh.core.abort import AbortController
+from dsh.cordis.json_text import stringify_json
 from dsh.typert.artifact import UNDEFINED
 
 
@@ -71,7 +72,7 @@ class MuxConnection:
 
     async def send(self, message):
         message = {key: value for key, value in message.items() if value is not UNDEFINED}
-        text = json.dumps(message, ensure_ascii=False, allow_nan=False, separators=(",", ":"))
+        text = stringify_json(message)
         await self.send_event(TextMessage(data=text))
 
     async def terminate(self, code, reason):

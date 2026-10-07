@@ -1,0 +1,24 @@
+{
+  "id": "MIG-UNICODE-CARRIERS-064",
+  "goal": "闭合实际FS UTF16结果到WebSocket/RPC/模型HTTP的规范JSON载体",
+  "kind": "implementation",
+  "state": "running",
+  "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
+  "base_product": "99d2fbec155fcb1e230edc0bde8f57c489edb8c1",
+  "owner": "current-session-coordinator",
+  "requires": [{"task": "MIG-CURRENT-RELEASE-GATE-003", "contract": "CON-CURRENT-RELEASE-GATE", "revision": 1}],
+  "provides": [{"contract": "CON-UNICODE-CARRIERS", "revision": 1}],
+  "acceptance": [
+    "All21 complete actual Source/Root/independently approved own Python3.8.10 carrier values match; full input and module guards pass.",
+    "Mandatory/extracted controls pass only after complete positive baseline; existing real carrier/model consumers pass.",
+    "Original mux/RPC/model refusals and qualification/observer failures retained with exact old/new provider bytes.",
+    "New clean full regression/all paired drivers/unchanged Source groups/actual extraction/original browser pass before bounded integration."
+  ],
+  "expected_paths": ["dsh", "scripts", "tests", "migration", "docs/research"],
+  "open_findings": ["Actual UTF16-capped FS output failed mux UTF8 delivery, RPC returned400 and lone surrogate model requests failed before network. Three real carriers now reuse normative JSON formatter;21 fresh complete Source/Root/own observations match with162 approved imports/15501 owned file guards.195 actual consumers and74 complete-positive-baseline gate controls pass;66-file immutable archive preserves original refusals and catalog-import failure. New clean full release and complete Session/profile/browser/transport parents remain open."],
+  "conflicts_with": [],
+  "candidate_commit": null,
+  "integrated_commit": null,
+  "evidence_ids": ["RUN-UNICODE-CARRIERS-QUALIFICATION-20261007-99D2FBEC"],
+  "next_action": "21完整自有观察、195真实回归、74有效正例门禁及66文件归档已完成；继续完整Session/profile/browser/transport和全部七父范围及新的干净完整冻结验收。"
+}

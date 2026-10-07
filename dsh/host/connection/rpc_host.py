@@ -5,6 +5,7 @@ import re
 from types import SimpleNamespace
 
 from dsh.cordis.service import Service
+from dsh.cordis.json_text import stringify_json
 from dsh.core.abort import NEVER_ABORTED
 from dsh.host.connection.api_trust import is_trusted_api_request
 from dsh.typert.artifact import UNDEFINED
@@ -26,7 +27,7 @@ def response(status, body, headers=None):
 def envelope(rpc_id, result):
     # An absent value is omitted on the wire; explicit null remains null.
     result = {key: value for key, value in result.items() if value is not UNDEFINED}
-    return response(200, json.dumps({"type": "server-response", "rpcId": rpc_id, "result": result}, ensure_ascii=False, allow_nan=False), {"content-type": "application/json"})
+    return response(200, stringify_json({"type": "server-response", "rpcId": rpc_id, "result": result}), {"content-type": "application/json"})
 
 
 async def rpc_fetch(channel, handler, request):

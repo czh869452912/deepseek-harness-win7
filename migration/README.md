@@ -1,5 +1,7 @@
 # 持续对齐记录
 
+2026-10-07 Unicode实际载体064推进：FS UTF16截断产生的单独代理项此前导致mux内部错误、RPC400及模型网络前失败；三载体复用规范JSON编码。七输入/21完整Source/Root/自有Python3.8.10观察匹配，162批准导入/15501输入前后守卫；195真实消费者和74有效正例门禁通过。66文件独立归档保留所有拒绝及首轮catalog导入失败，最终局部传输导入另重新验收，第83配对接入。064及056—063仍running；完整Session/profile/原版浏览器/transport/恢复/竞争和新的完整冻结待验收，最新完整仍83026446/65，七父范围及延期认证不变。自动维护本轮没有新增合格材料，见docs/research/2026-10-07-unicode-carrier-progress.md。
+
 2026-10-07 子代理model-selection063推进：16真实发布前setup配置、104完整Source/Root/自有Python3.8.10公开值匹配，120批准导入与15495输入前后守卫；27真实消费者及159有效正例后的正式/必需/解压控制通过。51文件归档保留320/152差异、漏value观察和首轮两项复制正则失败；真实Context拥有的Agent在工厂发布前注册工具，第82配对接入。063仍running；实际selected child routing、完整预设/原版浏览器/策略/取消/恢复/竞争及新完整冻结待验收，最新完整仍83026446/65，七父范围和延期认证不变。见docs/research/2026-10-07-subagent-model-values-progress.md。
 
 2026-10-07 默认预设十项元数据推广：75真实消费者通过/一既有目录链接权限skip；新鲜实际Source/Root/自有Python3.8.10 headless31事件/3请求/4查询全部字段匹配，473批准导入与15488输入前后守卫。53文件独立归档保留完整观察和旧Git提供端字节，只允许完整UUIDv4分配引用图对应。完整profile父范围未闭合，继续可选子代理model-selection、minimal顺序、creative额外导出及正式profile/浏览器的问答/审批/取消/关闭/冷恢复；完整签收仍83026446/65，七父范围及延期认证不变。见docs/research/2026-10-07-profile-metadata-progress.md。

@@ -977,6 +977,7 @@ class LLMService:
         self, messages, tools=None, model=None, temperature=None,
         provider=None, system=None, options=None,
     ):
+        from dsh.cordis.json_text import stringify_json
         from dsh.llm.deepseek_wire import serialize_request, parse_sse, translate
         from dsh.llm.http_stream import open_stream
         from dsh.llm.attribution import attribution_headers
@@ -992,7 +993,7 @@ class LLMService:
             payload = serialize_request(request, request.get('_request_defaults'))
         req = urllib.request.Request(
             "{}/chat/completions".format(base_url.rstrip("/")),
-            data=json.dumps(payload, ensure_ascii=False).encode("utf-8"),
+            data=stringify_json(payload).encode("utf-8"),
             headers={**attribution_headers(), **request.get("_provider_headers", {}), "Content-Type": "application/json", "Authorization": "Bearer {}".format(api_key),
                      "Accept": "text/event-stream"}, method="POST")
         try:

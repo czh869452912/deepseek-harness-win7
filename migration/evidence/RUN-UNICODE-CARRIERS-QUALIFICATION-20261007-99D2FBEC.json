@@ -1,0 +1,20 @@
+{
+  "id": "RUN-UNICODE-CARRIERS-QUALIFICATION-20261007-99D2FBEC",
+  "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
+  "product_commit": "99d2fbec155fcb1e230edc0bde8f57c489edb8c1",
+  "kind": "verification",
+  "task_id": "MIG-UNICODE-CARRIERS-064",
+  "result": "passed",
+  "validity": "current",
+  "exit_code": 0,
+  "commands": [
+    ".venv/Scripts/python.exe .goose/out/acp-a4-work/qualify_unicode_carrier_owned_v2.py",
+    ".venv/Scripts/python.exe -m pytest tests/test_unicode_carrier_consumers.py tests/test_current_release_gate.py -k unicode_carrier -x --junitxml=.goose/out/acp-a4-work/unicode-carrier-gate-v2.xml",
+    ".venv/Scripts/python.exe -m pytest tests/test_gateway_socket_journey.py tests/test_gateway_mux_write_lifetime.py tests/test_connection_rpc_host.py tests/test_deepseek_wire_boundary.py tests/test_deepseek_capture_consumers.py tests/test_deepseek_error_consumers.py -x --junitxml=.goose/out/acp-a4-work/unicode-carrier-regression-v2.xml",
+    ".venv/Scripts/python.exe .goose/out/acp-a4-work/collect_unicode_carrier_v1.py"
+  ],
+  "environment": {"python": "3.8.10", "os": "Windows-10-10.0.26200-SP0", "node": "v22.22.2"},
+  "contract_revisions": {"CON-UNICODE-CARRIERS": 1},
+  "artifacts": [{"path": "migration/evidence/artifacts/UNICODE-CARRIERS-QUALIFICATION-20261007-99D2FBEC.zip", "sha256": "22f5ae4e14ba05e77c16a04ec57bd7e07afdefd4d66f560db3a011296088e0b3"}],
+  "scope": "Seven actual Unicode inputs through physical Source/Root/own WebSocket, Connection RPC and local DeepSeek HTTP produce21 exact ordered values, including complete mux/RPC wire JSON text.162 independently approved actual imports and15501 own input guards before/after.195 actual consumers and74 complete-positive-baseline mandatory/extracted controls pass separately.66-file immutable archive preserves original UTF8/RPC400/pre-network refusals, incorrect private-mux probe, missing Source dependency path and49 passed/one catalog extra-import gate failure. Final local transport import requalified.83rd paired driver and actual owned extraction wired; no aliases or new upstream bug exceptions. Full Session/profile/browser/transport/recovery/race parents and new clean full release remain open."
+}

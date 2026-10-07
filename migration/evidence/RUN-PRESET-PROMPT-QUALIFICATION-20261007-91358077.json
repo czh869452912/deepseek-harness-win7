@@ -1,0 +1,19 @@
+{
+  "id": "RUN-PRESET-PROMPT-QUALIFICATION-20261007-91358077",
+  "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
+  "product_commit": "9135807764f211f72fbe19b032f397332ff3dc4b",
+  "kind": "verification",
+  "task_id": "MIG-PROFILE-JOURNEYS-002",
+  "result": "passed",
+  "validity": "current",
+  "exit_code": 0,
+  "commands": [
+    ".venv/Scripts/python.exe -m pytest tests/test_tool_web_upstream_parity.py tests/test_web_tools.py tests/test_system_prompt_reference_1to1.py tests/test_e2e_core_agent_loop_llm_system_prompt_1to1.py --junitxml=.goose/out/acp-a4-work/preset-prompt-regression-v1.xml",
+    ".venv/Scripts/python.exe .goose/out/acp-a4-work/qualify_preset_prompt_owned_v2.py",
+    ".venv/Scripts/python.exe .goose/out/acp-a4-work/collect_preset_prompt_v1.py"
+  ],
+  "environment": {"python": "3.8.10", "os": "Windows-10-10.0.26200-SP0", "node": "v22.22.2"},
+  "contract_revisions": {"CON-CURRENT-RELEASE-GATE": 1},
+  "artifacts": [{"path": "migration/evidence/artifacts/PRESET-PROMPT-QUALIFICATION-20261007-91358077.zip", "sha256": "319e47ab42198112897ea619bce2e3d6e5cf9be1093c92c6ac8871740d4b7fb9"}],
+  "scope": "Two actual file-reference/web-fetch prompt providers use exact Source complete text.68 real regressions pass. Three actual canonical Web Agent assemblies match Source/Root/own with2/26/33 tools,473 approved actual tracked imports and15505 complete owned guards. Literal controlled cwd/time/session IDs and real Source port reused; producer installation paragraph fully verified before projecting only installation identity; unchanged thirteen explicit Cordis Python guidance adaptations.47-file archive retains all complete observations and original errors. Root/own immediate shutdown checkpoint closed warnings and original-browser notice-timeout rejection remain open and are not clean acceptance. Complete real profile/model streams/browser and new clean release remain separate."
+}

@@ -1,0 +1,30 @@
+{
+  "id": "RUN-EXPIRED-PROCESS-20261007-46645625",
+  "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
+  "product_commit": "466456257f261bd30e3af1a40a3da75b9ac4446f",
+  "kind": "verification",
+  "task_id": "MIG-PROCESS-RETENTION-050",
+  "result": "passed",
+  "validity": "current",
+  "exit_code": 0,
+  "commands": [
+    ".venv/Scripts/python.exe .goose/out/acp-a4-work/prune_legacy_finished_receipts_v1.py",
+    ".venv/Scripts/python.exe .goose/out/acp-a4-work/prune_closed_qualification_copies_v2.py"
+  ],
+  "environment": {
+    "python": "3.8.10 (default, May  6 2021, 17:27:56) [MSC v.1928 64 bit (AMD64)]",
+    "os": "Windows-10-10.0.26200-SP0",
+    "cwd": "C:\\Users\\czh86\\Documents\\Codex\\deepseek-harness-win7",
+    "node": "v22.22.2"
+  },
+  "contract_revisions": {
+    "CON-PROCESS-ARTIFACT-RETENTION": 1
+  },
+  "artifacts": [
+    {
+      "path": "migration/evidence/artifacts/EXPIRED-PROCESS-QUALIFICATION-20261007-46645625.zip",
+      "sha256": "e08a61d8dabac4eb67128341ae3194d81f62a3690d49a63ddadf0baf0359a32d"
+    }
+  ],
+  "scope": "Explicit nine closed pre-mapping historical runs removed2568 exact synthetic JSONs/27413212833 bytes, preserving complete original logs/XML/inputs/summaries/audits. Two closed qualification copies removed30962 unchanged ZIP-matched regular files/491955312 bytes. Missing-XML owner refused before any mutation and retained. Fifty-seven archive files verified. Maintenance only: no Source business parity or new full acceptance inferred."
+}

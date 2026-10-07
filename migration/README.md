@@ -1,5 +1,7 @@
 # 持续对齐记录
 
+2026-10-07 自动过期维护继续完成：九份历史执行清理2568个合成JSON/27413212833字节，两份已结束资格目录清理30962个原样副本/491955312字节；57文件维护归档保留真实材料，缺XML执行先拒绝。干净466完整门禁收集9202项，到99%因正常3600秒时限拒绝，无完整XML；精确ZIP/输入/原始退出与逐项审计共759文件保留，未增加时限或计作签收。最新完整仍83026446/65，056running、036partial、七父范围及延期Win7不变。见 `docs/research/2026-10-07-expired-process-and-console-timeout.md`。
+
 2026-10-07 Windows受限控制台提供端推进：有控制台时继承stdio/console，无控制台管道继续CREATE_NO_WINDOW；仍限制token、先挂Job后恢复、关闭拥有进程。启动nonce先输出空行并保持严格独立行拒绝判据；实际history拒绝原样保留。Root七项物理/nonce控制和35项相关回归通过，414文件原始研究资格保留。2738必需lane/75配对及新的干净完整验收待执行；功能浏览器研究不等于完整DTO/工具schema签收，七父范围、056 running及Win7延期保持。见 `docs/research/2026-10-07-confined-console-progress.md`。
 
 2026-10-07 干净94a34b5d完整门禁被拒绝：8770 passed、45 failed、356 errors、6既有skip；磁盘峰值及两项旧审批审计断言分别处理。预检原样frontend/ICU副本改为每项body结束即双哈希清理，真实失败变体、活动/未知/外部文件保留；76项定向维护/真实子进程/审批/门禁控制通过。744文件精确拒绝归档保留，056仍running，最新完整仍83026446/65。见 `docs/research/2026-10-07-per-case-retention-progress.md`。

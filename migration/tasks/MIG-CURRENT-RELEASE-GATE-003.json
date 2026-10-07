@@ -59,7 +59,8 @@
     "RUN-CANONICAL-LLM-20261006-CURRENT-RELEASE-GATE-003",
     "RUN-METADATA-RETENTION-20261006-CURRENT-RELEASE-GATE-003",
     "RUN-LLM-CONFIG-20261006-CURRENT-RELEASE-GATE-003",
-    "RUN-SDK-RETENTION-20261007-CURRENT-RELEASE-GATE-003"
+    "RUN-SDK-RETENTION-20261007-CURRENT-RELEASE-GATE-003",
+    "RUN-CONSOLE-RETENTION-REJECTED-20261007-46645625"
   ],
-  "next_action": "干净产品83026446的2522必需lane、74配对、20组1911原样Source及真实解压/浏览器通过；继续完整迁移，Win7延期且accepted_upstream空。"
+  "next_action": "最新完整仍83026446/65；干净466收集9202项，到99%因正常3600秒超时拒绝，无完整XML。759文件精确拒绝归档保留，2738必需lane、75配对及Source/解压/浏览器仍待新完整签收。先核实正常全量耗时及依赖提供端/消费者问题；七父范围、056running、036partial与延期Win7保持。"
 }

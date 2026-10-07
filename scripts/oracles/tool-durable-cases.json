@@ -1,0 +1,14 @@
+[
+  {"name":"success-absent"},
+  {"name":"success-null","meta":null},
+  {"name":"success-false","meta":false},
+  {"name":"success-zero","meta":0},
+  {"name":"success-empty-object","meta":{}},
+  {"name":"success-empty-array","meta":[]},
+  {"name":"success-unicode","meta":"记录"},
+  {"name":"success-graph","meta":{"kind":"presentation","items":[null,false,0,{"text":"内容"}]}},
+  {"name":"plain-failure","throw":"plain"},
+  {"name":"typed-failure","throw":"typed"},
+  {"name":"abort-before","abort":"before"},
+  {"name":"abort-after-first","abort":"body"}
+]

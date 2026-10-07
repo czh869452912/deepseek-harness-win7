@@ -23,6 +23,7 @@ TOOL_RUNTIME_SCHEDULER = "TOOL_RUNTIME_SCHEDULER"
 TOOL_NOT_FOUND = "UNKNOWN_TOOL"
 TOOL_ARGS_INVALID = "INVALID_ARGS"
 _MISSING_SIGNAL = object()
+_MISSING_META = object()
 RUN_CODE_NAME = "run_code"
 
 
@@ -457,7 +458,7 @@ class ToolExecutionResult:
 
     def __init__(self, content: List[Dict[str, Any]], is_error: bool = False,
                  error: Optional[Dict[str, Any]] = None,
-                 meta: Optional[Dict[str, Any]] = None,
+                 meta: Any = _MISSING_META,
                  concludes_turn: bool = False,
                  additional_contexts: Optional[List[Any]] = None,
                  value: Any = None):
@@ -465,7 +466,8 @@ class ToolExecutionResult:
         self.content = content
         self.is_error = is_error
         self.error = error
-        self.meta = meta
+        self.meta = None if meta is _MISSING_META else meta
+        self._meta_present = meta is not _MISSING_META
         self.concludes_turn = concludes_turn
         self.additional_contexts = additional_contexts or []
         self.value = value
@@ -473,6 +475,8 @@ class ToolExecutionResult:
     def __setattr__(self, name: str, value: Any) -> None:
         if getattr(self, "_frozen", False):
             raise AttributeError("tool execution result is readonly")
+        if name == "meta":
+            object.__setattr__(self, "_meta_present", True)
         object.__setattr__(self, name, value)
 
     def freeze(self) -> "ToolExecutionResult":
@@ -1370,7 +1374,7 @@ class ToolsService:
                 if violations:
                     raise ToolOutputError(tool.name, violations)
                 content = _json_snapshot(tool.output["render"](exec_input.arguments, value))
-                meta = None
+                meta = _MISSING_META
                 projector = tool.output.get("presentationMeta")
                 if projector is not None and exec_input.parent is None:
                     meta = _json_snapshot(projector(exec_input.arguments, value))
@@ -1405,7 +1409,7 @@ class ToolsService:
             if violations:
                 raise ToolOutputError(tool.name, violations)
             content = _json_snapshot(tool.output["render"](exec_input.arguments, value))
-            meta = None
+            meta = _MISSING_META
             projector = tool.output.get("presentationMeta")
             if projector is not None and exec_input.parent is None:
                 meta = _json_snapshot(projector(exec_input.arguments, value))
@@ -1424,7 +1428,7 @@ class ToolsService:
             "content": result.content,
             "is_error": result.is_error,
             "error": result.error,
-            "meta": result.meta,
+            "meta": result.meta if result._meta_present else _MISSING_META,
             "concludes_turn": result.concludes_turn,
             "additional_contexts": result.additional_contexts,
             "value": result.value,
@@ -1505,7 +1509,7 @@ class ToolsService:
                     if violations:
                         raise ToolOutputError(tool.name, violations)
                     content = _json_snapshot(tool.output["render"](exec_input.arguments, value))
-                    meta = None
+                    meta = _MISSING_META
                     projector = tool.output.get("presentationMeta")
                     if projector is not None and exec_input.parent is None:
                         meta = _json_snapshot(projector(exec_input.arguments, value))

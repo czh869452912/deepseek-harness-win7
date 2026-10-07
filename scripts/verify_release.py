@@ -73,6 +73,9 @@ from scripts.permission_presets_cases import VALUE_DAMAGES as PERMISSION_PRESET_
 from scripts.tool_errors_oracle import validate_runtime as validate_tool_errors, identity as tool_errors_identity
 from scripts.tool_errors_oracle import complete_digest as tool_errors_digest, NAMES as TOOL_ERROR_NAMES
 from scripts.tool_errors_cases import VALUE_DAMAGES as TOOL_ERROR_DAMAGES, SOURCE_DAMAGES as TOOL_ERROR_SOURCE_DAMAGES
+from scripts.tool_durable_oracle import validate_runtime as validate_tool_durable, identity as tool_durable_identity
+from scripts.tool_durable_oracle import complete_digest as tool_durable_digest, NAMES as TOOL_DURABLE_NAMES
+from scripts.tool_durable_cases import VALUE_DAMAGES as TOOL_DURABLE_DAMAGES, SOURCE_DAMAGES as TOOL_DURABLE_SOURCE_DAMAGES
 from scripts.exported_host_lifecycle_oracle import observe_native as observe_host_lifecycle, validate_runtime as validate_host_lifecycle, observation_digest as host_lifecycle_digest
 PERMISSION_EXTRACTED_DAMAGES = PERMISSION_PRESET_DAMAGES + tuple('source-' + name for name in PERMISSION_SOURCE_DAMAGES) + ('missing', 'source-missing', 'source-hash', 'source-stamp')
 from scripts.llm_prepared_oracle import validate_runtime as validate_llm_prepared, identity as llm_prepared_identity, NAMES as LLM_PREPARED_NAMES
@@ -97,6 +100,7 @@ PAIRED_DRIVERS = PAIRED_DRIVERS + ('sdk_profile',)
 PAIRED_DRIVERS = PAIRED_DRIVERS + ('javascript_errors',)
 PAIRED_DRIVERS = PAIRED_DRIVERS + ('permission_presets',)
 PAIRED_DRIVERS = PAIRED_DRIVERS + ('tool_errors',)
+PAIRED_DRIVERS = PAIRED_DRIVERS + ('tool_durable',)
 OFFICIAL_CONFIGS = ('consumers', 'agent-lifecycle', 'session-recovery', 'session-projection', 'acp', 'acp-app', 'mcp', 'subagent-acp', 'storage-cache', 'session-observation', 'session-corpus', 'session-sqlite-query', 'query-engine-source', 'session-tools-source', 'sqlite-format-source', 'sqlite-provider-source', 'jsonl-provider-source', 'tool-scheduler-source', 'deepseek-source', 'llm-public-source')
 REQUIRED_REGRESSION = {
     'test_import_paths': {
@@ -113,6 +117,14 @@ REQUIRED_REGRESSION = {
         'test_tool_errors_owned_interpreter_and_independent_imports',
         'test_portable_tool_errors_refuses_partial_receipts[source]',
         'test_portable_tool_errors_refuses_partial_receipts[native]',
+    },
+    'test_tool_durable_consumers': {
+        *{'test_actual_source_native_durable_tool_results[' + name + ']' for name in TOOL_DURABLE_NAMES},
+        *{'test_durable_tools_requires_complete_values_and_runtime[' + damage + ']' for damage in TOOL_DURABLE_DAMAGES},
+        *{'test_durable_tools_source_requires_pinned_guarded_inputs[' + damage + ']' for damage in TOOL_DURABLE_SOURCE_DAMAGES},
+        'test_durable_tools_owned_interpreter_and_independent_imports',
+        'test_portable_durable_tools_refuses_partial_receipts[source]',
+        'test_portable_durable_tools_refuses_partial_receipts[native]',
     },
     'test_exported_host_metadata': {
         *{'test_exported_host_metadata_never_evaluates_authored_globals[' + case + ']' for case in ('literal-list', 'literal-tuple', 'empty', 'empty-name', 'nonstring', 'dynamic', 'trailing-body')},
@@ -580,7 +592,9 @@ REQUIRED_REGRESSION = {
     },
     'test_current_release_gate': {
         *{'test_extracted_tool_errors_requires_complete_values_and_runtime[' + damage + ']' for damage in TOOL_ERROR_DAMAGES + ('missing', 'source-missing', 'source-changed', 'source-file')},
+        *{'test_extracted_tool_durable_requires_complete_values_and_runtime[' + damage + ']' for damage in TOOL_DURABLE_DAMAGES + ('receipt-missing', 'source-missing', 'source-changed', 'source-file')},
         *{'test_tool_errors_consumer_lanes_are_mandatory[' + damage + ']' for damage in ('omit', 'skip', 'duplicate', 'failure')},
+        *{'test_tool_durable_consumer_lanes_are_mandatory[' + damage + ']' for damage in ('omit', 'skip', 'duplicate', 'failure')},
         *{'test_extracted_host_lifecycle_requires_owned_complete_observations[' + damage + ']' for damage in ('missing', 'row', 'tail', 'order', 'module', 'fixture', 'root', 'python', 'executable', 'counter')},
         *{'test_extracted_permission_presets_requires_complete_values_and_runtime[' + damage + ']' for damage in PERMISSION_EXTRACTED_DAMAGES},
         *{'test_permission_presets_consumer_lanes_are_mandatory[' + damage + ']' for damage in ('omit', 'skip', 'duplicate', 'failure')},
@@ -1556,6 +1570,16 @@ def validate_extracted(path, archive, candidate):
     except (ValueError, KeyError, TypeError) as error:
         raise RuntimeError('Extracted toolErrors consumer differs') from error
     try:
+        if report.get('toolDurableSourceSha256') != candidate['tool_durable_source_sha256']:
+            raise ValueError('Tools Source receipt identity differs')
+        if tool_durable_digest(candidate['tool_durable_source']['rows']) != candidate['tool_durable_observations_sha256']:
+            raise ValueError('Tools frozen complete Source values differ')
+        validate_tool_durable(report.get('toolDurable'), Path(report['mcpStdio']['root']),
+            Path(report['mcpStdio']['root']) / 'python.exe', candidate['tool_durable_source'],
+            candidate['tool_durable_modules'], check_files=False, owned_runtime=True)
+    except (ValueError, KeyError, TypeError) as error:
+        raise RuntimeError('Extracted toolDurable consumer differs') from error
+    try:
         validate_host_lifecycle(report.get('exportedHostLifecycle'), Path(report['mcpStdio']['root']),
             Path(report['mcpStdio']['root']) / 'python.exe', candidate['exported_host_lifecycle_sha256'],
             candidate['exported_host_lifecycle_modules'], candidate['exported_host_lifecycle_fixture_sha256'], check_files=False)
@@ -1880,6 +1904,13 @@ def verify(args, output):
     candidate['tool_errors_observations_sha256'] = tool_errors_identity(candidate['tool_errors_source'], ROOT / 'reference')
     candidate['tool_errors_source_sha256'] = digest(tool_errors_source)
     candidate['tool_errors_modules'] = tool_errors_report['imports']
+    tool_durable_source = output / 'tool-durable-paired.source.json'
+    tool_durable_native = output / 'tool-durable-paired.native.json'
+    tool_durable_report = json.loads(tool_durable_native.read_text(encoding='utf-8'))
+    candidate['tool_durable_source'] = json.loads(tool_durable_source.read_text(encoding='utf-8'))
+    candidate['tool_durable_observations_sha256'] = tool_durable_identity(candidate['tool_durable_source'], ROOT / 'reference')
+    candidate['tool_durable_source_sha256'] = digest(tool_durable_source)
+    candidate['tool_durable_modules'] = tool_durable_report['imports']
     host_lifecycle = observe_host_lifecycle(ROOT, python, output / 'host-lifecycle-root.json')
     candidate['exported_host_lifecycle_sha256'] = host_lifecycle_digest(host_lifecycle)
     candidate['exported_host_lifecycle_modules'] = host_lifecycle['imports']
@@ -1925,6 +1956,7 @@ def verify(args, output):
                '--sdk-profile-source', str(sdk_profile_source), '--sdk-profile-native', str(sdk_profile_native),
                '--permission-presets-source', str(permission_presets_source), '--permission-presets-native', str(permission_presets_native),
                '--tool-errors-source', str(tool_errors_source), '--tool-errors-native', str(tool_errors_native),
+               '--tool-durable-source', str(tool_durable_source), '--tool-durable-native', str(tool_durable_native),
                '--javascript-errors-source', str(errors_source), '--javascript-errors-native', str(errors_native)]
     if not candidate['worktree_dirty']:
         command += ['--expected-commit', candidate['product_commit']]

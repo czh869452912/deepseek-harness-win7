@@ -8,10 +8,9 @@ Aligned 1:1 with official `@deepseek-ai/dsh-agent-loop/tool-calls`.
 
 import asyncio
 import json
-import time
-import uuid
 from typing import Any, Callable, Dict, List, Optional, Union
 from dsh.core.agent_loop_settings import resolve_max_parallel_tool_calls
+from dsh.llm.message import create_tool_result_message
 from dsh.core.tools import (
     TOOL_ABORTED_BEFORE_DISPATCH,
     ToolExecutionInput,
@@ -284,7 +283,8 @@ def append_skipped_tool_call(session: Any, turn: int, step: int, block: Dict[str
         ToolExecutionResult(
             content=[{"type": "text", "text": "Error: tool call aborted before dispatch"}],
             is_error=True,
-            error={"name": "AbortError", "code": TOOL_ABORTED_BEFORE_DISPATCH, "message": "tool call aborted before dispatch"},
+            error={"message": "tool call aborted before dispatch",
+                   "info": {"name": "AbortError", "code": TOOL_ABORTED_BEFORE_DISPATCH}},
         ),
         call_seq,
     )
@@ -315,31 +315,20 @@ def append_tool_result(
     func = block.get("function", {}) if "function" in block else block
     name = func.get("name") or block.get("name", "")
 
-    tool_msg = {
-        "id": f"msg-{uuid.uuid4().hex[:8]}",
-        "role": "user",
-        "content": [
-            {
-                "type": "tool-result",
-                "toolCallId": call_id,
-                "content": result.content,
-                "isError": result.is_error,
-            }
-        ],
-        "source": {
-            "kind": "tool",
-            "callId": call_id,
-        },
-    }
+    tool_msg = create_tool_result_message({
+        "callId": call_id,
+        "content": result.content,
+        "isError": result.is_error,
+    })
 
     payload: Dict[str, Any] = {
         "turn": turn,
         "step": step,
         "message": tool_msg,
     }
-    if result.is_error and result.error:
-        payload["error"] = result.error.get("info", result.error) if isinstance(result.error, dict) else result.error
-    if getattr(result, "meta", None) is not None:
+    if isinstance(result.error, dict) and result.error.get("info"):
+        payload["error"] = result.error["info"]
+    if result._meta_present:
         payload["meta"] = result.meta
 
     if hasattr(session, "append"):

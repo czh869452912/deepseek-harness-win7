@@ -1,0 +1,23 @@
+{
+  "id": "CON-TOOL-DURABLE-PUBLICATION",
+  "revision": 1,
+  "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
+  "status": "specified",
+  "source_paths": ["reference/packages/core/tools/src/index.ts", "reference/packages/core/agent-loop/src/tool-calls.ts", "reference/packages/llm/llm/src/message.ts"],
+  "consumers": ["scripts/tool_durable_oracle.py", "scripts/tool_durable_cases.py", "scripts/oracles/tool_durable_source.mts", "scripts/oracles/tool_durable_python.py", "scripts/oracles/tool-durable-cases.json", "tests/test_tool_durable_consumers.py", "scripts/verify_release.py", "scripts/verify_portable.py", "tests/test_current_release_gate.py"],
+  "invariants": [
+    "Twelve ordered complete actual observations retain body-call identity/order, complete public results, scheduler outcome and every ordered tool/call and tool/result event field.",
+    "Missing metadata differs from explicit JSON null; false differs from zero and an empty object differs from an empty array. Presence survives copies, result handling and frozen publication.",
+    "Plain failure retains full public error/content without inventing durable error info; typed and skipped failure durable facts retain exactly original error.info without adding the public message.",
+    "Every tool-result message allocation is a distinct full lowercase UUIDv4. Only exact event.data.message.id allocations map by case and event position for cross-runtime comparison.",
+    "Fresh actual pinned Source guards all tracked original inputs and exact observer/case bytes before/after. Root and independent ownPython3.8.10 must import the complete independently approved native closure.",
+    "All value, presence, ordering, allocation, time, causal/surface, input, runtime and closure corruptions are refused. Every paired driver, regression lane and extracted receipt remains mandatory before a new clean full release qualifies integration."
+  ],
+  "identity": "Exact twelve names in tool_durable_oracle.NAMES. Complete JSON digest preserves type and presence; no general UUID alias mapping, metadata omission or error-message normalization is allowed.",
+  "ownership": "Actual tools and sessions are mounted through canonical providers; result message carrier uses the canonical helper. Input and module guards bind execution to the selected Root or own portable.",
+  "ordering": "Three controlled exclusive calls per case; all ordered events, body calls and results remain captured. Before-abort and abort-after-first retain skipped-call facts.",
+  "errors": "Complete public errors and exact durable typed info remain separate original fields. Older plain/skipped carriers and short/prefixed identifiers are rejected.",
+  "cancellation": "Before-abort calls no body; body-abort stops after the first body and retains the original complete outcomes/events for subsequent skipped calls.",
+  "adaptation": "Full UUIDv4 allocation values at one exact message-id path map to controlled event-position identities after shape and uniqueness validation; no other field is normalized.",
+  "open_questions": ["Arbitrary JSON-like graphs/cycles, every output/finalizer variant, additional contexts, all parallel scheduler/policy/profile combinations and the remaining Message ABI need their parent scopes.", "Actual Win7 certification remains user-deferred."]
+}

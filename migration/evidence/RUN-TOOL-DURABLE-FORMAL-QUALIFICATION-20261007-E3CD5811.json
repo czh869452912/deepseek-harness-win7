@@ -1,0 +1,26 @@
+{
+  "id": "RUN-TOOL-DURABLE-FORMAL-QUALIFICATION-20261007-E3CD5811",
+  "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
+  "product_commit": "e3cd5811ea13c665bc2f8dbfd5fdcfa9aecfe53b",
+  "kind": "verification",
+  "task_id": "MIG-TOOL-DURABLE-PUBLICATION-058",
+  "result": "passed",
+  "validity": "current",
+  "exit_code": 0,
+  "commands": [
+    ".venv/Scripts/python.exe scripts/tool_durable_oracle.py --output .goose/out/acp-a4-work/tool-durable-formal-root-after-v1.json",
+    ".venv/Scripts/python.exe -m pytest tests/test_tool_durable_consumers.py tests/test_tool_errors_consumers.py tests/test_tools_upstream_parity.py tests/test_tool_scheduler_failure_boundaries.py tests/test_tool_scheduler_and_modes.py tests/test_current_release_gate.py -k \"not extracted or tool_durable\" -q --junitxml=.goose/out/acp-a4-work/tool-durable-focused-v1.xml",
+    ".venv/Scripts/python.exe -m pytest tests/test_agent_loop_tool_order_1to1.py tests/test_tool_scheduler_source.py tests/test_session_tools.py tests/test_session_tools_source.py tests/test_session_tools_profile.py -q --junitxml=.goose/out/acp-a4-work/tool-durable-ordering-v1.xml",
+    ".venv/Scripts/python.exe -m pytest tests/test_sdk_profile_consumers.py tests/test_canonical_llm_consumers.py -q --junitxml=.goose/out/acp-a4-work/tool-durable-canonical-v1.xml",
+    ".venv/Scripts/python.exe .goose/out/acp-a4-work/qualify_tool_durable_exact_baseline_v1.py",
+    ".venv/Scripts/python.exe .goose/out/acp-a4-work/qualify_tool_durable_formal_owned_v3.py",
+    ".venv/Scripts/python.exe .goose/out/acp-a4-work/collect_tool_durable_formal_qualification_v1.py"
+  ],
+  "environment": {"python": "3.8.10", "os": "Windows-10-10.0.26200-SP0", "node": "v22.22.2"},
+  "contract_revisions": {"CON-TOOL-DURABLE-PUBLICATION": 1},
+  "artifacts": [
+    {"path": "migration/evidence/artifacts/TOOL-DURABLE-FORMAL-QUALIFICATION-20261007-E3CD5811.zip", "sha256": "402628de73580725e9881a1d220debe91ca41bc70f591d932ef80d7f0567c126"},
+    {"path": "migration/evidence/artifacts/TOOLS-SDK-REJECTED-20261007-0B197EFA.zip", "sha256": "f9b69121a4e171baed7cf162cd5ab4000f93384ea7adfdd98a2de28c6ae527e5"}
+  ],
+  "scope": "Formal complete12 Source/Root/independently owned exact-byte observations,105 approved actual imports and15481 owned inputs guarded before/after. Exact unchanged clean0b197efa Portable independently reproduces older rejected carrier/allocation. Earlier prefix proposal and formal LF/CRLF byte refusal remain retained; no hashing or error normalization.558 focused,66 actual ordering/Session and168 canonical/SDK tests all pass with no failures/errors/skips; overlapping sets are not added.61-file archive retains full XML/log,actual observations,promoted bytes and immutable35-file prior qualification.77 paired drivers and all new mandatory/extracted controls are registered. No new full clean release acceptance,058 integration or parent closure."
+}

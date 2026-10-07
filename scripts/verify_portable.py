@@ -63,6 +63,7 @@ from scripts.win32_stat_oracle import validate_runtime as validate_win32_stat, i
 from scripts.sdk_profile_oracle import validate_runtime as validate_sdk_profile, identity as sdk_profile_identity, observe_native as observe_sdk_profile
 from scripts.permission_presets_oracle import validate_runtime as validate_permission_presets, identity as permission_presets_identity, observe_native as observe_permission_presets
 from scripts.tool_errors_oracle import validate_runtime as validate_tool_errors, identity as tool_errors_identity, observe_native as observe_tool_errors
+from scripts.tool_durable_oracle import validate_runtime as validate_tool_durable, identity as tool_durable_identity, observe_native as observe_tool_durable
 from scripts.exported_host_lifecycle_oracle import observe_native as observe_host_lifecycle, validate_runtime as validate_host_lifecycle, observation_digest as host_lifecycle_digest
 from scripts.llm_prepared_oracle import validate_runtime as validate_llm_prepared, identity as llm_prepared_identity
 from scripts.llm_metadata_oracle import validate_runtime as validate_llm_metadata, identity as llm_metadata_identity
@@ -470,6 +471,26 @@ def tool_errors_receipts(source, native, output):
     return source, observed, runtime['imports']
 
 
+def tool_durable_receipts(source, native, output):
+    if source or native:
+        if not source or not native:
+            raise RuntimeError('Both durable tool Source and native receipts are required')
+        source, native = Path(source).resolve(), Path(native).resolve()
+    else:
+        paired = output.with_suffix('.tool-durable-paired.json')
+        completed = subprocess.run([sys.executable, str(ROOT / 'scripts/tool_durable_oracle.py'),
+            '--output', str(paired)], cwd=str(ROOT), capture_output=True, timeout=240)
+        output.with_suffix('.tool-durable-source.log').write_bytes(completed.stdout + completed.stderr)
+        if completed.returncode or completed.stderr:
+            raise RuntimeError('Fresh durable tool Source qualification failed')
+        source, native = paired.with_suffix('.source.json'), paired.with_suffix('.native.json')
+    observed = json.loads(source.read_text(encoding='utf-8'))
+    tool_durable_identity(observed, ROOT / 'reference')
+    runtime = json.loads(native.read_text(encoding='utf-8'))
+    validate_tool_durable(runtime, ROOT, sys.executable, observed, runtime['imports'])
+    return source, observed, runtime['imports']
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--archive', required=True)
@@ -519,7 +540,9 @@ def main(argv=None):
     parser.add_argument('--permission-presets-source', help='Fresh original permission settings/lifecycle/domain receipts')
     parser.add_argument('--permission-presets-native', help='Fresh native permission child/import receipts')
     parser.add_argument('--tool-errors-source', help='Fresh original complete tool errors and prompt ownership receipts')
+    parser.add_argument('--tool-durable-source', help='Fresh original complete durable tool and prompt ownership receipts')
     parser.add_argument('--tool-errors-native', help='Fresh native tool errors and imported closure')
+    parser.add_argument('--tool-durable-native', help='Fresh native durable tool and imported closure')
     parser.add_argument('--javascript-errors-source', help='Fresh original JavaScript error boundary observations')
     parser.add_argument('--javascript-errors-native', help='Fresh native JavaScript child/import/private asset receipts')
     parser.add_argument('--llm-prepared-source', help='Fresh actual Source prepared call observations')
@@ -596,6 +619,7 @@ def main(argv=None):
             'sdk_profile_oracle.py', 'sdk_profile_values.py', 'sdk_profile_imports.json', 'sdk_profile_cases.py', 'import_paths.py',
             'permission_presets_oracle.py', 'permission_presets_values.py', 'permission_presets_cases.py',
             'tool_errors_oracle.py', 'tool_errors_cases.py', 'oracles/tool_errors_source.mts', 'oracles/tool_errors_python.py',
+            'tool_durable_oracle.py', 'tool_durable_cases.py', 'oracles/tool_durable_source.mts', 'oracles/tool_durable_python.py', 'oracles/tool-durable-cases.json',
             'exported_host_lifecycle_oracle.py', 'oracles/exported_host_lifecycle.py', 'oracles/exported_host_lifecycle_python.py',
             'oracles/permission_presets_source.mts', 'oracles/permission_presets.probe.spec.ts',
             'oracles/permission_presets_domain_source.mts', 'oracles/permission_presets_domain.probe.spec.ts',
@@ -768,6 +792,9 @@ def main(argv=None):
         tool_errors_source, tool_errors_observed, tool_errors_modules = tool_errors_receipts(
             args.tool_errors_source, args.tool_errors_native, output)
         report['toolErrorsSourceSha256'] = digest(tool_errors_source)
+        tool_durable_source, tool_durable_observed, tool_durable_modules = tool_durable_receipts(
+            args.tool_durable_source, args.tool_durable_native, output)
+        report['toolDurableSourceSha256'] = digest(tool_durable_source)
         host_lifecycle = observe_host_lifecycle(ROOT, sys.executable, output.with_suffix('.host-lifecycle-root.json'))
         if args.format_source or args.format_inputs:
             if not args.format_source or not args.format_inputs:
@@ -1270,6 +1297,10 @@ def main(argv=None):
             validate_tool_errors(tool_errors_report, portable, portable / 'python.exe',
                 tool_errors_observed, tool_errors_modules, owned_runtime=True)
             report['toolErrors'] = tool_errors_report
+            tool_durable_report = observe_tool_durable(portable, portable / 'python.exe', workspace / 'tool-durable.json')
+            validate_tool_durable(tool_durable_report, portable, portable / 'python.exe',
+                tool_durable_observed, tool_durable_modules, owned_runtime=True)
+            report['toolDurable'] = tool_durable_report
             host_lifecycle_report = observe_host_lifecycle(portable, portable / 'python.exe', workspace / 'host-lifecycle.json')
             validate_host_lifecycle(host_lifecycle_report, portable, portable / 'python.exe',
                 host_lifecycle_digest(host_lifecycle), host_lifecycle['imports'], host_lifecycle['fixtureSha256'])

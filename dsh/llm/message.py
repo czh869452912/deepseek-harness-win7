@@ -92,6 +92,7 @@ def create_tool_result_message(input_data: Dict[str, Any]) -> Dict[str, Any]:
     is_error = bool(input_data.get("isError", input_data.get("is_error", False)))
 
     return create_user_message({
+        "id": random_uuid(),
         "source": {"kind": "tool", "callId": call_id},
         "content": [{
             "type": "tool-result",

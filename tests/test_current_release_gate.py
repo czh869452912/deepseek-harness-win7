@@ -60,7 +60,9 @@ from test_sdk_profile_consumers import damage_runtime as damage_sdk_profile_runt
 from scripts.sdk_profile_cases import EXTRACTED_DAMAGES as SDK_EXTRACTED_DAMAGES
 from scripts.permission_presets_cases import damage_runtime as damage_permission_runtime, damage_source as damage_permission_source
 from scripts.tool_errors_cases import damage_runtime as damage_tool_error_runtime
+from scripts.tool_durable_cases import damage_runtime as damage_tool_durable_runtime
 from scripts.tool_errors_oracle import OBSERVER_INPUTS as TOOL_ERROR_OBSERVER_INPUTS
+from scripts.tool_durable_oracle import OBSERVER_INPUTS as TOOL_DURABLE_OBSERVER_INPUTS
 from scripts.sdk_profile_oracle import OBSERVER_INPUTS as SDK_OBSERVER_INPUTS
 from scripts.permission_presets_oracle import OBSERVER_INPUTS as PERMISSION_OBSERVER_INPUTS
 from scripts.exported_host_lifecycle_oracle import observe_native as observe_host_lifecycle
@@ -1929,6 +1931,15 @@ def extracted_receipt(tmp_path):
     candidate['tool_errors_source_sha256'] = hashlib.sha256(json.dumps(tool_pair['source'], sort_keys=True).encode('utf-8')).hexdigest()
     candidate['tool_errors_observations_sha256'] = GATE.tool_errors_digest(tool_pair['source']['rows'])
     candidate['tool_errors_modules'] = copy.deepcopy(tool_errors['imports'])
+    tool_pair = copy.deepcopy(tool_durable_runtime_fixture())
+    tool_durable = tool_pair['native']
+    tool_durable['root'], tool_durable['executable'] = str(tmp_path), str(tmp_path / 'python.exe')
+    tool_pair['source']['inputs'] = {name: sha256 for name, sha256 in tool_pair['source']['inputs'].items()
+        if name in TOOL_DURABLE_OBSERVER_INPUTS or name in ('reference/packages/core/tools/src/index.ts', 'reference/packages/core/agent-loop/src/tool-calls.ts', 'reference/packages/llm/llm/src/message.ts')}
+    candidate['tool_durable_source'] = tool_pair['source']
+    candidate['tool_durable_source_sha256'] = hashlib.sha256(json.dumps(tool_pair['source'], sort_keys=True).encode('utf-8')).hexdigest()
+    candidate['tool_durable_observations_sha256'] = GATE.tool_durable_digest(tool_pair['source']['rows'])
+    candidate['tool_durable_modules'] = copy.deepcopy(tool_durable['imports'])
     host_lifecycle = copy.deepcopy(host_lifecycle_runtime_fixture())
     host_lifecycle['root'], host_lifecycle['executable'] = str(tmp_path), str(tmp_path / 'python.exe')
     candidate['exported_host_lifecycle_sha256'] = GATE.host_lifecycle_digest(host_lifecycle)
@@ -1949,6 +1960,7 @@ def extracted_receipt(tmp_path):
               'sdkProfile': sdk_profile, 'sdkProfileSourceSha256': candidate['sdk_profile_source_sha256'],
               'permissionPresets': permission_presets, 'permissionPresetsSourceSha256': candidate['permission_presets_source_sha256'],
               'toolErrors': tool_errors, 'toolErrorsSourceSha256': candidate['tool_errors_source_sha256'],
+              'toolDurable': tool_durable, 'toolDurableSourceSha256': candidate['tool_durable_source_sha256'],
               'exportedHostLifecycle': host_lifecycle,
               'javascriptErrors': errors, 'javascriptErrorsSourceSha256': candidate['javascript_errors_source_sha256']}
     modes = ['allow', 'reject', 'malformed', 'cancel-late', 'close-late', 'eof']
@@ -2925,6 +2937,45 @@ def test_extracted_session_tracing_requires_exact_observations_and_runtime(tmp_p
     path.write_text(json.dumps(report),encoding='utf-8')
     with pytest.raises(RuntimeError):
         GATE.validate_extracted(path,archive,candidate)
+
+
+@functools.lru_cache(maxsize=1)
+def tool_durable_runtime_fixture():
+    with tempfile.TemporaryDirectory(prefix='dsh-tool-durable-source-') as folder:
+        output = Path(folder) / 'paired.json'
+        completed = subprocess.run([sys.executable, str(ROOT / 'scripts/tool_durable_oracle.py'),
+            '--output', str(output)], cwd=str(ROOT), capture_output=True, timeout=240)
+        if completed.returncode:
+            raise RuntimeError(output.read_text(encoding='utf-8'))
+        return dict(source=json.loads(output.with_suffix('.source.json').read_text(encoding='utf-8')),
+            native=json.loads(output.with_suffix('.native.json').read_text(encoding='utf-8')))
+
+@pytest.mark.parametrize('damage', GATE.TOOL_DURABLE_DAMAGES + ('receipt-missing', 'source-missing', 'source-changed', 'source-file'))
+def test_extracted_tool_durable_requires_complete_values_and_runtime(tmp_path, damage):
+    archive, candidate, report = extracted_receipt(tmp_path)
+    if damage == 'receipt-missing':
+        del report['toolDurable']
+    elif damage == 'source-missing':
+        del candidate['tool_durable_source']
+    elif damage == 'source-changed':
+        candidate['tool_durable_source']['rows'][0]['calls'] = []
+    elif damage == 'source-file':
+        report['toolDurableSourceSha256'] = '0' * 64
+    else:
+        report['toolDurable'] = damage_tool_durable_runtime(report['toolDurable'], damage)
+    output = tmp_path / 'extracted.json'
+    output.write_text(json.dumps(report), encoding='utf-8')
+    with pytest.raises(RuntimeError, match='toolDurable'):
+        GATE.validate_extracted(output, archive, candidate)
+
+@pytest.mark.parametrize('damage', ('omit', 'skip', 'duplicate', 'failure'))
+def test_tool_durable_consumer_lanes_are_mandatory(tmp_path, damage):
+    path = tmp_path / 'pytest.xml'
+    for module in ('test_tool_durable_consumers',):
+        for name in GATE.REQUIRED_REGRESSION[module]:
+            regression_xml(path, **{damage: (module, name)})
+            with pytest.raises(RuntimeError):
+                GATE.validate_regression(path)
 
 
 @pytest.mark.parametrize('damage', ('omit', 'skip', 'duplicate', 'failure'))

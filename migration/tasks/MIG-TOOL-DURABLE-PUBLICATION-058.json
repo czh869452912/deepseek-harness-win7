@@ -1,0 +1,30 @@
+{
+  "id": "MIG-TOOL-DURABLE-PUBLICATION-058",
+  "goal": "对齐完整工具结果事实、元数据存在性及规范结果消息分配",
+  "kind": "implementation",
+  "state": "running",
+  "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
+  "base_product": "e3cd5811ea13c665bc2f8dbfd5fdcfa9aecfe53b",
+  "owner": "current-session-coordinator",
+  "requires": [{"task": "MIG-CURRENT-RELEASE-GATE-003", "contract": "CON-CURRENT-RELEASE-GATE", "revision": 1}],
+  "provides": [{"contract": "CON-TOOL-DURABLE-PUBLICATION", "revision": 1}],
+  "acceptance": [
+    "All twelve actual Source/Root/extracted observations retain every public result, scheduler outcome, body call and ordered durable fact; only validated unique full UUIDv4 message allocations at their exact path are mapped.",
+    "Absent/null/false/zero/empty-object/empty-array metadata, plain/typed errors and before/body interruption preserve literal original carrier and type/presence distinctions.",
+    "Exact unchanged rejected0b197efa Portable reproduces older allocations/carriers under its own Python3.8.10 and approved full input/import guards; first prefixed full-UUID proposal remains rejected and retained.",
+    "All actual Source/runtime/import/value/allocation and mandatory/extracted refusal controls pass without dropping fields, adding original-defect predicates or broadening existing identity normalization.",
+    "A new clean complete frozen suite, every current paired driver, unchanged official Source groups, real ownPython3.8.10 extraction and original browser pass before bounded integration."
+  ],
+  "expected_paths": ["dsh/core/tools.py", "dsh/core/tool_calls.py", "dsh/llm/message.py", "scripts", "tests", "migration", "docs/research"],
+  "open_findings": [
+    "Formal558 focused,66 ordering/Session and168 canonical/SDK controls pass without failures/errors/skips; overlapping sets are not added. Own formal LF candidate is correctly refused against independent CRLF Root bytes. Third candidate copies exact three Root files and qualifies12 complete observations/105 imports/15481 guarded inputs before/after.61-file formal archive nests immutable35-file early qualification and preserves every prefix/byte/baseline refusal; all new mandatory/extracted controls and77 paired drivers are registered. New full clean frozen release remains required.",
+    "Formal unchanged Source/Root-before records reject older allocation. Exact clean0b197efa Portable SHA2562c2c4a6c78e78f06dcbc8d173920f44729b5ac3963c770da7c2d5fde312ff6ec independently extracts15481 files; its own Python3.8.10 completes12 cases and105 exact imported modules before/after and is rejected. Proposed Root now matches all12 complete formal Source rows. Focused formal consumers and mandatory/extracted controls are running; no new full clean acceptance exists.",
+    "Earlier isolated first proposal emits msg-prefixed full UUIDs and remains rejected; revised three-provider owned candidate matches12 complete rows and19 precise corruption refusals. Formal observer additionally mounts actual LlmRuntime and needs its own actual qualification, not a relabel of those older observer bytes.",
+    "Complete AgentLoop five dependencies, ask-user and full profile/browser/policy journeys remain independent subsequent work. Overall migration, seven parent ranges and user-deferred Win7 certification remain open."
+  ],
+  "conflicts_with": [],
+  "candidate_commit": null,
+  "integrated_commit": null,
+  "evidence_ids": ["RUN-TOOL-DURABLE-FORMAL-QUALIFICATION-20261007-E3CD5811"],
+  "next_action": "完成当前正式提供端与消费者/Source/必需/解压拒绝控制，独立归档精确旧ZIP和首版拒绝及新鲜完整观察；提交此部分后推进五依赖36、ask-user、完整预设及父范围，最后统一按正常预算冻结完整原版/实际解压/浏览器验收。不得将有限资格作为整个迁移签收。"
+}

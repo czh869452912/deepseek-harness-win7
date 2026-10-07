@@ -194,7 +194,8 @@ async def test_roster_configuration_guards(tmp_path,monkeypatch,line):
                 with pytest.raises(ValueError,match='available: none'): await ctx.agentPresets.resolve()
             else:
                 warnings=[];monkeypatch.setattr(type(ctx.logger),'warn',lambda self,message,*args:warnings.append(str(message)))
-                await ctx.plugin(SessionPlugin);await ctx.plugin(AgentPlugin);await ctx.plugin(AgentLoopPlugin)
+                await ctx.plugin(SessionPlugin);await ctx.plugin(AgentPlugin)
+                await ctx.plugin(SystemPrompt);await ctx.plugin(ToolsPlugin);await ctx.plugin(AgentLoopPlugin)
                 handle=await ctx.agents.create('no-roster');assert warnings==[];await handle.dispose()
     finally: await ctx.fiber.dispose()
 

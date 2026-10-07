@@ -1,3 +1,4 @@
+from dsh.core.system_prompt import SystemPrompt as SourceToolsPrompt
 from dsh.cordis.context import Context
 from dsh.core.tools import ToolsPlugin
 from dsh.team.agent_team import AgentTeamPlugin, TeamService
@@ -7,6 +8,7 @@ from dsh.team.types import TeamTaskStatus
 
 def test_agent_team_roster_and_tasks():
     ctx = Context()
+    ctx.plugin(SourceToolsPrompt)
     ctx.plugin(ToolsPlugin)
     ctx.plugin(AgentTeamPlugin)
     ctx.plugin(ToolAgentTeamPlugin)
@@ -49,6 +51,7 @@ def test_agent_team_roster_and_tasks():
 
 def test_agent_team_tools_invocation():
     ctx = Context()
+    ctx.plugin(SourceToolsPrompt)
     ctx.plugin(ToolsPlugin)
     ctx.plugin(AgentTeamPlugin)
     ctx.plugin(ToolAgentTeamPlugin)

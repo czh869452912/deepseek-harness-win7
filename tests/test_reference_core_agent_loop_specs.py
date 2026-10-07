@@ -9,6 +9,7 @@ Covers:
 - Streaming chunk assembly and interrupted block recovery
 """
 
+from dsh.core.system_prompt import SystemPrompt as SourceToolsPrompt
 import asyncio
 import pytest
 from dsh.cordis.context import Context
@@ -71,6 +72,7 @@ async def create_harness(responses=None):
     ctx = Context()
     ctx.set_service("llm", MockLlmService(responses=responses))
     await ctx.plugin(SessionPlugin)
+    await ctx.plugin(SourceToolsPrompt)
     await ctx.plugin(ToolsPlugin)
     await ctx.plugin(AgentPlugin)
     await ctx.plugin(AgentLoopPlugin)

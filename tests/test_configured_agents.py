@@ -6,12 +6,15 @@ from dsh.cordis.context import Context
 from dsh.cordis.schema import ValidationError
 from dsh.core.agent import AgentPlugin
 from dsh.core.agent_loop import AgentLoopPlugin, CONFIGURED_AGENT_IDENTITIES_KEY
+from dsh.core.system_prompt import SystemPrompt
+from dsh.core.tools import ToolsPlugin
 from dsh.core.session import SessionPlugin, SessionHeader
 from dsh.core.session.preparation import SessionPreparation
 from dsh.session.persistence_jsonl import JsonlSessionPersistencePlugin
 
 async def core(tmp_path=None):
     ctx=Context()
+    await ctx.plugin(SystemPrompt); await ctx.plugin(ToolsPlugin)
     await ctx.plugin(SessionPlugin); await ctx.plugin(AgentPlugin)
     if tmp_path is not None: await ctx.plugin(JsonlSessionPersistencePlugin, {'root':str(tmp_path)})
     return ctx

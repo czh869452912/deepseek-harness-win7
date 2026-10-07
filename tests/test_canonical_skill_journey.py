@@ -1,3 +1,4 @@
+from dsh.core.system_prompt import SystemPrompt as SourceToolsPrompt
 import asyncio
 from types import SimpleNamespace
 
@@ -16,6 +17,7 @@ from dsh.llm.message import create_user_message
 async def setup(tmp_path):
     ctx = Context()
     ctx.set_service("agents", AgentRegistry(ctx))
+    await ctx.plugin(SourceToolsPrompt)
     await ctx.plugin(ToolsPlugin)
     await ctx.plugin(FsLocalPlugin)
     await ctx.plugin(resolve_harness_plugin("@deepseek-ai/dsh-skill"))

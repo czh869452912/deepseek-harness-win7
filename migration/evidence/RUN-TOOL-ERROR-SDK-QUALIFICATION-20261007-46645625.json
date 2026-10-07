@@ -1,0 +1,26 @@
+{
+  "id": "RUN-TOOL-ERROR-SDK-QUALIFICATION-20261007-46645625",
+  "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
+  "product_commit": "466456257f261bd30e3af1a40a3da75b9ac4446f",
+  "kind": "verification",
+  "task_id": "MIG-TOOL-ERRORS-SDK-METADATA-057",
+  "result": "passed",
+  "validity": "current",
+  "exit_code": 0,
+  "commands": [
+    ".venv/Scripts/python.exe .goose/out/acp-a4-work/qualify_tool_error_di_v5.py",
+    ".goose/out/acp-a4-work/sdk-metadata-own-candidate-v2/dsh-win7-portable/python.exe -I scripts/oracles/exported_host_lifecycle_python.py --root .goose/out/acp-a4-work/sdk-metadata-own-candidate-v2/dsh-win7-portable --output .goose/out/acp-a4-work/exported-host-lifecycle-own-v3.json"
+  ],
+  "environment": {
+    "python": "3.8.10 (default, May  6 2021, 17:27:56) [MSC v.1928 64 bit (AMD64)]",
+    "os": "Windows-10-10.0.26200-SP0",
+    "cwd": "C:\\Users\\czh86\\Documents\\Codex\\deepseek-harness-win7",
+    "node": "v22.22.2"
+  },
+  "contract_revisions": {"CON-TOOL-ERRORS-PROMPT-OWNERSHIP": 1, "CON-PYTHON-HOST-STATIC-INJECT": 1},
+  "artifacts": [{
+    "path": "migration/evidence/artifacts/TOOL-ERROR-DI-SDK-METADATA-QUALIFICATION-20261007-46645625.zip",
+    "sha256": "77804924cd32d099123b43400320a939b2be37f5552a57fabbe9e238b785ebe1"
+  }],
+  "scope": "84-file isolated qualification, exact clean466 base ZIP c2f04c76344bdbe898b6384b8c8f1fb26702b9933883eb0b2272a55fca4ab583 plus two declared providers,15481 owned inputs. Fresh pinned Source eight full Tools observations match ownPython3.8.10/105 imported modules; Root-before six failures, fourteen refusals. Eight native SDK lifecycle observations match Root/102 actual imported modules; first metadata candidate handler/global reset rejected and retained. Historical consumer failures and original runner correction retained;120 existing Root provider regressions,43 new focused controls and32 extracted/lane controls pass. Old console gate raw94% physical-tree F remains rejected; isolated physical probe passed and exact closed-run two descendants retired with byte/identity/creation/ancestry audits, without attributing the old cause. No clean full acceptance, broad parent closure or Win7 certification."
+}

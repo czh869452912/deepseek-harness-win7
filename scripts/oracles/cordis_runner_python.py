@@ -3,6 +3,7 @@
 Only fixture Host source is translated explicitly. Client source is unchanged;
 this does not interpret arbitrary JavaScript or simulate browser activation.
 """
+from dsh.core.system_prompt import SystemPrompt as SourceToolsPrompt
 import asyncio
 import copy
 import json
@@ -28,6 +29,7 @@ ERRORS = "def plugin(ctx):\n    def fail(message):\n        error = ValueError(m
 
 async def observe(spec):
     ctx = Context()
+    await ctx.plugin(SourceToolsPrompt)
     await ctx.plugin(ToolsPlugin())
     await ctx.plugin(DynamicCordisRunner)
     runner = ctx.get('dynamicCordisRunner')

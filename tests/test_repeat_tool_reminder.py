@@ -1,3 +1,4 @@
+from dsh.core.system_prompt import SystemPrompt as SourceToolsPrompt
 import asyncio
 import copy
 import json
@@ -73,6 +74,7 @@ def test_wildcard_literal_anchoring_and_line_terminators(name, expected):
 @pytest.mark.asyncio
 async def test_config_rejected_on_real_plugin_load(config):
     ctx = Context()
+    await ctx.plugin(SourceToolsPrompt)
     await ctx.plugin(ToolsPlugin)
     try:
         with pytest.raises((ValueError, TypeError)):
@@ -93,6 +95,7 @@ def test_integral_float_config_and_first_custom_threshold():
 @pytest.mark.asyncio
 async def test_direct_calls_untracked_transparency_downstream_block_and_unload():
     ctx = Context()
+    await ctx.plugin(SourceToolsPrompt)
     await ctx.plugin(ToolsPlugin)
     fiber = await ctx.plugin(RepeatToolReminderPlugin, dict(thresholds=[2, 3], exclude=["other"]))
     first, fresh = Agent(Session("reused")), Agent(Session("reused"))
@@ -130,6 +133,7 @@ async def test_direct_calls_untracked_transparency_downstream_block_and_unload()
 @pytest.mark.asyncio
 async def test_downstream_failure_still_advances_chain():
     ctx = Context()
+    await ctx.plugin(SourceToolsPrompt)
     await ctx.plugin(ToolsPlugin)
     await ctx.plugin(RepeatToolReminderPlugin, dict(thresholds=[2]))
     agent = Agent(Session("count"))

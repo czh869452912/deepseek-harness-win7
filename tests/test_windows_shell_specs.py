@@ -1,3 +1,4 @@
+from dsh.core.system_prompt import SystemPrompt as SourceToolsPrompt
 import os
 import sys
 from dsh.shell.shell_env import ShellEnvPlugin
@@ -8,6 +9,7 @@ from dsh.core.tools import ToolsPlugin
 
 def test_windows_shell_pwsh_tool_registration():
     ctx = Context()
+    ctx.plugin(SourceToolsPrompt)
     ctx.plugin(ToolsPlugin)
     ctx.plugin(ShellEnvPlugin)
     ctx.plugin(ToolPwshPlugin)

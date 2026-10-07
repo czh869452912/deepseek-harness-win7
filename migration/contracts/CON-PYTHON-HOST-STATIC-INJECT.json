@@ -1,0 +1,23 @@
+{
+  "id": "CON-PYTHON-HOST-STATIC-INJECT",
+  "revision": 1,
+  "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
+  "status": "specified",
+  "source_paths": ["reference/vendor/cordis/src/fiber.ts", "dsh/extensions/packaged_host.py", "dsh/boot/python_plugin_export.py"],
+  "consumers": ["scripts/exported_host_lifecycle_oracle.py", "scripts/oracles/exported_host_lifecycle.py", "scripts/oracles/exported_host_lifecycle_python.py", "tests/test_exported_host_metadata.py", "tests/test_python_plugin_export.py", "scripts/verify_release.py", "scripts/verify_portable.py"],
+  "invariants": [
+    "Only final single top-level plugin.inject list/tuple literals of nonempty strings are inferred without executing authored globals; dynamic declarations retain explicit guarded behavior.",
+    "Loader sees static dependencies before activation; an initially missing provider parks the entry and canonical boot must reject an unresolved pending entry without publishing false success.",
+    "Actual imported native declaration must equal inferred metadata; changed source is refused before handler/service publication.",
+    "Dependency epochs revoke handlers, services and tools while retaining globals and handler identity for the same Fiber mount; independent mounts initialize independent globals.",
+    "In-flight calls cannot publish an accepted result across activation changes. Disposing an inactive mount closes retained handlers and reverses parent-owned observers/effects; later providers cannot resurrect it.",
+    "Root and actual extracted ownPython3.8.10 retain eight complete native SDK observations with exact approved imported bytes and mandatory lifecycle/refusal lanes. Full clean qualification is required before integration."
+  ],
+  "identity": "Eight finite native SDK lifecycle names in exported_host_lifecycle_oracle.NAMES. This is an explicit Python extension compatibility contract, not a claim that the original JS SDK exports Python bodies.",
+  "ownership": "Namespace and handler collection belong to one mounted Fiber, with reversible final cleanup owned by its parent. No originating dynamic Agent is retained.",
+  "ordering": "Dependency loss and owned teardown settle before retained calls are tested; recovery activates a new epoch before the same handler object is reused.",
+  "errors": "Retired handlers, crossed in-flight epochs, changed declarations and unproven dynamic dependency metadata are explicitly refused.",
+  "cancellation": "Dependency teardown invalidates in-flight results and final disposal retires the mount; arbitrary uninterruptible authored Python remains trusted execution, not a hard sandbox.",
+  "adaptation": "Native Python source export is an already explicit SDK extension. Its metadata adapter is bounded to a final literal assignment and preserves the original mount's globals through service dependency epochs.",
+  "open_questions": ["Arbitrary dynamic inject inference, complete JS/native plugin ABI, all configuration reload combinations and full browser SDK journeys are not certified by this finite contract.", "Actual Win7 certification remains user-deferred."]
+}

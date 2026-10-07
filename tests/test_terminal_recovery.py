@@ -1,4 +1,5 @@
 """Bounded process-level checks: a lock regression must fail, never hang pytest."""
+from dsh.core.system_prompt import SystemPrompt as SourceToolsPrompt
 import os
 from pathlib import Path
 import subprocess
@@ -39,6 +40,7 @@ async def test_canonical_tool_preserves_agent_state_and_isolates_siblings(tmp_pa
     import asyncio
 
     ctx = Context()
+    await ctx.plugin(SourceToolsPrompt)
     await ctx.plugin(ToolsPlugin)
     await ctx.plugin(ToolPwshPersistentPlugin, config={"tool_name": "pwsh" if sys.platform == "win32" else "bash", "timeoutMs": 4000})
     left = Agent(Session("terminal-left"), ctx=ctx.extend())

@@ -62,6 +62,8 @@ from scripts.llm_config_oracle import validate_runtime as validate_llm_config, i
 from scripts.win32_stat_oracle import validate_runtime as validate_win32_stat, identity as win32_stat_identity
 from scripts.sdk_profile_oracle import validate_runtime as validate_sdk_profile, identity as sdk_profile_identity, observe_native as observe_sdk_profile
 from scripts.permission_presets_oracle import validate_runtime as validate_permission_presets, identity as permission_presets_identity, observe_native as observe_permission_presets
+from scripts.tool_errors_oracle import validate_runtime as validate_tool_errors, identity as tool_errors_identity, observe_native as observe_tool_errors
+from scripts.exported_host_lifecycle_oracle import observe_native as observe_host_lifecycle, validate_runtime as validate_host_lifecycle, observation_digest as host_lifecycle_digest
 from scripts.llm_prepared_oracle import validate_runtime as validate_llm_prepared, identity as llm_prepared_identity
 from scripts.llm_metadata_oracle import validate_runtime as validate_llm_metadata, identity as llm_metadata_identity
 from scripts.canonical_llm_oracle import validate_runtime as validate_canonical_llm, identity as canonical_llm_identity
@@ -448,6 +450,26 @@ def permission_presets_receipts(source, native, output):
     return source, observed, runtime['modules']
 
 
+def tool_errors_receipts(source, native, output):
+    if source or native:
+        if not source or not native:
+            raise RuntimeError('Both tool errors Source and native receipts are required')
+        source, native = Path(source).resolve(), Path(native).resolve()
+    else:
+        paired = output.with_suffix('.tool-errors-paired.json')
+        completed = subprocess.run([sys.executable, str(ROOT / 'scripts/tool_errors_oracle.py'),
+            '--output', str(paired)], cwd=str(ROOT), capture_output=True, timeout=240)
+        output.with_suffix('.tool-errors-source.log').write_bytes(completed.stdout + completed.stderr)
+        if completed.returncode or completed.stderr:
+            raise RuntimeError('Fresh tool errors Source qualification failed')
+        source, native = paired.with_suffix('.source.json'), paired.with_suffix('.native.json')
+    observed = json.loads(source.read_text(encoding='utf-8'))
+    tool_errors_identity(observed, ROOT / 'reference')
+    runtime = json.loads(native.read_text(encoding='utf-8'))
+    validate_tool_errors(runtime, ROOT, sys.executable, observed, runtime['imports'])
+    return source, observed, runtime['imports']
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--archive', required=True)
@@ -496,6 +518,8 @@ def main(argv=None):
     parser.add_argument('--sdk-profile-native', help='Fresh native SDK profile child/import/durable receipts')
     parser.add_argument('--permission-presets-source', help='Fresh original permission settings/lifecycle/domain receipts')
     parser.add_argument('--permission-presets-native', help='Fresh native permission child/import receipts')
+    parser.add_argument('--tool-errors-source', help='Fresh original complete tool errors and prompt ownership receipts')
+    parser.add_argument('--tool-errors-native', help='Fresh native tool errors and imported closure')
     parser.add_argument('--javascript-errors-source', help='Fresh original JavaScript error boundary observations')
     parser.add_argument('--javascript-errors-native', help='Fresh native JavaScript child/import/private asset receipts')
     parser.add_argument('--llm-prepared-source', help='Fresh actual Source prepared call observations')
@@ -571,6 +595,8 @@ def main(argv=None):
             'win32_stat_oracle.py', 'oracles/win32_stat_source.mts', 'oracles/win32_stat_python.py',
             'sdk_profile_oracle.py', 'sdk_profile_values.py', 'sdk_profile_imports.json', 'sdk_profile_cases.py',
             'permission_presets_oracle.py', 'permission_presets_values.py', 'permission_presets_cases.py',
+            'tool_errors_oracle.py', 'tool_errors_cases.py', 'oracles/tool_errors_source.mts', 'oracles/tool_errors_python.py',
+            'exported_host_lifecycle_oracle.py', 'oracles/exported_host_lifecycle.py', 'oracles/exported_host_lifecycle_python.py',
             'oracles/permission_presets_source.mts', 'oracles/permission_presets.probe.spec.ts',
             'oracles/permission_presets_domain_source.mts', 'oracles/permission_presets_domain.probe.spec.ts',
             'oracles/permission_presets_python.py', 'oracles/permission_presets_lifecycle_python.py',
@@ -739,6 +765,10 @@ def main(argv=None):
         permission_presets_source, permission_presets_observed, permission_presets_modules = permission_presets_receipts(
             args.permission_presets_source, args.permission_presets_native, output)
         report['permissionPresetsSourceSha256'] = digest(permission_presets_source)
+        tool_errors_source, tool_errors_observed, tool_errors_modules = tool_errors_receipts(
+            args.tool_errors_source, args.tool_errors_native, output)
+        report['toolErrorsSourceSha256'] = digest(tool_errors_source)
+        host_lifecycle = observe_host_lifecycle(ROOT, sys.executable, output.with_suffix('.host-lifecycle-root.json'))
         if args.format_source or args.format_inputs:
             if not args.format_source or not args.format_inputs:
                 raise RuntimeError('Both SQLite format Source and inputs are required')
@@ -1236,6 +1266,14 @@ def main(argv=None):
             validate_permission_presets(permission_presets_report, portable, portable / 'python.exe',
                 permission_presets_observed, permission_presets_modules, owned_runtime=True)
             report['permissionPresets'] = permission_presets_report
+            tool_errors_report = observe_tool_errors(portable, portable / 'python.exe', workspace / 'tool-errors.json')
+            validate_tool_errors(tool_errors_report, portable, portable / 'python.exe',
+                tool_errors_observed, tool_errors_modules, owned_runtime=True)
+            report['toolErrors'] = tool_errors_report
+            host_lifecycle_report = observe_host_lifecycle(portable, portable / 'python.exe', workspace / 'host-lifecycle.json')
+            validate_host_lifecycle(host_lifecycle_report, portable, portable / 'python.exe',
+                host_lifecycle_digest(host_lifecycle), host_lifecycle['imports'], host_lifecycle['fixtureSha256'])
+            report['exportedHostLifecycle'] = host_lifecycle_report
 
 
             directory = subprocess.run([str(portable / 'python.exe'), '-I', '-u',

@@ -101,6 +101,6 @@ async def test_str_replace_bool_insert_line_validation(editor_env):
         signal=asyncio.Event(),
     ))
     assert result.is_error is True
-    assert result.error["code"] == "INVALID_ARGS"
+    assert result.error["info"]["code"] == "INVALID_ARGS"
 
 

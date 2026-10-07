@@ -1,0 +1,23 @@
+{
+  "id": "CON-TOOL-ERRORS-PROMPT-OWNERSHIP",
+  "revision": 2,
+  "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
+  "status": "specified",
+  "source_paths": ["reference/packages/core/tools/src/index.ts", "reference/packages/core/system-prompt/src/index.ts", "reference/packages/core/agent-loop/src/index.ts", "reference/vendor/cordis/src/fiber.ts"],
+  "consumers": ["scripts/tool_errors_oracle.py", "scripts/oracles/tool_errors_source.mts", "scripts/oracles/tool_errors_python.py", "tests/test_tool_errors_consumers.py", "scripts/verify_release.py", "scripts/verify_portable.py"],
+  "invariants": [
+    "Nine ordered complete public observations retain mandatory systemPrompt activation, loss and restoration, full errors/content, body-call counts and cancellation outcomes. Every new dependency epoch re-registers its owned Tools service.",
+    "The canonical AgentLoop consumer waits for its owned Tools provider and retires on loss; it never creates a competing fallback Tools service during profile activation.",
+    "Typed failures have message and optional info only; info retains original name and code without adding top-level aliases. Plain errors, unknown tools and before/body abort results match actual Source literally.",
+    "Actual original observer runs with fresh full pinned input guards; Root and extracted ownPython3.8.10 must import independently approved complete module bytes.",
+    "Altered rows, order, aliases, calls, error values, Source pin/input/observer identity, runtime or module closure are refused. Every required lane and actual paired driver remains mandatory.",
+    "A clean full suite and real extracted original-browser qualification are required before this finite contract is integrated."
+  ],
+  "identity": "Exact nine names in tool_errors_oracle.NAMES; no identity normalization or field removal is used. Revision2 includes restored dependency activation discovered through the real canonical Loader/SDK consumer.",
+  "ownership": "Tools remains pending without systemPrompt, activates when provided and retires when its owned provider disappears. Actual imported files must belong to the selected root.",
+  "ordering": "before-prompt, after-prompt, after-prompt-dispose, after-prompt-restore, plain, typed, unknown, pre-aborted and body-aborted are ordered, complete and unique.",
+  "errors": "Complete result objects and body-call counts are literal; counterfeit, partial or stale observations fail validation.",
+  "cancellation": "Pre-abort never invokes the body; body-abort produces the exact original aborted result after the body has run once.",
+  "adaptation": "None for these nine observations. No new original defect predicate is introduced.",
+  "open_questions": ["Durable tool result publication, all output variants and complete scheduler/policy/profile combinations remain in their parent contracts.", "The remaining original AgentLoop agents/sessions/llm/systemPrompt declaration and registry/session fallback retirement require their own complete activation and ownership qualification; the Tools consumer change alone does not certify those dependencies.", "Actual Win7 certification remains user-deferred."]
+}

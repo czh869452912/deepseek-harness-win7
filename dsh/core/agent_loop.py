@@ -21,7 +21,6 @@ from dsh.core.agent_loop_settings import (
     AGENT_LOOP_CONFIG_SCHEMA, AGENT_LOOP_SETTINGS_NAMESPACE, AGENT_LOOP_SETTINGS_SCHEMA,
     DEFAULT_MAX_PARALLEL_TOOL_CALLS, install_parallel_settings,
 )
-from dsh.core.tools import ToolsService
 from dsh.core.agent_factory import FactoryTransaction
 from dsh.core.abort import AbortController
 from dsh.core.session.preparation import SessionPreparation
@@ -1083,12 +1082,10 @@ class AgentLoopPlugin(Plugin):
     id = "agent-loop"
     name = "@deepseek-ai/dsh-agent-loop"
     Config = AGENT_LOOP_CONFIG_SCHEMA
+    inject = ["tools"]
 
     def apply(self, ctx: Context) -> None:
         rows = configured_agents(self.config, ctx.get(CONFIGURED_AGENT_IDENTITIES_KEY))
-        if not ctx.has("tools"):
-            ctx.set_service("tools", ToolsService(ctx))
-
         if not ctx.has("sessions"):
             store = SessionStore(ctx=ctx)
             ctx.set_service("sessions", store)

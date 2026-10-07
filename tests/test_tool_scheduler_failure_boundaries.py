@@ -1,3 +1,4 @@
+from dsh.core.system_prompt import SystemPrompt as SourceToolsPrompt
 import asyncio
 
 import pytest
@@ -13,6 +14,7 @@ from dsh.core.tools import ToolsPlugin
 async def harness(identity):
     ctx = Context()
     await ctx.plugin(SessionPlugin)
+    await ctx.plugin(SourceToolsPrompt)
     await ctx.plugin(ToolsPlugin)
     await ctx.plugin(AgentPlugin)
     await ctx.plugin(AgentLoopPlugin)

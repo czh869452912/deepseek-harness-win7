@@ -1,4 +1,5 @@
 """Pinned runner journeys and actual canonical Remote/activation lifetimes."""
+from dsh.core.system_prompt import SystemPrompt as SourceToolsPrompt
 import asyncio
 import copy
 import hashlib
@@ -53,6 +54,7 @@ def test_collision_exception_accepts_only_exact_added_notification():
 @pytest.mark.asyncio
 async def test_cancelled_activation_waiter_does_not_leave_starting_or_cancel_shared_host():
     ctx = Context()
+    await ctx.plugin(SourceToolsPrompt)
     await ctx.plugin(ToolsPlugin())
     await ctx.plugin(DynamicCordisRunner)
     runner, entered, release = ctx.get('dynamicCordisRunner'), asyncio.Event(), asyncio.Event()

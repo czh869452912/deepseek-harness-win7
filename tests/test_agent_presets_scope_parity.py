@@ -1,4 +1,5 @@
 """Scope identity contracts from upstream agent-presets mount.spec.ts."""
+from dsh.core.system_prompt import SystemPrompt as SourceToolsPrompt
 import pytest
 from dsh.core.scope import create_scope, ScopeKey, scope_of, scope_parent_of
 from dsh.core.tools import ToolsPlugin
@@ -11,6 +12,7 @@ async def test_standing_tools_are_scoped_and_recompose_keeps_context_ancestry(tm
     for name in ("alpha", "beta"):
         seed(tmp_path, name, "- id: tools\n  name: fixture:tools\n  config:\n    label: %s\n" % name)
     ctx, _, presets = await boot(tmp_path, {"fixture:tools":contribute})
+    await ctx.plugin(SourceToolsPrompt)
     await ctx.plugin(ToolsPlugin)
     first = create_scope(ctx, ScopeKey("first"))
     second = create_scope(ctx, ScopeKey("second"))

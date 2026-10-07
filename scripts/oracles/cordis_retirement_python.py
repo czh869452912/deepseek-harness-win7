@@ -1,4 +1,5 @@
 """Real native activation/retirement observations for the pinned source probe."""
+from dsh.core.system_prompt import SystemPrompt as SourceToolsPrompt
 import asyncio
 import copy
 import json
@@ -18,6 +19,7 @@ PREVIOUS = "def plugin(ctx):\n    ctx.provide('probePrevious', 'ready')\n"
 
 async def observe(spec):
     ctx = Context()
+    await ctx.plugin(SourceToolsPrompt)
     await ctx.plugin(ToolsPlugin())
     await ctx.plugin(DynamicCordisRunner)
     runner = ctx.get('dynamicCordisRunner')

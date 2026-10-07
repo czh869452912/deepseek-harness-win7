@@ -1,0 +1,34 @@
+{
+  "id": "RUN-TOOL-RESTORATION-QUALIFICATION-20261007-5DD401D5",
+  "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
+  "product_commit": "5dd401d5bb8cef185f3027b55ca2ec8c378121e8",
+  "kind": "verification",
+  "task_id": "MIG-TOOL-ERRORS-SDK-METADATA-057",
+  "result": "passed",
+  "validity": "current",
+  "exit_code": 0,
+  "commands": [
+    ".venv/Scripts/python.exe .goose/out/acp-a4-work/qualify_tool_restore_v2.py",
+    ".venv/Scripts/python.exe .goose/out/acp-a4-work/run_tool_contract_root_consumers_v4.py",
+    ".venv/Scripts/python.exe -m pytest tests/test_current_release_gate.py -q -k 'extracted_tool_errors or tool_errors_consumer_lanes or extracted_host_lifecycle' --junitxml=.goose/out/acp-a4-work/tool-contract-gate-focused-v3.xml",
+    ".venv/Scripts/python.exe .goose/out/acp-a4-work/collect_tool_restore_qualification_v2.py"
+  ],
+  "environment": {
+    "python": "3.8.10 (default, May  6 2021, 17:27:56) [MSC v.1928 64 bit (AMD64)]",
+    "os": "Windows-10-10.0.26200-SP0",
+    "cwd": "C:\\Users\\czh86\\Documents\\Codex\\deepseek-harness-win7",
+    "node": "v22.22.2"
+  },
+  "contract_revisions": {"CON-TOOL-ERRORS-PROMPT-OWNERSHIP": 2, "CON-PYTHON-HOST-STATIC-INJECT": 1},
+  "artifacts": [
+    {
+      "path": "migration/evidence/artifacts/TOOL-RESTORATION-QUALIFICATION-20261007-5dd401d5.zip",
+      "sha256": "2165831f3f5d8e32c0b2f13b2057cfc0846113731ce44259d49a7690963ac42e"
+    },
+    {
+      "path": "migration/evidence/artifacts/TOOL-ERROR-DI-SDK-METADATA-QUALIFICATION-20261007-46645625.zip",
+      "sha256": "77804924cd32d099123b43400320a939b2be37f5552a57fabbe9e238b785ebe1"
+    }
+  ],
+  "scope": "97-file revision2 qualification, linked immutable84-file earlier qualification with exact clean466 base ZIP. Three explicit proposed providers and15481 owned inputs; fresh actual Source nine full Tools observations equal ownPython3.8.10/105 imported files, unchanged owncandidate2 differs exactly after-prompt-restore and15 refusal controls pass. Eight native SDK lifecycle observations match Root/102 imported bytes. Real canonical Loader missing dependencies never evaluate authored globals; loss/restoration preserve SDK handlers/globals and final disposal revokes them. Root862 consumer regressions and33 extracted/mandatory-lane controls pass;203 focused cases overlap and are not added. Loader restoration failures, nine actual Web ownership failures,47 missing-prerequisite failures,29 observer prerequisite failures and one invalid test-path invocation remain preserved. No frozen full release acceptance, remaining AgentLoop dependency certification, broad parent closure or Win7 certification."
+}

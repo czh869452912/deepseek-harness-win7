@@ -1,4 +1,5 @@
 """Source races, cancellation ownership and actual canonical runner unload."""
+from dsh.core.system_prompt import SystemPrompt as SourceToolsPrompt
 import asyncio
 import copy
 import hashlib
@@ -66,6 +67,7 @@ async def starting_runner(ctx):
 @pytest.mark.parametrize('action', ['stop', 'undefine', 'close'])
 async def test_cancelled_retirement_waiter_still_owns_cleanup(action):
     ctx = Context()
+    await ctx.plugin(SourceToolsPrompt)
     await ctx.plugin(ToolsPlugin())
     await ctx.plugin(DynamicCordisRunner)
     runner, owner, defined, activation, release = await starting_runner(ctx)
@@ -96,6 +98,7 @@ async def test_cancelled_retirement_waiter_still_owns_cleanup(action):
 @pytest.mark.asyncio
 async def test_concurrent_remove_escalates_owned_stop_and_permits_fresh_definition():
     ctx = Context()
+    await ctx.plugin(SourceToolsPrompt)
     await ctx.plugin(ToolsPlugin())
     await ctx.plugin(DynamicCordisRunner)
     runner, owner, defined, activation, release = await starting_runner(ctx)
@@ -124,6 +127,7 @@ async def test_concurrent_remove_escalates_owned_stop_and_permits_fresh_definiti
 @pytest.mark.asyncio
 async def test_real_runner_fiber_unload_joins_incomplete_apply_without_late_publication():
     ctx = Context()
+    await ctx.plugin(SourceToolsPrompt)
     await ctx.plugin(ToolsPlugin())
     runner_fiber = ctx.plugin(DynamicCordisRunner)
     await runner_fiber
@@ -177,6 +181,7 @@ async def test_canonical_remote_delete_retires_real_host_activation(tmp_path):
 @pytest.mark.parametrize('action', ['stop', 'undefine'])
 async def test_retirement_waits_for_real_tool_unwind_and_async_cleanup(action):
     ctx = Context()
+    await ctx.plugin(SourceToolsPrompt)
     await ctx.plugin(ToolsPlugin())
     await ctx.plugin(DynamicCordisRunner)
     entered, release = asyncio.Event(), asyncio.Event()
@@ -215,6 +220,7 @@ async def test_retirement_waits_for_real_tool_unwind_and_async_cleanup(action):
 @pytest.mark.asyncio
 async def test_close_cancels_pending_browser_request_and_rejects_late_reply():
     ctx = Context()
+    await ctx.plugin(SourceToolsPrompt)
     await ctx.plugin(ToolsPlugin())
     await ctx.plugin(DynamicCordisRunner)
     runner, owner, events = ctx.get('dynamicCordisRunner'), NS(id='owner'), []
@@ -237,6 +243,7 @@ async def test_close_cancels_pending_browser_request_and_rejects_late_reply():
 @pytest.mark.asyncio
 async def test_stop_during_previous_version_cleanup_prevents_new_apply():
     ctx = Context()
+    await ctx.plugin(SourceToolsPrompt)
     await ctx.plugin(ToolsPlugin())
     await ctx.plugin(DynamicCordisRunner)
     cleaning, finish, entered = asyncio.Event(), asyncio.Event(), []

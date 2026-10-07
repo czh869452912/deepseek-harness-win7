@@ -18,6 +18,7 @@ from dsh.cordis.context import Context
 from dsh.core.agent import AgentPlugin
 from dsh.core.agent_loop import AgentLoopPlugin, AgentLoopService
 from dsh.core.session import SessionPlugin
+from dsh.core.system_prompt import SystemPrompt
 from dsh.core.tools import ToolsPlugin
 from dsh.settings.provider import SettingsProvider
 from tool_start_prefix_python import observe_prefixes
@@ -76,6 +77,7 @@ async def observe():
         published = []
         ctx.on('agent/created', lambda *arguments: published.append(True))
         await ctx.plugin(SessionPlugin)
+        await ctx.plugin(SystemPrompt)
         await ctx.plugin(ToolsPlugin)
         await ctx.plugin(AgentPlugin)
         try:
@@ -89,6 +91,8 @@ async def observe():
     ctx = Context()
     try:
         settings_fiber = await ctx.plugin(MemorySettings)
+        await ctx.plugin(SystemPrompt)
+        await ctx.plugin(ToolsPlugin)
         loop_fiber = await ctx.plugin(AgentLoopPlugin, {'agents': [], 'maxParallelToolCalls': 4})
         loop = ctx.get('agentLoop')
         settings = ctx.get('settings')
@@ -115,6 +119,7 @@ async def observe():
     model = ToolModel(7)
     ctx.set_service('llm', model)
     await ctx.plugin(SessionPlugin)
+    await ctx.plugin(SystemPrompt)
     await ctx.plugin(ToolsPlugin)
     await ctx.plugin(AgentPlugin)
     await ctx.plugin(MemorySettings)
@@ -178,6 +183,7 @@ async def observe():
         model = ToolModel()
         ctx.set_service('llm', model)
         await ctx.plugin(SessionPlugin)
+        await ctx.plugin(SystemPrompt)
         await ctx.plugin(ToolsPlugin)
         await ctx.plugin(AgentPlugin)
         await ctx.plugin(AgentLoopPlugin, {'agents': [], 'maxParallelToolCalls': cap})

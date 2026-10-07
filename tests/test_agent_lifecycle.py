@@ -4,7 +4,8 @@ from dsh.cordis.context import Context
 from dsh.core.agent import Agent, AgentOptions, AgentPlugin, AgentRegistry
 from dsh.core.agent_loop import AgentLoopPlugin, AgentLoopService
 from dsh.core.session import Session, SessionPlugin
-from dsh.core.tools import ToolsService
+from dsh.core.tools import ToolsService, ToolsPlugin
+from dsh.core.system_prompt import SystemPrompt
 
 
 class MockLlmDriver:
@@ -60,6 +61,8 @@ def test_agent_initiator_scope():
 async def test_agent_create_followup_and_when_idle():
     ctx = Context()
     ctx.set_service("llm", MockLlmDriver())
+    await ctx.plugin(SystemPrompt)
+    await ctx.plugin(ToolsPlugin)
     await ctx.plugin(SessionPlugin)
     await ctx.plugin(AgentPlugin)
     await ctx.plugin(AgentLoopPlugin)
@@ -95,6 +98,8 @@ async def test_agent_create_followup_and_when_idle():
 async def test_agent_cancel():
     ctx = Context()
     ctx.set_service("llm", MockLlmDriver())
+    await ctx.plugin(SystemPrompt)
+    await ctx.plugin(ToolsPlugin)
     await ctx.plugin(SessionPlugin)
     await ctx.plugin(AgentPlugin)
     await ctx.plugin(AgentLoopPlugin)

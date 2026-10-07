@@ -1,3 +1,4 @@
+from dsh.core.system_prompt import SystemPrompt as SourceToolsPrompt
 import asyncio
 
 import pytest
@@ -30,6 +31,7 @@ class Model:
 async def setup():
     ctx, model = Context(), Model()
     ctx.set_service("llm", model)
+    await ctx.plugin(SourceToolsPrompt)
     await ctx.plugin(ToolsPlugin)
     await ctx.plugin(AgentLoopPlugin)
     await ctx.plugin(GoalService)

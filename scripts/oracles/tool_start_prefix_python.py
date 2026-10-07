@@ -4,6 +4,7 @@ from dsh.cordis.context import Context
 from dsh.core.agent import AgentPlugin
 from dsh.core.agent_loop import AgentLoopPlugin
 from dsh.core.session import SessionPlugin
+from dsh.core.system_prompt import SystemPrompt
 from dsh.core.tool_calls import execute_tool_calls
 from dsh.core.tools import ToolsPlugin, ToolExecutionResult
 
@@ -11,6 +12,7 @@ from dsh.core.tools import ToolsPlugin, ToolExecutionResult
 async def observe_prefix(implementation, action):
     ctx = Context()
     await ctx.plugin(SessionPlugin)
+    await ctx.plugin(SystemPrompt)
     await ctx.plugin(ToolsPlugin)
     await ctx.plugin(AgentPlugin)
     await ctx.plugin(AgentLoopPlugin)

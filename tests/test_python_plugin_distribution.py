@@ -31,7 +31,7 @@ def profile(tmp_path, monkeypatch):
     directory = home / "profiles" / "python-test"
     init_profile(str(directory), [], "startup")
     (directory / "cordis.patch.yml").write_text(
-        "- insert:\n    - id: tools\n      name: '@deepseek-ai/dsh-tools'\n", encoding="utf-8")
+        "- insert:\n    - id: system-prompt\n      name: '@deepseek-ai/dsh-system-prompt'\n    - id: tools\n      name: '@deepseek-ai/dsh-tools'\n", encoding="utf-8")
     real_which = shutil.which
     monkeypatch.setattr(plugin_cli.shutil, "which", lambda name, *args, **kwargs:
                         None if name in ("pnpm", "node") else real_which(name, *args, **kwargs))
@@ -86,7 +86,7 @@ async def test_install_boot_execute_unload_remove_reinstall_restart(profile, tmp
         await entry.fiber.dispose()
         await entry.fiber.await_settled()
         missing = await ctx.get("tools").execute(ToolExecutionInput("after-unload", "python_echo", {"text": "gone"}, signal=asyncio.Event()))
-        assert missing.is_error and missing.error["code"] == "UNKNOWN_TOOL"
+        assert missing.is_error and missing.error["info"]["code"] == "UNKNOWN_TOOL"
     finally:
         await close(result)
     assert plugin_cli.run_plugin("python-test", ["remove", PACKAGE]) == 0
@@ -264,7 +264,7 @@ else:
         else:
             missing = await result["ctx"].get("tools").execute(
                 ToolExecutionInput("missing", "python_echo", {"text": "gone"}, signal=asyncio.Event()))
-            assert missing.is_error and missing.error["code"] == "UNKNOWN_TOOL"
+            assert missing.is_error and missing.error["info"]["code"] == "UNKNOWN_TOOL"
         assert not (directory / installer.JOURNAL).exists()
     finally:
         await close(result)

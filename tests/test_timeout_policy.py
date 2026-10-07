@@ -1,3 +1,4 @@
+from dsh.core.system_prompt import SystemPrompt as SourceToolsPrompt
 import asyncio
 import gc
 import heapq
@@ -237,6 +238,7 @@ async def test_watchdog_upstream_abort_and_waiter_cancellation(clock):
 
 async def setup_tool(handler, budget=100):
     ctx = Context()
+    await ctx.plugin(SourceToolsPrompt)
     await ctx.plugin(ToolsPlugin)
     fiber = await ctx.plugin(ToolCallTimeoutPolicyPlugin)
     spec = dict(name="probe", description="test", parameters={}, execute=handler,

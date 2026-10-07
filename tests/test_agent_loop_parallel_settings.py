@@ -1,3 +1,4 @@
+from dsh.core.system_prompt import SystemPrompt as SourceToolsPrompt
 import asyncio
 import copy
 
@@ -41,6 +42,8 @@ def test_direct_parallel_cap_resolves_original_default_and_integer_numbers(confi
 @pytest.mark.asyncio
 async def test_parallel_settings_layers_refuses_and_unloads_reversibly():
     ctx = Context()
+    await ctx.plugin(SourceToolsPrompt)
+    await ctx.plugin(ToolsPlugin)
     settings_fiber = await ctx.plugin(MemorySettings)
     loop_fiber = await ctx.plugin(AgentLoopPlugin, {'agents': [], 'maxParallelToolCalls': 4})
     loop = ctx.get('agentLoop')
@@ -92,6 +95,7 @@ async def test_factory_model_turn_honors_configured_parallel_pool(cap):
     model = ToolModel()
     ctx.set_service('llm', model)
     await ctx.plugin(SessionPlugin)
+    await ctx.plugin(SourceToolsPrompt)
     await ctx.plugin(ToolsPlugin)
     await ctx.plugin(AgentPlugin)
     await ctx.plugin(AgentLoopPlugin, {'agents': [], 'maxParallelToolCalls': cap})

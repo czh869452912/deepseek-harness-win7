@@ -1,3 +1,4 @@
+from dsh.core.system_prompt import SystemPrompt as SourceToolsPrompt
 import asyncio
 import pytest
 
@@ -105,6 +106,7 @@ async def test_actual_ptc_tool_dispatch_uses_python_runtime():
     from dsh.core.tools import ToolsPlugin, ToolExecutionInput
     ctx = Context()
     await ctx.plugin(PythonProcessRuntime)
+    await ctx.plugin(SourceToolsPrompt)
     await ctx.plugin(ToolsPlugin, {'mode': 'code'})
     tools = ctx.get('tools')
     tools.register(dict(name='double', description='Double a number',

@@ -6,6 +6,8 @@ from dsh.cordis.schema import ValidationError
 from dsh.core.session import SessionPlugin
 from dsh.core.agent import AgentPlugin
 from dsh.core.agent_loop import AgentLoopPlugin,CONFIGURED_AGENT_IDENTITIES_KEY
+from dsh.core.system_prompt import SystemPrompt
+from dsh.core.tools import ToolsPlugin
 from dsh.session.persistence_jsonl import JsonlSessionPersistencePlugin
 async def wait(check):
  async def poll():
@@ -18,6 +20,7 @@ async def observe():
    ctx=Context();gate=asyncio.Event()
    try:
     await ctx.plugin(SessionPlugin);await ctx.plugin(AgentPlugin)
+    await ctx.plugin(SystemPrompt);await ctx.plugin(ToolsPlugin)
     if mode not in ['identity','invalid','deferred']:await ctx.plugin(JsonlSessionPersistencePlugin,{'root':root})
     agents=ctx.get('agents')
     if mode=='identity':

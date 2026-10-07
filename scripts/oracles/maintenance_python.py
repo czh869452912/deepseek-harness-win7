@@ -8,6 +8,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 from dsh.cordis.context import Context
 from dsh.core.agent import AgentPlugin
 from dsh.core.agent_loop import AgentLoopPlugin
+from dsh.core.system_prompt import SystemPrompt
+from dsh.core.tools import ToolsPlugin
 from dsh.core.session import SessionPlugin
 from dsh.compaction.engine import CompactionEngine
 from dsh.core.abort import AbortController
@@ -22,6 +24,8 @@ async def compaction(spec):
     try:
         await ctx.plugin(SessionPlugin)
         await ctx.plugin(AgentPlugin)
+        await ctx.plugin(SystemPrompt)
+        await ctx.plugin(ToolsPlugin)
         await ctx.plugin(AgentLoopPlugin)
         TokenMeter(ctx)
         engine = CompactionEngine(ctx=ctx, config=dict(auto=False))
@@ -95,6 +99,8 @@ async def observe(spec):
     try:
         await ctx.plugin(SessionPlugin)
         await ctx.plugin(AgentPlugin)
+        await ctx.plugin(SystemPrompt)
+        await ctx.plugin(ToolsPlugin)
         await ctx.plugin(AgentLoopPlugin)
         handle = await ctx.get('agents').create(session_id=spec['mode'])
         agent = handle.agent

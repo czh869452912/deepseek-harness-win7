@@ -518,7 +518,7 @@ def _error_result(error: BaseException) -> ToolExecutionResult:
     code = getattr(error, "code", None)
     if isinstance(code, str):
         info = {"name": getattr(error, "name", error.__class__.__name__), "code": code}
-        failure.update({"info": info, "name": info["name"], "code": code})
+        failure['info'] = info
     return ToolExecutionResult([{"type": "text", "text": "Error: %s" % message}],
                                is_error=True, error=failure)
 
@@ -1618,8 +1618,7 @@ class ToolsService:
         message = "tool call aborted before dispatch"
         return ToolExecutionResult(
             [{"type": "text", "text": "Error: %s" % message}], is_error=True,
-            error={"message": message, "name": "AbortError",
-                   "code": TOOL_ABORTED_BEFORE_DISPATCH,
+            error={"message": message,
                    "info": {"name": "AbortError", "code": TOOL_ABORTED_BEFORE_DISPATCH}})
 
     @staticmethod
@@ -1627,7 +1626,7 @@ class ToolsService:
         message = "tool call aborted"
         return ToolExecutionResult(
             [{"type": "text", "text": "Error: %s" % message}], is_error=True,
-            error={"message": message, "name": "AbortError", "code": TOOL_ABORTED,
+            error={"message": message,
                    "info": {"name": "AbortError", "code": TOOL_ABORTED}},
             additional_contexts=list(prior.additional_contexts) if prior is not None else [])
 
@@ -1635,14 +1634,10 @@ class ToolsService:
 class ToolsPlugin(Plugin):
     id = "tools"
     name = "@deepseek-ai/dsh-tools"
-    # The host composition may omit the optional system-prompt registry
-    # (notably minimal mode).  ToolsService already treats it as optional
-    # when mounting guidance sections, so it must not block activation.
-    inject = []
+    inject = ["systemPrompt"]
 
     def apply(self, ctx: Any) -> None:
-        if not ctx.has("tools"):
-            ctx.provide("tools", ToolsService(ctx, config=self.config))
+        ctx.provide("tools", ToolsService(ctx, config=self.config))
 
 
 ToolRegistry = ToolsService

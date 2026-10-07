@@ -70,6 +70,10 @@ from scripts.sdk_profile_cases import VALUE_DAMAGES as SDK_PROFILE_DAMAGES, SOUR
 from scripts.permission_presets_oracle import validate_runtime as validate_permission_presets, identity as permission_presets_identity, source_digest as permission_presets_source_digest
 from scripts.permission_presets_values import ALL_NAMES as PERMISSION_PRESET_NAMES
 from scripts.permission_presets_cases import VALUE_DAMAGES as PERMISSION_PRESET_DAMAGES, SOURCE_DAMAGES as PERMISSION_SOURCE_DAMAGES
+from scripts.tool_errors_oracle import validate_runtime as validate_tool_errors, identity as tool_errors_identity
+from scripts.tool_errors_oracle import complete_digest as tool_errors_digest, NAMES as TOOL_ERROR_NAMES
+from scripts.tool_errors_cases import VALUE_DAMAGES as TOOL_ERROR_DAMAGES, SOURCE_DAMAGES as TOOL_ERROR_SOURCE_DAMAGES
+from scripts.exported_host_lifecycle_oracle import observe_native as observe_host_lifecycle, validate_runtime as validate_host_lifecycle, observation_digest as host_lifecycle_digest
 PERMISSION_EXTRACTED_DAMAGES = PERMISSION_PRESET_DAMAGES + tuple('source-' + name for name in PERMISSION_SOURCE_DAMAGES) + ('missing', 'source-missing', 'source-hash', 'source-stamp')
 from scripts.llm_prepared_oracle import validate_runtime as validate_llm_prepared, identity as llm_prepared_identity, NAMES as LLM_PREPARED_NAMES
 from scripts.llm_metadata_oracle import validate_runtime as validate_llm_metadata, identity as llm_metadata_identity, NAMES as LLM_METADATA_NAMES
@@ -92,8 +96,30 @@ PAIRED_DRIVERS = PAIRED_DRIVERS + ('win32_stat',)
 PAIRED_DRIVERS = PAIRED_DRIVERS + ('sdk_profile',)
 PAIRED_DRIVERS = PAIRED_DRIVERS + ('javascript_errors',)
 PAIRED_DRIVERS = PAIRED_DRIVERS + ('permission_presets',)
+PAIRED_DRIVERS = PAIRED_DRIVERS + ('tool_errors',)
 OFFICIAL_CONFIGS = ('consumers', 'agent-lifecycle', 'session-recovery', 'session-projection', 'acp', 'acp-app', 'mcp', 'subagent-acp', 'storage-cache', 'session-observation', 'session-corpus', 'session-sqlite-query', 'query-engine-source', 'session-tools-source', 'sqlite-format-source', 'sqlite-provider-source', 'jsonl-provider-source', 'tool-scheduler-source', 'deepseek-source', 'llm-public-source')
 REQUIRED_REGRESSION = {
+    'test_tools_upstream_parity': {'test_agent_loop_waits_for_owned_tools_and_retires_on_loss'},
+    'test_tool_errors_consumers': {
+        *{'test_actual_source_native_tool_errors_and_prompt_ownership[' + name + ']' for name in TOOL_ERROR_NAMES},
+        *{'test_tool_errors_requires_complete_public_results_and_runtime[' + damage + ']' for damage in TOOL_ERROR_DAMAGES},
+        *{'test_tool_errors_source_requires_pinned_guarded_inputs[' + damage + ']' for damage in TOOL_ERROR_SOURCE_DAMAGES},
+        'test_tool_errors_owned_interpreter_and_independent_imports',
+        'test_portable_tool_errors_refuses_partial_receipts[source]',
+        'test_portable_tool_errors_refuses_partial_receipts[native]',
+    },
+    'test_exported_host_metadata': {
+        *{'test_exported_host_metadata_never_evaluates_authored_globals[' + case + ']' for case in ('literal-list', 'literal-tuple', 'empty', 'empty-name', 'nonstring', 'dynamic', 'trailing-body')},
+        'test_exported_host_metadata_preserves_all_mount_and_epoch_boundaries',
+        'test_client_only_export_does_not_gain_host_dependencies',
+    },
+    'test_python_plugin_export': {
+        'test_canonical_boot_rejects_pending_export_without_evaluating_globals',
+        'test_canonical_export_dependency_epochs_preserve_owned_globals_and_handlers',
+        'test_missing_dependency_is_pending_without_false_publication',
+        'test_exported_sdk_dependency_loss_revokes_handlers_and_tools',
+        'test_failed_exported_plugin_reverses_partial_registrations',
+    },
     'test_fs_local_upstream_parity': {
         'test_windows_replacement_errors_preserve_source_metadata_without_retry[%s-%s]' % (code, expected)
         for code, expected in ((1, 'EIO'), (2, 'ENOENT'), (3, 'ENOENT'), (5, 'EACCES'), (20, 'EIO'), (32, 'EIO'), (1175, 'EIO'), (1176, 'EIO'), (1177, 'EIO'))
@@ -547,6 +573,9 @@ REQUIRED_REGRESSION = {
             'missing-module', 'changed-module', 'empty-closure', 'foreign-root', 'foreign-python', 'missing-row', 'duplicate-row', 'changed-row')},
     },
     'test_current_release_gate': {
+        *{'test_extracted_tool_errors_requires_complete_values_and_runtime[' + damage + ']' for damage in TOOL_ERROR_DAMAGES + ('missing', 'source-missing', 'source-changed', 'source-file')},
+        *{'test_tool_errors_consumer_lanes_are_mandatory[' + damage + ']' for damage in ('omit', 'skip', 'duplicate', 'failure')},
+        *{'test_extracted_host_lifecycle_requires_owned_complete_observations[' + damage + ']' for damage in ('missing', 'row', 'tail', 'order', 'module', 'fixture', 'root', 'python', 'executable', 'counter')},
         *{'test_extracted_permission_presets_requires_complete_values_and_runtime[' + damage + ']' for damage in PERMISSION_EXTRACTED_DAMAGES},
         *{'test_permission_presets_consumer_lanes_are_mandatory[' + damage + ']' for damage in ('omit', 'skip', 'duplicate', 'failure')},
         'test_process_artifact_retention_lanes_are_mandatory[omit]',
@@ -1510,6 +1539,22 @@ def validate_extracted(path, archive, candidate):
             candidate['permission_presets_modules'], check_files=False, owned_runtime=True)
     except (ValueError, KeyError, TypeError) as error:
         raise RuntimeError('Extracted permissionPresets consumer differs') from error
+    try:
+        if report.get('toolErrorsSourceSha256') != candidate['tool_errors_source_sha256']:
+            raise ValueError('Tools Source receipt identity differs')
+        if tool_errors_digest(candidate['tool_errors_source']['rows']) != candidate['tool_errors_observations_sha256']:
+            raise ValueError('Tools frozen complete Source values differ')
+        validate_tool_errors(report.get('toolErrors'), Path(report['mcpStdio']['root']),
+            Path(report['mcpStdio']['root']) / 'python.exe', candidate['tool_errors_source'],
+            candidate['tool_errors_modules'], check_files=False, owned_runtime=True)
+    except (ValueError, KeyError, TypeError) as error:
+        raise RuntimeError('Extracted toolErrors consumer differs') from error
+    try:
+        validate_host_lifecycle(report.get('exportedHostLifecycle'), Path(report['mcpStdio']['root']),
+            Path(report['mcpStdio']['root']) / 'python.exe', candidate['exported_host_lifecycle_sha256'],
+            candidate['exported_host_lifecycle_modules'], candidate['exported_host_lifecycle_fixture_sha256'], check_files=False)
+    except (ValueError, KeyError, TypeError) as error:
+        raise RuntimeError('Extracted exportedHostLifecycle consumer differs') from error
     for name, validate in [('queryEngine', validate_query_engine), ('querySchema', validate_query_schema), ('pythonDirectory', validate_python_directory),
                            ('sessionLineage', validate_session_lineage), ('sessionEventTrace', validate_session_event_trace),
                            ('sessionFilters', validate_session_filters), ('sessionRequests', validate_session_requests),
@@ -1822,6 +1867,17 @@ def verify(args, output):
     candidate['permission_presets_source_sha256'] = digest(permission_presets_source)
     candidate['permission_presets_source_identity_sha256'] = permission_presets_source_digest(candidate['permission_presets_source'])
     candidate['permission_presets_modules'] = permission_presets_report['modules']
+    tool_errors_source = output / 'tool-errors-paired.source.json'
+    tool_errors_native = output / 'tool-errors-paired.native.json'
+    tool_errors_report = json.loads(tool_errors_native.read_text(encoding='utf-8'))
+    candidate['tool_errors_source'] = json.loads(tool_errors_source.read_text(encoding='utf-8'))
+    candidate['tool_errors_observations_sha256'] = tool_errors_identity(candidate['tool_errors_source'], ROOT / 'reference')
+    candidate['tool_errors_source_sha256'] = digest(tool_errors_source)
+    candidate['tool_errors_modules'] = tool_errors_report['imports']
+    host_lifecycle = observe_host_lifecycle(ROOT, python, output / 'host-lifecycle-root.json')
+    candidate['exported_host_lifecycle_sha256'] = host_lifecycle_digest(host_lifecycle)
+    candidate['exported_host_lifecycle_modules'] = host_lifecycle['imports']
+    candidate['exported_host_lifecycle_fixture_sha256'] = host_lifecycle['fixtureSha256']
     raw = output / 'cordis-raw.json'
     raw.unlink(missing_ok=True)
     run([python, 'scripts/cordis_oracle.py', '--output', str(raw)],
@@ -1862,6 +1918,7 @@ def verify(args, output):
                '--win32-stat-source', str(win32_stat_source), '--win32-stat-native', str(win32_stat_native),
                '--sdk-profile-source', str(sdk_profile_source), '--sdk-profile-native', str(sdk_profile_native),
                '--permission-presets-source', str(permission_presets_source), '--permission-presets-native', str(permission_presets_native),
+               '--tool-errors-source', str(tool_errors_source), '--tool-errors-native', str(tool_errors_native),
                '--javascript-errors-source', str(errors_source), '--javascript-errors-native', str(errors_native)]
     if not candidate['worktree_dirty']:
         command += ['--expected-commit', candidate['product_commit']]

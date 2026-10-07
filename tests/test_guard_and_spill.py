@@ -1,3 +1,4 @@
+from dsh.core.system_prompt import SystemPrompt as SourceToolsPrompt
 import os
 import shutil
 import tempfile
@@ -50,6 +51,7 @@ async def test_repeat_guard_preserves_downstream_decision_isolates_agents_and_re
     from types import SimpleNamespace
 
     ctx = Context()
+    await ctx.plugin(SourceToolsPrompt)
     await ctx.plugin(ToolsPlugin)
     fiber = await ctx.plugin(RepeatToolReminderPlugin, dict(thresholds=[2]))
     first, second = Agent(Session('first')), Agent(Session('second'))

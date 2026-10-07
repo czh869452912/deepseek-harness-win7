@@ -106,6 +106,8 @@ async def test_actual_fixed_parameter_adapter_keeps_python_boundary_arguments(co
     from dsh.cordis import Context
     from dsh.core.agent import AgentOptions
     from dsh.core.agent_loop import AgentLoopPlugin
+    from dsh.core.system_prompt import SystemPrompt
+    from dsh.core.tools import ToolsPlugin
 
     class LegacyModel:
         provider, model = 'mock', 'mock'
@@ -124,6 +126,8 @@ async def test_actual_fixed_parameter_adapter_keeps_python_boundary_arguments(co
     ctx = Context()
     model = LegacyModel()
     ctx.set_service('llm', model)
+    await ctx.plugin(SystemPrompt)
+    await ctx.plugin(ToolsPlugin)
     await ctx.plugin(AgentLoopPlugin)
     parent = await ctx.get('agent_loop').create('parent', options=AgentOptions(provider='mock', model='mock',
         max_tokens=tokens, reasoning_effort=effort))

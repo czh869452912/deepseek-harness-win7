@@ -23,6 +23,28 @@ def make_tools(config=None):
     return ctx, tools
 
 
+@pytest.mark.asyncio
+async def test_agent_loop_waits_for_owned_tools_and_retires_on_loss():
+    from dsh.core.agent_loop import AgentLoopPlugin
+    from dsh.core.system_prompt import SystemPrompt
+
+    ctx = Context()
+    try:
+        await ctx.plugin(AgentLoopPlugin)
+        assert ctx.get('tools') is None
+        assert ctx.get('agentLoop') is None
+        await ctx.plugin(SystemPrompt)
+        assert ctx.get('agentLoop') is None
+        tools = await ctx.plugin(ToolsPlugin)
+        assert ctx.get('agentLoop') is not None
+        await tools.dispose()
+        await asyncio.sleep(0)
+        assert ctx.get('tools') is None
+        assert ctx.get('agentLoop') is None
+    finally:
+        await ctx.fiber.dispose()
+
+
 def test_optional_system_prompt_uses_minimal_context_get_contract():
     class Prompt:
         def __init__(self):
@@ -136,8 +158,8 @@ async def test_typed_errors_keep_their_name_and_code(error, expected_name, expec
 
     assert result.is_error is True
     assert result.error["message"] == error.message
-    assert result.error["info"] == {"name": expected_name, "code": expected_code}
-    assert result.error["code"] == expected_code
+    assert result.error == {"message": error.message, "info": {"name": expected_name, "code": expected_code}}
+    assert result.error["info"]["code"] == expected_code
 
 
 @pytest.mark.asyncio
@@ -354,7 +376,7 @@ async def test_cancellation_before_during_and_after_body_uses_stable_codes():
     pre.set()
     tools.register(canonical_tool("cancel", lambda _args, _exec: "ok"))
     before = await tools.execute(ToolExecutionInput("a", "cancel", {}, signal=pre))
-    assert before.error["code"] == "ABORTED_BEFORE_DISPATCH"
+    assert before.error["info"]["code"] == "ABORTED_BEFORE_DISPATCH"
 
     during = asyncio.Event()
 
@@ -365,7 +387,7 @@ async def test_cancellation_before_during_and_after_body_uses_stable_codes():
 
     tools.register(canonical_tool("during", cancel_during))
     after_body = await tools.execute(ToolExecutionInput("b", "during", {}, signal=during))
-    assert after_body.error["code"] == "ABORTED"
+    assert after_body.error["info"]["code"] == "ABORTED"
 
 
 @pytest.mark.asyncio
@@ -392,7 +414,7 @@ async def test_around_replacement_signal_is_fused_and_success_is_revalidated():
     ctx.events._hooks["tools/execute"].clear()
     listen(ctx, "tools/execute", lambda _exec, _next: ToolExecutionResult([], value=42))
     invalid = await tools.execute(ToolExecutionInput("b", "wrapped", {}, signal=asyncio.Event()))
-    assert invalid.error["code"] == "INVALID_TOOL_OUTPUT"
+    assert invalid.error["info"]["code"] == "INVALID_TOOL_OUTPUT"
 
 
 @pytest.mark.asyncio
@@ -486,7 +508,7 @@ async def test_post_value_replacement_projection_error_is_typed():
 
     result = await tools.execute(ToolExecutionInput(
         "c", "post-render", {}, signal=asyncio.Event()))
-    assert result.error["code"] == "INVALID_TOOL_OUTPUT"
+    assert result.error["info"]["code"] == "INVALID_TOOL_OUTPUT"
     assert "replacement render broke" in result.error["message"]
 
 
@@ -523,7 +545,7 @@ async def test_post_cancellation_replaces_only_success_with_aborted():
 
     listen(ctx, "tools/post-execute", cancel)
     result = await tools.execute(ToolExecutionInput("c", "post-cancel", {}, signal=signal))
-    assert result.error["code"] == "ABORTED"
+    assert result.error["info"]["code"] == "ABORTED"
 
 
 @pytest.mark.asyncio
@@ -540,7 +562,7 @@ async def test_pre_aborted_skips_policy_and_around_cancel_before_body_is_pre_dis
     signal = asyncio.Event()
     signal.set()
     result = await tools.execute(ToolExecutionInput("a", "cancel-stage", {}, signal=signal))
-    assert result.error["code"] == "ABORTED_BEFORE_DISPATCH"
+    assert result.error["info"]["code"] == "ABORTED_BEFORE_DISPATCH"
     assert phases == []
 
     caller = asyncio.Event()
@@ -551,7 +573,7 @@ async def test_pre_aborted_skips_policy_and_around_cancel_before_body_is_pre_dis
 
     listen(ctx, "tools/execute", cancel_without_next)
     result = await tools.execute(ToolExecutionInput("b", "cancel-stage", {}, signal=caller))
-    assert result.error["code"] == "ABORTED_BEFORE_DISPATCH"
+    assert result.error["info"]["code"] == "ABORTED_BEFORE_DISPATCH"
 
 
 @pytest.mark.asyncio
@@ -616,13 +638,13 @@ async def test_supported_schema_enforces_one_of_additional_properties_and_projec
     }
     tools.register(definition)
     result = await tools.execute(ToolExecutionInput("c", "shape", {}, signal=asyncio.Event()))
-    assert result.error["code"] == "INVALID_TOOL_OUTPUT"
+    assert result.error["info"]["code"] == "INVALID_TOOL_OUTPUT"
 
     broken = canonical_tool("broken-render", lambda _args, _exec: "ok")
     broken["output"]["render"] = lambda _args, _value: (_ for _ in ()).throw(RuntimeError("render broke"))
     tools.register(broken)
     result = await tools.execute(ToolExecutionInput("d", "broken-render", {}, signal=asyncio.Event()))
-    assert result.error["code"] == "INVALID_TOOL_OUTPUT"
+    assert result.error["info"]["code"] == "INVALID_TOOL_OUTPUT"
 
 
 @pytest.mark.asyncio
@@ -749,7 +771,7 @@ async def test_cancelled_approval_with_caller_abort_beats_denial():
     listen(ctx, "tools/pre-execute", lambda _exec, _next: {"kind": "ask"})
     result = await tools.execute(ToolExecutionInput(
         "c", "approval-cancel", {}, agent=agent, signal=signal))
-    assert result.error["code"] == "ABORTED_BEFORE_DISPATCH"
+    assert result.error["info"]["code"] == "ABORTED_BEFORE_DISPATCH"
 
 
 @pytest.mark.asyncio
@@ -849,7 +871,7 @@ async def test_negative_zero_is_rejected_at_argument_and_output_boundaries():
 
     bad_output = await tools.execute(ToolExecutionInput(
         "b", "negative-zero", {"value": 0.0}, signal=asyncio.Event()))
-    assert bad_output.error["code"] == "INVALID_TOOL_OUTPUT"
+    assert bad_output.error["info"]["code"] == "INVALID_TOOL_OUTPUT"
     assert calls == [{"value": 0.0}]
 
 
@@ -1069,7 +1091,7 @@ async def test_code_mode_direct_native_call_is_collapsed_before_policy():
     result = await tools.execute(ToolExecutionInput(
         "c", "echo", {}, signal=asyncio.Event()))
 
-    assert result.error["code"] == "UNKNOWN_TOOL"
+    assert result.error["info"]["code"] == "UNKNOWN_TOOL"
     assert policy == []
 
 

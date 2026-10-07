@@ -59,6 +59,9 @@ from test_win32_stat_consumers import damage_runtime as damage_win32_stat_runtim
 from test_sdk_profile_consumers import damage_runtime as damage_sdk_profile_runtime
 from scripts.sdk_profile_cases import EXTRACTED_DAMAGES as SDK_EXTRACTED_DAMAGES
 from scripts.permission_presets_cases import damage_runtime as damage_permission_runtime, damage_source as damage_permission_source
+from scripts.tool_errors_cases import damage_runtime as damage_tool_error_runtime
+from scripts.tool_errors_oracle import OBSERVER_INPUTS as TOOL_ERROR_OBSERVER_INPUTS
+from scripts.exported_host_lifecycle_oracle import observe_native as observe_host_lifecycle
 from scripts.process_artifact_retention import prune_finished_test_folder
 from scripts.llm_metadata_oracle import observation_digest as llm_metadata_observation_digest
 from test_llm_metadata_consumers import damage_observations as damage_llm_metadata_observations
@@ -1579,6 +1582,83 @@ def permission_presets_runtime_fixture():
             native=json.loads(output.with_suffix('.native.json').read_text(encoding='utf-8')))
 
 
+@functools.lru_cache(maxsize=1)
+def tool_errors_runtime_fixture():
+    with tempfile.TemporaryDirectory(prefix='dsh-tool-errors-source-') as folder:
+        output = Path(folder) / 'paired.json'
+        completed = subprocess.run([sys.executable, str(ROOT / 'scripts/tool_errors_oracle.py'),
+            '--output', str(output)], cwd=str(ROOT), capture_output=True, timeout=240)
+        if completed.returncode:
+            raise RuntimeError(output.read_text(encoding='utf-8'))
+        return dict(source=json.loads(output.with_suffix('.source.json').read_text(encoding='utf-8')),
+            native=json.loads(output.with_suffix('.native.json').read_text(encoding='utf-8')))
+
+
+@functools.lru_cache(maxsize=1)
+def host_lifecycle_runtime_fixture():
+    with tempfile.TemporaryDirectory(prefix='dsh-host-lifecycle-') as folder:
+        return observe_host_lifecycle(ROOT, sys.executable, Path(folder) / 'native.json')
+
+
+@pytest.mark.parametrize('damage', GATE.TOOL_ERROR_DAMAGES + ('missing', 'source-missing', 'source-changed', 'source-file'))
+def test_extracted_tool_errors_requires_complete_values_and_runtime(tmp_path, damage):
+    archive, candidate, report = extracted_receipt(tmp_path)
+    if damage == 'missing':
+        del report['toolErrors']
+    elif damage == 'source-missing':
+        del candidate['tool_errors_source']
+    elif damage == 'source-changed':
+        candidate['tool_errors_source']['rows'][0]['present'] = True
+    elif damage == 'source-file':
+        report['toolErrorsSourceSha256'] = '0' * 64
+    else:
+        report['toolErrors'] = damage_tool_error_runtime(report['toolErrors'], damage)
+    output = tmp_path / 'extracted.json'
+    output.write_text(json.dumps(report), encoding='utf-8')
+    with pytest.raises(RuntimeError, match='toolErrors'):
+        GATE.validate_extracted(output, archive, candidate)
+
+
+@pytest.mark.parametrize('damage', ('omit', 'skip', 'duplicate', 'failure'))
+def test_tool_errors_consumer_lanes_are_mandatory(tmp_path, damage):
+    path = tmp_path / 'pytest.xml'
+    for module in ('test_tool_errors_consumers', 'test_exported_host_metadata'):
+        for name in GATE.REQUIRED_REGRESSION[module]:
+            regression_xml(path, **{damage: (module, name)})
+            with pytest.raises(RuntimeError):
+                GATE.validate_regression(path)
+
+
+@pytest.mark.parametrize('damage', ('missing', 'row', 'tail', 'order', 'module', 'fixture', 'root', 'python', 'executable', 'counter'))
+def test_extracted_host_lifecycle_requires_owned_complete_observations(tmp_path, damage):
+    archive, candidate, report = extracted_receipt(tmp_path)
+    runtime = report['exportedHostLifecycle']
+    if damage == 'missing':
+        del report['exportedHostLifecycle']
+    elif damage == 'row':
+        runtime['rows'][1]['republished'] = True
+    elif damage == 'tail':
+        runtime['rows'].pop()
+    elif damage == 'order':
+        runtime['rows'].reverse()
+    elif damage == 'module':
+        runtime['imports']['dsh/extensions/packaged_host.py'] = '0' * 64
+    elif damage == 'fixture':
+        runtime['fixtureSha256'] = '0' * 64
+    elif damage == 'root':
+        runtime['root'] += '-foreign'
+    elif damage == 'python':
+        runtime['python'] = '3.9.0 foreign'
+    elif damage == 'executable':
+        runtime['executable'] += '-foreign'
+    else:
+        runtime['rows'][0]['restoredCounter'] = 1
+    output = tmp_path / 'extracted.json'
+    output.write_text(json.dumps(report), encoding='utf-8')
+    with pytest.raises(RuntimeError, match='exportedHostLifecycle'):
+        GATE.validate_extracted(output, archive, candidate)
+
+
 @pytest.mark.parametrize('damage', GATE.PERMISSION_EXTRACTED_DAMAGES)
 def test_extracted_permission_presets_requires_complete_values_and_runtime(tmp_path, damage):
     archive, candidate, report = extracted_receipt(tmp_path)
@@ -1834,6 +1914,20 @@ def extracted_receipt(tmp_path):
     candidate['permission_presets_source_sha256'] = hashlib.sha256(json.dumps(permission_pair['source'], sort_keys=True).encode('utf-8')).hexdigest()
     candidate['permission_presets_source_identity_sha256'] = GATE.permission_presets_source_digest(permission_pair['source'])
     candidate['permission_presets_modules'] = copy.deepcopy(permission_presets['modules'])
+    tool_pair = copy.deepcopy(tool_errors_runtime_fixture())
+    tool_errors = tool_pair['native']
+    tool_errors['root'], tool_errors['executable'] = str(tmp_path), str(tmp_path / 'python.exe')
+    tool_pair['source']['inputs'] = {name: sha256 for name, sha256 in tool_pair['source']['inputs'].items()
+        if name in TOOL_ERROR_OBSERVER_INPUTS or name == 'reference/packages/core/tools/src/index.ts'}
+    candidate['tool_errors_source'] = tool_pair['source']
+    candidate['tool_errors_source_sha256'] = hashlib.sha256(json.dumps(tool_pair['source'], sort_keys=True).encode('utf-8')).hexdigest()
+    candidate['tool_errors_observations_sha256'] = GATE.tool_errors_digest(tool_pair['source']['rows'])
+    candidate['tool_errors_modules'] = copy.deepcopy(tool_errors['imports'])
+    host_lifecycle = copy.deepcopy(host_lifecycle_runtime_fixture())
+    host_lifecycle['root'], host_lifecycle['executable'] = str(tmp_path), str(tmp_path / 'python.exe')
+    candidate['exported_host_lifecycle_sha256'] = GATE.host_lifecycle_digest(host_lifecycle)
+    candidate['exported_host_lifecycle_modules'] = copy.deepcopy(host_lifecycle['imports'])
+    candidate['exported_host_lifecycle_fixture_sha256'] = host_lifecycle['fixtureSha256']
 
 
     report = {'result': 'passed', 'browser': {'passed': True}, 'runtime': {'checks': ['actual runtime']},
@@ -1848,6 +1942,8 @@ def extracted_receipt(tmp_path):
               'win32Stat': win32_stat, 'win32StatSourceSha256': candidate['win32_stat_source_sha256'],
               'sdkProfile': sdk_profile, 'sdkProfileSourceSha256': candidate['sdk_profile_source_sha256'],
               'permissionPresets': permission_presets, 'permissionPresetsSourceSha256': candidate['permission_presets_source_sha256'],
+              'toolErrors': tool_errors, 'toolErrorsSourceSha256': candidate['tool_errors_source_sha256'],
+              'exportedHostLifecycle': host_lifecycle,
               'javascriptErrors': errors, 'javascriptErrorsSourceSha256': candidate['javascript_errors_source_sha256']}
     modes = ['allow', 'reject', 'malformed', 'cancel-late', 'close-late', 'eof']
     report['acpPermissions'] = {'processes': 6, 'modes': modes, 'observations': [

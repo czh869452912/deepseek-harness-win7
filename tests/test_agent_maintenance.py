@@ -9,6 +9,8 @@ from dsh.compaction.engine import CompactionEngine, ManualCompactionError
 from dsh.cordis.context import Context
 from dsh.core.agent import Agent, AgentOptions, AgentPlugin
 from dsh.core.agent_loop import AgentLoopPlugin
+from dsh.core.system_prompt import SystemPrompt
+from dsh.core.tools import ToolsPlugin
 from dsh.core.session import Session, SessionPlugin
 from dsh.llm.token_meter import TokenMeter
 from dsh.llm.error import error_chain
@@ -130,6 +132,8 @@ async def test_factory_disposal_joins_real_compaction_before_releasing_scope(sta
     try:
         await ctx.plugin(SessionPlugin)
         await ctx.plugin(AgentPlugin)
+        await ctx.plugin(SystemPrompt)
+        await ctx.plugin(ToolsPlugin)
         await ctx.plugin(AgentLoopPlugin)
         TokenMeter(ctx)
         engine = CompactionEngine(ctx=ctx, config=dict(auto=False))

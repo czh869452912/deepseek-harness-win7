@@ -1,4 +1,5 @@
 """Owned source export through real Tools, install, isolated presets and restart."""
+from dsh.core.system_prompt import SystemPrompt as SourceToolsPrompt
 import asyncio
 import hashlib
 import json
@@ -107,7 +108,7 @@ async def test_exact_old_version_export_installs_unloads_restarts_and_rolls_back
         with pytest.raises(RuntimeError, match='unloaded'):
             await handlers.call('read', {})
         missing = await ctx.get('tools').execute(ToolExecutionInput('gone', 'export_counter', {}, signal=NEVER_ABORTED))
-        assert missing.is_error and missing.error['code'] == 'UNKNOWN_TOOL'
+        assert missing.is_error and missing.error['info']['code'] == 'UNKNOWN_TOOL'
     finally:
         await close(mounted)
     restarted = await boot(home)
@@ -285,6 +286,7 @@ async def test_exported_sdk_dependency_loss_revokes_handlers_and_tools(tmp_path)
     source = tmp_path / 'source.py'
     source.write_text(SOURCE.replace("['tools']", "['tools', 'requiredService']"), encoding='utf-8')
     ctx = Context()
+    await ctx.plugin(SourceToolsPrompt)
     await ctx.plugin(ToolsPlugin())
     provider = ctx.plugin(dict(name='required-provider', apply=lambda child: child.provide('requiredService', object())))
     await provider
@@ -306,19 +308,89 @@ async def test_exported_sdk_dependency_loss_revokes_handlers_and_tools(tmp_path)
 
 
 @pytest.mark.asyncio
-async def test_missing_dependency_is_activation_failure_not_false_success(tmp_path):
+async def test_missing_dependency_is_pending_without_false_publication(tmp_path):
     from dsh.cordis.context import Context
+    from dsh.cordis.fiber import FiberState
     from dsh.extensions.packaged_host import python_host_source
     source = tmp_path / 'source.py'
     source.write_text("def plugin(ctx):\n    ctx.provide('neverPublished', True)\nplugin.inject = ['missingProvider']\n", encoding='utf-8')
     ctx = Context()
     fiber = ctx.plugin(python_host_source(str(source), NAME))
-    with pytest.raises(Exception, match='requires services: missingProvider'):
+    try:
         await fiber
-    assert ctx.get('neverPublished') is None
-    assert ctx.get(host_handler_service(NAME)) is None
-    await fiber.dispose()
-    await ctx.fiber.dispose()
+        assert fiber.state == FiberState.PENDING
+        assert ctx.get('neverPublished') is None
+        assert ctx.get(host_handler_service(NAME)) is None
+        provider = ctx.plugin(lambda child: child.provide('missingProvider', object()))
+        await provider
+        await fiber.await_settled()
+        assert fiber.state == FiberState.ACTIVE
+        assert ctx.get('neverPublished') is True
+        await provider.dispose()
+        await fiber.await_settled()
+        assert ctx.get('neverPublished') is None
+        assert ctx.get(host_handler_service(NAME)) is None
+    finally:
+        await fiber.dispose()
+        await ctx.fiber.dispose()
+
+
+@pytest.mark.asyncio
+async def test_canonical_boot_rejects_pending_export_without_evaluating_globals(profile, tmp_path):
+    home, directory = profile
+    marker = tmp_path / 'must-not-run'
+    source = ("from pathlib import Path\nPath(" + repr(str(marker)) + ").write_text('ran', encoding='utf-8')\n"
+              "def plugin(ctx):\n    ctx.provide('neverPublished', True)\nplugin.inject = ['missingProvider']\n")
+    project = tmp_path / 'pending-project'
+    write_project(project, project_files(dict(packageId='pkg-pending', name='Pending', purpose='Dependency readiness',
+        code=dict(host=source)), 'probe-pending', NAME, '1.0.0', 'host', [], 'UNLICENSED', 'Test source\n'))
+    assert cli.run_plugin('python-test', ['add', str(project)]) == 0
+    with pytest.raises(Exception, match='pending.*missingProvider'):
+        await boot(home)
+    assert not marker.exists()
+    assert cli.run_plugin('python-test', ['remove', NAME]) == 0
+    assert not (directory / 'node_modules' / NAME).exists()
+
+
+@pytest.mark.asyncio
+async def test_canonical_export_dependency_epochs_preserve_owned_globals_and_handlers(profile, tmp_path):
+    home, directory = profile
+    project = tmp_path / 'epochs-project'
+    write_project(project, project_files(dict(packageId='pkg-epochs', name='Epochs', purpose='Loader dependency ownership',
+        code=dict(host=SOURCE)), 'probe-epochs', NAME, '1.0.0', 'host', [], 'UNLICENSED', 'Test source\n'))
+    assert cli.run_plugin('python-test', ['add', str(project)]) == 0
+    mounted = await boot(home)
+    ctx = mounted['ctx']
+    try:
+        handlers = ctx.get(host_handler_service(NAME))
+        assert await count(ctx) == 1
+        prompt = next(entry for entry in ctx.loader.entries if entry.options.get('id') == 'system-prompt')
+        await prompt.update({'disabled': True})
+        for iteration in range(3):
+            for fiber in ctx.registry.list_fibers():
+                await fiber.await_settled()
+            await asyncio.sleep(0)
+        assert ctx.get('tools') is None
+        assert ctx.get(host_handler_service(NAME)) is None
+        assert not handlers.closed
+        with pytest.raises(RuntimeError, match='unloaded'):
+            await handlers.call('read', {})
+        await prompt.update({'disabled': False})
+        await ctx.loader.await_tasks()
+        for iteration in range(3):
+            for fiber in ctx.registry.list_fibers():
+                await fiber.await_settled()
+            await asyncio.sleep(0)
+        assert ctx.get('tools') is not None, [(entry.options.get('id'), entry.fiber.state if entry.fiber else None,
+            str(entry.fiber._error) if entry.fiber else None) for entry in ctx.loader.entries]
+        assert ctx.get(host_handler_service(NAME)) is handlers
+        assert await count(ctx) == 2
+        assert await handlers.call('read', {}) == dict(value='first', calls=2)
+    finally:
+        await close(mounted)
+    assert handlers.closed
+    assert cli.run_plugin('python-test', ['remove', NAME]) == 0
+    assert not (directory / 'node_modules' / NAME).exists()
 
 
 @pytest.mark.parametrize('mutation', ['missing-source', 'missing-license', 'duplicate', 'escape'])
@@ -378,6 +450,7 @@ async def test_failed_exported_plugin_reverses_partial_registrations(tmp_path):
     source = tmp_path / 'source.py'
     source.write_text(SOURCE.replace("harness.handle('read'", "raise ValueError('failed activation')\n    harness.handle('read'"), encoding='utf-8')
     ctx = Context()
+    await ctx.plugin(SourceToolsPrompt)
     await ctx.plugin(ToolsPlugin())
     fiber = ctx.plugin(python_host_source(str(source), NAME))
     with pytest.raises(Exception, match='failed activation'):

@@ -1,5 +1,9 @@
 # 持续对齐记录
 
+2026-10-07 Tools/SDK修订2补齐真实Loader恢复链：九项完整Source和八项SDK观察由自有Python3.8.10匹配，十五篡改拒绝，candidate2恢复失败原样保留。Tools每代重新注册，AgentLoop等待Tools而不抢占回退；862消费者与33解压/必需lane控制通过，97文件资格链接此前84文件精确基包。057仍running，新的干净全量/76配对/20组Source/实际解压/原版浏览器待签收；其余AgentLoop依赖与durable/ask-user/profile仍开放。自动过期维护本次无新增合格材料，保留真实证据。见 `docs/research/2026-10-07-tool-errors-sdk-metadata-progress.md`。
+
+2026-10-07 Tools公开错误与必需systemPrompt依赖已推广，导出SDK先声明静态依赖并保留挂载globals/句柄，首版恢复回退独立拒绝。新鲜Source八完整观察、自有Python3.8.10和十四篡改控制通过；84文件精确资格保留，新增解压与必需lane门禁。057running，等待无重负载并行的全量及76配对/20组Source/实际解压/原版浏览器；durable旧错误载体及完整预设仍开放。旧466日志94%已有物理树F，不能解释为仅超时；隔离复测通过，原拒绝不改写。见 `docs/research/2026-10-07-tool-errors-sdk-metadata-progress.md`。
+
 2026-10-07 自动过期维护继续完成：九份历史执行清理2568个合成JSON/27413212833字节，两份已结束资格目录清理30962个原样副本/491955312字节；57文件维护归档保留真实材料，缺XML执行先拒绝。干净466完整门禁收集9202项，到99%因正常3600秒时限拒绝，无完整XML；精确ZIP/输入/原始退出与逐项审计共759文件保留，未增加时限或计作签收。最新完整仍83026446/65，056running、036partial、七父范围及延期Win7不变。见 `docs/research/2026-10-07-expired-process-and-console-timeout.md`。
 
 2026-10-07 Windows受限控制台提供端推进：有控制台时继承stdio/console，无控制台管道继续CREATE_NO_WINDOW；仍限制token、先挂Job后恢复、关闭拥有进程。启动nonce先输出空行并保持严格独立行拒绝判据；实际history拒绝原样保留。Root七项物理/nonce控制和35项相关回归通过，414文件原始研究资格保留。2738必需lane/75配对及新的干净完整验收待执行；功能浏览器研究不等于完整DTO/工具schema签收，七父范围、056 running及Win7延期保持。见 `docs/research/2026-10-07-confined-console-progress.md`。

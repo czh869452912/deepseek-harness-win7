@@ -1,0 +1,21 @@
+{
+  "id": "RUN-FRONTEND-PREFLIGHT-ORDER-20261007-6AABEA10",
+  "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
+  "product_commit": "6aabea1086309aa285d7f4f61b83827f8ff6d702",
+  "kind": "verification",
+  "task_id": "MIG-CURRENT-RELEASE-GATE-003",
+  "result": "passed",
+  "validity": "current",
+  "exit_code": 0,
+  "commands": [
+    ".venv/Scripts/python.exe -m pytest tests/test_fs_search_packaging_parity.py tests/test_current_release_gate.py::test_default_gate_rejects_dirty_checkout_before_build tests/test_current_release_gate.py::test_dirty_preview_is_never_a_publishable_success -q",
+    ".venv/Scripts/python.exe -m pytest tests/test_release_preflight.py -q"
+  ],
+  "environment": {"python": "3.8.10", "node": "22.22.2", "os": "Windows-10-10.0.26200-SP0"},
+  "contract_revisions": {"CON-CURRENT-RELEASE-GATE": 1},
+  "artifacts": [
+    {"path": "migration/evidence/artifacts/FRONTEND-PREFLIGHT-ORDER-20261007-6AABEA10.zip", "sha256": "f7fd7140b7093a2e116f8a35c3c3029b3f7ca20f89452bebb3c716c207b7500f"},
+    {"path": "migration/evidence/artifacts/CURRENT-GATE-REJECTED-20261007-6AABEA10.zip", "sha256": "422ba5b5e1d19ccac5b74c52382581cbf2a6cc9633f435acbc705c8923d8958d"}
+  ],
+  "scope": "Working-tree qualification over the named clean product base: dirty checkout refuses before frontend metadata; real complete recorded shell/client inputs replace an obsolete staging fixture. Five focused controls and 35 preflight regressions pass without cumulative overlap claims. Exact clean 10030-item full gate timed out at 65% under normal 3600 seconds, with no complete XML or acceptance. The initial unpinned Node selection and collector output collision are retained and independently qualified/revalidated. No new Source exception, weaker frontend check, changed budget, parent integration or platform certification."
+}

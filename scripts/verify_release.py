@@ -1902,10 +1902,10 @@ def verify(args, output):
     if actual != baseline['target_upstream'] or git('status', '--porcelain', root=ROOT / 'reference'):
         raise RuntimeError('initialize an unchanged pinned reference submodule before running the gate')
     candidate = {'product_commit': git('rev-parse', 'HEAD'),
-                 'worktree_dirty': bool(git('status', '--porcelain')),
-                 'frontend': json.loads((ROOT / 'scripts/frontend-inputs.json').read_text(encoding='utf-8'))}
+                 'worktree_dirty': bool(git('status', '--porcelain'))}
     if candidate['worktree_dirty'] and not args.allow_dirty:
         raise RuntimeError('release requires a clean checkout; --allow-dirty produces only a non-publishable preview')
+    candidate['frontend'] = json.loads((ROOT / 'scripts/frontend-inputs.json').read_text(encoding='utf-8'))
     python = str(ROOT / '.venv/Scripts/python.exe')
     environment = release_environment(browser)
     if args.prepare:

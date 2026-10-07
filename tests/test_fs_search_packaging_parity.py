@@ -1,6 +1,5 @@
 import asyncio
 import json
-import hashlib
 import importlib.util
 import os
 import sys
@@ -99,17 +98,17 @@ def test_portable_stages_pinned_rg_and_zip_path_matches_runtime_resolver(tmp_pat
     (runtime / "python.exe").write_bytes(b"runtime-exe")
     (runtime / "python38.dll").write_bytes(b"runtime-dll")
     (runtime / "Lib" / "os.py").write_text("# stdlib fixture", encoding="utf-8")
-    web = fixture_root / 'apps/web/dist'
-    web.mkdir(parents=True)
-    (web / 'index.html').write_bytes(b'<html>fixture</html>')
     (fixture_root / 'scripts').mkdir()
     (fixture_root / 'migration').mkdir()
     (fixture_root / 'reference/apps/cli').mkdir(parents=True)
     (fixture_root / 'reference/apps/cli/package.json').write_text('{}', encoding='utf-8')
-    (fixture_root / 'migration/baseline.json').write_text('{"target_upstream":"fixture"}', encoding='utf-8')
-    (fixture_root / 'scripts/frontend-inputs.json').write_text(json.dumps({
-        'target_upstream':'fixture', 'files':[{'path':'apps/web/dist/index.html',
-        'sha256':hashlib.sha256((web/'index.html').read_bytes()).hexdigest()}]}), encoding='utf-8')
+    shutil.copyfile(ROOT / 'migration/baseline.json', fixture_root / 'migration/baseline.json')
+    shutil.copyfile(ROOT / 'scripts/frontend-inputs.json', fixture_root / 'scripts/frontend-inputs.json')
+    frontend = json.loads((fixture_root / 'scripts/frontend-inputs.json').read_text(encoding='utf-8'))
+    for row in frontend['files'] + frontend['client_files']:
+        destination = fixture_root / row['path']
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copyfile(ROOT / row['path'], destination)
     (fixture_root / 'requirements-runtime.lock').write_text('FixtureRuntime==1.0\n', encoding='utf-8')
     site = fixture_root / '.venv/Lib/site-packages'
     metadata = site / 'FixtureRuntime-1.0.dist-info'

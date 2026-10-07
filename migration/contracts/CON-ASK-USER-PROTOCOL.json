@@ -1,0 +1,39 @@
+{
+  "id": "CON-ASK-USER-PROTOCOL",
+  "revision": 1,
+  "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
+  "status": "specified",
+  "source_paths": [
+    "reference/packages/interaction/tool-ask-user/src/index.ts",
+    "reference/packages/interaction/user-questions/src/index.ts",
+    "reference/packages/core/tools/src/index.ts"
+  ],
+  "consumers": [
+    "scripts/ask_user_oracle.py",
+    "scripts/ask_user_cases.py",
+    "scripts/oracles/ask_user_source.mts",
+    "scripts/oracles/ask_user_python.py",
+    "tests/test_ask_user_consumers.py",
+    "scripts/verify_release.py",
+    "scripts/verify_portable.py",
+    "tests/test_current_release_gate.py"
+  ],
+  "invariants": [
+    "The tool requires both tools and userQuestions. Missing questions provider keeps it pending; provider disposal unregisters the tool.",
+    "All11 complete ordered actual observations retain full tool input/output schemas, descriptions, request projections, signal/agent presence and complete public result/error/value/render fields.",
+    "Successful answers remain a typed object with compact JSON text rendering. Invalid null custom answers and nonstring selections are rejected by the original output contract.",
+    "No implicit first-option choice, local handler fallback or silent custom-null deletion is accepted.",
+    "Pinned actual Source tracked/observer inputs are guarded before/after. Root and independently owned Python3.8.10 import exactly the independently approved native closure.",
+    "Every Source/runtime/value/import change and missing/skipped/duplicated/failed mandatory or extracted lane is rejected."
+  ],
+  "identity": "Exact11 names in ask_user_oracle.NAMES; complete literal JSON digest without identity/path/error normalization.",
+  "ownership": "Injected real questions service owns answerer dispatch; the tool owns reversible registration.",
+  "ordering": "Staged provider provision/disposal followed by independent answers, empty/no-provider, interruption and malformed-answer observations.",
+  "errors": "Complete original error carriers retained; no-provider, empty questions, interruption and invalid output cannot become successful synthetic answers.",
+  "cancellation": "Before-request and provider-time abort retain original request and error facts.",
+  "adaptation": "None for compared fields; OS paths and selected runtime identity checked separately.",
+  "open_questions": [
+    "Wider agent ancestry, arbitrary JSON/extension graphs, provider replacement races and complete profile/browser journeys remain parent acceptance work.",
+    "Actual Win7 certification remains user-deferred."
+  ]
+}

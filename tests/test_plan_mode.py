@@ -3,11 +3,13 @@ from dsh.cordis.context import Context
 from dsh.core.session import SessionStore
 from dsh.core.tools import ToolsService
 from dsh.interaction.tool_ask_user import ToolAskUserPlugin
+from dsh.interaction.user_questions import UserQuestionsPlugin
 from dsh.plan.plan_mode import (
     PlanModePlugin,
     PlanModeController,
     fold_plan_mode,
     DEFAULT_PLAN_GUIDANCE,
+    APPROVE_LABEL,
 )
 
 
@@ -26,6 +28,9 @@ def plan_ctx():
     agent = Agent(session=session, ctx=ctx, agent_id="test-plan-session")
     ctx.get("agents").enter(agent)
 
+    UserQuestionsPlugin().apply(ctx)
+    ctx.on('user-questions/request', lambda request, next_fn=None: {
+        'answers': [{'id': question['id'], 'selected': [APPROVE_LABEL]} for question in request['questions']]})
     ctx.plugin(ToolAskUserPlugin)
     ctx.plugin(PlanModePlugin, config={"section": DEFAULT_PLAN_GUIDANCE})
     return ctx

@@ -1,0 +1,32 @@
+{
+  "id": "RUN-ASK-USER-FORMAL-QUALIFICATION-20261007-A90B55F1",
+  "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
+  "product_commit": "a90b55f14b5368f443acd6221e67f31ae0c5a347",
+  "kind": "verification",
+  "task_id": "MIG-ASK-USER-PROTOCOL-060",
+  "result": "passed",
+  "validity": "current",
+  "exit_code": 0,
+  "commands": [
+    ".venv/Scripts/python.exe scripts/ask_user_oracle.py --output .goose/out/acp-a4-work/ask-user-formal-root-after-v1.json",
+    ".venv/Scripts/python.exe -m pytest tests/test_reference_tool_ask_user_specs.py tests/test_todo_and_ask_user.py tests/test_plan_mode.py tests/test_web_transport_retirement.py tests/1to1/client/test_client_host_halves.py -q --junitxml=.goose/out/acp-a4-work/ask-user-prerequisites-v2.xml",
+    ".venv/Scripts/python.exe -m pytest tests/test_ask_user_consumers.py tests/test_current_release_gate.py -k \"not extracted or ask_user\" -q --junitxml=.goose/out/acp-a4-work/ask-user-gate-v1.xml",
+    ".venv/Scripts/python.exe .goose/out/acp-a4-work/qualify_ask_user_formal_owned_v1.py",
+    ".venv/Scripts/python.exe .goose/out/acp-a4-work/collect_ask_user_formal_qualification_v1.py"
+  ],
+  "environment": {
+    "python": "3.8.10",
+    "os": "Windows-10-10.0.26200-SP0",
+    "node": "v22.22.2"
+  },
+  "contract_revisions": {
+    "CON-ASK-USER-PROTOCOL": 1
+  },
+  "artifacts": [
+    {
+      "path": "migration/evidence/artifacts/ASK-USER-FORMAL-QUALIFICATION-20261007-A90B55F1.zip",
+      "sha256": "549e7fe0d2aea5dceec7fd05ac8b78e737f9f57440c780a01f5679774490a748"
+    }
+  ],
+  "scope": "Complete literal11 fresh formal Source/Root/own Python3.8.10 protocol rows,124 exact independently approved imports and15481 owned files guarded before/after.65 prerequisite and446 mandatory/extracted controls pass without failures/errors/skips; overlaps not summed.61-file archive retains current7 before differences, older11-difference research and fake-agent rejection.79 paired drivers with41 new consumer and25 mandatory/extracted controls. No new full frozen release,060 integration, broad Message/profile/policy/browser or parent closure."
+}

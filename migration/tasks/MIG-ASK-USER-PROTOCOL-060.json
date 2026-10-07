@@ -1,0 +1,50 @@
+{
+  "id": "MIG-ASK-USER-PROTOCOL-060",
+  "goal": "对齐真实问答依赖、完整工具契约、类型化答案及取消行为",
+  "kind": "implementation",
+  "state": "running",
+  "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
+  "base_product": "a90b55f14b5368f443acd6221e67f31ae0c5a347",
+  "owner": "current-session-coordinator",
+  "requires": [
+    {
+      "task": "MIG-CURRENT-RELEASE-GATE-003",
+      "contract": "CON-CURRENT-RELEASE-GATE",
+      "revision": 1
+    }
+  ],
+  "provides": [
+    {
+      "contract": "CON-ASK-USER-PROTOCOL",
+      "revision": 1
+    }
+  ],
+  "acceptance": [
+    "The tool requires both tools and userQuestions. Missing questions provider keeps it pending; provider disposal unregisters the tool.",
+    "All11 complete ordered actual observations retain full tool input/output schemas, descriptions, request projections, signal/agent presence and complete public result/error/value/render fields.",
+    "Successful answers remain a typed object with compact JSON text rendering. Invalid null custom answers and nonstring selections are rejected by the original output contract.",
+    "No implicit first-option choice, local handler fallback or silent custom-null deletion is accepted.",
+    "Pinned actual Source tracked/observer inputs are guarded before/after. Root and independently owned Python3.8.10 import exactly the independently approved native closure.",
+    "Every Source/runtime/value/import change and missing/skipped/duplicated/failed mandatory or extracted lane is rejected.",
+    "New clean complete frozen regression, all current paired drivers, unchanged official Source groups, actual own extraction and original browser pass before bounded integration."
+  ],
+  "expected_paths": [
+    "dsh/interaction/tool_ask_user.py",
+    "scripts",
+    "tests",
+    "migration",
+    "docs/research"
+  ],
+  "open_findings": [
+    "Formal11 fresh Source/Root/own Python3.8.10 observations match literally with124 independently approved imports and15481 full owned input guards before/after.65 prerequisite and446 mandatory/extracted tests pass with no failures/errors/skips; sets overlap and are not added.61-file archive preserves current7 Root-before differences, older11-difference research and first fake-agent refusal separately.",
+    "All79 paired drivers and new41 consumer/25 mandatory-extracted controls registered. No new full clean acceptance; latest accepted clean release remains83026446/65 bounded contracts.",
+    "Message helper identity, shape and readonly snapshot differences remain next actual Source work, followed by complete profiles/browser/policy and seven parent ranges. Actual Win7 certification stays user-deferred."
+  ],
+  "conflicts_with": [],
+  "candidate_commit": null,
+  "integrated_commit": null,
+  "evidence_ids": [
+    "RUN-ASK-USER-FORMAL-QUALIFICATION-20261007-A90B55F1"
+  ],
+  "next_action": "提交本项正式实现和完整证据；继续规范Message构造/快照与全部预设/浏览器/策略父范围，最后按正常预算冻结完整原版/配对/实际解压/浏览器验收，禁止以本项焦点资格计作整体迁移闭环。"
+}

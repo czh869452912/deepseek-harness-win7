@@ -1,98 +1,43 @@
-"""
-Interactive user questions tool (`@deepseek-ai/dsh-tool-ask-user`).
-Model-facing consumer of `ctx.userQuestions`.
-Aligned 1:1 with official `@deepseek-ai/dsh-tool-ask-user`.
-"""
+"""Model-facing consumer of the injected user-questions service."""
 
 import json
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Dict, Optional
+
 from dsh.cordis.plugin import Plugin
 
 
 class ToolAskUserPlugin(Plugin):
-    """
-    Plugin `@deepseek-ai/dsh-tool-ask-user`: Defines model-facing ask_user_question tool.
-    """
-
     id = "tool-ask-user"
     name = "@deepseek-ai/dsh-tool-ask-user"
-    inject = ["tools"]
-
-    def __init__(self, config: Optional[Dict[str, Any]] = None):
-        super().__init__(config)
-        self.handler: Optional[Callable[[List[Dict[str, Any]]], Any]] = None
+    inject = ["tools", "userQuestions"]
 
     def apply(self, ctx: Any) -> None:
-        # `tools` is an injected service; use the caller-bound proxy so this
-        # plugin registers into its preset fiber scope.
-        tools = ctx.tools
-        if tools is None:
-            return
-
-        async def exec_ask(args: Any = None, exec_input: Optional[Any] = None, agent: Optional[Any] = None, signal: Optional[Any] = None, **kwargs: Any) -> Any:
-            if isinstance(args, dict):
-                questions_arg = args.get("questions", [])
-            elif "questions" in kwargs:
-                questions_arg = kwargs["questions"]
-            elif isinstance(args, list):
-                questions_arg = args
-            else:
-                questions_arg = []
-
-            effective_agent = agent or getattr(exec_input, "agent", None) or kwargs.get("agent")
-            effective_signal = signal or getattr(exec_input, "signal", None) or kwargs.get("signal")
-
-            user_questions_svc = ctx.get("userQuestions")
-            if user_questions_svc and hasattr(user_questions_svc, "ask"):
-                qs = []
-                for q in questions_arg:
-                    item = {"id": q["id"], "question": q["question"]}
-                    if "header" in q:
-                        item["header"] = q["header"]
-                    if "options" in q:
-                        item["options"] = q["options"]
-                    if "multi_select" in q:
-                        item["multiSelect"] = q["multi_select"]
-                    qs.append(item)
-
-                req: Dict[str, Any] = {"questions": qs}
-                if effective_agent is not None:
-                    req["agent"] = effective_agent
-                if effective_signal is not None:
-                    req["signal"] = effective_signal
-
-                res = await user_questions_svc.ask(req)
-                answers = res.get("answers", [])
-                formatted = []
-                for ans in answers:
-                    item = {"id": ans["id"], "selected": list(ans.get("selected", []))}
-                    if "custom" in ans and ans["custom"] is not None:
-                        item["custom"] = ans["custom"]
-                    formatted.append(item)
-                return json.dumps({"answers": formatted}, ensure_ascii=False)
-
-            if self.handler:
-                res = self.handler(questions_arg)
-                if hasattr(res, "__await__"):
-                    res = await res
-                if isinstance(res, str):
-                    return res
-                return json.dumps(res, ensure_ascii=False)
-
+        async def execute(arguments: Dict[str, Any], execution: Optional[Any] = None,
+                          agent: Optional[Any] = None, signal: Optional[Any] = None) -> Any:
+            questions = []
+            for question in arguments["questions"]:
+                projected = {"id": question["id"], "question": question["question"]}
+                for field in ("header", "options"):
+                    if field in question:
+                        projected[field] = question[field]
+                if "multi_select" in question:
+                    projected["multiSelect"] = question["multi_select"]
+                questions.append(projected)
+            request = {"questions": questions,
+                       "signal": signal if signal is not None else getattr(execution, "signal", None)}
+            caller = agent if agent is not None else getattr(execution, "agent", None)
+            if caller is not None:
+                request["agent"] = caller
+            result = await ctx.userQuestions.ask(request)
             answers = []
-            for q in questions_arg:
-                qid = q.get("id", "q1")
-                opts = q.get("options", [])
-                selected = [opts[0]["label"]] if opts else []
-                answers.append({
-                    "id": qid,
-                    "selected": selected,
-                    "custom": None,
-                })
+            for answer in result["answers"]:
+                projected = {"id": answer["id"], "selected": list(answer["selected"])}
+                if "custom" in answer:
+                    projected["custom"] = answer["custom"]
+                answers.append(projected)
+            return {"answers": answers}
 
-            return json.dumps({"answers": answers}, ensure_ascii=False)
-
-        disposer = tools.register_tool({
+        definition = {
             "name": "ask_user_question",
             "description": (
                 "Ask the user a concise question when you need confirmation, a choice, or missing information before proceeding. "
@@ -103,39 +48,57 @@ class ToolAskUserPlugin(Plugin):
                 "properties": {
                     "questions": {
                         "type": "array",
+                        "description": "Questions to ask the user before continuing.",
                         "items": {
                             "type": "object",
+                            "additionalProperties": True,
                             "properties": {
                                 "id": {"type": "string", "description": "Stable id for this question; echoed in the answer."},
                                 "question": {"type": "string", "description": "The specific question to ask the user."},
-                                "header": {"type": "string", "description": "Optional short heading for the question."},
+                                "header": {"type": "string", "description": 'Optional short heading for the question, such as "Confirm" or "Choose Mode".'},
                                 "options": {
                                     "type": "array",
+                                    "description": "Optional choices to show the user. If you recommend one, put it first and append \"(Recommended)\" to that label.",
                                     "items": {
                                         "type": "object",
+                                        "additionalProperties": True,
                                         "properties": {
-                                            "label": {"type": "string"},
-                                            "description": {"type": "string"},
+                                            "label": {"type": "string", "description": "Short user-facing option label."},
+                                            "description": {"type": "string", "description": "One sentence explaining the tradeoff or impact."},
                                         },
                                         "required": ["label"],
                                     },
                                 },
-                                "multi_select": {"type": "boolean"},
+                                "multi_select": {"type": "boolean", "description": "Whether the user may select more than one option. Defaults to false."},
                             },
                             "required": ["id", "question"],
                         },
-                    }
+                    },
                 },
                 "required": ["questions"],
             },
-            "execute": exec_ask,
             "output": {
-                "schema": {"type": "string"},
-                "render": lambda _args, value: [{"type": "text", "text": str(value)}],
+                "schema": {
+                    "type": "object", "additionalProperties": False,
+                    "properties": {
+                        "answers": {
+                            "type": "array",
+                            "items": {
+                                "type": "object", "additionalProperties": False,
+                                "properties": {
+                                    "id": {"type": "string"},
+                                    "selected": {"type": "array", "items": {"type": "string"}},
+                                    "custom": {"type": "string"},
+                                },
+                                "required": ["id", "selected"],
+                            },
+                        },
+                    },
+                    "required": ["answers"],
+                },
+                "render": lambda _arguments, value: [{"type": "text", "text": json.dumps(value, ensure_ascii=False, separators=(",", ":"))}],
             },
-        })
-
-        if hasattr(ctx, "disposable"):
-            ctx.disposable(disposer, label="tool_ask_user.disposer")
-        elif hasattr(ctx, "effect"):
-            ctx.effect(lambda: disposer)
+            "execute": execute,
+        }
+        disposer = ctx.tools.register(definition)
+        ctx.disposable(disposer, label="tool_ask_user.unregister")

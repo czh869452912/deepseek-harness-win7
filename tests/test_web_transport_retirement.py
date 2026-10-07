@@ -199,7 +199,7 @@ async def test_scoped_human_request_uses_gateway_event_result_and_cancellation(t
             status, _, response = await request(ctx, 'POST', '/api/$events/result', cookie, body)
             assert status == 200 and json.loads(response)['result'] == dict(ok=True)
             value = await asyncio.wait_for(task, 5)
-            assert (json.loads(value) if kind == 'tool' else value) == answer
+            assert value == answer
             assert not gateway.events.pending
         if kind == 'approval':
             audit = [entry for entry in agent.session.events if entry['type'].startswith('approval/')]

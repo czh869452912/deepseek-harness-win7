@@ -75,10 +75,13 @@ from scripts.tool_errors_oracle import complete_digest as tool_errors_digest, NA
 from scripts.tool_errors_cases import VALUE_DAMAGES as TOOL_ERROR_DAMAGES, SOURCE_DAMAGES as TOOL_ERROR_SOURCE_DAMAGES
 from scripts.tool_durable_oracle import validate_runtime as validate_tool_durable, identity as tool_durable_identity
 from scripts.agent_dependencies_oracle import validate_runtime as validate_agent_dependencies, identity as agent_dependencies_identity
+from scripts.ask_user_oracle import validate_runtime as validate_ask_user, identity as ask_user_identity
 from scripts.tool_durable_oracle import complete_digest as tool_durable_digest, NAMES as TOOL_DURABLE_NAMES
 from scripts.agent_dependencies_oracle import complete_digest as agent_dependencies_digest, NAMES as AGENT_DEPENDENCIES_NAMES
+from scripts.ask_user_oracle import complete_digest as ask_user_digest, NAMES as ASK_USER_NAMES
 from scripts.tool_durable_cases import VALUE_DAMAGES as TOOL_DURABLE_DAMAGES, SOURCE_DAMAGES as TOOL_DURABLE_SOURCE_DAMAGES
 from scripts.agent_dependencies_cases import VALUE_DAMAGES as AGENT_DEPENDENCIES_DAMAGES, SOURCE_DAMAGES as AGENT_DEPENDENCIES_SOURCE_DAMAGES
+from scripts.ask_user_cases import VALUE_DAMAGES as ASK_USER_DAMAGES, SOURCE_DAMAGES as ASK_USER_SOURCE_DAMAGES
 from scripts.exported_host_lifecycle_oracle import observe_native as observe_host_lifecycle, validate_runtime as validate_host_lifecycle, observation_digest as host_lifecycle_digest
 PERMISSION_EXTRACTED_DAMAGES = PERMISSION_PRESET_DAMAGES + tuple('source-' + name for name in PERMISSION_SOURCE_DAMAGES) + ('missing', 'source-missing', 'source-hash', 'source-stamp')
 from scripts.llm_prepared_oracle import validate_runtime as validate_llm_prepared, identity as llm_prepared_identity, NAMES as LLM_PREPARED_NAMES
@@ -105,6 +108,7 @@ PAIRED_DRIVERS = PAIRED_DRIVERS + ('permission_presets',)
 PAIRED_DRIVERS = PAIRED_DRIVERS + ('tool_errors',)
 PAIRED_DRIVERS = PAIRED_DRIVERS + ('tool_durable',)
 PAIRED_DRIVERS = PAIRED_DRIVERS + ('agent_dependencies',)
+PAIRED_DRIVERS = PAIRED_DRIVERS + ('ask_user',)
 OFFICIAL_CONFIGS = ('consumers', 'agent-lifecycle', 'session-recovery', 'session-projection', 'acp', 'acp-app', 'mcp', 'subagent-acp', 'storage-cache', 'session-observation', 'session-corpus', 'session-sqlite-query', 'query-engine-source', 'session-tools-source', 'sqlite-format-source', 'sqlite-provider-source', 'jsonl-provider-source', 'tool-scheduler-source', 'deepseek-source', 'llm-public-source')
 REQUIRED_REGRESSION = {
     'test_import_paths': {
@@ -137,6 +141,14 @@ REQUIRED_REGRESSION = {
         'test_agent_dependencies_owned_interpreter_and_independent_imports',
         'test_portable_agent_dependencies_refuses_partial_receipts[source]',
         'test_portable_agent_dependencies_refuses_partial_receipts[native]',
+    },
+    'test_ask_user_consumers': {
+        *{'test_actual_source_native_ask_user_protocol[' + name + ']' for name in ASK_USER_NAMES},
+        *{'test_ask_user_requires_complete_values_and_runtime[' + damage + ']' for damage in ASK_USER_DAMAGES},
+        *{'test_ask_user_source_requires_pinned_guarded_inputs[' + damage + ']' for damage in ASK_USER_SOURCE_DAMAGES},
+        'test_ask_user_owned_interpreter_and_independent_imports',
+        'test_portable_ask_user_refuses_partial_receipts[source]',
+        'test_portable_ask_user_refuses_partial_receipts[native]',
     },
     'test_exported_host_metadata': {
         *{'test_exported_host_metadata_never_evaluates_authored_globals[' + case + ']' for case in ('literal-list', 'literal-tuple', 'empty', 'empty-name', 'nonstring', 'dynamic', 'trailing-body')},
@@ -606,9 +618,11 @@ REQUIRED_REGRESSION = {
         *{'test_extracted_tool_errors_requires_complete_values_and_runtime[' + damage + ']' for damage in TOOL_ERROR_DAMAGES + ('missing', 'source-missing', 'source-changed', 'source-file')},
         *{'test_extracted_tool_durable_requires_complete_values_and_runtime[' + damage + ']' for damage in TOOL_DURABLE_DAMAGES + ('receipt-missing', 'source-missing', 'source-changed', 'source-file')},
         *{'test_extracted_agent_dependencies_requires_complete_values_and_runtime[' + damage + ']' for damage in AGENT_DEPENDENCIES_DAMAGES + ('receipt-missing', 'source-missing', 'source-changed', 'source-file')},
+        *{'test_extracted_ask_user_requires_complete_values_and_runtime[' + damage + ']' for damage in ASK_USER_DAMAGES + ('receipt-missing', 'source-missing', 'source-changed', 'source-file')},
         *{'test_tool_errors_consumer_lanes_are_mandatory[' + damage + ']' for damage in ('omit', 'skip', 'duplicate', 'failure')},
         *{'test_tool_durable_consumer_lanes_are_mandatory[' + damage + ']' for damage in ('omit', 'skip', 'duplicate', 'failure')},
         *{'test_agent_dependencies_consumer_lanes_are_mandatory[' + damage + ']' for damage in ('omit', 'skip', 'duplicate', 'failure')},
+        *{'test_ask_user_consumer_lanes_are_mandatory[' + damage + ']' for damage in ('omit', 'skip', 'duplicate', 'failure')},
         *{'test_extracted_host_lifecycle_requires_owned_complete_observations[' + damage + ']' for damage in ('missing', 'row', 'tail', 'order', 'module', 'fixture', 'root', 'python', 'executable', 'counter')},
         *{'test_extracted_permission_presets_requires_complete_values_and_runtime[' + damage + ']' for damage in PERMISSION_EXTRACTED_DAMAGES},
         *{'test_permission_presets_consumer_lanes_are_mandatory[' + damage + ']' for damage in ('omit', 'skip', 'duplicate', 'failure')},
@@ -1604,6 +1618,16 @@ def validate_extracted(path, archive, candidate):
     except (ValueError, KeyError, TypeError) as error:
         raise RuntimeError('Extracted agentDependencies consumer differs') from error
     try:
+        if report.get('askUserSourceSha256') != candidate['ask_user_source_sha256']:
+            raise ValueError('Tools Source receipt identity differs')
+        if ask_user_digest(candidate['ask_user_source']['rows']) != candidate['ask_user_observations_sha256']:
+            raise ValueError('Tools frozen complete Source values differ')
+        validate_ask_user(report.get('askUser'), Path(report['mcpStdio']['root']),
+            Path(report['mcpStdio']['root']) / 'python.exe', candidate['ask_user_source'],
+            candidate['ask_user_modules'], check_files=False, owned_runtime=True)
+    except (ValueError, KeyError, TypeError) as error:
+        raise RuntimeError('Extracted askUser consumer differs') from error
+    try:
         validate_host_lifecycle(report.get('exportedHostLifecycle'), Path(report['mcpStdio']['root']),
             Path(report['mcpStdio']['root']) / 'python.exe', candidate['exported_host_lifecycle_sha256'],
             candidate['exported_host_lifecycle_modules'], candidate['exported_host_lifecycle_fixture_sha256'], check_files=False)
@@ -1942,6 +1966,13 @@ def verify(args, output):
     candidate['agent_dependencies_observations_sha256'] = agent_dependencies_identity(candidate['agent_dependencies_source'], ROOT / 'reference')
     candidate['agent_dependencies_source_sha256'] = digest(agent_dependencies_source)
     candidate['agent_dependencies_modules'] = agent_dependencies_report['imports']
+    ask_user_source = output / 'ask-user-paired.source.json'
+    ask_user_native = output / 'ask-user-paired.native.json'
+    ask_user_report = json.loads(ask_user_native.read_text(encoding='utf-8'))
+    candidate['ask_user_source'] = json.loads(ask_user_source.read_text(encoding='utf-8'))
+    candidate['ask_user_observations_sha256'] = ask_user_identity(candidate['ask_user_source'], ROOT / 'reference')
+    candidate['ask_user_source_sha256'] = digest(ask_user_source)
+    candidate['ask_user_modules'] = ask_user_report['imports']
     host_lifecycle = observe_host_lifecycle(ROOT, python, output / 'host-lifecycle-root.json')
     candidate['exported_host_lifecycle_sha256'] = host_lifecycle_digest(host_lifecycle)
     candidate['exported_host_lifecycle_modules'] = host_lifecycle['imports']
@@ -1989,6 +2020,7 @@ def verify(args, output):
                '--tool-errors-source', str(tool_errors_source), '--tool-errors-native', str(tool_errors_native),
                '--tool-durable-source', str(tool_durable_source), '--tool-durable-native', str(tool_durable_native),
                '--agent-dependencies-source', str(agent_dependencies_source), '--agent-dependencies-native', str(agent_dependencies_native),
+               '--ask-user-source', str(ask_user_source), '--ask-user-native', str(ask_user_native),
                '--javascript-errors-source', str(errors_source), '--javascript-errors-native', str(errors_native)]
     if not candidate['worktree_dirty']:
         command += ['--expected-commit', candidate['product_commit']]

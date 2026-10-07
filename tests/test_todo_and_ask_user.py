@@ -3,9 +3,11 @@ import asyncio
 from types import SimpleNamespace
 import pytest
 from dsh.cordis.context import Context
-from dsh.core.session import Session, SessionStore
+from dsh.core.agent import Agent, AgentPlugin
+from dsh.core.session import Session, SessionStore, SessionPlugin
 from dsh.core.tools import ToolExecutionInput, ToolsService
 from dsh.interaction.tool_ask_user import ToolAskUserPlugin
+from dsh.interaction.user_questions import UserQuestionsPlugin
 from dsh.todo.tool_todo import ToolTodoPlugin
 
 
@@ -58,8 +60,16 @@ async def test_ask_user_question_tool_execution():
     tools = ToolsService(ctx)
     ctx.set_service("tools", tools)
 
+    await ctx.plugin(UserQuestionsPlugin)
+    ctx.on('user-questions/request', lambda request, next_fn=None: {
+        'answers': [{'id': question['id'], 'selected': ['Cordis Plugin']} for question in request['questions']]})
+
     fiber = await ctx.registry.plugin(ToolAskUserPlugin, parent_ctx=ctx)
     tools = fiber.ctx.get("tools")
+    await ctx.plugin(SessionPlugin)
+    await ctx.plugin(AgentPlugin)
+    agent = Agent(session=ctx.get('sessions').create('test-agent'), ctx=fiber.ctx, agent_id='test-agent')
+    ctx.get('agents').enter(agent)
 
     questions_payload = [
         {
@@ -74,10 +84,13 @@ async def test_ask_user_question_tool_execution():
 
     result = await tools.execute(ToolExecutionInput(
         "ask-call", "ask_user_question", {"questions": questions_payload},
-        agent=SimpleNamespace(ctx=fiber.ctx, id="test-agent"), signal=asyncio.Event()))
+        agent=agent, signal=asyncio.Event()))
+    assert not result.is_error, result.error
     raw_res = "".join(block.get("text", "") for block in result.content)
     data = json.loads(raw_res)
     assert "answers" in data
     assert len(data["answers"]) == 1
     assert data["answers"][0]["id"] == "q1"
     assert data["answers"][0]["selected"] == ["Cordis Plugin"]
+    assert result.value == data
+    await ctx.fiber.dispose()

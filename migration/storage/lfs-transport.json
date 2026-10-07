@@ -1,0 +1,529 @@
+{
+  "schema_version": 1,
+  "original_tip": "02ad32af6dee6f290085e9bc82ac4e8e522caf5e",
+  "rewritten_tip": "74adf4c6ae5777599f454a8d7393b3529ccab194",
+  "remote_base": "9629973ebe3cda9b82af3f24cff391159dddcf06",
+  "mapping_path": "migration/storage/lfs-map.csv",
+  "mapping_sha256": "9e56788dfea43214deb22915fa8703bb868943845a02f8a311bb47debc4aef54",
+  "objects_path": "migration/storage/original-git-metadata.zip",
+  "objects_sha256": "9ced7101cfb23bdc1efbdcd41cb66134ad2116c66508a25869d262107179283c",
+  "archives": [
+    {
+      "path": "migration/evidence/artifacts/ACP-CONFIG-20261003-97f7b287.zip",
+      "git_blob": "ce2e38b30bb6a96930729766b4e4ce6540cd65f9",
+      "sha256": "4402d1f1d424cff9d1653bd2037e5a2ba96ee5643b221818456fc8e79691b87d",
+      "size": 4233163
+    },
+    {
+      "path": "migration/evidence/artifacts/ACP-MCP-20261004-e24fe1db.zip",
+      "git_blob": "0ac9dcad2d5ebe3182b622feeb5276f99467ba73",
+      "sha256": "47af12513631b1b97c594cba0aa0201d7f1c2280d8a5b54cc6384569030ec926",
+      "size": 15113606
+    },
+    {
+      "path": "migration/evidence/artifacts/ACP-PERMISSIONS-20261004-e887550a.zip",
+      "git_blob": "0b1219111167ccd9fb26d9960e5fb2b1031a583e",
+      "sha256": "214f99be4b32a1d978db0fff9fbe4a86aac4aebadbff56846444ab6a2fc1c775",
+      "size": 7422162
+    },
+    {
+      "path": "migration/evidence/artifacts/ACP-STDIO-20261003-5edf7e22.zip",
+      "git_blob": "202ff7e55ee3a7e93207a246c2f7e6ae01307331",
+      "sha256": "48724d745fcdd8e41570bbca4af89f3bcf65061f5ee94adcb874efb4ccb6fff1",
+      "size": 7621069
+    },
+    {
+      "path": "migration/evidence/artifacts/AGENT-DEPENDENCIES-FORMAL-QUALIFICATION-20261007-8C0BA04C.zip",
+      "git_blob": "fbab9127aa1b597844fa691bf917fbb799c5782d",
+      "sha256": "17715402ccbc3d8244d14a4144fe803f173d495578ace876c9440d08ae941047",
+      "size": 4220754
+    },
+    {
+      "path": "migration/evidence/artifacts/ASK-USER-FORMAL-QUALIFICATION-20261007-A90B55F1.zip",
+      "git_blob": "6e3131d9d1efdd7253f8060795308c8d06f58cc9",
+      "sha256": "549e7fe0d2aea5dceec7fd05ac8b78e737f9f57440c780a01f5679774490a748",
+      "size": 3937600
+    },
+    {
+      "path": "migration/evidence/artifacts/ASSISTANT-ALLOCATION-QUALIFICATION-20261007-5F0246C2.zip",
+      "git_blob": "5bb60ff1a1878acde5af82697ed13ea0b3433eb0",
+      "sha256": "809c6fa226fd03255122452336214cda0605f4c7efa654d98cb551d9ef3b75e9",
+      "size": 3867126
+    },
+    {
+      "path": "migration/evidence/artifacts/CANONICAL-LLM-20261006-55a5ba87.zip",
+      "git_blob": "73bf74d0b34b41b6b8f05a7e0e637b00e7a77d29",
+      "sha256": "b36474adac326cf27061a700dd634f49431e13c6be4b662df34ddb9468c3f4f5",
+      "size": 166045634
+    },
+    {
+      "path": "migration/evidence/artifacts/CLASS-METHOD-GATE-INTERRUPTED-20261007-2003821E.zip",
+      "git_blob": "093bf6c3b7bba76846ab8603093d09a0a2c42a24",
+      "sha256": "2481c6fed3c297afef00a2c59138f4666f0855bd295d8d7b115673ac6c168681",
+      "size": 77762674
+    },
+    {
+      "path": "migration/evidence/artifacts/CLASS-METHOD-GATE-QUALIFICATION-20261007-2003821E.zip",
+      "git_blob": "3743f75a34d348d784aa521147c9fa811469c72a",
+      "sha256": "330a70a29b1abb7f014af5e5dc2d43f344785305525b50be9f2ef4354c5ad69f",
+      "size": 70752
+    },
+    {
+      "path": "migration/evidence/artifacts/CONFINED-CONSOLE-WEB-QUALIFICATION-20261007-94A34B5D.zip",
+      "git_blob": "c79b771bbac6a66f8fddaa5b5d10784ca6edf9ce",
+      "sha256": "ed53a061c755a99fe527bb3ceee1efc5b97684b5538a8c28e4a50b145c1da78e",
+      "size": 130777754
+    },
+    {
+      "path": "migration/evidence/artifacts/CONSOLE-RETENTION-REJECTED-20261007-46645625.zip",
+      "git_blob": "97aa0b9043ab87b6df38f06a5ffba5c4adee0827",
+      "sha256": "a45aaecde3a2beba2a1ec1cf9bb7b68c94fb8940d6a6fb51dac0ac8e576a395c",
+      "size": 78392174
+    },
+    {
+      "path": "migration/evidence/artifacts/CORDIS-EXPORT-QUALIFICATION-20261007-FAF716E8.zip",
+      "git_blob": "2dd2c135def9657ea7df3dfbf48472679027f8b7",
+      "sha256": "5513866392078b262b9f2e6f0254d303f7b9e76e81cc322bb8de77b61315a866",
+      "size": 3161750
+    },
+    {
+      "path": "migration/evidence/artifacts/CURRENT-GATE-20261003-623a615a.zip",
+      "git_blob": "e2bb93136509206e5163e1d65f2153a0af362fb0",
+      "sha256": "88eaa2d9014502cbbb30b8bb54cb96f085f69e85164d9ca523a190b3311a2a6e",
+      "size": 4517305
+    },
+    {
+      "path": "migration/evidence/artifacts/CURRENT-GATE-REJECTED-20261007-6AABEA10.zip",
+      "git_blob": "a177ef5d821f9ab1a3291ca6956c69f1708003bd",
+      "sha256": "422ba5b5e1d19ccac5b74c52382581cbf2a6cc9633f435acbc705c8923d8958d",
+      "size": 78658445
+    },
+    {
+      "path": "migration/evidence/artifacts/DEEPSEEK-CAPTURE-REJECTED-20261006-eaa8bb05.zip",
+      "git_blob": "f1c085415d879aeaad13b6425ff2b1a54031a684",
+      "sha256": "5cc7368c99b64baecd48d06813d6eb4f269d29725103f21f86740d3b0d250820",
+      "size": 82876967
+    },
+    {
+      "path": "migration/evidence/artifacts/DEEPSEEK-ERROR-20261006-54361bd9.zip",
+      "git_blob": "a36864b2394bc32520acad317947b6bf7a26d2eb",
+      "sha256": "3ef96f03f46a3ab4b0de74cc60e01ca3f0c756a8857fab937d89e9efcddbf10e",
+      "size": 157603404
+    },
+    {
+      "path": "migration/evidence/artifacts/EXPIRED-PROCESS-QUALIFICATION-20261007-46645625.zip",
+      "git_blob": "0b9fb226903c7fe0225dcb1bf01e8c2c0340c7b3",
+      "sha256": "e08a61d8dabac4eb67128341ae3194d81f62a3690d49a63ddadf0baf0359a32d",
+      "size": 7836257
+    },
+    {
+      "path": "migration/evidence/artifacts/FRONTEND-PREFLIGHT-ORDER-20261007-6AABEA10.zip",
+      "git_blob": "c12647c194a7f336a7bb2805f23d7cb0cc105216",
+      "sha256": "f7fd7140b7093a2e116f8a35c3c3029b3f7ca20f89452bebb3c716c207b7500f",
+      "size": 54183
+    },
+    {
+      "path": "migration/evidence/artifacts/FS-TOOL-VALUES-QUALIFICATION-20261007-084A51B8.zip",
+      "git_blob": "2b16eb67d93ec8091b115a6f233ebc37e6df5088",
+      "sha256": "5724cb10ee5b37ebf69b8cecbcc7c598b02aa6042c1e348d208ce60ceee2a629",
+      "size": 7815953
+    },
+    {
+      "path": "migration/evidence/artifacts/IMPORT-PATHS-MANDATORY-20261007-77C74AEB.zip",
+      "git_blob": "13152210ef7dac10c01ad1cda41661772c7ce626",
+      "sha256": "201c3695b708e3d04609d83b7565954d13fe9917ab11dc25f4a22b9f62359921",
+      "size": 33905
+    },
+    {
+      "path": "migration/evidence/artifacts/IMPORT-PATHS-QUALIFICATION-20261007-77C74AEB.zip",
+      "git_blob": "ef3d6bb61a1ffcec6453a83ce73dff4245c291cd",
+      "sha256": "7bde30c2a82c6dc23c417d442fd763cb3ec6cba7284bdb1bb1b8645e95625253",
+      "size": 1280330
+    },
+    {
+      "path": "migration/evidence/artifacts/JS-DEATH-20261005-b1b2f797.zip",
+      "git_blob": "434dd9f5db7087db1be05cc2b66fea3977309629",
+      "sha256": "b362bfd251c30eff466f3f17b6cd8a3dea4bb6fdf46d0309a6125f3b00ac9f73",
+      "size": 88284652
+    },
+    {
+      "path": "migration/evidence/artifacts/JS-ERRORS-ROOT-QUALIFICATION-20261007-49B118DF.zip",
+      "git_blob": "030e7cb6f2daaa88ee9d9ba614dd84156d1b6a34",
+      "sha256": "b30b028ba2638b47d0f90bd07e1d61a6a1af7c066c91c488649c6c80d359f6bc",
+      "size": 78249354
+    },
+    {
+      "path": "migration/evidence/artifacts/JS-WORKFLOW-20261005-17c1c521.zip",
+      "git_blob": "b78c6295a7459e48db66481fcf3fd11b2362425b",
+      "sha256": "e1bc67d42ae0999ad163b618e0679d434934c356ee48e6ea67637090a5d21fbc",
+      "size": 88142962
+    },
+    {
+      "path": "migration/evidence/artifacts/JSONL-SHARING-20261006-b2398db9-v3.zip",
+      "git_blob": "48ca9de85d0ad6ac96b0ce3e47a5baa7cc2a6cb3",
+      "sha256": "c61359d2dbcf69707aa26a778edf1dfb7009042c1034b138c860609f274a6d88",
+      "size": 88132441
+    },
+    {
+      "path": "migration/evidence/artifacts/JSONL-SHARING-20261006-b2398db9.zip",
+      "git_blob": "86663aeab1199f28cc7ab375a2b1651a33ea5603",
+      "sha256": "c486ed5a73ce9762fa372097b16ebeb35a6a7a75edafa32f1d159103e4375d0f",
+      "size": 87922667
+    },
+    {
+      "path": "migration/evidence/artifacts/LLM-CONFIG-20261006-842d6373.zip",
+      "git_blob": "7a2bc1ef35c96df8a2f9e054c348756c8f7366c0",
+      "sha256": "b922a99acb95d970dacec302c426d9119ff438f4fdfd75862a4dcde1665ee36d",
+      "size": 249897765
+    },
+    {
+      "path": "migration/evidence/artifacts/LLM-CONFIG-QUALIFICATION-20261006-f8b96744.zip",
+      "git_blob": "116324e7f635ff953ad1c92f5eab1ae74585602d",
+      "sha256": "d2eb4247408d78f71bcb24c52d90d54d5e827fed39cd47c001e4700a7aee378f",
+      "size": 1030917
+    },
+    {
+      "path": "migration/evidence/artifacts/LLM-CONFIG-REJECTED-20261006-2d8fed63.zip",
+      "git_blob": "d58e0bdbb3070c48ce1a5dbe0d5d0a8637af4be7",
+      "sha256": "9b1b0264acfdd39da99c4b83cc73bc0abb68a831b80f7ab9bad63a6dfb446dc0",
+      "size": 90447561
+    },
+    {
+      "path": "migration/evidence/artifacts/LLM-METADATA-REJECTED-20261006-9b3f773b.zip",
+      "git_blob": "4599b2d61c3888212e6730e12b32b860034b6b50",
+      "sha256": "a5c5260d861aed9524100cc68a97a18a9cdcc452e8df152e0fd8fabca47eb5df",
+      "size": 232916839
+    },
+    {
+      "path": "migration/evidence/artifacts/LLM-PREPARED-ACP-FIXTURES-20261006-b93d1cd8.zip",
+      "git_blob": "90aa1a3a3398bc4fda1ab64463e397945f699915",
+      "sha256": "6d025817ca52d7599fa1b5402f3a6ea344f4cdef190f344f7fc44d6f13744ce5",
+      "size": 18733
+    },
+    {
+      "path": "migration/evidence/artifacts/LLM-PREPARED-REJECTED-20261006-011c3a95.zip",
+      "git_blob": "05b98db2a172c83b199ac56aec46f37e1422c0a9",
+      "sha256": "c7131176f2abdf48563ea56606322092f2b7d2a6552203c0b36952dba4d7fca3",
+      "size": 89043582
+    },
+    {
+      "path": "migration/evidence/artifacts/LLM-PREPARED-REJECTED-20261006-b93d1cd8.zip",
+      "git_blob": "3e2bae9f2ac516c72e86b733c05267d71d1b376c",
+      "sha256": "448e8893728ebf1fc57617e96c5c88a29ee623aa8b8eefd6a8948c4daf58638c",
+      "size": 87927651
+    },
+    {
+      "path": "migration/evidence/artifacts/LLM-PREPARED-REJECTED-20261006-c0b12c55.zip",
+      "git_blob": "f59791639ac2b475d6c460dc7bfa93a446bd3d26",
+      "sha256": "7a67801aee520f5a86c1039264a552435f0ccd877d9b2bbb1f44fafb883eb6a6",
+      "size": 88679990
+    },
+    {
+      "path": "migration/evidence/artifacts/LLM-PREPARED-REJECTED-20261006-fb3ba8d9.zip",
+      "git_blob": "71413de3701db4fc3714c9d1e375ca78de41ad3b",
+      "sha256": "a9a586d428c46a6a96fe9acba2a34c738a6b53a0d807150d8cd7b99f6a4c8c42",
+      "size": 88890219
+    },
+    {
+      "path": "migration/evidence/artifacts/MCP-20261004-8a17485d.zip",
+      "git_blob": "3e57a51d82194a38680f2060637841671ebacaec",
+      "sha256": "8d615bcc422d10dfe959181a38477be4de1116ea5022943feb4fc63b26cc3ac9",
+      "size": 18418267
+    },
+    {
+      "path": "migration/evidence/artifacts/MESSAGE-VALUES-FORMAL-QUALIFICATION-20261007-1F41ABF7.zip",
+      "git_blob": "faae2535615bdf6ef138aed79b2776513f88b251",
+      "sha256": "98cd0d56f9b4668ea8103ff043e494fd0434185c98b555c94c35326800c67046",
+      "size": 6564194
+    },
+    {
+      "path": "migration/evidence/artifacts/METADATA-RETENTION-20261006-2a67ae84.zip",
+      "git_blob": "5b29abeedfa97731a1b2396bccd76458970f3a58",
+      "sha256": "b207dc5d44ccc2ae8c793bda4c8f0c56c744d8044a32b2cefb4d11ea48c0ac42",
+      "size": 248671570
+    },
+    {
+      "path": "migration/evidence/artifacts/MOCK-STREAM-FIXTURE-20261007-27DEA08D.zip",
+      "git_blob": "ec73e4be21e893f5a2ad5bdc935855937b19b1c2",
+      "sha256": "d0098b231ce6d0c5ef76b8bd1f0faedc6e9f4bc2960f8b04968f93886c772262",
+      "size": 34168
+    },
+    {
+      "path": "migration/evidence/artifacts/OFFICIAL-FRONTEND-CONSUMERS-20261007-46C8D4E1.zip",
+      "git_blob": "65e7de93504da8e066454a80edb6794648f99856",
+      "sha256": "afdbaaa1d5d9fb936a4d9637eb2577eadc7b38c90fa819fc53bd76b9a511dd99",
+      "size": 86394
+    },
+    {
+      "path": "migration/evidence/artifacts/OFFICIAL-FRONTEND-INTERRUPTED-20261007-46C8D4E1.zip",
+      "git_blob": "2b322eac9caec8d6aab040d1ce4b2d07255f4299",
+      "sha256": "38f94b795dde27baa6bdfa70089166332827975c7fe1381120c6d9b08fbf9258",
+      "size": 77726019
+    },
+    {
+      "path": "migration/evidence/artifacts/OFFICIAL-FRONTEND-QUALIFICATION-20261007-8D129C7D.zip",
+      "git_blob": "f9823860eea0b4f6e52cf41ea34d4a052576b7c8",
+      "sha256": "b2ef057fe8308932708b76b1ef47576bda9b8ba27c9585a0886b6a1002d75abc",
+      "size": 40976982
+    },
+    {
+      "path": "migration/evidence/artifacts/PER-CASE-RETENTION-20261007-94A34B5D.zip",
+      "git_blob": "ca517809ccd4b963ee894cbdf93a4933ee5c6354",
+      "sha256": "fcbd328a25b4d8938d88905995182dbca3f7c8b4d9055d5c161b4267adcdb152",
+      "size": 62718
+    },
+    {
+      "path": "migration/evidence/artifacts/PERMISSION-QUALIFICATION-20261007-F6949FCD.zip",
+      "git_blob": "fbb54759638c63c50e4792c372f0f4941cae70d5",
+      "sha256": "e83cf8315752433284361405338696854ad66a24e566d13d1c3dc7c9ee0486f4",
+      "size": 81229992
+    },
+    {
+      "path": "migration/evidence/artifacts/PERMISSION-REJECTED-20261007-94A34B5D.zip",
+      "git_blob": "020387abd1eda01b6a5a6b76e929c3b30adfbac8",
+      "sha256": "f865e6cd46e64f0c9514a3a8a63feb09bc8e10e3e69187afefe2b179c184bf30",
+      "size": 78493857
+    },
+    {
+      "path": "migration/evidence/artifacts/PREFLIGHT-COPY-RETENTION-QUALIFICATION-20261007-C6EDA007.zip",
+      "git_blob": "ab80117fbac1ebe297bf7ac54fc909f2b378e452",
+      "sha256": "ac05e439bd1a2d9db1cbeca1da33c0139fd6318f85a664498c58b965300b32f8",
+      "size": 375268
+    },
+    {
+      "path": "migration/evidence/artifacts/PRESET-PROMPT-QUALIFICATION-20261007-91358077.zip",
+      "git_blob": "028f8ca644381118377ece62f1cc8212905a268d",
+      "sha256": "319e47ab42198112897ea619bce2e3d6e5cf9be1093c92c6ac8871740d4b7fb9",
+      "size": 2864724
+    },
+    {
+      "path": "migration/evidence/artifacts/PROFILE-METADATA-QUALIFICATION-20261007-88AC1FAE.zip",
+      "git_blob": "4a10e72fb825d26b600d8e17bc7f863a759ee3bf",
+      "sha256": "ac64a105502beb8fa808c541b5f694a565682b224f130fc11fb364f0f955b404",
+      "size": 2494451
+    },
+    {
+      "path": "migration/evidence/artifacts/RELEASE-FIXTURE-MEASUREMENT-20261007-022852F5.zip",
+      "git_blob": "c900b19196ef46511aacf3332d2f5251e1db27b1",
+      "sha256": "daf504c784479ea41538881474afe69a8c082915198f59340efdf40c1c3586c3",
+      "size": 4345248
+    },
+    {
+      "path": "migration/evidence/artifacts/ROUTE-PATH-BROWSER-RESEARCH-20261007-6AABEA10.zip",
+      "git_blob": "5cd9059d33b1845cea952ace598a21b40b82564b",
+      "sha256": "a6d37689e5b2f51c4e89cc543dadf14d4cce7c77b8b8bd142dae1d7baf0694c8",
+      "size": 71934877
+    },
+    {
+      "path": "migration/evidence/artifacts/RUNTIME-CONTEXT-20261006-47adea37.zip",
+      "git_blob": "1488338f628fd5c66ca09217bd4686e273ca7688",
+      "sha256": "b171e6c7e56cb395572bc4de0a51201b5bb8297fd1bf4eb598022e7fe3c075d9",
+      "size": 156127058
+    },
+    {
+      "path": "migration/evidence/artifacts/RUNTIME-CONTEXT-REJECTED-20261005-3be2afde.zip",
+      "git_blob": "9b4f1f3a6f2aa4bfdd60c0fc6af72d56af580a47",
+      "sha256": "8b913d3ca2881f26b87dc2640b9f646063c6f5a85134961660201af8d1f535aa",
+      "size": 81454337
+    },
+    {
+      "path": "migration/evidence/artifacts/RUNTIME-FULL-REQUEST-REJECTED-20261006-afd85f4e.zip",
+      "git_blob": "f36e4808f5eb4e995a1d6cff364cec8cda87d860",
+      "sha256": "7cf3f1b14b3235c4c85ab3cec0c5ac53abc8f87f2fc37df52874e00d8fa2558e",
+      "size": 82041032
+    },
+    {
+      "path": "migration/evidence/artifacts/RUNTIME-READY-REJECTED-20261005-7060e67b.zip",
+      "git_blob": "dbeb2c903c44f443a9f54b64af2505f99b398ed5",
+      "sha256": "aed98aa86cf44a89b5f49d39d84a665f3d3e5f064be7c45a7f53ac06f74f4275",
+      "size": 77741723
+    },
+    {
+      "path": "migration/evidence/artifacts/SDK-PROFILE-MINIMAL-QUALIFICATION-20261006-0076ec43.zip",
+      "git_blob": "8bc10e43502f606d0434d9d7234ba8b9bb9ed26f",
+      "sha256": "ee69cdfc8fc14b174f150bd2617dbc23d40996d797d6db71e9094b418166e83e",
+      "size": 103835719
+    },
+    {
+      "path": "migration/evidence/artifacts/SDK-PROFILE-QUALIFICATION-20261006-842d6373.zip",
+      "git_blob": "e31dfcc2029555fff632423b5a62748a0b1879f3",
+      "sha256": "4867191914455393b2943cc07ed5e1ddbd676254c6dfc02d6fd7da805b2f5aff",
+      "size": 27180715
+    },
+    {
+      "path": "migration/evidence/artifacts/SDK-PROFILE-ROOT-PORTABLE-QUALIFICATION-20261006-F6B384FB.zip",
+      "git_blob": "629a99bd87d4233ca945020b0cde78f9a7ebacbe",
+      "sha256": "da9251063eaa5927677823df585b490311c8db54db38d2be99189ee19a039b48",
+      "size": 78309686
+    },
+    {
+      "path": "migration/evidence/artifacts/SDK-RETENTION-20261007-83026446.zip",
+      "git_blob": "21f751d1e0b7fac76e7533cf776d0b5ff7f48e99",
+      "sha256": "2ea3f28a8c96cda75a13c1560b06493a4d77b823a26d514022d6c814839fa579",
+      "size": 263454668
+    },
+    {
+      "path": "migration/evidence/artifacts/SDK-RETENTION-REJECTED-20261007-14BE4E66.zip",
+      "git_blob": "120f8da9c18d36a7ba63d547a4d7e01fd6960730",
+      "sha256": "4294887015d88310345f2a79932226cf20f2892384a6bfb027df758d1c8655b0",
+      "size": 78289925
+    },
+    {
+      "path": "migration/evidence/artifacts/SDK-RETENTION-REJECTED-20261007-DC825E18.zip",
+      "git_blob": "d4a14d7809a022420b215dd1235ba3b297746c4a",
+      "sha256": "4f980a2ff3b765ce277be61b11cfbc506ba814e9efcbf85c22688ad14d8f7b29",
+      "size": 78142793
+    },
+    {
+      "path": "migration/evidence/artifacts/SDK-RETENTION-REJECTED-20261007-F5087DCD.zip",
+      "git_blob": "fa2817b693df0d24ed12110dca8b7274b53cfd69",
+      "sha256": "4fd88231662f229b741d0453624b972b0ac14a62b995ca6eac8826acdc62fbac",
+      "size": 78317687
+    },
+    {
+      "path": "migration/evidence/artifacts/SESSION-BOUNDARIES-20261006-7f9e87e4.zip",
+      "git_blob": "aa7037568d3acc8b237468b15559969a1e3c9a55",
+      "sha256": "b85b937eded8611bbd33f330f8e0c58f1c7192556b4cbaf14dd62507d0815188",
+      "size": 157056628
+    },
+    {
+      "path": "migration/evidence/artifacts/SESSION-BOUNDARIES-REJECTED-20261006-4a127b73.zip",
+      "git_blob": "e96a8553bbee572769b4a42c6cb322805f93beb3",
+      "sha256": "f83e3e4c608b56c61ddf1f04d29685d5360476d39fe7ec366c9b807be84f1ec4",
+      "size": 81563591
+    },
+    {
+      "path": "migration/evidence/artifacts/SESSION-FILTERS-20261004-1d9940aa.zip",
+      "git_blob": "de25ff4dd5c1fcaf175b921d9ed0d75780a8530d",
+      "sha256": "866846b71874a8ea46483ec4e45519f7c06ed8f6f344d2062c9c791aa7665e8f",
+      "size": 313978370
+    },
+    {
+      "path": "migration/evidence/artifacts/SESSION-QUERY-ENGINE-20261004-5c8c2c57.zip",
+      "git_blob": "bbb4f547b8b3b236a3b9f08978271553d69459c1",
+      "sha256": "462d9919cb1bafcc13925f4264a39e801998b09d7733089e553d1af1dcb9f98c",
+      "size": 630761252
+    },
+    {
+      "path": "migration/evidence/artifacts/SESSION-STORAGE-20261005-1f180e40.zip",
+      "git_blob": "262a21dd6bd76c8a76a8a01cda1659afeb3c4e57",
+      "sha256": "23b85307bc02f405d2261193d0c253b70d6ec5c261c8e844b7e2f8fef5c09e28",
+      "size": 684522308
+    },
+    {
+      "path": "migration/evidence/artifacts/SESSION-TEXT-20261005-fc275a66.zip",
+      "git_blob": "11b8d58926cc4d6b9ae995230a6a60845433fb05",
+      "sha256": "5c465852e74261da5ea0ae9a32290249ed2ba03b8c5bb6587b5c70ae2acac113",
+      "size": 258711825
+    },
+    {
+      "path": "migration/evidence/artifacts/SESSION-TOOLS-20261005-ae2c1abe.zip",
+      "git_blob": "a4548840bb8831c3f8e7d24a478837802829b9c9",
+      "sha256": "7e2adcd9132200b84bee1b7a8300da6120f8ebeab18b0d9ae4f71959caeb8dbb",
+      "size": 81971278
+    },
+    {
+      "path": "migration/evidence/artifacts/SESSION-TRACING-20261004-5c0b3c5e.zip",
+      "git_blob": "82ae21f7a42ad9a3d5c5149e7f00f9b45cf8086c",
+      "sha256": "47cc0e5e33aa999241c218d1292b67ead4293609d14990e5cfb65733fd5b2c46",
+      "size": 254954161
+    },
+    {
+      "path": "migration/evidence/artifacts/SQLITE-FORMAT-20261005-0edcc616.zip",
+      "git_blob": "1d8d5bf5b9788d85cfbfb2fedc3f30b2d89ce1b0",
+      "sha256": "fd8560c7b7347720e7579281aa06142b753d98d4fc0e1305fd518052354d9ebb",
+      "size": 84760952
+    },
+    {
+      "path": "migration/evidence/artifacts/SUBAGENT-MODEL-VALUES-QUALIFICATION-20261007-7EAAD135.zip",
+      "git_blob": "a7e5171de26f52bb30feb4461f5e94aee7d045d0",
+      "sha256": "8fd1582a3cc34405ba73ac9c3a232536d5c68bf915ee8642f4c416b45e4b00ee",
+      "size": 2347315
+    },
+    {
+      "path": "migration/evidence/artifacts/SUBAGENT-PREFLIGHT-DIAGNOSTICS-20261006-2d8fed63.zip",
+      "git_blob": "6ec204765938fbed12f58c5355462ed7c82afa0e",
+      "sha256": "1b7ee7dd9fcce44eba9cc93cfac365cece4a535601730c72c5e8d62134260ae9",
+      "size": 414852
+    },
+    {
+      "path": "migration/evidence/artifacts/TOOL-DURABLE-FORMAL-QUALIFICATION-20261007-E3CD5811.zip",
+      "git_blob": "125d7167618bfff4c3ff21bf89a5235c910e91b5",
+      "sha256": "402628de73580725e9881a1d220debe91ca41bc70f591d932ef80d7f0567c126",
+      "size": 5928698
+    },
+    {
+      "path": "migration/evidence/artifacts/TOOL-ERROR-DI-SDK-METADATA-QUALIFICATION-20261007-46645625.zip",
+      "git_blob": "eee89f419629b48208a477c0c1e95f30d5698ac3",
+      "sha256": "77804924cd32d099123b43400320a939b2be37f5552a57fabbe9e238b785ebe1",
+      "size": 79921196
+    },
+    {
+      "path": "migration/evidence/artifacts/TOOL-RESTORATION-QUALIFICATION-20261007-5dd401d5.zip",
+      "git_blob": "1a001213e322fd0d6344fae488aedb667973762b",
+      "sha256": "2165831f3f5d8e32c0b2f13b2057cfc0846113731ce44259d49a7690963ac42e",
+      "size": 5578484
+    },
+    {
+      "path": "migration/evidence/artifacts/TOOLS-HTTP-20261005-6ceef0f9.zip",
+      "git_blob": "1f214db9f88e5c8127ace642e34ea9be33c31908",
+      "sha256": "3136f4678a274b3584bb71d5e48778689057d917d0b47a02186782520eaff80b",
+      "size": 84563115
+    },
+    {
+      "path": "migration/evidence/artifacts/TOOLS-SDK-PREREQUISITES-20261007-0B197EFA.zip",
+      "git_blob": "9f9c824f5cef7c905497225914894a2b1ec6bb39",
+      "sha256": "eeccd53f499f7f483679d4c9db7a31731dab39e1edcfa4439cc7b34a1fc16e91",
+      "size": 69123
+    },
+    {
+      "path": "migration/evidence/artifacts/TOOLS-SDK-REGRESSION-20261007-91262F92.zip",
+      "git_blob": "2580abae6ab10d95d6b21247538fc2cee71cf280",
+      "sha256": "c24a7be7d74b88f17ccfdd998645709571143e0a1829988b2a93e641997d0720",
+      "size": 845876
+    },
+    {
+      "path": "migration/evidence/artifacts/TOOLS-SDK-REJECTED-20261007-0B197EFA.zip",
+      "git_blob": "f82fcc7598643c4b186bedd19361b9a4f0ce2149",
+      "sha256": "f9b69121a4e171baed7cf162cd5ab4000f93384ea7adfdd98a2de28c6ae527e5",
+      "size": 78313471
+    },
+    {
+      "path": "migration/evidence/artifacts/UNICODE-CARRIERS-QUALIFICATION-20261007-99D2FBEC.zip",
+      "git_blob": "2b3fb0c1e3bd8a263e30220463972456716adbcd",
+      "sha256": "22f5ae4e14ba05e77c16a04ec57bd7e07afdefd4d66f560db3a011296088e0b3",
+      "size": 4982170
+    },
+    {
+      "path": "migration/evidence/artifacts/WEB-UPGRADE-FIXTURE-20261007-CB780F2A.zip",
+      "git_blob": "af7a7d8498ada8ec3916fb0d750b6429db1827c7",
+      "sha256": "05523f663a4cda0e7865b1626e68df9a4a51e78220045a791cf8e7a7d3fb2055",
+      "size": 37375
+    },
+    {
+      "path": "migration/evidence/artifacts/WIN32-REPLACEMENT-DIAGNOSTICS-20261006-011c3a95.zip",
+      "git_blob": "840df1c32e99ccbcbbfb58c151b29e2acccfa633",
+      "sha256": "5d02bd4df889c2087b6bc0df8ddeb6f45d1f2d8fe9d006e1f76f0f5d94150f82",
+      "size": 23604
+    },
+    {
+      "path": "migration/evidence/artifacts/WIN32-STAT-PORTABLE-QUALIFICATION-20261006-633e6857.zip",
+      "git_blob": "4839ad270bf238320bcac13edfbd3c22c36d6986",
+      "sha256": "2b1c25a154658b39ba4a95c45c9b9a8b68185636eae9ac86b569f046098e778b",
+      "size": 77577656
+    },
+    {
+      "path": "migration/evidence/artifacts/WIN32-STAT-QUALIFICATION-20261006-842d6373.zip",
+      "git_blob": "45e85edcfa15afac6ee15e6863d28d7283d9917c",
+      "sha256": "5b49c24a05dd017d99365b25c307b5f03262528420f967811055e2ccef4437df",
+      "size": 1310275
+    },
+    {
+      "path": "migration/evidence/artifacts/WIN32-STAT-REJECTED-20261006-0076ec43.zip",
+      "git_blob": "b188ae7150d29b531c78494acce2e268dc93a05d",
+      "sha256": "7c67acd4ca80e3999de37abebde72e6fdfebb7effdf575f8e00b568415bc3e3c",
+      "size": 77823632
+    }
+  ],
+  "scope": "Storage-only conversion of unpublished history. Original receipt commit IDs and evidence bytes remain immutable; verified aliases support ancestor checks only."
+}

@@ -1,0 +1,23 @@
+{
+  "id": "RUN-LFS-STORAGE-20261007-74ADF4C6",
+  "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
+  "product_commit": "74adf4c6ae5777599f454a8d7393b3529ccab194",
+  "kind": "verification",
+  "task_id": "MIG-CURRENT-RELEASE-GATE-003",
+  "result": "passed",
+  "validity": "current",
+  "exit_code": 0,
+  "commands": [
+    ".venv/Scripts/python.exe -m pytest tests/test_migration_storage.py tests/test_migration_workflow.py -q",
+    "git lfs migrate import --include-ref=refs/heads/master --exclude-ref=refs/remotes/origin/master --include=migration/evidence/artifacts/*.zip --object-map=.goose/out/acp-a4-work/lfs-object-map-v1.csv --yes",
+    ".venv/Scripts/python.exe scripts/migration.py check"
+  ],
+  "environment": {"python": "3.8.10", "git_lfs": "3.5.1", "os": "Windows-10-10.0.26200-SP0"},
+  "contract_revisions": {},
+  "artifacts": [
+    {"path": "migration/storage/lfs-map.csv", "sha256": "9e56788dfea43214deb22915fa8703bb868943845a02f8a311bb47debc4aef54"},
+    {"path": "migration/storage/original-git-metadata.zip", "sha256": "9ced7101cfb23bdc1efbdcd41cb66134ad2116c66508a25869d262107179283c"},
+    {"path": "migration/storage/storage-qualification.zip", "sha256": "38755e1568cbfda91bfece90db8fc246bdf013c93ebed5b5d3abf532adfdff11"}
+  ],
+  "scope": "Working-tree storage qualification over mapped tip 74adf4c6: 44 focused controls including real LFS import and clone without old commit objects; actual 126-commit, 86-archive content-preserving mapping verified. Original receipt IDs and bytes remain immutable. Exact nonempty attributes/comments preserved; only blank lines and declared tracking entry differ. Original bare Git backup fsck passed. Raw sharing-lock and attribute-proof refusals retained. No complete regression or new release acceptance, Source exception, changed upstream pin or platform certification. Remote upload/push validation is a separate step."
+}

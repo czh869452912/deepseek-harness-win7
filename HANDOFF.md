@@ -6,14 +6,28 @@
 
 - 本地仓库：`C:\Users\czh86\Documents\Codex\deepseek-harness-win7`，分支 `master`。
 - 远程：`https://github.com/czh869452912/deepseek-harness-win7.git`，跟踪分支 `origin/master`。
-- 最近产品修复：`022852f5f508b792f289a86c82e7865d4f3dd24b`。
-- 最新证据/状态收尾：`1c0e9180`；写本交接文档前主目录干净，没有未提交产品修改。
+- 最近产品修复的原始身份：`022852f5f508b792f289a86c82e7865d4f3dd24b`。
+- 最近迁移证据/状态收尾的原始身份：`1c0e9180`；存储转换不把这些记录重标为新产品验收。
 - 固定原版：`reference` 子模块 `cd5ef8148158c3a752a658978873241fdf8e2bbc`；不得自动升级 pin。
 - 最近干净完整签收：`83026446`，65 个有界合同；不是全项目原版等价认证。
 
-**此次远程同步只交付本 handoff。** 同步前 `origin/master` 在 `c7796ca2`，落后本地 123 个提交；待推历史含普通 Git blob 共约 7.27 GB，多个 ZIP 超过 GitHub 的 100 MiB 限制，最大 684522308 字节。Git LFS 已安装，但既有 ZIP 是普通 Git 对象；仅新增 `.gitattributes` 无法改变旧历史。为保留证据绑定的原始提交身份，handoff 以远程原 tip 为父提交单独发布，然后合并回本地；不强推、不删除证据、不改写迁移历史。
+**全量同步采用 Git LFS。** 用户已明确选择仅转换未推送历史、保留原历史备份与哈希映射。转换原 tip `02ad32af6dee6f290085e9bc82ac4e8e522caf5e` → `74adf4c6ae5777599f454a8d7393b3529ccab194`，126 个未推送提交；已发布锚点 `9629973ebe3cda9b82af3f24cff391159dddcf06` 不变，后续正常快进推送。86 份 ZIP、6910079579 字节的实际内容全部保持原 SHA-256；Git 树内改存 LFS 指针。
 
-因此，新克隆远程仓库**尚不能**复现下面所列最新产品和归档；列出的迁移提交及证据路径当前在本地。接续工作优先使用现有工作区。后续同步完整迁移需另行选定大文件存储和历史迁移方案，保留旧提交及新旧身份映射，重新验证所有证据路径/散列/候选身份后再发布。普通 Git 大文件限制见 [GitHub 官方说明](https://docs.github.com/en/repositories/working-with-files/managing-large-files/about-large-files-on-github)。
+所有旧提交名称按**原始身份**理解，在 `migration/storage/lfs-map.csv` 查对应新 SHA。`migration/storage/original-git-metadata.zip` 保留原始 commit/tree/属性 blob，`lfs-transport.json` 绑定映射与元数据散列。祖先检查验证原 Git 对象身份、提交元数据、完整树差异和原 ZIP 字节后才解析别名；不跳过检查，不改写原始验收/拒绝回执。LFS 工具去掉属性文件的内部空行，所有非空属性/注释行原样验证；产品源码变动仍拒绝。
+
+本地完整原历史备份为 `.goose/out/lfs-original-history-20261007.git`，通过 `git fsck --full`，没有 alternates。使用不可变 Git 对象硬链接节省空间，逻辑自包含但与工作区同一磁盘；**不得把该目录作为过期测试结果清理**。原历史元数据和完整原 ZIP 内容也随全量同步保留。当前 Windows 的少数 LFS 指针因删除共享限制采用校验后复制缓存字节恢复，未删除原数据；占用者未归因，不新增原版例外。
+
+新环境须下载 LFS 实际内容；只获得指针时证据散列检查会拒绝。示例：
+
+```powershell
+git lfs install
+git clone --recurse-submodules https://github.com/czh869452912/deepseek-harness-win7.git
+cd deepseek-harness-win7
+git lfs pull
+git lfs fsck
+```
+
+普通 clone 会同时保留工作区文件和 LFS 缓存，需要为约 6.9 GB 证据及缓存预留空间。本机采用硬链接控制临时占用，归档必须保持不可变；新增回执使用新文件名。CI 已启用 LFS checkout。方案和额度边界见 `docs/research/2026-10-07-full-remote-sync-plan.md`，转换及验证记录见 `docs/research/2026-10-07-lfs-storage-progress.md`。全量同步不等于完整迁移或发行验收通过。
 
 ## 先读这些本地记录
 
@@ -76,7 +90,7 @@
 
 ## 接续命令
 
-在现有工作区执行；新克隆需先解决完整迁移同步，不能拿旧 remote 代码替代：
+在完整 clone 并获取 LFS 实际内容后执行；本地原始备份不作为祖先检查的隐藏依赖：
 
 ```powershell
 git status --short

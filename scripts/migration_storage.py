@@ -186,11 +186,8 @@ def _verify_rewrite(root):
                 after_lines = objects.read(current[1], 'blob').splitlines()
                 require(after_lines.count(TRACKING) == 1, 'storage tracking scope differs')
                 after_lines.remove(TRACKING)
-                while before_lines and not before_lines[-1]:
-                    before_lines.pop()
-                while after_lines and not after_lines[-1]:
-                    after_lines.pop()
-                require(before_lines == after_lines, 'storage conversion changed unrelated attributes')
+                require([line for line in before_lines if line] == [line for line in after_lines if line],
+                        'storage conversion changed unrelated attributes')
             elif previous[0] == current[0] == b'40000':
                 compare_tree(previous[1], current[1], path + '/')
             elif path.startswith(PREFIX) and path.endswith('.zip'):

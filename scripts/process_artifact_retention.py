@@ -301,7 +301,7 @@ def prune_previous_regressions(output_root):
 PREFLIGHT_DAMAGE_CASES = ('missing-frontend', 'extra-frontend', 'wrong-target', 'missing-runtime',
     'missing-icu', 'changed-icu-license', 'missing-case-fold', 'changed-case-fold',
     'missing-zstd', 'changed-zstd-license', 'changed-zstd-dictionary', 'missing-sql',
-    'changed-sql', 'changed-sql-manifest')
+    'changed-sql', 'changed-sql-manifest', 'missing-client', 'changed-client', 'extra-client', 'wrong-build-profile')
 
 
 def preflight_sources(product_root, frozen):
@@ -310,7 +310,7 @@ def preflight_sources(product_root, frozen):
     product_root = Path(os.path.abspath(str(product_root)))
     sources = {}
     for name, expected in frozen.items():
-        if not name.startswith(('apps/web/dist/', 'dsh/session/bin/icu/')):
+        if not name.startswith(('apps/web/dist/', 'dsh/session/bin/icu/')) and not re.fullmatch(r'packages/[^/]+/[^/]+/lib/client\.js(?:\.map)?', name):
             continue
         if '\\' in name or ':' in name or '..' in Path(name).parts:
             raise ValueError('Invalid frozen preflight input path')
@@ -339,7 +339,7 @@ def preflight_test_inputs(output_root, workspace, product_root, owner=None):
         frozen = read_json(owned_path(output_root, output / 'inputs.json'))
     else:
         frontend = read_json(owned_path(product_root, product_root / 'scripts/frontend-inputs.json'))
-        frozen = {item['path']: item['sha256'] for item in frontend['files']}
+        frozen = {item['path']: item['sha256'] for item in frontend['files'] + frontend.get('client_files', [])}
         icu_path = owned_path(product_root, product_root / 'dsh/session/bin/icu/icu.json')
         icu = read_json(icu_path)
         frozen['dsh/session/bin/icu/icu.json'] = digest_file(icu_path)
@@ -381,7 +381,7 @@ def prune_preflight_folders(output_root, folders, product_root, frozen, audit):
     owned_path(output_root, audit, missing=True)
     result = dict(status='planned', removed_files=0, removed_bytes=0, expected_files=len(candidates),
         manifest_sha256=hashlib.sha256(json.dumps(candidates, sort_keys=True, separators=(',', ':')).encode('utf-8')).hexdigest(),
-        examples=candidates[-32:], scope='Only unchanged frontend/ICU copies after an owned preflight test body finishes; frozen inputs and preserved originals must match. Modified variants, unknown files, active tests, actual observations, logs, XML and ZIPs remain.')
+        examples=candidates[-32:], scope='Only unchanged shell/client/ICU copies after an owned preflight test body finishes; frozen inputs and preserved originals must match. Modified variants, unknown files, active tests, actual observations, logs, XML and ZIPs remain.')
     with open(native_path(audit), 'x', encoding='utf-8') as stream:
         json.dump(result, stream, indent=2)
         stream.write('\n')
@@ -420,8 +420,11 @@ def prune_preflight_copies(output_root, output, product_root):
         report = ET.parse(stream).getroot()
     cases = [case for case in report.iter('testcase') if case.attrib.get('classname') == 'tests.test_release_preflight'
         and case.attrib.get('name', '').startswith('test_invalid_input_fails_before_release_replacement[')]
-    required = {'test_invalid_input_fails_before_release_replacement[' + damage + ']' for damage in PREFLIGHT_DAMAGE_CASES}
-    if len(cases) != len(required) or {case.attrib['name'] for case in cases} != required or any(case.find(tag) is not None for case in cases for tag in ('failure', 'error', 'skipped')):
+    generations = (PREFLIGHT_DAMAGE_CASES[:14], PREFLIGHT_DAMAGE_CASES)
+    actual = {case.attrib['name'] for case in cases}
+    if not any(len(cases) == len(generation) and actual == {
+            'test_invalid_input_fails_before_release_replacement[' + damage + ']' for damage in generation}
+            for generation in generations) or any(case.find(tag) is not None for case in cases for tag in ('failure', 'error', 'skipped')):
         return None
     frozen = read_json(owned_path(output_root, output / 'inputs.json'))
     folders = [workspace / child.name for child in os.scandir(native_path(workspace))

@@ -990,7 +990,7 @@ class Schema(metaclass=_SchemaMeta):
             # Every `refs` key is a uid, and ECMAScript enumerates integer-like
             # own keys in ascending order however they were inserted, so the
             # envelope lists the nodes by ascending uid.
-            return {"uid": self.uid, "refs": {uid: refs[uid] for uid in sorted(refs)}}
+            return {"uid": self.uid, "refs": {str(uid): refs[uid] for uid in sorted(refs)}}
         return self.uid
 
     def to_json(self) -> Dict[str, Any]:

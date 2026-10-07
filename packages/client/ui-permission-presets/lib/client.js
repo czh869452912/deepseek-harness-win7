@@ -30,8 +30,8 @@ window.__ModuleLoader__.load({
 			return value === "danger-full-access" ? "Full access" : displayPresetName(name);
 		}
 		//#endregion
-		//#region \0dsh-css:D:\Project\deepseek-harness-win7\reference\packages\client\ui-permission-presets\src\client\PermissionRow.module.css.mjs
-		const css = ".zGvlua_row{border-bottom:1px solid var(--dsw-alias-border-l2);align-items:center;gap:8px;padding:16px 0;display:flex}.zGvlua_rowText{flex-direction:column;flex:1;gap:4px;min-width:0;padding-right:48px;display:flex}.zGvlua_title{color:var(--dsw-alias-label-primary);font-size:14px;font-weight:400;line-height:22px}.zGvlua_desc{color:var(--dsw-alias-label-tertiary);font-size:12px;font-weight:400;line-height:18px}.zGvlua_selector{background:var(--dsw-alias-bg-module-platform);height:36px;font:inherit;color:var(--dsw-alias-label-primary);cursor:pointer;border:none;border-radius:18px;align-items:center;gap:12px;padding:0 14px;font-size:14px;line-height:22px;display:inline-flex}.zGvlua_selector:hover:not(:disabled){background:var(--dsw-alias-interactive-bg-hover)}.zGvlua_selector:disabled{cursor:default}.zGvlua_chevron{flex:none}";
+		//#region \0dsh-css:C:\Users\czh86\Documents\Codex\deepseek-harness-win7\reference\packages\client\ui-permission-presets\src\client\PermissionRow.module.css.mjs
+		const css = ".WctYRG_row{border-bottom:1px solid var(--dsw-alias-border-l2);align-items:center;gap:8px;padding:16px 0;display:flex}.WctYRG_rowText{flex-direction:column;flex:1;gap:4px;min-width:0;padding-right:48px;display:flex}.WctYRG_title{color:var(--dsw-alias-label-primary);font-size:14px;font-weight:400;line-height:22px}.WctYRG_desc{color:var(--dsw-alias-label-tertiary);font-size:12px;font-weight:400;line-height:18px}.WctYRG_selector{background:var(--dsw-alias-bg-module-platform);height:36px;font:inherit;color:var(--dsw-alias-label-primary);cursor:pointer;border:none;border-radius:18px;align-items:center;gap:12px;padding:0 14px;font-size:14px;line-height:22px;display:inline-flex}.WctYRG_selector:hover:not(:disabled){background:var(--dsw-alias-interactive-bg-hover)}.WctYRG_selector:disabled{cursor:default}.WctYRG_chevron{flex:none}";
 		const tagId = "@deepseek-ai/dsh-client-ui-permission-presets/PermissionRow.module.css";
 		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId) + "]") === null) {
 			const tag = document.createElement("style");
@@ -41,12 +41,12 @@ window.__ModuleLoader__.load({
 			document.head.appendChild(tag);
 		}
 		var PermissionRow_module_css_default = {
-			"chevron": "zGvlua_chevron",
-			"desc": "zGvlua_desc",
-			"row": "zGvlua_row",
-			"rowText": "zGvlua_rowText",
-			"selector": "zGvlua_selector",
-			"title": "zGvlua_title"
+			"chevron": "WctYRG_chevron",
+			"desc": "WctYRG_desc",
+			"row": "WctYRG_row",
+			"rowText": "WctYRG_rowText",
+			"selector": "WctYRG_selector",
+			"title": "WctYRG_title"
 		};
 		//#endregion
 		//#region lib/types/client/PermissionRow.js

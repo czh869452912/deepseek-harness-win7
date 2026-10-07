@@ -1,7 +1,20 @@
 {
   "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
   "kind": "versioned-prebuilt-input",
-  "scope": "Exact checked-in frontend bytes; this is input provenance, not a claim of a fresh upstream source build or browser protocol parity.",
+  "scope": "Exact unchanged pinned upstream official full build imported with its verified complete build record; browser and host protocol acceptance are separate.",
+  "build_record": {
+    "formatVersion": 1,
+    "environment": {
+      "DSH_CLIENT_BUILD_PROFILE": "official",
+      "DSH_CLIENT_COMMIT_HASH": "cd5ef81",
+      "DSH_CLIENT_TITLE": "DeepSeek Harness",
+      "DSH_CLIENT_VERSION": "0.1.2-alpha.1"
+    },
+    "artifacts": {
+      "fileCount": 218,
+      "sha256": "db1e666fe85de8d1781e4f778ea25ad4a7ba4cf8f6dcdb4d635954411d097ab2"
+    }
+  },
   "files": [
     {
       "path": "apps/web/dist/assets/fonts/KaTeX_AMS-Regular-BQhdFMY1.woff2",
@@ -453,7 +466,7 @@
     },
     {
       "path": "apps/web/dist/index.html",
-      "sha256": "069851c0c35055baa63fbd8bca9b833f1d05a4e96613c618ff1ff0c0595c7db0"
+      "sha256": "0dd16b20a6b1a3a749dea850e6de66296c67e76440e13aaad3136e7c786c8661"
     },
     {
       "path": "apps/web/dist/manifest.webmanifest",
@@ -461,7 +474,7 @@
     },
     {
       "path": "apps/web/dist/preview.html",
-      "sha256": "1ce67d4d0aa7c59b00f050cdd5ebcc0bbe3c5c47d4268507eebab462e5af2bc0"
+      "sha256": "abe399a270de8c1cc1d06f636ef4e6834cc362fe1ebeacc2e1bb174373759e7b"
     },
     {
       "path": "apps/web/dist/preview/bootstrap-53KaPJhF.js",
@@ -478,6 +491,404 @@
     {
       "path": "apps/web/dist/preview/worker-Be-7_nFK.js.map",
       "sha256": "5e7cc04a9f9e1c9ee5d3c83b420d22bdd1833e9ab7cc00aeafa761079351df34"
+    }
+  ],
+  "client_files": [
+    {
+      "path": "packages/api/gateway/lib/client.js",
+      "sha256": "fe28e214b4bcc7fa35236e44ed541944e16bbf1ec003fc860e4d4bb09ec218b3"
+    },
+    {
+      "path": "packages/api/gateway/lib/client.js.map",
+      "sha256": "71d365781ca6e588ae4c8822d7610d1adae9f3192f0b0a8c2c65e49a652b8099"
+    },
+    {
+      "path": "packages/api/remotes/lib/client.js",
+      "sha256": "7eb837812f3bd9978e9f20e0bef6cdb8c1d47f1e288912fab9b930827290cb3a"
+    },
+    {
+      "path": "packages/api/remotes/lib/client.js.map",
+      "sha256": "e76c3bc3025e84668274a9ba258840aa21ff36d91aa15e1f74c5bd61a36a6fd3"
+    },
+    {
+      "path": "packages/api/session-controller/lib/client.js",
+      "sha256": "52c8210e144d570c88f436da9434984d01ecbf141075ea766427fae85bc70ddb"
+    },
+    {
+      "path": "packages/api/session-controller/lib/client.js.map",
+      "sha256": "acb1bb9f07ca9ed3d440112ccf6e206a8ea62aafda027a4f77c097ea9602950f"
+    },
+    {
+      "path": "packages/api/workspace-controller/lib/client.js",
+      "sha256": "6142956344e24492f88649d52c66618d99580738d6c4b7c6f4d1a5394c3e5e5a"
+    },
+    {
+      "path": "packages/api/workspace-controller/lib/client.js.map",
+      "sha256": "e50d3a670e78933cfc90ae146cc03b93ca6e249dff366d7a66355b83274ccd65"
+    },
+    {
+      "path": "packages/client/connection/lib/client.js",
+      "sha256": "d90ac3ecd5a1fa6eda2ad19639b739daca4b3b5c988c544fc4bffcff6b3c030e"
+    },
+    {
+      "path": "packages/client/connection/lib/client.js.map",
+      "sha256": "6ff03dccf4420412eb6675f8cb1661f6298dbadb6204274d8db279dc2a9492f3"
+    },
+    {
+      "path": "packages/client/hmr/lib/client.js",
+      "sha256": "39cf44a8202214eca333d8f8fdf98b3fd35933ee27d75c42b5e98e1db96a84e0"
+    },
+    {
+      "path": "packages/client/hmr/lib/client.js.map",
+      "sha256": "4936cd425021d8a22baf52163440f54290b5df402eda8e06ee0dab7ff78bf418"
+    },
+    {
+      "path": "packages/client/locale/lib/client.js",
+      "sha256": "07e79235c95f58972615729c851ea72bcc2b06ed78c5d9ef25bc880e489c0bcd"
+    },
+    {
+      "path": "packages/client/locale/lib/client.js.map",
+      "sha256": "47cd9c9f9078fe58f3ea10bf1f388befa0c0b413a997e66a1341d83a657d3101"
+    },
+    {
+      "path": "packages/client/modules/lib/client.js",
+      "sha256": "9361241bfbe8a02864df5df9fabf9fbbfa0f5a1914025badab36bdf1b9481751"
+    },
+    {
+      "path": "packages/client/modules/lib/client.js.map",
+      "sha256": "104b0e5ca9c536e36ec324b0c539217a67807ebf812cb0af8c0058e6288b269d"
+    },
+    {
+      "path": "packages/client/ui-agent-preset/lib/client.js",
+      "sha256": "bcf99d837f7e306bde4dfd3237091ec5ab985666062edc3112555106e9b9739c"
+    },
+    {
+      "path": "packages/client/ui-agent-preset/lib/client.js.map",
+      "sha256": "07bc3ca72a5fe2966f243f8913ed7ac325a8fec40b8035501e5b4dd7f1e0e639"
+    },
+    {
+      "path": "packages/client/ui-approval/lib/client.js",
+      "sha256": "f73e11bb8b42fff5b2ac9bfb59f07485cdf7dcaa539042ce9f77937ff853168b"
+    },
+    {
+      "path": "packages/client/ui-approval/lib/client.js.map",
+      "sha256": "7da26248d43549531992524d955061508bb731cf7273675a383f4e661c7c15ee"
+    },
+    {
+      "path": "packages/client/ui-attachment/lib/client.js",
+      "sha256": "1a1bc2ccb98fc441fe6a65fd652f3361738882052be953e5ab00c9f3406c3815"
+    },
+    {
+      "path": "packages/client/ui-attachment/lib/client.js.map",
+      "sha256": "c9dc0f25085da6d8147f370307a8d4764aec8ad1f1be0229f7c4a72c55662366"
+    },
+    {
+      "path": "packages/client/ui-brand-official/lib/client.js",
+      "sha256": "04006081f2623dc481773e73a40496523e7388a1e68b8493c45eb18a498a9743"
+    },
+    {
+      "path": "packages/client/ui-brand-official/lib/client.js.map",
+      "sha256": "a6ef2da8c40ea52799e6bdbd9ec6b93dd3a7d378b6dd7d06d989806145a9c4ff"
+    },
+    {
+      "path": "packages/client/ui-chat/lib/client.js",
+      "sha256": "75f48b7711bc8a52c965bc3ba15523807f6097a08d8007951c032c6186a67e83"
+    },
+    {
+      "path": "packages/client/ui-chat/lib/client.js.map",
+      "sha256": "fb06d76ed38758660eeb2ad828c5865e73125f84f21f51b8530db08b05ab0fae"
+    },
+    {
+      "path": "packages/client/ui-commands/lib/client.js",
+      "sha256": "16422d3ce7c1653c3a4f3e2071bb9fccc2c56c2f12584d23bcaa333b9898e206"
+    },
+    {
+      "path": "packages/client/ui-commands/lib/client.js.map",
+      "sha256": "d57eec71bf4ab84cf8b51ff26c8e66d0ba13020ed5153b34515799cd902e1b7a"
+    },
+    {
+      "path": "packages/client/ui-conversation/lib/client.js",
+      "sha256": "b4d402419f46c9dbadad64ffeff9ba27bd0a4f6023ccf52be2ea75e222f7929a"
+    },
+    {
+      "path": "packages/client/ui-conversation/lib/client.js.map",
+      "sha256": "96ba82d09412396cb6f51681193c026c10d22cc53b3f6cc4174c0856a6f814e7"
+    },
+    {
+      "path": "packages/client/ui-deliverables/lib/client.js",
+      "sha256": "9984f9b0f4d8d5ceb9768f194dff0981fed69b0753fc9c498aeea884bc059fa9"
+    },
+    {
+      "path": "packages/client/ui-deliverables/lib/client.js.map",
+      "sha256": "04b546f0cd4453dd3a74577db9ddf00bcff212440092ddeaaeac3950dd05f082"
+    },
+    {
+      "path": "packages/client/ui-directory-picker-browse/lib/client.js",
+      "sha256": "9c9b10e0d34fe19da7e6ed65b27ee9ef88bb44a6ab585fc8b6d207c5dfb70b02"
+    },
+    {
+      "path": "packages/client/ui-directory-picker-browse/lib/client.js.map",
+      "sha256": "55d8f6bfd78dc79bdc253b24d2ee36ac834c4eaf20bfc8ab65ca84e5cf6c3d6b"
+    },
+    {
+      "path": "packages/client/ui-directory-picker-native/lib/client.js",
+      "sha256": "2e6b8b235966362d6bf4da0af4f0539c251ad0d713bde42463e0f0accc4bd4b7"
+    },
+    {
+      "path": "packages/client/ui-directory-picker-native/lib/client.js.map",
+      "sha256": "dcac019435dfdc9a4e3bff9dc096d14a2ad5b2b0907aa6e0c885fb33eaa80426"
+    },
+    {
+      "path": "packages/client/ui-goal/lib/client.js",
+      "sha256": "d1094248e94e2cb57680c73107acd91347a21b5dbfe44070dc8a4fd3e9e1b087"
+    },
+    {
+      "path": "packages/client/ui-goal/lib/client.js.map",
+      "sha256": "71cc48fae1951c26992a514032f50afabf1bf6fc559038b3b69469b3fa67fb9e"
+    },
+    {
+      "path": "packages/client/ui-input-trigger/lib/client.js",
+      "sha256": "78eae06ca4ac806a9161a733ae84a805d53ab4fac6f274db8c8ca38060a66c21"
+    },
+    {
+      "path": "packages/client/ui-input-trigger/lib/client.js.map",
+      "sha256": "d0f38f670eac3abaad049868368d7fcbb72c3e452be370d205e11a8e88844b96"
+    },
+    {
+      "path": "packages/client/ui-jobs/lib/client.js",
+      "sha256": "2aa7bb15bda9a870dee3dba7abe7707ca8cc2d7568d4d20fd6a0069d24aa2268"
+    },
+    {
+      "path": "packages/client/ui-jobs/lib/client.js.map",
+      "sha256": "968f7eaeee89abed07840d60d00f307e38cc2cf6af592031ddf9c10a565e4ed6"
+    },
+    {
+      "path": "packages/client/ui-layout/lib/client.js",
+      "sha256": "0895a7f828208d9c4e6adf11fd4215a1ac48b278832da348fa49118e98302212"
+    },
+    {
+      "path": "packages/client/ui-layout/lib/client.js.map",
+      "sha256": "80a3c5d536800caa6faf832936e30a8af0be08b0e8575b63de0cf95ea58c7faf"
+    },
+    {
+      "path": "packages/client/ui-message-feedback/lib/client.js",
+      "sha256": "b128dc4e2ba99aad8284759e57fe1b6f3d29e49b90d3db5a237532c2c3271a5e"
+    },
+    {
+      "path": "packages/client/ui-message-feedback/lib/client.js.map",
+      "sha256": "8004ea5548df9019acc6c8381e7d26b59ca01a68eb1b16dfdc828ff735358c72"
+    },
+    {
+      "path": "packages/client/ui-model-selection/lib/client.js",
+      "sha256": "7a5860223eec1bf0a19feac1b6306c76ff4a9d9454310d5f1f095022bfbc1816"
+    },
+    {
+      "path": "packages/client/ui-model-selection/lib/client.js.map",
+      "sha256": "3d80c931b2f57e90dc633e8b99503ba3d4794a85dec65b189bd5862b7d22365a"
+    },
+    {
+      "path": "packages/client/ui-permission-presets/lib/client.js",
+      "sha256": "155f4448402155aaf2f1f71336ed1f4546c451a8620d9c495c11087e1cf6a38f"
+    },
+    {
+      "path": "packages/client/ui-permission-presets/lib/client.js.map",
+      "sha256": "d5ee03372829302adb337face8254417c7bb2891c74f0a4bdf70847305b9b25b"
+    },
+    {
+      "path": "packages/client/ui-plan/lib/client.js",
+      "sha256": "5f0a61b3614df02a1c9afd82b6c06c35f357a1fcde401889fad56619929d985e"
+    },
+    {
+      "path": "packages/client/ui-plan/lib/client.js.map",
+      "sha256": "4e68b55dc9d86fd105d7af3f8ef85b0dd1ce36c3d1b2f1d62023155a464b7730"
+    },
+    {
+      "path": "packages/client/ui-reference/lib/client.js",
+      "sha256": "3598742a3882f8ffa76e6b48c0c245c0becef86b60d278de101ef596ac760ade"
+    },
+    {
+      "path": "packages/client/ui-reference/lib/client.js.map",
+      "sha256": "9851f08bedaf47a175cb840430f7f765a3d957abb52e5282178d5a4194f25fa5"
+    },
+    {
+      "path": "packages/client/ui-renderer/lib/client.js",
+      "sha256": "57cc5d86f23565ffe7909746fdcf5e84098ade4aaf3e8744e33654f1aac91144"
+    },
+    {
+      "path": "packages/client/ui-renderer/lib/client.js.map",
+      "sha256": "f25365cb767e1842b57135507e95ff7e0cb71bb7ed3ea732e4df03a38b470acc"
+    },
+    {
+      "path": "packages/client/ui-session/lib/client.js",
+      "sha256": "a794b82a58f6e7740041456fc3690596db98db6619749b97c49cd2443a89d5ae"
+    },
+    {
+      "path": "packages/client/ui-session/lib/client.js.map",
+      "sha256": "203376accd5356e574828d363a74e2f1d2827072e27a7eebeafcd6bfc1919004"
+    },
+    {
+      "path": "packages/client/ui-settings-general/lib/client.js",
+      "sha256": "49fd3ecccf9195908b50be75490d399cf74a5ac218aaeb75f67e47f975d73d42"
+    },
+    {
+      "path": "packages/client/ui-settings-general/lib/client.js.map",
+      "sha256": "b464f0511353f7554c386d1dbd0c5b5ebe23696ed22a8f5415459a389536ec49"
+    },
+    {
+      "path": "packages/client/ui-settings-models/lib/client.js",
+      "sha256": "8065d9915221a52829f00624fc262438350b2666f820aded4753a39847f129bc"
+    },
+    {
+      "path": "packages/client/ui-settings-models/lib/client.js.map",
+      "sha256": "b60b56316a922f5f30c9d00f2af62e16b8bd36e78890e9d3502fe45b86fcea0b"
+    },
+    {
+      "path": "packages/client/ui-settings-plugin-inventory/lib/client.js",
+      "sha256": "37d408dd23bdfbb676a5dddfe3f60c5b86b66e621539d45e02dfc5b771aa0558"
+    },
+    {
+      "path": "packages/client/ui-settings-plugin-inventory/lib/client.js.map",
+      "sha256": "c73e3dbf5faf61b9503caea918669215827eed78ec436882edf15e28cd35e212"
+    },
+    {
+      "path": "packages/client/ui-settings-plugins/lib/client.js",
+      "sha256": "0f2fa00ed05626d369b9d7e2f6fd5fd2766485c8f71317a6fc8fbcdaf1fd7ea4"
+    },
+    {
+      "path": "packages/client/ui-settings-plugins/lib/client.js.map",
+      "sha256": "5d74ccac1744411179f7b607ccb3a78fd4597160954bf550f3179ff763c22be1"
+    },
+    {
+      "path": "packages/client/ui-settings/lib/client.js",
+      "sha256": "0cb26d506adcf6a5ec51e62fea537c1d5afe19d7be41b4cccaaa40fc33d9e486"
+    },
+    {
+      "path": "packages/client/ui-settings/lib/client.js.map",
+      "sha256": "6dee765af2bf594a1f7b7e92a38241f1ac0445f7f992d7fd183103ac62d89c30"
+    },
+    {
+      "path": "packages/client/ui-sidebar/lib/client.js",
+      "sha256": "a963cfddf2722141c37bb0e5079ff02c5a612e260877b085648d3f5ecf64ebf5"
+    },
+    {
+      "path": "packages/client/ui-sidebar/lib/client.js.map",
+      "sha256": "15e87ec92b3bfdbc8050ad0297a1e640ae5a2a7a45c28790dadfaddcd55eba99"
+    },
+    {
+      "path": "packages/client/ui-skill/lib/client.js",
+      "sha256": "d05d3702e41caa1ae9725c119d96cab348f78f04106cbc0b13402003ad5ac81d"
+    },
+    {
+      "path": "packages/client/ui-skill/lib/client.js.map",
+      "sha256": "13b1a0f46773ba54ddef1bb5ad6e38777fbfe82f6db8695affc02037ae116d36"
+    },
+    {
+      "path": "packages/client/ui-subagent/lib/client.js",
+      "sha256": "44ef860c3be7d097214188a9765560e36807ab6c50326f0d0df77e4c01c00424"
+    },
+    {
+      "path": "packages/client/ui-subagent/lib/client.js.map",
+      "sha256": "57cd9b63b5f491e1bc1ba8b5de1c8880f7bb903b7357457346c038345f7f687e"
+    },
+    {
+      "path": "packages/client/ui-theme/lib/client.js",
+      "sha256": "c5842f1f6dd13a9c96defc4ea78a1b6ba2396635c84a60f9a6098ed9d46fb528"
+    },
+    {
+      "path": "packages/client/ui-theme/lib/client.js.map",
+      "sha256": "ccd29212f878f69683adc04a36875abe58a0fbb35a07708fcb891de4af19b722"
+    },
+    {
+      "path": "packages/client/ui-tool/lib/client.js",
+      "sha256": "41df1858ad2860dbc53528f75064113313eb2a18ce76766041d1593c4687eb06"
+    },
+    {
+      "path": "packages/client/ui-tool/lib/client.js.map",
+      "sha256": "ff1ba030944332633d5ca863f7c05f179157b64dcc695c9bc5134f17b32c578c"
+    },
+    {
+      "path": "packages/client/ui-trajectory/lib/client.js",
+      "sha256": "b113debbe9e0590503b5fa3c9c85d9242247ba10960f898a4a40d957b66bcfa1"
+    },
+    {
+      "path": "packages/client/ui-trajectory/lib/client.js.map",
+      "sha256": "09edfddf6849ff3e15079c599f276dd7db20523f817c90118419c93cfe256bfd"
+    },
+    {
+      "path": "packages/client/ui-user-questions/lib/client.js",
+      "sha256": "440d7e89ad01ae2452975cc449355ba8a4ab5342388b8ce88e78a833ca6ac7b7"
+    },
+    {
+      "path": "packages/client/ui-user-questions/lib/client.js.map",
+      "sha256": "45136ac656803bf9de36a78a5064073af97335caf1de799a9fdf4ea6ca293f4c"
+    },
+    {
+      "path": "packages/client/ui-workflow-run/lib/client.js",
+      "sha256": "beceb294ad1f7ed2e4bcc3892a9bbd5cd476a227a557c1d33cd836cf24004cec"
+    },
+    {
+      "path": "packages/client/ui-workflow-run/lib/client.js.map",
+      "sha256": "724b74f75797401af8a8e95f081f92d0a9fd60ebbfce1eaee071d1bf51e585ee"
+    },
+    {
+      "path": "packages/client/ui-workspace/lib/client.js",
+      "sha256": "2f5ea0d73ce141845a99ecfc16b83701e012883d0a119c5e629946e967280d91"
+    },
+    {
+      "path": "packages/client/ui-workspace/lib/client.js.map",
+      "sha256": "14b19e531093b29548cc46dc6db5e037d1bfdd479b8599ad5b169e1aba5acc7e"
+    },
+    {
+      "path": "packages/experimental/client-ui-agent-team/lib/client.js",
+      "sha256": "497ce9f79872b9b5a82798581075502904d8d177ee81765182f21672ebb3f1a1"
+    },
+    {
+      "path": "packages/experimental/client-ui-agent-team/lib/client.js.map",
+      "sha256": "ca4d01aed6b373375fbe707ce1d088c090c239410163f8753061be14d05b2624"
+    },
+    {
+      "path": "packages/experimental/inspector/lib/client.js",
+      "sha256": "643df0acefab79b6b5270ae1b76938abe81fc2e2a837c451d223184cd2e0db00"
+    },
+    {
+      "path": "packages/experimental/inspector/lib/client.js.map",
+      "sha256": "07d58b93e495a5c96c59589037a7d751de9ed319b9e9b66186290555f05dae6a"
+    },
+    {
+      "path": "packages/experimental/webworker-runtime/lib/client.js",
+      "sha256": "4b70832d019a0b4996c3569d406fdc8f27de8d6e8fbef74e2d5480b30ed9d049"
+    },
+    {
+      "path": "packages/extensions/cordis-client-runner/lib/client.js",
+      "sha256": "1e975d3105fde8fdfbae8c7d1900c7d650fb501c6c7c7c05625b7fa59186ad98"
+    },
+    {
+      "path": "packages/extensions/cordis-client-runner/lib/client.js.map",
+      "sha256": "b37aa86baaf93ec5ae1926c56765b1d9661dda25fa682a9bcbebbacf1952670f"
+    },
+    {
+      "path": "packages/extensions/ui-cordis/lib/client.js",
+      "sha256": "d75416c92afe24eb8331bd753c8635296a4f06540a20e84958c444a9adf3d3c9"
+    },
+    {
+      "path": "packages/extensions/ui-cordis/lib/client.js.map",
+      "sha256": "c5c97f96197bbdc9b8bf2862591194db2d934a95f60fcbdc7fb127fde2fe4a5d"
+    },
+    {
+      "path": "packages/session-query/session-log-export/lib/client.js",
+      "sha256": "24a189b8f01f7b7a95a88c07e5647d2ddec59b725a2b33d59a9203b9a21f1163"
+    },
+    {
+      "path": "packages/session-query/session-log-export/lib/client.js.map",
+      "sha256": "27f4266fa0515242cb41019ff22288e76991ca2582670bb36bb24f76eca644c4"
+    },
+    {
+      "path": "packages/typert/registry/lib/client.js",
+      "sha256": "116a1d5ac12355d0713444368158c889cb0e926c7f89d4d35487d648fe30fd0a"
+    },
+    {
+      "path": "packages/typert/registry/lib/client.js.map",
+      "sha256": "d3357817252aaa293c2da4170774cd9a4798b877f58f4b239a8447d805f84208"
     }
   ]
 }

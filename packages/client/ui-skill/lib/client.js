@@ -7,8 +7,8 @@ window.__ModuleLoader__.load({
 		let react_jsx_runtime = require("react/jsx-runtime");
 		let react = require("react");
 		let _deepseek_ai_dsh_client_ui_primitives = require("@deepseek-ai/dsh-client-ui-primitives");
-		//#region \0dsh-css:D:\Project\deepseek-harness-win7\reference\packages\client\ui-skill\src\client\SkillRow.module.css.mjs
-		const css = ".GyJ8hG_card{flex-direction:column;display:flex}.GyJ8hG_row{align-items:center;min-width:0;height:24px;display:flex;position:relative;overflow:hidden}.GyJ8hG_row[data-expandable]{cursor:pointer}.GyJ8hG_card[data-state=running] .GyJ8hG_row:after{content:\"\";background:linear-gradient(90deg, transparent 0%, color-mix(in srgb, var(--dsw-alias-bg-base) 60%, transparent) 55%, transparent 100%);pointer-events:none;width:300px;animation:2.6s ease-out infinite GyJ8hG_dsh-skill-row-sweep;position:absolute;inset:0 auto 0 0}@keyframes GyJ8hG_dsh-skill-row-sweep{0%{left:-300px}90%,to{left:100%}}.GyJ8hG_leading{width:16px;height:16px;color:var(--dsw-alias-label-tertiary);flex:none;justify-content:center;align-items:center;margin-right:6px;display:inline-flex;position:relative}.GyJ8hG_chevron{color:var(--dsw-alias-label-secondary)}.GyJ8hG_iconIdle{opacity:1;transition:opacity .1s;display:inline-flex}.GyJ8hG_chevronHover{opacity:0;margin:auto;transition:opacity .1s;position:absolute;inset:0}.GyJ8hG_row:hover .GyJ8hG_iconIdle{opacity:0}.GyJ8hG_row:hover .GyJ8hG_chevronHover{opacity:1}.GyJ8hG_title{color:var(--dsw-alias-label-secondary);flex:none;font-size:14px;line-height:24px}.GyJ8hG_separator{background:var(--dsw-alias-label-caption);border-radius:1px;flex:none;width:2px;height:2px;margin:0 8px}.GyJ8hG_summary{text-overflow:ellipsis;white-space:nowrap;min-width:0;color:var(--dsw-alias-label-tertiary);flex:auto;font-size:14px;line-height:24px;overflow:hidden}.GyJ8hG_errorSummary{color:var(--dsw-alias-state-error-primary)}.GyJ8hG_bodyWrap{flex-direction:column;display:flex}.GyJ8hG_instructionsCard{border:1px solid var(--dsw-alias-border-l1);background:var(--dsw-alias-markdown-code-block);border-radius:12px;flex-direction:column;max-height:260px;margin:4px 0 4px 4px;display:flex;overflow:hidden}.GyJ8hG_instructionsHeader{border-bottom:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-markdown-code-block-banner);color:var(--dsw-alias-label-caption);text-transform:uppercase;letter-spacing:.04em;flex:none;padding:8px 12px;font-size:11px;font-weight:500;line-height:16px}.GyJ8hG_instructions{white-space:pre-wrap;overflow-wrap:anywhere;min-height:0;font:var(--dsw-font-markdown-code-block-small);color:var(--dsw-alias-label-secondary);margin:0;padding:10px 12px 12px;overflow:auto}.GyJ8hG_instructions[data-error]{color:var(--dsw-alias-state-error-primary)}.GyJ8hG_instructions::-webkit-scrollbar-thumb{background-clip:padding-box;border:2px solid #0000;border-radius:6px}.GyJ8hG_instructions::-webkit-scrollbar-track{margin:6px 0}.GyJ8hG_inspectButton{border:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-bg-base);color:var(--dsw-alias-label-secondary);cursor:pointer;opacity:0;border-radius:999px;align-self:flex-start;align-items:center;gap:4px;margin:4px 0 2px 4px;padding:2px 8px;font-size:11px;line-height:16px;transition:opacity .1s;display:inline-flex}.GyJ8hG_card:hover .GyJ8hG_inspectButton,.GyJ8hG_inspectButton:focus-visible{opacity:1}.GyJ8hG_inspectButton:hover{background:var(--dsw-alias-interactive-bg-hover-solid);color:var(--dsw-alias-label-primary)}.GyJ8hG_visuallyHidden{clip:rect(0 0 0 0);white-space:nowrap;width:1px;height:1px;position:absolute;overflow:hidden}@media (prefers-reduced-motion:reduce){.GyJ8hG_card[data-state=running] .GyJ8hG_row:after{animation:none;display:none}.GyJ8hG_iconIdle,.GyJ8hG_chevronHover,.GyJ8hG_inspectButton{transition:none}}";
+		//#region \0dsh-css:C:\Users\czh86\Documents\Codex\deepseek-harness-win7\reference\packages\client\ui-skill\src\client\SkillRow.module.css.mjs
+		const css = ".B5CX-q_card{flex-direction:column;display:flex}.B5CX-q_row{align-items:center;min-width:0;height:24px;display:flex;position:relative;overflow:hidden}.B5CX-q_row[data-expandable]{cursor:pointer}.B5CX-q_card[data-state=running] .B5CX-q_row:after{content:\"\";background:linear-gradient(90deg, transparent 0%, color-mix(in srgb, var(--dsw-alias-bg-base) 60%, transparent) 55%, transparent 100%);pointer-events:none;width:300px;animation:2.6s ease-out infinite B5CX-q_dsh-skill-row-sweep;position:absolute;inset:0 auto 0 0}@keyframes B5CX-q_dsh-skill-row-sweep{0%{left:-300px}90%,to{left:100%}}.B5CX-q_leading{width:16px;height:16px;color:var(--dsw-alias-label-tertiary);flex:none;justify-content:center;align-items:center;margin-right:6px;display:inline-flex;position:relative}.B5CX-q_chevron{color:var(--dsw-alias-label-secondary)}.B5CX-q_iconIdle{opacity:1;transition:opacity .1s;display:inline-flex}.B5CX-q_chevronHover{opacity:0;margin:auto;transition:opacity .1s;position:absolute;inset:0}.B5CX-q_row:hover .B5CX-q_iconIdle{opacity:0}.B5CX-q_row:hover .B5CX-q_chevronHover{opacity:1}.B5CX-q_title{color:var(--dsw-alias-label-secondary);flex:none;font-size:14px;line-height:24px}.B5CX-q_separator{background:var(--dsw-alias-label-caption);border-radius:1px;flex:none;width:2px;height:2px;margin:0 8px}.B5CX-q_summary{text-overflow:ellipsis;white-space:nowrap;min-width:0;color:var(--dsw-alias-label-tertiary);flex:auto;font-size:14px;line-height:24px;overflow:hidden}.B5CX-q_errorSummary{color:var(--dsw-alias-state-error-primary)}.B5CX-q_bodyWrap{flex-direction:column;display:flex}.B5CX-q_instructionsCard{border:1px solid var(--dsw-alias-border-l1);background:var(--dsw-alias-markdown-code-block);border-radius:12px;flex-direction:column;max-height:260px;margin:4px 0 4px 4px;display:flex;overflow:hidden}.B5CX-q_instructionsHeader{border-bottom:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-markdown-code-block-banner);color:var(--dsw-alias-label-caption);text-transform:uppercase;letter-spacing:.04em;flex:none;padding:8px 12px;font-size:11px;font-weight:500;line-height:16px}.B5CX-q_instructions{white-space:pre-wrap;overflow-wrap:anywhere;min-height:0;font:var(--dsw-font-markdown-code-block-small);color:var(--dsw-alias-label-secondary);margin:0;padding:10px 12px 12px;overflow:auto}.B5CX-q_instructions[data-error]{color:var(--dsw-alias-state-error-primary)}.B5CX-q_instructions::-webkit-scrollbar-thumb{background-clip:padding-box;border:2px solid #0000;border-radius:6px}.B5CX-q_instructions::-webkit-scrollbar-track{margin:6px 0}.B5CX-q_inspectButton{border:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-bg-base);color:var(--dsw-alias-label-secondary);cursor:pointer;opacity:0;border-radius:999px;align-self:flex-start;align-items:center;gap:4px;margin:4px 0 2px 4px;padding:2px 8px;font-size:11px;line-height:16px;transition:opacity .1s;display:inline-flex}.B5CX-q_card:hover .B5CX-q_inspectButton,.B5CX-q_inspectButton:focus-visible{opacity:1}.B5CX-q_inspectButton:hover{background:var(--dsw-alias-interactive-bg-hover-solid);color:var(--dsw-alias-label-primary)}.B5CX-q_visuallyHidden{clip:rect(0 0 0 0);white-space:nowrap;width:1px;height:1px;position:absolute;overflow:hidden}@media (prefers-reduced-motion:reduce){.B5CX-q_card[data-state=running] .B5CX-q_row:after{animation:none;display:none}.B5CX-q_iconIdle,.B5CX-q_chevronHover,.B5CX-q_inspectButton{transition:none}}";
 		const tagId = "@deepseek-ai/dsh-client-ui-skill/SkillRow.module.css";
 		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId) + "]") === null) {
 			const tag = document.createElement("style");
@@ -18,23 +18,23 @@ window.__ModuleLoader__.load({
 			document.head.appendChild(tag);
 		}
 		var SkillRow_module_css_default = {
-			"bodyWrap": "GyJ8hG_bodyWrap",
-			"card": "GyJ8hG_card",
-			"chevron": "GyJ8hG_chevron",
-			"chevronHover": "GyJ8hG_chevronHover",
-			"dsh-skill-row-sweep": "GyJ8hG_dsh-skill-row-sweep",
-			"errorSummary": "GyJ8hG_errorSummary",
-			"iconIdle": "GyJ8hG_iconIdle",
-			"inspectButton": "GyJ8hG_inspectButton",
-			"instructions": "GyJ8hG_instructions",
-			"instructionsCard": "GyJ8hG_instructionsCard",
-			"instructionsHeader": "GyJ8hG_instructionsHeader",
-			"leading": "GyJ8hG_leading",
-			"row": "GyJ8hG_row",
-			"separator": "GyJ8hG_separator",
-			"summary": "GyJ8hG_summary",
-			"title": "GyJ8hG_title",
-			"visuallyHidden": "GyJ8hG_visuallyHidden"
+			"bodyWrap": "B5CX-q_bodyWrap",
+			"card": "B5CX-q_card",
+			"chevron": "B5CX-q_chevron",
+			"chevronHover": "B5CX-q_chevronHover",
+			"dsh-skill-row-sweep": "B5CX-q_dsh-skill-row-sweep",
+			"errorSummary": "B5CX-q_errorSummary",
+			"iconIdle": "B5CX-q_iconIdle",
+			"inspectButton": "B5CX-q_inspectButton",
+			"instructions": "B5CX-q_instructions",
+			"instructionsCard": "B5CX-q_instructionsCard",
+			"instructionsHeader": "B5CX-q_instructionsHeader",
+			"leading": "B5CX-q_leading",
+			"row": "B5CX-q_row",
+			"separator": "B5CX-q_separator",
+			"summary": "B5CX-q_summary",
+			"title": "B5CX-q_title",
+			"visuallyHidden": "B5CX-q_visuallyHidden"
 		};
 		//#endregion
 		//#region lib/types/client/SkillRow.js

@@ -58,7 +58,7 @@ def test_portable_dependency_copy_preserves_native_image_codecs(tmp_path):
     assert all((destination / path).is_file() for path in native)
 
 
-@pytest.mark.parametrize('damage', ['missing-frontend','extra-frontend','wrong-target','missing-runtime', 'missing-icu', 'changed-icu-license', 'missing-case-fold', 'changed-case-fold', 'missing-zstd', 'changed-zstd-license', 'changed-zstd-dictionary', 'missing-sql', 'changed-sql', 'changed-sql-manifest'])
+@pytest.mark.parametrize('damage', ['missing-frontend','extra-frontend','wrong-target','missing-runtime', 'missing-icu', 'changed-icu-license', 'missing-case-fold', 'changed-case-fold', 'missing-zstd', 'changed-zstd-license', 'changed-zstd-dictionary', 'missing-sql', 'changed-sql', 'changed-sql-manifest', 'missing-client', 'changed-client', 'extra-client', 'wrong-build-profile'])
 def test_invalid_input_fails_before_release_replacement(tmp_path, monkeypatch, damage):
     import shutil
     root = tmp_path/'checkout'
@@ -69,11 +69,17 @@ def test_invalid_input_fails_before_release_replacement(tmp_path, monkeypatch, d
     shutil.copytree(ROOT/'apps/web/dist', root/'apps/web/dist')
     (root/'scripts').mkdir()
     shutil.copyfile(ROOT/'scripts/frontend-inputs.json',root/'scripts/frontend-inputs.json')
+    frontend = json.loads((root/'scripts/frontend-inputs.json').read_text(encoding='utf-8'))
+    for row in frontend['client_files']:
+        destination = root/row['path']
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copyfile(ROOT/row['path'], destination)
     (root/'migration').mkdir()
     shutil.copyfile(ROOT/'migration/baseline.json',root/'migration/baseline.json')
     (root/'reference/apps/cli').mkdir(parents=True)
     (root/'reference/apps/cli/package.json').write_text('{}',encoding='utf-8')
     shutil.copyfile(ROOT/'requirements-runtime.lock',root/'requirements-runtime.lock')
+    BUILD.checked_inputs(root, ROOT/'.venv/Lib/site-packages')
     if damage=='missing-frontend': (root/'apps/web/dist/index.html').unlink()
     if damage=='extra-frontend': (root/'apps/web/dist/stale.js').write_text('stale',encoding='utf-8')
     if damage=='wrong-target': (root/'migration/baseline.json').write_text('{"target_upstream":"wrong"}',encoding='utf-8')
@@ -87,6 +93,12 @@ def test_invalid_input_fails_before_release_replacement(tmp_path, monkeypatch, d
     if damage=='missing-sql': (root/'dsh/session/resources/sql/schema.sql').unlink()
     if damage=='changed-sql': (root/'dsh/session/resources/sql/schema.sql').write_text('changed',encoding='utf-8')
     if damage=='changed-sql-manifest': (root/'dsh/session/resources/sql/manifest.json').write_text('{}',encoding='utf-8')
+    if damage=='missing-client': (root/frontend['client_files'][0]['path']).unlink()
+    if damage=='changed-client': (root/frontend['client_files'][0]['path']).write_text('changed',encoding='utf-8')
+    if damage=='extra-client': (root/'packages/client/unknown/lib').mkdir(parents=True); (root/'packages/client/unknown/lib/client.js').write_text('changed',encoding='utf-8')
+    if damage=='wrong-build-profile':
+        frontend['build_record']['environment']['DSH_CLIENT_BUILD_PROFILE'] = 'local'
+        (root/'scripts/frontend-inputs.json').write_text(json.dumps(frontend),encoding='utf-8')
     dist=root/'dist/dsh-win7-portable';dist.mkdir(parents=True)
     (dist/'sentinel').write_text('last successful release',encoding='utf-8')
     monkeypatch.setattr(BUILD,'ROOT_DIR',str(root));monkeypatch.setattr(BUILD,'DIST_DIR',str(dist))

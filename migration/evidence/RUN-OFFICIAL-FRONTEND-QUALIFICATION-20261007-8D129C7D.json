@@ -1,0 +1,22 @@
+{
+  "id": "RUN-OFFICIAL-FRONTEND-QUALIFICATION-20261007-8D129C7D",
+  "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
+  "product_commit": "8d129c7d02e134670bb46f023b7abd4f8eb90278",
+  "kind": "verification",
+  "task_id": "MIG-WEB-CONNECTION-002",
+  "result": "passed",
+  "validity": "current",
+  "exit_code": 0,
+  "commands": [
+    "pnpm run build:official (unchanged pinned reference)",
+    ".venv/Scripts/python.exe scripts/import_frontend.py --output-dir .goose/out/acp-a4-work/pinned-official-frontend-import-v1",
+    ".venv/Scripts/python.exe -m pytest tests/test_native_web_browser.py --junitxml=.goose/out/acp-a4-work/settings-graph-existing-browser-v1.xml",
+    ".venv/Scripts/python.exe -m pytest tests/test_frontend_import.py tests/test_preflight_copy_retention.py tests/test_release_preflight.py --junitxml=.goose/out/acp-a4-work/official-frontend-preflight-retention-v2.xml",
+    ".venv/Scripts/python.exe scripts/permission_presets_oracle.py --output .goose/out/acp-a4-work/settings-graph-permission-paired-v1.json",
+    ".venv/Scripts/python.exe .goose/out/acp-a4-work/collect_official_frontend_v1.py"
+  ],
+  "environment": {"python": "3.8.10", "os": "Windows-10-10.0.26200-SP0", "node": "v22.22.2"},
+  "contract_revisions": {"CON-CURRENT-RELEASE-GATE": 1},
+  "artifacts": [{"path": "migration/evidence/artifacts/OFFICIAL-FRONTEND-QUALIFICATION-20261007-8D129C7D.zip", "sha256": "b2ef057fe8308932708b76b1ef47576bda9b8ba27c9585a0886b6a1002d75abc"}],
+  "scope": "Working-tree qualification over named product base: exact recorded complete Source official218-artifact build imported unchanged; public Schema refs keys fixed at producer after actual settings.describe500.320 actual consumers,87 preflight/retention,53 mandatory/extracted controls and4 original browser lifecycle tests pass with overlap not summed.55 complete fresh Source/Root Permission observations match. Six Source/Root original-browser functional preset fresh/cold journeys pass with real tools/next-request/question/approval/cancel and shutdown; full wire equivalence, own interpreter six browser journeys and clean full release remain separate.318-file archive retains precise original rejections, prior build, current bytes and cache-close diagnosis. Automatic reconstructible client-copy maintenance protects changed/unknown/active material and supports both complete XML generations. No extra Source exception or platform certification."
+}

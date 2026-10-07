@@ -7,8 +7,8 @@ window.__ModuleLoader__.load({
 		let react_jsx_runtime = require("react/jsx-runtime");
 		let react = require("react");
 		let _deepseek_ai_dsh_client_ui_primitives = require("@deepseek-ai/dsh-client-ui-primitives");
-		//#region \0dsh-css:D:\Project\deepseek-harness-win7\reference\packages\client\ui-goal\src\client\GoalBar.module.css.mjs
-		const css$1 = ".meKWqa_dock{box-sizing:border-box;width:calc(100% - var(--dsh-composer-side-clearance) - var(--dsh-composer-side-clearance) - var(--dsh-composer-dock-inset) - var(--dsh-composer-dock-inset) - var(--dsh-composer-dock-inset) - var(--dsh-composer-dock-inset));margin:0 auto}.meKWqa_bar{box-sizing:border-box;width:100%;max-width:calc(var(--dsh-composer-card-max-width) - 4 * var(--dsh-composer-dock-inset));border:1px solid var(--dsw-alias-border-l1);background:var(--dsw-specific-tip);border-radius:12px;align-items:center;gap:10px;height:36px;margin:0 auto;padding:4px 5px 4px 12px;display:flex}.meKWqa_goalGlyph{color:var(--dsw-alias-label-tertiary);flex:none;display:inline-flex}.meKWqa_label{color:var(--dsw-alias-label-primary);flex:none;font-size:13px;font-weight:500;line-height:24px}.meKWqa_objective{min-width:0;color:var(--dsw-alias-label-primary-dimmed);text-overflow:ellipsis;white-space:nowrap;flex:1;font-size:13px;line-height:20px;overflow:hidden}.meKWqa_error{min-width:0;color:var(--dsw-alias-state-error-primary);text-overflow:ellipsis;white-space:nowrap;flex:1;font-size:12px;line-height:20px;overflow:hidden}.meKWqa_objectiveInput{border:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-bg-base);min-width:0;height:26px;color:var(--dsw-alias-label-primary);border-radius:6px;outline:none;flex:1;padding:0 8px;font-size:13px;line-height:20px}.meKWqa_objectiveInput:focus{border-color:var(--dsw-alias-state-business-primary)}.meKWqa_objectiveInput::placeholder{color:var(--dsw-alias-label-caption)}.meKWqa_actions{flex:none;align-items:center;gap:10px;display:flex}.meKWqa_iconBtn{width:28px;height:28px;color:var(--dsw-alias-label-tertiary);cursor:pointer;background:0 0;border:none;border-radius:999px;justify-content:center;align-items:center;padding:0;display:inline-flex}.meKWqa_iconBtn:hover{background:var(--dsw-alias-interactive-bg-hover);color:var(--dsw-alias-label-secondary)}.meKWqa_iconBtn:disabled{opacity:.4;cursor:default}";
+		//#region \0dsh-css:C:\Users\czh86\Documents\Codex\deepseek-harness-win7\reference\packages\client\ui-goal\src\client\GoalBar.module.css.mjs
+		const css$1 = ".ijckva_dock{box-sizing:border-box;width:calc(100% - var(--dsh-composer-side-clearance) - var(--dsh-composer-side-clearance) - var(--dsh-composer-dock-inset) - var(--dsh-composer-dock-inset) - var(--dsh-composer-dock-inset) - var(--dsh-composer-dock-inset));margin:0 auto}.ijckva_bar{box-sizing:border-box;width:100%;max-width:calc(var(--dsh-composer-card-max-width) - 4 * var(--dsh-composer-dock-inset));border:1px solid var(--dsw-alias-border-l1);background:var(--dsw-specific-tip);border-radius:12px;align-items:center;gap:10px;height:36px;margin:0 auto;padding:4px 5px 4px 12px;display:flex}.ijckva_goalGlyph{color:var(--dsw-alias-label-tertiary);flex:none;display:inline-flex}.ijckva_label{color:var(--dsw-alias-label-primary);flex:none;font-size:13px;font-weight:500;line-height:24px}.ijckva_objective{min-width:0;color:var(--dsw-alias-label-primary-dimmed);text-overflow:ellipsis;white-space:nowrap;flex:1;font-size:13px;line-height:20px;overflow:hidden}.ijckva_error{min-width:0;color:var(--dsw-alias-state-error-primary);text-overflow:ellipsis;white-space:nowrap;flex:1;font-size:12px;line-height:20px;overflow:hidden}.ijckva_objectiveInput{border:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-bg-base);min-width:0;height:26px;color:var(--dsw-alias-label-primary);border-radius:6px;outline:none;flex:1;padding:0 8px;font-size:13px;line-height:20px}.ijckva_objectiveInput:focus{border-color:var(--dsw-alias-state-business-primary)}.ijckva_objectiveInput::placeholder{color:var(--dsw-alias-label-caption)}.ijckva_actions{flex:none;align-items:center;gap:10px;display:flex}.ijckva_iconBtn{width:28px;height:28px;color:var(--dsw-alias-label-tertiary);cursor:pointer;background:0 0;border:none;border-radius:999px;justify-content:center;align-items:center;padding:0;display:inline-flex}.ijckva_iconBtn:hover{background:var(--dsw-alias-interactive-bg-hover);color:var(--dsw-alias-label-secondary)}.ijckva_iconBtn:disabled{opacity:.4;cursor:default}";
 		const tagId$1 = "@deepseek-ai/dsh-client-ui-goal/GoalBar.module.css";
 		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId$1) + "]") === null) {
 			const tag = document.createElement("style");
@@ -18,15 +18,15 @@ window.__ModuleLoader__.load({
 			document.head.appendChild(tag);
 		}
 		var GoalBar_module_css_default = {
-			"actions": "meKWqa_actions",
-			"bar": "meKWqa_bar",
-			"dock": "meKWqa_dock",
-			"error": "meKWqa_error",
-			"goalGlyph": "meKWqa_goalGlyph",
-			"iconBtn": "meKWqa_iconBtn",
-			"label": "meKWqa_label",
-			"objective": "meKWqa_objective",
-			"objectiveInput": "meKWqa_objectiveInput"
+			"actions": "ijckva_actions",
+			"bar": "ijckva_bar",
+			"dock": "ijckva_dock",
+			"error": "ijckva_error",
+			"goalGlyph": "ijckva_goalGlyph",
+			"iconBtn": "ijckva_iconBtn",
+			"label": "ijckva_label",
+			"objective": "ijckva_objective",
+			"objectiveInput": "ijckva_objectiveInput"
 		};
 		//#endregion
 		//#region lib/types/client/GoalBar.js
@@ -250,8 +250,8 @@ window.__ModuleLoader__.load({
 			});
 		}
 		//#endregion
-		//#region \0dsh-css:D:\Project\deepseek-harness-win7\reference\packages\client\ui-goal\src\client\GoalCommandInputView.module.css.mjs
-		const css = ".wp-ipW_row{flex-direction:column;align-items:flex-end;gap:6px;display:flex}.wp-ipW_stack{min-width:0;max-width:min(calc(var(--dsh-chat-content-width,748px) * .702), 82%);flex-direction:column;align-items:flex-end;display:flex}.wp-ipW_bubble{overflow-wrap:anywhere;background:var(--dsw-specific-bubble);max-width:100%;color:var(--dsw-alias-label-primary);font:var(--dsw-font-markdown-code);font-size:var(--dsh-content-font-size,14px);line-height:calc(22px + var(--dsh-content-font-delta,0px));white-space:pre-wrap;border-radius:22px;padding:10px 16px}";
+		//#region \0dsh-css:C:\Users\czh86\Documents\Codex\deepseek-harness-win7\reference\packages\client\ui-goal\src\client\GoalCommandInputView.module.css.mjs
+		const css = ".ygJprW_row{flex-direction:column;align-items:flex-end;gap:6px;display:flex}.ygJprW_stack{min-width:0;max-width:min(calc(var(--dsh-chat-content-width,748px) * .702), 82%);flex-direction:column;align-items:flex-end;display:flex}.ygJprW_bubble{overflow-wrap:anywhere;background:var(--dsw-specific-bubble);max-width:100%;color:var(--dsw-alias-label-primary);font:var(--dsw-font-markdown-code);font-size:var(--dsh-content-font-size,14px);line-height:calc(22px + var(--dsh-content-font-delta,0px));white-space:pre-wrap;border-radius:22px;padding:10px 16px}";
 		const tagId = "@deepseek-ai/dsh-client-ui-goal/GoalCommandInputView.module.css";
 		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId) + "]") === null) {
 			const tag = document.createElement("style");
@@ -261,9 +261,9 @@ window.__ModuleLoader__.load({
 			document.head.appendChild(tag);
 		}
 		var GoalCommandInputView_module_css_default = {
-			"bubble": "wp-ipW_bubble",
-			"row": "wp-ipW_row",
-			"stack": "wp-ipW_stack"
+			"bubble": "ygJprW_bubble",
+			"row": "ygJprW_row",
+			"stack": "ygJprW_stack"
 		};
 		//#endregion
 		//#region lib/types/client/GoalCommandInputView.js

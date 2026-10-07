@@ -2,6 +2,8 @@
 # Snapshot bytes are compared with pinned upstream goldens on Windows too.
 snapshots/** -text
 apps/web/dist/** -text
+packages/*/*/lib/client.js -text
+packages/*/*/lib/client.js.map -text
 dsh/session/bin/icu/** -text
 dsh/session/bin/zstd/** -text
 dsh/javascript/bin/** -text whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol

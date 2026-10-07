@@ -7,8 +7,8 @@ window.__ModuleLoader__.load({
 		let react_jsx_runtime = require("react/jsx-runtime");
 		let react = require("react");
 		let _deepseek_ai_dsh_client_ui_primitives = require("@deepseek-ai/dsh-client-ui-primitives");
-		//#region \0dsh-css:D:\Project\deepseek-harness-win7\reference\packages\client\ui-plan\src\client\PlanModeControl.module.css.mjs
-		const css = ".G9lbMG_wrap{align-items:center;gap:6px;display:inline-flex}.G9lbMG_chip{background:var(--dsw-alias-state-warn-tertiary);min-width:34px;color:var(--dsw-alias-state-warn-label);cursor:pointer;border:none;border-radius:999px;align-items:center;gap:4px;padding:2px 8px;font-size:13px;font-weight:500;line-height:20px;display:inline-flex}.G9lbMG_chip:hover:not(:disabled){color:var(--dsw-alias-state-warn-primary)}.G9lbMG_chip:focus-visible{outline:2px solid var(--dsw-alias-state-warn-label);outline-offset:2px}.G9lbMG_chip:disabled{opacity:.6;cursor:default}.G9lbMG_close{color:currentColor;align-items:center;display:inline-flex}.G9lbMG_error{color:var(--dsw-alias-state-error-primary);font-size:12px;line-height:18px}";
+		//#region \0dsh-css:C:\Users\czh86\Documents\Codex\deepseek-harness-win7\reference\packages\client\ui-plan\src\client\PlanModeControl.module.css.mjs
+		const css = ".mnApgq_wrap{align-items:center;gap:6px;display:inline-flex}.mnApgq_chip{background:var(--dsw-alias-state-warn-tertiary);min-width:34px;color:var(--dsw-alias-state-warn-label);cursor:pointer;border:none;border-radius:999px;align-items:center;gap:4px;padding:2px 8px;font-size:13px;font-weight:500;line-height:20px;display:inline-flex}.mnApgq_chip:hover:not(:disabled){color:var(--dsw-alias-state-warn-primary)}.mnApgq_chip:focus-visible{outline:2px solid var(--dsw-alias-state-warn-label);outline-offset:2px}.mnApgq_chip:disabled{opacity:.6;cursor:default}.mnApgq_close{color:currentColor;align-items:center;display:inline-flex}.mnApgq_error{color:var(--dsw-alias-state-error-primary);font-size:12px;line-height:18px}";
 		const tagId = "@deepseek-ai/dsh-client-ui-plan/PlanModeControl.module.css";
 		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId) + "]") === null) {
 			const tag = document.createElement("style");
@@ -18,10 +18,10 @@ window.__ModuleLoader__.load({
 			document.head.appendChild(tag);
 		}
 		var PlanModeControl_module_css_default = {
-			"chip": "G9lbMG_chip",
-			"close": "G9lbMG_close",
-			"error": "G9lbMG_error",
-			"wrap": "G9lbMG_wrap"
+			"chip": "mnApgq_chip",
+			"close": "mnApgq_close",
+			"error": "mnApgq_error",
+			"wrap": "mnApgq_wrap"
 		};
 		//#endregion
 		//#region lib/types/client/PlanModeControl.js

@@ -22,11 +22,11 @@
     "tests",
     "migration"
   ],
-  "open_findings": [],
+  "open_findings": ["Exact complete unchanged Source official build218 artifacts imported with recorded environment/digest; settings.describe HTTP500 caused by integer public Schema refs fixed at producer.320 actual consumers,87 preflight/maintenance,53 mandatory/extracted controls,4 original browser lifecycle and55 fresh Permission paired observations pass. Six Source/Root original browser functional minimal/standard/cordis fresh/cold journeys pass; full wire DTO equivalence, independent own interpreter journeys and new clean full release remain separate.318-file archive retains exact original rejections and prior build; no browser source changes or extra Source bug exception."],
   "conflicts_with": [],
   "candidate_commit": null,
   "integrated_commit": null,
-  "evidence_ids": [],
+  "evidence_ids": ["RUN-OFFICIAL-FRONTEND-QUALIFICATION-20261007-8D129C7D"],
   "next_action": "canonical Connection/Gateway/Remote 与五条原版 browser/HTTP lifetime 已在当前候选复验；补齐近期实现的正式分层 contracts 和源断言覆盖，保留 registry projection 与完整 domain/cache/replay 的边界，不因旧台账仍 draft 重写或回退到 ApiProxy。",
   "discovery_task": "MIG-WEB-PROTOCOL-DISCOVERY-002"
 }

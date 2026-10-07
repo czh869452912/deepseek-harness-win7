@@ -1806,10 +1806,44 @@ def test_javascript_errors_consumer_lanes_are_mandatory(tmp_path, damage):
             GATE.validate_regression(path)
 
 
+@pytest.mark.parametrize('module', ['test_frontend_import', 'test_release_preflight', 'test_settings_remote', 'test_schema_parity'])
+@pytest.mark.parametrize('damage', ['omit', 'skip', 'duplicate', 'failure'])
+def test_complete_frontend_and_settings_lanes_are_mandatory(tmp_path, module, damage):
+    path = tmp_path / 'pytest.xml'
+    regression_xml(path)
+    assert GATE.validate_regression(path)['required_lanes'] > 0
+    regression_xml(path, **{damage: (module, sorted(GATE.REQUIRED_REGRESSION[module])[0])})
+    with pytest.raises(RuntimeError):
+        GATE.validate_regression(path)
+
+
+@pytest.mark.parametrize('damage', ['missing-provenance', 'changed-provenance', 'missing-clients', 'client-count', 'build-digest'])
+def test_extracted_complete_frontend_requires_frozen_build_record(tmp_path, damage):
+    archive, candidate, report = extracted_receipt(tmp_path)
+    path = tmp_path / 'extracted.json'
+    path.write_text(json.dumps(report), encoding='utf-8')
+    assert GATE.validate_extracted(path, archive, candidate)['result'] == 'passed'
+    if damage == 'missing-provenance':
+        del report['provenance']['frontend']
+    elif damage == 'changed-provenance':
+        report['provenance']['frontend'] = copy.deepcopy(report['provenance']['frontend'])
+        report['provenance']['frontend']['client_files'][0]['sha256'] = '0' * 64
+    elif damage == 'missing-clients':
+        del report['frontendClientFilesChecked']
+    elif damage == 'client-count':
+        report['frontendClientFilesChecked'] -= 1
+    else:
+        report['frontendBuildDigest'] = '0' * 64
+    path.write_text(json.dumps(report), encoding='utf-8')
+    with pytest.raises(RuntimeError, match='complete frontend'):
+        GATE.validate_extracted(path, archive, candidate)
+
+
 def extracted_receipt(tmp_path):
     archive = tmp_path / 'portable.zip'
     archive.write_bytes(b'exact candidate archive')
-    candidate = {'product_commit': 'a' * 40, 'worktree_dirty': False}
+    candidate = {'product_commit': 'a' * 40, 'worktree_dirty': False,
+                 'frontend': json.loads((ROOT / 'scripts/frontend-inputs.json').read_text(encoding='utf-8'))}
     scheduler = copy.deepcopy(scheduler_runtime_fixture())
     scheduler['root'] = str(tmp_path)
     candidate['tool_scheduler_observations_sha256'] = scheduler_observation_digest(scheduler['rows'])
@@ -2018,7 +2052,9 @@ def extracted_receipt(tmp_path):
               'acp': {'processes': 2, 'steps': ['initialize-0', 'invalid-params-before-effects',
                   'persistent-new', 'close-list-0', 'eof-0', 'initialize-1',
                   'new-process-resume-no-history-updates', 'close-list-1', 'eof-1']},
-              'runtimeStderr': '', 'frontendFilesChecked': 119, 'archive': str(archive),
+              'runtimeStderr': '', 'frontendFilesChecked': len(candidate['frontend']['files']),
+              'frontendClientFilesChecked': len(candidate['frontend']['client_files']),
+              'frontendBuildDigest': candidate['frontend']['build_record']['artifacts']['sha256'], 'archive': str(archive),
               'archiveSha256': GATE.digest(archive), 'provenance': dict(candidate), 'toolScheduler': scheduler,
               'httpRedirect': redirect, 'javascriptWorkflow': javascript, 'runtimeContext': context, 'javascriptReady': ready,
               'persistenceRead': read, 'javascriptInitial': initial, 'sessionNumber': number, 'sessionDiagnostic': diagnostic,

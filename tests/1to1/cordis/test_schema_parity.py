@@ -935,7 +935,8 @@ def test_tojson_envelope_shape():
     assert sorted(envelope.keys()) == ["refs", "uid"]
     assert envelope["uid"] == schema.uid
     refs = envelope["refs"]
-    node = refs[schema.uid]
+    assert all(isinstance(key, str) for key in refs)
+    node = refs[str(schema.uid)]
     # The reference serializes a node as `JSON.parse(JSON.stringify({ ...
     # this }))`, so the member order and the set of members match the object the
     # factory created.
@@ -944,7 +945,7 @@ def test_tojson_envelope_shape():
     assert node["meta"] == {"default": {}}
     # A shared node is referenced by uid instead of being serialized twice.
     assert node["dict"] == {"a": inner.uid, "b": inner.uid}
-    assert refs[inner.uid] == {"type": "string", "meta": {}}
+    assert refs[str(inner.uid)] == {"type": "string", "meta": {}}
     assert len(refs) == 2
     # Every refs key is a uid, and ECMAScript enumerates integer-like own keys
     # in ascending numeric order, so the envelope reports ascending uids.
@@ -960,33 +961,33 @@ def test_tojson_keeps_assigned_falsey_and_nullable_members():
     relation container and an explicit null constant survive serialization.
     """
     empty_object = Schema.object({})
-    assert empty_object.toJSON()["refs"][empty_object.uid] == {
+    assert empty_object.toJSON()["refs"][str(empty_object.uid)] == {
         "type": "object", "meta": {"default": {}}, "dict": {},
     }
 
     empty_tuple = Schema.tuple([])
-    assert empty_tuple.toJSON()["refs"][empty_tuple.uid] == {
+    assert empty_tuple.toJSON()["refs"][str(empty_tuple.uid)] == {
         "type": "tuple", "meta": {"default": []}, "list": [],
     }
 
     empty_union = Schema.union([])
-    assert empty_union.toJSON()["refs"][empty_union.uid] == {
+    assert empty_union.toJSON()["refs"][str(empty_union.uid)] == {
         "type": "union", "meta": {}, "list": [],
     }
 
     empty_bitset = Schema.bitset({})
-    assert empty_bitset.toJSON()["refs"][empty_bitset.uid] == {
+    assert empty_bitset.toJSON()["refs"][str(empty_bitset.uid)] == {
         "type": "bitset", "meta": {"default": 0}, "bits": {},
     }
 
     null_const = Schema.const_(None)
-    assert null_const.toJSON()["refs"][null_const.uid] == {"type": "const", "meta": {}, "value": None}
+    assert null_const.toJSON()["refs"][str(null_const.uid)] == {"type": "const", "meta": {}, "value": None}
     zero_const = Schema.const_(0)
-    assert zero_const.toJSON()["refs"][zero_const.uid] == {"type": "const", "meta": {}, "value": 0}
+    assert zero_const.toJSON()["refs"][str(zero_const.uid)] == {"type": "const", "meta": {}, "value": 0}
     # `Schema.const(undefined)` never assigns `value`, so the member is absent;
     # the reference formatter result is nullish, so `toString()` falls back.
     unassigned = Schema.const_()
-    assert unassigned.toJSON()["refs"][unassigned.uid] == {"type": "const", "meta": {}}
+    assert unassigned.toJSON()["refs"][str(unassigned.uid)] == {"type": "const", "meta": {}}
     assert unassigned.to_string() == "Schema<const>"
     assert Schema.const_(None).to_string() == "Schema<const>"
     with pytest.raises(ValidationError) as exc:
@@ -994,25 +995,25 @@ def test_tojson_keeps_assigned_falsey_and_nullable_members():
     assert str(exc.value) == "expected undefined but got 5"
 
     loose_false = Schema.string().required(False)
-    assert loose_false.toJSON()["refs"][loose_false.uid]["meta"] == {"required": False}
+    assert loose_false.toJSON()["refs"][str(loose_false.uid)]["meta"] == {"required": False}
     null_default = Schema.string().default(None)
-    assert null_default.toJSON()["refs"][null_default.uid]["meta"] == {"default": None}
+    assert null_default.toJSON()["refs"][str(null_default.uid)]["meta"] == {"default": None}
 
 
 def test_tojson_transform_preserve_and_lazy_member_order():
     """A transform's `preserve` member and a lazy node's member order."""
     omitted = Schema.transform(Schema.string(), lambda value: value)
-    assert list(omitted.toJSON()["refs"][omitted.uid].keys()) == ["type", "meta", "inner", "callback"]
+    assert list(omitted.toJSON()["refs"][str(omitted.uid)].keys()) == ["type", "meta", "inner", "callback"]
 
     kept_false = Schema.transform(Schema.string(), lambda value: value, False)
-    assert kept_false.toJSON()["refs"][kept_false.uid]["preserve"] is False
+    assert kept_false.toJSON()["refs"][str(kept_false.uid)]["preserve"] is False
     kept_true = Schema.transform(Schema.string(), lambda value: value, True)
-    assert kept_true.toJSON()["refs"][kept_true.uid]["preserve"] is True
+    assert kept_true.toJSON()["refs"][str(kept_true.uid)]["preserve"] is True
 
     # `Schema.lazy` passes `{ type, builder, inner }` to the constructor and
     # `builder` is a function JSON drops, so `inner` precedes `meta`.
     lazy_schema = Schema.lazy(lambda: Schema.string())
-    lazy_node = lazy_schema.toJSON()["refs"][lazy_schema.uid]
+    lazy_node = lazy_schema.toJSON()["refs"][str(lazy_schema.uid)]
     assert list(lazy_node.keys()) == ["type", "inner", "meta"]
     assert lazy_node["inner"] == lazy_schema.inner.uid
     assert lazy_node["meta"] == {}
@@ -1021,11 +1022,11 @@ def test_tojson_transform_preserve_and_lazy_member_order():
 def test_tojson_normalizes_non_finite_numbers():
     """`JSON.stringify` renders a non-finite number as `null`."""
     schema = Schema.const_(float("nan"))
-    assert schema.toJSON()["refs"][schema.uid] == {"type": "const", "meta": {}, "value": None}
+    assert schema.toJSON()["refs"][str(schema.uid)] == {"type": "const", "meta": {}, "value": None}
     infinite = Schema.const_(float("inf"))
-    assert infinite.toJSON()["refs"][infinite.uid]["value"] is None
+    assert infinite.toJSON()["refs"][str(infinite.uid)]["value"] is None
     bits = Schema.bitset({"a": float("nan"), "b": float("inf"), "c": 0.5})
-    assert bits.toJSON()["refs"][bits.uid]["bits"] == {"a": None, "b": None, "c": 0.5}
+    assert bits.toJSON()["refs"][str(bits.uid)]["bits"] == {"a": None, "b": None, "c": 0.5}
 
 
 def test_constructor_clones_an_existing_schema():
@@ -1070,25 +1071,25 @@ def test_factories_create_the_node_before_shorthand_members():
     members, so an implicitly created member node always has the higher uid.
     """
     envelope = Schema.dict(Schema.number()).toJSON()
-    node = envelope["refs"][envelope["uid"]]
+    node = envelope["refs"][str(envelope["uid"])]
     assert node["inner"] < envelope["uid"] < node["sKey"]
-    assert list(envelope["refs"].keys()) == [node["inner"], envelope["uid"], node["sKey"]]
+    assert list(envelope["refs"].keys()) == [str(node["inner"]), str(envelope["uid"]), str(node["sKey"])]
 
     union = Schema.union(["red", "blue"]).toJSON()
-    members = union["refs"][union["uid"]]["list"]
+    members = union["refs"][str(union["uid"])]["list"]
     assert all(member > union["uid"] for member in members)
 
     obj = Schema.object({"a": "x"}).toJSON()
-    assert obj["refs"][obj["uid"]]["dict"]["a"] > obj["uid"]
+    assert obj["refs"][str(obj["uid"])]["dict"]["a"] > obj["uid"]
 
     transform = Schema.transform("bar", lambda: "foo").toJSON()
-    assert transform["refs"][transform["uid"]]["inner"] > transform["uid"]
+    assert transform["refs"][str(transform["uid"])]["inner"] > transform["uid"]
 
     array = Schema.array(int).toJSON()
-    assert array["refs"][array["uid"]]["inner"] > array["uid"]
+    assert array["refs"][str(array["uid"])]["inner"] > array["uid"]
 
     tuple_schema = Schema.tuple([int, str]).toJSON()
-    assert all(member > tuple_schema["uid"] for member in tuple_schema["refs"][tuple_schema["uid"]]["list"])
+    assert all(member > tuple_schema["uid"] for member in tuple_schema["refs"][str(tuple_schema["uid"])]["list"])
 
 
 def test_object_members_follow_ecmascript_key_order():
@@ -1096,7 +1097,7 @@ def test_object_members_follow_ecmascript_key_order():
     schema = Schema.object({"z": Schema.string(), "2": Schema.string(), "a": Schema.string()})
     assert list(schema.dict.keys()) == ["2", "z", "a"]
     assert schema.to_string() == "{ 2?: string, z?: string, a?: string }"
-    node = schema.toJSON()["refs"][schema.uid]
+    node = schema.toJSON()["refs"][str(schema.uid)]
     assert list(node["dict"].keys()) == ["2", "z", "a"]
 
 
@@ -1179,7 +1180,7 @@ def test_lazy_builder_is_memoized_and_serialized():
     assert lazy_schema("second") == "second"
     assert len(builds) == 1
 
-    node = lazy_schema.toJSON()["refs"][lazy_schema.uid]
+    node = lazy_schema.toJSON()["refs"][str(lazy_schema.uid)]
     assert node["type"] == "lazy"
     assert node["inner"] == lazy_schema.inner.uid
 
@@ -1227,7 +1228,7 @@ def test_badge_modifiers_write_into_the_shared_meta_object():
         {"text": "deprecated", "type": "danger"},
         {"text": "experimental", "type": "warning"},
     ]
-    assert two.toJSON()["refs"][two.uid]["meta"]["badges"] == base.meta["badges"]
+    assert two.toJSON()["refs"][str(two.uid)]["meta"]["badges"] == base.meta["badges"]
 
     # A plain modifier clone keeps sharing the badge list without adding a badge.
     assert Schema.string().deprecated().required().meta["badges"] == [
@@ -1325,8 +1326,8 @@ def test_lazy_clone_serializes_the_stub_origin_schema():
     clone = base.description("outer")
 
     envelope = clone.toJSON()
-    lazy_node = envelope["refs"][clone.uid]
-    built_node = envelope["refs"][lazy_node["inner"]]
+    lazy_node = envelope["refs"][str(clone.uid)]
+    built_node = envelope["refs"][str(lazy_node["inner"])]
 
     assert lazy_node["type"] == "lazy"
     assert lazy_node["meta"] == {"description": "outer"}

@@ -168,8 +168,8 @@ window.__ModuleLoader__.load({
 			});
 		}
 		//#endregion
-		//#region \0dsh-css:D:\Project\deepseek-harness-win7\reference\packages\session-query\session-log-export\src\client\HeaderAction.module.css.mjs
-		const css = ".rwp9lq_sessionLogButton{border:1px solid var(--dsw-alias-border-l2);min-width:111px;height:32px;color:var(--dsw-alias-label-primary);font-family:var(--dsw-font-family);cursor:pointer;background:0 0;border-radius:18px;justify-content:center;align-items:center;gap:4px;padding:6px 12px;font-size:13px;font-weight:400;line-height:20px;display:inline-flex}.rwp9lq_sessionLogButton:hover:not(:disabled){background:var(--dsw-alias-interactive-bg-hover)}.rwp9lq_sessionLogButton:disabled{color:var(--dsw-alias-label-dimmed);cursor:wait}.rwp9lq_sessionLogButton span,.rwp9lq_sessionLogButton svg{flex:none}.rwp9lq_sessionLogButton span{white-space:nowrap}";
+		//#region \0dsh-css:C:\Users\czh86\Documents\Codex\deepseek-harness-win7\reference\packages\session-query\session-log-export\src\client\HeaderAction.module.css.mjs
+		const css = ".ytapFq_sessionLogButton{border:1px solid var(--dsw-alias-border-l2);min-width:111px;height:32px;color:var(--dsw-alias-label-primary);font-family:var(--dsw-font-family);cursor:pointer;background:0 0;border-radius:18px;justify-content:center;align-items:center;gap:4px;padding:6px 12px;font-size:13px;font-weight:400;line-height:20px;display:inline-flex}.ytapFq_sessionLogButton:hover:not(:disabled){background:var(--dsw-alias-interactive-bg-hover)}.ytapFq_sessionLogButton:disabled{color:var(--dsw-alias-label-dimmed);cursor:wait}.ytapFq_sessionLogButton span,.ytapFq_sessionLogButton svg{flex:none}.ytapFq_sessionLogButton span{white-space:nowrap}";
 		const tagId = "@deepseek-ai/dsh-session-log-export/HeaderAction.module.css";
 		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId) + "]") === null) {
 			const tag = document.createElement("style");
@@ -178,7 +178,7 @@ window.__ModuleLoader__.load({
 			tag.textContent = css;
 			document.head.appendChild(tag);
 		}
-		var HeaderAction_module_css_default = { "sessionLogButton": "rwp9lq_sessionLogButton" };
+		var HeaderAction_module_css_default = { "sessionLogButton": "ytapFq_sessionLogButton" };
 		//#endregion
 		//#region lib/types/client/HeaderAction.js
 		/**

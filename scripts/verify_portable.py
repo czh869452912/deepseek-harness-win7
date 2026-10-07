@@ -76,6 +76,7 @@ from scripts.llm_metadata_oracle import validate_runtime as validate_llm_metadat
 from scripts.canonical_llm_oracle import validate_runtime as validate_canonical_llm, identity as canonical_llm_identity
 from scripts.jsonl_sharing_oracle import validate_runtime as validate_jsonl_sharing, identity as sharing_identity
 from scripts.persistence_read_oracle import validate_runtime as validate_persistence_read, identity as read_identity
+from scripts.import_frontend import validate_import as validate_frontend_import
 
 
 def digest(path):
@@ -695,7 +696,7 @@ def main(argv=None):
     report = dict(result='failed', archive=str(archive), archiveSha256=digest(archive),
         scope='Actual extracted Portable on current Windows; Win7 and its browser are not certified; no remote model request.',
         inputSha256={name: digest(ROOT / 'scripts' / name) for name in (
-            'verify_portable.py', 'portable_runtime_probe.py', 'portable_acp_probe.py', 'acp_permission_journey.py',
+            'verify_portable.py', 'import_frontend.py', 'portable_runtime_probe.py', 'portable_acp_probe.py', 'acp_permission_journey.py',
             'portable_browser_oracle.mjs', 'browser_onboarding.mjs', 'mcp_stdio_oracle.py',
             'oracles/mcp_stdio_python.py', 'oracles/mcp_stdio_peer.py', 'mcp_http_oracle.py',
             'oracles/mcp_http_python.py', 'oracles/mcp_http_peer.py', 'oracles/mcp_http_expected.json',
@@ -988,6 +989,9 @@ def main(argv=None):
                 if digest(portable / row['path']) != row['sha256']:
                     raise RuntimeError('Extracted upstream frontend hash mismatch: ' + row['path'])
             report['frontendFilesChecked'] = len(provenance['frontend']['files'])
+            validate_frontend_import(portable, provenance['frontend'])
+            report['frontendClientFilesChecked'] = len(provenance['frontend']['client_files'])
+            report['frontendBuildDigest'] = provenance['frontend']['build_record']['artifacts']['sha256']
             env = product_environment(portable, workspace)
             result = subprocess.run([str(portable / 'python.exe'), '-I', '-u',
                 str(ROOT / 'scripts/portable_runtime_probe.py'), '--workspace', str(workspace)],

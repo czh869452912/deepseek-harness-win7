@@ -7,8 +7,8 @@ window.__ModuleLoader__.load({
 		let react_jsx_runtime = require("react/jsx-runtime");
 		let react = require("react");
 		let _deepseek_ai_dsh_client_ui_primitives = require("@deepseek-ai/dsh-client-ui-primitives");
-		//#region \0dsh-css:D:\Project\deepseek-harness-win7\reference\packages\client\ui-jobs\src\client\JobListAction.module.css.mjs
-		const css = "._6pWmdW_root{position:relative}._6pWmdW_trigger{min-height:28px;color:var(--dsw-alias-label-tertiary);cursor:pointer;background:0 0;border:0;border-radius:6px;align-items:center;gap:3px;padding:3px 2px;font-size:12px;line-height:18px;display:inline-flex}._6pWmdW_trigger:hover,._6pWmdW_trigger:focus-visible{color:var(--dsw-alias-label-secondary)}._6pWmdW_trigger svg{transition:transform .12s}._6pWmdW_triggerOpen{transform:rotate(180deg)}._6pWmdW_triggerDot{flex:none}._6pWmdW_count{margin:0 5px}._6pWmdW_menu{z-index:100;box-sizing:border-box;border:1px solid var(--dsw-alias-border-l2);background:var(--dsw-specific-menu);--dsh-scrollbar-thumb:var(--dsw-alias-scrollbar-bg-l2);--dsh-scrollbar-thumb-hover:var(--dsw-alias-scrollbar-hover-l2);width:336px;max-width:min(400px,100vw - 32px);max-height:min(420px,100vh - 140px);box-shadow:var(--dsw-shadow-lv3);border-radius:12px;flex-direction:column;gap:1px;margin:0;padding:4px;list-style:none;display:flex;position:absolute;top:calc(100% + 5px);left:0;overflow:auto}._6pWmdW_row{box-sizing:border-box;width:100%;min-height:32px;color:var(--dsw-alias-label-primary);border-radius:8px;align-items:center;gap:8px;padding:6px 8px;font-size:13px;line-height:18px;display:flex}._6pWmdW_rowSettled{color:var(--dsw-alias-label-tertiary)}._6pWmdW_rowDot{flex:none}._6pWmdW_kind{background:var(--dsw-alias-fill-l2);color:var(--dsw-alias-label-secondary);border-radius:5px;flex:none;padding:0 6px;font-size:11px;line-height:18px}._6pWmdW_label{min-width:0;font-family:var(--dsw-font-mono);white-space:nowrap;text-overflow:ellipsis;flex:1;overflow:hidden}._6pWmdW_status,._6pWmdW_duration{color:var(--dsw-alias-label-tertiary);flex:none;font-size:11px;line-height:18px}._6pWmdW_status{white-space:nowrap;text-overflow:ellipsis;max-width:40%;overflow:hidden}._6pWmdW_duration{font-variant-numeric:tabular-nums}";
+		//#region \0dsh-css:C:\Users\czh86\Documents\Codex\deepseek-harness-win7\reference\packages\client\ui-jobs\src\client\JobListAction.module.css.mjs
+		const css = ".XHYpaG_root{position:relative}.XHYpaG_trigger{min-height:28px;color:var(--dsw-alias-label-tertiary);cursor:pointer;background:0 0;border:0;border-radius:6px;align-items:center;gap:3px;padding:3px 2px;font-size:12px;line-height:18px;display:inline-flex}.XHYpaG_trigger:hover,.XHYpaG_trigger:focus-visible{color:var(--dsw-alias-label-secondary)}.XHYpaG_trigger svg{transition:transform .12s}.XHYpaG_triggerOpen{transform:rotate(180deg)}.XHYpaG_triggerDot{flex:none}.XHYpaG_count{margin:0 5px}.XHYpaG_menu{z-index:100;box-sizing:border-box;border:1px solid var(--dsw-alias-border-l2);background:var(--dsw-specific-menu);--dsh-scrollbar-thumb:var(--dsw-alias-scrollbar-bg-l2);--dsh-scrollbar-thumb-hover:var(--dsw-alias-scrollbar-hover-l2);width:336px;max-width:min(400px,100vw - 32px);max-height:min(420px,100vh - 140px);box-shadow:var(--dsw-shadow-lv3);border-radius:12px;flex-direction:column;gap:1px;margin:0;padding:4px;list-style:none;display:flex;position:absolute;top:calc(100% + 5px);left:0;overflow:auto}.XHYpaG_row{box-sizing:border-box;width:100%;min-height:32px;color:var(--dsw-alias-label-primary);border-radius:8px;align-items:center;gap:8px;padding:6px 8px;font-size:13px;line-height:18px;display:flex}.XHYpaG_rowSettled{color:var(--dsw-alias-label-tertiary)}.XHYpaG_rowDot{flex:none}.XHYpaG_kind{background:var(--dsw-alias-fill-l2);color:var(--dsw-alias-label-secondary);border-radius:5px;flex:none;padding:0 6px;font-size:11px;line-height:18px}.XHYpaG_label{min-width:0;font-family:var(--dsw-font-mono);white-space:nowrap;text-overflow:ellipsis;flex:1;overflow:hidden}.XHYpaG_status,.XHYpaG_duration{color:var(--dsw-alias-label-tertiary);flex:none;font-size:11px;line-height:18px}.XHYpaG_status{white-space:nowrap;text-overflow:ellipsis;max-width:40%;overflow:hidden}.XHYpaG_duration{font-variant-numeric:tabular-nums}";
 		const tagId = "@deepseek-ai/dsh-client-ui-jobs/JobListAction.module.css";
 		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId) + "]") === null) {
 			const tag = document.createElement("style");
@@ -18,19 +18,19 @@ window.__ModuleLoader__.load({
 			document.head.appendChild(tag);
 		}
 		var JobListAction_module_css_default = {
-			"count": "_6pWmdW_count",
-			"duration": "_6pWmdW_duration",
-			"kind": "_6pWmdW_kind",
-			"label": "_6pWmdW_label",
-			"menu": "_6pWmdW_menu",
-			"root": "_6pWmdW_root",
-			"row": "_6pWmdW_row",
-			"rowDot": "_6pWmdW_rowDot",
-			"rowSettled": "_6pWmdW_rowSettled",
-			"status": "_6pWmdW_status",
-			"trigger": "_6pWmdW_trigger",
-			"triggerDot": "_6pWmdW_triggerDot",
-			"triggerOpen": "_6pWmdW_triggerOpen"
+			"count": "XHYpaG_count",
+			"duration": "XHYpaG_duration",
+			"kind": "XHYpaG_kind",
+			"label": "XHYpaG_label",
+			"menu": "XHYpaG_menu",
+			"root": "XHYpaG_root",
+			"row": "XHYpaG_row",
+			"rowDot": "XHYpaG_rowDot",
+			"rowSettled": "XHYpaG_rowSettled",
+			"status": "XHYpaG_status",
+			"trigger": "XHYpaG_trigger",
+			"triggerDot": "XHYpaG_triggerDot",
+			"triggerOpen": "XHYpaG_triggerOpen"
 		};
 		//#endregion
 		//#region lib/types/client/JobListAction.js

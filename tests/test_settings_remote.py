@@ -45,6 +45,12 @@ async def test_formal_web_settings_over_authenticated_http(tmp_path):
             return result['value']
 
         directory = await call('describe', {})
+        from dsh.cordis.json_text import stringify_json
+        raw_directory = ctx.get('settingsController').describe()
+        assert json.loads(stringify_json(raw_directory)) == directory
+        assert all(isinstance(key, str) for namespace in raw_directory['namespaces']
+                   if isinstance(namespace.get('schema'), dict) and 'refs' in namespace['schema']
+                   for key in namespace['schema']['refs'])
         rows = {row['ns']: row for row in directory['namespaces']}
         assert {'agent-presets', 'llm-deepseek', 'llm-pi-ai', 'shell', 'subagent-model-selection'} <= rows.keys()
         from dsh.cordis.schema import Schema

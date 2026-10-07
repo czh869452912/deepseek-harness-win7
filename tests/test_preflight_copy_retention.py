@@ -49,7 +49,7 @@ def test_completed_preflight_prunes_only_unchanged_reconstructible_copies(tmp_pa
     archived = output / 'candidate-portable.zip'
     archived.write_bytes(b'actual preserved candidate')
     result = retention.prune_preflight_copies(output_root, output, product)
-    assert result['status'] == 'completed' and result['removed_files'] == 27
+    assert result['status'] == 'completed' and result['removed_files'] == 2 * len(retention.PREFLIGHT_DAMAGE_CASES) - 1
     assert variant.read_bytes() == b'failed input variant'
     assert observed.read_text(encoding='utf-8') == '{"source":"preserved"}'
     assert archived.read_bytes() == b'actual preserved candidate'
@@ -57,6 +57,51 @@ def test_completed_preflight_prunes_only_unchanged_reconstructible_copies(tmp_pa
     assert (product / 'dsh/session/bin/icu/dsh_icudt78.dll').read_bytes() == b'original ICU data'
     assert retention.prune_preflight_copies(output_root, output, product) is None
     assert json.loads((output / 'preflight-copies-pruned.json').read_text(encoding='utf-8')) == result
+
+
+@pytest.mark.parametrize('damage', ['unchanged', 'changed-copy', 'changed-original'])
+def test_completed_client_copies_require_both_recorded_hashes(tmp_path, damage):
+    product, output_root, output, workspace = completed_fixture(tmp_path)
+    name = 'packages/client/connection/lib/client.js'
+    original = product / name
+    original.parent.mkdir(parents=True)
+    original.write_bytes(b'original client')
+    frozen = retention.read_json(output / 'inputs.json')
+    frozen[name] = retention.digest_file(original)
+    (output / 'inputs.json').write_text(json.dumps(frozen), encoding='utf-8')
+    folder = workspace / 'test_invalid_input_fails_befor0/checkout'
+    copied = folder / name
+    copied.parent.mkdir(parents=True)
+    copied.write_bytes(b'original client')
+    unknown = copied.with_name('server.js')
+    unknown.write_bytes(b'unknown process material')
+    if damage == 'changed-copy':
+        copied.write_bytes(b'changed client evidence')
+    if damage == 'changed-original':
+        original.write_bytes(b'changed original')
+        with pytest.raises(ValueError, match='original differs'):
+            retention.prune_preflight_copies(output_root, output, product)
+        assert copied.read_bytes() == b'original client'
+    else:
+        result = retention.prune_preflight_copies(output_root, output, product)
+        assert result['removed_files'] == 2 * len(retention.PREFLIGHT_DAMAGE_CASES) + (damage == 'unchanged')
+        assert copied.exists() == (damage == 'changed-copy')
+    assert unknown.read_bytes() == b'unknown process material'
+
+
+@pytest.mark.parametrize('generation', ['legacy', 'current'])
+def test_completed_preflight_supports_recorded_case_generations(tmp_path, generation):
+    product, output_root, output, workspace = completed_fixture(tmp_path)
+    if generation == 'legacy':
+        tree = ET.parse(output / 'pytest.xml')
+        suite = tree.getroot().find('testsuite')
+        for case in list(suite)[14:]:
+            suite.remove(case)
+        suite.set('tests', '14')
+        tree.write(str(output / 'pytest.xml'), encoding='utf-8')
+    result = retention.prune_preflight_copies(output_root, output, product)
+    assert result['status'] == 'completed'
+    assert result['removed_files'] == 2 * len(retention.PREFLIGHT_DAMAGE_CASES)
 
 
 @pytest.mark.parametrize('damage', ['missing-case', 'duplicate-case', 'failed-case', 'skipped-case',
@@ -103,7 +148,7 @@ def test_previous_preflight_maintenance_requires_completed_release_state(tmp_pat
     reports = retention.prune_previous_preflight_copies(output_root, product)
     target = workspace / 'test_invalid_input_fails_befor0/checkout/apps/web/dist/index.html'
     if state in ('passed', 'failed'):
-        assert len(reports) == 1 and reports[0]['removed_files'] == 28
+        assert len(reports) == 1 and reports[0]['removed_files'] == 2 * len(retention.PREFLIGHT_DAMAGE_CASES)
         assert not target.exists()
     else:
         assert reports == [] and target.exists()
@@ -155,7 +200,7 @@ def test_actual_maintenance_cli_prunes_completed_preflight_copies(tmp_path, mode
     completed = subprocess.run(command, capture_output=True, timeout=60)
     assert completed.returncode == 0, completed.stdout + completed.stderr
     report = json.loads(completed.stdout)['preflight_copies']
-    assert (report if mode == 'output' else report[0])['removed_files'] == 28
+    assert (report if mode == 'output' else report[0])['removed_files'] == 2 * len(retention.PREFLIGHT_DAMAGE_CASES)
     assert (product / 'apps/web/dist/index.html').read_bytes() == b'original frontend'
     assert not (workspace / 'test_invalid_input_fails_befor0/checkout/apps/web/dist/index.html').exists()
 

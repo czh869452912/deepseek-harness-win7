@@ -34,7 +34,6 @@ window.__ModuleLoader__.load({
 		* @param ctx - Client root context.
 		*/
 		function apply(ctx) {
-			if ({}.DSH_CLIENT_BUILD_PROFILE !== "official") return;
 			ctx.slots.inject("sidebar.brand.mark", () => ctx.slots.inject("sidebar.brand.name", () => ctx.slots.inject("conversation.hero.brand.mark", function* () {
 				yield ctx.slots.register({ name: "sidebar.brand.mark" }, OfficialBrandMark);
 				yield ctx.slots.register({ name: "sidebar.brand.name" }, OfficialBrandName);

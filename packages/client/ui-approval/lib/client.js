@@ -7,8 +7,8 @@ window.__ModuleLoader__.load({
 		let react_jsx_runtime = require("react/jsx-runtime");
 		let react = require("react");
 		let _deepseek_ai_dsh_client_ui_primitives = require("@deepseek-ai/dsh-client-ui-primitives");
-		//#region \0dsh-css:D:\Project\deepseek-harness-win7\reference\packages\client\ui-approval\src\client\ApprovalPanel.module.css.mjs
-		const css = ".z_9eoG_root{padding:8px calc(var(--dsh-composer-side-clearance) + 16px) 12px;flex-direction:column;align-items:center;display:flex}.z_9eoG_card{width:100%;max-width:var(--dsh-chat-content-width);border:1px solid var(--dsw-alias-state-warn-secondary);background:var(--dsw-specific-input-major);box-shadow:var(--dsw-shadow-lv2);--dsh-scrollbar-thumb:var(--dsw-alias-scrollbar-bg-l2);--dsh-scrollbar-thumb-hover:var(--dsw-alias-scrollbar-hover-l2);border-radius:20px;overflow:hidden}.z_9eoG_strip{background:var(--dsw-alias-state-warn-tertiary);color:var(--dsw-alias-state-warn-primary);align-items:center;gap:8px;padding:10px 16px;font-size:13px;line-height:18px;display:flex}.z_9eoG_dot{background:var(--dsw-alias-state-warn-primary);border-radius:50%;width:8px;height:8px}.z_9eoG_body{box-sizing:border-box;max-height:var(--dsh-composer-text-max-height);flex-direction:column;gap:6px;padding:12px 16px 0;display:flex;overflow-y:auto}.z_9eoG_headline{color:var(--dsw-alias-label-primary);font-size:15px;font-weight:500;line-height:24px}.z_9eoG_command{color:var(--dsw-alias-label-tertiary);font-family:var(--ds-font-family-code);word-break:break-all;font-size:13px;line-height:20px}.z_9eoG_actionRow{justify-content:flex-end;gap:8px;padding:14px 16px;display:flex}.z_9eoG_reject:hover:not(:disabled){background:var(--dsw-alias-interactive-bg-hover-danger);color:var(--dsw-alias-state-error-primary);border-color:#0000}";
+		//#region \0dsh-css:C:\Users\czh86\Documents\Codex\deepseek-harness-win7\reference\packages\client\ui-approval\src\client\ApprovalPanel.module.css.mjs
+		const css = "._1Gnp0G_root{padding:8px calc(var(--dsh-composer-side-clearance) + 16px) 12px;flex-direction:column;align-items:center;display:flex}._1Gnp0G_card{width:100%;max-width:var(--dsh-chat-content-width);border:1px solid var(--dsw-alias-state-warn-secondary);background:var(--dsw-specific-input-major);box-shadow:var(--dsw-shadow-lv2);--dsh-scrollbar-thumb:var(--dsw-alias-scrollbar-bg-l2);--dsh-scrollbar-thumb-hover:var(--dsw-alias-scrollbar-hover-l2);border-radius:20px;overflow:hidden}._1Gnp0G_strip{background:var(--dsw-alias-state-warn-tertiary);color:var(--dsw-alias-state-warn-primary);align-items:center;gap:8px;padding:10px 16px;font-size:13px;line-height:18px;display:flex}._1Gnp0G_dot{background:var(--dsw-alias-state-warn-primary);border-radius:50%;width:8px;height:8px}._1Gnp0G_body{box-sizing:border-box;max-height:var(--dsh-composer-text-max-height);flex-direction:column;gap:6px;padding:12px 16px 0;display:flex;overflow-y:auto}._1Gnp0G_headline{color:var(--dsw-alias-label-primary);font-size:15px;font-weight:500;line-height:24px}._1Gnp0G_command{color:var(--dsw-alias-label-tertiary);font-family:var(--ds-font-family-code);word-break:break-all;font-size:13px;line-height:20px}._1Gnp0G_actionRow{justify-content:flex-end;gap:8px;padding:14px 16px;display:flex}._1Gnp0G_reject:hover:not(:disabled){background:var(--dsw-alias-interactive-bg-hover-danger);color:var(--dsw-alias-state-error-primary);border-color:#0000}";
 		const tagId = "@deepseek-ai/dsh-client-ui-approval/ApprovalPanel.module.css";
 		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId) + "]") === null) {
 			const tag = document.createElement("style");
@@ -18,15 +18,15 @@ window.__ModuleLoader__.load({
 			document.head.appendChild(tag);
 		}
 		var ApprovalPanel_module_css_default = {
-			"actionRow": "z_9eoG_actionRow",
-			"body": "z_9eoG_body",
-			"card": "z_9eoG_card",
-			"command": "z_9eoG_command",
-			"dot": "z_9eoG_dot",
-			"headline": "z_9eoG_headline",
-			"reject": "z_9eoG_reject",
-			"root": "z_9eoG_root",
-			"strip": "z_9eoG_strip"
+			"actionRow": "_1Gnp0G_actionRow",
+			"body": "_1Gnp0G_body",
+			"card": "_1Gnp0G_card",
+			"command": "_1Gnp0G_command",
+			"dot": "_1Gnp0G_dot",
+			"headline": "_1Gnp0G_headline",
+			"reject": "_1Gnp0G_reject",
+			"root": "_1Gnp0G_root",
+			"strip": "_1Gnp0G_strip"
 		};
 		//#endregion
 		//#region lib/types/client/ApprovalPanel.js

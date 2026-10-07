@@ -221,8 +221,8 @@ window.__ModuleLoader__.load({
 			return matches.length === 1 ? matches[0] : void 0;
 		}
 		//#endregion
-		//#region \0dsh-css:D:\Project\deepseek-harness-win7\reference\packages\client\ui-deliverables\src\client\ProducedFiles.module.css.mjs
-		const css = ".BGEWKq_root{grid-template-columns:max-content minmax(0,1fr);align-items:center;gap:6px 8px;margin-top:16px;font-size:13px;line-height:22px;display:grid;position:relative}.BGEWKq_label{color:var(--dsw-alias-label-tertiary);grid-area:1/1}.BGEWKq_row{flex-wrap:nowrap;grid-area:1/2;align-items:center;gap:8px;min-width:0;display:flex;overflow:hidden}.BGEWKq_file{text-overflow:ellipsis;white-space:nowrap;background:var(--dsw-alias-interactive-bg-hover);max-width:320px;color:var(--dsw-alias-label-secondary);font:inherit;cursor:pointer;border:none;border-radius:6px;flex:none;margin:0;padding:0 8px;overflow:hidden}.BGEWKq_file:hover{color:var(--dsw-alias-label-primary);text-decoration:underline}.BGEWKq_file:focus-visible,.BGEWKq_showFolder:focus-visible{box-shadow:inset 0 0 0 2px var(--dsw-alias-border-l3);outline:none}.BGEWKq_more{white-space:nowrap;color:var(--dsw-alias-label-tertiary);flex:none}.BGEWKq_showFolder{color:var(--dsw-alias-label-tertiary);font:inherit;cursor:pointer;background:0 0;border:none;border-radius:4px;grid-area:2/2;justify-self:start;margin:0;padding:0 2px;line-height:20px}.BGEWKq_showFolder:hover{color:var(--dsw-alias-label-secondary);text-decoration:underline}.BGEWKq_measure{visibility:hidden;pointer-events:none;contain:strict;width:0;height:0;position:absolute;overflow:hidden}.BGEWKq_probe{width:max-content;position:absolute;inset:0 auto auto 0}";
+		//#region \0dsh-css:C:\Users\czh86\Documents\Codex\deepseek-harness-win7\reference\packages\client\ui-deliverables\src\client\ProducedFiles.module.css.mjs
+		const css = "._5HCHCa_root{grid-template-columns:max-content minmax(0,1fr);align-items:center;gap:6px 8px;margin-top:16px;font-size:13px;line-height:22px;display:grid;position:relative}._5HCHCa_label{color:var(--dsw-alias-label-tertiary);grid-area:1/1}._5HCHCa_row{flex-wrap:nowrap;grid-area:1/2;align-items:center;gap:8px;min-width:0;display:flex;overflow:hidden}._5HCHCa_file{text-overflow:ellipsis;white-space:nowrap;background:var(--dsw-alias-interactive-bg-hover);max-width:320px;color:var(--dsw-alias-label-secondary);font:inherit;cursor:pointer;border:none;border-radius:6px;flex:none;margin:0;padding:0 8px;overflow:hidden}._5HCHCa_file:hover{color:var(--dsw-alias-label-primary);text-decoration:underline}._5HCHCa_file:focus-visible,._5HCHCa_showFolder:focus-visible{box-shadow:inset 0 0 0 2px var(--dsw-alias-border-l3);outline:none}._5HCHCa_more{white-space:nowrap;color:var(--dsw-alias-label-tertiary);flex:none}._5HCHCa_showFolder{color:var(--dsw-alias-label-tertiary);font:inherit;cursor:pointer;background:0 0;border:none;border-radius:4px;grid-area:2/2;justify-self:start;margin:0;padding:0 2px;line-height:20px}._5HCHCa_showFolder:hover{color:var(--dsw-alias-label-secondary);text-decoration:underline}._5HCHCa_measure{visibility:hidden;pointer-events:none;contain:strict;width:0;height:0;position:absolute;overflow:hidden}._5HCHCa_probe{width:max-content;position:absolute;inset:0 auto auto 0}";
 		const tagId = "@deepseek-ai/dsh-client-ui-deliverables/ProducedFiles.module.css";
 		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId) + "]") === null) {
 			const tag = document.createElement("style");
@@ -232,14 +232,14 @@ window.__ModuleLoader__.load({
 			document.head.appendChild(tag);
 		}
 		var ProducedFiles_module_css_default = {
-			"file": "BGEWKq_file",
-			"label": "BGEWKq_label",
-			"measure": "BGEWKq_measure",
-			"more": "BGEWKq_more",
-			"probe": "BGEWKq_probe",
-			"root": "BGEWKq_root",
-			"row": "BGEWKq_row",
-			"showFolder": "BGEWKq_showFolder"
+			"file": "_5HCHCa_file",
+			"label": "_5HCHCa_label",
+			"measure": "_5HCHCa_measure",
+			"more": "_5HCHCa_more",
+			"probe": "_5HCHCa_probe",
+			"root": "_5HCHCa_root",
+			"row": "_5HCHCa_row",
+			"showFolder": "_5HCHCa_showFolder"
 		};
 		//#endregion
 		//#region lib/types/client/ProducedFiles.js

@@ -882,8 +882,8 @@ window.__ModuleLoader__.load({
 			return n;
 		}
 		//#endregion
-		//#region \0dsh-css:D:\Project\deepseek-harness-win7\reference\packages\client\ui-commands\src\client\PopupSelectView.module.css.mjs
-		const css = ".fxr7ba_card{z-index:100;--dsh-scrollbar-thumb:var(--dsw-alias-scrollbar-bg-l2);--dsh-scrollbar-thumb-hover:var(--dsw-alias-scrollbar-hover-l2);border:1px solid var(--dsw-alias-border-inverted);background:var(--dsw-specific-menu);min-width:min(220px,100%);max-width:100%;max-height:320px;box-shadow:var(--dsw-shadow-lv3);border-radius:12px;outline:none;flex-direction:column;padding:4px;display:flex;position:absolute;bottom:calc(100% + 4px);left:0;overflow:hidden}.fxr7ba_viewport{flex-direction:column;min-height:0;display:flex;overflow-y:auto}.fxr7ba_row{cursor:pointer;color:var(--dsw-alias-label-primary);border-radius:8px;align-items:center;gap:8px;padding:6px 8px;font-size:13px;display:flex}.fxr7ba_rowActive{background:var(--dsw-alias-interactive-bg-hover)}.fxr7ba_label{white-space:nowrap;text-overflow:ellipsis;flex:auto;min-width:0;overflow:hidden}.fxr7ba_detail{color:var(--dsw-alias-label-tertiary);white-space:nowrap;text-overflow:ellipsis;font-size:12px;overflow:hidden}.fxr7ba_check{color:var(--dsw-alias-label-primary);flex:none;display:inline-flex}.fxr7ba_status{color:var(--dsw-alias-label-tertiary);padding:8px 10px;font-size:13px}.fxr7ba_search{border:1px solid var(--dsw-alias-border-inverted);color:var(--dsw-alias-label-primary);background:0 0;border-radius:8px;outline:none;margin:2px 2px 4px;padding:6px 8px;font-size:13px}.fxr7ba_error{color:var(--dsw-alias-state-error-primary);align-items:center;gap:8px;padding:6px 8px;font-size:12px;display:flex}.fxr7ba_errorText{text-overflow:ellipsis;flex:1;overflow:hidden}.fxr7ba_retry{border:1px solid var(--dsw-alias-border-inverted);color:var(--dsw-alias-label-primary);cursor:pointer;background:0 0;border-radius:6px;padding:2px 8px;font-size:12px}";
+		//#region \0dsh-css:C:\Users\czh86\Documents\Codex\deepseek-harness-win7\reference\packages\client\ui-commands\src\client\PopupSelectView.module.css.mjs
+		const css = ".fXR92q_card{z-index:100;--dsh-scrollbar-thumb:var(--dsw-alias-scrollbar-bg-l2);--dsh-scrollbar-thumb-hover:var(--dsw-alias-scrollbar-hover-l2);border:1px solid var(--dsw-alias-border-inverted);background:var(--dsw-specific-menu);min-width:min(220px,100%);max-width:100%;max-height:320px;box-shadow:var(--dsw-shadow-lv3);border-radius:12px;outline:none;flex-direction:column;padding:4px;display:flex;position:absolute;bottom:calc(100% + 4px);left:0;overflow:hidden}.fXR92q_viewport{flex-direction:column;min-height:0;display:flex;overflow-y:auto}.fXR92q_row{cursor:pointer;color:var(--dsw-alias-label-primary);border-radius:8px;align-items:center;gap:8px;padding:6px 8px;font-size:13px;display:flex}.fXR92q_rowActive{background:var(--dsw-alias-interactive-bg-hover)}.fXR92q_label{white-space:nowrap;text-overflow:ellipsis;flex:auto;min-width:0;overflow:hidden}.fXR92q_detail{color:var(--dsw-alias-label-tertiary);white-space:nowrap;text-overflow:ellipsis;font-size:12px;overflow:hidden}.fXR92q_check{color:var(--dsw-alias-label-primary);flex:none;display:inline-flex}.fXR92q_status{color:var(--dsw-alias-label-tertiary);padding:8px 10px;font-size:13px}.fXR92q_search{border:1px solid var(--dsw-alias-border-inverted);color:var(--dsw-alias-label-primary);background:0 0;border-radius:8px;outline:none;margin:2px 2px 4px;padding:6px 8px;font-size:13px}.fXR92q_error{color:var(--dsw-alias-state-error-primary);align-items:center;gap:8px;padding:6px 8px;font-size:12px;display:flex}.fXR92q_errorText{text-overflow:ellipsis;flex:1;overflow:hidden}.fXR92q_retry{border:1px solid var(--dsw-alias-border-inverted);color:var(--dsw-alias-label-primary);cursor:pointer;background:0 0;border-radius:6px;padding:2px 8px;font-size:12px}";
 		const tagId = "@deepseek-ai/dsh-client-ui-commands/PopupSelectView.module.css";
 		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId) + "]") === null) {
 			const tag = document.createElement("style");
@@ -893,18 +893,18 @@ window.__ModuleLoader__.load({
 			document.head.appendChild(tag);
 		}
 		var PopupSelectView_module_css_default = {
-			"card": "fxr7ba_card",
-			"check": "fxr7ba_check",
-			"detail": "fxr7ba_detail",
-			"error": "fxr7ba_error",
-			"errorText": "fxr7ba_errorText",
-			"label": "fxr7ba_label",
-			"retry": "fxr7ba_retry",
-			"row": "fxr7ba_row",
-			"rowActive": "fxr7ba_rowActive",
-			"search": "fxr7ba_search",
-			"status": "fxr7ba_status",
-			"viewport": "fxr7ba_viewport"
+			"card": "fXR92q_card",
+			"check": "fXR92q_check",
+			"detail": "fXR92q_detail",
+			"error": "fXR92q_error",
+			"errorText": "fXR92q_errorText",
+			"label": "fXR92q_label",
+			"retry": "fXR92q_retry",
+			"row": "fXR92q_row",
+			"rowActive": "fXR92q_rowActive",
+			"search": "fXR92q_search",
+			"status": "fXR92q_status",
+			"viewport": "fXR92q_viewport"
 		};
 		//#endregion
 		//#region lib/types/client/PopupSelectView.js

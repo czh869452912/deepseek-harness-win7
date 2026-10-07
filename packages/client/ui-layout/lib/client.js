@@ -69,8 +69,8 @@ window.__ModuleLoader__.load({
 			return null;
 		}
 		//#endregion
-		//#region \0dsh-css:D:\Project\deepseek-harness-win7\reference\packages\client\ui-layout\src\client\AppFrame.module.css.mjs
-		const css = ".tzGzJW_frame{background:var(--dsw-alias-bg-base);height:100%;transition:grid-template-columns var(--ds-transition-duration-slow) var(--ds-ease-in-out);grid-template-rows:100%;display:grid;position:relative;overflow:hidden}.tzGzJW_frame[data-dragging]{transition:none}@media (prefers-reduced-motion:reduce){.tzGzJW_frame{transition:none}}.tzGzJW_sidebarCol{background:var(--dsw-specific-sidebar-fill);border-right:1px solid var(--dsw-alias-border-l1);min-width:0;overflow:hidden}.tzGzJW_centerCol{flex-direction:column;min-width:0;display:flex;overflow:hidden}.tzGzJW_detailsCol{border-left:1px solid var(--dsw-alias-border-l2);min-width:0;overflow:hidden}.tzGzJW_frame[data-details-collapsed] .tzGzJW_detailsCol{border-left:none}.tzGzJW_handle{cursor:col-resize;z-index:2;touch-action:none;width:8px;transition:left var(--ds-transition-duration-slow) var(--ds-ease-in-out);margin-left:-4px;position:absolute;top:0;bottom:0}.tzGzJW_frame[data-dragging] .tzGzJW_handle{transition:none}@media (prefers-reduced-motion:reduce){.tzGzJW_handle{transition:none}}.tzGzJW_handle[data-side=details]:after{content:\"\";box-sizing:border-box;background:var(--dsw-alias-button-floating-fill);border:1px solid var(--dsw-alias-border-l2-darkmode-thin);opacity:0;width:12px;height:32px;transition:opacity var(--ds-transition-duration-slow) var(--ds-ease-in-out), background var(--ds-transition-duration-slow) var(--ds-ease-in-out);border-radius:10px;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%)}.tzGzJW_detailsCol:hover~.tzGzJW_handle[data-side=details]:after,.tzGzJW_handle[data-side=details]:hover:after,.tzGzJW_handle[data-side=details][data-dragging=true]:after{opacity:1}.tzGzJW_handle[data-side=details]:hover:after,.tzGzJW_handle[data-side=details][data-dragging=true]:after{background:var(--dsw-alias-button-floating-hover);border-color:var(--dsw-alias-border-l3)}.tzGzJW_overlayLayer{z-index:20;pointer-events:none;position:absolute;inset:0}.tzGzJW_overlayLayer>*{pointer-events:auto}";
+		//#region \0dsh-css:C:\Users\czh86\Documents\Codex\deepseek-harness-win7\reference\packages\client\ui-layout\src\client\AppFrame.module.css.mjs
+		const css = ".QRHTIa_frame{background:var(--dsw-alias-bg-base);height:100%;transition:grid-template-columns var(--ds-transition-duration-slow) var(--ds-ease-in-out);grid-template-rows:100%;display:grid;position:relative;overflow:hidden}.QRHTIa_frame[data-dragging]{transition:none}@media (prefers-reduced-motion:reduce){.QRHTIa_frame{transition:none}}.QRHTIa_sidebarCol{background:var(--dsw-specific-sidebar-fill);border-right:1px solid var(--dsw-alias-border-l1);min-width:0;overflow:hidden}.QRHTIa_centerCol{flex-direction:column;min-width:0;display:flex;overflow:hidden}.QRHTIa_detailsCol{border-left:1px solid var(--dsw-alias-border-l2);min-width:0;overflow:hidden}.QRHTIa_frame[data-details-collapsed] .QRHTIa_detailsCol{border-left:none}.QRHTIa_handle{cursor:col-resize;z-index:2;touch-action:none;width:8px;transition:left var(--ds-transition-duration-slow) var(--ds-ease-in-out);margin-left:-4px;position:absolute;top:0;bottom:0}.QRHTIa_frame[data-dragging] .QRHTIa_handle{transition:none}@media (prefers-reduced-motion:reduce){.QRHTIa_handle{transition:none}}.QRHTIa_handle[data-side=details]:after{content:\"\";box-sizing:border-box;background:var(--dsw-alias-button-floating-fill);border:1px solid var(--dsw-alias-border-l2-darkmode-thin);opacity:0;width:12px;height:32px;transition:opacity var(--ds-transition-duration-slow) var(--ds-ease-in-out), background var(--ds-transition-duration-slow) var(--ds-ease-in-out);border-radius:10px;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%)}.QRHTIa_detailsCol:hover~.QRHTIa_handle[data-side=details]:after,.QRHTIa_handle[data-side=details]:hover:after,.QRHTIa_handle[data-side=details][data-dragging=true]:after{opacity:1}.QRHTIa_handle[data-side=details]:hover:after,.QRHTIa_handle[data-side=details][data-dragging=true]:after{background:var(--dsw-alias-button-floating-hover);border-color:var(--dsw-alias-border-l3)}.QRHTIa_overlayLayer{z-index:20;pointer-events:none;position:absolute;inset:0}.QRHTIa_overlayLayer>*{pointer-events:auto}";
 		const tagId = "@deepseek-ai/dsh-client-ui-layout/AppFrame.module.css";
 		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId) + "]") === null) {
 			const tag = document.createElement("style");
@@ -80,12 +80,12 @@ window.__ModuleLoader__.load({
 			document.head.appendChild(tag);
 		}
 		var AppFrame_module_css_default = {
-			"centerCol": "tzGzJW_centerCol",
-			"detailsCol": "tzGzJW_detailsCol",
-			"frame": "tzGzJW_frame",
-			"handle": "tzGzJW_handle",
-			"overlayLayer": "tzGzJW_overlayLayer",
-			"sidebarCol": "tzGzJW_sidebarCol"
+			"centerCol": "QRHTIa_centerCol",
+			"detailsCol": "QRHTIa_detailsCol",
+			"frame": "QRHTIa_frame",
+			"handle": "QRHTIa_handle",
+			"overlayLayer": "QRHTIa_overlayLayer",
+			"sidebarCol": "QRHTIa_sidebarCol"
 		};
 		//#endregion
 		//#region lib/types/client/AppFrame.js
@@ -236,7 +236,6 @@ window.__ModuleLoader__.load({
 			const onDetailsDrag = (0, react.useCallback)((dx) => {
 				actions.setDetails(detailsBase.current - dx);
 			}, [actions]);
-			const productTitle = {}.DSH_CLIENT_TITLE ?? t("brand.localBuild");
 			return (0, react_jsx_runtime.jsxs)("div", {
 				ref: frameRef,
 				className: AppFrame_module_css_default.frame,
@@ -246,7 +245,7 @@ window.__ModuleLoader__.load({
 				"data-dragging": dragging || void 0,
 				children: [
 					(0, react_jsx_runtime.jsx)(DocumentTitle, {
-						productTitle,
+						productTitle: "DeepSeek Harness",
 						...documentTitle === void 0 ? {} : { title: documentTitle }
 					}),
 					(0, react_jsx_runtime.jsx)("div", {

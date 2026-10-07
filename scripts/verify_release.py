@@ -127,6 +127,20 @@ PAIRED_DRIVERS = PAIRED_DRIVERS + ('fs_values',)
 PAIRED_DRIVERS = PAIRED_DRIVERS + ('message_values',)
 OFFICIAL_CONFIGS = ('consumers', 'agent-lifecycle', 'session-recovery', 'session-projection', 'acp', 'acp-app', 'mcp', 'subagent-acp', 'storage-cache', 'session-observation', 'session-corpus', 'session-sqlite-query', 'query-engine-source', 'session-tools-source', 'sqlite-format-source', 'sqlite-provider-source', 'jsonl-provider-source', 'tool-scheduler-source', 'deepseek-source', 'llm-public-source')
 REQUIRED_REGRESSION = {
+    'test_schema_parity': {'test_tojson_envelope_shape', 'test_tojson_envelope_roundtrip'},
+    'test_frontend_import': {
+        'test_actual_pinned_official_frontend_has_complete_build_provenance',
+        *{'test_complete_frontend_record_refuses_changed_or_incomplete_inputs[' + damage + ']'
+          for damage in ('missing-client', 'changed-client', 'extra-client', 'changed-shell',
+            'missing-shell', 'extra-shell', 'duplicate-row', 'wrong-count', 'wrong-digest', 'wrong-pin',
+            'wrong-profile', 'wrong-title', 'missing-version', 'extra-record-field')},
+    },
+    'test_settings_remote': {'test_formal_web_settings_over_authenticated_http'},
+    'test_release_preflight': {
+        'test_real_frontend_and_runtime_lock_are_resolvable',
+        *{'test_invalid_input_fails_before_release_replacement[' + damage + ']'
+          for damage in ('missing-client', 'changed-client', 'extra-client', 'wrong-build-profile')},
+    },
     'test_subagent_model_consumers': {
         *{'test_actual_source_native_subagent_model_values[' + name + ']' for name in SUBAGENT_MODEL_NAMES},
         *{'test_subagent_model_requires_complete_public_results_and_runtime[' + damage + ']' for damage in SUBAGENT_MODEL_DAMAGES},
@@ -554,6 +568,10 @@ REQUIRED_REGRESSION = {
         "test_unsettled_async_body_is_physically_terminated_on_owner_unload[await new Promise(()=>{})]",
     },
     "test_preflight_copy_retention": {
+        *{'test_completed_client_copies_require_both_recorded_hashes[' + damage + ']'
+          for damage in ('unchanged', 'changed-copy', 'changed-original')},
+        *{'test_completed_preflight_supports_recorded_case_generations[' + generation + ']'
+          for generation in ('legacy', 'current')},
         'test_completed_preflight_prunes_only_unchanged_reconstructible_copies',
         *{'test_unfinished_unowned_or_changed_preflight_inputs_stay_retained[' + damage + ']'
           for damage in ('missing-case', 'duplicate-case', 'failed-case', 'skipped-case', 'unfinished', 'active', 'changed-original', 'external-owner')},
@@ -685,6 +703,11 @@ REQUIRED_REGRESSION = {
             'missing-module', 'changed-module', 'empty-closure', 'foreign-root', 'foreign-python', 'missing-row', 'duplicate-row', 'changed-row')},
     },
     'test_current_release_gate': {
+        *{'test_complete_frontend_and_settings_lanes_are_mandatory[' + damage + '-' + module + ']'
+          for damage in ('omit', 'skip', 'duplicate', 'failure')
+          for module in ('test_frontend_import', 'test_release_preflight', 'test_settings_remote', 'test_schema_parity')},
+        *{'test_extracted_complete_frontend_requires_frozen_build_record[' + damage + ']'
+          for damage in ('missing-provenance', 'changed-provenance', 'missing-clients', 'client-count', 'build-digest')},
         'test_extracted_fs_values_accepts_complete_qualified_values',
         'test_extracted_subagent_model_accepts_complete_qualified_values',
         'test_extracted_unicode_carrier_accepts_complete_qualified_values',
@@ -1396,6 +1419,12 @@ def validate_paired(path):
 
 def validate_extracted(path, archive, candidate):
     report = json.loads(path.read_text(encoding='utf-8'))
+    frontend = candidate.get('frontend')
+    if (not isinstance(frontend, dict) or report.get('provenance', {}).get('frontend') != frontend
+            or report.get('frontendFilesChecked') != len(frontend['files'])
+            or report.get('frontendClientFilesChecked') != len(frontend['client_files'])
+            or report.get('frontendBuildDigest') != frontend['build_record']['artifacts']['sha256']):
+        raise RuntimeError('Extracted complete frontend build acceptance differs')
     if (report.get('result') != 'passed' or report.get('browser', {}).get('passed') is not True
             or not report.get('runtime') or report.get('runtimeStderr')
             or report.get('acp', {}).get('processes') != 2
@@ -1859,7 +1888,8 @@ def verify(args, output):
     if actual != baseline['target_upstream'] or git('status', '--porcelain', root=ROOT / 'reference'):
         raise RuntimeError('initialize an unchanged pinned reference submodule before running the gate')
     candidate = {'product_commit': git('rev-parse', 'HEAD'),
-                 'worktree_dirty': bool(git('status', '--porcelain'))}
+                 'worktree_dirty': bool(git('status', '--porcelain')),
+                 'frontend': json.loads((ROOT / 'scripts/frontend-inputs.json').read_text(encoding='utf-8'))}
     if candidate['worktree_dirty'] and not args.allow_dirty:
         raise RuntimeError('release requires a clean checkout; --allow-dirty produces only a non-publishable preview')
     python = str(ROOT / '.venv/Scripts/python.exe')

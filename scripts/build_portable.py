@@ -104,6 +104,8 @@ def checked_inputs(root_dir, site_packages):
               for p in (root / 'apps/web/dist').rglob('*') if p.is_file()}
     if not expected or expected != actual or 'apps/web/dist/index.html' not in actual:
         raise ValueError('versioned frontend inputs missing or changed; rebuild and review their manifest')
+    from scripts.import_frontend import validate_import
+    validate_import(root, manifest)
     if not (root / 'reference/apps/cli/package.json').is_file():
         raise FileNotFoundError('pinned reference CLI package metadata is missing; initialize submodules')
     distributions = {d.metadata['Name'].lower().replace('_', '-'): d

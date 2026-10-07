@@ -17,7 +17,7 @@ async def test_catalog_reads_cold_children_without_agents_and_traverses_ordinary
         registry = ctx.get('sessionProjections')
         registry.register(IDENTITY)
         registry.register(TIMING)
-        await manager.start(dict(provider='spawn', label='worker', childId='worker', request=dict(parent=parent.agent, prompt='work')))
+        await manager.start(dict(provider='spawn', label='worker', childId='worker', request=dict(parent=parent.agent, prompt=[dict(type='text', text='work')])))
         await retired(manager, 'worker')
         await parent.agent.when_idle()
         persisted = ctx.get('sessionPersistence')

@@ -49,9 +49,12 @@ class FrozenDict(dict):
         return dict(self)
 
     def __deepcopy__(self, memo: Any = None) -> Dict[str, Any]:
-        # `copy.deepcopy` mirrors `structuredClone`: a copy is detached and no
-        # longer frozen, exactly like the reference `snapshotSessionEvent`.
-        return copy.deepcopy(dict(self), memo if memo is not None else {})
+        memo = {} if memo is None else memo
+        result: Dict[str, Any] = {}
+        memo[id(self)] = result
+        for key, value in self.items():
+            result[copy.deepcopy(key, memo)] = copy.deepcopy(value, memo)
+        return result
 
     def __reduce__(self) -> Any:
         return (FrozenDict, (dict(self),))
@@ -82,7 +85,11 @@ class FrozenList(list):
         return list(self)
 
     def __deepcopy__(self, memo: Any = None) -> List[Any]:
-        return copy.deepcopy(list(self), memo if memo is not None else {})
+        memo = {} if memo is None else memo
+        result: List[Any] = []
+        memo[id(self)] = result
+        result.extend(copy.deepcopy(value, memo) for value in self)
+        return result
 
     def __reduce__(self) -> Any:
         return (FrozenList, (list(self),))

@@ -100,7 +100,7 @@ async def test_cordis_reference_version_and_diagnostics_through_canonical_web(tm
         assert [row['isNext'] for row in inspected['packages']] == [False, False]
         assert runner.inspectPackage(agent, pid, 'pkg-1')['code']['host'] == source
         assert runner.reference(agent, pid)['packageId'] == 'pkg-1'
-        message = create_user_message(dict(content='Please update @theme-1 @theme-1'))
+        message = create_user_message(dict(content=[dict(type='text', text='Please update @theme-1 @theme-1')], source=dict(kind='user')))
         async def next_fn(*_):
             return dict(kind='accept', messages=[], startsRequestSeries=True)
         payload = dict(agent=agent, messages=[message], signal=NEVER_ABORTED, turn=1, step=2)

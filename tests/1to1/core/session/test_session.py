@@ -491,10 +491,10 @@ def _tool_message(call_id, text, message_id=None):
 class TestSessionSeedAndAppendValidation:
     def test_keeps_the_exact_identified_context_message_in_durable_history_and_projection(self):
         session = Session.create(SessionId("s2-raw"))
-        message = _text_message(
-            "<system-reminder>Additional instructions from: pkg/AGENTS.md</system-reminder>",
-        )
-        message["source"] = {"kind": "plugin", "plugin": "agent-instructions"}
+        message = create_user_message({
+            "content": [{"type": "text", "text": "<system-reminder>Additional instructions from: pkg/AGENTS.md</system-reminder>"}],
+            "source": {"kind": "plugin", "plugin": "agent-instructions"},
+        })
         session.append("user/message", message, surface_op="append")
 
         assert session.derive_messages() == [message]

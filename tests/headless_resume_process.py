@@ -26,7 +26,7 @@ async def main():
         agent = handle.agent
         before = agent.session.seq
         assert any(event['type'] == 'tool/result' for event in agent.session.events)
-        agent.followup(create_user_message(dict(content='Continue from the restored file inspection')))
+        agent.followup(create_user_message(dict(content=[dict(type='text', text='Continue from the restored file inspection')], source=dict(kind='user'))))
         await agent.when_idle()
         await ctx.get('sessions').flush(agent.session)
         endings = [event for event in agent.session.events if event['seq'] >= before and event['type'] == 'turn/end']

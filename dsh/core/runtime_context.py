@@ -1,6 +1,6 @@
-import uuid
 from typing import Any, Dict, List, Optional
 from dsh.core.surface import is_replacement_surface_event
+from dsh.llm.message import create_user_message
 
 
 SOURCE = "@deepseek-ai/dsh-system-prompt"
@@ -86,15 +86,9 @@ class RuntimeContextProjection:
         if sections and len(sections) > 0:
             src["form"] = "snapshot"
             src["sections"] = sections
-        elif len(current) > 0:
-            src["form"] = "snapshot"
-            src["sections"] = []
-
-        return {
-            "id": f"msg-{uuid.uuid4().hex[:8]}",
-            "role": "user",
+        return create_user_message({
             "content": [{"type": "text", "text": snapshot}],
             "source": src,
-        }
+        })
 
 

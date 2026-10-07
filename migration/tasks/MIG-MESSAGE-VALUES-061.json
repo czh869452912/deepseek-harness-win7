@@ -1,0 +1,30 @@
+{
+  "id": "MIG-MESSAGE-VALUES-061",
+  "goal": "对齐原版Message构造、分配、只读循环图快照与运行时上下文投影",
+  "kind": "implementation",
+  "state": "running",
+  "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
+  "base_product": "1f41abf7a9084c42507101ee592707128c9e06dd",
+  "owner": "current-session-coordinator",
+  "requires": [
+    {"task": "MIG-CURRENT-RELEASE-GATE-003", "contract": "CON-CURRENT-RELEASE-GATE", "revision": 1}
+  ],
+  "provides": [{"contract": "CON-MESSAGE-VALUES", "revision": 1}],
+  "acceptance": [
+    "All20 complete actual pinned Source/Root/independently owned Python3.8.10 observations match with strict distinct UUIDv4 allocation validation and every graph node/ref/readonly flag retained.",
+    "Real consumer regression and mutation/identity/shape/graph/import/Source/extracted/mandatory refusal controls pass.",
+    "Complete original failed observations, intermediate repeated-freeze RecursionError and mutable-fixture failure remain immutable archived evidence.",
+    "New clean full regression, all current paired drivers, unchanged official Source groups, actual own extraction and original browser pass before bounded integration."
+  ],
+  "expected_paths": ["dsh/llm/message.py", "dsh/core", "dsh/subagent", "scripts", "tests", "migration", "docs/research"],
+  "open_findings": [
+    "Formal20 Source/Root/own Python3.8.10 observations match, with100 independently approved actual imports and15481 owned files checked before/after.427 prerequisites,95 mandatory/extracted and348 actual consumer tests pass; overlapping sets not summed.114-file immutable archive retains original refusals, repeated-freeze error, incomplete gate and old mutable/string fixture failures.",
+    "Eightieth paired driver and all new message/graph/mandatory/extracted controls registered. Latest accepted complete clean release remains83026446/65 bounded contracts; this item is not integrated.",
+    "Full profiles, policy/browser composition and seven parent ranges remain open; actual Win7 certification remains user-deferred."
+  ],
+  "conflicts_with": [],
+  "candidate_commit": null,
+  "integrated_commit": null,
+  "evidence_ids": ["RUN-MESSAGE-VALUES-FORMAL-QUALIFICATION-20261007-1F41ABF7"],
+  "next_action": "本部分正式提供端/消费端与114文件资格完成，继续全部预设/浏览器/策略及七父范围；按正常预算重新冻结完整回归、全部配对/原版/实际解压/原版浏览器验收后才可有界集成。"
+}

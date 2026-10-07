@@ -63,10 +63,12 @@ from scripts.tool_errors_cases import damage_runtime as damage_tool_error_runtim
 from scripts.tool_durable_cases import damage_runtime as damage_tool_durable_runtime
 from scripts.agent_dependencies_cases import damage_runtime as damage_agent_dependencies_runtime
 from scripts.ask_user_cases import damage_runtime as damage_ask_user_runtime
+from scripts.message_values_cases import damage_runtime as damage_message_values_runtime
 from scripts.tool_errors_oracle import OBSERVER_INPUTS as TOOL_ERROR_OBSERVER_INPUTS
 from scripts.tool_durable_oracle import OBSERVER_INPUTS as TOOL_DURABLE_OBSERVER_INPUTS
 from scripts.agent_dependencies_oracle import OBSERVER_INPUTS as AGENT_DEPENDENCIES_OBSERVER_INPUTS
 from scripts.ask_user_oracle import OBSERVER_INPUTS as ASK_USER_OBSERVER_INPUTS
+from scripts.message_values_oracle import OBSERVER_INPUTS as MESSAGE_VALUES_OBSERVER_INPUTS
 from scripts.sdk_profile_oracle import OBSERVER_INPUTS as SDK_OBSERVER_INPUTS
 from scripts.permission_presets_oracle import OBSERVER_INPUTS as PERMISSION_OBSERVER_INPUTS
 from scripts.exported_host_lifecycle_oracle import observe_native as observe_host_lifecycle
@@ -1962,6 +1964,15 @@ def extracted_receipt(tmp_path):
     candidate['ask_user_source_sha256'] = hashlib.sha256(json.dumps(tool_pair['source'], sort_keys=True).encode('utf-8')).hexdigest()
     candidate['ask_user_observations_sha256'] = GATE.ask_user_digest(tool_pair['source']['rows'])
     candidate['ask_user_modules'] = copy.deepcopy(ask_user['imports'])
+    tool_pair = copy.deepcopy(message_values_runtime_fixture())
+    message_values = tool_pair['native']
+    message_values['root'], message_values['executable'] = str(tmp_path), str(tmp_path / 'python.exe')
+    tool_pair['source']['inputs'] = {name: sha256 for name, sha256 in tool_pair['source']['inputs'].items()
+        if name in MESSAGE_VALUES_OBSERVER_INPUTS or name in ('reference/packages/core/tools/src/index.ts', 'reference/packages/interaction/tool-message-values/src/index.ts', 'reference/packages/interaction/user-questions/src/index.ts')}
+    candidate['message_values_source'] = tool_pair['source']
+    candidate['message_values_source_sha256'] = hashlib.sha256(json.dumps(tool_pair['source'], sort_keys=True).encode('utf-8')).hexdigest()
+    candidate['message_values_observations_sha256'] = GATE.message_values_digest(tool_pair['source']['rows'])
+    candidate['message_values_modules'] = copy.deepcopy(message_values['imports'])
     host_lifecycle = copy.deepcopy(host_lifecycle_runtime_fixture())
     host_lifecycle['root'], host_lifecycle['executable'] = str(tmp_path), str(tmp_path / 'python.exe')
     candidate['exported_host_lifecycle_sha256'] = GATE.host_lifecycle_digest(host_lifecycle)
@@ -1985,6 +1996,7 @@ def extracted_receipt(tmp_path):
               'toolDurable': tool_durable, 'toolDurableSourceSha256': candidate['tool_durable_source_sha256'],
               'agentDependencies': agent_dependencies, 'agentDependenciesSourceSha256': candidate['agent_dependencies_source_sha256'],
               'askUser': ask_user, 'askUserSourceSha256': candidate['ask_user_source_sha256'],
+              'messageValues': message_values, 'messageValuesSourceSha256': candidate['message_values_source_sha256'],
               'exportedHostLifecycle': host_lifecycle,
               'javascriptErrors': errors, 'javascriptErrorsSourceSha256': candidate['javascript_errors_source_sha256']}
     modes = ['allow', 'reject', 'malformed', 'cancel-late', 'close-late', 'eof']
@@ -2961,6 +2973,47 @@ def test_extracted_session_tracing_requires_exact_observations_and_runtime(tmp_p
     path.write_text(json.dumps(report),encoding='utf-8')
     with pytest.raises(RuntimeError):
         GATE.validate_extracted(path,archive,candidate)
+
+
+@functools.lru_cache(maxsize=1)
+def message_values_runtime_fixture():
+    with tempfile.TemporaryDirectory(prefix='dsh-message-values-source-') as folder:
+        output = Path(folder) / 'paired.json'
+        completed = subprocess.run([sys.executable, str(ROOT / 'scripts/message_values_oracle.py'),
+            '--output', str(output)], cwd=str(ROOT), capture_output=True, timeout=240)
+        if completed.returncode:
+            raise RuntimeError(output.read_text(encoding='utf-8'))
+        return dict(source=json.loads(output.with_suffix('.source.json').read_text(encoding='utf-8')),
+            native=json.loads(output.with_suffix('.native.json').read_text(encoding='utf-8')))
+
+
+@pytest.mark.parametrize('damage', GATE.MESSAGE_VALUES_DAMAGES + ('receipt-missing', 'source-missing', 'source-changed', 'source-file'))
+def test_extracted_message_values_requires_complete_values_and_runtime(tmp_path, damage):
+    archive, candidate, report = extracted_receipt(tmp_path)
+    if damage == 'receipt-missing':
+        del report['messageValues']
+    elif damage == 'source-missing':
+        del candidate['message_values_source']
+    elif damage == 'source-changed':
+        candidate['message_values_source']['rows'][0]['frozen'] = False
+    elif damage == 'source-file':
+        report['messageValuesSourceSha256'] = '0' * 64
+    else:
+        report['messageValues'] = damage_message_values_runtime(report['messageValues'], damage)
+    output = tmp_path / 'extracted.json'
+    output.write_text(json.dumps(report), encoding='utf-8')
+    with pytest.raises(RuntimeError, match='messageValues'):
+        GATE.validate_extracted(output, archive, candidate)
+
+
+@pytest.mark.parametrize('damage', ('omit', 'skip', 'duplicate', 'failure'))
+def test_message_values_consumer_lanes_are_mandatory(tmp_path, damage):
+    path = tmp_path / 'pytest.xml'
+    for module in ('test_message_values_consumers', 'test_message_snapshot_graph'):
+        for name in GATE.REQUIRED_REGRESSION[module]:
+            regression_xml(path, **{damage: (module, name)})
+            with pytest.raises(RuntimeError):
+                GATE.validate_regression(path)
 
 
 @functools.lru_cache(maxsize=1)

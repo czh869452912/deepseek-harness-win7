@@ -37,7 +37,7 @@ async def test_background_acceptance_natural_disposal_and_cold_followup(tmp_path
     signal = AbortController()
     try:
         first = await manager.start(dict(provider='spawn', label='worker', childId='worker', signal=signal.signal,
-                                        request=dict(parent=parent.agent, prompt='first child task', persona='test persona')))
+                                        request=dict(parent=parent.agent, prompt=[dict(type='text', text='first child task')], persona='test persona')))
         assert first['childId'] == 'worker' and first['messageId']
         original = manager.activations['worker'].handle.agent
         signal.abort(ValueError('admission signal no longer owns child'))
@@ -48,7 +48,7 @@ async def test_background_acceptance_natural_disposal_and_cold_followup(tmp_path
         assert observation.header.parentSession == parent.agent.id
         assert any(event['type'] == 'assistant/message' for event in observation.events)
         observation.dispose()
-        message_id = await manager.followup(parent.agent, 'worker', 'second child task')
+        message_id = await manager.followup(parent.agent, 'worker', [dict(type='text', text='second child task')])
         restored = manager.activations['worker'].handle.agent
         assert restored is not original and message_id != first['messageId']
         await retired(manager, 'worker')
@@ -81,14 +81,14 @@ async def test_followups_use_one_live_fifo_and_reject_wrong_parent(tmp_path):
     ctx.set_service('llm', model)
     stranger = await ctx.get('agents').create('stranger')
     try:
-        await manager.start(dict(provider='spawn', label='worker', childId='worker', request=dict(parent=parent.agent, prompt='first')))
+        await manager.start(dict(provider='spawn', label='worker', childId='worker', request=dict(parent=parent.agent, prompt=[dict(type='text', text='first')])))
         await asyncio.wait_for(model.entered.wait(), 2)
         child = manager.activations['worker'].handle.agent
-        second = await manager.followup(parent.agent, 'worker', 'second')
-        third = await manager.followup(parent.agent, 'worker', 'third')
+        second = await manager.followup(parent.agent, 'worker', [dict(type='text', text='second')])
+        third = await manager.followup(parent.agent, 'worker', [dict(type='text', text='third')])
         assert second != third and manager.activations['worker'].handle.agent is child
         with pytest.raises(SubagentError) as error:
-            await manager.followup(stranger.agent, 'worker', 'intruder')
+            await manager.followup(stranger.agent, 'worker', [dict(type='text', text='intruder')])
         assert error.value.code == 'UNAUTHORIZED'
         model.release.set()
         await retired(manager, 'worker')
@@ -115,17 +115,17 @@ async def test_scoped_drain_waits_child_first_and_keeps_other_tree_open(tmp_path
     released = []
     ctx.on('agent/disposed', lambda payload: released.append(payload['agent'].id))
     try:
-        await manager.start(dict(provider='spawn', label='child', childId='child', request=dict(parent=parent.agent, prompt='child')))
+        await manager.start(dict(provider='spawn', label='child', childId='child', request=dict(parent=parent.agent, prompt=[dict(type='text', text='child')])))
         child = manager.activations['child'].handle.agent
-        await manager.start(dict(provider='spawn', label='grandchild', childId='grandchild', request=dict(parent=child, prompt='grandchild')))
+        await manager.start(dict(provider='spawn', label='grandchild', childId='grandchild', request=dict(parent=child, prompt=[dict(type='text', text='grandchild')])))
         await manager.drain_descendants([parent.agent])
         assert released.index('grandchild') < released.index('child')
         with pytest.raises(SubagentError, match='closed'):
-            await manager.start(dict(provider='spawn', label='denied', request=dict(parent=parent.agent, prompt='denied')))
-        await manager.start(dict(provider='spawn', label='allowed', childId='allowed', request=dict(parent=other.agent, prompt='allowed')))
+            await manager.start(dict(provider='spawn', label='denied', request=dict(parent=parent.agent, prompt=[dict(type='text', text='denied')])))
+        await manager.start(dict(provider='spawn', label='allowed', childId='allowed', request=dict(parent=other.agent, prompt=[dict(type='text', text='allowed')])))
         assert 'allowed' in manager.activations
         await manager.drain_children(other.agent, ['allowed', 'unknown'])
-        await manager.start(dict(provider='spawn', label='again', childId='again', request=dict(parent=other.agent, prompt='again')))
+        await manager.start(dict(provider='spawn', label='again', childId='again', request=dict(parent=other.agent, prompt=[dict(type='text', text='again')])))
         assert 'again' in manager.activations
     finally:
         model.release.set()
@@ -141,7 +141,7 @@ async def test_parent_waits_for_child_settlement_and_report_does_not_finish_chil
     model = BlockingModel()
     ctx.set_service('llm', model)
     try:
-        await manager.start(dict(provider='spawn', label='worker', childId='worker', request=dict(parent=parent.agent, prompt='work')))
+        await manager.start(dict(provider='spawn', label='worker', childId='worker', request=dict(parent=parent.agent, prompt=[dict(type='text', text='work')])))
         await asyncio.wait_for(model.entered.wait(), 2)
         child = manager.activations['worker'].handle.agent
         report = manager.report(child, [{'type': 'text', 'text': 'partial progress'}], {'delivery': 'quiet'})
@@ -173,13 +173,13 @@ async def test_idle_parent_activation_waits_for_owned_descendant(tmp_path):
             yield {'choices': [{'delta': {'content': 'done'}, 'finish_reason': 'stop'}]}
     ctx.set_service('llm', RoutedModel())
     try:
-        await manager.start(dict(provider='spawn', label='worker', childId='worker', request=dict(parent=parent.agent, prompt='worker work')))
+        await manager.start(dict(provider='spawn', label='worker', childId='worker', request=dict(parent=parent.agent, prompt=[dict(type='text', text='worker work')])))
         worker = manager.activations['worker'].handle.agent
-        await manager.start(dict(provider='spawn', label='grandchild', childId='grandchild', request=dict(parent=worker, prompt='grandchild work')))
+        await manager.start(dict(provider='spawn', label='grandchild', childId='grandchild', request=dict(parent=worker, prompt=[dict(type='text', text='grandchild work')])))
         worker_gate.set()
         await asyncio.wait_for(worker.when_idle(), 2)
         assert manager.state(manager.activations['worker']) == 'waiting'
-        await manager.followup(parent.agent, 'worker', 'more work while waiting')
+        await manager.followup(parent.agent, 'worker', [dict(type='text', text='more work while waiting')])
         assert manager.activations['worker'].handle.agent is worker
         await asyncio.wait_for(worker.when_idle(), 2)
         assert manager.state(manager.activations['worker']) == 'waiting'
@@ -198,22 +198,22 @@ async def test_idle_parent_activation_waits_for_owned_descendant(tmp_path):
 async def test_cold_resume_uses_descriptor_after_provider_removal_and_stale_parent_rejected(tmp_path):
     ctx, _, parent, manager = await mounted(tmp_path)
     try:
-        await manager.start(dict(provider='spawn', label='worker', childId='worker', request=dict(parent=parent.agent, prompt='first')))
+        await manager.start(dict(provider='spawn', label='worker', childId='worker', request=dict(parent=parent.agent, prompt=[dict(type='text', text='first')])))
         await retired(manager, 'worker')
         await parent.agent.when_idle()
         manager.host.providers.clear()
-        await manager.followup(parent.agent, 'worker', 'provider need not be resident for resume')
+        await manager.followup(parent.agent, 'worker', [dict(type='text', text='provider need not be resident for resume')])
         await retired(manager, 'worker')
         await parent.agent.when_idle()
         stale = parent.agent
         await parent.dispose()
         parent = await ctx.get('agents').resume('parent')
         with pytest.raises(SubagentError) as error:
-            await manager.followup(stale, 'worker', 'stale authority')
+            await manager.followup(stale, 'worker', [dict(type='text', text='stale authority')])
         assert error.value.code == 'UNAUTHORIZED'
         with pytest.raises(SubagentError):
             manager.interrupt('unknown', {'kind': 'ancestor', 'agent': stale})
-        await manager.followup(parent.agent, 'worker', 'current parent incarnation')
+        await manager.followup(parent.agent, 'worker', [dict(type='text', text='current parent incarnation')])
         await retired(manager, 'worker')
     finally:
         await manager.drain()
@@ -231,7 +231,7 @@ async def test_revoked_setup_never_publishes_or_accepts_child(tmp_path):
     revoke = manager.setups.register(install)
     try:
         with pytest.raises(SubagentError) as error:
-            await manager.start(dict(provider='spawn', label='worker', childId='worker', request=dict(parent=parent.agent, prompt='never admitted')))
+            await manager.start(dict(provider='spawn', label='worker', childId='worker', request=dict(parent=parent.agent, prompt=[dict(type='text', text='never admitted')])))
         assert error.value.code == 'ACTIVATION_SETUP_REVOKED'
         assert removed == ['worker']
         assert ctx.get('agents').get('worker') is None

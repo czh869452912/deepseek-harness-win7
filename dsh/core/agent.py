@@ -152,7 +152,8 @@ class Agent:
         """
         Route input to inbox boundary and optionally wake driver.
         """
-        msg_dict = create_user_message(dict(content=message)) if isinstance(message, str) else dict(message)
+        msg_dict = create_user_message(dict(content=[dict(type='text', text=message)],
+                                           source=dict(kind='user'))) if isinstance(message, str) else dict(message)
         waking_after_abort = wakeup and self._phase_kind != "idle" and self.is_cancelled()
         resolved_target = "next-turn" if waking_after_abort else target
 

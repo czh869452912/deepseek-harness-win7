@@ -37,7 +37,7 @@ async def observe():
             meter, registry = ctx.get("tokenMeter"), ctx.get("sessionProjections")
             session, output, step = ctx.get("sessions").create(), [], 0
             def user(text, **options):
-                return session.append("user/message", create_user_message(dict(content=text)),
+                return session.append("user/message", create_user_message(dict(content=[dict(type='text', text=text)] if isinstance(text, str) else text, source=dict(kind='user'))),
                                       surface_op=options.pop("surface_op", "append"), **options)
             for action in spec["actions"]:
                 op = action["op"]
@@ -62,7 +62,7 @@ async def observe():
                                   dict(type="finish", reason=dict(kind="stop"))]
                         for chunk in chunks:
                             seqs.append(session.append("assistant/chunk", dict(turn=1, step=step, chunk=chunk))["seq"])
-                    data = dict(turn=1, step=step, message=create_assistant_message(dict(content=text)))
+                    data = dict(turn=1, step=step, message=create_assistant_message(dict(content=[dict(type='text', text=text)] if text else [], source=dict(provider='mock', model='mock'))))
                     if "usage" in action:
                         data["usage"] = action["usage"]
                     options = dict(source_event_seqs=seqs) if "provenance" in action else {}

@@ -14,7 +14,7 @@ async def test_remote_prompt_preserves_browser_source_and_named_failure(tmp_path
     await ctx.plugin(SessionProjectionsPlugin)
     ctx.get('sessionProjections').register(IDENTITY)
     try:
-        await manager.start(dict(provider='spawn', label='worker', childId='worker', request=dict(parent=parent.agent, prompt='first')))
+        await manager.start(dict(provider='spawn', label='worker', childId='worker', request=dict(parent=parent.agent, prompt=[dict(type='text', text='first')])))
         await retired(manager, 'worker')
         await parent.agent.when_idle()
         request = dict(parentSessionId='parent', childSessionId='worker', mode='continuable', requestId='browser-request',

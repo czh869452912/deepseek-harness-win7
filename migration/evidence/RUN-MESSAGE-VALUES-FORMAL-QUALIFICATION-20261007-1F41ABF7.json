@@ -1,0 +1,24 @@
+{
+  "id": "RUN-MESSAGE-VALUES-FORMAL-QUALIFICATION-20261007-1F41ABF7",
+  "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
+  "product_commit": "1f41abf7a9084c42507101ee592707128c9e06dd",
+  "kind": "verification",
+  "task_id": "MIG-MESSAGE-VALUES-061",
+  "result": "passed",
+  "validity": "current",
+  "exit_code": 0,
+  "commands": [
+    ".venv/Scripts/python.exe scripts/message_values_oracle.py --output .goose/out/acp-a4-work/message-values-formal-root-after-v3.json",
+    ".venv/Scripts/python.exe .goose/out/acp-a4-work/qualify_message_values_formal_owned_v2.py",
+    ".venv/Scripts/python.exe -m pytest tests/test_message_values_consumers.py tests/test_message_snapshot_graph.py tests/test_runtime_context_projection_parity.py tests/test_runtime_context_consumers.py tests/test_token_meter_replay.py tests/test_canonical_skill_journey.py tests/test_cordis_tools_full.py tests/1to1/core/session tests/1to1/feedback/message_feedback --junitxml=.goose/out/acp-a4-work/message-values-prerequisites-v2.xml",
+    ".venv/Scripts/python.exe -m pytest tests/test_message_values_consumers.py tests/test_current_release_gate.py -k message_values -q --junitxml=.goose/out/acp-a4-work/message-values-gate-v2.xml",
+    ".venv/Scripts/python.exe -m pytest tests/test_agent_inbox.py tests/test_e2e_core_agent_loop_llm_system_prompt_1to1.py tests/test_reference_core_agent_loop_1to1_full.py tests/test_subagent_in_process.py tests/test_subagent_continuation.py tests/test_subagent_composition.py tests/test_subagent_catalog.py tests/test_subagent_remote_control.py tests/test_canonical_subagent_tools.py tests/test_headless_http_journey.py tests/test_pi_headless_http_journey.py tests/test_headless_retry_http.py tests/test_canonical_llm_consumers.py tests/test_tool_durable_consumers.py tests/test_agent_dependencies_consumers.py tests/test_ask_user_consumers.py -q --junitxml=.goose/out/acp-a4-work/message-values-secondary-v3.xml",
+    ".venv/Scripts/python.exe .goose/out/acp-a4-work/collect_message_values_formal_qualification_v1.py"
+  ],
+  "environment": {"python": "3.8.10", "os": "Windows-10-10.0.26200-SP0", "node": "v22.22.2"},
+  "contract_revisions": {"CON-MESSAGE-VALUES": 1},
+  "artifacts": [
+    {"path": "migration/evidence/artifacts/MESSAGE-VALUES-FORMAL-QUALIFICATION-20261007-1F41ABF7.zip", "sha256": "98cd0d56f9b4668ea8103ff043e494fd0434185c98b555c94c35326800c67046"}
+  ],
+  "scope": "All20 full fresh Source/Root/own Python3.8.10 observations;100 independently approved actual imports and15481 owned file guards. Every graph node/ref/readonly flag and frozen identity literal; only exact distinct full UUIDv4 allocation fields mapped by named case.427 prerequisite,95 Message mandatory/extracted and348 actual consumer tests pass with no failure/error/skip; overlapping sets not summed.114-file archive retains old Root UUID refusal, intermediate cycle RecursionError, mutable-fixture failure, incomplete gate and both three-failure cold-continuation runs. Final own-v2 preserves original typed subagent provider; old string fixtures fixed to match actual Source content blocks.80 paired drivers and72 new consumer/graph plus34 mandatory/extracted controls registered. No new full clean release,061 integration or broad parent closure."
+}

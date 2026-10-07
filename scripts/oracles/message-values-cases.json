@@ -1,0 +1,14 @@
+[
+  {"name":"base","helper":"createMessage","input":{"role":"user","source":{"kind":"user"},"content":[{"type":"text","text":"hello 中文🙂"}],"metadata":{"flag":false,"count":0}}},
+  {"name":"base-given-id","helper":"createMessage","input":{"id":"supplied","role":"user","source":{"kind":"user"},"content":[]}},
+  {"name":"base-null-id","helper":"createMessage","input":{"id":null,"role":"user","source":{"kind":"user"},"content":[]}},
+  {"name":"user","helper":"createUserMessage","input":{"source":{"kind":"plugin","plugin":"probe"},"content":[{"type":"text","text":"user"}],"extra":{"id":"kept"}}},
+  {"name":"user-role","helper":"createUserMessage","input":{"role":"assistant","source":{"kind":"user"},"content":[]}},
+  {"name":"user-string","helper":"createUserMessage","input":{"source":{"kind":"user"},"content":"literal input"}},
+  {"name":"user-no-source","helper":"createUserMessage","input":{"content":[]}},
+  {"name":"assistant","helper":"createAssistantMessage","input":{"content":[{"type":"text","text":"answer"}],"source":{"provider":"provider","model":"model","replayState":{"data":[]}}}},
+  {"name":"assistant-extra","helper":"createAssistantMessage","input":{"id":"discarded","role":"user","content":[],"source":{"provider":"provider","model":"model"},"extra":"discarded"}},
+  {"name":"assistant-kind","helper":"createAssistantMessage","input":{"content":[],"source":{"kind":"imported","provider":"provider","model":"model"}}},
+  {"name":"tool","helper":"createToolResultMessage","input":{"callId":"controlled-call","content":[{"type":"text","text":"tool"}],"isError":false,"extra":"discarded"}},
+  {"name":"freeze","helper":"freezeMessage","input":{"id":"preserved-identity","role":"user","source":{"kind":"user"},"content":[{"type":"text","text":"snapshot"}],"extra":{"items":[false,0,null,{},[]]}}}
+]

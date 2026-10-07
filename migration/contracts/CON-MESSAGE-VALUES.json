@@ -1,0 +1,45 @@
+{
+  "id": "CON-MESSAGE-VALUES",
+  "revision": 1,
+  "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
+  "status": "specified",
+  "source_paths": [
+    "reference/packages/llm/llm/src/message.ts",
+    "reference/packages/core/agent-loop/src/runtime-context.ts",
+    "reference/packages/core/session/src/json.ts"
+  ],
+  "consumers": [
+    "dsh/core/agent.py",
+    "dsh/subagent/in_process.py",
+    "scripts/message_values_oracle.py",
+    "scripts/message_values_cases.py",
+    "scripts/oracles/message_values_source.mts",
+    "scripts/oracles/message_values_python.py",
+    "scripts/oracles/message-values-cases.json",
+    "tests/test_message_values_consumers.py",
+    "tests/test_message_snapshot_graph.py",
+    "scripts/verify_release.py",
+    "scripts/verify_portable.py",
+    "tests/test_current_release_gate.py"
+  ],
+  "invariants": [
+    "All20 ordered full actual observations retain helper input shape, source attribution, field selection, allocation, detached snapshots, nested readonly flags and runtime projection presence.",
+    "Creators always allocate distinct full UUIDv4 even when an input supplies identity; freeze preserves its given identity. Only the exact top-level allocation field is mapped by case after strict UUID validation.",
+    "User helpers neither invent source nor coerce content. Assistant helpers select content and model source only, preserving explicit source overrides. Tool helpers publish exact callId/content/isError fields.",
+    "Detached cloning and repeated freezing preserve complete dictionary/list aliases and cycles, including backreferences to the message. Every node/ref and readonly flag is compared literally.",
+    "Runtime projection omits unchanged/initial-empty snapshots, retains cleared-marker semantics and adds snapshot/sections attribution only when sections are nonempty.",
+    "Actual string-prompt consumers explicitly construct typed text blocks and user sources before calling the canonical helper.",
+    "Pinned actual Source and all tracked/observer/case bytes are guarded before and after; actual native imports equal an independently approved closure.",
+    "Missing, modified, skipped, duplicated or failed consumer/extracted/mandatory evidence is refused. A focused qualification cannot replace a new clean full release."
+  ],
+  "identity": "Exact20 ordered message_values_oracle.NAMES; only validated distinct full UUIDv4 at row.message.id for allocated rows is mapped. Frozen graph identities and nested ID strings stay literal.",
+  "ownership": "Message creators own detached readonly graphs; callers own mutable inputs. Runtime projection creates an uncommitted candidate without appending it.",
+  "ordering": "Twelve literal shared-fixture helper rows, first/repeated graph clones and six restored runtime projections.",
+  "errors": "Readonly mutations raise TypeError. Malformed observations/imports/identity and repeated allocation IDs cannot be normalized into matches.",
+  "cancellation": "No cancellation dispatch is introduced; existing Agent/Tool cancellation contracts remain required.",
+  "adaptation": "Python immutable dict/list subclasses expose readonly detached JSON graphs instead of freezing built-in containers in place. Actual graph references are retained; OS/runtime identities are checked separately.",
+  "open_questions": [
+    "Arbitrary non-JSON structured-clone types, extremely deep graphs and plugin-owned extension shapes remain wider ABI qualification work.",
+    "Complete profile/browser/policy parent acceptance and user-deferred actual Win7 certification remain separate."
+  ]
+}

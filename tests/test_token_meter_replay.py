@@ -22,7 +22,7 @@ def user(session, text="abcd", op="append"):
     if isinstance(op, dict):
         nodes = session.surface.nodes
         options["source_event_seqs"] = nodes[nodes.index(op["start"]):nodes.index(op["end"]) + 1]
-    return session.append("user/message", create_user_message(dict(content=text)), surface_op=op, **options)
+    return session.append("user/message", create_user_message(dict(content=[dict(type='text', text=text)] if isinstance(text, str) else text, source=dict(kind='user'))), surface_op=op, **options)
 
 
 def call(session, usage=USAGE, text="answer", provider_text=None, provenance="absent", header=HEADER, step=1):
@@ -38,7 +38,7 @@ def call(session, usage=USAGE, text="answer", provider_text=None, provenance="ab
                   dict(type="finish", reason=dict(kind="stop"))]
         for chunk in chunks:
             seqs.append(session.append("assistant/chunk", dict(turn=1, step=step, chunk=chunk))["seq"])
-    body = dict(turn=1, step=step, message=create_assistant_message(dict(content=text)))
+    body = dict(turn=1, step=step, message=create_assistant_message(dict(content=[dict(type='text', text=text)] if text else [], source=dict(provider='mock', model='mock'))))
     if usage is not None:
         body["usage"] = usage
     opts = {} if provenance == "absent" else dict(source_event_seqs=seqs)
@@ -201,7 +201,7 @@ def test_projection_shadow_claim_is_adjacent_and_range_checked():
     state = dict(systemTokens=0, toolsTokens=0, messageTokens=100)
     claim = dict(type="compaction/prune", data=dict(shadowedRange=dict(start=1, end=2), shadowedTokenCount=90))
     armed = fold_breakdown(state, claim)
-    event = dict(seq=5, type="user/message", surfaceOp=dict(start=1, end=2), data=create_user_message(dict(content="x")))
+    event = dict(seq=5, type="user/message", surfaceOp=dict(start=1, end=2), data=create_user_message(dict(content=[dict(type='text', text="x")], source=dict(kind='user'))))
     assert fold_breakdown(armed, event)["messageTokens"] == 19
     assert fold_breakdown(state, event) is state
     expired = fold_breakdown(armed, dict(type="session/end-seed", data={}))
@@ -217,7 +217,7 @@ def test_pressure_samples_precede_message_surface_and_window_can_clear():
     event = user(session)
     state = fold_pressure(dict(surfaceTokens=0), event)
     state = fold_pressure(state, dict(type="request/context", data=dict(contextWindow=1000)))
-    state = fold_pressure(state, dict(type="assistant/message", data=dict(usage=USAGE, message=create_assistant_message(dict(content="abcd"))), surfaceOp="append", seq=1))
+    state = fold_pressure(state, dict(type="assistant/message", data=dict(usage=USAGE, message=create_assistant_message(dict(content=[dict(type='text', text="abcd")], source=dict(provider='mock', model='mock')))), surfaceOp="append", seq=1))
     from dsh.llm.token_projections import pressure_view
     assert pressure_view(state) == dict(contextWindow=1000, pressureTokens=150, projectedTokens=159)
     state = fold_pressure(state, dict(type="request/context", data={}))
@@ -333,7 +333,7 @@ def test_first_chunk_freezes_input_and_later_surface_injection_remains_delta():
                                                   chunk=dict(type="text-delta", index=0, text="answer")))
     user(session, "injected")
     session.append("assistant/message", dict(turn=1, step=1, usage=USAGE,
-                                            message=create_assistant_message(dict(content="answer"))),
+                                            message=create_assistant_message(dict(content=[dict(type='text', text="answer")], source=dict(provider='mock', model='mock')))),
                    surface_op="append", source_event_seqs=[chunk["seq"]])
     session.append("step/end", dict(turn=1, step=1))
     result = meter.measure(session)

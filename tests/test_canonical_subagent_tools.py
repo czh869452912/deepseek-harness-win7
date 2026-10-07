@@ -72,7 +72,7 @@ async def test_child_report_is_scoped_and_live_revocable(tmp_path):
     reports = await ctx.plugin(ToolSubagentReport, {'reportDelivery': 'quiet'})
     try:
         service = ctx.get('subagents')
-        started = await service.startContinuable(dict(provider='spawn', label='worker', request=dict(parent=parent.agent, prompt='work')))
+        started = await service.startContinuable(dict(provider='spawn', label='worker', request=dict(parent=parent.agent, prompt=[dict(type='text', text='work')])))
         child = ctx.get('agents').get(started['childId'])
         assert ctx.get('tools').get('report', scope_of(parent.agent.ctx)) is None
         tool = ctx.get('tools').get('report', scope_of(child.ctx))

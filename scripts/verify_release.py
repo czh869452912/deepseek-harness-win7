@@ -224,12 +224,14 @@ REQUIRED_REGRESSION = {
         'test_client_only_export_does_not_gain_host_dependencies',
     },
     'test_python_plugin_export': {
+        'test_python_export_is_explicit_agent_owned_extension',
         'test_canonical_boot_rejects_pending_export_without_evaluating_globals',
         'test_canonical_export_dependency_epochs_preserve_owned_globals_and_handlers',
         'test_missing_dependency_is_pending_without_false_publication',
         'test_exported_sdk_dependency_loss_revokes_handlers_and_tools',
         'test_failed_exported_plugin_reverses_partial_registrations',
     },
+    'test_cordis_tool_contracts': {'test_manager_registers_exact_source_tool_roster'},
     'test_fs_local_upstream_parity': {
         'test_windows_replacement_errors_preserve_source_metadata_without_retry[%s-%s]' % (code, expected)
         for code, expected in ((1, 'EIO'), (2, 'ENOENT'), (3, 'ENOENT'), (5, 'EACCES'), (20, 'EIO'), (32, 'EIO'), (1175, 'EIO'), (1176, 'EIO'), (1177, 'EIO'))

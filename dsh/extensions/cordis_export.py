@@ -1,5 +1,14 @@
 """Python-specific model tool; upstream Cordis tool contracts stay unchanged."""
 from dsh.boot.python_plugin_export import export_project, json_text
+from dsh.cordis.plugin import Plugin
+
+
+class PythonPluginExport(Plugin):
+    id = 'tool-python-export'
+    inject = ['tools', 'dynamicCordisRunner', 'fs']
+
+    def apply(self, ctx):
+        register_export_tool(ctx)
 
 
 def register_export_tool(ctx):

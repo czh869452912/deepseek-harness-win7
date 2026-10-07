@@ -49,3 +49,8 @@ def test_native_host_guidance_and_parameter_contract_are_explicit():
             assert row == original[row['name']]
     contracts['definitions'][0]['parameters']['additionalProperties'] = 'mutated'
     assert native_contracts()['definitions'][0]['parameters'] == original['cordis_inspect_list']['parameters']
+
+
+def test_manager_registers_exact_source_tool_roster():
+    tools, _, _, _ = probe.environment({})
+    assert [tool.name for tool in tools] == [row['name'] for row in SOURCE_CONTRACTS['definitions']]

@@ -214,6 +214,7 @@ HARNESS_PLUGIN_CLASSES: Dict[str, str] = {
     # The self-inspection toolset publishes itself as `dsh-tool-cordis`; profiles
     # composed before that rename name the `dsh-cordis-manager` row.
     "@deepseek-ai/dsh-tool-cordis": "dsh.extensions.cordis_manager:CordisManagerPlugin",
+    "@deepseek-ai/dsh-tool-python-export": "dsh.extensions.cordis_export:PythonPluginExport",
     "@deepseek-ai/dsh-cordis-manager": "dsh.extensions.cordis_manager:CordisManagerPlugin",
 }
 

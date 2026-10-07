@@ -3,6 +3,8 @@
 日期：2026-10-01。修改前产品提交 `066a9b72`；固定参考版本
 `cd5ef8148158c3a752a658978873241fdf8e2bbc`。
 
+2026-10-07 更新：默认创造模式工具保持原版七项定义；Python源码导出改为用户预设显式挂载 `@deepseek-ai/dsh-tool-python-export`。实际装配与所有权验证见 [独立扩展记录](2026-10-07-cordis-export-extension-progress.md)。本文后续保留历史实施事实。
+
 这是 [Python 插件交付评估](2026-09-30-python-plugin-distribution-assessment.md)
 阶段 B 的原生 Python 实施，沿用已有目录/ZIP 安装、Loader、profile、源码升级
 和回退。它不是新增 JS 引擎，也不认证任意原版 JS Host/Workflow 的执行。

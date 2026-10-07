@@ -109,7 +109,10 @@ async def observations():
         except Exception as error:
             cases.append(dict(mode=spec['mode'], error=dict(message=getattr(error, 'message', str(error)))))
     contracts = native_contracts()
-    return dict(cases=cases, definitions=contracts['definitions'], prompt=contracts['prompt'], order=contracts['order'])
+    tools, _, _, _ = environment({})
+    definitions = [dict(name=tool.name, description=tool.description, parameters=tool.parameters,
+        outputSchema=tool.output['schema']) for tool in tools]
+    return dict(cases=cases, definitions=definitions, prompt=contracts['prompt'], order=contracts['order'])
 
 
 if __name__ == '__main__':

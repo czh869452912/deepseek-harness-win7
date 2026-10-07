@@ -1,0 +1,21 @@
+{
+  "id": "RUN-CORDIS-EXPORT-QUALIFICATION-20261007-FAF716E8",
+  "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
+  "product_commit": "faf716e86bae36648685c6c040cbfb9e3cb0ffdd",
+  "kind": "verification",
+  "task_id": "MIG-PROFILE-JOURNEYS-002",
+  "result": "passed",
+  "validity": "current",
+  "exit_code": 0,
+  "commands": [
+    ".venv/Scripts/python.exe -m pytest tests/test_cordis_tool_contracts.py tests/test_python_plugin_export.py tests/test_python_plugin_distribution.py -x --junitxml=.goose/out/acp-a4-work/cordis-export-roster-regression-v1.xml",
+    ".venv/Scripts/python.exe -m pytest tests/test_current_release_gate.py -k regression -x --junitxml=.goose/out/acp-a4-work/cordis-export-required-regression-v1.xml",
+    ".venv/Scripts/python.exe .goose/out/acp-a4-work/qualify_cordis_export_owned_v1.py",
+    ".venv/Scripts/python.exe scripts/sdk_profile_oracle.py --output .goose/out/acp-a4-work/cordis-export-sdk-diagnostic-v1.json",
+    ".venv/Scripts/python.exe .goose/out/acp-a4-work/collect_cordis_export_v1.py"
+  ],
+  "environment": {"python": "3.8.10", "os": "Windows-10-10.0.26200-SP0", "node": "v22.22.2"},
+  "contract_revisions": {"CON-CURRENT-RELEASE-GATE": 1},
+  "artifacts": [{"path": "migration/evidence/artifacts/CORDIS-EXPORT-QUALIFICATION-20261007-FAF716E8.zip", "sha256": "5513866392078b262b9f2e6f0254d303f7b9e76e81cc322bb8de77b61315a866"}],
+  "scope": "Default manager registers actual seven Source tool definitions; Python export is preserved as explicit agent-owned reversible plugin.153 actual consumers pass;77 existing general regression-validator tests pass separately.92 fresh existing Source/Root/owned callback cases and complete actual seven registered definitions match using unchanged thirteen explicit native-language guidance adaptations.15505 complete own input guards pass; the older callback observer does not enumerate complete imports. Fresh actual SDK normal/cancel/error30/14/18 frames match unchanged approved closure.41-file immutable archive retains complete observations and exact proposed/prior bytes. Full profiles/browser and new complete clean release remain open."
+}

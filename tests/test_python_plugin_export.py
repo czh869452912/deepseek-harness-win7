@@ -20,6 +20,7 @@ from dsh.core.tools import ToolExecutionInput
 from dsh.fs.fs_local import FsService
 from dsh.fs.fs_sandbox import SandboxedFileSystem
 from dsh.extensions.packaged_host import host_handler_service
+from dsh.extensions.cordis_export import PythonPluginExport
 from test_python_plugin_distribution import profile, boot, close
 
 NAME = '@author/export-probe'
@@ -43,9 +44,31 @@ def arguments(receipt, directory='project', placement='host'):
 
 
 async def actual_export(ctx, agent, args):
+    if not hasattr(agent, '_test_python_export'):
+        agent._test_python_export = await agent.ctx.plugin(PythonPluginExport)
     tools = ctx.get('tools')
     return await tools.execute(ToolExecutionInput('export-call', 'cordis_export', args,
         agent=agent, signal=NEVER_ABORTED))
+
+
+@pytest.mark.asyncio
+async def test_python_export_is_explicit_agent_owned_extension(tmp_path):
+    ctx = await web_context(tmp_path / 'home')
+    try:
+        for identity in ('export-enabled', 'export-foreign'):
+            await ctx.get('sessionController').create(dict(sessionId=identity, cwd=str(tmp_path), agentPreset='cordis'))
+        agent, foreign = [ctx.get('agents').get(identity) for identity in ('export-enabled', 'export-foreign')]
+        tools = ctx.get('tools')
+        assert 'cordis_export' not in [tool['name'] for tool in tools.schemas(agent)]
+        extension = await agent.ctx.plugin(PythonPluginExport)
+        assert 'cordis_export' in [tool['name'] for tool in tools.schemas(agent)]
+        assert 'cordis_export' not in [tool['name'] for tool in tools.schemas(foreign)]
+        await extension.dispose()
+        assert 'cordis_export' not in [tool['name'] for tool in tools.schemas(agent)]
+        from dsh.boot.plugin_registry import HARNESS_PLUGIN_CLASSES
+        assert HARNESS_PLUGIN_CLASSES['@deepseek-ai/dsh-tool-python-export'] == 'dsh.extensions.cordis_export:PythonPluginExport'
+    finally:
+        await close_web_context(ctx)
 
 
 async def count(ctx, agent=None):

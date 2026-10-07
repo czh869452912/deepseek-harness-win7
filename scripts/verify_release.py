@@ -162,6 +162,10 @@ REQUIRED_REGRESSION = {
         'test_portable_message_values_refuses_partial_receipts[source]',
         'test_portable_message_values_refuses_partial_receipts[native]',
     },
+    'test_e2e_core_agent_loop_llm_system_prompt_1to1': {
+        'test_canonical_assistant_allocation_survives_publication_and_next_request[False]',
+        'test_canonical_assistant_allocation_survives_publication_and_next_request[True]',
+    },
     'test_message_snapshot_graph': {
         *{'test_detached_message_keeps_aliases_and_dictionary_and_list_cycles[' + name + ']' for name in ('False', 'True')},
         *{'test_identified_message_rejects_nested_mutation[' + name + ']' for name in ('root-set', 'root-delete', 'root-update', 'root-pop', 'source-set', 'content-set', 'content-append', 'content-clear', 'block-update')},

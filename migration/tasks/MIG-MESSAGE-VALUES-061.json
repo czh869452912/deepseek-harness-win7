@@ -25,6 +25,6 @@
   "conflicts_with": [],
   "candidate_commit": null,
   "integrated_commit": null,
-  "evidence_ids": ["RUN-MESSAGE-VALUES-FORMAL-QUALIFICATION-20261007-1F41ABF7"],
+  "evidence_ids": ["RUN-MESSAGE-VALUES-FORMAL-QUALIFICATION-20261007-1F41ABF7", "RUN-ASSISTANT-ALLOCATION-QUALIFICATION-20261007-5F0246C2"],
   "next_action": "本部分正式提供端/消费端与114文件资格完成，继续全部预设/浏览器/策略及七父范围；按正常预算重新冻结完整回归、全部配对/原版/实际解压/原版浏览器验收后才可有界集成。"
 }

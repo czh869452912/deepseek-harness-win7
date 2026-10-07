@@ -19,6 +19,7 @@ import asyncio
 import copy
 import json
 import time
+import uuid
 from typing import Any, Callable, Dict, List, Optional, Set, Tuple, Union
 import pytest
 
@@ -226,6 +227,51 @@ async def create_test_context(
     llm_svc.register_adapter(["mock-provider", "openai", "deepseek", "deepseek-official"], adapter)
     await ctx.plugin(AgentLoopPlugin)
     return ctx
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize('interrupt', (False, True))
+async def test_canonical_assistant_allocation_survives_publication_and_next_request(interrupt):
+    adapter = ScriptedMockAdapter(responses=[{'text': 'first reply'}, {'text': 'second reply'}])
+    ctx = await create_test_context(adapter)
+    handle = await ctx.get('agent_loop').create_agent('assistant-allocation')
+    agent = handle.agent
+
+    def cancel_after_text(event):
+        if event['data']['chunk'].get('type') == 'text-delta':
+            agent.cancel({'kind': 'user'})
+
+    dispose = ctx.on('assistant/chunk', cancel_after_text) if interrupt else None
+    try:
+        agent.followup('first question')
+        await agent.when_idle()
+        if dispose is not None:
+            dispose()
+            dispose = None
+        published = [event for event in agent.session.events if event['type'] == 'assistant/message']
+        assert len(published) == 1
+        event = published[0]
+        message = event['data']['message']
+        identity = uuid.UUID(message['id'])
+        assert identity.version == 4 and str(identity) == message['id']
+        assert message['source'] == {'kind': 'model', 'provider': 'mock-provider', 'model': 'mock-model'}
+        assert message['content'] == [{'type': 'text', 'text': 'first reply'}]
+        assert event['data'].get('interrupted', False) is interrupt
+        chunks = [entry['seq'] for entry in agent.session.events if entry['type'] == 'assistant/chunk']
+        assert event['sourceEventSeqs'] == chunks
+        with pytest.raises(TypeError):
+            message['content'][0]['text'] = 'changed'
+        agent.followup('second question')
+        await agent.when_idle()
+        request_messages = adapter.requests[-1]['messages']
+        reference = next(value for value in request_messages if value.get('id') == message['id'])
+        assert reference == message
+        all_messages = [entry['data']['message'] for entry in agent.session.events if entry['type'] == 'assistant/message']
+        assert len(all_messages) == 2 and all_messages[1]['id'] != message['id']
+    finally:
+        if dispose is not None:
+            dispose()
+        await handle.dispose()
 
 
 # ==============================================================================

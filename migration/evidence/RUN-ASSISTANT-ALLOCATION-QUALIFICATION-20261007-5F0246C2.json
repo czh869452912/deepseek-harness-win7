@@ -1,0 +1,22 @@
+{
+  "id": "RUN-ASSISTANT-ALLOCATION-QUALIFICATION-20261007-5F0246C2",
+  "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
+  "product_commit": "5f0246c20f76235d968d26a6691e17000542c54f",
+  "kind": "verification",
+  "task_id": "MIG-MESSAGE-VALUES-061",
+  "result": "passed",
+  "validity": "current",
+  "exit_code": 0,
+  "commands": [
+    ".venv/Scripts/python.exe .goose/out/acp-a4-work/qualify_profile_current_headless_v2.py",
+    ".venv/Scripts/python.exe .goose/out/acp-a4-work/compare_profile_current_headless_v2.py",
+    ".venv/Scripts/python.exe -m pytest tests/test_e2e_core_agent_loop_llm_system_prompt_1to1.py tests/test_reference_core_agent_loop_cancel_and_errors.py tests/test_reference_core_agent_loop_regressions_specs.py tests/test_block_assembler.py --junitxml=.goose/out/acp-a4-work/assistant-allocation-regression-v1.xml",
+    ".venv/Scripts/python.exe .goose/out/acp-a4-work/collect_assistant_allocation_v1.py"
+  ],
+  "environment": {"python": "3.8.10", "os": "Windows-10-10.0.26200-SP0", "node": "v22.22.2"},
+  "contract_revisions": {"CON-MESSAGE-VALUES": 1},
+  "artifacts": [
+    {"path": "migration/evidence/artifacts/ASSISTANT-ALLOCATION-QUALIFICATION-20261007-5F0246C2.zip", "sha256": "809c6fa226fd03255122452336214cda0605f4c7efa654d98cb551d9ef3b75e9"}
+  ],
+  "scope": "41 actual publication/reconstruction regressions pass. Fresh isolated headless Source/own candidate31 events/3 requests/4 lookups match with473 imports/15488 guarded inputs and strict explicit full UUIDv4 reference graph. Prior short assistant ID rejection retained. Candidate also contains18 unpromoted metadata/FS proposals; this is bounded composition research, not Root profile parity, full release or parent closure."
+}

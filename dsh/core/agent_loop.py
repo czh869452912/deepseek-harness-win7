@@ -27,6 +27,7 @@ from dsh.core.session.preparation import SessionPreparation
 from dsh.core.configured_agents import ConfiguredStartup, configured_agents, CONFIGURED_AGENT_IDENTITIES_KEY
 from dsh.llm.error import error_chain
 from dsh.llm.llm_service import LlmError
+from dsh.llm.message import create_assistant_message
 
 
 def request_proposal(header: Dict[str, Any]) -> Dict[str, Any]:
@@ -914,10 +915,14 @@ class AgentLoopService:
                 except asyncio.CancelledError:
                     content = assembler.interrupted_blocks()
                     if content:
+                        partial_message = {"content": content, "role": "assistant"}
+                        if canonical_prepared:
+                            partial_message = create_assistant_message({
+                                "content": content,
+                                "source": {"provider": request_obj['provider'], "model": request_obj['model']},
+                            })
                         session.append_assistant_message(
-                            {"content": content, "role": "assistant", **({"source": {
-                                "kind": "model", "provider": request_obj['provider'], "model": request_obj['model']
-                            }} if canonical_prepared else {})},
+                            partial_message,
                             turn=turn,
                             step=step,
                             usage=assembler.usage if canonical_prepared else None,
@@ -931,10 +936,14 @@ class AgentLoopService:
                     if assembler._order and (not canonical_prepared or agent.is_cancelled()):
                         content = assembler.interrupted_blocks()
                         if content:
+                            partial_message = {"content": content, "role": "assistant"}
+                            if canonical_prepared:
+                                partial_message = create_assistant_message({
+                                    "content": content,
+                                    "source": {"provider": request_obj['provider'], "model": request_obj['model']},
+                                })
                             session.append_assistant_message(
-                                {"content": content, "role": "assistant", **({"source": {
-                                    "kind": "model", "provider": request_obj['provider'], "model": request_obj['model']
-                                }} if canonical_prepared else {})},
+                                partial_message,
                                 turn=turn,
                                 step=step,
                                 usage=assembler.usage if canonical_prepared else None,
@@ -1006,11 +1015,10 @@ class AgentLoopService:
             "model": model_name,
             **({"replayState": assembler.replayState} if assembler.replayState is not None else {}),
         }
-        assistant_msg = {
-            "role": "assistant",
+        assistant_msg = create_assistant_message({
             "content": blocks if canonical_prepared or blocks else [{"type": "text", "text": ""}],
             "source": source,
-        }
+        })
         tool_calls = [b for b in blocks if b.get("type") == "tool-call"]
 
         session.append_assistant_message(

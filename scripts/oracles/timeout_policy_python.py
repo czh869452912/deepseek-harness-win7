@@ -13,6 +13,7 @@ from dsh.core import timeout
 from dsh.core.abort import AbortController
 from dsh.core.cancellation import subscribe_abort
 from dsh.core.tools import ToolsPlugin, ToolExecutionInput
+from dsh.core.system_prompt import SystemPrompt
 from dsh.cordis.context import Context
 from dsh.guard.timeout_policy import ToolCallTimeoutPolicyPlugin
 from dsh.llm.error import HarnessError
@@ -75,6 +76,7 @@ async def run(clock):
             return await next_fn()
 
         try:
+            await ctx.plugin(SystemPrompt)
             await ctx.plugin(ToolsPlugin)
             await ctx.plugin(ToolCallTimeoutPolicyPlugin)
             spec = dict(name='probe', description='paired fixture', parameters={}, execute=tool,

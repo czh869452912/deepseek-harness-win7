@@ -8,6 +8,7 @@ from dsh.core.abort import AbortController, AbortSignal, AbortError
 from dsh.core.session.json import UNDEFINED
 from dsh.extensions.inspect_registry import CordisInspectRegistryService
 from dsh.core.tools import ToolsPlugin, ToolExecutionInput
+from dsh.core.system_prompt import SystemPrompt
 from dsh.guard.timeout_policy import ToolCallTimeoutPolicyPlugin
 
 REASONS = ['omitted', 'undefined', 'null', 'false', 'zero', 'empty', 'string', 'object', 'error']
@@ -92,6 +93,7 @@ async def observe():
         ctx, caller, events, entered = Context(), AbortController(), [], asyncio.Event()
         observed = {}
         try:
+            await ctx.plugin(SystemPrompt)
             await ctx.plugin(ToolsPlugin)
             await ctx.plugin(ToolCallTimeoutPolicyPlugin)
             async def tool(_args, exec):

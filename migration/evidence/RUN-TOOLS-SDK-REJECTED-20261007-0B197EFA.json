@@ -1,0 +1,18 @@
+{
+  "id": "RUN-TOOLS-SDK-REJECTED-20261007-0B197EFA",
+  "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
+  "product_commit": "0b197efabe8f186b0bf836ad41ff274ec8a554c8",
+  "kind": "verification",
+  "task_id": "MIG-TOOL-ERRORS-SDK-METADATA-057",
+  "result": "failed",
+  "validity": "current",
+  "exit_code": 1,
+  "commands": [
+    ".venv/Scripts/python.exe scripts/verify_release.py --browser C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe --output-dir .goose/out/tools-sdk-clean-v1",
+    ".venv/Scripts/python.exe .goose/out/acp-a4-work/collect_tools_sdk_rejection_v1.py"
+  ],
+  "environment": {"python": "3.8.10", "os": "Windows-10-10.0.26200-SP0", "node": "v22.22.2"},
+  "contract_revisions": {"CON-TOOL-ERRORS-PROMPT-OWNERSHIP": 2, "CON-PYTHON-HOST-STATIC-INJECT": 1},
+  "artifacts": [{"path": "migration/evidence/artifacts/TOOLS-SDK-REJECTED-20261007-0B197EFA.zip", "sha256": "f9b69121a4e171baed7cf162cd5ab4000f93384ea7adfdd98a2de28c6ae527e5"}],
+  "scope": "Exact clean0b197efa rejected Portable SHA2562c2c4a6c78e78f06dcbc8d173920f44729b5ac3963c770da7c2d5fde312ff6ec and frozen inputs4da8ccee5d9a40d4f550191144c3319b92a5a588407f84a6cee78f2a6b2f3460 retained in781 files. Collected9283; raw log has seven failures before normal3600-second timeout at91%. No complete XML or final pass count exists. Source20/paired76/extracted stages did not start. Ended-case housekeeping removed2571 reconstructible files/12136707871 bytes and retained its audits; actual evidence and modified preflight variants remain. Not a timeout-only failure, acceptance or migration closure."
+}

@@ -1,0 +1,22 @@
+{
+  "id": "RUN-TOOLS-SDK-PREREQUISITES-20261007-0B197EFA",
+  "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
+  "product_commit": "0b197efabe8f186b0bf836ad41ff274ec8a554c8",
+  "kind": "verification",
+  "task_id": "MIG-TOOL-ERRORS-SDK-METADATA-057",
+  "result": "passed",
+  "validity": "current",
+  "exit_code": 0,
+  "commands": [
+    ".venv/Scripts/python.exe -m pytest tests/1to1/boot/app_boot/test_plugin_registry.py tests/test_abort_platform_consumers.py tests/test_cordis_guard.py tests/test_python_plugin_dependencies.py tests/test_timeout_policy.py -q --junitxml=.goose/out/acp-a4-work/tools-sdk-prerequisite-after-v1.xml",
+    ".venv/Scripts/python.exe .goose/out/acp-a4-work/verify_prerequisite_sources_v1.py",
+    ".venv/Scripts/python.exe .goose/out/acp-a4-work/collect_prerequisite_qualification_v1.py"
+  ],
+  "environment": {"python": "3.8.10", "os": "Windows-10-10.0.26200-SP0", "node": "v22.22.2"},
+  "contract_revisions": {"CON-TOOL-ERRORS-PROMPT-OWNERSHIP": 2, "CON-PYTHON-HOST-STATIC-INJECT": 1},
+  "artifacts": [
+    {"path": "migration/evidence/artifacts/TOOLS-SDK-PREREQUISITES-20261007-0B197EFA.zip", "sha256": "eeccd53f499f7f483679d4c9db7a31731dab39e1edcfa4439cc7b34a1fc16e91"},
+    {"path": "migration/evidence/artifacts/TOOLS-SDK-REJECTED-20261007-0B197EFA.zip", "sha256": "f9b69121a4e171baed7cf162cd5ab4000f93384ea7adfdd98a2de28c6ae527e5"}
+  ],
+  "scope": "Thirty-file qualification of five concrete actual SystemPrompt prerequisite fixes over0b197efa. Focused unmodified baseline233 passed/seven failed with complete XML; enlarged after293 passed. Fresh unchanged pinned original Abort56, Guard117 literal matches/two existing exact CORDIS-GUARD-001 classifications and Timeout10 match; fixture and reviewed predicates are unchanged. Real boot installation fallback and second canonical profile sharing/rollback remain covered. XML generation/validation profile40 iterations1.111 seconds does not establish the full-suite bottleneck. Proposed bytes and complete focused failures are retained; clean full normal-budget qualification still required."
+}

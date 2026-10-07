@@ -60,6 +60,7 @@ from dsh.cordis.loader import (
 )
 from dsh.cordis.plugin import Plugin
 from dsh.cordis.service import Service
+from dsh.core.system_prompt import SystemPrompt
 
 NAME = "dsh"
 
@@ -334,7 +335,10 @@ async def test_a_config_project_module_still_wins_over_the_installation_fallback
             )
         monkeypatch.setenv("DSH_HOME", home)
 
-        ctx = await boot(NAME, config)
+        async def prepare(ctx):
+            await ctx.plugin(SystemPrompt)
+
+        ctx = await boot(NAME, config, prepare=prepare)
         try:
             # The project's own package is the row's implementation...
             assert ctx.get("projectShadowLoaded") is True

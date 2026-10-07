@@ -9,6 +9,7 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
 from dsh.cordis.context import Context
 from dsh.core.tools import ToolsPlugin
+from dsh.core.system_prompt import SystemPrompt
 from dsh.core.session.json import UNDEFINED
 from dsh.extensions.cordis_guard import sandbox_define_tool, sandbox_register_tool, guarded_plugin, normalize_handler
 
@@ -102,6 +103,7 @@ async def observe(spec):
             node = node['items']
         return dict(depth=depth, leaf=node)
     ctx = Context()
+    await ctx.plugin(SystemPrompt)
     await ctx.plugin(ToolsPlugin())
     try:
         if kind == 'marker':

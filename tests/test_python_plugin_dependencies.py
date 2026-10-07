@@ -111,7 +111,9 @@ async def test_complete_offline_closure_boot_restart_upgrade_and_rollback(profil
 def second_profile(home, name):
     directory = home / 'profiles' / name
     init_profile(str(directory), [], 'startup')
-    (directory / 'cordis.patch.yml').write_text("- insert:\n    - id: tools\n      name: '@deepseek-ai/dsh-tools'\n", encoding='utf-8')
+    (directory / 'cordis.patch.yml').write_text(
+        "- insert:\n    - id: system-prompt\n      name: '@deepseek-ai/dsh-system-prompt'\n"
+        "    - id: tools\n      name: '@deepseek-ai/dsh-tools'\n", encoding='utf-8')
     return directory
 
 

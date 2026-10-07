@@ -7,6 +7,7 @@ from dsh.core.tools import ToolsService
 from dsh.fs.fs_local import FsLocalPlugin, FsService, FsTarget, FsError
 from dsh.fs.tool_fs import ToolFsPlugin, format_read_output, format_write_output, format_edit_output
 from dsh.fs.tool_str_replace_editor import StrReplaceEditorPlugin
+from dsh.core.system_prompt import SystemPrompt
 
 
 @pytest.fixture
@@ -15,6 +16,7 @@ def fs_env():
     ctx = Context()
     tools = ToolsService(ctx)
     ctx.set_service("tools", tools)
+    ctx.plugin(SystemPrompt)
     ctx.plugin(FsLocalPlugin, config={"cwd": tmpdir})
     ctx.plugin(ToolFsPlugin)
     ctx.plugin(StrReplaceEditorPlugin)
@@ -79,8 +81,8 @@ async def test_tool_fs_read_write_edit(fs_env):
     # 2. Read tool
     res_read = await tools.execute_tool("read", {"file_path": file_path, "offset": 1, "limit": 2})
     assert "<path>" in res_read
-    assert "1  alpha" in res_read
-    assert "2  beta" in res_read
+    assert "1: alpha" in res_read
+    assert "2: beta" in res_read
 
     # 3. Edit tool
     res_edit = await tools.execute_tool("edit", {"file_path": file_path, "old_string": "beta", "new_string": "BETA"})

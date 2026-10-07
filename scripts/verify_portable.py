@@ -66,6 +66,7 @@ from scripts.tool_errors_oracle import validate_runtime as validate_tool_errors,
 from scripts.tool_durable_oracle import validate_runtime as validate_tool_durable, identity as tool_durable_identity, observe_native as observe_tool_durable
 from scripts.agent_dependencies_oracle import validate_runtime as validate_agent_dependencies, identity as agent_dependencies_identity, observe_native as observe_agent_dependencies
 from scripts.ask_user_oracle import validate_runtime as validate_ask_user, identity as ask_user_identity, observe_native as observe_ask_user
+from scripts.fs_values_oracle import validate_runtime as validate_fs_values, identity as fs_values_identity, observe_native as observe_fs_values
 from scripts.message_values_oracle import validate_runtime as validate_message_values, identity as message_values_identity, observe_native as observe_message_values
 from scripts.exported_host_lifecycle_oracle import observe_native as observe_host_lifecycle, validate_runtime as validate_host_lifecycle, observation_digest as host_lifecycle_digest
 from scripts.llm_prepared_oracle import validate_runtime as validate_llm_prepared, identity as llm_prepared_identity
@@ -534,6 +535,26 @@ def ask_user_receipts(source, native, output):
     return source, observed, runtime['imports']
 
 
+def fs_values_receipts(source, native, output):
+    if source or native:
+        if not source or not native:
+            raise RuntimeError('Both FS values Source and native receipts are required')
+        source, native = Path(source).resolve(), Path(native).resolve()
+    else:
+        paired = output.with_suffix('.fs-values-paired.json')
+        completed = subprocess.run([sys.executable, str(ROOT / 'scripts/fs_values_oracle.py'),
+            '--output', str(paired)], cwd=str(ROOT), capture_output=True, timeout=240)
+        output.with_suffix('.fs-values-source.log').write_bytes(completed.stdout + completed.stderr)
+        if completed.returncode or completed.stderr:
+            raise RuntimeError('Fresh FS values Source qualification failed')
+        source, native = paired.with_suffix('.source.json'), paired.with_suffix('.native.json')
+    observed = json.loads(source.read_text(encoding='utf-8'))
+    fs_values_identity(observed, ROOT / 'reference')
+    runtime = json.loads(native.read_text(encoding='utf-8'))
+    validate_fs_values(runtime, ROOT, sys.executable, observed, runtime['imports'])
+    return source, observed, runtime['imports']
+
+
 def message_values_receipts(source, native, output):
     if source or native:
         if not source or not native:
@@ -606,11 +627,13 @@ def main(argv=None):
     parser.add_argument('--tool-durable-source', help='Fresh original complete durable tool and prompt ownership receipts')
     parser.add_argument('--agent-dependencies-source', help='Fresh original complete Agent dependency and prompt ownership receipts')
     parser.add_argument('--ask-user-source', help='Fresh original complete Ask-user and prompt ownership receipts')
+    parser.add_argument('--fs-values-source', help='Fresh original complete FS values and prompt ownership receipts')
     parser.add_argument('--message-values-source', help='Fresh original complete Message and prompt ownership receipts')
     parser.add_argument('--tool-errors-native', help='Fresh native tool errors and imported closure')
     parser.add_argument('--tool-durable-native', help='Fresh native durable tool and imported closure')
     parser.add_argument('--agent-dependencies-native', help='Fresh native Agent dependency and imported closure')
     parser.add_argument('--ask-user-native', help='Fresh native Ask-user and imported closure')
+    parser.add_argument('--fs-values-native', help='Fresh native FS values and imported closure')
     parser.add_argument('--message-values-native', help='Fresh native Message and imported closure')
     parser.add_argument('--javascript-errors-source', help='Fresh original JavaScript error boundary observations')
     parser.add_argument('--javascript-errors-native', help='Fresh native JavaScript child/import/private asset receipts')
@@ -692,6 +715,7 @@ def main(argv=None):
             'agent_dependencies_oracle.py', 'agent_dependencies_cases.py', 'oracles/agent_dependencies_source.mts', 'oracles/agent_dependencies_python.py',
             'ask_user_oracle.py', 'ask_user_cases.py', 'oracles/ask_user_source.mts', 'oracles/ask_user_python.py',
             'message_values_oracle.py', 'message_values_cases.py', 'oracles/message_values_source.mts', 'oracles/message_values_python.py', 'oracles/message-values-cases.json',
+            'fs_values_oracle.py', 'fs_values_cases.py', 'oracles/fs-values-cases.json', 'oracles/fs-real-tool-fixtures-v1.json', 'oracles/read_tool_fixtures_v1.json', 'oracles/read-window-fixtures-v2.json', 'oracles/diff-fixtures-v1.json', 'oracles/fs_values_real_source.mts', 'oracles/fs_values_real_python.py', 'oracles/fs_values_read_source.mts', 'oracles/fs_values_read_python.py', 'oracles/fs_values_image_source.mts', 'oracles/fs_values_image_python.py', 'oracles/fs_values_window_source.mts', 'oracles/fs_values_window_python.py', 'oracles/fs_values_escalation_source.mts', 'oracles/fs_values_escalation_python.py', 'oracles/fs_values_diff_source.mts', 'oracles/fs_values_diff_python.py',
             'exported_host_lifecycle_oracle.py', 'oracles/exported_host_lifecycle.py', 'oracles/exported_host_lifecycle_python.py',
             'oracles/permission_presets_source.mts', 'oracles/permission_presets.probe.spec.ts',
             'oracles/permission_presets_domain_source.mts', 'oracles/permission_presets_domain.probe.spec.ts',
@@ -873,6 +897,9 @@ def main(argv=None):
         ask_user_source, ask_user_observed, ask_user_modules = ask_user_receipts(
             args.ask_user_source, args.ask_user_native, output)
         report['askUserSourceSha256'] = digest(ask_user_source)
+        fs_values_source, fs_values_observed, fs_values_modules = fs_values_receipts(
+            args.fs_values_source, args.fs_values_native, output)
+        report['fsValuesSourceSha256'] = digest(fs_values_source)
         message_values_source, message_values_observed, message_values_modules = message_values_receipts(
             args.message_values_source, args.message_values_native, output)
         report['messageValuesSourceSha256'] = digest(message_values_source)
@@ -1390,6 +1417,10 @@ def main(argv=None):
             validate_ask_user(ask_user_report, portable, portable / 'python.exe',
                 ask_user_observed, ask_user_modules, owned_runtime=True)
             report['askUser'] = ask_user_report
+            fs_values_report = observe_fs_values(portable, portable / 'python.exe', workspace / 'fs-values.json', fs_values_observed['fixtureWorkspace'])
+            validate_fs_values(fs_values_report, portable, portable / 'python.exe',
+                fs_values_observed, fs_values_modules, owned_runtime=True)
+            report['fsValues'] = fs_values_report
             message_values_report = observe_message_values(portable, portable / 'python.exe', workspace / 'message-values.json')
             validate_message_values(message_values_report, portable, portable / 'python.exe',
                 message_values_observed, message_values_modules, owned_runtime=True)

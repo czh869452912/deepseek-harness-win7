@@ -1,0 +1,20 @@
+{
+  "id": "RUN-FS-TOOL-VALUES-QUALIFICATION-20261007-084A51B8",
+  "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
+  "product_commit": "084a51b842536978630d65b68beb3934d336db0a",
+  "kind": "verification",
+  "task_id": "MIG-FS-TOOL-VALUES-062",
+  "result": "passed",
+  "validity": "current",
+  "exit_code": 0,
+  "commands": [
+    ".venv/Scripts/python.exe .goose/out/acp-a4-work/qualify_fs_formal_owned_v3.py",
+    ".venv/Scripts/python.exe -m pytest tests/test_fs_values_consumers.py tests/test_current_release_gate.py -k 'fs_values or extracted_message_values' -x --junitxml=.goose/out/acp-a4-work/fs-values-gate-v3.xml",
+    ".venv/Scripts/python.exe -m pytest tests/test_fs_tools.py tests/1to1/fs/test_tool_fs_observation_integration.py tests/test_fs_values_consumers.py tests/test_sdk_profile_consumers.py --junitxml=.goose/out/acp-a4-work/fs-values-root-final-v1.xml",
+    ".venv/Scripts/python.exe .goose/out/acp-a4-work/collect_fs_values_v1.py"
+  ],
+  "environment": {"python": "3.8.10", "os": "Windows-10-10.0.26200-SP0", "node": "v22.22.2"},
+  "contract_revisions": {"CON-FS-TOOL-VALUES": 1},
+  "artifacts": [{"path": "migration/evidence/artifacts/FS-TOOL-VALUES-QUALIFICATION-20261007-084A51B8.zip", "sha256": "5724cb10ee5b37ebf69b8cecbcc7c598b02aa6042c1e348d208ce60ceee2a629"}],
+  "scope": "509 complete ordered Source/independently owned observations match,129 approved imports,15488 candidate files guarded before/after.150 prerequisite passes and one existing POSIX-on-Windows skip;109 positive-baseline/negative controls and127 final actual Root FS/SDK consumers pass; overlapping suites not summed.723 files retain actual observations, full input guards and historical refusals. v2's76 negative passes had invalid undamaged baselines and are explicitly withdrawn as qualification; v3 repairs Source floors and validates positive baseline before FS/Message mutations. This is bounded qualification of exact proposed providers, not a new clean release, complete profile/browser/policy parity or parent integration."
+}

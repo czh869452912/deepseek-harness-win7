@@ -1,0 +1,46 @@
+{
+  "id": "CON-FS-TOOL-VALUES",
+  "revision": 1,
+  "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
+  "status": "specified",
+  "source_paths": [
+    "reference/packages/fs/tool-fs/src/index.ts",
+    "reference/packages/fs/tool-fs/src/read.ts",
+    "reference/packages/fs/tool-fs/src/read-render.ts",
+    "reference/packages/fs/tool-fs/src/read-image.ts",
+    "reference/packages/fs/tool-fs/src/write.ts",
+    "reference/packages/fs/tool-fs/src/edit.ts",
+    "reference/packages/fs/tool-fs/src/sandbox.ts",
+    "reference/packages/fs/tool-fs/src/diff.ts",
+    "reference/packages/sandbox/sandbox/src/escalation.ts"
+  ],
+  "consumers": [
+    "dsh/fs/tool_fs.py", "dsh/fs/tool_read.py", "dsh/fs/tool_read_render.py",
+    "dsh/fs/tool_read_image.py", "dsh/fs/tool_fs_mutation.py", "dsh/fs/tool_fs_sandbox.py",
+    "dsh/fs/tool_diff.py", "dsh/sandbox/escalation.py", "scripts/fs_values_oracle.py",
+    "scripts/fs_values_cases.py", "tests/test_fs_values_consumers.py",
+    "tests/1to1/fs/test_tool_fs_observation_integration.py", "scripts/verify_portable.py",
+    "scripts/verify_release.py", "tests/test_current_release_gate.py"
+  ],
+  "invariants": [
+    "All509 ordered complete actual Source observations match six groups: real registry/filesystem mutations, read tool/result/replay, image routing/store/gates, read windows/metadata, sandbox approval choreography and contextual diffs.",
+    "Source pin, runtime, tracked inputs, observer/case bytes and the actual diff dependency are guarded; own Python3.8.10 imports equal an independently approved closure with complete candidate inputs checked before and after.",
+    "Read validates positive-integer caps, scans exact total lines through sync/async delivery, preserves UTF16 truncation including lone surrogates, caps complete rendered lines by UTF8 bytes, and emits one authoritative observation after successful read or an absent observation for a missing target.",
+    "Real read stats once. Write/edit use the observed basis without tool-layer stat; successful mutation refreshes observation and preserves exact disk bytes.",
+    "Read results expose canonical numbered text and continuation/end markers, structured metadata and strict replay narrowing. Contextual diff cards retain every applied hunk with three context lines and omit patch-only newline markers.",
+    "Image execution uses the current routed model, actual attachment service and capability/read-policy checks; mounted store epochs reversibly control tool availability.",
+    "Sandbox escalation fields are advertised only for a confining backend; paired arguments, strictly wider mode, live actor/approval, exact audit request and returned one-shot policy are required. Standing policy and provider errors retain ownership and precise denial/remedy messages.",
+    "No paths, errors, text, timestamps, roles or identities are substituted. Only same-valued finite integer JSON numbers share numeric representation; booleans, fractions, nonfinite values and UTF16 surrogate content are not collapsed.",
+    "Partial, changed, foreign, duplicated, skipped, failed or missing consumer/Source/import/mandatory/extracted evidence is refused. Focused qualification cannot replace a clean complete release."
+  ],
+  "identity": "Exact509 ordered fs_values_oracle.NAMES. Actual controlled filesystem workspace is declared by Source and reused by Root/own/extracted observers; literal absolute public paths are retained.",
+  "ownership": "Tool plugin owns reversible registrations; backend owns atomic file mutation; policy owns observed basis; attachment provider owns durable image bytes; each probe owns its recorded temporary filesystem fixture.",
+  "ordering": "Six ordered groups and literal internal traces, output blocks, line numbers, schemas and hunks.",
+  "errors": "Actual FsError codes and model remedies, image/gate errors, replay refusal and approval outcomes retain literal text and field presence.",
+  "cancellation": "Image pre-abort and sandbox cancellation are compared; broader overlapping transport/workflow races remain separate parent work.",
+  "adaptation": "Python3.8 standard-library UTF16/UTF8 accounting and Myers line-diff port replace JavaScript string/Buffer operations and diff dependency. The existing attachment provider performs image validation; no new runtime dependency is introduced.",
+  "open_questions": [
+    "Complete profile/browser/policy composition and arbitrary extension-owned filesystem/attachment ABI remain wider parent qualification.",
+    "Actual Win7/target-browser certification remains user-deferred."
+  ]
+}

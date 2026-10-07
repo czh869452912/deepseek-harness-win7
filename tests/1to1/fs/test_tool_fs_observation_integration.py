@@ -9,11 +9,6 @@ has a version basis, and the provider performs the atomic freshness/no-clobber
 check. Assertions read files back byte-for-byte rather than trusting tool
 messages, exactly as upstream does.
 
-Upstream cases in that suite this port cannot carry yet are the `read` rendering
-('returns line-numbered content', 'paginates a multi-line file with offset/limit'),
-the binary-file read error, the model-facing remedy suffix, and the tool stat
-budget: the port's `read` rendering, remediation text, and stat placement belong
-to the `dsh-tool-fs` row's own migration unit, not to the policy provider.
 """
 
 import contextlib
@@ -26,6 +21,7 @@ from typing import Any, Dict, Optional
 import pytest
 
 from dsh.core.tools import ToolsService
+from dsh.core.system_prompt import SystemPrompt
 from dsh.cordis.context import Context
 from dsh.fs.fs_local import FsLocalPlugin
 from dsh.fs.fs_observation_policy import FsObservationPolicyPlugin
@@ -48,6 +44,7 @@ class Harness:
 
     async def boot(self, with_policy: bool = True) -> None:
         self.ctx.set_service("tools", ToolsService(self.ctx))
+        await self.ctx.plugin(SystemPrompt)
         await self.ctx.plugin(FsLocalPlugin, {"cwd": self.dir})
         if with_policy:
             await self.ctx.plugin(FsObservationPolicyPlugin)
@@ -104,6 +101,66 @@ def code(result: Any) -> Optional[str]:
         return None
     info = error.get("info")
     return info.get("code") if isinstance(info, dict) else None
+
+
+@pytest.mark.asyncio
+async def test_read_returns_canonical_numbered_content_and_end_marker():
+    async with deployment() as harness:
+        harness.write_disk('read.txt', 'alpha\nbeta')
+        result = await harness.call('read', {'file_path': 'read.txt'})
+        assert result.is_error is False
+        assert '1: alpha\n2: beta' in text(result)
+        assert '(End of file - total 2 lines)' in text(result)
+        assert result.meta['lines'] == [{'number': 1, 'text': 'alpha'}, {'number': 2, 'text': 'beta'}]
+
+
+@pytest.mark.asyncio
+async def test_read_pagination_exposes_the_exact_continuation():
+    async with deployment() as harness:
+        harness.write_disk('read.txt', 'one\ntwo\nthree\nfour')
+        result = await harness.call('read', {'file_path': 'read.txt', 'offset': 2, 'limit': 2})
+        assert result.is_error is False
+        assert '2: two\n3: three' in text(result)
+        assert '(Showing lines 2-3 of 4. Use offset=4 to continue.)' in text(result)
+        assert result.value['totalLines'] == 4
+
+
+@pytest.mark.asyncio
+async def test_binary_read_refuses_without_authorizing_a_following_edit():
+    async with deployment() as harness:
+        with open(harness.path('binary'), 'wb') as stream:
+            stream.write(b'\x00\x01\x02')
+        result = await harness.call('read', {'file_path': 'binary'})
+        assert result.is_error is True and code(result) == 'FS_NOT_TEXT'
+        edited = await harness.call('edit', {'file_path': 'binary', 'old_string': 'a', 'new_string': 'b'})
+        assert edited.is_error is True and code(edited) == 'FS_NOT_OBSERVED'
+        assert 'read the file, then retry' in text(edited)
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize('missing', (False, True))
+async def test_read_stats_once_and_guarded_mutations_use_the_observed_basis(monkeypatch, missing):
+    async with deployment() as harness:
+        if not missing:
+            harness.write_disk('basis.txt', 'hello world')
+        filesystem = harness.ctx.get('fs')
+        original = filesystem.stat
+        calls = []
+
+        async def counted_stat(*arguments, **options):
+            calls.append(arguments)
+            return await original(*arguments, **options)
+
+        monkeypatch.setattr(filesystem, 'stat', counted_stat)
+        read = await harness.call('read', {'file_path': 'basis.txt'})
+        assert read.is_error is missing and len(calls) == 1
+        calls.clear()
+        if not missing:
+            edited = await harness.call('edit', {'file_path': 'basis.txt', 'old_string': 'world', 'new_string': 'there'})
+            assert edited.is_error is False and calls == []
+        written = await harness.call('write', {'file_path': 'basis.txt', 'content': 'fresh'})
+        assert written.is_error is False and calls == []
+        assert harness.read_disk('basis.txt') == 'fresh'
 
 
 # --- write -> disk -----------------------------------------------------------

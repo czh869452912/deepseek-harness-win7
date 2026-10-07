@@ -1,0 +1,575 @@
+{
+  "windows": [
+    {
+      "name": "three-lines",
+      "chunks": [
+        "one\ntwo\nthree"
+      ]
+    },
+    {
+      "name": "offset-limit",
+      "chunks": [
+        "one\ntwo\nthree\nfour"
+      ],
+      "request": {
+        "offset": 2,
+        "limit": 2
+      }
+    },
+    {
+      "name": "crlf",
+      "chunks": [
+        "one\r\ntwo\r\n"
+      ]
+    },
+    {
+      "name": "crlf-chunks",
+      "chunks": [
+        "one\r",
+        "\ntwo",
+        "\r\n"
+      ]
+    },
+    {
+      "name": "empty",
+      "chunks": [
+        ""
+      ]
+    },
+    {
+      "name": "no-chunks",
+      "chunks": []
+    },
+    {
+      "name": "empty-chunks",
+      "chunks": [
+        "",
+        "",
+        ""
+      ]
+    },
+    {
+      "name": "newline",
+      "chunks": [
+        "\n"
+      ]
+    },
+    {
+      "name": "two-newlines",
+      "chunks": [
+        "\n\n"
+      ]
+    },
+    {
+      "name": "trailing-newline",
+      "chunks": [
+        "one\ntwo\n"
+      ]
+    },
+    {
+      "name": "final-no-newline",
+      "chunks": [
+        "one\ntwo"
+      ]
+    },
+    {
+      "name": "cr-only",
+      "chunks": [
+        "\r"
+      ]
+    },
+    {
+      "name": "embedded-cr",
+      "chunks": [
+        "one\rtwo\n"
+      ]
+    },
+    {
+      "name": "eof-offset",
+      "chunks": [
+        "one\ntwo"
+      ],
+      "request": {
+        "offset": 9,
+        "limit": 1
+      }
+    },
+    {
+      "name": "empty-offset",
+      "chunks": [
+        ""
+      ],
+      "request": {
+        "offset": 2
+      }
+    },
+    {
+      "name": "line-cap",
+      "chunks": [
+        "abcdefghij\nnext"
+      ],
+      "request": {
+        "maxLineLength": 3
+      }
+    },
+    {
+      "name": "cap-boundary",
+      "chunks": [
+        "abc\n"
+      ],
+      "request": {
+        "maxLineLength": 3
+      }
+    },
+    {
+      "name": "cap-cr",
+      "chunks": [
+        "abc\r\n"
+      ],
+      "request": {
+        "maxLineLength": 3
+      }
+    },
+    {
+      "name": "chunk-line-cap",
+      "chunks": [
+        "ab",
+        "cdef",
+        "ghij\n",
+        "ne",
+        "xt"
+      ],
+      "request": {
+        "maxLineLength": 3
+      }
+    },
+    {
+      "name": "byte-cap-first",
+      "chunks": [
+        "abcd\nnext"
+      ],
+      "request": {
+        "maxBytes": 3
+      }
+    },
+    {
+      "name": "byte-cap-second",
+      "chunks": [
+        "abc\nd\ne"
+      ],
+      "request": {
+        "maxBytes": 4
+      }
+    },
+    {
+      "name": "byte-cap-exact",
+      "chunks": [
+        "abc\nd"
+      ],
+      "request": {
+        "maxBytes": 5
+      }
+    },
+    {
+      "name": "byte-cap-after-offset",
+      "chunks": [
+        "abc\nd\ne"
+      ],
+      "request": {
+        "offset": 2,
+        "maxBytes": 1
+      }
+    },
+    {
+      "name": "total-after-line-cap",
+      "chunks": [
+        "abc\nd\ne\nf"
+      ],
+      "request": {
+        "limit": 1
+      }
+    },
+    {
+      "name": "unicode-bytes",
+      "chunks": [
+        "\u4e2d\u6587\nabc"
+      ],
+      "request": {
+        "maxBytes": 5
+      }
+    },
+    {
+      "name": "unicode-exact",
+      "chunks": [
+        "\u4e2d\u6587\nabc"
+      ],
+      "request": {
+        "maxBytes": 6
+      }
+    },
+    {
+      "name": "emoji-unit-cap",
+      "chunks": [
+        "\ud83d\ude00\ud83d\ude00x"
+      ],
+      "request": {
+        "maxLineLength": 3
+      }
+    },
+    {
+      "name": "emoji-split",
+      "chunks": [
+        "\ud83d",
+        "\ude00x\n"
+      ],
+      "request": {
+        "maxLineLength": 2
+      }
+    },
+    {
+      "name": "surrogate-byte-cap",
+      "chunks": [
+        "\ud83d"
+      ],
+      "request": {
+        "maxBytes": 2
+      }
+    },
+    {
+      "name": "surrogate-byte-exact",
+      "chunks": [
+        "\ud83d"
+      ],
+      "request": {
+        "maxBytes": 3
+      }
+    },
+    {
+      "name": "offset-final-blank",
+      "chunks": [
+        "one\n\n"
+      ],
+      "request": {
+        "offset": 2
+      }
+    },
+    {
+      "name": "cap-long-final-cr",
+      "chunks": [
+        "abcd\r\n"
+      ],
+      "request": {
+        "maxLineLength": 3
+      }
+    },
+    {
+      "name": "integer-float-caps",
+      "chunks": [
+        "abcdef\n",
+        "two\n",
+        "three\n"
+      ],
+      "request": {
+        "offset": 1.0,
+        "limit": 1.0,
+        "maxLineLength": 3.0,
+        "maxBytes": 100.0
+      }
+    },
+    {
+      "name": "integer-float-offset",
+      "chunks": [
+        "first\nsecond\nthird"
+      ],
+      "request": {
+        "offset": 2.0,
+        "limit": 1.0
+      }
+    },
+    {
+      "name": "integer-float-byte-cap",
+      "chunks": [
+        "abc\nxyz"
+      ],
+      "request": {
+        "offset": 1.0,
+        "maxBytes": 2.0
+      }
+    },
+    {
+      "name": "integer-float-past-eof",
+      "chunks": [
+        "one"
+      ],
+      "request": {
+        "offset": 2.0
+      }
+    },
+    {
+      "name": "integer-float-empty",
+      "chunks": [
+        ""
+      ],
+      "request": {
+        "offset": 1.0
+      }
+    }
+  ],
+  "paths": [
+    "a.ts",
+    "a.tsx",
+    "a.mts",
+    "a.cts",
+    "a.js",
+    "a.jsx",
+    "a.mjs",
+    "a.cjs",
+    "a.json",
+    "a.jsonc",
+    "a.py",
+    "a.rb",
+    "a.go",
+    "a.rs",
+    "a.java",
+    "a.c",
+    "a.h",
+    "a.cc",
+    "a.cpp",
+    "a.hpp",
+    "a.cxx",
+    "a.cs",
+    "a.kt",
+    "a.swift",
+    "a.php",
+    "a.sh",
+    "a.bash",
+    "a.zsh",
+    "a.yaml",
+    "a.yml",
+    "a.toml",
+    "a.ini",
+    "a.md",
+    "a.markdown",
+    "a.mdx",
+    "a.html",
+    "a.htm",
+    "a.css",
+    "a.scss",
+    "a.less",
+    "a.sql",
+    "a.xml",
+    "a.lua",
+    "C:\\fixture\\FILE.PY",
+    "folder.v2/file.ts",
+    "folder.ext/file",
+    ".gitignore",
+    "a.",
+    "a.unknown",
+    "a.constructor",
+    "a.__proto__",
+    ".config.json"
+  ],
+  "metadata": [
+    {
+      "path": "f.py",
+      "offset": 1,
+      "lines": [
+        {
+          "number": 1,
+          "text": "one"
+        },
+        {
+          "number": 2,
+          "text": "two"
+        }
+      ],
+      "totalLines": 2,
+      "lang": "py"
+    },
+    {
+      "path": "f",
+      "offset": 1,
+      "lines": [],
+      "totalLines": 0
+    },
+    {
+      "path": "f",
+      "offset": 3,
+      "lines": [],
+      "totalLines": 2
+    },
+    {
+      "path": "f",
+      "offset": 1,
+      "lines": [
+        {
+          "number": 1,
+          "text": "one",
+          "extra": true
+        }
+      ],
+      "totalLines": 1,
+      "extra": true
+    },
+    {
+      "path": "f",
+      "offset": 0,
+      "lines": [],
+      "totalLines": 0
+    },
+    {
+      "path": "f",
+      "offset": 1.5,
+      "lines": [],
+      "totalLines": 0
+    },
+    {
+      "path": "f",
+      "offset": true,
+      "lines": [],
+      "totalLines": 0
+    },
+    {
+      "path": "f",
+      "offset": 1,
+      "lines": [],
+      "totalLines": -1
+    },
+    {
+      "path": "f",
+      "offset": 1,
+      "lines": [],
+      "totalLines": 0.5
+    },
+    {
+      "path": "f",
+      "offset": 1,
+      "lines": [
+        {
+          "number": 0,
+          "text": "one"
+        }
+      ],
+      "totalLines": 1
+    },
+    {
+      "path": "f",
+      "offset": 1,
+      "lines": [
+        {
+          "number": 1.5,
+          "text": "one"
+        }
+      ],
+      "totalLines": 2
+    },
+    {
+      "path": "f",
+      "offset": 1,
+      "lines": [
+        {
+          "number": true,
+          "text": "one"
+        }
+      ],
+      "totalLines": 1
+    },
+    {
+      "path": "f",
+      "offset": 2,
+      "lines": [
+        {
+          "number": 1,
+          "text": "one"
+        }
+      ],
+      "totalLines": 2
+    },
+    {
+      "path": "f",
+      "offset": 1,
+      "lines": [
+        {
+          "number": 2,
+          "text": "two"
+        },
+        {
+          "number": 1,
+          "text": "one"
+        }
+      ],
+      "totalLines": 2
+    },
+    {
+      "path": "f",
+      "offset": 1,
+      "lines": [
+        {
+          "number": 1,
+          "text": "one"
+        },
+        {
+          "number": 1,
+          "text": "one"
+        }
+      ],
+      "totalLines": 2
+    },
+    {
+      "path": "f",
+      "offset": 1,
+      "lines": [
+        {
+          "number": 3,
+          "text": "three"
+        }
+      ],
+      "totalLines": 2
+    },
+    {
+      "path": "f",
+      "offset": 1,
+      "lines": [
+        {
+          "number": 1,
+          "text": null
+        }
+      ],
+      "totalLines": 1
+    },
+    {
+      "path": "f",
+      "offset": 1,
+      "lines": {},
+      "totalLines": 0
+    },
+    {
+      "path": "f",
+      "offset": 1,
+      "lines": [],
+      "totalLines": 0,
+      "lang": null
+    },
+    {
+      "path": 5,
+      "offset": 1,
+      "lines": [],
+      "totalLines": 0
+    },
+    null,
+    [],
+    "invalid",
+    {},
+    {
+      "path": "fixture.txt",
+      "offset": 1.0,
+      "totalLines": 1.0,
+      "lines": [
+        {
+          "number": 1.0,
+          "text": "value"
+        }
+      ]
+    }
+  ]
+}

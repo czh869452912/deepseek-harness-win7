@@ -1,0 +1,29 @@
+{
+  "cases": [
+    {"name":"whole","chunks":["one\ntwo\n"],"size":8,"args":{"file_path":"file.py"}},
+    {"name":"stream-threshold","chunks":["one\n","two\n"],"size":10,"args":{"file_path":"file.py"}},
+    {"name":"size-unknown","chunks":["a\r","\nb\r\n"],"args":{"file_path":"file.py"}},
+    {"name":"empty","chunks":[""],"size":0,"args":{"file_path":"file.py"}},
+    {"name":"window","chunks":["one\ntwo\nthree"],"size":13,"args":{"file_path":"file.py","offset":2,"limit":1}},
+    {"name":"byte-cap","chunks":["abcdefghijklmnopqrstuvwxyz\nnext"],"size":30,"args":{"file_path":"file.py"},"caps":{"maxBytes":4}},
+    {"name":"line-cap","chunks":["abcdefghijk\nnext"],"size":16,"args":{"file_path":"file.py"},"caps":{"maxLineLength":4}},
+    {"name":"integer-floats","chunks":["abcdef\nnext"],"size":11,"args":{"file_path":"file.py","offset":1.0,"limit":1.0},"caps":{"maxLineLength":3.0}},
+    {"name":"past-eof","chunks":["one"],"size":3,"args":{"file_path":"file.py","offset":2}},
+    {"name":"zero-offset","chunks":["one"],"size":3,"args":{"file_path":"file.py","offset":0}},
+    {"name":"fraction-offset","chunks":["one"],"size":3,"args":{"file_path":"file.py","offset":1.5}},
+    {"name":"negative-limit","chunks":["one"],"size":3,"args":{"file_path":"file.py","limit":-1}},
+    {"name":"limit-over-cap","chunks":["one"],"size":3,"args":{"file_path":"file.py","limit":4}},
+    {"name":"null-offset","chunks":["one"],"size":3,"args":{"file_path":"file.py","offset":null}},
+    {"name":"boolean-limit","chunks":["one"],"size":3,"args":{"file_path":"file.py","limit":true}},
+    {"name":"blank-path","chunks":["one"],"size":3,"args":{"file_path":"  "}},
+    {"name":"absent","missing":true,"chunks":[],"args":{"file_path":"missing.py"}},
+    {"name":"directory","type":"directory","chunks":[],"args":{"file_path":"folder"}},
+    {"name":"stat-error","reject":"stat","chunks":[],"args":{"file_path":"file.py"}},
+    {"name":"read-error","reject":"readText","chunks":["one"],"size":3,"args":{"file_path":"file.py"}},
+    {"name":"stream-error","reject":"streamText","chunks":["one"],"size":10,"args":{"file_path":"file.py"}},
+    {"name":"chunk-error","reject":"chunk","chunks":["one"],"size":10,"args":{"file_path":"file.py"}},
+    {"name":"no-agent","noAgent":true,"chunks":["one"],"size":3,"args":{"file_path":"file.py"}},
+    {"name":"explicit-first","chunks":["one"],"size":3,"args":{"file_path":"file.py","offset":1}},
+    {"name":"unknown-extension","chunks":["one"],"size":3,"args":{"file_path":"file.constructor"}}
+  ]
+}

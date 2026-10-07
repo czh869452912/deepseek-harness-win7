@@ -1,0 +1,18 @@
+{
+  "cases": [
+    {"name":"create-edit-write","initial":null,"steps":[{"tool":"write","args":{"file_path":"target.txt","content":"one\ntwo\n"}},{"tool":"read","args":{"file_path":"target.txt"}},{"tool":"edit","args":{"file_path":"target.txt","old_string":"two","new_string":"three"}},{"tool":"write","args":{"file_path":"target.txt","content":"final\n"}}]},
+    {"name":"read-absent-create","initial":null,"steps":[{"tool":"read","args":{"file_path":"target.txt"}},{"tool":"write","args":{"file_path":"target.txt","content":"created"}}]},
+    {"name":"existing-unobserved-write","initial":"old","steps":[{"tool":"write","args":{"file_path":"target.txt","content":"new"}}]},
+    {"name":"existing-unobserved-edit","initial":"old","steps":[{"tool":"edit","args":{"file_path":"target.txt","old_string":"old","new_string":"new"}}]},
+    {"name":"external-change-edit","initial":"old","steps":[{"tool":"read","args":{"file_path":"target.txt"}},{"external":"different longer external"},{"tool":"edit","args":{"file_path":"target.txt","old_string":"old","new_string":"new"}}]},
+    {"name":"external-change-write","initial":"old","steps":[{"tool":"read","args":{"file_path":"target.txt"}},{"external":"different longer external"},{"tool":"write","args":{"file_path":"target.txt","content":"new"}}]},
+    {"name":"partial-read-guards-full-file","initial":"one\ntwo\nthree\n","steps":[{"tool":"read","args":{"file_path":"target.txt","offset":2,"limit":1}},{"tool":"edit","args":{"file_path":"target.txt","old_string":"three","new_string":"last"}}]},
+    {"name":"duplicate-edit-refused","initial":"old\nold\n","steps":[{"tool":"read","args":{"file_path":"target.txt"}},{"tool":"edit","args":{"file_path":"target.txt","old_string":"old","new_string":"new"}}]},
+    {"name":"replace-all","initial":"old\nold\n","steps":[{"tool":"read","args":{"file_path":"target.txt"}},{"tool":"edit","args":{"file_path":"target.txt","old_string":"old","new_string":"new","replace_all":true}}]},
+    {"name":"crlf-preserved","initial":"one\r\ntwo\r\n","steps":[{"tool":"read","args":{"file_path":"target.txt"}},{"tool":"edit","args":{"file_path":"target.txt","old_string":"two","new_string":"three\nlast"}}]},
+    {"name":"byte-window","initial":"one\ntwo\nthree\nfour\n","caps":{"readMaxBytes":8},"steps":[{"tool":"read","args":{"file_path":"target.txt"}}]},
+    {"name":"no-agent-cannot-observe","initial":"old","noAgent":true,"steps":[{"tool":"read","args":{"file_path":"target.txt"}},{"tool":"edit","args":{"file_path":"target.txt","old_string":"old","new_string":"new"}}]},
+    {"name":"policy-unload-reload","initial":"old","steps":[{"tool":"read","args":{"file_path":"target.txt"}},{"policy":"unload"},{"tool":"edit","args":{"file_path":"target.txt","old_string":"old","new_string":"new"}},{"policy":"reload"},{"tool":"edit","args":{"file_path":"target.txt","old_string":"new","new_string":"again"}}]},
+    {"name":"absent-edit-refused","initial":null,"steps":[{"tool":"read","args":{"file_path":"target.txt"}},{"tool":"edit","args":{"file_path":"target.txt","old_string":"old","new_string":"new"}}]}
+  ]
+}

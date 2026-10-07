@@ -1,0 +1,1597 @@
+{
+  "cases": [
+    {
+      "name": "identical",
+      "path": "fixture.txt",
+      "before": "a\nb\n",
+      "after": "a\nb\n"
+    },
+    {
+      "name": "insert-empty",
+      "path": "fixture.txt",
+      "before": "",
+      "after": "new\ntext\n"
+    },
+    {
+      "name": "delete-all",
+      "path": "fixture.txt",
+      "before": "old\ntext\n",
+      "after": ""
+    },
+    {
+      "name": "terminal-newline",
+      "path": "fixture.txt",
+      "before": "a\nb",
+      "after": "a\nb\n"
+    },
+    {
+      "name": "repeated-tie",
+      "path": "fixture.txt",
+      "before": "a\nb\na\nb\n",
+      "after": "b\na\nb\na\n"
+    },
+    {
+      "name": "distant-hunks",
+      "path": "fixture.txt",
+      "before": "0\n1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n11\n12\n13\n14\n15\n16\n17\n18\n19\n20\n21\n22\n23\n24\n25\n26\n27\n28\n29",
+      "after": "0\n1\nchanged\n3\n4\n5\n6\n7\n8\n9\n10\n11\n12\n13\n14\n15\n16\n17\n18\n19\nchanged\n21\n22\n23\n24\n25\n26\n27\n28\n29"
+    },
+    {
+      "name": "crlf",
+      "path": "fixture.txt",
+      "before": "a\r\nb\r\n",
+      "after": "a\r\nchanged\r\n"
+    },
+    {
+      "name": "blank-lines",
+      "path": "fixture.txt",
+      "before": "\n\n",
+      "after": "\n"
+    },
+    {
+      "name": "unicode",
+      "path": "fixture.txt",
+      "before": "\u4e2d\u6587\n\ud83d\ude00\n",
+      "after": "\ud83d\ude00\n\u4e2d\u6587\n"
+    },
+    {
+      "name": "seeded-0",
+      "path": "fixture.txt",
+      "before": "b\n\u4e2d\u6587\n\u4e2d\u6587\n\n\na\nb\na\n\nb\nb\n\u4e2d\u6587\n \n\\ no newline\n\ud83d\ude00",
+      "after": "a\nb\nb\n\u4e2d\u6587\n\u4e2d\u6587\n \n\n\na\nb\na\n\nb\nb\n\u4e2d\u6587\n \n\\ no newline\n\n\ud83d\ude00\n"
+    },
+    {
+      "name": "seeded-1",
+      "path": "fixture.txt",
+      "before": "\u4e2d\u6587\nb\n\\ no newline\n \n\n",
+      "after": "\nb\na\n\\ no newline\n\n"
+    },
+    {
+      "name": "seeded-2",
+      "path": "fixture.txt",
+      "before": "a\n\\ no newline\n \n",
+      "after": "\ud83d\ude00\n \n\ud83d\ude00"
+    },
+    {
+      "name": "seeded-3",
+      "path": "fixture.txt",
+      "before": " \na\n \na\na\na\nb\n \na\n",
+      "after": " \na\n \na\na\na\nb\na\n"
+    },
+    {
+      "name": "seeded-4",
+      "path": "fixture.txt",
+      "before": "b\n \nb\n \na\n\n\u4e2d\u6587\nb\nb\n\\ no newline\na\na\n\\ no newline\na\n \nb\n\ud83d\ude00\nb\n \nb\n\\ no newline\na\n\ud83d\ude00\n \n\nb\n\\ no newline\n \n ",
+      "after": "b\nb\nb\n \na\n\n\u4e2d\u6587\nb\nb\n\\ no newline\na\na\n\\ no newline\na\n \nb\n\ud83d\ude00\nb\n \nb\n\\ no newline\na\n\ud83d\ude00\n \n\n \n \n\\ no newline"
+    },
+    {
+      "name": "seeded-5",
+      "path": "fixture.txt",
+      "before": " \na\n ",
+      "after": " \na\n \n "
+    },
+    {
+      "name": "seeded-6",
+      "path": "fixture.txt",
+      "before": "b\r\na\r\n\u4e2d\u6587\r\na\r\n\\ no newline\r\na\r\n\\ no newline\r\na\r\n\u4e2d\u6587\r\n\u4e2d\u6587\r\n \r\n",
+      "after": "b\r\na\r\n\\ no newline\r\na\r\n\\ no newline\r\na\r\n\\ no newline\r\na\r\n\\ no newline\r\n\u4e2d\u6587\r\nb\r\nb"
+    },
+    {
+      "name": "seeded-7",
+      "path": "fixture.txt",
+      "before": "\n\\ no newline\nb\n\ud83d\ude00\na\n\\ no newline\n\n\\ no newline\n \na\n\n\u4e2d\u6587\n \nb\n\u4e2d\u6587\n",
+      "after": "a\n\\ no newline\nb\n\ud83d\ude00\na\na\n\\ no newline\n\\ no newline\na\na\n\n\u4e2d\u6587\n \n\u4e2d\u6587"
+    },
+    {
+      "name": "seeded-8",
+      "path": "fixture.txt",
+      "before": "b\na\n \nb\n \na\nb\n\ud83d\ude00\n\\ no newline\na\na\n\n",
+      "after": "b\na\nb\n \na\nb\na\n\ud83d\ude00\n\\ no newline\n\na\na\n\n"
+    },
+    {
+      "name": "seeded-9",
+      "path": "fixture.txt",
+      "before": "a\r\nb\r\n\\ no newline\r\na\r\n\\ no newline\r\n\r\n",
+      "after": "a\r\nb\r\n\\ no newline\r\na\r\n\\ no newline\r\n\r\n\r\n\u4e2d\u6587\r\n\\ no newline\r\n"
+    },
+    {
+      "name": "seeded-10",
+      "path": "fixture.txt",
+      "before": "\\ no newline\r\na\r\n\r\n\ud83d\ude00\r\n\\ no newline\r\n\r\n\r\na\r\n\u4e2d\u6587\r\na\r\n\r\na\r\n\r\n\r\n\\ no newline\r\n\r\n\u4e2d\u6587\r\n\r\nb\r\nb\r\na\r\na\r\n\ud83d\ude00\r\n",
+      "after": "\\ no newline\r\na\r\n\r\n\ud83d\ude00\r\n\\ no newline\r\n\r\n\r\na\r\n\u4e2d\u6587\r\na\r\n\r\na\r\n\r\n\r\n\\ no newline\r\n\r\n\u4e2d\u6587\r\n\r\nb\r\nb\r\n\ud83d\ude00"
+    },
+    {
+      "name": "seeded-11",
+      "path": "fixture.txt",
+      "before": "b\n \n\u4e2d\u6587\na\n\u4e2d\u6587\nb\n\ud83d\ude00\nb\na\na\n \na\nb\n\\ no newline\nb\n\u4e2d\u6587\na\nb\n \nb\n\u4e2d\u6587\n",
+      "after": "b\n \n\u4e2d\u6587\na\n\u4e2d\u6587\n\u4e2d\u6587\n\\ no newline\n\ud83d\ude00\nb\na\na\na\nb\n\\ no newline\n\u4e2d\u6587\n\u4e2d\u6587\na\nb\n \nb\n\u4e2d\u6587\n\nb\nb\n"
+    },
+    {
+      "name": "seeded-12",
+      "path": "fixture.txt",
+      "before": "b\n\nb\na\n \na",
+      "after": "b\n\na\nb\na\n \n\u4e2d\u6587"
+    },
+    {
+      "name": "seeded-13",
+      "path": "fixture.txt",
+      "before": "b\r\na\r\n \r\n\\ no newline\r\n \r\n",
+      "after": "b\r\na\r\n \r\n\\ no newline\r\n \r\n "
+    },
+    {
+      "name": "seeded-14",
+      "path": "fixture.txt",
+      "before": "\ud83d\ude00\nb\nb\na\n\n\u4e2d\u6587\na\n\ud83d\ude00\na\n\u4e2d\u6587\n\\ no newline\na\n\ud83d\ude00\na\na\na\n",
+      "after": "\ud83d\ude00\nb\nb\na\n\n\u4e2d\u6587\n\na\n\ud83d\ude00\na\n\u4e2d\u6587\n\\ no newline\na\n\ud83d\ude00\na\na\na"
+    },
+    {
+      "name": "seeded-15",
+      "path": "fixture.txt",
+      "before": "b\na\na\n",
+      "after": "b\nb\nb\n\\ no newline\n \na\na\n\n"
+    },
+    {
+      "name": "seeded-16",
+      "path": "fixture.txt",
+      "before": "\ud83d\ude00\r\n\ud83d\ude00\r\n\ud83d\ude00\r\n\u4e2d\u6587\r\n\\ no newline\r\n \r\na\r\n",
+      "after": "\ud83d\ude00\r\n\ud83d\ude00\r\n\ud83d\ude00\r\nb\r\n\u4e2d\u6587\r\n \r\na\r\na"
+    },
+    {
+      "name": "seeded-17",
+      "path": "fixture.txt",
+      "before": "\u4e2d\u6587\n\\ no newline\na\n\ud83d\ude00\na\n \nb\n\u4e2d\u6587\nb\n\ud83d\ude00\na\n \na\na\na\na",
+      "after": "\u4e2d\u6587\n\\ no newline\na\n\ud83d\ude00\na\n \nb\na\nb\n\ud83d\ude00\na\n \na\na\na"
+    },
+    {
+      "name": "seeded-18",
+      "path": "fixture.txt",
+      "before": " \na\n\ud83d\ude00\n\\ no newline\n\ud83d\ude00\n\\ no newline\n\n\ud83d\ude00\na\n\\ no newline\n\u4e2d\u6587\n \n \n \n\na\n\\ no newline\n\\ no newline\n",
+      "after": " \na\n\ud83d\ude00\n\ud83d\ude00\nb\n\ud83d\ude00\n\\ no newline\n\n\ud83d\ude00\na\n\\ no newline\n\u4e2d\u6587\n \n \n \n\na\n\\ no newline\n\\ no newline"
+    },
+    {
+      "name": "seeded-19",
+      "path": "fixture.txt",
+      "before": "a\n \n\\ no newline\n\\ no newline\n \na\na\nb\n\\ no newline\n\n\ud83d\ude00",
+      "after": "\u4e2d\u6587\nb\n \n\\ no newline\n\\ no newline\n \na\na\nb\n\u4e2d\u6587\n\n\ud83d\ude00\nb\na\n\ud83d\ude00"
+    },
+    {
+      "name": "seeded-20",
+      "path": "fixture.txt",
+      "before": "b\na\na\na\n\\ no newline\n\\ no newline\na\n\\ no newline\na\n\\ no newline\na\n \n \na\n\\ no newline\n ",
+      "after": "b\na\na\na\n\\ no newline\n\\ no newline\n\ud83d\ude00\n\na\n\\ no newline\n\\ no newline\na\n\\ no newline\n\\ no newline\na\n \nb\nb\n\\ no newline\n"
+    },
+    {
+      "name": "seeded-21",
+      "path": "fixture.txt",
+      "before": "\ud83d\ude00\nb\na\n\\ no newline\na\na\nb\n\u4e2d\u6587\n\n\ud83d\ude00\nb\na\nb\n\\ no newline\nb\n \n",
+      "after": "\ud83d\ude00\nb\na\n\\ no newline\na\na\nb\n\u4e2d\u6587\n\n\ud83d\ude00\nb\n \nb\na\n\\ no newline\nb\n \n"
+    },
+    {
+      "name": "seeded-22",
+      "path": "fixture.txt",
+      "before": "a\n\n\ud83d\ude00\nb\n\ud83d\ude00\na\na\n \nb\na\n \n \n\n\ud83d\ude00\na\n\u4e2d\u6587\nb",
+      "after": "a\n\n\ud83d\ude00\nb\na\nb\n \nb\na\n \n \n\n\ud83d\ude00\na\n\u4e2d\u6587\nb\nb\n "
+    },
+    {
+      "name": "seeded-23",
+      "path": "fixture.txt",
+      "before": "\u4e2d\u6587\n\ud83d\ude00\na\n \n\ud83d\ude00\n\n \n \na\na\na\na\n\ud83d\ude00\n\n\ud83d\ude00\n\ud83d\ude00\na\na\n\na\n\u4e2d\u6587\na\n\n\ud83d\ude00\n\\ no newline\n",
+      "after": "\u4e2d\u6587\n\ud83d\ude00\n \n\ud83d\ude00\n\\ no newline\n\n\n \n \na\na\n\\ no newline\na\n\ud83d\ude00\n\na\n\ud83d\ude00\na\na\n\na\na\n\n\ud83d\ude00\n\\ no newline"
+    },
+    {
+      "name": "seeded-24",
+      "path": "fixture.txt",
+      "before": "a",
+      "after": "\r\na\r\n\ud83d\ude00"
+    },
+    {
+      "name": "seeded-25",
+      "path": "fixture.txt",
+      "before": "\\ no newline\n\\ no newline\n \n\u4e2d\u6587\na",
+      "after": " \na\na\n"
+    },
+    {
+      "name": "seeded-26",
+      "path": "fixture.txt",
+      "before": "\\ no newline\r\n\ud83d\ude00\r\n\r\n\ud83d\ude00\r\n\r\n\u4e2d\u6587\r\n\ud83d\ude00\r\na\r\n\\ no newline\r\n \r\na\r\n\\ no newline\r\nb\r\n \r\na\r\n \r\na\r\n\ud83d\ude00\r\nb\r\na\r\n \r\n\ud83d\ude00\r\na\r\n\r\na\r\n\\ no newline\r\n\\ no newline\r\n \r\n",
+      "after": "a\r\n\ud83d\ude00\r\n\r\n\ud83d\ude00\r\n\r\n\u4e2d\u6587\r\n\ud83d\ude00\r\na\r\n\\ no newline\r\n \r\n\r\n\\ no newline\r\nb\r\n \r\na\r\n \r\na\r\n\ud83d\ude00\r\n \r\na\r\n \r\na\r\na\r\n\\ no newline\r\n\\ no newline\r\n "
+    },
+    {
+      "name": "seeded-27",
+      "path": "fixture.txt",
+      "before": "b\n\ud83d\ude00\n \n\\ no newline\na\na\na\n\u4e2d\u6587\na\na\nb\n\n\n\u4e2d\u6587\n\\ no newline\nb\nb\n \na\nb\n\n \n",
+      "after": "b\nb\n\ud83d\ude00\n \n\\ no newline\n\\ no newline\na\na\nb\n\u4e2d\u6587\na\na\nb\n\n\n\u4e2d\u6587\n\\ no newline\nb\nb\n \na\nb\n\n \n"
+    },
+    {
+      "name": "seeded-28",
+      "path": "fixture.txt",
+      "before": "a\n\u4e2d\u6587\n\\ no newline\n\n \n\ud83d\ude00\n\n\u4e2d\u6587\na\n\\ no newline\n\\ no newline\n\ud83d\ude00",
+      "after": "a\n\n\n \n\ud83d\ude00\n\n\u4e2d\u6587\n\\ no newline\n\\ no newline\n\u4e2d\u6587"
+    },
+    {
+      "name": "seeded-29",
+      "path": "fixture.txt",
+      "before": "b\n\u4e2d\u6587\nb\na\n\ud83d\ude00\na\n \n\u4e2d\u6587\n\na\n\na\n\u4e2d\u6587\n\\ no newline\n\u4e2d\u6587\n \na\na",
+      "after": "b\n\u4e2d\u6587\nb\nb\na\n\ud83d\ude00\n\ud83d\ude00\na\n \n\u4e2d\u6587\n\na\n\na\n\u4e2d\u6587\n\u4e2d\u6587\n\u4e2d\u6587\n \na\nb\n"
+    },
+    {
+      "name": "seeded-30",
+      "path": "fixture.txt",
+      "before": "\ud83d\ude00\n\n\u4e2d\u6587\na\na\na\na\n\n\na\nb\n\nb\n\\ no newline\n \n \na\n\\ no newline\na\n\u4e2d\u6587\n",
+      "after": "\ud83d\ude00\n\n\u4e2d\u6587\na\na\na\na\n\n\n \n\u4e2d\u6587\nb\n\nb\n\\ no newline\n \na\n\\ no newline\na\n\u4e2d\u6587"
+    },
+    {
+      "name": "seeded-31",
+      "path": "fixture.txt",
+      "before": " \r\n \r\n\r\n\r\n\r\n \r\n\r\n\\ no newline\r\n\ud83d\ude00\r\n\u4e2d\u6587\r\n\\ no newline",
+      "after": "a\r\n \r\n\\ no newline\r\n\r\n\r\n \r\nb\r\n\ud83d\ude00\r\n\u4e2d\u6587\r\n "
+    },
+    {
+      "name": "seeded-32",
+      "path": "fixture.txt",
+      "before": "\u4e2d\u6587\r\na\r\na\r\n\u4e2d\u6587\r\n \r\n \r\na\r\na\r\n",
+      "after": "a\r\na\r\n\u4e2d\u6587\r\na\r\na\r\n \r\n\ud83d\ude00\r\na\r\n\u4e2d\u6587"
+    },
+    {
+      "name": "seeded-33",
+      "path": "fixture.txt",
+      "before": "a\na\na\na\nb\na\n\na\na\n\u4e2d\u6587\n\ud83d\ude00\n\\ no newline\n\\ no newline\n \na\n\ud83d\ude00\n\n\u4e2d\u6587\n\ud83d\ude00\n\ud83d\ude00\na\na\n",
+      "after": "a\na\na\na\n\\ no newline\nb\na\n\na\na\n\u4e2d\u6587\n\ud83d\ude00\n\u4e2d\u6587\n\\ no newline\n \na\n\ud83d\ude00\n\n\u4e2d\u6587\n\ud83d\ude00\n\ud83d\ude00\na\na\n"
+    },
+    {
+      "name": "seeded-34",
+      "path": "fixture.txt",
+      "before": "b\nb\n \n\na\n\\ no newline",
+      "after": "b\n\u4e2d\u6587\n\n\u4e2d\u6587\n"
+    },
+    {
+      "name": "seeded-35",
+      "path": "fixture.txt",
+      "before": " \nb\n\\ no newline\na\n\nb\n\na\n\na\n\u4e2d\u6587\n\ud83d\ude00\nb\nb\n \na\nb\n\ud83d\ude00\n\u4e2d\u6587\na\na\n\u4e2d\u6587\na\na\na\n \n\u4e2d\u6587\na\n",
+      "after": " \nb\n\\ no newline\na\n\nb\n\n\n\na\n\ud83d\ude00\nb\nb\n \na\nb\n\u4e2d\u6587\na\na\n\u4e2d\u6587\nb\na\na\n \n\u4e2d\u6587\na\n\n"
+    },
+    {
+      "name": "seeded-36",
+      "path": "fixture.txt",
+      "before": "\\ no newline\n\ud83d\ude00\na\n \n \n \n\n \na\n \n\u4e2d\u6587",
+      "after": " \n\ud83d\ude00\n\\ no newline\n\ud83d\ude00\n\ud83d\ude00\n\ud83d\ude00\n \n\n\n \na\n \na"
+    },
+    {
+      "name": "seeded-37",
+      "path": "fixture.txt",
+      "before": "\\ no newline\na\n\ud83d\ude00\n \n \nb\nb\n\n\u4e2d\u6587\na\na\n\n\ud83d\ude00\n\n\u4e2d\u6587\n\\ no newline\na\n\u4e2d\u6587\na\n \n\n\\ no newline\n \na\nb\n\ud83d\ude00\n\nb\n \n",
+      "after": "\n\\ no newline\na\n\ud83d\ude00\n \n \nb\n\n\u4e2d\u6587\na\na\n\n\ud83d\ude00\n\\ no newline\n\n\u4e2d\u6587\n\\ no newline\n\u4e2d\u6587\na\n \n\u4e2d\u6587\n\n\\ no newline\n \n\u4e2d\u6587\nb\n\ud83d\ude00\n\nb\n "
+    },
+    {
+      "name": "seeded-38",
+      "path": "fixture.txt",
+      "before": "a\r\n\\ no newline\r\n\u4e2d\u6587\r\n\u4e2d\u6587\r\n \r\n\r\n\ud83d\ude00\r\n\r\n\\ no newline\r\na\r\n\u4e2d\u6587\r\n\\ no newline\r\n\\ no newline\r\n\u4e2d\u6587\r\n\ud83d\ude00\r\na",
+      "after": "a\r\n\\ no newline\r\n\u4e2d\u6587\r\n\u4e2d\u6587\r\n \r\n\ud83d\ude00\r\na\r\n\u4e2d\u6587\r\n\\ no newline\r\n\\ no newline\r\n\u4e2d\u6587\r\n \r\na\r\na\r\n\u4e2d\u6587\r\na\r\n"
+    },
+    {
+      "name": "seeded-39",
+      "path": "fixture.txt",
+      "before": "a\n",
+      "after": ""
+    },
+    {
+      "name": "seeded-40",
+      "path": "fixture.txt",
+      "before": "\\ no newline\n\ud83d\ude00\n \n\\ no newline\na\n\nb\nb\nb\na\n\\ no newline\n \n \na\n\ud83d\ude00\n\ud83d\ude00\na\na\n \n\u4e2d\u6587\n",
+      "after": "\\ no newline\n\\ no newline\na\n\nb\n\ud83d\ude00\na\n\\ no newline\n \n \na\n\ud83d\ude00\n\ud83d\ude00\nb\na\na\n \n\u4e2d\u6587\n"
+    },
+    {
+      "name": "seeded-41",
+      "path": "fixture.txt",
+      "before": "\n\u4e2d\u6587\n\n \na\n\nb\n\nb\n\na\n\u4e2d\u6587\na\n\u4e2d\u6587\n\\ no newline\n\\ no newline\n\u4e2d\u6587\n\u4e2d\u6587\na\na\n\\ no newline\nb\nb\n\ud83d\ude00\nb\n\\ no newline\n\ud83d\ude00\na\n\\ no newline\n",
+      "after": "b\n\n\u4e2d\u6587\n\n \na\n\nb\n\nb\n\na\n\u4e2d\u6587\na\na\n\u4e2d\u6587\n\\ no newline\n\\ no newline\na\n\u4e2d\u6587\n\u4e2d\u6587\na\na\n\\ no newline\n\nb\n\ud83d\ude00\nb\n\\ no newline\n\ud83d\ude00\na\n\\ no newline\n"
+    },
+    {
+      "name": "seeded-42",
+      "path": "fixture.txt",
+      "before": "\u4e2d\u6587\na\n\u4e2d\u6587\na\n\\ no newline",
+      "after": "\\ no newline\nb\n\\ no newline\na\n\n"
+    },
+    {
+      "name": "seeded-43",
+      "path": "fixture.txt",
+      "before": "b\r\n\u4e2d\u6587\r\na\r\n\u4e2d\u6587\r\na\r\na\r\n\r\n\ud83d\ude00\r\n\ud83d\ude00\r\na\r\n\ud83d\ude00\r\n\\ no newline\r\na\r\n\\ no newline\r\na\r\nb\r\n",
+      "after": "b\r\na\r\n\u4e2d\u6587\r\na\r\na\r\n\r\nb\r\n\ud83d\ude00\r\n\ud83d\ude00\r\n\\ no newline\r\na\r\na\r\n\r\n\u4e2d\u6587\r\na\r\nb\r\n"
+    },
+    {
+      "name": "seeded-44",
+      "path": "fixture.txt",
+      "before": "a\n\u4e2d\u6587\n \n\u4e2d\u6587\nb\na\n\\ no newline\nb\n\\ no newline\n\ud83d\ude00\n\u4e2d\u6587\n \n \na\n\u4e2d\u6587\n\u4e2d\u6587\n\n\\ no newline\na\n\u4e2d\u6587\n\u4e2d\u6587\n\ud83d\ude00\n\n",
+      "after": "a\n\u4e2d\u6587\n \nb\n\u4e2d\u6587\nb\na\nb\n\\ no newline\n\ud83d\ude00\n\u4e2d\u6587\n \n \na\n\u4e2d\u6587\n\u4e2d\u6587\n\n\\ no newline\na\n\u4e2d\u6587\n\u4e2d\u6587\n\ud83d\ude00\n"
+    },
+    {
+      "name": "seeded-45",
+      "path": "fixture.txt",
+      "before": "\u4e2d\u6587\nb\n\ud83d\ude00\n\n \n\ud83d\ude00\n\\ no newline\na\n\na\nb\na\n \n\n\n\ud83d\ude00\n\ud83d\ude00\nb\n\u4e2d\u6587\n \na\nb\nb\n",
+      "after": "\u4e2d\u6587\nb\n\ud83d\ude00\n\n \n\ud83d\ude00\n\\ no newline\na\n\na\nb\na\n \n\n\\ no newline\n\ud83d\ude00\n\ud83d\ude00\nb\n\u4e2d\u6587\n \na\nb\n\n"
+    },
+    {
+      "name": "seeded-46",
+      "path": "fixture.txt",
+      "before": "\ud83d\ude00\n\u4e2d\u6587\n\\ no newline\n \na\n\u4e2d\u6587\nb\na\na\n \n\ud83d\ude00\n\ud83d\ude00\nb\na\na\nb\nb\n \n\u4e2d\u6587",
+      "after": "\ud83d\ude00\n\u4e2d\u6587\n \n\na\nb\na\na\n\ud83d\ude00\n\ud83d\ude00\nb\na\na\nb\na\nb\n \n\u4e2d\u6587"
+    },
+    {
+      "name": "seeded-47",
+      "path": "fixture.txt",
+      "before": " \n\\ no newline\n\u4e2d\u6587\n \n\ud83d\ude00\n\\ no newline\na\na\n \na\na\n\u4e2d\u6587\n \na\n\na\n\n\ud83d\ude00\n",
+      "after": " \n\\ no newline\n\u4e2d\u6587\nb\n \n\ud83d\ude00\n\\ no newline\na\na\n \na\n\na\n\\ no newline\n\\ no newline\n \na\n\na\n\n\ud83d\ude00\n\ud83d\ude00\n"
+    },
+    {
+      "name": "seeded-48",
+      "path": "fixture.txt",
+      "before": "a\r\nb\r\nb\r\na\r\n\ud83d\ude00\r\n\u4e2d\u6587\r\n\u4e2d\u6587\r\n\ud83d\ude00\r\n \r\nb\r\n\ud83d\ude00\r\nb\r\n\u4e2d\u6587\r\n\ud83d\ude00\r\na\r\na\r\n \r\n\ud83d\ude00\r\n\\ no newline\r\n\\ no newline\r\n\u4e2d\u6587\r\na\r\n",
+      "after": "a\r\nb\r\nb\r\na\r\n\ud83d\ude00\r\n\u4e2d\u6587\r\n\u4e2d\u6587\r\n\ud83d\ude00\r\n \r\nb\r\n\ud83d\ude00\r\nb\r\n\u4e2d\u6587\r\n\ud83d\ude00\r\na\r\n\\ no newline\r\n \r\n\ud83d\ude00\r\n\\ no newline\r\n\u4e2d\u6587\r\n\\ no newline\r\n\u4e2d\u6587\r\na"
+    },
+    {
+      "name": "seeded-49",
+      "path": "fixture.txt",
+      "before": "\\ no newline\n\u4e2d\u6587\n\\ no newline\na\n\u4e2d\u6587\n\n\\ no newline\n \n \nb\n \n\na\n \n\u4e2d\u6587",
+      "after": "\\ no newline\n\u4e2d\u6587\n\\ no newline\na\na\n\n\\ no newline\n \n \n\na\n \n\ud83d\ude00\n\u4e2d\u6587\n"
+    },
+    {
+      "name": "seeded-50",
+      "path": "fixture.txt",
+      "before": "\\ no newline\r\na\r\nb\r\n \r\n\u4e2d\u6587\r\na\r\n\ud83d\ude00\r\n\\ no newline\r\nb\r\n\ud83d\ude00\r\n\\ no newline\r\n",
+      "after": "\\ no newline\r\na\r\na\r\n \r\n\u4e2d\u6587\r\na\r\n\ud83d\ude00\r\na\r\nb\r\n\ud83d\ude00\r\n\\ no newline\r\na\r\na"
+    },
+    {
+      "name": "seeded-51",
+      "path": "fixture.txt",
+      "before": "a\nb\nb\n\\ no newline\n\ud83d\ude00\nb\nb\n\ud83d\ude00\n\ud83d\ude00\n\ud83d\ude00\na\n",
+      "after": "a\nb\nb\n\n\n\ud83d\ude00\nb\na\n\ud83d\ude00\n\ud83d\ude00\n\ud83d\ude00\na"
+    },
+    {
+      "name": "seeded-52",
+      "path": "fixture.txt",
+      "before": "b\r\n\r\n\\ no newline\r\n\r\n\\ no newline\r\n\r\n\ud83d\ude00\r\n\\ no newline\r\nb\r\n\\ no newline\r\nb",
+      "after": "b\r\n\r\n\\ no newline\r\nb\r\n\\ no newline\r\na\r\n\ud83d\ude00\r\n\ud83d\ude00\r\nb\r\n\u4e2d\u6587\r\nb\r\n\u4e2d\u6587\r\n"
+    },
+    {
+      "name": "seeded-53",
+      "path": "fixture.txt",
+      "before": "a\na\na\n\n \na\nb\n\u4e2d\u6587\n \n\u4e2d\u6587\na\na\n ",
+      "after": "b\na\na\n\n \na\n\nb\n\u4e2d\u6587\n \n\u4e2d\u6587\n\ud83d\ude00\na\n \nb\n"
+    },
+    {
+      "name": "seeded-54",
+      "path": "fixture.txt",
+      "before": "a\na\n\\ no newline\n",
+      "after": "a\na\na\na"
+    },
+    {
+      "name": "seeded-55",
+      "path": "fixture.txt",
+      "before": "\\ no newline\n\\ no newline\n \n \n\u4e2d\u6587\n\ud83d\ude00\na\n\u4e2d\u6587\n\\ no newline\n\\ no newline\na\na\na\n\ud83d\ude00\na\n\\ no newline\n\ud83d\ude00\n\\ no newline\nb\nb",
+      "after": " \n\\ no newline\n \n \n\u4e2d\u6587\n\na\n\u4e2d\u6587\n\\ no newline\n\\ no newline\na\na\na\n\ud83d\ude00\n\n\\ no newline\n\ud83d\ude00\na\n\\ no newline\nb"
+    },
+    {
+      "name": "seeded-56",
+      "path": "fixture.txt",
+      "before": "a\na\na\n\\ no newline\n\ud83d\ude00\n\u4e2d\u6587\n \n\u4e2d\u6587\n\\ no newline\na\nb\n\ud83d\ude00\n\u4e2d\u6587\n \na\n\n\\ no newline\n\u4e2d\u6587\n\u4e2d\u6587\n\u4e2d\u6587\n\u4e2d\u6587\n \n",
+      "after": "\ud83d\ude00\na\na\na\n\\ no newline\n\ud83d\ude00\nb\n \n\u4e2d\u6587\n\\ no newline\na\nb\n\ud83d\ude00\n\u4e2d\u6587\n \na\n\n\\ no newline\n\u4e2d\u6587\n\u4e2d\u6587\n\u4e2d\u6587\na\n "
+    },
+    {
+      "name": "seeded-57",
+      "path": "fixture.txt",
+      "before": "a\r\nb\r\n\ud83d\ude00\r\n\ud83d\ude00\r\n \r\nb\r\na\r\nb\r\n\ud83d\ude00\r\na\r\n",
+      "after": "a\r\nb\r\na\r\n\\ no newline\r\n\r\na\r\nb\r\n\ud83d\ude00\r\na\r\n\u4e2d\u6587\r\n"
+    },
+    {
+      "name": "seeded-58",
+      "path": "fixture.txt",
+      "before": "b",
+      "after": "b\r\n\\ no newline"
+    },
+    {
+      "name": "seeded-59",
+      "path": "fixture.txt",
+      "before": "\n\u4e2d\u6587\n\\ no newline\n\ud83d\ude00\na\n\u4e2d\u6587\n\\ no newline\na\n\\ no newline\nb\n\u4e2d\u6587\nb\na\na\na\n",
+      "after": "a\n\u4e2d\u6587\n \na\n\u4e2d\u6587\na\n\\ no newline\na\n\u4e2d\u6587\nb\n\ud83d\ude00\na\na\na\nb"
+    },
+    {
+      "name": "seeded-60",
+      "path": "fixture.txt",
+      "before": "\ud83d\ude00\n\n\u4e2d\u6587\n\u4e2d\u6587\na\n\ud83d\ude00\n\u4e2d\u6587\na\n\u4e2d\u6587\n\ud83d\ude00\na\na\nb\n\n\u4e2d\u6587\n\\ no newline\nb\nb\n\ud83d\ude00\na\na\n\n\u4e2d\u6587\na\n\ud83d\ude00\n\u4e2d\u6587\n\u4e2d\u6587\n \nb",
+      "after": "\ud83d\ude00\n\n\u4e2d\u6587\n\u4e2d\u6587\na\n\u4e2d\u6587\n \n\ud83d\ude00\n\u4e2d\u6587\na\n\n\ud83d\ude00\na\n\u4e2d\u6587\na\nb\n\n\u4e2d\u6587\n\\ no newline\nb\nb\n\ud83d\ude00\n\ud83d\ude00\na\n\n\u4e2d\u6587\na\n\ud83d\ude00\n\u4e2d\u6587\n "
+    },
+    {
+      "name": "seeded-61",
+      "path": "fixture.txt",
+      "before": "b\n\n \n\n\u4e2d\u6587\na\n ",
+      "after": "b\n\u4e2d\u6587\n\na\n\ud83d\ude00\n\n\u4e2d\u6587\n\u4e2d\u6587\n\u4e2d\u6587\n"
+    },
+    {
+      "name": "seeded-62",
+      "path": "fixture.txt",
+      "before": "\n\ud83d\ude00\n\ud83d\ude00\na\n\u4e2d\u6587\n",
+      "after": "\n\ud83d\ude00\n\u4e2d\u6587\n\u4e2d\u6587\n\\ no newline"
+    },
+    {
+      "name": "seeded-63",
+      "path": "fixture.txt",
+      "before": "\u4e2d\u6587",
+      "after": "\u4e2d\u6587\na"
+    },
+    {
+      "name": "seeded-64",
+      "path": "fixture.txt",
+      "before": "b\n \n\nb\na\na\na\n\u4e2d\u6587\n \n \n\n\ud83d\ude00\n \nb\n\u4e2d\u6587\n\u4e2d\u6587\n \nb\n\ud83d\ude00\n\n\u4e2d\u6587\na\na\n ",
+      "after": "b\na\na\n\n\u4e2d\u6587\n \n \n\n\ud83d\ude00\n \n\u4e2d\u6587\n\u4e2d\u6587\n \nb\n\ud83d\ude00\n\n\u4e2d\u6587\na\na\n "
+    },
+    {
+      "name": "seeded-65",
+      "path": "fixture.txt",
+      "before": " \r\na\r\nb\r\nb\r\n\\ no newline\r\n\u4e2d\u6587\r\nb\r\n\u4e2d\u6587\r\n\ud83d\ude00\r\n\u4e2d\u6587\r\n\u4e2d\u6587\r\n\r\n\r\n \r\n\ud83d\ude00\r\n",
+      "after": " \r\na\r\na\r\nb\r\n\u4e2d\u6587\r\nb\r\n\u4e2d\u6587\r\n\ud83d\ude00\r\n\ud83d\ude00\r\n\u4e2d\u6587\r\n\r\n\\ no newline\r\n\r\n\ud83d\ude00\r\n \r\n\ud83d\ude00"
+    },
+    {
+      "name": "seeded-66",
+      "path": "fixture.txt",
+      "before": "\\ no newline\nb\na\n\u4e2d\u6587\n\ud83d\ude00\n\n \n\\ no newline\n\\ no newline\n\ud83d\ude00\n\u4e2d\u6587\n\ud83d\ude00\n\\ no newline\na",
+      "after": "\\ no newline\nb\na\n\u4e2d\u6587\n\ud83d\ude00\n\n \n\\ no newline\n\\ no newline\n\ud83d\ude00\n \n\ud83d\ude00\n\\ no newline\na"
+    },
+    {
+      "name": "seeded-67",
+      "path": "fixture.txt",
+      "before": "b\r\n\ud83d\ude00\r\na\r\na\r\n\u4e2d\u6587\r\n\u4e2d\u6587\r\na\r\n\ud83d\ude00\r\n \r\na\r\nb\r\n \r\na\r\n\\ no newline\r\n\\ no newline\r\n\\ no newline\r\na\r\nb\r\na\r\na\r\n\u4e2d\u6587\r\n\ud83d\ude00\r\n\r\na\r\na\r\n\ud83d\ude00\r\n\u4e2d\u6587\r\na\r\n",
+      "after": "b\r\n\ud83d\ude00\r\na\r\na\r\n\u4e2d\u6587\r\n\u4e2d\u6587\r\na\r\n\ud83d\ude00\r\nb\r\nb\r\n \r\na\r\n\\ no newline\r\n\\ no newline\r\n\\ no newline\r\nb\r\na\r\nb\r\na\r\na\r\n\ud83d\ude00\r\n\ud83d\ude00\r\n\u4e2d\u6587\r\n\r\na\r\na\r\n\ud83d\ude00\r\n\u4e2d\u6587\r\na"
+    },
+    {
+      "name": "seeded-68",
+      "path": "fixture.txt",
+      "before": "b\na\n\u4e2d\u6587\nb\n\ud83d\ude00\na\n \nb\n \n\n\ud83d\ude00\n\n\\ no newline",
+      "after": "a\na\n\\ no newline\n\u4e2d\u6587\nb\n\ud83d\ude00\na\na\nb\nb\n\n\ud83d\ude00\n\nb"
+    },
+    {
+      "name": "seeded-69",
+      "path": "fixture.txt",
+      "before": "a\n \n\\ no newline\n\u4e2d\u6587\n\\ no newline\na\n \n\n \n\\ no newline\n\ud83d\ude00\n\ud83d\ude00\n\n \nb",
+      "after": "a\n \n\\ no newline\n\u4e2d\u6587\n\\ no newline\na\n \n\\ no newline\n \n\\ no newline\n\u4e2d\u6587\n\ud83d\ude00\n\n \n\ud83d\ude00\nb"
+    },
+    {
+      "name": "seeded-70",
+      "path": "fixture.txt",
+      "before": "a\r\n",
+      "after": "a\r\n"
+    },
+    {
+      "name": "seeded-71",
+      "path": "fixture.txt",
+      "before": "\u4e2d\u6587\na\na\n\n\\ no newline\nb\nb\n\\ no newline\n\\ no newline\na\n\u4e2d\u6587\n \na\n\na\na\n\ud83d\ude00\nb\n\n\\ no newline\na\n\n ",
+      "after": "\u4e2d\u6587\na\na\n\n\\ no newline\nb\nb\n\\ no newline\n\\ no newline\na\n\u4e2d\u6587\na\n\na\na\n\ud83d\ude00\nb\n\n\n\\ no newline\na\n "
+    },
+    {
+      "name": "seeded-72",
+      "path": "fixture.txt",
+      "before": " \r\na\r\n\r\n \r\n \r\na\r\n\u4e2d\u6587\r\n\r\n\u4e2d\u6587\r\n\u4e2d\u6587\r\n\\ no newline\r\n\\ no newline\r\n",
+      "after": " \r\na\r\n\r\n\r\n\\ no newline\r\n\u4e2d\u6587\r\n\r\n\r\n\u4e2d\u6587\r\n\\ no newline\r\n\ud83d\ude00\r\n\\ no newline"
+    },
+    {
+      "name": "seeded-73",
+      "path": "fixture.txt",
+      "before": "\u4e2d\u6587\n\\ no newline\n\u4e2d\u6587\n\u4e2d\u6587\nb\n\\ no newline\na\na\n\n\n",
+      "after": "b\n\\ no newline\na\n\\ no newline\nb\n\\ no newline\na\na\na\n\n"
+    },
+    {
+      "name": "seeded-74",
+      "path": "fixture.txt",
+      "before": "a\r\n\u4e2d\u6587\r\n\u4e2d\u6587\r\nb\r\n\ud83d\ude00\r\na\r\nb\r\nb\r\n\r\n\\ no newline\r\na\r\n\r\n\r\n\u4e2d\u6587\r\nb\r\n",
+      "after": "a\r\n\u4e2d\u6587\r\n\u4e2d\u6587\r\nb\r\n\ud83d\ude00\r\n \r\na\r\nb\r\n\r\n\\ no newline\r\na\r\n\r\n\r\n\u4e2d\u6587\r\nb"
+    },
+    {
+      "name": "seeded-75",
+      "path": "fixture.txt",
+      "before": "a\r\nb\r\n\u4e2d\u6587\r\na\r\n\ud83d\ude00\r\na\r\na\r\nb\r\n \r\n\ud83d\ude00\r\n\r\n\ud83d\ude00\r\na\r\na\r\na\r\n\ud83d\ude00\r\na\r\n\ud83d\ude00",
+      "after": "a\r\nb\r\n\u4e2d\u6587\r\n\ud83d\ude00\r\na\r\na\r\nb\r\n\ud83d\ude00\r\n\r\na\r\n\ud83d\ude00\r\na\r\n\ud83d\ude00\r\na"
+    },
+    {
+      "name": "seeded-76",
+      "path": "fixture.txt",
+      "before": "\n\\ no newline\n\ud83d\ude00\n\ud83d\ude00\n\n \n \n\n\ud83d\ude00\na\na\na\n\ud83d\ude00",
+      "after": "\n\\ no newline\n\ud83d\ude00\n\ud83d\ude00\n\n\ud83d\ude00\n\n \n\n\ud83d\ude00\na\na\na\n\ud83d\ude00\n"
+    },
+    {
+      "name": "seeded-77",
+      "path": "fixture.txt",
+      "before": "\\ no newline\n\nb\n\ud83d\ude00\n\ud83d\ude00\n\ud83d\ude00\n\u4e2d\u6587\n\n \na\na\n\u4e2d\u6587\na\n\u4e2d\u6587\n",
+      "after": "\\ no newline\n\nb\n\ud83d\ude00\n\ud83d\ude00\n\ud83d\ude00\n\u4e2d\u6587\n\n \na\na\n\\ no newline\na"
+    },
+    {
+      "name": "seeded-78",
+      "path": "fixture.txt",
+      "before": "a\na\na\n\n\\ no newline\n\n\na\nb\n\\ no newline\nb\na\n\\ no newline\n\\ no newline\n \n",
+      "after": "a\na\n\n\n\ud83d\ude00\n\n\na\nb\n\\ no newline\nb\na\n\\ no newline\n \n\ud83d\ude00\n"
+    },
+    {
+      "name": "seeded-79",
+      "path": "fixture.txt",
+      "before": "\\ no newline\r\n\u4e2d\u6587\r\n\u4e2d\u6587\r\n \r\nb\r\n\\ no newline\r\na\r\n",
+      "after": "\\ no newline\r\n\u4e2d\u6587\r\n \r\n\\ no newline\r\n\\ no newline\r\nb\r\nb"
+    },
+    {
+      "name": "seeded-80",
+      "path": "fixture.txt",
+      "before": "a\r\n \r\na\r\n\\ no newline\r\n\ud83d\ude00\r\n\ud83d\ude00\r\n\r\n\ud83d\ude00\r\n\r\nb\r\n\u4e2d\u6587\r\n\r\n",
+      "after": "\ud83d\ude00\r\n\r\n\\ no newline\r\n\ud83d\ude00\r\n\ud83d\ude00\r\n\r\na\r\n\r\n\r\n\r\nb\r\n\u4e2d\u6587\r\n"
+    },
+    {
+      "name": "seeded-81",
+      "path": "fixture.txt",
+      "before": "\ud83d\ude00\n",
+      "after": "\u4e2d\u6587\n"
+    },
+    {
+      "name": "seeded-82",
+      "path": "fixture.txt",
+      "before": "\r\na",
+      "after": "\r\n\u4e2d\u6587\r\nb\r\n"
+    },
+    {
+      "name": "seeded-83",
+      "path": "fixture.txt",
+      "before": "a\n\ud83d\ude00\n\u4e2d\u6587\n\ud83d\ude00\n\n\\ no newline\n\n\ud83d\ude00\n \na\n\ud83d\ude00\na\n\\ no newline\na\n",
+      "after": "a\n\ud83d\ude00\n\u4e2d\u6587\n\ud83d\ude00\n\\ no newline\n\ud83d\ude00\n \n\ud83d\ude00\na\n\\ no newline\n"
+    },
+    {
+      "name": "seeded-84",
+      "path": "fixture.txt",
+      "before": " \n\\ no newline\n\u4e2d\u6587\n \n \n\\ no newline\n\u4e2d\u6587\n\\ no newline\n",
+      "after": "a\n\\ no newline\n\u4e2d\u6587\nb\n \n\\ no newline\n \n\\ no newline\n\ud83d\ude00\n\\ no newline"
+    },
+    {
+      "name": "seeded-85",
+      "path": "fixture.txt",
+      "before": " \r\nb",
+      "after": "b\r\n \r\nb\r\n\\ no newline\r\n"
+    },
+    {
+      "name": "seeded-86",
+      "path": "fixture.txt",
+      "before": "a\r\n\\ no newline\r\na\r\na\r\nb\r\n\\ no newline\r\n\\ no newline\r\na\r\n\\ no newline\r\n \r\n\\ no newline\r\n ",
+      "after": "a\r\n\\ no newline\r\na\r\na\r\nb\r\n\\ no newline\r\n\\ no newline\r\na\r\n\\ no newline\r\n\r\n \r\n"
+    },
+    {
+      "name": "seeded-87",
+      "path": "fixture.txt",
+      "before": "a\na\n \n \n\\ no newline\na\na\nb\n\ud83d\ude00\n\\ no newline\n \nb\n\u4e2d\u6587\n \n\\ no newline\n\u4e2d\u6587\n\u4e2d\u6587\n \n\\ no newline\n\n \n\\ no newline\n\u4e2d\u6587\n \n\n \n\u4e2d\u6587\n",
+      "after": "a\na\n \n \n\\ no newline\na\na\nb\n\ud83d\ude00\n \nb\n\u4e2d\u6587\n \n\\ no newline\n\u4e2d\u6587\n \n\\ no newline\n\nb\nb\n \n\\ no newline\n\u4e2d\u6587\n \n\n\ud83d\ude00\n\u4e2d\u6587\n"
+    },
+    {
+      "name": "seeded-88",
+      "path": "fixture.txt",
+      "before": "a\n\ud83d\ude00\n\ud83d\ude00\n\\ no newline\nb\nb\na\n",
+      "after": "\u4e2d\u6587\n\ud83d\ude00\n\ud83d\ude00\n\\ no newline\nb\nb\n"
+    },
+    {
+      "name": "seeded-89",
+      "path": "fixture.txt",
+      "before": "\ud83d\ude00\na\n\\ no newline\n\u4e2d\u6587\nb\n\\ no newline\n\ud83d\ude00\n\\ no newline\n\n \n\u4e2d\u6587\nb\n\ud83d\ude00\nb\na\n\nb\nb\na\n\\ no newline\n\na\na",
+      "after": "\ud83d\ude00\na\n\\ no newline\n\u4e2d\u6587\nb\n\\ no newline\na\n\\ no newline\n\n \n\u4e2d\u6587\nb\n\ud83d\ude00\nb\na\n\n \nb\n \na\n\\ no newline\n\na\na\n"
+    },
+    {
+      "name": "seeded-90",
+      "path": "fixture.txt",
+      "before": "\r\n\u4e2d\u6587\r\na\r\n\\ no newline\r\n\r\nb\r\n\ud83d\ude00\r\n \r\n",
+      "after": "\r\na\r\n\ud83d\ude00\r\n\r\na\r\n\ud83d\ude00\r\n"
+    },
+    {
+      "name": "seeded-91",
+      "path": "fixture.txt",
+      "before": " \n\nb\na\n\ud83d\ude00\n\ud83d\ude00\na\nb\nb\n \na\n\\ no newline\n\n \n\\ no newline\na\n \n",
+      "after": " \n\\ no newline\nb\na\n\ud83d\ude00\na\n\ud83d\ude00\na\nb\n \na\na\n\n \n\\ no newline\na\n \n"
+    },
+    {
+      "name": "seeded-92",
+      "path": "fixture.txt",
+      "before": "\\ no newline\na\na\nb\nb\n\u4e2d\u6587\n \n \n\na\n\na\n\ud83d\ude00\n\\ no newline\nb\na\n",
+      "after": "\\ no newline\na\na\nb\nb\n\u4e2d\u6587\n \n \n\na\n\na\n\ud83d\ude00\nb\na\n"
+    },
+    {
+      "name": "seeded-93",
+      "path": "fixture.txt",
+      "before": "\u4e2d\u6587\n\na\n\\ no newline\n\u4e2d\u6587\nb\n\\ no newline\n\u4e2d\u6587\n\u4e2d\u6587\n\n \n\ud83d\ude00\n",
+      "after": "\u4e2d\u6587\n\na\n\ud83d\ude00\n\ud83d\ude00\n\u4e2d\u6587\nb\n\\ no newline\n\u4e2d\u6587\n\u4e2d\u6587\n \n\n \n\ud83d\ude00\n"
+    },
+    {
+      "name": "seeded-94",
+      "path": "fixture.txt",
+      "before": " \na\n\\ no newline",
+      "after": " \n\\ no newline\na\n\ud83d\ude00\nb\n\u4e2d\u6587"
+    },
+    {
+      "name": "seeded-95",
+      "path": "fixture.txt",
+      "before": "\\ no newline\na\na\n \n \n\u4e2d\u6587\na\n\ud83d\ude00\na\n \n \n\\ no newline\na\na\nb\na\n\n\ud83d\ude00\na\n\ud83d\ude00\nb\n \na\n\n\\ no newline\n\\ no newline\n",
+      "after": "\\ no newline\na\n\\ no newline\na\n \n \n\u4e2d\u6587\na\n\ud83d\ude00\na\n \n \n\u4e2d\u6587\n\\ no newline\na\na\nb\na\n\n\ud83d\ude00\na\n\ud83d\ude00\nb\na\n\n\\ no newline\n\\ no newline"
+    },
+    {
+      "name": "seeded-96",
+      "path": "fixture.txt",
+      "before": "\n \nb\na\n\\ no newline\na\n\\ no newline\n\u4e2d\u6587\n\na\na\na\na\n \na\na\n\ud83d\ude00\n \n\\ no newline\n\\ no newline\n\u4e2d\u6587\n\\ no newline\n\\ no newline\n\\ no newline\n\\ no newline",
+      "after": "\n \nb\na\n\\ no newline\na\n\\ no newline\n\u4e2d\u6587\n\n\na\na\na\na\n \na\na\n\ud83d\ude00\n \n\\ no newline\n\\ no newline\n\u4e2d\u6587\n\\ no newline\n\\ no newline\n\\ no newline\n\\ no newline\n"
+    },
+    {
+      "name": "seeded-97",
+      "path": "fixture.txt",
+      "before": "\ud83d\ude00\n\u4e2d\u6587\n \n \na\n\u4e2d\u6587\n \n\u4e2d\u6587",
+      "after": "\u4e2d\u6587\n \na\na\n \na\n"
+    },
+    {
+      "name": "seeded-98",
+      "path": "fixture.txt",
+      "before": "\n\\ no newline\na",
+      "after": "\n\ud83d\ude00\n "
+    },
+    {
+      "name": "seeded-99",
+      "path": "fixture.txt",
+      "before": " \n\ud83d\ude00\n\nb\na\n\\ no newline\na\n\u4e2d\u6587\n \n \n\na\na\na\n\n\\ no newline\n\ud83d\ude00\na\n\n\\ no newline\n",
+      "after": " \n\nb\n\\ no newline\n\u4e2d\u6587\n \n\ud83d\ude00\n\u4e2d\u6587\na\na\na\n\n\\ no newline\n\ud83d\ude00\na\n\\ no newline\n\n\u4e2d\u6587"
+    },
+    {
+      "name": "seeded-100",
+      "path": "fixture.txt",
+      "before": "",
+      "after": "\\ no newline\n\ud83d\ude00\n\n"
+    },
+    {
+      "name": "seeded-101",
+      "path": "fixture.txt",
+      "before": "\ud83d\ude00\r\nb\r\na\r\n\r\na\r\n \r\n\u4e2d\u6587\r\na\r\n\r\n\u4e2d\u6587\r\n \r\n \r\n \r\nb\r\nb\r\na\r\na\r\nb\r\n\u4e2d\u6587\r\na\r\n \r\nb\r\n\u4e2d\u6587",
+      "after": "\ud83d\ude00\r\na\r\na\r\na\r\n \r\n\u4e2d\u6587\r\na\r\n\r\n\u4e2d\u6587\r\n \r\nb\r\n \r\nb\r\nb\r\na\r\na\r\n\\ no newline\r\n\u4e2d\u6587\r\na\r\na\r\nb\r\n\u4e2d\u6587\r\n"
+    },
+    {
+      "name": "seeded-102",
+      "path": "fixture.txt",
+      "before": "b",
+      "after": " \nb\n"
+    },
+    {
+      "name": "seeded-103",
+      "path": "fixture.txt",
+      "before": "\u4e2d\u6587\n",
+      "after": " \na"
+    },
+    {
+      "name": "seeded-104",
+      "path": "fixture.txt",
+      "before": "\\ no newline\n\n\u4e2d\u6587\n\ud83d\ude00\nb\na\n\u4e2d\u6587\n\u4e2d\u6587\n\\ no newline\n\u4e2d\u6587\na\n\ud83d\ude00\n",
+      "after": "\\ no newline\n\u4e2d\u6587\n\ud83d\ude00\nb\na\n\u4e2d\u6587\n\u4e2d\u6587\n \n\\ no newline\n\u4e2d\u6587\na\n\ud83d\ude00\n\n"
+    },
+    {
+      "name": "seeded-105",
+      "path": "fixture.txt",
+      "before": " \n",
+      "after": "\u4e2d\u6587\n\\ no newline"
+    },
+    {
+      "name": "seeded-106",
+      "path": "fixture.txt",
+      "before": "a\na\na\n \n\\ no newline\nb\n\ud83d\ude00\n\na\n\nb\n \na\nb\na\na\n\n\u4e2d\u6587\na\na\n\\ no newline\na\na\nb\nb\n\ud83d\ude00\n\\ no newline\n \n",
+      "after": "a\na\na\na\n \n\\ no newline\nb\n\ud83d\ude00\n \na\na\n\nb\n\\ no newline\n\ud83d\ude00\nb\na\n\n\u4e2d\u6587\na\n\ud83d\ude00\na\n\\ no newline\na\n \nb\nb\n\ud83d\ude00\n\\ no newline\n \n"
+    },
+    {
+      "name": "seeded-107",
+      "path": "fixture.txt",
+      "before": " \r\n\ud83d\ude00\r\n \r\na\r\n\ud83d\ude00\r\n \r\n\r\n\\ no newline\r\n\r\na\r\na\r\n\r\nb\r\nb\r\n\\ no newline\r\n\r\n\r\nb\r\n\r\nb\r\n\r\na\r\n\\ no newline\r\n\\ no newline\r\na\r\n\r\n\ud83d\ude00\r\n ",
+      "after": " \r\n\ud83d\ude00\r\n \r\na\r\n\ud83d\ude00\r\n \r\n\r\n\\ no newline\r\n\r\na\r\na\r\nb\r\n\r\nb\r\nb\r\n\\ no newline\r\n\r\n\r\nb\r\n\r\nb\r\n\r\nb\r\n\\ no newline\r\n\\ no newline\r\na\r\n\r\n\ud83d\ude00\r\n"
+    },
+    {
+      "name": "seeded-108",
+      "path": "fixture.txt",
+      "before": "a\r\n\ud83d\ude00\r\n\ud83d\ude00\r\nb\r\n \r\n\\ no newline\r\n\\ no newline\r\n\r\nb\r\n \r\n\r\nb\r\n\ud83d\ude00\r\na\r\n \r\nb\r\n \r\na\r\na\r\na\r\nb\r\na\r\n",
+      "after": "a\r\n\ud83d\ude00\r\n\ud83d\ude00\r\nb\r\n \r\n\\ no newline\r\n\\ no newline\r\n\r\nb\r\n \r\n\r\nb\r\n\ud83d\ude00\r\na\r\n \r\nb\r\n \r\na\r\na\r\na\r\nb\r\na\r\na\r\n\r\na\r\n"
+    },
+    {
+      "name": "seeded-109",
+      "path": "fixture.txt",
+      "before": "b\n\ud83d\ude00\na\n\ud83d\ude00\n\u4e2d\u6587\n \nb\n\\ no newline\n\\ no newline\n\na\n \n \n\n\n ",
+      "after": "a\nb\n\ud83d\ude00\na\n\ud83d\ude00\n\ud83d\ude00\n \nb\n\\ no newline\n\\ no newline\n\na\n \n\ud83d\ude00\n \n\n\n "
+    },
+    {
+      "name": "seeded-110",
+      "path": "fixture.txt",
+      "before": "\ud83d\ude00\n\ud83d\ude00\n\u4e2d\u6587\nb\n\na\n\u4e2d\u6587\nb\n\u4e2d\u6587\n\ud83d\ude00\na\n\n \n",
+      "after": " \n \n\ud83d\ude00\nb\n\u4e2d\u6587\nb\n\na\n\u4e2d\u6587\nb\n\u4e2d\u6587\n\ud83d\ude00\na\n\n \n"
+    },
+    {
+      "name": "seeded-111",
+      "path": "fixture.txt",
+      "before": "a\r\n\ud83d\ude00\r\n\r\n\r\na\r\na\r\n\r\n\\ no newline",
+      "after": " \r\na\r\n\ud83d\ude00\r\n\\ no newline\r\n\r\na\r\na\r\n\r\n "
+    },
+    {
+      "name": "seeded-112",
+      "path": "fixture.txt",
+      "before": "b\nb\n\\ no newline\na\n\\ no newline\n\ud83d\ude00\n\\ no newline\n\ud83d\ude00\n\ud83d\ude00\n \na\na\n\u4e2d\u6587\n \n \na\na\n\u4e2d\u6587\n\\ no newline\nb\n\n\\ no newline\n\na\n\\ no newline\na",
+      "after": "b\nb\na\n\\ no newline\n\ud83d\ude00\n\\ no newline\n\ud83d\ude00\n\ud83d\ude00\n \na\na\n\u4e2d\u6587\n \n \na\nb\na\n\u4e2d\u6587\n\\ no newline\nb\n\n\\ no newline\n\na\n\\ no newline\na"
+    },
+    {
+      "name": "seeded-113",
+      "path": "fixture.txt",
+      "before": "\ud83d\ude00\na\n \n\u4e2d\u6587\na\n\nb\n\u4e2d\u6587\n\u4e2d\u6587\na\n\ud83d\ude00\n\u4e2d\u6587\nb\n\u4e2d\u6587\nb\na\na\n\u4e2d\u6587\n\na\nb\n \n \na\n\u4e2d\u6587\n\n\u4e2d\u6587\n",
+      "after": "\ud83d\ude00\na\n \n\u4e2d\u6587\na\n\nb\n\u4e2d\u6587\n\u4e2d\u6587\n\ud83d\ude00\n\u4e2d\u6587\nb\n\u4e2d\u6587\nb\na\na\n\u4e2d\u6587\n\na\n\u4e2d\u6587\n \n \na\n\u4e2d\u6587\n\n\u4e2d\u6587"
+    },
+    {
+      "name": "seeded-114",
+      "path": "fixture.txt",
+      "before": "\\ no newline\r\n",
+      "after": "\u4e2d\u6587\r\n\ud83d\ude00\r\n\\ no newline\r\nb"
+    },
+    {
+      "name": "seeded-115",
+      "path": "fixture.txt",
+      "before": "a\r\n\r\nb\r\n\u4e2d\u6587\r\na\r\na\r\na\r\n\\ no newline\r\n\u4e2d\u6587\r\n\\ no newline\r\n \r\n\\ no newline\r\na\r\na\r\na\r\n\ud83d\ude00\r\n\ud83d\ude00\r\n\u4e2d\u6587\r\n\u4e2d\u6587\r\n \r\nb\r\n\ud83d\ude00\r\na\r\na\r\na\r\na\r\n",
+      "after": "\r\n\r\n\u4e2d\u6587\r\nb\r\na\r\na\r\n\\ no newline\r\n\u4e2d\u6587\r\n\\ no newline\r\n \r\n\\ no newline\r\na\r\na\r\na\r\n\ud83d\ude00\r\n\ud83d\ude00\r\n\u4e2d\u6587\r\n\u4e2d\u6587\r\n \r\nb\r\n\ud83d\ude00\r\na\r\na\r\n\ud83d\ude00\r\na\r\na\r\n"
+    },
+    {
+      "name": "seeded-116",
+      "path": "fixture.txt",
+      "before": "a\r\na\r\n\r\n\u4e2d\u6587\r\n \r\n ",
+      "after": "a\r\na\r\n\r\n\u4e2d\u6587\r\n\ud83d\ude00\r\n\ud83d\ude00\r\n \r\na"
+    },
+    {
+      "name": "seeded-117",
+      "path": "fixture.txt",
+      "before": "\ud83d\ude00\r\na\r\n\u4e2d\u6587\r\n\r\n \r\na\r\n\ud83d\ude00\r\na\r\n\u4e2d\u6587\r\n\r\na\r\n\ud83d\ude00\r\n \r\n \r\nb\r\na\r\n\r\n\u4e2d\u6587\r\n\ud83d\ude00\r\n \r\n \r\n\u4e2d\u6587\r\n\u4e2d\u6587\r\n\u4e2d\u6587\r\n\ud83d\ude00\r\n",
+      "after": "\ud83d\ude00\r\na\r\n\u4e2d\u6587\r\n\r\n \r\na\r\na\r\n\ud83d\ude00\r\na\r\n\u4e2d\u6587\r\n \r\n\r\na\r\n\ud83d\ude00\r\n \r\n\u4e2d\u6587\r\nb\r\na\r\n\r\n\u4e2d\u6587\r\n\ud83d\ude00\r\n \r\n \r\n \r\n\u4e2d\u6587\r\n\ud83d\ude00"
+    },
+    {
+      "name": "seeded-118",
+      "path": "fixture.txt",
+      "before": "a\na\n\na\n\\ no newline\n\u4e2d\u6587\na\nb\n\nb\na\na\n\\ no newline\n\n\u4e2d\u6587\na\n\u4e2d\u6587\nb",
+      "after": "a\na\n\na\n\\ no newline\n\u4e2d\u6587\na\nb\n\nb\na\na\n\\ no newline\n\\ no newline\n\n\u4e2d\u6587\na\n\u4e2d\u6587\nb\n \n"
+    },
+    {
+      "name": "seeded-119",
+      "path": "fixture.txt",
+      "before": "\n\u4e2d\u6587\na\n\ud83d\ude00\n\ud83d\ude00\n\ud83d\ude00\na\nb\n\n\u4e2d\u6587\n\ud83d\ude00\n\u4e2d\u6587\n",
+      "after": "\n\u4e2d\u6587\na\n\ud83d\ude00\n\ud83d\ude00\n\ud83d\ude00\na\nb\n\n\u4e2d\u6587\n\u4e2d\u6587\n\u4e2d\u6587"
+    },
+    {
+      "name": "seeded-120",
+      "path": "fixture.txt",
+      "before": "\ud83d\ude00\r\n\r\n\ud83d\ude00\r\na\r\n",
+      "after": "\ud83d\ude00\r\na\r\n\r\n\ud83d\ude00\r\na\r\n"
+    },
+    {
+      "name": "seeded-121",
+      "path": "fixture.txt",
+      "before": "\r\n\\ no newline\r\n\r\na\r\n\r\n\u4e2d\u6587\r\na\r\n ",
+      "after": " \r\na\r\n\\ no newline\r\n \r\n\r\n\ud83d\ude00\r\na\r\n"
+    },
+    {
+      "name": "seeded-122",
+      "path": "fixture.txt",
+      "before": "\\ no newline\n\ud83d\ude00\na\n\ud83d\ude00\na\n\n\u4e2d\u6587\n\\ no newline\n\ud83d\ude00\na\n\na\n\ud83d\ude00\na\na\n\u4e2d\u6587\nb\n\u4e2d\u6587\na\n\n\ud83d\ude00\nb\n\ud83d\ude00\n\\ no newline\nb\n\ud83d\ude00\n\\ no newline\na\n",
+      "after": "\\ no newline\n\ud83d\ude00\na\n\ud83d\ude00\na\n\n\ud83d\ude00\n\\ no newline\n\ud83d\ude00\na\n\na\n\ud83d\ude00\na\na\n\u4e2d\u6587\nb\n\u4e2d\u6587\na\n\n\ud83d\ude00\nb\n\ud83d\ude00\n\\ no newline\nb\n\ud83d\ude00\n\\ no newline\na\n\n"
+    },
+    {
+      "name": "seeded-123",
+      "path": "fixture.txt",
+      "before": "\\ no newline\nb\n\n\na\na\nb\na\na\n\\ no newline\nb\n",
+      "after": "b\nb\n\n\na\n\na\na\n\nb\nb\n"
+    },
+    {
+      "name": "seeded-124",
+      "path": "fixture.txt",
+      "before": "\u4e2d\u6587\r\n\ud83d\ude00\r\n\ud83d\ude00\r\na\r\n \r\nb\r\na\r\n\\ no newline\r\n\r\n\ud83d\ude00\r\n\\ no newline\r\n\\ no newline\r\n\u4e2d\u6587\r\n\u4e2d\u6587\r\na\r\nb\r\na\r\n\r\n\u4e2d\u6587\r\n\\ no newline\r\na\r\n\\ no newline\r\na\r\nb\r\n",
+      "after": "\u4e2d\u6587\r\n\ud83d\ude00\r\n\ud83d\ude00\r\na\r\n \r\nb\r\na\r\n\\ no newline\r\n\r\n\ud83d\ude00\r\n\\ no newline\r\n\u4e2d\u6587\r\n\u4e2d\u6587\r\na\r\nb\r\na\r\n\r\na\r\n\u4e2d\u6587\r\n \r\na\r\n\\ no newline\r\na\r\nb\r\nb\r\nb"
+    },
+    {
+      "name": "seeded-125",
+      "path": "fixture.txt",
+      "before": "",
+      "after": "b\n\ud83d\ude00\n\n \n"
+    },
+    {
+      "name": "seeded-126",
+      "path": "fixture.txt",
+      "before": "a\n \n\\ no newline\n\u4e2d\u6587\na\na\n\ud83d\ude00\n\ud83d\ude00\na\n\ud83d\ude00\n \n\u4e2d\u6587\n\\ no newline\n \n \na\n\n\\ no newline\n \na\n",
+      "after": "a\n \n\\ no newline\n\ud83d\ude00\na\na\n\ud83d\ude00\n\ud83d\ude00\na\n\ud83d\ude00\n \n\u4e2d\u6587\n\\ no newline\n \na\na\n\n \na\n\n \n"
+    },
+    {
+      "name": "seeded-127",
+      "path": "fixture.txt",
+      "before": " \na\n \n\ud83d\ude00\n\u4e2d\u6587\n\n \n\\ no newline\na\n\ud83d\ude00\n\na\n",
+      "after": " \n\ud83d\ude00\n \n\ud83d\ude00\n\u4e2d\u6587\na\na\n \n\\ no newline\na\n\ud83d\ude00\n\nb\n"
+    },
+    {
+      "name": "seeded-128",
+      "path": "fixture.txt",
+      "before": "a\nb\n\u4e2d\u6587\n \n\ud83d\ude00\n\\ no newline\n",
+      "after": "\u4e2d\u6587\n \n \n\ud83d\ude00\na"
+    },
+    {
+      "name": "seeded-129",
+      "path": "fixture.txt",
+      "before": "\u4e2d\u6587\n\ud83d\ude00\nb\n\u4e2d\u6587\nb\nb\na\n \n\\ no newline\n",
+      "after": "\u4e2d\u6587\n\ud83d\ude00\na\nb\n\u4e2d\u6587\nb\na\n \n\\ no newline\n"
+    },
+    {
+      "name": "seeded-130",
+      "path": "fixture.txt",
+      "before": "\n",
+      "after": "\\ no newline\n\\ no newline\n\\ no newline"
+    },
+    {
+      "name": "seeded-131",
+      "path": "fixture.txt",
+      "before": "\u4e2d\u6587\nb\n\u4e2d\u6587\nb\na\n \nb\n\\ no newline\n\ud83d\ude00\na\n\\ no newline\na\n\u4e2d\u6587\n \na\n\u4e2d\u6587\n \n\ud83d\ude00\na\na\nb\n\u4e2d\u6587\na\na\n",
+      "after": "\\ no newline\n\u4e2d\u6587\nb\n\u4e2d\u6587\nb\na\n \nb\n\\ no newline\n\ud83d\ude00\n\\ no newline\n \n\u4e2d\u6587\n \na\n\u4e2d\u6587\n \n\ud83d\ude00\na\na\na\na"
+    },
+    {
+      "name": "seeded-132",
+      "path": "fixture.txt",
+      "before": "b\r\nb\r\n\\ no newline\r\n\\ no newline\r\n\r\n\r\na\r\na\r\n\u4e2d\u6587\r\n\r\n \r\n\u4e2d\u6587\r\n\ud83d\ude00\r\nb\r\n\r\n\r\na\r\n \r\na\r\n\r\n\ud83d\ude00\r\n\r\nb\r\nb\r\n\u4e2d\u6587\r\n\ud83d\ude00\r\n \r\na\r\n\\ no newline\r\n",
+      "after": "b\r\nb\r\n\\ no newline\r\n\\ no newline\r\n\r\n\r\na\r\n \r\n\u4e2d\u6587\r\n\r\n \r\n\u4e2d\u6587\r\n\ud83d\ude00\r\nb\r\n\r\n\r\na\r\n \r\na\r\n\r\n\ud83d\ude00\r\n\r\na\r\n\u4e2d\u6587\r\n\u4e2d\u6587\r\n\ud83d\ude00\r\n \r\na\r\n\\ no newline"
+    },
+    {
+      "name": "seeded-133",
+      "path": "fixture.txt",
+      "before": "\\ no newline\n \n\n\ud83d\ude00\n\u4e2d\u6587\n\\ no newline\n\ud83d\ude00\na\n\\ no newline\nb\na\n\\ no newline\nb",
+      "after": " \n\n\ud83d\ude00\n\\ no newline\n\ud83d\ude00\na\nb\nb\n\ud83d\ude00\na\n\\ no newline\n\\ no newline\nb"
+    },
+    {
+      "name": "seeded-134",
+      "path": "fixture.txt",
+      "before": " \r\n\ud83d\ude00\r\na\r\n\ud83d\ude00\r\n\ud83d\ude00\r\n\\ no newline",
+      "after": " \r\n\r\n\ud83d\ude00\r\n\ud83d\ude00\r\n\\ no newline\r\nb"
+    },
+    {
+      "name": "seeded-135",
+      "path": "fixture.txt",
+      "before": " \na\na\na\n\ud83d\ude00\nb\na\nb\na\n\\ no newline\n\\ no newline\n\u4e2d\u6587\n\\ no newline\na\n\u4e2d\u6587\n\n\\ no newline",
+      "after": " \na\na\n \na\n\ud83d\ude00\nb\na\n\ud83d\ude00\nb\na\n\n\\ no newline\n\u4e2d\u6587\n\\ no newline\na\na\na\n\u4e2d\u6587\n\u4e2d\u6587\n\n\\ no newline"
+    },
+    {
+      "name": "seeded-136",
+      "path": "fixture.txt",
+      "before": "\ud83d\ude00\n\ud83d\ude00\n\ud83d\ude00\na\na\n\ud83d\ude00\n\ud83d\ude00\n\ud83d\ude00\n\u4e2d\u6587\n\ud83d\ude00\n \na\n\\ no newline\n\n\ud83d\ude00\n \n\\ no newline\n\u4e2d\u6587\nb\na\na\n\\ no newline\n\\ no newline\n ",
+      "after": "\ud83d\ude00\n\ud83d\ude00\n\ud83d\ude00\na\n\u4e2d\u6587\n\ud83d\ude00\n\ud83d\ude00\n\ud83d\ude00\n\ud83d\ude00\na\n\\ no newline\nb\n\n\ud83d\ude00\n \n\\ no newline\na\na\n\\ no newline\n\u4e2d\u6587\n\\ no newline\n \n"
+    },
+    {
+      "name": "seeded-137",
+      "path": "fixture.txt",
+      "before": "\ud83d\ude00\nb\n\ud83d\ude00\nb\nb\n \na\nb\n\nb\nb\n\\ no newline\n\u4e2d\u6587\na\n\ud83d\ude00\n\ud83d\ude00\n \nb\n\u4e2d\u6587\n \n\na\n \nb\n \n\ud83d\ude00\n\n",
+      "after": "\ud83d\ude00\nb\n\ud83d\ude00\nb\nb\n \na\nb\n\nb\n\\ no newline\n\u4e2d\u6587\na\na\n\ud83d\ude00\n\ud83d\ude00\nb\n\u4e2d\u6587\na\n\na\n \nb\n \n\u4e2d\u6587\n"
+    },
+    {
+      "name": "seeded-138",
+      "path": "fixture.txt",
+      "before": "a\r\na\r\n\ud83d\ude00\r\n\u4e2d\u6587\r\na\r\n \r\n",
+      "after": "a\r\n\ud83d\ude00\r\na\r\n \r\n\r\n\ud83d\ude00\r\n"
+    },
+    {
+      "name": "seeded-139",
+      "path": "fixture.txt",
+      "before": "b\na\nb\n \n \n\nb\na\n\u4e2d\u6587\na\n\u4e2d\u6587\n\\ no newline\n\ud83d\ude00\n\ud83d\ude00\n",
+      "after": "b\na\nb\nb\n \n\nb\na\n\u4e2d\u6587\na\n\u4e2d\u6587\n \n\ud83d\ude00\n\ud83d\ude00"
+    },
+    {
+      "name": "seeded-140",
+      "path": "fixture.txt",
+      "before": " \na\nb\na\nb\n\ud83d\ude00\na\na\n\n \n",
+      "after": " \na\n \nb\na\n\ud83d\ude00\na\na\na\n\n \n"
+    },
+    {
+      "name": "seeded-141",
+      "path": "fixture.txt",
+      "before": "a\n\ud83d\ude00\n\na\nb\n\n\u4e2d\u6587\na",
+      "after": "a\n\ud83d\ude00\n\na\na\nb\n \n\u4e2d\u6587\na\n"
+    },
+    {
+      "name": "seeded-142",
+      "path": "fixture.txt",
+      "before": " \r\n\\ no newline\r\n \r\n\\ no newline\r\n\\ no newline\r\n\\ no newline\r\na\r\na\r\n \r\na\r\na\r\n \r\na\r\n \r\n\\ no newline\r\na\r\n \r\n \r\n",
+      "after": "\\ no newline\r\n \r\n\\ no newline\r\n\\ no newline\r\n\\ no newline\r\na\r\na\r\n \r\na\r\na\r\n \r\na\r\n\\ no newline\r\n \r\n\\ no newline\r\na\r\n \r\n \r\n \r\n"
+    },
+    {
+      "name": "seeded-143",
+      "path": "fixture.txt",
+      "before": "\\ no newline\nb\nb\n\na\n\u4e2d\u6587\na\n\u4e2d\u6587\n\ud83d\ude00\na\n\ud83d\ude00\nb\na\n\\ no newline\n \n\\ no newline\nb\n\\ no newline\n\na\n \n\n\\ no newline\n\u4e2d\u6587\n\\ no newline\n \n\ud83d\ude00\n\u4e2d\u6587",
+      "after": "\\ no newline\nb\nb\n\na\na\n\u4e2d\u6587\n\ud83d\ude00\n\ud83d\ude00\nb\na\n\\ no newline\n \n\\ no newline\n \nb\n\\ no newline\n\na\n \n\n \n\u4e2d\u6587\n\\ no newline\n \n\u4e2d\u6587"
+    },
+    {
+      "name": "seeded-144",
+      "path": "fixture.txt",
+      "before": "\ud83d\ude00\n \na\nb\n \n\ud83d\ude00\n\\ no newline\n\na\na\n \na\n\ud83d\ude00\nb\n\ud83d\ude00\n",
+      "after": "\ud83d\ude00\nb\n\na\nb\n\u4e2d\u6587\n\ud83d\ude00\n\\ no newline\n\na\n\u4e2d\u6587\n \na\n\ud83d\ude00\nb\n\ud83d\ude00"
+    },
+    {
+      "name": "seeded-145",
+      "path": "fixture.txt",
+      "before": "\\ no newline\nb\n \n\na\na\na\n\u4e2d\u6587\n\ud83d\ude00\n\\ no newline\n \n\n\n\u4e2d\u6587\na\nb\na\n ",
+      "after": "\\ no newline\nb\n \na\na\na\na\n\ud83d\ude00\n\\ no newline\n \n\n\na\nb\na\na\n "
+    },
+    {
+      "name": "seeded-146",
+      "path": "fixture.txt",
+      "before": "a\r\na\r\na\r\n\r\n\r\n \r\n\u4e2d\u6587\r\n\\ no newline\r\n\\ no newline\r\nb\r\nb\r\n\r\na\r\n\ud83d\ude00\r\na\r\n ",
+      "after": "a\r\n\ud83d\ude00\r\na\r\n\u4e2d\u6587\r\n \r\n\\ no newline\r\n\ud83d\ude00\r\nb\r\nb\r\na\r\n\ud83d\ude00\r\nb\r\n \r\na\r\n"
+    },
+    {
+      "name": "seeded-147",
+      "path": "fixture.txt",
+      "before": "\nb\n\n\u4e2d\u6587\nb\n\\ no newline\n\ud83d\ude00\n\u4e2d\u6587",
+      "after": "\n\u4e2d\u6587\nb\n\n\u4e2d\u6587\na\na\n\\ no newline\na\n\u4e2d\u6587"
+    },
+    {
+      "name": "seeded-148",
+      "path": "fixture.txt",
+      "before": "b\n\\ no newline\n\u4e2d\u6587\na\nb\n\ud83d\ude00\n\n\\ no newline\n\ud83d\ude00\na\na\n\ud83d\ude00",
+      "after": "\u4e2d\u6587\n\\ no newline\na\na\nb\n\ud83d\ude00\n\n\\ no newline\n\ud83d\ude00\na\na\nb"
+    },
+    {
+      "name": "seeded-149",
+      "path": "fixture.txt",
+      "before": "\u4e2d\u6587\na\n\ud83d\ude00\n\ud83d\ude00\n\ud83d\ude00\n \n\n",
+      "after": "\\ no newline\n\u4e2d\u6587\na\n\ud83d\ude00\na\n \n\n"
+    },
+    {
+      "name": "seeded-150",
+      "path": "fixture.txt",
+      "before": "a\na\n\n\na\nb\n \n\na\n\n\u4e2d\u6587\n \na\n \n \na\na\n\ud83d\ude00\na\n\\ no newline\n\\ no newline\n",
+      "after": "a\na\n\n\na\nb\n \n\na\n\na\n \n \na\na\n\ud83d\ude00\na\n\\ no newline\n\\ no newline\na\na"
+    },
+    {
+      "name": "seeded-151",
+      "path": "fixture.txt",
+      "before": "\r\na\r\nb\r\n\\ no newline\r\na\r\n\u4e2d\u6587\r\n\r\na\r\n\\ no newline\r\na\r\n\\ no newline\r\n\u4e2d\u6587\r\n\u4e2d\u6587\r\na\r\nb\r\n\ud83d\ude00\r\nb\r\n",
+      "after": "\r\na\r\nb\r\n\\ no newline\r\n\r\n\u4e2d\u6587\r\n\r\na\r\n\ud83d\ude00\r\n\\ no newline\r\na\r\n\\ no newline\r\n\u4e2d\u6587\r\n\u4e2d\u6587\r\na\r\n\\ no newline\r\n\ud83d\ude00\r\nb"
+    },
+    {
+      "name": "seeded-152",
+      "path": "fixture.txt",
+      "before": " \n\n\\ no newline",
+      "after": " \n\n\\ no newline\n\ud83d\ude00"
+    },
+    {
+      "name": "seeded-153",
+      "path": "fixture.txt",
+      "before": "\\ no newline\r\n\r\n \r\n\r\na\r\n\\ no newline\r\na\r\na\r\nb\r\nb\r\nb\r\n",
+      "after": "\\ no newline\r\n\r\n \r\n\r\na\r\n\\ no newline\r\na\r\nb\r\n\u4e2d\u6587\r\nb\r\nb"
+    },
+    {
+      "name": "seeded-154",
+      "path": "fixture.txt",
+      "before": "\\ no newline\n \na\nb\n",
+      "after": "\\ no newline\na\n \n\ud83d\ude00\nb"
+    },
+    {
+      "name": "seeded-155",
+      "path": "fixture.txt",
+      "before": "\\ no newline\r\n\u4e2d\u6587\r\n\r\n\\ no newline\r\n\u4e2d\u6587\r\n",
+      "after": "\\ no newline\r\n\ud83d\ude00\r\n\r\n\\ no newline\r\n\u4e2d\u6587\r\n\r\n\u4e2d\u6587"
+    },
+    {
+      "name": "seeded-156",
+      "path": "fixture.txt",
+      "before": "\r\nb\r\n \r\n\r\n\r\n\\ no newline\r\n\\ no newline\r\na\r\na\r\n\ud83d\ude00\r\n\u4e2d\u6587\r\n\r\na\r\n \r\n\ud83d\ude00\r\n\u4e2d\u6587\r\n",
+      "after": "\r\nb\r\n \r\n\r\n \r\n \r\n\\ no newline\r\na\r\na\r\n\ud83d\ude00\r\n\u4e2d\u6587\r\n\r\na\r\nb\r\n\ud83d\ude00\r\n\u4e2d\u6587\r\na"
+    },
+    {
+      "name": "seeded-157",
+      "path": "fixture.txt",
+      "before": "\\ no newline\n \n\n\u4e2d\u6587\n\\ no newline\n\na\nb\na\n \nb\n\u4e2d\u6587\na\na\n\\ no newline\na\n",
+      "after": "\\ no newline\n \n \n\\ no newline\nb\n\\ no newline\n\na\na\na\na\nb\n\u4e2d\u6587\na\nb\n\\ no newline\n\\ no newline\n"
+    },
+    {
+      "name": "seeded-158",
+      "path": "fixture.txt",
+      "before": "b",
+      "after": "\u4e2d\u6587\n\ud83d\ude00\na\na\nb\n\u4e2d\u6587\n"
+    },
+    {
+      "name": "seeded-159",
+      "path": "fixture.txt",
+      "before": "a\na\nb\n\na\na\n \n\n\nb\n\na\na\na\n",
+      "after": "a\na\n\ud83d\ude00\n\na\nb\n \n\n\ud83d\ude00\nb\n \na\na"
+    },
+    {
+      "name": "seeded-160",
+      "path": "fixture.txt",
+      "before": "\ud83d\ude00\na\nb",
+      "after": "b\n\ud83d\ude00\n\u4e2d\u6587\na"
+    },
+    {
+      "name": "seeded-161",
+      "path": "fixture.txt",
+      "before": "a\n\u4e2d\u6587\na\n\ud83d\ude00\na\na\na\na\nb\na\n\\ no newline\n \na\na\na",
+      "after": "a\n\u4e2d\u6587\na\na\n\u4e2d\u6587\na\n \na\na\n\\ no newline\n \na\n\\ no newline\n\ud83d\ude00"
+    },
+    {
+      "name": "seeded-162",
+      "path": "fixture.txt",
+      "before": "\u4e2d\u6587\n\na\n \n\u4e2d\u6587\na\n\u4e2d\u6587\nb\n\n\na\na\n\ud83d\ude00\nb\n \n \nb\na\n \n\nb\n\n \na\na\nb\n\ud83d\ude00\n\u4e2d\u6587\n",
+      "after": "\u4e2d\u6587\n\na\n \n\u4e2d\u6587\na\n\u4e2d\u6587\nb\n\n\n \na\n\ud83d\ude00\nb\n \n \nb\na\na\n \n\n\ud83d\ude00\nb\n\nb\n \na\na\nb\n\ud83d\ude00\nb\n\u4e2d\u6587\n\u4e2d\u6587\n"
+    },
+    {
+      "name": "seeded-163",
+      "path": "fixture.txt",
+      "before": "b\r\n\ud83d\ude00\r\n\u4e2d\u6587\r\n\u4e2d\u6587\r\nb\r\nb\r\n\r\n",
+      "after": "a\r\n\ud83d\ude00\r\nb\r\n\r\n\\ no newline"
+    },
+    {
+      "name": "seeded-164",
+      "path": "fixture.txt",
+      "before": "\ud83d\ude00\n\\ no newline\na\n\\ no newline\na\nb\n\u4e2d\u6587\n\ud83d\ude00\na",
+      "after": "\na\n\\ no newline\na\na\n \n\\ no newline\n\\ no newline\n\ud83d\ude00\n\u4e2d\u6587\n\ud83d\ude00"
+    },
+    {
+      "name": "seeded-165",
+      "path": "fixture.txt",
+      "before": "\ud83d\ude00\r\n\ud83d\ude00\r\na\r\nb\r\na",
+      "after": "b\r\n\ud83d\ude00\r\n\ud83d\ude00\r\na\r\n\ud83d\ude00\r\na\r\n\u4e2d\u6587"
+    },
+    {
+      "name": "seeded-166",
+      "path": "fixture.txt",
+      "before": "\u4e2d\u6587\r\n\r\na\r\n\r\n\u4e2d\u6587\r\nb\r\na\r\na\r\na\r\n \r\n\ud83d\ude00\r\n\ud83d\ude00\r\n\ud83d\ude00\r\n\r\na\r\na\r\n\u4e2d\u6587\r\na\r\nb\r\n\r\na\r\n\ud83d\ude00\r\na\r\na\r\nb\r\n",
+      "after": "\u4e2d\u6587\r\n\r\na\r\n\r\n\u4e2d\u6587\r\nb\r\na\r\na\r\na\r\n\r\n\ud83d\ude00\r\n\ud83d\ude00\r\n\r\na\r\na\r\n\u4e2d\u6587\r\na\r\n\\ no newline\r\nb\r\n\r\na\r\n\ud83d\ude00\r\na\r\n\\ no newline\r\nb\r\n\r\n"
+    },
+    {
+      "name": "seeded-167",
+      "path": "fixture.txt",
+      "before": " \na\n\n\u4e2d\u6587\na\na\n\\ no newline\n\u4e2d\u6587\n\ud83d\ude00\n\n\n\ud83d\ude00\na\n \na",
+      "after": " \n \na\n\n\u4e2d\u6587\na\na\n\u4e2d\u6587\n\ud83d\ude00\n\n\n\ud83d\ude00\na\na\n \na\n"
+    },
+    {
+      "name": "seeded-168",
+      "path": "fixture.txt",
+      "before": "b\r\na\r\nb\r\n\u4e2d\u6587\r\n\ud83d\ude00\r\na\r\n\u4e2d\u6587\r\n\\ no newline\r\n\ud83d\ude00\r\n\r\n \r\n \r\n\\ no newline\r\na\r\n \r\nb\r\n",
+      "after": "b\r\nb\r\n\ud83d\ude00\r\na\r\n\u4e2d\u6587\r\n\\ no newline\r\n\r\n \r\n \r\n\\ no newline\r\na\r\n \r\nb\r\na\r\n"
+    },
+    {
+      "name": "seeded-169",
+      "path": "fixture.txt",
+      "before": "a\n ",
+      "after": "\na\na\n\\ no newline\na"
+    },
+    {
+      "name": "seeded-170",
+      "path": "fixture.txt",
+      "before": "\u4e2d\u6587\na\nb\nb\nb\n\u4e2d\u6587\n\ud83d\ude00\na\n\\ no newline\na\na",
+      "after": "\u4e2d\u6587\na\n\ud83d\ude00\nb\nb\nb\na\n\ud83d\ude00\na\n\\ no newline\na\n\ud83d\ude00\na\n"
+    },
+    {
+      "name": "seeded-171",
+      "path": "fixture.txt",
+      "before": "\ud83d\ude00\na\nb\n\nb\n",
+      "after": "\ud83d\ude00\na\n\ud83d\ude00\nb\n\nb\n\n\\ no newline"
+    },
+    {
+      "name": "seeded-172",
+      "path": "fixture.txt",
+      "before": "b\na\nb\na\n\u4e2d\u6587\na\n\n\n\n\ud83d\ude00\nb\na\n \na\n\u4e2d\u6587\n\u4e2d\u6587\nb\nb",
+      "after": "b\na\nb\na\n\u4e2d\u6587\na\n\n\ud83d\ude00\nb\na\n \n\u4e2d\u6587\n\u4e2d\u6587\nb\nb"
+    },
+    {
+      "name": "seeded-173",
+      "path": "fixture.txt",
+      "before": "\u4e2d\u6587\r\n \r\na\r\n \r\nb\r\na\r\n \r\na\r\na\r\n\r\na\r\n\r\na\r\na\r\n",
+      "after": "\u4e2d\u6587\r\na\r\n \r\nb\r\na\r\n \r\na\r\n\r\na\r\n\r\na\r\na\r\na\r\n"
+    },
+    {
+      "name": "seeded-174",
+      "path": "fixture.txt",
+      "before": "\u4e2d\u6587\na\na\n\n\\ no newline\n\u4e2d\u6587\na\n\\ no newline\n\ud83d\ude00",
+      "after": "\u4e2d\u6587\na\n \n\n\\ no newline\n\u4e2d\u6587\n\u4e2d\u6587\n \n\ud83d\ude00"
+    },
+    {
+      "name": "seeded-175",
+      "path": "fixture.txt",
+      "before": "\ud83d\ude00\n\\ no newline\n\n\u4e2d\u6587\n\ud83d\ude00\n\ud83d\ude00\na\n \nb\n\ud83d\ude00\n\u4e2d\u6587\n \n\ud83d\ude00\n\u4e2d\u6587\n\na\na\nb\na\n\\ no newline\n\ud83d\ude00\na\na\n \na\na\n\n\u4e2d\u6587",
+      "after": "\ud83d\ude00\n\\ no newline\n\n\u4e2d\u6587\n\ud83d\ude00\n\ud83d\ude00\na\n \nb\n\ud83d\ude00\n\u4e2d\u6587\n\ud83d\ude00\n\u4e2d\u6587\n\na\na\nb\na\n\\ no newline\n\ud83d\ude00\na\na\n \na\na\n\n\u4e2d\u6587"
+    },
+    {
+      "name": "seeded-176",
+      "path": "fixture.txt",
+      "before": "\na\n\n \nb\nb\na\na\n\n\ud83d\ude00\n\ud83d\ude00\na\na\n\ud83d\ude00\n \n \n\u4e2d\u6587\n\n\n\\ no newline\n\ud83d\ude00\nb\na\n \n",
+      "after": "\na\n\n \nb\nb\na\na\n\n\ud83d\ude00\n\ud83d\ude00\na\na\n\ud83d\ude00\n \n \n\u4e2d\u6587\n\n\n \na\n\ud83d\ude00\n\u4e2d\u6587\nb\na\n \n"
+    },
+    {
+      "name": "seeded-177",
+      "path": "fixture.txt",
+      "before": "a\na\na\n\n\u4e2d\u6587\na\na\na\n\n\\ no newline\nb\n\u4e2d\u6587\n\n",
+      "after": "a\na\na\na\n\n\u4e2d\u6587\na\na\na\n\n\\ no newline\nb\na\n"
+    },
+    {
+      "name": "seeded-178",
+      "path": "fixture.txt",
+      "before": "b\nb\n\na\n\\ no newline\n \na\n\n\n \n\u4e2d\u6587\na\n\\ no newline\nb\n\\ no newline\na\n \na\n\\ no newline\n\n\n\u4e2d\u6587\n\\ no newline\na",
+      "after": "b\nb\n\na\n\\ no newline\n \na\n\n \n\u4e2d\u6587\na\n\\ no newline\nb\n\\ no newline\na\n \na\n\\ no newline\n\n\n\u4e2d\u6587\n\\ no newline\nb\na\n"
+    },
+    {
+      "name": "seeded-179",
+      "path": "fixture.txt",
+      "before": "\\ no newline\n\u4e2d\u6587\nb\n\n \n\n \n \na\n\na\n \n\u4e2d\u6587\n\u4e2d\u6587\n\u4e2d\u6587\n\\ no newline\nb\na\n\u4e2d\u6587\n\\ no newline\n\n \n \n",
+      "after": "\\ no newline\n\u4e2d\u6587\n\n \n\n \n \na\n\na\n \n\u4e2d\u6587\n\u4e2d\u6587\n\u4e2d\u6587\n\\ no newline\n\\ no newline\na\n\u4e2d\u6587\n\\ no newline\n\n \n \n\u4e2d\u6587\n "
+    },
+    {
+      "name": "seeded-180",
+      "path": "fixture.txt",
+      "before": "\u4e2d\u6587\nb\n \na\na\n\na\n\ud83d\ude00\na\n\n\u4e2d\u6587\nb\na\nb\n \n\u4e2d\u6587\na\na\na\n",
+      "after": "\u4e2d\u6587\nb\n \na\n \n\na\n\ud83d\ude00\n\ud83d\ude00\na\n\n\u4e2d\u6587\n\\ no newline\n\na\n \n\u4e2d\u6587\na"
+    },
+    {
+      "name": "seeded-181",
+      "path": "fixture.txt",
+      "before": "a\n\\ no newline\n\n\na\n\ud83d\ude00\nb\n\ud83d\ude00\nb\na\na\n\\ no newline\na\n\ud83d\ude00\nb\n\na\n\u4e2d\u6587\na\n\u4e2d\u6587\n \na\n\\ no newline\nb\n\\ no newline\n\\ no newline\na\n\ud83d\ude00\nb\n",
+      "after": "a\n\\ no newline\n\n\na\n\\ no newline\n\ud83d\ude00\nb\n\ud83d\ude00\nb\na\na\n\\ no newline\na\na\nb\n\na\n\u4e2d\u6587\na\n\u4e2d\u6587\na\n\\ no newline\nb\n\\ no newline\n\\ no newline\na\n\ud83d\ude00\nb"
+    },
+    {
+      "name": "seeded-182",
+      "path": "fixture.txt",
+      "before": "a\n \n\ud83d\ude00\na\na\n\ud83d\ude00\na\n \n\\ no newline\nb\n \na\n\u4e2d\u6587\na\n\n \n\u4e2d\u6587\n\\ no newline\na\n\u4e2d\u6587\n\\ no newline\na\n\n \na\nb\na\nb\na\n",
+      "after": "a\n \n\ud83d\ude00\na\n\ud83d\ude00\na\n \n\\ no newline\nb\n \n\u4e2d\u6587\na\n\n \n \n\u4e2d\u6587\n\\ no newline\na\n\u4e2d\u6587\n\u4e2d\u6587\n\\ no newline\n\n\n \na\n\u4e2d\u6587\na\na"
+    },
+    {
+      "name": "seeded-183",
+      "path": "fixture.txt",
+      "before": " \na\n\ud83d\ude00\n\na\n\ud83d\ude00\n\ud83d\ude00\na\na\n\\ no newline\n\u4e2d\u6587\na\n\u4e2d\u6587\nb\n\ud83d\ude00\nb\n\\ no newline\n\n\u4e2d\u6587\n",
+      "after": " \na\n\ud83d\ude00\n\na\n\ud83d\ude00\n\ud83d\ude00\na\na\n\\ no newline\n\u4e2d\u6587\n\u4e2d\u6587\n\ud83d\ude00\n\ud83d\ude00\nb\n\\ no newline\na\n\n\u4e2d\u6587\n\n"
+    },
+    {
+      "name": "seeded-184",
+      "path": "fixture.txt",
+      "before": "\u4e2d\u6587\r\n\ud83d\ude00\r\n\ud83d\ude00\r\nb\r\n\r\n\r\nb\r\n\u4e2d\u6587\r\nb\r\na\r\n\u4e2d\u6587\r\n\ud83d\ude00\r\n\\ no newline\r\na\r\na\r\nb\r\n \r\na\r\n \r\n",
+      "after": "\u4e2d\u6587\r\n\ud83d\ude00\r\nb\r\n\r\n\r\n\r\n\u4e2d\u6587\r\nb\r\n\u4e2d\u6587\r\n\ud83d\ude00\r\n\\ no newline\r\na\r\na\r\n\ud83d\ude00\r\nb\r\n \r\na\r\n \r\n"
+    },
+    {
+      "name": "seeded-185",
+      "path": "fixture.txt",
+      "before": "\ud83d\ude00\nb\na\nb\n \n\\ no newline\n\ud83d\ude00\na\na\n\ud83d\ude00\n\ud83d\ude00",
+      "after": " \nb\n \n\\ no newline\n\ud83d\ude00\na\na\na\n\ud83d\ude00\n\ud83d\ude00"
+    },
+    {
+      "name": "seeded-186",
+      "path": "fixture.txt",
+      "before": "a\na\n\ud83d\ude00\n\u4e2d\u6587\na\n\\ no newline\na\n\ud83d\ude00\n\u4e2d\u6587\n",
+      "after": "a\na\n\ud83d\ude00\n\u4e2d\u6587\na\na\n\n\ud83d\ude00\n\ud83d\ude00\na\n\n"
+    },
+    {
+      "name": "seeded-187",
+      "path": "fixture.txt",
+      "before": "\ud83d\ude00\nb\na\na\nb\n\ud83d\ude00\n",
+      "after": "\ud83d\ude00\nb\nb\na\na\nb\n\ud83d\ude00\n \na\n\n"
+    },
+    {
+      "name": "seeded-188",
+      "path": "fixture.txt",
+      "before": "b\n\ud83d\ude00",
+      "after": "a\n\na\n"
+    },
+    {
+      "name": "seeded-189",
+      "path": "fixture.txt",
+      "before": "\na\n\n\n \n\\ no newline\n\u4e2d\u6587\n \na\n\\ no newline\n\\ no newline\n\u4e2d\u6587\n\n \n\ud83d\ude00\na\n\n\n\ud83d\ude00\na\n\u4e2d\u6587\na",
+      "after": "a\na\na\n \n\n\u4e2d\u6587\n \n\\ no newline\n\u4e2d\u6587\n \na\n\\ no newline\n\\ no newline\n\n \n\ud83d\ude00\n\n\n\ud83d\ude00\na\n\u4e2d\u6587\n \na\na\n"
+    },
+    {
+      "name": "seeded-190",
+      "path": "fixture.txt",
+      "before": "\r\n\\ no newline\r\na\r\n\u4e2d\u6587\r\n\ud83d\ude00\r\na\r\n \r\nb\r\n\r\n\u4e2d\u6587\r\n\\ no newline\r\n\r\n\\ no newline\r\na\r\n\ud83d\ude00\r\n\ud83d\ude00\r\n \r\n \r\n\u4e2d\u6587\r\n\\ no newline\r\n\ud83d\ude00\r\n",
+      "after": "\r\n\\ no newline\r\na\r\n\u4e2d\u6587\r\n\ud83d\ude00\r\na\r\n \r\nb\r\n\r\na\r\n\u4e2d\u6587\r\n\\ no newline\r\n\r\n\\ no newline\r\na\r\n\ud83d\ude00\r\n\ud83d\ude00\r\n \r\n \r\n\u4e2d\u6587\r\n\\ no newline\r\n\ud83d\ude00\r\n \r\n"
+    },
+    {
+      "name": "seeded-191",
+      "path": "fixture.txt",
+      "before": "b\na\nb\n\ud83d\ude00",
+      "after": "b\na\n\\ no newline\na"
+    },
+    {
+      "name": "seeded-192",
+      "path": "fixture.txt",
+      "before": "b\r\n \r\na\r\na\r\n",
+      "after": "a\r\n \r\nb\r\na\r\na\r\na\r\n\\ no newline\r\n"
+    },
+    {
+      "name": "seeded-193",
+      "path": "fixture.txt",
+      "before": "b\nb\n\n\ud83d\ude00\n\ud83d\ude00\na\n\n\n\ud83d\ude00\n\ud83d\ude00\n \n\\ no newline\na\n\\ no newline\n\u4e2d\u6587\na\na\n\na\n\na\n\u4e2d\u6587\n \n\n",
+      "after": "b\nb\n\n\ud83d\ude00\n\ud83d\ude00\na\n\n\n\ud83d\ude00\na\n \n\\ no newline\n\ud83d\ude00\n\\ no newline\n\u4e2d\u6587\na\na\n\na\na\n\na\n\u4e2d\u6587\n \n\n"
+    },
+    {
+      "name": "seeded-194",
+      "path": "fixture.txt",
+      "before": "b\r\n \r\n\ud83d\ude00\r\na\r\n",
+      "after": "b\r\nb\r\n\ud83d\ude00\r\na\r\n\\ no newline\r\na\r\nb"
+    },
+    {
+      "name": "seeded-195",
+      "path": "fixture.txt",
+      "before": "b\n\\ no newline\n \nb\n\n\u4e2d\u6587\n",
+      "after": "b\n\\ no newline\n\nb\n \nb\n\n \n\u4e2d\u6587\n\u4e2d\u6587\n\u4e2d\u6587\n"
+    },
+    {
+      "name": "seeded-196",
+      "path": "fixture.txt",
+      "before": "a\r\n\u4e2d\u6587\r\n\u4e2d\u6587\r\n\u4e2d\u6587\r\n \r\nb\r\n\u4e2d\u6587\r\n\\ no newline\r\n\ud83d\ude00\r\n\r\n\ud83d\ude00\r\n\ud83d\ude00\r\n \r\n\r\na\r\n \r\n \r\n\ud83d\ude00\r\n\r\n\r\nb",
+      "after": "a\r\n\u4e2d\u6587\r\na\r\n\u4e2d\u6587\r\n\u4e2d\u6587\r\n \r\n \r\nb\r\n\r\n\u4e2d\u6587\r\n\\ no newline\r\n\ud83d\ude00\r\n\ud83d\ude00\r\n \r\na\r\na\r\n \r\n \r\n\ud83d\ude00\r\n\r\n\r\nb\r\n"
+    },
+    {
+      "name": "seeded-197",
+      "path": "fixture.txt",
+      "before": "b\nb\n\\ no newline\na\nb\n \na\nb\na\n \n \na\na\na\na\n\ud83d\ude00\na\nb\n\u4e2d\u6587\na\n\n \n",
+      "after": "b\n\\ no newline\nb\n\\ no newline\na\nb\n \n\ud83d\ude00\n \nb\n\n \na\n\nb\na\n\ud83d\ude00\na\nb\n\u4e2d\u6587\na\n\n \n"
+    },
+    {
+      "name": "seeded-198",
+      "path": "fixture.txt",
+      "before": "\\ no newline\n\ud83d\ude00\na\na\n\u4e2d\u6587\nb\na\na\nb\nb\n\ud83d\ude00\n\ud83d\ude00\nb",
+      "after": "\\ no newline\n\ud83d\ude00\n\ud83d\ude00\na\n\u4e2d\u6587\n\u4e2d\u6587\nb\n \na\nb\nb\n\ud83d\ude00\n\ud83d\ude00\nb\n"
+    },
+    {
+      "name": "seeded-199",
+      "path": "fixture.txt",
+      "before": "\\ no newline\n\ud83d\ude00\n",
+      "after": "\u4e2d\u6587\na\n\ud83d\ude00\n"
+    },
+    {
+      "name": "seeded-200",
+      "path": "fixture.txt",
+      "before": " \na\na\n\nb\na\nb\n\ud83d\ude00\na\n \nb\nb\nb\n \nb\n \nb\n\u4e2d\u6587\na\na\n \nb\nb\n \n\ud83d\ude00\n ",
+      "after": "\n \na\n\n\ud83d\ude00\nb\n\ud83d\ude00\na\nb\nb\na\n \nb\n \nb\n\u4e2d\u6587\na\na\n\u4e2d\u6587\n \nb\nb\n \n\ud83d\ude00\n "
+    },
+    {
+      "name": "seeded-201",
+      "path": "fixture.txt",
+      "before": "\r\nb\r\n\r\n\r\n\ud83d\ude00\r\na\r\n\u4e2d\u6587\r\n \r\n\\ no newline\r\n\ud83d\ude00\r\na\r\na\r\n\r\n\r\n\\ no newline\r\na\r\n\u4e2d\u6587\r\n \r\n\r\na\r\n \r\n\u4e2d\u6587\r\n\r\n\r\n\ud83d\ude00\r\na\r\n",
+      "after": "\r\nb\r\n\r\n\r\na\r\n\u4e2d\u6587\r\n\\ no newline\r\n\ud83d\ude00\r\na\r\na\r\n\r\n\r\n\\ no newline\r\na\r\n\u4e2d\u6587\r\n \r\n\r\na\r\n \r\n\u4e2d\u6587\r\n\r\n\r\n\ud83d\ude00\r\na\r\n"
+    },
+    {
+      "name": "seeded-202",
+      "path": "fixture.txt",
+      "before": "a\r\n\r\n\\ no newline\r\n\r\n\u4e2d\u6587\r\n\ud83d\ude00\r\nb\r\na\r\n\ud83d\ude00\r\n\r\n\\ no newline\r\n\r\n\u4e2d\u6587\r\n \r\n\ud83d\ude00\r\na\r\n\\ no newline\r\n",
+      "after": "a\r\n\r\n\\ no newline\r\n\r\n\u4e2d\u6587\r\n\ud83d\ude00\r\nb\r\na\r\n\ud83d\ude00\r\n\r\n\\ no newline\r\n\r\nb\r\n \r\n\ud83d\ude00\r\n\\ no newline"
+    },
+    {
+      "name": "seeded-203",
+      "path": "fixture.txt",
+      "before": "a\na\nb\na\n\u4e2d\u6587\n\u4e2d\u6587\n\ud83d\ude00\n \nb\na\n\nb\n\u4e2d\u6587\n\u4e2d\u6587\n\\ no newline\n\na\na\na\n\ud83d\ude00\n\\ no newline\na\n\nb\na\n \na",
+      "after": "a\na\n\u4e2d\u6587\nb\n\u4e2d\u6587\n\n\u4e2d\u6587\n\ud83d\ude00\n \nb\na\n\nb\n\u4e2d\u6587\n\u4e2d\u6587\n\\ no newline\n\na\n\n\ud83d\ude00\n\\ no newline\na\n\nb\na\n\\ no newline\n \na"
+    },
+    {
+      "name": "seeded-204",
+      "path": "fixture.txt",
+      "before": "\ud83d\ude00\r\na\r\na\r\na\r\n\u4e2d\u6587\r\n\r\n \r\na\r\n\\ no newline\r\nb\r\nb\r\n\r\nb\r\na\r\nb\r\n\\ no newline\r\na\r\na\r\n\u4e2d\u6587\r\n ",
+      "after": "\ud83d\ude00\r\na\r\na\r\na\r\n\u4e2d\u6587\r\n\r\n \r\na\r\n\\ no newline\r\nb\r\nb\r\n\r\nb\r\na\r\nb\r\n\\ no newline\r\na\r\na\r\n\u4e2d\u6587\r\n \r\n \r\n"
+    },
+    {
+      "name": "seeded-205",
+      "path": "fixture.txt",
+      "before": "b\nb\na\n\ud83d\ude00\n\u4e2d\u6587\n\ud83d\ude00\nb\n\\ no newline\na\n\u4e2d\u6587\na\nb\n\n \n\n\u4e2d\u6587\n\n\u4e2d\u6587\nb\n\\ no newline\nb\na\n \nb\n\na\n",
+      "after": "b\nb\na\n\ud83d\ude00\n\u4e2d\u6587\n\ud83d\ude00\nb\n\\ no newline\na\n\u4e2d\u6587\na\nb\n\n \n\na\n\u4e2d\u6587\n\n\u4e2d\u6587\nb\n\\ no newline\nb\na\n \nb\n\na\n"
+    },
+    {
+      "name": "seeded-206",
+      "path": "fixture.txt",
+      "before": "a\r\n\ud83d\ude00\r\na\r\n\r\n\r\na\r\n\\ no newline\r\na\r\na\r\n\r\n\r\n\r\na\r\n\ud83d\ude00\r\na\r\na\r\na\r\n\u4e2d\u6587\r\n\ud83d\ude00\r\n\ud83d\ude00\r\na\r\na\r\n \r\n\u4e2d\u6587",
+      "after": "a\r\n\ud83d\ude00\r\na\r\n\r\na\r\n\r\na\r\na\r\n\r\n\r\na\r\n\ud83d\ude00\r\nb\r\na\r\na\r\n\u4e2d\u6587\r\na\r\n\ud83d\ude00\r\na\r\na\r\n \r\n\u4e2d\u6587"
+    },
+    {
+      "name": "seeded-207",
+      "path": "fixture.txt",
+      "before": " \n\na\n\\ no newline\nb\n\n\\ no newline\nb\n",
+      "after": " \n\u4e2d\u6587\na\n \n\na\nb\n\nb\na"
+    },
+    {
+      "name": "seeded-208",
+      "path": "fixture.txt",
+      "before": "a\na\n \n",
+      "after": "a\n\u4e2d\u6587\nb\na\n \n "
+    },
+    {
+      "name": "seeded-209",
+      "path": "fixture.txt",
+      "before": "b\nb\n\\ no newline\na\nb\na\n\u4e2d\u6587\n\ud83d\ude00\nb\na\n\ud83d\ude00\n",
+      "after": "b\n\ud83d\ude00\na\nb\n\\ no newline\na\n\u4e2d\u6587\nb\n\u4e2d\u6587\na\n\ud83d\ude00\n"
+    },
+    {
+      "name": "seeded-210",
+      "path": "fixture.txt",
+      "before": "\u4e2d\u6587\n\u4e2d\u6587\n\\ no newline\na\na\n\ud83d\ude00\n\n\n\u4e2d\u6587\na\n\ud83d\ude00\n\u4e2d\u6587\n\n \n\ud83d\ude00\n\ud83d\ude00\n \n\\ no newline\n \nb\n\na\n\nb",
+      "after": "\\ no newline\n\u4e2d\u6587\n\n\\ no newline\na\na\n\ud83d\ude00\n\n\n\u4e2d\u6587\na\n\ud83d\ude00\n\u4e2d\u6587\n\n\ud83d\ude00\n\ud83d\ude00\n \n\\ no newline\n \nb\n\na\n\nb\n"
+    },
+    {
+      "name": "seeded-211",
+      "path": "fixture.txt",
+      "before": "\r\na\r\n\\ no newline\r\n \r\n\u4e2d\u6587\r\na\r\n \r\n\ud83d\ude00\r\n\r\n \r\n \r\na\r\n \r\na\r\n\\ no newline\r\n\u4e2d\u6587\r\n\r\n \r\n\\ no newline\r\n ",
+      "after": "b\r\n\r\na\r\n\\ no newline\r\n \r\n \r\n\u4e2d\u6587\r\n \r\n\ud83d\ude00\r\n\r\nb\r\n \r\na\r\n \r\na\r\n\r\n\u4e2d\u6587\r\n\r\n \r\n\\ no newline\r\n "
+    },
+    {
+      "name": "seeded-212",
+      "path": "fixture.txt",
+      "before": "a\na\nb\n\n \na\n\ud83d\ude00\n\\ no newline\nb\n\u4e2d\u6587\n\ud83d\ude00\n \na\na\n\na\n\u4e2d\u6587\n\u4e2d\u6587\n\u4e2d\u6587\n\ud83d\ude00\n\u4e2d\u6587\nb\n",
+      "after": "a\n\na\nb\n\na\na\n\ud83d\ude00\n\\ no newline\n \nb\n\u4e2d\u6587\n\ud83d\ude00\n \na\na\na\n\ud83d\ude00\n\na\n\u4e2d\u6587\n\ud83d\ude00\n\u4e2d\u6587\nb\n"
+    },
+    {
+      "name": "seeded-213",
+      "path": "fixture.txt",
+      "before": "\u4e2d\u6587\r\n\u4e2d\u6587\r\na\r\n\\ no newline\r\n\u4e2d\u6587\r\n\r\n\\ no newline\r\na\r\n\ud83d\ude00\r\n\r\n\\ no newline\r\nb\r\n\r\na\r\na\r\n \r\nb\r\n\u4e2d\u6587\r\n\r\n\r\nb\r\na\r\n",
+      "after": "\u4e2d\u6587\r\n\u4e2d\u6587\r\na\r\n\\ no newline\r\n\u4e2d\u6587\r\n\r\n\\ no newline\r\na\r\n\ud83d\ude00\r\n\r\n\\ no newline\r\nb\r\n\r\na\r\na\r\n \r\n\u4e2d\u6587\r\n\u4e2d\u6587\r\n\r\n\r\nb\r\na\r\n\r\n"
+    },
+    {
+      "name": "seeded-214",
+      "path": "fixture.txt",
+      "before": "b\r\n\r\na\r\n\ud83d\ude00\r\na\r\n",
+      "after": "\r\n\r\n\r\na\r\n\ud83d\ude00\r\n\\ no newline"
+    },
+    {
+      "name": "seeded-215",
+      "path": "fixture.txt",
+      "before": "a\r\na",
+      "after": " \r\na\r\na\r\na\r\n\\ no newline\r\n"
+    },
+    {
+      "name": "seeded-216",
+      "path": "fixture.txt",
+      "before": "\ud83d\ude00\r\na\r\n \r\na\r\n\r\na\r\n\u4e2d\u6587\r\n\\ no newline\r\na\r\na\r\na\r\n\\ no newline\r\n\ud83d\ude00\r\n\r\n \r\n\ud83d\ude00\r\n\ud83d\ude00\r\n\ud83d\ude00\r\n \r\n\r\n\\ no newline\r\n\ud83d\ude00\r\n \r\n\ud83d\ude00\r\na\r\na\r\n\u4e2d\u6587\r\n\r\n",
+      "after": "\ud83d\ude00\r\na\r\n \r\na\r\n\r\na\r\n\u4e2d\u6587\r\na\r\n\r\na\r\na\r\n\\ no newline\r\n\ud83d\ude00\r\n\r\n \r\n\ud83d\ude00\r\n\ud83d\ude00\r\n\ud83d\ude00\r\n \r\n\r\n\\ no newline\r\n\ud83d\ude00\r\n \r\n\ud83d\ude00\r\na\r\na\r\n\u4e2d\u6587\r\n\r\n"
+    },
+    {
+      "name": "seeded-217",
+      "path": "fixture.txt",
+      "before": "b\r\n\\ no newline\r\na\r\n\\ no newline\r\n\r\n \r\na\r\n \r\n\u4e2d\u6587\r\n\u4e2d\u6587\r\n \r\n\\ no newline\r\na\r\n\r\n\u4e2d\u6587\r\n\u4e2d\u6587\r\na\r\n\u4e2d\u6587\r\n\r\n\r\n\ud83d\ude00",
+      "after": "b\r\n\\ no newline\r\na\r\n\\ no newline\r\n\r\n\u4e2d\u6587\r\na\r\n \r\n\u4e2d\u6587\r\n\u4e2d\u6587\r\n \r\n\r\na\r\n\r\n\u4e2d\u6587\r\n\u4e2d\u6587\r\n\r\n\u4e2d\u6587\r\n\r\na\r\n\r\n\ud83d\ude00\r\n"
+    },
+    {
+      "name": "seeded-218",
+      "path": "fixture.txt",
+      "before": "\n\u4e2d\u6587\nb\n\u4e2d\u6587\na\n\n\\ no newline\n\nb\n\\ no newline\n\nb\na\n",
+      "after": "\n\n\u4e2d\u6587\na\n\\ no newline\n\n \n\u4e2d\u6587\n\\ no newline\n\nb\na\n \n"
+    },
+    {
+      "name": "seeded-219",
+      "path": "fixture.txt",
+      "before": "b\na\n\ud83d\ude00\na\n \nb\n\ud83d\ude00\nb\na\n\\ no newline\n \n\n\ud83d\ude00\n\\ no newline\nb\n \n\ud83d\ude00\n\u4e2d\u6587\n\ud83d\ude00\n ",
+      "after": "b\na\n\ud83d\ude00\na\n \nb\n\ud83d\ude00\nb\nb\na\n \na\na\n\u4e2d\u6587\n\ud83d\ude00\n\\ no newline\nb\nb\n \n\ud83d\ude00\n\u4e2d\u6587\n\ud83d\ude00\n "
+    },
+    {
+      "name": "seeded-220",
+      "path": "fixture.txt",
+      "before": "\r\n\u4e2d\u6587\r\n\ud83d\ude00\r\na\r\n\ud83d\ude00\r\nb\r\n \r\na\r\n\ud83d\ude00\r\n\u4e2d\u6587\r\n\ud83d\ude00\r\n\r\na\r\n \r\nb\r\na\r\n \r\n\ud83d\ude00\r\n",
+      "after": "\r\n\u4e2d\u6587\r\n\u4e2d\u6587\r\n\ud83d\ude00\r\na\r\n\u4e2d\u6587\r\nb\r\n\r\n\ud83d\ude00\r\n\ud83d\ude00\r\n\u4e2d\u6587\r\n\ud83d\ude00\r\n\r\na\r\n \r\nb\r\na\r\n \r\n\ud83d\ude00\r\n"
+    },
+    {
+      "name": "seeded-221",
+      "path": "fixture.txt",
+      "before": "a\r\n\ud83d\ude00\r\n\u4e2d\u6587\r\na\r\nb\r\n\u4e2d\u6587\r\n \r\na\r\na\r\na",
+      "after": "a\r\n\u4e2d\u6587\r\n\u4e2d\u6587\r\na\r\n\u4e2d\u6587\r\nb\r\na\r\n\u4e2d\u6587\r\n \r\na\r\na\r\n\ud83d\ude00\r\na\r\n"
+    },
+    {
+      "name": "seeded-222",
+      "path": "fixture.txt",
+      "before": "\na\n\u4e2d\u6587\n\u4e2d\u6587\n\na\nb\n\\ no newline\n\u4e2d\u6587\na",
+      "after": "\na\n\u4e2d\u6587\n\\ no newline\n\u4e2d\u6587\na\nb\n\\ no newline\n\u4e2d\u6587\na\n"
+    },
+    {
+      "name": "seeded-223",
+      "path": "fixture.txt",
+      "before": "a\r\na\r\nb\r\n\ud83d\ude00\r\n\\ no newline\r\n\u4e2d\u6587\r\na\r\n\ud83d\ude00\r\n\ud83d\ude00\r\n\\ no newline\r\na\r\n\\ no newline\r\na\r\na\r\n\ud83d\ude00\r\n \r\n\ud83d\ude00\r\n\r\na\r\n\u4e2d\u6587\r\n\r\n \r\n\ud83d\ude00\r\n \r\na\r\n\\ no newline\r\na",
+      "after": "a\r\na\r\nb\r\n\ud83d\ude00\r\n\\ no newline\r\n\u4e2d\u6587\r\na\r\n\\ no newline\r\n\ud83d\ude00\r\n\\ no newline\r\na\r\n\\ no newline\r\na\r\na\r\n\ud83d\ude00\r\n \r\n\ud83d\ude00\r\n\r\na\r\n\u4e2d\u6587\r\nb\r\n \r\n\ud83d\ude00\r\n \r\na\r\n\\ no newline\r\n\\ no newline"
+    },
+    {
+      "name": "seeded-224",
+      "path": "fixture.txt",
+      "before": "a\nb\nb\n\\ no newline\n\n\\ no newline\na\n \n\ud83d\ude00\n\u4e2d\u6587\na\n\u4e2d\u6587\n\n \n \na\n\\ no newline\n\u4e2d\u6587\n\u4e2d\u6587\na",
+      "after": "b\nb\n\\ no newline\n\n\\ no newline\na\n \n\ud83d\ude00\n\u4e2d\u6587\na\n\u4e2d\u6587\n \n \na\n\u4e2d\u6587\na\n"
+    },
+    {
+      "name": "seeded-225",
+      "path": "fixture.txt",
+      "before": "",
+      "after": "\u4e2d\u6587\r\n\\ no newline"
+    },
+    {
+      "name": "seeded-226",
+      "path": "fixture.txt",
+      "before": "\u4e2d\u6587\r\na\r\n\u4e2d\u6587\r\n\\ no newline\r\n\\ no newline\r\n\\ no newline\r\n\ud83d\ude00\r\na\r\n\\ no newline\r\nb\r\n\r\na\r\n\\ no newline\r\nb\r\na\r\na\r\na\r\n\r\n\r\na\r\nb\r\nb\r\nb\r\n\ud83d\ude00\r\na\r\n",
+      "after": "\u4e2d\u6587\r\na\r\n\\ no newline\r\n\\ no newline\r\n\\ no newline\r\na\r\n\\ no newline\r\nb\r\n\r\na\r\n\\ no newline\r\nb\r\nb\r\na\r\na\r\na\r\n\r\n\r\nb\r\nb\r\nb\r\nb\r\na\r\n\\ no newline\r\n"
+    },
+    {
+      "name": "seeded-227",
+      "path": "fixture.txt",
+      "before": "\ud83d\ude00\na\n\u4e2d\u6587\n \n\u4e2d\u6587\n \nb\n\u4e2d\u6587\na\n \n\ud83d\ude00\n\\ no newline",
+      "after": "\ud83d\ude00\na\n\u4e2d\u6587\n \n \nb\n\u4e2d\u6587\na\n \n "
+    },
+    {
+      "name": "seeded-228",
+      "path": "fixture.txt",
+      "before": "a\r\n\ud83d\ude00\r\n\ud83d\ude00\r\n\u4e2d\u6587\r\na\r\nb\r\n\u4e2d\u6587\r\n\r\n\ud83d\ude00\r\nb\r\nb\r\n\u4e2d\u6587\r\n\r\n",
+      "after": "a\r\n\ud83d\ude00\r\n\ud83d\ude00\r\n\u4e2d\u6587\r\na\r\nb\r\n\u4e2d\u6587\r\n\r\n\u4e2d\u6587\r\n\ud83d\ude00\r\nb\r\nb\r\n\u4e2d\u6587\r\n\r\n"
+    },
+    {
+      "name": "seeded-229",
+      "path": "fixture.txt",
+      "before": " \n\\ no newline\nb\na\na\n\\ no newline\n\u4e2d\u6587\nb\na\n \n\u4e2d\u6587\na\n\ud83d\ude00\n\\ no newline\n\ud83d\ude00\na\n\n \na\na\na\n\ud83d\ude00\n\\ no newline\nb\n\u4e2d\u6587\n",
+      "after": " \n\\ no newline\nb\na\n\\ no newline\n\u4e2d\u6587\nb\na\n \n\u4e2d\u6587\n\u4e2d\u6587\na\n\ud83d\ude00\n\\ no newline\n\ud83d\ude00\na\n\na\na\na\na\n\ud83d\ude00\n\\ no newline\nb\n\u4e2d\u6587"
+    },
+    {
+      "name": "seeded-230",
+      "path": "fixture.txt",
+      "before": "\ud83d\ude00\n\ud83d\ude00\na\nb\n \n\\ no newline\na\n\\ no newline\nb\n\ud83d\ude00\na\n\\ no newline\nb\na\n \n \n\ud83d\ude00\n\n\ud83d\ude00\n\\ no newline\n \nb\nb\n\u4e2d\u6587\n\\ no newline\na\na\n\ud83d\ude00",
+      "after": "b\n\ud83d\ude00\na\nb\n \n\\ no newline\na\n\\ no newline\nb\n\ud83d\ude00\na\n\\ no newline\nb\na\n \nb\n\ud83d\ude00\n\n\ud83d\ude00\n\\ no newline\n \nb\nb\na\n \na\n\\ no newline\n\ud83d\ude00\n"
+    },
+    {
+      "name": "seeded-231",
+      "path": "fixture.txt",
+      "before": "\\ no newline\n\ud83d\ude00\nb\nb\n\nb\n\\ no newline\n\\ no newline\na\n\u4e2d\u6587\na\n\\ no newline\n\nb\na\nb\n\n\u4e2d\u6587\n\\ no newline\n",
+      "after": "\\ no newline\n\ud83d\ude00\nb\nb\n\nb\n\\ no newline\n\\ no newline\n \na\n\u4e2d\u6587\n\\ no newline\n\nb\na\na\nb\n\n\\ no newline\n"
+    },
+    {
+      "name": "seeded-232",
+      "path": "fixture.txt",
+      "before": "a\nb\nb\n\n\\ no newline\n\\ no newline\n\na\n\n\u4e2d\u6587\na\n\\ no newline\n\u4e2d\u6587\n\\ no newline\nb\n\u4e2d\u6587\n\na\n\\ no newline\n \n\\ no newline\n\u4e2d\u6587\n \n\u4e2d\u6587\na\n",
+      "after": "a\nb\nb\n\n\\ no newline\n\\ no newline\n\na\n\n\u4e2d\u6587\n\u4e2d\u6587\n\\ no newline\nb\n\u4e2d\u6587\n\na\n\\ no newline\n\u4e2d\u6587\n \n\u4e2d\u6587"
+    },
+    {
+      "name": "seeded-233",
+      "path": "fixture.txt",
+      "before": "\\ no newline\na\n\\ no newline\nb\n\na\n \n \n \n\\ no newline\n\n\u4e2d\u6587\n ",
+      "after": "\\ no newline\na\n\\ no newline\nb\n\na\n \n \n\\ no newline\n\n\u4e2d\u6587\n"
+    },
+    {
+      "name": "seeded-234",
+      "path": "fixture.txt",
+      "before": "\ud83d\ude00\na\n \n\u4e2d\u6587\n\\ no newline\nb\nb\nb\n\u4e2d\u6587\nb\n \n\u4e2d\u6587\nb\n \n \n\\ no newline\na\nb\na\na\nb\n \na\n\u4e2d\u6587\n\ud83d\ude00\n\na\nb",
+      "after": "\ud83d\ude00\na\n \n\u4e2d\u6587\n\\ no newline\na\nb\n\ud83d\ude00\nb\n\u4e2d\u6587\n\\ no newline\na\n \n\u4e2d\u6587\nb\n \n \n\\ no newline\n \nb\na\nb\n \n\\ no newline\n\u4e2d\u6587\n\ud83d\ude00\n\na\nb"
+    },
+    {
+      "name": "seeded-235",
+      "path": "fixture.txt",
+      "before": "\\ no newline\n\n \n \n\n\ud83d\ude00\na\n\u4e2d\u6587\n\ud83d\ude00\n\\ no newline\na\nb\n\u4e2d\u6587\n\ud83d\ude00\n \n\nb\nb\n\ud83d\ude00\n\\ no newline",
+      "after": "\\ no newline\n\n \n \n\n\ud83d\ude00\n\u4e2d\u6587\n\ud83d\ude00\na\nb\n\u4e2d\u6587\n\ud83d\ude00\n \n\nb\nb\n\ud83d\ude00\n\\ no newline"
+    },
+    {
+      "name": "seeded-236",
+      "path": "fixture.txt",
+      "before": "\r\na\r\n\\ no newline\r\na\r\n\r\nb\r\nb\r\n\ud83d\ude00\r\n \r\na\r\n\u4e2d\u6587\r\nb\r\n \r\na\r\n\\ no newline\r\n\u4e2d\u6587\r\n\r\na\r\na\r\n\r\na",
+      "after": "\\ no newline\r\na\r\n\r\na\r\nb\r\nb\r\n\ud83d\ude00\r\n \r\na\r\n\u4e2d\u6587\r\n \r\n\r\na\r\n\\ no newline\r\na\r\na\r\na\r\n\r\na"
+    },
+    {
+      "name": "seeded-237",
+      "path": "fixture.txt",
+      "before": "\\ no newline\r\nb\r\n\r\nb\r\n \r\n\r\n\ud83d\ude00\r\n\r\na\r\nb\r\n\ud83d\ude00\r\n\u4e2d\u6587\r\n\r\n\\ no newline\r\na\r\na\r\n\r\na\r\nb\r\n",
+      "after": "\\ no newline\r\nb\r\n\r\nb\r\n \r\n\r\n\ud83d\ude00\r\n\u4e2d\u6587\r\n\r\na\r\nb\r\n\ud83d\ude00\r\n\u4e2d\u6587\r\n\r\n\\ no newline\r\n\r\na\r\n\r\na\r\n\\ no newline"
+    },
+    {
+      "name": "seeded-238",
+      "path": "fixture.txt",
+      "before": "\\ no newline\na",
+      "after": "\na\n \nb"
+    },
+    {
+      "name": "seeded-239",
+      "path": "fixture.txt",
+      "before": " \n \n\u4e2d\u6587\nb\n \n\u4e2d\u6587\n\\ no newline\na\n\\ no newline\na\na\n \n\n \n\na\n\ud83d\ude00\na\n \n\\ no newline\na\n\nb\n\u4e2d\u6587\nb\n\\ no newline\n \na\n",
+      "after": " \n \nb\na\n \n\u4e2d\u6587\n\\ no newline\na\n\n\\ no newline\na\na\n \n \n\na\n\ud83d\ude00\na\n \n\\ no newline\na\n\nb\n\u4e2d\u6587\nb\n\\ no newline\n \na\n"
+    }
+  ],
+  "metadata": [
+    null,
+    [],
+    {},
+    {
+      "diffs": []
+    },
+    {
+      "diffs": null
+    },
+    {
+      "diffs": [
+        {
+          "path": "fixture.txt",
+          "oldText": null,
+          "newText": "added"
+        }
+      ]
+    },
+    {
+      "diffs": [
+        {
+          "path": "fixture.txt",
+          "oldText": "",
+          "newText": "added"
+        }
+      ]
+    },
+    {
+      "diffs": [
+        {
+          "path": "fixture.txt",
+          "oldText": null,
+          "newText": "added",
+          "extra": 3
+        }
+      ],
+      "extra": true
+    },
+    {
+      "diffs": [
+        {
+          "path": "fixture.txt",
+          "newText": "missing"
+        }
+      ]
+    },
+    {
+      "diffs": [
+        {
+          "path": null,
+          "oldText": null,
+          "newText": "added"
+        }
+      ]
+    },
+    {
+      "diffs": [
+        {
+          "path": "fixture.txt",
+          "oldText": 3,
+          "newText": "added"
+        }
+      ]
+    },
+    {
+      "diffs": [
+        {
+          "path": "fixture.txt",
+          "oldText": null,
+          "newText": false
+        }
+      ]
+    },
+    {
+      "diffs": [
+        {
+          "path": "fixture.txt",
+          "oldText": null,
+          "newText": "added"
+        },
+        null
+      ]
+    },
+    {
+      "diffs": [
+        {
+          "path": "fixture.txt",
+          "oldText": null,
+          "newText": "added"
+        },
+        {
+          "path": "other",
+          "oldText": "old",
+          "newText": "new"
+        }
+      ]
+    }
+  ]
+}

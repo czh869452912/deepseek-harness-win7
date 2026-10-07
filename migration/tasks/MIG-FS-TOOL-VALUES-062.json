@@ -1,0 +1,29 @@
+{
+  "id": "MIG-FS-TOOL-VALUES-062",
+  "goal": "对齐真实文件工具的读取、图像、观察基准、结构化差异和沙箱升级公开值",
+  "kind": "implementation",
+  "state": "running",
+  "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
+  "base_product": "084a51b842536978630d65b68beb3934d336db0a",
+  "owner": "current-session-coordinator",
+  "requires": [{"task": "MIG-CURRENT-RELEASE-GATE-003", "contract": "CON-CURRENT-RELEASE-GATE", "revision": 1}],
+  "provides": [{"contract": "CON-FS-TOOL-VALUES", "revision": 1}],
+  "acceptance": [
+    "All509 ordered complete observations across six actual Source groups match independently owned Python3.8.10 using exact current Root providers, approved129 imported module hashes and15488 candidate file guards before/after.",
+    "Actual disk/read/observation consumers and positive qualified extracted receipt pass; every negative FS/Message extracted mutation first proves its undamaged baseline valid.",
+    "Complete Source guards include installed diff9.0.0 libesm bytes; schemas, public paths, errors, approval request/outcome and UTF16 surrogate values remain literal.",
+    "All original refusals, unfinished v1 gate and invalid-baseline v2 results remain archived with their limitations; no new upstream defect exception.",
+    "New clean complete regression, every current paired driver, unchanged original Source groups, actual own extraction and original browser pass before bounded integration."
+  ],
+  "expected_paths": ["dsh/fs", "dsh/sandbox/escalation.py", "scripts", "tests", "migration", "docs/research"],
+  "open_findings": [
+    "509 complete Source/own observations match; eight exact provider files promoted. SDK required import roster adds only two independently observed new providers in all three scenarios;30/14/18 full frames remain unchanged.",
+    "109 positive-baseline/negative controls pass. Earlier76 passing negative tests lacked a valid baseline and are not accepted qualification; missing Source input floors are corrected for both FS and Message.",
+    "Latest accepted complete clean release remains83026446/65 bounded contracts. Complete profiles, policy/browser composition and seven parent ranges remain open; actual Win7 certification remains user-deferred."
+  ],
+  "conflicts_with": [],
+  "candidate_commit": null,
+  "integrated_commit": null,
+  "evidence_ids": ["RUN-FS-TOOL-VALUES-QUALIFICATION-20261007-084A51B8"],
+  "next_action": "完成本部分真实消费者和不可变资格归档并提交，继续十项预设元数据与真实模型/浏览器/策略旅程；正常预算冻结完整门禁通过后才可有界集成。"
+}

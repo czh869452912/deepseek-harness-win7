@@ -1,0 +1,37 @@
+{
+  "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
+  "product_commit": "b529a9901c79f052f406d4ac4a692e5ebada159b",
+  "kind": "verification",
+  "task_id": "MIG-CURRENT-RELEASE-GATE-003",
+  "validity": "current",
+  "environment": {
+    "python": "3.8.10",
+    "git_lfs": "3.5.1",
+    "os": "Windows-10-10.0.26200-SP0"
+  },
+  "contract_revisions": {},
+  "artifacts": [
+    {
+      "path": "migration/storage/remote-sync-verification.zip",
+      "sha256": "ac318b5cb18f1a33742bddacd6bc21404dacb8a35302f38732ef178f34aedc3e"
+    }
+  ],
+  "id": "RUN-LFS-FULL-REGRESSION-20261007-B529A990",
+  "result": "failed",
+  "commands": [
+    ".venv/Scripts/python.exe -m pytest tests -ra --junitxml --basetemp through unchanged run_python_regression; normal 3600-second budget"
+  ],
+  "scope": "Complete direct test suite over frozen clean b529a990 storage-converted tree. Exact outcome, timing, logs, inputs and available XML retained in archive. Not full paired/Source/extracted/browser release acceptance.",
+  "regression_summary": {
+    "result": "failed",
+    "product_commit": "b529a9901c79f052f406d4ac4a692e5ebada159b",
+    "scope": "Complete direct pytest tests over frozen storage-converted checkout; normal 3600 seconds. Not complete release acceptance.",
+    "failure": {
+      "name": "TimeoutExpired",
+      "message": "Command '['C:\\\\Users\\\\czh86\\\\Documents\\\\Codex\\\\deepseek-harness-win7\\\\.venv\\\\Scripts\\\\python.exe', '-m', 'pytest', 'tests', '-ra', '--junitxml=C:\\\\Users\\\\czh86\\\\Documents\\\\Codex\\\\deepseek-harness-win7\\\\.goose\\\\out\\\\lfs-storage-full-regression-v1\\\\pytest.xml', '--basetemp=C:\\\\Users\\\\czh86\\\\Documents\\\\Codex\\\\deepseek-harness-win7\\\\.goose\\\\out\\\\g-sktpg09r']' timed out after 3600 seconds"
+    },
+    "traceback": "Traceback (most recent call last):\n  File \".goose/out/acp-a4-work/run_lfs_full_regression_v1.py\", line 27, in <module>\n    gate.run_python_regression(str(root / '.venv/Scripts/python.exe'), output, environment)\n  File \"C:\\Users\\czh86\\Documents\\Codex\\deepseek-harness-win7\\scripts\\verify_release.py\", line 1855, in run_python_regression\n    exitstatus = run([python, '-m', 'pytest', 'tests', '-ra', '--junitxml=' + str(output / 'pytest.xml'),\n  File \"C:\\Users\\czh86\\Documents\\Codex\\deepseek-harness-win7\\scripts\\verify_release.py\", line 1357, in run\n    return_code = process.wait(timeout=timeout)\n  File \"C:\\Users\\czh86\\AppData\\Roaming\\uv\\python\\cpython-3.8.10-windows-x86_64-none\\lib\\subprocess.py\", line 1083, in wait\n    return self._wait(timeout=timeout)\n  File \"C:\\Users\\czh86\\AppData\\Roaming\\uv\\python\\cpython-3.8.10-windows-x86_64-none\\lib\\subprocess.py\", line 1364, in _wait\n    raise TimeoutExpired(self.args, timeout)\nsubprocess.TimeoutExpired: Command '['C:\\\\Users\\\\czh86\\\\Documents\\\\Codex\\\\deepseek-harness-win7\\\\.venv\\\\Scripts\\\\python.exe', '-m', 'pytest', 'tests', '-ra', '--junitxml=C:\\\\Users\\\\czh86\\\\Documents\\\\Codex\\\\deepseek-harness-win7\\\\.goose\\\\out\\\\lfs-storage-full-regression-v1\\\\pytest.xml', '--basetemp=C:\\\\Users\\\\czh86\\\\Documents\\\\Codex\\\\deepseek-harness-win7\\\\.goose\\\\out\\\\g-sktpg09r']' timed out after 3600 seconds\n",
+    "seconds": 3600.4312486999997,
+    "xml_complete": false
+  }
+}

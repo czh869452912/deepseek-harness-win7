@@ -29,6 +29,12 @@ git lfs fsck
 
 普通 clone 会同时保留工作区文件和 LFS 缓存，需要为约 6.9 GB 证据及缓存预留空间。本机采用硬链接控制临时占用，归档必须保持不可变；新增回执使用新文件名。CI 已启用 LFS checkout。方案和额度边界见 `docs/research/2026-10-07-full-remote-sync-plan.md`，转换及验证记录见 `docs/research/2026-10-07-lfs-storage-progress.md`。全量同步不等于完整迁移或发行验收通过。
 
+**2026-10-08 同步核验已完成。** master 全量普通快进到 `b529a990`，86 个 LFS 对象上传后实际远程下载全部 6910079579 字节，大小/双散列全部匹配。独立远程 clone 无 alternates 或原 tip 对象，Git fsck、126 项映射及 migration check 通过，原版 pin 不变；证据实体用本地核验硬链接补全，实际远程下载另行流式核验。首次服务器 GH009/Internal Server Error 和重复 LFS 接口 502 拒绝保留，重试成功，没有强推。最终记录提交另在该同步基线上追加。22 成员小型归档 `migration/storage/remote-sync-verification.zip` SHA-256 `ac318b5cb18f1a33742bddacd6bc21404dacb8a35302f38732ef178f34aedc3e` 保存完整验证材料。
+
+该干净基线全套收集 **10046 项**，正常 **3600 秒**、**67%** 超时，无完整 XML；未取得全套通过，日志截至中断未见失败标记。16/28 项存储/迁移控制在全套中通过，完整输入/HEAD 前后不变；拥有的进程树已结束，失败工作区 `.goose/out/lfs-storage-full-regression-v1/pytest-workspace` 保留。同步 passed 与全套 failed/TimeoutExpired 分别入账，不替换 `83026446/65` 最新完整产品签收。后续仍优先解决重复回执验证成本再做新干净发行门禁。
+
+自动审批拒绝删除已验证的可重建独立克隆（`blocked by policy`），所以 `.goose/out/lfs-remote-clone-20261007` 暂留；拒绝记录保留，不绕过删除。原历史 `.goose/out/lfs-original-history-20261007.git` 必须继续保护，不纳入自动过程清理。
+
 ## 先读这些本地记录
 
 1. `AGENTS.md`：Python 3.8.10、Win7、Cordis ownership/effect、原版前端和 canonical boot 规则。

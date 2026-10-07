@@ -477,6 +477,7 @@ Evidence:
 - RUN-JSONL-SHARING-V3-20261006-TOOL-PARALLELISM-033: acceptance / passed / stale-inputs
 - RUN-JSONL-SHARING-V3-20261006-TOOL-START-PREFIX-034: acceptance / passed / stale-inputs
 - RUN-JSONL-SHARING-V3-20261006-UPSTREAM-DELTA-002: acceptance / passed / stale-inputs
+- RUN-LFS-FULL-REGRESSION-20261007-B529A990: verification / failed / current
 - RUN-LFS-STORAGE-20261007-74ADF4C6: verification / passed / current
 - RUN-LLM-CONFIG-20261006-ACP-CONFIG-OUTPUT-004: acceptance / passed / stale-inputs
 - RUN-LLM-CONFIG-20261006-ACP-MCP-009: acceptance / passed / stale-inputs
@@ -643,6 +644,7 @@ Evidence:
 - RUN-PORTABLE-FINISH-20260927: acceptance / passed / stale-inputs
 - RUN-PRESET-PROMPT-QUALIFICATION-20261007-91358077: verification / passed / current
 - RUN-PROFILE-METADATA-QUALIFICATION-20261007-88AC1FAE: verification / passed / current
+- RUN-REMOTE-LFS-SYNC-20261007-B529A990: verification / passed / current
 - RUN-RUNTIME-CONTEXT-20261006-ACP-CONFIG-OUTPUT-004: acceptance / passed / stale-inputs
 - RUN-RUNTIME-CONTEXT-20261006-ACP-MCP-009: acceptance / passed / stale-inputs
 - RUN-RUNTIME-CONTEXT-20261006-ACP-PERMISSIONS-006: acceptance / passed / stale-inputs

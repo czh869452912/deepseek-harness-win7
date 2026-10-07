@@ -1,0 +1,29 @@
+{
+  "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
+  "product_commit": "b529a9901c79f052f406d4ac4a692e5ebada159b",
+  "kind": "verification",
+  "task_id": "MIG-CURRENT-RELEASE-GATE-003",
+  "validity": "current",
+  "environment": {
+    "python": "3.8.10",
+    "git_lfs": "3.5.1",
+    "os": "Windows-10-10.0.26200-SP0"
+  },
+  "contract_revisions": {},
+  "artifacts": [
+    {
+      "path": "migration/storage/remote-sync-verification.zip",
+      "sha256": "ac318b5cb18f1a33742bddacd6bc21404dacb8a35302f38732ef178f34aedc3e"
+    }
+  ],
+  "id": "RUN-REMOTE-LFS-SYNC-20261007-B529A990",
+  "result": "passed",
+  "exit_code": 0,
+  "commands": [
+    "git lfs push --all origin master",
+    "git push origin master",
+    "Remote LFS batch download for all 86 OIDs; streamed 6910079579 bytes and verified SHA256 and original Git blob SHA1",
+    "Independent remote clone without alternates or original commit objects: full mapped history/archive proof and migration check"
+  ],
+  "scope": "All master code/history and evidence synced through ordinary fast-forward. Original published anchor unchanged. Upload, remote availability, full actual streamed download and independent clone verified. Local clone archive materialization used verified immutable hardlinks to avoid duplicates. Server lock API/HTTP502/GH009 refusals were transient and not product/Source exceptions; successful retry follows exact uploaded OID verification. No new migration closure or complete release acceptance."
+}

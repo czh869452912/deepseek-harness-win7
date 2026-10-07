@@ -1,0 +1,20 @@
+{
+  "id": "RUN-PROFILE-METADATA-QUALIFICATION-20261007-88AC1FAE",
+  "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
+  "product_commit": "88ac1faebf8affc5f924ce5c2eae3737b44783b3",
+  "kind": "verification",
+  "task_id": "MIG-PROFILE-JOURNEYS-002",
+  "result": "passed",
+  "validity": "current",
+  "exit_code": 0,
+  "commands": [
+    ".venv/Scripts/python.exe .goose/out/acp-a4-work/qualify_profile_metadata_headless_v1.py",
+    ".venv/Scripts/python.exe .goose/out/acp-a4-work/qualify_profile_metadata_root_v1.py",
+    ".venv/Scripts/python.exe -m pytest tests/test_agent_instructions.py tests/test_canonical_pwsh_tool.py tests/test_canonical_persistent_pwsh.py tests/test_jobs.py tests/test_jobs_local_lifecycle.py tests/test_canonical_goal.py tests/test_canonical_goal_controls.py tests/test_canonical_skill_journey.py tests/test_canonical_subagent_tools.py tests/test_subagent_continuation.py tests/test_tool_fs_search_upstream_parity.py tests/test_tool_todo_upstream_parity.py tests/test_web_tools.py --junitxml=.goose/out/acp-a4-work/profile-metadata-regression-v1.xml",
+    ".venv/Scripts/python.exe .goose/out/acp-a4-work/collect_profile_metadata_v1.py"
+  ],
+  "environment": {"python": "3.8.10", "os": "Windows-10-10.0.26200-SP0", "node": "v22.22.2"},
+  "contract_revisions": {"CON-CURRENT-RELEASE-GATE": 1},
+  "artifacts": [{"path": "migration/evidence/artifacts/PROFILE-METADATA-QUALIFICATION-20261007-88AC1FAE.zip", "sha256": "ac64a105502beb8fa808c541b5f694a565682b224f130fc11fb364f0f955b404"}],
+  "scope": "Bounded default-profile metadata and instruction baseline qualification: ten providers promoted;75 actual consumers pass with one existing directory-symlink privilege skip. Fresh complete headless Source/Root/own Python3.8.10 all31 events/3 requests/4 lookups match,473 imports and15488 own input guards before/after.53-file archive includes complete raw evidence, guards, proposed bytes and prior Git provider bytes. Strict full UUIDv4 declaration/reference graph only; literal clock/schema/prompt/tool content/paths retained. This does not sign the complete profile parent, optional subagent model-selection metadata, other profile/browser/policy/restore/race journeys or a new complete clean release."
+}

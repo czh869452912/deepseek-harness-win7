@@ -66,7 +66,7 @@ class CanonicalToolSkill(Plugin):
             resource_variants.append({"type": "object", "additionalProperties": False,
                 "properties": {"kind": {"type": "string", "const": kind}, field: {"type": "string"}}, "required": ["kind", field]})
         definition = {"name": "skill", "description": "Load the full instructions for an available skill. Call this with the exact skill name from the session skill catalog before acting on a task that names or clearly matches that skill.",
-            "parameters": {"type": "object", "properties": {"name": {"type": "string"}}, "required": ["name"]},
+            "parameters": {"type": "object", "properties": {"name": {"type": "string", "description": "The exact skill name from the available skills list."}}, "required": ["name"]},
             "execute": execute, "output": {"schema": {"type": "object", "additionalProperties": False,
                 "properties": dict({key: {"type": "string"} for key in ("name", "provider", "content")}, resourceBase={"oneOf": resource_variants}),
                 "required": ["name", "provider", "content"]},

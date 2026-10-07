@@ -140,7 +140,7 @@ class ToolJobsPlugin(Plugin):
                 owner.inject(message)
         jobs.attach_controller("tool-jobs")
         jobs.on_job_done(completed)
-        ctx.get("systemPrompt").section({"name": "tool:jobs", "order": 106, "text": SYSTEM_PROMPT_JOBS_TEXT})
+        ctx.get("systemPrompt").section({"name": "tool:jobs", "order": 1600, "text": SYSTEM_PROMPT_JOBS_TEXT})
 
         def identifier(args):
             value = args["job_id"]
@@ -168,21 +168,25 @@ class ToolJobsPlugin(Plugin):
             body = value["text"] or "(no new output)"
             return blocks(body + ("" if body.endswith("\n") else "\n") + status_line(value["job"]))
 
-        common = {"job_id": {"type": "string"}}
+        common = {"job_id": {"type": "string", "description": "Job id returned by the tool that started the background work."}}
         definitions = [
-            ("job_output", "Read a background job; wait only when blocked on completion.",
-             dict(common, wait={"type": "boolean"}, timeout_ms={"type": "number"}), ["job_id"], output,
+            ("job_output", 'Read a background job. Stream jobs return only output since the previous read; final-output jobs return their result after settlement. Every response ends with `[status: ...]`. Reads are non-blocking unless `wait: true`, which waits up to the configured cap.',
+             dict(common, wait={"type": "boolean", "description": "Block until the job reaches a terminal status or the timeout expires. A timed-out wait returns [status: running] and leaves the job alive."},
+                  timeout_ms={"type": "number", "description": "Max wait in milliseconds (only meaningful with wait: true). Defaults to the configured wait timeout; capped by the configured maximum."}), ["job_id"], output,
              {"type": "object", "additionalProperties": False, "properties": {"text": {"type": "string"}, "job": PUBLIC_SCHEMA}, "required": ["text", "job"]}, output_render),
-            ("job_list", "List your background jobs, including finished jobs.", {}, [], listing,
+            ("job_list", 'List your background jobs (running and finished) with their ids, kinds, and statuses.', {}, [], listing,
              {"type": "array", "items": PUBLIC_SCHEMA},
              lambda args, value: blocks("\n".join("{id} [{kind}] {status} — {label}".format(**j) for j in value) or "(no background jobs)")),
-            ("job_kill", "Request cancellation; a job settles when its work actually stops.", dict(common, reason={"type": "string"}), ["job_id"], kill,
+            ("job_kill", 'Request cancellation of a running background job by job id. Returns immediately; the job settles as killed once its work actually stops.', dict(common, reason={"type": "string", "description": "Optional short reason, recorded in the log and forwarded to the job."}), ["job_id"], kill,
              {"type": "object", "additionalProperties": False, "properties": {"outcome": {"type": "string", "enum": ["already-finished", "cancellation-requested"]}, "job": PUBLIC_SCHEMA}, "required": ["outcome", "job"]},
              lambda args, value: blocks("job {} had already finished {}".format(value["job"]["id"], status_line(value["job"])) if value["outcome"] == "already-finished" else "requested cancellation of job " + value["job"]["id"])),
         ]
         for name, description, properties, required, execute, schema, render in definitions:
+            parameters = {"type": "object", "properties": properties}
+            if required:
+                parameters['required'] = required
             ctx.get("tools").register({"name": name, "description": description,
-                "parameters": {"type": "object", "properties": properties, "required": required, "additionalProperties": False},
+                "parameters": parameters,
                 "execute": execute, "output": {"schema": schema, "render": render},
                 "finalizeContent": finalize,
                 "presentCall": lambda args, tool=name: {"card": "generic", "title": tool, "kind": "execute" if tool == "job_kill" else "read", "rawInput": args.get("job_id", "")}})

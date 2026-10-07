@@ -32,10 +32,14 @@
     "tests",
     "migration"
   ],
-  "open_findings": [],
+  "open_findings": [
+    "Ten default-profile tool metadata/instruction baseline providers promoted;75 actual consumer regressions pass with one existing symlink privilege skip. Fresh actual Source/Root/own Python3.8.10 headless all31 events/3 requests/4 lookups match with473 actual imported hashes and15488 owned input guards;53-file archive preserves full observations and previous Git provider bytes.",
+    "This is bounded headless research and provider qualification, not full profile acceptance. Optional model-selection-enabled subagent descriptions/schemas still differ from actual Source; canonical minimal tool ordering and creative Cordis extra export require explicit complete observation.",
+    "Still specify complete source-backed parent contract and required profile/model-tool-next-request/question/approval/cancel/close/cold-reopen lanes; original frontend and user-deferred Win7 certification stay unchanged."
+  ],
   "conflicts_with": [],
   "candidate_commit": null,
   "integrated_commit": null,
-  "evidence_ids": [],
-  "next_action": "当前 release/Agent 提供端已重验，改依赖 canonical 当前门禁而非历史 REPRO 安装契约；仍须正式 profile 的模型→真实工具→下一请求、question/approval UI、取消、关闭及新进程恢复的组合闭包。现有五 profile 启停与五 browser 插件旅程不等于全部用户主链认证。"
+  "evidence_ids": ["RUN-PROFILE-METADATA-QUALIFICATION-20261007-88AC1FAE"],
+  "next_action": "十项默认元数据及实际headless31事件/3请求已有限推广并独立归档；继续可选子代理model selection、minimal真实顺序、creative额外导出及正式profile/原版浏览器的question/approval/取消/关闭/冷恢复组合闭包，补正式父契约和必需完整门禁；不以本部分重标全profile或七父范围。"
 }

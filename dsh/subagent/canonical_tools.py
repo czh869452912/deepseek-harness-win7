@@ -22,6 +22,8 @@ def object_schema(fields, required=None):
 def register(ctx, name, description, fields, execute, output_schema, render, required=None):
     parameters = object_schema(fields, required)
     parameters.pop('additionalProperties')
+    if not parameters['required']:
+        parameters.pop('required')
     return ctx.get('tools').register(dict(name=name, description=description,
         parameters=parameters, execute=execute, isConcurrencySafe=lambda *_: True,
         output=dict(schema=output_schema, render=render)))
@@ -145,9 +147,12 @@ class CanonicalToolSubagent(Plugin):
                 if provider.name != provider_name or mounted[0] is not None:
                     return
                 validate(provider)
-                fields = dict(description={'type': 'string'}, prompt={'type': 'string'})
+                fields = dict(description={'type': 'string', 'description': 'A short (3-5 word) description of the delegated task, for display.'},
+                    prompt={'type': 'string', 'description': "The task for the subagent. It already sees this conversation's completed turns, so build on them freely and state only what is new."
+                        if provider.inheritsParentContext else "The complete, self-contained task for the subagent. It does not share this conversation's context, so include everything it needs."})
                 if background:
-                    fields['run_in_background'] = {'type': 'boolean'}
+                    fields['run_in_background'] = {'type': 'boolean', 'description': 'Whether to run as a background job and return its id. Defaults to false; collect with job_output or stop with job_kill.'
+                        if not continuable else 'Whether to run in the background and return a durable subagent id immediately. Defaults to true. Set false to wait for the result when your next action depends on it.'}
                 if policy is not None:
                     fields.update({key: {'type': 'string'} for key in ('provider', 'model', 'reasoning_effort')})
                 async def execute(args, execution):
@@ -205,10 +210,10 @@ class CanonicalToolSubagent(Plugin):
                     if value['kind'] == 'foreground':
                         return text(''.join(item['text'] for item in value['output'] if isinstance(item, dict) and item.get('type') == 'text'))
                     return text('started subagent ' + value['subagentId'] if value['kind'] == 'continuable' else 'started background subagent job ' + value['jobId'])
-                description = ('Delegate work to a child seeded with completed conversation turns; it does not see the current turn.' if provider.inheritsParentContext else
-                               'Delegate a self-contained task to a separate child; include all needed context because it does not see this conversation.')
-                description += (' Runs in the background by default and returns a durable child id. A settlement notice delivers the outcome; send_message continues its conversation.'
-                                if background and continuable else ' Waits for the result by default; background execution returns a job id.' if background else ' Waits for the result.')
+                description = ("Delegate a task to a subagent that inherits this conversation: a child agent seeded with all completed turns so far (it does not see the current in-flight turn). Use this when the subtask builds on this conversation's context — a follow-up analysis, a review, a continuation — without consuming this conversation's context for the work itself. You receive its result, not its intermediate steps." if provider.inheritsParentContext else
+                               "Delegate a self-contained task to a subagent (a separate agent that works in its own context) to offload focused, independent work — research, a scoped implementation, an analysis — so it does not consume this conversation's context. The subagent returns its result, not its intermediate steps. Give it a complete, standalone prompt: it does not see this conversation.")
+                description += (' This tool runs in the background by default, immediately returns a durable subagent id, and keeps the child conversation available for later turns. When that run settles, the runtime sends the parent a notice containing its outcome and any final assistant message; `send_message` starts a later turn in the same child conversation. Set `run_in_background: false` only when your next action depends on receiving the result.'
+                                if background and continuable else ' This call waits for the result by default. Set `run_in_background: true` to return a job id; collect with `job_output` and stop with `job_kill`.' if background else ' This call waits for the subagent and returns its result.')
                 mounted[0] = register(runtime_ctx, name, description, fields, execute, output, render, ['description', 'prompt'])
             def removed(removed_name):
                 if removed_name == provider_name and mounted[0] is not None:
@@ -222,7 +227,7 @@ class CanonicalToolSubagent(Plugin):
             if background and continuable:
                 runtime_ctx.get('systemPrompt').section(dict(name='tool:' + name, order=2800,
                     text=lambda context: '' if mounted[0] is None or runtime_ctx.get('tools').get(name, context.get('scope')) is None else
-                    'Use {} in the background by default. Start independent delegations together and continue useful work. Set run_in_background to false when your next action needs the result.'.format(name)))
+                    "Use {} in the background by default. Start independent delegations together in one assistant message and continue useful work while they run. Set `run_in_background: false` only when your next action depends on that subagent's result. When a background run settles, the runtime sends you a notice containing its outcome and any final assistant message.".format(name)))
 
         if not selection:
             install(ctx, None)

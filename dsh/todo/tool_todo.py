@@ -142,7 +142,6 @@ def _install_projection(ctx: Any) -> None:
 def _definition(allow_parallel: bool) -> Dict[str, Any]:
     parameters = {
         "type": "object",
-        "additionalProperties": False,
         "properties": {
             "todos": {
                 "type": "array",

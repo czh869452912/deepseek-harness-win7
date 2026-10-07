@@ -120,13 +120,18 @@ class CanonicalToolGoal(Plugin):
         definitions = [
             ("get_goal", "Read the current same-session goal, including its exact id/revision, objective, phase, completed continuation rounds, round limit, blocker reason when present, and whether another continuation is armed. Call this before updating a goal.", {}, [], self.get),
             ("create_goal", 'Create one persisted same-session completion goal when the current direct human request is a long-running objective that should continue across autonomous goal rounds. You may infer that intent without requiring the user to say "create a goal". Do not use this for trivial single-turn work. Execution rejects non-human and subagent authority.',
-             {"objective": {"type": "string"}, "max_goal_rounds": {"type": "number"}}, ["objective"], self.create),
+             {"objective": {"type": "string", "description": "The concrete completion objective inferred from the direct human request."},
+              "max_goal_rounds": {"type": "number", "description": "Optional positive safe-integer limit on automatic continuation rounds."}}, ["objective"], self.create),
             ("update_goal", 'Update the exact current goal revision. edit, pause, and resume require a direct top-level human request. During an automatic continuation of the current goal, complete and blocked are also allowed. blocked is rejected before the configured minimum round count; the model remains responsible for judging that the same condition persisted across those rounds and must explain it in blocked_reason.',
-             {"goal_id": {"type": "string"}, "revision": {"type": "number"}, "action": {"type": "string", "enum": ["edit", "pause", "resume", "complete", "blocked"]},
-              "objective": {"type": "string"}, "max_goal_rounds": {"type": "number"}, "blocked_reason": {"type": "string"}}, ["goal_id", "revision", "action"], self.update)]
+             {"goal_id": {"type": "string", "description": "Exact id returned by get_goal."},
+              "revision": {"type": "number", "description": "Exact positive revision returned by get_goal."},
+              "action": {"type": "string", "enum": ["edit", "pause", "resume", "complete", "blocked"], "description": "edit | pause | resume | complete | blocked"},
+              "objective": {"type": "string", "description": "Replacement objective; valid only with action edit."},
+              "max_goal_rounds": {"type": "number", "description": "Replacement cap; valid only with action edit."},
+              "blocked_reason": {"type": "string", "description": "Concrete blocking condition; required only with action blocked."}}, ["goal_id", "revision", "action"], self.update)]
         for name, description, properties, required, execute in definitions:
             ctx.get("tools").register({"name": name, "description": description,
-                "parameters": {"type": "object", "properties": properties, "required": required}, "execute": execute,
+                "parameters": dict(type="object", properties=properties, **({"required": required} if required else {})), "execute": execute,
                 "presentCall": lambda args, tool_name=name: present_call(tool_name, args),
                 "output": {"schema": output_schema(), "render": lambda args, value: [{"type": "text", "text": json.dumps(value, ensure_ascii=False, separators=(",", ":"))}]}})
 

@@ -123,12 +123,12 @@ class ToolFsSearchPlugin(Plugin):
                 "while a larger one keeps the modification-time-ordered head."
             )
             disposers.append(prompt.section({
-                "name": "tool:glob", "order": 103,
+                "name": "tool:glob", "order": 1400,
                 "text": ('Use the glob tool \u2014 not shell find \u2014 to discover files by path pattern. A pattern with no "/" matches basenames at any depth, so "*" matches every file in the tree rather than its top level. '
                          'Results are files only, never directories, and include hidden and ignored files: a result that fits comes back in modification-time order, %s' % over_cap_guidance),
             }))
             disposers.append(prompt.section({
-                "name": "tool:grep", "order": 104,
+                "name": "tool:grep", "order": 1500,
                 "text": "Use the grep tool \u2014 not shell grep or rg \u2014 to search file contents. Use read on a matched file when you need surrounding context.",
             }))
 
@@ -150,7 +150,7 @@ class ToolFsSearchPlugin(Plugin):
                                 "Up to %d paths come back in modification-time order; %s, "
                                 "says so, and reports where the complete sorted list was saved. This tool does not enumerate directory entries."
                                 % (service.glob_max_results, over_cap_description)),
-                "parameters": {"type": "object", "additionalProperties": False, "required": ["pattern"], "properties": {
+                "parameters": {"type": "object", "required": ["pattern"], "properties": {
                     "pattern": {"type": "string", "description": ('Glob pattern to match file paths against (e.g. "**/*.ts", "src/**/*.test.js"). '
                                                                     'A pattern with no "/" matches the basename at any depth, so "*" and "*.ts" both search the whole tree; include a separator to anchor the depth.')},
                     "path": {"type": "string", "description": "Directory to search in. Defaults to the session workspace; a relative path resolves against it."},
@@ -175,11 +175,11 @@ class ToolFsSearchPlugin(Plugin):
             }
             grep_definition = {
                 "name": "grep",
-                "description": "Search file contents with a ripgrep regular expression. Returns matching lines with line numbers, grouped by file. Returns the first %d matches inline." % service.grep_max_matches,
-                "parameters": {"type": "object", "additionalProperties": False, "required": ["pattern"], "properties": {
+                "description": 'Search file contents with a ripgrep regular expression. Returns matching lines with line numbers, grouped by file. Returns the first %d matches inline; a capped result reports where the complete match list was saved. Use read on a matched file for surrounding context.' % service.grep_max_matches,
+                "parameters": {"type": "object", "required": ["pattern"], "properties": {
                     "pattern": {"type": "string", "description": "Regular expression to search for (ripgrep syntax)."},
                     "path": {"type": "string", "description": "File or directory to search. Defaults to the session workspace; a relative path resolves against it."},
-                    "include": {"type": "string", "description": "One positive glob filter for files to search."},
+                    "include": {"type": "string", "description": 'One glob filter for which files to search (e.g. "*.ts", "*.{js,jsx}"). Not a list; negation is not supported.'},
                 }},
                 "timeoutMs": service.timeout_ms,
                 "output": {

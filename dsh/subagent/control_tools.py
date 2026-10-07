@@ -13,14 +13,15 @@ class ToolSubagentControl(Plugin):
             identity = await ctx.get('subagents').followup(parent, args['subagent_id'], text(args['message']),
                 dict(source=dict(kind='coordinator', form='relay', senderSessionId=parent.id), signal=execution.signal))
             return dict(messageId=identity)
-        register(ctx, 'send_message', 'Queue the next FIFO turn for your direct background child. Returns admission only; it does not redirect the current turn.',
-                 dict(subagent_id={'type': 'string'}, message={'type': 'string'}), send,
+        register(ctx, 'send_message', "Send a message to a background subagent by its subagent id, continuing the same conversation. It becomes the subagent's next turn: if it is still working, the message waits until its current turn finishes, so it cannot redirect work already underway. This call returns no answer from the subagent — only confirmation that the message was delivered — so use it to give it more work. A failure means the message was NOT delivered.",
+                 dict(subagent_id={'type': 'string', 'description': 'The subagent id returned when the background subagent was started.'},
+                      message={'type': 'string', 'description': 'The message to deliver to the subagent.'}), send,
                  object_schema(dict(messageId={'type': 'string'})), lambda args, _: text('message queued as the next turn for subagent ' + args['subagent_id']))
         async def interrupt(args, execution):
             ctx.get('subagents').interrupt(args['agent_id'], dict(kind='ancestor', agent=agent_of(execution)))
             return dict(accepted=True)
-        register(ctx, 'interrupt_agent', 'Stop a descendant background agent current turn. Queued messages and descendants remain available; a later send_message wakes parked work.',
-                 dict(agent_id={'type': 'string'}), interrupt, object_schema(dict(accepted={'type': 'boolean'})),
+        register(ctx, 'interrupt_agent', "Request cancellation of a background agent's current turn by its agent id. The target may be your direct child or a deeper agent created under you. Only the current turn stops: messages already queued for the agent stay parked until a later send_message, agents it started keep running, and the agent itself stays available for follow-ups. This call returns as soon as the stop request is accepted, so the target may keep running briefly; interrupting an agent that already finished is an accepted no-op.",
+                 dict(agent_id={'type': 'string', 'description': 'The agent id of the running agent to interrupt.'}), interrupt, object_schema(dict(accepted={'type': 'boolean'})),
                  lambda args, _: text('interrupt requested for agent ' + args['agent_id']))
 
 
@@ -57,8 +58,9 @@ class ToolListAgents(Plugin):
         schema = {'type': 'array', 'items': {'oneOf': [
             object_schema(dict(common, kind={'type': 'string', 'const': 'child'}, label={'type': 'string'}, status={'type': 'string', 'enum': ['running', 'idle', 'ready']}), ['kind', 'id', 'label', 'status']),
             object_schema(dict(common, kind={'type': 'string', 'const': 'diagnostic'}, reason={'type': 'string', 'enum': ['corrupt', 'unsupported', 'unavailable']}), ['kind', 'id', 'reason'])]}}
-        register(ctx, 'list_agents', 'Recall continuable child ids. Status ready means persisted and resumable. Descendants include tree position; send_message accepts only direct children.',
-                 dict(scope={'type': 'string', 'enum': ['children', 'descendants']}), execute, schema, render, [])
+        register(ctx, 'list_agents', 'List your continuable background subagents by durable id and label. Use it to recall which ones you started, not to poll for completion — you are told when one finishes. Status comes from the live registry: running means the agent is working right now, idle means it is loaded but between turns (it may be waiting on agents it started), and ready means it exists only in storage — resumable, not terminal, and not a result waiting to be collected; a `send_message` starts a new turn on the same conversation, and a direct child remains a `send_message` candidate in every status. The snapshot is not a delivery promise — `send_message` performs the authoritative check and may still fail. Children that could not be read are reported as diagnostics instead of being silently dropped. Scope `descendants` walks the whole tree below you in stable pre-order, annotating each entry with its durable direct-parent session id and depth. You may use `send_message` only for depth-1 entries; deeper entries are candidates for `interrupt_agent` only.',
+                 dict(scope={'type': 'string', 'enum': ['children', 'descendants'],
+                            'description': 'children (default) lists direct children only; descendants walks the complete tree below you.'}), execute, schema, render, [])
 
 
 class ToolSubagentReport(Plugin):

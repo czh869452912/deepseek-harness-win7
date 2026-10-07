@@ -60,6 +60,8 @@ def workspace_baseline_identity(config: ResolvedConfig, cwd: str, project_root: 
         rel_root = os.path.relpath(project_root, cwd)
     except ValueError:
         rel_root = project_root
+    if rel_root == ".":
+        rel_root = ""
     return json.dumps({
         "projectRoot": rel_root,
         "projectRootMarkers": config.project_root_markers,
@@ -67,7 +69,7 @@ def workspace_baseline_identity(config: ResolvedConfig, cwd: str, project_root: 
         "maxSourceBytes": config.max_source_bytes,
         "instructionFileCandidates": config.instruction_file_candidates,
         "localInstructionFileCandidates": config.local_instruction_file_candidates,
-    })
+    }, ensure_ascii=False, separators=(",", ":"))
 
 
 def resolve_config(config: Optional[Dict[str, Any]] = None) -> ResolvedConfig:

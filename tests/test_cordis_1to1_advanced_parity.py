@@ -121,10 +121,11 @@ def test_schemastery_to_json_refs_table():
     assert json_refs["uid"] == obj_schema.uid
 
     refs = json_refs["refs"]
-    assert obj_schema.uid in refs
-    assert inner_schema.uid in refs
-    assert refs[obj_schema.uid]["type"] == "object"
-    assert refs[inner_schema.uid]["type"] == "string"
+    assert all(isinstance(key, str) for key in refs)
+    assert str(obj_schema.uid) in refs
+    assert str(inner_schema.uid) in refs
+    assert refs[str(obj_schema.uid)]["type"] == "object"
+    assert refs[str(inner_schema.uid)]["type"] == "string"
 
 
 def test_schemastery_i18n_advanced_placeholders():

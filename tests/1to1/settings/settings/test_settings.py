@@ -237,11 +237,10 @@ class TestRegistration:
         assert descriptors[0]["value"] == {"theme": "dark", "fontSize": 14}
         # schemastery's canonical wire form: a { uid, refs } envelope whose root
         # ref is the object schema, the form schema-driven UIs reconstruct from.
-        # The reference reads the root as `refs[String(uid)]`; the port keys
-        # `refs` by the uid itself, so that key names the same node.
         serialized = descriptors[0]["schema"]
         refs = serialized["refs"]
-        assert refs[serialized["uid"]]["type"] == "object"
+        assert all(isinstance(key, str) for key in refs)
+        assert refs[str(serialized["uid"])]["type"] == "object"
 
     @pytest.mark.asyncio
     async def test_reads_undefined_for_an_unregistered_namespace(self):

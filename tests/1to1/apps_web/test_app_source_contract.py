@@ -42,11 +42,14 @@ def test_source_document_projects_into_the_built_document():
     source = _read_text(os.path.join(WEB_ROOT, "index.html"))
     built = _read_text(os.path.join(DIST_ROOT, "index.html"))
 
-    # The mount point, document shell, and title survive the build unchanged.
+    # The mount point and document shell survive the build unchanged.
     assert '<div id="root"></div>' in source
     assert '<div id="root"></div>' in built
     assert "<title>DSH Local Build</title>" in source
-    assert "<title>DSH Local Build</title>" in built
+    assert "<title>DeepSeek Harness</title>" in built
+    config = _read_text(os.path.join(WEB_ROOT, "vite.config.ts"))
+    assert "process.env.DSH_CLIENT_TITLE ?? DEFAULT_CLIENT_TITLE" in config
+    assert "html.replace('<title>DSH Local Build</title>', `<title>${title}</title>`)" in config
     for line in ('<!doctype html>', '<html lang="en">', '<meta charset="utf-8" />',
                  '<meta name="viewport" content="width=device-width, initial-scale=1" />'):
         assert line in source, line

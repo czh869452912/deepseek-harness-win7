@@ -1,0 +1,21 @@
+{
+  "id": "RUN-OFFICIAL-FRONTEND-CONSUMERS-20261007-46C8D4E1",
+  "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
+  "product_commit": "46c8d4e1b88729a3f37ed9eeb69c743058984fb6",
+  "kind": "verification",
+  "task_id": "MIG-WEB-CONNECTION-002",
+  "result": "passed",
+  "validity": "current",
+  "exit_code": 0,
+  "commands": [
+    ".venv/Scripts/python.exe -m pytest tests/1to1/apps_web tests/1to1/settings/settings tests/1to1/cordis/test_schema_parity.py tests/test_cordis_1to1_advanced_parity.py tests/test_settings_remote.py",
+    ".venv/Scripts/python.exe -m pytest tests/test_current_release_gate.py -k complete_frontend_and_settings"
+  ],
+  "environment": {"python": "3.8.10", "os": "Windows-10-10.0.26200-SP0"},
+  "contract_revisions": {"CON-CURRENT-RELEASE-GATE": 1},
+  "artifacts": [
+    {"path": "migration/evidence/artifacts/OFFICIAL-FRONTEND-CONSUMERS-20261007-46C8D4E1.zip", "sha256": "afdbaaa1d5d9fb936a4d9637eb2577eadc7b38c90fa819fc53bd76b9a511dd99"},
+    {"path": "migration/evidence/artifacts/OFFICIAL-FRONTEND-INTERRUPTED-20261007-46C8D4E1.zip", "sha256": "38f94b795dde27baa6bdfa70089166332827975c7fe1381120c6d9b08fbf9258"}
+  ],
+  "scope": "Working-tree consumer qualification over named product base: 291 actual regressions and 32 positive-first mandatory-lane refusal controls pass. Prior 103-pass/4-failure baseline, coordinator-interrupted clean full-gate inputs, exact candidate ZIP and raw logs preserved. Correct official build title and public string refs expectations; no relaxed carrier, browser edit, completed full-suite claim, parent integration or platform certification."
+}

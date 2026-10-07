@@ -83,7 +83,7 @@ def test_built_index_is_relative_and_declares_the_document_root():
     assert urls, "built index.html carries no module entry"
     assert all(url.startswith("./") for url in urls)
     assert '<div id="root"></div>' in index
-    assert "<title>DSH Local Build</title>" in index
+    assert "<title>DeepSeek Harness</title>" in index
     # Every emitted asset the page references exists in the published dist.
     for url in urls:
         assert os.path.isfile(os.path.join(DIST_ROOT, url[2:])), url

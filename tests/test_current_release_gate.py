@@ -1806,7 +1806,8 @@ def test_javascript_errors_consumer_lanes_are_mandatory(tmp_path, damage):
             GATE.validate_regression(path)
 
 
-@pytest.mark.parametrize('module', ['test_frontend_import', 'test_release_preflight', 'test_settings_remote', 'test_schema_parity'])
+@pytest.mark.parametrize('module', ['test_frontend_import', 'test_release_preflight', 'test_settings_remote', 'test_schema_parity',
+    'test_app_source_contract', 'test_web_package_contract', 'test_settings', 'test_cordis_1to1_advanced_parity'])
 @pytest.mark.parametrize('damage', ['omit', 'skip', 'duplicate', 'failure'])
 def test_complete_frontend_and_settings_lanes_are_mandatory(tmp_path, module, damage):
     path = tmp_path / 'pytest.xml'

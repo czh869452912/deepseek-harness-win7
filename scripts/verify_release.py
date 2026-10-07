@@ -127,6 +127,10 @@ PAIRED_DRIVERS = PAIRED_DRIVERS + ('fs_values',)
 PAIRED_DRIVERS = PAIRED_DRIVERS + ('message_values',)
 OFFICIAL_CONFIGS = ('consumers', 'agent-lifecycle', 'session-recovery', 'session-projection', 'acp', 'acp-app', 'mcp', 'subagent-acp', 'storage-cache', 'session-observation', 'session-corpus', 'session-sqlite-query', 'query-engine-source', 'session-tools-source', 'sqlite-format-source', 'sqlite-provider-source', 'jsonl-provider-source', 'tool-scheduler-source', 'deepseek-source', 'llm-public-source')
 REQUIRED_REGRESSION = {
+    'test_app_source_contract': {'test_source_document_projects_into_the_built_document'},
+    'test_web_package_contract': {'test_built_index_is_relative_and_declares_the_document_root'},
+    'test_settings': {'test_describes_registered_namespaces_with_schema_json_value_and_applies'},
+    'test_cordis_1to1_advanced_parity': {'test_schemastery_to_json_refs_table'},
     'test_schema_parity': {'test_tojson_envelope_shape', 'test_tojson_envelope_roundtrip'},
     'test_frontend_import': {
         'test_actual_pinned_official_frontend_has_complete_build_provenance',
@@ -705,7 +709,8 @@ REQUIRED_REGRESSION = {
     'test_current_release_gate': {
         *{'test_complete_frontend_and_settings_lanes_are_mandatory[' + damage + '-' + module + ']'
           for damage in ('omit', 'skip', 'duplicate', 'failure')
-          for module in ('test_frontend_import', 'test_release_preflight', 'test_settings_remote', 'test_schema_parity')},
+          for module in ('test_frontend_import', 'test_release_preflight', 'test_settings_remote', 'test_schema_parity',
+            'test_app_source_contract', 'test_web_package_contract', 'test_settings', 'test_cordis_1to1_advanced_parity')},
         *{'test_extracted_complete_frontend_requires_frozen_build_record[' + damage + ']'
           for damage in ('missing-provenance', 'changed-provenance', 'missing-clients', 'client-count', 'build-digest')},
         'test_extracted_fs_values_accepts_complete_qualified_values',

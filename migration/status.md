@@ -632,6 +632,7 @@ Evidence:
 - RUN-NEXT-SPINE-001-20260927: acceptance / passed / stale-inputs
 - RUN-NEXT-WEB-PROTOCOL-DISCOVERY-002-20260927: acceptance / passed / stale-inputs
 - RUN-NEXT-WORKFLOW-001-20260927: acceptance / passed / stale-inputs
+- RUN-OFFICIAL-FRONTEND-CONSUMERS-20261007-46C8D4E1: verification / passed / current
 - RUN-OFFICIAL-FRONTEND-QUALIFICATION-20261007-8D129C7D: verification / passed / current
 - RUN-PORTABLE-ACCEPTANCE-20260927: acceptance / passed / stale-inputs
 - RUN-PORTABLE-FINAL-ACCEPTANCE-20260927: acceptance / passed / stale-inputs

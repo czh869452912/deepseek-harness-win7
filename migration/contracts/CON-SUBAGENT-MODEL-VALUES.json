@@ -1,0 +1,36 @@
+{
+  "id": "CON-SUBAGENT-MODEL-VALUES",
+  "revision": 1,
+  "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
+  "status": "specified",
+  "source_paths": [
+    "reference/packages/subagent/tool-subagent/src/index.ts",
+    "reference/packages/subagent/tool-subagent/src/list-models.ts",
+    "reference/packages/subagent/tool-subagent/src/model-selection.ts",
+    "reference/packages/subagent/tool-subagent/src/model-selection-settings.ts",
+    "reference/packages/core/agent/src/index.ts",
+    "reference/packages/core/agent-loop/src/index.ts",
+    "reference/packages/core/tools/src/index.ts",
+    "reference/packages/llm/llm/src/index.ts"
+  ],
+  "consumers": ["dsh/subagent/canonical_tools.py", "scripts/subagent_model_oracle.py",
+    "scripts/subagent_model_cases.py", "tests/test_subagent_model_consumers.py",
+    "tests/test_canonical_subagent_tools.py", "scripts/verify_release.py", "scripts/verify_portable.py",
+    "tests/test_current_release_gate.py"],
+  "invariants": [
+    "All104 ordered complete actual Source/Root/owned observations match across sixteen enabled/inherits/provider-defaults/one-shot-or-continuable configurations: complete schemas, literal durable policy events and eleven real discovery executions for each enabled configuration.",
+    "A real unpublished Agent association is authoritative during setup; its scoped tool definitions are available before factory publication. An Agent need not already appear in the registry to own its tools.",
+    "Discovery and delegation parameter/description values retain exact source wording including provider-owned route defaults and inherited-prefix guidance. Disabled selection exposes neither discovery nor route fields.",
+    "Actual ToolRuntime discovers registered providers, advertised allowed models, exact resolved model efforts and allowed unlisted models; rejects missing/empty/disallowed/unregistered routes with complete literal error content and metadata.",
+    "Fixed clock1791244800000 and provided fixture identities remain literal. No UUID, path, error, schema or value aliases; every field and ordered row retained.",
+    "Pinned Source and all tracked/observer/case bytes guarded; approved actual import closure and complete owned Python3.8.10 input guards before/after required.",
+    "Partial, changed, foreign or missing observations/imports/Source and omitted/skipped/duplicate/failed mandatory or extracted lanes refused. Every extracted negative first verifies the undamaged complete positive baseline."
+  ],
+  "identity": "Exact subagent_model_oracle.NAMES104 and sixteen declared variants; actual registry-owned Agent setup and Session policy.",
+  "ownership": "Host settings are sampled at Agent setup; Agent association owns scoped definitions before publication; provider supplies capabilities/defaults; real LLM and ToolRuntime own discovery and error publication.",
+  "ordering": "Sixteen ordered variants, each full schema row followed by eleven discovery rows when enabled; registered discovery precedes delegation; literal policy sequence and model/effort lists retained.",
+  "errors": "Exact provider/model diagnostics, rendered Error text, Error metadata and successful public value are compared through actual ToolRuntime.",
+  "cancellation": "Probe forbids child start/preparation and streaming; broader real delegation cancellation/race/transport ownership is separate qualification.",
+  "adaptation": "Python3.8 follows Context parent-owned Agent association to read the actual unpublished Agent corresponding to Source ctx.agent; no late-publication registry substitute.",
+  "open_questions": ["Complete child route execution/preflight/continuation and original browser/profile/transport/restore races remain wider parent work.", "Actual Win7 certification remains user-deferred."]
+}

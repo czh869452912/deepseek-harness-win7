@@ -1,0 +1,23 @@
+{
+  "id": "RUN-SUBAGENT-MODEL-VALUES-QUALIFICATION-20261007-7EAAD135",
+  "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
+  "product_commit": "7eaad135508a0a7eeaa553475b6c038e981a210d",
+  "kind": "verification",
+  "task_id": "MIG-SUBAGENT-MODEL-VALUES-063",
+  "result": "passed",
+  "validity": "current",
+  "exit_code": 0,
+  "commands": [
+    ".venv/Scripts/python.exe .goose/out/acp-a4-work/qualify_subagent_model_owned_v1.py",
+    ".venv/Scripts/python.exe -m pytest tests/test_canonical_subagent_tools.py tests/test_subagent_model_selection.py tests/test_subagent_continuation.py tests/test_subagent_composition.py tests/test_subagent_in_process.py --junitxml=.goose/out/acp-a4-work/subagent-model-values-regression-v1.xml",
+    ".venv/Scripts/python.exe -m pytest tests/test_subagent_model_consumers.py tests/test_current_release_gate.py -k subagent_model -x --junitxml=.goose/out/acp-a4-work/subagent-model-gate-v2.xml",
+    ".venv/Scripts/python.exe .goose/out/acp-a4-work/collect_subagent_model_values_v1.py"
+  ],
+  "environment": {"python": "3.8.10", "os": "Windows-10-10.0.26200-SP0", "node": "v22.22.2"},
+  "contract_revisions": {"CON-SUBAGENT-MODEL-VALUES": 1},
+  "artifacts": [{
+    "path": "migration/evidence/artifacts/SUBAGENT-MODEL-VALUES-QUALIFICATION-20261007-7EAAD135.zip",
+    "sha256": "8fd1582a3cc34405ba73ac9c3a232536d5c68bf915ee8642f4c416b45e4b00ee"
+  }],
+  "scope": "Sixteen actual unpublished Agent setup variants and104 complete ordered schemas/policies/model discovery successes and refusals match fresh Source/Root/independently owned Python3.8.10.120 approved imports and15495 complete owned files guarded before/after.27 real subagent consumers and159 mandatory/extracted/Source/runtime controls pass; counts are separate, not cumulative.51-file immutable archive retains initial missing-value observer, corrected missing-tool320 differences, publication-only152 differences, and131 passed/two copied-regex failures before corrected159 passing gate.82nd paired driver wired; no aliases or new upstream bug exceptions. Selected child routing, complete profiles/browser/policy/cancel/restore/race parents and new complete clean release remain open."
+}

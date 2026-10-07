@@ -66,25 +66,29 @@ def register_models(ctx, routes):
     async def execute(args, execution):
         llm = ctx.get('llm')
         if llm is None:
-            raise ValueError('cannot discover child LLM routes because llm is unavailable')
+            raise ValueError('cannot discover child LLM routes because the `llm` service is unavailable')
         provider, model = args.get('provider'), args.get('model')
         if model is not None and provider is None:
-            raise ValueError('model requires provider')
+            raise ValueError('`model` requires `provider`')
         providers = [item for item in llm.listProviders() if any(route['provider'] == item['id'] for route in routes)]
         if provider is None:
             return '\n'.join('{} — {}'.format(item['id'], item['name']) for item in providers) or '(no LLM providers)'
+        if not provider:
+            raise ValueError('`provider` must be non-empty')
         allowed = [route for route in routes if route['provider'] == provider]
         if not allowed:
-            raise ValueError('LLM provider is not allowed for this Session')
+            raise ValueError('LLM provider "{}" is not allowed for this Session'.format(provider))
         if not any(item['id'] == provider for item in providers):
-            raise ValueError('LLM provider is not registered; available providers: ' + ', '.join(item['id'] for item in providers))
+            raise ValueError('LLM provider "{}" is not registered; available providers: {}'.format(provider, ', '.join(item['id'] for item in providers) or '(none)'))
         def line(item):
             return '{}/{} — {}{}'.format(provider, item['id'], item['name'], ': ' + item['description'] if 'description' in item else '')
         if model is None:
             models = [item for item in await llm.list_models(provider) if any(route['model'] == item['id'] for route in allowed)]
             return '\n'.join(line(item) for item in models) or '(no advertised models for {})'.format(provider)
+        if not model:
+            raise ValueError('`model` must be non-empty')
         if not any(route['model'] == model for route in allowed):
-            raise ValueError('child LLM route is not allowed for this Session')
+            raise ValueError('child LLM route "{}/{}" is not allowed for this Session'.format(provider, model))
         info = await llm.resolve_model_info(provider, model, execution.signal)
         reasoning = info.get('reasoning', {})
         efforts = []
@@ -94,8 +98,9 @@ def register_models(ctx, routes):
             efforts.append('{}{} — {}{}'.format(effort['id'], ' (default)' if effort['id'] == reasoning.get('defaultEffort') else '',
                                                 effort['name'], ': ' + effort['description'] if 'description' in effort else ''))
         return line(info) + '\nReasoning efforts:\n' + ('\n'.join(efforts) or '(no advertised reasoning efforts)')
-    register(ctx, 'list_subagent_models', 'Discover allowed child providers, advertised models, and exact model reasoning efforts.',
-             {'provider': {'type': 'string'}, 'model': {'type': 'string'}}, execute, {'type': 'string'}, lambda _, value: text(value), [])
+    register(ctx, 'list_subagent_models', "Discover LLM routes for subagents without changing the current Agent. Call with no arguments to list registered providers, with `provider` to list its advertised models, or with `provider` and `model` to inspect that exact model and its reasoning efforts. Catalog membership is advisory: an adapter may accept an unlisted model id. Use the returned ids with a delegation tool's `provider`, `model`, and `reasoning_effort` fields.",
+             {'provider': {'type': 'string', 'description': 'Registered LLM provider id. Omit to list providers.'},
+              'model': {'type': 'string', 'description': "Exact model id to inspect. Requires provider; omit to list that provider's advertised models."}}, execute, {'type': 'string'}, lambda _, value: text(value), [])
 
 
 class CanonicalToolSubagent(Plugin):
@@ -154,7 +159,10 @@ class CanonicalToolSubagent(Plugin):
                     fields['run_in_background'] = {'type': 'boolean', 'description': 'Whether to run as a background job and return its id. Defaults to false; collect with job_output or stop with job_kill.'
                         if not continuable else 'Whether to run in the background and return a durable subagent id immediately. Defaults to true. Set false to wait for the result when your next action depends on it.'}
                 if policy is not None:
-                    fields.update({key: {'type': 'string'} for key in ('provider', 'model', 'reasoning_effort')})
+                    route_defaults = getattr(provider, 'agentRouteDefaults', None) is not None
+                    fields.update(provider={'type': 'string', 'description': "LLM provider route for the child. Supply together with model; omit both to use configured child defaults or this provider's route defaults." if route_defaults else 'LLM provider route for the child. Supply together with model; omit both to use configured child defaults or inherit the parent route.'},
+                        model={'type': 'string', 'description': "Model id interpreted by provider. Supply together with provider; omit both to use configured child defaults or this provider's route defaults." if route_defaults else 'Model id interpreted by provider. Supply together with provider; omit both to use configured child defaults or inherit the parent route.'},
+                        reasoning_effort={'type': 'string', 'description': "Adapter-owned reasoning effort for the effective child route. Omit to use a compatible configured effort or the selected model's default." if route_defaults else "Adapter-owned reasoning effort for the effective child route. Omit to inherit a compatible configured/parent effort or use a newly selected model's default."})
                 async def execute(args, execution):
                     parent = agent_of(execution)
                     inherited = parent_options(parent)
@@ -214,6 +222,10 @@ class CanonicalToolSubagent(Plugin):
                                "Delegate a self-contained task to a subagent (a separate agent that works in its own context) to offload focused, independent work — research, a scoped implementation, an analysis — so it does not consume this conversation's context. The subagent returns its result, not its intermediate steps. Give it a complete, standalone prompt: it does not see this conversation.")
                 description += (' This tool runs in the background by default, immediately returns a durable subagent id, and keeps the child conversation available for later turns. When that run settles, the runtime sends the parent a notice containing its outcome and any final assistant message; `send_message` starts a later turn in the same child conversation. Set `run_in_background: false` only when your next action depends on receiving the result.'
                                 if background and continuable else ' This call waits for the result by default. Set `run_in_background: true` to return a job id; collect with `job_output` and stop with `job_kill`.' if background else ' This call waits for the subagent and returns its result.')
+                if policy is not None:
+                    description += (" Child LLM selection is optional. Omit `provider`, `model`, and `reasoning_effort` to use configured child defaults and this provider's route defaults. Supply `provider` and `model` together after using `list_subagent_models` to inspect advertised routes and efforts. Changing the effective route without naming an effort uses the selected model's default effort." if route_defaults else " Child LLM selection is optional. Omit `provider`, `model`, and `reasoning_effort` to use configured child defaults and inherit compatible missing values from the parent Agent. Supply `provider` and `model` together after using `list_subagent_models` to inspect advertised routes and efforts. Changing the effective route without naming an effort uses the selected model's default effort.")
+                    if provider.inheritsParentContext:
+                        description += ' Changing the route can prevent provider-side reuse of the inherited conversation prefix.'
                 mounted[0] = register(runtime_ctx, name, description, fields, execute, output, render, ['description', 'prompt'])
             def removed(removed_name):
                 if removed_name == provider_name and mounted[0] is not None:
@@ -249,7 +261,12 @@ class CanonicalToolSubagent(Plugin):
             if routes is not None:
                 record_policy(agent.session, routes)
             return routes
-        current_agent = next((agent for agent in ctx.get('agents').list() if scope_of(agent.ctx) is composition_scope), None)
+        current_agent, association = None, ctx
+        while association is not None:
+            if 'agent' in association.__dict__:
+                current_agent = association.__dict__['agent']
+                break
+            association = association.__dict__.get('_parent')
         if current_agent is not None:
             install(ctx, select(current_agent))
             return

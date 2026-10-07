@@ -141,3 +141,43 @@ async def test_background_one_shot_is_admitted_by_jobs_before_child_start():
     finally:
         await parent.dispose()
         await ctx.fiber.dispose()
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize('enabled', [False, True])
+async def test_setup_owns_delegation_tools_before_agent_publication(enabled):
+    from dsh.subagent.model_selection import ModelSelectionSettings, read_policy
+    ctx, model, parent = await setup()
+    created = None
+    await ctx.plugin(SubagentPlugin)
+    await ctx.plugin(SpawnInProcess)
+    routes = [dict(provider='alpha', model='fast')]
+    await ctx.plugin(ModelSelectionSettings, dict(enabled=enabled, allowedModels=routes))
+    identity = 'setup-delegation-' + str(enabled)
+
+    async def configure(agent_ctx):
+        assert ctx.get('agents').get(identity) is None
+        await agent_ctx.plugin(CanonicalToolSubagent, dict(provider='spawn',
+            modelSelectionSettings=True, enableRunInBackground=False))
+        schemas = agent_ctx.get('tools').schemas(scope_of(agent_ctx))
+        assert [item['name'] for item in schemas] == (['list_subagent_models', 'subagent'] if enabled else ['subagent'])
+
+    try:
+        created = await ctx.get('agents').create(dict(sessionId=identity, setup=configure))
+        tool = ctx.get('tools').get('subagent', scope_of(created.agent.ctx))
+        assert tool is not None
+        assert ('provider' in tool.parameters['properties']) is enabled
+        assert read_policy(created.agent.session) == (routes if enabled else None)
+        result = await tool.execute(dict(description='setup child', prompt='actual task'),
+            SimpleNamespace(agent=created.agent, signal=AbortController().signal))
+        assert result['kind'] == 'foreground'
+        assert result['output'][0]['text'] == 'actual child answer'
+        assert ctx.get('agents').get(result['runId']) is None
+        assert len(model.requests) == 1
+        await created.dispose()
+        assert ctx.get('tools').get('subagent', scope_of(created.agent.ctx)) is None
+    finally:
+        if created is not None:
+            await created.dispose()
+        await parent.dispose()
+        await ctx.fiber.dispose()

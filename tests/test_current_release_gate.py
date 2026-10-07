@@ -63,12 +63,14 @@ from scripts.tool_errors_cases import damage_runtime as damage_tool_error_runtim
 from scripts.tool_durable_cases import damage_runtime as damage_tool_durable_runtime
 from scripts.agent_dependencies_cases import damage_runtime as damage_agent_dependencies_runtime
 from scripts.ask_user_cases import damage_runtime as damage_ask_user_runtime
+from scripts.subagent_model_cases import damage_runtime as damage_subagent_model_runtime
 from scripts.fs_values_cases import damage_runtime as damage_fs_values_runtime
 from scripts.message_values_cases import damage_runtime as damage_message_values_runtime
 from scripts.tool_errors_oracle import OBSERVER_INPUTS as TOOL_ERROR_OBSERVER_INPUTS
 from scripts.tool_durable_oracle import OBSERVER_INPUTS as TOOL_DURABLE_OBSERVER_INPUTS
 from scripts.agent_dependencies_oracle import OBSERVER_INPUTS as AGENT_DEPENDENCIES_OBSERVER_INPUTS
 from scripts.ask_user_oracle import OBSERVER_INPUTS as ASK_USER_OBSERVER_INPUTS
+from scripts.subagent_model_oracle import OBSERVER_INPUTS as SUBAGENT_MODEL_OBSERVER_INPUTS, SOURCE_REQUIRED as SUBAGENT_MODEL_SOURCE_REQUIRED
 from scripts.fs_values_oracle import OBSERVER_INPUTS as FS_VALUES_OBSERVER_INPUTS
 from scripts.fs_values_oracle import SOURCE_REQUIRED as FS_VALUES_SOURCE_REQUIRED
 from scripts.message_values_oracle import OBSERVER_INPUTS as MESSAGE_VALUES_OBSERVER_INPUTS
@@ -1967,6 +1969,15 @@ def extracted_receipt(tmp_path):
     candidate['ask_user_source_sha256'] = hashlib.sha256(json.dumps(tool_pair['source'], sort_keys=True).encode('utf-8')).hexdigest()
     candidate['ask_user_observations_sha256'] = GATE.ask_user_digest(tool_pair['source']['rows'])
     candidate['ask_user_modules'] = copy.deepcopy(ask_user['imports'])
+    tool_pair = copy.deepcopy(subagent_model_runtime_fixture())
+    subagent_model = tool_pair['native']
+    subagent_model['root'], subagent_model['executable'] = str(tmp_path), str(tmp_path / 'python.exe')
+    tool_pair['source']['inputs'] = {name: sha256 for name, sha256 in tool_pair['source']['inputs'].items()
+        if name in set(SUBAGENT_MODEL_OBSERVER_INPUTS) | SUBAGENT_MODEL_SOURCE_REQUIRED}
+    candidate['subagent_model_source'] = tool_pair['source']
+    candidate['subagent_model_source_sha256'] = hashlib.sha256(json.dumps(tool_pair['source'], sort_keys=True).encode('utf-8')).hexdigest()
+    candidate['subagent_model_observations_sha256'] = GATE.subagent_model_digest(tool_pair['source']['rows'])
+    candidate['subagent_model_modules'] = copy.deepcopy(subagent_model['imports'])
     tool_pair = copy.deepcopy(fs_values_runtime_fixture())
     fs_values = tool_pair['native']
     fs_values['root'], fs_values['executable'] = str(tmp_path), str(tmp_path / 'python.exe')
@@ -2008,6 +2019,7 @@ def extracted_receipt(tmp_path):
               'toolDurable': tool_durable, 'toolDurableSourceSha256': candidate['tool_durable_source_sha256'],
               'agentDependencies': agent_dependencies, 'agentDependenciesSourceSha256': candidate['agent_dependencies_source_sha256'],
               'askUser': ask_user, 'askUserSourceSha256': candidate['ask_user_source_sha256'],
+              'subagentModels': subagent_model, 'subagentModelsSourceSha256': candidate['subagent_model_source_sha256'],
               'fsValues': fs_values, 'fsValuesSourceSha256': candidate['fs_values_source_sha256'],
               'messageValues': message_values, 'messageValuesSourceSha256': candidate['message_values_source_sha256'],
               'exportedHostLifecycle': host_lifecycle,
@@ -2986,6 +2998,57 @@ def test_extracted_session_tracing_requires_exact_observations_and_runtime(tmp_p
     path.write_text(json.dumps(report),encoding='utf-8')
     with pytest.raises(RuntimeError):
         GATE.validate_extracted(path,archive,candidate)
+
+
+@functools.lru_cache(maxsize=1)
+def subagent_model_runtime_fixture():
+    with tempfile.TemporaryDirectory(prefix='dsh-subagent-model-source-') as folder:
+        output = Path(folder) / 'paired.json'
+        completed = subprocess.run([sys.executable, str(ROOT / 'scripts/subagent_model_oracle.py'),
+            '--output', str(output)], cwd=str(ROOT), capture_output=True, timeout=240)
+        if completed.returncode:
+            raise RuntimeError(output.read_text(encoding='utf-8'))
+        return dict(source=json.loads(output.with_suffix('.source.json').read_text(encoding='utf-8')),
+            native=json.loads(output.with_suffix('.native.json').read_text(encoding='utf-8')))
+
+
+@pytest.mark.parametrize('damage', GATE.SUBAGENT_MODEL_DAMAGES + ('receipt-missing', 'source-missing', 'source-changed', 'source-file'))
+def test_extracted_subagent_model_requires_complete_values_and_runtime(tmp_path, damage):
+    archive, candidate, report = extracted_receipt(tmp_path)
+    output = tmp_path / 'extracted.json'
+    output.write_text(json.dumps(report), encoding='utf-8')
+    GATE.validate_extracted(output, archive, candidate)
+    if damage == 'receipt-missing':
+        del report['subagentModels']
+    elif damage == 'source-missing':
+        del candidate['subagent_model_source']
+    elif damage == 'source-changed':
+        candidate['subagent_model_source']['rows'][0]['schemas'] = [{}]
+    elif damage == 'source-file':
+        report['subagentModelsSourceSha256'] = '0' * 64
+    else:
+        report['subagentModels'] = damage_subagent_model_runtime(report['subagentModels'], damage)
+    output = tmp_path / 'extracted.json'
+    output.write_text(json.dumps(report), encoding='utf-8')
+    with pytest.raises(RuntimeError, match='subagentModels'):
+        GATE.validate_extracted(output, archive, candidate)
+
+
+@pytest.mark.parametrize('damage', ('omit', 'skip', 'duplicate', 'failure'))
+def test_subagent_model_consumer_lanes_are_mandatory(tmp_path, damage):
+    path = tmp_path / 'pytest.xml'
+    for module in ('test_subagent_model_consumers', 'test_canonical_subagent_tools'):
+        for name in GATE.REQUIRED_REGRESSION[module]:
+            regression_xml(path, **{damage: (module, name)})
+            with pytest.raises(RuntimeError):
+                GATE.validate_regression(path)
+
+
+def test_extracted_subagent_model_accepts_complete_qualified_values(tmp_path):
+    archive, candidate, report = extracted_receipt(tmp_path)
+    output = tmp_path / 'extracted.json'
+    output.write_text(json.dumps(report), encoding='utf-8')
+    GATE.validate_extracted(output, archive, candidate)
 
 
 @functools.lru_cache(maxsize=1)

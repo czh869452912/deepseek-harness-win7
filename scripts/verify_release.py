@@ -76,16 +76,19 @@ from scripts.tool_errors_cases import VALUE_DAMAGES as TOOL_ERROR_DAMAGES, SOURC
 from scripts.tool_durable_oracle import validate_runtime as validate_tool_durable, identity as tool_durable_identity
 from scripts.agent_dependencies_oracle import validate_runtime as validate_agent_dependencies, identity as agent_dependencies_identity
 from scripts.ask_user_oracle import validate_runtime as validate_ask_user, identity as ask_user_identity
+from scripts.subagent_model_oracle import validate_runtime as validate_subagent_model, identity as subagent_model_identity
 from scripts.fs_values_oracle import validate_runtime as validate_fs_values, identity as fs_values_identity
 from scripts.message_values_oracle import validate_runtime as validate_message_values, identity as message_values_identity
 from scripts.tool_durable_oracle import complete_digest as tool_durable_digest, NAMES as TOOL_DURABLE_NAMES
 from scripts.agent_dependencies_oracle import complete_digest as agent_dependencies_digest, NAMES as AGENT_DEPENDENCIES_NAMES
 from scripts.ask_user_oracle import complete_digest as ask_user_digest, NAMES as ASK_USER_NAMES
+from scripts.subagent_model_oracle import complete_digest as subagent_model_digest, NAMES as SUBAGENT_MODEL_NAMES
 from scripts.fs_values_oracle import complete_digest as fs_values_digest, GROUPS as FS_VALUES_GROUPS
 from scripts.message_values_oracle import complete_digest as message_values_digest, NAMES as MESSAGE_VALUES_NAMES
 from scripts.tool_durable_cases import VALUE_DAMAGES as TOOL_DURABLE_DAMAGES, SOURCE_DAMAGES as TOOL_DURABLE_SOURCE_DAMAGES
 from scripts.agent_dependencies_cases import VALUE_DAMAGES as AGENT_DEPENDENCIES_DAMAGES, SOURCE_DAMAGES as AGENT_DEPENDENCIES_SOURCE_DAMAGES
 from scripts.ask_user_cases import VALUE_DAMAGES as ASK_USER_DAMAGES, SOURCE_DAMAGES as ASK_USER_SOURCE_DAMAGES
+from scripts.subagent_model_cases import VALUE_DAMAGES as SUBAGENT_MODEL_DAMAGES, SOURCE_DAMAGES as SUBAGENT_MODEL_SOURCE_DAMAGES
 from scripts.fs_values_cases import VALUE_DAMAGES as FS_VALUES_DAMAGES, SOURCE_DAMAGES as FS_VALUES_SOURCE_DAMAGES
 from scripts.message_values_cases import VALUE_DAMAGES as MESSAGE_VALUES_DAMAGES, SOURCE_DAMAGES as MESSAGE_VALUES_SOURCE_DAMAGES
 from scripts.exported_host_lifecycle_oracle import observe_native as observe_host_lifecycle, validate_runtime as validate_host_lifecycle, observation_digest as host_lifecycle_digest
@@ -115,10 +118,23 @@ PAIRED_DRIVERS = PAIRED_DRIVERS + ('tool_errors',)
 PAIRED_DRIVERS = PAIRED_DRIVERS + ('tool_durable',)
 PAIRED_DRIVERS = PAIRED_DRIVERS + ('agent_dependencies',)
 PAIRED_DRIVERS = PAIRED_DRIVERS + ('ask_user',)
+PAIRED_DRIVERS = PAIRED_DRIVERS + ('subagent_model',)
 PAIRED_DRIVERS = PAIRED_DRIVERS + ('fs_values',)
 PAIRED_DRIVERS = PAIRED_DRIVERS + ('message_values',)
 OFFICIAL_CONFIGS = ('consumers', 'agent-lifecycle', 'session-recovery', 'session-projection', 'acp', 'acp-app', 'mcp', 'subagent-acp', 'storage-cache', 'session-observation', 'session-corpus', 'session-sqlite-query', 'query-engine-source', 'session-tools-source', 'sqlite-format-source', 'sqlite-provider-source', 'jsonl-provider-source', 'tool-scheduler-source', 'deepseek-source', 'llm-public-source')
 REQUIRED_REGRESSION = {
+    'test_subagent_model_consumers': {
+        *{'test_actual_source_native_subagent_model_values[' + name + ']' for name in SUBAGENT_MODEL_NAMES},
+        *{'test_subagent_model_requires_complete_public_results_and_runtime[' + damage + ']' for damage in SUBAGENT_MODEL_DAMAGES},
+        *{'test_subagent_model_source_requires_pinned_guarded_inputs[' + damage + ']' for damage in SUBAGENT_MODEL_SOURCE_DAMAGES},
+        'test_subagent_model_owned_interpreter_and_independent_imports',
+        'test_portable_subagent_model_refuses_partial_receipts[source]',
+        'test_portable_subagent_model_refuses_partial_receipts[native]',
+    },
+    'test_canonical_subagent_tools': {
+        'test_setup_owns_delegation_tools_before_agent_publication[False]',
+        'test_setup_owns_delegation_tools_before_agent_publication[True]',
+    },
     'test_fs_values_consumers': {
         *{'test_actual_source_native_complete_fs_values[' + group + ']' for group in FS_VALUES_GROUPS},
         *{'test_fs_values_refuses_partial_changed_or_foreign_runtime[' + damage + ']' for damage in FS_VALUES_DAMAGES},
@@ -656,16 +672,19 @@ REQUIRED_REGRESSION = {
     },
     'test_current_release_gate': {
         'test_extracted_fs_values_accepts_complete_qualified_values',
+        'test_extracted_subagent_model_accepts_complete_qualified_values',
         *{'test_extracted_tool_errors_requires_complete_values_and_runtime[' + damage + ']' for damage in TOOL_ERROR_DAMAGES + ('missing', 'source-missing', 'source-changed', 'source-file')},
         *{'test_extracted_tool_durable_requires_complete_values_and_runtime[' + damage + ']' for damage in TOOL_DURABLE_DAMAGES + ('receipt-missing', 'source-missing', 'source-changed', 'source-file')},
         *{'test_extracted_agent_dependencies_requires_complete_values_and_runtime[' + damage + ']' for damage in AGENT_DEPENDENCIES_DAMAGES + ('receipt-missing', 'source-missing', 'source-changed', 'source-file')},
         *{'test_extracted_ask_user_requires_complete_values_and_runtime[' + damage + ']' for damage in ASK_USER_DAMAGES + ('receipt-missing', 'source-missing', 'source-changed', 'source-file')},
+        *{'test_extracted_subagent_model_requires_complete_values_and_runtime[' + damage + ']' for damage in SUBAGENT_MODEL_DAMAGES + ('receipt-missing', 'source-missing', 'source-changed', 'source-file')},
         *{'test_extracted_fs_values_requires_complete_values_and_runtime[' + damage + ']' for damage in FS_VALUES_DAMAGES + ('receipt-missing', 'source-missing', 'source-changed', 'source-file')},
         *{'test_extracted_message_values_requires_complete_values_and_runtime[' + damage + ']' for damage in MESSAGE_VALUES_DAMAGES + ('receipt-missing', 'source-missing', 'source-changed', 'source-file')},
         *{'test_tool_errors_consumer_lanes_are_mandatory[' + damage + ']' for damage in ('omit', 'skip', 'duplicate', 'failure')},
         *{'test_tool_durable_consumer_lanes_are_mandatory[' + damage + ']' for damage in ('omit', 'skip', 'duplicate', 'failure')},
         *{'test_agent_dependencies_consumer_lanes_are_mandatory[' + damage + ']' for damage in ('omit', 'skip', 'duplicate', 'failure')},
         *{'test_ask_user_consumer_lanes_are_mandatory[' + damage + ']' for damage in ('omit', 'skip', 'duplicate', 'failure')},
+        *{'test_subagent_model_consumer_lanes_are_mandatory[' + damage + ']' for damage in ('omit', 'skip', 'duplicate', 'failure')},
         *{'test_fs_values_consumer_lanes_are_mandatory[' + damage + ']' for damage in ('omit', 'skip', 'duplicate', 'failure')},
         *{'test_message_values_consumer_lanes_are_mandatory[' + damage + ']' for damage in ('omit', 'skip', 'duplicate', 'failure')},
         *{'test_extracted_host_lifecycle_requires_owned_complete_observations[' + damage + ']' for damage in ('missing', 'row', 'tail', 'order', 'module', 'fixture', 'root', 'python', 'executable', 'counter')},
@@ -1673,6 +1692,16 @@ def validate_extracted(path, archive, candidate):
     except (ValueError, KeyError, TypeError) as error:
         raise RuntimeError('Extracted askUser consumer differs') from error
     try:
+        if report.get('subagentModelsSourceSha256') != candidate['subagent_model_source_sha256']:
+            raise ValueError('Tools Source receipt identity differs')
+        if subagent_model_digest(candidate['subagent_model_source']['rows']) != candidate['subagent_model_observations_sha256']:
+            raise ValueError('Tools frozen complete Source values differ')
+        validate_subagent_model(report.get('subagentModels'), Path(report['mcpStdio']['root']),
+            Path(report['mcpStdio']['root']) / 'python.exe', candidate['subagent_model_source'],
+            candidate['subagent_model_modules'], check_files=False, owned_runtime=True)
+    except (ValueError, KeyError, TypeError) as error:
+        raise RuntimeError('Extracted subagentModels consumer differs') from error
+    try:
         if report.get('fsValuesSourceSha256') != candidate['fs_values_source_sha256']:
             raise ValueError('Tools Source receipt identity differs')
         if fs_values_digest(candidate['fs_values_source']['rows']) != candidate['fs_values_observations_sha256']:
@@ -2038,6 +2067,13 @@ def verify(args, output):
     candidate['ask_user_observations_sha256'] = ask_user_identity(candidate['ask_user_source'], ROOT / 'reference')
     candidate['ask_user_source_sha256'] = digest(ask_user_source)
     candidate['ask_user_modules'] = ask_user_report['imports']
+    subagent_model_source = output / 'subagent-model-paired.source.json'
+    subagent_model_native = output / 'subagent-model-paired.native.json'
+    subagent_model_report = json.loads(subagent_model_native.read_text(encoding='utf-8'))
+    candidate['subagent_model_source'] = json.loads(subagent_model_source.read_text(encoding='utf-8'))
+    candidate['subagent_model_observations_sha256'] = subagent_model_identity(candidate['subagent_model_source'], ROOT / 'reference')
+    candidate['subagent_model_source_sha256'] = digest(subagent_model_source)
+    candidate['subagent_model_modules'] = subagent_model_report['imports']
     fs_values_source = output / 'fs-values-paired.source.json'
     fs_values_native = output / 'fs-values-paired.native.json'
     fs_values_report = json.loads(fs_values_native.read_text(encoding='utf-8'))
@@ -2100,6 +2136,7 @@ def verify(args, output):
                '--tool-durable-source', str(tool_durable_source), '--tool-durable-native', str(tool_durable_native),
                '--agent-dependencies-source', str(agent_dependencies_source), '--agent-dependencies-native', str(agent_dependencies_native),
                '--ask-user-source', str(ask_user_source), '--ask-user-native', str(ask_user_native),
+               '--subagent-model-source', str(subagent_model_source), '--subagent-model-native', str(subagent_model_native),
                '--fs-values-source', str(fs_values_source), '--fs-values-native', str(fs_values_native),
                '--message-values-source', str(message_values_source), '--message-values-native', str(message_values_native),
                '--javascript-errors-source', str(errors_source), '--javascript-errors-native', str(errors_native)]

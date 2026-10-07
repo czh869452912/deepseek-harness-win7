@@ -1,0 +1,11 @@
+# 子代理模型选择公开值推进
+
+基线7eaad135，固定原版cd5ef8148158c3a752a658978873241fdf8e2bbc。真实Agent工厂的setup发生在registry发布前；原Python工具插件只遍历已发布Agent，因此可选模型选择分支的delegation/discovery工具缺失。现在使用实际Context所拥有的Agent关联，在发布前安装可逆工具，并对齐完整描述、参数指导、模型路由默认与继承提示和精确发现错误。没有增加全局Agent回退或修改原版前端。
+
+16组真实setup配置覆盖model-selection启用/关闭、继承启用/关闭、provider-owned默认启用/关闭及one-shot/continuable。104项完整schema、持久策略和实际发现成功/错误值由新鲜Source、Root和独立自有Python3.8.10逐字段匹配；120个实际导入等于独立批准的Root字节，15495个自有输入运行前后核验。字面时间、完整描述、字段存在性、顺序及错误保留，没有别名或新上游bug豁免。完整值digest为91fd35b02a2debab7208579a64eb6f4c3719263675058d378300095bec18b2aa。
+
+27项真实子代理消费者通过，包含工厂发布前工具可用、真实前台子Agent执行和dispose后的工具退役。159项正式消费者及必需/解压/Source/runtime拒绝控制通过，所有篡改先验证完整正例。两组计数独立，不累计。首轮131通过/两项失败源于复制的partial-receipt错误正则，修正测试字面值后重跑通过；实际提供端和原版观察未改变。
+
+51文件不可变归档migration/evidence/artifacts/SUBAGENT-MODEL-VALUES-QUALIFICATION-20261007-7EAAD135.zip，SHA256为8fd1582a3cc34405ba73ac9c3a232536d5c68bf915ee8642f4c416b45e4b00ee。保留初版漏value观察、修正观察后320差异、仅发布修正后152差异、最终零差异、首轮两项正则失败、完整正式Root/own观察和守卫、精确提案字节及旧Git提供端。观察遗漏没有被当作完整基线证明。
+
+这是第82个配对驱动的有限资格，不签收完整模型路由执行或全部子代理生命周期。发现观察器明确禁止prepare/start/stream，因此不能代替真实选定child route、取消、transport、预设、原版浏览器、恢复与竞争链。063仍running，最新完整干净签收仍83026446/65；继续全部七父范围和新的完整冻结验收，用户延期Win7保持不变。自动过期过程维护继续执行，真实失败和观察保留。

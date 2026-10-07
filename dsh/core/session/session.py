@@ -1049,6 +1049,5 @@ class SessionPlugin(Plugin):
     name = "@deepseek-ai/dsh-session"
 
     def apply(self, ctx: Any) -> None:
-        if not ctx.has("sessions"):
-            store = SessionStore(ctx)
-            ctx.set_service("sessions", store)
+        store = SessionStore(ctx)
+        ctx.set_service("sessions", store)

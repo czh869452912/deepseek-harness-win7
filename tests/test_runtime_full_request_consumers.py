@@ -1,3 +1,5 @@
+from dsh.core.agent import AgentPlugin
+from dsh.core.session import SessionPlugin
 import copy
 import asyncio
 import json
@@ -128,6 +130,8 @@ async def test_actual_fixed_parameter_adapter_keeps_python_boundary_arguments(co
     ctx.set_service('llm', model)
     await ctx.plugin(SystemPrompt)
     await ctx.plugin(ToolsPlugin)
+    await ctx.plugin(SessionPlugin)
+    await ctx.plugin(AgentPlugin)
     await ctx.plugin(AgentLoopPlugin)
     parent = await ctx.get('agent_loop').create('parent', options=AgentOptions(provider='mock', model='mock',
         max_tokens=tokens, reasoning_effort=effort))

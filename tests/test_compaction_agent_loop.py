@@ -5,6 +5,7 @@ import pytest
 from dsh.compaction.engine import CompactionBasicPlugin
 from dsh.cordis.context import Context
 from dsh.core.agent_loop import AgentLoopPlugin
+from dsh.core.agent import AgentPlugin
 from dsh.core.session import SessionPlugin
 from dsh.core.system_prompt import SystemPrompt
 from dsh.core.tools import ToolsPlugin
@@ -44,7 +45,7 @@ async def test_real_loop_overflow_rebuilds_same_step_from_replacement(delivery):
     ctx = Context()
     model = Model(delivery)
     ctx.set_service('llm', model)
-    for plugin in (SessionPlugin, ToolsPlugin, SystemPrompt, AgentLoopPlugin, TokenMeterPlugin):
+    for plugin in (SessionPlugin, ToolsPlugin, SystemPrompt, AgentPlugin, AgentLoopPlugin, TokenMeterPlugin):
         await ctx.plugin(plugin)
     await ctx.plugin(CompactionBasicPlugin, dict(thresholdRatio=1, retainTokens=0, maxTokens=64))
     handle = await ctx.get('agent_loop').create('overflow-' + delivery)
@@ -80,7 +81,7 @@ async def test_unrecovered_in_band_failure_does_not_publish_success(finish):
             yield dict(type='finish', reason=dict(kind=finish, failure=dict(message='provider failed', code='PROVIDER_FAILURE')))
     ctx = Context()
     ctx.set_service('llm', FailureModel('in-band'))
-    for plugin in (SessionPlugin, ToolsPlugin, SystemPrompt, AgentLoopPlugin):
+    for plugin in (SessionPlugin, ToolsPlugin, SystemPrompt, AgentPlugin, AgentLoopPlugin):
         await ctx.plugin(plugin)
     handle = await ctx.get('agent_loop').create('failed-' + finish)
     try:

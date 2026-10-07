@@ -1061,7 +1061,6 @@ class LlmRuntime:
         self.config = config or {}
 
     def apply(self, ctx: Any) -> None:
-        if not ctx.has("llm"):
-            svc = LLMService(ctx=ctx)
-            ctx.set_service("llm", svc)
+        svc = LLMService(ctx=ctx)
+        ctx.set_service("llm", svc)
 

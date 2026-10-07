@@ -125,8 +125,8 @@ async def build_e2e_harness(adapter: StrictMockLlmAdapter, persona: str = "You a
         "includeRuntimeContext": True,
     })
     await ctx.plugin(AgentPlugin)
-    await ctx.plugin(AgentLoopPlugin)
     ctx.set_service("llm", adapter)
+    await ctx.plugin(AgentLoopPlugin)
     return ctx
 
 

@@ -1,3 +1,4 @@
+from dsh.llm.llm_service import LlmRuntime
 from dsh.core.system_prompt import SystemPrompt as SourceToolsPrompt
 import asyncio
 
@@ -17,6 +18,7 @@ async def harness(identity):
     await ctx.plugin(SourceToolsPrompt)
     await ctx.plugin(ToolsPlugin)
     await ctx.plugin(AgentPlugin)
+    await ctx.plugin(LlmRuntime)
     await ctx.plugin(AgentLoopPlugin)
     handle = await ctx.get('agents').create(session_id=identity)
     return ctx, handle, handle.agent

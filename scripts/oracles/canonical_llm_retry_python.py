@@ -16,6 +16,8 @@ async def observe(name):
     from dsh.cordis.context import Context
     from dsh.cordis.environment import LaunchEnvironmentSnapshot
     from dsh.core.agent_loop import AgentLoopPlugin
+    from dsh.core.agent import AgentPlugin
+    from dsh.core.session import SessionPlugin
     from dsh.core.agent import AgentOptions
     from dsh.core.tools import ToolsPlugin
     from dsh.core.system_prompt import SystemPrompt
@@ -56,7 +58,7 @@ async def observe(name):
     worker.start()
     ctx = Context()
     ctx.set_service('launchEnvironment', LaunchEnvironmentSnapshot([dict(source='process', values=dict(DEEPSEEK_API_KEY='fixture-key'))]))
-    for plugin in (LlmRuntime, ToolsPlugin, SystemPrompt, LLMRetryPlugin, AgentLoopPlugin):
+    for plugin in (LlmRuntime, ToolsPlugin, SystemPrompt, LLMRetryPlugin, SessionPlugin, AgentPlugin, AgentLoopPlugin):
         await ctx.plugin(plugin)
     delay = 1000 if name == 'cancel-backoff' else 1
     config = dict(baseURL='http://127.0.0.1:' + str(server.server_port), streamIdleTimeoutMs=3000,

@@ -10,6 +10,8 @@ import sys
 async def observe(name):
     from dsh.cordis.context import Context
     from dsh.core.agent_loop import AgentLoopPlugin
+    from dsh.core.agent import AgentPlugin
+    from dsh.core.session import SessionPlugin
     from dsh.core.agent import AgentOptions
     from dsh.core.system_prompt import SystemPrompt
     from dsh.core.tools import ToolsPlugin
@@ -17,7 +19,7 @@ async def observe(name):
     from dsh.llm.agent_request import is_agent_loop_request
     from dsh.llm.llm_service import LlmRuntime
     ctx = Context()
-    for plugin in (LlmRuntime,ToolsPlugin,SystemPrompt,AgentLoopPlugin):
+    for plugin in (LlmRuntime,ToolsPlugin,SystemPrompt,SessionPlugin, AgentPlugin, AgentLoopPlugin):
         await ctx.plugin(plugin)
     trace, requests = [], []
     parent = None

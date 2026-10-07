@@ -31,13 +31,15 @@ class ControlledModel:
 async def observe(action):
     from dsh.cordis.context import Context
     from dsh.core.agent_loop import AgentLoopPlugin
+    from dsh.core.agent import AgentPlugin
+    from dsh.core.session import SessionPlugin
     from dsh.core.tools import ToolsPlugin
     from dsh.core.system_prompt import SystemPrompt
 
     ctx = Context()
     model = ControlledModel()
     ctx.set_service('llm', model)
-    for plugin in (ToolsPlugin, SystemPrompt, AgentLoopPlugin):
+    for plugin in (ToolsPlugin, SystemPrompt, SessionPlugin, AgentPlugin, AgentLoopPlugin):
         await ctx.plugin(plugin)
     current = '' if action == 'empty' else 'initial {{value}}'
     prompt = ctx.get('systemPrompt')

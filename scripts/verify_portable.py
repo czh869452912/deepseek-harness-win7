@@ -64,6 +64,7 @@ from scripts.sdk_profile_oracle import validate_runtime as validate_sdk_profile,
 from scripts.permission_presets_oracle import validate_runtime as validate_permission_presets, identity as permission_presets_identity, observe_native as observe_permission_presets
 from scripts.tool_errors_oracle import validate_runtime as validate_tool_errors, identity as tool_errors_identity, observe_native as observe_tool_errors
 from scripts.tool_durable_oracle import validate_runtime as validate_tool_durable, identity as tool_durable_identity, observe_native as observe_tool_durable
+from scripts.agent_dependencies_oracle import validate_runtime as validate_agent_dependencies, identity as agent_dependencies_identity, observe_native as observe_agent_dependencies
 from scripts.exported_host_lifecycle_oracle import observe_native as observe_host_lifecycle, validate_runtime as validate_host_lifecycle, observation_digest as host_lifecycle_digest
 from scripts.llm_prepared_oracle import validate_runtime as validate_llm_prepared, identity as llm_prepared_identity
 from scripts.llm_metadata_oracle import validate_runtime as validate_llm_metadata, identity as llm_metadata_identity
@@ -491,6 +492,26 @@ def tool_durable_receipts(source, native, output):
     return source, observed, runtime['imports']
 
 
+def agent_dependencies_receipts(source, native, output):
+    if source or native:
+        if not source or not native:
+            raise RuntimeError('Both Agent dependency Source and native receipts are required')
+        source, native = Path(source).resolve(), Path(native).resolve()
+    else:
+        paired = output.with_suffix('.agent-dependencies-paired.json')
+        completed = subprocess.run([sys.executable, str(ROOT / 'scripts/agent_dependencies_oracle.py'),
+            '--output', str(paired)], cwd=str(ROOT), capture_output=True, timeout=240)
+        output.with_suffix('.agent-dependencies-source.log').write_bytes(completed.stdout + completed.stderr)
+        if completed.returncode or completed.stderr:
+            raise RuntimeError('Fresh Agent dependency Source qualification failed')
+        source, native = paired.with_suffix('.source.json'), paired.with_suffix('.native.json')
+    observed = json.loads(source.read_text(encoding='utf-8'))
+    agent_dependencies_identity(observed, ROOT / 'reference')
+    runtime = json.loads(native.read_text(encoding='utf-8'))
+    validate_agent_dependencies(runtime, ROOT, sys.executable, observed, runtime['imports'])
+    return source, observed, runtime['imports']
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--archive', required=True)
@@ -541,8 +562,10 @@ def main(argv=None):
     parser.add_argument('--permission-presets-native', help='Fresh native permission child/import receipts')
     parser.add_argument('--tool-errors-source', help='Fresh original complete tool errors and prompt ownership receipts')
     parser.add_argument('--tool-durable-source', help='Fresh original complete durable tool and prompt ownership receipts')
+    parser.add_argument('--agent-dependencies-source', help='Fresh original complete Agent dependency and prompt ownership receipts')
     parser.add_argument('--tool-errors-native', help='Fresh native tool errors and imported closure')
     parser.add_argument('--tool-durable-native', help='Fresh native durable tool and imported closure')
+    parser.add_argument('--agent-dependencies-native', help='Fresh native Agent dependency and imported closure')
     parser.add_argument('--javascript-errors-source', help='Fresh original JavaScript error boundary observations')
     parser.add_argument('--javascript-errors-native', help='Fresh native JavaScript child/import/private asset receipts')
     parser.add_argument('--llm-prepared-source', help='Fresh actual Source prepared call observations')
@@ -620,6 +643,7 @@ def main(argv=None):
             'permission_presets_oracle.py', 'permission_presets_values.py', 'permission_presets_cases.py',
             'tool_errors_oracle.py', 'tool_errors_cases.py', 'oracles/tool_errors_source.mts', 'oracles/tool_errors_python.py',
             'tool_durable_oracle.py', 'tool_durable_cases.py', 'oracles/tool_durable_source.mts', 'oracles/tool_durable_python.py', 'oracles/tool-durable-cases.json',
+            'agent_dependencies_oracle.py', 'agent_dependencies_cases.py', 'oracles/agent_dependencies_source.mts', 'oracles/agent_dependencies_python.py',
             'exported_host_lifecycle_oracle.py', 'oracles/exported_host_lifecycle.py', 'oracles/exported_host_lifecycle_python.py',
             'oracles/permission_presets_source.mts', 'oracles/permission_presets.probe.spec.ts',
             'oracles/permission_presets_domain_source.mts', 'oracles/permission_presets_domain.probe.spec.ts',
@@ -795,6 +819,9 @@ def main(argv=None):
         tool_durable_source, tool_durable_observed, tool_durable_modules = tool_durable_receipts(
             args.tool_durable_source, args.tool_durable_native, output)
         report['toolDurableSourceSha256'] = digest(tool_durable_source)
+        agent_dependencies_source, agent_dependencies_observed, agent_dependencies_modules = agent_dependencies_receipts(
+            args.agent_dependencies_source, args.agent_dependencies_native, output)
+        report['agentDependenciesSourceSha256'] = digest(agent_dependencies_source)
         host_lifecycle = observe_host_lifecycle(ROOT, sys.executable, output.with_suffix('.host-lifecycle-root.json'))
         if args.format_source or args.format_inputs:
             if not args.format_source or not args.format_inputs:
@@ -1301,6 +1328,10 @@ def main(argv=None):
             validate_tool_durable(tool_durable_report, portable, portable / 'python.exe',
                 tool_durable_observed, tool_durable_modules, owned_runtime=True)
             report['toolDurable'] = tool_durable_report
+            agent_dependencies_report = observe_agent_dependencies(portable, portable / 'python.exe', workspace / 'agent-dependencies.json')
+            validate_agent_dependencies(agent_dependencies_report, portable, portable / 'python.exe',
+                agent_dependencies_observed, agent_dependencies_modules, owned_runtime=True)
+            report['agentDependencies'] = agent_dependencies_report
             host_lifecycle_report = observe_host_lifecycle(portable, portable / 'python.exe', workspace / 'host-lifecycle.json')
             validate_host_lifecycle(host_lifecycle_report, portable, portable / 'python.exe',
                 host_lifecycle_digest(host_lifecycle), host_lifecycle['imports'], host_lifecycle['fixtureSha256'])

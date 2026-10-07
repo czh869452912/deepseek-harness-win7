@@ -267,6 +267,7 @@ async def test_optional_projection_registration_live_replay_and_unload(registry_
 @pytest.mark.asyncio
 async def test_actual_agent_loop_usage_anchor_projection_dedup_and_cold_replay():
     from dsh.core.agent_loop import AgentLoopPlugin
+    from dsh.core.agent import AgentPlugin
     from dsh.core.tools import ToolsPlugin
     from dsh.core.system_prompt import SystemPrompt
     class Model:
@@ -279,7 +280,7 @@ async def test_actual_agent_loop_usage_anchor_projection_dedup_and_cold_replay()
             yield dict(type="finish", reason=dict(kind="stop"))
     ctx = Context()
     ctx.set_service("llm", Model())
-    for plugin in (SessionPlugin, ToolsPlugin, SystemPrompt, AgentLoopPlugin, SessionProjectionsPlugin, TokenMeterPlugin):
+    for plugin in (SessionPlugin, ToolsPlugin, SystemPrompt, AgentPlugin, AgentLoopPlugin, SessionProjectionsPlugin, TokenMeterPlugin):
         await ctx.plugin(plugin)
     handle = await ctx.get("agent_loop").create("meter-loop")
     try:

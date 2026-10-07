@@ -1,0 +1,23 @@
+{
+  "id": "CON-AGENT-DEPENDENCY-LIFECYCLE",
+  "revision": 1,
+  "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
+  "status": "specified",
+  "source_paths": ["reference/packages/core/agent-loop/src/index.ts", "reference/packages/core/agent/src/index.ts", "reference/packages/core/session/src/index.ts", "reference/packages/llm/llm/src/index.ts"],
+  "consumers": ["scripts/agent_dependencies_oracle.py", "scripts/agent_dependencies_cases.py", "scripts/oracles/agent_dependencies_source.mts", "scripts/oracles/agent_dependencies_python.py", "tests/test_agent_dependencies_consumers.py", "scripts/verify_release.py", "scripts/verify_portable.py", "tests/test_current_release_gate.py"],
+  "invariants": [
+    "AgentLoop requires agents, sessions, llm, tools and systemPrompt before activation; it does not manufacture substitute sessions or agents.",
+    "All thirty-six ordered complete original observations retain each active/pending state, service-presence map, publication result, replacement identity and retired-factory error verbatim.",
+    "Loss of any required service retires the loop and its owned publication; restoring the provider creates a replacement loop and permits new owned publication.",
+    "Actual Agent, Session and LLM providers publish a fresh service after their previous epoch is disposed, even when service metadata remains declared.",
+    "Source pin and complete tracked/observer inputs are guarded before and after execution. Root and independently owned Python3.8.10 import the exact independently approved native closure.",
+    "Complete value/runtime/import/Source changes and every missing, skipped, duplicated or failed regression lane are rejected. Extracted qualification independently binds approved Source digest, import closure and selected owned interpreter."
+  ],
+  "identity": "Exact thirty-six names in agent_dependencies_oracle.NAMES with full literal JSON values; no identifier, path or error normalization.",
+  "ownership": "Five actual injected providers and reversible registry factory binding; application composition and actual test consumers supply their own prerequisites.",
+  "ordering": "Initial missing dependencies, ordered staged provision, then separate loss/retired-factory/restoration/create/final-disposal journeys for each of the five services.",
+  "errors": "Retired create preserves the literal original inactive-context required-sessions failure before factory transaction creation.",
+  "cancellation": "Dependency disposal drains the loop's owned handles; this finite contract does not certify arbitrary competing transactions or interruption races.",
+  "adaptation": "None for compared observation fields; operating-system root and executable identities are verified separately against the selected native runtime.",
+  "open_questions": ["Competing provider registrations, wider reload/race histories, every factory API and all parent profile/browser/policy journeys remain separate acceptance ranges.", "Actual Windows7 certification remains user-deferred."]
+}

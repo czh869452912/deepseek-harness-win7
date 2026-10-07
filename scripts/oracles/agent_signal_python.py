@@ -7,6 +7,8 @@ import sys
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
 from dsh.cordis import Context
+from dsh.core.agent import AgentPlugin
+from dsh.core.session import SessionPlugin
 from dsh.core.abort import AbortSignal
 from dsh.core.agent_loop import AgentLoopPlugin
 from dsh.core.system_prompt import SystemPrompt
@@ -37,6 +39,8 @@ async def harness(tools=False, queued=False):
     ctx.set_service('llm', model)
     await ctx.plugin(ToolsPlugin)
     await ctx.plugin(SystemPrompt)
+    await ctx.plugin(SessionPlugin)
+    await ctx.plugin(AgentPlugin)
     await ctx.plugin(AgentLoopPlugin)
     handle = await ctx.get('agents').create({'sessionId': 'signal-owner'})
     return ctx, model, handle

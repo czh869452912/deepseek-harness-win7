@@ -39,6 +39,8 @@ async def observe(name):
     action, configuration = name.split('/')
     from dsh.cordis.context import Context
     from dsh.core.agent_loop import AgentLoopPlugin
+    from dsh.core.agent import AgentPlugin
+    from dsh.core.session import SessionPlugin
     from dsh.core.agent import AgentOptions
     from dsh.core.abort import AbortSignal
     from dsh.core.tools import ToolsPlugin
@@ -70,7 +72,7 @@ async def observe(name):
     model = ctx.get('llm')
     adapter = Adapter()
     model.register_adapter(['mock'], adapter)
-    for plugin in (ToolsPlugin, SystemPrompt, AgentLoopPlugin):
+    for plugin in (ToolsPlugin, SystemPrompt, SessionPlugin, AgentPlugin, AgentLoopPlugin):
         await ctx.plugin(plugin)
     current = '' if action == 'empty' else 'initial {{value}}'
     prompt = ctx.get('systemPrompt')

@@ -1,3 +1,5 @@
+from dsh.core.agent import AgentPlugin
+from dsh.core.session import SessionPlugin
 import asyncio
 
 import pytest
@@ -30,6 +32,8 @@ async def setup():
     ctx.set_service("llm", model)
     await ctx.plugin(ToolsPlugin)
     await ctx.plugin(SystemPrompt)
+    await ctx.plugin(SessionPlugin)
+    await ctx.plugin(AgentPlugin)
     await ctx.plugin(AgentLoopPlugin)
     handle = await ctx.get("agent_loop").create("parent")
     return ctx, model, handle

@@ -645,6 +645,5 @@ class AgentPlugin(Plugin):
     name = "@deepseek-ai/dsh-agent"
 
     def apply(self, ctx: Context) -> None:
-        if not ctx.has("agents"):
-            registry = AgentRegistry(ctx=ctx)
-            ctx.set_service("agents", registry)
+        registry = AgentRegistry(ctx=ctx)
+        ctx.set_service("agents", registry)

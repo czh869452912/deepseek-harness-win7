@@ -65,8 +65,8 @@ async def test_real_factory_awaits_preset_setup_and_limits_model_tools(tmp_path)
     await ctx.plugin(SystemPrompt)
     await ctx.plugin(SessionPlugin)
     await ctx.plugin(AgentPlugin)
-    await ctx.plugin(AgentLoopPlugin)
     adapter=StrictMockLlmAdapter([{"text":"done"}]);ctx.provide("llm",adapter)
+    await ctx.plugin(AgentLoopPlugin)
     handles=[]
     try:
         for name in ("alpha","beta"):

@@ -2,6 +2,8 @@
 Tests for canonical tool ordering in agent loop and headers
 matching reference/packages/core/agent-loop/tests/tool-order.spec.ts.
 """
+from dsh.core.agent import AgentPlugin
+from dsh.core.session import SessionPlugin
 
 from dsh.core.system_prompt import SystemPrompt as SourceToolsPrompt
 import pytest
@@ -39,6 +41,8 @@ async def test_canonical_tool_order_lexicographic():
     ctx.set_service("llm", mock_llm)
     await ctx.plugin(SourceToolsPrompt)
     await ctx.plugin(ToolsPlugin)
+    await ctx.plugin(SessionPlugin)
+    await ctx.plugin(AgentPlugin)
     await ctx.plugin(AgentLoopPlugin)
 
     tools: ToolsService = ctx.get("tools")

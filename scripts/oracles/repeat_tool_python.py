@@ -8,6 +8,7 @@ import sys
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
 from dsh.cordis.context import Context
+from dsh.core.agent import AgentPlugin
 from dsh.core.agent_loop import AgentLoopPlugin
 from dsh.core.session import SessionPlugin
 from dsh.core.system_prompt import SystemPrompt
@@ -57,6 +58,7 @@ async def run():
             await ctx.plugin(SessionPlugin)
             await ctx.plugin(ToolsPlugin)
             await ctx.plugin(SystemPrompt)
+            await ctx.plugin(AgentPlugin)
             await ctx.plugin(AgentLoopPlugin)
             await ctx.plugin(RepeatToolReminderPlugin, spec['config'])
             received = []

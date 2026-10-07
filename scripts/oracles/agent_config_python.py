@@ -2,6 +2,7 @@ import asyncio,json,sys,tempfile
 from pathlib import Path
 sys.path.insert(0,str(Path(__file__).resolve().parents[2]))
 from dsh.cordis.context import Context
+from dsh.llm.llm_service import LlmRuntime
 from dsh.cordis.schema import ValidationError
 from dsh.core.session import SessionPlugin
 from dsh.core.agent import AgentPlugin
@@ -19,6 +20,7 @@ async def observe():
   with tempfile.TemporaryDirectory() as root:
    ctx=Context();gate=asyncio.Event()
    try:
+    await ctx.plugin(LlmRuntime)
     await ctx.plugin(SessionPlugin);await ctx.plugin(AgentPlugin)
     await ctx.plugin(SystemPrompt);await ctx.plugin(ToolsPlugin)
     if mode not in ['identity','invalid','deferred']:await ctx.plugin(JsonlSessionPersistencePlugin,{'root':root})

@@ -1,6 +1,7 @@
 import asyncio
 import json
 from dsh.cordis.context import Context
+from dsh.llm.llm_service import LlmRuntime
 from dsh.core.agent import AgentPlugin
 from dsh.core.agent_loop import AgentLoopPlugin
 from dsh.core.session import SessionPlugin
@@ -15,6 +16,7 @@ async def observe_prefix(implementation, action):
     await ctx.plugin(SystemPrompt)
     await ctx.plugin(ToolsPlugin)
     await ctx.plugin(AgentPlugin)
+    await ctx.plugin(LlmRuntime)
     await ctx.plugin(AgentLoopPlugin)
     handle = await ctx.get('agents').create(session_id=implementation + '-' + action)
     agent = handle.agent

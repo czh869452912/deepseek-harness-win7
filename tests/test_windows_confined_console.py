@@ -1,3 +1,5 @@
+from dsh.core.agent import AgentPlugin
+from dsh.core.session import SessionPlugin
 import asyncio
 from contextlib import asynccontextmanager
 import os
@@ -40,6 +42,8 @@ async def confined(tmp_path):
         ctx.set_service('llm', UnusedModel())
         await ctx.plugin(SystemPrompt)
         await ctx.plugin(ToolsPlugin)
+        await ctx.plugin(SessionPlugin)
+        await ctx.plugin(AgentPlugin)
         await ctx.plugin(AgentLoopPlugin)
         owner = await ctx.get('agent_loop').create('console-owner', meta=dict(cwd=str(workspace)))
         other = await ctx.get('agents').create('console-sibling', meta=dict(cwd=str(workspace)))

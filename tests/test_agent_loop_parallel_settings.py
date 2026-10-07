@@ -1,3 +1,4 @@
+from dsh.llm.llm_service import LlmRuntime
 from dsh.core.system_prompt import SystemPrompt as SourceToolsPrompt
 import asyncio
 import copy
@@ -45,6 +46,9 @@ async def test_parallel_settings_layers_refuses_and_unloads_reversibly():
     await ctx.plugin(SourceToolsPrompt)
     await ctx.plugin(ToolsPlugin)
     settings_fiber = await ctx.plugin(MemorySettings)
+    await ctx.plugin(SessionPlugin)
+    await ctx.plugin(AgentPlugin)
+    await ctx.plugin(LlmRuntime)
     loop_fiber = await ctx.plugin(AgentLoopPlugin, {'agents': [], 'maxParallelToolCalls': 4})
     loop = ctx.get('agentLoop')
     settings = ctx.get('settings')

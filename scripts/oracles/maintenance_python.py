@@ -6,6 +6,7 @@ import sys
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 from dsh.cordis.context import Context
+from dsh.llm.llm_service import LlmRuntime
 from dsh.core.agent import AgentPlugin
 from dsh.core.agent_loop import AgentLoopPlugin
 from dsh.core.system_prompt import SystemPrompt
@@ -26,6 +27,7 @@ async def compaction(spec):
         await ctx.plugin(AgentPlugin)
         await ctx.plugin(SystemPrompt)
         await ctx.plugin(ToolsPlugin)
+        await ctx.plugin(LlmRuntime)
         await ctx.plugin(AgentLoopPlugin)
         TokenMeter(ctx)
         engine = CompactionEngine(ctx=ctx, config=dict(auto=False))
@@ -101,6 +103,7 @@ async def observe(spec):
         await ctx.plugin(AgentPlugin)
         await ctx.plugin(SystemPrompt)
         await ctx.plugin(ToolsPlugin)
+        await ctx.plugin(LlmRuntime)
         await ctx.plugin(AgentLoopPlugin)
         handle = await ctx.get('agents').create(session_id=spec['mode'])
         agent = handle.agent

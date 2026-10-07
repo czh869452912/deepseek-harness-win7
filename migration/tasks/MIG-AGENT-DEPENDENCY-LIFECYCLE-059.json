@@ -1,0 +1,51 @@
+{
+  "id": "MIG-AGENT-DEPENDENCY-LIFECYCLE-059",
+  "goal": "对齐 AgentLoop 五项依赖、服务退役恢复及完整原版生命周期事实",
+  "kind": "implementation",
+  "state": "running",
+  "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
+  "base_product": "8c0ba04cc21194b2121a8181f1defab0795338e0",
+  "owner": "current-session-coordinator",
+  "requires": [
+    {
+      "task": "MIG-CURRENT-RELEASE-GATE-003",
+      "contract": "CON-CURRENT-RELEASE-GATE",
+      "revision": 1
+    }
+  ],
+  "provides": [
+    {
+      "contract": "CON-AGENT-DEPENDENCY-LIFECYCLE",
+      "revision": 1
+    }
+  ],
+  "acceptance": [
+    "All36 complete ordered actual Source/Root/owned observations match literally, including staged dependency states, publication, provider replacement and retired-factory errors.",
+    "AgentLoop requires all5 original providers and owns reversible factory binding; real Agent/Session/LLM providers recover after disposal without fallback or service-metadata suppression.",
+    "Actual consumers supply their real prerequisites without weakening injection or silently replacing an existing model service.",
+    "Source/runtime/value/import changes and missing/skipped/duplicate/failed mandatory or extracted lanes are rejected; own Python3.8.10 imports an independently approved exact closure with full input guards before/after.",
+    "New complete clean frozen regression, all current paired drivers, unchanged official Source groups, real owned extraction and original browser pass before bounded integration."
+  ],
+  "expected_paths": [
+    "dsh/core/agent_loop.py",
+    "dsh/core/agent.py",
+    "dsh/core/session/session.py",
+    "dsh/llm/llm_service.py",
+    "scripts",
+    "tests",
+    "migration",
+    "docs/research"
+  ],
+  "open_findings": [
+    "Fresh formal Source/Root/owned Python3.8.10 matches36 complete observations,105 independently approved actual imports and15481 owned inputs before/after.498 prerequisite consumers,417 secondary regressions and465 mandatory/extracted controls pass with no failures/errors/skips; overlapping sets are not summed.80-file archive preserves earlier failed/no-test invocations plus immutable25-file research qualification and original16 Root differences.",
+    "All78 paired drivers and new65 actual consumer/24 mandatory-extracted controls are registered. New clean full frozen release remains required; latest accepted clean release is still83026446/65 bounded contracts.",
+    "Ask-user, complete profile/browser/policy journeys, broad factory/concurrent-provider ranges and seven parent acceptance ranges remain open. Actual Win7 certification stays user-deferred."
+  ],
+  "conflicts_with": [],
+  "candidate_commit": null,
+  "integrated_commit": null,
+  "evidence_ids": [
+    "RUN-AGENT-DEPENDENCIES-FORMAL-QUALIFICATION-20261007-8C0BA04C"
+  ],
+  "next_action": "提交本项正式实现和完整证据；继续 ask-user、完整预设与父范围，最后按正常预算冻结完整原版/配对/真实解压/浏览器验收，再认定有限集成。"
+}

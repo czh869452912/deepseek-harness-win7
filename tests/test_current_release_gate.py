@@ -61,8 +61,10 @@ from scripts.sdk_profile_cases import EXTRACTED_DAMAGES as SDK_EXTRACTED_DAMAGES
 from scripts.permission_presets_cases import damage_runtime as damage_permission_runtime, damage_source as damage_permission_source
 from scripts.tool_errors_cases import damage_runtime as damage_tool_error_runtime
 from scripts.tool_durable_cases import damage_runtime as damage_tool_durable_runtime
+from scripts.agent_dependencies_cases import damage_runtime as damage_agent_dependencies_runtime
 from scripts.tool_errors_oracle import OBSERVER_INPUTS as TOOL_ERROR_OBSERVER_INPUTS
 from scripts.tool_durable_oracle import OBSERVER_INPUTS as TOOL_DURABLE_OBSERVER_INPUTS
+from scripts.agent_dependencies_oracle import OBSERVER_INPUTS as AGENT_DEPENDENCIES_OBSERVER_INPUTS
 from scripts.sdk_profile_oracle import OBSERVER_INPUTS as SDK_OBSERVER_INPUTS
 from scripts.permission_presets_oracle import OBSERVER_INPUTS as PERMISSION_OBSERVER_INPUTS
 from scripts.exported_host_lifecycle_oracle import observe_native as observe_host_lifecycle
@@ -1940,6 +1942,15 @@ def extracted_receipt(tmp_path):
     candidate['tool_durable_source_sha256'] = hashlib.sha256(json.dumps(tool_pair['source'], sort_keys=True).encode('utf-8')).hexdigest()
     candidate['tool_durable_observations_sha256'] = GATE.tool_durable_digest(tool_pair['source']['rows'])
     candidate['tool_durable_modules'] = copy.deepcopy(tool_durable['imports'])
+    tool_pair = copy.deepcopy(agent_dependencies_runtime_fixture())
+    agent_dependencies = tool_pair['native']
+    agent_dependencies['root'], agent_dependencies['executable'] = str(tmp_path), str(tmp_path / 'python.exe')
+    tool_pair['source']['inputs'] = {name: sha256 for name, sha256 in tool_pair['source']['inputs'].items()
+        if name in AGENT_DEPENDENCIES_OBSERVER_INPUTS or name in ('reference/packages/core/tools/src/index.ts', 'reference/packages/core/agent-loop/src/index.ts', 'reference/packages/core/agent/src/index.ts', 'reference/packages/core/session/src/index.ts', 'reference/packages/llm/llm/src/index.ts')}
+    candidate['agent_dependencies_source'] = tool_pair['source']
+    candidate['agent_dependencies_source_sha256'] = hashlib.sha256(json.dumps(tool_pair['source'], sort_keys=True).encode('utf-8')).hexdigest()
+    candidate['agent_dependencies_observations_sha256'] = GATE.agent_dependencies_digest(tool_pair['source']['rows'])
+    candidate['agent_dependencies_modules'] = copy.deepcopy(agent_dependencies['imports'])
     host_lifecycle = copy.deepcopy(host_lifecycle_runtime_fixture())
     host_lifecycle['root'], host_lifecycle['executable'] = str(tmp_path), str(tmp_path / 'python.exe')
     candidate['exported_host_lifecycle_sha256'] = GATE.host_lifecycle_digest(host_lifecycle)
@@ -1961,6 +1972,7 @@ def extracted_receipt(tmp_path):
               'permissionPresets': permission_presets, 'permissionPresetsSourceSha256': candidate['permission_presets_source_sha256'],
               'toolErrors': tool_errors, 'toolErrorsSourceSha256': candidate['tool_errors_source_sha256'],
               'toolDurable': tool_durable, 'toolDurableSourceSha256': candidate['tool_durable_source_sha256'],
+              'agentDependencies': agent_dependencies, 'agentDependenciesSourceSha256': candidate['agent_dependencies_source_sha256'],
               'exportedHostLifecycle': host_lifecycle,
               'javascriptErrors': errors, 'javascriptErrorsSourceSha256': candidate['javascript_errors_source_sha256']}
     modes = ['allow', 'reject', 'malformed', 'cancel-late', 'close-late', 'eof']
@@ -2937,6 +2949,47 @@ def test_extracted_session_tracing_requires_exact_observations_and_runtime(tmp_p
     path.write_text(json.dumps(report),encoding='utf-8')
     with pytest.raises(RuntimeError):
         GATE.validate_extracted(path,archive,candidate)
+
+
+@functools.lru_cache(maxsize=1)
+def agent_dependencies_runtime_fixture():
+    with tempfile.TemporaryDirectory(prefix='dsh-agent-dependencies-source-') as folder:
+        output = Path(folder) / 'paired.json'
+        completed = subprocess.run([sys.executable, str(ROOT / 'scripts/agent_dependencies_oracle.py'),
+            '--output', str(output)], cwd=str(ROOT), capture_output=True, timeout=240)
+        if completed.returncode:
+            raise RuntimeError(output.read_text(encoding='utf-8'))
+        return dict(source=json.loads(output.with_suffix('.source.json').read_text(encoding='utf-8')),
+            native=json.loads(output.with_suffix('.native.json').read_text(encoding='utf-8')))
+
+
+@pytest.mark.parametrize('damage', GATE.AGENT_DEPENDENCIES_DAMAGES + ('receipt-missing', 'source-missing', 'source-changed', 'source-file'))
+def test_extracted_agent_dependencies_requires_complete_values_and_runtime(tmp_path, damage):
+    archive, candidate, report = extracted_receipt(tmp_path)
+    if damage == 'receipt-missing':
+        del report['agentDependencies']
+    elif damage == 'source-missing':
+        del candidate['agent_dependencies_source']
+    elif damage == 'source-changed':
+        candidate['agent_dependencies_source']['rows'][0]['active'] = True
+    elif damage == 'source-file':
+        report['agentDependenciesSourceSha256'] = '0' * 64
+    else:
+        report['agentDependencies'] = damage_agent_dependencies_runtime(report['agentDependencies'], damage)
+    output = tmp_path / 'extracted.json'
+    output.write_text(json.dumps(report), encoding='utf-8')
+    with pytest.raises(RuntimeError, match='agentDependencies'):
+        GATE.validate_extracted(output, archive, candidate)
+
+
+@pytest.mark.parametrize('damage', ('omit', 'skip', 'duplicate', 'failure'))
+def test_agent_dependencies_consumer_lanes_are_mandatory(tmp_path, damage):
+    path = tmp_path / 'pytest.xml'
+    for module in ('test_agent_dependencies_consumers',):
+        for name in GATE.REQUIRED_REGRESSION[module]:
+            regression_xml(path, **{damage: (module, name)})
+            with pytest.raises(RuntimeError):
+                GATE.validate_regression(path)
 
 
 @functools.lru_cache(maxsize=1)

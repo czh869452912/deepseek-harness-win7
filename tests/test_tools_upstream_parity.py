@@ -1,3 +1,6 @@
+from dsh.llm.llm_service import LlmRuntime
+from dsh.core.session import SessionPlugin
+from dsh.core.agent import AgentPlugin
 import asyncio
 from types import SimpleNamespace
 
@@ -30,6 +33,9 @@ async def test_agent_loop_waits_for_owned_tools_and_retires_on_loss():
 
     ctx = Context()
     try:
+        await ctx.plugin(AgentPlugin)
+        await ctx.plugin(SessionPlugin)
+        await ctx.plugin(LlmRuntime)
         await ctx.plugin(AgentLoopPlugin)
         assert ctx.get('tools') is None
         assert ctx.get('agentLoop') is None

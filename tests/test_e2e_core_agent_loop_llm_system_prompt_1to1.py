@@ -219,13 +219,12 @@ async def create_test_context(
     if f_sp.error is not None:
         raise f_sp.error
     await ctx.plugin(AgentPlugin)
-    await ctx.plugin(AgentLoopPlugin)
-
     llm_svc = LLMService(ctx=ctx)
     llm_svc.provider = "mock-provider"
     llm_svc.model = "mock-model"
     ctx.set_service("llm", llm_svc)
     llm_svc.register_adapter(["mock-provider", "openai", "deepseek", "deepseek-official"], adapter)
+    await ctx.plugin(AgentLoopPlugin)
     return ctx
 
 

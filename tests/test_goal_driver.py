@@ -1,3 +1,5 @@
+from dsh.core.agent import AgentPlugin
+from dsh.core.session import SessionPlugin
 from dsh.core.system_prompt import SystemPrompt as SourceToolsPrompt
 import asyncio
 
@@ -33,6 +35,8 @@ async def setup():
     ctx.set_service("llm", model)
     await ctx.plugin(SourceToolsPrompt)
     await ctx.plugin(ToolsPlugin)
+    await ctx.plugin(SessionPlugin)
+    await ctx.plugin(AgentPlugin)
     await ctx.plugin(AgentLoopPlugin)
     await ctx.plugin(GoalService)
     driver = await ctx.plugin(GoalRoundDriver)

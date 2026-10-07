@@ -1,4 +1,5 @@
 """Configured Agent startup/reload derived from config-session-id.spec.ts."""
+from dsh.llm.llm_service import LlmRuntime
 import asyncio
 import re
 import pytest
@@ -12,8 +13,12 @@ from dsh.core.session import SessionPlugin, SessionHeader
 from dsh.core.session.preparation import SessionPreparation
 from dsh.session.persistence_jsonl import JsonlSessionPersistencePlugin
 
-async def core(tmp_path=None):
+async def core(tmp_path=None, llm=None):
     ctx=Context()
+    if llm is None:
+        await ctx.plugin(LlmRuntime)
+    else:
+        ctx.provide('llm', llm)
     await ctx.plugin(SystemPrompt); await ctx.plugin(ToolsPlugin)
     await ctx.plugin(SessionPlugin); await ctx.plugin(AgentPlugin)
     if tmp_path is not None: await ctx.plugin(JsonlSessionPersistencePlugin, {'root':str(tmp_path)})
@@ -190,9 +195,8 @@ async def test_disposal_does_not_wait_for_hung_index(tmp_path):
 async def test_configured_reload_continues_real_driver_history(tmp_path):
     import json
     from test_e2e_core_spine_strict_parity import StrictMockLlmAdapter
-    ctx=await core(tmp_path)
     adapter=StrictMockLlmAdapter([{'text':'Remember 42.'},{'text':'The earlier answer was 42.'}])
-    ctx.provide('llm',adapter)
+    ctx=await core(tmp_path, llm=adapter)
     config={'agents':[{'id':'main','sessionId':'s','provider':'mock','model':'mock'}]}
     try:
         first=await ctx.plugin(AgentLoopPlugin,config);await settled(lambda:ctx.get('agents').get('s'))

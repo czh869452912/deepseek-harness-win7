@@ -1,0 +1,31 @@
+{
+  "id": "RUN-AGENT-DEPENDENCIES-FORMAL-QUALIFICATION-20261007-8C0BA04C",
+  "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
+  "product_commit": "8c0ba04cc21194b2121a8181f1defab0795338e0",
+  "kind": "verification",
+  "task_id": "MIG-AGENT-DEPENDENCY-LIFECYCLE-059",
+  "result": "passed",
+  "validity": "current",
+  "exit_code": 0,
+  "commands": [
+    ".venv/Scripts/python.exe scripts/agent_dependencies_oracle.py --output .goose/out/acp-a4-work/agent-dependencies-formal-root-after-v1.json",
+    ".venv/Scripts/python.exe -m pytest tests/test_agent_dependencies_consumers.py tests/test_current_release_gate.py -k \"not extracted or agent_dependencies\" -q --junitxml=.goose/out/acp-a4-work/agent-dependencies-gate-v1.xml",
+    ".venv/Scripts/python.exe .goose/out/acp-a4-work/qualify_agent_dependencies_formal_owned_v2.py",
+    ".venv/Scripts/python.exe .goose/out/acp-a4-work/collect_agent_dependencies_formal_qualification_v1.py"
+  ],
+  "environment": {
+    "python": "3.8.10",
+    "os": "Windows-10-10.0.26200-SP0",
+    "node": "v22.22.2"
+  },
+  "contract_revisions": {
+    "CON-AGENT-DEPENDENCY-LIFECYCLE": 1
+  },
+  "artifacts": [
+    {
+      "path": "migration/evidence/artifacts/AGENT-DEPENDENCIES-FORMAL-QUALIFICATION-20261007-8C0BA04C.zip",
+      "sha256": "17715402ccbc3d8244d14a4144fe803f173d495578ace876c9440d08ae941047"
+    }
+  ],
+  "scope": "Complete literal36 Source/Root/own Python3.8.10 lifecycle observations,105 independently approved imports and15481 full owned inputs before/after; no field/error/identity/path normalization.498 prerequisite,417 secondary and465 gate tests pass separately without failures/errors/skips; overlaps are not added.80-file archive retains earlier failures/no-test invocation, immutable25-file isolated qualification and16 original Root mismatches.78 paired drivers,65 new consumer and24 mandatory/extracted controls registered. Focused qualification; no new full frozen clean release,059 integration or parent closure."
+}

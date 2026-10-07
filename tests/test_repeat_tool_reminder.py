@@ -1,3 +1,4 @@
+from dsh.core.agent import AgentPlugin
 from dsh.core.system_prompt import SystemPrompt as SourceToolsPrompt
 import asyncio
 import copy
@@ -179,6 +180,7 @@ async def loop_harness(calls, config=None):
     await ctx.plugin(SessionPlugin)
     await ctx.plugin(ToolsPlugin)
     await ctx.plugin(SystemPrompt)
+    await ctx.plugin(AgentPlugin)
     await ctx.plugin(AgentLoopPlugin)
     await ctx.plugin(RepeatToolReminderPlugin, config or {})
     for name in ("probe", "other"):

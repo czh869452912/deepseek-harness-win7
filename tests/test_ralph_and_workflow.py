@@ -1,4 +1,6 @@
 """Pinned workflow contracts, native Ralph execution and real child isolation."""
+from dsh.core.agent import AgentPlugin
+from dsh.core.session import SessionPlugin
 
 import asyncio
 import copy
@@ -499,6 +501,8 @@ async def test_actual_agent_loop_ralph_children_have_no_parent_or_prior_child_se
     ctx.set_service("llm", model)
     await ctx.plugin(ToolsPlugin)
     await ctx.plugin(SystemPrompt)
+    await ctx.plugin(SessionPlugin)
+    await ctx.plugin(AgentPlugin)
     await ctx.plugin(AgentLoopPlugin)
     await ctx.plugin(SubagentRuntime)
     await ctx.plugin(SpawnInProcess)

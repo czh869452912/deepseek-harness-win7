@@ -457,12 +457,13 @@ class AgentLoopService:
                            seed=None, signal=None, owner_ctx=None):
         self._validate_options(options)
         sid = session_id if session_id is not None else 'session-' + uuid.uuid4().hex[:8]
+        sessions = self.ctx.sessions
         tx = FactoryTransaction(self, owner_ctx or self.ctx, sid, signal)
         wrapper = asyncio.get_running_loop().create_future()
         self._wrappers.add(wrapper)
         preparation = None
         try:
-            preparation = SessionPreparation.create(self.ctx.get('sessions').prepare(sid, seed=seed, meta=meta))
+            preparation = SessionPreparation.create(sessions.prepare(sid, seed=seed, meta=meta))
             return await self._publish_preparation(tx, preparation, options, setup, 'startup')
         except BaseException:
             await tx.dispose()
@@ -1082,18 +1083,11 @@ class AgentLoopPlugin(Plugin):
     id = "agent-loop"
     name = "@deepseek-ai/dsh-agent-loop"
     Config = AGENT_LOOP_CONFIG_SCHEMA
-    inject = ["tools"]
+    inject = ["agents", "sessions", "llm", "tools", "systemPrompt"]
 
     def apply(self, ctx: Context) -> None:
         rows = configured_agents(self.config, ctx.get(CONFIGURED_AGENT_IDENTITIES_KEY))
-        if not ctx.has("sessions"):
-            store = SessionStore(ctx=ctx)
-            ctx.set_service("sessions", store)
-
-        registry = ctx.get("agents")
-        if not ctx.has("agents"):
-            registry = AgentRegistry(ctx=ctx)
-            ctx.set_service("agents", registry)
+        registry = ctx.agents
 
         agent_loop = AgentLoopService(ctx, dict(self.config, agents=rows))
         ctx.set_service("agent_loop", agent_loop)
@@ -1109,8 +1103,7 @@ class AgentLoopPlugin(Plugin):
 
         ctx.inject(["systemPrompt"], prompt_variables)
 
-        if registry is not None:
-            registry.set_factory(agent_loop)
+        ctx.effect(lambda: registry.set_factory(agent_loop))
 
         if hasattr(ctx, "disposable"):
             ctx.disposable(agent_loop.teardown, label="agent_loop.teardown")

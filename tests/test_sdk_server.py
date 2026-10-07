@@ -1,3 +1,5 @@
+from dsh.core.agent import AgentPlugin
+from dsh.core.session import SessionPlugin
 import asyncio
 import pytest
 
@@ -38,6 +40,8 @@ async def setup():
     ctx.get('llm').register_adapter(['fixture'], Adapter())
     await ctx.plugin(ToolsPlugin)
     await ctx.plugin(SystemPrompt)
+    await ctx.plugin(SessionPlugin)
+    await ctx.plugin(AgentPlugin)
     await ctx.plugin(AgentLoopPlugin)
     peer = Peer()
     server = HarnessSdkJsonRpcServer(ctx, peer)

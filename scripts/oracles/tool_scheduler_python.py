@@ -15,6 +15,7 @@ sys.path.insert(0, str(root))
 sys.path.insert(1, str(Path(__file__).resolve().parent))
 
 from dsh.cordis.context import Context
+from dsh.llm.llm_service import LlmRuntime
 from dsh.core.agent import AgentPlugin
 from dsh.core.agent_loop import AgentLoopPlugin, AgentLoopService
 from dsh.core.session import SessionPlugin
@@ -80,6 +81,7 @@ async def observe():
         await ctx.plugin(SystemPrompt)
         await ctx.plugin(ToolsPlugin)
         await ctx.plugin(AgentPlugin)
+        await ctx.plugin(LlmRuntime)
         try:
             await ctx.plugin(AgentLoopPlugin, config)
             rows.append(dict(name=name, admitted=True, published=published))
@@ -93,6 +95,9 @@ async def observe():
         settings_fiber = await ctx.plugin(MemorySettings)
         await ctx.plugin(SystemPrompt)
         await ctx.plugin(ToolsPlugin)
+        await ctx.plugin(SessionPlugin)
+        await ctx.plugin(AgentPlugin)
+        await ctx.plugin(LlmRuntime)
         loop_fiber = await ctx.plugin(AgentLoopPlugin, {'agents': [], 'maxParallelToolCalls': 4})
         loop = ctx.get('agentLoop')
         settings = ctx.get('settings')

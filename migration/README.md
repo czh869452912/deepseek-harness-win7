@@ -1,5 +1,7 @@
 # 持续对齐记录
 
+2026-10-07 完整直接回归：91262f92加六行合成SDK/Permission fixture映射压缩，9277 passed、6既有skip、零失败/错误，3556.59秒；785文件归档完整XML/日志/精确被测diff及768份自动清理审计。自动删除2571个可重建过程文件/10243133558字节，真实证据保留。该回归不替代干净冻结发布；057/056继续running，最新完整签收仍83026446/65。durable12/19拒绝与五依赖36隔离研究继续正式推广，原始悬空目录链接优化拒绝保留；七父范围及用户延期Win7/目标浏览器未关闭。见 `docs/research/2026-10-07-tools-sdk-full-regression-progress.md`。
+
 2026-10-07 干净0b197efa全量9283项到91%因正常3600秒拒绝，此前已有七项失败，无完整XML/通过数；781文件保留精确ZIP/输入/原始退出。五处真实SystemPrompt前置依赖修正通过293回归及新鲜Abort56、Guard117匹配/两既有精确绕过、Timeout10；30文件资格保留完整七失败基线。自动清理2571个可重建文件/12136707871字节，保留实际证据。继续测量全量瓶颈，未扩大预算或绕过，057/056及七父范围仍开放。见 `docs/research/2026-10-07-tool-errors-sdk-metadata-progress.md`。
 
 2026-10-07 Tools/SDK修订2补齐真实Loader恢复链：九项完整Source和八项SDK观察由自有Python3.8.10匹配，十五篡改拒绝，candidate2恢复失败原样保留。Tools每代重新注册，AgentLoop等待Tools而不抢占回退；862消费者与33解压/必需lane控制通过，97文件资格链接此前84文件精确基包。057仍running，新的干净全量/76配对/20组Source/实际解压/原版浏览器待签收；其余AgentLoop依赖与durable/ask-user/profile仍开放。自动过期维护本次无新增合格材料，保留真实证据。见 `docs/research/2026-10-07-tool-errors-sdk-metadata-progress.md`。

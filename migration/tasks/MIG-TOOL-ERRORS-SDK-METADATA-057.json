@@ -20,6 +20,7 @@
   ],
   "expected_paths": ["dsh/core/tools.py", "dsh/extensions/packaged_host.py", "scripts", "tests", "migration", "docs/research"],
   "open_findings": [
+    "Complete direct91262f92 Root regression plus six synthetic fixture map compactions passes9277 with six existing skips,zero failures/errors,3556.59 seconds.785-file exact archive preserves complete XML/log,tested bytes/diff and768 actual automatic retention audits removing2571 reconstructible files/10243133558 bytes. This has no new frozen clean Portable/extraction/official/paired gate acceptance; task remains running. Isolated durable12 and complete five-provider36 proposals still need formal consumers and qualification.",
     "Clean0b197efa full gate collected9283, recorded seven failures and then timed out normally at91%/3600 seconds; no complete XML or accepted count exists. Exact781-file rejection is preserved. Focused before233 passed/seven failed and enlarged after293 passed localize and fix actual SystemPrompt prerequisites in old Abort/Guard/Timeout observers, installation fallback boot and the second Python library profile. Fresh Abort56, Guard117 matches/two unchanged reviewed classifications and Timeout10 pass. Full normal-budget throughput still needs measured qualification, not a waived deadline.",
     "Revision2 includes the real canonical Loader restoration regression. OwnPython3.8.10 matches nine fresh guarded original Tools observations; unchanged candidate2 fails precisely restored activation and fifteen refusals pass. Eight owned SDK lifecycle observations match Root. Core Tools re-registers each epoch; AgentLoop waits for Tools instead of creating a competing fallback. Earlier six Root differences, first metadata globals reset and actual Loader/Web consumer failures remain preserved. Full clean acceptance is still required.",
     "Durable skipped/plain-error publication in dsh/core/tool_calls.py still uses an older carrier; it belongs to the subsequent agent/tool durable contract, not this nine-observation public Tools acceptance. Remaining original AgentLoop dependency declarations and registry/session fallback retirement, full profile, ask-user, tool metadata and broad policy journeys remain open."
@@ -27,6 +28,6 @@
   "conflicts_with": [],
   "candidate_commit": null,
   "integrated_commit": null,
-  "evidence_ids": ["RUN-TOOL-ERROR-SDK-QUALIFICATION-20261007-46645625", "RUN-TOOL-RESTORATION-QUALIFICATION-20261007-5DD401D5", "RUN-TOOLS-SDK-REJECTED-20261007-0B197EFA", "RUN-TOOLS-SDK-PREREQUISITES-20261007-0B197EFA"],
-  "next_action": "五处真实前置依赖修正已通过293回归及新鲜Abort56/Guard119/Timeout10；保留精确0b完整拒绝和七项定向失败。测量完整门禁耗时并解决实际瓶颈，保持正常3600秒预算及全部2822必需lane/76配对/20组Source/实际解压/原版浏览器判据后重新冻结验收。随后继续durable错误、完整AgentLoop依赖、ask-user及完整预设，不以有界报告关闭七父范围。"
+  "evidence_ids": ["RUN-TOOL-ERROR-SDK-QUALIFICATION-20261007-46645625", "RUN-TOOL-RESTORATION-QUALIFICATION-20261007-5DD401D5", "RUN-TOOLS-SDK-REJECTED-20261007-0B197EFA", "RUN-TOOLS-SDK-PREREQUISITES-20261007-0B197EFA", "RUN-TOOLS-SDK-REGRESSION-20261007-91262F92"],
+  "next_action": "完整直接回归9277通过/6既有skip/3556.59秒；保留精确0b拒绝及七项定向失败，自动清理2571文件约10.24GB并归档768审计。提交六行合成fixture映射压缩，推进已隔离验证的durable12与五依赖36提供端/消费者和实际路径解析瓶颈，再按正常3600秒及全部必需lane/配对/20组Source/实际解压/原版浏览器重新冻结验收。继续ask-user及完整预设，不以有界报告关闭七父范围。"
 }

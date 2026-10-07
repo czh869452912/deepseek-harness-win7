@@ -61,6 +61,8 @@ from scripts.sdk_profile_cases import EXTRACTED_DAMAGES as SDK_EXTRACTED_DAMAGES
 from scripts.permission_presets_cases import damage_runtime as damage_permission_runtime, damage_source as damage_permission_source
 from scripts.tool_errors_cases import damage_runtime as damage_tool_error_runtime
 from scripts.tool_errors_oracle import OBSERVER_INPUTS as TOOL_ERROR_OBSERVER_INPUTS
+from scripts.sdk_profile_oracle import OBSERVER_INPUTS as SDK_OBSERVER_INPUTS
+from scripts.permission_presets_oracle import OBSERVER_INPUTS as PERMISSION_OBSERVER_INPUTS
 from scripts.exported_host_lifecycle_oracle import observe_native as observe_host_lifecycle
 from scripts.process_artifact_retention import prune_finished_test_folder
 from scripts.llm_metadata_oracle import observation_digest as llm_metadata_observation_digest
@@ -1899,6 +1901,8 @@ def extracted_receipt(tmp_path):
     candidate['win32_stat_modules'] = win32_stat['modules'].copy()
     sdk_profile_pair = copy.deepcopy(sdk_profile_runtime_fixture())
     sdk_profile = sdk_profile_pair['native']
+    sdk_profile_pair['source']['inputs'] = {name: sha256 for name, sha256 in sdk_profile_pair['source']['inputs'].items()
+        if name in SDK_OBSERVER_INPUTS or name in ('reference/apps/cli/src/bin.ts', 'reference/packages/sdk/server/src/index.ts')}
     sdk_profile['root'], sdk_profile['executable'] = str(tmp_path), str(tmp_path / 'python.exe')
     for capture in sdk_profile['captures'].values():
         capture['runtime']['root'], capture['runtime']['executable'] = sdk_profile['root'], sdk_profile['executable']
@@ -1907,6 +1911,8 @@ def extracted_receipt(tmp_path):
     candidate['sdk_profile_modules'] = copy.deepcopy(sdk_profile['modules'])
     permission_pair = copy.deepcopy(permission_presets_runtime_fixture())
     permission_presets = permission_pair['native']
+    permission_pair['source']['inputs'] = {name: sha256 for name, sha256 in permission_pair['source']['inputs'].items()
+        if name in PERMISSION_OBSERVER_INPUTS or name == 'reference/packages/interaction/permission-presets/src/index.ts'}
     permission_presets['root'], permission_presets['executable'] = str(tmp_path), str(tmp_path / 'python.exe')
     for child in permission_presets['groups'].values():
         child['root'], child['executable'] = permission_presets['root'], permission_presets['executable']

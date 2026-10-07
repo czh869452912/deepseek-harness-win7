@@ -1,0 +1,20 @@
+{
+  "id": "RUN-TOOLS-SDK-REGRESSION-20261007-91262F92",
+  "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
+  "product_commit": "91262f92e9741d1c57b5fc3d77171bf87a8b69c7",
+  "kind": "verification",
+  "task_id": "MIG-TOOL-ERRORS-SDK-METADATA-057",
+  "result": "passed",
+  "validity": "current",
+  "exit_code": 0,
+  "commands": [
+    ".venv/Scripts/python.exe -m pytest tests --durations=50 --junitxml=.goose/out/acp-a4-work/tools-sdk-full-throughput-v1.xml",
+    ".venv/Scripts/python.exe .goose/out/acp-a4-work/collect_tools_sdk_throughput_v1.py"
+  ],
+  "environment": {"python": "3.8.10", "os": "Windows-10-10.0.26200-SP0", "node": "v22.22.2"},
+  "contract_revisions": {"CON-TOOL-ERRORS-PROMPT-OWNERSHIP": 2, "CON-PYTHON-HOST-STATIC-INJECT": 1},
+  "artifacts": [
+    {"path": "migration/evidence/artifacts/TOOLS-SDK-REGRESSION-20261007-91262F92.zip", "sha256": "c24a7be7d74b88f17ccfdd998645709571143e0a1829988b2a93e641997d0720"}
+  ],
+  "scope": "Complete direct Root Python3.8.10 regression:9283 collected,9277 passed,six existing skips,zero failures/errors,3556.59 console seconds/3555.111 XML seconds. Baseline91262f92 plus exactly six synthetic SDK/Permission fixture map compactions; exact tested bytes and working diff SHA256 d76f464053c61e7d6582da242a1a07a605d0b4fd01d7f642d62869d3252ba180 are archived.785 files include full XML/log and768 actual automatic retention audits:2571 reconstructible process files/10243133558 bytes removed. No frozen clean inputs,new Portable,independent extracted/official/paired gate acceptance or parent closure. Existing pytest fixture-loop configuration warning remains literal. Diagnostic profiles and isolated later proposals do not qualify the release;057/056 remain running."
+}

@@ -237,6 +237,7 @@ Evidence:
 - RUN-CANONICAL-LLM-20261006-TOOL-PARALLELISM-033: acceptance / passed / stale-inputs
 - RUN-CANONICAL-LLM-20261006-TOOL-START-PREFIX-034: acceptance / passed / stale-inputs
 - RUN-CANONICAL-LLM-20261006-UPSTREAM-DELTA-002: acceptance / passed / stale-inputs
+- RUN-CLASS-METHOD-GATE-QUALIFICATION-20261007-2003821E: verification / passed / current
 - RUN-CONSOLE-RETENTION-REJECTED-20261007-46645625: verification / failed / current
 - RUN-CORDIS-20260927: cordis-observations-and-regression / failed / historical
 - RUN-CORDIS-CLOSURE-20260927: scoped-observations-and-regression / failed / historical

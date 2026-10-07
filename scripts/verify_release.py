@@ -129,7 +129,7 @@ OFFICIAL_CONFIGS = ('consumers', 'agent-lifecycle', 'session-recovery', 'session
 REQUIRED_REGRESSION = {
     'test_app_source_contract': {'test_source_document_projects_into_the_built_document'},
     'test_web_package_contract': {'test_built_index_is_relative_and_declares_the_document_root'},
-    'test_settings': {'test_describes_registered_namespaces_with_schema_json_value_and_applies'},
+    'test_settings.TestRegistration': {'test_describes_registered_namespaces_with_schema_json_value_and_applies'},
     'test_cordis_1to1_advanced_parity': {'test_schemastery_to_json_refs_table'},
     'test_schema_parity': {'test_tojson_envelope_shape', 'test_tojson_envelope_roundtrip'},
     'test_frontend_import': {
@@ -710,7 +710,10 @@ REQUIRED_REGRESSION = {
         *{'test_complete_frontend_and_settings_lanes_are_mandatory[' + damage + '-' + module + ']'
           for damage in ('omit', 'skip', 'duplicate', 'failure')
           for module in ('test_frontend_import', 'test_release_preflight', 'test_settings_remote', 'test_schema_parity',
-            'test_app_source_contract', 'test_web_package_contract', 'test_settings', 'test_cordis_1to1_advanced_parity')},
+            'test_app_source_contract', 'test_web_package_contract', 'test_settings.TestRegistration', 'test_cordis_1to1_advanced_parity')},
+        *{'test_regression_requires_actual_pytest_class_method_identity[' + damage + ']'
+          for damage in ('omit', 'skip', 'duplicate', 'failure', 'foreign-module', 'foreign-class')},
+        'test_regression_refuses_ambiguous_class_method_identity',
         *{'test_extracted_complete_frontend_requires_frozen_build_record[' + damage + ']'
           for damage in ('missing-provenance', 'changed-provenance', 'missing-clients', 'client-count', 'build-digest')},
         'test_extracted_fs_values_accepts_complete_qualified_values',
@@ -1395,7 +1398,13 @@ def validate_regression(path):
     required = {(module, name) for module, names in REQUIRED_REGRESSION.items() for name in names}
     observed = set()
     for case in suites.iter('testcase'):
-        key = (case.get('classname', '').split('.')[-1], case.get('name'))
+        classname, name = case.get('classname', ''), case.get('name')
+        segments = classname.split('.')
+        matches = [(".".join(segments[position:]), name) for position in range(len(segments))
+                   if (".".join(segments[position:]), name) in required]
+        if len(matches) > 1:
+            raise RuntimeError('Regression lane identity is ambiguous: ' + classname + '.' + str(name))
+        key = matches[0] if matches else (classname.split('.')[-1], name)
         if case.find('failure') is not None or case.find('error') is not None:
             raise RuntimeError('Regression contains a failure: ' + str(key))
         if key in required:

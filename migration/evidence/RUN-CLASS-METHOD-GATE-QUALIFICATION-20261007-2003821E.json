@@ -1,0 +1,18 @@
+{
+  "id": "RUN-CLASS-METHOD-GATE-QUALIFICATION-20261007-2003821E",
+  "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
+  "product_commit": "2003821ef37b96276bf738dba8a0e4420ef9d647",
+  "kind": "verification",
+  "task_id": "MIG-CURRENT-RELEASE-GATE-003",
+  "result": "passed",
+  "validity": "current",
+  "exit_code": 0,
+  "commands": [".venv/Scripts/python.exe -m pytest tests/test_current_release_gate.py -k 'complete_frontend_and_settings or actual_pytest_class_method or ambiguous_class_method or regression_requires_browser or incomplete_regression or actual_pytest_unicode'", "Validate four required consumers in actual previously completed291-case XML"],
+  "environment": {"python": "3.8.10", "os": "Windows-10-10.0.26200-SP0"},
+  "contract_revisions": {"CON-CURRENT-RELEASE-GATE": 1},
+  "artifacts": [
+    {"path": "migration/evidence/artifacts/CLASS-METHOD-GATE-QUALIFICATION-20261007-2003821E.zip", "sha256": "330a70a29b1abb7f014af5e5dc2d43f344785305525b50be9f2ef4354c5ad69f"},
+    {"path": "migration/evidence/artifacts/CLASS-METHOD-GATE-INTERRUPTED-20261007-2003821E.zip", "sha256": "2481c6fed3c297afef00a2c59138f4666f0855bd295d8d7b115673ac6c168681"}
+  ],
+  "scope": "Working-tree gate identity qualification:121 positive-first controls pass; actual class-method subprocess XML and previously completed consumer XML validate. Required suffix explicitly includes module/class and full test name; wrong module/class, omissions, skips, duplicates, failures and ambiguity refused. Deterministic old-gate refusal and coordinator-interrupted clean inputs/exactZIP/raw logs preserved. No completed full-suite, whole migration, parent integration or platform certification inferred."
+}

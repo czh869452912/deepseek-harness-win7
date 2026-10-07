@@ -444,6 +444,50 @@ def test_regression_requires_browser_portable_and_acp_process_lanes(tmp_path):
     assert GATE.validate_regression(path) == {'required_lanes': sum(len(names) for names in GATE.REQUIRED_REGRESSION.values()), 'skipped': 1}
 
 
+@pytest.mark.parametrize('damage', ['omit', 'skip', 'duplicate', 'failure', 'foreign-module', 'foreign-class'])
+def test_regression_requires_actual_pytest_class_method_identity(tmp_path, monkeypatch, damage):
+    module = 'test_settings.TestRegistration'
+    name = 'test_describes_registered_namespaces_with_schema_json_value_and_applies'
+    path = tmp_path / 'actual-class-method.xml'
+    completed = subprocess.run([sys.executable, '-m', 'pytest',
+        str(ROOT / 'tests/1to1/settings/settings/test_settings.py') + '::TestRegistration::' + name,
+        '-q', '--basetemp', str(tmp_path / 'nested'), '--junitxml', str(path)],
+        cwd=str(ROOT), stdout=subprocess.PIPE, stderr=subprocess.STDOUT, timeout=30)
+    assert completed.returncode == 0, completed.stdout.decode('utf-8', errors='replace')
+    monkeypatch.setattr(GATE, 'REQUIRED_REGRESSION', {module: {name}})
+    assert GATE.validate_regression(path) == {'required_lanes': 1, 'skipped': 0}
+    tree = ET.parse(str(path))
+    suite = tree.getroot().find('testsuite')
+    case = suite.find('testcase')
+    assert case.get('classname') == 'tests.1to1.settings.settings.' + module
+    if damage == 'omit':
+        suite.remove(case)
+    elif damage == 'skip':
+        ET.SubElement(case, 'skipped')
+    elif damage == 'duplicate':
+        suite.append(copy.deepcopy(case))
+    elif damage == 'failure':
+        ET.SubElement(case, 'failure')
+    elif damage == 'foreign-module':
+        case.set('classname', 'settings.settings.test_other.TestRegistration')
+    else:
+        case.set('classname', 'settings.settings.test_settings.OtherRegistration')
+    tree.write(str(path), encoding='utf-8')
+    with pytest.raises(RuntimeError):
+        GATE.validate_regression(path)
+
+
+def test_regression_refuses_ambiguous_class_method_identity(tmp_path, monkeypatch):
+    module, name = 'test_settings.TestRegistration', 'test_probe'
+    monkeypatch.setattr(GATE, 'REQUIRED_REGRESSION', {module: {name}})
+    path = tmp_path / 'pytest.xml'
+    regression_xml(path)
+    assert GATE.validate_regression(path)['required_lanes'] == 1
+    monkeypatch.setattr(GATE, 'REQUIRED_REGRESSION', {module: {name}, 'TestRegistration': {name}})
+    with pytest.raises(RuntimeError, match='ambiguous'):
+        GATE.validate_regression(path)
+
+
 @pytest.mark.parametrize('module', ['test_native_web_browser', 'test_portable_smoke', 'test_acp_stdio_journey', 'test_acp_permission_process', 'test_mcp_stdio_transport', 'test_mcp_supervisor', 'test_mcp_schema', 'test_mcp_config', 'test_mcp_tools_source', 'test_mcp_image_consumer', 'test_mcp_http_source', 'test_mcp_http_transport', 'test_mcp_supervisor_source', 'test_mcp_factory_source', 'test_acp_mcp_source', 'test_acp_mcp_runtime_source', 'test_acp_mcp_abort_source', 'test_acp_mcp_process', 'test_acp_mcp_runtime'])
 @pytest.mark.parametrize('damage', ['omit', 'skip', 'duplicate', 'failure'])
 def test_incomplete_regression_cannot_certify_a_release(tmp_path, module, damage):
@@ -1807,7 +1851,7 @@ def test_javascript_errors_consumer_lanes_are_mandatory(tmp_path, damage):
 
 
 @pytest.mark.parametrize('module', ['test_frontend_import', 'test_release_preflight', 'test_settings_remote', 'test_schema_parity',
-    'test_app_source_contract', 'test_web_package_contract', 'test_settings', 'test_cordis_1to1_advanced_parity'])
+    'test_app_source_contract', 'test_web_package_contract', 'test_settings.TestRegistration', 'test_cordis_1to1_advanced_parity'])
 @pytest.mark.parametrize('damage', ['omit', 'skip', 'duplicate', 'failure'])
 def test_complete_frontend_and_settings_lanes_are_mandatory(tmp_path, module, damage):
     path = tmp_path / 'pytest.xml'

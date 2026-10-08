@@ -917,6 +917,12 @@ REQUIRED_REGRESSION = {
         'test_extension_request_idle_watchdog_tracks_partial_wire_activity',
         'test_extension_idle_watchdog_does_not_charge_settled_reader_delivery',
     },
+    'test_llm_http_cancellation': {
+        'test_numeric_ipv4_request_reaches_actual_server_without_dns',
+        'test_cancellation_bounds_dns_wait_without_leaving_a_transport',
+        'test_stalled_http_times_out_with_typed_failure[headers]',
+        'test_stalled_http_times_out_with_typed_failure[body]',
+    },
     'test_profile_spine_recovery': {'test_profile_tool_turn_persists_and_resumes_after_shutdown'},
     'test_jsonl_canonical': {
         'test_canonical_registry_uses_lazy_default_checksummed_zstd',

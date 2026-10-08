@@ -67,7 +67,8 @@
     "RUN-REMOTE-LFS-SYNC-20261007-B529A990",
     "RUN-LFS-FULL-REGRESSION-20261007-B529A990",
     "RUN-FULL-VALIDATION-REJECTED-20261008-DEA32B1C",
-    "RUN-FULL-VALIDATION-REJECTED-20261008-13D0AE22"
+    "RUN-FULL-VALIDATION-REJECTED-20261008-13D0AE22",
+    "RUN-FULL-VALIDATION-REJECTED-20261008-C53FFF6D"
   ],
-  "next_action": "干净13d0ae22已在正常3600秒内全套正常结束：10082通过/6失败/6既有skip，3467.69秒，有完整XML；六项为旧reference构建环境、测试LLM提供过晚及嵌套工作区长路径glob。已显式boot期测试LLM、扩展路径读取真实Git进展；16项复验与15项前端控制通过。保留实际本机official重建路径相关33产物差异，核验历史归档后恢复既定218产物/原记录，不改产品前端。冻结新候选执行第三次10094项全套、83配对、20组Source和实际解压/原版浏览器，预算与判据保持。最新有界合同签收暂仍83026446/65，开放任务不自动变更。"
+  "next_action": "第三次干净c53fff6d正常全套10086通过/2失败/6既有skip，3414.466秒，完整XML；最早DeepSeek完整HTTP观察差异与settled-reader测试DNS等待超时拒绝。原冷观察已由旧夹具删除，不推断差异原因；以后失败保留全部原始配对，不重试或放宽。数字IPv4避免不必要DNS线程，主机名可取消等待及原短期限保持；186实际HTTP/DeepSeek/重定向与14门禁/DNS分别通过。冻结新候选执行第四次10095项全套、83配对、20组Source及同包实际解压/原版浏览器，预算与判据保持。最新有界合同签收暂仍83026446/65，开放任务不自动变更。"
 }

@@ -98,6 +98,25 @@ def test_provider_retry_after_request_id_and_error_body_survive_transport_cleanu
     assert "quota" in str(caught.value)
 
 
+def test_numeric_ipv4_request_reaches_actual_server_without_dns(server, monkeypatch):
+    import socket
+    llm, state = server
+    state['mode'] = 'retry'
+    calls = []
+    def unexpected_dns(*args, **kwargs):
+        calls.append(args)
+        raise RuntimeError('A numeric IPv4 endpoint must not wait for DNS')
+    monkeypatch.setattr(socket, 'getaddrinfo', unexpected_dns)
+    with pytest.raises(LlmError) as caught:
+        list(llm.chat_completion_stream([], model='test', streamIdleTimeoutMs=150))
+    assert state['entered'].is_set()
+    assert calls == []
+    assert caught.value.code == 'RATE_LIMIT'
+    assert caught.value.providerRetryAfterMs == 2000
+    assert caught.value.requestId == 'request-test'
+    assert not any(t.name == 'dsh-http-cancellation' for t in threading.enumerate())
+
+
 @pytest.mark.parametrize("stage", ["handshake", "partial-record"])
 @pytest.mark.parametrize("cancelled", [False, True])
 def test_tls_stalls_are_bounded_in_handshake_and_partial_record(monkeypatch, stage, cancelled):
@@ -174,10 +193,11 @@ def test_cancellation_bounds_dns_wait_without_leaving_a_transport(monkeypatch):
     canceller = threading.Thread(target=abort, daemon=True)
     canceller.start()
     try:
-        llm = LLMService(api_key="local-only", base_url="http://127.0.0.1:1")
+        llm = LLMService(api_key="local-only", base_url="http://localhost:1")
         start = time.monotonic()
         with pytest.raises(LlmError) as caught:
             list(llm.chat_completion_stream([], model="test", signal=signal))
+        assert entered.is_set()
         assert caught.value.code == "ABORTED"
         assert time.monotonic() - start < 1
     finally:

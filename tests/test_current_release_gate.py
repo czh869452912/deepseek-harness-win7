@@ -5,6 +5,7 @@ import importlib.util
 import json
 import functools
 import subprocess
+import shutil
 import sys
 import tempfile
 from pathlib import Path
@@ -1248,6 +1249,8 @@ def deepseek_capture_runtime_fixture():
         completed = subprocess.run([sys.executable, str(ROOT / 'scripts/deepseek_capture_oracle.py'),
             '--output', str(output)], cwd=str(ROOT), capture_output=True, timeout=90)
         if completed.returncode:
+            diagnostic = ROOT / '.goose/out' / Path(folder).name
+            shutil.copytree(folder, str(diagnostic))
             raise RuntimeError(output.read_text(encoding='utf-8'))
         return json.loads(output.with_suffix('.native.json').read_text(encoding='utf-8'))
 

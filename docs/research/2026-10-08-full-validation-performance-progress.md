@@ -54,3 +54,9 @@ LLM 汇总/子组、Session、DeepSeek、Agent、问答、工具、Message、FS�
 本机执行固定原版完整 `pnpm run build:official` 成功，218 产物/四个 public 环境值，但 Source CSS 插件把实际绝对源码目录用于 chunk 标签和类名散列，造成 33 个 client.js 与冻结原构建不同。未改原版源码、浏览器代码或修改其散列规则。本机实际重建的 218 字节和原始记录、完整日志/驱动归档 `FRONTEND-ENVIRONMENT-20261008-13D0AE22.zip`，222 成员 / 5744909 字节，SHA-256 `8105811332a4776157c801750298d484f76a4c7c21b76e95bfb827ee27e686c1`。恢复环境时先核验历史 official 归档的原 SHA-256，再取其实际原记录与 218 个原产物，逐一核对现版本化 frontend 输入；只替换 reference 的 33 个忽略产物和原记录。没有重标本机重建，也没有变更产品 frontend，恢复后15项严格frontend控制通过。第三次干净完整门禁待执行，正常预算与必需 lane 保持。
 
 第三轮定向修复的原拒绝/通过 XML 日志、驱动及被测物理字节归档 `FULL-VALIDATION-THIRD-FIXES-20261008-13D0AE22.zip`，17 成员 / 22768 字节，SHA-256 `e417f212718aee0dd79034464d320ec4cad917b9eb8ef69afe50f2d6a468e33e`，CRC 与逐成员散列核验；不把局部通过当作新的完整签收。
+
+第三次干净 `c53fff6d3d0ecef2066f82ed42f2f771bd09791f` 在正常预算内完整结束：10086 passed / 2 failed / 6 既有 skipped，3414.466 秒，完整 XML。最早的冷构造拒绝为 DeepSeek 完整 HTTP 观察摘要不同；旧 TemporaryDirectory 已删除其原始配对，完整 XML 保留 runner-error，但无法证明该次具体字段差异。另一个 settled-reader 交付测试的完整栈显示250ms在数字127.0.0.1的DNS等待阶段耗尽，尚未进入被测的交付延迟。进度尾部曾漏见第二个失败标记，最终结论以完整XML两项为准。后续发行阶段未执行。
+
+数字IPv4用Python3.8标准库严格解析后直接构造实际TCP地址，避免无需解析的DNS线程；主机名/IPv6仍走原可取消解析等待，所有连接/读取/取消/短超时判据保持。新增真实服务器控制在DNS不可用时原实现失败、改正后仍以150ms期限取得完整RATE_LIMIT/Retry-After/request-id；既有DNS取消夹具改为实际localhost主机名，并断言确实进入解析。186项实际HTTP/DeepSeek/重定向通过（53.49秒）；补充14项门禁/DNS控制通过（3.05秒），计数重叠不累加。首次独立新鲜76项捕获在修改前匹配，第二次在修改后匹配，两者不冒称已恢复或解释那次丢失的首次原始观察。冷捕获以后失败先复制全部Source/native/原始日志，再保留原拒绝；没有增加重试或更改摘要比较。
+
+第三次精确ZIP/冻结输入/完整XML日志归档 `FULL-VALIDATION-REJECTED-20261008-C53FFF6D.zip`，10成员/77799585字节，SHA-256 `0b2baeab88f4a5dba47cfb518ed7b8aad6a1738fb559478a94c70a3b7999a0f5`。有限修复归档 `FULL-VALIDATION-FOURTH-FIXES-20261008-C53FFF6D.zip`，28成员/146545字节，SHA-256 `6381efdedeb267a8758bca6d2ee72fa8f04291098abe7ba581faeb1db1b218a7`；包含数字地址原失败、两次独立实际完整捕获、最终通过、被测字节和驱动，亦保留初次误写不存在测试路径、遗漏本机固定Node导致观察器拒绝，以及测试主机名经过代理后拒绝的诊断。逐成员完整字节散列和CRC均已核验。第四次新干净10095项全套与后续发行阶段仍待执行，正常3600秒预算、原Source比较/九项例外与任务状态保持。

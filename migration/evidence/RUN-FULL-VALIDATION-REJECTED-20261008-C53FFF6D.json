@@ -1,0 +1,41 @@
+{
+  "id": "RUN-FULL-VALIDATION-REJECTED-20261008-C53FFF6D",
+  "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
+  "product_commit": "c53fff6d3d0ecef2066f82ed42f2f771bd09791f",
+  "kind": "verification",
+  "task_id": "MIG-CURRENT-RELEASE-GATE-003",
+  "result": "failed",
+  "validity": "historical",
+  "exit_code": 1,
+  "commands": [
+    ".venv/Scripts/python.exe scripts/verify_release.py --browser \"C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe\" --output-dir .goose/out/full-validation-clean-20261008-v3"
+  ],
+  "environment": {
+    "python": "3.8.10",
+    "os": "Windows",
+    "cwd": "D:\\Project\\deepseek-harness-win7",
+    "node": "v22.22.2",
+    "browser": "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe"
+  },
+  "contract_revisions": {},
+  "artifacts": [
+    {
+      "path": "migration/evidence/artifacts/FULL-VALIDATION-REJECTED-20261008-C53FFF6D.zip",
+      "sha256": "0b2baeab88f4a5dba47cfb518ed7b8aad6a1738fb559478a94c70a3b7999a0f5"
+    },
+    {
+      "path": "migration/evidence/artifacts/FULL-VALIDATION-FOURTH-FIXES-20261008-C53FFF6D.zip",
+      "sha256": "6381efdedeb267a8758bca6d2ee72fa8f04291098abe7ba581faeb1db1b218a7"
+    }
+  ],
+  "regression_summary": {
+    "collected": 10094,
+    "passed": 10086,
+    "failed": 2,
+    "skipped": 6,
+    "seconds": 3414.466,
+    "timeout_seconds": 3600,
+    "xml_complete": true
+  },
+  "scope": "Third clean full regression normally exited but cold DeepSeek HTTP capture mismatch and settled-delivery fixture DNS startup timeout reject the candidate. No subsequent release qualification. Original cold paired observations were removed by the old temporary fixture, so mismatch cause remains unproved; fresh matched observations are separate. Numeric IPv4 skips unnecessary DNS work, actual hostname DNS remains cancellable, deadlines unchanged; deterministic regression fails before fix, actual transport controls pass afterward. Preserve subsequent cold capture failures, without retry or relaxed comparison. Open migration tasks and original exceptions unchanged."
+}

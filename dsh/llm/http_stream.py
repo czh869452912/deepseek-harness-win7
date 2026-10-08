@@ -3,6 +3,7 @@ import contextlib
 import copy
 import http.client
 import io
+import ipaddress
 import math
 import errno
 import queue
@@ -82,23 +83,31 @@ def open_stream(request, signal=None, idle_timeout_ms=300000, on_activity=None, 
                 return
 
     def connect_socket(address, timeout=None, source_address=None):
-        # getaddrinfo has no cancellable API on Python 3.8/Win7. Bound the
-        # caller's wait; an abandoned DNS worker owns no transport sockets.
-        resolved = queue.Queue(maxsize=1)
-        def resolve():
-            try:
-                resolved.put(socket.getaddrinfo(address[0], address[1], 0, socket.SOCK_STREAM))
-            except Exception as error:
-                resolved.put(error)
-        resolver = threading.Thread(target=resolve, name="dsh-http-dns", daemon=True)
-        resolver.start()
-        while True:
-            check()
-            try:
-                addresses = resolved.get(timeout=0.02)
-                break
-            except queue.Empty:
-                pass
+        try:
+            numeric = str(ipaddress.IPv4Address(address[0]))
+        except ipaddress.AddressValueError:
+            numeric = None
+        if numeric is not None:
+            addresses = [(socket.AF_INET, socket.SOCK_STREAM, socket.IPPROTO_TCP,
+                          '', (numeric, address[1]))]
+        else:
+            # getaddrinfo has no cancellable API on Python 3.8/Win7. Bound
+            # hostname waits; an abandoned DNS worker owns no sockets.
+            resolved = queue.Queue(maxsize=1)
+            def resolve():
+                try:
+                    resolved.put(socket.getaddrinfo(address[0], address[1], 0, socket.SOCK_STREAM))
+                except Exception as error:
+                    resolved.put(error)
+            resolver = threading.Thread(target=resolve, name="dsh-http-dns", daemon=True)
+            resolver.start()
+            while True:
+                check()
+                try:
+                    addresses = resolved.get(timeout=0.02)
+                    break
+                except queue.Empty:
+                    pass
         if isinstance(addresses, Exception):
             raise addresses
         last_error = None

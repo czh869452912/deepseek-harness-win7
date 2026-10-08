@@ -156,11 +156,17 @@ git submodule update --init --recursive
 
 ## 单元与集成测试
 
-运行完整测试套件：
+日常开发默认运行原失败用例、修改模块及直接消费者的定向测试。例如，修改 SDK 等待逻辑时：
 ```powershell
-.venv\Scripts\python.exe -m pytest tests
+.venv\Scripts\python.exe -m pytest tests/test_sdk_stdio_wait.py --durations=20
 ```
-测试数量和结果以当前检出的实际运行日志为准；历史通过记录不证明新默认 profile 或 Web 协议已经完成迁移。
+定向验证通过后，只有新变更、失败或未覆盖风险才扩测。提交、合并、push 和普通任务收尾本身不要求重跑完整集合或重新打包。文档修改通常只需检查差异和链接。
+
+完整测试安排在稳定迁移批次统一签收、跨模块架构改造整体收尾、Portable 发布候选冻结或用户明确要求时。正式统一验收使用 `scripts/verify_release.py`，它已包含全量 pytest、固定原版配置、配对及实际解压/浏览器验证，不应在它之前重复执行一次 `pytest tests`。
+
+如果任务目标只是独立的完整 Python 回归，可运行 `.venv\Scripts\python.exe -m pytest tests`，但这不等于发行验收。完整门禁失败后先保留材料、集中修复并定向复验，下一稳定候选再安排完整门禁；不在每修一项后自动重跑。
+
+测试数量和结果以当前检出的实际运行日志为准。局部通过不证明全量或发行通过，历史通过记录不证明新默认 profile 或 Web 协议已经完成迁移。节点规划和产物保留规则见 [验证指南](docs/testing.md) 和 [agent 开发指引](AGENTS.md#5-verification--testing)。
 
 ---
 

@@ -112,13 +112,61 @@ writers before overlapping changes. Do not treat a task report, test filename,
 or manifest inventory as proof of upstream parity. The current CLI does not
 provide concurrent task claiming or automatic state transitions.
 
-Before declaring work complete, agents **MUST** execute the test suite:
+### Select Verification by Change Scope
 
-```powershell
-.venv\Scripts\python.exe -m pytest tests
-```
+Before declaring a development task complete, agents **MUST** execute verification
+appropriate to the change. **Targeted verification is the default.** Select the
+original failing cases, changed providers, direct consumers, and relevant
+regressions; do not select tests solely by changed filenames. Documentation-only
+changes normally need diff/link checks rather than pytest. When modifying tools
+or CLI flags, add corresponding pytest cases under `tests/`.
 
-Ensure all tests pass cleanly. When modifying tools or CLI flags, add corresponding pytest cases under `tests/`.
+State the selected verification scope and why it covers the change. Once it
+passes, broaden or repeat it only for a new change, failure, or uncovered risk.
+A local fix, task handoff, commit, merge, or push does **not** by itself require
+the entire test collection or a Portable rebuild.
+
+### Plan Complete Gates at Stable Milestones
+
+Run a complete gate when a stable migration batch is ready for unified acceptance,
+a cross-module architecture change is ready for overall sign-off, a Portable
+release candidate is ready, or the user explicitly requests it. Before starting,
+finish known fixes and targeted checks, prepare required dependencies/browser,
+coordinate writers, and identify the frozen candidate and fresh output directory.
+
+For unified migration/release qualification, use `scripts/verify_release.py`,
+which already runs the complete Python collection, pinned Source configurations,
+paired contracts, and actual extracted Portable/browser checks. Do not run
+`pytest tests` immediately beforehand as a duplicate gate. A standalone full
+Python regression may be planned when that is the actual objective, but does not
+constitute release acceptance.
+
+After a complete run fails, preserve its diagnostics, fix the identified problems,
+and rerun their relevant cases/consumers. Do not automatically restart the full
+gate after each individual fix. Schedule the next full run at the next stable
+candidate qualification. Inspect existing timings and wait/deadline behavior
+before diagnosing slow file operations as a hang. The total pytest budget is
+optional (`--regression-timeout SECONDS`); individual operation deadlines remain.
+
+Report targeted completion separately from full regression and release acceptance.
+Targeted results cannot replace task acceptance requirements, promote migration
+states that require missing evidence, or certify an untested commit/archive.
+Reuse a complete receipt only for its exact qualified candidate, frozen inputs,
+and archive; never combine partial runs into a new full acceptance claim.
+
+### Keep Verification Outputs Bounded
+
+Use a fresh owned output directory and the existing short pytest workspace
+mechanism. Keep commands, scope, exit status, XML/logs, timings, and necessary
+raw failure observations for meaningful runs. Do not overwrite unresolved failure
+directories, build a Portable for every local fix, or archive every debug workspace
+into migration/LFS evidence. Use existing retention rules for completed,
+identified reconstructible fixtures/copies; preserve real observations, unresolved
+failures, active/unknown files, formal receipts, and protected history backups.
+Never bulk-delete `.goose/out` to recover space.
+
+See [the verification guide](docs/testing.md) for the milestone matrix, examples,
+artifact handling, and the distinction between this guidance and current CI.
 
 ---
 

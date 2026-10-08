@@ -1,7 +1,8 @@
 """Schemastery metadata and defaults for the native provider settings editor."""
 from dsh.cordis.schema import Schema as z
 from dsh.llm.deepseek_config import DEFAULTS, DEFAULT_MODELS
-from dsh.llm.retry_policy import DEFAULT_CODES, MAX_TIMER_DELAY_MS
+from dsh.llm.retry_policy import MAX_TIMER_DELAY_MS
+from dsh.llm.retry_schema import RetryPolicySchema
 
 
 def positive():
@@ -9,17 +10,6 @@ def positive():
 
 
 def config_schema():
-    backoff = z.object({
-        "initialDelayMs": z.number().max(MAX_TIMER_DELAY_MS).default(500),
-        "maxDelayMs": z.number().max(MAX_TIMER_DELAY_MS).default(10000),
-        "jitterRatio": z.number().min(0).max(1).default(0.1),
-    })
-    retry = z.union([
-        z.object({"mode": z.const_("normal").required(),
-                  "maxRetries": z.number().step(1).min(0).max(9007199254740991).default(5),
-                  "retryableCodes": z.array(z.string()).default(DEFAULT_CODES), "backoff": backoff}),
-        z.object({"mode": z.const_("always").required(), "backoff": backoff}),
-    ])
     model = z.object({
         "id": z.string().required(), "name": z.string(), "description": z.string(),
         "contextWindow": positive(), "maxTokens": positive(),
@@ -38,7 +28,7 @@ def config_schema():
         "fileExpiresAfterSeconds": z.number().step(1).min(3600).max(2592000).default(DEFAULTS["fileExpiresAfterSeconds"]),
         "fileRefreshMarginSeconds": z.number().step(1).min(0).default(DEFAULTS["fileRefreshMarginSeconds"]),
         "fileQuotaCleanupBatch": positive().max(1000).default(DEFAULTS["fileQuotaCleanupBatch"]),
-        "retryPolicy": retry,
+        "retryPolicy": RetryPolicySchema,
     })
     for key in ("streamIdleTimeoutMs", "filesApiTimeoutMs"):
         fields[key] = z.number().min(float.fromhex("0x0.0000000000001p-1022")).max(MAX_TIMER_DELAY_MS).default(DEFAULTS[key])

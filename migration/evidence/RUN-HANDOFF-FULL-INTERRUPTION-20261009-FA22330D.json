@@ -1,0 +1,24 @@
+{
+  "id": "RUN-HANDOFF-FULL-INTERRUPTION-20261009-FA22330D",
+  "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
+  "product_commit": "fa22330df98eea4ada9bb76cce9787240119f249",
+  "kind": "research",
+  "result": "failed",
+  "validity": "historical",
+  "commands": [
+    "Exact producer and scoped commands retained in immutable archive manifests and raw logs."
+  ],
+  "environment": {
+    "python": "3.8.10",
+    "os": "Windows-10-10.0.26200-SP0",
+    "cwd": "C:\\Users\\czh86\\Documents\\Codex\\deepseek-harness-win7"
+  },
+  "contract_revisions": {},
+  "artifacts": [
+    {
+      "path": "migration/evidence/artifacts/CURRENT-RELEASE-INTERRUPTION-20261009-FA22330D.zip",
+      "sha256": "baf756fd2e9ba74a7ba81b48a0d0e0ea0a1cc5eb84decc842fd235bb5a9651e4"
+    }
+  ],
+  "scope": "Frozen fa22330d interrupted on repeat SDK closure rejection; no final XML or full result. Exact ZIP, inputs and raw first failure retained."
+}

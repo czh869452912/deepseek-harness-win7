@@ -1,0 +1,24 @@
+{
+  "id": "RUN-HANDOFF-EXACT-COMPOSITION-20261009-FA22330D",
+  "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
+  "product_commit": "fa22330df98eea4ada9bb76cce9787240119f249",
+  "kind": "research",
+  "result": "unknown",
+  "validity": "historical",
+  "commands": [
+    "Exact producer and scoped commands retained in immutable archive manifests and raw logs."
+  ],
+  "environment": {
+    "python": "3.8.10",
+    "os": "Windows-10-10.0.26200-SP0",
+    "cwd": "C:\\Users\\czh86\\Documents\\Codex\\deepseek-harness-win7"
+  },
+  "contract_revisions": {},
+  "artifacts": [
+    {
+      "path": "migration/evidence/artifacts/HANDOFF-EXACT-COMPOSITION-20261009-FA22330D.zip",
+      "sha256": "48e626e4ec2136c8349258eae758b528a11417d749c8398c03ff263301e945c5"
+    }
+  ],
+  "scope": "Same clean fa22330d and exact ZIP, seven routes/three engine scenarios/nine HTTP alias runs match with all late input/import guards; full parent and release scopes remain open."
+}

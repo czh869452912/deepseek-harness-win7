@@ -1,0 +1,24 @@
+{
+  "id": "RUN-HANDOFF-SCHEMA-CLOSURE-FIX-20261009-V1",
+  "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
+  "product_commit": "fa22330df98eea4ada9bb76cce9787240119f249",
+  "kind": "research",
+  "result": "unknown",
+  "validity": "historical",
+  "commands": [
+    "Exact producer and scoped commands retained in immutable archive manifests and raw logs."
+  ],
+  "environment": {
+    "python": "3.8.10",
+    "os": "Windows-10-10.0.26200-SP0",
+    "cwd": "C:\\Users\\czh86\\Documents\\Codex\\deepseek-harness-win7"
+  },
+  "contract_revisions": {},
+  "artifacts": [
+    {
+      "path": "migration/evidence/artifacts/HANDOFF-SCHEMA-CLOSURE-FIX-20261009-V1.zip",
+      "sha256": "14edb853910431f00ca2ebac8d65195b2f43f82014b370c79111b3a71d90312d"
+    }
+  ],
+  "scope": "Uncommitted schema and exact SDK/LLM closure fix based on fa22330d. 85/168/24 scoped tests, actual Source/Root schema graphs, raw CSS differences. No complete acceptance or task promotion."
+}

@@ -74,3 +74,23 @@ Loader检查曾误用未用于canonical启动的拆分类；相关两处提案�
 真实Loader懒同步导入与单线程拥有的异步导入均正常完成，工具仍为pwsh/editor；多线程循环模块锁失败独立保留。这些研究没有推广硬编码加载延迟、排序或Source暖缓存选择。后续继续按实际Node模块依赖/缓存和Cordis注入时机研究。
 
 确认Source与修复后Native成功物理结束，专用浏览器profile逐文件/无链接核验后删除999文件/33407343字节；完整网络、Host、帧和清理审计保留。500诊断的失败profile和中断工作区继续保留，未混入成功清理。
+
+## fa22330d 冻结拒绝、Schema与SDK精确闭包
+
+第5轮冻结候选`fa22330df98eea4ada9bb76cce9787240119f249`实际构建成功，完整Python约33%在发布门禁的SDK夹具出现重复拒绝。即时失败报告指向`SDK actual imported closure differs`，已保存后核对根PID/命令行结束其拥有的进程树；无最终XML，不推断完整通过/失败数。物理退出且编辑前16558冻结输入均未变，干净HEAD保持，输入清单SHA-256为`ef9e57aac507f4c20063965d9db9afef41e2b897a8aea3a1f15cbb810926fb27`；精确ZIP为`c87747d5a642c25347ace7503acfa377d4b765b9d5a062a71cc19e83ece7435c`。22成员中断归档`CURRENT-RELEASE-INTERRUPTION-20261009-FA22330D.zip`为80698669字节，SHA-256`baf756fd2e9ba74a7ba81b48a0d0e0ea0a1cc5eb84decc842fd235bb5a9651e4`，短工作区和即时失败材料保留。
+
+新鲜实际SDK三场景原始导入确认清单仍要求已退出canonical启动链的`dsh/core/agent_default_model.py`，漏记3153推广的`dsh/web/deepseek_search_provider.py`。按明确路径替换审批清单，并补本批共享`retry_schema.py`；不动态批准所有导入。新DeepSeek Config提前导入Schema也触发canonical LLM retry闭包拒绝，原失败保留，精确补`deepseek_schema.py`及`retry_schema.py`。SDK与canonical LLM实际观察及未知/遗漏模块、字节/解释器等拒绝控制168项通过（75.46秒）；独立81组完整canonical LLM Source/Root观察匹配。首次单独SDK诊断未指定固定Node而拒绝，后续固定v22.22.2取得完整原始闭包，未把初次结果写成通过。
+
+实际14RPC的完整Schema图定位四项真正差异。DeepSeek未导出Config导致Loader未向公开Settings.base填入Source默认值；现在Class.Config与注册使用同一个Schema。Source两个Provider导入同一个RetryPolicySchema；现在共享完整retry子图及normal/always两分支backoff。pi的cacheControlFormat保留单项union而非const；locale保留正则公开`u`标志且本地验证模式不变。四个真实canonical Web启动回归修复前全部失败。修复后Web/DeepSeek/pi/Settings/client host halves/boot85项通过（31.56秒）。同输入实际Source/Native14RPC重验全部14个Schema图无业务/metadata差异、无遗漏节点，两个Provider跨namespace共享12节点一致；51/137两个完整Provider图均匹配。原始namespace数组和mux帧交错没有排序或丢弃，仍未取得完整Web父资格。
+
+必需门禁加入四项真实Schema事实，遗漏/跳过/重复/失败16控制及原始提取物理树8控制全部通过（24项、285.17秒）。冷门禁夹具包含真实Source/Native多个完整观察，其中FS全观察成本属正常工作量。本轮只复验受影响消费者，不在每个独立修复后重启全套。85/168/24为分别记录的定向范围，不能代替下一稳定冻结候选的完整门禁。
+
+70成员有限修复归档`HANDOFF-SCHEMA-CLOSURE-FIX-20261009-V1.zip`为770063字节，SHA-256`14edb853910431f00ca2ebac8d65195b2f43f82014b370c79111b3a71d90312d`。保存确切未提交提供端/观察器/消费者字节、首次失败、最终XML、完整Schema诊断/原始RPC与CSS研究；以fa22330d为研究基线，不能重标为同fa产品通过或完整发行资格。
+
+## 同fa精确包组合与CSS研究边界
+
+编辑前在同干净fa候选/原样ZIP重新取得七selected-child路由、三真实workflow/Ralph engine-model组合及九headless/standard/creative别名HTTP运行。均由实际Source/Root/原样ZIP自有Python执行，所有输入/实际导入晚守卫通过；HTTP完整两个body与31公开事件匹配，headers独立保留；别名共享一种bundle，不能当作五种完整profile或父合同证明。280成员`HANDOFF-EXACT-COMPOSITION-20261009-FA22330D.zip`为13414484字节，SHA-256`48e626e4ec2136c8349258eae758b528a11417d749c8398c03ff263301e945c5`，引用中断归档中的精确ZIP，不重复打包原ZIP。
+
+从固定实际218前端产物提取29处CSS调用、21表达式，在现代Edge与固定108真实浏览器以四组颜色/透明度输入观察84组有限sRGB混合方案。108不支持原调用；legacy rgba值均接受，但保留21组跨浏览器canvas像素差异及2组现代原调用/提案差异。该诊断包含CSSOM序列化重解析与canvas量化，不能视为实际DOM最终像素资格；尚未推广CSS补丁或放宽像素谓词。动态组件/主题、局部变量、完整CSS及启用realm仍需继续验证，原版前端字节保持。
+
+三份成功拥有的提取副本各15510文件已经全输入守卫/进程退出后删除；其中HTTP审计明确245989950字节。此处不从文件数猜另两份删除字节。Source/Native Schema研究和CSS两浏览器成功退出后新增专用profile清理累计1192文件/43421516字节（v7、v8、v9及两CSSprofile），每份审计/完整观察保留，不与先前33407343字节重复累计。中断/未知/失败输入、正式归档和保护Git历史继续保留。当前16任务不因局部结果提升。

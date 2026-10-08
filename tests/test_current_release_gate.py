@@ -160,6 +160,18 @@ def regression_xml(path, omit=None, skip=None, duplicate=None, failure=None):
     ET.ElementTree(suites).write(str(path), encoding='utf-8')
 
 
+@pytest.mark.parametrize('case', ['deepseek-base', 'shared-retry', 'pi-cache-union', 'locale-unicode'])
+@pytest.mark.parametrize('damage', ['omit', 'skip', 'duplicate', 'failure'])
+def test_actual_web_schema_facts_remain_mandatory(tmp_path, case, damage):
+    key = ('test_web_settings_inventory',
+           'test_source_settings_schema_facts_survive_canonical_web_boot[' + case + ']')
+    assert key[1] in GATE.REQUIRED_REGRESSION[key[0]]
+    path = tmp_path / 'pytest.xml'
+    regression_xml(path, **{damage: key})
+    with pytest.raises(RuntimeError):
+        GATE.validate_regression(path)
+
+
 @pytest.mark.parametrize('module', ['test_subprocess_tree_source', 'test_subprocess_physical_tree',
     'test_subagent_acp_peer_encoding'])
 @pytest.mark.parametrize('damage', ['omit', 'skip', 'duplicate', 'failure'])

@@ -128,6 +128,10 @@ PAIRED_DRIVERS = PAIRED_DRIVERS + ('message_values',)
 OFFICIAL_CONFIGS = ('consumers', 'agent-lifecycle', 'session-recovery', 'session-projection', 'acp', 'acp-app', 'mcp', 'subagent-acp', 'storage-cache', 'session-observation', 'session-corpus', 'session-sqlite-query', 'query-engine-source', 'session-tools-source', 'sqlite-format-source', 'sqlite-provider-source', 'jsonl-provider-source', 'tool-scheduler-source', 'deepseek-source', 'llm-public-source')
 OFFICIAL_CONFIGS += ('web-search-deepseek-source',)
 REQUIRED_REGRESSION = {
+    'test_web_settings_inventory': {
+        'test_source_settings_schema_facts_survive_canonical_web_boot[' + case + ']'
+        for case in ('deepseek-base', 'shared-retry', 'pi-cache-union', 'locale-unicode')
+    },
     'test_boot_remote_composition': {
         *{'test_boot_default_model_has_serializable_live_settings[' + value + ']' for value in ('False', 'True')},
         *{'test_boot_commands_remote_serializes_and_owns_effects[' + value + ']' for value in ('False', 'True')},

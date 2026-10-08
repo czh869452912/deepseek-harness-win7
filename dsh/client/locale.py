@@ -27,7 +27,8 @@ LOCALE_IDS = ("zh", "en")
 # Durable locale schema; also the wire envelope the browser scope validates against.
 LocaleSettingsSchema = z.object(
     {
-        LOCALE_PREFERENCE_FIELD: z.string().pattern(LOCALE_ID_PATTERN).required(False),
+        LOCALE_PREFERENCE_FIELD: z.string().pattern(LOCALE_ID_PATTERN).extra(
+            "pattern", dict(source=LOCALE_ID_PATTERN.pattern, flags="u")).required(False),
     }
 )
 

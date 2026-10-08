@@ -5,6 +5,7 @@ import logging
 from dsh.cordis.plugin import Plugin
 from dsh.llm.llm_service import LLMService, LlmError, assert_usable_api_key
 from dsh.llm.deepseek_config import resolve_options
+from dsh.llm.deepseek_schema import config_schema
 from dsh.cordis.environment import launch_environment_of
 from dsh.settings.provider import install_settings_section, deep_equal_json
 
@@ -144,6 +145,7 @@ class DeepSeekAdapter:
 class LLMDeepSeekPlugin(Plugin):
     id = "llm-deepseek"
     inject = ["llm"]
+    Config = config_schema()
 
     def apply(self, ctx):
         llm = ctx.get("llm")
@@ -169,7 +171,6 @@ class LLMDeepSeekPlugin(Plugin):
                 dispose_route.replace(["deepseek-official"])
                 registered_policy[0] = policy
 
-        from dsh.llm.deepseek_schema import config_schema
-        install_settings_section(ctx, "llm-deepseek", config_schema(), self.config, {
+        install_settings_section(ctx, "llm-deepseek", self.Config, self.config, {
             "setSource": lambda source: setattr(adapter, "source", source), "onChange": changed,
         })

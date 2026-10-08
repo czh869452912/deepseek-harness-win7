@@ -4,11 +4,22 @@ Matching reference/packages/util/workspace-path/tests/index.spec.ts
 """
 
 from dsh.workspace.paths import (
+    realpath_normalize,
     abbreviate_home_path,
     resolve_workspace_path,
     workspace_title_of,
     is_windows_style_path,
 )
+
+
+def test_realpath_preserves_native_workspace_identity(tmp_path):
+    import os
+    folder = tmp_path / '中文工作区'
+    folder.mkdir()
+    file = folder / '中文.txt'
+    file.write_text('path identity', encoding='utf-8')
+    for target in (folder, file):
+        assert realpath_normalize(str(target)) == os.path.realpath(str(target))
 
 
 def test_resolve_workspace_path():

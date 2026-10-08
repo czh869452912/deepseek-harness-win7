@@ -1,125 +1,35 @@
 {
-  "id": "MIG-PROFILE-JOURNEYS-002",
-  "goal": "验证完整 profile 用户流程与便携包",
-  "kind": "verification",
-  "state": "draft",
+  "id": "CON-PROFILE-JOURNEYS",
+  "revision": 1,
   "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
-  "base_product": "a4ff8ac41fa37b5463b0ce8b7f420d0973e8d840",
-  "owner": null,
-  "requires": [
-    {
-      "task": "MIG-AGENT-LIFECYCLE-002",
-      "contract": "CON-AGENT-FACTORY",
-      "revision": 1
-    },
-    {
-      "task": "MIG-CURRENT-RELEASE-GATE-003",
-      "contract": "CON-CURRENT-RELEASE-GATE",
-      "revision": 1
-    },
-    {
-      "task": "MIG-AGENT-CONFIG-003",
-      "contract": "CON-AGENT-CONFIG",
-      "revision": 1
-    },
-    {
-      "task": "MIG-SDK-PROFILE-055",
-      "contract": "CON-SDK-PROFILE",
-      "revision": 1
-    },
-    {
-      "task": "MIG-PERMISSION-PRESETS-056",
-      "contract": "CON-PERMISSION-PRESETS",
-      "revision": 1
-    },
-    {
-      "task": "MIG-TOOL-ERRORS-SDK-METADATA-057",
-      "contract": "CON-TOOL-ERRORS-PROMPT-OWNERSHIP",
-      "revision": 2
-    },
-    {
-      "task": "MIG-TOOL-ERRORS-SDK-METADATA-057",
-      "contract": "CON-PYTHON-HOST-STATIC-INJECT",
-      "revision": 1
-    },
-    {
-      "task": "MIG-TOOL-DURABLE-PUBLICATION-058",
-      "contract": "CON-TOOL-DURABLE-PUBLICATION",
-      "revision": 1
-    },
-    {
-      "task": "MIG-AGENT-DEPENDENCY-LIFECYCLE-059",
-      "contract": "CON-AGENT-DEPENDENCY-LIFECYCLE",
-      "revision": 1
-    },
-    {
-      "task": "MIG-ASK-USER-PROTOCOL-060",
-      "contract": "CON-ASK-USER-PROTOCOL",
-      "revision": 1
-    },
-    {
-      "task": "MIG-MESSAGE-VALUES-061",
-      "contract": "CON-MESSAGE-VALUES",
-      "revision": 1
-    },
-    {
-      "task": "MIG-FS-TOOL-VALUES-062",
-      "contract": "CON-FS-TOOL-VALUES",
-      "revision": 1
-    },
-    {
-      "task": "MIG-SUBAGENT-MODEL-VALUES-063",
-      "contract": "CON-SUBAGENT-MODEL-VALUES",
-      "revision": 1
-    },
-    {
-      "task": "MIG-UNICODE-CARRIERS-064",
-      "contract": "CON-UNICODE-CARRIERS",
-      "revision": 1
-    },
-    {
-      "task": "MIG-JS-WORKFLOW-036",
-      "contract": "CON-JS-WORKFLOW",
-      "revision": 1
-    },
-    {
-      "task": "MIG-CURRENT-RELEASE-GATE-003",
-      "contract": "CON-WEB-HTTP-RESPONSE-LIFETIME",
-      "revision": 1
-    }
+  "status": "specified",
+  "source_paths": [
+    "reference/packages/preset/agent-presets/src/index.ts",
+    "reference/packages/preset/agent-presets/presets/minimal/agent.cordis.yml",
+    "reference/apps/cli/src/bin.ts"
   ],
-  "provides": [
-    {
-      "contract": "CON-PROFILE-JOURNEYS",
-      "revision": 1
-    }
+  "consumers": [
+    "scripts/verify_release.py",
+    "scripts/verify_portable.py"
   ],
-  "acceptance": [
+  "invariants": [
     "Canonical minimal/standard/creative/web/headless profile launchers execute real model/tool continuations with full prompts, raw tool registration order/schema and selected child routing.",
     "Fresh and physically closed/cold restored original-browser minimal/standard/cordis journeys compare complete controlled Source/native/extracted wire and durable projections, including question/approval/cancel and workflow/model consumers.",
     "Profile patches, dependency loss/restore and concurrent interruption/closing retain the actual composition and public provider contracts; native export is explicit extension, not an upstream default tool.",
     "A fresh clean frozen complete release gate, all required child contracts, same-scenario Source/native observations and isolated own-Python3.8.10 extracted consumers pass before parent integration. Child counts, historical receipts and browser functional success alone are insufficient."
   ],
-  "expected_paths": [
-    "dsh",
-    "tests",
-    "migration"
-  ],
-  "open_findings": [
+  "identity": "Pinned Source and exact candidate/input/observer/ZIP hashes bind full raw observations. Only source-backed allocated identity graphs and documented platform mappings may differ; business fields and registration order stay literal.",
+  "ownership": "Canonical Context/Loader services and per-agent/session mounts own all registrations and resources. Unload, retirement and physical process close remove only owned effects.",
+  "ordering": "Source-observed event, dispatch, wire and durable sequence is retained through composed journeys. No sorting or dropping fields to hide registration or publication differences.",
+  "errors": "Refuse missing/stale/altered lanes, unknown imports, changed artifacts and unmatched full observations. Retain the first raw failure and exact existing upstream exceptions; do not add generic normalization or retries.",
+  "cancellation": "Observe pre-publication, active, pending reply/result and close/disposal cancellation with bounded individual deadlines and final resource ownership, including cold recovery after physical exit.",
+  "adaptation": "Python3.8.10 and current Windows are the development runtime. Host compatibility is separate from unchanged frontend parity. Win7 certification remains user-deferred; arbitrary unsupported engine/plugin/transport behavior cannot be inferred from finite observations.",
+  "open_questions": [
     "Ten default-profile tool metadata/instruction baseline providers promoted;75 actual consumer regressions pass with one existing symlink privilege skip. Fresh actual Source/Root/own Python3.8.10 headless all31 events/3 requests/4 lookups match with473 actual imported hashes and15488 owned input guards;53-file archive preserves full observations and previous Git provider bytes.",
     "063 qualifies104 complete optional model-selection values and actual unpublished Agent ownership; complete selected child routing remains separate. Default Cordis manager now registers actual seven Source definitions; Python export remains explicit agent-owned plugin.153 real consumers,92 fresh Source/Root/owned callback cases and unchanged actual SDK three lanes30/14/18 pass;15505 owned byte guards pass, but callback observer does not enumerate complete imports.41-file archive preserves exact observations and bytes.",
     "Two actual file-reference/web-fetch guidance providers now use complete Source text.68 real regressions and fresh Source/Root/owned three actual canonical Web Agent assemblies match with2/26/33 tools,473 approved actual tracked imports and15505 owned byte guards. Exact controlled cwd/time/session IDs and actual Source port; installation paragraph fully verified before projecting installation identity.47-file archive retains original omitted Agent observer diagnosis and Windows Node URI rejection. Immediate Root/own shutdown checkpoint closed warnings and original browser notice-timeout rejection remain unqualified; complete real profiles/model streams/browser remain pending.",
     "Original browser notice rejection diagnosed from actual settings.describe500: public Schema refs string keys now fixed, complete Source official frontend218 bytes imported without source edits. Six Source/Root real minimal/standard/cordis browser journeys complete tools/next-request/question/approval/cancel/physical-close/cold-reopen;318-file archive retains full successes and failures. This functional qualification does not establish whole wire equivalence or owned Portable journeys; clean full acceptance is pending. Immediate checkpoint diagnostics also reproduced missing cache writes on Source, so stronger write-before-close assertion was withdrawn without product cache change or extra exception.",
-    "Still specify complete source-backed parent contract and required provider revisions; full CLI/headless/web composition, selected child routing, exact wire and user-deferred Win7 certification remain separate."
-  ],
-  "conflicts_with": [],
-  "candidate_commit": null,
-  "integrated_commit": null,
-  "evidence_ids": [
-    "RUN-PROFILE-METADATA-QUALIFICATION-20261007-88AC1FAE",
-    "RUN-CORDIS-EXPORT-QUALIFICATION-20261007-FAF716E8",
-    "RUN-PRESET-PROMPT-QUALIFICATION-20261007-91358077",
-    "RUN-OFFICIAL-FRONTEND-QUALIFICATION-20261007-8D129C7D"
-  ],
-  "next_action": "按正式父合同补足组合观察、独立进程与实际解压消费者；保留原始差异和开放发现，完整候选签收后逐项审查，不能由子合同计数推定闭环。"
+    "Still specify complete source-backed parent contract and required provider revisions; full CLI/headless/web composition, selected child routing, exact wire and user-deferred Win7 certification remain separate.",
+    "The additional composed full-parent observations above are not yet accepted. This contract specification is not task acceptance."
+  ]
 }

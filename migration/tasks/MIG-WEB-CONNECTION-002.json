@@ -11,22 +11,64 @@
       "task": "MIG-AGENT-LIFECYCLE-002",
       "contract": "CON-AGENT-FACTORY",
       "revision": 1
+    },
+    {
+      "task": "MIG-SESSION-PROJECTION-007",
+      "contract": "CON-SESSION-PROJECTION",
+      "revision": 1
+    },
+    {
+      "task": "MIG-PERMISSION-PRESETS-056",
+      "contract": "CON-PERMISSION-PRESETS",
+      "revision": 1
+    },
+    {
+      "task": "MIG-ASK-USER-PROTOCOL-060",
+      "contract": "CON-ASK-USER-PROTOCOL",
+      "revision": 1
+    },
+    {
+      "task": "MIG-UNICODE-CARRIERS-064",
+      "contract": "CON-UNICODE-CARRIERS",
+      "revision": 1
+    },
+    {
+      "task": "MIG-CURRENT-RELEASE-GATE-003",
+      "contract": "CON-CURRENT-RELEASE-GATE",
+      "revision": 1
+    },
+    {
+      "task": "MIG-CURRENT-RELEASE-GATE-003",
+      "contract": "CON-WEB-HTTP-RESPONSE-LIFETIME",
+      "revision": 1
     }
   ],
-  "provides": [],
+  "provides": [
+    {
+      "contract": "CON-WEB-CONNECTION",
+      "revision": 1
+    }
+  ],
   "acceptance": [
-    "Specify source-backed contract and required provider revisions before entering ready."
+    "Connection authentication, remote.mux control/snapshot/follow, RPC/DTO errors and reconnect retain complete wire fields and active Loader/client module identities.",
+    "Unchanged official browser UI executes catalog plus model-selection projections, settings, messages/tools, questions/approvals/plan, cancel/close and cold resume on the owned extracted Host.",
+    "Dynamic module unload/reload, HMR SSE, disconnect/reconnect and cache/replay boundaries retain owners without legacy ApiProxy or business SSE fallbacks.",
+    "A fresh clean frozen complete release gate, all required child contracts, same-scenario Source/native observations and isolated own-Python3.8.10 extracted consumers pass before parent integration. Child counts, historical receipts and browser functional success alone are insufficient."
   ],
   "expected_paths": [
     "dsh",
     "tests",
     "migration"
   ],
-  "open_findings": ["Exact complete unchanged Source official build218 artifacts imported with recorded environment/digest; settings.describe HTTP500 caused by integer public Schema refs fixed at producer.320 actual consumers,87 preflight/maintenance,53 mandatory/extracted controls,4 original browser lifecycle and55 fresh Permission paired observations pass. Six Source/Root original browser functional minimal/standard/cordis fresh/cold journeys pass; full wire DTO equivalence, independent own interpreter journeys and new clean full release remain separate.318-file archive retains exact original rejections and prior build; no browser source changes or extra Source bug exception."],
+  "open_findings": [
+    "Exact complete unchanged Source official build218 artifacts imported with recorded environment/digest; settings.describe HTTP500 caused by integer public Schema refs fixed at producer.320 actual consumers,87 preflight/maintenance,53 mandatory/extracted controls,4 original browser lifecycle and55 fresh Permission paired observations pass. Six Source/Root original browser functional minimal/standard/cordis fresh/cold journeys pass; full wire DTO equivalence, independent own interpreter journeys and new clean full release remain separate.318-file archive retains exact original rejections and prior build; no browser source changes or extra Source bug exception."
+  ],
   "conflicts_with": [],
   "candidate_commit": null,
   "integrated_commit": null,
-  "evidence_ids": ["RUN-OFFICIAL-FRONTEND-QUALIFICATION-20261007-8D129C7D"],
-  "next_action": "canonical Connection/Gateway/Remote 与五条原版 browser/HTTP lifetime 已在当前候选复验；补齐近期实现的正式分层 contracts 和源断言覆盖，保留 registry projection 与完整 domain/cache/replay 的边界，不因旧台账仍 draft 重写或回退到 ApiProxy。",
+  "evidence_ids": [
+    "RUN-OFFICIAL-FRONTEND-QUALIFICATION-20261007-8D129C7D"
+  ],
+  "next_action": "按正式父合同补足组合观察、独立进程与实际解压消费者；保留原始差异和开放发现，完整候选签收后逐项审查，不能由子合同计数推定闭环。",
   "discovery_task": "MIG-WEB-PROTOCOL-DISCOVERY-002"
 }

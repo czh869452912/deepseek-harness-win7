@@ -25,9 +25,16 @@ class CollectedOutput:
 
 
 class SubprocessCollect:
-    def __init__(self, max_bytes: int, spill: Optional[Dict[str, int]] = None):
+    def __init__(self, max_bytes: int, spill: Optional[Dict[str, int]] = None,
+                 text_encoding: str = 'utf-8'):
         self.maxBytes = max_bytes
         self.spill = spill  # dict with "maxBytes"
+        # Host adaptation, opt-in per stream. Generic subprocess UTF-8 remains
+        # the upstream contract; PowerShell startup can emit UTF-16 before its
+        # UTF-8 preamble executes.
+        if text_encoding not in ('utf-8', 'powershell'):
+            raise ValueError('unsupported subprocess text encoding policy')
+        self.textEncoding = text_encoding
 
 
 # SubprocessStdinMode: "ignore" | "pipe" | dict {"data": str}

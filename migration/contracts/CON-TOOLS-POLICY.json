@@ -1,0 +1,30 @@
+{
+  "id": "CON-TOOLS-POLICY",
+  "revision": 1,
+  "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
+  "status": "specified",
+  "source_paths": [
+    "reference/packages/core/tools/src/index.ts",
+    "reference/packages/core/agent-loop/src/index.ts"
+  ],
+  "consumers": [
+    "scripts/verify_release.py",
+    "scripts/verify_portable.py"
+  ],
+  "invariants": [
+    "Tools registration/prepare/dispatch/results, approval, timeout/abort, repeat/token/pruner/compaction and model continuation preserve source-backed ordered observable outcomes.",
+    "Parallel tools with user supplementation, pending approval, first failure, interrupt and close are observed as composed canonical AgentLoop journeys, not isolated hook tests.",
+    "Public schema/presentation/diagnostics and reversible dependencies preserve identity and first outcome through unload/restore; existing upstream bug exceptions stay restricted to their exact predicates.",
+    "A fresh clean frozen complete release gate, all required child contracts, same-scenario Source/native observations and isolated own-Python3.8.10 extracted consumers pass before parent integration. Child counts, historical receipts and browser functional success alone are insufficient."
+  ],
+  "identity": "Pinned Source and exact candidate/input/observer/ZIP hashes bind full raw observations. Only source-backed allocated identity graphs and documented platform mappings may differ; business fields and registration order stay literal.",
+  "ownership": "Canonical Context/Loader services and per-agent/session mounts own all registrations and resources. Unload, retirement and physical process close remove only owned effects.",
+  "ordering": "Source-observed event, dispatch, wire and durable sequence is retained through composed journeys. No sorting or dropping fields to hide registration or publication differences.",
+  "errors": "Refuse missing/stale/altered lanes, unknown imports, changed artifacts and unmatched full observations. Retain the first raw failure and exact existing upstream exceptions; do not add generic normalization or retries.",
+  "cancellation": "Observe pre-publication, active, pending reply/result and close/disposal cancellation with bounded individual deadlines and final resource ownership, including cold recovery after physical exit.",
+  "adaptation": "Python3.8.10 and current Windows are the development runtime. Host compatibility is separate from unchanged frontend parity. Win7 certification remains user-deferred; arbitrary unsupported engine/plugin/transport behavior cannot be inferred from finite observations.",
+  "open_questions": [
+    "Pinned actual Source six scheduler observations expose missing final-result finish/notification, late dispatch after prepare and overwritten first failure. Root fixes passed 119 focused native tests and six fresh Source observations; full B2 combinations, synchronous dispatch prefixes and clean complete/extracted qualification remain open. See docs/research/2026-10-05-tools-scheduler-failure-progress.md.",
+    "The additional composed full-parent observations above are not yet accepted. This contract specification is not task acceptance."
+  ]
+}

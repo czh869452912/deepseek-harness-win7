@@ -4,6 +4,7 @@ Bounded output stream collector with spill recovery.
 Python 3.8.10 compatible.
 """
 
+import codecs
 import os
 import random
 import string
@@ -32,11 +33,16 @@ class OutputCollector(SubprocessOutputReader):
         max_spill_bytes: Optional[int],
         label: str,
         spill_dir: Optional[str] = None,
+        text_encoding: str = 'utf-8',
     ):
         self.max_bytes = max_bytes
         self.max_spill_bytes = max_spill_bytes
         self.label = label
         self.spill_dir = spill_dir or _private_spill_dir()
+        self.text_encoding = text_encoding
+        self._detected_encoding = None
+        self._encoding_prefix = b''
+        self._sealed = False
 
         self.chunks: List[bytes] = []
         self.bytes_count = 0
@@ -49,6 +55,15 @@ class OutputCollector(SubprocessOutputReader):
     def push(self, chunk: bytes) -> None:
         if not chunk:
             return
+        if self.text_encoding == 'powershell' and len(self._encoding_prefix) < 8:
+            self._encoding_prefix = (self._encoding_prefix + chunk)[:8]
+            prefix = self._encoding_prefix
+            if prefix.startswith(codecs.BOM_UTF16_LE):
+                self._detected_encoding = 'utf-16-le'
+            elif prefix.startswith(codecs.BOM_UTF16_BE):
+                self._detected_encoding = 'utf-16-be'
+            elif len(prefix) == 8 and prefix[1:8:2] == b'\0\0\0\0' and all(prefix[0:8:2]):
+                self._detected_encoding = 'utf-16-le'
         self.total += len(chunk)
         overflows = (self.bytes_count + len(chunk)) > self.max_bytes
 
@@ -126,15 +141,43 @@ class OutputCollector(SubprocessOutputReader):
             offset_in_buf = from_byte - window_start
             slice_data = buffer_data[offset_in_buf:]
 
-        text = slice_data.decode("utf-8", errors="replace")
+        next_offset = self.total
+        if self.text_encoding == 'powershell':
+            if self._detected_encoding is None and window_start == 0 and len(buffer_data) < 8 and not self._sealed:
+                return SubprocessOutputRead(text='', next_offset=0, lossy=lossy, spill_path=self.spill_file)
+            encoding = self._detected_encoding or 'utf-8'
+            undecodable = False
+            try:
+                probe = codecs.getincrementaldecoder(encoding)(errors='strict')
+                probe.decode(buffer_data, final=self._sealed)
+            except UnicodeError:
+                undecodable = True
+            if (self._detected_encoding or undecodable) and not self.spill_disabled and self.spill_fd is None and self.spill_file is None:
+                self._spill_all(b'')
+                if self._sealed:
+                    self.seal()
+            if self._detected_encoding:
+                # Retain raw startup diagnostics even when the memory cap was
+                # not reached; a text rendering must never be the only copy.
+                if (self.total - len(slice_data)) % 2:
+                    slice_data = slice_data[1:]
+                    lossy = True
+                if self.total - len(slice_data) == 0 and slice_data.startswith((codecs.BOM_UTF16_LE, codecs.BOM_UTF16_BE)):
+                    slice_data = slice_data[2:]
+            decoder = codecs.getincrementaldecoder(encoding)(errors='backslashreplace')
+            text = decoder.decode(slice_data, final=self._sealed)
+            next_offset -= len(decoder.getstate()[0])
+        else:
+            text = slice_data.decode("utf-8", errors="replace")
         return SubprocessOutputRead(
             text=text,
-            next_offset=self.total,
+            next_offset=next_offset,
             lossy=lossy,
             spill_path=self.spill_file,
         )
 
     def seal(self) -> None:
+        self._sealed = True
         if self.spill_fd is None:
             return
         try:
@@ -145,7 +188,9 @@ class OutputCollector(SubprocessOutputReader):
 
     def finalize(self) -> CollectedOutput:
         self.seal()
-        text = b"".join(self.chunks).decode("utf-8", errors="replace")
+        text = self.read_from(0).text if self.text_encoding == 'powershell' else b"".join(self.chunks).decode("utf-8", errors="replace")
+        # read_from may have created the raw diagnostic spill after seal.
+        self.seal()
         return CollectedOutput(
             text=text,
             truncated=self.dropped,

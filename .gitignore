@@ -49,3 +49,4 @@ hello_test.txt
 /scripts/oracles/official/node_modules/
 
 /node_modules/.vite/
+.goose/tools/

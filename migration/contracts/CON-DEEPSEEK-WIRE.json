@@ -1,96 +1,35 @@
 {
-  "id": "MIG-DEEPSEEK-WIRE-002",
-  "goal": "对齐真实 DeepSeek HTTP 适配与重试协议",
-  "kind": "verification",
-  "state": "draft",
+  "id": "CON-DEEPSEEK-WIRE",
+  "revision": 1,
   "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
-  "base_product": "a4ff8ac41fa37b5463b0ce8b7f420d0973e8d840",
-  "owner": null,
-  "requires": [
-    {
-      "task": "MIG-DEEPSEEK-ERROR-045",
-      "contract": "CON-DEEPSEEK-ERROR",
-      "revision": 1
-    },
-    {
-      "task": "MIG-DEEPSEEK-CAPTURE-046",
-      "contract": "CON-DEEPSEEK-CAPTURE",
-      "revision": 1
-    },
-    {
-      "task": "MIG-CANONICAL-LLM-048",
-      "contract": "CON-CANONICAL-LLM",
-      "revision": 1
-    },
-    {
-      "task": "MIG-LLM-METADATA-049",
-      "contract": "CON-LLM-METADATA",
-      "revision": 1
-    },
-    {
-      "task": "MIG-LLM-PREPARED-051",
-      "contract": "CON-LLM-PREPARED",
-      "revision": 1
-    },
-    {
-      "task": "MIG-LLM-CONFIG-053",
-      "contract": "CON-LLM-CONFIG",
-      "revision": 1
-    },
-    {
-      "task": "MIG-AGENT-DEPENDENCY-LIFECYCLE-059",
-      "contract": "CON-AGENT-DEPENDENCY-LIFECYCLE",
-      "revision": 1
-    },
-    {
-      "task": "MIG-MESSAGE-VALUES-061",
-      "contract": "CON-MESSAGE-VALUES",
-      "revision": 1
-    },
-    {
-      "task": "MIG-UNICODE-CARRIERS-064",
-      "contract": "CON-UNICODE-CARRIERS",
-      "revision": 1
-    },
-    {
-      "task": "MIG-CURRENT-RELEASE-GATE-003",
-      "contract": "CON-CURRENT-RELEASE-GATE",
-      "revision": 1
-    },
-    {
-      "task": "MIG-CURRENT-RELEASE-GATE-003",
-      "contract": "CON-WEB-HTTP-RESPONSE-LIFETIME",
-      "revision": 1
-    }
+  "status": "specified",
+  "source_paths": [
+    "reference/packages/llm/llm-deepseek/src/index.ts",
+    "reference/packages/core/agent-loop/src/index.ts"
   ],
-  "provides": [
-    {
-      "contract": "CON-DEEPSEEK-WIRE",
-      "revision": 1
-    }
+  "consumers": [
+    "scripts/verify_release.py",
+    "scripts/verify_portable.py"
   ],
-  "acceptance": [
+  "invariants": [
     "The canonical provider executes full requests, streamed chunks, usage, typed failures and retry decisions through real local HTTP for all five profiles.",
     "Catalog/model selection, preparation generation and immutable request/message graph identities remain exact across tool/next-model, retries, cancellation, close and cold recovery.",
     "Malformed transport/configuration, auxiliary failures and concurrent preparation/disposal retain source-backed error and resource ownership; local fixtures never substitute cloud/OAuth/paid qualification.",
     "A fresh clean frozen complete release gate, all required child contracts, same-scenario Source/native observations and isolated own-Python3.8.10 extracted consumers pass before parent integration. Child counts, historical receipts and browser functional success alone are insufficient."
   ],
-  "expected_paths": [
-    "dsh",
-    "tests",
-    "migration"
-  ],
-  "open_findings": [
+  "identity": "Pinned Source and exact candidate/input/observer/ZIP hashes bind full raw observations. Only source-backed allocated identity graphs and documented platform mappings may differ; business fields and registration order stay literal.",
+  "ownership": "Canonical Context/Loader services and per-agent/session mounts own all registrations and resources. Unload, retirement and physical process close remove only owned effects.",
+  "ordering": "Source-observed event, dispatch, wire and durable sequence is retained through composed journeys. No sorting or dropping fields to hide registration or publication differences.",
+  "errors": "Refuse missing/stale/altered lanes, unknown imports, changed artifacts and unmatched full observations. Retain the first raw failure and exact existing upstream exceptions; do not add generic normalization or retries.",
+  "cancellation": "Observe pre-publication, active, pending reply/result and close/disposal cancellation with bounded individual deadlines and final resource ownership, including cold recovery after physical exit.",
+  "adaptation": "Python3.8.10 and current Windows are the development runtime. Host compatibility is separate from unchanged frontend parity. Win7 certification remains user-deferred; arbitrary unsupported engine/plugin/transport behavior cannot be inferred from finite observations.",
+  "open_questions": [
     "24 complete local HTTP adapter error controls045 are bounded accepted in clean54361bd9, with exact oldafd ownPortable baseline retained. Every captured request/chunk/error/failure value compares; only JSON whole numeric token spelling is canonicalized for digest.446 unchanged Source assertions add reference coverage but are not extra native parity. Existing76 historical wire/config/model/files/settings observations still need their full Source-backed contract and selected/extracted runtime closure; full canonical retry/profile/cancellation/malformed transport and OAuth/cloud/paid scope remain open.",
     "76 complete selected config/model/serialize/usage/SSE/HTTP/Files/Settings captures046 are bounded accepted in cleanb2398db9. Exact543 ownPortable17 diagnostics and raw retry/origin identities remain retained. Full canonical AgentLoop retry/profile/cancellation/error recovery, arbitrary malformed transport/config and immutable/public graph ABI remain open.",
     "81 complete selected canonical LLM retry/auxiliary failure/public boundary/iterator ownership observations048 are bounded accepted in clean55a5ba87. Arbitrary metadata,prepared one-shot/config ownership,full model/profile,public graph ABI and concurrency remain open.",
     "137 complete selected public metadata/catalog/exact detachment/final stream observations049 are bounded accepted in clean2a67ae84. Prepared one-shot/config/generation/replay ownership,arbitrary accessors/null/graph ABI,full model/profile and concurrency remain open.",
     "053 selected26 complete standalone config query/nullable/strict identity observations bounded accepted in clean842d6373; arbitrary graphs/schedules/fullprofiles still open.",
-    "108 complete selected public prepared-call/config/generation/iterator/canonical AgentLoop observations051 are bounded accepted in clean842d6373. Arbitrary standalone configuration/accessor/graph ABI,full model/profile and concurrency remain open."
-  ],
-  "conflicts_with": [],
-  "candidate_commit": null,
-  "integrated_commit": null,
-  "evidence_ids": [],
-  "next_action": "按正式父合同补足组合观察、独立进程与实际解压消费者；保留原始差异和开放发现，完整候选签收后逐项审查，不能由子合同计数推定闭环。"
+    "108 complete selected public prepared-call/config/generation/iterator/canonical AgentLoop observations051 are bounded accepted in clean842d6373. Arbitrary standalone configuration/accessor/graph ABI,full model/profile and concurrency remain open.",
+    "The additional composed full-parent observations above are not yet accepted. This contract specification is not task acceptance."
+  ]
 }

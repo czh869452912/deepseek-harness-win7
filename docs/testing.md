@@ -54,6 +54,6 @@
 
 ## 当前 CI 的边界
 
-这些指引调整的是开发时的验证选择。当前 `.github/workflows/verify.yml` 仍在 PR、手工调用及发布复用时执行完整发行门禁，并设置45分钟 job 限制；`.github/workflows/release.yml` 的发布依赖该验收产物。本文没有改变这些触发器、时限或发布条件，也不授权绕过它们。
+当前 `.github/workflows/verify.yml` 仍在 PR、手工调用及发布复用时执行完整发行门禁，整体job期限为180分钟；先准备固定Chromium108观察器，与现代浏览器共同传入发行入口。完整入口新增同ZIP包内Python的108三预设fresh/cold功能旅程和输入/模块/缺lane拒绝；这不替代其他realm/CSS审计或Win7认证。`.github/workflows/release.yml` 的发布依赖同一验收产物和精确ZIP散列，不另行重建。
 
 后续 CI 改造应单独实现普通 PR 的相关验证与稳定整合/发布的完整门禁，评估 runner 的实际耗时，并保持正式回执、必需 lane 和精确 ZIP 发布约束。在 CI 改造完成前，应按现有工作流实际结果报告。

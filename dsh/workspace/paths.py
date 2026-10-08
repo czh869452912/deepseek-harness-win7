@@ -16,7 +16,7 @@ def realpath_normalize(path: str) -> str:
     if not os.path.exists(path):
         raise FileNotFoundError(f"No such file or directory: '{path}'")
     canonical = os.path.realpath(path)
-    return os.path.normpath(canonical).replace("\\", "/")
+    return os.path.normpath(canonical)
 def is_windows_style_path(value: str) -> bool:
     """Whether a path uses a Windows drive or UNC prefix."""
     if not value or not isinstance(value, str):

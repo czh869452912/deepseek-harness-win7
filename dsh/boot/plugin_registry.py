@@ -200,6 +200,7 @@ HARNESS_PLUGIN_CLASSES: Dict[str, str] = {
     "@deepseek-ai/dsh-client-modules": "dsh.host.client_modules.registry:ClientModulesPlugin",
     "@deepseek-ai/dsh-host-webserver": "dsh.host.webserver.webserver:WebServerPlugin",
     "@deepseek-ai/dsh-host-frontend-static": "dsh.host.frontend_static.frontend_static:FrontendStaticPlugin",
+    "@deepseek-win7/dsh-host-browser-compatibility": "dsh.host.browser_compat.plugin:BrowserCompatibilityPlugin",
     "@deepseek-ai/dsh-host-plugin-inventory": "dsh.host.plugin_inventory.plugin_inventory:PluginInventoryPlugin",
     "@deepseek-ai/dsh-host-directory-picker-auto": "dsh.host.directory_picker.auto:DirectoryPickerAutoPlugin",
     "@deepseek-ai/dsh-host-directory-picker-browse": "dsh.host.directory_picker.browse:BrowseDirectoryPickerPlugin",

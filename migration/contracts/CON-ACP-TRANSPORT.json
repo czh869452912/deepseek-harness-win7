@@ -1,0 +1,32 @@
+{
+  "id": "CON-ACP-TRANSPORT",
+  "revision": 1,
+  "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
+  "status": "specified",
+  "source_paths": [
+    "reference/packages/bundle/acp-app/src/index.ts",
+    "reference/packages/sdk/server/src/index.ts"
+  ],
+  "consumers": [
+    "scripts/verify_release.py",
+    "scripts/verify_portable.py"
+  ],
+  "invariants": [
+    "Canonical ACP initialization, admission, prompt, model selection, permission, cancellation, EOF and shutdown retain every captured SDK field and ordered committed output.",
+    "Hung initialization, malformed or pathological input, overlapping prompts and cancellation at publication boundaries terminate owned MCP/subagent/process trees without replacing the first outcome.",
+    "Independent multi-process cold sessions and five-profile consumers preserve the child provider contracts and public transport ownership.",
+    "A fresh clean frozen complete release gate, all required child contracts, same-scenario Source/native observations and isolated own-Python3.8.10 extracted consumers pass before parent integration. Child counts, historical receipts and browser functional success alone are insufficient."
+  ],
+  "identity": "Pinned Source and exact candidate/input/observer/ZIP hashes bind full raw observations. Only source-backed allocated identity graphs and documented platform mappings may differ; business fields and registration order stay literal.",
+  "ownership": "Canonical Context/Loader services and per-agent/session mounts own all registrations and resources. Unload, retirement and physical process close remove only owned effects.",
+  "ordering": "Source-observed event, dispatch, wire and durable sequence is retained through composed journeys. No sorting or dropping fields to hide registration or publication differences.",
+  "errors": "Refuse missing/stale/altered lanes, unknown imports, changed artifacts and unmatched full observations. Retain the first raw failure and exact existing upstream exceptions; do not add generic normalization or retries.",
+  "cancellation": "Observe pre-publication, active, pending reply/result and close/disposal cancellation with bounded individual deadlines and final resource ownership, including cold recovery after physical exit.",
+  "adaptation": "Python3.8.10 and current Windows are the development runtime. Host compatibility is separate from unchanged frontend parity. Win7 certification remains user-deferred; arbitrary unsupported engine/plugin/transport behavior cannot be inferred from finite observations.",
+  "open_questions": [
+    "A1/A2/A3 permissions, controlled MCP stdio/HTTP/SSE mounting, subprocess ACP, teardown/disposal and one measured Windows descendant tree are accepted only under their bounded contracts at 5c0b3c5e. The parent has no complete source-backed contract or integrated acceptance.",
+    "Infinite blocked initialization, pathological/oversized streams, full SDK HTTP/TLS/redirect/compression/URL coverage and arbitrary supervisor/Host crash/background Job/terminal/orphan trees remain unaccepted.",
+    "Browser startup cancellation, the original fixed-40ms cache test race, Proactor warnings and HTTP 10054 remain unclassified. Complete profile journeys and deferred Win7 are separate unaccepted scopes.",
+    "The additional composed full-parent observations above are not yet accepted. This contract specification is not task acceptance."
+  ]
+}

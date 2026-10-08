@@ -151,11 +151,39 @@
       "task": "MIG-JSONL-SHARING-047",
       "contract": "CON-JSONL-SHARING",
       "revision": 1
+    },
+    {
+      "task": "MIG-MESSAGE-VALUES-061",
+      "contract": "CON-MESSAGE-VALUES",
+      "revision": 1
+    },
+    {
+      "task": "MIG-UNICODE-CARRIERS-064",
+      "contract": "CON-UNICODE-CARRIERS",
+      "revision": 1
+    },
+    {
+      "task": "MIG-CURRENT-RELEASE-GATE-003",
+      "contract": "CON-CURRENT-RELEASE-GATE",
+      "revision": 1
+    },
+    {
+      "task": "MIG-CURRENT-RELEASE-GATE-003",
+      "contract": "CON-WEB-HTTP-RESPONSE-LIFETIME",
+      "revision": 1
     }
   ],
-  "provides": [],
+  "provides": [
+    {
+      "contract": "CON-SESSION-REPLAY",
+      "revision": 1
+    }
+  ],
   "acceptance": [
-    "Specify source-backed contract and required provider revisions before entering ready."
+    "Live and cold canonical Session projections, revisions, signed admission, events, queries, lineage and snapshots match complete Source values for plaintext/zstd JSONL and SQLite.",
+    "Independent processes and working directories replay public event/message graphs without alias leakage; malformed extension events and graph/copy cycles receive source-backed outcomes.",
+    "Writer/reader retirement, cancellation/reentrancy and Web reconnect/cold recovery preserve sequence, first error, owned preparations and durable state; long-history cases retain actual scale and deadlines.",
+    "A fresh clean frozen complete release gate, all required child contracts, same-scenario Source/native observations and isolated own-Python3.8.10 extracted consumers pass before parent integration. Child counts, historical receipts and browser functional success alone are insufficient."
   ],
   "expected_paths": [
     "dsh",
@@ -173,5 +201,5 @@
   "candidate_commit": null,
   "integrated_commit": null,
   "evidence_ids": [],
-  "next_action": "047规范JSONL共享读取四组已有界签收；继续任意锁竞争/写入者、公共Session图与插件ABI、多进程/multi-cwd/长历史及完整profile/Web恢复后才关闭父任务。"
+  "next_action": "按正式父合同补足组合观察、独立进程与实际解压消费者；保留原始差异和开放发现，完整候选签收后逐项审查，不能由子合同计数推定闭环。"
 }

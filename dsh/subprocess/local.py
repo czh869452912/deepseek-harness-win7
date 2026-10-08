@@ -249,6 +249,7 @@ class LocalSubprocessHandle(SubprocessHandle):
                 max_spill_bytes=stdout_mode.spill.get("maxBytes") if stdout_mode.spill else None,
                 label="stdout",
                 spill_dir=self.spill_dir,
+                text_encoding=stdout_mode.textEncoding,
             )
         if isinstance(stderr_mode, SubprocessCollect):
             self._stderr_collector = OutputCollector(
@@ -256,6 +257,7 @@ class LocalSubprocessHandle(SubprocessHandle):
                 max_spill_bytes=stderr_mode.spill.get("maxBytes") if stderr_mode.spill else None,
                 label="stderr",
                 spill_dir=self.spill_dir,
+                text_encoding=stderr_mode.textEncoding,
             )
 
         self.collected = SubprocessCollectedOutputs(

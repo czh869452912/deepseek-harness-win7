@@ -59,6 +59,14 @@ async def resolve_rg_path() -> str:
             repo_root, "reference", "node_modules", "@vscode",
             package_name, "bin", binary,
         ))
+        # pnpm keeps optional platform packages in its versioned store rather
+        # than necessarily creating a top-level @vscode link. Use the same
+        # fixed input as Portable assembly; never pick an arbitrary version.
+        candidates.append(os.path.join(
+            repo_root, "reference", "node_modules", ".pnpm",
+            "@vscode+%s@1.18.0" % package_name, "node_modules", "@vscode",
+            package_name, "bin", binary,
+        ))
     on_path = shutil.which("rg")
     if on_path:
         candidates.append(on_path)

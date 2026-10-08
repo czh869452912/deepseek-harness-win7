@@ -11,21 +11,86 @@
       "task": "MIG-AGENT-LIFECYCLE-002",
       "contract": "CON-AGENT-FACTORY",
       "revision": 1
+    },
+    {
+      "task": "MIG-TOOL-PARALLELISM-033",
+      "contract": "CON-TOOL-PARALLELISM",
+      "revision": 1
+    },
+    {
+      "task": "MIG-TOOL-START-PREFIX-034",
+      "contract": "CON-TOOL-START-PREFIX",
+      "revision": 1
+    },
+    {
+      "task": "MIG-PERMISSION-PRESETS-056",
+      "contract": "CON-PERMISSION-PRESETS",
+      "revision": 1
+    },
+    {
+      "task": "MIG-TOOL-ERRORS-SDK-METADATA-057",
+      "contract": "CON-TOOL-ERRORS-PROMPT-OWNERSHIP",
+      "revision": 2
+    },
+    {
+      "task": "MIG-TOOL-ERRORS-SDK-METADATA-057",
+      "contract": "CON-PYTHON-HOST-STATIC-INJECT",
+      "revision": 1
+    },
+    {
+      "task": "MIG-TOOL-DURABLE-PUBLICATION-058",
+      "contract": "CON-TOOL-DURABLE-PUBLICATION",
+      "revision": 1
+    },
+    {
+      "task": "MIG-AGENT-DEPENDENCY-LIFECYCLE-059",
+      "contract": "CON-AGENT-DEPENDENCY-LIFECYCLE",
+      "revision": 1
+    },
+    {
+      "task": "MIG-ASK-USER-PROTOCOL-060",
+      "contract": "CON-ASK-USER-PROTOCOL",
+      "revision": 1
+    },
+    {
+      "task": "MIG-FS-TOOL-VALUES-062",
+      "contract": "CON-FS-TOOL-VALUES",
+      "revision": 1
+    },
+    {
+      "task": "MIG-CURRENT-RELEASE-GATE-003",
+      "contract": "CON-CURRENT-RELEASE-GATE",
+      "revision": 1
+    },
+    {
+      "task": "MIG-CURRENT-RELEASE-GATE-003",
+      "contract": "CON-WEB-HTTP-RESPONSE-LIFETIME",
+      "revision": 1
     }
   ],
-  "provides": [],
+  "provides": [
+    {
+      "contract": "CON-TOOLS-POLICY",
+      "revision": 1
+    }
+  ],
   "acceptance": [
-    "Specify source-backed contract and required provider revisions before entering ready."
+    "Tools registration/prepare/dispatch/results, approval, timeout/abort, repeat/token/pruner/compaction and model continuation preserve source-backed ordered observable outcomes.",
+    "Parallel tools with user supplementation, pending approval, first failure, interrupt and close are observed as composed canonical AgentLoop journeys, not isolated hook tests.",
+    "Public schema/presentation/diagnostics and reversible dependencies preserve identity and first outcome through unload/restore; existing upstream bug exceptions stay restricted to their exact predicates.",
+    "A fresh clean frozen complete release gate, all required child contracts, same-scenario Source/native observations and isolated own-Python3.8.10 extracted consumers pass before parent integration. Child counts, historical receipts and browser functional success alone are insufficient."
   ],
   "expected_paths": [
     "dsh",
     "tests",
     "migration"
   ],
-  "open_findings": ["Pinned actual Source six scheduler observations expose missing final-result finish/notification, late dispatch after prepare and overwritten first failure. Root fixes passed 119 focused native tests and six fresh Source observations; full B2 combinations, synchronous dispatch prefixes and clean complete/extracted qualification remain open. See docs/research/2026-10-05-tools-scheduler-failure-progress.md."],
+  "open_findings": [
+    "Pinned actual Source six scheduler observations expose missing final-result finish/notification, late dispatch after prepare and overwritten first failure. Root fixes passed 119 focused native tests and six fresh Source observations; full B2 combinations, synchronous dispatch prefixes and clean complete/extracted qualification remain open. See docs/research/2026-10-05-tools-scheduler-failure-progress.md."
+  ],
   "conflicts_with": [],
   "candidate_commit": null,
   "integrated_commit": null,
   "evidence_ids": [],
-  "next_action": "Agent 提供端已在 623a615a 重验；据现有 repeat/token/pruner/compaction/approval/timeout/abort 配对回执回填正式合同，并认证并行工具、中断、用户补充与关闭的组合顺序。八类原版 bug 仍只由既有精确谓词接受，不扩大绕过。"
+  "next_action": "按正式父合同补足组合观察、独立进程与实际解压消费者；保留原始差异和开放发现，完整候选签收后逐项审查，不能由子合同计数推定闭环。"
 }

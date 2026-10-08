@@ -1334,6 +1334,27 @@ REQUIRED_REGRESSION = {
         'test_real_process_concurrent_sessions_cancel_only_owned_request[$/cancel_request]',
         'test_real_process_eof_cancels_active_turn_and_reopens_durable_session',
     },
+    'test_browser_compat': {
+        'test_host_owns_early_injection_and_unload_removes_it',
+        'test_independent_realm_capabilities_and_native_preservation',
+    },
+    'test_browser108_gate': {
+        'test_all_fixed_observer_resources_are_required',
+        'test_profile_imports_remain_bound_to_zip_after_owned_extraction_cleanup',
+        *{'test_profile_journeys_require_all_lanes_and_owned_runtime[' + damage + ']'
+          for damage in ('lane', 'phase', 'scenario', 'result', 'cancel', 'root', 'python',
+                         'interpreter', 'exit', 'module', 'bytes', 'version', 'late', 'zip', 'console')},
+        *{'test_zip_bound_observer_rejects_damage_after_valid_baseline[' + damage + ']'
+          for damage in ('absent', 'version', 'revision', 'binary', 'ua', 'adapter', 'zip',
+                         'exception', 'console', 'late', 'already-patched', 'timeout', 'host', 'missing-step')},
+    },
+    'test_pwsh_output_encoding': {
+        'test_truncated_fatal_stderr_remembers_encoding_and_preserves_complete_raw_log[]',
+        'test_truncated_fatal_stderr_remembers_encoding_and_preserves_complete_raw_log[\\xff\\xfe]',
+        'test_real_redirected_child_preserves_fatal_stderr_and_exit_status',
+        'test_generic_subprocess_utf8_contract_is_unchanged',
+        'test_unconfirmed_codepage_is_escaped_without_guessing_gbk',
+    },
     'test_native_web_browser': {
         'test_browser_extension_isolation_preserves_application_error_observation',
         'test_original_browser_native_host_cordis_lifecycle[lifecycle]',
@@ -1483,6 +1504,14 @@ def validate_extracted(path, archive, candidate):
             or len(report.get('acpPermissions', {}).get('observations', [])) != 6
             or report.get('frontendFilesChecked', 0) <= 0):
         raise RuntimeError('Extracted runtime/browser/ACP acceptance is incomplete')
+    if candidate.get('browserCompatibility'):
+        from scripts.browser108_gate import validate_observation, validate_profile_journeys
+        identity = candidate['browserCompatibility']
+        validate_observation(report.get('browser108', {}), archive, identity['adapter_sha256'])
+        if report.get('browser108InputSha256') != identity['input_sha256']:
+            raise RuntimeError('Extracted Chromium 108 input differs from frozen candidate')
+        validate_profile_journeys(report.get('browser108ProfileJourneys'), archive,
+            identity['adapter_sha256'], Path(report['runtime']['identity']['executable']).parent, check_files=False)
     for row, mode in zip(report['acpPermissions']['observations'], report['acpPermissions']['modes']):
         expected = {'allow': 'allowed-once', 'reject': 'rejected', 'malformed': 'unavailable'}.get(mode, 'cancelled')
         audit = row.get('audit', [])
@@ -1939,6 +1968,13 @@ def verify(args, output):
     if candidate['worktree_dirty'] and not args.allow_dirty:
         raise RuntimeError('release requires a clean checkout; --allow-dirty produces only a non-publishable preview')
     candidate['frontend'] = json.loads((ROOT / 'scripts/frontend-inputs.json').read_text(encoding='utf-8'))
+    from scripts.browser108_gate import validate_input as validate_browser108_input
+    browser108 = getattr(args, 'browser108', None) or os.environ.get('DSH_TEST_CHROMIUM108')
+    if not browser108:
+        raise RuntimeError('release requires the fixed Chromium 108 observer: use --browser108')
+    observer108 = validate_browser108_input(browser108)
+    candidate['browserCompatibility'] = dict(observer108,
+        adapter_sha256=digest(ROOT / 'dsh/host/browser_compat/compat.js'))
     python = str(ROOT / '.venv/Scripts/python.exe')
     environment = release_environment(browser)
     if args.prepare:
@@ -2219,6 +2255,7 @@ def verify(args, output):
     extracted = output / 'portable-extracted.json'
     extracted.unlink(missing_ok=True)
     command = [python, 'scripts/verify_portable.py', '--archive', str(archive),
+               '--browser108', observer108['binary'],
                '--browser', str(browser), '--output', str(extracted), '--unicode-source', str(unicode_source),
                '--text-source', str(text_source), '--text-inputs', str(text_inputs), '--tools-source', str(tools_source),
                '--format-source', str(format_source), '--format-inputs', str(format_inputs),
@@ -2254,7 +2291,9 @@ def verify(args, output):
                '--javascript-errors-source', str(errors_source), '--javascript-errors-native', str(errors_native)]
     if not candidate['worktree_dirty']:
         command += ['--expected-commit', candidate['product_commit']]
-    run(command, 'portable-extracted', output, env=environment)
+    # Three additional independently bounded 108 profile observers (300s each)
+    # join the existing extracted gate. Individual observer deadlines stay fixed.
+    run(command, 'portable-extracted', output, env=environment, timeout=1500)
     validate_extracted(extracted, archive, candidate)
     receipts['portable-extracted'] = digest(extracted)
     if source_snapshot() != before or git('rev-parse', 'HEAD') != candidate['product_commit']:
@@ -2283,6 +2322,7 @@ def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--prepare', action='store_true', help='Install pinned development dependencies before verification')
     parser.add_argument('--browser', help='Absolute Chromium executable; defaults to DSH_TEST_CHROMIUM')
+    parser.add_argument('--browser108', help='Fixed Chromium 108 executable; defaults to DSH_TEST_CHROMIUM108')
     parser.add_argument('--allow-dirty', action='store_true', help='Verify a non-publishable development preview, never a release')
     parser.add_argument('--regression-timeout', type=positive_seconds, metavar='SECONDS',
                         help='Optional total pytest budget; by default only individual operation deadlines apply')

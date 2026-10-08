@@ -48,7 +48,7 @@ def requested_options(parent, configured, request, enabled):
         if key in request and (not isinstance(request[key], str) or not request[key]):
             raise ValueError('child LLM {} must be non-empty'.format(key))
     if ('provider' in request) != ('model' in request):
-        raise ValueError('child LLM provider and model must be supplied together')
+        raise ValueError('child LLM `provider` and `model` must be supplied together')
     result = copy.deepcopy(configured or {})
     if 'provider' in request:
         changed = any(request[key] != result.get(key, parent.get(key)) for key in ('provider', 'model'))

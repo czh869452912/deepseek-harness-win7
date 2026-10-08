@@ -331,7 +331,9 @@ class WebServerService:
     def render_index(self, html: str) -> str:
         """Render index.html: structured injections first, then tap_index transforms."""
         injected = render_index_injections(html, self.collect_index_injections())
-        return self.apply_index_taps(injected)
+        rendered = self.apply_index_taps(injected)
+        compatibility = self.ctx.get('browserCompatibility') if hasattr(self.ctx, 'get') else None
+        return compatibility.validate_index(rendered) if compatibility is not None else rendered
 
     def _response_compression(self, headers: Dict[str, str]) -> Optional[ResponseCompression]:
         """

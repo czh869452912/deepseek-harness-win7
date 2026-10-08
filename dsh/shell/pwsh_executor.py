@@ -169,7 +169,9 @@ class PwshLocalExecutor(Service):
             argv=argv, cwd=spec['workdir'], grace_ms=config['graceMs'], signal=spec.get('signal'), env=env,
             stdio=SubprocessStdio({'data': spec['stdin']} if 'stdin' in spec else 'ignore',
                                  collect(config['maxOutputBytes'] if background else spec['stdoutMaxBytes']),
-                                 collect(config['maxOutputBytes']))))
+                                 SubprocessCollect(int(config['maxOutputBytes']),
+                                     {'maxBytes': int(config['maxSpillBytes'])},
+                                     text_encoding='powershell' if os.name == 'nt' else 'utf-8'))))
 
     async def run(self, spec):
         argv, facts = self.wrap(spec)

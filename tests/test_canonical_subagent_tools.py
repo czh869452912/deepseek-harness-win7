@@ -9,6 +9,39 @@ from test_subagent_in_process import setup
 from dsh.session.persistence_jsonl import JsonlSessionPersistencePlugin
 
 
+@pytest.mark.parametrize('reason,headline', [
+    ('completed', None), ('aborted', 'subagent run was cancelled'),
+    ('error', 'subagent run failed'), ('max-tokens', 'subagent run hit its token limit before finishing'),
+    ('refusal', 'subagent declined the task'), ('custom', 'subagent run ended abnormally (custom)')])
+@pytest.mark.parametrize('diagnostic', [None, '', 'provider detail'])
+@pytest.mark.parametrize('partial', ['', 'preserved answer'])
+@pytest.mark.asyncio
+async def test_foreground_retains_stop_reason_diagnostic_partial_and_disposal(reason, headline, diagnostic, partial):
+    import asyncio
+    from dsh.subagent.canonical_tools import foreground
+    value = dict(stopReason=reason, output=[dict(type='text', text=partial), dict(type='image', data='excluded')])
+    if diagnostic is not None:
+        value['diagnostic'] = diagnostic
+    future = asyncio.get_running_loop().create_future()
+    future.set_result(value)
+    disposed = []
+    async def dispose():
+        disposed.append('disposed')
+    run = SimpleNamespace(id='actual-result', result=future, dispose=dispose)
+    if headline is None:
+        assert await foreground(run) == dict(kind='foreground', runId='actual-result', output=value['output'])
+    else:
+        expected = headline
+        if diagnostic is not None:
+            expected += '\nDiagnostic: ' + diagnostic
+        if partial:
+            expected += '\nPartial output before the run ended:\n' + partial
+        with pytest.raises(RuntimeError) as error:
+            await foreground(run)
+        assert str(error.value) == expected
+    assert disposed == ['disposed']
+
+
 @pytest.mark.asyncio
 async def test_official_tool_executes_child_and_provider_unload_removes_tool():
     ctx, model, parent = await setup()

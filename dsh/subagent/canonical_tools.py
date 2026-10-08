@@ -41,8 +41,11 @@ async def foreground(run):
     try:
         result = await run.result
         if result['stopReason'] != 'completed':
-            message = 'subagent run ended: ' + result['stopReason']
-            if result.get('diagnostic'):
+            message = {'aborted': 'subagent run was cancelled', 'error': 'subagent run failed',
+                'max-tokens': 'subagent run hit its token limit before finishing',
+                'refusal': 'subagent declined the task'}.get(result['stopReason'],
+                    'subagent run ended abnormally ({})'.format(result['stopReason']))
+            if 'diagnostic' in result:
                 message += '\nDiagnostic: ' + result['diagnostic']
             partial = ''.join(block['text'] for block in result['output'] if block['type'] == 'text')
             if partial:

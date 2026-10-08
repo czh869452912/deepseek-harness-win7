@@ -276,6 +276,16 @@ try {
   cdp = new CDP(socket);
   if (options.inspect) observeInspectReplies(cdp, 'first');
   report.browser = await cdp.call('Browser.getVersion');
+  report.browserBinarySha256 = createHash('sha256').update(await readFile(resolve(options.browser))).digest('hex');
+  report.capabilitiesBefore = await cdp.evaluate(`({userAgent: navigator.userAgent,
+    abortSignalAny: typeof AbortSignal.any, promiseWithResolvers: typeof Promise.withResolvers,
+    abortSignalTimeout: typeof AbortSignal.timeout})`);
+  if (options['expected-browser-major']) {
+    const version = report.browser.product.match(/\/(\d+)\./)?.[1];
+    assert.equal(version, options['expected-browser-major'], 'actual browser protocol product must match the selected lane');
+    assert.ok(report.capabilitiesBefore.userAgent.includes('/' + version + '.'), 'actual UA must match protocol version');
+  }
+  report.compatibilitySha256 = createHash('sha256').update(await readFile(join(root, 'dsh/host/browser_compat/compat.js'))).digest('hex');
   cdp.listeners.push(message => {
     if (message.method === 'Runtime.exceptionThrown') report.errors.push(message.params.exceptionDetails);
     if (message.method === 'Runtime.consoleAPICalled' && message.params.type === 'error') report.consoleErrors.push(message.params.args.map(value => value.value ?? value.description));
@@ -302,6 +312,10 @@ try {
   await navigateOriginalPage(cdp, until, boot.url);
   await until(() => count('[class*="frame"]'), 'original application frame', 30000);
   report.steps.push({ step: 'original-frontend-boot', passed: true });
+  report.capabilitiesAfter = await cdp.evaluate(`({abortSignalAny: typeof AbortSignal.any,
+    promiseWithResolvers: typeof Promise.withResolvers, abortSignalTimeout: typeof AbortSignal.timeout})`);
+  assert.equal(report.capabilitiesAfter.abortSignalAny, 'function');
+  assert.equal(report.capabilitiesAfter.promiseWithResolvers, 'function');
   report.initialText = await cdp.evaluate('document.body.innerText');
   report.initialControls = await cdp.evaluate("Array.from(document.querySelectorAll('button,input,[role=dialog]')).map(e=>({tag:e.tagName,text:e.textContent,label:e.getAttribute('aria-label'),role:e.getAttribute('role')}))");
   await until(() => count('[role="dialog"][aria-label="Internal Testing Notice"]'), 'onboarding notice');

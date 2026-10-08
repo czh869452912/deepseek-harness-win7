@@ -623,6 +623,7 @@ def main(argv=None):
     parser.add_argument('--archive', required=True)
     parser.add_argument('--output', required=True)
     parser.add_argument('--browser', help='Optional absolute Chromium executable, development observer only')
+    parser.add_argument('--browser108', help='Fixed Chromium 108 observer for ZIP-bound compatibility lane')
     parser.add_argument('--expected-commit', help='Require this exact clean product commit in archive provenance')
     parser.add_argument('--unicode-source', help='Fresh paired Unicode source observations from the release gate')
     parser.add_argument('--text-source', help='Fresh paired Session text source observations from the release gate')
@@ -1534,6 +1535,44 @@ def main(argv=None):
                     raise RuntimeError('Extracted original-browser journey failed; see ' + str(browser_report))
             else:
                 report['browser'] = dict(status='not-run')
+            if args.browser108:
+                from scripts.browser108_gate import validate_input, validate_observation, validate_profile_journeys
+                identity108 = validate_input(args.browser108)
+                browser108_report = output.with_suffix('.browser108.json')
+                env_file = workspace / 'host-environment108.json'
+                env_file.write_text(json.dumps(env), encoding='utf-8')
+                observed108 = subprocess.run([node, str(ROOT / 'scripts/portable_browser_oracle.mjs'),
+                    '--python', str(portable / 'python.exe'), '--workspace', str(workspace),
+                    '--environment', str(env_file), '--browser', identity108['binary'],
+                    '--archive', str(archive), '--output', str(browser108_report)], cwd=str(workspace),
+                    capture_output=True, encoding='utf-8', errors='replace', timeout=120)
+                output.with_suffix('.browser108.log').write_text(observed108.stdout + '\nSTDERR:\n' + observed108.stderr, encoding='utf-8')
+                report['browser108'] = json.loads(browser108_report.read_text(encoding='utf-8')) if browser108_report.is_file() else {}
+                if observed108.returncode:
+                    raise RuntimeError('Extracted Chromium 108 journey failed; see ' + str(browser108_report))
+                validate_observation(report['browser108'], archive, digest(portable / 'dsh/host/browser_compat/compat.js'))
+                report['browser108InputSha256'] = identity108['input_sha256']
+                report['browser108ProfileJourneys'] = {}
+                for preset in ('minimal', 'standard', 'cordis'):
+                    journey_dir = output.parent / ('browser108-profile-' + preset)
+                    observed_profile = subprocess.run([node,
+                        str(ROOT / 'scripts/oracles/browser_profiles/web_journey_browser.mjs'),
+                        '--preset', preset, '--side', 'native', '--python', str(portable / 'python.exe'),
+                        '--root', str(portable), '--browser', identity108['binary'], '--expected-browser-major', '108',
+                        '--output', str(journey_dir), '--run-dir', str(workspace / ('journey-' + preset)),
+                        '--workspace', str(workspace / ('workspace-' + preset)), '--clock', '1791244800000',
+                        '--approval-artifact', str(workspace / ('approved-' + preset + '.txt')),
+                        '--archive', str(archive)], cwd=str(workspace), capture_output=True,
+                        encoding='utf-8', errors='replace', timeout=300)
+                    output.with_suffix('.browser108-' + preset + '.log').write_text(
+                        observed_profile.stdout + '\nSTDERR:\n' + observed_profile.stderr, encoding='utf-8')
+                    journey_path = journey_dir / 'report.json'
+                    if observed_profile.returncode or not journey_path.is_file():
+                        raise RuntimeError('Extracted Chromium 108 profile journey failed: ' + preset)
+                    report['browser108ProfileJourneys'][preset] = json.loads(journey_path.read_text(encoding='utf-8'))
+                validate_profile_journeys(report['browser108ProfileJourneys'], archive,
+                    digest(portable / 'dsh/host/browser_compat/compat.js'), portable)
+                validate_input(args.browser108)
             report['result'] = 'passed'
     except Exception as error:
         report['failure'] = str(error)

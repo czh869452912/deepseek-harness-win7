@@ -1,0 +1,34 @@
+{
+  "id": "CON-SESSION-REPLAY",
+  "revision": 1,
+  "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
+  "status": "specified",
+  "source_paths": [
+    "reference/packages/core/session/src/index.ts",
+    "reference/packages/core/session/src/json.ts"
+  ],
+  "consumers": [
+    "scripts/verify_release.py",
+    "scripts/verify_portable.py"
+  ],
+  "invariants": [
+    "Live and cold canonical Session projections, revisions, signed admission, events, queries, lineage and snapshots match complete Source values for plaintext/zstd JSONL and SQLite.",
+    "Independent processes and working directories replay public event/message graphs without alias leakage; malformed extension events and graph/copy cycles receive source-backed outcomes.",
+    "Writer/reader retirement, cancellation/reentrancy and Web reconnect/cold recovery preserve sequence, first error, owned preparations and durable state; long-history cases retain actual scale and deadlines.",
+    "A fresh clean frozen complete release gate, all required child contracts, same-scenario Source/native observations and isolated own-Python3.8.10 extracted consumers pass before parent integration. Child counts, historical receipts and browser functional success alone are insufficient."
+  ],
+  "identity": "Pinned Source and exact candidate/input/observer/ZIP hashes bind full raw observations. Only source-backed allocated identity graphs and documented platform mappings may differ; business fields and registration order stay literal.",
+  "ownership": "Canonical Context/Loader services and per-agent/session mounts own all registrations and resources. Unload, retirement and physical process close remove only owned effects.",
+  "ordering": "Source-observed event, dispatch, wire and durable sequence is retained through composed journeys. No sorting or dropping fields to hide registration or publication differences.",
+  "errors": "Refuse missing/stale/altered lanes, unknown imports, changed artifacts and unmatched full observations. Retain the first raw failure and exact existing upstream exceptions; do not add generic normalization or retries.",
+  "cancellation": "Observe pre-publication, active, pending reply/result and close/disposal cancellation with bounded individual deadlines and final resource ownership, including cold recovery after physical exit.",
+  "adaptation": "Python3.8.10 and current Windows are the development runtime. Host compatibility is separate from unchanged frontend parity. Win7 certification remains user-deferred; arbitrary unsupported engine/plugin/transport behavior cannot be inferred from finite observations.",
+  "open_questions": [
+    "Clean7f9e87e4 revalidates canonical SQLite323/default compressed or plaintext JSONL1030, independent schema-19 format826, FTS16, Unicode2034/text7883, optional tools78 and existing core/cold/live/prepared/projection/cache/corpus/title/lineage/snapshot ranges. These are distinct bounded Source contracts, not complete Session-domain certification.",
+    "Public canonical persistence51 numeric/cancelled read controls039, public create/metadata/clone53 revision2 controls041, create/restore76 exact admission diagnostics042 and restore18 signed-number predicates043 are now bounded integrated. Exact rejected4a127b73 and its clone/diagnostic/sign baselines remain preserved. Actual detached list/load/lineage/snapshot Source consumers pass.",
+    "Complete arbitrary malformed/extension event and public plugin ABI, alias/graph/copy-cycle ownership, private errors beyond specified rows, remaining provider/index/Task cancellation races, other domains/locales, long-history scale and independent cross-process/multi-cwd/profile/Web reconnect combinations remain unqualified. Source cache40ms timing, historical startup cancellation/WinError1175 and Proactor diagnostics remain separately recorded; real Win7 is user-deferred.",
+    "Sixteen complete canonical AgentLoop request/context graphs044 are bounded accepted in clean54361bd9; durable assistant messages retain Source content blocks without the oldtool_calls alias. This is not arbitrary extension/message ABI or every model/profile/cancellation schedule.",
+    "Four complete actual JSONL none/zstd list/inspect/raw shared-reader observations047 are bounded accepted in cleanb2398db9. Actual exclusive denial, reader retirement, missing paths and extended paths remain strict. The rejected eaa8 transient holder is unidentified; arbitrary holder schedules, writers, public graph ABI and full Session/profile scopes remain open.",
+    "The additional composed full-parent observations above are not yet accepted. This contract specification is not task acceptance."
+  ]
+}

@@ -8,7 +8,7 @@ permissions:
 jobs:
   verify:
     runs-on: windows-2022
-    timeout-minutes: 45
+    timeout-minutes: 180
     steps:
       - uses: actions/checkout@v4
         with:
@@ -27,7 +27,10 @@ jobs:
         run: |
           $browser = Join-Path $env:ProgramFiles 'Google/Chrome/Application/chrome.exe'
           if (-not (Test-Path -LiteralPath $browser)) { throw 'Required Chromium observer is missing' }
-          python scripts/verify_release.py --prepare --browser $browser
+          python scripts/browser108_gate.py --prepare .goose/tools/chromium108
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          $browser108 = (Resolve-Path .goose/tools/chromium108/chrome-win/chrome.exe).Path
+          python scripts/verify_release.py --prepare --browser $browser --browser108 $browser108
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           $receipt = Get-Content -Encoding utf8 .goose/out/release-gate/summary.json | ConvertFrom-Json
           if ($receipt.result -ne 'passed' -or $receipt.publishable -ne $true) { throw 'Candidate is not publishable' }

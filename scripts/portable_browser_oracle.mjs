@@ -1,5 +1,6 @@
 /** Development observer of an extracted Portable Host and unchanged browser UI. */
 import assert from 'node:assert/strict';
+import {createHash} from 'node:crypto';
 import {spawn} from 'node:child_process';
 import {mkdtemp, readFile, rm, writeFile} from 'node:fs/promises';
 import {tmpdir} from 'node:os';
@@ -86,6 +87,12 @@ try {
   const socket = new WebSocket(target.webSocketDebuggerUrl);
   await new Promise((yes, no) => {socket.addEventListener('open', yes, {once: true}); socket.addEventListener('error', no, {once: true});});
   cdp = new CDP(socket);
+  report.browser = await cdp.call('Browser.getVersion');
+  report.browserBinarySha256 = createHash('sha256').update(await readFile(resolve(options.browser))).digest('hex');
+  report.capabilitiesBefore = await cdp.evaluate(`({abortSignalAny:typeof AbortSignal.any,
+    promiseWithResolvers:typeof Promise.withResolvers,abortSignalTimeout:typeof AbortSignal.timeout})`);
+  if(options['archive']) report.archiveSha256 = createHash('sha256').update(await readFile(resolve(options.archive))).digest('hex');
+  report.compatibilitySha256 = createHash('sha256').update(await readFile(join(options.python, '..', 'dsh/host/browser_compat/compat.js'))).digest('hex');
   const requests = new Map();
   const replyJobs = new Set();
   cdp.listeners.push(message => {
@@ -131,6 +138,8 @@ try {
   await cdp.call('Emulation.setDeviceMetricsOverride', {width: 1680, height: 1000, deviceScaleFactor: 1, mobile: false});
   await navigateOriginalPage(cdp, until, boot.url);
   await until(() => count('[class*="frame"]'), 'original shell');
+  report.capabilitiesAfter = await cdp.evaluate(`({abortSignalAny:typeof AbortSignal.any,
+    promiseWithResolvers:typeof Promise.withResolvers,abortSignalTimeout:typeof AbortSignal.timeout})`);
   const notice = '[role="dialog"][aria-label="Internal Testing Notice"]';
   await until(() => count(notice), 'original first-use notice'); await click(notice + ' button');
   await until(async () => !await count(notice), 'notice dismissed');

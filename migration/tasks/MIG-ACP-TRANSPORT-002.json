@@ -86,14 +86,29 @@
       "task": "MIG-SUBPROCESS-TREE-014",
       "contract": "CON-SUBPROCESS-TREE",
       "revision": 1
+    },
+    {
+      "task": "MIG-CURRENT-RELEASE-GATE-003",
+      "contract": "CON-CURRENT-RELEASE-GATE",
+      "revision": 1
+    },
+    {
+      "task": "MIG-CURRENT-RELEASE-GATE-003",
+      "contract": "CON-WEB-HTTP-RESPONSE-LIFETIME",
+      "revision": 1
     }
   ],
-  "provides": [],
+  "provides": [
+    {
+      "contract": "CON-ACP-TRANSPORT",
+      "revision": 1
+    }
+  ],
   "acceptance": [
-    "Specify one source-backed provider/consumer contract before ready: identity, capabilities/version negotiation, ordered notifications, request cancellation, persisted sessions, MCP ownership and teardown.",
-    "Drive real stdio JSON-RPC initialize/new/prompt/cancel/list/resume/close/config with two Sessions, durable restoration and malformed/closed/late-result failures; no Agent=None success fallback.",
-    "MCP stdio/network transport and permission requests preserve exact Session/Agent ownership; disposable effects drain output and descendants on disconnect/unload.",
-    "Necessary ACP subagent consumers, canonical profile/launcher and extracted Portable execute the same bounded journeys; source-only ACP 139 tests do not certify Python parity."
+    "Canonical ACP initialization, admission, prompt, model selection, permission, cancellation, EOF and shutdown retain every captured SDK field and ordered committed output.",
+    "Hung initialization, malformed or pathological input, overlapping prompts and cancellation at publication boundaries terminate owned MCP/subagent/process trees without replacing the first outcome.",
+    "Independent multi-process cold sessions and five-profile consumers preserve the child provider contracts and public transport ownership.",
+    "A fresh clean frozen complete release gate, all required child contracts, same-scenario Source/native observations and isolated own-Python3.8.10 extracted consumers pass before parent integration. Child counts, historical receipts and browser functional success alone are insufficient."
   ],
   "expected_paths": [
     "dsh/acp",
@@ -114,5 +129,5 @@
   "candidate_commit": null,
   "integrated_commit": null,
   "evidence_ids": [],
-  "next_action": "以 5c0b3c5e 已签收的有界子合同为基础，继续无限阻塞初始化、病态流、SDK HTTP/URL 与完整进程/监督树生命周期；另行制定完整父合同并执行 canonical profile/Portable 消费者闭包，不能由子任务计数推定父范围完成。"
+  "next_action": "按正式父合同补足组合观察、独立进程与实际解压消费者；保留原始差异和开放发现，完整候选签收后逐项审查，不能由子合同计数推定闭环。"
 }

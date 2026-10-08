@@ -1,0 +1,31 @@
+{
+  "id": "CON-WEB-CONNECTION",
+  "revision": 1,
+  "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
+  "status": "specified",
+  "source_paths": [
+    "reference/packages/client/connection/src/index.ts",
+    "reference/packages/api/gateway/src/index.ts",
+    "reference/apps/web/src/main.ts"
+  ],
+  "consumers": [
+    "scripts/verify_release.py",
+    "scripts/verify_portable.py"
+  ],
+  "invariants": [
+    "Connection authentication, remote.mux control/snapshot/follow, RPC/DTO errors and reconnect retain complete wire fields and active Loader/client module identities.",
+    "Unchanged official browser UI executes catalog plus model-selection projections, settings, messages/tools, questions/approvals/plan, cancel/close and cold resume on the owned extracted Host.",
+    "Dynamic module unload/reload, HMR SSE, disconnect/reconnect and cache/replay boundaries retain owners without legacy ApiProxy or business SSE fallbacks.",
+    "A fresh clean frozen complete release gate, all required child contracts, same-scenario Source/native observations and isolated own-Python3.8.10 extracted consumers pass before parent integration. Child counts, historical receipts and browser functional success alone are insufficient."
+  ],
+  "identity": "Pinned Source and exact candidate/input/observer/ZIP hashes bind full raw observations. Only source-backed allocated identity graphs and documented platform mappings may differ; business fields and registration order stay literal.",
+  "ownership": "Canonical Context/Loader services and per-agent/session mounts own all registrations and resources. Unload, retirement and physical process close remove only owned effects.",
+  "ordering": "Source-observed event, dispatch, wire and durable sequence is retained through composed journeys. No sorting or dropping fields to hide registration or publication differences.",
+  "errors": "Refuse missing/stale/altered lanes, unknown imports, changed artifacts and unmatched full observations. Retain the first raw failure and exact existing upstream exceptions; do not add generic normalization or retries.",
+  "cancellation": "Observe pre-publication, active, pending reply/result and close/disposal cancellation with bounded individual deadlines and final resource ownership, including cold recovery after physical exit.",
+  "adaptation": "Python3.8.10 and current Windows are the development runtime. Host compatibility is separate from unchanged frontend parity. Win7 certification remains user-deferred; arbitrary unsupported engine/plugin/transport behavior cannot be inferred from finite observations.",
+  "open_questions": [
+    "Exact complete unchanged Source official build218 artifacts imported with recorded environment/digest; settings.describe HTTP500 caused by integer public Schema refs fixed at producer.320 actual consumers,87 preflight/maintenance,53 mandatory/extracted controls,4 original browser lifecycle and55 fresh Permission paired observations pass. Six Source/Root original browser functional minimal/standard/cordis fresh/cold journeys pass; full wire DTO equivalence, independent own interpreter journeys and new clean full release remain separate.318-file archive retains exact original rejections and prior build; no browser source changes or extra Source bug exception.",
+    "The additional composed full-parent observations above are not yet accepted. This contract specification is not task acceptance."
+  ]
+}

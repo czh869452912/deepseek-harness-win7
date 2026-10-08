@@ -11,6 +11,7 @@ from dsh.cordis.environment import launch_environment_of
 from dsh.cordis.plugin import Plugin
 from dsh.core.system_prompt import FIRST_PARTY_SECTION_ORDER
 from dsh.host.frontend_static.frontend_static import FrontendStaticPlugin
+from dsh.host.browser_compat.plugin import BrowserCompatibilityPlugin
 from dsh.subprocess.service import scrubbed_parent_env
 
 _announced = weakref.WeakSet()
@@ -71,6 +72,7 @@ class WebRuntimePlugin(Plugin):
             raise ValueError('web-app: trustedHosts must be an array of strings')
         runtime = resolve_lan_trust(ctx.get('webServer').host, config['trustedHosts'])
         ctx.set_service('webRuntime', runtime)
+        await ctx.plugin(BrowserCompatibilityPlugin)
         await ctx.plugin(FrontendStaticPlugin, config={'distIndex': str(SOURCE_ROOT / 'apps/web/dist/index.html')})
         if config['surfaceContext']:
             def prompt(child):

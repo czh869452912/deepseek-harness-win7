@@ -62,3 +62,15 @@ Loader检查曾误用未用于canonical启动的拆分类；相关两处提案�
 ## 最新清理范围
 
 第三轮既有逐测试保留器989份审计合计删除5442文件/13784477431字节；保留每份原审计与汇总。六份已成功退出浏览器的专用profile逐文件核验后删除1894文件/86886555字节；网络、完整帧、Host观察及清理审计保留。加上三份原样包成功副本，本轮新增清理824821566字节。与先前两份副本491936542字节及第三轮自动清理分开记账，不重复累计。失败、未知、活跃、正式材料及保护历史不删除。
+
+## 3153ebc3 真实严格Remote修复与门禁中断
+
+冻结第4轮实际Portable构建成功，完整Python约16%时同输入真实浏览器发现commands/list为HTTP500。仅按已核对PID/命令行结束本轮拥有的完整进程树；没有最终XML，不推断已通过数。物理结束且编辑前16554输入、干净HEAD均不变，精确包SHA-256为`4e553a7faba476b3c4334be49124849c300b9d64b629cc2402fdccddfca206d0`。19成员中断材料`CURRENT-RELEASE-INTERRUPTION-20261009-3153EBC3.zip`为80715602字节，SHA-256`e274f5403dc3224bafa9d73a1b45eb1e8f832ec810cbe495e7b991f04acbf412`；包含原包、输入、中断进程身份、完整当时日志及实际HTTP500观察。短执行工作区保留，未删除未知中断输入。
+
+最初将500归因于input的不可变对象，直接重现随后否定该假设：FrozenDict本身可以正常序列化。实际canonical加载的生成严格合同优先于SRC描述符，直接选择`list`域方法，绕过`remoteList`，返回CommandDescriptor元组。严格分派现在在合同未指定implementation时尊重显式Remote导出；合同显式implementation仍优先，重复导出拒绝，参数/lookup/严格codec/合同卸载的检查不变。新增实际生成commands合同与SRC两条回归，包括input/images和真正HTTP封套；回归初次也揭示独立夹具wireTypeSymbol未使用真实SessionId，已修正，首次拒绝保留。
+
+71项直接消费者及必需门禁控制通过，覆盖boot、Typert分派/Loader、HTTP、Settings、Workspace与commands。另一8项遗漏/跳过/重复/失败控制通过，与71项有重叠，不累计。真正Source/Native同14RPC、工具/下一模型/取消及两个物理进程均0重新执行；在既定message/workspace分配图投影下42条完整持久事件和最终header匹配。完整1155处原始差异仍保存：720处RPC主要包含Settings namespace顺序/Schema分配UID图、LLM provider注册顺序，435处全局mux交错/clientId分配。没有删除字段或排序数组签收。35成员`HANDOFF-STRICT-REMOTE-FIX-20261009-V1.zip`为459250字节，SHA-256`e7d76169a45b902f209d4792f5b5a3a5c46bc82677fbd2db411b55d4ff9388aa`；范围是基于3153的未提交修复字节和诊断，不是新ZIP/父合同资格。
+
+真实Loader懒同步导入与单线程拥有的异步导入均正常完成，工具仍为pwsh/editor；多线程循环模块锁失败独立保留。这些研究没有推广硬编码加载延迟、排序或Source暖缓存选择。后续继续按实际Node模块依赖/缓存和Cordis注入时机研究。
+
+确认Source与修复后Native成功物理结束，专用浏览器profile逐文件/无链接核验后删除999文件/33407343字节；完整网络、Host、帧和清理审计保留。500诊断的失败profile和中断工作区继续保留，未混入成功清理。

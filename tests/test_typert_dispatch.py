@@ -151,6 +151,69 @@ async def test_src_markers_rename_lookup_and_absent_arguments():
 
 
 @pytest.mark.asyncio
+@pytest.mark.parametrize('explicit_implementation', [False, True])
+async def test_strict_export_adapter_and_explicit_implementation_precedence(explicit_implementation):
+    class Adapter(TypertRemoteService):
+        def __init__(self, ctx):
+            super().__init__(ctx, 'adapter')
+
+        def read(self):
+            raise AssertionError('Domain method must not become the wire export')
+
+        @Remote('read')
+        def wireRead(self):
+            return dict(selected='export')
+
+        def explicitRead(self):
+            return dict(selected='explicit')
+
+    ctx = Context()
+    try:
+        await ctx.plugin(TypertRegistry)
+        await ctx.plugin(Adapter)
+        row = dict(id='fixture#adapter/read', service='adapter', namespace='adapter', method='read',
+                   invocation=dict(kind='direct'), parameters=[], result=dict(mode='src-json'))
+        if explicit_implementation:
+            row['implementation'] = 'explicitRead'
+        ctx.get('typert').register(dict(package='fixture', face='host', schemas=[], model={}, invocations=[row]))
+        assert await RemoteDispatcher(ctx).invoke(dict(namespace='adapter', method='read', args={})) == dict(
+            selected='explicit' if explicit_implementation else 'export')
+    finally:
+        await ctx.fiber.dispose()
+
+
+@pytest.mark.asyncio
+async def test_strict_duplicate_exports_reject_before_domain_invocation():
+    class Ambiguous(TypertRemoteService):
+        def __init__(self, ctx):
+            super().__init__(ctx, 'ambiguous')
+
+        def read(self):
+            raise AssertionError('Ambiguous export must not invoke the domain')
+
+        @Remote('read')
+        def first(self):
+            raise AssertionError('First export must not be selected silently')
+
+        @Remote('read')
+        def second(self):
+            raise AssertionError('Second export must not be selected silently')
+
+    ctx = Context()
+    try:
+        await ctx.plugin(TypertRegistry)
+        await ctx.plugin(Ambiguous)
+        row = dict(id='fixture#ambiguous/read', service='ambiguous', namespace='ambiguous', method='read',
+                   invocation=dict(kind='direct'), parameters=[], result=dict(mode='src-json'))
+        ctx.get('typert').register(dict(package='fixture', face='host', schemas=[], model={}, invocations=[row]))
+        with pytest.raises(TypertGatewayError) as caught:
+            await RemoteDispatcher(ctx).invoke(dict(namespace='ambiguous', method='read', args={}))
+        assert caught.value.code == 'ambiguous-endpoint'
+    finally:
+        await ctx.fiber.dispose()
+
+
+@pytest.mark.asyncio
 async def test_strict_codec_exact_fields_and_withdrawal_forbids_src_fallback():
     ctx, gateway = await setup()
     row = {"id": "fixture#read", "service": "example", "namespace": "example", "method": "read", "invocation": {"kind": "direct"},

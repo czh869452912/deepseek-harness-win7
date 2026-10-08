@@ -1,0 +1,24 @@
+{
+  "id": "RUN-HANDOFF-FULL-INTERRUPTION-20261009-3153EBC3",
+  "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
+  "product_commit": "3153ebc3e1ebfb7a5fb6172f7c4434259c536578",
+  "kind": "research",
+  "result": "failed",
+  "validity": "historical",
+  "commands": [
+    "Frozen verify_release.py v4 stopped after actual canonical commands/list HTTP500; exact owned process tree/physical exit and unchanged frozen inputs verified. No final Python XML."
+  ],
+  "environment": {
+    "python": "3.8.10",
+    "os": "Windows-10-10.0.26200-SP0",
+    "cwd": "C:\\Users\\czh86\\Documents\\Codex\\deepseek-harness-win7"
+  },
+  "contract_revisions": {},
+  "artifacts": [
+    {
+      "path": "migration/evidence/artifacts/CURRENT-RELEASE-INTERRUPTION-20261009-3153EBC3.zip",
+      "sha256": "e274f5403dc3224bafa9d73a1b45eb1e8f832ec810cbe495e7b991f04acbf412"
+    }
+  ],
+  "scope": "Interrupted known-defective candidate, not release acceptance or complete Python result. Exact Portable ZIP preserved once with full input and protocol rejection diagnostics."
+}

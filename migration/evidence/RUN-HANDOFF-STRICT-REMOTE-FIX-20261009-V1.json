@@ -1,0 +1,24 @@
+{
+  "id": "RUN-HANDOFF-STRICT-REMOTE-FIX-20261009-V1",
+  "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
+  "product_commit": "3153ebc3e1ebfb7a5fb6172f7c4434259c536578",
+  "kind": "research",
+  "result": "unknown",
+  "validity": "historical",
+  "commands": [
+    "Recorded focused consumers and mandatory omission controls; real Source/native14RPC and tool/cancel hosts physically completed0."
+  ],
+  "environment": {
+    "python": "3.8.10",
+    "os": "Windows-10-10.0.26200-SP0",
+    "cwd": "C:\\Users\\czh86\\Documents\\Codex\\deepseek-harness-win7"
+  },
+  "contract_revisions": {},
+  "artifacts": [
+    {
+      "path": "migration/evidence/artifacts/HANDOFF-STRICT-REMOTE-FIX-20261009-V1.zip",
+      "sha256": "e7d76169a45b902f209d4792f5b5a3a5c46bc82677fbd2db411b55d4ff9388aa"
+    }
+  ],
+  "scope": "Focused uncommitted strict Remote fix and finite browser diagnostics based on3153ebc3. Raw order/schema allocation differences remain; no task state promotion."
+}

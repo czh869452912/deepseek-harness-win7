@@ -252,7 +252,18 @@ class RemoteDispatcher:
         positional = list(await asyncio.gather(*(parameter(item) for item in row["parameters"])))
         if "cancellation" in row:
             positional.append(request.get("signal") or NEVER_ABORTED)
-        method = getattr(receiver, row.get("implementation", row["method"]), None)
+        implementation = row.get("implementation", row["method"])
+        if "implementation" not in row:
+            # Generated Source contracts name the public endpoint. A native
+            # service may retain a domain method and explicitly export its
+            # wire adapter under that name; strict and SRC calls must agree.
+            markers = [marker for marker in remote_methods(original_of(receiver))
+                       if marker.get("exportName", marker["method"]) == row["method"]]
+            if len(markers) > 1:
+                raise TypertGatewayError("ambiguous-endpoint", endpoint, "multiple Remote methods export this endpoint")
+            if markers:
+                implementation = markers[0]["method"]
+        method = getattr(receiver, implementation, None)
         if not callable(method):
             raise TypertGatewayError("method-unavailable", endpoint, "active Service has no callable method")
         return endpoint, row, method, positional

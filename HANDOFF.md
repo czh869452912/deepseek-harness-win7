@@ -26,6 +26,25 @@
 
 **门禁现状及验证节奏**：现有 CI 使用 runner 已安装的 Chrome，现有发行回执不要求版本 108，专项资格尚不成立。先执行 C108-01–03 相关定向验证，收尾稳定后再通过统一发行入口完成 C108-04；不为本次文档或每项局部补丁重启全套/重建 Portable。完整入口已包含 Python 全量，不在前面重复 `pytest tests`。专项结果不能补写旧回执或把下文旧签收提升为当前完整通过；旧 16 项开放迁移范围和精确上游例外保持，新增兼容待办另行规划，不塞入已 integrated 历史记录。
 
+## 下一步工作：Win7 隔离网 Portable 工具与依赖闭合
+
+**2026-10-08 新增现场问题与分析交接**：源码根目录运行 glob 报 `ripgrep launch failed`；另有 Win7 内网 Portable 中任意 pwsh 命令都返回初始化失败退出码 `4294901760`、stderr 乱码，而用户手工在 PowerShell 2.0 中能运行兼容命令。已整理 [离线 Portable 工具报告](docs/research/2026-10-08-win7-offline-portable-tool-report.md)，包含原始现场截图、已确认代码/原生依赖缺口、待确认假设和预制清单。当前只分析，不实施产品修复；此前探索性 glob 补丁及新增测试已撤回。
+
+本节只读核查基线为 `master` / `ec32e9194048c5dd2633a50dab64207277bab0f7`，不替换上方前端报告的原基线。现场 Portable 的精确 ZIP 尚未确认，不把当前构建输入、开发机定向通过或照片等同于该现场包的资格。以下为新增待办，**未实施、未登记为 MIG 任务、未签收**：
+
+| 待办 / 优先级 | 下一步交付 | 完成判据与边界 |
+| --- | --- | --- |
+| W7-OFFLINE-01 / P1 | 对齐源码与打包的 rg 路径解析，覆盖实际固定 pnpm 输入、包内优先级及显式覆盖 | 新进程无宿主 PATH rg 仍能运行实际 glob/grep；缺文件/启动失败诊断可区分；不要求现场安装 Node/pnpm/rg |
+| W7-OFFLINE-02 / P0 | 替换或构建真正支持 Win7 的固定 rg 输入 | 当前打包输入 rg 15.0.0 导入 Win8 同步 API；新输入绑定版本/来源/工具链/散列/许可，保持实际搜索语义并取得目标 OS 运行证据；未知现场包先补身份 |
+| W7-OFFLINE-03 / P0 | 明确原始 SP1/serviced Win7 基线，闭合 Python 3.8.10 x64、VC/UCRT、锁定 Python 扩展与所有 native helper 依赖 | 逐项 PE/API/ABI/布局和包内 import/启动核查，覆盖 winpty、SQLite、ICU、zstd、QuickJS；复制 DLL 或带离线安装器不直接等于零安装，不使用现代 OS API 补丁 |
+| W7-OFFLINE-04 / P0 | 定位 pwsh 宿主初始化失败，核查实际现场 profile/映射和创建条件 | 精确 ZIP、shell 版本/路径/bitness、argv/cwd/env、token/ACL、stdio/console 与原始字节形成对照；验证完整 PS2 包装脚本和权限边界，不以正文兼容或关闭 sandbox 代替根因 |
+| W7-OFFLINE-05 / P0 | 修复可证实的 PowerShell 输出解码缺口，保存无损诊断 | 区分宿主 fatal stderr、成功/失败命令、native 输出与 PTY；据原始字节判定 UTF-8/UTF-16LE/CP936，覆盖中文及跨块字符，不全局改 GBK 或先 replacement 再恢复 |
+| W7-OFFLINE-06 / P1 | 预制内网 LLM 配置、CA/proxy 与离线功能范围 | 经真实 canonical Provider 验证 tool calling/streaming 等服务能力；bootstrap-only 设置从可信入口生效；urllib/requests 信任链均核查，离线资源完整、外部下载/扩展依赖范围明确 |
+| W7-OFFLINE-07 / P0 | 明确零前置 Web 的产品浏览器运行时与启动方式 | 当前依赖默认浏览器；若零前置覆盖 Web，预制 Win7 可运行浏览器及依赖/许可/隔离 profile；产品浏览器与 108 验收 observer 分开，协调 C108-01–04，保留原版前端 |
+| W7-OFFLINE-08 / P0 | 准备同一最终 ZIP 的隔离网实际解压验收矩阵与回执 | 绑定候选/冻结输入/ZIP/OS/浏览器，验证无宿主开发工具、CLI/Web/搜索/shell/PTY/Session/工作流和内网 API；稳定节点走统一发行门禁。Win7 正式认证仍延期，先准备不自动恢复，不能用现代 Windows 通过替代 |
+
+**验证节奏与证据状态**：先补原始身份/字节并定向定位，修复后验证直接消费者，稳定候选才安排完整门禁；本次文档只做 diff/链接/截图一致性检查，不运行 pytest 或重建 Portable。与 C108 待办和原 16 项迁移范围并列跟踪，不提升历史回执或台账状态。
+
 ## 既有完整验证进展（保留历史）
 
 **2026-10-08 最新：按用户要求停止重复全套，完成用时审查与定向修复。** 第四次干净 `2112a470` 收集10095项，在3600秒/约99%中断，SDK有失败标记但没有最终XML/完整栈，拒绝已归档；不得猜测最终通过数。现从第二、三轮完整XML定位冷观察构造286秒、浏览器约39–49秒、SQLite约26秒的成本；代表性浏览器/SQLite复验通过，没有证据把这些正常工作量认作死循环。SDK夹具已修复通知重置等待期限、丢失已观察回复、用10秒即时回复期限等待300秒真实工具的问题。另修复SDK观察器及JSONL实际目录/追加/冷读取的Win7长路径访问，公开位置与原比较判据保持；新增失败栈即时保存。27项SDK/等待/发行工作区、100项JSONL/SDK、28项最终边界及4项最终字节Source配对分别通过，包含重叠，不累计；两个原版浏览器和SQLite控制通过。发行脚本默认不再硬卡全套3600秒，只有显式 `--regression-timeout SECONDS` 才设置总预算，单项操作期限保留。此轮没有第五次全套或新的完整签收；详细说明与未确认历史失败见本日验证进展，下文“待第四次”等均为历史。最新有界合同签收仍83026446/65，16开放任务不提升。
@@ -77,6 +96,7 @@ git lfs fsck
 4. `docs/research/2026-10-07-frontend-preflight-order-progress.md`：最新完整门禁拒绝及两项已修复失败。
 5. `migration/upstream-bug-exceptions.json`：九项原版缺陷发现索引；实际接受由各 oracle 的精确谓词决定。
 6. [2026-10-08 统一兼容报告](docs/research/2026-10-08-deepseek-harness-win7-unified-compatibility-report.md)：Chromium 108 源码/bundle 缺口、模型双输入及 G1–G4 交付门禁设计；上方 C108-01–07 是本次新增下一步工作。
+7. [2026-10-08 Win7 离线 Portable 工具报告](docs/research/2026-10-08-win7-offline-portable-tool-report.md)：glob/rg 依赖、PowerShell 初始化与编码、预制环境和现场证据边界；接续 W7-OFFLINE-01–08。
 
 账本当前共 **86 项：70 integrated、10 running、6 draft**。70 含历史/工具类记录，不能用作当前产品完成率。`accepted_upstream` 仍未建立。
 
@@ -168,6 +188,8 @@ git diff --check
 开放 16 项：056–064 九项 running、六个 draft 父范围（ACP transport / DeepSeek wire / profile journeys / Session replay / Tools policy / Web connection）以及 JS036 running/partial。顺序为成本优化 → 正式推广与补观察 → 新干净完整门禁 → 九项有限集成 → 六父合同及 JS036 剩余 Node/图 ABI/Ready/重入/竞争 → 最终统一验收。
 
 另有本次新增的 C108-01–07 兼容待办，见上方“下一步工作”。Chromium 108 前端复核、Host 适配与最终 ZIP 专项资格作为后续交付约束并列推进；尚未写入 MIG 台账，不能把“16 项”当作覆盖所有新增问题的总数。最终交付可用性不得只依赖此前现代浏览器验收。
+
+另有 W7-OFFLINE-01–08 隔离网 Portable 待办，见上方工具与依赖闭合交接及专门报告。源码搜索路径、rg 原生 Win7 API、PowerShell 初始化/解码和零前置部署分别闭合；这些分析没有实施补丁或补发资格，不计入已 integrated 历史。
 
 九项原版缺陷例外维持精确谓词；Python Future 调度差异另为语言适配。启动取消/cache 时序、Proactor/HTTP 关闭及部分文件系统错误仍未归因，不新增抑制、不把未知失败当原版 bug。真实 Win7 OS/浏览器组合认证按用户明确决策延期，不再重复询问；Chromium 108 自动化复核与交付门禁按上方新增待办推进。不能用当前 Windows 的 Python 3.8.10 或浏览器通过记录宣称 Win7 实机认证。
 

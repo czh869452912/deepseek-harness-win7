@@ -11,6 +11,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 from scripts.canonical_llm_values import observation_digest as value_digest
 from scripts.runtime_context_oracle import SOURCE_COMMIT, source_pin, validate_executable
+from scripts.import_paths import resolve_import_path
 
 GROUPS = ('retry', 'auxiliary', 'failure', 'boundary', 'iterator')
 GROUP_MODULES = {'retry': ['dsh/__init__.py',
@@ -616,6 +617,7 @@ SOURCE_INPUTS = {
     'reference/packages/llm/llm/src/retry-policy.ts',
     'reference/packages/llm/llm/src/types.ts',
     'scripts/canonical_llm_oracle.py',
+    'scripts/import_paths.py',
     'scripts/canonical_llm_values.py',
     'scripts/oracles/canonical-llm-fixtures.json',
     'scripts/oracles/canonical_llm_auxiliary.probe.spec.ts',
@@ -665,10 +667,11 @@ def identity(source, check_files=True):
 def validate_modules(modules, root, check_files):
     if not isinstance(modules, dict) or not modules:
         raise ValueError('Canonical LLM imported modules missing')
+    missing_prefixes = None if check_files else {}
     for name, expected in modules.items():
         if not isinstance(name, str) or not name.startswith('dsh/') or '..' in Path(name).parts or ':' in name or '\\' in name:
             raise ValueError('Canonical LLM imported path invalid')
-        selected = (root / name).resolve()
+        selected = resolve_import_path(root, name, missing_prefixes)
         if selected.relative_to(root).as_posix() != name or not isinstance(expected, str) or len(expected) != 64 or any(character not in '0123456789abcdef' for character in expected):
             raise ValueError('Canonical LLM imported identity invalid')
         if check_files and digest(selected) != expected:

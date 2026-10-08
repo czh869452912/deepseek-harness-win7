@@ -22,7 +22,7 @@ SOURCE_INPUTS = {
     'scripts/oracles/vitest.consumers.config.mts', 'scripts/oracles/vitest.core.config.mts',
     'migration/modules.json',
     'reference/packages/llm/llm/src/index.ts', 'reference/packages/llm/llm/src/types.ts',
-}
+} | {'scripts/import_paths.py'}
 REQUIRED_MODULES = {'dsh/core/agent_loop.py', 'dsh/core/runtime_context.py',
     'dsh/core/system_prompt/types.py', 'dsh/core/system_prompt/__init__.py',
     'dsh/core/session/session.py', 'dsh/core/tools.py', 'dsh/cordis/context.py',
@@ -83,16 +83,21 @@ def validate_executable(executable, root, check_files=True):
 
 
 def validate_runtime(report, root, expected_digest, modules, check_files=True):
+    if __package__:
+        from scripts.import_paths import resolve_import_path
+    else:
+        from import_paths import resolve_import_path
     root = Path(root).resolve()
     if not isinstance(report, dict) or Path(report['root']).resolve() != root or not report['python'].startswith('3.8.10 '):
         raise ValueError('Runtime full request selected root or Python differs')
     validate_executable(report['executable'], root, check_files)
     if not isinstance(modules, dict) or not REQUIRED_MODULES.issubset(modules) or report['modules'] != modules:
         raise ValueError('Runtime full request actual imported module closure differs')
+    missing_prefixes = None if check_files else {}
     for name, expected in modules.items():
         if not name.startswith('dsh/') or '..' in Path(name).parts or ':' in name or '\\' in name:
             raise ValueError('Runtime full request module path invalid')
-        path = (root / name).resolve()
+        path = resolve_import_path(root, name, missing_prefixes)
         if path.relative_to(root).as_posix() != name or len(expected) != 64 or any(character not in '0123456789abcdef' for character in expected):
             raise ValueError('Runtime full request module identity invalid')
         if check_files and digest(path) != expected:

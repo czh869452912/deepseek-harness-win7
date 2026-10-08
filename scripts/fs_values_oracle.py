@@ -16,7 +16,7 @@ OBSERVER_INPUTS = ('scripts/fs_values_oracle.py', 'scripts/fs_values_cases.py',
     'scripts/oracles/fs-values-cases.json', 'scripts/oracles/fs-real-tool-fixtures-v1.json',
     'scripts/oracles/read_tool_fixtures_v1.json', 'scripts/oracles/read-window-fixtures-v2.json',
     'scripts/oracles/diff-fixtures-v1.json') + tuple('scripts/oracles/fs_values_' + group + '_' + side + '.' + ('mts' if side == 'source' else 'py')
-        for group in GROUPS for side in ('source', 'python'))
+        for group in GROUPS for side in ('source', 'python')) + ('scripts/import_paths.py',)
 REQUIRED_IMPORTS = {'dsh/core/tools.py', 'dsh/core/system_prompt/__init__.py', 'dsh/cordis/context.py',
     'dsh/fs/tool_fs.py', 'dsh/fs/tool_read.py', 'dsh/fs/tool_read_render.py', 'dsh/fs/tool_read_image.py',
     'dsh/fs/tool_fs_mutation.py', 'dsh/fs/tool_fs_sandbox.py', 'dsh/fs/tool_diff.py',
@@ -98,6 +98,10 @@ def identity(source, source_root, check_files=True):
 
 
 def validate_runtime(report, root, executable, source, modules, check_files=True, owned_runtime=False):
+    if __package__:
+        from scripts.import_paths import resolve_import_path
+    else:
+        from import_paths import resolve_import_path
     root, executable = Path(root).resolve(), Path(executable).resolve()
     if (not isinstance(report, dict) or set(report) != {'root', 'python', 'executable', 'imports', 'rows', 'fixtureSha256', 'fixtureWorkspace'}
             or report.get('root') != str(root) or not report.get('python', '').startswith('3.8.10 ')
@@ -111,13 +115,14 @@ def validate_runtime(report, root, executable, source, modules, check_files=True
         raise ValueError('FS values native observer bytes differ')
     if not isinstance(modules, dict) or not REQUIRED_IMPORTS.issubset(modules) or report['imports'] != modules:
         raise ValueError('FS values actual imported closure differs')
+    missing_prefixes = None if check_files else {}
     for name, expected in modules.items():
         if (not isinstance(name, str) or not name.startswith('dsh/') or '\\' in name or ':' in name
                 or '..' in PurePosixPath(name).parts or PurePosixPath(name).as_posix() != name
                 or not isinstance(expected, str) or len(expected) != 64
                 or any(character not in '0123456789abcdef' for character in expected)):
             raise ValueError('FS values imported identity invalid')
-        path = (root / name).resolve()
+        path = resolve_import_path(root, name, missing_prefixes)
         if path.relative_to(root).as_posix() != name or check_files and digest(path) != expected:
             raise ValueError('FS values actual imported bytes differ')
     if complete_digest(report['rows']) != identity(source, ROOT / 'reference', check_files=False):

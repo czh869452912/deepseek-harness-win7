@@ -45,12 +45,17 @@ def identity(source, check_files=True):
 
 
 def validate_modules(modules, root, required, check_files):
+    if __package__:
+        from scripts.import_paths import resolve_import_path
+    else:
+        from import_paths import resolve_import_path
     if not isinstance(modules, dict) or set(modules) != set(required):
         raise ValueError('LLM config actual import closure differs')
+    missing_prefixes = None if check_files else {}
     for name, expected in modules.items():
         if not name.startswith('dsh/') or '..' in Path(name).parts or ':' in name or '\\' in name:
             raise ValueError('LLM config imported path invalid')
-        path = (root / name).resolve()
+        path = resolve_import_path(root, name, missing_prefixes)
         if path.relative_to(root).as_posix() != name or not isinstance(expected, str) or len(expected) != 64 or any(character not in '0123456789abcdef' for character in expected):
             raise ValueError('LLM config imported identity invalid')
         if check_files and digest(path) != expected:

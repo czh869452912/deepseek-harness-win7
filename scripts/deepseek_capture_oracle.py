@@ -14,7 +14,7 @@ SOURCE_COMMIT = 'cd5ef8148158c3a752a658978873241fdf8e2bbc'
 sys.path.insert(0, str(ROOT))
 from scripts.oracles.deepseek_capture_python import NAMES
 from dsh.core.session.json import walk_json_value
-SOURCE_INPUTS = {'scripts/oracles/deepseek_capture_http.ts', 'reference/packages/llm/llm/src/retry-policy.ts', 'scripts/oracles/deepseek_capture_settings.ts', 'reference/packages/llm/llm-deepseek/src/sse.ts', 'reference/packages/llm/llm-deepseek/src/translate.ts', 'scripts/oracles/deepseek-fixtures.json', 'reference/packages/llm/llm-deepseek/src/adapter.ts', 'scripts/oracles/deepseek_capture_files.ts', 'scripts/oracles/vitest.deepseek-capture-probe.config.mts', 'reference/packages/llm/llm-retry/src/index.ts', 'migration/modules.json', 'scripts/oracles/vitest.deepseek-probe.config.mts', 'reference/packages/llm/llm-deepseek/src/files-api.ts', 'reference/packages/llm/llm-deepseek/src/serialize.ts', 'scripts/oracles/deepseek_capture.probe.spec.ts', 'reference/packages/llm/llm-deepseek/src/index.ts'}
+SOURCE_INPUTS = {'scripts/oracles/deepseek_capture_http.ts', 'reference/packages/llm/llm/src/retry-policy.ts', 'scripts/oracles/deepseek_capture_settings.ts', 'reference/packages/llm/llm-deepseek/src/sse.ts', 'reference/packages/llm/llm-deepseek/src/translate.ts', 'scripts/oracles/deepseek-fixtures.json', 'reference/packages/llm/llm-deepseek/src/adapter.ts', 'scripts/oracles/deepseek_capture_files.ts', 'scripts/oracles/vitest.deepseek-capture-probe.config.mts', 'reference/packages/llm/llm-retry/src/index.ts', 'migration/modules.json', 'scripts/oracles/vitest.deepseek-probe.config.mts', 'reference/packages/llm/llm-deepseek/src/files-api.ts', 'reference/packages/llm/llm-deepseek/src/serialize.ts', 'scripts/oracles/deepseek_capture.probe.spec.ts', 'reference/packages/llm/llm-deepseek/src/index.ts'} | {'scripts/import_paths.py'}
 REQUIRED_MODULES = {'dsh/llm/llm_deepseek.py', 'dsh/llm/deepseek_wire.py',
     'dsh/llm/deepseek_request.py', 'dsh/llm/deepseek_config.py', 'dsh/llm/llm_service.py',
     'dsh/llm/http_stream.py', 'dsh/llm/stream_bridge.py', 'dsh/core/abort.py',
@@ -106,16 +106,21 @@ def validate_executable(executable, root, check_files=True):
 
 
 def validate_runtime(report, root, expected_digest, modules, check_files=True):
+    if __package__:
+        from scripts.import_paths import resolve_import_path
+    else:
+        from import_paths import resolve_import_path
     root = Path(root).resolve()
     if not isinstance(report, dict) or Path(report['root']).resolve() != root or not report['python'].startswith('3.8.10 '):
         raise ValueError('DeepSeek capture selected root or Python differs')
     validate_executable(report['executable'], root, check_files)
     if not isinstance(modules, dict) or not REQUIRED_MODULES.issubset(modules) or report['modules'] != modules:
         raise ValueError('DeepSeek capture actual imported module closure differs')
+    missing_prefixes = None if check_files else {}
     for name, expected in modules.items():
         if not name.startswith('dsh/') or '..' in Path(name).parts or ':' in name or '\\' in name:
             raise ValueError('DeepSeek capture module path invalid')
-        path = (root / name).resolve()
+        path = resolve_import_path(root, name, missing_prefixes)
         if path.relative_to(root).as_posix() != name or len(expected) != 64 or any(character not in '0123456789abcdef' for character in expected):
             raise ValueError('DeepSeek capture module identity invalid')
         if check_files and digest(path) != expected:

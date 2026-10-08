@@ -13,7 +13,7 @@ ROOT = Path(__file__).resolve().parents[1]
 SOURCE_COMMIT = 'cd5ef8148158c3a752a658978873241fdf8e2bbc'
 NAMES = ('success-absent', 'success-null', 'success-false', 'success-zero', 'success-empty-object', 'success-empty-array', 'success-unicode', 'success-graph', 'plain-failure', 'typed-failure', 'abort-before', 'abort-after-first')
 OBSERVER_INPUTS = ('scripts/tool_durable_oracle.py', 'scripts/oracles/tool_durable_source.mts',
-                   'scripts/oracles/tool_durable_python.py', 'scripts/tool_durable_cases.py', 'scripts/oracles/tool-durable-cases.json')
+                   'scripts/oracles/tool_durable_python.py', 'scripts/tool_durable_cases.py', 'scripts/oracles/tool-durable-cases.json') + ('scripts/import_paths.py',)
 REQUIRED_IMPORTS = {'dsh/core/tools.py', 'dsh/core/system_prompt/__init__.py', 'dsh/core/tool_calls.py', 'dsh/llm/message.py', 'dsh/llm/llm_service.py', 'dsh/cordis/context.py',
                     'dsh/core/abort.py', 'dsh/llm/error.py'}
 
@@ -77,6 +77,10 @@ def identity(source, source_root, check_files=True):
 
 
 def validate_runtime(report, root, executable, source, modules, check_files=True, owned_runtime=False):
+    if __package__:
+        from scripts.import_paths import resolve_import_path
+    else:
+        from import_paths import resolve_import_path
     root, executable = Path(root).resolve(), Path(executable).resolve()
     if (not isinstance(report, dict) or set(report) != {'root', 'python', 'executable', 'imports', 'rows', 'fixtureSha256'}
             or report.get('root') != str(root) or not report.get('python', '').startswith('3.8.10 ')
@@ -88,13 +92,14 @@ def validate_runtime(report, root, executable, source, modules, check_files=True
         raise ValueError('Durable tool native observer bytes differ')
     if not isinstance(modules, dict) or not REQUIRED_IMPORTS.issubset(modules) or report['imports'] != modules:
         raise ValueError('Durable tool actual imported closure differs')
+    missing_prefixes = None if check_files else {}
     for name, expected in modules.items():
         if (not isinstance(name, str) or not name.startswith('dsh/') or '\\' in name or ':' in name
                 or '..' in PurePosixPath(name).parts or PurePosixPath(name).as_posix() != name
                 or not isinstance(expected, str) or len(expected) != 64
                 or any(character not in '0123456789abcdef' for character in expected)):
             raise ValueError('Durable tool imported identity invalid')
-        path = (root / name).resolve()
+        path = resolve_import_path(root, name, missing_prefixes)
         if path.relative_to(root).as_posix() != name or check_files and digest(path) != expected:
             raise ValueError('Durable tool actual imported bytes differ')
     if complete_digest(report['rows']) != identity(source, ROOT / 'reference', check_files=False):

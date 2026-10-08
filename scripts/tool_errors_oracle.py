@@ -12,7 +12,7 @@ SOURCE_COMMIT = 'cd5ef8148158c3a752a658978873241fdf8e2bbc'
 NAMES = ('before-prompt', 'after-prompt', 'after-prompt-dispose', 'after-prompt-restore', 'plain',
          'typed', 'unknown', 'pre-aborted', 'body-aborted')
 OBSERVER_INPUTS = ('scripts/tool_errors_oracle.py', 'scripts/oracles/tool_errors_source.mts',
-                   'scripts/oracles/tool_errors_python.py', 'scripts/tool_errors_cases.py')
+                   'scripts/oracles/tool_errors_python.py', 'scripts/tool_errors_cases.py') + ('scripts/import_paths.py',)
 REQUIRED_IMPORTS = {'dsh/core/tools.py', 'dsh/core/system_prompt/__init__.py', 'dsh/cordis/context.py',
                     'dsh/core/abort.py', 'dsh/llm/error.py'}
 
@@ -62,6 +62,10 @@ def identity(source, source_root, check_files=True):
 
 
 def validate_runtime(report, root, executable, source, modules, check_files=True, owned_runtime=False):
+    if __package__:
+        from scripts.import_paths import resolve_import_path
+    else:
+        from import_paths import resolve_import_path
     root, executable = Path(root).resolve(), Path(executable).resolve()
     if (not isinstance(report, dict) or set(report) != {'root', 'python', 'executable', 'imports', 'rows', 'fixtureSha256'}
             or report.get('root') != str(root) or not report.get('python', '').startswith('3.8.10 ')
@@ -73,13 +77,14 @@ def validate_runtime(report, root, executable, source, modules, check_files=True
         raise ValueError('Tools native observer bytes differ')
     if not isinstance(modules, dict) or not REQUIRED_IMPORTS.issubset(modules) or report['imports'] != modules:
         raise ValueError('Tools actual imported closure differs')
+    missing_prefixes = None if check_files else {}
     for name, expected in modules.items():
         if (not isinstance(name, str) or not name.startswith('dsh/') or '\\' in name or ':' in name
                 or '..' in PurePosixPath(name).parts or PurePosixPath(name).as_posix() != name
                 or not isinstance(expected, str) or len(expected) != 64
                 or any(character not in '0123456789abcdef' for character in expected)):
             raise ValueError('Tools imported identity invalid')
-        path = (root / name).resolve()
+        path = resolve_import_path(root, name, missing_prefixes)
         if path.relative_to(root).as_posix() != name or check_files and digest(path) != expected:
             raise ValueError('Tools actual imported bytes differ')
     if complete_digest(report['rows']) != identity(source, ROOT / 'reference', check_files=False):

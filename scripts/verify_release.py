@@ -186,6 +186,11 @@ REQUIRED_REGRESSION = {
           for state in ('missing', 'existing', 'junction', 'dangling-junction') for check_files in (True, False)},
         *{'test_import_paths_live_prefix_never_uses_missing_tree_shortcut[' + str(check_files) + ']'
           for check_files in (True, False)},
+        *{'test_grouped_import_validation_retains_missing_file_and_link_refusals[' + state + '-' + str(check_files) + '-' + validator + ']'
+          for state in ('missing', 'existing', 'junction', 'dangling-junction')
+          for check_files in (True, False) for validator in ('canonical', 'prepared', 'metadata', 'config', 'javascript')},
+        *{'test_grouped_import_validation_reads_current_bytes_on_every_call[' + validator + ']'
+          for validator in ('canonical', 'prepared', 'metadata', 'config', 'javascript')},
     },
     'test_tools_upstream_parity': {'test_agent_loop_waits_for_owned_tools_and_retires_on_loss'},
     'test_tool_errors_consumers': {

@@ -19,7 +19,7 @@ SOURCE_INPUTS = {
     'scripts/oracles/jsonl_sharing.probe.spec.ts', 'scripts/oracles/jsonl_sharing_python.py',
     'scripts/oracles/vitest.jsonl-sharing-probe.config.mts', 'scripts/oracles/vitest.agent-lifecycle.config.mts',
     'scripts/oracles/vitest.consumers.config.mts', 'scripts/oracles/vitest.core.config.mts', 'migration/modules.json',
-}
+} | {'scripts/import_paths.py'}
 REQUIRED_MODULES = {'dsh/session/file_io.py', 'dsh/session/jsonl_store.py',
     'dsh/session/persistence_jsonl_canonical.py', 'dsh/cordis/context.py'}
 
@@ -46,16 +46,21 @@ def identity(source, check_files=True):
 
 
 def validate_runtime(report, root, expected_digest, modules, check_files=True):
+    if __package__:
+        from scripts.import_paths import resolve_import_path
+    else:
+        from import_paths import resolve_import_path
     root = Path(root).resolve()
     if Path(report['root']).resolve() != root or not report['python'].startswith('3.8.10 '):
         raise ValueError('JSONL sharing selected root or Python differs')
     validate_executable(report['executable'], root, check_files)
     if not isinstance(modules, dict) or not REQUIRED_MODULES.issubset(modules) or report['modules'] != modules:
         raise ValueError('JSONL sharing imported module closure differs')
+    missing_prefixes = None if check_files else {}
     for name, expected in modules.items():
         if not name.startswith('dsh/') or '..' in Path(name).parts or ':' in name or '\\' in name:
             raise ValueError('JSONL sharing imported path invalid')
-        path = (root / name).resolve()
+        path = resolve_import_path(root, name, missing_prefixes)
         if path.relative_to(root).as_posix() != name or not isinstance(expected, str) or len(expected) != 64 or any(character not in '0123456789abcdef' for character in expected):
             raise ValueError('JSONL sharing imported identity invalid')
         if check_files and digest(path) != expected:

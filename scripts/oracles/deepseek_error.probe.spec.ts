@@ -16,7 +16,7 @@ it('captures complete actual DeepSeek local HTTP failure graphs', async () => {
     'scripts/oracles/deepseek_error.probe.spec.ts',
     'scripts/oracles/vitest.deepseek-error-probe.config.mts',
     'scripts/oracles/deepseek-error-fixtures.json',
-    'scripts/oracles/vitest.deepseek-probe.config.mts', 'migration/modules.json',
+    'scripts/oracles/vitest.deepseek-probe.config.mts', 'migration/modules.json', 'scripts/import_paths.py',
   ]
   const inputs = Object.fromEntries(paths.map(path => [path, createHash('sha256').update(readFileSync(path)).digest('hex')]))
   const fixtures = JSON.parse(readFileSync('scripts/oracles/deepseek-error-fixtures.json', 'utf8'))

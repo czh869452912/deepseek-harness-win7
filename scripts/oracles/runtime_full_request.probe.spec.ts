@@ -85,7 +85,8 @@ describe('actual Source agent runtime context', () => {
       'reference/packages/core/system-prompt/src/index.ts', 'reference/packages/core/agent-loop/tests/mock-adapter.ts',
       'scripts/oracles/runtime_full_request.probe.spec.ts', 'scripts/oracles/vitest.runtime-full-request-probe.config.mts',
       'reference/packages/llm/llm/src/index.ts', 'reference/packages/llm/llm/src/types.ts',
-      'scripts/oracles/vitest.consumers.config.mts', 'scripts/oracles/vitest.core.config.mts', 'migration/modules.json']
+      'scripts/oracles/vitest.consumers.config.mts', 'scripts/oracles/vitest.core.config.mts', 'migration/modules.json',
+      'scripts/import_paths.py']
     for (const path of files) inputs[path] = createHash('sha256').update(readFileSync(path)).digest('hex')
     writeFileSync(output, JSON.stringify({ sourceCommit, node: process.version, inputs, observations }, null, 2) + '\n', { encoding: 'utf8', flag: 'wx' })
   })

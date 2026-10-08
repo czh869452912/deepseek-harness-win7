@@ -12,6 +12,7 @@ sys.path.insert(0, str(ROOT))
 from scripts.runtime_context_oracle import SOURCE_COMMIT, source_pin, validate_executable
 from scripts.canonical_llm_oracle import SOURCE_INPUTS as CANONICAL_SOURCE_INPUTS
 from scripts.canonical_llm_values import observation_digest as canonical_value_digest
+from scripts.import_paths import resolve_import_path
 
 GROUPS = ('public', 'generation', 'failure', 'iterator', 'equality', 'agent', 'default')
 FIXTURE_PATH = 'scripts/oracles/llm-prepared-fixtures.json'
@@ -47,10 +48,11 @@ def identity(source, check_files=True):
 def validate_modules(modules, root, required, check_files):
     if not isinstance(modules, dict) or set(modules) != set(required):
         raise ValueError('LLM prepared actual import closure differs')
+    missing_prefixes = None if check_files else {}
     for name, expected in modules.items():
         if not name.startswith('dsh/') or '..' in Path(name).parts or ':' in name or '\\' in name:
             raise ValueError('LLM prepared imported path invalid')
-        path = (root / name).resolve()
+        path = resolve_import_path(root, name, missing_prefixes)
         if path.relative_to(root).as_posix() != name or not isinstance(expected, str) or len(expected) != 64 or any(character not in '0123456789abcdef' for character in expected):
             raise ValueError('LLM prepared imported identity invalid')
         if check_files and digest(path) != expected:

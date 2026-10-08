@@ -16,6 +16,7 @@ it('records actual pinned DeepSeek boundary observations', async () => {
   expect(execFileSync('git',['-C','reference','status','--porcelain'],{encoding:'utf8'}).trim()).toBe('')
   const paths = [
   "migration/modules.json",
+  "scripts/import_paths.py",
   "reference/packages/llm/llm-deepseek/src/adapter.ts",
   "reference/packages/llm/llm-deepseek/src/files-api.ts",
   "reference/packages/llm/llm-deepseek/src/index.ts",

@@ -11,7 +11,7 @@ ROOT = Path(__file__).resolve().parents[1]
 SOURCE_COMMIT = 'cd5ef8148158c3a752a658978873241fdf8e2bbc'
 NAMES = ('text.txt', 'empty.txt', '中文.txt', 'fixed-time.txt', 'directory', 'metadata-change.txt', 'missing.txt')
 SOURCE_AREAS = ('packages/fs/fs-local', 'packages/fs/fs', 'vendor/cordis', 'packages/typert', 'vendor/schemastery')
-OBSERVER_INPUTS = ('scripts/win32_stat_oracle.py', 'scripts/oracles/win32_stat_source.mts', 'scripts/oracles/win32_stat_python.py')
+OBSERVER_INPUTS = ('scripts/win32_stat_oracle.py', 'scripts/oracles/win32_stat_source.mts', 'scripts/oracles/win32_stat_python.py') + ('scripts/import_paths.py',)
 REQUIRED_MODULES = frozenset(('dsh/__init__.py', 'dsh/fs/fs_local.py', 'dsh/fs/win32_stat.py') + tuple(
     'dsh/cordis/' + name + '.py' for name in ('__init__', 'awaiting', 'context', 'environment', 'errors', 'events',
         'fiber', 'hmr', 'include', 'loader', 'logger', 'plugin', 'profile', 'reflect', 'registry', 'schema',
@@ -74,6 +74,10 @@ def identity(source, source_root, check_files=True):
 
 
 def validate_runtime(report, root, executable, source, modules, check_files=True):
+    if __package__:
+        from scripts.import_paths import resolve_import_path
+    else:
+        from import_paths import resolve_import_path
     root = Path(root).resolve()
     if Path(report['root']).resolve() != root or not report['python'].startswith('3.8.10 '):
         raise ValueError('File metadata selected root or Python differs')
@@ -83,8 +87,9 @@ def validate_runtime(report, root, executable, source, modules, check_files=True
         raise ValueError('File metadata physical workspace differs')
     if not isinstance(modules, dict) or set(modules) != REQUIRED_MODULES or report.get('modules') != modules:
         raise ValueError('File metadata actual import closure differs')
+    missing_prefixes = None if check_files else {}
     for name, expected in modules.items():
-        path = (root / name).resolve()
+        path = resolve_import_path(root, name, missing_prefixes)
         if path.relative_to(root).as_posix() != name or not isinstance(expected, str) or len(expected) != 64 or any(character not in '0123456789abcdef' for character in expected):
             raise ValueError('File metadata imported identity invalid')
         if check_files and digest(path) != expected:

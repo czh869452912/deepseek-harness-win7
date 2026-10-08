@@ -18,7 +18,7 @@ SOURCE_INPUTS = {
     'scripts/oracles/deepseek_error_http.ts', 'scripts/oracles/deepseek_error.probe.spec.ts',
     'scripts/oracles/vitest.deepseek-error-probe.config.mts', 'scripts/oracles/deepseek-error-fixtures.json',
     'scripts/oracles/vitest.deepseek-probe.config.mts', 'migration/modules.json',
-}
+} | {'scripts/import_paths.py'}
 REQUIRED_MODULES = {'dsh/llm/llm_deepseek.py', 'dsh/llm/deepseek_wire.py',
     'dsh/llm/deepseek_request.py', 'dsh/llm/deepseek_config.py', 'dsh/llm/llm_service.py',
     'dsh/llm/http_stream.py', 'dsh/llm/stream_bridge.py', 'dsh/core/abort.py',
@@ -61,16 +61,21 @@ def validate_executable(executable, root, check_files=True):
 
 
 def validate_runtime(report, root, expected_digest, modules, check_files=True):
+    if __package__:
+        from scripts.import_paths import resolve_import_path
+    else:
+        from import_paths import resolve_import_path
     root = Path(root).resolve()
     if not isinstance(report, dict) or Path(report['root']).resolve() != root or not report['python'].startswith('3.8.10 '):
         raise ValueError('DeepSeek error selected root or Python differs')
     validate_executable(report['executable'], root, check_files)
     if not isinstance(modules, dict) or not REQUIRED_MODULES.issubset(modules) or report['modules'] != modules:
         raise ValueError('DeepSeek error actual imported module closure differs')
+    missing_prefixes = None if check_files else {}
     for name, expected in modules.items():
         if not name.startswith('dsh/') or '..' in Path(name).parts or ':' in name or '\\' in name:
             raise ValueError('DeepSeek error module path invalid')
-        path = (root / name).resolve()
+        path = resolve_import_path(root, name, missing_prefixes)
         if path.relative_to(root).as_posix() != name or len(expected) != 64 or any(character not in '0123456789abcdef' for character in expected):
             raise ValueError('DeepSeek error module identity invalid')
         if check_files and digest(path) != expected:

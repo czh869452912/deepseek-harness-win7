@@ -26,7 +26,7 @@ SOURCE_INPUTS = {
     'scripts/oracles/persistence_public.probe.spec.ts', 'scripts/oracles/persistence_order.probe.spec.ts',
     'scripts/oracles/vitest.persistence-read-probe.config.mts', 'scripts/oracles/vitest.agent-lifecycle.config.mts',
     'scripts/oracles/vitest.consumers.config.mts', 'scripts/oracles/vitest.core.config.mts', 'migration/modules.json',
-}
+} | {'scripts/import_paths.py'}
 REQUIRED_MODULES = {'dsh/session/coordinator.py', 'dsh/session/persistence_jsonl_canonical.py',
     'dsh/session/persistence_sqlite_canonical.py', 'dsh/session/preparations.py',
     'dsh/session/jsonl_store.py', 'dsh/session/sqlite_store.py', 'dsh/cordis/context.py'}
@@ -54,6 +54,10 @@ def identity(source, check_files=True):
 
 
 def validate_runtime(report, root, expected_digest, modules, expected_assets, check_files=True):
+    if __package__:
+        from scripts.import_paths import resolve_import_path
+    else:
+        from import_paths import resolve_import_path
     root = Path(root).resolve()
     if not isinstance(report, dict) or Path(report['root']).resolve() != root or not report['python'].startswith('3.8.10 '):
         raise ValueError('Persistence read selected root or Python differs')
@@ -63,10 +67,11 @@ def validate_runtime(report, root, expected_digest, modules, expected_assets, ch
     if not isinstance(expected_assets, dict) or not {'dsh/session/bin/sqlite3.dll', 'dsh/session/bin/zstd/dsh_zstd.dll',
             'dsh/session/resources/sql/manifest.json'}.issubset(expected_assets) or report['assets'] != expected_assets:
         raise ValueError('Persistence read private asset closure differs')
+    missing_prefixes = None if check_files else {}
     for name, expected in dict(modules, **expected_assets).items():
         if not name.startswith('dsh/') or '..' in Path(name).parts or ':' in name or '\\' in name:
             raise ValueError('Persistence read imported path invalid')
-        path = (root / name).resolve()
+        path = resolve_import_path(root, name, missing_prefixes)
         if path.relative_to(root).as_posix() != name or not isinstance(expected, str) or len(expected) != 64 or any(character not in '0123456789abcdef' for character in expected):
             raise ValueError('Persistence read imported identity invalid')
         if check_files and digest(path) != expected:

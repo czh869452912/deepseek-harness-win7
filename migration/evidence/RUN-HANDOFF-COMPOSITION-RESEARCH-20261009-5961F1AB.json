@@ -1,0 +1,25 @@
+{
+  "id": "RUN-HANDOFF-COMPOSITION-RESEARCH-20261009-5961F1AB",
+  "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
+  "product_commit": "5961f1abb37c5a6f9859dcae4f444e0a34ccd520",
+  "kind": "research",
+  "result": "unknown",
+  "validity": "historical",
+  "commands": [
+    "See qualification.json and preserved producer command logs inside the archive; all use pinned Source/Node and local fixtures."
+  ],
+  "environment": {
+    "python": "3.8.10",
+    "os": "Windows-10-10.0.26200-SP0",
+    "cwd": "C:\\Users\\czh86\\Documents\\Codex\\deepseek-harness-win7",
+    "node": "v22.22.2"
+  },
+  "contract_revisions": {},
+  "artifacts": [
+    {
+      "path": "migration/evidence/artifacts/HANDOFF-COMPOSITION-QUALIFICATION-20261009-5961F1AB.zip",
+      "sha256": "a8e3c3e660fb82356b930e69c7ca7fc0bc8b2d50c9119ee5aa080da22a696db4"
+    }
+  ],
+  "scope": "Seven selected route and three workflow/Ralph compositions matched complete Source/Root/owned observations. HTTP native profile labels share one actual composition. Unchanged targeted ZIP lacked vendor package identities and failed REQUEST_EXTENSION before HTTP; declared 18-file overlay matched complete HTTP bodies and public observations. Real three-preset Web observations retain 1764 raw tool catalog order differences. This is a mixed research archive, not a passing task or full release receipt. Its targeted ZIP and overlay must not be combined with the full rejected ZIP."
+}

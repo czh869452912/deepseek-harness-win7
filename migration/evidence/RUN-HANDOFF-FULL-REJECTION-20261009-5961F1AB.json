@@ -1,0 +1,25 @@
+{
+  "id": "RUN-HANDOFF-FULL-REJECTION-20261009-5961F1AB",
+  "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
+  "product_commit": "5961f1abb37c5a6f9859dcae4f444e0a34ccd520",
+  "kind": "research",
+  "result": "failed",
+  "validity": "historical",
+  "commands": [
+    ".venv/Scripts/python.exe scripts/verify_release.py --browser \"C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe\" --browser108 .goose/tools/chromium-1058931/chrome-win/chrome.exe --output-dir .goose/out/release-gate-20261009-handoff-v2"
+  ],
+  "environment": {
+    "python": "3.8.10",
+    "os": "Windows-10-10.0.26200-SP0",
+    "cwd": "C:\\Users\\czh86\\Documents\\Codex\\deepseek-harness-win7",
+    "node": "v22.22.2"
+  },
+  "contract_revisions": {},
+  "artifacts": [
+    {
+      "path": "migration/evidence/artifacts/CURRENT-RELEASE-REJECTION-20261009-5961F1AB.zip",
+      "sha256": "93347b4eea0291a6e55c59df2337ff02432e93c7ff4269a398bf05679fce1532"
+    }
+  ],
+  "scope": "Complete Python collection: 10228 passed, 1 failed, 6 existing skips, 4072.71 seconds. Plugin installation atomic replacement raised WinError5. Later Source/paired/extracted/browser stages did not run. Exact ZIP ba9eebf9a488a7173c1ea92b99484f72f93f5deacdf9ec3ef5042e6517303cbd; 16528 frozen input identities verified unchanged after exit. No task acceptance."
+}

@@ -48,6 +48,31 @@ def bundle_pinned_ripgrep(dist_dir=DIST_DIR, root_dir=ROOT_DIR, source=None):
     return target
 
 
+def bundle_vendor_identities(root_dir, dist_dir):
+    """Keep pinned Cordis package provenance for real DeepSeek request inventory."""
+    source_root = Path(root_dir) / 'reference' / 'vendor'
+    selected = []
+    names = set()
+    for manifest in sorted(source_root.glob('*/package.json')):
+        license_file = manifest.with_name('LICENSE')
+        if manifest.is_symlink() or not license_file.is_file() or license_file.is_symlink():
+            raise ValueError('Pinned vendor identity/license is missing or aliased: ' + str(manifest))
+        data = json.loads(manifest.read_text(encoding='utf-8'))
+        if any(not isinstance(data.get(key), str) or not data[key] for key in ('name', 'version')):
+            raise ValueError('Pinned vendor manifest requires name and version: ' + str(manifest))
+        if data['name'] in names:
+            raise ValueError('Duplicate pinned vendor package identity: ' + data['name'])
+        names.add(data['name'])
+        selected.extend((manifest, license_file))
+    if not selected:
+        raise ValueError('Pinned vendor identity closure is missing')
+    for source in selected:
+        target = Path(dist_dir) / source.relative_to(Path(root_dir) / 'reference')
+        target.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copyfile(str(source), str(target))
+    return names
+
+
 def bundle_python_runtime(dist_dir, runtime_dir):
     """Stage a supplied Python 3.8 Windows runtime without host PATH lookup."""
     required = ["python.exe", "python38.dll", "Lib/os.py"]
@@ -220,6 +245,7 @@ def assemble_portable(dist_dir, zip_output, runtime_dir=None, ripgrep_source=Non
             dirs_exist_ok=True,
         )
 
+    bundle_vendor_identities(ROOT_DIR, dist_dir)
     shutil.copy(os.path.join(ROOT_DIR, "dsh.py"), os.path.join(dist_dir, "dsh.py"))
     shutil.copy(os.path.join(ROOT_DIR, "README.md"), os.path.join(dist_dir, "README.md"))
     if os.path.exists(os.path.join(ROOT_DIR, "AGENTS.md")):

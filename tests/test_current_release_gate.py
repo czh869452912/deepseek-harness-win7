@@ -457,6 +457,18 @@ def test_stdio_wait_and_failure_diagnostics_lanes_are_mandatory(tmp_path, module
         GATE.validate_regression(path)
 
 
+@pytest.mark.parametrize('module', ['test_python_plugin_atomic_file', 'test_portable_vendor_identities', 'test_engine_composition_consumers'])
+@pytest.mark.parametrize('damage', ['omit', 'skip', 'duplicate', 'failure'])
+def test_handoff_composition_and_installation_lanes_are_mandatory(tmp_path, module, damage):
+    path = tmp_path / 'pytest.xml'
+    regression_xml(path)
+    assert GATE.validate_regression(path)['required_lanes'] == sum(len(names) for names in GATE.REQUIRED_REGRESSION.values())
+    name = sorted(GATE.REQUIRED_REGRESSION[module])[0]
+    regression_xml(path, **{damage: (module, name)})
+    with pytest.raises(RuntimeError):
+        GATE.validate_regression(path)
+
+
 @pytest.mark.parametrize('damage', ['omit', 'skip', 'duplicate', 'failure', 'foreign-module', 'foreign-class'])
 def test_regression_requires_actual_pytest_class_method_identity(tmp_path, monkeypatch, damage):
     module = 'test_settings.TestRegistration'

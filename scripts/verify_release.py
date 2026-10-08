@@ -1355,6 +1355,22 @@ REQUIRED_REGRESSION = {
         'test_generic_subprocess_utf8_contract_is_unchanged',
         'test_unconfirmed_codepage_is_escaped_without_guessing_gbk',
     },
+    'test_python_plugin_atomic_file': {
+        'test_atomic_install_commit_waits_for_real_non_delete_reader',
+        'test_terminal_commit_error_preserves_first_outcome_and_original_bytes',
+        'test_unrelated_commit_failure_is_not_retried',
+    },
+    'test_portable_vendor_identities': {
+        'test_missing_identity_refuses_but_pinned_bundle_resolves',
+        *{'test_invalid_vendor_closure_refused_before_publication[' + damage + ']'
+          for damage in ('missing-license', 'empty-version', 'duplicate-name')},
+    },
+    'test_engine_composition_consumers': {
+        'test_complete_actual_compositions',
+        *{'test_real_composition_consumer_rejects_changed_values[' + damage + ']'
+          for damage in ('model', 'request-presence', 'request-order', 'event-order', 'unknown-child',
+                         'disposed', 'cancel', 'ralph-result')},
+    },
     'test_native_web_browser': {
         'test_browser_extension_isolation_preserves_application_error_observation',
         'test_original_browser_native_host_cordis_lifecycle[lifecycle]',

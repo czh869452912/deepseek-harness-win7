@@ -7,6 +7,7 @@ import os
 import shutil
 import stat
 import tempfile
+import time
 import uuid
 import zipfile
 
@@ -21,6 +22,25 @@ JOURNAL = ".dsh-python-transaction.json"
 STAGING = ".dsh-python-staging"
 
 
+def _replace_atomic_file(source, destination):
+    """Bound transient Windows sharing failures without changing the commit step."""
+    deadline = time.monotonic() + 1.0
+    first = None
+    while True:
+        try:
+            os.replace(source, destination)
+            return
+        except PermissionError as error:
+            if os.name != 'nt' or getattr(error, 'winerror', None) not in (5, 32, 33):
+                raise
+            if first is None:
+                first = error
+            remaining = deadline - time.monotonic()
+            if remaining <= 0:
+                raise first
+            time.sleep(min(0.02, remaining))
+
+
 def atomic_bytes(path, data):
     descriptor, temporary = tempfile.mkstemp(prefix=".dsh-write-", dir=os.path.dirname(path))
     try:
@@ -28,7 +48,7 @@ def atomic_bytes(path, data):
             stream.write(data)
             stream.flush()
             os.fsync(stream.fileno())
-        os.replace(temporary, path)
+        _replace_atomic_file(temporary, path)
     finally:
         if os.path.exists(temporary):
             os.unlink(temporary)

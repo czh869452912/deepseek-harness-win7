@@ -1,5 +1,6 @@
 import copy
 import json
+import os
 from pathlib import Path
 import subprocess
 import sys
@@ -12,8 +13,13 @@ from scripts.verify_portable import fs_values_receipts
 
 
 @pytest.fixture(scope='module')
-def actual_pair(tmp_path_factory):
-    output = tmp_path_factory.mktemp('fs-values-pair') / 'paired.json'
+def actual_pair_output(tmp_path_factory):
+    return tmp_path_factory.mktemp('fs-values-pair') / 'paired.json'
+
+
+@pytest.fixture(scope='module')
+def actual_pair(actual_pair_output):
+    output = actual_pair_output
     process = subprocess.run([sys.executable, str(ROOT / 'scripts/fs_values_oracle.py'), '--output', str(output)],
         cwd=str(ROOT), capture_output=True, timeout=240)
     output.with_suffix('.log').write_bytes(process.stdout + process.stderr)
@@ -22,7 +28,73 @@ def actual_pair(tmp_path_factory):
     native = json.loads(output.with_suffix('.native.json').read_text(encoding='utf-8'))
     identity(source, ROOT / 'reference')
     validate_runtime(native, ROOT, sys.executable, source, native['imports'])
-    return source, native
+    yield source, native
+    # These tests are the last consumers of this pair. Retain observations and
+    # prune only the isolated, byte-verified successful fixture workspace.
+    from scripts.fs_fixture_workspace import cleanup
+    cleanup(output)
+
+
+@pytest.mark.parametrize('damage', ('foreign-owner', 'allocated', 'unmatched', 'observation',
+                                   'unknown-file', 'unknown-directory', 'changed-file', 'shared-hardlink'))
+def test_fixture_cleanup_refuses_unqualified_or_changed_material(actual_pair, actual_pair_output, tmp_path, damage):
+    from scripts.fs_fixture_workspace import cleanup, native_path
+    output = tmp_path / 'copied-pair.json'
+    for suffix in ('.json', '.source.json', '.native.json', '.fixture-owner.json'):
+        output.with_suffix(suffix).write_bytes(actual_pair_output.with_suffix(suffix).read_bytes())
+    marker = output.with_suffix('.fixture-owner.json')
+    record = json.loads(marker.read_text(encoding='utf-8'))
+    record['ownerOutput'] = str(output.resolve())
+    owned = Path(record['path'])
+    extra, restored = None, None
+    if damage == 'foreign-owner':
+        record['ownerOutput'] = str(actual_pair_output)
+    elif damage == 'allocated':
+        record['state'] = 'allocated'
+    elif damage == 'unmatched':
+        output.write_text('{"status":"different"}', encoding='utf-8')
+    elif damage == 'observation':
+        with output.with_suffix('.native.json').open('ab') as stream:
+            stream.write(b'\n')
+    elif damage == 'unknown-file':
+        extra = owned / 'foreign-fixture.bin'
+        extra.write_bytes(b'not an owned fixture')
+    elif damage == 'unknown-directory':
+        extra = owned / 'foreign-empty-directory'
+        extra.mkdir()
+    elif damage == 'shared-hardlink':
+        name = next(iter(record['files']))
+        extra = tmp_path / 'outside-hardlink'
+        os.link(native_path(owned / name), str(extra))
+    else:
+        name = next(name for name, row in record['files'].items() if not row['readonly'])
+        changed = native_path(owned / name)
+        with open(changed, 'rb') as stream:
+            original = stream.read()
+        restored = changed, original
+        with open(changed, 'wb') as stream:
+            stream.write(original + b'changed')
+    marker.write_text(json.dumps(record), encoding='utf-8')
+    try:
+        with pytest.raises(ValueError):
+            cleanup(output)
+        assert owned.is_dir()
+        assert not output.with_suffix('.fixture-cleanup.json').exists()
+    finally:
+        if extra is not None:
+            extra.rmdir() if extra.is_dir() else extra.unlink()
+        if restored is not None:
+            with open(restored[0], 'wb') as stream:
+                stream.write(restored[1])
+
+
+def test_fixture_allocation_refuses_repository_temporary_parent(monkeypatch, tmp_path):
+    from scripts import fs_fixture_workspace
+    monkeypatch.setattr(fs_fixture_workspace.tempfile, 'gettempdir', lambda: str(tmp_path))
+    monkeypatch.setattr(fs_fixture_workspace, 'ROOT', tmp_path)
+    with pytest.raises(ValueError, match='outside'):
+        fs_fixture_workspace.allocate(tmp_path / 'paired.json')
+    assert not list(tmp_path.iterdir())
 
 
 @pytest.mark.parametrize('group', GROUPS)

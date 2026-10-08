@@ -3218,8 +3218,13 @@ def fs_values_runtime_fixture():
             '--output', str(output)], cwd=str(ROOT), capture_output=True, timeout=240)
         if completed.returncode:
             raise RuntimeError(output.read_text(encoding='utf-8'))
-        return dict(source=json.loads(output.with_suffix('.source.json').read_text(encoding='utf-8')),
+        report = dict(source=json.loads(output.with_suffix('.source.json').read_text(encoding='utf-8')),
             native=json.loads(output.with_suffix('.native.json').read_text(encoding='utf-8')))
+        # Later extracted-receipt controls consume JSON values only. This is
+        # the final physical consumer, before TemporaryDirectory drops its owner.
+        from scripts.fs_fixture_workspace import cleanup
+        cleanup(output)
+        return report
 
 
 @pytest.mark.parametrize('damage', GATE.FS_VALUES_DAMAGES + ('receipt-missing', 'source-missing', 'source-changed', 'source-file'))

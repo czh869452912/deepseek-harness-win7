@@ -207,6 +207,37 @@ def _native_path(path: str) -> str:
     return _to_namespaced_path(path) if os.name == "nt" else path
 
 
+def _win32_read_opener(path: str, flags: int) -> int:
+    """Match libuv readers: an open reader also shares deletion/replacement."""
+    import ctypes
+    import msvcrt
+    kernel32 = ctypes.WinDLL('kernel32', use_last_error=True)
+    create_file = kernel32.CreateFileW
+    create_file.argtypes = [ctypes.c_wchar_p, ctypes.c_uint32, ctypes.c_uint32,
+                           ctypes.c_void_p, ctypes.c_uint32, ctypes.c_uint32, ctypes.c_void_p]
+    create_file.restype = ctypes.c_void_p
+    close_handle = kernel32.CloseHandle
+    close_handle.argtypes = [ctypes.c_void_p]
+    close_handle.restype = ctypes.c_int
+    handle = create_file(path, 0x80000000, 0x00000007, None, 3, 0x80, None)
+    if handle == ctypes.c_void_p(-1).value:
+        raise ctypes.WinError(ctypes.get_last_error())
+    try:
+        # Successful conversion transfers ownership to the CRT descriptor.
+        # FileIO owns that descriptor and closes it, including exceptional reads.
+        return msvcrt.open_osfhandle(handle, os.O_RDONLY | os.O_BINARY | getattr(os, 'O_NOINHERIT', 0))
+    except BaseException:
+        close_handle(handle)
+        raise
+
+
+def _open_binary_read(path: str) -> Any:
+    native = _native_path(path)
+    if os.name == 'nt':
+        return open(native, 'rb', opener=_win32_read_opener)
+    return open(native, 'rb')
+
+
 def _real_path(path: str) -> str:
     return _from_namespaced_path(os.path.realpath(_native_path(path)))
 
@@ -375,7 +406,7 @@ class FsService:
 
     def _read_whole_text(self, target: FsTarget, signal: Optional[Any], verb: str = "read") -> str:
         self._regular_info(target, signal, verb)
-        with open(_native_path(target.targetKey), "rb") as handle:
+        with _open_binary_read(target.targetKey) as handle:
             raw = handle.read()
         _throw_if_aborted(signal, verb)
         if b"\x00" in raw[:BINARY_SAMPLE_BYTES]:
@@ -387,7 +418,7 @@ class FsService:
         if encoding.lower().replace("-", "") == "utf8":
             return self._read_whole_text(target, None)
         self._regular_info(target, None)
-        with open(_native_path(target.targetKey), "rb") as handle:
+        with _open_binary_read(target.targetKey) as handle:
             return handle.read().decode(encoding, errors="strict")
 
     async def readText(self, target: Union[FsTarget, str], signal: Optional[Any] = None) -> str:
@@ -396,7 +427,7 @@ class FsService:
         await asyncio.sleep(0)
         chunks: List[bytes] = []
         sampled = 0
-        with open(_native_path(local.targetKey), "rb") as handle:
+        with _open_binary_read(local.targetKey) as handle:
             while True:
                 _throw_if_aborted(signal, "read")
                 raw = handle.read(READ_CHUNK_BYTES)
@@ -419,7 +450,7 @@ class FsService:
         async def chunks() -> AsyncIterator[str]:
             decoder = codecs.getincrementaldecoder("utf-8")(errors="strict")
             sampled = 0
-            with open(_native_path(local.targetKey), "rb") as handle:
+            with _open_binary_read(local.targetKey) as handle:
                 while True:
                     _throw_if_aborted(signal, "read")
                     raw = handle.read(READ_CHUNK_BYTES)
@@ -454,7 +485,7 @@ class FsService:
         await asyncio.sleep(0)
         chunks: List[bytes] = []
         total = 0
-        with open(_native_path(local.targetKey), "rb") as handle:
+        with _open_binary_read(local.targetKey) as handle:
             while True:
                 _throw_if_aborted(signal, "read")
                 remaining = max_bytes + 1 - total
@@ -478,7 +509,7 @@ class FsService:
     async def _diff_basis(self, path: str, signal: Optional[Any]) -> Optional[str]:
         _throw_if_aborted(signal, "read")
         try:
-            with open(_native_path(path), "rb") as handle:
+            with _open_binary_read(path) as handle:
                 info = os.fstat(handle.fileno())
                 if not stat_module.S_ISREG(info.st_mode) or info.st_size >= self.diff_basis_max_bytes:
                     return None
@@ -694,7 +725,7 @@ class FsService:
             if expected and _version_of(existing) != expected.get("version"):
                 raise FsError('cannot edit "%s": file changed since it was read' % local.displayPath, "FS_STALE_VERSION")
             chunks: List[bytes] = []
-            with open(_native_path(local.targetKey), "rb") as handle:
+            with _open_binary_read(local.targetKey) as handle:
                 while True:
                     _throw_if_aborted(signal, "edit")
                     raw_chunk = handle.read(READ_CHUNK_BYTES)

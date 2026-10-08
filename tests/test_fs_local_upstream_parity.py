@@ -613,3 +613,21 @@ async def test_atomic_write_passes_namespaced_paths_to_ordinary_windows_io(tmp_p
     for operation in observed.values():
         assert operation
         assert all(path.startswith("\\\\?\\") for path in operation)
+
+
+@pytest.mark.skipif(os.name != "nt", reason="Source Windows reader delete sharing")
+@pytest.mark.asyncio
+async def test_open_stream_keeps_old_bytes_and_allows_atomic_replacement(tmp_path, fs):
+    target = tmp_path / 'shared-reader.txt'
+    original = b'x' * 200000
+    target.write_bytes(original)
+    stream = await fs.streamText(await fs.resolve(str(target)))
+    try:
+        first = await stream.__anext__()
+        assert first == 'x' * 65536
+        await fs.writeText(await fs.resolve(str(target)), 'replacement\n')
+        remaining = ''.join([chunk async for chunk in stream])
+        assert first + remaining == original.decode('utf-8')
+        assert target.read_bytes() == b'replacement\n'
+    finally:
+        await stream.aclose()

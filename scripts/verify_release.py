@@ -2300,11 +2300,13 @@ def verify(args, output):
         raise RuntimeError('candidate inputs changed during verification')
     if git('rev-parse', 'HEAD', root=ROOT / 'reference') != actual or git('status', '--porcelain', root=ROOT / 'reference'):
         raise RuntimeError('reference changed during verification')
+    from scripts.fs_fixture_workspace import cleanup as cleanup_fs_fixtures
+    fs_fixture_cleanup = cleanup_fs_fixtures(output / 'fs-values-paired.json')
     return dict(candidate, result='development-preview' if candidate['worktree_dirty'] else 'passed',
                 publishable=not candidate['worktree_dirty'], target_upstream=actual,
                 python=sys.version, platform=sys.platform, node=NODE_VERSION, browser=str(browser),
                 regression=regression_result, input_manifest_sha256=digest(inputs), receipts=receipts,
-                archive=str(archive), archive_sha256=digest(archive),
+                archive=str(archive), archive_sha256=digest(archive), fsFixtureCleanup=fs_fixture_cleanup,
                 scope='Current Windows complete gate; selected paired contracts, original browser and extracted runtime; not full parity or Win7 certification.')
 
 

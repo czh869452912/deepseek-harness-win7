@@ -765,7 +765,7 @@ def main(argv=None):
             'message_values_oracle.py', 'message_values_cases.py', 'oracles/message_values_source.mts', 'oracles/message_values_python.py', 'oracles/message-values-cases.json',
             'subagent_model_oracle.py', 'subagent_model_cases.py', 'oracles/subagent_model_source.mts', 'oracles/subagent_model_python.py',
             'unicode_carrier_oracle.py', 'unicode_carrier_cases.py', 'oracles/unicode_carrier_source.mts', 'oracles/unicode_carrier_python.py',
-            'fs_values_oracle.py', 'fs_values_cases.py', 'oracles/fs-values-cases.json', 'oracles/fs-real-tool-fixtures-v1.json', 'oracles/read_tool_fixtures_v1.json', 'oracles/read-window-fixtures-v2.json', 'oracles/diff-fixtures-v1.json', 'oracles/fs_values_real_source.mts', 'oracles/fs_values_real_python.py', 'oracles/fs_values_read_source.mts', 'oracles/fs_values_read_python.py', 'oracles/fs_values_image_source.mts', 'oracles/fs_values_image_python.py', 'oracles/fs_values_window_source.mts', 'oracles/fs_values_window_python.py', 'oracles/fs_values_escalation_source.mts', 'oracles/fs_values_escalation_python.py', 'oracles/fs_values_diff_source.mts', 'oracles/fs_values_diff_python.py',
+            'fs_values_oracle.py', 'fs_fixture_workspace.py', 'fs_values_cases.py', 'oracles/fs-values-cases.json', 'oracles/fs-real-tool-fixtures-v1.json', 'oracles/read_tool_fixtures_v1.json', 'oracles/read-window-fixtures-v2.json', 'oracles/diff-fixtures-v1.json', 'oracles/fs_values_real_source.mts', 'oracles/fs_values_real_python.py', 'oracles/fs_values_read_source.mts', 'oracles/fs_values_read_python.py', 'oracles/fs_values_image_source.mts', 'oracles/fs_values_image_python.py', 'oracles/fs_values_window_source.mts', 'oracles/fs_values_window_python.py', 'oracles/fs_values_escalation_source.mts', 'oracles/fs_values_escalation_python.py', 'oracles/fs_values_diff_source.mts', 'oracles/fs_values_diff_python.py',
             'exported_host_lifecycle_oracle.py', 'oracles/exported_host_lifecycle.py', 'oracles/exported_host_lifecycle_python.py',
             'oracles/permission_presets_source.mts', 'oracles/permission_presets.probe.spec.ts',
             'oracles/permission_presets_domain_source.mts', 'oracles/permission_presets_domain.probe.spec.ts',
@@ -1573,7 +1573,11 @@ def main(argv=None):
                 validate_profile_journeys(report['browser108ProfileJourneys'], archive,
                     digest(portable / 'dsh/host/browser_compat/compat.js'), portable)
                 validate_input(args.browser108)
-            report['result'] = 'passed'
+        if not args.fs_values_source and not args.fs_values_native:
+            from scripts.fs_fixture_workspace import cleanup as cleanup_fs_fixtures
+            paired = output.with_suffix('.fs-values-paired.json')
+            report['fsFixtureCleanup'] = cleanup_fs_fixtures(paired)
+        report['result'] = 'passed'
     except Exception as error:
         report['failure'] = str(error)
     output.write_text(json.dumps(report, ensure_ascii=True, indent=2) + '\n', encoding='utf-8')

@@ -16,7 +16,7 @@ OBSERVER_INPUTS = ('scripts/fs_values_oracle.py', 'scripts/fs_values_cases.py',
     'scripts/oracles/fs-values-cases.json', 'scripts/oracles/fs-real-tool-fixtures-v1.json',
     'scripts/oracles/read_tool_fixtures_v1.json', 'scripts/oracles/read-window-fixtures-v2.json',
     'scripts/oracles/diff-fixtures-v1.json') + tuple('scripts/oracles/fs_values_' + group + '_' + side + '.' + ('mts' if side == 'source' else 'py')
-        for group in GROUPS for side in ('source', 'python')) + ('scripts/import_paths.py',)
+        for group in GROUPS for side in ('source', 'python')) + ('scripts/import_paths.py', 'scripts/fs_fixture_workspace.py')
 REQUIRED_IMPORTS = {'dsh/core/tools.py', 'dsh/core/system_prompt/__init__.py', 'dsh/cordis/context.py',
     'dsh/fs/tool_fs.py', 'dsh/fs/tool_read.py', 'dsh/fs/tool_read_render.py', 'dsh/fs/tool_read_image.py',
     'dsh/fs/tool_fs_mutation.py', 'dsh/fs/tool_fs_sandbox.py', 'dsh/fs/tool_diff.py',
@@ -181,11 +181,16 @@ def main():
     workspace.mkdir()
     result = dict(status='runner-error')
     try:
+        if __package__:
+            from scripts.fs_fixture_workspace import allocate, mark_ready
+        else:
+            from fs_fixture_workspace import allocate, mark_ready
+        fixtures = allocate(output)
         inputs = source_inputs(ROOT / 'reference')
         rows = []
         for group in GROUPS:
             path = workspace / ('source-' + group + '.json')
-            environment = dict(os.environ, DSH_FS_OUTPUT=str(path), DSH_FS_WORK=str(workspace),
+            environment = dict(os.environ, DSH_FS_OUTPUT=str(path), DSH_FS_WORK=str(fixtures),
                                TSX_TSCONFIG_PATH=str(ROOT / 'reference/tsconfig.json'))
             completed = subprocess.run(['node', '--import', (ROOT / 'reference/node_modules/tsx/dist/loader.mjs').as_uri(),
                 str(ROOT / ('scripts/oracles/fs_values_' + group + '_source.mts'))], cwd=str(ROOT), env=environment,
@@ -209,15 +214,16 @@ def main():
         if source_inputs(ROOT / 'reference') != inputs:
             raise ValueError('FS Source inputs changed during observation')
         source = dict(sourceCommit=SOURCE_COMMIT, node='v22.22.2', rows=rows, inputs=inputs,
-                      fixtureSha256=digest(ROOT / 'scripts/fs_values_oracle.py'), fixtureWorkspace=str(workspace))
+                      fixtureSha256=digest(ROOT / 'scripts/fs_values_oracle.py'), fixtureWorkspace=str(fixtures))
         with source_path.open('x', encoding='utf-8') as stream:
             json.dump(source, stream, ensure_ascii=True, indent=2)
             stream.write('\n')
         expected = identity(source, ROOT / 'reference')
-        native = observe_native(options.root, options.executable, native_path, workspace)
+        native = observe_native(options.root, options.executable, native_path, fixtures)
         validate_runtime(native, options.root, options.executable, source, native['imports'])
         if source_inputs(ROOT / 'reference') != inputs:
             raise ValueError('FS Source inputs changed during native observation')
+        mark_ready(output)
         result = dict(status='matched', cases=len(NAMES), observationsSha256=expected)
     except Exception as error:
         result['error'] = str(error)

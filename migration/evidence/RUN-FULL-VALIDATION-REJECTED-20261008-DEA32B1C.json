@@ -1,0 +1,34 @@
+{
+  "id": "RUN-FULL-VALIDATION-REJECTED-20261008-DEA32B1C",
+  "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
+  "product_commit": "dea32b1c4f236262097474576eb2ea49603f2cba",
+  "kind": "verification",
+  "task_id": "MIG-CURRENT-RELEASE-GATE-003",
+  "result": "failed",
+  "validity": "historical",
+  "exit_code": 1,
+  "commands": [
+    ".venv/Scripts/python.exe scripts/verify_release.py --browser \"C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe\" --output-dir .goose/out/full-validation-clean-20261008-v1"
+  ],
+  "environment": {
+    "python": "3.8.10",
+    "os": "Windows",
+    "cwd": "D:\\Project\\deepseek-harness-win7",
+    "node": "v22.22.2",
+    "browser": "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe"
+  },
+  "contract_revisions": {},
+  "artifacts": [
+    {
+      "path": "migration/evidence/artifacts/FULL-VALIDATION-REJECTED-20261008-DEA32B1C.zip",
+      "sha256": "172969b1900af9272afa94b8f2b5c6aeb6c9b4ad41afb44aa1f0bddc4333c02d"
+    }
+  ],
+  "regression_summary": {
+    "collected": 10091,
+    "timeout_seconds": 3600,
+    "progress_percent_approximate": 91,
+    "xml_complete": false
+  },
+  "scope": "Exact clean candidate rejected at the unchanged normal 3600-second budget, approximately 91 percent. No complete regression pass/fail count. Original Source, 83 paired drivers and actual extraction/browser release stages did not start. Root logs, frozen inputs, exact real built ZIP, owned process-tree retirement and selected actual failure diagnostics retained; remaining unit fixture workspace stays local. No relaxation, new exception, task promotion or publication."
+}

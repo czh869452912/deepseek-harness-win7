@@ -24,6 +24,10 @@ def identity(rows):
 
 
 def validate_runtime(report, root, expected_digest, expected_modules):
+    if __package__:
+        from scripts.import_paths import resolve_import_path
+    else:
+        from import_paths import resolve_import_path
     if not isinstance(report, dict):
         raise ValueError('HTTP redirect runtime receipt missing')
     if report.get('root') != str(root.resolve()) or report.get('python') != '3.8.10':
@@ -33,11 +37,12 @@ def validate_runtime(report, root, expected_digest, expected_modules):
     modules = report.get('modules')
     if not isinstance(modules, dict) or not REQUIRED_MODULES.issubset(modules) or modules != expected_modules:
         raise ValueError('HTTP redirect candidate runtime module closure differs')
+    missing_prefixes = {}
     for name, value in modules.items():
-        path = root / name
         if not name.startswith('dsh/') or '..' in Path(name).parts or ':' in name or '\\' in name:
             raise ValueError('HTTP redirect module path invalid')
-        if path.resolve().relative_to(root.resolve()).as_posix() != name:
+        path = resolve_import_path(root, name, missing_prefixes)
+        if path.relative_to(root.resolve()).as_posix() != name:
             raise ValueError('HTTP redirect module escaped selected root')
         if not isinstance(value, str) or len(value) != 64 or any(character not in '0123456789abcdef' for character in value):
             raise ValueError('HTTP redirect module digest invalid')

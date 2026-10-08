@@ -42,11 +42,22 @@ def digest(data):
     return hashlib.sha256(data).hexdigest()
 
 
+def filesystem_path(path):
+    if os.name != 'nt':
+        return path
+    absolute = os.path.abspath(path)
+    if absolute.startswith('\\\\?\\'):
+        return absolute
+    return '\\\\?\\UNC\\' + absolute[2:] if absolute.startswith('\\\\') else '\\\\?\\' + absolute
+
+
 def reparse(path):
-    return os.path.islink(path) or bool(getattr(os.lstat(path), "st_reparse_tag", 0))
+    selected = filesystem_path(path)
+    return os.path.islink(selected) or bool(getattr(os.lstat(selected), "st_reparse_tag", 0))
 
 
 def regular_tree(directory, ignore_git=False):
+    directory = filesystem_path(directory)
     seen, total, count = set(), 0, 0
     if reparse(directory):
         raise ValueError("plugin directory must not be a link or junction")

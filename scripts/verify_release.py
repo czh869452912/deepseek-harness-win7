@@ -975,7 +975,8 @@ REQUIRED_REGRESSION = {
         *{'test_private_decoder_preserves_complete_output_across_buffer_boundaries[' + str(size) + ']' for size in (
             65535, 65536, 65537, 100000, 131072, 200000, 1048576)},
     },
-    'test_sqlite_format_source': {'test_actual_schema19_format_source_native_pair'},
+    'test_sqlite_format_source': {'test_actual_schema19_format_source_native_pair',
+        'test_complete_sqlite_format_inputs_remain_exact_with_lightweight_inventory'},
     'test_session_tools': {
         'test_optional_plugin_registers_and_reverses_all_five_tools_and_prompt',
         'test_caller_abort_wins_over_late_provider_result_and_drains[False]',
@@ -1315,6 +1316,10 @@ REQUIRED_REGRESSION = {
         'test_original_browser_native_host_cordis_lifecycle[lifecycle]',
         'test_original_browser_native_host_cordis_lifecycle[inspect]',
         'test_original_browser_native_host_cordis_lifecycle[inventory-layout-boundary]',
+    },
+    'test_python_plugin_versions': {
+        'test_long_plugin_tree_preserves_hashes_and_rejects_current_damage[bytes]',
+        'test_long_plugin_tree_preserves_hashes_and_rejects_current_damage[junction]',
     },
     'test_python_web_plugin': {'test_original_browser_installed_python_web_package_journey'},
     'test_python_client_build': {

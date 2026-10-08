@@ -1,4 +1,5 @@
 import copy
+import hashlib
 import json
 import os
 from pathlib import Path
@@ -7,6 +8,16 @@ import sys
 
 import pytest
 from scripts import sqlite_format_oracle as oracle
+from scripts.oracles.sqlite_format_inputs import build_inputs
+
+
+def test_complete_sqlite_format_inputs_remain_exact_with_lightweight_inventory():
+    inputs = build_inputs()
+    encoded = json.dumps(inputs, sort_keys=True, ensure_ascii=True, separators=(',', ':')).encode('utf-8')
+    assert hashlib.sha256(encoded).hexdigest() == 'b72b65aaab0dcfc86dcfd376cc64a9a082bee6a67eda078910c162cff62892bf'
+    expected = [item['name'] for item in inputs['packs'] + inputs['decodes'] + inputs['varints']['encode'] + inputs['varints']['decode']]
+    expected += ['bind-' + str(index) for index in range(len(inputs['compression']))] + oracle.FRAME_NAMES + oracle.TAIL_NAMES
+    assert oracle.names() == expected
 
 
 @pytest.fixture(scope='module')

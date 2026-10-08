@@ -25,7 +25,7 @@ def owned_path(directory, relative):
     current = root
     for part in os.path.relpath(path, root).split(os.sep):
         current = os.path.join(current, part)
-        if os.path.lexists(current) and store.reparse(current):
+        if os.path.lexists(store.filesystem_path(current)) and store.reparse(current):
             raise ValueError('plugin snapshot path must not be a link or junction')
     return path
 
@@ -34,7 +34,7 @@ def archive_path(directory, name, record):
     expected = generation(record)
     if record.get('generation', expected) != expected:
         raise ValueError('plugin history generation differs from its content record')
-    return owned_path(directory, HISTORY + '/' + package_name(name) + '/' + expected)
+    return store.filesystem_path(owned_path(directory, HISTORY + '/' + package_name(name) + '/' + expected))
 
 
 def verify(path, files):

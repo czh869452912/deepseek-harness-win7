@@ -48,7 +48,8 @@ def test_original_browser_native_host_cordis_lifecycle(tmp_path, inspect_mode, i
     if inventory_boundary:
         arguments.extend(['--inventory-layout-boundary', 'true'])
     result = subprocess.run(arguments, cwd=str(ROOT),
-        capture_output=True, encoding='utf-8', timeout=150)
+        capture_output=True, encoding='utf-8', timeout=150,
+        env=dict(os.environ, PYTHONIOENCODING='cp936'))
     assert result.returncode == 0, result.stdout + result.stderr
     report = json.loads(output.read_text(encoding='utf-8'))
     assert report['passed'] and report['python'] == '3.8.10'

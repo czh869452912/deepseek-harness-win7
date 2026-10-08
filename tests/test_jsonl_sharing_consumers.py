@@ -139,9 +139,10 @@ def test_missing_shared_reader_stays_file_not_found(tmp_path):
 def test_shared_reader_handles_long_owned_paths(tmp_path):
     from dsh.session.file_io import open_shared_read
     directory = tmp_path / ('nested-' + 'x' * 100) / ('nested-' + 'y' * 100)
-    directory.mkdir(parents=True)
+    extended_directory = Path('\\\\?\\' + str(directory))
+    extended_directory.mkdir(parents=True)
     path = directory / 'owned.jsonl'
     assert len(str(path)) > 260
-    path.write_bytes(b'owned')
+    (extended_directory / 'owned.jsonl').write_bytes(b'owned')
     with open_shared_read(path) as stream:
         assert stream.read() == b'owned'

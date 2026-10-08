@@ -37,6 +37,10 @@ def identity(source):
 
 
 def validate_runtime(report, root, expected_digest, modules, expected_assets, check_files=True):
+    if __package__:
+        from scripts.import_paths import resolve_import_path
+    else:
+        from import_paths import resolve_import_path
     root = Path(root).resolve()
     if not isinstance(report, dict) or Path(report['root']).resolve() != root or not report['python'].startswith('3.8.10 '):
         raise ValueError('JavaScript Ready selected runtime differs')
@@ -45,10 +49,11 @@ def validate_runtime(report, root, expected_digest, modules, expected_assets, ch
         'dsh/workflow/workflow_service.py', 'dsh/subagent/runtime.py', 'dsh/cordis/context.py'}
     if not isinstance(modules, dict) or not required.issubset(modules) or report['modules'] != modules:
         raise ValueError('JavaScript Ready imported module closure differs')
+    missing_prefixes = None if check_files else {}
     for name, expected in modules.items():
         if not name.startswith('dsh/') or '..' in Path(name).parts or ':' in name or '\\' in name:
             raise ValueError('JavaScript Ready imported module path invalid')
-        path = (root / name).resolve()
+        path = resolve_import_path(root, name, missing_prefixes)
         if path.relative_to(root).as_posix() != name or not isinstance(expected, str) or len(expected) != 64 or any(character not in '0123456789abcdef' for character in expected):
             raise ValueError('JavaScript Ready imported module identity invalid')
         if check_files and digest(path) != expected:

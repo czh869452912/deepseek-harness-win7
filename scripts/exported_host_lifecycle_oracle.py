@@ -33,6 +33,10 @@ def observation_digest(report):
 
 
 def validate_runtime(report, root, executable, expected, modules, fixture_sha256, check_files=True):
+    if __package__:
+        from scripts.import_paths import resolve_import_path
+    else:
+        from import_paths import resolve_import_path
     root, executable = Path(root).resolve(), Path(executable).resolve()
     if (not isinstance(report, dict) or set(report) != {'root', 'python', 'executable', 'imports', 'rows', 'fixtureSha256'}
             or report.get('root') != str(root) or not report.get('python', '').startswith('3.8.10 ')
@@ -42,13 +46,14 @@ def validate_runtime(report, root, executable, expected, modules, fixture_sha256
         raise ValueError('Exported Host observer bytes differ')
     if not isinstance(modules, dict) or not REQUIRED_IMPORTS.issubset(modules) or report['imports'] != modules:
         raise ValueError('Exported Host actual imported closure differs')
+    missing_prefixes = None if check_files else {}
     for name, sha256 in modules.items():
         if (not isinstance(name, str) or not name.startswith('dsh/') or '\\' in name or ':' in name
                 or '..' in PurePosixPath(name).parts or PurePosixPath(name).as_posix() != name
                 or not isinstance(sha256, str) or len(sha256) != 64
                 or any(character not in '0123456789abcdef' for character in sha256)):
             raise ValueError('Exported Host imported identity invalid')
-        selected = (root / name).resolve()
+        selected = resolve_import_path(root, name, missing_prefixes)
         if selected.relative_to(root).as_posix() != name or check_files and hashlib.sha256(selected.read_bytes()).hexdigest() != sha256:
             raise ValueError('Exported Host actual imported bytes differ')
     if observation_digest(report) != expected:

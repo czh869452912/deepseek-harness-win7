@@ -12,15 +12,20 @@ def chunk(sequence, kind='text-delta', payload='piece', **extra):
 
 
 
-def build_inputs():
+def build_inputs(inventory_only=False):
+    # Inventory checks need labels, not newly allocated observed payloads.
+    # All real Source/native observers retain the complete default inputs.
+    def events(factory):
+        return [] if inventory_only else factory()
+
     packs = []
     for kind in ['text-delta', 'reasoning-delta', 'tool-call-delta']:
         for count in [0, 1, 2, 3, 4, 1024, 1025, 1026, 2051]:
-            packs.append(dict(name=kind + '-' + str(count), events=[chunk(index, kind) for index in range(count)]))
-    packs.extend([dict(name='utf8-bounded', events=[chunk(index, payload='界' * 120000) for index in range(5)]),
-                  dict(name='individual-oversize', events=[chunk(index, payload='x' * 1048576) for index in range(3)]),
-                  dict(name='presence-boundary', events=[chunk(index, 'tool-call-delta', name='tool') if index < 3 else chunk(index, 'tool-call-delta') for index in range(6)]),
-                  dict(name='reversed-time', events=[dict(chunk(index), time=-index * 5) for index in range(5)])])
+            packs.append(dict(name=kind + '-' + str(count), events=events(lambda: [chunk(index, kind) for index in range(count)])))
+    packs.extend([dict(name='utf8-bounded', events=events(lambda: [chunk(index, payload='界' * 120000) for index in range(5)])),
+                  dict(name='individual-oversize', events=events(lambda: [chunk(index, payload='x' * 1048576) for index in range(3)])),
+                  dict(name='presence-boundary', events=events(lambda: [chunk(index, 'tool-call-delta', name='tool') if index < 3 else chunk(index, 'tool-call-delta') for index in range(6)])),
+                  dict(name='reversed-time', events=events(lambda: [dict(chunk(index), time=-index * 5) for index in range(5)]))])
     base = dict(type='text-chunks', seq0=0, time0=1, data=dict(turn=1.25, step=2.5, index=0.5, dt=[-2, 3], texts=['a', 'b', 'c']))
     decodes = [dict(name='valid', value=base), dict(name='scalar', value='scalar'), dict(name='null', value=None)]
     for name, mutation in [('extra-envelope', lambda value: value.update(extra=True)),

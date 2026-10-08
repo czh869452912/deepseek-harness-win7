@@ -38,7 +38,7 @@ def digest(value):
 
 
 def names():
-    inputs = build_inputs()
+    inputs = build_inputs(inventory_only=True)
     return ([item['name'] for item in inputs['packs'] + inputs['decodes'] + inputs['varints']['encode'] + inputs['varints']['decode']]
             + ['bind-' + str(index) for index in range(len(inputs['compression']))] + FRAME_NAMES + TAIL_NAMES)
 

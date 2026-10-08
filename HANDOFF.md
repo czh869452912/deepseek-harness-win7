@@ -2,6 +2,8 @@
 
 交接日期：2026-10-07。此文档交接当前主目录迁移工作，供下一位维护者直接接续。**迁移尚未全部闭环，最新产品尚未通过新的完整发行验收。**
 
+**2026-10-08 完整验证正在修复。** 当前工作目录 `D:\Project\deepseek-harness-win7`、分支 `codex/full-validation-performance`。第一次路径优化后的干净 `dea32b1c` 收集 10091 项，在正常 3600 秒、约 91% 超时，未取得完整 XML；精确实际 ZIP、冻结输入和拒绝日志已独立归档。随后补齐本机 `LongPathsEnabled=0` 下的插件历史访问、长路径夹具、浏览器夹具 UTF-8 控制通道及显式 Agent-owned Python 导出扩展；第二轮六处元数据/SQLite 名称生成优化的新鲜完整正例校验约 0.36–0.38 秒。新的完整门禁仍待冻结后执行，任务状态不自动提升。详细当前进展见 `docs/research/2026-10-08-full-validation-performance-progress.md`；下文未实施/65%/67% 的内容是此前基线和历史拒绝，不代表本轮最终结果。
+
 ## 起点与同步范围
 
 - 本地仓库：`C:\Users\czh86\Documents\Codex\deepseek-harness-win7`，分支 `master`。

@@ -47,6 +47,34 @@ def zip_source(source, path):
     return path
 
 
+@pytest.mark.skipif(os.name != 'nt', reason='Actual Win7 extended plugin tree')
+@pytest.mark.parametrize('damage', ('bytes', 'junction'))
+def test_long_plugin_tree_preserves_hashes_and_rejects_current_damage(tmp_path, damage):
+    directory = tmp_path / ('nested-' + 'x' * 85) / ('nested-' + 'y' * 85)
+    extended = Path(store.filesystem_path(str(directory)))
+    shutil.copytree(str(EXAMPLE), str(extended))
+    path = extended / 'python/echo/formatting.py'
+    assert len(str(directory / 'python/echo/formatting.py')) > 260
+    original = store.file_hashes(str(EXAMPLE))
+    assert store.file_hashes(str(directory)) == original
+    if damage == 'bytes':
+        path.write_text('def format_echo(text):\n    return "changed: " + text\n', encoding='utf-8')
+        assert store.file_hashes(str(directory))['python/echo/formatting.py'] != original['python/echo/formatting.py']
+    else:
+        target = tmp_path / 'foreign'
+        target.mkdir()
+        link = tmp_path / 'link'
+        completed = subprocess.run(['cmd.exe', '/c', 'mklink', '/J', str(link), str(target)], capture_output=True)
+        assert completed.returncode == 0, completed.stdout + completed.stderr
+        owned_link = extended / 'python/foreign'
+        os.rename(str(link), str(owned_link))
+        try:
+            with pytest.raises(ValueError, match='linked plugin file'):
+                store.file_hashes(str(directory))
+        finally:
+            os.rmdir(str(owned_link))
+
+
 @pytest.mark.asyncio
 @pytest.mark.parametrize('container', ['directory', 'zip'])
 async def test_upgrade_restart_named_rollback_and_newer_rollback_without_node(profile, tmp_path, container):

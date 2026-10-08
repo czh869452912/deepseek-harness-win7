@@ -7,6 +7,7 @@ import yaml
 from dsh.boot.profile_boot import run_profile
 from dsh.core.abort import NEVER_ABORTED
 from dsh.core.tools import ToolExecutionInput
+from dsh.extensions.cordis_export import PythonPluginExport
 
 NAME = '@author/python-export-web'
 SESSION_PRESETS = {'python-session-a': 'exported-a', 'python-session-b': 'exported-b',
@@ -88,6 +89,7 @@ async def export_project_at(workspace, host_source=HOST_SOURCE, client_source=CL
         ctx = author['ctx']
         await ctx.sessionController.create(dict(sessionId='export-author', cwd=str(workspace), agentPreset='cordis'))
         agent = ctx.agents.get('export-author')
+        await agent.ctx.plugin(PythonPluginExport)
         code = dict(client=client_source)
         if host_source is not None:
             code['host'] = host_source

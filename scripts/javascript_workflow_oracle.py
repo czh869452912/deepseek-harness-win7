@@ -55,14 +55,19 @@ def assets(root):
 
 
 def validate_runtime(report, root, expected_digest, modules, expected_assets, check_files=True):
+    if __package__:
+        from scripts.import_paths import resolve_import_path
+    else:
+        from import_paths import resolve_import_path
     root = root.resolve()
     if Path(report['root']).resolve() != root or not report['python'].startswith('3.8.10 '):
         raise ValueError('JavaScript workflow runtime root or Python differs')
     validate_executable(report['executable'], root, check_files)
     if not REQUIRED_MODULES.issubset(report['modules']) or report['modules'] != modules:
         raise ValueError('JavaScript workflow imported module closure differs')
+    missing_prefixes = None if check_files else {}
     for name, expected in modules.items():
-        path = (root / name).resolve()
+        path = resolve_import_path(root, name, missing_prefixes)
         if path.relative_to(root).as_posix() != name or check_files and digest(path) != expected:
             raise ValueError('JavaScript workflow imported module bytes differ')
     if report['assets'] != expected_assets or check_files and assets(root) != expected_assets:

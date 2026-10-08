@@ -1,8 +1,32 @@
 # Python 3.8.10 / Win7 迁移交接
 
-交接日期：2026-10-07。此文档交接当前主目录迁移工作，供下一位维护者直接接续。**迁移尚未全部闭环，最新产品尚未通过新的完整发行验收。**
+交接日期：2026-10-08。此文档交接当前主目录迁移工作，供下一位维护者直接接续。**迁移尚未全部闭环，最新产品尚未通过新的完整发行验收。**
 
 **当前开发验证指引：** 按用户认可的评估，`AGENTS.md` 第5节已替换每次任务完成前无条件全套要求；默认定向验证，完整门禁安排在稳定迁移批次/跨模块架构整体签收、Portable发行候选或用户明确要求时。完整门禁失败后集中修复并定向复验，不逐项重启全套；提交/合并/push本身不触发全套。节点规划、短工作区和证据保留见 `docs/testing.md`；此前“待下一次全套”等为历史进展，不自动启动运行。现有CI触发器/45分钟job限制仍待单独改造，正式签收规则和台账状态不因本次文档调整变化。
+
+## 下一步工作：Chromium 108 前端复核与交付门禁
+
+**2026-10-08 新增交付要求**：此前全盘接收固定原版 WebUI，未独立复核 Chromium 108 兼容性。前端原版一致、现代浏览器运行或 Python 回归通过都不能代替目标浏览器可用性。下一步必须复核完整前端，并设计、实现绑定最终 Portable ZIP 的兼容门禁，使进入交付包的版本有相应运行证据。当前只完成问题核对、设计和交接，产品补丁与专项门禁尚未实施。详见 [统一兼容报告](docs/research/2026-10-08-deepseek-harness-win7-unified-compatibility-report.md)，尤其第 3 节和第 6.5–6.8 节。
+
+本次核查基线：`D:\Project\deepseek-harness-win7`、`master`、`0f06bed62c823821068a100c284b90e4488edc22`；upstream pin 仍为 `cd5ef8148158c3a752a658978873241fdf8e2bbc`。下文性能修复的分支、原工作目录和“待第几次全套”是其历史记录；接续时以实际 HEAD/status 为准。本次没有执行完整门禁或构建 Portable，没有提升迁移台账状态。
+
+**已核实的范围**：Gateway 客户端 `remote-stream.ts:107`、`remote-events.ts:128/157`、`index.ts:485` 及 `lib/client.js` 直接调用 `AbortSignal.any`。审批/提问的 `src/client/index.ts` 与 `contract/slots.ts`、两份 `lib/client.js` 直接调用 `Promise.withResolvers`，故对这些功能同属 P0 兼容缺口；`READY_MARKUP` 的启动 deferred 替代不覆盖它们。上述源码与 bundle 与固定上游逐字节一致。模型选择初次 ready 同时依赖 `modelCatalog` 和 Session `modelSelection` 投影；尚未取得现场 RPC/投影日志，不能宣称已证明唯一根因。Win7 现场缺失 API、重连和 Console 临时 polyfill 部分恢复沿用原报告反馈，原始截图/代码/候选 ZIP 未归档，不能当作本次重做真机验证。
+
+按以下次序接续，与已有性能/迁移收尾协调；这些条目是新增待办标识，**不是已登记或已签收的 MIG 任务**：
+
+| 待办 / 优先级 | 下一步交付 | 完成判据与边界 |
+| --- | --- | --- |
+| C108-01 / P0 | 全前端兼容性审计：固定浏览器 108 observer 来源/版本/散列；从前端清单、包导出、活动 Loader/boot roster 生成实际主入口、动态 bundle、依赖/懒加载、CSS、启用 realm 的清单 | 逐文件 SHA-256、API/语法/CSS 支持与适配矩阵；覆盖实际包内产物，不能只扫描源码、固定插件数或拿原版散列当兼容证明 |
+| C108-02 / P0 | Cordis Host 兼容插件/模块，统一补齐 `AbortSignal.any` 与 `Promise.withResolvers`，通过 `webserver/index-inject` 接入；保留原版 React/TSX/CSS/bundle 和原生 API | 对缺失能力按需补齐；最终 served HTML 在所有可执行客户端/parser 脚本前执行，核查 tap/CSP；取消原因、非法/空输入、级联/重入、清理、Promise 构造器/结算语义及 Host 卸载控制通过；独立 realm 单测 |
+| C108-03 / P0 | 固定 108 实际浏览器旅程：连接/控制/快照/follow 恢复，模型目录 + 投影，选择/刷新/断线恢复，消息/工具、审批/提问/计划确认、取消/超时/销毁、动态插件；现代浏览器反向回归 | 用协议版本、二进制散列、UA 和能力探针核验 108；保留 Console 首错、WS 帧和 Host 状态；分别定位 RPC/投影与兼容补丁后的新异常。本地可控 Provider 验证真实请求链，外部模型调用另记授权与执行状态 |
+| C108-04 / P0 | 将报告 G1–G4 接入 `verify_release.py`、`verify_portable.py`、浏览器观察器及 CI/artifact 发布资格 | 最终 ZIP 新目录实际解压，运行包内 Python/Host/前端/兼容层，使用固定 108；回执绑定 commit、输入、pin、前端/兼容层、浏览器和 ZIP 散列；错版本、缺 lane/回执、晚注入、篡改/遗漏产物或换包均拒绝。只发布通过的原 ZIP |
+| C108-05 / P1 | 审计其他实际使用的浏览器能力、第三方依赖、CSS、Worker/iframe；补充缺 API/已支持/真实调用的区分及 CI 分层范围 | 运行 realm 和审计覆盖可核查；`AbortSignal.timeout` 现场已存在，禁止无依据覆盖。108 自动化、现代回归、Win7 实机分开记账；静态或模拟缺 API 检查不替代真实 108 |
+| C108-06 / P1 | 补录现场环境与原始证据：精确候选/ZIP、Win7 SP1/架构、QIHU 产品及实际内核/模式、能力探针、临时 polyfill 代码和前后 Console/Network/Host 日志、剩余异常 | 材料绑定同一候选，敏感信息脱敏；无法取得则保持待补。Win7 真机认证继续按既有用户决策延期，不反复询问或自动恢复；未认证不得宣称 Win7 实机通过 |
+| C108-07 / P2 | 原生目录选择器/子进程/TLS 等 OS 层问题独立跟踪 | 原目录选择故障已由用户反馈不再出现，不重开为本次共同根因；仅出现新证据时独立排查，恢复真机认证时覆盖 native/browse 双通道 |
+
+**门禁现状及验证节奏**：现有 CI 使用 runner 已安装的 Chrome，现有发行回执不要求版本 108，专项资格尚不成立。先执行 C108-01–03 相关定向验证，收尾稳定后再通过统一发行入口完成 C108-04；不为本次文档或每项局部补丁重启全套/重建 Portable。完整入口已包含 Python 全量，不在前面重复 `pytest tests`。专项结果不能补写旧回执或把下文旧签收提升为当前完整通过；旧 16 项开放迁移范围和精确上游例外保持，新增兼容待办另行规划，不塞入已 integrated 历史记录。
+
+## 既有完整验证进展（保留历史）
 
 **2026-10-08 最新：按用户要求停止重复全套，完成用时审查与定向修复。** 第四次干净 `2112a470` 收集10095项，在3600秒/约99%中断，SDK有失败标记但没有最终XML/完整栈，拒绝已归档；不得猜测最终通过数。现从第二、三轮完整XML定位冷观察构造286秒、浏览器约39–49秒、SQLite约26秒的成本；代表性浏览器/SQLite复验通过，没有证据把这些正常工作量认作死循环。SDK夹具已修复通知重置等待期限、丢失已观察回复、用10秒即时回复期限等待300秒真实工具的问题。另修复SDK观察器及JSONL实际目录/追加/冷读取的Win7长路径访问，公开位置与原比较判据保持；新增失败栈即时保存。27项SDK/等待/发行工作区、100项JSONL/SDK、28项最终边界及4项最终字节Source配对分别通过，包含重叠，不累计；两个原版浏览器和SQLite控制通过。发行脚本默认不再硬卡全套3600秒，只有显式 `--regression-timeout SECONDS` 才设置总预算，单项操作期限保留。此轮没有第五次全套或新的完整签收；详细说明与未确认历史失败见本日验证进展，下文“待第四次”等均为历史。最新有界合同签收仍83026446/65，16开放任务不提升。
 
@@ -52,6 +76,7 @@ git lfs fsck
 3. `docs/research/2026-10-07-current-work-close-status.md`：最新完整状态、成本测量、候选研究、未闭合项及优先顺序。
 4. `docs/research/2026-10-07-frontend-preflight-order-progress.md`：最新完整门禁拒绝及两项已修复失败。
 5. `migration/upstream-bug-exceptions.json`：九项原版缺陷发现索引；实际接受由各 oracle 的精确谓词决定。
+6. [2026-10-08 统一兼容报告](docs/research/2026-10-08-deepseek-harness-win7-unified-compatibility-report.md)：Chromium 108 源码/bundle 缺口、模型双输入及 G1–G4 交付门禁设计；上方 C108-01–07 是本次新增下一步工作。
 
 账本当前共 **86 项：70 integrated、10 running、6 draft**。70 含历史/工具类记录，不能用作当前产品完成率。`accepted_upstream` 仍未建立。
 
@@ -120,19 +145,13 @@ node --version
 
 Python 必须为 **3.8.10**；观察器 Node 为 **22.22.2**。Node/Chromium 是开发验收依赖，不是便携产品依赖。已有 Edge 路径 `C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe`；在其他机器使用实际可用的 Chromium 路径。API 凭据不写入交接或证据，不能擅自调用付费服务。
 
-每一部分完善实际回归和证据后单独提交。产品任务完成前必须执行：
-
-```powershell
-.venv\Scripts\python.exe -m pytest tests
-```
-
-提交并确认干净后执行统一发行门禁，输出目录采用新名字，避免覆盖旧拒绝；下例目录必须尚不存在：
+每一部分完善定向回归和证据后单独提交；按当前 `AGENTS.md` 第5节和 `docs/testing.md` 选择提供端、直接消费者及相关控制，不把提交或交接作为启动全套的触发条件。稳定批次准备整体签收或正式 Portable 候选时，确认干净冻结后直接执行统一发行门禁，不先重复跑全量 pytest。输出目录采用新名字，避免覆盖旧拒绝；下例目录必须尚不存在：
 
 ```powershell
 .venv\Scripts\python.exe scripts\verify_release.py --browser 'C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe' --output-dir '.goose/out/handoff-next-clean-gate-v1'
 ```
 
-缺失固定开发依赖时先阅读门禁的 `--prepare` 行为再准备。不得用 `--allow-dirty` 的开发预览作发布资格，不扩大正常 3600 秒预算，不跳过必需 lane 或修改九项精确例外。完整门禁执行期间不得改其冻结输入；真实解压及浏览器必须验证同一个精确候选包。
+缺失固定开发依赖时先阅读门禁的 `--prepare` 行为再准备。不得用 `--allow-dirty` 的开发预览作发布资格；当前默认无全量 pytest 的 3600 秒硬限制，仅显式 `--regression-timeout SECONDS` 设置总预算，单项期限不放宽。不跳过必需 lane 或修改九项精确例外。完整门禁执行期间不得改其冻结输入；真实解压及浏览器必须验证同一个精确候选包。上例是现有发行入口，尚不能代表新增 Chromium 108 专项门禁已接入；C108-04 实施后更新相应配置和命令。
 
 维护命令：
 
@@ -148,6 +167,8 @@ git diff --check
 
 开放 16 项：056–064 九项 running、六个 draft 父范围（ACP transport / DeepSeek wire / profile journeys / Session replay / Tools policy / Web connection）以及 JS036 running/partial。顺序为成本优化 → 正式推广与补观察 → 新干净完整门禁 → 九项有限集成 → 六父合同及 JS036 剩余 Node/图 ABI/Ready/重入/竞争 → 最终统一验收。
 
-九项原版缺陷例外维持精确谓词；Python Future 调度差异另为语言适配。启动取消/cache 时序、Proactor/HTTP 关闭及部分文件系统错误仍未归因，不新增抑制、不把未知失败当原版 bug。真实 Win7 和目标浏览器认证按用户明确决策延期，不再重复询问，也不能用当前 Windows 的 Python 3.8.10 通过记录宣称 Win7 实机认证。
+另有本次新增的 C108-01–07 兼容待办，见上方“下一步工作”。Chromium 108 前端复核、Host 适配与最终 ZIP 专项资格作为后续交付约束并列推进；尚未写入 MIG 台账，不能把“16 项”当作覆盖所有新增问题的总数。最终交付可用性不得只依赖此前现代浏览器验收。
+
+九项原版缺陷例外维持精确谓词；Python Future 调度差异另为语言适配。启动取消/cache 时序、Proactor/HTTP 关闭及部分文件系统错误仍未归因，不新增抑制、不把未知失败当原版 bug。真实 Win7 OS/浏览器组合认证按用户明确决策延期，不再重复询问；Chromium 108 自动化复核与交付门禁按上方新增待办推进。不能用当前 Windows 的 Python 3.8.10 或浏览器通过记录宣称 Win7 实机认证。
 
 架构继续 canonical profile/boot、Cordis 动态服务和可撤销副作用、原版 Connection/Typert Remote `/api/remote.mux`。不恢复旧 `ApiProxy`/双业务 SSE/`--mode` 启动路线，不通过更改原版前端迎合主机协议。`expected_paths` 为影响提示，不是编辑权限；跨提供端/消费者的同一合同修改需一并处理。`migration.py` 不自动调度或转状态；已 integrated 的旧任务不塞入未解决 findings，新的未签收状态应明确记录。

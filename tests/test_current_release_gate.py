@@ -3508,6 +3508,16 @@ def test_session_filters_required_lanes_cannot_be_optional(tmp_path,module,damag
             GATE.validate_regression(path)
 
 
+@pytest.mark.parametrize('module', ['test_boot_remote_composition', 'test_web_search_deepseek'])
+@pytest.mark.parametrize('damage', ['omit', 'skip', 'duplicate', 'failure'])
+def test_boot_and_search_composition_lanes_are_mandatory(tmp_path, module, damage):
+    path = tmp_path / 'pytest.xml'
+    key = (module, sorted(GATE.REQUIRED_REGRESSION[module])[0])
+    regression_xml(path, **{damage: key})
+    with pytest.raises(RuntimeError):
+        GATE.validate_regression(path)
+
+
 @pytest.mark.parametrize('damage',['missing','tail','duplicate','reorder','foreign-root','foreign-module','python','unknown','early-copy','literal-matching'])
 def test_extracted_filters_require_exact_observations_and_runtime(tmp_path,damage):
     archive,candidate,report = extracted_receipt(tmp_path)

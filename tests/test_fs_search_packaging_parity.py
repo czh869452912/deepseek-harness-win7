@@ -102,6 +102,11 @@ def test_portable_stages_pinned_rg_and_zip_path_matches_runtime_resolver(tmp_pat
     (fixture_root / 'migration').mkdir()
     (fixture_root / 'reference/apps/cli').mkdir(parents=True)
     (fixture_root / 'reference/apps/cli/package.json').write_text('{}', encoding='utf-8')
+    for manifest in (ROOT / 'reference/vendor').glob('*/package.json'):
+        destination = fixture_root / manifest.relative_to(ROOT)
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copyfile(manifest, destination)
+        shutil.copyfile(manifest.with_name('LICENSE'), destination.with_name('LICENSE'))
     shutil.copyfile(ROOT / 'migration/baseline.json', fixture_root / 'migration/baseline.json')
     shutil.copyfile(ROOT / 'scripts/frontend-inputs.json', fixture_root / 'scripts/frontend-inputs.json')
     frontend = json.loads((fixture_root / 'scripts/frontend-inputs.json').read_text(encoding='utf-8'))
@@ -131,6 +136,10 @@ def test_portable_stages_pinned_rg_and_zip_path_matches_runtime_resolver(tmp_pat
 
     with zipfile.ZipFile(build.ZIP_OUTPUT) as packaged:
         assert "dsh-win7-portable/dsh/fs/tool_fs_search/bin/rg.exe" in packaged.namelist()
+        for manifest in (ROOT / 'reference/vendor').glob('*/package.json'):
+            for source in (manifest, manifest.with_name('LICENSE')):
+                member = 'dsh-win7-portable/' + source.relative_to(ROOT / 'reference').as_posix()
+                assert packaged.read(member) == source.read_bytes()
 
     portable_core_path = dist / "dsh" / "fs" / "tool_fs_search" / "search_core.py"
     spec = importlib.util.spec_from_file_location("portable_search_core", portable_core_path)

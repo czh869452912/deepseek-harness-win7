@@ -59,9 +59,20 @@ class _FetchRedirectHandler(urllib.request.HTTPRedirectHandler):
     http_error_301 = http_error_303 = http_error_307 = http_error_308 = http_error_302
 
 
+class _RejectRedirectHandler(urllib.request.HTTPRedirectHandler):
+    def http_error_302(self, request, response, code, message, headers):
+        response.close()
+        raise urllib.error.URLError('HTTP redirect disallowed')
+
+    http_error_301 = http_error_303 = http_error_307 = http_error_308 = http_error_302
+
+
 @contextlib.contextmanager
-def open_stream(request, signal=None, idle_timeout_ms=300000, on_activity=None, read_error_body=True):
+def open_stream(request, signal=None, idle_timeout_ms=300000, on_activity=None, read_error_body=True,
+                redirect_policy='follow', raise_http_errors=True):
     from dsh.llm.llm_service import LlmError
+    if redirect_policy not in ('follow', 'error'):
+        raise ValueError('HTTP redirect policy must be follow or error')
     request = urllib.request.Request(request) if isinstance(request, str) else copy.copy(request)
     request.headers = {name: value for name, value in request.headers.items() if name.lower() != 'host'}
     request.unredirected_hdrs = {name: value for name, value in request.unredirected_hdrs.items() if name.lower() != 'host'}
@@ -294,11 +305,13 @@ def open_stream(request, signal=None, idle_timeout_ms=300000, on_activity=None, 
     try:
         state.update(reading=True, since=time.monotonic())
         try:
-            response = urllib.request.build_opener(Http(), Https(), _FetchRedirectHandler()).open(request, timeout=idle_timeout_ms / 1000)
+            redirect = _FetchRedirectHandler() if redirect_policy == 'follow' else _RejectRedirectHandler()
+            response = urllib.request.build_opener(Http(), Https(), redirect).open(request, timeout=idle_timeout_ms / 1000)
         except urllib.error.HTTPError as error:
             response = state["response"] = error
-            error._dsh_body = b"".join(read_chunks(error)) if read_error_body else b""
-            raise
+            if raise_http_errors:
+                error._dsh_body = b"".join(read_chunks(error)) if read_error_body else b""
+                raise
         except urllib.error.URLError as error:
             if isinstance(error.reason, socket.timeout):
                 state["code"] = "TIMEOUT"

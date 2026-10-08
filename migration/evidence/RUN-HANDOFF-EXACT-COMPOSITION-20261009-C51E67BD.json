@@ -1,0 +1,27 @@
+{
+  "id": "RUN-HANDOFF-EXACT-COMPOSITION-20261009-C51E67BD",
+  "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
+  "product_commit": "c51e67bdbf67afaa47af312fa3e840b351557544",
+  "kind": "research",
+  "result": "unknown",
+  "validity": "historical",
+  "commands": [
+    "scripts/route_execution_oracle.py",
+    "scripts/engine_composition_oracle.py",
+    "Recorded controlled HTTP/browser observers; exact commands and physical exits in archive."
+  ],
+  "environment": {
+    "python": "3.8.10",
+    "os": "Windows-10-10.0.26200-SP0",
+    "cwd": "C:\\Users\\czh86\\Documents\\Codex\\deepseek-harness-win7",
+    "node": "v22.22.2"
+  },
+  "contract_revisions": {},
+  "artifacts": [
+    {
+      "path": "migration/evidence/artifacts/HANDOFF-EXACT-COMPOSITION-20261009-C51E67BD.zip",
+      "sha256": "9a972175f5b113c35d55163169182f8ffbaee527d1a66ed6ec31fb674eba9b34"
+    }
+  ],
+  "scope": "Seven routes and three real engine compositions matched Source/Root/unchanged owned ZIP; three native profile aliases are one actual bundle composition, nine local HTTP processes matched full events/body only. Complete raw browser wire differences remain. Loader split-module false diagnosis and actual threaded import deadlocks are research refusals, not product fixes. No task or full release acceptance."
+}

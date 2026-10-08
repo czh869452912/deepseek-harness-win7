@@ -73,7 +73,7 @@ HARNESS_PLUGIN_CLASSES: Dict[str, str] = {
     "@deepseek-ai/dsh-session": "dsh.core.session.session:SessionPlugin",
     "@deepseek-ai/dsh-agent": "dsh.core.agent:AgentPlugin",
     "@deepseek-ai/dsh-agent-loop": "dsh.core.agent_loop:AgentLoopPlugin",
-    "@deepseek-ai/dsh-agent-default-model": "dsh.core.agent_default_model:AgentDefaultModelPlugin",
+    "@deepseek-ai/dsh-agent-default-model": "dsh.core.model_selection:AgentDefaultModelConfig",
     "@deepseek-ai/dsh-agent-tool-presentation": "dsh.core.agent_tool_presentation:AgentToolPresentationPlugin",
     "@deepseek-ai/dsh-tools": "dsh.core.tools:ToolsPlugin",
     "@deepseek-ai/dsh-persona": "dsh.core.persona:PersonaPlugin",

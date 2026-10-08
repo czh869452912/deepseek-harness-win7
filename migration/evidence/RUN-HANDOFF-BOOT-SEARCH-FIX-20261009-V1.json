@@ -1,0 +1,25 @@
+{
+  "id": "RUN-HANDOFF-BOOT-SEARCH-FIX-20261009-V1",
+  "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
+  "product_commit": "c51e67bdbf67afaa47af312fa3e840b351557544",
+  "kind": "research",
+  "result": "unknown",
+  "validity": "historical",
+  "commands": [
+    "Recorded exact pytest commands and Source original configuration run; XML/logs and tested provider bytes in archive."
+  ],
+  "environment": {
+    "python": "3.8.10",
+    "os": "Windows-10-10.0.26200-SP0",
+    "cwd": "C:\\Users\\czh86\\Documents\\Codex\\deepseek-harness-win7",
+    "node": "v22.22.2"
+  },
+  "contract_revisions": {},
+  "artifacts": [
+    {
+      "path": "migration/evidence/artifacts/HANDOFF-BOOT-SEARCH-FIX-20261009-V1.zip",
+      "sha256": "ea8c5688207f9234f41123de9a8b5efd5399c37a35d6cfed60b6d52d7fb82613"
+    }
+  ],
+  "scope": "Focused fixed boot/Remote/search consumers and original Source55 only. Archived uncommitted provider bytes based on c51e67bd; current full release and sameZIP search qualification not established. No task acceptance."
+}

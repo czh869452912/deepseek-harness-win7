@@ -188,7 +188,8 @@ class SessionController(TypertRemoteService):
                     entries.append(entry)
                 return True, dict(id=provider['id'], name=provider['name'], models=entries)
             except Exception as error:
-                return False, dict(id=provider['id'], name=provider['name'], message=str(error))
+                return False, dict(id=provider['id'], name=provider['name'],
+                                   message=getattr(error, 'message', str(error)))
         rows = await asyncio.gather(*(group(provider) for provider in providers))
         return {'default': self.ctx.get('agentDefaultModel').currentSelection(), 'routableProviders': [row['id'] for row in providers],
                 'groups': [row for success, row in rows if success and row['models']], 'failures': [row for success, row in rows if not success]}

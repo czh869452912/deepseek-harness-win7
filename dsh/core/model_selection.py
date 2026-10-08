@@ -8,6 +8,7 @@ import inspect
 from typing import Any, Callable, Dict, List, Optional
 from dsh.cordis.context import Context
 from dsh.cordis.service import Service
+from dsh.cordis.schema import Schema as z
 from dsh.settings.provider import install_settings_section
 from dsh.settings.types import settings_namespace
 
@@ -15,56 +16,16 @@ from dsh.settings.types import settings_namespace
 AGENT_DEFAULT_MODEL_SETTINGS_NAMESPACE = settings_namespace("agent-default-model")
 
 
-class _StringObjectSchema:
-    """Small Schemastery-compatible adapter for this package's object schemas."""
-
-    def __init__(self, required: List[str], optional: Optional[List[str]] = None):
-        self.required = list(required)
-        self.optional = list(optional or [])
-
-    def _issues(self, value: Any) -> List[Dict[str, Any]]:
-        issues: List[Dict[str, Any]] = []
-        if not isinstance(value, dict):
-            return [{"message": "expected an object"}]
-        for key in self.required:
-            if key not in value:
-                issues.append({"message": "is required", "path": [key]})
-            elif not isinstance(value[key], str):
-                issues.append({"message": "expected a string", "path": [key]})
-        for key in self.optional:
-            if key in value and value[key] is not None and not isinstance(value[key], str):
-                issues.append({"message": "expected a string", "path": [key]})
-        return issues
-
-    def validate(self, value: Any) -> Dict[str, Any]:
-        return {"value": value, "issues": self._issues(value)}
-
-    def __call__(self, value: Any) -> Any:
-        issues = self._issues(value)
-        if issues:
-            issue = issues[0]
-            path = ".".join(issue.get("path", []))
-            suffix = " at %s" % path if path else ""
-            raise TypeError("invalid agent default model settings: %s%s" % (issue["message"], suffix))
-        return value
-
-    def to_json(self) -> Dict[str, Any]:
-        properties = {
-            key: {"type": "string"}
-            for key in self.required + self.optional
-        }
-        return {"type": "object", "properties": properties, "required": list(self.required)}
-
-
-AGENT_DEFAULT_MODEL_SETTINGS_SCHEMA = _StringObjectSchema(
-    ["provider", "model"], ["reasoningEffort"]
-)
-
+AGENT_DEFAULT_MODEL_SETTINGS_SCHEMA = z.object({
+    "provider": z.string().required(),
+    "model": z.string().required(),
+    "reasoningEffort": z.string(),
+})
 
 class AgentDefaultModelConfig(Service):
     """Default Agent model selection layered over the optional settings service."""
 
-    Config = _StringObjectSchema(["provider", "model"])
+    Config = z.object({"provider": z.string().required(), "model": z.string().required()})
 
     def __init__(self, ctx: Context, config: Dict[str, Any]):
         super().__init__(ctx, "agentDefaultModel")

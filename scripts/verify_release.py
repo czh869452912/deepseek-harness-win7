@@ -126,7 +126,21 @@ PAIRED_DRIVERS = PAIRED_DRIVERS + ('unicode_carrier',)
 PAIRED_DRIVERS = PAIRED_DRIVERS + ('fs_values',)
 PAIRED_DRIVERS = PAIRED_DRIVERS + ('message_values',)
 OFFICIAL_CONFIGS = ('consumers', 'agent-lifecycle', 'session-recovery', 'session-projection', 'acp', 'acp-app', 'mcp', 'subagent-acp', 'storage-cache', 'session-observation', 'session-corpus', 'session-sqlite-query', 'query-engine-source', 'session-tools-source', 'sqlite-format-source', 'sqlite-provider-source', 'jsonl-provider-source', 'tool-scheduler-source', 'deepseek-source', 'llm-public-source')
+OFFICIAL_CONFIGS += ('web-search-deepseek-source',)
 REQUIRED_REGRESSION = {
+    'test_boot_remote_composition': {
+        *{'test_boot_default_model_has_serializable_live_settings[' + value + ']' for value in ('False', 'True')},
+        'test_boot_commands_remote_serializes_and_owns_effects',
+        *{'test_model_catalog_preserves_error_message_without_code_prefix[' + value + ']' for value in ('error0', 'error1')},
+    },
+    'test_web_search_deepseek': {
+        'test_actual_messages_body_headers_recording_and_web_cap',
+        *{'test_search_redirect_rejected_before_location_contact[' + str(code) + ']' for code in (301,302,303,307,308)},
+        *{'test_abort_mid_body_closes_owned_socket_and_preserves_reason[' + path + ']' for path in ('/slow', '/error/slow')},
+        'test_credentials_snapshot_abort_and_late_rejection_observed',
+        'test_settings_live_redaction_detach_and_missing_credentials',
+        'test_actual_pinned_source_complete_mapping_availability_and_missing_key',
+    },
     'test_app_source_contract': {'test_source_document_projects_into_the_built_document'},
     'test_web_package_contract': {'test_built_index_is_relative_and_declares_the_document_root'},
     'test_settings.TestRegistration': {'test_describes_registered_namespaces_with_schema_json_value_and_applies'},

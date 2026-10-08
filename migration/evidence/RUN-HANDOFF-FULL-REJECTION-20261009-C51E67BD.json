@@ -1,0 +1,25 @@
+{
+  "id": "RUN-HANDOFF-FULL-REJECTION-20261009-C51E67BD",
+  "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
+  "product_commit": "c51e67bdbf67afaa47af312fa3e840b351557544",
+  "kind": "research",
+  "result": "failed",
+  "validity": "historical",
+  "commands": [
+    ".venv/Scripts/python.exe scripts/verify_release.py --browser \"C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe\" --browser108 .goose/tools/chromium-1058931/chrome-win/chrome.exe --output-dir .goose/out/release-gate-20261009-handoff-v3"
+  ],
+  "environment": {
+    "python": "3.8.10",
+    "os": "Windows-10-10.0.26200-SP0",
+    "cwd": "C:\\Users\\czh86\\Documents\\Codex\\deepseek-harness-win7",
+    "node": "v22.22.2"
+  },
+  "contract_revisions": {},
+  "artifacts": [
+    {
+      "path": "migration/evidence/artifacts/CURRENT-RELEASE-REJECTION-20261009-C51E67BD.zip",
+      "sha256": "88fce0fe4b8944a37cf2cc744ccc97fa932d7d8382e1e6dc325da999ceb7c77e"
+    }
+  ],
+  "scope": "Complete Python collection:10256 passed,1 failed,6 existing skips,3900.69 seconds. rg staging fixture omitted mandatory vendor identities; actual Portable build succeeded. Later Source/paired/extracted/browser stages did not run.16542 frozen input identities unchanged after physical exit. Exact ZIP77270191bb7dbf1a8408f2195c6d4a113bdfea9657d34aeef98b9a18b0ba7404. No task acceptance."
+}

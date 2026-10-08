@@ -29,7 +29,8 @@ from dsh.core.abort import AbortSignal
 from dsh.core.cancellation import subscribe_abort
 from dsh.core.scope import NamedEntries, ScopeLayer, ScopedLayers, scope_of
 from dsh.core.session.json import FrozenList, deep_freeze
-from dsh.cordis.service import Service
+from dsh.typert.remote import Remote, TypertRemoteService
+from dsh.typert.artifact import UNDEFINED
 
 __all__ = [
     "COMMAND_NAME",
@@ -556,7 +557,7 @@ def normalize_result(command: str, value: Any) -> Mapping[str, Any]:
 normalizeResult = normalize_result
 
 
-class CommandRuntime(Service):
+class CommandRuntime(TypertRemoteService):
     """
     Human-command registry mounted at `ctx.commands`.
 
@@ -607,6 +608,18 @@ class CommandRuntime(Service):
         commands = list(self._view(agent).values())
         commands.sort(key=lambda command: command.definition.name)
         return tuple(command.descriptor for command in commands)
+
+    @Remote('list')
+    def remoteList(self, agent):
+        """Export the Source JSON descriptors while retaining immutable domain views."""
+        return [descriptor.to_dict() for descriptor in self.list(agent)]
+
+    @Remote('execute')
+    async def remoteExecute(self, agent, line, images, signal):
+        execution = await self.execute(agent, line, () if images is UNDEFINED else images, signal)
+        if execution is None:
+            return UNDEFINED
+        return {'commandId': execution.command_id, 'result': execution.result}
 
     def find(self, agent: Any, name: str) -> Optional[CommandDefinition]:
         """

@@ -1,0 +1,9 @@
+[
+  {"name":"citations-and-dedup","response":{"content":[{"type":"text","citations":[{"url":"https://a.test","cited_text":"first"},{"url":"https://a.test","cited_text":"second"},{"url":"","cited_text":"orphan"}]},{"type":"web_search_tool_result","content":[{"type":"web_search_result","url":"https://a.test","title":"A","page_age":"2026-02-02"},{"type":"web_search_result","url":"https://b.test"},{"type":"web_search_result","url":"https://a.test","title":"duplicate"},{"type":"web_search_result","url":""},{"type":"web_search_result_error","url":"https://error.test"}]}]}},
+  {"name":"empty-result-block","response":{"content":[{"type":"web_search_tool_result","content":[]}]}},
+  {"name":"empty-optional-fields","response":{"content":[{"type":"web_search_tool_result","content":[{"type":"web_search_result","url":"https://a.test","title":"","page_age":""}]}]}},
+  {"name":"empty-citations","response":{"content":[{"type":"text","citations":[{"url":"https://a.test"},{"cited_text":"orphan"},{"url":"https://a.test","cited_text":""}]},{"type":"web_search_tool_result","content":[{"type":"web_search_result","url":"https://a.test"}]}]}},
+  {"name":"duplicate-result-blocks","response":{"content":[{"type":"web_search_tool_result","content":[{"type":"web_search_result","url":"https://a.test","title":"first"}]},{"type":"web_search_tool_result","content":[{"type":"web_search_result","url":"https://a.test","title":"second"},{"type":"web_search_result","url":"https://b.test"}]}]}},
+  {"name":"missing-result-block","response":{"content":[{"type":"text","text":"Prose is not a search result."}]}},
+  {"name":"absent-content","response":{}}
+]

@@ -10,6 +10,57 @@ from dsh.cordis.context import Context
 from dsh.cordis.fiber import FiberState
 from dsh.cordis.loader import Loader, evaluate, interpolate
 from dsh.cordis.loader import EntryGroup, AggregateError as LoaderAggregateError
+from dsh.cordis.loader import EntryTree
+
+
+@pytest.mark.asyncio
+async def test_entry_uses_owning_async_tree_for_initial_and_replacement_imports():
+    ctx = Context()
+    loader = Loader(ctx)
+    imports, active = [], []
+    admitted = asyncio.Event()
+    release = asyncio.Event()
+
+    def contribution(_ctx, config):
+        active.append(config['value'])
+        return lambda: active.remove(config['value'])
+
+    class OwnedTree(EntryTree):
+        async def import_plugin(self, name, get_outer_stack=None):
+            imports.append(dict(name=name, stack=get_outer_stack()))
+            admitted.set()
+            await release.wait()
+            if name == 'missing':
+                raise RuntimeError('owned-tree import failed')
+            return SimpleNamespace(default=plugin(contribution))
+
+        def write(self):
+            return None
+
+    tree = OwnedTree(ctx)
+    try:
+        pending = tree.root.update([
+            dict(id='owned', name='relative-plugin', config=dict(value='original'))])
+        await asyncio.wait_for(admitted.wait(), 2)
+        assert active == []
+        release.set()
+        await asyncio.wait_for(pending, 5)
+        assert active == ['original']
+        entry = tree.resolve('owned')
+        original = entry.fiber
+        with pytest.raises(Exception, match='owned-tree import failed'):
+            await entry.update(dict(name='missing'))
+        assert entry.fiber is original and active == ['original']
+        await entry.update(dict(name='replacement', config=dict(value='replacement')))
+        assert active == ['replacement']
+        assert [row['name'] for row in imports] == ['relative-plugin', 'missing', 'replacement']
+        assert all(row['stack'] and '#owned' in row['stack'][0] for row in imports)
+        await tree.root.stop()
+        assert active == []
+    finally:
+        release.set()
+        await tree.await_()
+        await ctx.fiber.dispose()
 
 
 class RecordingLoader(Loader):

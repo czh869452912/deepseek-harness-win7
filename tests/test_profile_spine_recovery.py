@@ -1,5 +1,6 @@
 """Real profile/Loader/core plugins/JSONL recovery, with only the LLM mocked."""
 import json
+from pathlib import Path
 import pytest
 import yaml
 from dsh.boot.profile import init_profile
@@ -12,6 +13,7 @@ async def test_profile_tool_turn_persists_and_resumes_after_shutdown(tmp_path):
     init_profile(str(profile), [], 'startup')
     rows = [{'id':name, 'name':'@deepseek-ai/dsh-' + name} for name in
             ['session', 'tools', 'system-prompt', 'agent', 'agent-loop']]
+    rows.append(dict(id='test-llm', name=str(Path(__file__).with_name('profile_llm_fixture.py')) + ':plugin'))
     rows.append({'id':'session-persistence-jsonl', 'name':'@deepseek-ai/dsh-session-persistence-jsonl',
                  'config':{'root':str(tmp_path / 'sessions')}})
     (profile / 'cordis.patch.yml').write_text(yaml.safe_dump([{'insert':rows}]), encoding='utf-8')
@@ -22,7 +24,8 @@ async def test_profile_tool_turn_persists_and_resumes_after_shutdown(tmp_path):
         {'tool_calls':[{'id':'calc','name':'multiply','arguments':{'a':6,'b':7}}]},
         {'text':'The result is 42.'},
     ])
-    ctx.provide('llm', adapter)
+    ctx.get('llm').responses.extend(adapter.responses)
+    adapter = ctx.get('llm')
     ctx.get('tools').register_tool(name='multiply', description='Multiply', parameters={'type':'object'},
                                    handler=lambda args: str(args['a'] * args['b']))
     handle = await ctx.get('agent_loop').create_agent('profile-recovery', meta={'cwd':str(tmp_path)})
@@ -46,7 +49,8 @@ async def test_profile_tool_turn_persists_and_resumes_after_shutdown(tmp_path):
     assert fresh is not ctx
     assert fresh.get('sessions').get('profile-recovery') is None
     continuation = StrictMockLlmAdapter([{'text':'Recovered the previous answer: 42.'}])
-    fresh.provide('llm', continuation)
+    fresh.get('llm').responses.extend(continuation.responses)
+    continuation = fresh.get('llm')
     restored = await fresh.get('agent_loop').resume('profile-recovery')
     try:
         assert any(e['type'] == 'tool/result' for e in restored.agent.session.events)

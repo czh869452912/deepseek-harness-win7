@@ -1,0 +1,41 @@
+{
+  "id": "RUN-FULL-VALIDATION-REJECTED-20261008-13D0AE22",
+  "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
+  "product_commit": "13d0ae22d6293a8d0fd2a3322be2a7a920cfd0b8",
+  "kind": "verification",
+  "task_id": "MIG-CURRENT-RELEASE-GATE-003",
+  "result": "failed",
+  "validity": "historical",
+  "exit_code": 1,
+  "commands": [
+    ".venv/Scripts/python.exe scripts/verify_release.py --browser \"C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe\" --output-dir .goose/out/full-validation-clean-20261008-v2"
+  ],
+  "environment": {
+    "python": "3.8.10",
+    "os": "Windows",
+    "cwd": "D:\\Project\\deepseek-harness-win7",
+    "node": "v22.22.2",
+    "browser": "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe"
+  },
+  "contract_revisions": {},
+  "artifacts": [
+    {
+      "path": "migration/evidence/artifacts/FULL-VALIDATION-REJECTED-20261008-13D0AE22.zip",
+      "sha256": "3467f4c1b1739f76be21281eb41c3599968794c6e5158def5305b661b61cc1c7"
+    },
+    {
+      "path": "migration/evidence/artifacts/FRONTEND-ENVIRONMENT-20261008-13D0AE22.zip",
+      "sha256": "8105811332a4776157c801750298d484f76a4c7c21b76e95bfb827ee27e686c1"
+    }
+  ],
+  "regression_summary": {
+    "collected": 10094,
+    "passed": 10082,
+    "failed": 6,
+    "skipped": 6,
+    "seconds": 3467.69,
+    "timeout_seconds": 3600,
+    "xml_complete": true
+  },
+  "scope": "Full regression normally exited within unchanged 3600-second budget but six failures reject the clean candidate. No subsequent original Source, paired or extracted release qualification. Frozen inputs, complete XML/logs, exact actual ZIP retained. Follow-up restored preexisting ignored Source frontend build inputs from verified original archived record and bytes; actual fresh path-dependent official rebuild is separately archived, not relabeled as the old build. No Source edits, exceptions, task promotion or publication."
+}

@@ -46,3 +46,11 @@ LLM 汇总/子组、Session、DeepSeek、Agent、问答、工具、Message、FS�
 第二轮有限材料归档 `migration/evidence/artifacts/FULL-VALIDATION-FIXES-20261008-DEA32B1C.zip`，78 成员 / 1603219 字节，SHA-256 `4c49792174714c08580cafacf4553715cbbb23aa2ced9e55aadd0357182625c3`。保存原拒绝/通过 XML 日志、实际原版浏览器报告、新鲜完整实际 tuple、两种 profile、AST 审计、被测物理字节和驱动；逐成员完整散列及 CRC 已核验。这里只是基于 dea32b1c 的工作区有限验证，不是干净产品签收，也不替代后续真实发行 ZIP。
 
 最新完整产品签收暂仍为原始 `83026446` 的 65 个有界合同。056–064、六个父范围和 JS036 不因性能修改自动转状态；九项原版例外、Python 调度适配以及用户延期的 Win7/目标浏览器认证均保持。
+
+第二次干净候选 `13d0ae22d6293a8d0fd2a3322be2a7a920cfd0b8` 全套正常结束：10082 passed / 6 failed / 6 既有 skipped，3467.69 秒，完整 XML。正常预算内全套已走完，但六项拒绝导致 Source/83 配对/实际解压发行阶段没有开始。原 JSONL、插件历史/导出/依赖和四条原版浏览器控制均通过。精确真实 ZIP/冻结输入/完整 XML 日志归档 `FULL-VALIDATION-REJECTED-20261008-13D0AE22.zip`，10 成员 / 77797546 字节，SHA-256 `3467f4c1b1739f76be21281eb41c3599968794c6e5158def5305b661b61cc1c7`，逐成员散列与 CRC 核验。
+
+六项失败为三类：本机 reference 忽略目录里仍为旧非 official 前端构建；四个手工 profile 测试等 boot 完成后才挂载 LLM，违反现在的激活检查；嵌套发行夹具用普通 glob 访问已收取的超长工作区。现用显式测试插件在 boot 时提供 LLM，其后只填充同一实例的响应，冷重启仍独立新实例；夹具用扩展路径验证真实收取的 Git 进展字节。16 项 profile/工作区复验通过（20.56 秒），两次初始改正中的缺失 config/重复服务/错误进展预期拒绝保留。
+
+本机执行固定原版完整 `pnpm run build:official` 成功，218 产物/四个 public 环境值，但 Source CSS 插件把实际绝对源码目录用于 chunk 标签和类名散列，造成 33 个 client.js 与冻结原构建不同。未改原版源码、浏览器代码或修改其散列规则。本机实际重建的 218 字节和原始记录、完整日志/驱动归档 `FRONTEND-ENVIRONMENT-20261008-13D0AE22.zip`，222 成员 / 5744909 字节，SHA-256 `8105811332a4776157c801750298d484f76a4c7c21b76e95bfb827ee27e686c1`。恢复环境时先核验历史 official 归档的原 SHA-256，再取其实际原记录与 218 个原产物，逐一核对现版本化 frontend 输入；只替换 reference 的 33 个忽略产物和原记录。没有重标本机重建，也没有变更产品 frontend，恢复后15项严格frontend控制通过。第三次干净完整门禁待执行，正常预算与必需 lane 保持。
+
+第三轮定向修复的原拒绝/通过 XML 日志、驱动及被测物理字节归档 `FULL-VALIDATION-THIRD-FIXES-20261008-13D0AE22.zip`，17 成员 / 22768 字节，SHA-256 `e417f212718aee0dd79034464d320ec4cad917b9eb8ef69afe50f2d6a468e33e`，CRC 与逐成员散列核验；不把局部通过当作新的完整签收。

@@ -6,6 +6,8 @@
 
 ## 起点与同步范围
 
+第二次完整门禁干净 `13d0ae22` 已在正常 3600 秒内正常结束：10082 passed / 6 failed / 6 既有 skipped，3467.69 秒，完整 XML；仍被门禁拒绝，后续 Source/配对/实际解压未执行。六项失败已分别修复并通过16项 profile/工作区和15项前端复验；实际本机 official 重建的33个路径相关产物差异保留，reference 按已核验历史归档恢复冻结218产物/原记录，不改产品前端。第三次干净全套待执行，详细材料见本日验证进展；此前最新有界合同签收仍83026446/65。
+
 - 本地仓库：`C:\Users\czh86\Documents\Codex\deepseek-harness-win7`，分支 `master`。
 - 远程：`https://github.com/czh869452912/deepseek-harness-win7.git`，跟踪分支 `origin/master`。
 - 最近产品修复的原始身份：`022852f5f508b792f289a86c82e7865d4f3dd24b`。

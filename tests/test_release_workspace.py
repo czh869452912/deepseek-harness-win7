@@ -61,12 +61,14 @@ def test_short_pytest_workspace_runs_actual_shared_checkpoint_git_consumer(tmp_p
     log = (output / 'pytest.log').read_text(encoding='utf-8')
     assert '1 passed' in log and '$GIT_DIR' not in log
     retained = output / 'pytest-workspace'
-    assert list(retained.glob('test_split_tasks*/.goose/runs/project/worktrees/*-split-*/a.py'))
+    physical_retained = Path(gate.regression_retention_path(retained))
+    observations = list(physical_retained.glob('test_split_tasks*/.goose/runs/project/worktrees/*-split-*/a.py'))
+    assert observations and all(path.read_text(encoding='utf-8') == 'value = 8\n' for path in observations)
     mapping = json.loads((output / 'pytest-workspace-mapping.json').read_text(encoding='utf-8'))
     assert not Path(mapping['execution_path']).exists()
     assert Path(mapping['retained_path']) == retained
     if os.name == 'nt':
-        assert max(len(str(path)) for path in retained.rglob('*') if path.is_file()) > 260
+        assert max(len(str(path)) for path in physical_retained.rglob('*') if path.is_file()) > 260
 
 
 @pytest.mark.parametrize('outcome', ['passed', 'failed'])

@@ -1,4 +1,5 @@
 import json
+from pathlib import Path
 
 import pytest
 import yaml
@@ -17,6 +18,7 @@ async def test_optional_profile_model_tools_next_request_and_cold_restart(tmp_pa
     profile = tmp_path / 'profiles' / 'session-tools'
     init_profile(str(profile), [], 'startup')
     rows = [dict(id=name, name='@deepseek-ai/dsh-' + name) for name in ['session', 'tools', 'system-prompt', 'agent', 'agent-loop']]
+    rows.append(dict(id='test-llm', name=str(Path(__file__).with_name('profile_llm_fixture.py')) + ':plugin'))
     persistence_config = dict(root=str(tmp_path / 'sessions'), compression='none' if backend == 'jsonl' else 'zstd') if backend.startswith('jsonl') else dict(path=str(tmp_path / 'sessions.db'))
     rows.extend([dict(id='storage', name='@deepseek-ai/dsh-session-persistence-' + ('jsonl' if backend.startswith('jsonl') else backend), config=persistence_config),
                  dict(id='query', name='@deepseek-ai/dsh-session-query-sqlite', config=dict(path=str(tmp_path / 'query.db'), defaultLimit=1)),
@@ -32,7 +34,8 @@ async def test_optional_profile_model_tools_next_request_and_cold_restart(tmp_pa
         dict(tool_calls=[dict(id='relationships', name='session_event_trace', arguments=dict(session_id='prior', seq=0))]),
         dict(tool_calls=[dict(id='exact', name='session_event_read', arguments=dict(session_id='prior', seq=0))]),
         dict(text='The prior history contains the needle.')])
-    context.provide('llm', adapter)
+    context.get('llm').responses.extend(adapter.responses)
+    adapter = context.get('llm')
     storage = context.get('sessionPersistence')
     event = dict(type='user/message', seq=0, time=2, surfaceOp='append', data=dict(id='prior-message', role='user',
                  content=[dict(type='text', text='durable needle payload')], source=dict(kind='user')))
@@ -63,7 +66,8 @@ async def test_optional_profile_model_tools_next_request_and_cold_restart(tmp_pa
     assert fresh.get('sessions').get('prior') is None
     assert fresh.get('sessions').get('caller') is None
     continuation = StrictMockLlmAdapter([dict(text='Recovered durable needle payload.')])
-    fresh.provide('llm', continuation)
+    fresh.get('llm').responses.extend(continuation.responses)
+    continuation = fresh.get('llm')
     restored = await fresh.get('agent_loop').resume('caller')
     try:
         invocation = ToolExecutionInput('restart', 'session_search', dict(query='needle'), agent=restored.agent,

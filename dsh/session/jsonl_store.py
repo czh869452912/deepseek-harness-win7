@@ -7,7 +7,7 @@ import time
 from dsh.cordis.json_text import stringify_json
 from dsh.session.durable_publish import ensure_durable_directory, publish_new_file, discard_staging
 from dsh.session.file_revision import file_revision
-from dsh.session.file_io import open_shared_read
+from dsh.session.file_io import open_shared_read, filesystem_path
 from dsh.session.persistence import SessionFormatUnsupportedError, SessionLocation
 from dsh.session.preparations import throw_aborted
 from dsh.session.jsonl_format import SessionLogScanner, encode_segment, project_key, header_bytes, event_bytes, parse_header_meta, scan_log
@@ -30,7 +30,7 @@ class JsonlStore:
         self.root_checked = False
         self.root_error = None
         try:
-            with os.scandir(self.root):
+            with os.scandir(filesystem_path(self.root)):
                 pass
         except FileNotFoundError:
             pass
@@ -60,7 +60,7 @@ class JsonlStore:
         except FileNotFoundError:
             parent = os.path.dirname(path)
             try:
-                with os.scandir(parent):
+                with os.scandir(filesystem_path(parent)):
                     pass
             except FileNotFoundError:
                 pass
@@ -68,18 +68,18 @@ class JsonlStore:
 
     def _projects(self):
         try:
-            with os.scandir(self.root) as entries:
-                return [entry.path for entry in entries if entry.is_dir(follow_symlinks=False)]
+            with os.scandir(filesystem_path(self.root)) as entries:
+                return [os.path.join(self.root, entry.name) for entry in entries if entry.is_dir(follow_symlinks=False)]
         except FileNotFoundError:
             return []
 
     def _sessions(self, project):
-        with os.scandir(project) as entries:
+        with os.scandir(filesystem_path(project)) as entries:
             entries = list(entries)
         for entry in entries:
             if entry.is_file(follow_symlinks=False) and (entry.name.endswith('.jsonl') or entry.name.endswith('.jsonl.zstd')):
-                raise self._legacy_error(entry.path)
-        return [entry.path for entry in entries if entry.is_dir(follow_symlinks=False)]
+                raise self._legacy_error(os.path.join(project, entry.name))
+        return [os.path.join(project, entry.name) for entry in entries if entry.is_dir(follow_symlinks=False)]
 
     def _ensure_encoding(self):
         if self.root_checked:
@@ -126,7 +126,7 @@ class JsonlStore:
             raise ValueError('corrupt session log "%s": header id cannot name a storage path' % path) from error
         if path != expected:
             try:
-                matches = os.path.samefile(path, expected)
+                matches = os.path.samefile(filesystem_path(path), filesystem_path(expected))
             except FileNotFoundError:
                 matches = False
             if not matches:
@@ -265,10 +265,10 @@ class JsonlStore:
         if events:
             content += self._event_frame(events)
         directory = os.path.dirname(path)
-        ensure_durable_directory(directory)
+        ensure_durable_directory(filesystem_path(directory))
         if self._exists(path):
             raise ValueError('session "%s" already has a persisted log; refusing to overwrite it' % meta['id'])
-        descriptor, staging = tempfile.mkstemp(prefix='.session-', suffix='.tmp', dir=directory)
+        descriptor, staging = tempfile.mkstemp(prefix='.session-', suffix='.tmp', dir=filesystem_path(directory))
         try:
             with os.fdopen(descriptor, 'wb') as stream:
                 stream.write(content)
@@ -283,9 +283,10 @@ class JsonlStore:
         return compress_frame(plaintext) if self.compression == 'zstd' else plaintext
 
     def _append(self, path, content):
-        before = os.stat(path).st_size
+        physical = filesystem_path(path)
+        before = os.stat(physical).st_size
         try:
-            with open(path, 'ab', buffering=0) as stream:
+            with open(physical, 'ab', buffering=0) as stream:
                 remaining = memoryview(content)
                 while remaining:
                     count = stream.write(remaining)
@@ -301,7 +302,7 @@ class JsonlStore:
             raise
 
     def _truncate(self, path, size):
-        with open(path, 'r+b') as stream:
+        with open(filesystem_path(path), 'r+b') as stream:
             stream.truncate(size)
             stream.flush()
             os.fsync(stream.fileno())

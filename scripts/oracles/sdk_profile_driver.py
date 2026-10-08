@@ -11,6 +11,15 @@ import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 
+def read_session_logs(home):
+    absolute = os.path.abspath(str(home))
+    if os.name == 'nt' and not absolute.startswith('\\\\?\\'):
+        absolute = '\\\\?\\UNC\\' + absolute[2:] if absolute.startswith('\\\\') else '\\\\?\\' + absolute
+    physical = Path(absolute)
+    return {path.relative_to(physical).as_posix(): path.read_text(encoding='utf-8')
+            for path in (physical / 'sessions').rglob('*.jsonl')}
+
+
 def run(side, scenario, options, destination):
     phase = destination / (options.native_label if side == 'native' else 'source')
     phase.mkdir()
@@ -146,7 +155,7 @@ def run(side, scenario, options, destination):
         result['stderr'] = ''.join(errors)
         result['fixtureErrors'] = fixture_errors
         result['command'] = command
-        result['logs'] = {path.relative_to(home).as_posix(): path.read_text(encoding='utf-8') for path in (home / 'sessions').rglob('*.jsonl')}
+        result['logs'] = read_session_logs(home)
         if side == 'native' and native_receipt.exists():
             result['runtime'] = json.loads(native_receipt.read_text(encoding='utf-8'))
         with (phase / 'capture.json').open('x', encoding='utf-8') as stream:

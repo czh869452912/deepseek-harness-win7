@@ -403,9 +403,12 @@ REQUIRED_REGRESSION = {
         'test_actual_release_process_preserves_exit_status_and_logs[0]',
         'test_actual_release_process_preserves_exit_status_and_logs[7]',
         'test_actual_timeout_retires_redirector_descendants_before_workspace_move',
-        'test_short_pytest_workspace_retains_owned_success_and_failure_artifacts[passed]',
-        'test_short_pytest_workspace_retains_owned_success_and_failure_artifacts[failed]',
+        *{'test_short_pytest_workspace_retains_owned_success_and_failure_artifacts[' + outcome + '-' + budget + ']'
+          for outcome in ('passed', 'failed') for budget in ('None', '7200')},
+        *{'test_regression_budget_is_optional_cli_configuration[' + value + ']' for value in ('arguments0-None', 'arguments1-7200')},
+        *{'test_regression_budget_cli_rejects_invalid_seconds[' + value + ']' for value in ('0', '-1', '1.5', 'invalid')},
         'test_short_pytest_workspace_runs_actual_shared_checkpoint_git_consumer',
+        'test_failure_trace_is_retained_before_pytest_summary',
     },
     'test_runtime_full_request_consumers': {
         *{'test_actual_complete_agent_model_requests_match_source[' + name + ']' for name in FULL_REQUEST_NAMES},
@@ -923,8 +926,22 @@ REQUIRED_REGRESSION = {
         'test_stalled_http_times_out_with_typed_failure[headers]',
         'test_stalled_http_times_out_with_typed_failure[body]',
     },
+    'test_sdk_stdio_journey': {
+        *{'test_sdk_launcher_prompt_notifications_shutdown_and_persistence[' + value + ']' for value in ('False', 'True')},
+        *{'test_sdk_launcher_accepts_interleaved_reply_already_observed[' + value + ']' for value in ('False', 'True')},
+    },
+    'test_sdk_stdio_wait': {
+        'test_notifications_cannot_extend_the_response_deadline',
+        'test_protocol_failure_is_not_hidden_by_unmatched_frames[frame0]',
+        'test_protocol_failure_is_not_hidden_by_unmatched_frames[frame1]',
+    },
+    'test_sdk_profile_paths': {
+        'test_sdk_observer_reads_actual_long_session_path_without_changing_log_identity',
+    },
     'test_profile_spine_recovery': {'test_profile_tool_turn_persists_and_resumes_after_shutdown'},
     'test_jsonl_canonical': {
+        'test_long_session_paths_preserve_append_cold_read_and_public_location[none]',
+        'test_long_session_paths_preserve_append_cold_read_and_public_location[zstd]',
         'test_canonical_registry_uses_lazy_default_checksummed_zstd',
         'test_torn_tail_inspection_is_inert_and_load_commits_repair[zstd]',
         'test_torn_tail_inspection_is_inert_and_load_commits_repair[none]',
@@ -1844,7 +1861,7 @@ def regression_retention_path(path):
     return '\\\\?\\UNC\\' + absolute[2:] if absolute.startswith('\\\\') else '\\\\?\\' + absolute
 
 
-def run_python_regression(python, output, environment):
+def run_python_regression(python, output, environment, timeout=None):
     retained = (output / 'pytest-workspace').resolve()
     retained.relative_to(output.resolve())
     if retained.exists():
@@ -1854,7 +1871,7 @@ def run_python_regression(python, output, environment):
     workspace = Path(tempfile.mkdtemp(prefix='g-', dir=str(parent))).resolve()
     workspace.relative_to(parent)
     (output / 'pytest-workspace-mapping.json').write_text(json.dumps(dict(
-        execution_path=str(workspace), retained_path=str(retained),
+        execution_path=str(workspace), retained_path=str(retained), timeout_seconds=timeout,
         scope='Fresh owned short Windows execution path is independent of the output label. Artifacts move to the retained path after pytest, including failure/timeout; raw observations retain execution paths.'), indent=2) + '\n', encoding='utf-8')
     primary_failure = None
     exitstatus = None
@@ -1869,7 +1886,7 @@ def run_python_regression(python, output, environment):
         pass
     try:
         exitstatus = run([python, '-m', 'pytest', 'tests', '-ra', '--junitxml=' + str(output / 'pytest.xml'),
-            '--basetemp=' + str(workspace)], 'pytest', output, env=regression_environment, timeout=3600, accepted=(0, 1))
+            '--basetemp=' + str(workspace)], 'pytest', output, env=regression_environment, timeout=timeout, accepted=(0, 1))
         if exitstatus == 1:
             primary_failure = RuntimeError('pytest failed (1); see ' + str(output / 'pytest.log'))
     except BaseException as failure:
@@ -1948,7 +1965,7 @@ def verify(args, output):
          'scripts/oracles/official/node_modules/@vscode/ripgrep-win32-x64/bin/rg.exe'],
         'portable-build', output, env=environment)
     regression = output / 'pytest.xml'
-    run_python_regression(python, output, environment)
+    run_python_regression(python, output, environment, timeout=getattr(args, 'regression_timeout', None))
     regression_result = validate_regression(regression)
     for config in OFFICIAL_CONFIGS:
         run(['node', '--expose-internals', 'scripts/oracles/official/node_modules/vitest/vitest.mjs',
@@ -2252,11 +2269,23 @@ def verify(args, output):
                 scope='Current Windows complete gate; selected paired contracts, original browser and extracted runtime; not full parity or Win7 certification.')
 
 
+def positive_seconds(value):
+    try:
+        seconds = int(value)
+    except ValueError:
+        raise argparse.ArgumentTypeError('regression timeout must be a positive integer')
+    if seconds <= 0:
+        raise argparse.ArgumentTypeError('regression timeout must be a positive integer')
+    return seconds
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--prepare', action='store_true', help='Install pinned development dependencies before verification')
     parser.add_argument('--browser', help='Absolute Chromium executable; defaults to DSH_TEST_CHROMIUM')
     parser.add_argument('--allow-dirty', action='store_true', help='Verify a non-publishable development preview, never a release')
+    parser.add_argument('--regression-timeout', type=positive_seconds, metavar='SECONDS',
+                        help='Optional total pytest budget; by default only individual operation deadlines apply')
     parser.add_argument('--output-dir', type=Path, default=ROOT / '.goose/out/release-gate')
     args = parser.parse_args(argv)
     output = args.output_dir.resolve()

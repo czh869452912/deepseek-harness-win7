@@ -1,0 +1,34 @@
+{
+  "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
+  "product_commit": "2112a4707d9880c9a2ac977420d3b2816b9a09dc",
+  "kind": "verification",
+  "task_id": "MIG-CURRENT-RELEASE-GATE-003",
+  "validity": "historical",
+  "environment": {
+    "python": "3.8.10",
+    "os": "Windows",
+    "cwd": "D:\\Project\\deepseek-harness-win7",
+    "node": "v22.22.2",
+    "browser": "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe"
+  },
+  "contract_revisions": {},
+  "id": "RUN-FULL-VALIDATION-REJECTED-20261008-2112A470",
+  "result": "failed",
+  "exit_code": 1,
+  "commands": [
+    ".venv/Scripts/python.exe scripts/verify_release.py --browser \"C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe\" --output-dir .goose/out/full-validation-clean-20261008-v4"
+  ],
+  "artifacts": [
+    {
+      "path": "migration/evidence/artifacts/FULL-VALIDATION-REJECTED-20261008-2112A470.zip",
+      "sha256": "e3de102b891999d90ed493764fa778d883df9057348833df753656bdabf81049"
+    }
+  ],
+  "regression_summary": {
+    "collected": 10095,
+    "timeout_seconds": 3600,
+    "progress_percent_approximate": 99,
+    "xml_complete": false
+  },
+  "scope": "Exact fourth clean gate failed under the former 3600-second total budget. SDK failure marker without final traceback/counts; actual durable session retained. No later release stages or acceptance. User directed existing-record timing analysis and targeted closeout instead of a fifth full regression; user-owned portable Web process preserved."
+}

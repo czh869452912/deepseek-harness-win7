@@ -1,0 +1,34 @@
+{
+  "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
+  "product_commit": "2112a4707d9880c9a2ac977420d3b2816b9a09dc",
+  "kind": "verification",
+  "task_id": "MIG-CURRENT-RELEASE-GATE-003",
+  "validity": "historical",
+  "environment": {
+    "python": "3.8.10",
+    "os": "Windows",
+    "cwd": "D:\\Project\\deepseek-harness-win7",
+    "node": "v22.22.2",
+    "browser": "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe"
+  },
+  "contract_revisions": {},
+  "id": "RUN-FULL-VALIDATION-TARGETED-CLOSEOUT-20261008-2112A470",
+  "result": "passed",
+  "exit_code": 0,
+  "commands": [
+    ".venv/Scripts/python.exe .goose/out/fifth_timing_analysis.py",
+    ".venv/Scripts/python.exe -m pytest tests/test_sdk_stdio_journey.py tests/test_sdk_stdio_wait.py tests/test_release_workspace.py -q --durations=12 --junitxml=.goose/out/full-validation-fifth-diagnostics/targeted-fixes-final.xml --basetemp=.goose/out/fifth-targeted-fixes",
+    ".venv/Scripts/python.exe -m pytest tests/test_release_workspace.py::test_failure_trace_is_retained_before_pytest_summary tests/test_current_release_gate.py::test_stdio_wait_and_failure_diagnostics_lanes_are_mandatory tests/test_current_release_gate.py::test_regression_requires_browser_portable_and_acp_process_lanes -q --junitxml=.goose/out/full-validation-fifth-diagnostics/diagnostic-lanes.xml --basetemp=.goose/out/fifth-diagnostic-lanes",
+    ".venv/Scripts/python.exe -m pytest tests/test_jsonl_canonical.py tests/test_jsonl_recovery_boundaries.py tests/test_jsonl_metadata_boundaries.py tests/test_jsonl_provider_source.py tests/test_jsonl_sharing_consumers.py tests/test_sdk_profile_paths.py tests/test_sdk_profile_consumers.py::test_actual_original_and_native_sdk_profile_match -q --durations=8 --junitxml=.goose/out/full-validation-fifth-diagnostics/jsonl-sdk-final.xml --basetemp=.goose/out/fifth-jsonl-sdk-final",
+    ".venv/Scripts/python.exe -m pytest tests/test_jsonl_canonical.py tests/test_current_release_gate.py::test_stdio_wait_and_failure_diagnostics_lanes_are_mandatory tests/test_current_release_gate.py::test_regression_requires_browser_portable_and_acp_process_lanes -q --junitxml=.goose/out/full-validation-fifth-diagnostics/final-boundaries.xml --basetemp=.goose/out/fifth-final-boundaries",
+    ".venv/Scripts/python.exe -m pytest tests/test_sdk_profile_consumers.py::test_actual_original_and_native_sdk_profile_match tests/test_jsonl_provider_source.py::test_actual_source_and_native_compressed_jsonl_mutual_files_and_cold_consumers -q --durations=4 --junitxml=.goose/out/full-validation-fifth-diagnostics/final-source-pairs.xml --basetemp=.goose/out/fifth-source-pairs",
+    ".venv/Scripts/python.exe .goose/out/archive_fifth_targeted_closeout.py"
+  ],
+  "artifacts": [
+    {
+      "path": "migration/evidence/artifacts/FULL-VALIDATION-TARGETED-CLOSEOUT-20261008-2112A470.zip",
+      "sha256": "26882b891a41f702df8b1a25a0d1f29d1379005595127d43121b20e329cd237b"
+    }
+  ],
+  "scope": "Limited worktree overlay on 2112a470, exact final bytes archived. Existing timing records audited, real interleaved SDK wait fails before fix, absolute deadline preserves earlier frames, completion budget respects real tool configuration. Confirmed Source observer and actual native JSONL long-path failures fixed without public path/protocol changes. Actual immediate failure retention precedes unfinished pytest summary. Optional total regression budget; individual bounds remain. 27/14/100/28/4 targeted groups overlap and are not summed; slow browser and SQLite controls passed in an earlier 3-passed/1-error diagnostic run whose SDK error was subsequently fixed. Historical cold DeepSeek mismatch and full SDK marker do not have enough original data to prove unique causes. No new full gate, acceptance, promotion, publication or exception."
+}

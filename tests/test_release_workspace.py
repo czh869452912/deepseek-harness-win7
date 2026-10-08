@@ -8,19 +8,20 @@ import pytest
 from scripts import verify_release as gate
 
 
+@pytest.mark.parametrize('timeout', [None, 7200])
 @pytest.mark.parametrize('outcome', ['passed', 'failed'])
-def test_short_pytest_workspace_retains_owned_success_and_failure_artifacts(tmp_path, monkeypatch, outcome):
+def test_short_pytest_workspace_retains_owned_success_and_failure_artifacts(tmp_path, monkeypatch, outcome, timeout):
     output = tmp_path / ('descriptive-release-' + 'a' * 70)
     output.mkdir()
     executions = []
 
-    def observe_run(command, name, selected_output, env=None, timeout=None, accepted=None):
+    def observe_run(command, name, selected_output, env=None, accepted=None, **options):
         selected = Path(next(argument.split('=', 1)[1] for argument in command if argument.startswith('--basetemp=')))
         selected.relative_to(gate.ROOT / '.goose/out')
         assert selected.name.startswith('g-')
         assert selected.parent == gate.ROOT / '.goose/out'
         assert command[1:4] == ['-m', 'pytest', 'tests']
-        assert timeout == 3600 and name == 'pytest' and selected_output == output
+        assert options['timeout'] == timeout and name == 'pytest' and selected_output == output
         assert accepted == (0, 1)
         executions.append(selected)
         (selected / 'owned-observation.json').write_text('{"result":"retained"}\n', encoding='utf-8')
@@ -30,9 +31,9 @@ def test_short_pytest_workspace_retains_owned_success_and_failure_artifacts(tmp_
     monkeypatch.setattr(gate, 'run', observe_run)
     if outcome == 'failed':
         with pytest.raises(RuntimeError, match='fixture rejected'):
-            gate.run_python_regression(sys.executable, output, {})
+            gate.run_python_regression(sys.executable, output, {}, timeout=timeout)
     else:
-        gate.run_python_regression(sys.executable, output, {})
+        gate.run_python_regression(sys.executable, output, {}, timeout=timeout)
     assert len(executions) == 1 and not executions[0].exists()
     mapping = json.loads((output / 'pytest-workspace-mapping.json').read_text(encoding='utf-8'))
     assert mapping['execution_path'] == str(executions[0])
@@ -166,12 +167,74 @@ def test_actual_release_pytest_exits_before_owned_artifact_cleanup(tmp_path, mon
     retained = output / 'pytest-workspace'
     assert not list(retained.glob('test_process*/receipt.json'))
     assert list(retained.glob('test_process*/actual-source.json'))
+    failures = list((retained / 'failed-reports').glob('*.json'))
+    if outcome == 'failed':
+        assert len(failures) == 1
+        report = json.loads(failures[0].read_text(encoding='utf-8'))
+        assert report['nodeid'] == 'tests/test_process.py::test_process'
+        assert report['when'] == 'call' and 'retained child failure' in report['traceback']
+    else:
+        assert not failures
     audit = json.loads((output / 'unit-receipts-pruned.json').read_text(encoding='utf-8'))
     assert audit['status'] == 'completed' and audit['removed_files'] == 1
     assert not (retained / 'unit-receipts-pruned.json').exists()
     log = (output / 'pytest.log').read_text(encoding='utf-8')
     assert ('1 passed' if outcome == 'passed' else 'retained child failure') in log
     assert (output / 'pytest.xml').is_file()
+
+
+@pytest.mark.parametrize('arguments, expected', [([], None), (['--regression-timeout', '7200'], 7200)])
+def test_regression_budget_is_optional_cli_configuration(tmp_path, monkeypatch, arguments, expected):
+    def verify(args, output):
+        assert args.regression_timeout == expected
+        return dict(result='passed', publishable=False)
+    monkeypatch.setattr(gate, 'verify', verify)
+    assert gate.main(arguments + ['--output-dir', str(tmp_path / 'gate')]) == 0
+
+
+@pytest.mark.parametrize('value', ['0', '-1', '1.5', 'invalid'])
+def test_regression_budget_cli_rejects_invalid_seconds(tmp_path, value):
+    with pytest.raises(SystemExit) as failure:
+        gate.main(['--regression-timeout', value, '--output-dir', str(tmp_path / 'gate')])
+    assert failure.value.code == 2
+    assert not (tmp_path / 'gate').exists()
+
+
+def test_failure_trace_is_retained_before_pytest_summary(tmp_path):
+    import subprocess
+    import time
+
+    child = tmp_path / 'child'
+    scripts, tests = child / 'scripts', child / 'tests'
+    scripts.mkdir(parents=True)
+    tests.mkdir()
+    (scripts / '__init__.py').write_text('', encoding='utf-8')
+    (scripts / 'process_artifact_retention.py').write_bytes((gate.ROOT / 'scripts/process_artifact_retention.py').read_bytes())
+    (tests / 'conftest.py').write_bytes((gate.ROOT / 'tests/conftest.py').read_bytes())
+    entered = child / 'entered'
+    (tests / 'test_failure.py').write_text(
+        "def test_first():\n    assert False, 'immediate retained failure'\n"
+        "def test_second():\n    import time\n    from pathlib import Path\n"
+        "    Path('entered').write_text('running', encoding='utf-8')\n    time.sleep(60)\n", encoding='utf-8')
+    workspace, xml = child / 'workspace', child / 'pytest.xml'
+    with (child / 'pytest.log').open('w', encoding='utf-8') as log:
+        process = subprocess.Popen([sys.executable, '-m', 'pytest', 'tests', '-q',
+            '--basetemp=' + str(workspace), '--junitxml=' + str(xml)], cwd=str(child), stdout=log, stderr=log)
+        try:
+            deadline = time.monotonic() + 10
+            while not entered.exists() and process.poll() is None and time.monotonic() < deadline:
+                time.sleep(0.025)
+            assert entered.is_file() and process.poll() is None
+            assert not xml.exists()
+            reports = list((workspace / 'failed-reports').glob('*.json'))
+            assert len(reports) == 1
+            failure = json.loads(reports[0].read_text(encoding='utf-8'))
+            assert failure['nodeid'] == 'tests/test_failure.py::test_first'
+            assert failure['when'] == 'call' and 'immediate retained failure' in failure['traceback']
+        finally:
+            if process.poll() is None:
+                process.terminate()
+            process.wait(timeout=5)
 
 
 def test_actual_timeout_retires_redirector_descendants_before_workspace_move(tmp_path):

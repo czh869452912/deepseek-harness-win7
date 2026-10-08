@@ -68,7 +68,9 @@
     "RUN-LFS-FULL-REGRESSION-20261007-B529A990",
     "RUN-FULL-VALIDATION-REJECTED-20261008-DEA32B1C",
     "RUN-FULL-VALIDATION-REJECTED-20261008-13D0AE22",
-    "RUN-FULL-VALIDATION-REJECTED-20261008-C53FFF6D"
+    "RUN-FULL-VALIDATION-REJECTED-20261008-C53FFF6D",
+    "RUN-FULL-VALIDATION-REJECTED-20261008-2112A470",
+    "RUN-FULL-VALIDATION-TARGETED-CLOSEOUT-20261008-2112A470"
   ],
-  "next_action": "第三次干净c53fff6d正常全套10086通过/2失败/6既有skip，3414.466秒，完整XML；最早DeepSeek完整HTTP观察差异与settled-reader测试DNS等待超时拒绝。原冷观察已由旧夹具删除，不推断差异原因；以后失败保留全部原始配对，不重试或放宽。数字IPv4避免不必要DNS线程，主机名可取消等待及原短期限保持；186实际HTTP/DeepSeek/重定向与14门禁/DNS分别通过。冻结新候选执行第四次10095项全套、83配对、20组Source及同包实际解压/原版浏览器，预算与判据保持。最新有界合同签收暂仍83026446/65，开放任务不自动变更。"
+  "next_action": "按用户要求完成已有用时审查及可重现错误的定向收尾，不再重复完整集合。第四轮2112a470在旧3600秒约99%中断，无最终XML，SDK历史失败无完整栈；拒绝单独保留。SDK等待/回复复用、工具完成期限、观察器与实际JSONL长路径、失败即时留存均修复，相关定向和最终字节Source配对通过；历史冷DeepSeek摘要差异及SDK标记的唯一原因仍未证实。全套总预算改为可选--regression-timeout，单项期限/原比较不变。下一步回到未闭合迁移合同，只有另有完整发行签收需要时执行新的干净门禁；83026446/65及16开放范围不提升。"
 }

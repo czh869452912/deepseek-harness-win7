@@ -7,16 +7,27 @@ import queue
 import subprocess
 import sys
 import threading
+import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 import yaml
 import pytest
+from sdk_stdio_test_support import wait_frame
 
 from dsh.boot.profile import init_profile
 
 
 @pytest.mark.parametrize('default_profile', [False, True])
 def test_sdk_launcher_prompt_notifications_shutdown_and_persistence(tmp_path, default_profile):
+    sdk_journey(tmp_path, default_profile, notification_first=False)
+
+
+@pytest.mark.parametrize('default_profile', [False, True])
+def test_sdk_launcher_accepts_interleaved_reply_already_observed(tmp_path, default_profile):
+    sdk_journey(tmp_path, default_profile, notification_first=True)
+
+
+def sdk_journey(tmp_path, default_profile, notification_first):
     profile = tmp_path / 'home' / 'profiles' / 'sdk-journey'
     init_profile(str(profile), [], 'startup')
     rows = [dict(id=name, name='@deepseek-ai/dsh-' + name) for name in (
@@ -49,29 +60,28 @@ def test_sdk_launcher_prompt_notifications_shutdown_and_persistence(tmp_path, de
     process = subprocess.Popen([sys.executable, str(Path(__file__).resolve().parents[1] / 'dsh.py'), '--profile', 'minimal' if default_profile else 'sdk-journey'],
         cwd=str(tmp_path), env=env, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
         encoding='utf-8', bufsize=1)
-    frames, stderr = queue.Queue(), []
+    frames, stderr, captured, timings = queue.Queue(), [], [], []
+    started = time.monotonic()
     def read():
         for line in process.stdout:
             try:
-                frames.put(json.loads(line))
+                frame = json.loads(line)
             except ValueError:
-                frames.put(dict(invalid=line))
+                frame = dict(invalid=line)
+            captured.append(frame)
+            timings.append(time.monotonic() - started)
+            frames.put(frame)
         frames.put(dict(eof=True))
     reader = threading.Thread(target=read, daemon=True)
-    errors = threading.Thread(target=lambda: stderr.append(process.stderr.read()), daemon=True)
+    def read_errors():
+        for line in process.stderr:
+            stderr.append(line)
+    errors = threading.Thread(target=read_errors, daemon=True)
     reader.start()
     errors.start()
     observed = []
-    def wait(predicate):
-        while True:
-            try:
-                frame = frames.get(timeout=10)
-            except queue.Empty:
-                raise AssertionError('SDK response timed out: ' + ''.join(stderr))
-            assert 'invalid' not in frame and 'eof' not in frame, (frame, stderr)
-            observed.append(frame)
-            if predicate(frame):
-                return frame
+    def wait(predicate, timeout=10):
+        return wait_frame(frames, observed, predicate, stderr, timeout=timeout)
     def send(identity, method, params):
         process.stdin.write(json.dumps(dict(jsonrpc='2.0', id=identity, method=method, params=params)) + '\n')
         process.stdin.flush()
@@ -79,9 +89,16 @@ def test_sdk_launcher_prompt_notifications_shutdown_and_persistence(tmp_path, de
         send(1, 'initialize', dict(cwd=str(tmp_path), provider='deepseek-official', model='fixture-model'))
         assert 'result' in wait(lambda frame: frame.get('id') == 1)
         send(2, 'session/prompt', dict(sessionId='sdk-durable', contentBlocks=[dict(type='text', text='say hello')]))
+        complete = lambda frame: frame.get('method') == 'session.event' and 'SDK journey complete' in str(frame)
+        # Minimal's real persistent shell has a 300-second command deadline.
+        # Completion is not an immediate RPC reply; allow that operation plus
+        # the protocol budget, without resetting the deadline on notifications.
+        turn_timeout = 310 if default_profile else 10
+        if notification_first:
+            wait(complete, timeout=turn_timeout)
         reply = wait(lambda frame: frame.get('id') == 2)
         assert reply['result']['messageId']
-        wait(lambda frame: frame.get('method') == 'session.event' and 'SDK journey complete' in str(frame))
+        wait(complete, timeout=turn_timeout)
         send(3, 'shutdown', {})
         assert wait(lambda frame: frame.get('id') == 3)['result'] == {}
         assert process.wait(timeout=10) == 0, stderr
@@ -104,3 +121,7 @@ def test_sdk_launcher_prompt_notifications_shutdown_and_persistence(tmp_path, de
         server.shutdown()
         server.server_close()
         thread.join(2)
+        (tmp_path / 'sdk-observations.json').write_text(json.dumps(dict(
+            frames=captured, requests=requests, stderr=''.join(stderr), exitCode=process.returncode,
+            frameSeconds=timings, defaultProfile=default_profile,
+            notificationFirst=notification_first), ensure_ascii=True, indent=2) + '\n', encoding='utf-8')

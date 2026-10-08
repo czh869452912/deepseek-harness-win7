@@ -1,6 +1,15 @@
 import os
 
 
+def filesystem_path(path):
+    if os.name != 'nt':
+        return path
+    absolute = os.path.abspath(os.fsdecode(path))
+    if absolute.startswith('\\\\?\\'):
+        return absolute
+    return '\\\\?\\UNC\\' + absolute[2:] if absolute.startswith('\\\\') else '\\\\?\\' + absolute
+
+
 def open_shared_read(path):
     if os.name != 'nt':
         return open(path, 'rb')
@@ -13,9 +22,7 @@ def open_shared_read(path):
     kernel.CreateFileW.restype = wintypes.HANDLE
     kernel.CloseHandle.argtypes = [wintypes.HANDLE]
     kernel.CloseHandle.restype = wintypes.BOOL
-    absolute = os.path.abspath(os.fsdecode(path))
-    if not absolute.startswith('\\\\?\\'):
-        absolute = '\\\\?\\UNC\\' + absolute[2:] if absolute.startswith('\\\\') else '\\\\?\\' + absolute
+    absolute = filesystem_path(path)
     handle = kernel.CreateFileW(absolute, 0x80000000, 7, None, 3, 0x80, None)
     if handle == ctypes.c_void_p(-1).value:
         raise ctypes.WinError(ctypes.get_last_error())

@@ -1,5 +1,6 @@
 import asyncio
 import threading
+import os
 from pathlib import Path
 
 import pytest
@@ -15,6 +16,32 @@ from dsh.session.jsonl_zstd import compress_frame, scan_frames, decompress_frame
 def events():
     return [dict(type='turn/start', seq=0, time=1, data=dict(turn=1)),
         dict(type='turn/end', seq=1, time=2, data=dict(turn=1, reason=dict(kind='completed')))]
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize('compression', ['none', 'zstd'])
+async def test_long_session_paths_preserve_append_cold_read_and_public_location(tmp_path, compression):
+    root = tmp_path / ('sessions-' + 'a' * 160)
+    metadata = SessionHeader('sdk-durable', created_at=1, cwd=str(tmp_path / 'project'))
+    provider = JsonlSessionPersistence(str(root), compression)
+    location = provider.locate(metadata).path
+    assert len(location) > 260 and not location.startswith('\\\\?\\')
+    await provider.create(metadata)
+    await provider.append(metadata.id, events()[:1])
+    await provider.append(metadata.id, events()[1:])
+    cold = JsonlSessionPersistence(str(root), compression)
+    assert cold.locate(metadata).path == location
+    assert cold.store.find(metadata.id) == location
+    assert (await cold.read_stored(metadata.id)).events == events()
+    assert [header.id for header in await cold.list()] == [metadata.id]
+    assert len(await cold.store.list_snapshots()) == 1
+    raw = await cold.store.read_raw(metadata.id)
+    assert raw['filename'] == 'session.jsonl' and 'turn/end' in raw['content']
+    physical = Path('\\\\?\\' + location) if os.name == 'nt' else Path(location)
+    before = physical.read_bytes()
+    with pytest.raises(ValueError, match='configured for compression'):
+        await JsonlSessionPersistence(str(root), 'zstd' if compression == 'none' else 'none').list()
+    assert physical.read_bytes() == before
 
 
 @pytest.mark.asyncio
@@ -173,5 +200,6 @@ async def test_append_sync_failure_restores_prefix_or_retains_both_causes(tmp_pa
         await store.append_batch(metadata, events()[1:], True)
     if rollback_fails:
         assert observed.value.errors == [failure, rollback]
+        assert str(observed.value) == 'failed to roll back append to "%s"' % path
     else:
         assert observed.value is failure and path.read_bytes() == before

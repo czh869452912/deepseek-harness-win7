@@ -51,3 +51,11 @@ def test_independent_realm_capabilities_and_native_preservation():
                             cwd=str(ROOT), capture_output=True, encoding='utf-8', timeout=30)
     assert result.returncode == 0, result.stdout + result.stderr
     assert json.loads(result.stdout)['passed']
+
+
+def test_real_browser_journey_observer_has_valid_module_syntax():
+    node = shutil.which('node')
+    assert node is not None
+    result = subprocess.run([node, '--check', str(ROOT / 'scripts/oracles/browser_profiles/web_journey_browser.mjs')],
+                            cwd=str(ROOT), capture_output=True, encoding='utf-8', timeout=30)
+    assert result.returncode == 0, result.stdout + result.stderr

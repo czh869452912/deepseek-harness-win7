@@ -61,7 +61,7 @@ PROFILE_TEMPLATES: Dict[str, Dict[str, Any]] = {
         "patchReload": "startup",
     },
     "creative": {
-        "bundles": ["@deepseek-ai/dsh-base", "@deepseek-ai/dsh-headless"],
+        "bundles": ["@deepseek-ai/dsh-base", "@deepseek-ai/dsh-headless", "@deepseek-win7/dsh-creative"],
         "patchReload": "startup",
     },
     "sdk": {
@@ -76,6 +76,7 @@ PROFILE_TEMPLATES: Dict[str, Dict[str, Any]] = {
 
 INSTALLATION_OWNED_PROFILE_TUPLES: Dict[str, List[str]] = {
     "headless": ["@deepseek-ai/dsh-base", "@deepseek-ai/dsh-web-app", "@deepseek-ai/dsh-headless"],
+    "creative": ["@deepseek-ai/dsh-base", "@deepseek-ai/dsh-headless"],
 }
 
 

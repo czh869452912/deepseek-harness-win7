@@ -1,4 +1,5 @@
 import asyncio
+import uuid
 
 import pytest
 
@@ -26,6 +27,31 @@ def setup(stream):
 async def good(request):
     yield {'type': 'text-delta', 'index': 0, 'text': 'Keep the important facts.'}
     yield {'type': 'finish', 'reason': {'kind': 'stop'}}
+
+
+@pytest.mark.asyncio
+async def test_summary_instruction_and_durable_checkpoint_keep_canonical_message_ids():
+    requests = []
+    async def stream(request):
+        requests.append(request)
+        async for chunk in good(request):
+            yield chunk
+    ctx, session, engine, agent = setup(stream)
+    try:
+        await engine.compact_region(session, 0, 0, agent=agent, manual=True)
+        instruction = requests[0]['messages'][-1]
+        checkpoint = next(event for event in session.events[2:] if event['type'] == 'user/message')
+        for message in (instruction, checkpoint['data']):
+            assert str(uuid.UUID(message['id'], version=4)) == message['id']
+            assert message['role'] == 'user' and message['source']['kind'] == 'plugin'
+        assert instruction['id'] != checkpoint['data']['id']
+        assert instruction['source']['plugin'] == 'dsh-compaction-basic'
+        assert checkpoint['data']['source']['plugin'] == 'compact'
+        assert checkpoint['surfaceOp'] == dict(op='replace', start=0, end=0)
+        assert checkpoint['seq'] in session.surface.nodes
+        assert session.derive_messages()[0]['id'] == checkpoint['data']['id']
+    finally:
+        await ctx.fiber.dispose()
 
 
 @pytest.mark.asyncio

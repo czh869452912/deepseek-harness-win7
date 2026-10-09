@@ -1,4 +1,5 @@
 import os
+import json
 import tempfile
 import yaml
 from dsh.cordis.profile import (
@@ -19,22 +20,57 @@ def test_prepare_builtin_profiles():
         assert len(prof.bundles) >= 1
 
 
-def test_creative_profile_aligns_with_upstream_shape():
-    """Creative Mode host composition carries no invention layer (upstream profiles are
-    bundles+patchReload only); @deepseek-ai/dsh-cordis-manager is mounted solely from the
-    agent preset layer (dsh/presets/creative.yaml), matching the upstream separation of
-    host profile vs. agent preset."""
+def test_creative_profile_mounts_its_native_bundle_over_original_composition():
     from dsh.boot.profile import PROFILE_TEMPLATES
 
     assert "patches" not in PROFILE_TEMPLATES["creative"]
     assert BUILTIN_PROFILES["creative"]["patches"] == []
-    assert all(entry.get("name") != "@deepseek-ai/dsh-cordis-manager" for entry in BUILTIN_PROFILES["creative"]["patches"])
+    assert PROFILE_TEMPLATES['creative']['bundles'] == PROFILE_TEMPLATES['standard']['bundles'] + ['@deepseek-win7/dsh-creative']
+    assert [row['name'] for row in BUILTIN_BUNDLES['dsh-creative'][0]['insert']] == [
+        '@deepseek-ai/dsh-cordis-host-runner', '@deepseek-ai/dsh-tool-cordis']
 
     preset_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "dsh", "presets", "creative.yaml")
     with open(preset_path, "r", encoding="utf-8") as f:
         rows = yaml.safe_load(f)
     manager_rows = [r for r in rows if isinstance(r, dict) and r.get("name") == "@deepseek-ai/dsh-cordis-manager"]
     assert len(manager_rows) == 1
+
+
+def test_existing_creative_default_upgrades_without_overwriting_user_patches():
+    from dsh.boot.profile import init_profile, load_profile, PROFILE_TEMPLATES
+    from dsh.boot.profile_boot import INSTALL_ANCHOR
+    with tempfile.TemporaryDirectory() as home:
+        profile_dir = os.path.join(home, 'profiles', 'creative')
+        init_profile(profile_dir, PROFILE_TEMPLATES['standard']['bundles'], 'startup')
+        patch = os.path.join(profile_dir, 'cordis.patch.yml')
+        rows = [{'id': 'system-prompt', 'config': {'persona': 'Keep my persona'}}]
+        with open(patch, 'w', encoding='utf-8') as stream:
+            yaml.safe_dump(rows, stream)
+        loaded = load_profile('dsh', 'creative', INSTALL_ANCHOR, home)
+        assert [layer.packageName for layer in loaded.layers] == PROFILE_TEMPLATES['creative']['bundles']
+        assert loaded.patches == rows
+        with open(os.path.join(profile_dir, 'package.json'), encoding='utf-8') as stream:
+            manifest = json.load(stream)
+        manifest['dsh']['profile']['bundles'] = ['@deepseek-ai/dsh-base']
+        with open(os.path.join(profile_dir, 'package.json'), 'w', encoding='utf-8') as stream:
+            json.dump(manifest, stream)
+        customized = load_profile('dsh', 'creative', INSTALL_ANCHOR, home)
+        assert [layer.packageName for layer in customized.layers] == ['@deepseek-ai/dsh-base']
+        assert customized.patches == rows
+
+
+def test_native_install_anchor_uses_the_shipped_cli_identity():
+    from pathlib import Path
+    from dsh.boot.profile_boot import INSTALL_ANCHOR
+    root = Path(__file__).resolve().parents[1]
+    assert Path(INSTALL_ANCHOR) == root / 'apps/cli/package.json'
+    assert Path(INSTALL_ANCHOR).read_bytes() == (root / 'reference/apps/cli/package.json').read_bytes()
+    manifests = list((root / 'reference/vendor').glob('*/package.json'))
+    assert manifests
+    for manifest in manifests:
+        for path in (manifest, manifest.with_name('LICENSE')):
+            copied = root / path.relative_to(root / 'reference')
+            assert copied.read_bytes() == path.read_bytes()
 
 
 def test_compose_profile_4_layer_cascading():

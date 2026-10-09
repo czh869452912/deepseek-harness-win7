@@ -1,0 +1,26 @@
+{
+  "id": "RUN-HANDOFF-EXACT-COMPOSITION-20261009-D02AFF0C",
+  "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
+  "product_commit": "d02aff0c20bb8b1f71a75888120a89c5eedf0746",
+  "kind": "research",
+  "result": "passed",
+  "validity": "historical",
+  "exit_code": 0,
+  "commands": [
+    "Exact guarded producers, Source/Root/owned observations and original-process logs are preserved in the archive."
+  ],
+  "environment": {
+    "python": "3.8.10",
+    "node": "v22.22.2",
+    "os": "Windows-10-10.0.26200-SP0",
+    "cwd": "C:\\Users\\czh86\\Documents\\Codex\\deepseek-harness-win7"
+  },
+  "contract_revisions": {},
+  "artifacts": [
+    {
+      "path": "migration/evidence/artifacts/HANDOFF-EXACT-COMPOSITION-20261009-D02AFF0C.zip",
+      "sha256": "c21d3ffb22f766cf46cd34e7690bab14543d6d68429576f1be63350bbcc86ccf"
+    }
+  ],
+  "scope": "Seven selected canonical routes, three real private engine/workflow/Ralph compositions and seven parallel/supplement/cancel/failure/approval AgentLoop compositions matched fresh Source/clean d02 Root/isolated actual own-Python3.8.10 from the same exact ZIP. Three successful copies were fully late guarded and cleaned. This finite qualification is not complete parent, full wire, release or Win7 acceptance; later four budget/pruner/compaction scenarios retain original differences separately."
+}

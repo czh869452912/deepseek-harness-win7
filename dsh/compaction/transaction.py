@@ -5,6 +5,7 @@ import uuid
 from dsh.core.abort import abort_reason_error
 from dsh.core.cancellation import aborted
 from dsh.llm.error import error_chain
+from dsh.llm.message import create_user_message
 from dsh.compaction.tool_pairing import tool_pairing_balanced_before, tool_pairing_balanced_after
 
 
@@ -93,7 +94,8 @@ async def compact(engine, session, start, end, agent=None, signal=None,
         shadow_tokens = sum(node["heuristicTokens"] for node in priced)
         summary = await engine.summarize(summarization_input(session, selected), agent, signal)
         checkpoint = frame_summary(summary["summary"])
-        if meter.estimate_message({"role": "user", "content": checkpoint}) >= sum(n["tokens"] for n in priced):
+        checkpoint_message = create_user_message(dict(content=checkpoint, source=dict(identity, kind="plugin", plugin="compact")))
+        if meter.estimate_message(checkpoint_message) >= sum(n["tokens"] for n in priced):
             raise ValueError("summary is not smaller than the shadowed content")
         if manual:
             check_cancel(signal)
@@ -115,9 +117,8 @@ async def compact(engine, session, start, end, agent=None, signal=None,
         if summary.get("llmStreamCall") is True:
             body["llmStreamCall"] = True
         record = session.append("compaction/summary", body)
-        session.append_user_message(checkpoint, surface_op={"op": "replace", "start": start, "end": end},
-                                    source=dict(identity, kind="plugin", plugin="compact"),
-                                    source_event_seqs=[opening["seq"], record["seq"]] + selected)
+        session.append("user/message", checkpoint_message, surface_op={"op": "replace", "start": start, "end": end},
+                       source_event_seqs=[opening["seq"], record["seq"]] + selected)
         closing = True
         end_event = session.append("compaction/end", lifecycle)
         closed = True

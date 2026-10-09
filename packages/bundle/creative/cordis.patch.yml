@@ -1,0 +1,12 @@
+# Native profile extension. Original upstream profiles and presets stay intact.
+- insert:
+    - id: cordis-host-runner
+      name: '@deepseek-ai/dsh-cordis-host-runner'
+    - id: tool-cordis
+      name: '@deepseek-ai/dsh-tool-cordis'
+
+- id: system-prompt
+  config:
+    persona: >-
+      You are a coding agent powered by the {{model}} model. Your working directory is {{cwd}}.
+      You can inspect and extend this harness through its Cordis tools. Host plugin bodies use Python.

@@ -1,0 +1,8 @@
+{
+  "name": "@deepseek-win7/dsh-creative",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Native Python creative profile tools over the original base and headless bundles",
+  "exports": {"./cordis.patch.yml": "./cordis.patch.yml"},
+  "dsh": {"bundle": {"patch": "cordis.patch.yml"}}
+}

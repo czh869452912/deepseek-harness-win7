@@ -119,6 +119,11 @@ def profile_baseline(tmp_path):
                 ]
         reports[preset] = dict(status='qualified', side='native', preset=preset, phases=phases,
             errors=[], consoleErrors=[], archiveSha256=gate.digest(archive), compatibilitySha256='adapter')
+        from pathlib import Path
+        captured = json.loads((Path(__file__).with_name('fixtures') / 'color_mix_browser_values.json').read_text(encoding='utf-8'))
+        for selected, actual in zip(phases, captured['observers']['native108']['phases']):
+            selected.update(copy.deepcopy({name: value for name, value in actual.items()
+                                          if name.startswith('css') or name == 'browserErrors'}))
     gate.validate_profile_journeys(reports, archive, 'adapter', root)
     return reports, archive, root
 

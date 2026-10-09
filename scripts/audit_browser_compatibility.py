@@ -20,7 +20,7 @@ CAPABILITIES = {
     'findLast': ('supported', 'verified in raw fixed Chromium 108; inspect receiver types'),
     'findLastIndex': ('supported', 'verified in raw fixed Chromium 108; inspect receiver types'),
     'DecompressionStream': ('supported', 'verified in raw fixed Chromium 108; each enabled realm still needs coverage'),
-    'color-mix': ('missing', 'actual bundled CSS uses it; the JavaScript adapter does not supply a CSS fallback'),
+    'color-mix': ('missing', 'Host fallback for pinned two-color sRGB styles; actual style/media/lifecycle qualification required'),
     'scrollbar-width': ('missing', 'inspect WebKit scrollbar fallback for each component'),
     'light-dark': ('callsite-review', 'unsupported in raw fixed Chromium 108; a library option string is not proof of an active CSS use'),
     'scrollend': ('fallback-review', 'absent in raw fixed Chromium 108; trajectory already guards the event and uses a debounce fallback'),

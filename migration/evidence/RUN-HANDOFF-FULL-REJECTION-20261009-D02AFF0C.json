@@ -1,0 +1,26 @@
+{
+  "id": "RUN-HANDOFF-FULL-REJECTION-20261009-D02AFF0C",
+  "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
+  "product_commit": "d02aff0c20bb8b1f71a75888120a89c5eedf0746",
+  "kind": "research",
+  "result": "failed",
+  "validity": "historical",
+  "exit_code": 1,
+  "commands": [
+    ".venv/Scripts/python.exe scripts/verify_release.py --browser \"C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe\" --browser108 .goose/tools/chromium-1058931/chrome-win/chrome.exe --output-dir .goose/out/release-gate-20261009-handoff-v8"
+  ],
+  "environment": {
+    "python": "3.8.10",
+    "os": "Windows-10-10.0.26200-SP0",
+    "cwd": "C:\\Users\\czh86\\Documents\\Codex\\deepseek-harness-win7",
+    "node": "v22.22.2"
+  },
+  "contract_revisions": {},
+  "artifacts": [
+    {
+      "path": "migration/evidence/artifacts/CURRENT-RELEASE-REJECTION-20261009-D02AFF0C.zip",
+      "sha256": "4353084d6939e7c2e5d5df2e41cd76ba1e5d561e9896c5636c060c78b8c23d5c"
+    }
+  ],
+  "scope": "Clean d02 complete Python10421 passed/1 failed/6 existing skips/4068.60s. Empty-PATH native search regression still requires reference pnpm rg15 rather than the licensed pinned native rg14 and fails before either search. Frozen16588 inputs and exact ZIP remain unchanged after physical exit1. All Source, paired, extracted and browser stages were not executed; no release or task promotion.995 actual per-case owner/hash audits removed5448 reconstructible files/13892159655 bytes; original rejection and unknown files remain."
+}

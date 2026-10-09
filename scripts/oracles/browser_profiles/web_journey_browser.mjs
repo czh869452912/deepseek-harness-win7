@@ -236,6 +236,92 @@ async function phase(name){
       }
       await complete(scenario);
     }
+    state.cssMixAdapter=await cdp.evaluate("JSON.parse(JSON.stringify(window[Symbol.for('deepseek-win7.host.color-mix')]?.current?.facts??null))");
+    state.cssMixPalette=await cdp.evaluate(String.raw`(()=>{const n=document.querySelector('[class*=trajectory]')??document.querySelector('[class*=Trajectory]')??document.body;const s=getComputedStyle(n);return Object.fromEntries([...new Set([...document.querySelectorAll('style')].flatMap(t=>[...t.textContent.matchAll(/var\((--[^,)]+)/g)].map(m=>m[1])))].filter(k=>k.startsWith('--dsw-')||k.startsWith('--trajectory-')).map(k=>[k,s.getPropertyValue(k).trim()]));})()`);
+    state.cssMixDynamic=await cdp.evaluate(`(async()=>{
+      const wait=async()=>{for(let i=0;i<4;i++)await new Promise(resolve=>requestAnimationFrame(resolve));};
+      const tag=document.createElement('style');const original='.dsh-probe-paint{background-color:color-mix(in srgb,var(--dsh-probe-color) 25%,transparent)}';tag.textContent=original;document.head.append(tag);
+      const outer=document.createElement('div');outer.style.setProperty('--dsh-probe-color','rgb(80,120,160)');
+      const inner=document.createElement('div');inner.style.setProperty('--dsh-probe-color','rgb(160,80,40)');outer.append(inner);
+      const a=document.createElement('div'),b=document.createElement('div');a.className=b.className='dsh-probe-paint';outer.append(a);inner.append(b);document.body.append(outer);await wait();
+      const values=[];const read=phase=>values.push({phase,a:getComputedStyle(a).backgroundColor,b:getComputedStyle(b).backgroundColor});read('initial');
+      outer.style.setProperty('--dsh-probe-color','rgb(40,60,80)');await wait();read('ancestor-change');
+      inner.style.removeProperty('--dsh-probe-color');await wait();read('local-removal');
+      const immutable=tag.textContent===original;
+      const generatedName=tag.nextSibling?.textContent?.match(/--dsh-host-mix-[0-9]+/)?.[0]??null;const beforeRemoval=generatedName?outer.style.getPropertyValue(generatedName):null;
+      tag.textContent='.dsh-probe-paint{background-color:rgb(11,22,33)}';await wait();read('style-replaced-without-mix');
+      tag.textContent=original;await wait();read('style-mix-restored');
+      tag.remove();await wait();read('style-unmounted');const afterRemoval=generatedName?outer.style.getPropertyValue(generatedName):null;const remainingOwnProperties=Array.from(outer.style).filter(name=>name.startsWith('--dsh-host-mix-'));outer.remove();await wait();
+      const originalDark=document.body.hasAttribute('data-ds-dark-theme');document.body.toggleAttribute('data-ds-dark-theme',false);await wait();
+      const themeStyle=document.createElement('style');themeStyle.textContent='.dsh-probe-theme{background-color:color-mix(in srgb,var(--dsw-alias-bg-base) 60%,transparent)}';document.head.append(themeStyle);
+      const theme=document.createElement('div');theme.className='dsh-probe-theme';document.body.append(theme);await wait();
+      const dark=document.body.hasAttribute('data-ds-dark-theme');const themes=[];
+      const readTheme=phase=>themes.push({phase,dark:document.body.hasAttribute('data-ds-dark-theme'),base:getComputedStyle(theme).getPropertyValue('--dsw-alias-bg-base').trim(),paint:getComputedStyle(theme).backgroundColor});readTheme('initial');
+      document.body.toggleAttribute('data-ds-dark-theme',!dark);await wait();readTheme('theme-toggled');
+      document.body.toggleAttribute('data-ds-dark-theme',dark);await wait();readTheme('theme-restored');
+      themeStyle.remove();theme.remove();document.body.toggleAttribute('data-ds-dark-theme',originalDark);await wait();
+      return {values,themes,immutable,ownedProperty:{generatedName,beforeRemoval,afterRemoval,remainingOwnProperties},adapter:window[Symbol.for('deepseek-win7.host.color-mix')]?.current?.facts??null};
+    })()`);
+
+    state.cssLifecycle=await cdp.evaluate(`(async()=>{
+      const key=Symbol.for('deepseek-win7.host.color-mix'),managerPresent=window[key]!==undefined,manager=window[key]??{current:{active:false},install(){return this.current;},dispose(){}};
+      const wait=async()=>{for(let i=0;i<5;i++)await new Promise(done=>requestAnimationFrame(done));};
+      const tag=document.createElement('style'), original='.dsh-lifecycle-paint{background-color:color-mix(in srgb,var(--dsh-lifecycle-color) 25%,transparent)}';
+      tag.textContent=original;document.head.append(tag);
+      const node=document.createElement('div');node.className='dsh-lifecycle-paint';node.style.setProperty('--dsh-lifecycle-color','rgb(80,120,160)');document.body.append(node);await wait();
+      const rows=[],read=phase=>rows.push({phase,paint:getComputedStyle(node).backgroundColor});read('active');
+      tag.media='not all';await wait();read('media-disabled');tag.media='all';await wait();read('media-restored');
+      tag.sheet.disabled=true;await wait();read('sheet-disabled');tag.sheet.disabled=false;await wait();read('sheet-restored');
+      const previous=manager.current,clonesBefore=[...document.querySelectorAll('style')].filter(style=>style.textContent.includes('--dsh-host-mix-')).length;
+      manager.dispose();await wait();read('disposed');
+      const removed={symbolAbsent:window[key]===undefined,clones:[...document.querySelectorAll('style')].filter(style=>style.textContent.includes('--dsh-host-mix-')).length,
+        inline:[...document.querySelectorAll('[style]')].flatMap(element=>[...element.style].filter(name=>name.startsWith('--dsh-host-mix-'))),facts:previous.facts??null};
+      const beforeMutation=previous.facts?.refreshes;node.classList.add('changed-after-dispose');await wait();const afterMutation=previous.facts?.refreshes;
+      const savedStyle=document.documentElement.getAttribute('style');document.documentElement.style.setProperty('--dsh-host-mix-0','original-owner-value','important');
+      const once=manager.install();await wait();read('reinstalled');const twice=manager.install();await wait();read('reinstalled-twice');
+      const clonesAfter=[...document.querySelectorAll('style')].filter(style=>style.textContent.includes('--dsh-host-mix-')).length;
+      manager.dispose();await wait();const preserved={value:document.documentElement.style.getPropertyValue('--dsh-host-mix-0'),priority:document.documentElement.style.getPropertyPriority('--dsh-host-mix-0')};
+      if(savedStyle===null)document.documentElement.removeAttribute('style');else document.documentElement.setAttribute('style',savedStyle);
+      manager.install();await wait();tag.remove();node.remove();await wait();
+      return {managerPresent,rows,originalImmutable:tag.textContent===original,active:previous.active,clonesBefore,clonesAfter,removed,beforeMutation,afterMutation,
+        replacedOwnerDisposed:once.facts?.disposed??null,preserved,final:manager.current.facts??null};
+    })()`);
+    state.cssInvalidValue=await cdp.evaluate(`(async()=>{
+      const wait=async()=>{for(let i=0;i<5;i++)await new Promise(done=>requestAnimationFrame(done));};
+      const style=document.createElement('style');style.textContent='.dsh-fallback-paint{background-color:color-mix(in srgb,var(--dsh-unset-color,rgb(80,120,160)) 25%,transparent)}.dsh-invalid-paint{background-color:color-mix(in srgb,var(--dsh-cyclic-color) 25%,transparent)}';document.head.append(style);
+      const outer=document.createElement('div');outer.style.setProperty('--dsh-cyclic-color','rgb(40,60,80)');
+      const fallback=document.createElement('div');fallback.className='dsh-fallback-paint';
+      const cyclic=document.createElement('div');cyclic.className='dsh-invalid-paint';cyclic.style.setProperty('--dsh-cyclic-color','var(--dsh-cyclic-color)');
+      const valid=document.createElement('div');valid.className='dsh-invalid-paint';outer.append(fallback,cyclic,valid);document.body.append(outer);await wait();
+      const observed={fallback:getComputedStyle(fallback).backgroundColor,cyclic:getComputedStyle(cyclic).backgroundColor,inherited:getComputedStyle(valid).backgroundColor,
+        original:style.textContent,errors:window[Symbol.for('deepseek-win7.host.color-mix')]?.current?.facts?.errors??[],facts:window[Symbol.for('deepseek-win7.host.color-mix')]?.current?.facts??null};
+      style.remove();outer.remove();await wait();return observed;
+    })()`);
+    async function listenerCounts(){
+      const values={};
+      for(const target of ['window','document']){
+        const evaluated=await cdp.call('Runtime.evaluate',{expression:target,returnByValue:false});
+        const result=await cdp.call('DOMDebugger.getEventListeners',{objectId:evaluated.result.objectId});
+        values[target]={};
+        for(const listener of result.listeners)values[target][listener.type]=(values[target][listener.type]??0)+1;
+        await cdp.call('Runtime.releaseObject',{objectId:evaluated.result.objectId});
+      }
+      return values;
+    }
+    const before=await listenerCounts();
+    const active=await cdp.evaluate(`(async()=>{const key=Symbol.for('deepseek-win7.host.color-mix');window.__dshResearchManager=window[key];const active=window[key]!==undefined;window[key]?.dispose();for(let i=0;i<5;i++)await new Promise(done=>requestAnimationFrame(done));return active;})()`);
+    const removed=await listenerCounts();
+    await cdp.evaluate(`(async()=>{window.__dshResearchManager?.install();delete window.__dshResearchManager;for(let i=0;i<5;i++)await new Promise(done=>requestAnimationFrame(done));})()`);
+    const restored=await listenerCounts();
+    state.cssListenerOwnership={active,before,removed,restored};
+    await cdp.evaluate(`(async()=>{const style=document.createElement('style');style.id='dsh-controlled-media-style';style.textContent='.dsh-controlled-media{--dsh-media-color:rgb(80,120,160);background-color:color-mix(in srgb,var(--dsh-media-color) 25%,transparent)}@media print{.dsh-controlled-media{--dsh-media-color:rgb(40,60,80)}}';const node=document.createElement('div');node.id='dsh-controlled-media-node';node.className='dsh-controlled-media';document.head.append(style);document.body.append(node);for(let i=0;i<5;i++)await new Promise(done=>requestAnimationFrame(done));})()`);
+    const media=[];
+    for(const value of ['screen','print','screen']){
+      await cdp.call('Emulation.setEmulatedMedia',{media:value});
+      media.push(await cdp.evaluate(`(async()=>{for(let i=0;i<5;i++)await new Promise(done=>requestAnimationFrame(done));const node=document.getElementById('dsh-controlled-media-node');return {media:${JSON.stringify(value)},paint:getComputedStyle(node).backgroundColor,variable:getComputedStyle(node).getPropertyValue('--dsh-media-color').trim()};})()`));
+    }
+    await cdp.evaluate(`(async()=>{document.getElementById('dsh-controlled-media-style').remove();document.getElementById('dsh-controlled-media-node').remove();for(let i=0;i<5;i++)await new Promise(done=>requestAnimationFrame(done));})()`);
+    state.cssMediaConditions=media;
     state.final=await snapshot();
     state.finalText=await cdp.evaluate('document.body.innerText');
     await Promise.allSettled([...cdp.jobs]);

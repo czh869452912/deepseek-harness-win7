@@ -1,0 +1,26 @@
+{
+  "id": "RUN-HANDOFF-CSS-COMPACTION-CREATIVE-FIX-20261009-V1",
+  "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
+  "product_commit": "d02aff0c20bb8b1f71a75888120a89c5eedf0746",
+  "kind": "research",
+  "result": "passed",
+  "validity": "historical",
+  "exit_code": 0,
+  "commands": [
+    "Exact repair bytes, controlled producers, raw diagnostics and targeted commands/XML/logs are preserved in the artifact."
+  ],
+  "environment": {
+    "python": "3.8.10",
+    "node": "v22.22.2",
+    "os": "Windows-10-10.0.26200-SP0",
+    "cwd": "C:\\Users\\czh86\\Documents\\Codex\\deepseek-harness-win7"
+  },
+  "contract_revisions": {},
+  "artifacts": [
+    {
+      "path": "migration/evidence/artifacts/HANDOFF-CSS-COMPACTION-CREATIVE-FIX-20261009-V1.zip",
+      "sha256": "2d1d26f4fda3f47d3deb6301f97fdbed3100be6f55057ef142c4298fb4c7038b"
+    }
+  ],
+  "scope": "Finite repair evidence on d02: canonical compaction checkpoint/summary-instruction UUID identities; pinned original frontend with reversible Host sRGB CSS fallback and actual108/modern fresh/cold style/media/listener/plan/tool/approval/cancel journeys; native creative default bundle and owned-tuple upgrade; actual native CLI installation anchor with9 pinned vendor identity/license pairs. 15/145/41 final targeted consumers pass with overlap not added. Actual4 Source/currentRoot policy flows keep11 full token measurement differences and do not broaden existing predicates. Observer syntax/URI failures, prior anchor resolution rejection and actual REQUEST_EXTENSION cause remain. No new clean release, same current ZIP, full wire, whole parent/task or Win7 acceptance."
+}

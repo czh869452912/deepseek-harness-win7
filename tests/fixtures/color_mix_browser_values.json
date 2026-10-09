@@ -1,0 +1,1535 @@
+{
+  "scope": "Captured research browser CSS/lifecycle observations. Golden refusal controls only; no product or release acceptance.",
+  "observers": {
+    "native108": {
+      "rawReportSha256": "1e452d1b04898fde940bec7eb2b50763e1da9c016b2c83fbd230d6d41910376e",
+      "researchAdapterSha256": "ba5c8862a05173bd67c39e8ca8b81d0402c0681f0c7036efffc268c8b40981e9",
+      "phases": [
+        {
+          "cssMixPalette": {
+            "--dsw-alias-border-l2": "#0000001a",
+            "--dsw-alias-label-primary": "#0f1115",
+            "--dsw-alias-bg-module-platform": "#f5f6f7",
+            "--dsw-alias-interactive-bg-hover": "#2631480f",
+            "--dsw-alias-label-tertiary": "#81858c",
+            "--dsw-alias-state-warn-label": "#dd8629",
+            "--dsw-alias-state-success-primary": "#22c55e",
+            "--dsw-alias-border-l3": "#0000001f",
+            "--dsw-alias-label-secondary": "#61666b",
+            "--dsw-alias-state-error-primary": "#ec1313",
+            "--dsw-alias-button-primary-fill": "#0f1115",
+            "--dsw-alias-label-primary-foreground": "#fff",
+            "--dsw-alias-button-primary-hover": "#43454a",
+            "--dsw-alias-interactive-bg-hover-solid": "#f1f3f5",
+            "--dsw-alias-interactive-bg-hover-danger": "#ec13130d",
+            "--dsw-alias-bg-layer-1": "#fff",
+            "--dsw-alias-brand-primary": "#0f1115",
+            "--dsw-alias-label-dimmed": "#e1e5ee",
+            "--dsw-alias-scrollbar-bg-l2": "#e5e5e5",
+            "--dsw-alias-scrollbar-hover-l2": "#d4d4d4",
+            "--dsw-alias-state-business-primary": "#4176e6",
+            "--dsw-alias-bg-layer-3": "#fff",
+            "--dsw-alias-border-l1": "#0000000a",
+            "--dsw-shadow-lv1": "0 2px 4px 0 #0000000d",
+            "--dsw-alias-label-error": "",
+            "--dsw-alias-bg-layer-2": "#fff",
+            "--dsw-alias-bg-layer-4": "",
+            "--dsw-static-neutral-bluish-400": "#adb2b8",
+            "--dsw-alias-label-caption": "#adb2b8",
+            "--dsw-alias-bg-base": "#fff",
+            "--dsw-specific-sidebar-fill": "#f9fafb",
+            "--dsw-alias-button-floating-fill": "#fff",
+            "--dsw-alias-border-l2-darkmode-thin": "#0000001a",
+            "--dsw-alias-button-floating-hover": "#f1f3f5",
+            "--dsw-alias-button-elevated-fill": "#fff",
+            "--dsw-static-neutral-bluish-00": "#fff",
+            "--dsw-static-neutral-bluish-60": "#f5f6f7",
+            "--dsw-static-neutral-bluish-150": "#e9ecf2",
+            "--dsw-static-neutral-bluish-1000": "#0f1115",
+            "--dsw-static-neutral-bluish-700": "#61666b",
+            "--dsw-static-neutral-bluish-75": "#f1f3f5",
+            "--dsw-static-neutral-bluish-500": "#979da6",
+            "--dsw-static-neutral-bluish-100": "#ebeef2",
+            "--dsw-static-deepseek-500": "#4176e6",
+            "--dsw-static-deepseek-400": "#679efe",
+            "--dsw-static-neutral-bluish-750": "#43454a",
+            "--dsw-static-neutral-bluish-200": "#e1e5ee",
+            "--dsw-static-blue-900": "#0e3074",
+            "--dsw-static-neutral-bluish-950": "#151517",
+            "--dsw-static-neutral-bluish-600": "#81858c",
+            "--dsw-static-neutral-bluish-50": "#f9fafb",
+            "--dsw-static-neutral-200": "#e5e5e5",
+            "--dsw-static-neutral-300": "#d4d4d4",
+            "--dsw-static-deepseek-100": "#e4edfd",
+            "--dsw-static-red-600": "#ec1313",
+            "--dsw-static-red-400": "#f25a5a",
+            "--dsw-static-green-500": "#22c55e",
+            "--dsw-static-green-400": "#4ed17e",
+            "--dsw-static-green-100": "#e6faed",
+            "--dsw-static-amber-600": "#dd8629",
+            "--dsw-static-amber-500": "#f59e0b",
+            "--dsw-static-amber-400": "#f7ad31",
+            "--dsw-static-amber-100": "#fef5e7",
+            "--dsw-static-neutral-bluish-800": "#353638",
+            "--dsw-static-neutral-bluish-850": "#2c2c2e",
+            "--dsw-static-deepseek-200": "#d3e2ff",
+            "--dsw-static-deepseek-50": "#edf3fe",
+            "--dsw-static-neutral-bluish-875": "#232324",
+            "--dsw-static-neutral-850": "#212123",
+            "--dsw-static-deepseek-450": "#5686fe",
+            "--dsw-static-neutral-bluish-300": "#cfd3d6",
+            "--dsw-static-neutral-bluish-900": "#1b1b1c",
+            "--dsw-static-neutral-700": "#3c3c3d",
+            "--dsw-static-neutral-600": "#545557",
+            "--dsw-static-neutral-550": "#65676b",
+            "--dsw-static-deepseek-800": "#34415b",
+            "--dsw-static-green-900": "#233c2c",
+            "--dsw-static-amber-900": "#27241f",
+            "--dsw-alias-scrollbar-bg-l1": "#e5e5e5",
+            "--dsw-alias-scrollbar-hover-l1": "#d4d4d4",
+            "--dsw-font-family": "-apple-system, BlinkMacSystemFont, \"Segoe UI\", \"PingFang SC\", \"Hiragino Sans GB\", \"Microsoft YaHei\", \"Helvetica Neue\", Helvetica, Arial, sans-serif",
+            "--dsw-alias-markdown-code-block": "#f9fafb",
+            "--dsw-alias-label-primary-inverted": "#fff",
+            "--dsw-specific-tip": "#f5f6f7",
+            "--dsw-font-xs-13": "13px/20px -apple-system, BlinkMacSystemFont, \"Segoe UI\", \"PingFang SC\", \"Hiragino Sans GB\", \"Microsoft YaHei\", \"Helvetica Neue\", Helvetica, Arial, sans-serif",
+            "--dsw-alias-label-primary-dimmed": "#151517",
+            "--dsw-alias-state-business-tertiary": "#e4edfd",
+            "--dsw-alias-label-primary-bluish": "#0e3074",
+            "--dsw-alias-border-inverted": "#0000",
+            "--dsw-specific-menu": "#fff",
+            "--dsw-shadow-lv3": "0 0 1px 0 #0003, 0 0 4px 0 #00000005, 0 12px 32px 0 #00000014",
+            "--dsw-static-blue-450": "#4d93f8",
+            "--dsw-specific-input-major": "#fff",
+            "--dsw-shadow-lv2": "0 4px 12px 0 #00000005, 0 2px 8px 0 #0000000a",
+            "--dsw-alias-border-l4": "#00000029",
+            "--dsw-specific-selector": "#f5f6f7",
+            "--dsw-alias-button-info-fill": "#4176e6",
+            "--dsw-alias-button-info-hover": "#679efe",
+            "--dsw-alias-fill-l2": "",
+            "--dsw-font-mono": "",
+            "--dsw-alias-state-warn-tertiary": "#fef5e7",
+            "--dsw-alias-state-warn-primary": "#f59e0b",
+            "--dsw-alias-bg-mask-1": "#0000003d",
+            "--dsw-mask-blur": "blur(2px)",
+            "--dsw-specific-sidebar-nav-item-hover": "#f1f3f5",
+            "--dsw-specific-sidebar-nav-item-active": "#ebeef2",
+            "--dsw-alias-label-quaternary": "",
+            "--dsw-font-markdown-code-block-small": "11px/16px \"SF Mono\", \"JetBrains Mono\", \"Fira Code\", Consolas, \"Liberation Mono\", Menlo, Courier, \"PingFang SC\", \"Microsoft YaHei\"",
+            "--dsw-alias-bg-skeleton": "#0000000a",
+            "--dsw-alias-state-warn-secondary": "#f7ad31",
+            "--dsw-alias-bg-overlay": "#e9ecf2",
+            "--dsw-specific-sidebar-nav-item-active-accent": "#e4edfd",
+            "--dsw-font-xxs-12": "12px/18px -apple-system, BlinkMacSystemFont, \"Segoe UI\", \"PingFang SC\", \"Hiragino Sans GB\", \"Microsoft YaHei\", \"Helvetica Neue\", Helvetica, Arial, sans-serif",
+            "--dsw-static-blue-500": "#3b82f6",
+            "--trajectory-virtual-spacer-height": "",
+            "--dsw-alias-interactive-bg-active": "#2631481a",
+            "--dsw-alias-brand-primary-new-colorprimary-new-color": "#4176e6",
+            "--trajectory-turn-accent": "",
+            "--dsw-alias-state-success-tertiary": "#e6faed",
+            "--dsw-font-xs-strong-13": "500 13px/20px -apple-system, BlinkMacSystemFont, \"Segoe UI\", \"PingFang SC\", \"Hiragino Sans GB\", \"Microsoft YaHei\", \"Helvetica Neue\", Helvetica, Arial, sans-serif",
+            "--dsw-alias-state-error-secondary": "#f25a5a",
+            "--trajectory-tool-request-width": "",
+            "--dsw-alias-markdown-citation": "#ebeef2",
+            "--dsw-font-xxxs-11": "11px/14px -apple-system, BlinkMacSystemFont, \"Segoe UI\", \"PingFang SC\", \"Hiragino Sans GB\", \"Microsoft YaHei\", \"Helvetica Neue\", Helvetica, Arial, sans-serif",
+            "--trajectory-domain-left": "",
+            "--trajectory-domain-width": "",
+            "--trajectory-turn-left": "",
+            "--trajectory-span-lane": "",
+            "--trajectory-span-left": "",
+            "--trajectory-span-gap": "",
+            "--trajectory-span-width": "",
+            "--trajectory-assistant-decoding-color": "",
+            "--trajectory-assistant-ttft-color": "",
+            "--trajectory-assistant-ttft": "",
+            "--trajectory-selection-left": "",
+            "--trajectory-selection-width": "",
+            "--trajectory-hover-left": "",
+            "--dsw-alias-fill-tsp-secondary": "",
+            "--dsw-specific-bubble": "#edf3fe",
+            "--dsw-alias-line-secondary": "",
+            "--dsw-font-s-strong-14": "500 14px/22px -apple-system, BlinkMacSystemFont, \"Segoe UI\", \"PingFang SC\", \"Hiragino Sans GB\", \"Microsoft YaHei\", \"Helvetica Neue\", Helvetica, Arial, sans-serif",
+            "--dsw-alias-separator-primary": "",
+            "--dsw-alias-markdown-code-block-banner": "#f9fafb",
+            "--dsw-font-markdown-code": "12px/19px \"SF Mono\", \"JetBrains Mono\", \"Fira Code\", Consolas, \"Liberation Mono\", Menlo, Courier, \"PingFang SC\", \"Microsoft YaHei\"",
+            "--dsw-alias-button-contrast-fill": "#61666b",
+            "--dsw-alias-bg-mask-drop": "#ffffffb3",
+            "--dsw-font-l-20": "500 20px/28px -apple-system, BlinkMacSystemFont, \"Segoe UI\", \"PingFang SC\", \"Hiragino Sans GB\", \"Microsoft YaHei\", \"Helvetica Neue\", Helvetica, Arial, sans-serif",
+            "--dsw-font-s-14": "14px/22px -apple-system, BlinkMacSystemFont, \"Segoe UI\", \"PingFang SC\", \"Hiragino Sans GB\", \"Microsoft YaHei\", \"Helvetica Neue\", Helvetica, Arial, sans-serif",
+            "--dsw-alias-button-ghost-active-fill": "#ebeef2"
+          },
+          "cssMixDynamic": {
+            "values": [
+              {
+                "phase": "initial",
+                "a": "rgba(80, 120, 160, 0.25)",
+                "b": "rgba(160, 80, 40, 0.25)"
+              },
+              {
+                "phase": "ancestor-change",
+                "a": "rgba(40, 60, 80, 0.25)",
+                "b": "rgba(160, 80, 40, 0.25)"
+              },
+              {
+                "phase": "local-removal",
+                "a": "rgba(40, 60, 80, 0.25)",
+                "b": "rgba(40, 60, 80, 0.25)"
+              },
+              {
+                "phase": "style-replaced-without-mix",
+                "a": "rgb(11, 22, 33)",
+                "b": "rgb(11, 22, 33)"
+              },
+              {
+                "phase": "style-mix-restored",
+                "a": "rgba(40, 60, 80, 0.25)",
+                "b": "rgba(40, 60, 80, 0.25)"
+              },
+              {
+                "phase": "style-unmounted",
+                "a": "rgba(0, 0, 0, 0)",
+                "b": "rgba(0, 0, 0, 0)"
+              }
+            ],
+            "themes": [
+              {
+                "phase": "initial",
+                "dark": false,
+                "base": "#fff",
+                "paint": "rgba(255, 255, 255, 0.6)"
+              },
+              {
+                "phase": "theme-toggled",
+                "dark": true,
+                "base": "#151517",
+                "paint": "rgba(21, 21, 23, 0.6)"
+              },
+              {
+                "phase": "theme-restored",
+                "dark": false,
+                "base": "#fff",
+                "paint": "rgba(255, 255, 255, 0.6)"
+              }
+            ],
+            "immutable": true,
+            "ownedProperty": {
+              "generatedName": "--dsh-host-mix-20",
+              "beforeRemoval": "rgba(40,60,80,0.25)",
+              "afterRemoval": "",
+              "remainingOwnProperties": []
+            },
+            "adapter": {
+              "styles": 13,
+              "activeStyles": 10,
+              "expressions": 20,
+              "refreshes": 79,
+              "invalidScopes": 1680,
+              "mediaScans": 7,
+              "maxRefreshMs": 48.59999996423721,
+              "visited": 786,
+              "disposed": false,
+              "errors": []
+            }
+          },
+          "cssLifecycle": {
+            "managerPresent": true,
+            "rows": [
+              {
+                "phase": "active",
+                "paint": "rgba(80, 120, 160, 0.25)"
+              },
+              {
+                "phase": "media-disabled",
+                "paint": "rgba(0, 0, 0, 0)"
+              },
+              {
+                "phase": "media-restored",
+                "paint": "rgba(80, 120, 160, 0.25)"
+              },
+              {
+                "phase": "sheet-disabled",
+                "paint": "rgba(0, 0, 0, 0)"
+              },
+              {
+                "phase": "sheet-restored",
+                "paint": "rgba(80, 120, 160, 0.25)"
+              },
+              {
+                "phase": "disposed",
+                "paint": "rgba(0, 0, 0, 0)"
+              },
+              {
+                "phase": "reinstalled",
+                "paint": "rgba(80, 120, 160, 0.25)"
+              },
+              {
+                "phase": "reinstalled-twice",
+                "paint": "rgba(80, 120, 160, 0.25)"
+              }
+            ],
+            "originalImmutable": true,
+            "active": true,
+            "clonesBefore": 11,
+            "clonesAfter": 11,
+            "removed": {
+              "symbolAbsent": true,
+              "clones": 0,
+              "inline": [],
+              "facts": {
+                "styles": 14,
+                "activeStyles": 0,
+                "expressions": 0,
+                "refreshes": 84,
+                "invalidScopes": 1800,
+                "mediaScans": 10,
+                "maxRefreshMs": 48.59999996423721,
+                "visited": 789,
+                "disposed": true,
+                "errors": []
+              }
+            },
+            "beforeMutation": 84,
+            "afterMutation": 84,
+            "replacedOwnerDisposed": true,
+            "preserved": {
+              "value": "original-owner-value",
+              "priority": "important"
+            },
+            "final": {
+              "styles": 11,
+              "activeStyles": 10,
+              "expressions": 20,
+              "refreshes": 2,
+              "invalidScopes": 45,
+              "mediaScans": 2,
+              "maxRefreshMs": 52.89999997615814,
+              "visited": 786,
+              "disposed": false,
+              "errors": []
+            }
+          },
+          "cssInvalidValue": {
+            "fallback": "rgba(80, 120, 160, 0.25)",
+            "cyclic": "rgba(0, 0, 0, 0)",
+            "inherited": "rgba(40, 60, 80, 0.25)",
+            "original": ".dsh-fallback-paint{background-color:color-mix(in srgb,var(--dsh-unset-color,rgb(80,120,160)) 25%,transparent)}.dsh-invalid-paint{background-color:color-mix(in srgb,var(--dsh-cyclic-color) 25%,transparent)}",
+            "errors": [],
+            "facts": {
+              "styles": 12,
+              "activeStyles": 10,
+              "expressions": 20,
+              "refreshes": 4,
+              "invalidScopes": 90,
+              "mediaScans": 4,
+              "maxRefreshMs": 54.40000003576279,
+              "visited": 786,
+              "disposed": false,
+              "errors": []
+            }
+          },
+          "cssListenerOwnership": {
+            "active": true,
+            "before": {
+              "window": {
+                "textInput": 1,
+                "resize": 2,
+                "dragend": 1,
+                "beforeprint": 1,
+                "afterprint": 1,
+                "pagehide": 1,
+                "pageshow": 1
+              },
+              "document": {
+                "pointerover": 1,
+                "pointerout": 1,
+                "focusin": 1,
+                "focusout": 1,
+                "selectionchange": 2,
+                "dragenter": 1,
+                "dragover": 1,
+                "dragleave": 1,
+                "drop": 1
+              }
+            },
+            "removed": {
+              "window": {
+                "textInput": 1,
+                "resize": 1,
+                "dragend": 1
+              },
+              "document": {
+                "selectionchange": 2,
+                "dragenter": 1,
+                "dragover": 1,
+                "dragleave": 1,
+                "drop": 1
+              }
+            },
+            "restored": {
+              "window": {
+                "textInput": 1,
+                "resize": 2,
+                "dragend": 1,
+                "beforeprint": 1,
+                "afterprint": 1,
+                "pagehide": 1,
+                "pageshow": 1
+              },
+              "document": {
+                "pointerover": 1,
+                "pointerout": 1,
+                "focusin": 1,
+                "focusout": 1,
+                "selectionchange": 2,
+                "dragenter": 1,
+                "dragover": 1,
+                "dragleave": 1,
+                "drop": 1
+              }
+            }
+          },
+          "cssMediaConditions": [
+            {
+              "media": "screen",
+              "paint": "rgba(80, 120, 160, 0.25)",
+              "variable": "rgb(80,120,160)"
+            },
+            {
+              "media": "print",
+              "paint": "rgba(40, 60, 80, 0.25)",
+              "variable": "rgb(40,60,80)"
+            },
+            {
+              "media": "screen",
+              "paint": "rgba(80, 120, 160, 0.25)",
+              "variable": "rgb(80,120,160)"
+            }
+          ],
+          "cssMixAdapter": {
+            "styles": 10,
+            "activeStyles": 10,
+            "expressions": 20,
+            "refreshes": 67,
+            "invalidScopes": 1407,
+            "mediaScans": 1,
+            "maxRefreshMs": 36.200000047683716,
+            "visited": 785,
+            "disposed": false,
+            "errors": []
+          },
+          "name": "fresh",
+          "passed": true,
+          "hostErrors": "",
+          "browserErrors": "\r\nDevTools listening on ws://127.0.0.1:56355/devtools/browser/d1927274-812b-41c3-8393-4a7d4e2023b0\r\n"
+        },
+        {
+          "cssMixPalette": {
+            "--dsw-alias-border-l2": "#0000001a",
+            "--dsw-alias-label-primary": "#0f1115",
+            "--dsw-alias-bg-module-platform": "#f5f6f7",
+            "--dsw-alias-interactive-bg-hover": "#2631480f",
+            "--dsw-alias-label-tertiary": "#81858c",
+            "--dsw-alias-state-warn-label": "#dd8629",
+            "--dsw-alias-state-success-primary": "#22c55e",
+            "--dsw-alias-border-l3": "#0000001f",
+            "--dsw-alias-label-secondary": "#61666b",
+            "--dsw-alias-state-error-primary": "#ec1313",
+            "--dsw-alias-button-primary-fill": "#0f1115",
+            "--dsw-alias-label-primary-foreground": "#fff",
+            "--dsw-alias-button-primary-hover": "#43454a",
+            "--dsw-alias-interactive-bg-hover-solid": "#f1f3f5",
+            "--dsw-alias-interactive-bg-hover-danger": "#ec13130d",
+            "--dsw-alias-bg-layer-1": "#fff",
+            "--dsw-alias-brand-primary": "#0f1115",
+            "--dsw-alias-label-dimmed": "#e1e5ee",
+            "--dsw-alias-scrollbar-bg-l2": "#e5e5e5",
+            "--dsw-alias-scrollbar-hover-l2": "#d4d4d4",
+            "--dsw-alias-state-business-primary": "#4176e6",
+            "--dsw-alias-bg-layer-3": "#fff",
+            "--dsw-alias-border-l1": "#0000000a",
+            "--dsw-shadow-lv1": "0 2px 4px 0 #0000000d",
+            "--dsw-alias-label-error": "",
+            "--dsw-alias-bg-layer-2": "#fff",
+            "--dsw-alias-bg-layer-4": "",
+            "--dsw-static-neutral-bluish-400": "#adb2b8",
+            "--dsw-alias-label-caption": "#adb2b8",
+            "--dsw-alias-bg-base": "#fff",
+            "--dsw-specific-sidebar-fill": "#f9fafb",
+            "--dsw-alias-button-floating-fill": "#fff",
+            "--dsw-alias-border-l2-darkmode-thin": "#0000001a",
+            "--dsw-alias-button-floating-hover": "#f1f3f5",
+            "--dsw-alias-button-elevated-fill": "#fff",
+            "--dsw-static-neutral-bluish-00": "#fff",
+            "--dsw-static-neutral-bluish-60": "#f5f6f7",
+            "--dsw-static-neutral-bluish-150": "#e9ecf2",
+            "--dsw-static-neutral-bluish-1000": "#0f1115",
+            "--dsw-static-neutral-bluish-700": "#61666b",
+            "--dsw-static-neutral-bluish-75": "#f1f3f5",
+            "--dsw-static-neutral-bluish-500": "#979da6",
+            "--dsw-static-neutral-bluish-100": "#ebeef2",
+            "--dsw-static-deepseek-500": "#4176e6",
+            "--dsw-static-deepseek-400": "#679efe",
+            "--dsw-static-neutral-bluish-750": "#43454a",
+            "--dsw-static-neutral-bluish-200": "#e1e5ee",
+            "--dsw-static-blue-900": "#0e3074",
+            "--dsw-static-neutral-bluish-950": "#151517",
+            "--dsw-static-neutral-bluish-600": "#81858c",
+            "--dsw-static-neutral-bluish-50": "#f9fafb",
+            "--dsw-static-neutral-200": "#e5e5e5",
+            "--dsw-static-neutral-300": "#d4d4d4",
+            "--dsw-static-deepseek-100": "#e4edfd",
+            "--dsw-static-red-600": "#ec1313",
+            "--dsw-static-red-400": "#f25a5a",
+            "--dsw-static-green-500": "#22c55e",
+            "--dsw-static-green-400": "#4ed17e",
+            "--dsw-static-green-100": "#e6faed",
+            "--dsw-static-amber-600": "#dd8629",
+            "--dsw-static-amber-500": "#f59e0b",
+            "--dsw-static-amber-400": "#f7ad31",
+            "--dsw-static-amber-100": "#fef5e7",
+            "--dsw-static-neutral-bluish-800": "#353638",
+            "--dsw-static-neutral-bluish-850": "#2c2c2e",
+            "--dsw-static-deepseek-200": "#d3e2ff",
+            "--dsw-static-deepseek-50": "#edf3fe",
+            "--dsw-static-neutral-bluish-875": "#232324",
+            "--dsw-static-neutral-850": "#212123",
+            "--dsw-static-deepseek-450": "#5686fe",
+            "--dsw-static-neutral-bluish-300": "#cfd3d6",
+            "--dsw-static-neutral-bluish-900": "#1b1b1c",
+            "--dsw-static-neutral-700": "#3c3c3d",
+            "--dsw-static-neutral-600": "#545557",
+            "--dsw-static-neutral-550": "#65676b",
+            "--dsw-static-deepseek-800": "#34415b",
+            "--dsw-static-green-900": "#233c2c",
+            "--dsw-static-amber-900": "#27241f",
+            "--dsw-alias-scrollbar-bg-l1": "#e5e5e5",
+            "--dsw-alias-scrollbar-hover-l1": "#d4d4d4",
+            "--dsw-font-family": "-apple-system, BlinkMacSystemFont, \"Segoe UI\", \"PingFang SC\", \"Hiragino Sans GB\", \"Microsoft YaHei\", \"Helvetica Neue\", Helvetica, Arial, sans-serif",
+            "--dsw-alias-markdown-code-block": "#f9fafb",
+            "--dsw-alias-label-primary-inverted": "#fff",
+            "--dsw-specific-tip": "#f5f6f7",
+            "--dsw-font-xs-13": "13px/20px -apple-system, BlinkMacSystemFont, \"Segoe UI\", \"PingFang SC\", \"Hiragino Sans GB\", \"Microsoft YaHei\", \"Helvetica Neue\", Helvetica, Arial, sans-serif",
+            "--dsw-alias-label-primary-dimmed": "#151517",
+            "--dsw-alias-state-business-tertiary": "#e4edfd",
+            "--dsw-alias-label-primary-bluish": "#0e3074",
+            "--dsw-alias-border-inverted": "#0000",
+            "--dsw-specific-menu": "#fff",
+            "--dsw-shadow-lv3": "0 0 1px 0 #0003, 0 0 4px 0 #00000005, 0 12px 32px 0 #00000014",
+            "--dsw-static-blue-450": "#4d93f8",
+            "--dsw-specific-input-major": "#fff",
+            "--dsw-shadow-lv2": "0 4px 12px 0 #00000005, 0 2px 8px 0 #0000000a",
+            "--dsw-alias-border-l4": "#00000029",
+            "--dsw-specific-selector": "#f5f6f7",
+            "--dsw-alias-button-info-fill": "#4176e6",
+            "--dsw-alias-button-info-hover": "#679efe",
+            "--dsw-alias-fill-l2": "",
+            "--dsw-font-mono": "",
+            "--dsw-alias-state-warn-tertiary": "#fef5e7",
+            "--dsw-alias-state-warn-primary": "#f59e0b",
+            "--dsw-alias-bg-mask-1": "#0000003d",
+            "--dsw-mask-blur": "blur(2px)",
+            "--dsw-specific-sidebar-nav-item-hover": "#f1f3f5",
+            "--dsw-specific-sidebar-nav-item-active": "#ebeef2",
+            "--dsw-alias-label-quaternary": "",
+            "--dsw-font-markdown-code-block-small": "11px/16px \"SF Mono\", \"JetBrains Mono\", \"Fira Code\", Consolas, \"Liberation Mono\", Menlo, Courier, \"PingFang SC\", \"Microsoft YaHei\"",
+            "--dsw-alias-bg-skeleton": "#0000000a",
+            "--dsw-alias-state-warn-secondary": "#f7ad31",
+            "--dsw-alias-bg-overlay": "#e9ecf2",
+            "--dsw-specific-sidebar-nav-item-active-accent": "#e4edfd",
+            "--dsw-font-xxs-12": "12px/18px -apple-system, BlinkMacSystemFont, \"Segoe UI\", \"PingFang SC\", \"Hiragino Sans GB\", \"Microsoft YaHei\", \"Helvetica Neue\", Helvetica, Arial, sans-serif",
+            "--dsw-static-blue-500": "#3b82f6",
+            "--trajectory-virtual-spacer-height": "",
+            "--dsw-alias-interactive-bg-active": "#2631481a",
+            "--dsw-alias-brand-primary-new-colorprimary-new-color": "#4176e6",
+            "--trajectory-turn-accent": "",
+            "--dsw-alias-state-success-tertiary": "#e6faed",
+            "--dsw-font-xs-strong-13": "500 13px/20px -apple-system, BlinkMacSystemFont, \"Segoe UI\", \"PingFang SC\", \"Hiragino Sans GB\", \"Microsoft YaHei\", \"Helvetica Neue\", Helvetica, Arial, sans-serif",
+            "--dsw-alias-state-error-secondary": "#f25a5a",
+            "--trajectory-tool-request-width": "",
+            "--dsw-alias-markdown-citation": "#ebeef2",
+            "--dsw-font-xxxs-11": "11px/14px -apple-system, BlinkMacSystemFont, \"Segoe UI\", \"PingFang SC\", \"Hiragino Sans GB\", \"Microsoft YaHei\", \"Helvetica Neue\", Helvetica, Arial, sans-serif",
+            "--trajectory-domain-left": "",
+            "--trajectory-domain-width": "",
+            "--trajectory-turn-left": "",
+            "--trajectory-span-lane": "",
+            "--trajectory-span-left": "",
+            "--trajectory-span-gap": "",
+            "--trajectory-span-width": "",
+            "--trajectory-assistant-decoding-color": "",
+            "--trajectory-assistant-ttft-color": "",
+            "--trajectory-assistant-ttft": "",
+            "--trajectory-selection-left": "",
+            "--trajectory-selection-width": "",
+            "--trajectory-hover-left": "",
+            "--dsw-alias-fill-tsp-secondary": "",
+            "--dsw-specific-bubble": "#edf3fe",
+            "--dsw-alias-line-secondary": "",
+            "--dsw-font-s-strong-14": "500 14px/22px -apple-system, BlinkMacSystemFont, \"Segoe UI\", \"PingFang SC\", \"Hiragino Sans GB\", \"Microsoft YaHei\", \"Helvetica Neue\", Helvetica, Arial, sans-serif",
+            "--dsw-alias-separator-primary": "",
+            "--dsw-alias-markdown-code-block-banner": "#f9fafb",
+            "--dsw-font-markdown-code": "12px/19px \"SF Mono\", \"JetBrains Mono\", \"Fira Code\", Consolas, \"Liberation Mono\", Menlo, Courier, \"PingFang SC\", \"Microsoft YaHei\"",
+            "--dsw-alias-button-contrast-fill": "#61666b",
+            "--dsw-alias-bg-mask-drop": "#ffffffb3",
+            "--dsw-font-l-20": "500 20px/28px -apple-system, BlinkMacSystemFont, \"Segoe UI\", \"PingFang SC\", \"Hiragino Sans GB\", \"Microsoft YaHei\", \"Helvetica Neue\", Helvetica, Arial, sans-serif",
+            "--dsw-font-s-14": "14px/22px -apple-system, BlinkMacSystemFont, \"Segoe UI\", \"PingFang SC\", \"Hiragino Sans GB\", \"Microsoft YaHei\", \"Helvetica Neue\", Helvetica, Arial, sans-serif",
+            "--dsw-alias-button-ghost-active-fill": "#ebeef2"
+          },
+          "cssMixDynamic": {
+            "values": [
+              {
+                "phase": "initial",
+                "a": "rgba(80, 120, 160, 0.25)",
+                "b": "rgba(160, 80, 40, 0.25)"
+              },
+              {
+                "phase": "ancestor-change",
+                "a": "rgba(40, 60, 80, 0.25)",
+                "b": "rgba(160, 80, 40, 0.25)"
+              },
+              {
+                "phase": "local-removal",
+                "a": "rgba(40, 60, 80, 0.25)",
+                "b": "rgba(40, 60, 80, 0.25)"
+              },
+              {
+                "phase": "style-replaced-without-mix",
+                "a": "rgb(11, 22, 33)",
+                "b": "rgb(11, 22, 33)"
+              },
+              {
+                "phase": "style-mix-restored",
+                "a": "rgba(40, 60, 80, 0.25)",
+                "b": "rgba(40, 60, 80, 0.25)"
+              },
+              {
+                "phase": "style-unmounted",
+                "a": "rgba(0, 0, 0, 0)",
+                "b": "rgba(0, 0, 0, 0)"
+              }
+            ],
+            "themes": [
+              {
+                "phase": "initial",
+                "dark": false,
+                "base": "#fff",
+                "paint": "rgba(255, 255, 255, 0.6)"
+              },
+              {
+                "phase": "theme-toggled",
+                "dark": true,
+                "base": "#151517",
+                "paint": "rgba(21, 21, 23, 0.6)"
+              },
+              {
+                "phase": "theme-restored",
+                "dark": false,
+                "base": "#fff",
+                "paint": "rgba(255, 255, 255, 0.6)"
+              }
+            ],
+            "immutable": true,
+            "ownedProperty": {
+              "generatedName": "--dsh-host-mix-20",
+              "beforeRemoval": "rgba(40,60,80,0.25)",
+              "afterRemoval": "",
+              "remainingOwnProperties": []
+            },
+            "adapter": {
+              "styles": 13,
+              "activeStyles": 10,
+              "expressions": 20,
+              "refreshes": 36,
+              "invalidScopes": 773,
+              "mediaScans": 7,
+              "maxRefreshMs": 53.69999998807907,
+              "visited": 865,
+              "disposed": false,
+              "errors": []
+            }
+          },
+          "cssLifecycle": {
+            "managerPresent": true,
+            "rows": [
+              {
+                "phase": "active",
+                "paint": "rgba(80, 120, 160, 0.25)"
+              },
+              {
+                "phase": "media-disabled",
+                "paint": "rgba(0, 0, 0, 0)"
+              },
+              {
+                "phase": "media-restored",
+                "paint": "rgba(80, 120, 160, 0.25)"
+              },
+              {
+                "phase": "sheet-disabled",
+                "paint": "rgba(0, 0, 0, 0)"
+              },
+              {
+                "phase": "sheet-restored",
+                "paint": "rgba(80, 120, 160, 0.25)"
+              },
+              {
+                "phase": "disposed",
+                "paint": "rgba(0, 0, 0, 0)"
+              },
+              {
+                "phase": "reinstalled",
+                "paint": "rgba(80, 120, 160, 0.25)"
+              },
+              {
+                "phase": "reinstalled-twice",
+                "paint": "rgba(80, 120, 160, 0.25)"
+              }
+            ],
+            "originalImmutable": true,
+            "active": true,
+            "clonesBefore": 11,
+            "clonesAfter": 11,
+            "removed": {
+              "symbolAbsent": true,
+              "clones": 0,
+              "inline": [],
+              "facts": {
+                "styles": 14,
+                "activeStyles": 0,
+                "expressions": 0,
+                "refreshes": 41,
+                "invalidScopes": 893,
+                "mediaScans": 10,
+                "maxRefreshMs": 53.69999998807907,
+                "visited": 868,
+                "disposed": true,
+                "errors": []
+              }
+            },
+            "beforeMutation": 41,
+            "afterMutation": 41,
+            "replacedOwnerDisposed": true,
+            "preserved": {
+              "value": "original-owner-value",
+              "priority": "important"
+            },
+            "final": {
+              "styles": 11,
+              "activeStyles": 10,
+              "expressions": 20,
+              "refreshes": 2,
+              "invalidScopes": 45,
+              "mediaScans": 2,
+              "maxRefreshMs": 45.60000002384186,
+              "visited": 865,
+              "disposed": false,
+              "errors": []
+            }
+          },
+          "cssInvalidValue": {
+            "fallback": "rgba(80, 120, 160, 0.25)",
+            "cyclic": "rgba(0, 0, 0, 0)",
+            "inherited": "rgba(40, 60, 80, 0.25)",
+            "original": ".dsh-fallback-paint{background-color:color-mix(in srgb,var(--dsh-unset-color,rgb(80,120,160)) 25%,transparent)}.dsh-invalid-paint{background-color:color-mix(in srgb,var(--dsh-cyclic-color) 25%,transparent)}",
+            "errors": [],
+            "facts": {
+              "styles": 12,
+              "activeStyles": 10,
+              "expressions": 20,
+              "refreshes": 4,
+              "invalidScopes": 90,
+              "mediaScans": 4,
+              "maxRefreshMs": 47.5,
+              "visited": 865,
+              "disposed": false,
+              "errors": []
+            }
+          },
+          "cssListenerOwnership": {
+            "active": true,
+            "before": {
+              "window": {
+                "textInput": 1,
+                "resize": 2,
+                "dragend": 1,
+                "beforeprint": 1,
+                "afterprint": 1,
+                "pagehide": 1,
+                "pageshow": 1
+              },
+              "document": {
+                "pointerover": 1,
+                "pointerout": 1,
+                "focusin": 1,
+                "focusout": 1,
+                "selectionchange": 2,
+                "dragenter": 1,
+                "dragover": 1,
+                "dragleave": 1,
+                "drop": 1
+              }
+            },
+            "removed": {
+              "window": {
+                "textInput": 1,
+                "resize": 1,
+                "dragend": 1
+              },
+              "document": {
+                "selectionchange": 2,
+                "dragenter": 1,
+                "dragover": 1,
+                "dragleave": 1,
+                "drop": 1
+              }
+            },
+            "restored": {
+              "window": {
+                "textInput": 1,
+                "resize": 2,
+                "dragend": 1,
+                "beforeprint": 1,
+                "afterprint": 1,
+                "pagehide": 1,
+                "pageshow": 1
+              },
+              "document": {
+                "pointerover": 1,
+                "pointerout": 1,
+                "focusin": 1,
+                "focusout": 1,
+                "selectionchange": 2,
+                "dragenter": 1,
+                "dragover": 1,
+                "dragleave": 1,
+                "drop": 1
+              }
+            }
+          },
+          "cssMediaConditions": [
+            {
+              "media": "screen",
+              "paint": "rgba(80, 120, 160, 0.25)",
+              "variable": "rgb(80,120,160)"
+            },
+            {
+              "media": "print",
+              "paint": "rgba(40, 60, 80, 0.25)",
+              "variable": "rgb(40,60,80)"
+            },
+            {
+              "media": "screen",
+              "paint": "rgba(80, 120, 160, 0.25)",
+              "variable": "rgb(80,120,160)"
+            }
+          ],
+          "cssMixAdapter": {
+            "styles": 10,
+            "activeStyles": 10,
+            "expressions": 20,
+            "refreshes": 25,
+            "invalidScopes": 525,
+            "mediaScans": 1,
+            "maxRefreshMs": 40.89999997615814,
+            "visited": 865,
+            "disposed": false,
+            "errors": []
+          },
+          "name": "cold",
+          "passed": true,
+          "hostErrors": "",
+          "browserErrors": "\r\nDevTools listening on ws://127.0.0.1:60965/devtools/browser/0cf8b70a-cc83-4a17-a4f1-633d05921e22\r\n"
+        }
+      ]
+    },
+    "modern": {
+      "rawReportSha256": "cbe91e68af74bf8355658621ed3d47aa5c232c95f491d5b7d70bd59e15e9b257",
+      "researchAdapterSha256": "ba5c8862a05173bd67c39e8ca8b81d0402c0681f0c7036efffc268c8b40981e9",
+      "phases": [
+        {
+          "cssMixPalette": {
+            "--dsw-alias-border-l2": "#ffffff1f",
+            "--dsw-alias-label-primary": "#f9fafb",
+            "--dsw-alias-bg-module-platform": "#353638",
+            "--dsw-alias-interactive-bg-hover": "#ffffff14",
+            "--dsw-alias-label-tertiary": "#adb2b8",
+            "--dsw-alias-state-warn-label": "#dd8629",
+            "--dsw-alias-state-success-primary": "#22c55e",
+            "--dsw-alias-border-l3": "#ffffff29",
+            "--dsw-alias-label-secondary": "#cfd3d6",
+            "--dsw-alias-state-error-primary": "#f25a5a",
+            "--dsw-alias-button-primary-fill": "#f9fafb",
+            "--dsw-alias-label-primary-foreground": "#0f1115",
+            "--dsw-alias-button-primary-hover": "#ebeef2",
+            "--dsw-alias-interactive-bg-hover-solid": "#353638",
+            "--dsw-alias-interactive-bg-hover-danger": "#f25a5a26",
+            "--dsw-alias-bg-layer-1": "#232324",
+            "--dsw-alias-brand-primary": "#f9fafb",
+            "--dsw-alias-label-dimmed": "#43454a",
+            "--dsw-alias-scrollbar-bg-l2": "#545557",
+            "--dsw-alias-scrollbar-hover-l2": "#65676b",
+            "--dsw-alias-state-business-primary": "#679efe",
+            "--dsw-alias-bg-layer-3": "#353638",
+            "--dsw-alias-border-l1": "#ffffff0f",
+            "--dsw-shadow-lv1": "0 2px 4px 0 #0000000d",
+            "--dsw-alias-label-error": "",
+            "--dsw-alias-bg-layer-2": "#2c2c2e",
+            "--dsw-alias-bg-layer-4": "",
+            "--dsw-static-neutral-bluish-400": "#adb2b8",
+            "--dsw-alias-label-caption": "#81858c",
+            "--dsw-alias-bg-base": "#151517",
+            "--dsw-specific-sidebar-fill": "#1b1b1c",
+            "--dsw-alias-button-floating-fill": "#2c2c2e",
+            "--dsw-alias-border-l2-darkmode-thin": "#ffffff0f",
+            "--dsw-alias-button-floating-hover": "#353638",
+            "--dsw-alias-button-elevated-fill": "#43454a",
+            "--dsw-static-neutral-bluish-00": "#fff",
+            "--dsw-static-neutral-bluish-60": "#f9fafb",
+            "--dsw-static-neutral-bluish-150": "#e9ecf2",
+            "--dsw-static-neutral-bluish-1000": "#0f1115",
+            "--dsw-static-neutral-bluish-700": "#61666b",
+            "--dsw-static-neutral-bluish-75": "#f1f3f5",
+            "--dsw-static-neutral-bluish-500": "#979da6",
+            "--dsw-static-neutral-bluish-100": "#ebeef2",
+            "--dsw-static-deepseek-500": "#4176e6",
+            "--dsw-static-deepseek-400": "#679efe",
+            "--dsw-static-neutral-bluish-750": "#43454a",
+            "--dsw-static-neutral-bluish-200": "#e1e5ee",
+            "--dsw-static-blue-900": "#0e3074",
+            "--dsw-static-neutral-bluish-950": "#151517",
+            "--dsw-static-neutral-bluish-600": "#81858c",
+            "--dsw-static-neutral-bluish-50": "#f9fafb",
+            "--dsw-static-neutral-200": "#e5e5e5",
+            "--dsw-static-neutral-300": "#d4d4d4",
+            "--dsw-static-deepseek-100": "#e4edfd",
+            "--dsw-static-red-600": "#ec1313",
+            "--dsw-static-red-400": "#f25a5a",
+            "--dsw-static-green-500": "#22c55e",
+            "--dsw-static-green-400": "#4ed17e",
+            "--dsw-static-green-100": "#e6faed",
+            "--dsw-static-amber-600": "#dd8629",
+            "--dsw-static-amber-500": "#f59e0b",
+            "--dsw-static-amber-400": "#f7ad31",
+            "--dsw-static-amber-100": "#fef5e7",
+            "--dsw-static-neutral-bluish-800": "#353638",
+            "--dsw-static-neutral-bluish-850": "#2c2c2e",
+            "--dsw-static-deepseek-200": "#d3e2ff",
+            "--dsw-static-deepseek-50": "#edf3fe",
+            "--dsw-static-neutral-bluish-875": "#232324",
+            "--dsw-static-neutral-850": "#212123",
+            "--dsw-static-deepseek-450": "#5686fe",
+            "--dsw-static-neutral-bluish-300": "#cfd3d6",
+            "--dsw-static-neutral-bluish-900": "#1b1b1c",
+            "--dsw-static-neutral-700": "#3c3c3d",
+            "--dsw-static-neutral-600": "#545557",
+            "--dsw-static-neutral-550": "#65676b",
+            "--dsw-static-deepseek-800": "#34415b",
+            "--dsw-static-green-900": "#233c2c",
+            "--dsw-static-amber-900": "#27241f",
+            "--dsw-alias-scrollbar-bg-l1": "#3c3c3d",
+            "--dsw-alias-scrollbar-hover-l1": "#545557",
+            "--dsw-font-family": "-apple-system, BlinkMacSystemFont, \"Segoe UI\", \"PingFang SC\", \"Hiragino Sans GB\", \"Microsoft YaHei\", \"Helvetica Neue\", Helvetica, Arial, sans-serif",
+            "--dsw-alias-markdown-code-block": "#1b1b1c",
+            "--dsw-alias-label-primary-inverted": "#353638",
+            "--dsw-specific-tip": "#353638",
+            "--dsw-font-xs-13": "13px/20px -apple-system, BlinkMacSystemFont, \"Segoe UI\", \"PingFang SC\", \"Hiragino Sans GB\", \"Microsoft YaHei\", \"Helvetica Neue\", Helvetica, Arial, sans-serif",
+            "--dsw-alias-label-primary-dimmed": "#ebeef2",
+            "--dsw-alias-state-business-tertiary": "#34415b",
+            "--dsw-alias-label-primary-bluish": "#f9fafb",
+            "--dsw-alias-border-inverted": "#ffffff0f",
+            "--dsw-specific-menu": "#353638",
+            "--dsw-shadow-lv3": "0 0 1px 0 #0003, 0 0 4px 0 #00000005, 0 12px 32px 0 #00000014",
+            "--dsw-static-blue-450": "#4d93f8",
+            "--dsw-specific-input-major": "#2c2c2e",
+            "--dsw-shadow-lv2": "0 4px 12px 0 #00000005, 0 2px 8px 0 #0000000a",
+            "--dsw-alias-border-l4": "#fff3",
+            "--dsw-specific-selector": "#353638",
+            "--dsw-alias-button-info-fill": "#679efe",
+            "--dsw-alias-button-info-hover": "#4176e6",
+            "--dsw-alias-fill-l2": "",
+            "--dsw-font-mono": "",
+            "--dsw-alias-state-warn-tertiary": "#27241f",
+            "--dsw-alias-state-warn-primary": "#f59e0b",
+            "--dsw-alias-bg-mask-1": "#00000080",
+            "--dsw-mask-blur": "blur(2px)",
+            "--dsw-specific-sidebar-nav-item-hover": "#2c2c2e",
+            "--dsw-specific-sidebar-nav-item-active": "#43454a",
+            "--dsw-alias-label-quaternary": "",
+            "--dsw-font-markdown-code-block-small": "11px/16px \"SF Mono\", \"JetBrains Mono\", \"Fira Code\", Consolas, \"Liberation Mono\", Menlo, Courier, \"PingFang SC\", \"Microsoft YaHei\"",
+            "--dsw-alias-bg-skeleton": "#ffffff14",
+            "--dsw-alias-state-warn-secondary": "#f7ad31",
+            "--dsw-alias-bg-overlay": "#61666b",
+            "--dsw-specific-sidebar-nav-item-active-accent": "#353638",
+            "--dsw-font-xxs-12": "12px/18px -apple-system, BlinkMacSystemFont, \"Segoe UI\", \"PingFang SC\", \"Hiragino Sans GB\", \"Microsoft YaHei\", \"Helvetica Neue\", Helvetica, Arial, sans-serif",
+            "--dsw-static-blue-500": "#3b82f6",
+            "--trajectory-virtual-spacer-height": "",
+            "--dsw-alias-interactive-bg-active": "#ffffff24",
+            "--dsw-alias-brand-primary-new-colorprimary-new-color": "#5686fe",
+            "--trajectory-turn-accent": "",
+            "--dsw-alias-state-success-tertiary": "#233c2c",
+            "--dsw-font-xs-strong-13": "500 13px/20px -apple-system, BlinkMacSystemFont, \"Segoe UI\", \"PingFang SC\", \"Hiragino Sans GB\", \"Microsoft YaHei\", \"Helvetica Neue\", Helvetica, Arial, sans-serif",
+            "--dsw-alias-state-error-secondary": "#f25a5a",
+            "--trajectory-tool-request-width": "",
+            "--dsw-alias-markdown-citation": "#353638",
+            "--dsw-font-xxxs-11": "11px/14px -apple-system, BlinkMacSystemFont, \"Segoe UI\", \"PingFang SC\", \"Hiragino Sans GB\", \"Microsoft YaHei\", \"Helvetica Neue\", Helvetica, Arial, sans-serif",
+            "--trajectory-domain-left": "",
+            "--trajectory-domain-width": "",
+            "--trajectory-turn-left": "",
+            "--trajectory-span-lane": "",
+            "--trajectory-span-left": "",
+            "--trajectory-span-gap": "",
+            "--trajectory-span-width": "",
+            "--trajectory-assistant-decoding-color": "",
+            "--trajectory-assistant-ttft-color": "",
+            "--trajectory-assistant-ttft": "",
+            "--trajectory-selection-left": "",
+            "--trajectory-selection-width": "",
+            "--trajectory-hover-left": "",
+            "--dsw-alias-fill-tsp-secondary": "",
+            "--dsw-specific-bubble": "#2c2c2e",
+            "--dsw-alias-line-secondary": "",
+            "--dsw-font-s-strong-14": "500 14px/22px -apple-system, BlinkMacSystemFont, \"Segoe UI\", \"PingFang SC\", \"Hiragino Sans GB\", \"Microsoft YaHei\", \"Helvetica Neue\", Helvetica, Arial, sans-serif",
+            "--dsw-alias-separator-primary": "",
+            "--dsw-alias-markdown-code-block-banner": "#2c2c2e",
+            "--dsw-font-markdown-code": "12px/19px \"SF Mono\", \"JetBrains Mono\", \"Fira Code\", Consolas, \"Liberation Mono\", Menlo, Courier, \"PingFang SC\", \"Microsoft YaHei\"",
+            "--dsw-alias-button-contrast-fill": "#f9fafb",
+            "--dsw-alias-bg-mask-drop": "#272730b3",
+            "--dsw-font-l-20": "500 20px/28px -apple-system, BlinkMacSystemFont, \"Segoe UI\", \"PingFang SC\", \"Hiragino Sans GB\", \"Microsoft YaHei\", \"Helvetica Neue\", Helvetica, Arial, sans-serif",
+            "--dsw-font-s-14": "14px/22px -apple-system, BlinkMacSystemFont, \"Segoe UI\", \"PingFang SC\", \"Hiragino Sans GB\", \"Microsoft YaHei\", \"Helvetica Neue\", Helvetica, Arial, sans-serif",
+            "--dsw-alias-button-ghost-active-fill": "#43454a"
+          },
+          "cssMixDynamic": {
+            "values": [
+              {
+                "phase": "initial",
+                "a": "color(srgb 0.313726 0.470588 0.627451 / 0.25)",
+                "b": "color(srgb 0.627451 0.313726 0.156863 / 0.25)"
+              },
+              {
+                "phase": "ancestor-change",
+                "a": "color(srgb 0.156863 0.235294 0.313726 / 0.25)",
+                "b": "color(srgb 0.627451 0.313726 0.156863 / 0.25)"
+              },
+              {
+                "phase": "local-removal",
+                "a": "color(srgb 0.156863 0.235294 0.313726 / 0.25)",
+                "b": "color(srgb 0.156863 0.235294 0.313726 / 0.25)"
+              },
+              {
+                "phase": "style-replaced-without-mix",
+                "a": "rgb(11, 22, 33)",
+                "b": "rgb(11, 22, 33)"
+              },
+              {
+                "phase": "style-mix-restored",
+                "a": "color(srgb 0.156863 0.235294 0.313726 / 0.25)",
+                "b": "color(srgb 0.156863 0.235294 0.313726 / 0.25)"
+              },
+              {
+                "phase": "style-unmounted",
+                "a": "rgba(0, 0, 0, 0)",
+                "b": "rgba(0, 0, 0, 0)"
+              }
+            ],
+            "themes": [
+              {
+                "phase": "initial",
+                "dark": false,
+                "base": "#fff",
+                "paint": "color(srgb 1 1 1 / 0.6)"
+              },
+              {
+                "phase": "theme-toggled",
+                "dark": true,
+                "base": "#151517",
+                "paint": "color(srgb 0.0823529 0.0823529 0.0901961 / 0.6)"
+              },
+              {
+                "phase": "theme-restored",
+                "dark": false,
+                "base": "#fff",
+                "paint": "color(srgb 1 1 1 / 0.6)"
+              }
+            ],
+            "immutable": true,
+            "ownedProperty": {
+              "generatedName": null,
+              "beforeRemoval": null,
+              "afterRemoval": null,
+              "remainingOwnProperties": []
+            },
+            "adapter": null
+          },
+          "cssLifecycle": {
+            "managerPresent": false,
+            "rows": [
+              {
+                "phase": "active",
+                "paint": "color(srgb 0.313726 0.470588 0.627451 / 0.25)"
+              },
+              {
+                "phase": "media-disabled",
+                "paint": "rgba(0, 0, 0, 0)"
+              },
+              {
+                "phase": "media-restored",
+                "paint": "color(srgb 0.313726 0.470588 0.627451 / 0.25)"
+              },
+              {
+                "phase": "sheet-disabled",
+                "paint": "rgba(0, 0, 0, 0)"
+              },
+              {
+                "phase": "sheet-restored",
+                "paint": "color(srgb 0.313726 0.470588 0.627451 / 0.25)"
+              },
+              {
+                "phase": "disposed",
+                "paint": "color(srgb 0.313726 0.470588 0.627451 / 0.25)"
+              },
+              {
+                "phase": "reinstalled",
+                "paint": "color(srgb 0.313726 0.470588 0.627451 / 0.25)"
+              },
+              {
+                "phase": "reinstalled-twice",
+                "paint": "color(srgb 0.313726 0.470588 0.627451 / 0.25)"
+              }
+            ],
+            "originalImmutable": true,
+            "active": false,
+            "clonesBefore": 0,
+            "clonesAfter": 0,
+            "removed": {
+              "symbolAbsent": true,
+              "clones": 0,
+              "inline": [],
+              "facts": null
+            },
+            "replacedOwnerDisposed": null,
+            "preserved": {
+              "value": "original-owner-value",
+              "priority": "important"
+            },
+            "final": null
+          },
+          "cssInvalidValue": {
+            "fallback": "color(srgb 0.313726 0.470588 0.627451 / 0.25)",
+            "cyclic": "rgba(0, 0, 0, 0)",
+            "inherited": "color(srgb 0.156863 0.235294 0.313726 / 0.25)",
+            "original": ".dsh-fallback-paint{background-color:color-mix(in srgb,var(--dsh-unset-color,rgb(80,120,160)) 25%,transparent)}.dsh-invalid-paint{background-color:color-mix(in srgb,var(--dsh-cyclic-color) 25%,transparent)}",
+            "errors": [],
+            "facts": null
+          },
+          "cssListenerOwnership": {
+            "active": false,
+            "before": {
+              "window": {
+                "textInput": 1,
+                "resize": 1,
+                "dragend": 1
+              },
+              "document": {
+                "selectionchange": 2,
+                "dragenter": 1,
+                "dragover": 1,
+                "dragleave": 1,
+                "drop": 1
+              }
+            },
+            "removed": {
+              "window": {
+                "textInput": 1,
+                "resize": 1,
+                "dragend": 1
+              },
+              "document": {
+                "selectionchange": 2,
+                "dragenter": 1,
+                "dragover": 1,
+                "dragleave": 1,
+                "drop": 1
+              }
+            },
+            "restored": {
+              "window": {
+                "textInput": 1,
+                "resize": 1,
+                "dragend": 1
+              },
+              "document": {
+                "selectionchange": 2,
+                "dragenter": 1,
+                "dragover": 1,
+                "dragleave": 1,
+                "drop": 1
+              }
+            }
+          },
+          "cssMediaConditions": [
+            {
+              "media": "screen",
+              "paint": "color(srgb 0.313726 0.470588 0.627451 / 0.25)",
+              "variable": "rgb(80,120,160)"
+            },
+            {
+              "media": "print",
+              "paint": "color(srgb 0.156863 0.235294 0.313726 / 0.25)",
+              "variable": "rgb(40,60,80)"
+            },
+            {
+              "media": "screen",
+              "paint": "color(srgb 0.313726 0.470588 0.627451 / 0.25)",
+              "variable": "rgb(80,120,160)"
+            }
+          ],
+          "cssMixAdapter": null,
+          "name": "fresh",
+          "passed": true,
+          "hostErrors": "",
+          "browserErrors": "\r\nDevTools listening on ws://127.0.0.1:56366/devtools/browser/88c46518-c789-43b4-a97c-676b50108acd\r\n[21500:12016:1009/222342.448:ERROR:chrome\\browser\\importer\\edge_china_browsers\\edge_qqbrowser_importer_utils_win.cc:165] QQBrowser user data path not found.\r\n[21500:24780:1009/222347.659:ERROR:chrome\\browser\\task_manager\\providers\\fallback_task_provider.cc:126] Every renderer should have at least one task provided by a primary task provider. If a \"Renderer\" fallback task is shown, it is a bug. If you have repro steps, please file a new bug and tag it as a dependency of crbug.com/40528867.\r\n"
+        },
+        {
+          "cssMixPalette": {
+            "--dsw-alias-border-l2": "#ffffff1f",
+            "--dsw-alias-label-primary": "#f9fafb",
+            "--dsw-alias-bg-module-platform": "#353638",
+            "--dsw-alias-interactive-bg-hover": "#ffffff14",
+            "--dsw-alias-label-tertiary": "#adb2b8",
+            "--dsw-alias-state-warn-label": "#dd8629",
+            "--dsw-alias-state-success-primary": "#22c55e",
+            "--dsw-alias-border-l3": "#ffffff29",
+            "--dsw-alias-label-secondary": "#cfd3d6",
+            "--dsw-alias-state-error-primary": "#f25a5a",
+            "--dsw-alias-button-primary-fill": "#f9fafb",
+            "--dsw-alias-label-primary-foreground": "#0f1115",
+            "--dsw-alias-button-primary-hover": "#ebeef2",
+            "--dsw-alias-interactive-bg-hover-solid": "#353638",
+            "--dsw-alias-interactive-bg-hover-danger": "#f25a5a26",
+            "--dsw-alias-bg-layer-1": "#232324",
+            "--dsw-alias-brand-primary": "#f9fafb",
+            "--dsw-alias-label-dimmed": "#43454a",
+            "--dsw-alias-scrollbar-bg-l2": "#545557",
+            "--dsw-alias-scrollbar-hover-l2": "#65676b",
+            "--dsw-alias-state-business-primary": "#679efe",
+            "--dsw-alias-bg-layer-3": "#353638",
+            "--dsw-alias-border-l1": "#ffffff0f",
+            "--dsw-shadow-lv1": "0 2px 4px 0 #0000000d",
+            "--dsw-alias-label-error": "",
+            "--dsw-alias-bg-layer-2": "#2c2c2e",
+            "--dsw-alias-bg-layer-4": "",
+            "--dsw-static-neutral-bluish-400": "#adb2b8",
+            "--dsw-alias-label-caption": "#81858c",
+            "--dsw-alias-bg-base": "#151517",
+            "--dsw-specific-sidebar-fill": "#1b1b1c",
+            "--dsw-alias-button-floating-fill": "#2c2c2e",
+            "--dsw-alias-border-l2-darkmode-thin": "#ffffff0f",
+            "--dsw-alias-button-floating-hover": "#353638",
+            "--dsw-alias-button-elevated-fill": "#43454a",
+            "--dsw-static-neutral-bluish-00": "#fff",
+            "--dsw-static-neutral-bluish-60": "#f9fafb",
+            "--dsw-static-neutral-bluish-150": "#e9ecf2",
+            "--dsw-static-neutral-bluish-1000": "#0f1115",
+            "--dsw-static-neutral-bluish-700": "#61666b",
+            "--dsw-static-neutral-bluish-75": "#f1f3f5",
+            "--dsw-static-neutral-bluish-500": "#979da6",
+            "--dsw-static-neutral-bluish-100": "#ebeef2",
+            "--dsw-static-deepseek-500": "#4176e6",
+            "--dsw-static-deepseek-400": "#679efe",
+            "--dsw-static-neutral-bluish-750": "#43454a",
+            "--dsw-static-neutral-bluish-200": "#e1e5ee",
+            "--dsw-static-blue-900": "#0e3074",
+            "--dsw-static-neutral-bluish-950": "#151517",
+            "--dsw-static-neutral-bluish-600": "#81858c",
+            "--dsw-static-neutral-bluish-50": "#f9fafb",
+            "--dsw-static-neutral-200": "#e5e5e5",
+            "--dsw-static-neutral-300": "#d4d4d4",
+            "--dsw-static-deepseek-100": "#e4edfd",
+            "--dsw-static-red-600": "#ec1313",
+            "--dsw-static-red-400": "#f25a5a",
+            "--dsw-static-green-500": "#22c55e",
+            "--dsw-static-green-400": "#4ed17e",
+            "--dsw-static-green-100": "#e6faed",
+            "--dsw-static-amber-600": "#dd8629",
+            "--dsw-static-amber-500": "#f59e0b",
+            "--dsw-static-amber-400": "#f7ad31",
+            "--dsw-static-amber-100": "#fef5e7",
+            "--dsw-static-neutral-bluish-800": "#353638",
+            "--dsw-static-neutral-bluish-850": "#2c2c2e",
+            "--dsw-static-deepseek-200": "#d3e2ff",
+            "--dsw-static-deepseek-50": "#edf3fe",
+            "--dsw-static-neutral-bluish-875": "#232324",
+            "--dsw-static-neutral-850": "#212123",
+            "--dsw-static-deepseek-450": "#5686fe",
+            "--dsw-static-neutral-bluish-300": "#cfd3d6",
+            "--dsw-static-neutral-bluish-900": "#1b1b1c",
+            "--dsw-static-neutral-700": "#3c3c3d",
+            "--dsw-static-neutral-600": "#545557",
+            "--dsw-static-neutral-550": "#65676b",
+            "--dsw-static-deepseek-800": "#34415b",
+            "--dsw-static-green-900": "#233c2c",
+            "--dsw-static-amber-900": "#27241f",
+            "--dsw-alias-scrollbar-bg-l1": "#3c3c3d",
+            "--dsw-alias-scrollbar-hover-l1": "#545557",
+            "--dsw-font-family": "-apple-system, BlinkMacSystemFont, \"Segoe UI\", \"PingFang SC\", \"Hiragino Sans GB\", \"Microsoft YaHei\", \"Helvetica Neue\", Helvetica, Arial, sans-serif",
+            "--dsw-alias-markdown-code-block": "#1b1b1c",
+            "--dsw-alias-label-primary-inverted": "#353638",
+            "--dsw-specific-tip": "#353638",
+            "--dsw-font-xs-13": "13px/20px -apple-system, BlinkMacSystemFont, \"Segoe UI\", \"PingFang SC\", \"Hiragino Sans GB\", \"Microsoft YaHei\", \"Helvetica Neue\", Helvetica, Arial, sans-serif",
+            "--dsw-alias-label-primary-dimmed": "#ebeef2",
+            "--dsw-alias-state-business-tertiary": "#34415b",
+            "--dsw-alias-label-primary-bluish": "#f9fafb",
+            "--dsw-alias-border-inverted": "#ffffff0f",
+            "--dsw-specific-menu": "#353638",
+            "--dsw-shadow-lv3": "0 0 1px 0 #0003, 0 0 4px 0 #00000005, 0 12px 32px 0 #00000014",
+            "--dsw-static-blue-450": "#4d93f8",
+            "--dsw-specific-input-major": "#2c2c2e",
+            "--dsw-shadow-lv2": "0 4px 12px 0 #00000005, 0 2px 8px 0 #0000000a",
+            "--dsw-alias-border-l4": "#fff3",
+            "--dsw-specific-selector": "#353638",
+            "--dsw-alias-button-info-fill": "#679efe",
+            "--dsw-alias-button-info-hover": "#4176e6",
+            "--dsw-alias-fill-l2": "",
+            "--dsw-font-mono": "",
+            "--dsw-alias-state-warn-tertiary": "#27241f",
+            "--dsw-alias-state-warn-primary": "#f59e0b",
+            "--dsw-alias-bg-mask-1": "#00000080",
+            "--dsw-mask-blur": "blur(2px)",
+            "--dsw-specific-sidebar-nav-item-hover": "#2c2c2e",
+            "--dsw-specific-sidebar-nav-item-active": "#43454a",
+            "--dsw-alias-label-quaternary": "",
+            "--dsw-font-markdown-code-block-small": "11px/16px \"SF Mono\", \"JetBrains Mono\", \"Fira Code\", Consolas, \"Liberation Mono\", Menlo, Courier, \"PingFang SC\", \"Microsoft YaHei\"",
+            "--dsw-alias-bg-skeleton": "#ffffff14",
+            "--dsw-alias-state-warn-secondary": "#f7ad31",
+            "--dsw-alias-bg-overlay": "#61666b",
+            "--dsw-specific-sidebar-nav-item-active-accent": "#353638",
+            "--dsw-font-xxs-12": "12px/18px -apple-system, BlinkMacSystemFont, \"Segoe UI\", \"PingFang SC\", \"Hiragino Sans GB\", \"Microsoft YaHei\", \"Helvetica Neue\", Helvetica, Arial, sans-serif",
+            "--dsw-static-blue-500": "#3b82f6",
+            "--trajectory-virtual-spacer-height": "",
+            "--dsw-alias-interactive-bg-active": "#ffffff24",
+            "--dsw-alias-brand-primary-new-colorprimary-new-color": "#5686fe",
+            "--trajectory-turn-accent": "",
+            "--dsw-alias-state-success-tertiary": "#233c2c",
+            "--dsw-font-xs-strong-13": "500 13px/20px -apple-system, BlinkMacSystemFont, \"Segoe UI\", \"PingFang SC\", \"Hiragino Sans GB\", \"Microsoft YaHei\", \"Helvetica Neue\", Helvetica, Arial, sans-serif",
+            "--dsw-alias-state-error-secondary": "#f25a5a",
+            "--trajectory-tool-request-width": "",
+            "--dsw-alias-markdown-citation": "#353638",
+            "--dsw-font-xxxs-11": "11px/14px -apple-system, BlinkMacSystemFont, \"Segoe UI\", \"PingFang SC\", \"Hiragino Sans GB\", \"Microsoft YaHei\", \"Helvetica Neue\", Helvetica, Arial, sans-serif",
+            "--trajectory-domain-left": "",
+            "--trajectory-domain-width": "",
+            "--trajectory-turn-left": "",
+            "--trajectory-span-lane": "",
+            "--trajectory-span-left": "",
+            "--trajectory-span-gap": "",
+            "--trajectory-span-width": "",
+            "--trajectory-assistant-decoding-color": "",
+            "--trajectory-assistant-ttft-color": "",
+            "--trajectory-assistant-ttft": "",
+            "--trajectory-selection-left": "",
+            "--trajectory-selection-width": "",
+            "--trajectory-hover-left": "",
+            "--dsw-alias-fill-tsp-secondary": "",
+            "--dsw-specific-bubble": "#2c2c2e",
+            "--dsw-alias-line-secondary": "",
+            "--dsw-font-s-strong-14": "500 14px/22px -apple-system, BlinkMacSystemFont, \"Segoe UI\", \"PingFang SC\", \"Hiragino Sans GB\", \"Microsoft YaHei\", \"Helvetica Neue\", Helvetica, Arial, sans-serif",
+            "--dsw-alias-separator-primary": "",
+            "--dsw-alias-markdown-code-block-banner": "#2c2c2e",
+            "--dsw-font-markdown-code": "12px/19px \"SF Mono\", \"JetBrains Mono\", \"Fira Code\", Consolas, \"Liberation Mono\", Menlo, Courier, \"PingFang SC\", \"Microsoft YaHei\"",
+            "--dsw-alias-button-contrast-fill": "#f9fafb",
+            "--dsw-alias-bg-mask-drop": "#272730b3",
+            "--dsw-font-l-20": "500 20px/28px -apple-system, BlinkMacSystemFont, \"Segoe UI\", \"PingFang SC\", \"Hiragino Sans GB\", \"Microsoft YaHei\", \"Helvetica Neue\", Helvetica, Arial, sans-serif",
+            "--dsw-font-s-14": "14px/22px -apple-system, BlinkMacSystemFont, \"Segoe UI\", \"PingFang SC\", \"Hiragino Sans GB\", \"Microsoft YaHei\", \"Helvetica Neue\", Helvetica, Arial, sans-serif",
+            "--dsw-alias-button-ghost-active-fill": "#43454a"
+          },
+          "cssMixDynamic": {
+            "values": [
+              {
+                "phase": "initial",
+                "a": "color(srgb 0.313726 0.470588 0.627451 / 0.25)",
+                "b": "color(srgb 0.627451 0.313726 0.156863 / 0.25)"
+              },
+              {
+                "phase": "ancestor-change",
+                "a": "color(srgb 0.156863 0.235294 0.313726 / 0.25)",
+                "b": "color(srgb 0.627451 0.313726 0.156863 / 0.25)"
+              },
+              {
+                "phase": "local-removal",
+                "a": "color(srgb 0.156863 0.235294 0.313726 / 0.25)",
+                "b": "color(srgb 0.156863 0.235294 0.313726 / 0.25)"
+              },
+              {
+                "phase": "style-replaced-without-mix",
+                "a": "rgb(11, 22, 33)",
+                "b": "rgb(11, 22, 33)"
+              },
+              {
+                "phase": "style-mix-restored",
+                "a": "color(srgb 0.156863 0.235294 0.313726 / 0.25)",
+                "b": "color(srgb 0.156863 0.235294 0.313726 / 0.25)"
+              },
+              {
+                "phase": "style-unmounted",
+                "a": "rgba(0, 0, 0, 0)",
+                "b": "rgba(0, 0, 0, 0)"
+              }
+            ],
+            "themes": [
+              {
+                "phase": "initial",
+                "dark": false,
+                "base": "#fff",
+                "paint": "color(srgb 1 1 1 / 0.6)"
+              },
+              {
+                "phase": "theme-toggled",
+                "dark": true,
+                "base": "#151517",
+                "paint": "color(srgb 0.0823529 0.0823529 0.0901961 / 0.6)"
+              },
+              {
+                "phase": "theme-restored",
+                "dark": false,
+                "base": "#fff",
+                "paint": "color(srgb 1 1 1 / 0.6)"
+              }
+            ],
+            "immutable": true,
+            "ownedProperty": {
+              "generatedName": null,
+              "beforeRemoval": null,
+              "afterRemoval": null,
+              "remainingOwnProperties": []
+            },
+            "adapter": null
+          },
+          "cssLifecycle": {
+            "managerPresent": false,
+            "rows": [
+              {
+                "phase": "active",
+                "paint": "color(srgb 0.313726 0.470588 0.627451 / 0.25)"
+              },
+              {
+                "phase": "media-disabled",
+                "paint": "rgba(0, 0, 0, 0)"
+              },
+              {
+                "phase": "media-restored",
+                "paint": "color(srgb 0.313726 0.470588 0.627451 / 0.25)"
+              },
+              {
+                "phase": "sheet-disabled",
+                "paint": "rgba(0, 0, 0, 0)"
+              },
+              {
+                "phase": "sheet-restored",
+                "paint": "color(srgb 0.313726 0.470588 0.627451 / 0.25)"
+              },
+              {
+                "phase": "disposed",
+                "paint": "color(srgb 0.313726 0.470588 0.627451 / 0.25)"
+              },
+              {
+                "phase": "reinstalled",
+                "paint": "color(srgb 0.313726 0.470588 0.627451 / 0.25)"
+              },
+              {
+                "phase": "reinstalled-twice",
+                "paint": "color(srgb 0.313726 0.470588 0.627451 / 0.25)"
+              }
+            ],
+            "originalImmutable": true,
+            "active": false,
+            "clonesBefore": 0,
+            "clonesAfter": 0,
+            "removed": {
+              "symbolAbsent": true,
+              "clones": 0,
+              "inline": [],
+              "facts": null
+            },
+            "replacedOwnerDisposed": null,
+            "preserved": {
+              "value": "original-owner-value",
+              "priority": "important"
+            },
+            "final": null
+          },
+          "cssInvalidValue": {
+            "fallback": "color(srgb 0.313726 0.470588 0.627451 / 0.25)",
+            "cyclic": "rgba(0, 0, 0, 0)",
+            "inherited": "color(srgb 0.156863 0.235294 0.313726 / 0.25)",
+            "original": ".dsh-fallback-paint{background-color:color-mix(in srgb,var(--dsh-unset-color,rgb(80,120,160)) 25%,transparent)}.dsh-invalid-paint{background-color:color-mix(in srgb,var(--dsh-cyclic-color) 25%,transparent)}",
+            "errors": [],
+            "facts": null
+          },
+          "cssListenerOwnership": {
+            "active": false,
+            "before": {
+              "window": {
+                "textInput": 1,
+                "resize": 1,
+                "dragend": 1
+              },
+              "document": {
+                "selectionchange": 2,
+                "dragenter": 1,
+                "dragover": 1,
+                "dragleave": 1,
+                "drop": 1
+              }
+            },
+            "removed": {
+              "window": {
+                "textInput": 1,
+                "resize": 1,
+                "dragend": 1
+              },
+              "document": {
+                "selectionchange": 2,
+                "dragenter": 1,
+                "dragover": 1,
+                "dragleave": 1,
+                "drop": 1
+              }
+            },
+            "restored": {
+              "window": {
+                "textInput": 1,
+                "resize": 1,
+                "dragend": 1
+              },
+              "document": {
+                "selectionchange": 2,
+                "dragenter": 1,
+                "dragover": 1,
+                "dragleave": 1,
+                "drop": 1
+              }
+            }
+          },
+          "cssMediaConditions": [
+            {
+              "media": "screen",
+              "paint": "color(srgb 0.313726 0.470588 0.627451 / 0.25)",
+              "variable": "rgb(80,120,160)"
+            },
+            {
+              "media": "print",
+              "paint": "color(srgb 0.156863 0.235294 0.313726 / 0.25)",
+              "variable": "rgb(40,60,80)"
+            },
+            {
+              "media": "screen",
+              "paint": "color(srgb 0.313726 0.470588 0.627451 / 0.25)",
+              "variable": "rgb(80,120,160)"
+            }
+          ],
+          "cssMixAdapter": null,
+          "name": "cold",
+          "passed": true,
+          "hostErrors": "",
+          "browserErrors": "\r\nDevTools listening on ws://127.0.0.1:55200/devtools/browser/c08b0242-ce42-4d4e-bec8-cd96aea1d6d2\r\n[37988:37496:1009/222355.163:ERROR:chrome\\browser\\importer\\edge_china_browsers\\edge_qqbrowser_importer_utils_win.cc:165] QQBrowser user data path not found.\r\n"
+        }
+      ]
+    }
+  }
+}

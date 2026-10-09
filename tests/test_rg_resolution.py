@@ -43,10 +43,13 @@ def test_fresh_source_glob_and_grep_have_no_host_rg(tmp_path):
     env = dict(os.environ, PATH='')
     env.pop('DSH_RG_PATH', None)
     script = '''
-import asyncio, subprocess, sys
+import asyncio, hashlib, subprocess, sys
+from pathlib import Path
 from dsh.fs.tool_fs_search.search_core import resolve_rg_path
 rg = asyncio.run(resolve_rg_path())
-assert 'reference' in rg and '.pnpm' in rg, rg
+assert Path(rg).resolve() == Path('dsh/fs/tool_fs_search/bin/rg.exe').resolve(), rg
+assert hashlib.sha256(Path(rg).read_bytes()).hexdigest() == '1dce02aae98c0a48c2644abd1849fb90406296d4e0c95e239f95242ee8480ff8'
+assert subprocess.check_output([rg, '--version']).decode('utf-8').splitlines()[0].startswith('ripgrep 14.1.0 ')
 for args in (['--files', '--hidden', '--no-ignore', sys.argv[1]],
              ['--json', '独立搜索', sys.argv[1]]):
     result = subprocess.run([rg, '--no-config'] + args, stdout=subprocess.PIPE,

@@ -1,5 +1,6 @@
 """Auxiliary summarization through the mounted LLM, using the routed prefix."""
 from dsh.core.cancellation import aborted
+from dsh.llm.message import create_user_message
 from dsh.llm.stream_bridge import iter_chunks
 from dsh.llm.image_content import images
 from dsh.cordis.utils import _V8_WHITESPACE_OR_LINE_TERMINATOR
@@ -65,8 +66,8 @@ async def summarize(engine, input, agent, signal):
     if not target.get("provider") or not target.get("model"):
         raise ValueError("no provider/model available for summarization")
     messages = list(input["messages"])
-    messages.append({"role": "user", "content": [{"type": "text", "text": INSTRUCTION}],
-                     "source": {"kind": "plugin", "plugin": "dsh-compaction-basic"}})
+    messages.append(create_user_message({"content": [{"type": "text", "text": INSTRUCTION}],
+                                         "source": {"kind": "plugin", "plugin": "dsh-compaction-basic"}}))
     request = dict(provider=target["provider"], model=target["model"], messages=messages,
                    maxTokens=cfg["maxTokens"], sessionId=session.id, purpose="compaction", signal=signal)
     for key in ("system", "tools"):

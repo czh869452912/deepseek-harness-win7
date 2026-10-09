@@ -81,6 +81,12 @@ def test_headless_runner_http_tool_roundtrip_and_exit(tmp_path, truncated, defau
             assert result.returncode == 0, result.stdout + result.stderr
             assert result.stdout.strip() == "The file contains unique file evidence."
             assert len(requests) == 2
+            if default_profile:
+                cordis_tools = [tool['function']['name'] for tool in requests[0]['tools']
+                                if tool['function']['name'].startswith('cordis_')]
+                assert cordis_tools == (['cordis_define', 'cordis_inspect_list', 'cordis_inspect_query',
+                                        'cordis_inspect_self', 'cordis_run', 'cordis_stop', 'cordis_undefine']
+                                       if default_profile == 'creative' else [])
             assert requests[0]["model"] == ("deepseek-v4-flash" if default_profile else "chosen-model")
             if not default_profile:
                 assert "User selected persona" in requests[0]["messages"][0]["content"]

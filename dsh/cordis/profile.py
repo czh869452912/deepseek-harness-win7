@@ -116,6 +116,7 @@ def _load_builtin_bundles() -> Dict[str, List[Dict[str, Any]]]:
     sdk_patches = _read_bundle_patch("sdk-app")
     acp_patches = _read_bundle_patch("acp-app")
     sdk_min_patches = _read_bundle_patch("sdk-minimal")
+    creative_patches = _read_bundle_patch("creative")
 
     bundles: Dict[str, List[Dict[str, Any]]] = {
         "dsh-base": base_patches,
@@ -130,6 +131,8 @@ def _load_builtin_bundles() -> Dict[str, List[Dict[str, Any]]]:
         "@deepseek-ai/dsh-acp-app": acp_patches,
         "dsh-sdk-minimal": sdk_min_patches,
         "@deepseek-ai/dsh-sdk-minimal": sdk_min_patches,
+        "dsh-creative": creative_patches,
+        "@deepseek-win7/dsh-creative": creative_patches,
     }
     return bundles
 
@@ -155,12 +158,9 @@ BUILTIN_PROFILES: Dict[str, Dict[str, Any]] = {
         "bundles": ["dsh-sdk-minimal"],
         "patches": [],
     },
-    # Creative Mode aligns with the upstream profile shape (bundles only):
-    # the host composition carries no invention layer, and @deepseek-ai/dsh-cordis-manager
-    # is mounted solely from the agent preset layer (dsh/presets/creative.yaml),
-    # matching the upstream separation of host profile vs. agent preset.
+    # Native creative alias adds its tools as a separately owned bundle.
     "creative": {
-        "bundles": ["dsh-base", "dsh-headless"],
+        "bundles": ["dsh-base", "dsh-headless", "dsh-creative"],
         "patches": [],
     },
 

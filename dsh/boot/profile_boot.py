@@ -38,9 +38,9 @@ NAME = "dsh"
 
 # Resolve INSTALL_ANCHOR
 _CANDIDATE_ANCHORS = [
-    os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "reference", "apps", "cli", "package.json")),
     os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "apps", "cli", "package.json")),
     os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "package.json")),
+    os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "reference", "apps", "cli", "package.json")),
 ]
 INSTALL_ANCHOR = _CANDIDATE_ANCHORS[0]
 for _cand in _CANDIDATE_ANCHORS:

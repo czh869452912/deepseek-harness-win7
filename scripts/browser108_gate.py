@@ -85,6 +85,8 @@ def validate_profile_journeys(reports, archive, adapter_sha256, root, check_file
                 [row.get('name') for row in report.get('phases', [])] != ['fresh', 'cold']):
             raise ValueError('ZIP-bound Chromium 108 profile journey differs')
         for phase in report['phases']:
+            from scripts.color_mix_gate import validate_phase
+            validate_phase(phase, legacy=True)
             before, after = phase.get('capabilitiesBefore', {}), phase.get('capabilitiesAfter', {})
             host = phase.get('hostReceipt', {})
             identity = phase.get('browserIdentity', {})

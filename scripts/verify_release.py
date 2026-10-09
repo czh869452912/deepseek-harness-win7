@@ -1389,6 +1389,14 @@ REQUIRED_REGRESSION = {
     'test_browser_compat': {
         'test_host_owns_early_injection_and_unload_removes_it',
         'test_independent_realm_capabilities_and_native_preservation',
+        'test_real_browser_journey_observer_has_valid_module_syntax',
+    },
+    'test_color_mix_gate': {
+        *{'test_captured_original_browser_css_lifetimes[' + browser + ']'
+          for browser in ('native108', 'modern')},
+        *{'test_css_qualification_refuses_incomplete_or_changed_observations[' + damage + '-' + browser + ']'
+          for damage in ('missing', 'paint', 'theme', 'original', 'listener', 'media', 'retained-inline',
+                         'parser', 'native-invasion', 'prior-owner') for browser in ('native108', 'modern')},
     },
     'test_browser108_gate': {
         'test_all_fixed_observer_resources_are_required',

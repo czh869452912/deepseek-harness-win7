@@ -1,0 +1,5 @@
+{
+  "result": "failed",
+  "publishable": false,
+  "failure": "development oracle requires pinned Node 22.22.2"
+}

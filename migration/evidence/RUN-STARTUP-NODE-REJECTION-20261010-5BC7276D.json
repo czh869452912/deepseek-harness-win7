@@ -1,0 +1,18 @@
+{
+  "id": "RUN-STARTUP-NODE-REJECTION-20261010-5BC7276D",
+  "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
+  "product_commit": "5bc7276dcdee9252e38fac3430696dd3a0103e5c",
+  "kind": "research",
+  "result": "failed",
+  "validity": "historical",
+  "exit_code": 1,
+  "commands": [
+    ".venv/Scripts/python.exe scripts/verify_release.py --browser \"C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe\" --browser108 .goose/tools/chromium-1058931/chrome-win/chrome.exe --output-dir .goose/out/release-gate-20261010-handoff-v11"
+  ],
+  "environment": {"python": "3.8.10", "node": "v22.20.0", "os": "Windows-10-10.0.26200-SP0"},
+  "contract_revisions": {},
+  "artifacts": [
+    {"path": "migration/evidence/artifacts/STARTUP-NODE-REJECTION-20261010-5BC7276D.json", "sha256": "2397155b0d5d2dfc4e04238b44b21017dc1851fd70f9a30b5ef59553a56a2fe0"}
+  ],
+  "scope": "Clean candidate refused at initial Node identity check before freeze/build/regression/Source/paired/extracted work. Physical process exit1, no Python pass counts or release qualification. Existing raw research Node identities rechecked; environment record corrected to22.20.0. Actual installed22.22.2 located for explicit per-run environment."
+}

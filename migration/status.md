@@ -1143,6 +1143,7 @@ Evidence:
 - RUN-SQLITE-FORMAT-20261005-SUBAGENT-ACP-TEARDOWN-011: acceptance / passed / stale-inputs
 - RUN-SQLITE-FORMAT-20261005-SUBPROCESS-OWNERSHIP-013: acceptance / passed / stale-inputs
 - RUN-SQLITE-FORMAT-20261005-SUBPROCESS-TREE-014: acceptance / passed / stale-inputs
+- RUN-STARTUP-NODE-REJECTION-20261010-5BC7276D: research / failed / historical
 - RUN-SUBAGENT-MODEL-VALUES-QUALIFICATION-20261007-7EAAD135: verification / passed / current
 - RUN-TOOL-DURABLE-FORMAL-QUALIFICATION-20261007-E3CD5811: verification / passed / current
 - RUN-TOOL-ERROR-SDK-QUALIFICATION-20261007-46645625: verification / passed / current

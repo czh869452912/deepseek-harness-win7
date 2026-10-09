@@ -7,14 +7,17 @@ import weakref
 
 from dsh.typert.remote import TypertRemoteService, Remote
 from dsh.core.notifications import emit_contained
+from dsh.llm.error import HarnessError
 from dsh.goal.fold import (integer, empty_goal_state, apply_goal_event, goal_ref,
                            apply_goal_projection, projection_schema)
 
 
-class GoalError(ValueError):
+class GoalError(HarnessError, ValueError):
     def __init__(self, message, code):
-        super().__init__(message)
-        self.code = code
+        super().__init__(message, code)
+
+    def __str__(self):
+        return self.message
 
 
 def max_rounds(value):

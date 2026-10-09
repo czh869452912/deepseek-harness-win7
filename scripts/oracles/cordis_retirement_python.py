@@ -1,5 +1,4 @@
 """Real native activation/retirement observations for the pinned source probe."""
-from dsh.core.system_prompt import SystemPrompt as SourceToolsPrompt
 import asyncio
 import copy
 import json
@@ -9,6 +8,7 @@ from types import SimpleNamespace as NS
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
+from dsh.core.system_prompt import SystemPrompt as SourceToolsPrompt
 from dsh.cordis.context import Context
 from dsh.core.tools import ToolsPlugin
 from dsh.extensions.host_runner import DynamicCordisRunner

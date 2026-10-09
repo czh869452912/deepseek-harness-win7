@@ -90,7 +90,7 @@ def validate_profile_journeys(reports, archive, adapter_sha256, root, check_file
             identity = phase.get('browserIdentity', {})
             scenarios = ['WEB_REOPEN'] if phase['name'] == 'cold' else (
                 ['WEB_TOOL', 'WEB_CANCEL'] if preset == 'minimal' else
-                ['WEB_TOOL', 'WEB_QUESTION', 'WEB_APPROVAL', 'WEB_CANCEL'] + (['WEB_CORDIS'] if preset == 'cordis' else []))
+                ['WEB_TOOL', 'WEB_QUESTION', 'WEB_APPROVAL', 'WEB_PLAN', 'WEB_CANCEL'] + (['WEB_CORDIS'] if preset == 'cordis' else []))
             final = phase.get('final', {})
             if (phase.get('scenarios') != scenarios or final.get('agentStatus') != 'idle' or
                     any(not any(event.get('type') == 'assistant/message' and
@@ -99,6 +99,8 @@ def validate_profile_journeys(reports, archive, adapter_sha256, root, check_file
                     'WEB_CANCEL' in scenarios and not any(row.get('finallyAborted') is True and
                         row.get('detached') == 1 for row in final.get('cancellation', []))):
                 raise ValueError('Chromium 108 profile scenario observations are incomplete')
+            if preset != 'minimal':
+                validate_plan_journey(phase)
             if (phase.get('passed') is not True or phase.get('hostErrors') or
                     phase.get('browserBinarySha256') != pin['binary_sha256'] or
                     identity.get('product') != pin['protocol_product'] or identity.get('revision') != pin['protocol_revision'] or
@@ -122,6 +124,41 @@ def validate_profile_journeys(reports, archive, adapter_sha256, root, check_file
                 if not check_files:
                     if archive_modules[name] != expected:
                         raise ValueError('Chromium 108 profile imports differ from verified ZIP')
+
+
+def validate_plan_journey(phase):
+    """Require the controlled real plan approval and its cold durable replay."""
+    events = phase.get('final', {}).get('events', [])
+    modes = [event for event in events if event.get('type') == 'plan/mode']
+    calls = [event for event in events if event.get('type') == 'tool/call'
+             and event.get('data', {}).get('name') == 'exit_plan_mode']
+    if (len(modes) != 2 or [event.get('data') for event in modes] != [dict(active=True), dict(active=False)]
+            or any(type(event['data']['active']) is not bool for event in modes) or len(calls) != 1):
+        raise ValueError('Chromium 108 plan mode entry/exit or call is incomplete')
+    call = calls[0]
+    if call.get('data', {}).get('arguments') != json.dumps(dict(
+            plan='# Controlled browser plan\n\nInspect the isolated workspace and report the result.'), separators=(',', ':')):
+        raise ValueError('Chromium 108 plan review arguments differ')
+    call_id = call['data'].get('callId')
+    results = [(event, block) for event in events if event.get('type') == 'tool/result'
+        for block in event.get('data', {}).get('message', {}).get('content', [])
+        if block.get('type') == 'tool-result' and block.get('toolCallId') == call_id]
+    text = 'Plan approved — plan mode exited; carry out the plan starting with your next step.'
+    if (not call_id or len(results) != 1 or results[0][1].get('isError') is not False
+            or results[0][1].get('content') != [dict(type='text', text=text)]
+            or results[0][0].get('sourceEventSeqs') != [call.get('seq')]
+            or not all(type(event.get('seq')) is int for event in (modes[0], call, results[0][0], modes[1]))
+            or not modes[0]['seq'] < call['seq'] < results[0][0]['seq'] < modes[1]['seq']):
+        raise ValueError('Chromium 108 approved plan result or durable ordering differs')
+    positions = [next(index for index, event in enumerate(events) if event is expected)
+                 for expected in (modes[0], call, results[0][0], modes[1])]
+    if not all(left < right for left, right in zip(positions, positions[1:])):
+        raise ValueError('Chromium 108 plan event array order differs')
+    if phase.get('name') == 'fresh':
+        panel = phase.get('planReviewPanel', {})
+        if ('Controlled browser plan' not in panel.get('text', '')
+                or panel.get('approveLabel', '').strip() != 'Approve'):
+            raise ValueError('Chromium 108 original plan review control is absent')
 
 
 def prepare(destination):

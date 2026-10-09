@@ -16,35 +16,72 @@ sys.path.insert(0, ROOT_DIR)
 DIST_DIR = os.path.join(ROOT_DIR, "dist", "dsh-win7-portable")
 VERSION = "0.1.0"
 ZIP_OUTPUT = os.path.join(ROOT_DIR, "dist", f"dsh-win7-portable-v{VERSION}.zip")
-RIPGREP_VERSION = "1.18.0"
+RIPGREP_VERSION = "14.1.0"
+RIPGREP_MANIFEST_SHA256 = '1e06b8d18d8dd34c0fa6cdebaeb5a4894a38b5377fc12e4af74329797e80e04e'
+RIPGREP_FILES = {
+    'rg.exe': ('1dce02aae98c0a48c2644abd1849fb90406296d4e0c95e239f95242ee8480ff8', 5332480),
+    'COPYING': ('dfe7d0a6134a17d3de7409762e08dc02133303912875cab40a74ba07a390f85a', 129),
+    'LICENSE-MIT': ('970813655a1bf777d2ead189cef71ab73ab92ce04dc864027d61a45de03e6728', 1102),
+    'UNLICENSE': ('640514163b17f977adc997cb16f51871122cfb0555ebad1a3f01e167b7ba8857', 1235),
+}
 
 
 def resolve_pinned_ripgrep_source(root_dir=ROOT_DIR):
-    source = os.path.join(
-        root_dir,
-        "reference",
-        "node_modules",
-        ".pnpm",
-        "@vscode+ripgrep-win32-x64@%s" % RIPGREP_VERSION,
-        "node_modules",
-        "@vscode",
-        "ripgrep-win32-x64",
-        "bin",
-        "rg.exe",
-    )
+    source = os.path.join(root_dir, 'dsh', 'fs', 'tool_fs_search', 'bin', 'rg.exe')
     if not os.path.isfile(source):
         raise FileNotFoundError(
-            "pinned @vscode/ripgrep-win32-x64@%s binary is missing: %s"
+            "pinned ripgrep %s binary is missing: %s"
             % (RIPGREP_VERSION, source)
         )
     return source
 
 
+def verify_pinned_ripgrep(root_dir, source=None):
+    """Approve the exact licensed native input, including explicit overrides."""
+    binary = Path(resolve_pinned_ripgrep_source(root_dir))
+    directory = binary.parent
+    manifest = directory / 'ripgrep-input.json'
+    if (not manifest.is_file() or manifest.stat().st_nlink != 1
+            or os.path.normcase(os.path.realpath(str(manifest))) != os.path.normcase(os.path.abspath(str(manifest)))):
+        raise ValueError('Portable ripgrep manifest is missing or aliased')
+    manifest_bytes = manifest.read_bytes()
+    if hashlib.sha256(manifest_bytes).hexdigest() != RIPGREP_MANIFEST_SHA256:
+        raise ValueError('Portable ripgrep manifest bytes differ')
+    metadata = json.loads(manifest_bytes.decode('utf-8'))
+    if (metadata.get('schema') != 1 or metadata.get('name') != 'BurntSushi/ripgrep'
+            or metadata.get('version') != RIPGREP_VERSION
+            or metadata.get('target') != 'x86_64-pc-windows-msvc'
+            or metadata.get('files') != {name: dict(sha256=identity[0], bytes=identity[1])
+                                        for name, identity in RIPGREP_FILES.items()}):
+        raise ValueError('Portable ripgrep input identity differs')
+    for name, (expected, size) in RIPGREP_FILES.items():
+        path = directory / name
+        if (os.path.normcase(os.path.realpath(str(path))) != os.path.normcase(os.path.abspath(str(path)))
+                or not path.is_file() or path.stat().st_nlink != 1):
+            raise ValueError('Portable ripgrep input is missing or aliased: ' + name)
+        data = path.read_bytes()
+        if len(data) != size or hashlib.sha256(data).hexdigest() != expected:
+            raise ValueError('Portable ripgrep input bytes differ: ' + name)
+    selected = Path(source) if source is not None else binary
+    if (not selected.is_file()
+            or os.path.normcase(os.path.realpath(str(selected))) != os.path.normcase(os.path.abspath(str(selected)))
+            or selected.stat().st_nlink != 1):
+        raise ValueError('Portable ripgrep override is missing or aliased')
+    data = selected.read_bytes()
+    expected, size = RIPGREP_FILES['rg.exe']
+    if len(data) != size or hashlib.sha256(data).hexdigest() != expected:
+        raise ValueError('Portable requires the exact pinned ripgrep ' + RIPGREP_VERSION)
+    return str(selected), metadata
+
+
 def bundle_pinned_ripgrep(dist_dir=DIST_DIR, root_dir=ROOT_DIR, source=None):
-    source_path = source or resolve_pinned_ripgrep_source(root_dir)
+    source_path, _ = verify_pinned_ripgrep(root_dir, source)
     target = os.path.join(dist_dir, "dsh", "fs", "tool_fs_search", "bin", "rg.exe")
     os.makedirs(os.path.dirname(target), exist_ok=True)
     shutil.copy2(source_path, target)
+    for name in ('COPYING', 'LICENSE-MIT', 'UNLICENSE', 'ripgrep-input.json'):
+        shutil.copyfile(os.path.join(os.path.dirname(resolve_pinned_ripgrep_source(root_dir)), name),
+                        os.path.join(os.path.dirname(target), name))
     return target
 
 
@@ -176,14 +213,7 @@ def bundle_dependencies(distributions, destination):
 
 def assemble_portable(dist_dir, zip_output, runtime_dir=None, ripgrep_source=None, site_packages=None):
     # Resolve before replacing an existing release so a missing pinned build input fails safely.
-    ripgrep_source = ripgrep_source or resolve_pinned_ripgrep_source(ROOT_DIR)
-    if not os.path.isfile(ripgrep_source):
-        raise FileNotFoundError('pinned ripgrep binary is missing: ' + str(ripgrep_source))
-    metadata_path = os.path.join(os.path.dirname(os.path.dirname(ripgrep_source)), "package.json")
-    with open(metadata_path, "r", encoding="utf-8") as stream:
-        metadata = json.load(stream)
-    if metadata.get("name") != "@vscode/ripgrep-win32-x64" or metadata.get("version") != RIPGREP_VERSION:
-        raise ValueError("portable requires pinned @vscode/ripgrep-win32-x64@" + RIPGREP_VERSION)
+    ripgrep_source, metadata = verify_pinned_ripgrep(ROOT_DIR, ripgrep_source)
     runtime_dir = runtime_dir or sys.base_prefix
     if not os.path.isfile(os.path.join(runtime_dir, "python38.dll")):
         raise FileNotFoundError("Python 3.8 Windows runtime is required before staging")
@@ -207,6 +237,7 @@ def assemble_portable(dist_dir, zip_output, runtime_dir=None, ripgrep_source=Non
                   "python_runtime": runtime,
                   "ripgrep_package": metadata["name"], "ripgrep_version": metadata["version"],
                   "ripgrep_sha256": ripgrep_digest,
+                  "ripgrep_input": metadata,
                   "frontend": frontend,
                   "runtime_dependencies": {d.metadata['Name']: d.version for d in dependencies}}
     try:

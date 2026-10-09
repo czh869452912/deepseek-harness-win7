@@ -81,14 +81,9 @@ def test_portable_stages_pinned_rg_and_zip_path_matches_runtime_resolver(tmp_pat
     (fixture_root / "dsh.py").write_text("", encoding="utf-8")
     (fixture_root / "README.md").write_text("fixture", encoding="utf-8")
 
-    pinned = fixture_root / "reference" / "node_modules" / ".pnpm"
-    pinned = pinned / "@vscode+ripgrep-win32-x64@1.18.0" / "node_modules" / "@vscode"
-    pinned = pinned / "ripgrep-win32-x64" / "bin" / "rg.exe"
-    pinned.parent.mkdir(parents=True)
-    expected_binary = b"fixture-pinned-ripgrep-binary"  # staging test, independent of local node_modules
-    pinned.write_bytes(expected_binary)
-    (pinned.parent.parent / "package.json").write_text(
-        '{"name":"@vscode/ripgrep-win32-x64","version":"1.18.0"}', encoding="utf-8")
+    pinned = fixture_root / 'dsh/fs/tool_fs_search/bin/rg.exe'
+    shutil.copytree(ROOT / 'dsh/fs/tool_fs_search/bin', pinned.parent)
+    expected_binary = (ROOT / 'dsh/fs/tool_fs_search/bin/rg.exe').read_bytes()
 
     build.ROOT_DIR = str(fixture_root)
     build.DIST_DIR = str(dist)
@@ -136,6 +131,8 @@ def test_portable_stages_pinned_rg_and_zip_path_matches_runtime_resolver(tmp_pat
 
     with zipfile.ZipFile(build.ZIP_OUTPUT) as packaged:
         assert "dsh-win7-portable/dsh/fs/tool_fs_search/bin/rg.exe" in packaged.namelist()
+        for name in ('rg.exe', 'ripgrep-input.json', 'COPYING', 'LICENSE-MIT', 'UNLICENSE'):
+            assert packaged.read('dsh-win7-portable/dsh/fs/tool_fs_search/bin/' + name) == (pinned.parent / name).read_bytes()
         for manifest in (ROOT / 'reference/vendor').glob('*/package.json'):
             for source in (manifest, manifest.with_name('LICENSE')):
                 member = 'dsh-win7-portable/' + source.relative_to(ROOT / 'reference').as_posix()
@@ -153,5 +150,5 @@ def test_portable_stages_pinned_rg_and_zip_path_matches_runtime_resolver(tmp_pat
 
 def test_missing_pinned_rg_source_fails_loud(tmp_path):
     build = _load_build_module()
-    with pytest.raises(FileNotFoundError, match="pinned @vscode/ripgrep-win32-x64@1.18.0"):
+    with pytest.raises(FileNotFoundError, match="pinned ripgrep 14.1.0"):
         build.resolve_pinned_ripgrep_source(str(tmp_path))

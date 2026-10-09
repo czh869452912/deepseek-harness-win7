@@ -206,11 +206,24 @@ async function phase(name){
         &&JSON.stringify(event.data).includes(scenario+'_FINAL'))&&value;
     },'actual model/tool next request '+scenario,60000);
     const scenarios=name==='cold'?['WEB_REOPEN']:options.preset==='minimal'?['WEB_TOOL','WEB_CANCEL']:
-      ['WEB_TOOL','WEB_QUESTION','WEB_APPROVAL','WEB_CANCEL',...(options.preset==='cordis'?['WEB_CORDIS']:[])];
+      ['WEB_TOOL','WEB_QUESTION','WEB_APPROVAL','WEB_PLAN','WEB_CANCEL',...(options.preset==='cordis'?['WEB_CORDIS']:[])];
     state.scenarios=scenarios;
     for(const scenario of scenarios){
+      if(scenario==='WEB_PLAN'){
+        await submit('/plan');
+        await until(async()=>{const value=await snapshot();return value.events.some(event=>event.type==='plan/mode'&&event.data.active===true);},'logged plan-mode entry');
+      }
       await submit(scenario);
-      if(scenario==='WEB_QUESTION'){
+      if(scenario==='WEB_PLAN'){
+        state.planReviewPanel=await until(()=>cdp.evaluate(`(()=>{
+          const panel=document.querySelector('[data-plan-review-key]');
+          if(!panel)return false;
+          const button=panel.querySelector('button:last-child');
+          if(!button||button.disabled)return false;
+          return {text:panel.textContent,approveLabel:button.textContent};
+        })()`),'original plan review panel');
+        await click(cdp,'[data-plan-review-key] button:last-child');
+      }else if(scenario==='WEB_QUESTION'){
         await click(cdp,'[data-question-key] button[role="radio"][aria-label="Proceed"]');
         await click(cdp,'[data-question-key] footer > div:last-child button:last-child');
       }else if(scenario==='WEB_APPROVAL'){
@@ -270,6 +283,7 @@ async function phase(name){
 try{
   if(options.side==='native')report.compatibilitySha256=createHash('sha256').update(await readFile(join(resolve(options.root),'dsh/host/browser_compat/compat.js'))).digest('hex');
   if(options.archive)report.archiveSha256=createHash('sha256').update(await readFile(resolve(options.archive))).digest('hex');
+  await assert.rejects(lstat(resolve(options['approval-artifact'])),error=>error.code==='ENOENT');
   await phase('fresh');
   await phase('cold');
   report.status='qualified';

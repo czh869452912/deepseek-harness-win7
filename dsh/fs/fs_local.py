@@ -11,6 +11,7 @@ import uuid
 from typing import Any, AsyncIterator, Dict, List, Optional, Tuple, Union
 
 from dsh.cordis.plugin import Plugin
+from dsh.llm.error import HarnessError
 
 
 PACKAGE_NAME = "@deepseek-ai/dsh-fs-local"
@@ -21,12 +22,12 @@ BINARY_SAMPLE_BYTES = 8192
 READ_CHUNK_BYTES = 64 * 1024
 
 
-class FsError(Exception):
+class FsError(HarnessError):
     def __init__(self, message: str, code: str, cause: Optional[BaseException] = None):
-        super().__init__(message)
-        self.message = message
-        self.code = code
-        self.cause = cause
+        super().__init__(message, code, cause=cause)
+
+    def __str__(self) -> str:
+        return self.message
 
 
 class Win32FsError(OSError):

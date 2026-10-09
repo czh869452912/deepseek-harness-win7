@@ -1,0 +1,26 @@
+{
+  "id": "RUN-HANDOFF-FULL-REJECTION-20261009-4A878F46",
+  "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
+  "product_commit": "4a878f463621c19f35387c81cc61f5d15429a610",
+  "kind": "research",
+  "result": "failed",
+  "validity": "historical",
+  "exit_code": 1,
+  "commands": [
+    ".venv/Scripts/python.exe scripts/verify_release.py --browser \"C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe\" --browser108 .goose/tools/chromium-1058931/chrome-win/chrome.exe --output-dir .goose/out/release-gate-20261009-handoff-v7"
+  ],
+  "environment": {
+    "python": "3.8.10",
+    "os": "Windows-10-10.0.26200-SP0",
+    "cwd": "C:\\Users\\czh86\\Documents\\Codex\\deepseek-harness-win7",
+    "node": "v22.22.2"
+  },
+  "contract_revisions": {},
+  "artifacts": [
+    {
+      "path": "migration/evidence/artifacts/CURRENT-RELEASE-REJECTION-20261009-4A878F46.zip",
+      "sha256": "2ea19f4fa380498f2cc2a956b948b8ef64121f3a2f087dbdd8ed0045b490ad5f"
+    }
+  ],
+  "scope": "Clean4a complete Python10341 passed/6 existing skips/3951.58s and22 original Source configurations passed. Paired phase rejected by native Cordis runner observer importing dsh before its explicit sys.path root; retirement has the same standalone startup defect. Frozen16573 inputs and exact ZIP remain unchanged after physical exit1. Later paired/extracted/browser phases were not completed; no release or task promotion.989 actual per-case owner/hash audits removed5442 reconstructible files/13787627133 bytes; original rejection and unknown files remain."
+}

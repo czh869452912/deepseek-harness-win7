@@ -129,6 +129,18 @@ OFFICIAL_CONFIGS = ('consumers', 'agent-lifecycle', 'session-recovery', 'session
 OFFICIAL_CONFIGS += ('web-search-deepseek-source',)
 OFFICIAL_CONFIGS += ('plan-source',)
 REQUIRED_REGRESSION = {
+    'test_ripgrep_compatibility': {
+        'test_native_input_keeps_official_identity_and_licenses',
+        'test_fresh_search_process_runs_without_host_ripgrep_or_node',
+        *{'test_invalid_native_input_cannot_replace_previous_distribution[' + damage + ']'
+          for damage in ('binary', 'license', 'missing-license', 'manifest', 'override', 'hardlink')},
+        *{'test_real_search_values_match_pinned_source_native_input[' + str(case) + ']'
+          for case in range(9)},
+        *{'test_isolated_native_runtime_rejects_incomplete_receipt[' + damage + ']'
+          for damage in ('missing', 'root', 'python', 'executable', 'binary', 'binary-sha', 'path',
+            'override', 'node', 'version', 'version-exit', 'version-stderr', 'module', 'module-bytes',
+            'glob', 'grep', 'meta', 'order', 'flag-type', 'public-extra')},
+    },
     'test_plan_mode_contract': {
         *{'test_pending_selection_commits_only_at_accepted_live_step[' + kind + ']'
           for kind in ('reject', 'abort', 'accepted')},
@@ -750,6 +762,8 @@ REQUIRED_REGRESSION = {
             'missing-module', 'changed-module', 'empty-closure', 'foreign-root', 'foreign-python', 'missing-row', 'duplicate-row', 'changed-row')},
     },
     'test_current_release_gate': {
+        *{'test_extracted_native_search_requires_real_receipt[' + damage + ']'
+          for damage in ('missing', 'binary-sha', 'module', 'grep', 'flag-type', 'version-exit')},
         *{'test_complete_frontend_and_settings_lanes_are_mandatory[' + damage + '-' + module + ']'
           for damage in ('omit', 'skip', 'duplicate', 'failure')
           for module in ('test_frontend_import', 'test_release_preflight', 'test_settings_remote', 'test_schema_parity',
@@ -1381,10 +1395,23 @@ REQUIRED_REGRESSION = {
         'test_profile_imports_remain_bound_to_zip_after_owned_extraction_cleanup',
         *{'test_profile_journeys_require_all_lanes_and_owned_runtime[' + damage + ']'
           for damage in ('lane', 'phase', 'scenario', 'result', 'cancel', 'root', 'python',
-                         'interpreter', 'exit', 'module', 'bytes', 'version', 'late', 'zip', 'console')},
+                         'interpreter', 'exit', 'module', 'bytes', 'version', 'late', 'zip', 'console',
+                         'plan-panel', 'plan-result', 'plan-link', 'plan-order', 'plan-cold',
+                         'plan-event-order', 'plan-mode-type')},
         *{'test_zip_bound_observer_rejects_damage_after_valid_baseline[' + damage + ']'
           for damage in ('absent', 'version', 'revision', 'binary', 'ua', 'adapter', 'zip',
                          'exception', 'console', 'late', 'already-patched', 'timeout', 'host', 'missing-step')},
+    },
+    'test_cordis_observer_startup': {
+        'test_isolated_observer_executes_complete_source_journeys[runner]',
+        'test_isolated_observer_executes_complete_source_journeys[retirement]',
+    },
+    'test_tools_thrown_values': {
+        'test_tool_body_cancel_preserves_original_reason',
+        *{'test_actual_tool_body_public_error[value-' + str(index) + ']' for index in range(16)},
+        *{'test_actual_tool_body_public_error[' + name + ']' for name in (
+            'cycle-array', 'bad-string', 'getter-throws', 'error-number-message', 'typed-error',
+            'foreign-coded-error', 'getter-attribute-error', 'fs', 'goal', 'subagent', 'llm', 'attachment')},
     },
     'test_pwsh_output_encoding': {
         'test_truncated_fatal_stderr_remembers_encoding_and_preserves_complete_raw_log[]',
@@ -1558,6 +1585,12 @@ def validate_extracted(path, archive, candidate):
             or len(report.get('acpPermissions', {}).get('observations', [])) != 6
             or report.get('frontendFilesChecked', 0) <= 0):
         raise RuntimeError('Extracted runtime/browser/ACP acceptance is incomplete')
+    from scripts.ripgrep_runtime_gate import validate_runtime as validate_native_search
+    try:
+        validate_native_search(report.get('nativeSearch'), Path(report['mcpStdio']['root']),
+            Path(report['mcpStdio']['root']) / 'python.exe', candidate['native_search_modules'], check_files=False)
+    except (ValueError, KeyError, TypeError) as error:
+        raise RuntimeError('Extracted native search acceptance is incomplete') from error
     if candidate.get('browserCompatibility'):
         from scripts.browser108_gate import validate_observation, validate_profile_journeys
         identity = candidate['browserCompatibility']
@@ -2048,11 +2081,12 @@ def verify(args, output):
         cleanup['expired_manifests'] = expire_finished_manifests(output_root, focus_folder)
     (output / 'process-artifacts-pruned.json').write_text(json.dumps(cleanup, indent=2) + '\n', encoding='utf-8')
     before = source_snapshot()
+    from scripts.ripgrep_runtime_gate import REQUIRED_MODULES as SEARCH_MODULES
+    candidate['native_search_modules'] = {name: before[name] for name in SEARCH_MODULES}
     inputs = output / 'inputs.json'
     inputs.write_text(json.dumps(before, indent=2) + '\n', encoding='utf-8')
     run([python, 'scripts/migration.py', 'check'], 'migration-records', output, env=environment)
-    run([python, 'scripts/build_portable.py', '--ripgrep-source',
-         'scripts/oracles/official/node_modules/@vscode/ripgrep-win32-x64/bin/rg.exe'],
+    run([python, 'scripts/build_portable.py'],
         'portable-build', output, env=environment)
     regression = output / 'pytest.xml'
     run_python_regression(python, output, environment, timeout=getattr(args, 'regression_timeout', None))

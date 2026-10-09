@@ -698,6 +698,7 @@ def main(argv=None):
         scope='Actual extracted Portable on current Windows; Win7 and its browser are not certified; no remote model request.',
         inputSha256={name: digest(ROOT / 'scripts' / name) for name in (
             'verify_portable.py', 'import_frontend.py', 'portable_runtime_probe.py', 'portable_acp_probe.py', 'acp_permission_journey.py',
+            'ripgrep_runtime_gate.py', 'oracles/ripgrep_portable_python.py',
             'portable_browser_oracle.mjs', 'browser_onboarding.mjs', 'mcp_stdio_oracle.py',
             'oracles/mcp_stdio_python.py', 'oracles/mcp_stdio_peer.py', 'mcp_http_oracle.py',
             'oracles/mcp_http_python.py', 'oracles/mcp_http_peer.py', 'oracles/mcp_http_expected.json',
@@ -994,6 +995,21 @@ def main(argv=None):
             report['frontendClientFilesChecked'] = len(provenance['frontend']['client_files'])
             report['frontendBuildDigest'] = provenance['frontend']['build_record']['artifacts']['sha256']
             env = product_environment(portable, workspace)
+            from scripts.ripgrep_runtime_gate import validate_runtime as validate_native_search, REQUIRED_MODULES as SEARCH_MODULES
+            search_environment = dict(env)
+            search_environment['PATH'] = ''
+            search_environment.pop('DSH_RG_PATH', None)
+            search_output = output.with_suffix('.native-search.json')
+            search = subprocess.run([str(portable / 'python.exe'), '-I', '-B',
+                str(ROOT / 'scripts/oracles/ripgrep_portable_python.py'), '--root', str(portable),
+                '--workspace', str(workspace / 'native-search-workspace'), '--output', str(search_output)],
+                cwd=str(workspace), env=search_environment, capture_output=True, timeout=60)
+            output.with_suffix('.native-search.log').write_bytes(search.stdout + search.stderr)
+            if search.returncode or search.stderr or not search_output.is_file():
+                raise RuntimeError('Extracted native search process failed; original diagnostics retained')
+            report['nativeSearch'] = json.loads(search_output.read_text(encoding='utf-8'))
+            validate_native_search(report['nativeSearch'], portable, portable / 'python.exe',
+                {name: digest(ROOT / name) for name in SEARCH_MODULES})
             result = subprocess.run([str(portable / 'python.exe'), '-I', '-u',
                 str(ROOT / 'scripts/portable_runtime_probe.py'), '--workspace', str(workspace)],
                 cwd=str(workspace), env=env, capture_output=True, encoding='utf-8', errors='replace', timeout=240)

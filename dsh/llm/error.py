@@ -103,6 +103,15 @@ def _string(value: Any, arrays: Optional[Set[int]] = None) -> str:
     raise TypeError("Cannot convert object to primitive value")
 
 
+def stringify_value(value: Any) -> str:
+    """Convert a diagnostic value using JavaScript String semantics.
+
+    Conversion failures remain visible to the caller so each public error
+    boundary can apply its own Source-defined fallback.
+    """
+    return _string(value)
+
+
 def error_chain(value: Any) -> str:
     """Render explicit causes and aggregate members without escaping failures.
 

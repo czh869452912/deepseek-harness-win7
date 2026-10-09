@@ -12,7 +12,8 @@ SOURCE_COMMIT = 'cd5ef8148158c3a752a658978873241fdf8e2bbc'
 NAMES = ('text.txt', 'empty.txt', '中文.txt', 'fixed-time.txt', 'directory', 'metadata-change.txt', 'missing.txt')
 SOURCE_AREAS = ('packages/fs/fs-local', 'packages/fs/fs', 'vendor/cordis', 'packages/typert', 'vendor/schemastery')
 OBSERVER_INPUTS = ('scripts/win32_stat_oracle.py', 'scripts/oracles/win32_stat_source.mts', 'scripts/oracles/win32_stat_python.py') + ('scripts/import_paths.py',)
-REQUIRED_MODULES = frozenset(('dsh/__init__.py', 'dsh/fs/fs_local.py', 'dsh/fs/win32_stat.py') + tuple(
+REQUIRED_MODULES = frozenset(('dsh/__init__.py', 'dsh/fs/fs_local.py', 'dsh/fs/win32_stat.py',
+    'dsh/llm/error.py') + tuple(
     'dsh/cordis/' + name + '.py' for name in ('__init__', 'awaiting', 'context', 'environment', 'errors', 'events',
         'fiber', 'hmr', 'include', 'loader', 'logger', 'plugin', 'profile', 'reflect', 'registry', 'schema',
         'service', 'timer', 'utils')))

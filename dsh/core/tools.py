@@ -7,8 +7,9 @@ import math
 from typing import Any, Callable, Dict, List, Optional, Union
 
 from dsh.cordis.plugin import Plugin
+from dsh.cordis.errors import ThrownValueError
 from dsh.cordis.utils import Tracker
-from dsh.llm.error import HarnessError
+from dsh.llm.error import HarnessError, stringify_value
 from dsh.core.json_schema import (
     JsonSchemaError, assert_supported_json_schema, assert_object_json_schema,
     validate_json_schema_value, assertSupportedJsonSchema,
@@ -511,19 +512,39 @@ class ToolExecutionResult:
                    error=error_info, value=None if is_error else raw)
 
 
-def _error_message(error: BaseException) -> str:
-    message = getattr(error, "message", None)
-    return message if isinstance(message, str) else str(error)
+def _error_message(error: Any) -> Any:
+    try:
+        if isinstance(error, ThrownValueError):
+            error = error.value
+        if isinstance(error, BaseException):
+            missing = object()
+            if inspect.getattr_static(error, 'message', missing) is missing:
+                message = getattr(error, 'message', missing)
+                return str(error) if message is missing else message
+            # Source preserves Error.message even when it is not a string.
+            return getattr(error, 'message')
+        if isinstance(error, dict):
+            message = error.get('message')
+        elif inspect.getattr_static(error, 'message', _MISSING_META) is _MISSING_META:
+            message = getattr(error, 'message', None)
+        else:
+            message = getattr(error, 'message')
+        return message if isinstance(message, str) else stringify_value(error)
+    except Exception:
+        return '<unprintable thrown value>'
 
 
 def _error_result(error: BaseException) -> ToolExecutionResult:
+    if isinstance(error, ThrownValueError):
+        error = error.value
     message = _error_message(error)
     failure: Dict[str, Any] = {"message": message}
-    code = getattr(error, "code", None)
-    if isinstance(code, str):
-        info = {"name": getattr(error, "name", error.__class__.__name__), "code": code}
-        failure['info'] = info
-    return ToolExecutionResult([{"type": "text", "text": "Error: %s" % message}],
+    try:
+        if isinstance(error, HarnessError):
+            failure['info'] = {"name": error.name, "code": error.code}
+    except Exception:
+        pass
+    return ToolExecutionResult([{"type": "text", "text": "Error: " + stringify_value(message)}],
                                is_error=True, error=failure)
 
 

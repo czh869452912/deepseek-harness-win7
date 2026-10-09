@@ -1,4 +1,5 @@
 import copy
+import json
 import shutil
 import zipfile
 
@@ -94,7 +95,7 @@ def profile_baseline(tmp_path):
         phases = []
         for phase in ('fresh', 'cold'):
             scenarios = ['WEB_REOPEN'] if phase == 'cold' else ['WEB_TOOL', 'WEB_CANCEL'] if preset == 'minimal' else [
-                'WEB_TOOL', 'WEB_QUESTION', 'WEB_APPROVAL', 'WEB_CANCEL'] + (['WEB_CORDIS'] if preset == 'cordis' else [])
+                'WEB_TOOL', 'WEB_QUESTION', 'WEB_APPROVAL', 'WEB_PLAN', 'WEB_CANCEL'] + (['WEB_CORDIS'] if preset == 'cordis' else [])
             phases.append(dict(name=phase, passed=True, hostErrors='', scenarios=scenarios,
                 browserBinarySha256=pin['binary_sha256'], browserIdentity=dict(product=pin['protocol_product'],
                     revision=pin['protocol_revision'], userAgent='HeadlessChrome/108.0.5359.0'),
@@ -105,6 +106,17 @@ def profile_baseline(tmp_path):
                 hostReceipt=dict(root=str(root), executable=str(root / 'python.exe'), python='3.8.10 control',
                     phase=phase, preset=preset, exitCode=0, requests=[dict(control='identity')],
                     durableBefore={'state': 'before'}, durableAfter={'state': 'after'}, modules=modules)))
+            if preset != 'minimal':
+                phases[-1]['planReviewPanel'] = dict(text='Controlled browser plan', approveLabel='Approve')
+                phases[-1]['final']['events'] += [
+                    dict(type='plan/mode', seq=10, data=dict(active=True)),
+                    dict(type='tool/call', seq=11, data=dict(name='exit_plan_mode', callId='plan-call',
+                        arguments=json.dumps(dict(plan='# Controlled browser plan\n\nInspect the isolated workspace and report the result.'), separators=(',', ':')))),
+                    dict(type='tool/result', seq=12, sourceEventSeqs=[11], data=dict(message=dict(content=[
+                        dict(type='tool-result', toolCallId='plan-call', isError=False,
+                            content=[dict(type='text', text='Plan approved — plan mode exited; carry out the plan starting with your next step.')])]))),
+                    dict(type='plan/mode', seq=13, data=dict(active=False)),
+                ]
         reports[preset] = dict(status='qualified', side='native', preset=preset, phases=phases,
             errors=[], consoleErrors=[], archiveSha256=gate.digest(archive), compatibilitySha256='adapter')
     gate.validate_profile_journeys(reports, archive, 'adapter', root)
@@ -112,7 +124,9 @@ def profile_baseline(tmp_path):
 
 
 @pytest.mark.parametrize('damage', ['lane', 'phase', 'scenario', 'result', 'cancel', 'root', 'python',
-                                  'interpreter', 'exit', 'module', 'bytes', 'version', 'late', 'zip', 'console'])
+                                  'interpreter', 'exit', 'module', 'bytes', 'version', 'late', 'zip', 'console',
+                                  'plan-panel', 'plan-result', 'plan-link', 'plan-order', 'plan-cold',
+                                  'plan-event-order', 'plan-mode-type'])
 def test_profile_journeys_require_all_lanes_and_owned_runtime(tmp_path, damage):
     reports, archive, root = profile_baseline(tmp_path)
     reports = copy.deepcopy(reports)
@@ -146,6 +160,21 @@ def test_profile_journeys_require_all_lanes_and_owned_runtime(tmp_path, damage):
         phase['capabilitiesAfter']['any'] = 'undefined'
     elif damage == 'zip':
         archive.write_bytes(b'changed')
+    elif damage == 'plan-panel':
+        phase.pop('planReviewPanel')
+    elif damage == 'plan-result':
+        phase['final']['events'][-2]['data']['message']['content'][0]['isError'] = True
+    elif damage == 'plan-link':
+        phase['final']['events'][-2]['sourceEventSeqs'] = [0]
+    elif damage == 'plan-order':
+        phase['final']['events'][-1]['seq'] = 11
+    elif damage == 'plan-cold':
+        reports['standard']['phases'][1]['final']['events'].pop()
+    elif damage == 'plan-event-order':
+        events = phase['final']['events']
+        events[-3], events[-2] = events[-2], events[-3]
+    elif damage == 'plan-mode-type':
+        phase['final']['events'][-1]['data']['active'] = 0
     else:
         reports['standard']['consoleErrors'].append('first exception')
     with pytest.raises(ValueError):

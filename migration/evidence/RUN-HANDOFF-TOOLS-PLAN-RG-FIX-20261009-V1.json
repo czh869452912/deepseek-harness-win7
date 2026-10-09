@@ -1,0 +1,29 @@
+{
+  "id": "RUN-HANDOFF-TOOLS-PLAN-RG-FIX-20261009-V1",
+  "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
+  "product_commit": "4a878f463621c19f35387c81cc61f5d15429a610",
+  "kind": "research",
+  "result": "passed",
+  "validity": "historical",
+  "exit_code": 0,
+  "commands": [
+    ".venv/Scripts/python.exe -m pytest tests/test_win32_stat_consumers.py tests/test_current_release_gate.py::test_extracted_fs_values_accepts_complete_qualified_values -x -q --basetemp .goose/out/continuation-20261008-v1/tools-stat-closure-final-v3 --junitxml .goose/out/continuation-20261008-v1/tools-stat-closure-final-v3.xml",
+    ".venv/Scripts/python.exe -m pytest tests/test_ripgrep_compatibility.py tests/test_fs_search_packaging_parity.py tests/test_release_preflight.py tests/test_fs_search.py tests/test_tool_fs_search_upstream_parity.py -x -q --basetemp .goose/out/continuation-20261008-v1/ripgrep14-product-targeted-v4 --junitxml .goose/out/continuation-20261008-v1/ripgrep14-product-targeted-v4.xml",
+    ".venv/Scripts/python.exe -m pytest tests/test_ripgrep_compatibility.py tests/test_current_release_gate.py::test_required_regression_names_resolve_real_test_definitions tests/test_current_release_gate.py::test_extracted_native_search_requires_real_receipt tests/test_current_release_gate.py::test_extracted_fs_values_accepts_complete_qualified_values -x -q --basetemp .goose/out/continuation-20261008-v1/native-search-gate-final-v6 --junitxml .goose/out/continuation-20261008-v1/native-search-gate-final-v6.xml",
+    ".venv/Scripts/python.exe -I -B scripts/oracles/ripgrep_portable_python.py --root . --workspace .goose/out/continuation-20261008-v1/ripgrep-runtime-root-v3 --output .goose/out/continuation-20261008-v1/ripgrep-runtime-root-v3.json (PATH empty; DSH_RG_PATH absent)"
+  ],
+  "environment": {
+    "python": "3.8.10",
+    "node": "v22.22.2",
+    "os": "Windows-10-10.0.26200-SP0",
+    "cwd": "C:\\Users\\czh86\\Documents\\Codex\\deepseek-harness-win7"
+  },
+  "contract_revisions": {},
+  "artifacts": [
+    {
+      "path": "migration/evidence/artifacts/HANDOFF-TOOLS-PLAN-RG-FIX-20261009-V1.zip",
+      "sha256": "94ed0f43cc3baad3b18583fc439111d7e6bd0a8951f1743e4aefb901feb034ae"
+    }
+  ],
+  "scope": "Finite working-tree repair evidence on base4a: two standalone observer startup regressions; 28 actual Source/Root thrown-value cases and7 controlled standard AgentLoop policy compositions; three original standard-browser Source/Root-modern/Root108 fresh/cold plan journeys; licensed official rg14 native input, same-runtime native-input comparisons, Source rg15 order counterproof, and actual Root isolated search with114 approved imports plus complete/extracted refusal controls. No owned Portable, new frozen release, complete wire, parent-task or Win7 acceptance is claimed. The rg targeted-v4 test file changed later to constrain grep to one file after20 Source-only runs observed two raw orders; final-v6 qualifies that final scope. Historical203 passes plus1 win32 closure rejection are followed by37 successful stat/complete-receipt controls; counts overlap and are not added."
+}

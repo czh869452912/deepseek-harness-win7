@@ -8,9 +8,10 @@ from typing import Any, Dict, List, Optional
 
 from dsh.cordis.environment import LaunchEnvironmentSnapshot
 from dsh.typert.remote import Remote, bind_typert_remote, TypertRemoteFailure
+from dsh.llm.error import HarnessError
 
 
-class LlmError(RuntimeError):
+class LlmError(HarnessError, RuntimeError):
     def __init__(self, message, code, status=None, providerRetryAfterMs=None, requestId=None):
         if not isinstance(message, str) or not message:
             raise ValueError("LlmError message must be a non-empty string")
@@ -25,7 +26,7 @@ class LlmError(RuntimeError):
         if requestId is not None:
             if not isinstance(requestId, str) or not requestId:
                 raise ValueError("LlmError requestId must be a non-empty string")
-        super(LlmError, self).__init__(f"[{code}] {message}")
+        super(LlmError, self).__init__(message, code)
         self.code = code
         self.message = message
         self.name = self.__class__.__name__

@@ -22,10 +22,10 @@ export function apply(ctx:Context){
         text='Controlled browser journey'
       }else{
         const user=options.messages.findLast((message:any)=>message.role==='user'&&message.content.some((block:any)=>
-          block.type==='text'&&['WEB_TOOL','WEB_QUESTION','WEB_APPROVAL','WEB_CANCEL','WEB_CORDIS','WEB_REOPEN'].includes(block.text.trim())))
+          block.type==='text'&&['WEB_PLAN','WEB_TOOL','WEB_QUESTION','WEB_APPROVAL','WEB_CANCEL','WEB_CORDIS','WEB_REOPEN'].includes(block.text.trim())))
         if(!user)throw new Error('Controlled browser turn has no actual user scenario')
         const prompt=user.content.filter((block:any)=>block.type==='text').map((block:any)=>block.text).join('')
-        const scenario=['WEB_TOOL','WEB_QUESTION','WEB_APPROVAL','WEB_CANCEL','WEB_CORDIS','WEB_REOPEN'].find(name=>prompt.includes(name))
+        const scenario=['WEB_PLAN','WEB_TOOL','WEB_QUESTION','WEB_APPROVAL','WEB_CANCEL','WEB_CORDIS','WEB_REOPEN'].find(name=>prompt.includes(name))
         if(!scenario)throw new Error('Unexpected controlled browser prompt')
         const call=(this.calls.get(user.id)??0)+1
         this.calls.set(user.id,call)
@@ -52,7 +52,9 @@ export function apply(ctx:Context){
         }
         if(call===1||scenario==='WEB_APPROVAL'&&call===2){
           let tool:string,argumentsValue:any
-          if(scenario==='WEB_QUESTION'){
+          if(scenario==='WEB_PLAN'){
+            tool='exit_plan_mode';argumentsValue={plan:'# Controlled browser plan\n\nInspect the isolated workspace and report the result.'}
+          }else if(scenario==='WEB_QUESTION'){
             tool='ask_user_question'
             argumentsValue={questions:[{id:'browser-choice',question:'Choose a local test result.',options:[
               {label:'Proceed',description:'Continue the controlled journey.'},{label:'Reject',description:'Return a rejection.'}]}]}

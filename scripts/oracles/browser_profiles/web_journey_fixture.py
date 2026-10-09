@@ -36,10 +36,10 @@ class FixturePlugin(Plugin):
                     text = 'Controlled browser journey'
                 else:
                     user = next(message for message in reversed(options['messages']) if message['role'] == 'user'
-                        and any(block['type'] == 'text' and block['text'].strip() in ('WEB_TOOL', 'WEB_QUESTION',
+                        and any(block['type'] == 'text' and block['text'].strip() in ('WEB_PLAN', 'WEB_TOOL', 'WEB_QUESTION',
                             'WEB_APPROVAL', 'WEB_CANCEL', 'WEB_CORDIS', 'WEB_REOPEN') for block in message['content']))
                     prompt = ''.join(block['text'] for block in user['content'] if block['type'] == 'text')
-                    scenario = next(name for name in ('WEB_TOOL', 'WEB_QUESTION', 'WEB_APPROVAL',
+                    scenario = next(name for name in ('WEB_PLAN', 'WEB_TOOL', 'WEB_QUESTION', 'WEB_APPROVAL',
                         'WEB_CANCEL', 'WEB_CORDIS', 'WEB_REOPEN') if name in prompt)
                     call = self.calls.get(user['id'], 0) + 1
                     self.calls[user['id']] = call
@@ -68,7 +68,9 @@ class FixturePlugin(Plugin):
                             trace['detached'] = 1
                         return
                     if call == 1 or scenario == 'WEB_APPROVAL' and call == 2:
-                        if scenario == 'WEB_QUESTION':
+                        if scenario == 'WEB_PLAN':
+                            tool, arguments = 'exit_plan_mode', dict(plan='# Controlled browser plan\n\nInspect the isolated workspace and report the result.')
+                        elif scenario == 'WEB_QUESTION':
                             tool = 'ask_user_question'
                             arguments = dict(questions=[dict(id='browser-choice', question='Choose a local test result.',
                                 options=[dict(label='Proceed', description='Continue the controlled journey.'),

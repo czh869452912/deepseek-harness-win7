@@ -5,6 +5,7 @@ import hashlib
 import importlib.util
 import json
 import functools
+import os
 import subprocess
 import shutil
 import sys
@@ -1949,11 +1950,44 @@ def test_extracted_complete_frontend_requires_frozen_build_record(tmp_path, dama
         GATE.validate_extracted(path, archive, candidate)
 
 
+@functools.lru_cache(maxsize=1)
+def native_search_runtime_fixture():
+    with tempfile.TemporaryDirectory(prefix='native-search-receipt-') as folder:
+        output = Path(folder) / 'runtime.json'
+        environment = dict(os.environ)
+        environment['PATH'] = ''
+        environment.pop('DSH_RG_PATH', None)
+        completed = subprocess.run([sys.executable, '-I', '-B',
+            str(ROOT / 'scripts/oracles/ripgrep_portable_python.py'), '--root', str(ROOT),
+            '--workspace', str(Path(folder) / 'workspace'), '--output', str(output)],
+            env=environment, capture_output=True, timeout=60)
+        if completed.returncode:
+            raise RuntimeError(completed.stderr.decode('utf-8'))
+        return json.loads(output.read_text(encoding='utf-8'))
+
+
+@pytest.mark.parametrize('damage', ['missing', 'binary-sha', 'module', 'grep', 'flag-type', 'version-exit'])
+def test_extracted_native_search_requires_real_receipt(tmp_path, damage):
+    from tests.test_ripgrep_compatibility import damage_runtime
+    archive, candidate, report = extracted_receipt(tmp_path)
+    path = tmp_path / 'extracted.json'
+    path.write_text(json.dumps(report), encoding='utf-8')
+    GATE.validate_extracted(path, archive, candidate)
+    report['nativeSearch'] = damage_runtime(copy.deepcopy(report['nativeSearch']), damage)
+    path.write_text(json.dumps(report), encoding='utf-8')
+    with pytest.raises(RuntimeError, match='native search'):
+        GATE.validate_extracted(path, archive, candidate)
+
+
 def extracted_receipt(tmp_path):
     archive = tmp_path / 'portable.zip'
     archive.write_bytes(b'exact candidate archive')
     candidate = {'product_commit': 'a' * 40, 'worktree_dirty': False,
                  'frontend': json.loads((ROOT / 'scripts/frontend-inputs.json').read_text(encoding='utf-8'))}
+    native_search = copy.deepcopy(native_search_runtime_fixture())
+    candidate['native_search_modules'] = native_search['modules'].copy()
+    native_search.update(root=str(tmp_path), executable=str(tmp_path / 'python.exe'),
+        binary=str(tmp_path / 'dsh/fs/tool_fs_search/bin/rg.exe'), workspace=str(tmp_path / 'native-search-workspace'))
     scheduler = copy.deepcopy(scheduler_runtime_fixture())
     scheduler['root'] = str(tmp_path)
     candidate['tool_scheduler_observations_sha256'] = scheduler_observation_digest(scheduler['rows'])
@@ -2166,6 +2200,7 @@ def extracted_receipt(tmp_path):
               'frontendClientFilesChecked': len(candidate['frontend']['client_files']),
               'frontendBuildDigest': candidate['frontend']['build_record']['artifacts']['sha256'], 'archive': str(archive),
               'archiveSha256': GATE.digest(archive), 'provenance': dict(candidate), 'toolScheduler': scheduler,
+              'nativeSearch': native_search,
               'httpRedirect': redirect, 'javascriptWorkflow': javascript, 'runtimeContext': context, 'javascriptReady': ready,
               'persistenceRead': read, 'javascriptInitial': initial, 'sessionNumber': number, 'sessionDiagnostic': diagnostic,
               'sessionRestoreSign': restore_sign, 'runtimeFullRequest': full_request, 'deepseekError': deepseek_error, 'deepseekCapture': deepseek_capture, 'jsonlSharing': sharing, 'canonicalLlm': canonical_llm, 'llmMetadata': llm_metadata, 'llmPrepared': llm_prepared, 'llmConfig': llm_config,

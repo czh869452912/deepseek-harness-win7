@@ -102,12 +102,11 @@ def test_invalid_input_fails_before_release_replacement(tmp_path, monkeypatch, d
     dist=root/'dist/dsh-win7-portable';dist.mkdir(parents=True)
     (dist/'sentinel').write_text('last successful release',encoding='utf-8')
     monkeypatch.setattr(BUILD,'ROOT_DIR',str(root));monkeypatch.setattr(BUILD,'DIST_DIR',str(dist))
-    # No rg binary is needed: use a pinned metadata fixture for the preflight.
-    fake=root/'rg/bin/rg.exe';fake.parent.mkdir(parents=True);fake.write_bytes(b'rg')
-    (fake.parent.parent/'package.json').write_text('{"name":"@vscode/ripgrep-win32-x64","version":"1.18.0"}',encoding='utf-8')
+    # Keep the licensed native input valid so each intended preflight damage is reached.
+    shutil.copytree(ROOT/'dsh/fs/tool_fs_search/bin', root/'dsh/fs/tool_fs_search/bin')
     site=tmp_path/'absent' if damage=='missing-runtime' else ROOT/'.venv/Lib/site-packages'
     with pytest.raises((ValueError,FileNotFoundError,RuntimeError)):
-        BUILD.build_portable(runtime_dir=sys.base_prefix,ripgrep_source=str(fake),site_packages=site)
+        BUILD.build_portable(runtime_dir=sys.base_prefix,site_packages=site)
     assert (dist/'sentinel').read_text(encoding='utf-8')=='last successful release'
 
 

@@ -13,6 +13,7 @@ scripts/build_workflow.mjs text eol=lf
 dsh/javascript/workflow/** -text whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol
 dsh/session/resources/sql/** -text
 dsh/session/bin/unicode/** -text
+dsh/fs/tool_fs_search/bin/** -text whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol
 examples/python-web-echo/** text eol=lf
 # Evidence hashes must survive checkout on Windows and POSIX.
 migration/** text eol=lf

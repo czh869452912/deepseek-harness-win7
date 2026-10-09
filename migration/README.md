@@ -1,5 +1,7 @@
 # 持续对齐记录
 
+2026-10-10 Runtime/Scope/保留接续：干净fff0完整Python10482通过/6既有skip，4306.10秒，22组Source与83配对契约通过；实际解压首探针缺Tools的systemPrompt依赖而拒绝，后续解压/浏览器未执行，16项不晋升。16674冻结输入/精确ZIP未变，完整拒绝独立封存；旧验证器删除失败工作区的证据缺口如实披露。探针依赖及显式Agent-owned导出修正后历史同包自有Python旅程通过，真实技能Remote作用域修正通过17消费者；22导出及32失败保留/工作区消费者分别通过。四策略11项token差异有限批准，Web顺序提案待答复。998审计清理13.957GB，另15561文件/248MB默认UI隔离拒绝的原样副本已清理，正式/失败材料保留。见[接续记录](../docs/research/2026-10-10-runtime-scope-retention-progress.md)。
+
 2026-10-09 CSS/压缩/creative接续：干净d02完整Python10421通过/1失败/6既有skip，4068.60秒，旧搜索断言拒绝后续发行，16588输入/精确ZIP不变并封存。修复压缩UUID、creative默认组合/本机锚点及9组vendor身份/许可，推广原版bundle外的Host CSS适配；产品108/现代四fresh/cold严格旅程、15项profile及145项SDK/Web消费者通过。四扩展Tools组合仍保留11个token差异，既有判据未扩大；16项不自动签收。995审计清理约13.89GB及6份解压副本约1.48GB，正式/失败证据保留。见`docs/research/2026-10-09-css-compaction-creative-progress.md`。
 
 2026-10-09 工具/计划/原生搜索接续：干净4a完整Python10341通过/6既有skip、22组Source通过，独立Cordis观察器root导入顺序导致配对阶段拒绝；原包/16573输入/完整XML与989清理审计独立保留，16项不晋升。修复实际Tools抛出值、取消原因与领域HarnessError身份，加入原版计划审批/冷恢复门禁；官方校验和固定rg14及许可证同时供源码/Portable使用，并加入包内空PATH真实搜索与114项导入验证。40/546/112消费者、37完整正例与最终45搜索门禁分别通过，有限修复168成员归档；Source自身20次grep产生两种顺序，原始差异未排序。V7清理约13.79GB，最后定向工作区另1.27GB，相同暂存ZIP82.8MB也已核验删除。新的冻结发行/完整wire/父范围与延期Win7仍待验收，见[本轮记录](../docs/research/2026-10-09-tools-plan-ripgrep-progress.md)。

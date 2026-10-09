@@ -329,7 +329,9 @@ Evidence:
 - RUN-FULL-VALIDATION-TARGETED-CLOSEOUT-20261008-2112A470: verification / passed / historical
 - RUN-HANDOFF-BOOT-SEARCH-FIX-20261009-V1: research / unknown / historical
 - RUN-HANDOFF-COMPOSITION-RESEARCH-20261009-5961F1AB: research / unknown / historical
+- RUN-HANDOFF-CSS-COMPACTION-CREATIVE-FIX-20261009-V1: research / passed / historical
 - RUN-HANDOFF-EXACT-COMPOSITION-20261009-C51E67BD: research / unknown / historical
+- RUN-HANDOFF-EXACT-COMPOSITION-20261009-D02AFF0C: research / passed / historical
 - RUN-HANDOFF-EXACT-COMPOSITION-20261009-D4154199: research / unknown / historical
 - RUN-HANDOFF-EXACT-COMPOSITION-20261009-FA22330D: research / unknown / historical
 - RUN-HANDOFF-FULL-INTERRUPTION-20261009-3153EBC3: research / failed / historical
@@ -337,7 +339,10 @@ Evidence:
 - RUN-HANDOFF-FULL-REJECTION-20261009-4A878F46: research / failed / historical
 - RUN-HANDOFF-FULL-REJECTION-20261009-5961F1AB: research / failed / historical
 - RUN-HANDOFF-FULL-REJECTION-20261009-C51E67BD: research / failed / historical
+- RUN-HANDOFF-FULL-REJECTION-20261009-D02AFF0C: research / failed / historical
 - RUN-HANDOFF-FULL-REJECTION-20261009-D4154199: research / failed / historical
+- RUN-HANDOFF-FULL-REJECTION-20261010-3DCA2A32: research / failed / historical
+- RUN-HANDOFF-FULL-REJECTION-20261010-FFF0BEA1: research / failed / historical
 - RUN-HANDOFF-PLAN-COMPATIBILITY-FIX-20261009-V1: research / unknown / historical
 - RUN-HANDOFF-SCHEMA-CLOSURE-FIX-20261009-V1: research / unknown / historical
 - RUN-HANDOFF-STRICT-REMOTE-FIX-20261009-V1: research / unknown / historical
@@ -664,6 +669,7 @@ Evidence:
 - RUN-PORTABLE-FINISH-20260927: acceptance / passed / stale-inputs
 - RUN-PRESET-PROMPT-QUALIFICATION-20261007-91358077: verification / passed / current
 - RUN-PROFILE-METADATA-QUALIFICATION-20261007-88AC1FAE: verification / passed / current
+- RUN-PROVIDER-UCRT-COMPOSITION-RESEARCH-20261010-3DCA2A32: research / passed / historical
 - RUN-REMOTE-LFS-SYNC-20261007-B529A990: verification / passed / current
 - RUN-RUNTIME-CONTEXT-20261006-ACP-CONFIG-OUTPUT-004: acceptance / passed / stale-inputs
 - RUN-RUNTIME-CONTEXT-20261006-ACP-MCP-009: acceptance / passed / stale-inputs
@@ -718,6 +724,7 @@ Evidence:
 - RUN-RUNTIME-CONTEXT-REJECTED-20261005-037: verification / failed / historical
 - RUN-RUNTIME-FULL-REQUEST-REJECTED-20261006-AFD85F4E: verification / failed / current
 - RUN-RUNTIME-READY-REJECTED-20261005-038: verification / failed / historical
+- RUN-RUNTIME-SCOPE-RETENTION-RESEARCH-20261010-FFF0BEA1: research / passed / historical
 - RUN-SDK-RETENTION-20261007-ACP-CONFIG-OUTPUT-004: acceptance / passed / stale-inputs
 - RUN-SDK-RETENTION-20261007-ACP-MCP-009: acceptance / passed / stale-inputs
 - RUN-SDK-RETENTION-20261007-ACP-PERMISSIONS-006: acceptance / passed / stale-inputs

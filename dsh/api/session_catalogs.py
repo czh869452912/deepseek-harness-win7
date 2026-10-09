@@ -1,5 +1,6 @@
 """Agent-scoped file references and cold-readable skill metadata."""
 from dsh.api.settings import failure, settled
+from dsh.core.scope import scope_of
 from dsh.session.session_query import SessionQueryError
 from dsh.typert.remote import Remote, TypertRemoteService
 
@@ -41,7 +42,7 @@ class SessionSkillCatalog(TypertRemoteService):
         registry = registry if registry is not None else self.ctx.get('skills')
         if registry is None:
             raise failure('internal', "skill registry is absent: neither this session's agent preset nor the host composition mounts @deepseek-ai/dsh-skill")
-        scope = live
+        scope = scope_of(live.ctx) if live is not None else None
         if scope is None and presets is not None:
             try:
                 scope = await presets.standingKeyFor(preset)

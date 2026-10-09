@@ -1,0 +1,26 @@
+{
+  "id": "RUN-HANDOFF-FULL-REJECTION-20261010-FFF0BEA1",
+  "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
+  "product_commit": "fff0bea1175ad5b254d05cd716737b79fa7d6cdc",
+  "kind": "research",
+  "result": "failed",
+  "validity": "historical",
+  "exit_code": 1,
+  "commands": [
+    ".venv/Scripts/python.exe scripts/verify_release.py --browser \"C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe\" --browser108 .goose/tools/chromium-1058931/chrome-win/chrome.exe --output-dir .goose/out/release-gate-20261010-handoff-v10"
+  ],
+  "environment": {
+    "python": "3.8.10",
+    "os": "Windows-10-10.0.26200-SP0",
+    "cwd": "C:\\Users\\czh86\\Documents\\Codex\\deepseek-harness-win7",
+    "node": "v22.22.2"
+  },
+  "contract_revisions": {},
+  "artifacts": [
+    {
+      "path": "migration/evidence/artifacts/CURRENT-RELEASE-REJECTION-20261010-FFF0BEA1.zip",
+      "sha256": "4fc0e99bd5a1d220a913e897a1660088f943ad3e4c68baffd97c6530215b27d0"
+    }
+  ],
+  "scope": "Clean fff0bea1 complete Python10482 passed/6 existing skips/4306.10s, all22 Source configurations and83 paired contracts passed. Actual extracted runtime probe omitted systemPrompt required by Tools and rejected continuation; later extracted/browser gates did not execute. Frozen16674 inputs and exact ZIP remain unchanged after physical exit1. No release or task promotion.998 actual per-case audits removed6349 reconstructible files/13957222267 bytes. The verifier automatically removed its failed TemporaryDirectory, so original workspace bytes were lost; only recorded raw logs/input/provenance observations are claimed. This retention gap is separately fixed; archive is not a reconstruction of lost observations."
+}

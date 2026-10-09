@@ -1,0 +1,25 @@
+{
+  "id": "RUN-RUNTIME-SCOPE-RETENTION-RESEARCH-20261010-FFF0BEA1",
+  "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
+  "product_commit": "fff0bea1175ad5b254d05cd716737b79fa7d6cdc",
+  "kind": "research",
+  "result": "passed",
+  "validity": "historical",
+  "exit_code": 0,
+  "commands": [
+    ".venv/Scripts/python.exe .goose/out/continuation-20261008-v1/archive-runtime-scope-research-v1.py"
+  ],
+  "environment": {
+    "python": "3.8.10",
+    "node": "v22.22.2",
+    "os": "Windows-10-10.0.26200-SP0"
+  },
+  "contract_revisions": {},
+  "artifacts": [
+    {
+      "path": "migration/evidence/artifacts/RUNTIME-SCOPE-RETENTION-RESEARCH-20261010-FFF0BEA1.zip",
+      "sha256": "d2c17a22da0604d54773792a130920d8706531bc5294cf1d18ee43295f7bb3a6"
+    }
+  ],
+  "scope": "178 members/93005172 bytes independently verified. Targeted dirty-successor Scope/retention and explicit Python export; 17/32/22 consumer groups separately pass. Actual historical exact FFF archive runtime probe passes; three-preset Source/Root fresh/cold12 processes and6 complete carrier diagnostic pairs have zero residual fields under pending directory/inter-stream proposal plus declared full-header input anchors. Automatic Source/Root Cordis original UI2 journeys pass. Raw observer failures retained, including standard UI wrapper serialization rejection. This is no new clean full release or own new-ZIP/task acceptance; ordering proposal remains pending, nine upstream predicates unchanged."
+}

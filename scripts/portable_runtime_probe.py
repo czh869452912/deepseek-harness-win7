@@ -110,13 +110,15 @@ async def journey(workspace, home):
     report = dict(identity=identity(), steps=[])
     root = Path(sys.executable).parent
     for profile in ('minimal', 'standard', 'creative', 'web', 'headless'):
-        result = subprocess.run([sys.executable, '-I', str(root / 'dsh.py'), '--profile', profile, '--dump-config'],
+        result = subprocess.run([sys.executable, '-I', '-B', str(root / 'dsh.py'), '--profile', profile, '--dump-config'],
                                 cwd=str(workspace), capture_output=True, encoding='utf-8', timeout=60)
         require(result.returncode == 0 and result.stdout.strip(), 'profile dump failed: ' + profile + ': ' + result.stderr)
         report['steps'].append('dump-' + profile)
     directory = home / 'profiles' / 'portable-probe'
     init_profile(str(directory), [], 'startup')
-    (directory / 'cordis.patch.yml').write_text("- insert:\n    - id: tools\n      name: '@deepseek-ai/dsh-tools'\n", encoding='utf-8')
+    (directory / 'cordis.patch.yml').write_text(
+        "- insert:\n    - id: system-prompt\n      name: '@deepseek-ai/dsh-system-prompt'\n"
+        "    - id: tools\n      name: '@deepseek-ai/dsh-tools'\n", encoding='utf-8')
     first = project(workspace, '1.0.0', '原生:')
     newer = project(workspace, '2.0.0', '升级:')
     archive = workspace / 'plugin.zip'
@@ -151,6 +153,10 @@ async def journey(workspace, home):
         ctx = author['ctx']
         await ctx.sessionController.create(dict(sessionId='portable-author', cwd=str(workspace), agentPreset='cordis'))
         agent = ctx.agents.get('portable-author')
+        # Native export is an explicit Agent-owned extension, outside upstream
+        # Cordis defaults. Exercise the extension without changing that preset.
+        from dsh.extensions.cordis_export import PythonPluginExport
+        await agent.ctx.plugin(PythonPluginExport)
         receipt = ctx.dynamicCordisRunner.define(dict(sessionId=agent.id, plugin=dict(kind='new', idPrefix='port'),
             name='Portable proof', purpose='Original browser to extracted Python', code=dict(
                 host='def plugin(ctx):\n    harness.handle("echo", lambda args: {"value": args, "runtime": "Python 3.8.10"})\n',

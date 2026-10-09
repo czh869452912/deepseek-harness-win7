@@ -1,5 +1,7 @@
 # Python 3.8.10 / Win7 迁移交接
 
+**2026-10-10 Runtime/Scope/保留接续：** 干净fff0bea1第十轮完整Python10482通过/6既有skip，4306.10秒；22组官方Source与83配对契约通过，实际解压探针因Tools缺systemPrompt而拒绝，后续解压/浏览器未执行。16674冻结输入与精确ZIP未变，拒绝独立封存；旧验证器已删除失败工作区，如实保留该证据缺口。修正探针依赖及显式Agent-owned Python导出后，历史同ZIP自有Python完整运行探针通过；真实技能Remote作用域遗漏已修复。17项技能消费者、22项导出消费者及32项失败保留/工作区消费者分别通过，不累加。默认UI观察器的审批文件隔离拒绝保持原始记录，15561文件/248MB原样副本已清理。四策略11项token差异有限批准，Web顺序提案仍待答复，16项仍待新稳定候选严格验收。详见[本轮接续](docs/research/2026-10-10-runtime-scope-retention-progress.md)。
+
 **2026-10-10 Provider/UCRT接续：** 干净3dca2a32第九轮完整Python10444通过/4失败/6既有skip，4215.139秒；16619冻结输入与精确ZIP未变，Source/配对/解压阶段未执行，拒绝及孤立原始观察已封存。已修复creative夹具旧表、有限工作区保留重试、Provider行字段/省略值，并固定Microsoft SDK14393.795的41个UCRT DLL及许可，同主EXE部署/实际解压校验接入。103/49/99项定向和101项清理控制通过；四场景11个token差异已获用户有限批准，Web目录/流交错提案仍待答复。真实默认SDK三场景及standard/headless、creative精确语言映射取得研究匹配，16项仍待新同包完整验收。995份审计清理13.89GB，另及时清理成功浏览器与私有UCRT副本，失败/正式/未知材料保留。详见[最新接续记录](docs/research/2026-10-10-provider-ucrt-composition-progress.md)。
 
 **2026-10-09 CSS/压缩/creative接续：** 干净d02完整Python10421通过/1失败/6既有skip，4068.60秒；失败为旧空PATH测试仍要求pnpm rg15，冻结16588输入与精确ZIP未变并独立封存，后续发行阶段未执行。已修正断言，修复压缩检查点/摘要指令公开UUID身份；四实际扩展组合仍保留11个token差异，不扩大既有判据。Host按需CSS适配现保留原版bundle，产品108/现代各fresh/cold严格样式、监听器、计划/工具/审批旅程通过。实际creative缺Cordis的默认组合已修复，并补本机CLI锚点和9组固定vendor身份/许可，15项profile与145项SDK/Web消费者通过。d02同ZIP7路由/3engine/7policy有限资格单独归档。995份审计清理约13.89GB，另清理6份解压副本约1.48GB及重复暂存归档；失败/正式材料保留。新的稳定完整验收与16项签收仍待完成，见[最新接续记录](docs/research/2026-10-09-css-compaction-creative-progress.md)。

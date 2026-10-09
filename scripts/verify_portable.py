@@ -4,6 +4,7 @@ Node and Chromium are optional development observers, never product runtimes.
 The output report intentionally distinguishes this Windows run from Win7 proof.
 """
 import argparse
+from contextlib import contextmanager
 import hashlib
 import json
 import os
@@ -85,6 +86,46 @@ def digest(path):
         for chunk in iter(lambda: stream.read(65536), b''):
             value.update(chunk)
     return value.hexdigest()
+
+
+@contextmanager
+def verification_workspace(output, report):
+    """Keep the first failed extraction's actual files and ownership receipt."""
+    selected = Path(tempfile.mkdtemp(prefix='dsh Portable 中文 ')).resolve()
+    report['verificationWorkspace'] = str(selected)
+    report['workspaceRetention'] = 'active'
+    try:
+        yield str(selected)
+        assert selected.parent == Path(tempfile.gettempdir()).resolve()
+        assert selected.name.startswith('dsh Portable 中文 ')
+        shutil.rmtree(str(selected))
+        report['workspaceRetention'] = 'removed-after-success'
+    except BaseException as primary:
+        report['workspaceRetention'] = 'retained-after-failure'
+        receipt = dict(workspace=str(selected), status='retained-after-failure',
+                       firstFailure=dict(name=type(primary).__name__, message=str(primary)), files={}, opaqueLinks=[])
+        try:
+            for base, children, names in os.walk(str(selected), followlinks=False):
+                folder = Path(base)
+                for name in list(children) + names:
+                    path = folder / name
+                    stat = path.lstat()
+                    relative = path.relative_to(selected).as_posix()
+                    if path.is_symlink() or getattr(stat, 'st_file_attributes', 0) & 0x400:
+                        receipt['opaqueLinks'].append(relative)
+                        if name in children:
+                            children.remove(name)
+                    elif path.is_file():
+                        receipt['files'][relative] = dict(bytes=stat.st_size, sha256=digest(path))
+            path = Path(output).with_suffix('.failure-workspace.json')
+            with path.open('x', encoding='utf-8') as stream:
+                json.dump(receipt, stream, ensure_ascii=True, indent=2)
+                stream.write('\n')
+            report['failureWorkspaceReceipt'] = str(path)
+        except Exception as diagnostic:
+            # Recording a failure must not replace its original outcome.
+            report['workspaceRetentionDiagnostic'] = dict(name=type(diagnostic).__name__, message=str(diagnostic))
+        raise
 
 
 def extract(archive, destination):
@@ -977,7 +1018,7 @@ def main(argv=None):
         format_digest, format_frames = format_source_identity(json.loads(format_source.read_text(encoding='utf-8')))
         report['sqliteFormatSourceSha256'] = digest(format_source)
         report['sqliteFormatInputSha256'] = digest(format_inputs)
-        with tempfile.TemporaryDirectory(prefix='dsh Portable 中文 ') as private:
+        with verification_workspace(output, report) as private:
             workspace = Path(private)
             portable = extract(archive, workspace)
             provenance = json.loads((portable / 'build-provenance.json').read_text(encoding='utf-8'))

@@ -1,4 +1,5 @@
 import argparse
+import ast
 import copy
 import hashlib
 import importlib.util
@@ -1844,6 +1845,31 @@ def test_windows_confined_console_lanes_are_mandatory(tmp_path, damage):
     path = tmp_path / 'pytest.xml'
     for name in GATE.REQUIRED_REGRESSION['test_windows_confined_console']:
         regression_xml(path, **{damage: ('test_windows_confined_console', name)})
+        with pytest.raises(RuntimeError):
+            GATE.validate_regression(path)
+
+
+def test_required_regression_names_resolve_real_test_definitions():
+    missing = []
+    for module, names in GATE.REQUIRED_REGRESSION.items():
+        parts = module.split('.')
+        paths = list((ROOT / 'tests').rglob(parts[0] + '.py'))
+        assert len(paths) == 1, (module, paths)
+        path = paths[0]
+        tree = ast.parse(path.read_text(encoding='utf-8'))
+        for class_name in parts[1:]:
+            tree = next(node for node in tree.body if isinstance(node, ast.ClassDef) and node.name == class_name)
+        definitions = {node.name for node in ast.walk(tree)
+                       if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))}
+        missing.extend((module, name) for name in names if name.split('[', 1)[0] not in definitions)
+    assert not missing, 'Mandatory manifest refers to retired test definitions: ' + repr(missing)
+
+
+@pytest.mark.parametrize('damage', ('omit', 'skip', 'duplicate', 'failure'))
+def test_plan_contract_lanes_are_mandatory(tmp_path, damage):
+    path = tmp_path / 'pytest.xml'
+    for name in GATE.REQUIRED_REGRESSION['test_plan_mode_contract']:
+        regression_xml(path, **{damage: ('test_plan_mode_contract', name)})
         with pytest.raises(RuntimeError):
             GATE.validate_regression(path)
 

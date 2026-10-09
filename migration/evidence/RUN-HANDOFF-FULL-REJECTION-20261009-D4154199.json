@@ -1,0 +1,24 @@
+{
+  "id": "RUN-HANDOFF-FULL-REJECTION-20261009-D4154199",
+  "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
+  "product_commit": "d415419956c186f7d168c156c7e1ab3feeb4addd",
+  "kind": "research",
+  "result": "failed",
+  "validity": "historical",
+  "commands": [
+    "Exact observers, commands and raw diagnostics retained in immutable archive member manifests."
+  ],
+  "environment": {
+    "python": "3.8.10",
+    "os": "Windows-10-10.0.26200-SP0",
+    "cwd": "C:\\Users\\czh86\\Documents\\Codex\\deepseek-harness-win7"
+  },
+  "contract_revisions": {},
+  "artifacts": [
+    {
+      "path": "migration/evidence/artifacts/CURRENT-RELEASE-REJECTION-20261009-D4154199.zip",
+      "sha256": "867842b4010c09363ca477543710e900977c0baeb86c5da4addfeda20578e2de"
+    }
+  ],
+  "scope": "Complete Python 10314 passed/6 existing skips/4025.09s; release rejected by retired mandatory console test name. Frozen16565 inputs/clean candidate/ZIP unchanged. 22nd Source group and plan fix belong to the next candidate; no release or task promotion."
+}

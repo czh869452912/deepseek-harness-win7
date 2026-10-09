@@ -1,0 +1,24 @@
+{
+  "id": "RUN-HANDOFF-EXACT-COMPOSITION-20261009-D4154199",
+  "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
+  "product_commit": "d415419956c186f7d168c156c7e1ab3feeb4addd",
+  "kind": "research",
+  "result": "unknown",
+  "validity": "historical",
+  "commands": [
+    "Exact observers, commands and raw diagnostics retained in immutable archive member manifests."
+  ],
+  "environment": {
+    "python": "3.8.10",
+    "os": "Windows-10-10.0.26200-SP0",
+    "cwd": "C:\\Users\\czh86\\Documents\\Codex\\deepseek-harness-win7"
+  },
+  "contract_revisions": {},
+  "artifacts": [
+    {
+      "path": "migration/evidence/artifacts/HANDOFF-EXACT-COMPOSITION-20261009-D4154199.zip",
+      "sha256": "3c557790252d2894efc5a3e473bc91d1caeba41ee7d122a0a937fd6dc420f56d"
+    }
+  ],
+  "scope": "Seven routes/three actual workflow-Ralph engine compositions/nine actual HTTP aliases matched on clean d4154199 and its unchanged ZIP using Source/Root/ownPython3.8.10. Full guards/owned cleanup passed. Headers independent, one bundle alias composition; not a complete parent/full release receipt."
+}

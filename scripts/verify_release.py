@@ -127,7 +127,24 @@ PAIRED_DRIVERS = PAIRED_DRIVERS + ('fs_values',)
 PAIRED_DRIVERS = PAIRED_DRIVERS + ('message_values',)
 OFFICIAL_CONFIGS = ('consumers', 'agent-lifecycle', 'session-recovery', 'session-projection', 'acp', 'acp-app', 'mcp', 'subagent-acp', 'storage-cache', 'session-observation', 'session-corpus', 'session-sqlite-query', 'query-engine-source', 'session-tools-source', 'sqlite-format-source', 'sqlite-provider-source', 'jsonl-provider-source', 'tool-scheduler-source', 'deepseek-source', 'llm-public-source')
 OFFICIAL_CONFIGS += ('web-search-deepseek-source',)
+OFFICIAL_CONFIGS += ('plan-source',)
 REQUIRED_REGRESSION = {
+    'test_plan_mode_contract': {
+        *{'test_pending_selection_commits_only_at_accepted_live_step[' + kind + ']'
+          for kind in ('reject', 'abort', 'accepted')},
+        'test_failed_plan_append_preserves_intent_and_retries_without_blocking_step',
+        'test_cancelled_entry_keeps_logged_state_and_no_notice',
+        *{'test_review_accepts_only_one_exact_approval[answer' + str(index) + ']'
+          for index in range(7)},
+        *{'test_review_dismissal_and_abort_keep_plan_state_and_first_outcome[' + code + ']'
+          for code in ('ASK_CANCELLED', 'ASK_ABORTED')},
+        'test_missing_review_channel_cannot_approve',
+        'test_disposed_service_cannot_approve_a_deferred_review',
+        'test_approval_is_typed_silent_pending_exit_until_next_step',
+        'test_late_command_and_projection_mount_replay_and_dispose',
+        *{'test_plan_checkpoint_rejects_invalid_v2_state[' + damage + ']'
+          for damage in ('missing-wanted', 'extra-state', 'extra-running', 'invalid-wanted')},
+    },
     'test_web_settings_inventory': {
         'test_source_settings_schema_facts_survive_canonical_web_boot[' + case + ']'
         for case in ('deepseek-base', 'shared-retry', 'pi-cache-union', 'locale-unicode')
@@ -622,7 +639,7 @@ REQUIRED_REGRESSION = {
     },
     "test_windows_confined_console": {
         'test_confined_console_retains_state_unicode_and_actual_write_boundary',
-        'test_confined_console_deadline_abort_and_unload_close_owned_jobs',
+        'test_confined_console_timeout_and_cancel_close_owned_jobs',
         'test_confined_pipe_runner_has_no_console_and_retains_captured_stdio',
         *{'test_startup_nonce_requires_its_own_live_output_line[' + observation + ']'
           for observation in ('own-output-line', 'input-echo', 'prefixed-token', 'exited-before-ready')},
@@ -777,6 +794,9 @@ REQUIRED_REGRESSION = {
         *{'test_preflight_copy_retention_lanes_are_mandatory[' + damage + ']'
           for damage in ('omit', 'skip', 'duplicate', 'failure')},
         *{'test_windows_confined_console_lanes_are_mandatory[' + damage + ']'
+          for damage in ('omit', 'skip', 'duplicate', 'failure')},
+        'test_required_regression_names_resolve_real_test_definitions',
+        *{'test_plan_contract_lanes_are_mandatory[' + damage + ']'
           for damage in ('omit', 'skip', 'duplicate', 'failure')},
         *{'test_actual_pytest_unicode_lane_identity_remains_mandatory[' + damage + ']' for damage in ('none', 'omit', 'skip', 'duplicate', 'failure')},
         *{'test_extracted_llm_config_requires_complete_values_and_runtime[' + damage + ']' for damage in ('missing', 'source-missing', 'source-changed', 'module-changed', 'config', 'boolean', 'max-null', 'reason-null', 'same', 'same-stop', 'input', 'after-change', 'error', 'code', 'hook', 'signal', 'trace', 'tail', 'duplicate', 'order', 'type', 'unknown', 'root', 'python', 'executable', 'module', 'group-missing', 'group-rows', 'group-root', 'group-executable', 'group-module')},

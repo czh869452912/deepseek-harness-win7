@@ -3,6 +3,7 @@ from dsh.cordis.context import Context
 from dsh.core.agent import Agent, AgentPlugin
 from dsh.core.session import Session, SessionStore, SessionPlugin
 from dsh.core.tools import ToolsPlugin
+from dsh.core.system_prompt import SystemPrompt
 from dsh.interaction.user_questions import UserQuestionsPlugin
 from dsh.plan.plan_mode import PlanModePlugin, resolve_config, fold_plan_mode, EXIT_PLAN_MODE
 
@@ -20,6 +21,7 @@ def fake_agent(ctx, name="agent-1", active=False):
 @pytest.fixture
 def plan_ctx():
     ctx = Context()
+    SystemPrompt(ctx)
     tools_plugin = ToolsPlugin()
     tools_plugin.apply(ctx)
     sess_plugin = SessionPlugin()
@@ -34,10 +36,10 @@ def plan_ctx():
 
 
 def test_resolve_config():
-    with pytest.raises(TypeError, match="needs a string `section`"):
+    with pytest.raises(ValueError, match="needs a string `section`"):
         resolve_config({})
 
-    with pytest.raises(TypeError, match="needs a string `section`"):
+    with pytest.raises(ValueError, match="needs a string `section`"):
         resolve_config({"section": 123})
 
     with pytest.raises(ValueError, match="needs a non-empty `section`"):
@@ -135,4 +137,7 @@ async def test_exit_plan_mode_asks_user_and_exits_on_approval(plan_ctx):
     assert "Plan approved — plan mode exited" in res.content[0]["text"]
 
     plan_svc = ctx.get("planMode")
-    assert plan_svc.get(agent)["active"] is False
+    assert res.value == dict(approved=True)
+    assert plan_svc.get(agent) == dict(active=True, pending=False)
+    await ctx.waterfall('agent/pre-step', dict(agent=agent), lambda: dict(kind='enter', messages=[]))
+    assert plan_svc.get(agent) == dict(active=False)

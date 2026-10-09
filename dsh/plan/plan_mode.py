@@ -5,10 +5,15 @@ is included in each model request, and `exit_plan_mode` presents the completed p
 """
 
 import re
-from typing import Any, Dict, List, Optional, Union
+import weakref
+from typing import Any, Dict, List, Optional
 
+from dsh.cordis.awaiting import await_callback_result
 from dsh.cordis.plugin import Plugin
-from dsh.core.session import Session, SessionEvent
+from dsh.core.session import Session
+from dsh.core.system_prompt.types import FIRST_PARTY_SECTION_ORDER
+from dsh.interaction.user_questions import UserQuestionError
+from dsh.llm.message import create_user_message
 
 EXIT_PLAN_MODE = "exit_plan_mode"
 REVIEW_ID = "plan-review"
@@ -37,18 +42,16 @@ When ready, call exit_plan_mode with the complete plan markdown, starting with a
 """.strip()
 
 
-def resolve_config(config: Any) -> Dict[str, str]:
-    if not isinstance(config, dict):
-        raise TypeError("needs a string `section`")
-    for k in config:
-        if k != "section":
-            raise ValueError(f"unknown key(s) {k} — config is {{ section }}")
-    section = config.get("section")
+def resolve_config(config):
+    section = config.get('section') if isinstance(config, dict) else None
     if not isinstance(section, str):
-        raise TypeError("needs a string `section`")
+        raise ValueError('PlanModeConfig needs a string `section`')
     if not section.strip():
-        raise ValueError("needs a non-empty `section`")
-    return {"section": section}
+        raise ValueError('PlanModeConfig needs a non-empty `section`')
+    unknown = [key for key in config if key != 'section']
+    if unknown:
+        raise ValueError('PlanModeConfig has unknown key(s) ' + ', '.join(unknown) + ' — config is { section }')
+    return dict(section=section)
 
 
 def fold_plan_mode(events: List[Any], end: Optional[int] = None) -> bool:
@@ -77,7 +80,7 @@ foldPlanMode = fold_plan_mode
 def first_heading(plan: str) -> Optional[str]:
     """Find the first markdown heading in plan text."""
     for line in plan.splitlines():
-        match = re.match(r"^#{1,6}\s+(.+?)\s*$", line.strip())
+        match = re.match(r"^#{1,6}\s+(.+?)\s*$", line)
         if match:
             return match.group(1)
     return None
@@ -102,44 +105,27 @@ class PlanModeController:
 
     def __init__(self, ctx: Any, section: Optional[str] = None):
         self.ctx = ctx
-        self.section = section or DEFAULT_PLAN_GUIDANCE
-        self._pending_intents: Dict[str, Dict[str, Any]] = {}
+        self.section = resolve_config(dict(section=section))["section"]
+        self._pending_intents = weakref.WeakKeyDictionary()
+        self._disposed = False
+        def close():
+            self._disposed = True
+        ctx.effect(lambda: close, "plan service lifetime")
 
-        if hasattr(ctx, "has") and ctx.has("systemPrompt"):
-            sp = ctx.get("systemPrompt")
-            if hasattr(sp, "section"):
-                sp.section({
-                    "name": "plan:policy",
-                    "order": 50,
-                    "text": lambda context: self.section if self.is_active(context.get("agent") if isinstance(context, dict) else None) else "",
-                })
+        ctx.get("systemPrompt").section({
+            "name": "plan:policy",
+            "order": FIRST_PARTY_SECTION_ORDER["PLAN_POLICY"],
+            "text": lambda context: self.section if context.get("agent") is not None and self.is_active(context["agent"]) else "",
+        })
 
-    def _resolve_session(self, agent: Optional[Any] = None) -> Optional[Session]:
-        if agent and hasattr(agent, "session") and agent.session:
-            return agent.session
-        if self.ctx and self.ctx.has("agents"):
-            agents_svc = self.ctx.get("agents")
-            if hasattr(agents_svc, "current_initiator"):
-                initiator = agents_svc.current_initiator()
-                if initiator and hasattr(initiator, "session"):
-                    return initiator.session
-        if self.ctx and self.ctx.has("sessions"):
-            sessions_svc = self.ctx.get("sessions")
-            if isinstance(sessions_svc, Session):
-                return sessions_svc
-            if hasattr(sessions_svc, "get"):
-                s = sessions_svc.get("default-session")
-                if s:
-                    return s
-                if hasattr(sessions_svc, "_sessions") and sessions_svc._sessions:
-                    return next(iter(sessions_svc._sessions.values()))
-        return None
+    def _resolve_session(self, agent=None):
+        return getattr(agent, "session", None)
 
     def is_active(self, agent: Optional[Any] = None) -> bool:
         sess = self._resolve_session(agent)
         if not sess:
             return False
-        pending = self._pending_intents.get(sess.id)
+        pending = self._pending_intents.get(sess)
         if pending is not None:
             return bool(pending.get("active", False))
         return fold_plan_mode(sess.events)
@@ -149,60 +135,69 @@ class PlanModeController:
         if not sess:
             return {"active": False}
         active = fold_plan_mode(sess.events)
-        pending = self._pending_intents.get(sess.id)
+        pending = self._pending_intents.get(sess)
         if pending is not None:
             return {"active": active, "pending": pending.get("active", False)}
         return {"active": active}
 
     get_state = get
 
-    def set(self, agent: Optional[Any], active: bool) -> str:
-        sess = self._resolve_session(agent)
-        if not sess:
-            return "noop"
+    def narration(self, session, target):
+        last_header = next((i for i in range(len(session.events) - 1, -1, -1)
+                            if session.events[i]["type"] == 'request/header'), None)
+        if last_header is None or fold_plan_mode(session.events, last_header + 1) == target:
+            return None
+        text = 'The user switched this session to plan mode.' if target else 'The user switched this session back to the default mode.'
+        return create_user_message(dict(content=[dict(type='text', text=text)],
+            source=dict(kind='plugin', plugin='plan-mode', form='notice', summary=text)))
 
-        current_active = fold_plan_mode(sess.events)
-        pending = self._pending_intents.get(sess.id)
-        current_target = pending.get("active") if pending is not None else current_active
+    def set(self, agent, active):
+        session = self._resolve_session(agent)
+        if session is None:
+            return 'noop'
+        pending = self._pending_intents.get(session)
+        target = pending['active'] if pending else fold_plan_mode(session.events)
+        if active == target:
+            return 'noop'
+        if has_open_turn(session.events):
+            self._pending_intents[session] = dict(active=active, narrate=True)
+            return 'cancelled' if fold_plan_mode(session.events) == active else 'queued'
+        if active == fold_plan_mode(session.events):
+            self._pending_intents.pop(session, None)
+            return 'cancelled'
+        session.append('plan/mode', dict(active=active))
+        self._pending_intents.pop(session, None)
+        narration = self.narration(session, active)
+        if narration is not None:
+            agent.inject(narration)
+        return 'committed'
 
-        if active == current_target:
-            return "noop"
+    def on_boundary(self, session):
+        pending = self._pending_intents.get(session)
+        if pending is None:
+            return
+        target = pending['active']
+        if target != fold_plan_mode(session.events):
+            session.append('plan/mode', dict(active=target))
+        self._pending_intents.pop(session, None)
 
-        in_turn = has_open_turn(sess.events)
-        if in_turn:
-            self._pending_intents[sess.id] = {"active": active}
-            return "queued"
-        else:
-            if pending is not None and active == current_active:
-                self._pending_intents.pop(sess.id, None)
-                return "cancelled"
-            sess.append("plan/mode", {"active": active})
-            self._pending_intents.pop(sess.id, None)
-            return "committed"
-
-    def set_active(self, active: bool, agent: Optional[Any] = None) -> str:
-        return self.set(agent, active)
-
-    def on_prompt_assemble(self, prompt: str) -> str:
-        """Inject plan guidance section if plan mode is active."""
-        if self.is_active():
-            return prompt + f"\n\n[Plan Mode Active]\n{self.section}\n"
-        return prompt
-
-    async def on_pre_step(self, payload: Dict[str, Any], next_fn=None) -> Dict[str, Any]:
-        """Commit pending plan mode transitions and handle messages."""
-        agent = payload.get("agent")
-        sess = self._resolve_session(agent)
-        if not sess:
-            return await next_fn() if next_fn is not None else payload
-
-        pending = self._pending_intents.pop(sess.id, None)
-        if pending is not None:
-            target = pending.get("active", False)
-            if target != fold_plan_mode(sess.events):
-                sess.append("plan/mode", {"active": target}, ignorable=True)
-
-        return await next_fn() if next_fn is not None else payload
+    async def on_pre_step(self, payload, next_fn=None):
+        decision = await await_callback_result(next_fn()) if next_fn else payload
+        agent, signal = payload.get('agent'), payload.get('signal')
+        if agent is None or decision.get('kind') == 'reject' or getattr(signal, 'aborted', False):
+            return decision
+        pending = self._pending_intents.get(agent.session)
+        if pending is None:
+            return decision
+        narration = self.narration(agent.session, pending['active'])
+        try:
+            self.on_boundary(agent.session)
+        except Exception as error:
+            self.ctx.logger.warn('dsh-plan-mode: failed to append selected plan mode at step start: %o', error)
+            return decision
+        if not pending['narrate'] or narration is None:
+            return decision
+        return dict(decision, messages=list(decision['messages']) + [narration])
 
     async def handle_exit_plan_mode(
         self,
@@ -219,7 +214,7 @@ class PlanModeController:
         if effective_agent is None:
             raise RuntimeError("exit_plan_mode requires a calling agent (no session to switch)")
 
-        if not self.is_active(effective_agent):
+        if not fold_plan_mode(effective_agent.session.events):
             raise RuntimeError("exit_plan_mode is only available in plan mode")
 
         call_args = args if isinstance(args, dict) else kwargs
@@ -228,32 +223,31 @@ class PlanModeController:
         if not re.match(r"^#\s+\S", plan_clean):
             raise RuntimeError("exit_plan_mode requires a non-empty markdown plan starting with a # heading")
 
-        # Present plan for user review via userQuestions if available
-        uq_svc = context.get("userQuestions") if context and context.has("userQuestions") else None
-        if uq_svc:
-            res = await uq_svc.ask({
-                "agent": effective_agent,
-                "questions": [{
-                    "id": REVIEW_ID,
-                    "question": f"Approve this plan and leave plan mode?\n\n{plan_clean}",
-                    "header": "Plan Review",
-                    "options": [
-                        {"label": APPROVE_LABEL, "description": "Leave plan mode; the plan is carried out from the next step."},
-                        {"label": KEEP_PLANNING_LABEL, "description": "Stay in plan mode; feedback goes back to the model."},
-                    ],
-                }],
-            })
-            answers = res.get("answers", [])
-            selected = answers[0].get("selected", []) if answers else []
-            if APPROVE_LABEL in selected:
-                self.set(effective_agent, False)
-                return "Plan approved — plan mode exited; carry out the plan starting with your next step."
-            else:
-                feedback = answers[0].get("custom") or (selected[0] if selected else "")
-                return f"The user chose to keep planning; their feedback: {feedback}"
+        uq_svc = context.get('userQuestions')
+        if uq_svc is None:
+            raise RuntimeError('no user-questions channel is available to review the plan; ask the user to switch the session mode instead')
+        try:
+            res = await uq_svc.ask(dict(agent=effective_agent,
+                signal=getattr(exec_input, 'signal', None), questions=[dict(id=REVIEW_ID,
+                    header='Plan review', question='Approve this plan and leave plan mode?', detail=plan_text,
+                    options=[dict(label=APPROVE_LABEL, description='Leave plan mode; the plan is carried out from the next step.'),
+                             dict(label=KEEP_PLANNING_LABEL, description='Stay in plan mode; feedback goes back to the model.')],
+                    intent=dict(kind='plan-review', approve=APPROVE_LABEL))]))
+        except UserQuestionError as error:
+            if error.code == 'ASK_CANCELLED':
+                raise RuntimeError('The user dismissed the plan review to speak instead; stay in plan mode, stop here, and wait for their message.') from error
+            raise
+        if self._disposed:
+            raise RuntimeError("the plan-mode service was reloaded while the plan was under review; present the plan again")
+        answers = [answer for answer in res['answers'] if answer['id'] == REVIEW_ID]
+        item = answers[0] if len(answers) == 1 else None
+        if item is None or item['selected'] != [APPROVE_LABEL] or 'custom' in item:
+            feedback = item.get('custom', '') if item else ''
+            raise RuntimeError('The user chose to keep planning; revise the plan and present it again.'
+                if not feedback else 'The user chose to keep planning; their feedback: ' + feedback)
+        self._pending_intents[effective_agent.session] = dict(active=False, narrate=False)
+        return dict(approved=True)
 
-        self.set(effective_agent, False)
-        return "Plan approved — plan mode exited; carry out the plan starting with your next step."
 
 
 class PlanModePlugin(Plugin):
@@ -263,64 +257,74 @@ class PlanModePlugin(Plugin):
 
     id = "plan-mode"
     name = "@deepseek-ai/dsh-plan-mode"
-    inject = ["tools"]
+    inject = ["tools", "systemPrompt"]
 
     def apply(self, ctx: Any) -> None:
         cfg = self.config or {}
-        section = cfg.get("section")
+        section = resolve_config(cfg)["section"]
         controller = PlanModeController(ctx, section=section)
         ctx.set_service("planMode", controller)
 
-        # 1. Register session projection if sessionProjections is mounted
-        if ctx.has("sessionProjections"):
-            projections = ctx.get("sessionProjections")
-            if hasattr(projections, "register"):
-                def apply_plan_projection(state: Any, event: Any) -> Any:
-                    evt_type = event.get("type") if isinstance(event, dict) else getattr(event, "type", "")
-                    evt_data = event.get("data", {}) if isinstance(event, dict) else getattr(event, "data", {})
-                    current_active = state.get("active", False) if isinstance(state, dict) else False
+        def mount_projection(pctx):
+            def apply_projection(state, event):
+                data = event["data"]
+                if event["type"] == 'command/run' and data['name'] == 'plan':
+                    if 'args' not in data:
+                        return state
+                    return dict(state, running=dict(commandId=data['commandId'], wanted=data['args'].strip() != 'off'))
+                if event["type"] == 'command/done' and state['running'] is not None and data['commandId'] == state['running']['commandId']:
+                    wanted = state['running']['wanted'] if data['kind'] == 'success' and state['running']['wanted'] != state['active'] else None
+                    return dict(state, wanted=wanted, running=None)
+                if event["type"] == 'plan/mode':
+                    return dict(state, active=data['active'], wanted=None)
+                return state
+            def state_schema(value):
+                if type(value) is not dict or set(value) != {'active', 'wanted', 'running'} or type(value.get('active')) is not bool or value.get('wanted') is not None and type(value['wanted']) is not bool:
+                    raise ValueError('Invalid plan projection state')
+                running = value.get('running')
+                if running is not None and (type(running) is not dict or set(running) != {'commandId', 'wanted'} or type(running.get('commandId')) is not str or type(running.get('wanted')) is not bool):
+                    raise ValueError('Invalid plan command projection')
+                return dict(active=value['active'], wanted=value['wanted'], running=dict(running) if running is not None else None)
+            def wire_view(state, header=None):
+                wanted = state['running']['wanted'] if state['running'] is not None else state['wanted']
+                return dict(active=state['active'], pending=wanted is not None and wanted != state['active'])
+            def wire_schema(value):
+                if type(value) is not dict or type(value.get('active')) is not bool or type(value.get('pending')) is not bool:
+                    raise ValueError('Invalid plan projection')
+                return dict(active=value['active'], pending=value['pending'])
+            pctx.get('sessionProjections').register(dict(key='plan', stateSchema=state_schema,
+                init=lambda header: dict(active=False, wanted=None, running=None), apply=apply_projection,
+                wire=dict(view=wire_view, viewSchema=wire_schema), stateVersion=2))
+        ctx.inject(['sessionProjections'], mount_projection)
 
-                    if evt_type == "plan/mode":
-                        new_active = bool(evt_data.get("active", False))
-                        return {"active": new_active, "pending": False}
-                    return state
+        def mount_commands(command_ctx):
+            cmd_svc = command_ctx.get("commands")
+            def plan_command(invocation):
+                agent = invocation.agent
+                message = invocation.raw_input.strip()
+                attachments = invocation.attachments
+                if message == 'off' and attachments:
+                    return dict(kind='error', text='Image attachments cannot accompany /plan off.')
+                if message == 'off':
+                    outcome = controller.set(agent, False)
+                    texts = dict(committed='Plan mode off.',
+                        queued='Leaving plan mode (applies from the next step).',
+                        cancelled='Plan mode entry cancelled.')
+                    text = texts.get(outcome, 'Leaving plan mode (applies from the next step).'
+                        if fold_plan_mode(agent.session.events) else 'Plan mode is already inactive.')
+                    return dict(kind='success', text=text)
+                outcome = controller.set(agent, True)
+                if message or attachments:
+                    from dsh.llm.message import create_user_message
+                    content = list(attachments) + ([dict(type='text', text=message)] if message else [])
+                    agent.steer(create_user_message(dict(content=content, source=dict(kind='user'))))
+                return dict(kind='success', text='Plan mode on. Use /plan off to leave.'
+                    if outcome == 'committed' else 'Entering plan mode (applies from the next step). Use /plan off to leave.')
 
-                projections.register(
-                    key="plan",
-                    schema={"type": "object"},
-                    init=lambda: {"active": False, "pending": False},
-                    apply=apply_plan_projection,
-                    view=lambda s: s,
-                )
+            cmd_svc.register(dict(name='plan', description='Enter or leave plan mode',
+                input=dict(hint='[off|message]', images=True), handler=plan_command))
 
-        # 2. Register /plan command if commands service is mounted
-        if ctx.has("commands"):
-            cmd_svc = ctx.get("commands")
-            if hasattr(cmd_svc, "register"):
-                def execute_plan_command(invocation: Any) -> str:
-                    raw = getattr(invocation, "raw_input", "") or ""
-                    tokens = raw.strip().split(None, 1)
-                    sub = tokens[0].lower() if tokens else "on"
-                    if sub in ("off", "stop", "exit", "0"):
-                        res = controller.set_active(False, agent=None)
-                        if res == "committed":
-                            return "Plan mode off."
-                        elif res == "queued":
-                            return "Leaving plan mode (applies from the next step)."
-                        else:
-                            return "Plan mode is already inactive."
-                    else:
-                        res = controller.set_active(True, agent=None)
-                        return "Plan mode on. Use /plan off to leave."
-
-                def plan_command(invocation: Any) -> Dict[str, Any]:
-                    return {"kind": "success", "text": execute_plan_command(invocation)}
-
-                cmd_svc.register({
-                    "name": "plan",
-                    "description": "Enter or leave plan mode",
-                    "handler": plan_command,
-                })
+        ctx.inject(["commands"], mount_commands)
 
         # 3. Register exit_plan_mode tool
         tools = ctx.tools
@@ -335,57 +339,20 @@ class PlanModePlugin(Plugin):
             "required": ["plan"],
         }
 
-        if hasattr(tools, "register_tool"):
-            disposer = tools.register_tool({
-                "name": EXIT_PLAN_MODE,
-                "description": EXIT_DESCRIPTION,
-                "parameters": parameters,
-                "execute": controller.handle_exit_plan_mode,
-            })
-        else:
-            disposer = tools.register(
-                name=EXIT_PLAN_MODE,
-                description=EXIT_DESCRIPTION,
-                parameters=parameters,
-                handler=controller.handle_exit_plan_mode,
-            )
+        async def execute(args, execution):
+            return await controller.handle_exit_plan_mode(args, exec_input=execution)
+        disposer = tools.register(dict(name=EXIT_PLAN_MODE, description=EXIT_DESCRIPTION,
+            parameters=parameters, execute=execute,
+            output=dict(schema=dict(type='object', additionalProperties=False,
+                properties=dict(approved=dict(type='boolean', const=True)), required=['approved']),
+                render=lambda args, value: [dict(type='text', text='Plan approved — plan mode exited; carry out the plan starting with your next step.')]),
+            presentCall=lambda args: dict(card='generic', title=first_heading(args['plan']) or 'Plan',
+                kind='other', content=[dict(type='text', text=args['plan'])]),
+            presentResult=lambda args, result: dict(card='generic', title='Plan review', content=result.content)))
 
-        ctx.on("agent/prompt-assemble", controller.on_prompt_assemble)
         ctx.on("agent/pre-step", controller.on_pre_step)
-
-        # Hook /plan command in agent pre-step if user types /plan in natural input
-        ctx.on("agent/pre-step", self._hook_plan_slash_command)
 
         if hasattr(ctx, "disposable"):
             ctx.disposable(disposer, label="plan_mode.disposer")
         elif hasattr(ctx, "effect"):
             ctx.effect(lambda: disposer)
-
-    async def _hook_plan_slash_command(self, payload: Dict[str, Any], next_fn=None) -> Dict[str, Any]:
-        messages = payload.get("messages", [])
-        if not messages:
-            return await next_fn() if next_fn is not None else payload
-
-        last_user_msg = None
-        for msg in reversed(messages):
-            if msg.get("role") == "user":
-                last_user_msg = msg
-                break
-
-        if last_user_msg and isinstance(last_user_msg.get("content"), str):
-            text = last_user_msg["content"].strip()
-            if text.startswith("/plan"):
-                tokens = text.split(None, 1)
-                controller: PlanModeController = self.ctx.get("planMode")
-                if controller:
-                    if len(tokens) == 1 or tokens[1].lower() in ("on", "start"):
-                        controller.set_active(True)
-                        last_user_msg["content"] += "\n\n[System Notice: Session switched to Plan Mode. Explore without modifying files, and call exit_plan_mode when ready.]"
-                    elif tokens[1].lower() in ("off", "stop", "exit"):
-                        controller.set_active(False)
-                        last_user_msg["content"] += "\n\n[System Notice: Session switched back to Default Mode.]"
-                    else:
-                        controller.set_active(True)
-                        last_user_msg["content"] = tokens[1] + "\n\n[System Notice: Session switched to Plan Mode.]"
-
-        return await next_fn() if next_fn is not None else payload

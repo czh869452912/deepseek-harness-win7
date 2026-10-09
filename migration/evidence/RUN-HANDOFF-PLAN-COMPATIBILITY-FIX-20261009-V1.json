@@ -1,0 +1,24 @@
+{
+  "id": "RUN-HANDOFF-PLAN-COMPATIBILITY-FIX-20261009-V1",
+  "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
+  "product_commit": "d415419956c186f7d168c156c7e1ab3feeb4addd",
+  "kind": "research",
+  "result": "unknown",
+  "validity": "historical",
+  "commands": [
+    "Exact observers, commands and raw diagnostics retained in immutable archive member manifests."
+  ],
+  "environment": {
+    "python": "3.8.10",
+    "os": "Windows-10-10.0.26200-SP0",
+    "cwd": "C:\\Users\\czh86\\Documents\\Codex\\deepseek-harness-win7"
+  },
+  "contract_revisions": {},
+  "artifacts": [
+    {
+      "path": "migration/evidence/artifacts/HANDOFF-PLAN-COMPATIBILITY-FIX-20261009-V1.zip",
+      "sha256": "40c36e9588a28938f5ef7518f51ff1c23728f7953979ae28f7a00bd26d32ee75"
+    }
+  ],
+  "scope": "Uncommitted plan/config/pre-step/review/command/replay/lifetime fix based on d4154199. 41 full Source/Root fact rows,66 consumers,56 SDK,83 original Source cases and mandatory refusals. Product fixed108 fresh/cold journey passed; full wire differences remain. CSS84 DOM and dynamic108 adapter are research only. No task/full release acceptance."
+}

@@ -2,6 +2,7 @@ import pytest
 from dsh.cordis.context import Context
 from dsh.core.session import SessionStore
 from dsh.core.tools import ToolsService
+from dsh.core.system_prompt import SystemPrompt
 from dsh.interaction.tool_ask_user import ToolAskUserPlugin
 from dsh.interaction.user_questions import UserQuestionsPlugin
 from dsh.plan.plan_mode import (
@@ -19,6 +20,7 @@ from dsh.core.agent import Agent, AgentPlugin
 @pytest.fixture
 def plan_ctx():
     ctx = Context()
+    SystemPrompt(ctx)
     tools = ToolsService(ctx)
     ctx.set_service("tools", tools)
     sessions = SessionStore(ctx)
@@ -47,23 +49,22 @@ def test_fold_plan_mode(plan_ctx):
     assert fold_plan_mode(session.events) is False
 
 
-def test_plan_mode_prompt_assembly(plan_ctx):
+@pytest.mark.asyncio
+async def test_plan_mode_prompt_assembly(plan_ctx):
     controller: PlanModeController = plan_ctx.get("planMode")
     agent = plan_ctx.get("agents").get("test-plan-session")
-    base_prompt = "You are an assistant."
-
-    # Inactive: prompt is unchanged
-    assert controller.on_prompt_assemble(base_prompt) == base_prompt
+    assembly = await plan_ctx.get('systemPrompt').assemble(dict(agent=agent, scope=agent))
+    assert next(section['text'] for section in assembly['sections'] if section['name'] == 'plan:policy') == ''
 
     # Active: guidance is injected
     controller.set(agent, True)
     assert controller.is_active(agent) is True
-    assembled = controller.on_prompt_assemble(base_prompt)
-    assert "[Plan Mode Active]" in assembled
-    assert "You are in plan mode" in assembled
+    assembly = await plan_ctx.get('systemPrompt').assemble(dict(agent=agent, scope=agent))
+    assert next(section['text'] for section in assembly['sections'] if section['name'] == 'plan:policy') == DEFAULT_PLAN_GUIDANCE
 
     controller.set(agent, False)
-    assert controller.on_prompt_assemble(base_prompt) == base_prompt
+    assembly = await plan_ctx.get('systemPrompt').assemble(dict(agent=agent, scope=agent))
+    assert next(section['text'] for section in assembly['sections'] if section['name'] == 'plan:policy') == ''
 
 
 @pytest.mark.asyncio
@@ -102,3 +103,6 @@ async def test_exit_plan_mode_validation(plan_ctx):
     assert res3.is_error is False
     assert "approved" in res3.content[0]["text"].lower()
     assert controller.is_active(agent) is False
+    assert controller.get(agent) == dict(active=True, pending=False)
+    await plan_ctx.waterfall('agent/pre-step', dict(agent=agent), lambda: dict(kind='enter', messages=[]))
+    assert controller.get(agent) == dict(active=False)

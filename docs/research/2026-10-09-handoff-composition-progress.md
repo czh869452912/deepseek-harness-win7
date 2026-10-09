@@ -94,3 +94,27 @@ Loader检查曾误用未用于canonical启动的拆分类；相关两处提案�
 从固定实际218前端产物提取29处CSS调用、21表达式，在现代Edge与固定108真实浏览器以四组颜色/透明度输入观察84组有限sRGB混合方案。108不支持原调用；legacy rgba值均接受，但保留21组跨浏览器canvas像素差异及2组现代原调用/提案差异。该诊断包含CSSOM序列化重解析与canvas量化，不能视为实际DOM最终像素资格；尚未推广CSS补丁或放宽像素谓词。动态组件/主题、局部变量、完整CSS及启用realm仍需继续验证，原版前端字节保持。
 
 三份成功拥有的提取副本各15510文件已经全输入守卫/进程退出后删除；其中HTTP审计明确245989950字节。此处不从文件数猜另两份删除字节。Source/Native Schema研究和CSS两浏览器成功退出后新增专用profile清理累计1192文件/43421516字节（v7、v8、v9及两CSSprofile），每份审计/完整观察保留，不与先前33407343字节重复累计。中断/未知/失败输入、正式归档和保护Git历史继续保留。当前16任务不因局部结果提升。
+
+## d4154199完整回归及必需清单修复
+
+第6轮在干净d415419956c186f7d168c156c7e1ab3feeb4addd上完整Python正常结束：10314通过、6既有skip、4025.09秒，完整XML。发行随后拒绝：必需清单仍引用`test_confined_console_deadline_abort_and_unload_close_owned_jobs`，实际已更名为`test_confined_console_timeout_and_cancel_close_owned_jobs`。全部七个控制台实例确已执行通过，但清单拒绝不得改写为发行通过；21个原版Source组、83配对与实际解压阶段尚未执行。物理退出后、任何产品编辑前，16565输入/干净HEAD未变，输入清单SHA为`8d35e83eb61ffc7878897fc86ac2f32de3cc1fc1efb20cde0052ab9087187cc1`，精确ZIP为`4cd3f9f55ebdafd0afdbd421506df6a3a9ed6280e707befeeeff572d3c8a7db2`。18成员拒绝归档`CURRENT-RELEASE-REJECTION-20261009-D4154199.zip`为80900331字节，SHA为`867842b4010c09363ca477543710e900977c0baeb86c5da4addfeda20578e2de`，含原包、输入、旧提供端、XML、完整日志和冻结身份。
+
+清单现在引用真实测试，并新增对全部模块、测试类及函数定义的检查，防止退休名称在长时间全套之后才发现。该检查不替代最终JUnit的遗漏/skip/重复/失败谓词。9项清单及新计划控制通过（7.48秒）。下一稳定候选增加原版计划Source配置，合计22个Source配置；旧拒绝回执不补写新阶段。
+
+## 真实计划命令、审批与冷投影修复
+
+真正原版standard浏览器Source可进入计划并审批，旧PythonHost的`/plan`声明缺input，`/plan on`未被命令执行器接纳，完整失败观察和252次快照保留。修复声明`[off|message]`及images，使用实际调用Agent和user消息steer；`off`带图片拒绝。审批使用Source问题detail/intent/信号和typed`{approved:true}`，缺问题通道不能自动批准，取消保留计划、关闭期间审批拒绝。退出在下一个已接纳pre-step静默提交；拒绝/中止步骤不提交，append失败保留意图以便重试。意图按Session对象弱引用隔离，完整v2投影从command/run/done重放执行中及待提交状态。命令/投影通过晚依赖注册并随fiber卸载，删除非上游的自然输入变更钩子。
+
+两个真正Source探针及实际产品提供端取得24组配置/状态/审批和17组命令/投影/卸载事实。错误message对message比较，一条notice的UUID分配图有明确路径及一一映射；完整请求字段、内容和有序事件保留。修复过程中原4个pending投影差异、研究提供端FrozenDict属性错误、失效Service的探针读取错误均保留，未作为Source例外。原版4份计划spec83项全部通过，66项计划/问题/投影消费者和56项实际SDK通过，重叠不累计；新增v2坏checkpoint/遗漏/skip/重复/失败控制成为必需。原legacy测试更新为Source规定的pending出口和真正systemPrompt组装。
+
+实际产品Host固定108及现代Edge均完成工具/问题/权限审批/计划审批/取消/物理关闭/冷恢复；这是功能资格，完整wire和父范围仍未签收。首次完整比较发现旧审批artifact复用，导致拒绝命令读取旧内容；已通过拥有关系/逐字节审计重置，并在新observer要求fresh时该文件不存在。Source明确选择WindowsPowerShell5.1再与Root对照，仍保留preamble/系统语言诊断、RPC分配图、压缩持久文件及全局顺序差异；不能排序或丢弃其字段签收。一次Source观察器漏传source-root、一次路由观察器/SDK用错Node均属研究环境拒绝，原记录保留，正确固定Node版本后重新执行。
+
+119成员计划修复材料`HANDOFF-PLAN-COMPATIBILITY-FIX-20261009-V1.zip`为132743854字节，SHA为`40c36e9588a28938f5ef7518f51ff1c23728f7953979ae28f7a00bd26d32ee75`。所有7份产品/门禁/测试提供端归档字节与待提交内容一致；保留原失败、实际Source/Root事实、fixed108产品旅程、最终定向XML及CSS研究。现代旅程独立原始报告保留在本次运行目录，不冒称已在这个归档中。此档为以d4154199为基线的未提交修复研究，不是d415产品资格或当前完整发行。
+
+## 同d415精确组合、CSS与及时清理
+
+产品编辑前，同d415原样ZIP及实际Source/Root/自有Python3.8.10完成七真实子路由、三workflow/Ralph组合和九实际HTTP别名运行。完整晚守卫匹配，三解压副本各15511文件已删除；HTTP明确删除245989825字节，路由/engine不猜测字节数。280成员归档`HANDOFF-EXACT-COMPOSITION-20261009-D4154199.zip`为13416370字节，SHA为`3c557790252d2894efc5a3e473bc91d1caeba41ee7d122a0a937fd6dc420f56d`，引用拒绝归档中原ZIP。HTTPheaders保留独立，三个别名共用一种bundle，不当作五种profile或完整父合同。
+
+直接DOM截图的84组原表达式/有限rgba方案有2组现代同浏览器和28组跨浏览器差异，最大一通道1；原Canvas重解析的最大11差异为另一指标，不混用或放宽像素谓词。Host早注入动态附加样式研究在实际108处理10个style/20个表达式，fresh/cold功能旅程无Console首错；局部变量、动态主题、未观察语法、完整CSS/realm和精确像素仍未取得资格，未推广CSS产品补丁或修改原版bundle。
+
+第6轮989份原逐测试审计合计删除5442文件/13787900553字节；回归结束后的保留器复核没有再删除不明文件。额外清理Source调度两profile1014文件/39805053字节、原await及lazy研究两profile各312文件/12184429和12186327字节、DOM两profile266文件/8135527字节，及明确拥有的Vitest临时配置25640490字节。共享结果缓存保留；成功journey的原observer在两物理阶段结束后删除专用浏览器缓存。失败/未知/活跃材料、完整XML/日志、正式档案、保护Git历史均保留；不能bulk-delete `.goose/out`。16任务仍待稳定候选完整资格及各父范围的实际组合证据。

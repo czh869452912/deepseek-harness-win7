@@ -1,0 +1,27 @@
+{
+  "id": "RUN-EXTERNAL-WORKSPACE-RESEARCH-20261010-FD2C3A9B",
+  "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
+  "product_commit": "fd2c3a9bbcb55cf876b4f0aa5d20f3f3ee906ee9",
+  "kind": "research",
+  "result": "passed",
+  "validity": "historical",
+  "exit_code": 0,
+  "commands": [
+    ".venv/Scripts/python.exe .goose/out/continuation-20261008-v1/run-external-workspace-consumers-v1.py",
+    ".venv/Scripts/python.exe .goose/out/continuation-20261008-v1/run-external-workspace-gate-controls-v3.py"
+  ],
+  "environment": {
+    "python": "3.8.10",
+    "node": "v22.22.2 for Source-backed final controls; v2 default22.20.0 refused",
+    "os": "Windows-10-10.0.26200-SP0",
+    "cwd": "C:\\Users\\czh86\\Documents\\Codex\\deepseek-harness-win7"
+  },
+  "contract_revisions": {},
+  "artifacts": [
+    {
+      "path": "migration/evidence/artifacts/EXTERNAL-WORKSPACE-RESEARCH-20261010-FD2C3A9B.zip",
+      "sha256": "173ca052b019b7e6f028359cd49115032dbef988d12220a263ce7775bb8efbff"
+    }
+  ],
+  "scope": "Targeted verification-only external SystemTemp short workspace and strict scoped cleanup.129 workspace/retention controls pass; actual editor/FS/preflight/external ownership83 pass/4 existing platform skips; final pinned Source-backed mandatory/extracted98 pass. Sets overlap,not summed. Original native1175 error metadata/no-retry remain exact. Wrong Node control16 failures retained separately. External workspace physically retired into retained observations. No clean full acceptance or task promotion. 4925 reconstructible files/1414005873 bytes removed by audited individual cleanup."
+}

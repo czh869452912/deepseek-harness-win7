@@ -88,6 +88,47 @@ def candidate(output_root, path, expected=None):
         return None
 
 
+def execution_workspace(output_root, output, mapping, missing=False):
+    """Validate an explicit release mapping without trusting an arbitrary temp path."""
+    retained = Path(output) / 'pytest-workspace'
+    if Path(mapping['retained_path']) != retained:
+        raise ValueError('Retained process artifact owner differs')
+    if 'format' not in mapping:
+        execution = owned_path(output_root, mapping['execution_path'], missing=missing)
+        if execution.parent != Path(os.path.abspath(str(output_root))) or not execution.name.startswith('g-'):
+            raise ValueError('Short execution workspace owner differs')
+        return execution
+    parent = Path(tempfile.gettempdir()).resolve()
+    if mapping['format'] != 'dsh-release-workspace@2' or mapping.get('temporary_parent') != str(parent):
+        raise ValueError('System temporary workspace owner differs')
+    execution = Path(mapping['execution_path'])
+    if not execution.is_absolute() or execution.parent != parent or not re.fullmatch(r'g-[a-z0-9_]{8}', execution.name):
+        raise ValueError('Short execution workspace owner differs')
+    try:
+        parent.relative_to(Path(output_root).resolve())
+    except ValueError:
+        pass
+    else:
+        raise ValueError('System temporary workspace must be external')
+    return owned_path(parent, execution, missing=missing)
+
+
+def active_workspace_root(output_root, workspace, owner=None):
+    """Authorize only the mapped active external workspace, never its siblings."""
+    try:
+        owned_path(output_root, workspace)
+        return Path(os.path.abspath(str(output_root)))
+    except (ValueError, OSError):
+        if not owner:
+            raise
+    output = owned_path(output_root, owner)
+    mapping = read_json(owned_path(output_root, output / 'pytest-workspace-mapping.json'))
+    execution = execution_workspace(output_root, output, mapping)
+    if execution != Path(workspace):
+        raise ValueError('Active pytest workspace owner differs')
+    return execution
+
+
 def completed_workspace(output_root, output):
     selected = owned_path(output_root, output)
     mapping_path = owned_path(output_root, selected / 'pytest-workspace-mapping.json')
@@ -95,9 +136,7 @@ def completed_workspace(output_root, output):
     retained = selected / 'pytest-workspace'
     if Path(mapping['retained_path']) != retained:
         raise ValueError('Retained process artifact owner differs')
-    execution = owned_path(output_root, Path(mapping['execution_path']), missing=True)
-    if execution.parent != Path(os.path.abspath(str(output_root))) or not execution.name.startswith('g-'):
-        raise ValueError('Short execution workspace owner differs')
+    execution = execution_workspace(output_root, selected, mapping, missing=True)
     if os.path.lexists(native_path(execution)):
         raise ValueError('Process tests are still active')
     validate_completed_xml(output_root, selected / 'pytest.xml')
@@ -129,6 +168,7 @@ def prune_synthetic_workspace(output_root, workspace, audit):
 
 def prune_finished_test_folder(output_root, workspace, folder):
     try:
+        output_root = active_workspace_root(output_root, workspace, os.environ.get('DSH_RELEASE_PYTEST_OUTPUT'))
         workspace = owned_path(output_root, workspace)
         folder = owned_path(output_root, folder)
     except (OSError, ValueError, TypeError):
@@ -201,11 +241,12 @@ def prune_pytest_session(session, exitstatus, output_root):
     workspace = getattr(factory, '_basetemp', None)
     if workspace is None:
         return None
+    owner = os.environ.get('DSH_RELEASE_PYTEST_OUTPUT')
     try:
-        selected = owned_path(output_root, workspace)
+        workspace_root = active_workspace_root(output_root, workspace, owner)
+        selected = owned_path(workspace_root, workspace)
     except (ValueError, OSError):
         return None
-    owner = os.environ.get('DSH_RELEASE_PYTEST_OUTPUT')
     if owner:
         try:
             output = owned_path(output_root, owner)
@@ -213,13 +254,13 @@ def prune_pytest_session(session, exitstatus, output_root):
             output = None
         if output is not None:
             mapping = read_json(owned_path(output_root, output / 'pytest-workspace-mapping.json'))
-            execution = owned_path(output_root, mapping['execution_path'])
+            execution = execution_workspace(output_root, output, mapping)
             if execution == selected:
                 retained = owned_path(output_root, mapping['retained_path'], missing=True)
-                if execution.parent != Path(output_root) or not execution.name.startswith('g-') or retained != output / 'pytest-workspace':
+                if retained != output / 'pytest-workspace':
                     raise ValueError('Deferred pytest cleanup owner differs')
                 return dict(status='deferred', owner=str(output), workspace=str(selected), exitstatus=int(exitstatus))
-    return prune_synthetic_workspace(output_root, selected, selected / 'unit-receipts-pruned.json')
+    return prune_synthetic_workspace(workspace_root, selected, selected / 'unit-receipts-pruned.json')
 
 
 def expire_finished_manifests(output_root, folder, keep=2):
@@ -326,16 +367,17 @@ def preflight_sources(product_root, frozen):
 
 def preflight_test_inputs(output_root, workspace, product_root, owner=None):
     try:
-        workspace = owned_path(output_root, workspace)
+        workspace_root = active_workspace_root(output_root, workspace, owner)
+        workspace = owned_path(workspace_root, workspace)
     except (OSError, ValueError):
         return None
     product_root = Path(os.path.abspath(str(product_root)))
     if owner:
         output = owned_path(output_root, owner)
         mapping = read_json(owned_path(output_root, output / 'pytest-workspace-mapping.json'))
-        execution = owned_path(output_root, mapping['execution_path'])
+        execution = execution_workspace(output_root, output, mapping)
         retained = owned_path(output_root, mapping['retained_path'], missing=True)
-        if execution != workspace or execution.parent != Path(os.path.abspath(str(output_root))) or not execution.name.startswith('g-') or retained != output / 'pytest-workspace':
+        if execution != workspace or retained != output / 'pytest-workspace':
             raise ValueError('Active preflight test owner differs')
         frozen = read_json(owned_path(output_root, output / 'inputs.json'))
     else:
@@ -414,6 +456,7 @@ def prune_preflight_folders(output_root, folders, product_root, frozen, audit):
 
 
 def prune_finished_preflight_folder(output_root, workspace, folder, product_root, frozen):
+    output_root = active_workspace_root(output_root, workspace, os.environ.get('DSH_RELEASE_PYTEST_OUTPUT'))
     workspace = owned_path(output_root, workspace)
     folder = owned_path(output_root, folder)
     if folder.parent != workspace:

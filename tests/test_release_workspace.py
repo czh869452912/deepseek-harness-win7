@@ -2,6 +2,7 @@ import json
 import os
 from pathlib import Path
 import sys
+import tempfile
 
 import pytest
 
@@ -17,9 +18,11 @@ def test_short_pytest_workspace_retains_owned_success_and_failure_artifacts(tmp_
 
     def observe_run(command, name, selected_output, env=None, accepted=None, **options):
         selected = Path(next(argument.split('=', 1)[1] for argument in command if argument.startswith('--basetemp=')))
-        selected.relative_to(gate.ROOT / '.goose/out')
+        selected.relative_to(Path(tempfile.gettempdir()).resolve())
         assert selected.name.startswith('g-')
-        assert selected.parent == gate.ROOT / '.goose/out'
+        assert selected.parent == Path(tempfile.gettempdir()).resolve()
+        with pytest.raises(ValueError):
+            selected.relative_to(gate.ROOT.resolve())
         assert command[1:4] == ['-m', 'pytest', 'tests']
         assert options['timeout'] == timeout and name == 'pytest' and selected_output == output
         assert accepted == (0, 1)
@@ -37,6 +40,7 @@ def test_short_pytest_workspace_retains_owned_success_and_failure_artifacts(tmp_
     assert len(executions) == 1 and not executions[0].exists()
     mapping = json.loads((output / 'pytest-workspace-mapping.json').read_text(encoding='utf-8'))
     assert mapping['execution_path'] == str(executions[0])
+    assert mapping['format'] == 'dsh-release-workspace@2'
     assert Path(mapping['retained_path']) == output / 'pytest-workspace'
     assert json.loads((output / 'pytest-workspace/owned-observation.json').read_text(encoding='utf-8')) == dict(result='retained')
     with pytest.raises(RuntimeError, match='Fresh retained pytest workspace'):

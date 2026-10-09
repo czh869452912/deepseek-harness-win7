@@ -452,6 +452,12 @@ REQUIRED_REGRESSION = {
         *{'test_actual_retry_hint_keeps_json_numeric_value[' + spelling + ']' for spelling in ('native-float', 'source-float', 'fraction')},
         *{'test_portable_deepseek_error_cli_refuses_partial_receipts[' + side + ']' for side in ('source', 'native')},
     },
+    'test_release_external_workspace': {
+        'test_mapped_external_finished_case_prunes_only_synthetic_receipt',
+        'test_repository_temp_is_rejected_before_pytest_or_allocation',
+        *{'test_external_mapping_refuses_foreign_execution[' + damage + ']'
+          for damage in ('wrong-parent', 'wrong-format', 'nested', 'sibling')},
+    },
     'test_release_workspace': {
         *{'test_normal_failed_pytest_status_survives_secondary_housekeeping_failure[' + failure + ']' for failure in ('retention', 'cleanup-audit')},
         *{'test_actual_release_pytest_exits_before_owned_artifact_cleanup[' + outcome + ']' for outcome in ('passed', 'failed')},
@@ -2037,12 +2043,22 @@ def run_python_regression(python, output, environment, timeout=None):
     if retained.exists():
         raise RuntimeError('Fresh retained pytest workspace required')
     parent = (ROOT / '.goose/out').resolve()
-    parent.mkdir(parents=True, exist_ok=True)
-    workspace = Path(tempfile.mkdtemp(prefix='g-', dir=str(parent))).resolve()
-    workspace.relative_to(parent)
+    temporary_parent = Path(tempfile.gettempdir()).resolve()
+    try:
+        temporary_parent.relative_to(ROOT.resolve())
+    except ValueError:
+        pass
+    else:
+        raise RuntimeError('Regression execution workspace must be outside the repository')
+    # Retention is an atomic directory rename, never a copy that follows links.
+    if os.stat(temporary_parent).st_dev != os.stat(output).st_dev:
+        raise RuntimeError('Set TEMP to an external directory on the output volume for atomic regression retention')
+    workspace = Path(tempfile.mkdtemp(prefix='g-', dir=str(temporary_parent))).resolve()
+    workspace.relative_to(temporary_parent)
     (output / 'pytest-workspace-mapping.json').write_text(json.dumps(dict(
+        format='dsh-release-workspace@2', temporary_parent=str(temporary_parent),
         execution_path=str(workspace), retained_path=str(retained), timeout_seconds=timeout,
-        scope='Fresh owned short Windows execution path is independent of the output label. Artifacts move to the retained path after pytest, including failure/timeout; raw observations retain execution paths.'), indent=2) + '\n', encoding='utf-8')
+        scope='Fresh owned short system-temp execution path outside the repository. Atomic retention after pytest, including failure/timeout; raw observations retain execution paths.'), indent=2) + '\n', encoding='utf-8')
     primary_failure = None
     exitstatus = None
     owned_output = False

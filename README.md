@@ -4,7 +4,7 @@
 
 [README.md](README.md) | [AGENTS.md](AGENTS.md)
 
-当前迁移验收：最新完整签收仍为干净产品 `83026446` 的65个有界范围。后续16项尚待统一闭环；干净 `fff0bea1` 第十轮完整 Python **10482 passed、6既有skip**，22组官方Source及83配对契约通过，但实际解压探针依赖缺失使发行拒绝，精确证据已封存。探针、技能作用域及失败工作区保留已定向修复，下一稳定候选另作同包完整验收。可重建测试副本及时清理，真实观察、失败与正式证据保留。详见 [迁移台账](migration/README.md) 和 [最新接续记录](docs/research/2026-10-10-runtime-scope-retention-progress.md)。
+当前迁移验收：最新完整签收仍为干净产品 `83026446` 的65个有界范围。后续16项尚待统一闭环；干净 `fd2c3a9b` 第十二轮完整 Python **10488 passed、1失败、6既有skip**，原生文件替换1175使发行拒绝，后续Source/配对/解压未执行，原失败文件及精确证据已封存。完整回归改在仓库外执行，严格映射清理与原子保留已定向验证，生产替换语义不改，下一稳定候选另作同包完整验收。可重建测试副本及时清理，真实观察、失败与正式证据保留。详见 [迁移台账](migration/README.md) 和 [最新接续记录](docs/research/2026-10-10-external-regression-workspace-progress.md)。
 
 规范 JSONL 与原版一致，默认写 `session.jsonl.zstd`，逻辑导出仍为 `session.jsonl`。已有 plaintext 根目录须显式配置 `compression: none`，或为默认压缩选择单独的 root；两种物理格式不能混用同一个 root，也不会静默转换已有日志。新提供端的完整发布验收仍在执行，见 [推进记录](docs/research/2026-10-05-jsonl-provider-progress.md)。
 

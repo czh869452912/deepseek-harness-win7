@@ -1,0 +1,26 @@
+{
+  "id": "RUN-HANDOFF-FULL-REJECTION-20261010-FD2C3A9B",
+  "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
+  "product_commit": "fd2c3a9bbcb55cf876b4f0aa5d20f3f3ee906ee9",
+  "kind": "research",
+  "result": "failed",
+  "validity": "historical",
+  "exit_code": 1,
+  "commands": [
+    ".venv/Scripts/python.exe scripts/verify_release.py --browser \"C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe\" --browser108 .goose/tools/chromium-1058931/chrome-win/chrome.exe --output-dir .goose/out/release-gate-20261010-handoff-v12"
+  ],
+  "environment": {
+    "python": "3.8.10",
+    "node": "v22.22.2",
+    "os": "Windows-10-10.0.26200-SP0",
+    "cwd": "C:\\Users\\czh86\\Documents\\Codex\\deepseek-harness-win7"
+  },
+  "contract_revisions": {},
+  "artifacts": [
+    {
+      "path": "migration/evidence/artifacts/CURRENT-RELEASE-REJECTION-20261010-FD2C3A9B.zip",
+      "sha256": "6823ea41a9da89d25981f5007eff9868d44b6cf14e227697cc5949a2f5e5319c"
+    }
+  ],
+  "scope": "Clean fd2c3a9b complete Python10488 passed/1 failed/6 existing skips,4114.15 seconds. Native ReplaceFileW1175 rejected str_replace_editor null-versus-omitted replacement in repository-owned short workspace. Frozen16683 inputs and exact ZIP unchanged after physical exit1. Original failed destination, immediate report,XML,logs,exact archive retained; deleted atomic staging is not reconstructed.22 Source configurations/83 pairs/extracted/browser gates did not execute.No acceptance promotion.998 completed per-case audits removed6349 reconstructible files/13957275718 bytes; real observations,failures and protected history remain."
+}

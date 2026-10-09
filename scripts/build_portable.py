@@ -214,6 +214,8 @@ def bundle_dependencies(distributions, destination):
 def assemble_portable(dist_dir, zip_output, runtime_dir=None, ripgrep_source=None, site_packages=None):
     # Resolve before replacing an existing release so a missing pinned build input fails safely.
     ripgrep_source, metadata = verify_pinned_ripgrep(ROOT_DIR, ripgrep_source)
+    from scripts.ucrt_inputs import verify_pinned_ucrt, bundle_ucrt
+    ucrt = verify_pinned_ucrt(ROOT_DIR)
     runtime_dir = runtime_dir or sys.base_prefix
     if not os.path.isfile(os.path.join(runtime_dir, "python38.dll")):
         raise FileNotFoundError("Python 3.8 Windows runtime is required before staging")
@@ -230,11 +232,13 @@ def assemble_portable(dist_dir, zip_output, runtime_dir=None, ripgrep_source=Non
     os.makedirs(dist_dir, exist_ok=True)
 
     bundle_python_runtime(dist_dir, runtime_dir)
+    bundle_ucrt(ROOT_DIR, dist_dir)
 
     with open(ripgrep_source, "rb") as stream:
         ripgrep_digest = hashlib.sha256(stream.read()).hexdigest()
     provenance = {"python_builder": platform.python_version(), "python_runtime_source": runtime_dir,
                   "python_runtime": runtime,
+                  "ucrt_input": ucrt,
                   "ripgrep_package": metadata["name"], "ripgrep_version": metadata["version"],
                   "ripgrep_sha256": ripgrep_digest,
                   "ripgrep_input": metadata,

@@ -1,0 +1,211 @@
+[
+  {
+    "entry": {
+      "provider": "fixture",
+      "displayName": "Fixture",
+      "settingsNs": "fixture",
+      "settingsPath": []
+    },
+    "registered": [
+      {
+        "provider": "fixture",
+        "displayName": "Fixture",
+        "settingsNs": "fixture",
+        "settingsPath": []
+      }
+    ],
+    "replaced": [
+      {
+        "provider": "fixture",
+        "displayName": "Fixture",
+        "settingsNs": "fixture",
+        "settingsPath": [
+          "changed"
+        ]
+      }
+    ],
+    "afterMutation": [
+      {
+        "provider": "fixture",
+        "displayName": "Fixture",
+        "settingsNs": "fixture",
+        "settingsPath": [
+          "changed"
+        ]
+      }
+    ],
+    "disposed": []
+  },
+  {
+    "entry": {
+      "provider": "fixture",
+      "displayName": "Fixture",
+      "settingsNs": "fixture",
+      "settingsPath": [],
+      "declared": false
+    },
+    "registered": [
+      {
+        "provider": "fixture",
+        "displayName": "Fixture",
+        "settingsNs": "fixture",
+        "settingsPath": [],
+        "declared": false
+      }
+    ],
+    "replaced": [
+      {
+        "provider": "fixture",
+        "displayName": "Fixture",
+        "settingsNs": "fixture",
+        "settingsPath": [
+          "changed"
+        ],
+        "declared": false
+      }
+    ],
+    "afterMutation": [
+      {
+        "provider": "fixture",
+        "displayName": "Fixture",
+        "settingsNs": "fixture",
+        "settingsPath": [
+          "changed"
+        ],
+        "declared": false
+      }
+    ],
+    "disposed": []
+  },
+  {
+    "entry": {
+      "provider": "fixture",
+      "displayName": "Fixture",
+      "settingsNs": "fixture",
+      "settingsPath": [],
+      "declared": true
+    },
+    "registered": [
+      {
+        "provider": "fixture",
+        "displayName": "Fixture",
+        "settingsNs": "fixture",
+        "settingsPath": [],
+        "declared": true
+      }
+    ],
+    "replaced": [
+      {
+        "provider": "fixture",
+        "displayName": "Fixture",
+        "settingsNs": "fixture",
+        "settingsPath": [
+          "changed"
+        ],
+        "declared": true
+      }
+    ],
+    "afterMutation": [
+      {
+        "provider": "fixture",
+        "displayName": "Fixture",
+        "settingsNs": "fixture",
+        "settingsPath": [
+          "changed"
+        ],
+        "declared": true
+      }
+    ],
+    "disposed": []
+  },
+  {
+    "entry": {
+      "provider": "fixture",
+      "displayName": "Fixture",
+      "settingsNs": "fixture",
+      "settingsPath": [],
+      "declared": null
+    },
+    "registered": [
+      {
+        "provider": "fixture",
+        "displayName": "Fixture",
+        "settingsNs": "fixture",
+        "settingsPath": [],
+        "declared": null
+      }
+    ],
+    "replaced": [
+      {
+        "provider": "fixture",
+        "displayName": "Fixture",
+        "settingsNs": "fixture",
+        "settingsPath": [
+          "changed"
+        ],
+        "declared": null
+      }
+    ],
+    "afterMutation": [
+      {
+        "provider": "fixture",
+        "displayName": "Fixture",
+        "settingsNs": "fixture",
+        "settingsPath": [
+          "changed"
+        ],
+        "declared": null
+      }
+    ],
+    "disposed": []
+  },
+  {
+    "entry": {
+      "provider": "fixture",
+      "displayName": "Fixture",
+      "settingsNs": "fixture",
+      "settingsPath": [],
+      "extension": {
+        "value": "retained"
+      }
+    },
+    "registered": [
+      {
+        "provider": "fixture",
+        "displayName": "Fixture",
+        "settingsNs": "fixture",
+        "settingsPath": [],
+        "extension": {
+          "value": "retained"
+        }
+      }
+    ],
+    "replaced": [
+      {
+        "provider": "fixture",
+        "displayName": "Fixture",
+        "settingsNs": "fixture",
+        "settingsPath": [
+          "changed"
+        ],
+        "extension": {
+          "value": "retained"
+        }
+      }
+    ],
+    "afterMutation": [
+      {
+        "provider": "fixture",
+        "displayName": "Fixture",
+        "settingsNs": "fixture",
+        "settingsPath": [
+          "changed"
+        ],
+        "extension": {
+          "value": "retained"
+        }
+      }
+    ],
+    "disposed": []
+  }
+]

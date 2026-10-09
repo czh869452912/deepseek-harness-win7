@@ -310,7 +310,8 @@ def preflight_sources(product_root, frozen):
     product_root = Path(os.path.abspath(str(product_root)))
     sources = {}
     for name, expected in frozen.items():
-        if not name.startswith(('apps/web/dist/', 'dsh/session/bin/icu/')) and not re.fullmatch(r'packages/[^/]+/[^/]+/lib/client\.js(?:\.map)?', name):
+        ucrt_copy = name in ('vendor/ucrt/ucrt-input.json', 'vendor/ucrt/SDK-LICENSE.rtf', 'vendor/ucrt/REDIST.html') or re.fullmatch(r'vendor/ucrt/x64/[^/]+\.dll', name)
+        if not ucrt_copy and not name.startswith(('apps/web/dist/', 'dsh/session/bin/icu/')) and not re.fullmatch(r'packages/[^/]+/[^/]+/lib/client\.js(?:\.map)?', name):
             continue
         if '\\' in name or ':' in name or '..' in Path(name).parts:
             raise ValueError('Invalid frozen preflight input path')
@@ -348,6 +349,13 @@ def preflight_test_inputs(output_root, workspace, product_root, owner=None):
                 if Path(name).name != name or '/' in name or '\\' in name:
                     raise ValueError('Invalid ICU input name')
                 frozen['dsh/session/bin/icu/' + name] = expected
+        if os.path.lexists(native_path(product_root / 'vendor/ucrt')):
+            from scripts.ucrt_inputs import verify_pinned_ucrt
+            ucrt = verify_pinned_ucrt(product_root)
+            for row in ucrt['files']:
+                frozen['vendor/ucrt/x64/' + row['name']] = row['sha256']
+            for name in ('ucrt-input.json', 'SDK-LICENSE.rtf', 'REDIST.html'):
+                frozen['vendor/ucrt/' + name] = digest_file(product_root / 'vendor/ucrt' / name)
     return preflight_sources(product_root, frozen)
 
 
@@ -365,7 +373,7 @@ def prune_preflight_folders(output_root, folders, product_root, frozen, audit):
             try:
                 path = owned_path(output_root, folder / 'checkout' / name)
                 information = os.lstat(native_path(path))
-                if stat.S_ISREG(information.st_mode) and digest_file(path) == expected:
+                if stat.S_ISREG(information.st_mode) and information.st_nlink == 1 and digest_file(path) == expected:
                     candidates.append(dict(path=str(path), source=name, size=information.st_size, sha256=expected))
             except FileNotFoundError:
                 continue
@@ -381,7 +389,7 @@ def prune_preflight_folders(output_root, folders, product_root, frozen, audit):
     owned_path(output_root, audit, missing=True)
     result = dict(status='planned', removed_files=0, removed_bytes=0, expected_files=len(candidates),
         manifest_sha256=hashlib.sha256(json.dumps(candidates, sort_keys=True, separators=(',', ':')).encode('utf-8')).hexdigest(),
-        examples=candidates[-32:], scope='Only unchanged shell/client/ICU copies after an owned preflight test body finishes; frozen inputs and preserved originals must match. Modified variants, unknown files, active tests, actual observations, logs, XML and ZIPs remain.')
+        examples=candidates[-32:], scope='Only unchanged private shell/client/ICU/UCRT copies after an owned preflight test body finishes; frozen inputs and preserved originals must match. Modified variants, shared files, unknown files, active tests, actual observations, logs, XML and ZIPs remain.')
     with open(native_path(audit), 'x', encoding='utf-8') as stream:
         json.dump(result, stream, indent=2)
         stream.write('\n')
@@ -391,7 +399,7 @@ def prune_preflight_folders(output_root, folders, product_root, frozen, audit):
             path = owned_path(output_root, item['path'])
             source = owned_path(product_root, product_root / item['source'])
             information = os.lstat(native_path(path))
-            if not stat.S_ISREG(information.st_mode) or information.st_size != item['size'] or digest_file(path) != item['sha256'] or digest_file(source) != item['sha256']:
+            if not stat.S_ISREG(information.st_mode) or information.st_nlink != 1 or information.st_size != item['size'] or digest_file(path) != item['sha256'] or digest_file(source) != item['sha256']:
                 raise RuntimeError('Preflight copy or preserved original changed before cleanup')
             os.unlink(native_path(path))
             result['removed_files'] += 1

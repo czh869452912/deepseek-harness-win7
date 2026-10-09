@@ -1,4 +1,5 @@
 import json
+import os
 from pathlib import Path
 import subprocess
 import sys
@@ -7,6 +8,32 @@ import xml.etree.ElementTree as ET
 import pytest
 
 from scripts import process_artifact_retention as retention
+
+
+@pytest.mark.parametrize('damage', ['unchanged', 'modified', 'shared'])
+def test_completed_ucrt_copies_preserve_variants_and_shared_files(tmp_path, damage):
+    product, output_root, output, workspace = completed_fixture(tmp_path)
+    name = 'vendor/ucrt/x64/ucrtbase.dll'
+    original = product / name
+    original.parent.mkdir(parents=True)
+    original.write_bytes(b'pinned UCRT input')
+    frozen = retention.read_json(output / 'inputs.json')
+    frozen[name] = retention.digest_file(original)
+    (output / 'inputs.json').write_text(json.dumps(frozen), encoding='utf-8')
+    copied = workspace / 'test_invalid_input_fails_befor0/checkout' / name
+    copied.parent.mkdir(parents=True)
+    copied.write_bytes(original.read_bytes())
+    if damage == 'modified':
+        copied.write_bytes(b'failed UCRT variant')
+    if damage == 'shared':
+        os.link(str(copied), str(tmp_path / 'shared.dll'))
+    unknown = copied.with_name('unexpected.bin')
+    unknown.write_bytes(b'raw observation')
+    result = retention.prune_preflight_copies(output_root, output, product)
+    assert result['removed_files'] == 2 * len(retention.PREFLIGHT_DAMAGE_CASES) + (damage == 'unchanged')
+    assert copied.exists() == (damage != 'unchanged')
+    assert original.read_bytes() == b'pinned UCRT input'
+    assert unknown.read_bytes() == b'raw observation'
 
 
 def completed_fixture(tmp_path):

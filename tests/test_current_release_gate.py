@@ -1984,6 +1984,8 @@ def extracted_receipt(tmp_path):
     archive.write_bytes(b'exact candidate archive')
     candidate = {'product_commit': 'a' * 40, 'worktree_dirty': False,
                  'frontend': json.loads((ROOT / 'scripts/frontend-inputs.json').read_text(encoding='utf-8'))}
+    from scripts.ucrt_inputs import verify_pinned_ucrt
+    candidate['ucrt_input'] = verify_pinned_ucrt(ROOT)
     native_search = copy.deepcopy(native_search_runtime_fixture())
     candidate['native_search_modules'] = native_search['modules'].copy()
     native_search.update(root=str(tmp_path), executable=str(tmp_path / 'python.exe'),
@@ -2200,6 +2202,7 @@ def extracted_receipt(tmp_path):
               'frontendClientFilesChecked': len(candidate['frontend']['client_files']),
               'frontendBuildDigest': candidate['frontend']['build_record']['artifacts']['sha256'], 'archive': str(archive),
               'archiveSha256': GATE.digest(archive), 'provenance': dict(candidate), 'toolScheduler': scheduler,
+              'ucrtInput': copy.deepcopy(candidate['ucrt_input']),
               'nativeSearch': native_search,
               'httpRedirect': redirect, 'javascriptWorkflow': javascript, 'runtimeContext': context, 'javascriptReady': ready,
               'persistenceRead': read, 'javascriptInitial': initial, 'sessionNumber': number, 'sessionDiagnostic': diagnostic,

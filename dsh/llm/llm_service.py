@@ -403,7 +403,7 @@ class LLMService:
                 raise LlmError('configurable provider "{}" has an empty settingsPath segment'.format(provider), "INVALID_DIRECTORY")
             if provider in self._directory or any(d["provider"] == provider for d in detached):
                 raise LlmError('configurable provider "{}" is already declared'.format(provider), "DUPLICATE_DIRECTORY")
-            detached.append({"provider": provider, "displayName": display, "settingsNs": ns, "settingsPath": list(path), "declared": e.get("declared")})
+            detached.append(dict(e, settingsPath=list(path)))
         for d in detached:
             self._directory[d["provider"]] = d
         self._emit_adapters_updated()
@@ -436,7 +436,7 @@ class LLMService:
                     raise LlmError('configurable provider "{}" has an empty settingsPath segment'.format(provider), "INVALID_DIRECTORY")
                 if (provider in self._directory and provider not in own) or any(x["provider"] == provider for x in nd):
                     raise LlmError('configurable provider "{}" is already declared'.format(provider), "DUPLICATE_DIRECTORY")
-                nd.append({"provider": provider, "displayName": display, "settingsNs": ns, "settingsPath": list(path), "declared": e.get("declared")})
+                nd.append(dict(e, settingsPath=list(path)))
             for d in held:
                 self._directory.pop(d["provider"], None)
             held.clear()
@@ -477,7 +477,7 @@ class LLMService:
         return [dict(v["provider"]) for v in self._adapters.values()]
 
     def list_configurable_providers(self):
-        return [dict(provider=v["provider"], displayName=v["displayName"], settingsNs=v["settingsNs"], settingsPath=list(v["settingsPath"]), **({"declared": v["declared"]} if "declared" in v and v["declared"] is not None else {})) for v in self._directory.values()]
+        return self.listConfigurableProviders()
 
     async def discover_models(self, settings_ns, options, signal=None):
         discover = self._discoveries.get(settings_ns)

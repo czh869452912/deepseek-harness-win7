@@ -103,6 +103,7 @@ def test_invalid_input_fails_before_release_replacement(tmp_path, monkeypatch, d
     (dist/'sentinel').write_text('last successful release',encoding='utf-8')
     monkeypatch.setattr(BUILD,'ROOT_DIR',str(root));monkeypatch.setattr(BUILD,'DIST_DIR',str(dist))
     # Keep the licensed native input valid so each intended preflight damage is reached.
+    shutil.copytree(ROOT/'vendor/ucrt', root/'vendor/ucrt')
     shutil.copytree(ROOT/'dsh/fs/tool_fs_search/bin', root/'dsh/fs/tool_fs_search/bin')
     site=tmp_path/'absent' if damage=='missing-runtime' else ROOT/'.venv/Lib/site-packages'
     with pytest.raises((ValueError,FileNotFoundError,RuntimeError)):

@@ -66,6 +66,7 @@ def test_portable_stages_pinned_rg_and_zip_path_matches_runtime_resolver(tmp_pat
     build = _load_build_module()
     fixture_root = tmp_path / "fixture"
     import shutil
+    shutil.copytree(ROOT / 'vendor/ucrt', fixture_root / 'vendor/ucrt')
     shutil.copytree(ROOT / 'dsh/session/bin/icu', fixture_root / 'dsh/session/bin/icu')
     shutil.copytree(ROOT / 'dsh/session/bin/zstd', fixture_root / 'dsh/session/bin/zstd')
     shutil.copytree(ROOT / 'dsh/session/bin/unicode', fixture_root / 'dsh/session/bin/unicode')

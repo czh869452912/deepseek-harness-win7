@@ -1,0 +1,30 @@
+{
+  "id": "RUN-HANDOFF-FULL-REJECTION-20261010-3DCA2A32",
+  "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
+  "product_commit": "3dca2a325dde5e89cb815559dd03a4d8ace4baa4",
+  "kind": "research",
+  "result": "failed",
+  "validity": "historical",
+  "exit_code": 1,
+  "commands": [
+    ".venv/Scripts/python.exe scripts/verify_release.py --browser \"C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe\" --browser108 .goose/tools/chromium-1058931/chrome-win/chrome.exe --output-dir .goose/out/release-gate-20261009-handoff-v9"
+  ],
+  "environment": {
+    "python": "3.8.10",
+    "os": "Windows-10-10.0.26200-SP0",
+    "cwd": "C:\\Users\\czh86\\Documents\\Codex\\deepseek-harness-win7",
+    "node": "v22.22.2"
+  },
+  "contract_revisions": {},
+  "artifacts": [
+    {
+      "path": "migration/evidence/artifacts/CURRENT-RELEASE-REJECTION-20261010-3DCA2A32.zip",
+      "sha256": "ae7c14c5db370ccef4191be8bf536250a5b9fd0971df265ba1b955c1b343b5ef"
+    },
+    {
+      "path": "migration/evidence/artifacts/RETENTION-ORPHAN-20261010-3DCA2A32.zip",
+      "sha256": "f4d787f271314baa26dc9852a77f6788d4138f94c4338e693b21e357b9b1eef7"
+    }
+  ],
+  "scope": "Clean 3dca2a32 complete Python10444 passed/4 failed/6 existing skips/4215.139s. Three creative fixture bundle-map failures and one owned workspace retention WinError5. Frozen16619 inputs and exact ZIP remain unchanged after physical exit1. All Source, paired, extracted and browser stages were not executed; no release or task promotion.995 actual per-case owner/hash audits removed5448 reconstructible files/13891871346 bytes; original rejection and unknown files remain. Original 23-byte CRLF orphan observation, original mapping and WinError5 remain byte-exact in a three-member supplemental archive. After archival, the owned orphan was recovered into its physically moved retained fixture; original execution/retained paths are unchanged in raw records."
+}

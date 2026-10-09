@@ -14,6 +14,7 @@ import signal
 import subprocess
 import sys
 import tempfile
+import time
 import xml.etree.ElementTree as ET
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -129,6 +130,15 @@ OFFICIAL_CONFIGS = ('consumers', 'agent-lifecycle', 'session-recovery', 'session
 OFFICIAL_CONFIGS += ('web-search-deepseek-source',)
 OFFICIAL_CONFIGS += ('plan-source',)
 REQUIRED_REGRESSION = {
+    'test_ucrt_inputs': {
+        'test_actual_sdk_files_keep_exact_identity_and_app_local_layout',
+        *{'test_bad_ucrt_input_cannot_replace_previous_release[' + damage + ']'
+          for damage in ('missing-binary', 'binary', 'manifest', 'license', 'redist', 'hardlink')},
+        *{'test_extracted_ucrt_damage_is_rejected[' + damage + ']'
+          for damage in ('missing', 'binary', 'relocated', 'manifest', 'license', 'redist', 'hardlink')},
+        *{'test_current_release_requires_complete_ucrt_receipt[' + damage + ']'
+          for damage in ('missing-proof', 'missing-provenance', 'wrong-version', 'missing-file', 'changed-hash')},
+    },
     'test_ripgrep_compatibility': {
         'test_native_input_keeps_official_identity_and_licenses',
         'test_fresh_search_process_runs_without_host_ripgrep_or_node',
@@ -1576,6 +1586,10 @@ def validate_paired(path):
 
 def validate_extracted(path, archive, candidate):
     report = json.loads(path.read_text(encoding='utf-8'))
+    ucrt = candidate.get('ucrt_input')
+    if (not isinstance(ucrt, dict) or report.get('provenance', {}).get('ucrt_input') != ucrt
+            or report.get('ucrtInput') != ucrt):
+        raise RuntimeError('Extracted pinned app-local UCRT acceptance differs')
     frontend = candidate.get('frontend')
     if (not isinstance(frontend, dict) or report.get('provenance', {}).get('frontend') != frontend
             or report.get('frontendFilesChecked') != len(frontend['files'])
@@ -1985,6 +1999,38 @@ def regression_retention_path(path):
     return '\\\\?\\UNC\\' + absolute[2:] if absolute.startswith('\\\\') else '\\\\?\\' + absolute
 
 
+def retain_regression_workspace(workspace, retained, timeout=1.0):
+    """Move a closed owned workspace without replacing a retained observation."""
+    source = regression_retention_path(workspace)
+    target = regression_retention_path(retained)
+    initial = os.lstat(source)
+    if os.path.islink(source) or getattr(initial, 'st_file_attributes', 0) & 0x400:
+        raise RuntimeError('Refusing linked regression workspace')
+    identity = (initial.st_dev, initial.st_ino)
+    deadline = time.monotonic() + timeout
+    first_failure = None
+    while True:
+        if os.path.lexists(target):
+            if first_failure is not None:
+                raise first_failure
+            raise FileExistsError('Fresh retained pytest workspace required: ' + target)
+        current = os.lstat(source)
+        if (current.st_dev, current.st_ino) != identity or os.path.islink(source) or getattr(current, 'st_file_attributes', 0) & 0x400:
+            raise RuntimeError('Regression workspace identity changed before retention')
+        try:
+            os.rename(source, target)
+            return
+        except OSError as failure:
+            if getattr(failure, 'winerror', None) not in (5, 32, 33):
+                raise
+            if first_failure is None:
+                first_failure = failure
+            remaining = deadline - time.monotonic()
+            if remaining <= 0:
+                raise first_failure
+            time.sleep(min(0.02, remaining))
+
+
 def run_python_regression(python, output, environment, timeout=None):
     retained = (output / 'pytest-workspace').resolve()
     retained.relative_to(output.resolve())
@@ -2019,8 +2065,8 @@ def run_python_regression(python, output, environment, timeout=None):
     finally:
         if workspace.exists():
             try:
-                os.rename(regression_retention_path(workspace), regression_retention_path(retained))
-            except OSError as retention_failure:
+                retain_regression_workspace(workspace, retained)
+            except Exception as retention_failure:
                 try:
                     (output / 'pytest-retention-failure.json').write_text(json.dumps(dict(
                         name=type(retention_failure).__name__, message=str(retention_failure)), indent=2) + '\n', encoding='utf-8')
@@ -2063,6 +2109,8 @@ def verify(args, output):
     if candidate['worktree_dirty'] and not args.allow_dirty:
         raise RuntimeError('release requires a clean checkout; --allow-dirty produces only a non-publishable preview')
     candidate['frontend'] = json.loads((ROOT / 'scripts/frontend-inputs.json').read_text(encoding='utf-8'))
+    from scripts.ucrt_inputs import verify_pinned_ucrt
+    candidate['ucrt_input'] = verify_pinned_ucrt(ROOT)
     from scripts.browser108_gate import validate_input as validate_browser108_input
     browser108 = getattr(args, 'browser108', None) or os.environ.get('DSH_TEST_CHROMIUM108')
     if not browser108:

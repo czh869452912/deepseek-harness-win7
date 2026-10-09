@@ -982,6 +982,11 @@ def main(argv=None):
             portable = extract(archive, workspace)
             provenance = json.loads((portable / 'build-provenance.json').read_text(encoding='utf-8'))
             report['provenance'] = provenance
+            from scripts.ucrt_inputs import verify_pinned_ucrt, validate_bundled_ucrt
+            ucrt = verify_pinned_ucrt(ROOT)
+            if provenance.get('ucrt_input') != ucrt:
+                raise RuntimeError('Portable UCRT provenance differs from pinned inputs')
+            report['ucrtInput'] = validate_bundled_ucrt(portable, ucrt)
             if args.expected_commit and (provenance.get('product_commit') != args.expected_commit or provenance.get('worktree_dirty') is not False):
                 raise RuntimeError('Portable does not come from the required clean product commit')
             for name, expected in provenance['python_runtime']['files'].items():

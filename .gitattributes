@@ -5,6 +5,7 @@ apps/web/dist/** -text
 apps/cli/package.json -text
 vendor/*/package.json -text
 vendor/*/LICENSE -text
+vendor/ucrt/** -text
 packages/*/*/lib/client.js -text
 packages/*/*/lib/client.js.map -text
 dsh/session/bin/icu/** -text

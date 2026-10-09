@@ -4,7 +4,7 @@
 
 [README.md](README.md) | [AGENTS.md](AGENTS.md)
 
-当前迁移验收：最新完整签收仍为干净产品 `2a67ae84` 的60个有界范围。新候选 `011c3a95` 全量 **8530 passed、1 failed、6既有skip**，Windows受保护覆盖返回1175，精确失败产物已保留；整体迁移尚未闭环。可重建过程测试结果已自动清理，真实验收与失败证据保留。详见 [迁移台账](migration/README.md) 和 [当前替换诊断](docs/research/2026-10-06-win32-replacement-progress.md)。
+当前迁移验收：最新完整签收仍为干净产品 `83026446` 的65个有界范围。后续16项尚待统一闭环；干净 `3dca2a32` 第九轮完整 Python **10444 passed、4 failed、6既有skip**，精确拒绝已封存。本批 Provider/工作区保留/UCRT 修复已定向验证，下一稳定候选另作同包完整验收。可重建测试副本及时清理，真实观察、失败与正式证据保留。详见 [迁移台账](migration/README.md) 和 [最新接续记录](docs/research/2026-10-10-provider-ucrt-composition-progress.md)。
 
 规范 JSONL 与原版一致，默认写 `session.jsonl.zstd`，逻辑导出仍为 `session.jsonl`。已有 plaintext 根目录须显式配置 `compression: none`，或为默认压缩选择单独的 root；两种物理格式不能混用同一个 root，也不会静默转换已有日志。新提供端的完整发布验收仍在执行，见 [推进记录](docs/research/2026-10-05-jsonl-provider-progress.md)。
 

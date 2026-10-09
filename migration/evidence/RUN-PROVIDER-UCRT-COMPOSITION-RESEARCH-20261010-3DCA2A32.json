@@ -1,0 +1,25 @@
+{
+  "id": "RUN-PROVIDER-UCRT-COMPOSITION-RESEARCH-20261010-3DCA2A32",
+  "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
+  "product_commit": "3dca2a325dde5e89cb815559dd03a4d8ace4baa4",
+  "kind": "research",
+  "result": "passed",
+  "validity": "historical",
+  "exit_code": 0,
+  "commands": [
+    ".venv/Scripts/python.exe .goose/out/continuation-20261008-v1/archive-provider-ucrt-research-v1.py"
+  ],
+  "environment": {
+    "python": "3.8.10",
+    "node": "v22.22.2",
+    "os": "Windows-10-10.0.26200-SP0"
+  },
+  "contract_revisions": {},
+  "artifacts": [
+    {
+      "path": "migration/evidence/artifacts/PROVIDER-UCRT-COMPOSITION-RESEARCH-20261010-3DCA2A32.zip",
+      "sha256": "0c7e9c9ea25e048186d030d508547b89fd6fc925baa23f5fee99a703fda4ae2f"
+    }
+  ],
+  "scope": "Historical exact 3dca2a32 finite compositions; dirty successor targeted DTO/retention/UCRT checks and default-profile research. No full release, parent or child acceptance. Four token scenarios approved by user; wire-order proposal pending. Archive member hashes verified; archive success is not release acceptance."
+}

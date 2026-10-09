@@ -87,6 +87,7 @@ BUNDLE_DIRS: Dict[str, str] = {
     "@deepseek-ai/dsh-acp-app": "acp-app",
     "@deepseek-ai/dsh-sdk-app": "sdk-app",
     "@deepseek-ai/dsh-sdk-minimal": "sdk-minimal",
+    "@deepseek-win7/dsh-creative": "creative",
 }
 
 PROFILES: List[str] = ["web", "standard", "headless", "creative", "acp", "sdk", "minimal"]

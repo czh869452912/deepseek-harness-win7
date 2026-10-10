@@ -19,6 +19,8 @@ const report = {passed: false, steps: [], exceptions: [], consoleErrors: [], soc
 report.observedSessionWire = [];
 const privateBrowser = await mkdtemp(join(tmpdir(), 'dsh-portable-cdp-'));
 let host, browser, cdp, hostErrors = '';
+const sha256 = value => createHash('sha256').update(value).digest('hex');
+let noticeInput;
 const delay = ms => new Promise(done => setTimeout(done, ms));
 const exited = child => child.exitCode !== null || child.signalCode !== null;
 async function until(read, label, timeout = 25000) {
@@ -64,10 +66,26 @@ async function click(selector) {
 }
 try {
   const env = JSON.parse(await readFile(options.environment, 'utf8'));
+  if (options['notice-input']) {
+    noticeInput = JSON.parse(await readFile(options['notice-input'], 'utf8'));
+    assert.equal(noticeInput.mode, 'persisted-acknowledgement');
+    assert.equal(noticeInput.version, '2026-08-13.1');
+    assert.equal(resolve(noticeInput.settings.path), resolve(options.workspace, 'home/settings.yaml'));
+    const settings = await readFile(noticeInput.settings.path);
+    assert.equal(settings.toString('utf8'), noticeInput.settings.text);
+    assert.equal(sha256(settings), noticeInput.settings.sha256);
+    const priorBytes = await readFile(noticeInput.prior.path);
+    assert.equal(sha256(priorBytes), noticeInput.prior.sha256);
+    const prior = JSON.parse(priorBytes);
+    assert.equal(prior.passed, true); assert.equal(prior.hostExitCode, 0);
+    assert.equal(prior.steps[0], 'original-shell-and-first-use-notice');
+    assert.ok(!prior.hostErrors); assert.deepEqual(prior.exceptions, []); assert.deepEqual(prior.consoleErrors, []);
+    report.welcomeNotice = {input: noticeInput, settingsBeforeSha256: sha256(settings)};
+  }
   let readyYes, readyNo;
   const ready = new Promise((yes, no) => {readyYes = yes; readyNo = no;});
   const timer = setTimeout(() => readyNo(new Error('Extracted Host startup timeout')), 30000);
-  host = spawn(resolve(options.python), ['-I', '-u', join(dirname(fileURLToPath(import.meta.url)), 'portable_runtime_probe.py'),
+  host = spawn(resolve(options.python), ['-I', '-B', '-u', join(dirname(fileURLToPath(import.meta.url)), 'portable_runtime_probe.py'),
     '--workspace', resolve(options.workspace), '--serve'], {cwd: options.workspace, env, windowsHide: true});
   host.stderr.on('data', data => {hostErrors += data;});
   host.on('error', readyNo); host.on('exit', code => readyNo(new Error('Host exited: ' + code)));
@@ -141,10 +159,16 @@ try {
   report.capabilitiesAfter = await cdp.evaluate(`({abortSignalAny:typeof AbortSignal.any,
     promiseWithResolvers:typeof Promise.withResolvers,abortSignalTimeout:typeof AbortSignal.timeout})`);
   const notice = '[role="dialog"][aria-label="Internal Testing Notice"]';
-  await until(() => count(notice), 'original first-use notice'); await click(notice + ' button');
-  await until(async () => !await count(notice), 'notice dismissed');
-  report.steps.push('original-shell-and-first-use-notice');
+  if (!noticeInput) {
+    await until(() => count(notice), 'original first-use notice'); await click(notice + ' button');
+    await until(async () => !await count(notice), 'notice dismissed');
+    report.steps.push('original-shell-and-first-use-notice');
+  } else report.steps.push('original-shell-and-persisted-notice-acknowledgement');
   await deferProviderOnboarding(cdp, until);
+  if (noticeInput) {
+    assert.equal(await count(notice), 0, 'acknowledged notice stays absent after onboarding is ready');
+    report.welcomeNotice.absentAfterOnboarding = true;
+  }
   report.steps.push('original-provider-onboarding-deferred-without-credentials');
   await until(() => count('[role="treeitem"]'), 'original sidebar');
   await press(await until(async () => {
@@ -176,6 +200,10 @@ try {
   assert.deepEqual(report.exceptions, []); assert.deepEqual(report.consoleErrors, []);
   await Promise.all([...replyJobs]);
   report.steps.push('installed-original-evaluator-client-calls-extracted-python-remote');
+  if (noticeInput) {
+    assert.equal(await count(notice), 0, 'acknowledged notice stays absent after the actual round trip');
+    report.welcomeNotice.absentAfterRoundTrip = true;
+  }
   const cookies = (await cdp.call('Network.getCookies', {urls: [boot.url]})).cookies;
   browser.kill();
   await until(() => exited(browser), 'abrupt original-browser termination');
@@ -210,6 +238,12 @@ try {
   report.browserExitCode = browser?.exitCode;
   report.browserSignalCode = browser?.signalCode;
   if (report.passed && (report.hostErrors || report.hostExitCode !== 0)) {report.passed = false; report.failure = 'Host teardown failed';}
+  if (noticeInput) {
+    try {
+      report.welcomeNotice.settingsAfterSha256 = sha256(await readFile(noticeInput.settings.path));
+      assert.equal(report.welcomeNotice.settingsAfterSha256, noticeInput.settings.sha256);
+    } catch (error) {report.passed = false; report.noticePersistenceFailure = String(error.stack ?? error);}
+  }
   assert.equal(resolve(dirname(privateBrowser)), resolve(tmpdir()));
   assert.ok(basename(privateBrowser).startsWith('dsh-portable-'));
   try {await rm(privateBrowser, {recursive: true, force: true, maxRetries: 5, retryDelay: 100});}

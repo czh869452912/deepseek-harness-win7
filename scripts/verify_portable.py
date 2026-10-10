@@ -1598,21 +1598,30 @@ def main(argv=None):
             else:
                 report['browser'] = dict(status='not-run')
             if args.browser108:
-                from scripts.browser108_gate import validate_input, validate_observation, validate_profile_journeys
+                from scripts.browser108_gate import (validate_input, validate_observation,
+                    validate_profile_journeys, prepare_notice_input)
                 identity108 = validate_input(args.browser108)
                 browser108_report = output.with_suffix('.browser108.json')
                 env_file = workspace / 'host-environment108.json'
                 env_file.write_text(json.dumps(env), encoding='utf-8')
+                notice_args = []
+                if args.browser:
+                    notice_input = prepare_notice_input(workspace, browser_report, report['browser'])
+                    notice_path = output.with_suffix('.browser108-notice-input.json')
+                    notice_path.write_text(json.dumps(notice_input, ensure_ascii=True, indent=2) + '\n', encoding='utf-8')
+                    report['browser108NoticeInput'] = notice_input
+                    notice_args = ['--notice-input', str(notice_path)]
                 observed108 = subprocess.run([node, str(ROOT / 'scripts/portable_browser_oracle.mjs'),
                     '--python', str(portable / 'python.exe'), '--workspace', str(workspace),
                     '--environment', str(env_file), '--browser', identity108['binary'],
-                    '--archive', str(archive), '--output', str(browser108_report)], cwd=str(workspace),
+                    '--archive', str(archive), '--output', str(browser108_report)] + notice_args, cwd=str(workspace),
                     capture_output=True, encoding='utf-8', errors='replace', timeout=120)
                 output.with_suffix('.browser108.log').write_text(observed108.stdout + '\nSTDERR:\n' + observed108.stderr, encoding='utf-8')
                 report['browser108'] = json.loads(browser108_report.read_text(encoding='utf-8')) if browser108_report.is_file() else {}
                 if observed108.returncode:
                     raise RuntimeError('Extracted Chromium 108 journey failed; see ' + str(browser108_report))
-                validate_observation(report['browser108'], archive, digest(portable / 'dsh/host/browser_compat/compat.js'))
+                validate_observation(report['browser108'], archive, digest(portable / 'dsh/host/browser_compat/compat.js'),
+                    report.get('browser108NoticeInput'), report.get('browser'), browser_report if args.browser else None)
                 report['browser108InputSha256'] = identity108['input_sha256']
                 report['browser108ProfileJourneys'] = {}
                 for preset in ('minimal', 'standard', 'cordis'):

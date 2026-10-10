@@ -1,0 +1,45 @@
+{
+  "id": "RUN-HANDOFF-UI-NOTICE-CLOSE-RESEARCH-20261010-DBC3876E",
+  "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
+  "product_commit": "dbc3876e5c6feee78bd4775f97d1f08ab9e3151f",
+  "kind": "research",
+  "result": "passed",
+  "validity": "historical",
+  "exit_code": 0,
+  "commands": [
+    ".venv/Scripts/python.exe -m pytest tests/test_browser108_gate.py tests/test_browser_onboarding.py -q --junitxml=.goose/out/continuation-20261008-v1/notice-gate-targeted-v1.xml",
+    ".venv/Scripts/python.exe -m pytest tests/test_current_release_gate.py::test_extracted_runtime_and_browser_receipt_is_bound_to_the_candidate -q --junitxml=.goose/out/continuation-20261008-v1/notice-release-consumers-v1.xml",
+    ".venv/Scripts/python.exe .goose/out/continuation-20261008-v1/run-model-other-presets-research-v1.py",
+    ".venv/Scripts/python.exe .goose/out/continuation-20261008-v1/review-notice-targeted-and-retire-v1.py",
+    ".venv/Scripts/python.exe .goose/out/continuation-20261008-v1/review-notice-targeted-and-retire-v2.py",
+    ".venv/Scripts/python.exe -m pytest tests/test_browser108_gate.py tests/test_browser_onboarding.py -q --junitxml=.goose/out/continuation-20261008-v1/notice-raw-binding-targeted-v2.xml",
+    ".venv/Scripts/python.exe .goose/out/continuation-20261008-v1/qualify-notice-raw-binding-v2.py",
+    ".venv/Scripts/python.exe -I -S scripts/browser108_gate.py --browser .goose/tools/chromium-1058931/chrome-win/chrome.exe"
+  ],
+  "environment": {
+    "python": "3.8.10",
+    "node": "v22.22.2",
+    "os": "Windows-10-10.0.26200-SP0",
+    "cwd": "C:\\Users\\czh86\\Documents\\Codex\\deepseek-harness-win7"
+  },
+  "contract_revisions": {},
+  "artifacts": [
+    {
+      "path": "migration/evidence/artifacts/HANDOFF-UI-NOTICE-CLOSE-RESEARCH-20261010-DBC3876E.zip",
+      "sha256": "3a73a6f88cce362d15fe95d04b26ef9a9496f6299a1cff8354830ea9f75d3270"
+    },
+    {
+      "path": "migration/evidence/artifacts/CURRENT-RELEASE-REJECTION-20261010-DBC3876E.zip",
+      "sha256": "64a7cf24ee9b0db867274255dafd85bd063774a9172d92e671a1b6a0d1e19647"
+    },
+    {
+      "path": "migration/evidence/artifacts/NOTICE-RAW-REPORT-BINDING-20261010-DBC3876E.zip",
+      "sha256": "2974381e8730c5297781b72e9662738899f4a566670062d3f7905dd4cf14ebd1"
+    },
+    {
+      "path": "migration/evidence/artifacts/NOTICE-OBSERVER-BOOTSTRAP-20261010-DBC3876E.zip",
+      "sha256": "01a52c206593ca1e3dc614ab0b2fd4c685a3aac4bf6c7333cd434214e6cb3d0a"
+    }
+  ],
+  "scope": "Current working-tree verification repairs above clean rejected DBC; no production/frontend byte change.76 browser/notice controls passed2.83s;25 actual release consumers passed435.21s. Actual modern fresh acknowledgement binds same-home108 installed-client round trip to raw prior report/current settings, exact version and absence/unchanged state. Two six-child runtime/modern/108/three-profile fresh/cold runs each physically passed every actual child and standard observation validators, but each outer exited1 at overstrict whole-copy equality due generated caches; full original raw failures retained and never relabelled. Independent post-physical review sessions58046 and95290 exit0 validate15561 original files unchanged,689/154 caches exactly against corresponding3.8.10 source compilation/magic/filename/line table, archive full caches and retire completed copies504779743 bytes. Source/Root actual minimal and cordis model/Low effort use and fresh/cold research four journeys physically pass; earlier standard Source/Root model research and all named refusals retained. Two actual body-close/approval-close Source/Root/exact-old-ZIP own observations fully match and retire496144812 copied bytes; earlier identified browser research copies316760875 bytes removed after full raw archive. Research archive515 members252673823 bytes includes complete original refusals, screenshots/Host homes/observers/guards/physical bindings; exact Portable ZIP remains once in referenced full rejection. Four policy11token differences retain user-approved bounds; Web ordering unapproved; no full/task/Win7 certification."
+}

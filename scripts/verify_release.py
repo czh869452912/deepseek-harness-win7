@@ -1418,6 +1418,13 @@ REQUIRED_REGRESSION = {
     'test_browser108_gate': {
         'test_all_fixed_observer_resources_are_required',
         'test_profile_imports_remain_bound_to_zip_after_owned_extraction_cleanup',
+        *{'test_warm_lane_requires_successful_fresh_observation_and_unchanged_acknowledgement[' + damage + ']'
+          for damage in ('none', 'missing-prior', 'failed-prior', 'prior-not-fresh', 'prior-bytes',
+                         'notice-version', 'durable-version', 'settings-before', 'settings-after',
+                         'notice-visible', 'notice-reappeared', 'host-identity', 'settings-path', 'missing-proof', 'wrong-step',
+                         'prior-path', 'prior-raw-hash', 'raw-prior-removed', 'self-consistent-prior')},
+        *{'test_notice_caller_rejects_changed_raw_input_before_launch[' + damage + ']'
+          for damage in ('raw-prior', 'raw-settings', 'malformed-settings')},
         *{'test_profile_journeys_require_all_lanes_and_owned_runtime[' + damage + ']'
           for damage in ('lane', 'phase', 'scenario', 'result', 'cancel', 'root', 'python',
                          'interpreter', 'exit', 'module', 'bytes', 'version', 'late', 'zip', 'console',
@@ -1624,7 +1631,8 @@ def validate_extracted(path, archive, candidate):
     if candidate.get('browserCompatibility'):
         from scripts.browser108_gate import validate_observation, validate_profile_journeys
         identity = candidate['browserCompatibility']
-        validate_observation(report.get('browser108', {}), archive, identity['adapter_sha256'])
+        validate_observation(report.get('browser108', {}), archive, identity['adapter_sha256'],
+            report.get('browser108NoticeInput'), report.get('browser'), path.with_suffix('.browser.json'))
         if report.get('browser108InputSha256') != identity['input_sha256']:
             raise RuntimeError('Extracted Chromium 108 input differs from frozen candidate')
         validate_profile_journeys(report.get('browser108ProfileJourneys'), archive,

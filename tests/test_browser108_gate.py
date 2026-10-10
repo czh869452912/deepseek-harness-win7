@@ -2,6 +2,7 @@ import copy
 import json
 import shutil
 import zipfile
+from pathlib import Path
 
 import pytest
 
@@ -75,6 +76,97 @@ def test_all_fixed_observer_resources_are_required(tmp_path, monkeypatch):
     dll.unlink()
     with pytest.raises(ValueError, match='changed or missing'):
         gate.validate_input(binary)
+
+
+def acknowledged_baseline(tmp_path):
+    report, archive = valid(tmp_path)
+    workspace = tmp_path / 'owned-workspace'
+    settings = workspace / 'home/settings.yaml'
+    settings.parent.mkdir(parents=True)
+    settings.write_bytes(b'ui-onboarding:\r\n  welcomeNoticeVersion: 2026-08-13.1\r\n')
+    prior = copy.deepcopy(report)
+    prior['identity'] = dict(executable=str(workspace / 'portable/python.exe'))
+    prior_path = tmp_path / 'modern.json'
+    prior_path.write_text(json.dumps(prior), encoding='utf-8')
+    proof = gate.prepare_notice_input(workspace, prior_path, prior)
+    report['identity'] = copy.deepcopy(prior['identity'])
+    report['steps'][0] = gate.ACKNOWLEDGED_NOTICE_STEP
+    report['welcomeNotice'] = dict(input=copy.deepcopy(proof), absentAfterOnboarding=True,
+        absentAfterRoundTrip=True, settingsBeforeSha256=proof['settings']['sha256'],
+        settingsAfterSha256=proof['settings']['sha256'])
+    gate.validate_observation(report, archive, 'adapter', proof, prior, prior_path)
+    return report, archive, proof, prior
+
+
+@pytest.mark.parametrize('damage', ['none', 'missing-prior', 'failed-prior', 'prior-not-fresh',
+    'prior-bytes', 'notice-version', 'durable-version', 'settings-before', 'settings-after',
+    'notice-visible', 'notice-reappeared', 'host-identity', 'settings-path', 'missing-proof', 'wrong-step',
+    'prior-path', 'prior-raw-hash', 'raw-prior-removed', 'self-consistent-prior'])
+def test_warm_lane_requires_successful_fresh_observation_and_unchanged_acknowledgement(tmp_path, damage):
+    report, archive, proof, prior = acknowledged_baseline(tmp_path)
+    prior_path = Path(proof['prior']['path'])
+    if damage == 'missing-prior':
+        prior = None
+    elif damage == 'failed-prior':
+        prior['passed'] = False
+    elif damage == 'prior-not-fresh':
+        prior['steps'][0] = gate.ACKNOWLEDGED_NOTICE_STEP
+    elif damage == 'prior-bytes':
+        prior['identity']['executable'] += '.other'
+    elif damage == 'notice-version':
+        proof['version'] = 'other'
+    elif damage == 'durable-version':
+        proof['settings']['text'] = 'ui-onboarding:\n  welcomeNoticeVersion: other\n'
+        proof['settings']['sha256'] = gate.hashlib.sha256(proof['settings']['text'].encode('utf-8')).hexdigest()
+        report['welcomeNotice']['input'] = copy.deepcopy(proof)
+    elif damage == 'settings-before':
+        report['welcomeNotice']['settingsBeforeSha256'] = 'changed'
+    elif damage == 'settings-after':
+        report['welcomeNotice']['settingsAfterSha256'] = 'changed'
+    elif damage == 'notice-visible':
+        report['welcomeNotice']['absentAfterOnboarding'] = False
+    elif damage == 'notice-reappeared':
+        report['welcomeNotice']['absentAfterRoundTrip'] = False
+    elif damage == 'host-identity':
+        report['identity']['executable'] += '.other'
+    elif damage == 'settings-path':
+        proof['settings']['path'] = str(tmp_path / 'unrelated-home/settings.yaml')
+        report['welcomeNotice']['input'] = copy.deepcopy(proof)
+    elif damage == 'missing-proof':
+        proof = None
+    elif damage == 'wrong-step':
+        report['steps'][0] = gate.PORTABLE_STEPS[0]
+    elif damage == 'prior-path':
+        proof['prior']['path'] = str(tmp_path / 'other-modern.json')
+        report['welcomeNotice']['input'] = copy.deepcopy(proof)
+    elif damage == 'prior-raw-hash':
+        proof['prior']['sha256'] = 'f' * 64
+        report['welcomeNotice']['input'] = copy.deepcopy(proof)
+    elif damage == 'raw-prior-removed':
+        prior_path.unlink()
+    elif damage == 'self-consistent-prior':
+        prior['sessionRequests'] = ['fabricated']
+        proof['prior']['valueSha256'] = gate.value_digest(prior)
+        report['welcomeNotice']['input'] = copy.deepcopy(proof)
+    if damage == 'none':
+        gate.validate_observation(report, archive, 'adapter', proof, prior, prior_path)
+    else:
+        with pytest.raises(ValueError):
+            gate.validate_observation(report, archive, 'adapter', proof, prior, prior_path)
+
+
+@pytest.mark.parametrize('damage', ['raw-prior', 'raw-settings', 'malformed-settings'])
+def test_notice_caller_rejects_changed_raw_input_before_launch(tmp_path, damage):
+    report, archive, proof, prior = acknowledged_baseline(tmp_path)
+    if damage == 'raw-prior':
+        Path(proof['prior']['path']).write_text('{}', encoding='utf-8')
+    else:
+        Path(proof['settings']['path']).write_bytes(b'other' if damage == 'raw-settings' else b'ui-onboarding: [')
+    with pytest.raises(ValueError):
+        gate.validate_notice_input(proof, prior, check_files=True)
+    if damage != 'raw-prior':
+        with pytest.raises(ValueError):
+            gate.prepare_notice_input(Path(proof['settings']['path']).parents[1], proof['prior']['path'], prior)
 
 
 def profile_baseline(tmp_path):

@@ -6,7 +6,6 @@ from pathlib import Path
 import urllib.request
 import zipfile
 
-
 ROOT = Path(__file__).resolve().parents[1]
 PORTABLE_STEPS = [
     'original-shell-and-first-use-notice',
@@ -15,6 +14,50 @@ PORTABLE_STEPS = [
     'installed-original-evaluator-client-calls-extracted-python-remote',
     'abrupt-browser-close-retains-same-host-and-installed-remote-service',
 ]
+ACKNOWLEDGED_NOTICE_STEP = 'original-shell-and-persisted-notice-acknowledgement'
+NOTICE_VERSION = '2026-08-13.1'
+
+
+def value_digest(value):
+    return hashlib.sha256(json.dumps(value, sort_keys=True, ensure_ascii=True,
+        separators=(',', ':')).encode('utf-8')).hexdigest()
+
+
+def validate_notice_input(proof, prior_report, check_files=False):
+    """Bind a warm browser lane to the preceding successful fresh UI observation."""
+    import yaml
+
+    try:
+        settings, prior = proof['settings'], proof['prior']
+        raw = settings['text'].encode('utf-8')
+        if (proof['mode'] != 'persisted-acknowledgement' or proof['version'] != NOTICE_VERSION
+                or yaml.safe_load(settings['text']).get('ui-onboarding', {}).get('welcomeNoticeVersion') != NOTICE_VERSION
+                or hashlib.sha256(raw).hexdigest() != settings['sha256']
+                or prior_report.get('passed') is not True or prior_report.get('steps') != PORTABLE_STEPS
+                or prior_report.get('hostExitCode') != 0 or prior_report.get('hostErrors')
+                or prior_report.get('exceptions') or prior_report.get('consoleErrors')
+                or value_digest(prior_report) != prior['valueSha256']):
+            raise ValueError('preceding fresh notice observation or durable acknowledgement differs')
+        for row in (settings, prior):
+            path = Path(row['path'])
+            if not path.is_absolute() or len(row['sha256']) != 64:
+                raise ValueError('notice input identity is incomplete')
+            if check_files and (not path.is_file() or digest(path) != row['sha256']):
+                raise ValueError('notice input bytes changed')
+        if check_files and json.loads(Path(prior['path']).read_text(encoding='utf-8')) != prior_report:
+            raise ValueError('preceding raw browser observation differs')
+    except (KeyError, TypeError, AttributeError, yaml.YAMLError) as error:
+        raise ValueError('persisted notice input is incomplete') from error
+
+
+def prepare_notice_input(workspace, prior_path, prior_report):
+    settings = Path(workspace).resolve() / 'home/settings.yaml'
+    proof = dict(mode='persisted-acknowledgement', version=NOTICE_VERSION,
+        settings=dict(path=str(settings), text=settings.read_bytes().decode('utf-8'), sha256=digest(settings)),
+        prior=dict(path=str(Path(prior_path).resolve()), sha256=digest(prior_path),
+                   valueSha256=value_digest(prior_report)))
+    validate_notice_input(proof, prior_report, check_files=True)
+    return proof
 
 
 def digest(path):
@@ -43,10 +86,30 @@ def validate_input(binary):
                 input_sha256=digest(ROOT / 'scripts/browser108-input.json'))
 
 
-def validate_observation(report, archive, adapter_sha256):
+def validate_observation(report, archive, adapter_sha256, expected_notice=None, prior_report=None, prior_path=None):
     pin = pinned_input()
     before, after = report.get('capabilitiesBefore', {}), report.get('capabilitiesAfter', {})
-    if (report.get('passed') is not True or report.get('steps') != PORTABLE_STEPS or report.get('hostExitCode') != 0 or
+    expected_steps = list(PORTABLE_STEPS)
+    if expected_notice is not None:
+        validate_notice_input(expected_notice, prior_report)
+        if (prior_path is None or Path(expected_notice['prior']['path']) != Path(prior_path).resolve()
+                or not Path(prior_path).is_file() or digest(prior_path) != expected_notice['prior']['sha256']
+                or json.loads(Path(prior_path).read_text(encoding='utf-8')) != prior_report):
+            raise ValueError('preceding raw browser observation is missing or changed')
+        expected_steps[0] = ACKNOWLEDGED_NOTICE_STEP
+        notice = report.get('welcomeNotice', {})
+        if (notice.get('input') != expected_notice or notice.get('absentAfterOnboarding') is not True
+                or notice.get('absentAfterRoundTrip') is not True
+                or notice.get('settingsBeforeSha256') != expected_notice['settings']['sha256']
+                or notice.get('settingsAfterSha256') != expected_notice['settings']['sha256']
+                or not report.get('identity', {}).get('executable')
+                or report.get('identity') != prior_report.get('identity')
+                or Path(expected_notice['settings']['path']) !=
+                    Path(report['identity']['executable']).parent.parent / 'home/settings.yaml'):
+            raise ValueError('ZIP-bound Chromium 108 persisted notice observation is incomplete or changed')
+    elif report.get('welcomeNotice') is not None:
+        raise ValueError('unexpected persisted notice input')
+    if (report.get('passed') is not True or report.get('steps') != expected_steps or report.get('hostExitCode') != 0 or
             report.get('hostErrors') or report.get('exceptions') or report.get('consoleErrors') or
             report.get('browserBinarySha256') != pin['binary_sha256'] or
             report.get('browser', {}).get('product') != pin['protocol_product'] or

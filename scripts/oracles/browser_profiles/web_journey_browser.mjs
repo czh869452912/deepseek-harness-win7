@@ -110,7 +110,7 @@ async function phase(name){
   if(options.side==='native'){
     if(!options.python||!options.root)throw new Error('Owned native root and interpreter required');
     executable=resolve(options.python);
-    argumentsValue=['-I','-u',join(stage,'web_journey_native_host.py'),'--root',resolve(options.root),...common];
+    argumentsValue=['-I','-B','-u',join(stage,'web_journey_native_host.py'),'--root',resolve(options.root),...common];
   }else{
     if(!options['source-root'])throw new Error('Pinned actual Source root required');
     const source=resolve(options['source-root']);

@@ -1,0 +1,26 @@
+{
+  "id": "RUN-HANDOFF-FULL-REJECTION-20261010-DBC3876E",
+  "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
+  "product_commit": "dbc3876e5c6feee78bd4775f97d1f08ab9e3151f",
+  "kind": "research",
+  "result": "failed",
+  "validity": "historical",
+  "exit_code": 1,
+  "commands": [
+    ".venv/Scripts/python.exe scripts/verify_release.py --browser \"C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe\" --browser108 .goose/tools/chromium-1058931/chrome-win/chrome.exe --output-dir .goose/out/release-gate-20261010-handoff-v14"
+  ],
+  "environment": {
+    "python": "3.8.10",
+    "node": "v22.22.2",
+    "os": "Windows-10-10.0.26200-SP0",
+    "cwd": "C:\\Users\\czh86\\Documents\\Codex\\deepseek-harness-win7"
+  },
+  "contract_revisions": {},
+  "artifacts": [
+    {
+      "path": "migration/evidence/artifacts/CURRENT-RELEASE-REJECTION-20261010-DBC3876E.zip",
+      "sha256": "64a7cf24ee9b0db867274255dafd85bd063774a9172d92e671a1b6a0d1e19647"
+    }
+  ],
+  "scope": "Clean dbc3876e full Python10498 passed/0 failed/0 errors/6 existing skips,4088.337 seconds XML.22 pinned Source configurations and83 paired drivers passed.16694 frozen inputs and exact ZIP837ba409aaff0b8b75146c3e3081b67455250c5d30a9ce96906b1e4c33101ae7 unchanged after physical exit1. Actual extracted own Python runtime/consumers and modern installed-client browser passed. Chromium108 installed-client observer timed out demanding first-use notice already acknowledged by the preceding modern browser in the same Host home; preserved raw settings contain ui-onboarding.welcomeNoticeVersion2026-08-13.1. Failed108 has original page/mux/patched capabilities and no browser exception/console error; this is not a passed108 journey.108 three-profile lanes and parent qualification not executed. Original failure workspace and opaque links retained.1861-member92238110-byte rejection archive preserves full raw observations/inputs/XML/logs/ZIP and997 retention audits:993 completed remove6348 identified files/13965187716 bytes;four intentional failed/planned negative controls remain separate.16 open tasks not promoted. Four tool-policy scenarios have user-approved bounded token differences only; Web ordering proposal remains pending. Win7 native certification remains user-deferred."
+}

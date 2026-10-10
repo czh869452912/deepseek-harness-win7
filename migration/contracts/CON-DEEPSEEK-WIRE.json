@@ -24,6 +24,12 @@
   "cancellation": "Observe pre-publication, active, pending reply/result and close/disposal cancellation with bounded individual deadlines and final resource ownership, including cold recovery after physical exit.",
   "adaptation": "Python3.8.10 and current Windows are the development runtime. Host compatibility is separate from unchanged frontend parity. Win7 certification remains user-deferred; arbitrary unsupported engine/plugin/transport behavior cannot be inferred from finite observations.",
   "open_questions": [
+    "Win7 native certification remains user-deferred.",
+    "Existing nine Source bug predicates and the four approved policy-token scenes remain unchanged.",
+    "Original HTTP10054,40ms cache/1175/5 histories and the v5 missing private-temp producer and v7 checkpoint replacement WinError5 remain unclassified. Actual later passing finite observations do not identify or eliminate those original causes.",
+    "Five actual default profile HTTP model/tool continuations, SDK normal/cancel/error, actual Web HTTP/cold graphs and full current LLM error/capture/metadata/config/prepared corpus. Exact creative language tool-description mapping only; cloud/OAuth/paid endpoints, arbitrary accessor graphs and schedules are not certified."
+  ],
+  "historical_open_questions": [
     "24 complete local HTTP adapter error controls045 are bounded accepted in clean54361bd9, with exact oldafd ownPortable baseline retained. Every captured request/chunk/error/failure value compares; only JSON whole numeric token spelling is canonicalized for digest.446 unchanged Source assertions add reference coverage but are not extra native parity. Existing76 historical wire/config/model/files/settings observations still need their full Source-backed contract and selected/extracted runtime closure; full canonical retry/profile/cancellation/malformed transport and OAuth/cloud/paid scope remain open.",
     "76 complete selected config/model/serialize/usage/SSE/HTTP/Files/Settings captures046 are bounded accepted in cleanb2398db9. Exact543 ownPortable17 diagnostics and raw retry/origin identities remain retained. Full canonical AgentLoop retry/profile/cancellation/error recovery, arbitrary malformed transport/config and immutable/public graph ABI remain open.",
     "81 complete selected canonical LLM retry/auxiliary failure/public boundary/iterator ownership observations048 are bounded accepted in clean55a5ba87. Arbitrary metadata,prepared one-shot/config ownership,full model/profile,public graph ABI and concurrency remain open.",
@@ -31,5 +37,376 @@
     "053 selected26 complete standalone config query/nullable/strict identity observations bounded accepted in clean842d6373; arbitrary graphs/schedules/fullprofiles still open.",
     "108 complete selected public prepared-call/config/generation/iterator/canonical AgentLoop observations051 are bounded accepted in clean842d6373. Arbitrary standalone configuration/accessor/graph ABI,full model/profile and concurrency remain open.",
     "The additional composed full-parent observations above are not yet accepted. This contract specification is not task acceptance."
-  ]
+  ],
+  "acceptance_review": {
+    "candidate": "f90ded26e96ecfb0c1737a47d9f47b034b26c93a",
+    "reviewArtifact": "migration/evidence/artifacts/HANDOFF-PARENT-REVIEW-20261010-F90DED26.zip",
+    "originalTaskSnapshot": {
+      "status": "immutable-original-snapshot",
+      "candidate": "f90ded26e96ecfb0c1737a47d9f47b034b26c93a",
+      "path": "C:\\Users\\czh86\\Documents\\Codex\\deepseek-harness-win7\\.goose\\out\\continuation-20261008-v1\\task-review-originals-v15.zip",
+      "sha256": "1c14ce74c2a2e91a82366a5ccf2cd73b3675ff4cda39b44a30e83ae8be47dd49",
+      "taskCount": 16,
+      "members": {
+        "migration/baseline.json": {
+          "bytes": 618,
+          "sha256": "44c235ccc09de1cf1f5460470171d581ddbd5e2e764ccfb51cb7d8242c0c4626"
+        },
+        "migration/contracts/CON-ACP-CONFIG-OUTPUT.json": {
+          "bytes": 3535,
+          "sha256": "c71f24a53285ac44aae538ccdc71659e3177eb11f7fd6906b9fa57d9954e00f4"
+        },
+        "migration/contracts/CON-ACP-MCP.json": {
+          "bytes": 3723,
+          "sha256": "32885c5a345c4707de36c7794ce211e00e5095485d4087156f0203efe1a07bb9"
+        },
+        "migration/contracts/CON-ACP-PERMISSIONS.json": {
+          "bytes": 2349,
+          "sha256": "41da2e56bb88ac62d12e2902288f188941566551967bee57b63926ee63a2ba02"
+        },
+        "migration/contracts/CON-ACP-PROMPT-OWNERSHIP.json": {
+          "bytes": 2437,
+          "sha256": "b25768802dd2e591f2aa5005db5257d630b19425d427b351a132edff4e07a041"
+        },
+        "migration/contracts/CON-ACP-SESSION-CONTROLS.json": {
+          "bytes": 2783,
+          "sha256": "7aa9d1888b8a85bbff8991a42a2e27fba87287fddf5b802f8a73bfec1a11db03"
+        },
+        "migration/contracts/CON-ACP-STDIO.json": {
+          "bytes": 3857,
+          "sha256": "882773c8a7c448bc9a2d743e56b69f0ba61aaad16e8b9605a84cac35fa53f8ff"
+        },
+        "migration/contracts/CON-ACP-TRANSPORT.json": {
+          "bytes": 3463,
+          "sha256": "2e151fc168d59f61a75d9728a7611608046196ba1671932082582661228f7b43"
+        },
+        "migration/contracts/CON-AGENT-CONFIG.json": {
+          "bytes": 2921,
+          "sha256": "3fefffa50fa650b47d3e93a4d2321e038feef42c85c51ee49ff6f5f000c62693"
+        },
+        "migration/contracts/CON-AGENT-DEPENDENCY-LIFECYCLE.json": {
+          "bytes": 3041,
+          "sha256": "87b0aa1f6b0ddb50ccdc33f0d6cf074e5bf939dc99b6d2ef5133500374c80428"
+        },
+        "migration/contracts/CON-AGENT-FACTORY.json": {
+          "bytes": 2501,
+          "sha256": "a6b2de1123390cfb87e72deda189450f18bf0edfd69c27dde951305665896a87"
+        },
+        "migration/contracts/CON-ASK-USER-PROTOCOL.json": {
+          "bytes": 2628,
+          "sha256": "28426a7ac261a45ba589ed3baa767981bbf0cedfb8b5746f77561de1a5151148"
+        },
+        "migration/contracts/CON-CANONICAL-LLM.json": {
+          "bytes": 4679,
+          "sha256": "2a069fd58c593dfd0fd4317154c5ae02023f610190546b9d2d7c1443a9cdc639"
+        },
+        "migration/contracts/CON-CURRENT-RELEASE-GATE.json": {
+          "bytes": 2892,
+          "sha256": "5edbe2abed2bb4c60591c93be8310f7c1e8beef6ff240644054fe2613d1c75d1"
+        },
+        "migration/contracts/CON-DEEPSEEK-CAPTURE.json": {
+          "bytes": 4417,
+          "sha256": "37a3f26775c912f3eeb9ae29de4cdf96dff7b9ab925d34051ea82a2b0aa3e22d"
+        },
+        "migration/contracts/CON-DEEPSEEK-ERROR.json": {
+          "bytes": 3400,
+          "sha256": "2344c77a357ed7c9711cd48e091cae90e71b1b7636c1699f8ea98e35f64f976b"
+        },
+        "migration/contracts/CON-DEEPSEEK-WIRE.json": {
+          "bytes": 4762,
+          "sha256": "515144517c6dbd97f84362bf42bcfee27b3e465c7c4046e6d8f858d104ac743c"
+        },
+        "migration/contracts/CON-FS-TOOL-VALUES.json": {
+          "bytes": 4596,
+          "sha256": "181bb77cb40acbb5d55accb01d1d89489466587ea0fb84cdbd16a3321a122308"
+        },
+        "migration/contracts/CON-JS-WORKFLOW.json": {
+          "bytes": 2719,
+          "sha256": "5e203a05a9cc024088280fead3876f6f51beb3b1898b36fee022caa0007c1c13"
+        },
+        "migration/contracts/CON-JSONL-PROVIDER.json": {
+          "bytes": 3629,
+          "sha256": "a8ebe2fe3f8bcccf98fca5f386a9180c77b456f14143dedb86fbeb30b0911d68"
+        },
+        "migration/contracts/CON-JSONL-SHARING.json": {
+          "bytes": 2660,
+          "sha256": "d5ba1f44c85b667803536be4a37bc267f3d11056bfe23e228851a0c31a6c1a38"
+        },
+        "migration/contracts/CON-LLM-CONFIG.json": {
+          "bytes": 2883,
+          "sha256": "ee1771e1a950797039d63ea5f40c6c32a26a5bf29a42b10c49508d3e003a50c9"
+        },
+        "migration/contracts/CON-LLM-METADATA.json": {
+          "bytes": 3162,
+          "sha256": "7af9b4b76d51769999bd0d1903f60e1476179dc239db67ef097ce53d6353a723"
+        },
+        "migration/contracts/CON-LLM-PREPARED.json": {
+          "bytes": 3714,
+          "sha256": "40b13b92814c72f07c32776401e557fba533cbe81f83ab1d849cc3f9bf5c31bf"
+        },
+        "migration/contracts/CON-MCP-DISPOSAL.json": {
+          "bytes": 2677,
+          "sha256": "1b1bddd96846041247951262c5f5401d74418347f3313e0966cbdb88788c3b7f"
+        },
+        "migration/contracts/CON-MCP-HTTP.json": {
+          "bytes": 3299,
+          "sha256": "733200422841227def8b3b5fa770b30361c3fb5dbda2c90894694302750244ed"
+        },
+        "migration/contracts/CON-MCP-STDIO.json": {
+          "bytes": 2779,
+          "sha256": "9698bf57689a9aa5aa0120639364c031c144023920256f815f33d2b11f7b2ab5"
+        },
+        "migration/contracts/CON-MESSAGE-VALUES.json": {
+          "bytes": 3601,
+          "sha256": "c3cd387eeb9bf37a2e887caf3851df5883207e298e157ac55a68d00707994cd3"
+        },
+        "migration/contracts/CON-PERMISSION-PRESETS.json": {
+          "bytes": 3859,
+          "sha256": "5a38445e77a2fa5bcdf69d2020c80e1762009235c4bae964373964e9454401b7"
+        },
+        "migration/contracts/CON-PERSISTENCE-READ.json": {
+          "bytes": 3994,
+          "sha256": "57d36c1584a5793800bc3c2d04493d7adc5933e3ef5d37111993aad6596e9725"
+        },
+        "migration/contracts/CON-PROFILE-JOURNEYS.json": {
+          "bytes": 5503,
+          "sha256": "9cda5276179c3ef804ae534573dc5100f3d1daefd8af0176fcd61e26e40dd1dc"
+        },
+        "migration/contracts/CON-PROJECTION-CACHE-READS.json": {
+          "bytes": 2654,
+          "sha256": "0c0c7f950aaecb4164355c4f3ffac4900d720b92bd1b8879785100136e0b8fb1"
+        },
+        "migration/contracts/CON-PYTHON-HOST-STATIC-INJECT.json": {
+          "bytes": 3135,
+          "sha256": "1edbc60e7443918bf1467bee76c5a71315b440f1eadfa9e5a61cf00a0336c430"
+        },
+        "migration/contracts/CON-RUNTIME-FULL-REQUEST.json": {
+          "bytes": 3338,
+          "sha256": "29011e5be5928dea05ae06e20a8a1de76a003c4f1a606909d17615b88e96889d"
+        },
+        "migration/contracts/CON-SDK-PROFILE.json": {
+          "bytes": 3573,
+          "sha256": "1bc754e0a8170bf179fcae1f58467df59ba0c89c334344f8967c044f1b1e004c"
+        },
+        "migration/contracts/CON-SESSION-COLD-RECOVERY.json": {
+          "bytes": 2455,
+          "sha256": "cccae570acf072962dbaccee3ee302cf651bab5ffb03a380fdf7e1f1e4e030fe"
+        },
+        "migration/contracts/CON-SESSION-CORPUS-LIST.json": {
+          "bytes": 2858,
+          "sha256": "018dd3e11b27056421e03886f1060049dde0b657983aa972a9749f69117e3632"
+        },
+        "migration/contracts/CON-SESSION-CORPUS-READ.json": {
+          "bytes": 3374,
+          "sha256": "293eee3ed9cecab96794aa8a37e16c6020d2593f42d9bb8e6242a44fab93f577"
+        },
+        "migration/contracts/CON-SESSION-DIAGNOSTIC.json": {
+          "bytes": 2503,
+          "sha256": "82819138d7b430020c97a7c0d69d1afa65a76323855d334385bd6e41942ef783"
+        },
+        "migration/contracts/CON-SESSION-FILTERS.json": {
+          "bytes": 3001,
+          "sha256": "08499f4392b9f0d49c73449ee4c8ebdf7dcdd48bb46ff3bf4c604b3429a696ce"
+        },
+        "migration/contracts/CON-SESSION-LIVE-WRITES.json": {
+          "bytes": 2895,
+          "sha256": "a6484c79b57b8083d5f5c6860e24a4a9257af834a1fcdaaf064aa71fe06fea34"
+        },
+        "migration/contracts/CON-SESSION-NUMBERS.json": {
+          "bytes": 4037,
+          "sha256": "cb102576f07f2fd99ca90d9968fab863df2531df12f0f816630850b0c9b2d47c"
+        },
+        "migration/contracts/CON-SESSION-OBSERVATION-READS.json": {
+          "bytes": 2846,
+          "sha256": "3b9e54d627c5f4186f1f2f93bd9abcda17c6dafa13793c4561857040bb4d17e0"
+        },
+        "migration/contracts/CON-SESSION-PREPARATIONS.json": {
+          "bytes": 3113,
+          "sha256": "24e0c4128465fe1af161193a646b73381a4d61f2b1298c99f1ca606d959775ca"
+        },
+        "migration/contracts/CON-SESSION-PROJECTION.json": {
+          "bytes": 2652,
+          "sha256": "19605b4a105458eacf55f813930fd42e8c2d2e5ff37a4bbae7920fbe7c2fbbfe"
+        },
+        "migration/contracts/CON-SESSION-QUERY-ENGINE.json": {
+          "bytes": 4295,
+          "sha256": "6fb5813fbe50591c8c2f81415a54ab908c300547a63913e5327cf6166b51d553"
+        },
+        "migration/contracts/CON-SESSION-QUERY-SCHEMA.json": {
+          "bytes": 2931,
+          "sha256": "746c69a70cac406010c58742b29ba5d7af4930688c42845d56eef6fc5f230a74"
+        },
+        "migration/contracts/CON-SESSION-QUERY-TOOLS.json": {
+          "bytes": 4342,
+          "sha256": "34685400c7df775d33fe00a39c777d7f1469fb6d8bbda304adf81e7f79477cce"
+        },
+        "migration/contracts/CON-SESSION-QUERY-UNICODE.json": {
+          "bytes": 3158,
+          "sha256": "6038ba6e20cd12936745df5f2ce6727ffecd9a0195deafbe926842a24b490e8f"
+        },
+        "migration/contracts/CON-SESSION-REPLAY.json": {
+          "bytes": 4719,
+          "sha256": "5cab0f91e68e8050b32ade6bc7e82bb7bf5ed4fd579d3cb15d12d0708068b827"
+        },
+        "migration/contracts/CON-SESSION-RESTORE-SIGN.json": {
+          "bytes": 2972,
+          "sha256": "cd6db0b9fc0d49c4133abdc6409b46bca340095929fde0f4ec290df863d63541"
+        },
+        "migration/contracts/CON-SESSION-SEARCH-REQUESTS.json": {
+          "bytes": 4063,
+          "sha256": "7d3c6ac5a1f93b2deed2099392944a6624ed871ef3e65be04eb7cc647947f21d"
+        },
+        "migration/contracts/CON-SESSION-SNAPSHOTS.json": {
+          "bytes": 3976,
+          "sha256": "3d495eae10448fa7bc420d60cd88516e70a7f5be144c5b484955951973a2af7b"
+        },
+        "migration/contracts/CON-SESSION-STORAGE.json": {
+          "bytes": 3007,
+          "sha256": "2e0c68d637c5c1718079009155c6391b6e90ef35b793444326baebc9e51182d1"
+        },
+        "migration/contracts/CON-SESSION-TEXT.json": {
+          "bytes": 3732,
+          "sha256": "0d700956ea3f1417aa1dbfbc38f6d03d35f8538a521a44270283b1518fdd9577"
+        },
+        "migration/contracts/CON-SESSION-TRACING.json": {
+          "bytes": 3429,
+          "sha256": "d0706a3648fccf6a7132a946e6c18d36ef846873d8b8cee51757639305667712"
+        },
+        "migration/contracts/CON-SQLITE-FORMAT.json": {
+          "bytes": 4206,
+          "sha256": "c6ae77198e78d5ebe4a2a0c28dd10a0fd282f8d5884470df52cc9bc140345771"
+        },
+        "migration/contracts/CON-SQLITE-PROVIDER.json": {
+          "bytes": 4262,
+          "sha256": "2f06608cfb79b749e26551e321e523a1aaff9d80378e226c67d1dc8fef0e9be5"
+        },
+        "migration/contracts/CON-SUBAGENT-ACP-TEARDOWN.json": {
+          "bytes": 2790,
+          "sha256": "4dc369451878f760580aceec127de9c9ceee216f59783c9d3fab73e74f3be58f"
+        },
+        "migration/contracts/CON-SUBAGENT-ACP.json": {
+          "bytes": 4162,
+          "sha256": "e51e4f1295ea0eb714632143ed6ed98d6f6f16655d215f8b8de9320246acc8f7"
+        },
+        "migration/contracts/CON-SUBAGENT-MODEL-VALUES.json": {
+          "bytes": 3807,
+          "sha256": "97af89d29b46bfb83fb562ea26ef2f028405eaccf033176bae59262e9fb22d07"
+        },
+        "migration/contracts/CON-SUBPROCESS-OWNERSHIP.json": {
+          "bytes": 2699,
+          "sha256": "6af676715dd79623d9695092f83091b001e7fcbe195022dd3c6dcd8f2f5ba837"
+        },
+        "migration/contracts/CON-SUBPROCESS-TREE.json": {
+          "bytes": 2503,
+          "sha256": "71379ce036595032a45d9af001c5bbcc4202fc4b4ec143e91a48d3c25eb6ec07"
+        },
+        "migration/contracts/CON-TOOL-DURABLE-PUBLICATION.json": {
+          "bytes": 3334,
+          "sha256": "d33f6d4c96afc377e2eca5715541900c6d0596da703f53835d3e65198f3abcc5"
+        },
+        "migration/contracts/CON-TOOL-ERRORS-PROMPT-OWNERSHIP.json": {
+          "bytes": 3185,
+          "sha256": "2a87b07c01fa82dc421773a969e940b99f925591f99c41aae8591272411415e8"
+        },
+        "migration/contracts/CON-TOOL-PARALLELISM.json": {
+          "bytes": 3666,
+          "sha256": "6be323696b51cd6bd0c6b3625894742030f842ebf360dfff780ab3a96289108c"
+        },
+        "migration/contracts/CON-TOOL-START-PREFIX.json": {
+          "bytes": 2631,
+          "sha256": "3dc5351ddd5c91d61cd0c4b474f03ac37dbfe9b7de0d5e62f52df815e88b1b30"
+        },
+        "migration/contracts/CON-TOOLS-POLICY.json": {
+          "bytes": 3220,
+          "sha256": "d6d3cffa432bb4a959ebb7aa795373f56012a6f039e15b75aa118490c2caed14"
+        },
+        "migration/contracts/CON-UNICODE-CARRIERS.json": {
+          "bytes": 3196,
+          "sha256": "d2ff4fd04bf3b49c85edaa691ea7b709af479603478cc8bc80d4ccc32351e063"
+        },
+        "migration/contracts/CON-WEB-CONNECTION.json": {
+          "bytes": 3476,
+          "sha256": "ad2e44bd1f4b00a919a14da9d26338781b6cfd4cff13d515b4a6bc8fbf6aea20"
+        },
+        "migration/contracts/CON-WEB-HTTP-RESPONSE-LIFETIME.json": {
+          "bytes": 2483,
+          "sha256": "bdbf1d29db8e1aba8200cc171a041feae7042f4151dce257af5bd907cc236662"
+        },
+        "migration/tasks/MIG-ACP-TRANSPORT-002.json": {
+          "bytes": 4692,
+          "sha256": "63f0f6a295bc8ae6f1f5ff748df17ef869fd4e06323fcdd0b88dd98873a58542"
+        },
+        "migration/tasks/MIG-AGENT-DEPENDENCY-LIFECYCLE-059.json": {
+          "bytes": 3045,
+          "sha256": "bcaeae5eca06da3bda494a3af4aff364a5dc591d80a83d6129ab28db72f9a0e8"
+        },
+        "migration/tasks/MIG-ASK-USER-PROTOCOL-060.json": {
+          "bytes": 3142,
+          "sha256": "ae2779dd664690c47ea4ea88acf2a2d5ff76639f4f408fda62835cfba48c37e8"
+        },
+        "migration/tasks/MIG-DEEPSEEK-WIRE-002.json": {
+          "bytes": 5023,
+          "sha256": "457a7df2e1c78f9ba9e1b55c4b7fe8a0789545915abb8bf3cc5bac18cee8f791"
+        },
+        "migration/tasks/MIG-FS-TOOL-VALUES-062.json": {
+          "bytes": 2649,
+          "sha256": "0deb00fa1cc16569fef941fbdd5cf833d7bad2a6d73552899433873a46ef04ba"
+        },
+        "migration/tasks/MIG-JS-WORKFLOW-036.json": {
+          "bytes": 3453,
+          "sha256": "57be8cb86949c68c7a326749c42de62f506469828263cbe0ac8ed736ab048306"
+        },
+        "migration/tasks/MIG-MESSAGE-VALUES-061.json": {
+          "bytes": 2567,
+          "sha256": "2325da9e05b2bcd8c005389072be7e178e848d34e05e73691ad4b74ce4bff82d"
+        },
+        "migration/tasks/MIG-PERMISSION-PRESETS-056.json": {
+          "bytes": 2278,
+          "sha256": "1be0fbecab477440ab5ac188acc30b57ed4bd12761876b85fa99aafa95931d59"
+        },
+        "migration/tasks/MIG-PROFILE-JOURNEYS-002.json": {
+          "bytes": 6620,
+          "sha256": "6ef638fce8e04e8caf464524622b14f0b30361986720cfeb93db78e29d19aeda"
+        },
+        "migration/tasks/MIG-SESSION-REPLAY-002.json": {
+          "bytes": 7769,
+          "sha256": "b9df850d39494f06f59186add49728014374c041446007113c306f376096060d"
+        },
+        "migration/tasks/MIG-SUBAGENT-MODEL-VALUES-063.json": {
+          "bytes": 2691,
+          "sha256": "575b4dd48b03babb204213d1760b1f7be19c07eb7178ed5e5444a405265161b5"
+        },
+        "migration/tasks/MIG-TOOL-DURABLE-PUBLICATION-058.json": {
+          "bytes": 3902,
+          "sha256": "6a2f69daccedbaaaf8f4eb3840c043bc3ca7fb1ffe0b2f81ef952e078fbb4a20"
+        },
+        "migration/tasks/MIG-TOOL-ERRORS-SDK-METADATA-057.json": {
+          "bytes": 5342,
+          "sha256": "27b66bae061b18058452efbde79225f727e251168fe589c3d66f32d7d55b41d1"
+        },
+        "migration/tasks/MIG-TOOLS-POLICY-002.json": {
+          "bytes": 3697,
+          "sha256": "81f22bcd24081b5a172dac9bc27d76b90a067550051b5ffb998309f580aba2b7"
+        },
+        "migration/tasks/MIG-UNICODE-CARRIERS-064.json": {
+          "bytes": 2078,
+          "sha256": "ac9ca8b900e5a31dadb54c79301211a083fd426fac66202928472648bfc02937"
+        },
+        "migration/tasks/MIG-WEB-CONNECTION-002.json": {
+          "bytes": 3374,
+          "sha256": "14ca6a0d9c19ccb0a2fc0611102319349f572c980300beed5420f691e6d3b945"
+        }
+      },
+      "automaticFindingRemoval": false
+    },
+    "finiteScope": "Five actual default profile HTTP model/tool continuations, SDK normal/cancel/error, actual Web HTTP/cold graphs and full current LLM error/capture/metadata/config/prepared corpus. Exact creative language tool-description mapping only; cloud/OAuth/paid endpoints, arbitrary accessor graphs and schedules are not certified.",
+    "existingUpstreamPredicates": "unchanged",
+    "orderingApproval": "HANDOFF-ORDER-APPROVAL-20261010-F90DED26"
+  },
+  "approved_ordering_adaptation": {
+    "approval": "HANDOFF-ORDER-APPROVAL-20261010-F90DED26",
+    "scope": "Only four full-row unique-key directory bijections: settings/describe(ns), llm/listProviders(id), llm/listConfigurableProviders(provider), session/modelCatalog.routableProviders(provider identity); and global interleaving of four independent remote.mux streams in the sixteen current comparisons. Complete rows, all fields, each stream sequence, business/durable/request/body/termination/error values, all other ordering and the original sixteen mutation controls stay strict. Original global order remains sealed. No new upstream bug predicate, arbitrary scheduling/ABI/cloud qualification or native Win7 certification.",
+    "proposalSha256": "9ad0e65bd9c89690e806dcbf776d206d7b7d3fe1800e20a374a52a6bf4a1454b",
+    "bindingsSha256": "73399f327175f469aeab4cb3123b37a256a1d67f415dda0bbf1c953b2fbf5711"
+  }
 }

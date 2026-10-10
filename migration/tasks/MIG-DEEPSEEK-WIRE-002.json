@@ -2,7 +2,7 @@
   "id": "MIG-DEEPSEEK-WIRE-002",
   "goal": "\u5bf9\u9f50\u771f\u5b9e DeepSeek HTTP \u9002\u914d\u4e0e\u91cd\u8bd5\u534f\u8bae",
   "kind": "verification",
-  "state": "review",
+  "state": "integrated",
   "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
   "base_product": "a4ff8ac41fa37b5463b0ce8b7f420d0973e8d840",
   "owner": "current-session-coordinator",
@@ -80,24 +80,83 @@
     "tests",
     "migration"
   ],
-  "open_findings": [
-    "24 complete local HTTP adapter error controls045 are bounded accepted in clean54361bd9, with exact oldafd ownPortable baseline retained. Every captured request/chunk/error/failure value compares; only JSON whole numeric token spelling is canonicalized for digest.446 unchanged Source assertions add reference coverage but are not extra native parity. Existing76 historical wire/config/model/files/settings observations still need their full Source-backed contract and selected/extracted runtime closure; full canonical retry/profile/cancellation/malformed transport and OAuth/cloud/paid scope remain open.",
-    "76 complete selected config/model/serialize/usage/SSE/HTTP/Files/Settings captures046 are bounded accepted in cleanb2398db9. Exact543 ownPortable17 diagnostics and raw retry/origin identities remain retained. Full canonical AgentLoop retry/profile/cancellation/error recovery, arbitrary malformed transport/config and immutable/public graph ABI remain open.",
-    "81 complete selected canonical LLM retry/auxiliary failure/public boundary/iterator ownership observations048 are bounded accepted in clean55a5ba87. Arbitrary metadata,prepared one-shot/config ownership,full model/profile,public graph ABI and concurrency remain open.",
-    "137 complete selected public metadata/catalog/exact detachment/final stream observations049 are bounded accepted in clean2a67ae84. Prepared one-shot/config/generation/replay ownership,arbitrary accessors/null/graph ABI,full model/profile and concurrency remain open.",
-    "053 selected26 complete standalone config query/nullable/strict identity observations bounded accepted in clean842d6373; arbitrary graphs/schedules/fullprofiles still open.",
-    "108 complete selected public prepared-call/config/generation/iterator/canonical AgentLoop observations051 are bounded accepted in clean842d6373. Arbitrary standalone configuration/accessor/graph ABI,full model/profile and concurrency remain open."
-  ],
+  "open_findings": [],
   "conflicts_with": [],
   "candidate_commit": "f90ded26e96ecfb0c1737a47d9f47b034b26c93a",
-  "integrated_commit": null,
-  "evidence_ids": [],
-  "next_action": "\u540cf90ded26\u5b8c\u6574\u95e8\u7981\u3001\u5b8c\u6574\u7236\u89c2\u5bdf\u548c\u9010\u9879\u539f\u59cb\u53d1\u73b0\u5ba1\u67e5\u5df2\u51c6\u5907\uff1b\u56db\u6307\u5b9a\u76ee\u5f55\u5b8c\u6574\u884c\u6392\u5217\u4e0e\u56db\u72ec\u7acbmux\u6d41\u5168\u5c40\u4ea4\u9519\u9700\u7528\u6237\u660e\u786e\u6279\u51c6v2\u3002\u6240\u6709\u5b57\u6bb5/\u6d41\u5185/\u6301\u4e45/\u539f\u7248UI\u4e25\u683c\u8981\u6c42\u4e0d\u53d8\uff1b\u672a\u6279\u51c6\u4e0d\u7b7e\u6536\uff0cWin7\u5ef6\u671f\u3002",
+  "integrated_commit": "f90ded26e96ecfb0c1737a47d9f47b034b26c93a",
+  "evidence_ids": [
+    "RUN-HANDOFF-PARENT-20261010-DEEPSEEK-WIRE-002"
+  ],
+  "next_action": "\u539f\u5408\u540c\u6709\u9650\u8303\u56f4\u5df2\u5728f90ded26\u539f\u5b8c\u6574\u95e8\u7981\u53ca\u540cZIP\u7236\u7ec4\u5408\u7b7e\u6536\uff1b\u56db\u76ee\u5f55/\u72ec\u7acbmux\u6d41\u4ea4\u9519\u6309\u7528\u6237\u660e\u786e\u6279\u51c6v2\u62ab\u9732\u3002\u539f\u5931\u8d25\u4e0e10054/40ms/1175/5/\u4e34\u65f6\u76ee\u5f55\u6d88\u5931\u8bca\u65ad\u7ee7\u7eed\u4fdd\u7559\u3001\u8303\u56f4\u5916ABI/\u8c03\u5ea6/\u4e91\u4e0e\u5ef6\u671fWin7\u53e6\u67e5\uff0c\u4e0d\u91cd\u6807\u65b0\u63d0\u4ea4\u4e3a\u539f\u53d1\u884c\u5019\u9009\u3002",
   "current_raw_review": {
     "candidate": "f90ded26e96ecfb0c1737a47d9f47b034b26c93a",
     "evidenceArchive": "migration/evidence/artifacts/HANDOFF-PARENT-REVIEW-20261010-F90DED26.zip",
     "originalFindingsPreserved": true,
-    "orderingApproval": "pending",
-    "scope": "Five actual default profile HTTP model/tool continuations, SDK normal/cancel/error, actual Web HTTP/cold graphs and full current LLM error/capture/metadata/config/prepared corpus. Exact creative language tool-description mapping only; cloud/OAuth/paid endpoints, arbitrary accessor graphs and schedules are not certified."
-  }
+    "orderingApproval": "HANDOFF-ORDER-APPROVAL-20261010-F90DED26",
+    "scope": "Five actual default profile HTTP model/tool continuations, SDK normal/cancel/error, actual Web HTTP/cold graphs and full current LLM error/capture/metadata/config/prepared corpus. Exact creative language tool-description mapping only; cloud/OAuth/paid endpoints, arbitrary accessor graphs and schedules are not certified.",
+    "disposition": "original finding text and SHA retained in reviewed_findings"
+  },
+  "reviewed_findings": [
+    {
+      "original": "24 complete local HTTP adapter error controls045 are bounded accepted in clean54361bd9, with exact oldafd ownPortable baseline retained. Every captured request/chunk/error/failure value compares; only JSON whole numeric token spelling is canonicalized for digest.446 unchanged Source assertions add reference coverage but are not extra native parity. Existing76 historical wire/config/model/files/settings observations still need their full Source-backed contract and selected/extracted runtime closure; full canonical retry/profile/cancellation/malformed transport and OAuth/cloud/paid scope remain open.",
+      "originalSha256": "536c999de07ed8a8a9485ebbaf3b0f1735402438c928aed6ffc90f2049d78811",
+      "review": "Require full current literal error/config/wire/Source closure plus real local HTTP across Source/sdk-minimal and Native/minimal,standard,creative,headless,web defaults, actual owned Python and model/tool continuations. Native creative language differences stay at exact disclosed tool-description paths; no cloud/OAuth/paid claim.",
+      "disposition": "Recorded corpus/missing clean milestone resolved by exact current evidence; original broader/unknown/deferred scope is retained as a limitation, not reclassified as an upstream bug. Ordering-dependent signoff awaits separate human decision.",
+      "orderingDecision": "Preserved pre-decision wording; direct human v2 approval now applies only the four named directories and independent-stream interleaving.",
+      "approvalRecord": "HANDOFF-ORDER-APPROVAL-20261010-F90DED26",
+      "evidenceArchive": "migration/evidence/artifacts/HANDOFF-PARENT-REVIEW-20261010-F90DED26.zip"
+    },
+    {
+      "original": "76 complete selected config/model/serialize/usage/SSE/HTTP/Files/Settings captures046 are bounded accepted in cleanb2398db9. Exact543 ownPortable17 diagnostics and raw retry/origin identities remain retained. Full canonical AgentLoop retry/profile/cancellation/error recovery, arbitrary malformed transport/config and immutable/public graph ABI remain open.",
+      "originalSha256": "81c7e423ad396b85e9edcd6d5460b557d8a04bbe05202f0dcd589085ac013b84",
+      "review": "Current canonical retries/cancellation/close/error preparation are checked by fresh complete pairs plus actual normal/cancel/error default SDK and real Web HTTP continuations/cold restore; all public request/chunk/usage graphs retained.",
+      "disposition": "Recorded corpus/missing clean milestone resolved by exact current evidence; original broader/unknown/deferred scope is retained as a limitation, not reclassified as an upstream bug. Ordering-dependent signoff awaits separate human decision.",
+      "orderingDecision": "Preserved pre-decision wording; direct human v2 approval now applies only the four named directories and independent-stream interleaving.",
+      "approvalRecord": "HANDOFF-ORDER-APPROVAL-20261010-F90DED26",
+      "evidenceArchive": "migration/evidence/artifacts/HANDOFF-PARENT-REVIEW-20261010-F90DED26.zip"
+    },
+    {
+      "original": "81 complete selected canonical LLM retry/auxiliary failure/public boundary/iterator ownership observations048 are bounded accepted in clean55a5ba87. Arbitrary metadata,prepared one-shot/config ownership,full model/profile,public graph ABI and concurrency remain open.",
+      "originalSha256": "32bd1095e8390bd92d2f4d34c9b3c4adac947067f60638c15ce93eadef955c21",
+      "review": "Current canonical failure/iterator/preparation and disposal source-backed ownership plus concrete composed runs resolve the specified corpus; arbitrary metadata/concurrency/plugin behavior remains outside finite acceptance.",
+      "disposition": "Recorded corpus/missing clean milestone resolved by exact current evidence; original broader/unknown/deferred scope is retained as a limitation, not reclassified as an upstream bug. Ordering-dependent signoff awaits separate human decision.",
+      "orderingDecision": "Preserved pre-decision wording; direct human v2 approval now applies only the four named directories and independent-stream interleaving.",
+      "approvalRecord": "HANDOFF-ORDER-APPROVAL-20261010-F90DED26",
+      "evidenceArchive": "migration/evidence/artifacts/HANDOFF-PARENT-REVIEW-20261010-F90DED26.zip"
+    },
+    {
+      "original": "137 complete selected public metadata/catalog/exact detachment/final stream observations049 are bounded accepted in clean2a67ae84. Prepared one-shot/config/generation/replay ownership,arbitrary accessors/null/graph ABI,full model/profile and concurrency remain open.",
+      "originalSha256": "79ecf42db9d49a378fd1c51a3234bbb8dbcbe5d3ca7a72a1b011df5737b457d9",
+      "review": "Require current complete137 metadata/catalog/detachment/final-stream pair, actual model route/selection and default profile full requests. No graph field is dropped; arbitrary unknown accessors are not inferred.",
+      "disposition": "Recorded corpus/missing clean milestone resolved by exact current evidence; original broader/unknown/deferred scope is retained as a limitation, not reclassified as an upstream bug. Ordering-dependent signoff awaits separate human decision.",
+      "orderingDecision": "Preserved pre-decision wording; direct human v2 approval now applies only the four named directories and independent-stream interleaving.",
+      "approvalRecord": "HANDOFF-ORDER-APPROVAL-20261010-F90DED26",
+      "evidenceArchive": "migration/evidence/artifacts/HANDOFF-PARENT-REVIEW-20261010-F90DED26.zip"
+    },
+    {
+      "original": "053 selected26 complete standalone config query/nullable/strict identity observations bounded accepted in clean842d6373; arbitrary graphs/schedules/fullprofiles still open.",
+      "originalSha256": "59cf424fc644a7807365b04d60a41dfd8c7c5beacc1ce24fbf81d063d414ec9d",
+      "review": "Require current26 configuration identity/nullability pair and actual default configuration consumers; preserve literal nullable/error semantics and readonly alias identities.",
+      "disposition": "Recorded corpus/missing clean milestone resolved by exact current evidence; original broader/unknown/deferred scope is retained as a limitation, not reclassified as an upstream bug. Ordering-dependent signoff awaits separate human decision.",
+      "orderingDecision": "Preserved pre-decision wording; direct human v2 approval now applies only the four named directories and independent-stream interleaving.",
+      "approvalRecord": "HANDOFF-ORDER-APPROVAL-20261010-F90DED26",
+      "evidenceArchive": "migration/evidence/artifacts/HANDOFF-PARENT-REVIEW-20261010-F90DED26.zip"
+    },
+    {
+      "original": "108 complete selected public prepared-call/config/generation/iterator/canonical AgentLoop observations051 are bounded accepted in clean842d6373. Arbitrary standalone configuration/accessor/graph ABI,full model/profile and concurrency remain open.",
+      "originalSha256": "12cdc81319f56a931ed54d8c5f328d0f094f9a018c65699cefc8e15992d2b2ae",
+      "review": "Require108 preparation/config/generation/iterator/canonical-loop values with original request graphs plus independent default model/profile HTTP/SDK/cold consumers. No arbitrary graph/schedule or paid credential certification.",
+      "disposition": "Recorded corpus/missing clean milestone resolved by exact current evidence; original broader/unknown/deferred scope is retained as a limitation, not reclassified as an upstream bug. Ordering-dependent signoff awaits separate human decision.",
+      "orderingDecision": "Preserved pre-decision wording; direct human v2 approval now applies only the four named directories and independent-stream interleaving.",
+      "approvalRecord": "HANDOFF-ORDER-APPROVAL-20261010-F90DED26",
+      "evidenceArchive": "migration/evidence/artifacts/HANDOFF-PARENT-REVIEW-20261010-F90DED26.zip"
+    }
+  ],
+  "limitations": [
+    "Win7 native certification remains user-deferred.",
+    "Existing nine Source bug predicates and the four approved policy-token scenes remain unchanged.",
+    "Original HTTP10054,40ms cache/1175/5 histories and the v5 missing private-temp producer and v7 checkpoint replacement WinError5 remain unclassified. Actual later passing finite observations do not identify or eliminate those original causes.",
+    "Five actual default profile HTTP model/tool continuations, SDK normal/cancel/error, actual Web HTTP/cold graphs and full current LLM error/capture/metadata/config/prepared corpus. Exact creative language tool-description mapping only; cloud/OAuth/paid endpoints, arbitrary accessor graphs and schedules are not certified.",
+    "Only four full-row unique-key directory bijections: settings/describe(ns), llm/listProviders(id), llm/listConfigurableProviders(provider), session/modelCatalog.routableProviders(provider identity); and global interleaving of four independent remote.mux streams in the sixteen current comparisons. Complete rows, all fields, each stream sequence, business/durable/request/body/termination/error values, all other ordering and the original sixteen mutation controls stay strict. Original global order remains sealed. No new upstream bug predicate, arbitrary scheduling/ABI/cloud qualification or native Win7 certification."
+  ]
 }

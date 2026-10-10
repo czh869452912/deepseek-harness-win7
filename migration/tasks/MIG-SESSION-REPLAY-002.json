@@ -2,7 +2,7 @@
   "id": "MIG-SESSION-REPLAY-002",
   "goal": "\u5bf9\u9f50 Session \u4e8b\u4ef6\u6295\u5f71\u3001\u6301\u4e45\u5316\u4e0e\u5b98\u65b9\u56de\u653e",
   "kind": "verification",
-  "state": "review",
+  "state": "integrated",
   "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
   "base_product": "1d9940aaf1af6454045d5e25aadb6733b13991bd",
   "owner": "current-session-coordinator",
@@ -190,23 +190,74 @@
     "tests",
     "migration"
   ],
-  "open_findings": [
-    "Clean7f9e87e4 revalidates canonical SQLite323/default compressed or plaintext JSONL1030, independent schema-19 format826, FTS16, Unicode2034/text7883, optional tools78 and existing core/cold/live/prepared/projection/cache/corpus/title/lineage/snapshot ranges. These are distinct bounded Source contracts, not complete Session-domain certification.",
-    "Public canonical persistence51 numeric/cancelled read controls039, public create/metadata/clone53 revision2 controls041, create/restore76 exact admission diagnostics042 and restore18 signed-number predicates043 are now bounded integrated. Exact rejected4a127b73 and its clone/diagnostic/sign baselines remain preserved. Actual detached list/load/lineage/snapshot Source consumers pass.",
-    "Complete arbitrary malformed/extension event and public plugin ABI, alias/graph/copy-cycle ownership, private errors beyond specified rows, remaining provider/index/Task cancellation races, other domains/locales, long-history scale and independent cross-process/multi-cwd/profile/Web reconnect combinations remain unqualified. Source cache40ms timing, historical startup cancellation/WinError1175 and Proactor diagnostics remain separately recorded; real Win7 is user-deferred.",
-    "Sixteen complete canonical AgentLoop request/context graphs044 are bounded accepted in clean54361bd9; durable assistant messages retain Source content blocks without the oldtool_calls alias. This is not arbitrary extension/message ABI or every model/profile/cancellation schedule.",
-    "Four complete actual JSONL none/zstd list/inspect/raw shared-reader observations047 are bounded accepted in cleanb2398db9. Actual exclusive denial, reader retirement, missing paths and extended paths remain strict. The rejected eaa8 transient holder is unidentified; arbitrary holder schedules, writers, public graph ABI and full Session/profile scopes remain open."
-  ],
+  "open_findings": [],
   "conflicts_with": [],
   "candidate_commit": "f90ded26e96ecfb0c1737a47d9f47b034b26c93a",
-  "integrated_commit": null,
-  "evidence_ids": [],
-  "next_action": "\u540cf90ded26\u5b8c\u6574\u95e8\u7981\u3001\u5b8c\u6574\u7236\u89c2\u5bdf\u548c\u9010\u9879\u539f\u59cb\u53d1\u73b0\u5ba1\u67e5\u5df2\u51c6\u5907\uff1b\u56db\u6307\u5b9a\u76ee\u5f55\u5b8c\u6574\u884c\u6392\u5217\u4e0e\u56db\u72ec\u7acbmux\u6d41\u5168\u5c40\u4ea4\u9519\u9700\u7528\u6237\u660e\u786e\u6279\u51c6v2\u3002\u6240\u6709\u5b57\u6bb5/\u6d41\u5185/\u6301\u4e45/\u539f\u7248UI\u4e25\u683c\u8981\u6c42\u4e0d\u53d8\uff1b\u672a\u6279\u51c6\u4e0d\u7b7e\u6536\uff0cWin7\u5ef6\u671f\u3002",
+  "integrated_commit": "f90ded26e96ecfb0c1737a47d9f47b034b26c93a",
+  "evidence_ids": [
+    "RUN-HANDOFF-PARENT-20261010-SESSION-REPLAY-002"
+  ],
+  "next_action": "\u539f\u5408\u540c\u6709\u9650\u8303\u56f4\u5df2\u5728f90ded26\u539f\u5b8c\u6574\u95e8\u7981\u53ca\u540cZIP\u7236\u7ec4\u5408\u7b7e\u6536\uff1b\u56db\u76ee\u5f55/\u72ec\u7acbmux\u6d41\u4ea4\u9519\u6309\u7528\u6237\u660e\u786e\u6279\u51c6v2\u62ab\u9732\u3002\u539f\u5931\u8d25\u4e0e10054/40ms/1175/5/\u4e34\u65f6\u76ee\u5f55\u6d88\u5931\u8bca\u65ad\u7ee7\u7eed\u4fdd\u7559\u3001\u8303\u56f4\u5916ABI/\u8c03\u5ea6/\u4e91\u4e0e\u5ef6\u671fWin7\u53e6\u67e5\uff0c\u4e0d\u91cd\u6807\u65b0\u63d0\u4ea4\u4e3a\u539f\u53d1\u884c\u5019\u9009\u3002",
   "current_raw_review": {
     "candidate": "f90ded26e96ecfb0c1737a47d9f47b034b26c93a",
     "evidenceArchive": "migration/evidence/artifacts/HANDOFF-PARENT-REVIEW-20261010-F90DED26.zip",
     "originalFindingsPreserved": true,
-    "orderingApproval": "pending",
-    "scope": "Complete canonical storage/query/projection/message graph corpora plus24 independent processes: none/zstd/sqlite and both writer sides,2048 committed events and2049 detached observations, public full headers/messages and cold Web/HTTP consumers. No arbitrary malformed/plugin ABI, locale or unobserved lock/cancellation schedule certification."
-  }
+    "orderingApproval": "HANDOFF-ORDER-APPROVAL-20261010-F90DED26",
+    "scope": "Complete canonical storage/query/projection/message graph corpora plus24 independent processes: none/zstd/sqlite and both writer sides,2048 committed events and2049 detached observations, public full headers/messages and cold Web/HTTP consumers. No arbitrary malformed/plugin ABI, locale or unobserved lock/cancellation schedule certification.",
+    "disposition": "original finding text and SHA retained in reviewed_findings"
+  },
+  "reviewed_findings": [
+    {
+      "original": "Clean7f9e87e4 revalidates canonical SQLite323/default compressed or plaintext JSONL1030, independent schema-19 format826, FTS16, Unicode2034/text7883, optional tools78 and existing core/cold/live/prepared/projection/cache/corpus/title/lineage/snapshot ranges. These are distinct bounded Source contracts, not complete Session-domain certification.",
+      "originalSha256": "837f74ad69e2fcc6bd39666b794249cb964c152f57e901cf20a8989b9629ccd9",
+      "review": "Require current full provider/query/format/text/tool/lineage/snapshot pairs and actual owned consumers; add independent24 physical writer/reader processes,three formats,both writer sides,2048message scale with complete public header/event/message graphs. Counts alone are insufficient.",
+      "disposition": "Recorded corpus/missing clean milestone resolved by exact current evidence; original broader/unknown/deferred scope is retained as a limitation, not reclassified as an upstream bug. Ordering-dependent signoff awaits separate human decision.",
+      "orderingDecision": "Preserved pre-decision wording; direct human v2 approval now applies only the four named directories and independent-stream interleaving.",
+      "approvalRecord": "HANDOFF-ORDER-APPROVAL-20261010-F90DED26",
+      "evidenceArchive": "migration/evidence/artifacts/HANDOFF-PARENT-REVIEW-20261010-F90DED26.zip"
+    },
+    {
+      "original": "Public canonical persistence51 numeric/cancelled read controls039, public create/metadata/clone53 revision2 controls041, create/restore76 exact admission diagnostics042 and restore18 signed-number predicates043 are now bounded integrated. Exact rejected4a127b73 and its clone/diagnostic/sign baselines remain preserved. Actual detached list/load/lineage/snapshot Source consumers pass.",
+      "originalSha256": "a3de58fbc4a4e791389654ed9493f5e634ce914106e167f90d1994f1bdbc6063",
+      "review": "Require current persistence numeric/public create/metadata/clone/admission/sign pairs and detached actual consumers; preserve exact rejected archives and raw diagnostics.",
+      "disposition": "Recorded corpus/missing clean milestone resolved by exact current evidence; original broader/unknown/deferred scope is retained as a limitation, not reclassified as an upstream bug. Ordering-dependent signoff awaits separate human decision.",
+      "orderingDecision": "Preserved pre-decision wording; direct human v2 approval now applies only the four named directories and independent-stream interleaving.",
+      "approvalRecord": "HANDOFF-ORDER-APPROVAL-20261010-F90DED26",
+      "evidenceArchive": "migration/evidence/artifacts/HANDOFF-PARENT-REVIEW-20261010-F90DED26.zip"
+    },
+    {
+      "original": "Complete arbitrary malformed/extension event and public plugin ABI, alias/graph/copy-cycle ownership, private errors beyond specified rows, remaining provider/index/Task cancellation races, other domains/locales, long-history scale and independent cross-process/multi-cwd/profile/Web reconnect combinations remain unqualified. Source cache40ms timing, historical startup cancellation/WinError1175 and Proactor diagnostics remain separately recorded; real Win7 is user-deferred.",
+      "originalSha256": "12fb7cd281c93d9e0102811a5a68a654001f471742c43dacfa2addb1066e6dc1",
+      "review": "Specify finite graph/cycle/extension inputs via current message/source-boundary controls and actual replay/cold/reconnect compositions; arbitrary plugin ABI/locales/schedules/private errors remain uncertified. Historical40ms/1175 causes are not inferred; actual current unsupported platform cases and deferred Win7 stay explicit.",
+      "disposition": "Recorded corpus/missing clean milestone resolved by exact current evidence; original broader/unknown/deferred scope is retained as a limitation, not reclassified as an upstream bug. Ordering-dependent signoff awaits separate human decision.",
+      "orderingDecision": "Preserved pre-decision wording; direct human v2 approval now applies only the four named directories and independent-stream interleaving.",
+      "approvalRecord": "HANDOFF-ORDER-APPROVAL-20261010-F90DED26",
+      "evidenceArchive": "migration/evidence/artifacts/HANDOFF-PARENT-REVIEW-20261010-F90DED26.zip"
+    },
+    {
+      "original": "Sixteen complete canonical AgentLoop request/context graphs044 are bounded accepted in clean54361bd9; durable assistant messages retain Source content blocks without the oldtool_calls alias. This is not arbitrary extension/message ABI or every model/profile/cancellation schedule.",
+      "originalSha256": "c31d4efdd3639bc60c18029e34ac9f82eadfcfc4c55e782d3416b785e1eac5b1",
+      "review": "Current complete canonical request graphs/durable body/detachment pair plus actual default profile/HTTP/SDK/model/next-tool cold journeys resolve the recorded combination scope; no arbitrary extension or scheduling claim.",
+      "disposition": "Recorded corpus/missing clean milestone resolved by exact current evidence; original broader/unknown/deferred scope is retained as a limitation, not reclassified as an upstream bug. Ordering-dependent signoff awaits separate human decision.",
+      "orderingDecision": "Preserved pre-decision wording; direct human v2 approval now applies only the four named directories and independent-stream interleaving.",
+      "approvalRecord": "HANDOFF-ORDER-APPROVAL-20261010-F90DED26",
+      "evidenceArchive": "migration/evidence/artifacts/HANDOFF-PARENT-REVIEW-20261010-F90DED26.zip"
+    },
+    {
+      "original": "Four complete actual JSONL none/zstd list/inspect/raw shared-reader observations047 are bounded accepted in cleanb2398db9. Actual exclusive denial, reader retirement, missing paths and extended paths remain strict. The rejected eaa8 transient holder is unidentified; arbitrary holder schedules, writers, public graph ABI and full Session/profile scopes remain open.",
+      "originalSha256": "807a89010e73a4aca1ecc4011fd6adebfc59c16727201c42d22feac0da45c704",
+      "review": "Require current literal JSONL none/zstd shared-reader pair and positive/refusal controls plus actual independent writer/reader histories. Original eaa8 transient holder stays unidentified; do not add retries, change errors or invent its root cause.",
+      "disposition": "Recorded corpus/missing clean milestone resolved by exact current evidence; original broader/unknown/deferred scope is retained as a limitation, not reclassified as an upstream bug. Ordering-dependent signoff awaits separate human decision.",
+      "orderingDecision": "Preserved pre-decision wording; direct human v2 approval now applies only the four named directories and independent-stream interleaving.",
+      "approvalRecord": "HANDOFF-ORDER-APPROVAL-20261010-F90DED26",
+      "evidenceArchive": "migration/evidence/artifacts/HANDOFF-PARENT-REVIEW-20261010-F90DED26.zip"
+    }
+  ],
+  "limitations": [
+    "Win7 native certification remains user-deferred.",
+    "Existing nine Source bug predicates and the four approved policy-token scenes remain unchanged.",
+    "Original HTTP10054,40ms cache/1175/5 histories and the v5 missing private-temp producer and v7 checkpoint replacement WinError5 remain unclassified. Actual later passing finite observations do not identify or eliminate those original causes.",
+    "Complete canonical storage/query/projection/message graph corpora plus24 independent processes: none/zstd/sqlite and both writer sides,2048 committed events and2049 detached observations, public full headers/messages and cold Web/HTTP consumers. No arbitrary malformed/plugin ABI, locale or unobserved lock/cancellation schedule certification.",
+    "Only four full-row unique-key directory bijections: settings/describe(ns), llm/listProviders(id), llm/listConfigurableProviders(provider), session/modelCatalog.routableProviders(provider identity); and global interleaving of four independent remote.mux streams in the sixteen current comparisons. Complete rows, all fields, each stream sequence, business/durable/request/body/termination/error values, all other ordering and the original sixteen mutation controls stay strict. Original global order remains sealed. No new upstream bug predicate, arbitrary scheduling/ABI/cloud qualification or native Win7 certification."
+  ]
 }

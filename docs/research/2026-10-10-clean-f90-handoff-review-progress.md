@@ -2,6 +2,20 @@
 
 候选为 `f90ded26e96ecfb0c1737a47d9f47b034b26c93a`，Source 仍固定 `cd5ef8148158c3a752a658978873241fdf8e2bbc`。本轮后续工作没有改变生产代码或原版前端。四实际策略场景的十一项 token 差异保持用户已批准的原边界；不扩展九项既有上游 bug 判据。
 
+## 当前：十六项有限范围全部闭环
+
+用户针对精确Web顺序v2答复“批准，继续签收”。批准记录为 `migration/evidence/HANDOFF-ORDER-APPROVAL-20261010-F90DED26.json`，SHA256 `f0768888f53a09d6ef603e20cd80e3d3748ad46e86aaa40978c3aff770d58a6d`；绑定原提案 SHA256 `9ad0e65bd9c89690e806dcbf776d206d7b7d3fe1800e20a374a52a6bf4a1454b`、原绑定清单 `73399f327175f469aeab4cb3123b37a256a1d67f415dda0bbf1c953b2fbf5711`。原提案文字仍作为批准前历史保存，审批记录另存，不把旧token批准当作此次批准。
+
+`apply-approved-pending-five-v1.py --direct-human-v2-approved` 读取正式父归档原快照/逐项审查及当前已发布证据，核验前81/5状态、同候选依赖、原验收/发现、16个完整顺序诊断与物理退出后，仅增量签收DeepSeek、Session、Tools、Web、Profiles五项。调用回执 `approved-pending-five-caller-v1.json` 物理退出0；此前81项任务字节未变。HANDOFF后续16项已在原记录有限范围闭环，全账本 **86 integrated / 0 review**；五新父验收保持同f90候选/原验收摘要，所有原finding原文/SHA移入reviewed_findings，范围限制保留。
+
+只允许四指定目录的完整行唯一键双射排列，以及四独立mux流全局交错。每条流内完整帧/顺序、业务/持久/请求/正文/终止/错误、其余数组/字段及16破坏控制保持严格；五合同的原ordering原文未删除，另附用户批准的有限行为边界。原完整比较qualification=false与原120/1/1/1失败不重标；完整发行证据仍由原单次完整回执提供，本次不是拼接或新运行。任意ABI/调度、付费云、未归因兼容性诊断及延期Win7不因此认证。
+
+正式闭环归档 `migration/evidence/artifacts/HANDOFF-ORDER-CLOSURE-20261010-F90DED26.zip`，SHA256 `6925f810329114a88cf67175fa0660d4080765d9a319d435d40f4394f90d5f25`，保存实际人类批准、精确提案/清单、前后任务/合同、增量脚本、物理调用日志及五新验收记录绑定。维护记录 `migration/evidence/RUN-HANDOFF-ORDER-CLOSURE-20261010-F90DED26.json` 记录16项闭环、86/0状态及清理。原观察/Portable使用已有正式完整/父归档，不新增测试运行或重建Portable。
+
+正式归档逐成员CRC/尺寸/SHA及当前文件字节核验通过后，删除已消费的逐项审查散装副本和本轮before-state ZIP，共2文件、13302237字节；两份原始字节仍分别保存在正式父归档与闭环归档。原工作区/失败/未知材料继续保留，临时写入文件全部原子替换完成。以下十一项已签收/五项待批准及存储阻塞为前阶段历史。
+
+最终元数据核验 `verify-handoff-closure-ledger-v2.py` 物理退出0：执行canonical migration check，再从同一已校验视图生成status及按原CLI规则检查ready，避免重复解析同一台账。86项integrated、81项当前有限验收有效，所有依赖无阻塞，本次16项原验收/发现及五合同原ordering/invariants均核对，ready为空。5项既有历史任务（Inventory、Repro Gate、Search、Web Protocol Discovery、Workflow）维持原集成提交，不冒称本次重新认证。首版附加检查错误要求这5项也有当前验收，canonical check本身通过但首版脚本退出1；原脚本/日志保留，修正版仅纠正验证范围，不改历史任务或伪造当前证据。回执/日志为 `handoff-final-ledger-verification-v2.json`/`.log`。验证范围为台账、同输入依赖、原合同与归档身份；本轮只改文档/台账，因此不重复pytest、全套或构建。文档链接、diff及新归档LFS/批准记录的实际Git字节绑定另核验。
+
 ## 完整发行：已通过
 
 第十五轮统一入口 `scripts/verify_release.py` 在干净候选物理退出 0。完整 Python **10520 passed / 6 既有 skipped**，10526 项收集，XML 4077.732 秒；22 组固定 Source 配置、83 配对驱动、实际解压包内 Python 消费者、现代浏览器及 Chromium 108 必需旅程通过。六项跳过是既有 Windows symlink 权限或 POSIX 权限/路径行为边界，不增加跳过。
@@ -10,7 +24,7 @@
 
 正式完整归档：`migration/evidence/artifacts/HANDOFF-CLEAN-20261010-F90DED26.zip`，138065207 字节，SHA256 `6b6711df6ae94610d909890340e27822cb4c47669b9c8efbf34616e796b3dd9c`。该单次完整回执提供发行证据，不能用多个局部通过拼接另一次完整通过。
 
-## 父组合与逐项审查：十一项已签收，五项待批准
+## 前阶段父组合与逐项审查：十一项已签收，五项待批准
 
 原父运行先完成五个物理退出 0 的独立任务：九个实际 route/engine/policy/cold/ACP/ownership/close 组合、真实默认 SDK normal/cancel/error、五个默认 profile HTTP、三预设 fresh/cold 完整 wire，以及真实 Web 模型 HTTP。原外层最终退出 **120**，因为最后 UI 报告写入 ENOSPC；仍是失败。后续三个完整 UI 重做分别退出 **1/1/1**，原因是私有临时路径消失、再次 ENOSPC、检查点替换 WinError5，均保留原始拒绝。
 
@@ -36,7 +50,7 @@
 
 正式维护归档：`migration/evidence/artifacts/HANDOFF-POST-REVIEW-STORAGE-20261010-F90DED26.zip`，SHA256 `84fb6beead41a1dfb604dc43957bdf9ff299dd9cd17c8452263cd73d514597b0`，含当前成功应用、此前存储失败、各次重复副本退休审计、待批准预检和准备gzip原字节。对应记录 `migration/evidence/RUN-HANDOFF-STORAGE-LEDGER-20261010-F90DED26.json` 如实记录删除及81/5状态；这是维护证据，不是新发行认证。
 
-接续从 `review-pending-five-preflight-v1.py` 的只读逻辑开始；当前成功预检已保存 `pending-five-preflight-v1.json`。它直接读取正式父归档的原始快照/逐项审查与当前已发布记录，不需要恢复被清理的临时准备gzip。**旧全16或11项应用脚本不可直接重跑**，其原始SHA/不存在路径前置条件已不满足。若用户明确批准精确v2，先绑定实际人类答复与当前proposal/bindings SHA，再准备只提升这五项的增量操作，核对当前任务快照、原验收摘要及依赖。不能把待答复、经过时间或token批准当作顺序批准。完成后按实际变更执行migration check/ready/status和diff/链接检查；后续文档/台账提交不因此重复全套或重建Portable，认证候选仍为原f90ded26及精确ZIP。
+此前接续使用 `review-pending-five-preflight-v1.py` 只读逻辑及 `pending-five-preflight-v1.json`，直接读取正式父归档原快照/逐项审查与当前已发布记录，无需恢复临时准备gzip。本次已取得并绑定实际人类v2批准，再用五项增量入口完成签收。**旧全16、11项、五项应用脚本及81/5前置预检均不可直接重跑**，已完成的状态/路径前置条件不再满足；它们只作历史证据。后续继续兼容诊断，不再把16项当作待签收任务。按实际变更执行migration check/ready/status和diff/链接检查；文档/台账提交不因此重复全套或重建Portable，认证候选仍为原f90ded26及精确ZIP。
 
 ## 兼容性待查
 

@@ -1,0 +1,42 @@
+{
+  "id": "HANDOFF-ORDER-APPROVAL-20261010-F90DED26",
+  "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
+  "product_commit": "f90ded26e96ecfb0c1737a47d9f47b034b26c93a",
+  "result": "passed",
+  "validity": "current",
+  "kind": "human-approval",
+  "commands": [
+    "Direct human answer to the exact reviewable v2 ordering proposal; this is authorization, not an executed parity test."
+  ],
+  "environment": {
+    "python": "3.8.10 (default, May  6 2021, 17:27:56) [MSC v.1928 64 bit (AMD64)]",
+    "os": "Windows-10-10.0.26200-SP0",
+    "node": "v22.22.2",
+    "browser": "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe",
+    "cwd": "C:\\Users\\czh86\\Documents\\Codex\\deepseek-harness-win7",
+    "originalParentPhysicalExit": 120,
+    "previousUIRecoveryPhysicalExit": 1,
+    "originalUIRecoveryV7PhysicalExit": 1,
+    "independentCaseReviewPhysicalExit": 0
+  },
+  "contract_revisions": {},
+  "artifacts": [
+    {
+      "path": "migration/evidence/artifacts/HANDOFF-PARENT-REVIEW-20261010-F90DED26.zip",
+      "sha256": "9013d05837b14f7c23fee81bf0695900ed6c43332ba6f1a4c18a63372e495526"
+    }
+  ],
+  "approval": {
+    "candidate": "f90ded26e96ecfb0c1737a47d9f47b034b26c93a",
+    "decision": "approved-exact-four-directories-and-independent-mux-interleaving",
+    "source": "Direct human user answer in current conversation",
+    "humanAnswer": "\u6279\u51c6\uff0c\u7ee7\u7eed\u7b7e\u6536",
+    "question": "\u662f\u5426\u6279\u51c6Web\u6709\u9650\u987a\u5e8f\u63d0\u6848\uff0c\u7ee7\u7eed\u5269\u4f595\u9879\u7b7e\u6536\uff1f\u6b64\u524d\u56db\u573a\u666ftoken\u6279\u51c6\u4e0d\u5305\u542b\u76ee\u5f55\u6392\u5217\u548c\u72ec\u7acb\u6d41\u4ea4\u9519\u3002",
+    "proposalSha256": "9ad0e65bd9c89690e806dcbf776d206d7b7d3fe1800e20a374a52a6bf4a1454b",
+    "bindingsSha256": "73399f327175f469aeab4cb3123b37a256a1d67f415dda0bbf1c953b2fbf5711",
+    "scope": "Only four full-row unique-key directory bijections: settings/describe(ns), llm/listProviders(id), llm/listConfigurableProviders(provider), session/modelCatalog.routableProviders(provider identity); and global interleaving of four independent remote.mux streams in the sixteen current comparisons. Complete rows, all fields, each stream sequence, business/durable/request/body/termination/error values, all other ordering and the original sixteen mutation controls stay strict. Original global order remains sealed. No new upstream bug predicate, arbitrary scheduling/ABI/cloud qualification or native Win7 certification.",
+    "previousPolicyApproval": "unchanged; distinct authorization",
+    "originalProposalPendingTextPreserved": true
+  },
+  "scope": "Only four full-row unique-key directory bijections: settings/describe(ns), llm/listProviders(id), llm/listConfigurableProviders(provider), session/modelCatalog.routableProviders(provider identity); and global interleaving of four independent remote.mux streams in the sixteen current comparisons. Complete rows, all fields, each stream sequence, business/durable/request/body/termination/error values, all other ordering and the original sixteen mutation controls stay strict. Original global order remains sealed. No new upstream bug predicate, arbitrary scheduling/ABI/cloud qualification or native Win7 certification."
+}

@@ -1,0 +1,93 @@
+{
+  "id": "RUN-HANDOFF-ORDER-CLOSURE-20261010-F90DED26",
+  "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
+  "product_commit": "f90ded26e96ecfb0c1737a47d9f47b034b26c93a",
+  "kind": "maintenance",
+  "result": "passed",
+  "validity": "current",
+  "exit_code": 0,
+  "commands": [
+    "Direct human answer: approve exact Web ordering v2 and continue acceptance.",
+    ".venv/Scripts/python.exe .goose/out/continuation-20261008-v1/apply-approved-pending-five-v1.py --direct-human-v2-approved",
+    ".venv/Scripts/python.exe .goose/out/continuation-20261008-v1/seal-approved-five-closure-v1.py"
+  ],
+  "environment": {
+    "python": "3.8.10",
+    "os": "Windows-10-10.0.26200-SP0",
+    "cwd": "C:\\Users\\czh86\\Documents\\Codex\\deepseek-harness-win7"
+  },
+  "contract_revisions": {},
+  "artifacts": [
+    {
+      "path": "migration/evidence/artifacts/HANDOFF-ORDER-CLOSURE-20261010-F90DED26.zip",
+      "sha256": "6925f810329114a88cf67175fa0660d4080765d9a319d435d40f4394f90d5f25"
+    },
+    {
+      "path": "migration/evidence/HANDOFF-ORDER-APPROVAL-20261010-F90DED26.json",
+      "sha256": "f0768888f53a09d6ef603e20cd80e3d3748ad46e86aaa40978c3aff770d58a6d"
+    }
+  ],
+  "closure": {
+    "integrated": 86,
+    "review": 0,
+    "handoffClosures": 16,
+    "newlyClosed": 5,
+    "records": [
+      {
+        "path": "migration/evidence/RUN-HANDOFF-PARENT-20261010-DEEPSEEK-WIRE-002.json",
+        "sha256": "7fd609ce8d4ddd53b8e3f0d1e800c9e4ba72969e5d7ea007e69d40d789e5fcab",
+        "bytes": 2471736
+      },
+      {
+        "path": "migration/evidence/RUN-HANDOFF-PARENT-20261010-PROFILE-JOURNEYS-002.json",
+        "sha256": "b84eed77c795808302d250cf431f43866f6b4e7aa3a0cbfca120dcabb5bb4991",
+        "bytes": 2471977
+      },
+      {
+        "path": "migration/evidence/RUN-HANDOFF-PARENT-20261010-SESSION-REPLAY-002.json",
+        "sha256": "6a084fa10d2d139d2a9743fbd9d3b3097bc0d552ea85e8b16db169fc53f0ac38",
+        "bytes": 2472497
+      },
+      {
+        "path": "migration/evidence/RUN-HANDOFF-PARENT-20261010-TOOLS-POLICY-002.json",
+        "sha256": "5dac2987ba64ea1e24e1b36931e26e6d0de8bd36048b9b5f7563f785b4705337",
+        "bytes": 2471824
+      },
+      {
+        "path": "migration/evidence/RUN-HANDOFF-PARENT-20261010-WEB-CONNECTION-002.json",
+        "sha256": "d0f074a77e35b1ae41d6f8a20db5b6417fe6a337d70123b0d664dc2ce934a135",
+        "bytes": 2471742
+      }
+    ]
+  },
+  "cleanup": {
+    "status": "completed",
+    "removedFiles": 2,
+    "removedBytes": 13302237,
+    "files": [
+      {
+        "status": "completed",
+        "path": "C:\\Users\\czh86\\Documents\\Codex\\deepseek-harness-win7\\.goose\\out\\continuation-20261008-v1\\task-disposition-review-v18.json",
+        "bytes": 13278305,
+        "sha256": "15338ca0c2d25f6478b967d944c357ea0f0080d2a582b8146f8d38d06fbb7ccc",
+        "archive": {
+          "path": "migration/evidence/artifacts/HANDOFF-PARENT-REVIEW-20261010-F90DED26.zip",
+          "sha256": "9013d05837b14f7c23fee81bf0695900ed6c43332ba6f1a4c18a63372e495526"
+        },
+        "member": "recovery/task-disposition-review-v18.json"
+      },
+      {
+        "path": "C:\\Users\\czh86\\Documents\\Codex\\deepseek-harness-win7\\.goose\\out\\continuation-20261008-v1\\pending-five-before-application-v1.zip",
+        "bytes": 23932,
+        "sha256": "dc4e93258be817a56dec0ed3ff1d19ba689471eae7cd400072eea5d4fd580156",
+        "archive": {
+          "path": "migration/evidence/artifacts/HANDOFF-ORDER-CLOSURE-20261010-F90DED26.zip",
+          "sha256": "6925f810329114a88cf67175fa0660d4080765d9a319d435d40f4394f90d5f25"
+        },
+        "member": "transition/pending-five-before-application-v1.zip"
+      }
+    ],
+    "scope": "Only exact completed review/before-state preparation copies; original review and actual before bytes retain one formal sealed copy. No test run, active/unknown workspace or formal evidence deleted."
+  },
+  "scope": "Five actual incremental transitions after explicit exact-v2 human approval, all16 original criteria/findings preserved. Previous81 task bytes unchanged. Original120/1/1/1 remain failed, no stitched/new complete gate. Compatibility diagnostics and native Win7 deferral remain outside finite acceptance."
+}

@@ -2,7 +2,7 @@
   "id": "MIG-TOOLS-POLICY-002",
   "goal": "\u5bf9\u9f50\u5de5\u5177\u8c03\u5ea6\u3001\u5ba1\u6279\u548c\u53d6\u6d88\u5951\u7ea6",
   "kind": "verification",
-  "state": "review",
+  "state": "integrated",
   "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
   "base_product": "a4ff8ac41fa37b5463b0ce8b7f420d0973e8d840",
   "owner": "current-session-coordinator",
@@ -85,19 +85,38 @@
     "tests",
     "migration"
   ],
-  "open_findings": [
-    "Pinned actual Source six scheduler observations expose missing final-result finish/notification, late dispatch after prepare and overwritten first failure. Root fixes passed 119 focused native tests and six fresh Source observations; full B2 combinations, synchronous dispatch prefixes and clean complete/extracted qualification remain open. See docs/research/2026-10-05-tools-scheduler-failure-progress.md."
-  ],
+  "open_findings": [],
   "conflicts_with": [],
   "candidate_commit": "f90ded26e96ecfb0c1737a47d9f47b034b26c93a",
-  "integrated_commit": null,
-  "evidence_ids": [],
-  "next_action": "\u540cf90ded26\u5b8c\u6574\u95e8\u7981\u3001\u5b8c\u6574\u7236\u89c2\u5bdf\u548c\u9010\u9879\u539f\u59cb\u53d1\u73b0\u5ba1\u67e5\u5df2\u51c6\u5907\uff1b\u56db\u6307\u5b9a\u76ee\u5f55\u5b8c\u6574\u884c\u6392\u5217\u4e0e\u56db\u72ec\u7acbmux\u6d41\u5168\u5c40\u4ea4\u9519\u9700\u7528\u6237\u660e\u786e\u6279\u51c6v2\u3002\u6240\u6709\u5b57\u6bb5/\u6d41\u5185/\u6301\u4e45/\u539f\u7248UI\u4e25\u683c\u8981\u6c42\u4e0d\u53d8\uff1b\u672a\u6279\u51c6\u4e0d\u7b7e\u6536\uff0cWin7\u5ef6\u671f\u3002",
+  "integrated_commit": "f90ded26e96ecfb0c1737a47d9f47b034b26c93a",
+  "evidence_ids": [
+    "RUN-HANDOFF-PARENT-20261010-TOOLS-POLICY-002"
+  ],
+  "next_action": "\u539f\u5408\u540c\u6709\u9650\u8303\u56f4\u5df2\u5728f90ded26\u539f\u5b8c\u6574\u95e8\u7981\u53ca\u540cZIP\u7236\u7ec4\u5408\u7b7e\u6536\uff1b\u56db\u76ee\u5f55/\u72ec\u7acbmux\u6d41\u4ea4\u9519\u6309\u7528\u6237\u660e\u786e\u6279\u51c6v2\u62ab\u9732\u3002\u539f\u5931\u8d25\u4e0e10054/40ms/1175/5/\u4e34\u65f6\u76ee\u5f55\u6d88\u5931\u8bca\u65ad\u7ee7\u7eed\u4fdd\u7559\u3001\u8303\u56f4\u5916ABI/\u8c03\u5ea6/\u4e91\u4e0e\u5ef6\u671fWin7\u53e6\u67e5\uff0c\u4e0d\u91cd\u6807\u65b0\u63d0\u4ea4\u4e3a\u539f\u53d1\u884c\u5019\u9009\u3002",
   "current_raw_review": {
     "candidate": "f90ded26e96ecfb0c1737a47d9f47b034b26c93a",
     "evidenceArchive": "migration/evidence/artifacts/HANDOFF-PARENT-REVIEW-20261010-F90DED26.zip",
     "originalFindingsPreserved": true,
-    "orderingApproval": "pending",
-    "scope": "Full scheduler/publication/error/preset/question corpora plus seven actual composed policy cases, four explicitly approved policy-token scenes and two held-body/pending-approval runtime closes. Actual UI question/approval/plan/cancel follows. Nine upstream predicates stay exact; arbitrary policy graphs/schedules are not certified."
-  }
+    "orderingApproval": "HANDOFF-ORDER-APPROVAL-20261010-F90DED26",
+    "scope": "Full scheduler/publication/error/preset/question corpora plus seven actual composed policy cases, four explicitly approved policy-token scenes and two held-body/pending-approval runtime closes. Actual UI question/approval/plan/cancel follows. Nine upstream predicates stay exact; arbitrary policy graphs/schedules are not certified.",
+    "disposition": "original finding text and SHA retained in reviewed_findings"
+  },
+  "reviewed_findings": [
+    {
+      "original": "Pinned actual Source six scheduler observations expose missing final-result finish/notification, late dispatch after prepare and overwritten first failure. Root fixes passed 119 focused native tests and six fresh Source observations; full B2 combinations, synchronous dispatch prefixes and clean complete/extracted qualification remain open. See docs/research/2026-10-05-tools-scheduler-failure-progress.md.",
+      "originalSha256": "54f8af2e280e3502304b6776c7fb71764d0d8b1de40de1d4aabfa6e837d89193",
+      "review": "Require complete scheduler/dispatch/publication/first-error pairs and actual composed seven policy cases plus four exact user-approved token scenarios, default SDK and real UI question/approval/plan/cancel. Check Source strict synchronous prefixes and full outputs; existing nine upstream predicates unchanged.",
+      "disposition": "Recorded corpus/missing clean milestone resolved by exact current evidence; original broader/unknown/deferred scope is retained as a limitation, not reclassified as an upstream bug. Ordering-dependent signoff awaits separate human decision.",
+      "orderingDecision": "Preserved pre-decision wording; direct human v2 approval now applies only the four named directories and independent-stream interleaving.",
+      "approvalRecord": "HANDOFF-ORDER-APPROVAL-20261010-F90DED26",
+      "evidenceArchive": "migration/evidence/artifacts/HANDOFF-PARENT-REVIEW-20261010-F90DED26.zip"
+    }
+  ],
+  "limitations": [
+    "Win7 native certification remains user-deferred.",
+    "Existing nine Source bug predicates and the four approved policy-token scenes remain unchanged.",
+    "Original HTTP10054,40ms cache/1175/5 histories and the v5 missing private-temp producer and v7 checkpoint replacement WinError5 remain unclassified. Actual later passing finite observations do not identify or eliminate those original causes.",
+    "Full scheduler/publication/error/preset/question corpora plus seven actual composed policy cases, four explicitly approved policy-token scenes and two held-body/pending-approval runtime closes. Actual UI question/approval/plan/cancel follows. Nine upstream predicates stay exact; arbitrary policy graphs/schedules are not certified.",
+    "Only four full-row unique-key directory bijections: settings/describe(ns), llm/listProviders(id), llm/listConfigurableProviders(provider), session/modelCatalog.routableProviders(provider identity); and global interleaving of four independent remote.mux streams in the sixteen current comparisons. Complete rows, all fields, each stream sequence, business/durable/request/body/termination/error values, all other ordering and the original sixteen mutation controls stay strict. Original global order remains sealed. No new upstream bug predicate, arbitrary scheduling/ABI/cloud qualification or native Win7 certification."
+  ]
 }

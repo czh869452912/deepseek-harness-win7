@@ -139,7 +139,7 @@ def test_candidate_failure_retains_both_previous_artifacts(tmp_path, monkeypatch
     dist = parent / 'dsh-win7-portable'
     dist.mkdir(parents=True)
     (dist / 'previous').write_bytes(b'old directory')
-    archive = parent / 'dsh-win7-portable-v0.1.0.zip'
+    archive = parent / ('dsh-win7-portable-v' + BUILD.VERSION + '.zip')
     archive.write_bytes(b'old zip')
     def assemble(directory, output, *args):
         Path(directory).mkdir()
@@ -175,7 +175,7 @@ def test_failed_publication_rollback_keeps_recoverable_backup(tmp_path, monkeypa
     dist = parent / 'dsh-win7-portable'
     dist.mkdir(parents=True)
     (dist / 'previous').write_bytes(b'old directory')
-    archive = parent / 'dsh-win7-portable-v0.1.0.zip'
+    archive = parent / ('dsh-win7-portable-v' + BUILD.VERSION + '.zip')
     archive.write_bytes(b'old zip')
     def assemble(directory, output, *args):
         Path(directory).mkdir()

@@ -172,7 +172,7 @@ artifact handling, and the distinction between this guidance and current CI.
 
 ## 6. Portable Release Requirements
 
-The portable release script (`scripts/build_portable.py`) creates a standalone distribution in `dist/dsh-win7-portable/` and `dist/dsh-win7-portable-v0.1.0.zip` containing:
+The portable release script (`scripts/build_portable.py`) creates a standalone distribution in `dist/dsh-win7-portable/` and `dist/dsh-win7-portable-v0.1.1.zip` containing:
 1. Embedded Python 3.8 dependencies (`lib/`).
 2. Full `dsh/` framework and `dsh.py` entrypoint.
 3. Compiled React 18 Web GUI (`apps/web/dist/`) and official client packages (`packages/client/`).

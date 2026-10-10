@@ -148,7 +148,7 @@ git submodule update --init --recursive
 .venv\Scripts\python.exe scripts\build_portable.py
 ```
 
-构建产物将放置在 `dist/dsh-win7-portable/` 并打包为 `dist/dsh-win7-portable-v0.1.0.zip`：
+构建产物将放置在 `dist/dsh-win7-portable/` 并打包为 `dist/dsh-win7-portable-v0.1.1.zip`：
 - 双击 **`dsh-web.bat`**：一键启动 Web GUI 并在浏览器中打开。
 - **`dsh.bat --profile headless "任务"`**：通过正式入口执行单次任务。
 

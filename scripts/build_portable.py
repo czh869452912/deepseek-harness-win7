@@ -14,7 +14,7 @@ from pathlib import Path
 ROOT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, ROOT_DIR)
 DIST_DIR = os.path.join(ROOT_DIR, "dist", "dsh-win7-portable")
-VERSION = "0.1.0"
+VERSION = "0.1.1"
 ZIP_OUTPUT = os.path.join(ROOT_DIR, "dist", f"dsh-win7-portable-v{VERSION}.zip")
 RIPGREP_VERSION = "14.1.0"
 RIPGREP_MANIFEST_SHA256 = '1e06b8d18d8dd34c0fa6cdebaeb5a4894a38b5377fc12e4af74329797e80e04e'

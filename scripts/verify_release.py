@@ -140,6 +140,7 @@ REQUIRED_REGRESSION = {
           for damage in ('missing-proof', 'missing-provenance', 'wrong-version', 'missing-file', 'changed-hash')},
     },
     'test_ripgrep_compatibility': {
+        'test_isolated_native_runtime_runs_in_explicit_workspace',
         'test_native_input_keeps_official_identity_and_licenses',
         'test_fresh_search_process_runs_without_host_ripgrep_or_node',
         *{'test_invalid_native_input_cannot_replace_previous_distribution[' + damage + ']'
@@ -147,7 +148,7 @@ REQUIRED_REGRESSION = {
         *{'test_real_search_values_match_pinned_source_native_input[' + str(case) + ']'
           for case in range(9)},
         *{'test_isolated_native_runtime_rejects_incomplete_receipt[' + damage + ']'
-          for damage in ('missing', 'root', 'python', 'executable', 'binary', 'binary-sha', 'path',
+          for damage in ('missing', 'root', 'workspace', 'python', 'executable', 'binary', 'binary-sha', 'path',
             'override', 'node', 'version', 'version-exit', 'version-stderr', 'module', 'module-bytes',
             'glob', 'grep', 'meta', 'order', 'flag-type', 'public-extra')},
     },
@@ -779,7 +780,7 @@ REQUIRED_REGRESSION = {
     },
     'test_current_release_gate': {
         *{'test_extracted_native_search_requires_real_receipt[' + damage + ']'
-          for damage in ('missing', 'binary-sha', 'module', 'grep', 'flag-type', 'version-exit')},
+          for damage in ('missing', 'workspace', 'binary-sha', 'module', 'grep', 'flag-type', 'version-exit')},
         *{'test_complete_frontend_and_settings_lanes_are_mandatory[' + damage + '-' + module + ']'
           for damage in ('omit', 'skip', 'duplicate', 'failure')
           for module in ('test_frontend_import', 'test_release_preflight', 'test_settings_remote', 'test_schema_parity',
@@ -1616,7 +1617,8 @@ def validate_extracted(path, archive, candidate):
     from scripts.ripgrep_runtime_gate import validate_runtime as validate_native_search
     try:
         validate_native_search(report.get('nativeSearch'), Path(report['mcpStdio']['root']),
-            Path(report['mcpStdio']['root']) / 'python.exe', candidate['native_search_modules'], check_files=False)
+            Path(report['mcpStdio']['root']) / 'python.exe', candidate['native_search_modules'],
+            Path(report['mcpStdio']['root']).parent / 'native-search-workspace', check_files=False)
     except (ValueError, KeyError, TypeError) as error:
         raise RuntimeError('Extracted native search acceptance is incomplete') from error
     if candidate.get('browserCompatibility'):

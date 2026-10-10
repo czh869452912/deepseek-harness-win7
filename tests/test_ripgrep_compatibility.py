@@ -177,8 +177,13 @@ def actual_isolated_runtime(tmp_path_factory):
     assert completed.returncode == 0, completed.stderr
     value = json.loads(output.read_text(encoding='utf-8'))
     assert len(value['modules']) == 114 and set(value['modules']) == REQUIRED_MODULES
-    validate_runtime(value, ROOT, sys.executable, value['modules'])
-    return value
+    validate_runtime(value, ROOT, sys.executable, value['modules'], parent / 'workspace')
+    return value, parent / 'workspace'
+
+
+def test_isolated_native_runtime_runs_in_explicit_workspace(actual_isolated_runtime):
+    value, workspace = actual_isolated_runtime
+    validate_runtime(value, ROOT, sys.executable, value['modules'], workspace)
 
 
 def damage_runtime(value, damage):
@@ -186,6 +191,8 @@ def damage_runtime(value, damage):
         return None
     if damage == 'root':
         value['root'] = str(ROOT.parent)
+    elif damage == 'workspace':
+        value['workspace'] = str(Path(value['workspace']).with_name('unqualified-workspace'))
     elif damage == 'python':
         value['python'] = '3.9.0 unqualified'
     elif damage == 'executable':
@@ -229,8 +236,8 @@ def damage_runtime(value, damage):
 
 @pytest.mark.parametrize('damage', RUNTIME_DAMAGES)
 def test_isolated_native_runtime_rejects_incomplete_receipt(actual_isolated_runtime, damage):
-    valid = actual_isolated_runtime
-    validate_runtime(valid, ROOT, sys.executable, valid['modules'])
+    valid, workspace = actual_isolated_runtime
+    validate_runtime(valid, ROOT, sys.executable, valid['modules'], workspace)
     with pytest.raises((ValueError, KeyError, TypeError)):
         validate_runtime(damage_runtime(copy.deepcopy(valid), damage), ROOT, sys.executable,
-                         valid['modules'], check_files=False)
+                         valid['modules'], workspace, check_files=False)

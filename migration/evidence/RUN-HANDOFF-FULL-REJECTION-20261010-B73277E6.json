@@ -1,0 +1,26 @@
+{
+  "id": "RUN-HANDOFF-FULL-REJECTION-20261010-B73277E6",
+  "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
+  "product_commit": "b73277e6fd9c64ea6c590e815793884936d3b0cf",
+  "kind": "research",
+  "result": "failed",
+  "validity": "historical",
+  "exit_code": 1,
+  "commands": [
+    ".venv/Scripts/python.exe scripts/verify_release.py --browser \"C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe\" --browser108 .goose/tools/chromium-1058931/chrome-win/chrome.exe --output-dir .goose/out/release-gate-20261010-handoff-v13"
+  ],
+  "environment": {
+    "python": "3.8.10",
+    "node": "v22.22.2",
+    "os": "Windows-10-10.0.26200-SP0",
+    "cwd": "C:\\Users\\czh86\\Documents\\Codex\\deepseek-harness-win7"
+  },
+  "contract_revisions": {},
+  "artifacts": [
+    {
+      "path": "migration/evidence/artifacts/CURRENT-RELEASE-REJECTION-20261010-B73277E6.zip",
+      "sha256": "b78ad3960505009e1cb091c92e66f38343a4f9e8bbe6bd96f271b40197dfb3b8"
+    }
+  ],
+  "scope": "Clean b73277e6 full Python10474 passed/1 failed/20 setup errors/6 existing skips,4162.76 seconds. Nested teardown lacks explicit workspace ownership and expected nonzero exit concealed a second child failure;20 search setup errors share old root.parent workspace assumption.16689 frozen inputs and exact ZIP unchanged after physical exit1. Complete XML/logs,21 immediate reports,all four nested child results and original successful search process/receipt/input preserved.22 Source/83 pairs/extracted/browser acceptance not executed.No task promotion.996 audits archived:992 completed remove6347 synthetic/copy files and13951642662 bytes;four deliberately failed/planned negative-control audits retained and not counted as completed. Native ReplaceFileW behavior remains unchanged; Win7 remains user-deferred."
+}

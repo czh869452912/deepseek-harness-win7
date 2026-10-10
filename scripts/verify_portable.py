@@ -1055,7 +1055,7 @@ def main(argv=None):
                 raise RuntimeError('Extracted native search process failed; original diagnostics retained')
             report['nativeSearch'] = json.loads(search_output.read_text(encoding='utf-8'))
             validate_native_search(report['nativeSearch'], portable, portable / 'python.exe',
-                {name: digest(ROOT / name) for name in SEARCH_MODULES})
+                {name: digest(ROOT / name) for name in SEARCH_MODULES}, workspace / 'native-search-workspace')
             result = subprocess.run([str(portable / 'python.exe'), '-I', '-u',
                 str(ROOT / 'scripts/portable_runtime_probe.py'), '--workspace', str(workspace)],
                 cwd=str(workspace), env=env, capture_output=True, encoding='utf-8', errors='replace', timeout=240)

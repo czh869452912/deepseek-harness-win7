@@ -18,7 +18,7 @@ REQUIRED_MODULES = (set(GROUP_MODULES['query']) - {'dsh/llm/model_info.py'}) | {
     'dsh/subprocess/__init__.py', 'dsh/subprocess/collector.py', 'dsh/subprocess/local.py',
     'dsh/subprocess/service.py', 'dsh/subprocess/types.py',
 }
-RUNTIME_DAMAGES = ('missing', 'root', 'python', 'executable', 'binary', 'binary-sha', 'path',
+RUNTIME_DAMAGES = ('missing', 'root', 'workspace', 'python', 'executable', 'binary', 'binary-sha', 'path',
     'override', 'node', 'version', 'version-exit', 'version-stderr', 'module', 'module-bytes',
     'glob', 'grep', 'meta', 'order', 'flag-type', 'public-extra')
 
@@ -36,7 +36,7 @@ def expected_public():
     ]
 
 
-def validate_runtime(report, root, executable, expected_modules, check_files=True):
+def validate_runtime(report, root, executable, expected_modules, expected_workspace, check_files=True):
     root = Path(root).resolve()
     if not isinstance(report, dict) or set(report) != {
             'root', 'executable', 'python', 'modules', 'workspace', 'binary', 'binarySha256',
@@ -47,7 +47,9 @@ def validate_runtime(report, root, executable, expected_modules, check_files=Tru
         raise ValueError('Native search selected root or Python differs')
     if Path(report['binary']).resolve() != root / 'dsh/fs/tool_fs_search/bin/rg.exe':
         raise ValueError('Native search selected binary differs')
-    Path(report['workspace']).resolve().relative_to(root.parent)
+    workspace = Path(report['workspace'])
+    if not workspace.is_absolute() or workspace.resolve() != Path(expected_workspace).resolve():
+        raise ValueError('Native search selected workspace differs')
     if (report['binarySha256'] != RIPGREP_FILES['rg.exe'][0] or report['path'] != ''
             or report['explicitOverridePresent'] is not False or report['hostNodeFound'] is not False):
         raise ValueError('Native search input or isolation differs')

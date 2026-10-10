@@ -5,6 +5,7 @@ import subprocess
 import sys
 import shutil
 import tempfile
+import xml.etree.ElementTree as ET
 from types import SimpleNamespace
 
 import pytest
@@ -95,7 +96,19 @@ def test_actual_gate_teardown_prunes_finished_test_before_next_test(tmp_path, pl
     root = Path(__file__).resolve().parents[1]
     child = tmp_path / 'gate-teardown'
     child.mkdir()
-    workspace = child / 'workspace' if placement == 'owned' else Path(tempfile.mkdtemp(prefix='gate-external-'))
+    temporary_parent = Path(tempfile.gettempdir()).resolve()
+    workspace = Path(tempfile.mkdtemp(prefix='g-' if placement == 'owned' else 'gate-external-')).resolve()
+    environment = dict(os.environ)
+    owner = None
+    if placement == 'owned':
+        output_root = (root / '.goose/out').resolve()
+        output_root.mkdir(parents=True, exist_ok=True)
+        owner = Path(tempfile.mkdtemp(prefix='nested-gate-owner-', dir=str(output_root))).resolve()
+        mapping = dict(format='dsh-release-workspace@2', temporary_parent=str(temporary_parent),
+                       execution_path=str(workspace), retained_path=str(owner / 'pytest-workspace'))
+        (owner / 'pytest-workspace-mapping.json').write_text(json.dumps(mapping), encoding='utf-8')
+        (child / 'workspace-mapping.json').write_text(json.dumps(mapping), encoding='utf-8')
+        environment['DSH_RELEASE_PYTEST_OUTPUT'] = str(owner)
     record = child / 'first.txt'
     script = child / 'test_teardown.py'
     script.write_text(
@@ -118,19 +131,38 @@ def test_actual_gate_teardown_prunes_finished_test_before_next_test(tmp_path, pl
         + "    assert (previous / 'portable.zip').read_bytes() == b'exact candidate archive'\n"
         + ("    assert json.loads((previous / 'unit-receipts-pruned.json').read_text(encoding='utf-8'))['status'] == 'completed'\n" if placement == 'owned' else ''),
         encoding='utf-8')
+    qualified = False
     try:
         result = subprocess.run([sys.executable, '-m', 'pytest', str(script), '-q',
             '--confcutdir=' + str(child), '--basetemp=' + str(workspace), '--junitxml=' + str(child / 'pytest.xml')],
-            cwd=str(root), capture_output=True, timeout=60)
+            cwd=str(root), env=environment, capture_output=True, timeout=60)
         (child / 'pytest.log').write_bytes(result.stdout + result.stderr)
         assert result.returncode == (1 if outcome == 'failed' else 0), result.stdout + result.stderr
+        cases = ET.parse(str(child / 'pytest.xml')).findall('.//testcase')
+        assert [case.get('name') for case in cases] == ['test_first', 'test_second']
+        assert all(case.find('error') is None and case.find('skipped') is None for case in cases)
+        assert (cases[0].find('failure') is not None) is (outcome == 'failed')
+        assert cases[1].find('failure') is None, result.stdout + result.stderr
         if outcome == 'failed':
             assert b'retained original failure' in result.stdout
             assert 'retained original failure' in (child / 'pytest.xml').read_text(encoding='utf-8')
+        qualified = True
     finally:
-        if placement == 'external':
-            assert workspace.resolve() == workspace and workspace.name.startswith('gate-external-')
+        if qualified:
+            assert workspace.resolve() == workspace and workspace.parent == temporary_parent
+            assert workspace.name.startswith('g-' if placement == 'owned' else 'gate-external-')
+            for parent, directories, names in os.walk(str(workspace), followlinks=False):
+                for path in [Path(parent)] + [Path(parent) / name for name in directories + names]:
+                    assert not path.is_symlink() and not getattr(path.lstat(), 'st_file_attributes', 0) & 0x400
             shutil.rmtree(str(workspace))
+            if owner is not None:
+                assert owner.resolve() == owner and owner.parent == (root / '.goose/out').resolve()
+                assert {path.name for path in owner.iterdir()} == {'pytest-workspace-mapping.json'}
+                assert not getattr(owner.lstat(), 'st_file_attributes', 0) & 0x400
+                shutil.rmtree(str(owner))
+            (child / 'workspace-pruned.json').write_text(json.dumps(dict(status='completed',
+                workspace=str(workspace), owner=str(owner) if owner else None, physicalExit=result.returncode,
+                scope='Only this physically exited child fixture workspace; XML/logs/script retained.')), encoding='utf-8')
 
 
 @pytest.mark.parametrize('damage', ['real-zip', 'foreign-runtime', 'missing-runtime', 'invalid-json', 'unknown-name', 'nested-folder', 'unowned-folder'])

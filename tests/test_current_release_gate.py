@@ -1966,7 +1966,7 @@ def native_search_runtime_fixture():
         return json.loads(output.read_text(encoding='utf-8'))
 
 
-@pytest.mark.parametrize('damage', ['missing', 'binary-sha', 'module', 'grep', 'flag-type', 'version-exit'])
+@pytest.mark.parametrize('damage', ['missing', 'workspace', 'binary-sha', 'module', 'grep', 'flag-type', 'version-exit'])
 def test_extracted_native_search_requires_real_receipt(tmp_path, damage):
     from tests.test_ripgrep_compatibility import damage_runtime
     archive, candidate, report = extracted_receipt(tmp_path)
@@ -1989,7 +1989,7 @@ def extracted_receipt(tmp_path):
     native_search = copy.deepcopy(native_search_runtime_fixture())
     candidate['native_search_modules'] = native_search['modules'].copy()
     native_search.update(root=str(tmp_path), executable=str(tmp_path / 'python.exe'),
-        binary=str(tmp_path / 'dsh/fs/tool_fs_search/bin/rg.exe'), workspace=str(tmp_path / 'native-search-workspace'))
+        binary=str(tmp_path / 'dsh/fs/tool_fs_search/bin/rg.exe'), workspace=str(tmp_path.parent / 'native-search-workspace'))
     scheduler = copy.deepcopy(scheduler_runtime_fixture())
     scheduler['root'] = str(tmp_path)
     candidate['tool_scheduler_observations_sha256'] = scheduler_observation_digest(scheduler['rows'])

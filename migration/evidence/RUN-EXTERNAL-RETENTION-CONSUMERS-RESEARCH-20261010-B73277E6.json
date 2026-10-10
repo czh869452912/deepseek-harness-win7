@@ -1,0 +1,31 @@
+{
+  "id": "RUN-EXTERNAL-RETENTION-CONSUMERS-RESEARCH-20261010-B73277E6",
+  "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
+  "product_commit": "b73277e6fd9c64ea6c590e815793884936d3b0cf",
+  "kind": "research",
+  "result": "passed",
+  "validity": "historical",
+  "exit_code": 0,
+  "commands": [
+    ".venv/Scripts/python.exe -B .goose/out/continuation-20261008-v1/run-nested-teardown-retention-v1.py",
+    ".venv/Scripts/python.exe -B .goose/out/continuation-20261008-v1/run-current-runtime-probe-b732-v1.py"
+  ],
+  "environment": {
+    "python": "3.8.10",
+    "node": "v22.22.2",
+    "os": "Windows-10-10.0.26200-SP0",
+    "cwd": "C:\\Users\\czh86\\Documents\\Codex\\deepseek-harness-win7"
+  },
+  "contract_revisions": {},
+  "artifacts": [
+    {
+      "path": "migration/evidence/artifacts/EXTERNAL-RETENTION-CONSUMERS-RESEARCH-20261010-B73277E6.zip",
+      "sha256": "d4f0221cfe5fbfdcc5226edc2991b072e4a0947d32773f6f70b2ef0ae90076b0"
+    },
+    {
+      "path": "migration/evidence/artifacts/CURRENT-RELEASE-REJECTION-20261010-B73277E6.zip",
+      "sha256": "b78ad3960505009e1cb091c92e66f38343a4f9e8bbe6bd96f271b40197dfb3b8"
+    }
+  ],
+  "scope": "Targeted working-tree verification fixes above clean rejected b732 candidate: actual external gate181 controls passed,401.68 seconds,physical exit0; all workspace/retention/search providers and seven extracted search consumers, including exact neighboring-workspace refusal. Four child XML/logs/mapping/retirement receipts retain expected first failure and require second case pass. Exact unchanged clean b732 ZIP actual own Python3.8.10 executes13 steps/five profiles/install/tool restart/upgrade/rollback/remove/creative export/Web/cold restore,physical exit0 and empty stderr;15561 original copied files unchanged and retired248072358 bytes after ownership/no-reparse checks. Actual business workspace retained. Source-baseline extracted unit data is refusal-control evidence,not full current Portable parity. Raw redirected diff decodes strictly as UTF8 without BOM; original bytes and tested UTF8 source files preserved. No full/task/Win7 acceptance; existing bug predicates and approved policy scope unchanged."
+}

@@ -320,6 +320,7 @@ Evidence:
 - RUN-DEEPSEEK-ERROR-20261006-TOOL-START-PREFIX-034: acceptance / passed / stale-inputs
 - RUN-DEEPSEEK-ERROR-20261006-UPSTREAM-DELTA-002: acceptance / passed / stale-inputs
 - RUN-EXPIRED-PROCESS-20261007-46645625: verification / passed / current
+- RUN-EXTERNAL-RETENTION-CONSUMERS-RESEARCH-20261010-B73277E6: research / passed / historical
 - RUN-EXTERNAL-WORKSPACE-RESEARCH-20261010-FD2C3A9B: research / passed / historical
 - RUN-FRONTEND-PREFLIGHT-ORDER-20261007-6AABEA10: verification / passed / current
 - RUN-FS-TOOL-VALUES-QUALIFICATION-20261007-084A51B8: verification / passed / current
@@ -343,6 +344,7 @@ Evidence:
 - RUN-HANDOFF-FULL-REJECTION-20261009-D02AFF0C: research / failed / historical
 - RUN-HANDOFF-FULL-REJECTION-20261009-D4154199: research / failed / historical
 - RUN-HANDOFF-FULL-REJECTION-20261010-3DCA2A32: research / failed / historical
+- RUN-HANDOFF-FULL-REJECTION-20261010-B73277E6: research / failed / historical
 - RUN-HANDOFF-FULL-REJECTION-20261010-FD2C3A9B: research / failed / historical
 - RUN-HANDOFF-FULL-REJECTION-20261010-FFF0BEA1: research / failed / historical
 - RUN-HANDOFF-PLAN-COMPATIBILITY-FIX-20261009-V1: research / unknown / historical

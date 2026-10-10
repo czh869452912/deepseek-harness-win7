@@ -1,0 +1,425 @@
+{
+  "id": "RUN-HANDOFF-STORAGE-LEDGER-20261010-F90DED26",
+  "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
+  "product_commit": "f90ded26e96ecfb0c1737a47d9f47b034b26c93a",
+  "kind": "maintenance",
+  "result": "passed",
+  "validity": "current",
+  "exit_code": 0,
+  "commands": [
+    ".venv/Scripts/python.exe .goose/out/continuation-20261008-v1/apply-independent-handoff-ledger-v17.py --independent-literal-scopes-only",
+    ".venv/Scripts/python.exe scripts/migration.py check",
+    ".venv/Scripts/python.exe .goose/out/continuation-20261008-v1/review-pending-five-preflight-v1.py --read-only",
+    ".venv/Scripts/python.exe .goose/out/continuation-20261008-v1/complete-storage-review-v1.py"
+  ],
+  "environment": {
+    "python": "3.8.10",
+    "os": "Windows-10-10.0.26200-SP0",
+    "cwd": "C:\\Users\\czh86\\Documents\\Codex\\deepseek-harness-win7"
+  },
+  "contract_revisions": {},
+  "artifacts": [
+    {
+      "path": "migration/evidence/artifacts/HANDOFF-POST-REVIEW-STORAGE-20261010-F90DED26.zip",
+      "sha256": "84fb6beead41a1dfb604dc43957bdf9ff299dd9cd17c8452263cd73d514597b0"
+    },
+    {
+      "path": "migration/evidence/artifacts/HANDOFF-PARENT-REVIEW-20261010-F90DED26.zip",
+      "sha256": "9013d05837b14f7c23fee81bf0695900ed6c43332ba6f1a4c18a63372e495526"
+    }
+  ],
+  "maintenance": {
+    "integrated": 81,
+    "review": 5,
+    "newlyClosed": 11,
+    "rawCopiesRemovedFiles": 36,
+    "rawCopiesRemovedBytes": 56229454,
+    "preparationRetirement": {
+      "status": "completed",
+      "source": "C:\\Users\\czh86\\Documents\\Codex\\deepseek-harness-win7\\.goose\\out\\continuation-20261008-v1\\clean-v15-evidence-records-v1.json.gz",
+      "sha256": "a9d9f36b0cb0424db60c3c893afd7b2a75875b34f913fe07a3cea38f764ed28a",
+      "bytes": 51564464,
+      "publishedRecords": [
+        {
+          "path": "migration/evidence/RUN-HANDOFF-CLEAN-20261010-ACP-CONFIG-OUTPUT-004.json",
+          "sha256": "e9cf5a02e0236608de812d3d5795ace253c203f9efbc233da5d00c477983c017",
+          "bytes": 2529087
+        },
+        {
+          "path": "migration/evidence/RUN-HANDOFF-CLEAN-20261010-ACP-MCP-009.json",
+          "sha256": "5e14c44a0c2c04489cf82c73683eaf2c901ceb616f8449bfe0b6c312a8e9eb97",
+          "bytes": 2529075
+        },
+        {
+          "path": "migration/evidence/RUN-HANDOFF-CLEAN-20261010-ACP-PERMISSIONS-006.json",
+          "sha256": "e0db8242b371b827f1e410788b5ff4daa8fa48b01d9d2753fef499c25e1c11ff",
+          "bytes": 2529046
+        },
+        {
+          "path": "migration/evidence/RUN-HANDOFF-CLEAN-20261010-ACP-PROMPT-OWNERSHIP-001.json",
+          "sha256": "f2b664cffd5236444a649c87f501605e6f2a3ecd2a9f9d20ae666adb9d1e39eb",
+          "bytes": 2529000
+        },
+        {
+          "path": "migration/evidence/RUN-HANDOFF-CLEAN-20261010-ACP-SESSION-CONTROLS-003.json",
+          "sha256": "e1ee3585a03c331a9cf3dac4f768c18741304a976cc8332afce922215fb0d691",
+          "bytes": 2529133
+        },
+        {
+          "path": "migration/evidence/RUN-HANDOFF-CLEAN-20261010-ACP-STDIO-005.json",
+          "sha256": "b406b3036b26612b6a25e26c4431a1dcc39f2a6ff46050c003ff81e90dc4678c",
+          "bytes": 2529096
+        },
+        {
+          "path": "migration/evidence/RUN-HANDOFF-CLEAN-20261010-AGENT-CONFIG-003.json",
+          "sha256": "03917fadcefe44e36e29f1ec1c34155ac067a35b652b653997a561a4656cc4ad",
+          "bytes": 2529064
+        },
+        {
+          "path": "migration/evidence/RUN-HANDOFF-CLEAN-20261010-AGENT-LIFECYCLE-002.json",
+          "sha256": "501fc82a71c54820300f4ba0316d50bbc2e9ce6104c5933f6c932e06019f8166",
+          "bytes": 2529011
+        },
+        {
+          "path": "migration/evidence/RUN-HANDOFF-CLEAN-20261010-CANONICAL-LLM-048.json",
+          "sha256": "787245068237ea6edd3bd08513bf477c11931de9fd397b2ae68d2c62a919b27e",
+          "bytes": 2529083
+        },
+        {
+          "path": "migration/evidence/RUN-HANDOFF-CLEAN-20261010-CORDIS-001.json",
+          "sha256": "978fa96a226f695fa9a72511c9d55e1ad4d79959c9e64aa7813ab0ccc379e8e8",
+          "bytes": 2528964
+        },
+        {
+          "path": "migration/evidence/RUN-HANDOFF-CLEAN-20261010-CURRENT-RELEASE-GATE-003.json",
+          "sha256": "dcd45f41b7278e80cb8d871d04c304b9e82580047c53e739f7d2e74d31c03dac",
+          "bytes": 2529042
+        },
+        {
+          "path": "migration/evidence/RUN-HANDOFF-CLEAN-20261010-DEEPSEEK-CAPTURE-046.json",
+          "sha256": "f948503d6be47b15e63ea2f44348915a44da3589499490e0363930f1718c372d",
+          "bytes": 2529054
+        },
+        {
+          "path": "migration/evidence/RUN-HANDOFF-CLEAN-20261010-DEEPSEEK-ERROR-045.json",
+          "sha256": "8c2a86b13d89ccbe7bd64b83b1910d47cb290902a6bad72dd431cc3ed65d0655",
+          "bytes": 2529018
+        },
+        {
+          "path": "migration/evidence/RUN-HANDOFF-CLEAN-20261010-HTTP-REDIRECT-035.json",
+          "sha256": "d26b7e1522939fb93f9a9f56ff4feaa69fe08d498772fddb66b383686422172d",
+          "bytes": 2529015
+        },
+        {
+          "path": "migration/evidence/RUN-HANDOFF-CLEAN-20261010-JS-ERRORS-052.json",
+          "sha256": "d1331145aaf646a64d5510126270aab0fdfb56460d592d7d59179b7a84166fa3",
+          "bytes": 2529035
+        },
+        {
+          "path": "migration/evidence/RUN-HANDOFF-CLEAN-20261010-JS-INITIAL-WRITE-040.json",
+          "sha256": "74c5a656f25ee29232f323ae08eddf4c973f91d2aeba272aa6ff03442762a5af",
+          "bytes": 2529048
+        },
+        {
+          "path": "migration/evidence/RUN-HANDOFF-CLEAN-20261010-JS-READY-038.json",
+          "sha256": "4701e5dab35c46e650794bf252a63a7dc59f13edde765678601f95728563e811",
+          "bytes": 2529000
+        },
+        {
+          "path": "migration/evidence/RUN-HANDOFF-CLEAN-20261010-JSONL-PROVIDER-032.json",
+          "sha256": "d1582163f3752e87a52d7a42ff43500b041b6722b6a5123b5cc9dfc9c3ca9022",
+          "bytes": 2529078
+        },
+        {
+          "path": "migration/evidence/RUN-HANDOFF-CLEAN-20261010-JSONL-SHARING-047.json",
+          "sha256": "8d067e412c1692bceeab43794b3893e62b26bcff72ee21d26337225c32b48b8e",
+          "bytes": 2529047
+        },
+        {
+          "path": "migration/evidence/RUN-HANDOFF-CLEAN-20261010-LLM-CONFIG-053.json",
+          "sha256": "3d0fd060721b37f3592be187bac9c46db72c83c66fe70f6771031d66e2dcc37f",
+          "bytes": 2529026
+        },
+        {
+          "path": "migration/evidence/RUN-HANDOFF-CLEAN-20261010-LLM-METADATA-049.json",
+          "sha256": "1d6ce01fed5f1acd5066c915a166a665cf93eadc64f0d1d86909804e70f670f5",
+          "bytes": 2529041
+        },
+        {
+          "path": "migration/evidence/RUN-HANDOFF-CLEAN-20261010-LLM-PREPARED-051.json",
+          "sha256": "07e20585cd28c985bcce80e2a0c10ab38e41f122e69564424755d44557f8e937",
+          "bytes": 2529033
+        },
+        {
+          "path": "migration/evidence/RUN-HANDOFF-CLEAN-20261010-MCP-DISPOSAL-012.json",
+          "sha256": "e173a56eb9de8ca9834755cbf1dcdfb1c78bc628d2fd0bcd09d4c4e47c739907",
+          "bytes": 2529061
+        },
+        {
+          "path": "migration/evidence/RUN-HANDOFF-CLEAN-20261010-MCP-HTTP-008.json",
+          "sha256": "d7282dd7faf9ad6fb6da9c335c7787d3a02a8afeaedf986fd5ed3a915029f1dc",
+          "bytes": 2528992
+        },
+        {
+          "path": "migration/evidence/RUN-HANDOFF-CLEAN-20261010-MCP-STDIO-007.json",
+          "sha256": "4b441082c31e72fd33e2c5f9c2529ead1fe4f74d561d28b091ef286516f0b314",
+          "bytes": 2528995
+        },
+        {
+          "path": "migration/evidence/RUN-HANDOFF-CLEAN-20261010-PERSISTENCE-READ-039.json",
+          "sha256": "9c969e4f84baf67212288ca04a91fad64ac92e0134030ee67c7cc518194d57b5",
+          "bytes": 2529085
+        },
+        {
+          "path": "migration/evidence/RUN-HANDOFF-CLEAN-20261010-PORTABLE-001.json",
+          "sha256": "67f1ecc97c3dd92151e077966d7e0ff090cba3afc9fcb1b834ba698cb3eedbf8",
+          "bytes": 2528969
+        },
+        {
+          "path": "migration/evidence/RUN-HANDOFF-CLEAN-20261010-PROCESS-RETENTION-050.json",
+          "sha256": "9a0a0e3b7460672222b87e7e9627fdbc815af7b83c9ceabc6110ca55c355f33d",
+          "bytes": 2529036
+        },
+        {
+          "path": "migration/evidence/RUN-HANDOFF-CLEAN-20261010-PROJECTION-CACHE-READS-015.json",
+          "sha256": "badd138f26711cf58ef0c20f91c624071e64286b0b577d69ab58703e2a8ae7cd",
+          "bytes": 2529076
+        },
+        {
+          "path": "migration/evidence/RUN-HANDOFF-CLEAN-20261010-PYTHON-DIRECTORY-PUBLICATION-025.json",
+          "sha256": "69ffec81a366393dba6a5905fb5f3052628262c75d5741c606eaefc51d40b033",
+          "bytes": 2529094
+        },
+        {
+          "path": "migration/evidence/RUN-HANDOFF-CLEAN-20261010-PYTHON-ZIP-STAGING-018.json",
+          "sha256": "f8b863123837a5da43c8f5b3f240b13a03e254325e9d6427dd8814481f517dc3",
+          "bytes": 2529030
+        },
+        {
+          "path": "migration/evidence/RUN-HANDOFF-CLEAN-20261010-RUNTIME-CONTEXT-CONSUMER-037.json",
+          "sha256": "c2431abdf3a92881dcbbebc0712aa79184399f005bec3a9b40066fd07a6617aa",
+          "bytes": 2529076
+        },
+        {
+          "path": "migration/evidence/RUN-HANDOFF-CLEAN-20261010-RUNTIME-FULL-REQUEST-044.json",
+          "sha256": "a6dcd0aec11a211c067eae7734807526d96931b0be26681c54e5d9be56c93c2b",
+          "bytes": 2529076
+        },
+        {
+          "path": "migration/evidence/RUN-HANDOFF-CLEAN-20261010-SDK-PROFILE-055.json",
+          "sha256": "d6acb482c07d75724fa2057e9f14f56bb29edfab53245488d7757daadbe7d3b6",
+          "bytes": 2529063
+        },
+        {
+          "path": "migration/evidence/RUN-HANDOFF-CLEAN-20261010-SESSION-COLD-003.json",
+          "sha256": "7fdb4c81466dea6d042e40e7d4211c946f85d4ff4d1046a7e25636d689ceb16e",
+          "bytes": 2529013
+        },
+        {
+          "path": "migration/evidence/RUN-HANDOFF-CLEAN-20261010-SESSION-CORPUS-LIST-017.json",
+          "sha256": "d4a8b760dcaaec00d4ed4accbc1827416d2cfbc877e719fbf814d405f223216d",
+          "bytes": 2529074
+        },
+        {
+          "path": "migration/evidence/RUN-HANDOFF-CLEAN-20261010-SESSION-CORPUS-READ-019.json",
+          "sha256": "2247bfa47c3c1e43f7b320675ad52cf9d39cbc030ee7ba60a40164c0859e443b",
+          "bytes": 2529068
+        },
+        {
+          "path": "migration/evidence/RUN-HANDOFF-CLEAN-20261010-SESSION-DIAGNOSTIC-042.json",
+          "sha256": "8a96a70538d1a3633b50f0466c94a7ec36c3fcba4df096779a546b6fea17cdf1",
+          "bytes": 2529030
+        },
+        {
+          "path": "migration/evidence/RUN-HANDOFF-CLEAN-20261010-SESSION-FILTERS-021.json",
+          "sha256": "5cd5864376e84cd3216a36f1987a4556802d2c8b78fa347b4d63c0f5cb7dc5a2",
+          "bytes": 2529087
+        },
+        {
+          "path": "migration/evidence/RUN-HANDOFF-CLEAN-20261010-SESSION-LIVE-004.json",
+          "sha256": "0cc946e729fae5a486d1e1a69c9d87997770c243be5e078826a5eade1bc02844",
+          "bytes": 2529048
+        },
+        {
+          "path": "migration/evidence/RUN-HANDOFF-CLEAN-20261010-SESSION-NUMBERS-041.json",
+          "sha256": "4bdb076c57a95e3455271fd7bea708a86a3a210e9d352053a317c3ee27e555f1",
+          "bytes": 2529053
+        },
+        {
+          "path": "migration/evidence/RUN-HANDOFF-CLEAN-20261010-SESSION-OBSERVATION-READS-016.json",
+          "sha256": "29472adb620dd5148d79c4f873e8edea2cac0e877391a89597cc64bb51b3e210",
+          "bytes": 2529089
+        },
+        {
+          "path": "migration/evidence/RUN-HANDOFF-CLEAN-20261010-SESSION-PREPARED-005.json",
+          "sha256": "f88ca9783dc55a83b9cdb4865c98889f699570e0e413c928ff9d44f3cca08fa1",
+          "bytes": 2529064
+        },
+        {
+          "path": "migration/evidence/RUN-HANDOFF-CLEAN-20261010-SESSION-PROJECTION-007.json",
+          "sha256": "6bc5ded96d866a6bb6dda76431ac4e1a9333408d3cba3ff9c054e48b93cc8e93",
+          "bytes": 2529058
+        },
+        {
+          "path": "migration/evidence/RUN-HANDOFF-CLEAN-20261010-SESSION-QUERY-ENGINE-026.json",
+          "sha256": "c453d687fc063d05658a4196692db9f058a11c7237c1841dc2d888357f1864d6",
+          "bytes": 2529144
+        },
+        {
+          "path": "migration/evidence/RUN-HANDOFF-CLEAN-20261010-SESSION-QUERY-SCHEMA-024.json",
+          "sha256": "137f738116e0603cd3ffdacc90eab4958565e74078372ad3e4dcd5b74e0e5eff",
+          "bytes": 2529108
+        },
+        {
+          "path": "migration/evidence/RUN-HANDOFF-CLEAN-20261010-SESSION-QUERY-TOOLS-029.json",
+          "sha256": "8e865323f50b5a22e0e15da9f2a763b38626f690c6a35f8891df3df07f416e9a",
+          "bytes": 2529061
+        },
+        {
+          "path": "migration/evidence/RUN-HANDOFF-CLEAN-20261010-SESSION-QUERY-UNICODE-027.json",
+          "sha256": "1a5bf233202ca372820c93ca1462b7af7a0d84a73d68a20b976dee9c1766d78a",
+          "bytes": 2529075
+        },
+        {
+          "path": "migration/evidence/RUN-HANDOFF-CLEAN-20261010-SESSION-RESTORE-SIGN-043.json",
+          "sha256": "d53f74db37eaf253d33f2ab2108625f03ae3ad87cb43ff105c90c521b24761fb",
+          "bytes": 2529036
+        },
+        {
+          "path": "migration/evidence/RUN-HANDOFF-CLEAN-20261010-SESSION-SEARCH-REQUESTS-022.json",
+          "sha256": "80aaaefe21dded303bda7a960713bad5be058eafef3ad885a8d08bdae48bb672",
+          "bytes": 2529107
+        },
+        {
+          "path": "migration/evidence/RUN-HANDOFF-CLEAN-20261010-SESSION-SNAPSHOTS-023.json",
+          "sha256": "2cfbb62872055dd638c83d985ff4edff7d16da05ae0326157eaedfa8e4573b33",
+          "bytes": 2529133
+        },
+        {
+          "path": "migration/evidence/RUN-HANDOFF-CLEAN-20261010-SESSION-STORAGE-006.json",
+          "sha256": "c2efe0b6c81ab3ae5d45de74f257eb854ff4ea4da21af2ccb68370197cc297dc",
+          "bytes": 2529056
+        },
+        {
+          "path": "migration/evidence/RUN-HANDOFF-CLEAN-20261010-SESSION-TEXT-028.json",
+          "sha256": "fccc411f325200511f69b1141d49c1fe4498570a5a8b1d504b7a22a145da49ed",
+          "bytes": 2529075
+        },
+        {
+          "path": "migration/evidence/RUN-HANDOFF-CLEAN-20261010-SESSION-TRACING-020.json",
+          "sha256": "0361ead3efa59bf9582253c6ea52d88caa4933e0cb4b14490d1ebdb6577c155d",
+          "bytes": 2529087
+        },
+        {
+          "path": "migration/evidence/RUN-HANDOFF-CLEAN-20261010-SPINE-001.json",
+          "sha256": "738d4b05b64a5ce2448551e6cb87da2589468022adc650439e3b979a86885824",
+          "bytes": 2528996
+        },
+        {
+          "path": "migration/evidence/RUN-HANDOFF-CLEAN-20261010-SQLITE-FORMAT-030.json",
+          "sha256": "ccc6e2c7256127a3bd152e961d54fda003a6f57dd4411189dc3eac04c72be167",
+          "bytes": 2529046
+        },
+        {
+          "path": "migration/evidence/RUN-HANDOFF-CLEAN-20261010-SQLITE-PROVIDER-031.json",
+          "sha256": "a4a790b12b5c4dc45ff0275c2354d89cc614ca904809c1a4ca17b638739167e8",
+          "bytes": 2529081
+        },
+        {
+          "path": "migration/evidence/RUN-HANDOFF-CLEAN-20261010-SUBAGENT-ACP-010.json",
+          "sha256": "550fed9010112b41e6097b7062c21111a01f94539cd85e1f6bba10572ed9d064",
+          "bytes": 2529094
+        },
+        {
+          "path": "migration/evidence/RUN-HANDOFF-CLEAN-20261010-SUBAGENT-ACP-TEARDOWN-011.json",
+          "sha256": "a58ebe1b74a98fbd1e33fb49a1a4b18b9db0fa2793ae6f153880954717583adf",
+          "bytes": 2529067
+        },
+        {
+          "path": "migration/evidence/RUN-HANDOFF-CLEAN-20261010-SUBPROCESS-OWNERSHIP-013.json",
+          "sha256": "b8d13b9d01c6520bf36daae7e0121b1777d19f67fe55c67ce8210b1de79f7453",
+          "bytes": 2529064
+        },
+        {
+          "path": "migration/evidence/RUN-HANDOFF-CLEAN-20261010-SUBPROCESS-TREE-014.json",
+          "sha256": "0a31332b167d0b8738fca1c614ea5cb8bf32806ff3b65ea299c2d3d4f5849290",
+          "bytes": 2529057
+        },
+        {
+          "path": "migration/evidence/RUN-HANDOFF-CLEAN-20261010-TOOL-PARALLELISM-033.json",
+          "sha256": "56625a681b5a88307b945d2e59e6c3718a90b0e71bac8baafbf8c47715da0a1d",
+          "bytes": 2529017
+        },
+        {
+          "path": "migration/evidence/RUN-HANDOFF-CLEAN-20261010-TOOL-START-PREFIX-034.json",
+          "sha256": "d5114b782a7cab2b1ef1a2d23e89d31c0e1a67c2ae1aa422cca8a15b284560b0",
+          "bytes": 2529023
+        },
+        {
+          "path": "migration/evidence/RUN-HANDOFF-CLEAN-20261010-UPSTREAM-DELTA-002.json",
+          "sha256": "1c8faad96dd817501ac1663c776dec86af1b18db73187e1e322f41c78c8b78fa",
+          "bytes": 2528982
+        },
+        {
+          "path": "migration/evidence/RUN-HANDOFF-CLEAN-20261010-WIN32-STAT-054.json",
+          "sha256": "a6aec0ede826d307852e13cc6793304f7a17a6ab2c8f24f06ac36d1cd0680a23",
+          "bytes": 2529006
+        },
+        {
+          "path": "migration/evidence/RUN-HANDOFF-CLEAN-20261010-AGENT-DEPENDENCY-LIFECYCLE-059.json",
+          "sha256": "b5ca66851cd1e546687b7a94d9a6fe077a36befe1073a6676910094a8f4b3ee6",
+          "bytes": 2529054
+        },
+        {
+          "path": "migration/evidence/RUN-HANDOFF-CLEAN-20261010-ASK-USER-PROTOCOL-060.json",
+          "sha256": "d14ec437e8c49b39e87c756df48d54c45f143dd5e90193766a8b78b479083589",
+          "bytes": 2529027
+        },
+        {
+          "path": "migration/evidence/RUN-HANDOFF-CLEAN-20261010-FS-TOOL-VALUES-062.json",
+          "sha256": "66c5a63516d13f43d9f5fc2c96dbbc26b5983de1fa024069662fc5dae10b9f03",
+          "bytes": 2529018
+        },
+        {
+          "path": "migration/evidence/RUN-HANDOFF-CLEAN-20261010-MESSAGE-VALUES-061.json",
+          "sha256": "7a0f1bd707c2d4a2958daefb3c04dbfa590efa0f3c6b04a0f90a512637415348",
+          "bytes": 2529018
+        },
+        {
+          "path": "migration/evidence/RUN-HANDOFF-CLEAN-20261010-PERMISSION-PRESETS-056.json",
+          "sha256": "dd62a33126b14f59b6da82ccfaef102b7986f7a9706b46524abd45eab8a6e2ec",
+          "bytes": 2529030
+        },
+        {
+          "path": "migration/evidence/RUN-HANDOFF-CLEAN-20261010-SUBAGENT-MODEL-VALUES-063.json",
+          "sha256": "71e69dbcf07b56825ed5389e3ab64c20cf66a9ad2300edb27fcbd0b9fd6f6d5d",
+          "bytes": 2529039
+        },
+        {
+          "path": "migration/evidence/RUN-HANDOFF-CLEAN-20261010-TOOL-DURABLE-PUBLICATION-058.json",
+          "sha256": "14c007c6b9e244dc9fe7bac0f5b4ffff497121d91a34101bbbc550c252304aa0",
+          "bytes": 2529048
+        },
+        {
+          "path": "migration/evidence/RUN-HANDOFF-CLEAN-20261010-TOOL-ERRORS-SDK-METADATA-057.json",
+          "sha256": "a65e1f16e37ee7f028d824fe22154444010f1e6f146bdafe02b27a8cdecfb7b3",
+          "bytes": 2529093
+        },
+        {
+          "path": "migration/evidence/RUN-HANDOFF-CLEAN-20261010-UNICODE-CARRIERS-064.json",
+          "sha256": "ddab68cc4f879bc63fffad67827c82c2ca34a5c92768977164248f855dc2eb2b",
+          "bytes": 2529024
+        }
+      ],
+      "scope": "All 74 published values equal the completed preparation. Exact compressed original bytes retained once in the formal maintenance archive; pending-five preflight reads the formal parent snapshot and current ledger, without this preparation copy.",
+      "archive": {
+        "path": "migration/evidence/artifacts/HANDOFF-POST-REVIEW-STORAGE-20261010-F90DED26.zip",
+        "sha256": "84fb6beead41a1dfb604dc43957bdf9ff299dd9cd17c8452263cd73d514597b0"
+      },
+      "member": "clean-v15-evidence-records-v1.json.gz",
+      "removedFiles": 1,
+      "removedBytes": 51564464
+    }
+  },
+  "scope": "Storage maintenance and eleven finite ledger closures only; original storage/UI failures unchanged. Five parents remain pending human order decision, Win7 remains deferred. Exact current full release is separately bound to its original frozen candidate/inputs/ZIP; this metadata/cleanup pass is not a new release acceptance."
+}

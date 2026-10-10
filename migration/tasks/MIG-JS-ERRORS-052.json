@@ -1,6 +1,6 @@
 {
   "id": "MIG-JS-ERRORS-052",
-  "goal": "补齐实际JS解析结果、Ready和业务错误边界并复现私有构建",
+  "goal": "\u8865\u9f50\u5b9e\u9645JS\u89e3\u6790\u7ed3\u679c\u3001Ready\u548c\u4e1a\u52a1\u9519\u8bef\u8fb9\u754c\u5e76\u590d\u73b0\u79c1\u6709\u6784\u5efa",
   "kind": "implementation",
   "state": "integrated",
   "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
@@ -39,10 +39,11 @@
   ],
   "open_findings": [],
   "conflicts_with": [],
-  "candidate_commit": "83026446716b18b0f8cb185d177ae971473deff8",
-  "integrated_commit": "83026446716b18b0f8cb185d177ae971473deff8",
+  "candidate_commit": "f90ded26e96ecfb0c1737a47d9f47b034b26c93a",
+  "integrated_commit": "f90ded26e96ecfb0c1737a47d9f47b034b26c93a",
   "evidence_ids": [
-    "RUN-SDK-RETENTION-20261007-JS-ERRORS-052"
+    "RUN-SDK-RETENTION-20261007-JS-ERRORS-052",
+    "RUN-HANDOFF-CLEAN-20261010-JS-ERRORS-052"
   ],
-  "next_action": "32实际解析/Ready/业务错误与资源归属场景在干净产品83026446有界签收；保留精确原生帧/生成诊断/descriptor平台适配，完整Node/profile/竞争及036继续开放。"
+  "next_action": "\u672c\u6709\u9650\u5408\u540c\u5df2\u5728f90ded26\u539f\u59cb\u5b8c\u6574\u95e8\u7981\u590d\u9a8c\uff1b\u53ea\u590d\u7528\u517616701\u51bb\u7ed3\u8f93\u5165\u4e0e\u7cbe\u786e61232e80 ZIP\uff0c\u540e\u7eed\u53f0\u8d26\u63d0\u4ea4\u4e0d\u662f\u65b0\u7684\u53d1\u884c\u8ba4\u8bc1\u3002\u8303\u56f4\u5916ABI/\u4efb\u610f\u8c03\u5ea6/\u4e91\u670d\u52a1\u548c\u5ef6\u671fWin7\u53e6\u8bb0\u3002"
 }

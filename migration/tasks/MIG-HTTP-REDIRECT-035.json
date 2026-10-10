@@ -1,6 +1,6 @@
 {
   "id": "MIG-HTTP-REDIRECT-035",
-  "goal": "闭合实际 DeepSeek 与共享 HTTP carrier 的二十九组重定向边界",
+  "goal": "\u95ed\u5408\u5b9e\u9645 DeepSeek \u4e0e\u5171\u4eab HTTP carrier \u7684\u4e8c\u5341\u4e5d\u7ec4\u91cd\u5b9a\u5411\u8fb9\u754c",
   "kind": "implementation",
   "state": "integrated",
   "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
@@ -34,8 +34,8 @@
   ],
   "open_findings": [],
   "conflicts_with": [],
-  "candidate_commit": "83026446716b18b0f8cb185d177ae971473deff8",
-  "integrated_commit": "83026446716b18b0f8cb185d177ae971473deff8",
+  "candidate_commit": "f90ded26e96ecfb0c1737a47d9f47b034b26c93a",
+  "integrated_commit": "f90ded26e96ecfb0c1737a47d9f47b034b26c93a",
   "evidence_ids": [
     "RUN-TOOLS-HTTP-20261005-HTTP-REDIRECT-035",
     "RUN-JS-WORKFLOW-20261005-HTTP-REDIRECT-035",
@@ -47,7 +47,8 @@
     "RUN-CANONICAL-LLM-20261006-HTTP-REDIRECT-035",
     "RUN-METADATA-RETENTION-20261006-HTTP-REDIRECT-035",
     "RUN-LLM-CONFIG-20261006-HTTP-REDIRECT-035",
-    "RUN-SDK-RETENTION-20261007-HTTP-REDIRECT-035"
+    "RUN-SDK-RETENTION-20261007-HTTP-REDIRECT-035",
+    "RUN-HANDOFF-CLEAN-20261010-HTTP-REDIRECT-035"
   ],
-  "next_action": "clean candidate 83026446 全量/原版/真实解压复验已通过。二十九组真实adapter/Fetch/shared carrier及Source/native/extracted已在新干净全量门禁有界签收；继续完整URL/IDNA/TLS/proxy/compression/framing与其他provider实例，不签收全项目。"
+  "next_action": "\u672c\u6709\u9650\u5408\u540c\u5df2\u5728f90ded26\u539f\u59cb\u5b8c\u6574\u95e8\u7981\u590d\u9a8c\uff1b\u53ea\u590d\u7528\u517616701\u51bb\u7ed3\u8f93\u5165\u4e0e\u7cbe\u786e61232e80 ZIP\uff0c\u540e\u7eed\u53f0\u8d26\u63d0\u4ea4\u4e0d\u662f\u65b0\u7684\u53d1\u884c\u8ba4\u8bc1\u3002\u8303\u56f4\u5916ABI/\u4efb\u610f\u8c03\u5ea6/\u4e91\u670d\u52a1\u548c\u5ef6\u671fWin7\u53e6\u8bb0\u3002"
 }

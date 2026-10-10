@@ -1,6 +1,6 @@
 {
   "id": "MIG-PROCESS-RETENTION-050",
-  "goal": "自动清理已完成可重建过程测试JSON与过期清理清单，保留验收与失败证据",
+  "goal": "\u81ea\u52a8\u6e05\u7406\u5df2\u5b8c\u6210\u53ef\u91cd\u5efa\u8fc7\u7a0b\u6d4b\u8bd5JSON\u4e0e\u8fc7\u671f\u6e05\u7406\u6e05\u5355\uff0c\u4fdd\u7559\u9a8c\u6536\u4e0e\u5931\u8d25\u8bc1\u636e",
   "kind": "implementation",
   "state": "integrated",
   "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
@@ -35,13 +35,14 @@
   ],
   "open_findings": [],
   "conflicts_with": [],
-  "candidate_commit": "83026446716b18b0f8cb185d177ae971473deff8",
-  "integrated_commit": "83026446716b18b0f8cb185d177ae971473deff8",
+  "candidate_commit": "f90ded26e96ecfb0c1737a47d9f47b034b26c93a",
+  "integrated_commit": "f90ded26e96ecfb0c1737a47d9f47b034b26c93a",
   "evidence_ids": [
     "RUN-METADATA-RETENTION-20261006-PROCESS-RETENTION-050",
     "RUN-LLM-CONFIG-20261006-PROCESS-RETENTION-050",
     "RUN-SDK-RETENTION-20261007-PROCESS-RETENTION-050",
-    "RUN-EXPIRED-PROCESS-20261007-46645625"
+    "RUN-EXPIRED-PROCESS-20261007-46645625",
+    "RUN-HANDOFF-CLEAN-20261010-PROCESS-RETENTION-050"
   ],
-  "next_action": "clean candidate 83026446 全量/原版/真实解压复验已通过。干净产品2a67ae84全量、1899必需lane、69配对、原版Source及实际解压/浏览器通过；自动清理已完成测试合成回执并保留真实证据，转发子进程超时退出/目录释放及主错误保留有界签收。继续其余迁移；不把维护当作额外业务同等性。 已核验并清理九份历史2568个合成JSON约25.5GiB及两份491955312字节原样资格副本，57文件独立维护归档；当前466完整门禁因3600秒超时拒绝，不新增业务签收。"
+  "next_action": "\u672c\u6709\u9650\u5408\u540c\u5df2\u5728f90ded26\u539f\u59cb\u5b8c\u6574\u95e8\u7981\u590d\u9a8c\uff1b\u53ea\u590d\u7528\u517616701\u51bb\u7ed3\u8f93\u5165\u4e0e\u7cbe\u786e61232e80 ZIP\uff0c\u540e\u7eed\u53f0\u8d26\u63d0\u4ea4\u4e0d\u662f\u65b0\u7684\u53d1\u884c\u8ba4\u8bc1\u3002\u8303\u56f4\u5916ABI/\u4efb\u610f\u8c03\u5ea6/\u4e91\u670d\u52a1\u548c\u5ef6\u671fWin7\u53e6\u8bb0\u3002"
 }

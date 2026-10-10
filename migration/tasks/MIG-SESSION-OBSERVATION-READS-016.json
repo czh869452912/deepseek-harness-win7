@@ -1,6 +1,6 @@
 {
   "id": "MIG-SESSION-OBSERVATION-READS-016",
-  "goal": "对齐 Session point observation 的精确错误/cause和独立 cut租约释放",
+  "goal": "\u5bf9\u9f50 Session point observation \u7684\u7cbe\u786e\u9519\u8bef/cause\u548c\u72ec\u7acb cut\u79df\u7ea6\u91ca\u653e",
   "kind": "implementation",
   "state": "integrated",
   "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
@@ -38,8 +38,8 @@
   ],
   "open_findings": [],
   "conflicts_with": [],
-  "candidate_commit": "83026446716b18b0f8cb185d177ae971473deff8",
-  "integrated_commit": "83026446716b18b0f8cb185d177ae971473deff8",
+  "candidate_commit": "f90ded26e96ecfb0c1737a47d9f47b034b26c93a",
+  "integrated_commit": "f90ded26e96ecfb0c1737a47d9f47b034b26c93a",
   "evidence_ids": [
     "RUN-SESSION-TRACING-20261004-SESSION-OBSERVATION-READS-016",
     "RUN-SESSION-FILTERS-20261004-SESSION-OBSERVATION-READS-016",
@@ -58,7 +58,8 @@
     "RUN-CANONICAL-LLM-20261006-SESSION-OBSERVATION-READS-016",
     "RUN-METADATA-RETENTION-20261006-SESSION-OBSERVATION-READS-016",
     "RUN-LLM-CONFIG-20261006-SESSION-OBSERVATION-READS-016",
-    "RUN-SDK-RETENTION-20261007-SESSION-OBSERVATION-READS-016"
+    "RUN-SDK-RETENTION-20261007-SESSION-OBSERVATION-READS-016",
+    "RUN-HANDOFF-CLEAN-20261010-SESSION-OBSERVATION-READS-016"
   ],
-  "next_action": "clean candidate 83026446 全量/原版/真实解压复验已通过。clean candidate 83026446 的十六组 point read 错误/cause/cut/租约已有界验收；继续完整 durable/domain/FTS/长期回放和 Web/profile 消费者，不认证完整 B1 或 Win7。"
+  "next_action": "\u672c\u6709\u9650\u5408\u540c\u5df2\u5728f90ded26\u539f\u59cb\u5b8c\u6574\u95e8\u7981\u590d\u9a8c\uff1b\u53ea\u590d\u7528\u517616701\u51bb\u7ed3\u8f93\u5165\u4e0e\u7cbe\u786e61232e80 ZIP\uff0c\u540e\u7eed\u53f0\u8d26\u63d0\u4ea4\u4e0d\u662f\u65b0\u7684\u53d1\u884c\u8ba4\u8bc1\u3002\u8303\u56f4\u5916ABI/\u4efb\u610f\u8c03\u5ea6/\u4e91\u670d\u52a1\u548c\u5ef6\u671fWin7\u53e6\u8bb0\u3002"
 }

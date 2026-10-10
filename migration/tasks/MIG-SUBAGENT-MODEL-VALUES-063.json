@@ -1,27 +1,68 @@
 {
   "id": "MIG-SUBAGENT-MODEL-VALUES-063",
-  "goal": "对齐子代理发布前模型选择工具所有权与完整发现公开值",
+  "goal": "\u5bf9\u9f50\u5b50\u4ee3\u7406\u53d1\u5e03\u524d\u6a21\u578b\u9009\u62e9\u5de5\u5177\u6240\u6709\u6743\u4e0e\u5b8c\u6574\u53d1\u73b0\u516c\u5f00\u503c",
   "kind": "implementation",
-  "state": "running",
+  "state": "integrated",
   "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
   "base_product": "7eaad135508a0a7eeaa553475b6c038e981a210d",
   "owner": "current-session-coordinator",
-  "requires": [{"task": "MIG-CURRENT-RELEASE-GATE-003", "contract": "CON-CURRENT-RELEASE-GATE", "revision": 1}],
-  "provides": [{"contract": "CON-SUBAGENT-MODEL-VALUES", "revision": 1}],
+  "requires": [
+    {
+      "task": "MIG-CURRENT-RELEASE-GATE-003",
+      "contract": "CON-CURRENT-RELEASE-GATE",
+      "revision": 1
+    }
+  ],
+  "provides": [
+    {
+      "contract": "CON-SUBAGENT-MODEL-VALUES",
+      "revision": 1
+    }
+  ],
   "acceptance": [
     "Sixteen real Source/Root/owned Agent setup variants match104 complete ordered schemas/policies/discovery success and error values; independently approved imports and own input guards pass.",
     "Real setup-before-publication and following delegated child consumers pass, plus mandatory/extracted/import/Source/full-public-value refusal controls with valid positive baseline.",
     "Original missing-tool baseline, intermediate152 differences, observer missing value field and copied partial-receipt regex failure remain independently preserved; no upstream bug exception.",
     "New clean full regression, all current paired drivers, unchanged original Source groups, actual own extraction and original browser pass before bounded integration."
   ],
-  "expected_paths": ["dsh/subagent/canonical_tools.py", "scripts", "tests", "migration", "docs/research"],
-  "open_findings": [
-    "Actual unpublished Agent setup had no delegated/discovery tools because it searched the published registry. Own Context Agent association now installs before publication; full optional model descriptions and precise discovery refusals aligned.104 fresh Source/Root research rows match and27 actual consumers pass.",
-    "Fresh formal Source/Root/owned Python3.8.10 match104 complete values,120 independently approved imports and15495 owned files guarded before/after.159 mandatory/extracted/Source/runtime controls pass with complete positive baselines;27 actual subagent consumers pass.51-file immutable archive retains original and intermediate refusals including131 passed/two copied-regex failures. Full child/model/profile/browser/transport/restore/race parent ranges remain open; latest complete clean release83026446/65 unchanged."
+  "expected_paths": [
+    "dsh/subagent/canonical_tools.py",
+    "scripts",
+    "tests",
+    "migration",
+    "docs/research"
   ],
+  "open_findings": [],
   "conflicts_with": [],
-  "candidate_commit": null,
-  "integrated_commit": null,
-  "evidence_ids": ["RUN-SUBAGENT-MODEL-VALUES-QUALIFICATION-20261007-7EAAD135"],
-  "next_action": "104项精确字节自有解释器、159项有效正例门禁及51文件不可变归档已完成；继续完整child/model/profile/原版浏览器/策略与七父范围，正常预算完整冻结验收前不标集成。"
+  "candidate_commit": "f90ded26e96ecfb0c1737a47d9f47b034b26c93a",
+  "integrated_commit": "f90ded26e96ecfb0c1737a47d9f47b034b26c93a",
+  "evidence_ids": [
+    "RUN-SUBAGENT-MODEL-VALUES-QUALIFICATION-20261007-7EAAD135",
+    "RUN-HANDOFF-CLEAN-20261010-SUBAGENT-MODEL-VALUES-063"
+  ],
+  "next_action": "\u672c\u539f\u5408\u540c\u7684\u5df2\u8bb0\u5f55\u6709\u9650\u8303\u56f4\u5728f90ded26\u5b8c\u6574\u95e8\u7981\u53ca\u540cZIP\u7236\u7ec4\u5408\u4e2d\u5b8c\u6210\uff1b\u672c\u9879\u672a\u5e94\u7528\u5f85\u51b3\u5b9a\u7684\u76ee\u5f55/\u72ec\u7acb\u6d41\u4ea4\u9519\u9002\u914d\uff0c\u4e94\u9879\u76f8\u5173\u7236\u4efb\u52a1\u7ee7\u7eed\u5f85\u51b3\u5b9a\u3002\u4efb\u610f\u672a\u89c2\u5bdfABI/\u8c03\u5ea6\u3001\u4ed8\u8d39\u4e91\u548c\u5ef6\u671fWin7\u4e0d\u636e\u6b64\u8ba4\u8bc1\uff1b\u539f\u59cb10054/40ms/1175/5/\u4e34\u65f6\u76ee\u5f55\u6d88\u5931\u8bca\u65ad\u4fdd\u6301\u72ec\u7acb\u5f85\u67e5\u3002",
+  "reviewed_findings": [
+    {
+      "original": "Actual unpublished Agent setup had no delegated/discovery tools because it searched the published registry. Own Context Agent association now installs before publication; full optional model descriptions and precise discovery refusals aligned.104 fresh Source/Root research rows match and27 actual consumers pass.",
+      "originalSha256": "98f721f1d7580d5a73a4226858ab2f3a4c0008a47de5c78488942383969d664d",
+      "review": "Require all104 current real setup/schema/policy/discovery values and actual unpublished Agent association before registry publication; compare complete selected child route consumers independently.",
+      "disposition": "Recorded corpus/missing clean milestone resolved by exact current evidence; original broader/unknown/deferred scope is retained as a limitation, not reclassified as an upstream bug. Ordering-dependent signoff awaits separate human decision.",
+      "orderingDecision": "No proposed ordering adaptation is applied to this independent literal scope.",
+      "evidenceArchive": "migration/evidence/artifacts/HANDOFF-PARENT-REVIEW-20261010-F90DED26.zip"
+    },
+    {
+      "original": "Fresh formal Source/Root/owned Python3.8.10 match104 complete values,120 independently approved imports and15495 owned files guarded before/after.159 mandatory/extracted/Source/runtime controls pass with complete positive baselines;27 actual subagent consumers pass.51-file immutable archive retains original and intermediate refusals including131 passed/two copied-regex failures. Full child/model/profile/browser/transport/restore/race parent ranges remain open; latest complete clean release83026446/65 unchanged.",
+      "originalSha256": "9089b9b50e426bd6309eea31f5f2fe2849ee07564a3060e98e72e6cd97cef209",
+      "review": "Require current full/extracted/refusal and approved closure evidence, preserve original/intermediate missing-tool/152difference/copied-regex failures. Route7/default profile/model/transport/replay combinations are separately reviewed finite parent evidence; arbitrary schedules/Win7 excluded.",
+      "disposition": "Recorded corpus/missing clean milestone resolved by exact current evidence; original broader/unknown/deferred scope is retained as a limitation, not reclassified as an upstream bug. Ordering-dependent signoff awaits separate human decision.",
+      "orderingDecision": "No proposed ordering adaptation is applied to this independent literal scope.",
+      "evidenceArchive": "migration/evidence/artifacts/HANDOFF-PARENT-REVIEW-20261010-F90DED26.zip"
+    }
+  ],
+  "limitations": [
+    "Win7 native certification remains user-deferred.",
+    "Existing nine Source bug predicates and the four approved policy-token scenes remain unchanged.",
+    "Original HTTP10054,40ms cache/1175/5 histories and the v5 missing private-temp producer and v7 checkpoint replacement WinError5 remain unclassified. Actual later passing finite observations do not identify or eliminate those original causes.",
+    "Only the unchanged bounded child acceptance corpus, actual imports/owned inputs, valid positive/refusal controls and exact current full release. Historical input inventory counts describe their original qualification; the current archive guards all15561 files. No parent, universal ABI/schedule or Win7 certification inferred."
+  ]
 }

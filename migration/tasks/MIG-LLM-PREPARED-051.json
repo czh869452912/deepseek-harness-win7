@@ -1,6 +1,6 @@
 {
   "id": "MIG-LLM-PREPARED-051",
-  "goal": "闭合108组公共准备句柄、代际、严格配置比较和规范AgentLoop消费者观察",
+  "goal": "\u95ed\u5408108\u7ec4\u516c\u5171\u51c6\u5907\u53e5\u67c4\u3001\u4ee3\u9645\u3001\u4e25\u683c\u914d\u7f6e\u6bd4\u8f83\u548c\u89c4\u8303AgentLoop\u6d88\u8d39\u8005\u89c2\u5bdf",
   "kind": "implementation",
   "state": "integrated",
   "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
@@ -41,15 +41,16 @@
   ],
   "open_findings": [],
   "conflicts_with": [],
-  "candidate_commit": "83026446716b18b0f8cb185d177ae971473deff8",
-  "integrated_commit": "83026446716b18b0f8cb185d177ae971473deff8",
+  "candidate_commit": "f90ded26e96ecfb0c1737a47d9f47b034b26c93a",
+  "integrated_commit": "f90ded26e96ecfb0c1737a47d9f47b034b26c93a",
   "evidence_ids": [
     "RUN-LLM-PREPARED-REJECTED-20261006-B93D1CD8",
     "RUN-LLM-PREPARED-REJECTED-20261006-C0B12C55",
     "RUN-LLM-PREPARED-REJECTED-20261006-FB3BA8D9",
     "RUN-LLM-PREPARED-REJECTED-20261006-011C3A95",
     "RUN-LLM-CONFIG-20261006-LLM-PREPARED-051",
-    "RUN-SDK-RETENTION-20261007-LLM-PREPARED-051"
+    "RUN-SDK-RETENTION-20261007-LLM-PREPARED-051",
+    "RUN-HANDOFF-CLEAN-20261010-LLM-PREPARED-051"
   ],
-  "next_action": "clean candidate 83026446 全量/原版/真实解压复验已通过。108组完整公共准备句柄、代际、配置严格比较、规范AgentLoop及实际解压在干净产品842d6373有界签收；精确2a旧包及b93拒绝ZIP/ACP失败fixture保持。继续任意配置图ABI及完整profile/Wire/图ABI/竞争；七父范围与036保持开放。"
+  "next_action": "\u672c\u6709\u9650\u5408\u540c\u5df2\u5728f90ded26\u539f\u59cb\u5b8c\u6574\u95e8\u7981\u590d\u9a8c\uff1b\u53ea\u590d\u7528\u517616701\u51bb\u7ed3\u8f93\u5165\u4e0e\u7cbe\u786e61232e80 ZIP\uff0c\u540e\u7eed\u53f0\u8d26\u63d0\u4ea4\u4e0d\u662f\u65b0\u7684\u53d1\u884c\u8ba4\u8bc1\u3002\u8303\u56f4\u5916ABI/\u4efb\u610f\u8c03\u5ea6/\u4e91\u670d\u52a1\u548c\u5ef6\u671fWin7\u53e6\u8bb0\u3002"
 }

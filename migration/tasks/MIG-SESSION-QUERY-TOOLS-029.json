@@ -1,6 +1,6 @@
 {
   "id": "MIG-SESSION-QUERY-TOOLS-029",
-  "goal": "闭合原版五个可选 model-facing Session 工具的规范消费者",
+  "goal": "\u95ed\u5408\u539f\u7248\u4e94\u4e2a\u53ef\u9009 model-facing Session \u5de5\u5177\u7684\u89c4\u8303\u6d88\u8d39\u8005",
   "kind": "implementation",
   "state": "integrated",
   "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
@@ -42,8 +42,8 @@
   ],
   "open_findings": [],
   "conflicts_with": [],
-  "candidate_commit": "83026446716b18b0f8cb185d177ae971473deff8",
-  "integrated_commit": "83026446716b18b0f8cb185d177ae971473deff8",
+  "candidate_commit": "f90ded26e96ecfb0c1737a47d9f47b034b26c93a",
+  "integrated_commit": "f90ded26e96ecfb0c1737a47d9f47b034b26c93a",
   "evidence_ids": [
     "RUN-SESSION-TOOLS-20261005-SESSION-QUERY-TOOLS-029",
     "RUN-SQLITE-FORMAT-20261005-SESSION-QUERY-TOOLS-029",
@@ -58,7 +58,8 @@
     "RUN-CANONICAL-LLM-20261006-SESSION-QUERY-TOOLS-029",
     "RUN-METADATA-RETENTION-20261006-SESSION-QUERY-TOOLS-029",
     "RUN-LLM-CONFIG-20261006-SESSION-QUERY-TOOLS-029",
-    "RUN-SDK-RETENTION-20261007-SESSION-QUERY-TOOLS-029"
+    "RUN-SDK-RETENTION-20261007-SESSION-QUERY-TOOLS-029",
+    "RUN-HANDOFF-CLEAN-20261010-SESSION-QUERY-TOOLS-029"
   ],
-  "next_action": "clean candidate 83026446 全量/原版/真实解压复验已通过。五个 opt-in 规范工具的 78 双侧/真实解压、102 原版断言及两个模型/profile 冷恢复消费者已有界签收；继续物理 schema-19、malformed/public plugin ABI、全部领域/竞争和整体迁移，Win7 延期。"
+  "next_action": "\u672c\u6709\u9650\u5408\u540c\u5df2\u5728f90ded26\u539f\u59cb\u5b8c\u6574\u95e8\u7981\u590d\u9a8c\uff1b\u53ea\u590d\u7528\u517616701\u51bb\u7ed3\u8f93\u5165\u4e0e\u7cbe\u786e61232e80 ZIP\uff0c\u540e\u7eed\u53f0\u8d26\u63d0\u4ea4\u4e0d\u662f\u65b0\u7684\u53d1\u884c\u8ba4\u8bc1\u3002\u8303\u56f4\u5916ABI/\u4efb\u610f\u8c03\u5ea6/\u4e91\u670d\u52a1\u548c\u5ef6\u671fWin7\u53e6\u8bb0\u3002"
 }

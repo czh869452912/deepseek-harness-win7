@@ -1,13 +1,24 @@
 {
   "id": "MIG-FS-TOOL-VALUES-062",
-  "goal": "对齐真实文件工具的读取、图像、观察基准、结构化差异和沙箱升级公开值",
+  "goal": "\u5bf9\u9f50\u771f\u5b9e\u6587\u4ef6\u5de5\u5177\u7684\u8bfb\u53d6\u3001\u56fe\u50cf\u3001\u89c2\u5bdf\u57fa\u51c6\u3001\u7ed3\u6784\u5316\u5dee\u5f02\u548c\u6c99\u7bb1\u5347\u7ea7\u516c\u5f00\u503c",
   "kind": "implementation",
-  "state": "running",
+  "state": "integrated",
   "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
   "base_product": "084a51b842536978630d65b68beb3934d336db0a",
   "owner": "current-session-coordinator",
-  "requires": [{"task": "MIG-CURRENT-RELEASE-GATE-003", "contract": "CON-CURRENT-RELEASE-GATE", "revision": 1}],
-  "provides": [{"contract": "CON-FS-TOOL-VALUES", "revision": 1}],
+  "requires": [
+    {
+      "task": "MIG-CURRENT-RELEASE-GATE-003",
+      "contract": "CON-CURRENT-RELEASE-GATE",
+      "revision": 1
+    }
+  ],
+  "provides": [
+    {
+      "contract": "CON-FS-TOOL-VALUES",
+      "revision": 1
+    }
+  ],
   "acceptance": [
     "All509 ordered complete observations across six actual Source groups match independently owned Python3.8.10 using exact current Root providers, approved129 imported module hashes and15488 candidate file guards before/after.",
     "Actual disk/read/observation consumers and positive qualified extracted receipt pass; every negative FS/Message extracted mutation first proves its undamaged baseline valid.",
@@ -15,15 +26,53 @@
     "All original refusals, unfinished v1 gate and invalid-baseline v2 results remain archived with their limitations; no new upstream defect exception.",
     "New clean complete regression, every current paired driver, unchanged original Source groups, actual own extraction and original browser pass before bounded integration."
   ],
-  "expected_paths": ["dsh/fs", "dsh/sandbox/escalation.py", "scripts", "tests", "migration", "docs/research"],
-  "open_findings": [
-    "509 complete Source/own observations match; eight exact provider files promoted. SDK required import roster adds only two independently observed new providers in all three scenarios;30/14/18 full frames remain unchanged.",
-    "109 positive-baseline/negative controls pass. Earlier76 passing negative tests lacked a valid baseline and are not accepted qualification; missing Source input floors are corrected for both FS and Message.",
-    "Latest accepted complete clean release remains83026446/65 bounded contracts. Complete profiles, policy/browser composition and seven parent ranges remain open; actual Win7 certification remains user-deferred."
+  "expected_paths": [
+    "dsh/fs",
+    "dsh/sandbox/escalation.py",
+    "scripts",
+    "tests",
+    "migration",
+    "docs/research"
   ],
+  "open_findings": [],
   "conflicts_with": [],
-  "candidate_commit": null,
-  "integrated_commit": null,
-  "evidence_ids": ["RUN-FS-TOOL-VALUES-QUALIFICATION-20261007-084A51B8"],
-  "next_action": "完成本部分真实消费者和不可变资格归档并提交，继续十项预设元数据与真实模型/浏览器/策略旅程；正常预算冻结完整门禁通过后才可有界集成。"
+  "candidate_commit": "f90ded26e96ecfb0c1737a47d9f47b034b26c93a",
+  "integrated_commit": "f90ded26e96ecfb0c1737a47d9f47b034b26c93a",
+  "evidence_ids": [
+    "RUN-FS-TOOL-VALUES-QUALIFICATION-20261007-084A51B8",
+    "RUN-HANDOFF-CLEAN-20261010-FS-TOOL-VALUES-062"
+  ],
+  "next_action": "\u672c\u539f\u5408\u540c\u7684\u5df2\u8bb0\u5f55\u6709\u9650\u8303\u56f4\u5728f90ded26\u5b8c\u6574\u95e8\u7981\u53ca\u540cZIP\u7236\u7ec4\u5408\u4e2d\u5b8c\u6210\uff1b\u672c\u9879\u672a\u5e94\u7528\u5f85\u51b3\u5b9a\u7684\u76ee\u5f55/\u72ec\u7acb\u6d41\u4ea4\u9519\u9002\u914d\uff0c\u4e94\u9879\u76f8\u5173\u7236\u4efb\u52a1\u7ee7\u7eed\u5f85\u51b3\u5b9a\u3002\u4efb\u610f\u672a\u89c2\u5bdfABI/\u8c03\u5ea6\u3001\u4ed8\u8d39\u4e91\u548c\u5ef6\u671fWin7\u4e0d\u636e\u6b64\u8ba4\u8bc1\uff1b\u539f\u59cb10054/40ms/1175/5/\u4e34\u65f6\u76ee\u5f55\u6d88\u5931\u8bca\u65ad\u4fdd\u6301\u72ec\u7acb\u5f85\u67e5\u3002",
+  "reviewed_findings": [
+    {
+      "original": "509 complete Source/own observations match; eight exact provider files promoted. SDK required import roster adds only two independently observed new providers in all three scenarios;30/14/18 full frames remain unchanged.",
+      "originalSha256": "ca5611ff54488ea2e3ac2dc6a0817bed7a978d76414c6bcfe97372bffe4fb50a",
+      "review": "Require509 complete current Source/Root/own rows and current imports/input guards, not old129/15488 counts. Preserve no-retry1175/1176/1177 public metadata; external fixture allocation is part of verification ownership, not a production algorithm change.",
+      "disposition": "Recorded corpus/missing clean milestone resolved by exact current evidence; original broader/unknown/deferred scope is retained as a limitation, not reclassified as an upstream bug. Ordering-dependent signoff awaits separate human decision.",
+      "orderingDecision": "No proposed ordering adaptation is applied to this independent literal scope.",
+      "evidenceArchive": "migration/evidence/artifacts/HANDOFF-PARENT-REVIEW-20261010-F90DED26.zip"
+    },
+    {
+      "original": "109 positive-baseline/negative controls pass. Earlier76 passing negative tests lacked a valid baseline and are not accepted qualification; missing Source input floors are corrected for both FS and Message.",
+      "originalSha256": "4e93867d4b95444fd8c855d27de3db3792872bac19fb56900ee6eb0c9580db27",
+      "review": "Require undamaged valid positive baselines before all current negative FS/Message mutations. Earlier76 controls with invalid baselines remain refused; current proper Source diff9 libesm guards remain literal.",
+      "disposition": "Recorded corpus/missing clean milestone resolved by exact current evidence; original broader/unknown/deferred scope is retained as a limitation, not reclassified as an upstream bug. Ordering-dependent signoff awaits separate human decision.",
+      "orderingDecision": "No proposed ordering adaptation is applied to this independent literal scope.",
+      "evidenceArchive": "migration/evidence/artifacts/HANDOFF-PARENT-REVIEW-20261010-F90DED26.zip"
+    },
+    {
+      "original": "Latest accepted complete clean release remains83026446/65 bounded contracts. Complete profiles, policy/browser composition and seven parent ranges remain open; actual Win7 certification remains user-deferred.",
+      "originalSha256": "2fc6734a80594a7893c32af7521705f9267071828d82cfa4c07337c253f1fe39",
+      "review": "Resolve missing clean full milestone only by exact full15 all-lane success. Parent scopes/Win7 are not inferred from the509 corpus; unknown historical1175 holder is not newly identified.",
+      "disposition": "Recorded corpus/missing clean milestone resolved by exact current evidence; original broader/unknown/deferred scope is retained as a limitation, not reclassified as an upstream bug. Ordering-dependent signoff awaits separate human decision.",
+      "orderingDecision": "No proposed ordering adaptation is applied to this independent literal scope.",
+      "evidenceArchive": "migration/evidence/artifacts/HANDOFF-PARENT-REVIEW-20261010-F90DED26.zip"
+    }
+  ],
+  "limitations": [
+    "Win7 native certification remains user-deferred.",
+    "Existing nine Source bug predicates and the four approved policy-token scenes remain unchanged.",
+    "Original HTTP10054,40ms cache/1175/5 histories and the v5 missing private-temp producer and v7 checkpoint replacement WinError5 remain unclassified. Actual later passing finite observations do not identify or eliminate those original causes.",
+    "Only the unchanged bounded child acceptance corpus, actual imports/owned inputs, valid positive/refusal controls and exact current full release. Historical input inventory counts describe their original qualification; the current archive guards all15561 files. No parent, universal ABI/schedule or Win7 certification inferred."
+  ]
 }

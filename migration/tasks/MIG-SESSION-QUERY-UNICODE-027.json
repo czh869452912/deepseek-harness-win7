@@ -1,6 +1,6 @@
 {
   "id": "MIG-SESSION-QUERY-UNICODE-027",
-  "goal": "对齐 ICU 请求指纹与 Unicode 游标边界，并闭合私有运行库和真实解压验收",
+  "goal": "\u5bf9\u9f50 ICU \u8bf7\u6c42\u6307\u7eb9\u4e0e Unicode \u6e38\u6807\u8fb9\u754c\uff0c\u5e76\u95ed\u5408\u79c1\u6709\u8fd0\u884c\u5e93\u548c\u771f\u5b9e\u89e3\u538b\u9a8c\u6536",
   "kind": "implementation",
   "state": "integrated",
   "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
@@ -38,8 +38,8 @@
   ],
   "open_findings": [],
   "conflicts_with": [],
-  "candidate_commit": "83026446716b18b0f8cb185d177ae971473deff8",
-  "integrated_commit": "83026446716b18b0f8cb185d177ae971473deff8",
+  "candidate_commit": "f90ded26e96ecfb0c1737a47d9f47b034b26c93a",
+  "integrated_commit": "f90ded26e96ecfb0c1737a47d9f47b034b26c93a",
   "evidence_ids": [
     "RUN-SESSION-TEXT-20261005-SESSION-QUERY-UNICODE-027",
     "RUN-SESSION-TOOLS-20261005-SESSION-QUERY-UNICODE-027",
@@ -55,7 +55,8 @@
     "RUN-CANONICAL-LLM-20261006-SESSION-QUERY-UNICODE-027",
     "RUN-METADATA-RETENTION-20261006-SESSION-QUERY-UNICODE-027",
     "RUN-LLM-CONFIG-20261006-SESSION-QUERY-UNICODE-027",
-    "RUN-SDK-RETENTION-20261007-SESSION-QUERY-UNICODE-027"
+    "RUN-SDK-RETENTION-20261007-SESSION-QUERY-UNICODE-027",
+    "RUN-HANDOFF-CLEAN-20261010-SESSION-QUERY-UNICODE-027"
   ],
-  "next_action": "clean candidate 83026446 全量/原版/真实解压复验已通过。clean candidate 83026446 的 2034 Unicode 当前默认 locale 双侧/真实解压观察已有界签收；Session 字面匹配/有效提取/列表谱系顺序另有界签收；继续 malformed/plugin ABI、全域/竞争、schema-19、启动取消及整体迁移，Win7 延期。"
+  "next_action": "\u672c\u6709\u9650\u5408\u540c\u5df2\u5728f90ded26\u539f\u59cb\u5b8c\u6574\u95e8\u7981\u590d\u9a8c\uff1b\u53ea\u590d\u7528\u517616701\u51bb\u7ed3\u8f93\u5165\u4e0e\u7cbe\u786e61232e80 ZIP\uff0c\u540e\u7eed\u53f0\u8d26\u63d0\u4ea4\u4e0d\u662f\u65b0\u7684\u53d1\u884c\u8ba4\u8bc1\u3002\u8303\u56f4\u5916ABI/\u4efb\u610f\u8c03\u5ea6/\u4e91\u670d\u52a1\u548c\u5ef6\u671fWin7\u53e6\u8bb0\u3002"
 }

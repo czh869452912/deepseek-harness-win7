@@ -1,11 +1,11 @@
 {
   "id": "MIG-ACP-TRANSPORT-002",
-  "goal": "共同闭合 ACP stdio/MCP 提供端与 subagent 消费者的完整请求生命周期",
+  "goal": "\u5171\u540c\u95ed\u5408 ACP stdio/MCP \u63d0\u4f9b\u7aef\u4e0e subagent \u6d88\u8d39\u8005\u7684\u5b8c\u6574\u8bf7\u6c42\u751f\u547d\u5468\u671f",
   "kind": "implementation",
-  "state": "draft",
+  "state": "integrated",
   "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
   "base_product": "5c0b3c5e229d900435b3b9df3ed36f9d64a9028b",
-  "owner": null,
+  "owner": "current-session-coordinator",
   "requires": [
     {
       "task": "MIG-ACP-PROMPT-OWNERSHIP-001",
@@ -120,14 +120,44 @@
     "migration",
     "docs/research"
   ],
-  "open_findings": [
-    "A1/A2/A3 permissions, controlled MCP stdio/HTTP/SSE mounting, subprocess ACP, teardown/disposal and one measured Windows descendant tree are accepted only under their bounded contracts at 5c0b3c5e. The parent has no complete source-backed contract or integrated acceptance.",
-    "Infinite blocked initialization, pathological/oversized streams, full SDK HTTP/TLS/redirect/compression/URL coverage and arbitrary supervisor/Host crash/background Job/terminal/orphan trees remain unaccepted.",
-    "Browser startup cancellation, the original fixed-40ms cache test race, Proactor warnings and HTTP 10054 remain unclassified. Complete profile journeys and deferred Win7 are separate unaccepted scopes."
-  ],
+  "open_findings": [],
   "conflicts_with": [],
-  "candidate_commit": null,
-  "integrated_commit": null,
-  "evidence_ids": [],
-  "next_action": "按正式父合同补足组合观察、独立进程与实际解压消费者；保留原始差异和开放发现，完整候选签收后逐项审查，不能由子合同计数推定闭环。"
+  "candidate_commit": "f90ded26e96ecfb0c1737a47d9f47b034b26c93a",
+  "integrated_commit": "f90ded26e96ecfb0c1737a47d9f47b034b26c93a",
+  "evidence_ids": [
+    "RUN-HANDOFF-PARENT-20261010-ACP-TRANSPORT-002"
+  ],
+  "next_action": "\u672c\u539f\u5408\u540c\u7684\u5df2\u8bb0\u5f55\u6709\u9650\u8303\u56f4\u5728f90ded26\u5b8c\u6574\u95e8\u7981\u53ca\u540cZIP\u7236\u7ec4\u5408\u4e2d\u5b8c\u6210\uff1b\u672c\u9879\u672a\u5e94\u7528\u5f85\u51b3\u5b9a\u7684\u76ee\u5f55/\u72ec\u7acb\u6d41\u4ea4\u9519\u9002\u914d\uff0c\u4e94\u9879\u76f8\u5173\u7236\u4efb\u52a1\u7ee7\u7eed\u5f85\u51b3\u5b9a\u3002\u4efb\u610f\u672a\u89c2\u5bdfABI/\u8c03\u5ea6\u3001\u4ed8\u8d39\u4e91\u548c\u5ef6\u671fWin7\u4e0d\u636e\u6b64\u8ba4\u8bc1\uff1b\u539f\u59cb10054/40ms/1175/5/\u4e34\u65f6\u76ee\u5f55\u6d88\u5931\u8bca\u65ad\u4fdd\u6301\u72ec\u7acb\u5f85\u67e5\u3002",
+  "reviewed_findings": [
+    {
+      "original": "A1/A2/A3 permissions, controlled MCP stdio/HTTP/SSE mounting, subprocess ACP, teardown/disposal and one measured Windows descendant tree are accepted only under their bounded contracts at 5c0b3c5e. The parent has no complete source-backed contract or integrated acceptance.",
+      "originalSha256": "b2a73b02a04ff8baf53eab9049537f1574b4e1c322ae80749367c7995f0402b3",
+      "review": "Require original ACP/MCP/provider children revalidated by full15 plus literal64-overlap/EOF,large fragmented Unicode and malformed tail Source/Root/own boundary captures, actual default SDK normal/cancel/error and selected route consumers. Parent proof is their composed outcome/ownership, not a sum of child cases.",
+      "disposition": "Recorded corpus/missing clean milestone resolved by exact current evidence; original broader/unknown/deferred scope is retained as a limitation, not reclassified as an upstream bug. Ordering-dependent signoff awaits separate human decision.",
+      "orderingDecision": "No proposed ordering adaptation is applied to this independent literal scope.",
+      "evidenceArchive": "migration/evidence/artifacts/HANDOFF-PARENT-REVIEW-20261010-F90DED26.zip"
+    },
+    {
+      "original": "Infinite blocked initialization, pathological/oversized streams, full SDK HTTP/TLS/redirect/compression/URL coverage and arbitrary supervisor/Host crash/background Job/terminal/orphan trees remain unaccepted.",
+      "originalSha256": "78c142c909c1c6ce9fb0845b25b63064b6938f1bd6fc61f97192ab528a9da246",
+      "review": "Hung initialization/publication/first failure/physical teardown is checked by current owned process pairs and controls; specified large/malformed/overlap inputs add finite boundaries. Arbitrary supervisors/background Jobs/orphan trees, unspecified TLS/URL behavior and cloud/OAuth/paid qualification remain explicitly uncertified outside this finite contract.",
+      "disposition": "Recorded corpus/missing clean milestone resolved by exact current evidence; original broader/unknown/deferred scope is retained as a limitation, not reclassified as an upstream bug. Ordering-dependent signoff awaits separate human decision.",
+      "orderingDecision": "No proposed ordering adaptation is applied to this independent literal scope.",
+      "evidenceArchive": "migration/evidence/artifacts/HANDOFF-PARENT-REVIEW-20261010-F90DED26.zip"
+    },
+    {
+      "original": "Browser startup cancellation, the original fixed-40ms cache test race, Proactor warnings and HTTP 10054 remain unclassified. Complete profile journeys and deferred Win7 are separate unaccepted scopes.",
+      "originalSha256": "b27b9c1a073d40e93adcdef90f0c8f8cf05d5bfb51fd77f1e22065dd2fa4477a",
+      "review": "Preserve original startup/cache timing histories: current closed-writer creation-stack fix is documented in2026-10-07-proactor-fixture-progress;40ms Source timing and unidentified1175/5 holder are not retroactively explained. Only existing precise Source-SDK cancel10054 predicate is permitted; any other raw shutdown diagnostic is retained as an independent observation, never silently classified as that predicate. Current official gates/original UI/ownership must pass; Win7 remains deferred.",
+      "disposition": "Recorded corpus/missing clean milestone resolved by exact current evidence; original broader/unknown/deferred scope is retained as a limitation, not reclassified as an upstream bug. Ordering-dependent signoff awaits separate human decision.",
+      "orderingDecision": "No proposed ordering adaptation is applied to this independent literal scope.",
+      "evidenceArchive": "migration/evidence/artifacts/HANDOFF-PARENT-REVIEW-20261010-F90DED26.zip"
+    }
+  ],
+  "limitations": [
+    "Win7 native certification remains user-deferred.",
+    "Existing nine Source bug predicates and the four approved policy-token scenes remain unchanged.",
+    "Original HTTP10054,40ms cache/1175/5 histories and the v5 missing private-temp producer and v7 checkpoint replacement WinError5 remain unclassified. Actual later passing finite observations do not identify or eliminate those original causes.",
+    "Canonical ACP/MCP/subagent owned publication, prompt/model/permissions, overlapping64/EOF and fragmented/malformed finite carriers; actual SDK/routes/process-tree and independent cold consumers. Arbitrary supervisors/orphan Jobs, unspecified TLS/URL and cloud/OAuth/paid use are not certified."
+  ]
 }

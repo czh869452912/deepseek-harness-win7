@@ -1,6 +1,6 @@
 {
   "id": "MIG-SESSION-QUERY-ENGINE-026",
-  "goal": "将现代 FTS 引擎接入规范 SessionQuery，闭合有界代际、稳定观察、队列取消及真实 Remote 消费者",
+  "goal": "\u5c06\u73b0\u4ee3 FTS \u5f15\u64ce\u63a5\u5165\u89c4\u8303 SessionQuery\uff0c\u95ed\u5408\u6709\u754c\u4ee3\u9645\u3001\u7a33\u5b9a\u89c2\u5bdf\u3001\u961f\u5217\u53d6\u6d88\u53ca\u771f\u5b9e Remote \u6d88\u8d39\u8005",
   "kind": "implementation",
   "state": "integrated",
   "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
@@ -50,8 +50,8 @@
   ],
   "open_findings": [],
   "conflicts_with": [],
-  "candidate_commit": "83026446716b18b0f8cb185d177ae971473deff8",
-  "integrated_commit": "83026446716b18b0f8cb185d177ae971473deff8",
+  "candidate_commit": "f90ded26e96ecfb0c1737a47d9f47b034b26c93a",
+  "integrated_commit": "f90ded26e96ecfb0c1737a47d9f47b034b26c93a",
   "evidence_ids": [
     "RUN-SESSION-QUERY-ENGINE-20261004-SESSION-QUERY-ENGINE-026",
     "RUN-SESSION-TEXT-20261005-SESSION-QUERY-ENGINE-026",
@@ -68,7 +68,8 @@
     "RUN-CANONICAL-LLM-20261006-SESSION-QUERY-ENGINE-026",
     "RUN-METADATA-RETENTION-20261006-SESSION-QUERY-ENGINE-026",
     "RUN-LLM-CONFIG-20261006-SESSION-QUERY-ENGINE-026",
-    "RUN-SDK-RETENTION-20261007-SESSION-QUERY-ENGINE-026"
+    "RUN-SDK-RETENTION-20261007-SESSION-QUERY-ENGINE-026",
+    "RUN-HANDOFF-CLEAN-20261010-SESSION-QUERY-ENGINE-026"
   ],
-  "next_action": "clean candidate 83026446 全量/原版/真实解压复验已通过。clean candidate 83026446 的 16 组实际规范 FTS 双侧/解压及三套 preset Remote 重启搜索已有界验收；Unicode 请求身份和有效 Session 文本/locale 顺序另有界签收；继续 malformed/plugin ABI、竞争/公共工具、持久化 schema-19、启动取消根因与整体迁移；整体 accepted_upstream 保持空，Win7 延期。"
+  "next_action": "\u672c\u6709\u9650\u5408\u540c\u5df2\u5728f90ded26\u539f\u59cb\u5b8c\u6574\u95e8\u7981\u590d\u9a8c\uff1b\u53ea\u590d\u7528\u517616701\u51bb\u7ed3\u8f93\u5165\u4e0e\u7cbe\u786e61232e80 ZIP\uff0c\u540e\u7eed\u53f0\u8d26\u63d0\u4ea4\u4e0d\u662f\u65b0\u7684\u53d1\u884c\u8ba4\u8bc1\u3002\u8303\u56f4\u5916ABI/\u4efb\u610f\u8c03\u5ea6/\u4e91\u670d\u52a1\u548c\u5ef6\u671fWin7\u53e6\u8bb0\u3002"
 }

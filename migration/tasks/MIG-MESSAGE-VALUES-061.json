@@ -1,30 +1,79 @@
 {
   "id": "MIG-MESSAGE-VALUES-061",
-  "goal": "对齐原版Message构造、分配、只读循环图快照与运行时上下文投影",
+  "goal": "\u5bf9\u9f50\u539f\u7248Message\u6784\u9020\u3001\u5206\u914d\u3001\u53ea\u8bfb\u5faa\u73af\u56fe\u5feb\u7167\u4e0e\u8fd0\u884c\u65f6\u4e0a\u4e0b\u6587\u6295\u5f71",
   "kind": "implementation",
-  "state": "running",
+  "state": "integrated",
   "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
   "base_product": "1f41abf7a9084c42507101ee592707128c9e06dd",
   "owner": "current-session-coordinator",
   "requires": [
-    {"task": "MIG-CURRENT-RELEASE-GATE-003", "contract": "CON-CURRENT-RELEASE-GATE", "revision": 1}
+    {
+      "task": "MIG-CURRENT-RELEASE-GATE-003",
+      "contract": "CON-CURRENT-RELEASE-GATE",
+      "revision": 1
+    }
   ],
-  "provides": [{"contract": "CON-MESSAGE-VALUES", "revision": 1}],
+  "provides": [
+    {
+      "contract": "CON-MESSAGE-VALUES",
+      "revision": 1
+    }
+  ],
   "acceptance": [
     "All20 complete actual pinned Source/Root/independently owned Python3.8.10 observations match with strict distinct UUIDv4 allocation validation and every graph node/ref/readonly flag retained.",
     "Real consumer regression and mutation/identity/shape/graph/import/Source/extracted/mandatory refusal controls pass.",
     "Complete original failed observations, intermediate repeated-freeze RecursionError and mutable-fixture failure remain immutable archived evidence.",
     "New clean full regression, all current paired drivers, unchanged official Source groups, actual own extraction and original browser pass before bounded integration."
   ],
-  "expected_paths": ["dsh/llm/message.py", "dsh/core", "dsh/subagent", "scripts", "tests", "migration", "docs/research"],
-  "open_findings": [
-    "Formal20 Source/Root/own Python3.8.10 observations match, with100 independently approved actual imports and15481 owned files checked before/after.427 prerequisites,95 mandatory/extracted and348 actual consumer tests pass; overlapping sets not summed.114-file immutable archive retains original refusals, repeated-freeze error, incomplete gate and old mutable/string fixture failures.",
-    "Eightieth paired driver and all new message/graph/mandatory/extracted controls registered. Latest accepted complete clean release remains83026446/65 bounded contracts; this item is not integrated.",
-    "Full profiles, policy/browser composition and seven parent ranges remain open; actual Win7 certification remains user-deferred."
+  "expected_paths": [
+    "dsh/llm/message.py",
+    "dsh/core",
+    "dsh/subagent",
+    "scripts",
+    "tests",
+    "migration",
+    "docs/research"
   ],
+  "open_findings": [],
   "conflicts_with": [],
-  "candidate_commit": null,
-  "integrated_commit": null,
-  "evidence_ids": ["RUN-MESSAGE-VALUES-FORMAL-QUALIFICATION-20261007-1F41ABF7", "RUN-ASSISTANT-ALLOCATION-QUALIFICATION-20261007-5F0246C2"],
-  "next_action": "本部分正式提供端/消费端与114文件资格完成，继续全部预设/浏览器/策略及七父范围；按正常预算重新冻结完整回归、全部配对/原版/实际解压/原版浏览器验收后才可有界集成。"
+  "candidate_commit": "f90ded26e96ecfb0c1737a47d9f47b034b26c93a",
+  "integrated_commit": "f90ded26e96ecfb0c1737a47d9f47b034b26c93a",
+  "evidence_ids": [
+    "RUN-MESSAGE-VALUES-FORMAL-QUALIFICATION-20261007-1F41ABF7",
+    "RUN-ASSISTANT-ALLOCATION-QUALIFICATION-20261007-5F0246C2",
+    "RUN-HANDOFF-CLEAN-20261010-MESSAGE-VALUES-061"
+  ],
+  "next_action": "\u672c\u539f\u5408\u540c\u7684\u5df2\u8bb0\u5f55\u6709\u9650\u8303\u56f4\u5728f90ded26\u5b8c\u6574\u95e8\u7981\u53ca\u540cZIP\u7236\u7ec4\u5408\u4e2d\u5b8c\u6210\uff1b\u672c\u9879\u672a\u5e94\u7528\u5f85\u51b3\u5b9a\u7684\u76ee\u5f55/\u72ec\u7acb\u6d41\u4ea4\u9519\u9002\u914d\uff0c\u4e94\u9879\u76f8\u5173\u7236\u4efb\u52a1\u7ee7\u7eed\u5f85\u51b3\u5b9a\u3002\u4efb\u610f\u672a\u89c2\u5bdfABI/\u8c03\u5ea6\u3001\u4ed8\u8d39\u4e91\u548c\u5ef6\u671fWin7\u4e0d\u636e\u6b64\u8ba4\u8bc1\uff1b\u539f\u59cb10054/40ms/1175/5/\u4e34\u65f6\u76ee\u5f55\u6d88\u5931\u8bca\u65ad\u4fdd\u6301\u72ec\u7acb\u5f85\u67e5\u3002",
+  "reviewed_findings": [
+    {
+      "original": "Formal20 Source/Root/own Python3.8.10 observations match, with100 independently approved actual imports and15481 owned files checked before/after.427 prerequisites,95 mandatory/extracted and348 actual consumer tests pass; overlapping sets not summed.114-file immutable archive retains original refusals, repeated-freeze error, incomplete gate and old mutable/string fixture failures.",
+      "originalSha256": "1992ed1ae8500680d096388534001b50005eeecbfa648370e068c974d64677c0",
+      "review": "Require current complete20 graphs with exact present fields/readonly/ref identities and validated unique allocations across actual Source/Root/own; retain every original repeated-freeze/mutable/partial failure.",
+      "disposition": "Recorded corpus/missing clean milestone resolved by exact current evidence; original broader/unknown/deferred scope is retained as a limitation, not reclassified as an upstream bug. Ordering-dependent signoff awaits separate human decision.",
+      "orderingDecision": "No proposed ordering adaptation is applied to this independent literal scope.",
+      "evidenceArchive": "migration/evidence/artifacts/HANDOFF-PARENT-REVIEW-20261010-F90DED26.zip"
+    },
+    {
+      "original": "Eightieth paired driver and all new message/graph/mandatory/extracted controls registered. Latest accepted complete clean release remains83026446/65 bounded contracts; this item is not integrated.",
+      "originalSha256": "c137684b23fc4b4e18bebbe074508ccbcfa1ebf0ba9b3e7ff9d3d8365a35fd81",
+      "review": "Current full15 contains the fresh message pair, positive-baseline mandatory/extracted controls and exact real owned consumer; old83026446 remains historical.",
+      "disposition": "Recorded corpus/missing clean milestone resolved by exact current evidence; original broader/unknown/deferred scope is retained as a limitation, not reclassified as an upstream bug. Ordering-dependent signoff awaits separate human decision.",
+      "orderingDecision": "No proposed ordering adaptation is applied to this independent literal scope.",
+      "evidenceArchive": "migration/evidence/artifacts/HANDOFF-PARENT-REVIEW-20261010-F90DED26.zip"
+    },
+    {
+      "original": "Full profiles, policy/browser composition and seven parent ranges remain open; actual Win7 certification remains user-deferred.",
+      "originalSha256": "f4dcd7ce077fa91b1b835bc6e2d3f3eef1d48a69f600803612fa71b636c5d0b4",
+      "review": "Public message graph ABI here is the specified corpus; broader plugin APIs/arbitrary graphs are outside its recorded finite contract. Parent combinations require their own same-candidate evidence; Win7 remains deferred.",
+      "disposition": "Recorded corpus/missing clean milestone resolved by exact current evidence; original broader/unknown/deferred scope is retained as a limitation, not reclassified as an upstream bug. Ordering-dependent signoff awaits separate human decision.",
+      "orderingDecision": "No proposed ordering adaptation is applied to this independent literal scope.",
+      "evidenceArchive": "migration/evidence/artifacts/HANDOFF-PARENT-REVIEW-20261010-F90DED26.zip"
+    }
+  ],
+  "limitations": [
+    "Win7 native certification remains user-deferred.",
+    "Existing nine Source bug predicates and the four approved policy-token scenes remain unchanged.",
+    "Original HTTP10054,40ms cache/1175/5 histories and the v5 missing private-temp producer and v7 checkpoint replacement WinError5 remain unclassified. Actual later passing finite observations do not identify or eliminate those original causes.",
+    "Only the unchanged bounded child acceptance corpus, actual imports/owned inputs, valid positive/refusal controls and exact current full release. Historical input inventory counts describe their original qualification; the current archive guards all15561 files. No parent, universal ABI/schedule or Win7 certification inferred."
+  ]
 }

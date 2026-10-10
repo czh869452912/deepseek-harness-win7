@@ -1,8 +1,8 @@
 {
   "id": "MIG-ASK-USER-PROTOCOL-060",
-  "goal": "对齐真实问答依赖、完整工具契约、类型化答案及取消行为",
+  "goal": "\u5bf9\u9f50\u771f\u5b9e\u95ee\u7b54\u4f9d\u8d56\u3001\u5b8c\u6574\u5de5\u5177\u5951\u7ea6\u3001\u7c7b\u578b\u5316\u7b54\u6848\u53ca\u53d6\u6d88\u884c\u4e3a",
   "kind": "implementation",
-  "state": "running",
+  "state": "integrated",
   "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
   "base_product": "a90b55f14b5368f443acd6221e67f31ae0c5a347",
   "owner": "current-session-coordinator",
@@ -35,16 +35,45 @@
     "migration",
     "docs/research"
   ],
-  "open_findings": [
-    "Formal11 fresh Source/Root/own Python3.8.10 observations match literally with124 independently approved imports and15481 full owned input guards before/after.65 prerequisite and446 mandatory/extracted tests pass with no failures/errors/skips; sets overlap and are not added.61-file archive preserves current7 Root-before differences, older11-difference research and first fake-agent refusal separately.",
-    "All79 paired drivers and new41 consumer/25 mandatory-extracted controls registered. No new full clean acceptance; latest accepted clean release remains83026446/65 bounded contracts.",
-    "Message helper identity, shape and readonly snapshot differences remain next actual Source work, followed by complete profiles/browser/policy and seven parent ranges. Actual Win7 certification stays user-deferred."
-  ],
+  "open_findings": [],
   "conflicts_with": [],
-  "candidate_commit": null,
-  "integrated_commit": null,
+  "candidate_commit": "f90ded26e96ecfb0c1737a47d9f47b034b26c93a",
+  "integrated_commit": "f90ded26e96ecfb0c1737a47d9f47b034b26c93a",
   "evidence_ids": [
-    "RUN-ASK-USER-FORMAL-QUALIFICATION-20261007-A90B55F1"
+    "RUN-ASK-USER-FORMAL-QUALIFICATION-20261007-A90B55F1",
+    "RUN-HANDOFF-CLEAN-20261010-ASK-USER-PROTOCOL-060"
   ],
-  "next_action": "提交本项正式实现和完整证据；继续规范Message构造/快照与全部预设/浏览器/策略父范围，最后按正常预算冻结完整原版/配对/实际解压/浏览器验收，禁止以本项焦点资格计作整体迁移闭环。"
+  "next_action": "\u672c\u539f\u5408\u540c\u7684\u5df2\u8bb0\u5f55\u6709\u9650\u8303\u56f4\u5728f90ded26\u5b8c\u6574\u95e8\u7981\u53ca\u540cZIP\u7236\u7ec4\u5408\u4e2d\u5b8c\u6210\uff1b\u672c\u9879\u672a\u5e94\u7528\u5f85\u51b3\u5b9a\u7684\u76ee\u5f55/\u72ec\u7acb\u6d41\u4ea4\u9519\u9002\u914d\uff0c\u4e94\u9879\u76f8\u5173\u7236\u4efb\u52a1\u7ee7\u7eed\u5f85\u51b3\u5b9a\u3002\u4efb\u610f\u672a\u89c2\u5bdfABI/\u8c03\u5ea6\u3001\u4ed8\u8d39\u4e91\u548c\u5ef6\u671fWin7\u4e0d\u636e\u6b64\u8ba4\u8bc1\uff1b\u539f\u59cb10054/40ms/1175/5/\u4e34\u65f6\u76ee\u5f55\u6d88\u5931\u8bca\u65ad\u4fdd\u6301\u72ec\u7acb\u5f85\u67e5\u3002",
+  "reviewed_findings": [
+    {
+      "original": "Formal11 fresh Source/Root/own Python3.8.10 observations match literally with124 independently approved imports and15481 full owned input guards before/after.65 prerequisite and446 mandatory/extracted tests pass with no failures/errors/skips; sets overlap and are not added.61-file archive preserves current7 Root-before differences, older11-difference research and first fake-agent refusal separately.",
+      "originalSha256": "d68e533aebee7bf6a4476c80aba0087fcc605baa349e7d57c732ae5c1782deb8",
+      "review": "Require11 complete current Source/Root/own observations with actual dependencies/imports and typed output; no first-option fallback/custom-null deletion. Preserve fake-agent and old Root failures.",
+      "disposition": "Recorded corpus/missing clean milestone resolved by exact current evidence; original broader/unknown/deferred scope is retained as a limitation, not reclassified as an upstream bug. Ordering-dependent signoff awaits separate human decision.",
+      "orderingDecision": "No proposed ordering adaptation is applied to this independent literal scope.",
+      "evidenceArchive": "migration/evidence/artifacts/HANDOFF-PARENT-REVIEW-20261010-F90DED26.zip"
+    },
+    {
+      "original": "All79 paired drivers and new41 consumer/25 mandatory-extracted controls registered. No new full clean acceptance; latest accepted clean release remains83026446/65 bounded contracts.",
+      "originalSha256": "9d7bad3ee13e898683e160b81e6f172b9712ed6d4d5bef36e6a44469cc8bba89",
+      "review": "Resolve only the missing fresh full frozen gate using exact full15 receipt, all paired and actual extracted/browser evidence.",
+      "disposition": "Recorded corpus/missing clean milestone resolved by exact current evidence; original broader/unknown/deferred scope is retained as a limitation, not reclassified as an upstream bug. Ordering-dependent signoff awaits separate human decision.",
+      "orderingDecision": "No proposed ordering adaptation is applied to this independent literal scope.",
+      "evidenceArchive": "migration/evidence/artifacts/HANDOFF-PARENT-REVIEW-20261010-F90DED26.zip"
+    },
+    {
+      "original": "Message helper identity, shape and readonly snapshot differences remain next actual Source work, followed by complete profiles/browser/policy and seven parent ranges. Actual Win7 certification stays user-deferred.",
+      "originalSha256": "3163b4efadd8bc09ca87955d2a89d753df7238c54e509e9120348b049b176880",
+      "review": "Message identity/readonly graphs are independently covered by061 complete20 and its refusal controls. Full policy/profile/Web compositions remain separate parent evidence; Win7 remains deferred.",
+      "disposition": "Recorded corpus/missing clean milestone resolved by exact current evidence; original broader/unknown/deferred scope is retained as a limitation, not reclassified as an upstream bug. Ordering-dependent signoff awaits separate human decision.",
+      "orderingDecision": "No proposed ordering adaptation is applied to this independent literal scope.",
+      "evidenceArchive": "migration/evidence/artifacts/HANDOFF-PARENT-REVIEW-20261010-F90DED26.zip"
+    }
+  ],
+  "limitations": [
+    "Win7 native certification remains user-deferred.",
+    "Existing nine Source bug predicates and the four approved policy-token scenes remain unchanged.",
+    "Original HTTP10054,40ms cache/1175/5 histories and the v5 missing private-temp producer and v7 checkpoint replacement WinError5 remain unclassified. Actual later passing finite observations do not identify or eliminate those original causes.",
+    "Only the unchanged bounded child acceptance corpus, actual imports/owned inputs, valid positive/refusal controls and exact current full release. Historical input inventory counts describe their original qualification; the current archive guards all15561 files. No parent, universal ABI/schedule or Win7 certification inferred."
+  ]
 }

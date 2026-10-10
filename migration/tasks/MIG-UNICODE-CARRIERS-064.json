@@ -1,24 +1,60 @@
 {
   "id": "MIG-UNICODE-CARRIERS-064",
-  "goal": "闭合实际FS UTF16结果到WebSocket/RPC/模型HTTP的规范JSON载体",
+  "goal": "\u95ed\u5408\u5b9e\u9645FS UTF16\u7ed3\u679c\u5230WebSocket/RPC/\u6a21\u578bHTTP\u7684\u89c4\u8303JSON\u8f7d\u4f53",
   "kind": "implementation",
-  "state": "running",
+  "state": "integrated",
   "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
   "base_product": "99d2fbec155fcb1e230edc0bde8f57c489edb8c1",
   "owner": "current-session-coordinator",
-  "requires": [{"task": "MIG-CURRENT-RELEASE-GATE-003", "contract": "CON-CURRENT-RELEASE-GATE", "revision": 1}],
-  "provides": [{"contract": "CON-UNICODE-CARRIERS", "revision": 1}],
+  "requires": [
+    {
+      "task": "MIG-CURRENT-RELEASE-GATE-003",
+      "contract": "CON-CURRENT-RELEASE-GATE",
+      "revision": 1
+    }
+  ],
+  "provides": [
+    {
+      "contract": "CON-UNICODE-CARRIERS",
+      "revision": 1
+    }
+  ],
   "acceptance": [
     "All21 complete actual Source/Root/independently approved own Python3.8.10 carrier values match; full input and module guards pass.",
     "Mandatory/extracted controls pass only after complete positive baseline; existing real carrier/model consumers pass.",
     "Original mux/RPC/model refusals and qualification/observer failures retained with exact old/new provider bytes.",
     "New clean full regression/all paired drivers/unchanged Source groups/actual extraction/original browser pass before bounded integration."
   ],
-  "expected_paths": ["dsh", "scripts", "tests", "migration", "docs/research"],
-  "open_findings": ["Actual UTF16-capped FS output failed mux UTF8 delivery, RPC returned400 and lone surrogate model requests failed before network. Three real carriers now reuse normative JSON formatter;21 fresh complete Source/Root/own observations match with162 approved imports/15501 owned file guards.195 actual consumers and74 complete-positive-baseline gate controls pass;66-file immutable archive preserves original refusals and catalog-import failure. New clean full release and complete Session/profile/browser/transport parents remain open."],
+  "expected_paths": [
+    "dsh",
+    "scripts",
+    "tests",
+    "migration",
+    "docs/research"
+  ],
+  "open_findings": [],
   "conflicts_with": [],
-  "candidate_commit": null,
-  "integrated_commit": null,
-  "evidence_ids": ["RUN-UNICODE-CARRIERS-QUALIFICATION-20261007-99D2FBEC"],
-  "next_action": "21完整自有观察、195真实回归、74有效正例门禁及66文件归档已完成；继续完整Session/profile/browser/transport和全部七父范围及新的干净完整冻结验收。"
+  "candidate_commit": "f90ded26e96ecfb0c1737a47d9f47b034b26c93a",
+  "integrated_commit": "f90ded26e96ecfb0c1737a47d9f47b034b26c93a",
+  "evidence_ids": [
+    "RUN-UNICODE-CARRIERS-QUALIFICATION-20261007-99D2FBEC",
+    "RUN-HANDOFF-CLEAN-20261010-UNICODE-CARRIERS-064"
+  ],
+  "next_action": "\u672c\u539f\u5408\u540c\u7684\u5df2\u8bb0\u5f55\u6709\u9650\u8303\u56f4\u5728f90ded26\u5b8c\u6574\u95e8\u7981\u53ca\u540cZIP\u7236\u7ec4\u5408\u4e2d\u5b8c\u6210\uff1b\u672c\u9879\u672a\u5e94\u7528\u5f85\u51b3\u5b9a\u7684\u76ee\u5f55/\u72ec\u7acb\u6d41\u4ea4\u9519\u9002\u914d\uff0c\u4e94\u9879\u76f8\u5173\u7236\u4efb\u52a1\u7ee7\u7eed\u5f85\u51b3\u5b9a\u3002\u4efb\u610f\u672a\u89c2\u5bdfABI/\u8c03\u5ea6\u3001\u4ed8\u8d39\u4e91\u548c\u5ef6\u671fWin7\u4e0d\u636e\u6b64\u8ba4\u8bc1\uff1b\u539f\u59cb10054/40ms/1175/5/\u4e34\u65f6\u76ee\u5f55\u6d88\u5931\u8bca\u65ad\u4fdd\u6301\u72ec\u7acb\u5f85\u67e5\u3002",
+  "reviewed_findings": [
+    {
+      "original": "Actual UTF16-capped FS output failed mux UTF8 delivery, RPC returned400 and lone surrogate model requests failed before network. Three real carriers now reuse normative JSON formatter;21 fresh complete Source/Root/own observations match with162 approved imports/15501 owned file guards.195 actual consumers and74 complete-positive-baseline gate controls pass;66-file immutable archive preserves original refusals and catalog-import failure. New clean full release and complete Session/profile/browser/transport parents remain open.",
+      "originalSha256": "66a69dd6a46d7471af9cfc15651f1c83c93baba54c7af3980252d40bac1d059d",
+      "review": "Require21 current complete FS/mux/model UTF16-surrogate captures and independently owned imports/inputs, with valid positive/negative consumers. Keep original400/UTF8/catalog-import refusals. Complete current release and composed session/profile/Web proof remain separate; Win7 deferred.",
+      "disposition": "Recorded corpus/missing clean milestone resolved by exact current evidence; original broader/unknown/deferred scope is retained as a limitation, not reclassified as an upstream bug. Ordering-dependent signoff awaits separate human decision.",
+      "orderingDecision": "No proposed ordering adaptation is applied to this independent literal scope.",
+      "evidenceArchive": "migration/evidence/artifacts/HANDOFF-PARENT-REVIEW-20261010-F90DED26.zip"
+    }
+  ],
+  "limitations": [
+    "Win7 native certification remains user-deferred.",
+    "Existing nine Source bug predicates and the four approved policy-token scenes remain unchanged.",
+    "Original HTTP10054,40ms cache/1175/5 histories and the v5 missing private-temp producer and v7 checkpoint replacement WinError5 remain unclassified. Actual later passing finite observations do not identify or eliminate those original causes.",
+    "Only the unchanged bounded child acceptance corpus, actual imports/owned inputs, valid positive/refusal controls and exact current full release. Historical input inventory counts describe their original qualification; the current archive guards all15561 files. No parent, universal ABI/schedule or Win7 certification inferred."
+  ]
 }

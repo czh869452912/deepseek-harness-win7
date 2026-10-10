@@ -1,8 +1,8 @@
 {
   "id": "MIG-JS-WORKFLOW-036",
-  "goal": "交付真实私有JavaScript进程并闭合工作流提供端与消费者",
+  "goal": "\u4ea4\u4ed8\u771f\u5b9e\u79c1\u6709JavaScript\u8fdb\u7a0b\u5e76\u95ed\u5408\u5de5\u4f5c\u6d41\u63d0\u4f9b\u7aef\u4e0e\u6d88\u8d39\u8005",
   "kind": "implementation",
-  "state": "running",
+  "state": "integrated",
   "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
   "base_product": "a016e434a2ff29f1c74a24eb1361a651d22f47ed",
   "owner": "current-session-coordinator",
@@ -34,13 +34,10 @@
     "migration",
     "docs/research"
   ],
-  "open_findings": [
-    "The original22 observations recorded eight raw engine/parse differences.052 now qualifies32 actual Source/native/ownZIP observations, fixes parse-before-Ready and business stack prefixes, and retains exact disclosed native frame/generated diagnostic/descriptor adaptations.191 strict compatibility/gate and181 existing regressions pass;052 clean full acceptance is pending. Full Node APIs/SDK/plugin delivery and C2 remain unaccepted.",
-    "Thirty original direct-worker frame scenarios and34 actual Source/native/extracted WorkerRun observations retain private provenance, physical-exit classification, first outcome and owned disposal. Four bounded attributed AgentLoop cases037 and two already-emitted Ready/exit cases038 are now integrated. Two entry-blocked physical-exit cases before Ready emission040 and16 complete canonical model request graphs044 are now bounded integrated. These controls do not qualify arbitrary profiles or cancellation schedules. Full model/profile composition, all spawn/Ready schedules and broader callback/reentrancy competition remain unfinished."
-  ],
+  "open_findings": [],
   "conflicts_with": [],
-  "candidate_commit": "83026446716b18b0f8cb185d177ae971473deff8",
-  "integrated_commit": null,
+  "candidate_commit": "f90ded26e96ecfb0c1737a47d9f47b034b26c93a",
+  "integrated_commit": "f90ded26e96ecfb0c1737a47d9f47b034b26c93a",
   "evidence_ids": [
     "RUN-JS-WORKFLOW-20261005-PARTIAL-036",
     "RUN-JS-DEATH-20261005-PARTIAL-036",
@@ -51,7 +48,32 @@
     "RUN-CANONICAL-LLM-20261006-PARTIAL-036",
     "RUN-METADATA-RETENTION-20261006-PARTIAL-036",
     "RUN-LLM-CONFIG-20261006-PARTIAL-036",
-    "RUN-SDK-RETENTION-20261007-PARTIAL-036"
+    "RUN-SDK-RETENTION-20261007-PARTIAL-036",
+    "RUN-HANDOFF-PARENT-20261010-JS-WORKFLOW-036"
   ],
-  "next_action": "干净产品83026446完整验收通过，036仍部分verification；继续有明确原版观测的JS engine/parse适配、完整model/profile、spawn/Ready竞争与清理重入。"
+  "next_action": "\u672c\u539f\u5408\u540c\u7684\u5df2\u8bb0\u5f55\u6709\u9650\u8303\u56f4\u5728f90ded26\u5b8c\u6574\u95e8\u7981\u53ca\u540cZIP\u7236\u7ec4\u5408\u4e2d\u5b8c\u6210\uff1b\u672c\u9879\u672a\u5e94\u7528\u5f85\u51b3\u5b9a\u7684\u76ee\u5f55/\u72ec\u7acb\u6d41\u4ea4\u9519\u9002\u914d\uff0c\u4e94\u9879\u76f8\u5173\u7236\u4efb\u52a1\u7ee7\u7eed\u5f85\u51b3\u5b9a\u3002\u4efb\u610f\u672a\u89c2\u5bdfABI/\u8c03\u5ea6\u3001\u4ed8\u8d39\u4e91\u548c\u5ef6\u671fWin7\u4e0d\u636e\u6b64\u8ba4\u8bc1\uff1b\u539f\u59cb10054/40ms/1175/5/\u4e34\u65f6\u76ee\u5f55\u6d88\u5931\u8bca\u65ad\u4fdd\u6301\u72ec\u7acb\u5f85\u67e5\u3002",
+  "reviewed_findings": [
+    {
+      "original": "The original22 observations recorded eight raw engine/parse differences.052 now qualifies32 actual Source/native/ownZIP observations, fixes parse-before-Ready and business stack prefixes, and retains exact disclosed native frame/generated diagnostic/descriptor adaptations.191 strict compatibility/gate and181 existing regressions pass;052 clean full acceptance is pending. Full Node APIs/SDK/plugin delivery and C2 remain unaccepted.",
+      "originalSha256": "d024da8866db4e2144e137136063f8a2c05ca3c0087fb49e69843cf25cb8d91f",
+      "review": "Require current32 engine/parse and all private byte/PE/resource guards with original explicit frame/diagnostic/descriptor adaptations; all old eight engine/parse observations stay raw. Current full source-backed gate and actual Source/Root/own workflow/Ralph engine compositions are required; arbitrary Node APIs/C2 remain unsupported scope.",
+      "disposition": "Recorded corpus/missing clean milestone resolved by exact current evidence; original broader/unknown/deferred scope is retained as a limitation, not reclassified as an upstream bug. Ordering-dependent signoff awaits separate human decision.",
+      "orderingDecision": "No proposed ordering adaptation is applied to this independent literal scope.",
+      "evidenceArchive": "migration/evidence/artifacts/HANDOFF-PARENT-REVIEW-20261010-F90DED26.zip"
+    },
+    {
+      "original": "Thirty original direct-worker frame scenarios and34 actual Source/native/extracted WorkerRun observations retain private provenance, physical-exit classification, first outcome and owned disposal. Four bounded attributed AgentLoop cases037 and two already-emitted Ready/exit cases038 are now integrated. Two entry-blocked physical-exit cases before Ready emission040 and16 complete canonical model request graphs044 are now bounded integrated. These controls do not qualify arbitrary profiles or cancellation schedules. Full model/profile composition, all spawn/Ready schedules and broader callback/reentrancy competition remain unfinished.",
+      "originalSha256": "a190d92fd0eb933bf91c331dbebdb2550b1906abcdc71cbaea7c352fa6b68447",
+      "review": "Require current34 WorkerRun/direct frames/ready/death/request graphs plus four HELD_UNLOAD,CANCEL_PUBLISHED,CANCEL_UNPUBLISHED,DISPOSE_REENTRANT actual Source/Root/own schedules with first result and physical closure. No sorting or arbitrary schedule inference.",
+      "disposition": "Recorded corpus/missing clean milestone resolved by exact current evidence; original broader/unknown/deferred scope is retained as a limitation, not reclassified as an upstream bug. Ordering-dependent signoff awaits separate human decision.",
+      "orderingDecision": "No proposed ordering adaptation is applied to this independent literal scope.",
+      "evidenceArchive": "migration/evidence/artifacts/HANDOFF-PARENT-REVIEW-20261010-F90DED26.zip"
+    }
+  ],
+  "limitations": [
+    "Win7 native certification remains user-deferred.",
+    "Existing nine Source bug predicates and the four approved policy-token scenes remain unchanged.",
+    "Original HTTP10054,40ms cache/1175/5 histories and the v5 missing private-temp producer and v7 checkpoint replacement WinError5 remain unclassified. Actual later passing finite observations do not identify or eliminate those original causes.",
+    "Real private Win6.1-targeted executable/resources,32 actual parse/error corpus with exact existing frame/diagnostic/descriptor adaptation,34 WorkerRun corpus, workflow/Ralph/selected-child consumers and four actual HELD_UNLOAD/CANCEL_PUBLISHED/CANCEL_UNPUBLISHED/DISPOSE_REENTRANT ownership schedules. No arbitrary Node/Intl/Wasm/SDK/Cordis delivery/trust or Win7 claim."
+  ]
 }

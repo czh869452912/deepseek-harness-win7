@@ -1,6 +1,6 @@
 {
   "id": "MIG-SESSION-COLD-003",
-  "goal": "对齐 JSONL 冷恢复、物理读取与有效字节边界",
+  "goal": "\u5bf9\u9f50 JSONL \u51b7\u6062\u590d\u3001\u7269\u7406\u8bfb\u53d6\u4e0e\u6709\u6548\u5b57\u8282\u8fb9\u754c",
   "kind": "implementation",
   "state": "integrated",
   "target_upstream": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
@@ -34,8 +34,8 @@
   ],
   "open_findings": [],
   "conflicts_with": [],
-  "candidate_commit": "83026446716b18b0f8cb185d177ae971473deff8",
-  "integrated_commit": "83026446716b18b0f8cb185d177ae971473deff8",
+  "candidate_commit": "f90ded26e96ecfb0c1737a47d9f47b034b26c93a",
+  "integrated_commit": "f90ded26e96ecfb0c1737a47d9f47b034b26c93a",
   "evidence_ids": [
     "RUN-SESSION-COLD-SESSION-COLD-003-20260927",
     "RUN-SESSION-LIVE-SESSION-COLD-003-20260927",
@@ -66,7 +66,8 @@
     "RUN-CANONICAL-LLM-20261006-SESSION-COLD-003",
     "RUN-METADATA-RETENTION-20261006-SESSION-COLD-003",
     "RUN-LLM-CONFIG-20261006-SESSION-COLD-003",
-    "RUN-SDK-RETENTION-20261007-SESSION-COLD-003"
+    "RUN-SDK-RETENTION-20261007-SESSION-COLD-003",
+    "RUN-HANDOFF-CLEAN-20261010-SESSION-COLD-003"
   ],
-  "next_action": "clean candidate 83026446 全量/原版/真实解压复验已通过。Bounded contract revalidated with CON-AGENT-CONFIG@1; next full Session projection/replay before Web consumers and complete profile journeys."
+  "next_action": "\u672c\u6709\u9650\u5408\u540c\u5df2\u5728f90ded26\u539f\u59cb\u5b8c\u6574\u95e8\u7981\u590d\u9a8c\uff1b\u53ea\u590d\u7528\u517616701\u51bb\u7ed3\u8f93\u5165\u4e0e\u7cbe\u786e61232e80 ZIP\uff0c\u540e\u7eed\u53f0\u8d26\u63d0\u4ea4\u4e0d\u662f\u65b0\u7684\u53d1\u884c\u8ba4\u8bc1\u3002\u8303\u56f4\u5916ABI/\u4efb\u610f\u8c03\u5ea6/\u4e91\u670d\u52a1\u548c\u5ef6\u671fWin7\u53e6\u8bb0\u3002"
 }

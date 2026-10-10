@@ -33,6 +33,10 @@ jobs:
       - name: Prepare pinned inputs, build, and verify
         id: gate
         run: |
+          $releaseTemp = Join-Path (Split-Path -Parent $env:GITHUB_WORKSPACE) ("dsh-release-temp-" + $env:GITHUB_RUN_ID + "-" + $env:GITHUB_RUN_ATTEMPT)
+          New-Item -ItemType Directory -Path $releaseTemp -ErrorAction Stop | Out-Null
+          $env:TEMP = $releaseTemp
+          $env:TMP = $releaseTemp
           $browser = Join-Path $env:ProgramFiles 'Google/Chrome/Application/chrome.exe'
           if (-not (Test-Path -LiteralPath $browser)) { throw 'Required Chromium observer is missing' }
           python scripts/browser108_gate.py --prepare .goose/tools/chromium108

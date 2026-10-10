@@ -54,6 +54,14 @@
 
 ## 兼容性待查
 
+用户认可后，已完成充足空间下的本机定向复核：源码standard仓库内、同一验收Portable自有Python的cordis仓库内、仓库外三个实际原版浏览器场景，每个fresh/cold，两阶段共六次Host物理退出0；三个浏览器调用分别退出0。生产14773输入、包内15561文件、原ZIP及观察器在运行前后核对不变。实际浏览器为本机现代Edge，Python3.8.10、固定Node22.22.2；这不是新的完整发行或Win7真机测试。
+
+空间以真实epoch/monotonic时间每0.5秒采样，三个场景52/55/56条、最大间隔0.516秒，最低247199715328可用字节（约247.2GB）；临时/输出/产品卷及每个目录/检查点操作另记录空间。15次materialize返回路径当时存在、35次原os.replace检查点替换成功，无相应错误。六个私有temp均由原owner结束时dispose，最终路径不存在。六阶段Host stderr为空，页面/console错误数组为空；浏览器进程stderr中Edge自身后台导入/同步/组件诊断按原文保留。缺失私有目录、检查点WinError5本次均未重现；只能说明充足空间下这次通过，不能证明旧错误由磁盘满引起或生产根因已修复。未加入生产重试、错误过滤或新上游判据。
+
+正式诊断归档 `migration/evidence/artifacts/DISK-PRESSURE-UI-DIAGNOSTIC-20261010-F90DED26.zip`，94087507字节，SHA256 `8a044a02c37999d6eb374512fb1e9d1339c06002b44dd0abb36cb68e8e57d1aa`。含本次完整原始浏览器/Host观察、连续空间、生命周期、原操作结果、实际调用、观察器及清理前归属清单；原失败、Source记录和Portable引用已有正式归档，不再重复打包。记录 `migration/evidence/RUN-DISK-PRESSURE-UI-DIAGNOSTIC-20261010-F90DED26.json` 为research，台账任务/合同未变。canonical migration check物理退出0，完整归档/输入/pin/依赖有效；同一已校验视图生成status和ready，86 integrated/0 review、ready为空，新增research不作为任务验收。文档链接、diff及实际Git LF/LFS字节绑定核验通过；验证范围对应本次诊断与元数据变更，不重复pytest、完整门禁或Portable构建。
+
+归档逐成员CRC/尺寸/SHA核验后，清理本次结束的三个Host home、三个工作区、精确解压runtime、两份封存Source复制报告及三个浏览器大报告重复副本：15608文件、705038941逻辑字节（约705MB）。655个新建junction/symlink均由本次link-created事件绑定，no-follow核验后只移除链接本身，目标当时仍在；六个浏览器profile已由原观察器在进程退出后删除。小型日志/审计保留，未删除未知/活动/原失败目录或保护历史，94MB新增正式归档占用另计。封存脚本v1错误把浏览器原始stderr当页面错误、v2错误使用Windows DirEntry缓存nlink=0，两次均在写归档/删除前拒绝；原脚本和拒绝记录封存，v3使用原观察器判据及直接no-follow lstat，物理退出0。此为封存检查纠正，未改原始运行结果或重跑浏览器。
+
 用户补充：本机测试期间硬盘曾满，可能导致error。磁盘压力列为优先环境假设。已有明确ENOSPC的报告/台账写入失败可归因于空间不足；另外两种原始错误与磁盘压力的因果关系仍需证据。正式父归档中v5 `storage-preflight.json` 记录启动前1038700544可用字节（约1.04GB），v7记录3226644480字节（约3.23GB）；这是启动前快照，未记录错误瞬间余量，不能据此排除运行中耗尽，也不能直接归因。上述成员按父归档manifest SHA核对，未生成新的解压测试副本。后续若再运行相关场景，应同步记录错误时间、对应临时/输出卷空间与目录/检查点生命周期，结束后及时清理已核验自有副本。当前不把这两种本机异常认定为已证明的Win7专属兼容缺陷，不改变原失败结论或追加生产绕过。
 
 v5 的私有临时目录消失在同场景 fresh/cold 诊断中未重现；诊断观察一次共享 owner 创建、复用和最终 revoke/delete，不识别原删除者。v7 的缓存 `os.replace` WinError5 在仓库内/外实际 own Cordis fresh/cold 诊断中均未重现，RestartManager holder 探针只在真实失败时触发，因此未识别持有者。未加入生产重试、抑制日志或新的上游例外，不能声称根因修复。

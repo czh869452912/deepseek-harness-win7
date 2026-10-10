@@ -320,6 +320,7 @@ Evidence:
 - RUN-DEEPSEEK-ERROR-20261006-TOOL-PARALLELISM-033: acceptance / passed / stale-inputs
 - RUN-DEEPSEEK-ERROR-20261006-TOOL-START-PREFIX-034: acceptance / passed / stale-inputs
 - RUN-DEEPSEEK-ERROR-20261006-UPSTREAM-DELTA-002: acceptance / passed / stale-inputs
+- RUN-DISK-PRESSURE-UI-DIAGNOSTIC-20261010-F90DED26: research / passed / current
 - RUN-EXPIRED-PROCESS-20261007-46645625: verification / passed / current
 - RUN-EXTERNAL-RETENTION-CONSUMERS-RESEARCH-20261010-B73277E6: research / passed / historical
 - RUN-EXTERNAL-WORKSPACE-RESEARCH-20261010-FD2C3A9B: research / passed / historical

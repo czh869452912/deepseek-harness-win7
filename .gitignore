@@ -3,6 +3,9 @@
 build/
 *.egg-info/
 
+# Independent plugin checkouts for local development and integration
+/.local-plugins/
+
 # Virtual Environments
 .venv/
 env/

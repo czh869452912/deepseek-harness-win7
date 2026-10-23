@@ -1,0 +1,73 @@
+{
+  "schema_version": 1,
+  "recorded_at": "2026-10-21",
+  "target_upstream": "a4c74a91e06b00fe0b0937bde982170c526cc842",
+  "related_finding": "UPSTREAM-WINDOWS-ACL-001",
+  "status": "targeted-passed-not-release-qualified",
+  "scope": "Migration-specific host recovery following an ACL preflight refusal. This is an intentional additional tool, not an upstream parity claim or a new accepted Source exception signature.",
+  "implementation": [
+    "Host-only inspect/plan/repair tool mounted through sandbox service injection in both canonical one-shot and persistent pwsh consumers; tool scope cleanup verified.",
+    "Read-only diagnosis survives a blocked workspace shell and reports directory and ancestor ACLs without materializing grants.",
+    "Plan binds workspace, session, host account, original descriptor and directory identity chain; expires after 600 seconds, bounded to 16 plans.",
+    "Only allowed-once approval applies a current-host-account inheritable Modify grant to the explicitly selected directory. Existing ACEs are preserved rather than merged through same-SID GRANT_ACCESS.",
+    "Host metadata handles enforce READ_CONTROL/WRITE_DAC without enabling privileges; x86 and x64 layouts exercised on actual Windows.",
+    "Backup is flushed, synchronized and reopened before application; stale snapshots, failed backup, cancellation and read-only policies prevent mutation.",
+    "Post-apply validation reports workspace readiness separately from selected-directory repair; protected descendants are not reset. Parent approval explicitly discloses propagation to other inheriting workspaces."
+  ],
+  "input_sha256": {
+    "dsh/sandbox/windows_acl_recovery.py": "f82de0c6f3860618021431a1643c96e5b6e8c9bd0e92a73d49e0e0c625ab97fa",
+    "dsh/sandbox/windows_acl_metadata.py": "5f0df60d9bd36c0e4b514e120af055e28045b171c6dc6355d486c38bbcf79613",
+    "dsh/sandbox/local.py": "e3e0dfbb7ffbc6e6cdd28cbd6be9d5c136f6e3c0ba42cdc3800451171aa6df71",
+    "dsh/sandbox/windows_acl_checks.py": "cdb84125e96fe48ae9aacf6630e11b633443ab52e31ec565dba9d8ae43735e2c",
+    "dsh/shell/workspace_acl_tool.py": "202696336de8373fa9c8dcdba239776648e04ebf31fe5c2ae30059139e1b7e20",
+    "dsh/shell/canonical_tool_pwsh.py": "ff31066faa27cf9b6619ef6752719524106059eae0218e923269eb5025fd98c4",
+    "dsh/terminal/persistent_pwsh.py": "163870cf1a687bd25759f36d0f4ebd2b60f29e52bf2e0997019b133e8c965b28",
+    "tests/test_windows_acl_recovery.py": "5b2cb64deadfcae0d4a31f4b65dbf9bc55ea1403e5470c31bd461d96c7a83b36",
+    "tests/test_workspace_acl_tool.py": "19b19e120b1104efea37a1483930d0f99738dc524b70e879df6a767a96c27e6c"
+  },
+  "targeted_runs": [
+    {
+      "python": "3.8.10 x64",
+      "command": ".venv\\Scripts\\python.exe -m pytest tests/test_windows_acl_recovery.py tests/test_workspace_acl_tool.py tests/test_windows_acl_materialization.py tests/test_windows_acl_runner.py tests/test_local_sandbox_provider.py tests/test_pwsh_executor.py tests/test_canonical_pwsh_tool.py tests/test_canonical_persistent_pwsh.py tests/test_fs_atomic_write_diagnostics.py tests/1to1/sandbox -q --tb=short --junitxml=.goose/out/acl-recovery-20261021-final-v2-targeted.xml",
+      "passed": 132,
+      "skipped": 1,
+      "seconds": 46.38,
+      "exit": 0,
+      "xml": ".goose/out/acl-recovery-20261021-final-v2-targeted.xml",
+      "coverage": "Recovery and approval negatives, real restricted Python nested Markdown reopen/delete, actual persistent PowerShell refusal-to-recovery journey, canonical Web Minimal/Standard scoped diagnosis, shell and filesystem consumers, previous preflight/runner regressions."
+    },
+    {
+      "python": "3.8.10 x86",
+      "interpreter": ".goose/tools/python-3.8.10-win32/python.exe",
+      "selection": "tests/test_windows_acl_recovery.py tests/test_workspace_acl_tool.py -k 'not persistent and not actual_web'",
+      "bootstrap": "Temporarily prepend .venv/Lib/site-packages and repository root to this isolated interpreter process's sys.path; no runtime files changed.",
+      "passed": 25,
+      "deselected": 2,
+      "seconds": 2.20,
+      "exit": 0,
+      "xml": ".goose/out/acl-recovery-20261021-x86-final-v2.xml",
+      "coverage": "Native metadata layout, this-folder-only and capability-only recovery, parent propagation and protected descendants, stale/foreign/expired plans, backup and post-apply failures, Deny/NULL/empty refusal, reparse refusal and approval consumers. PTY and actual Web journey were exercised by x64 only."
+    }
+  ],
+  "paired_regression": {
+    "command": ".venv\\Scripts\\python.exe scripts/windows_acl_oracle.py --output .goose/out/acl-recovery-20261021-paired/observations.json",
+    "cases": ["this-folder-only", "protected-null"],
+    "classification": "reviewed-upstream-bug/UPSTREAM-WINDOWS-ACL-001",
+    "raw_path": ".goose/out/acl-recovery-20261021-paired/observations.json",
+    "raw_sha256": "b8b282e8963dedae2f4fed495b09c2b23220d0e64325897351222fdc8a827edf",
+    "exit": 0,
+    "note": "The existing two exact predicates remain unchanged. The additional recovery tool is not accepted through this predicate."
+  },
+  "preserved_failures": [
+    ".goose/out/acl-recovery-20261021-initial.xml",
+    ".goose/out/acl-recovery-20261021-metadata.xml"
+  ],
+  "limitations": [
+    "Modern Windows build 26200; no Win7 SP1 domain/LDAP-account qualification or real user E-drive mutation.",
+    "Only selected directories can be repaired; old protected files and all descendant access are not certified. NULL, absent and empty DACLs require manual review.",
+    "Windows can propagate inheritable permissions below a selected parent. The saved selected-directory descriptor is not a whole-tree rollback or SACL backup.",
+    "No repair without allowed-once approval or adequate host permissions; no UAC elevation, arbitrary shell recovery or automatic unconfined fallback.",
+    "Raw local reports are ignored working outputs, not a release evidence archive. Original preflight records retain their original inputs.",
+    "No full regression, Portable/Desktop rebuild or release qualification; the existing released artifacts do not contain these source changes."
+  ]
+}

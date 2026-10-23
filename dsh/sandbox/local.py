@@ -11,7 +11,8 @@ import tempfile
 from dsh.cordis.schema import Schema
 from dsh.cordis.service import Service
 from dsh.sandbox.vocabulary import SandboxUnavailableError
-from dsh.sandbox.windows_acl import WinApi, assert_temp_outside, capability_sid
+from dsh.sandbox.windows_acl import (WinApi, assert_temp_outside, capability_sid,
+                                     temp_directory_identity, verify_temp_identity)
 
 
 def bwrap_profile(policy):
@@ -39,9 +40,9 @@ class LocalSandboxProvider(Service):
             raise ValueError("sandbox-local: runnerFailureSignatures must be non-empty single-line strings")
         if isinstance(self.timeout, bool) or not isinstance(self.timeout, (int, float)) or not math.isfinite(self.timeout) or self.timeout <= 0:
             raise ValueError("sandbox-local: probeTimeoutMs must be a positive finite number")
-        self.workspaces = set()
         self.temps = {}
         self.api = None
+        self._acl_recovery = None
         self.closed = False
         self.selected = None
         super().__init__(ctx, "sandbox")
@@ -49,6 +50,16 @@ class LocalSandboxProvider(Service):
 
     def apply(self, ctx=None, config=None):
         pass
+
+    def acl_recovery(self):
+        if self.closed or sys.platform != "win32" or self.runner:
+            raise ValueError("host Windows ACL recovery is unavailable for this provider")
+        if self.api is None:
+            self.api = WinApi()
+        if self._acl_recovery is None:
+            from dsh.sandbox.windows_acl_recovery import WindowsAclRecovery
+            self._acl_recovery = WindowsAclRecovery(self.api)
+        return self._acl_recovery
 
     def confine(self, argv, policy):
         mode = policy["mode"]
@@ -69,7 +80,9 @@ class LocalSandboxProvider(Service):
                 try:
                     temp, sid = self.materialize(policy["sessionId"], policy["workspaceRoot"])
                 except Exception as error:
-                    raise SandboxUnavailableError(mode, str(error)) from error
+                    raise SandboxUnavailableError(mode, str(error) +
+                        " Use workspace_acl inspect for host-side diagnosis without starting pwsh; "
+                        "workspace_acl plan/repair offers a separate approved directory repair.") from error
                 extra = ["--write-sid", capability_sid(policy["workspaceRoot"]), "--temp-write-sid", sid]
             invocation += ["--workspace", policy["workspaceRoot"], "--temp", temp, "--mode", mode] + extra
             return self.result(invocation + ["--"] + list(argv), "partial",
@@ -107,39 +120,52 @@ class LocalSandboxProvider(Service):
         assert_temp_outside(workspace, tempfile.gettempdir())
         if self.api is None:
             self.api = WinApi()
-        if workspace not in self.workspaces:
-            self.api.grant(workspace, capability_sid(workspace))
-            self.workspaces.add(workspace)
+        # A previous grant is not evidence of the directory's current ACL.
+        self.api.grant(workspace, capability_sid(workspace))
         key = (str(session_id), workspace)
         if key not in self.temps:
             directory = tempfile.mkdtemp(prefix="dsh-")
             sid = capability_sid(directory, True)
+            identity = temp_directory_identity(directory)
             try:
                 self.api.grant(directory, sid)
             except BaseException:
                 try:
+                    verify_temp_identity(directory, identity)
                     self.api.grant(directory, sid, revoke=True)
-                finally:
+                except Exception as error:
+                    logging.getLogger("sandbox-local").warning("private temp revoke failed: %s", error)
+                try:
+                    verify_temp_identity(directory, identity)
                     shutil.rmtree(directory)
+                except Exception as error:
+                    logging.getLogger("sandbox-local").warning("private temp cleanup failed: %s", error)
                 raise
-            self.temps[key] = (directory, sid)
-        return self.temps[key]
+            self.temps[key] = (directory, sid, identity)
+        else:
+            directory, sid, identity = self.temps[key]
+            verify_temp_identity(directory, identity)
+            self.api.validate_grant(directory, sid)
+        return self.temps[key][:2]
 
     def dispose(self):
         if self.closed:
             return
         self.closed = True
+        if self._acl_recovery is not None:
+            self._acl_recovery.clear()
         failures = []
-        for directory, sid in self.temps.values():
+        for directory, sid, identity in self.temps.values():
             try:
+                verify_temp_identity(directory, identity)
                 self.api.grant(directory, sid, revoke=True)
             except Exception as error:
                 failures.append(error)
             try:
+                verify_temp_identity(directory, identity)
                 shutil.rmtree(directory)
             except Exception as error:
                 failures.append(error)
         self.temps.clear()
-        self.workspaces.clear()
         for error in failures:
             logging.getLogger("sandbox-local").warning("private temp cleanup failed: %s", error)

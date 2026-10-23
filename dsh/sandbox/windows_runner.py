@@ -8,7 +8,8 @@ import tempfile
 if __package__ in (None, ""):
     sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
-from dsh.sandbox.windows_acl import WinApi, assert_temp_outside, capability_sid
+from dsh.sandbox.windows_acl import (WinApi, assert_temp_outside, capability_sid,
+                                     temp_directory_identity, verify_temp_identity)
 
 
 class RunnerParser(argparse.ArgumentParser):
@@ -38,6 +39,7 @@ def main(argv=None):
     api = WinApi()
     private = None
     owned = None
+    owned_identity = None
     temp_sid = None
     try:
         sids = []
@@ -49,8 +51,11 @@ def main(argv=None):
                 temp_sid = capability_sid(private, True)
                 if args.write_sid != workspace_sid or args.temp_write_sid != temp_sid:
                     raise ValueError("capability SID does not match its owning directory")
+                api.validate_grant(args.workspace, workspace_sid)
+                api.validate_grant(private, temp_sid)
             else:
                 private = owned = tempfile.mkdtemp(prefix="dsh-", dir=args.temp)
+                owned_identity = temp_directory_identity(private)
                 temp_sid = capability_sid(private, True)
                 api.grant(args.workspace, workspace_sid)
                 api.grant(private, temp_sid)
@@ -62,10 +67,12 @@ def main(argv=None):
         if owned:
             try:
                 if temp_sid:
+                    verify_temp_identity(owned, owned_identity)
                     api.grant(owned, temp_sid, revoke=True)
             except Exception as error:
                 print("windows-acl-run: cleanup: {}".format(error), file=sys.stderr)
             try:
+                verify_temp_identity(owned, owned_identity)
                 shutil.rmtree(owned)
             except Exception as error:
                 print("windows-acl-run: cleanup: {}".format(error), file=sys.stderr)

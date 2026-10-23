@@ -1,0 +1,61 @@
+{
+  "schema_version": 1,
+  "recorded_at": "2026-10-21",
+  "target_upstream": "a4c74a91e06b00fe0b0937bde982170c526cc842",
+  "finding": "UPSTREAM-WINDOWS-ACL-001",
+  "status": "targeted-passed-not-release-qualified",
+  "scope": "Actual clean pinned upstream grant compared with Python preflight on owned native Windows fixtures; Python x64 and x86. The upstream Node architecture is not asserted. No Win7 or current released archive qualification.",
+  "driver": "scripts/windows_acl_oracle.py",
+  "predicate": "classify",
+  "source_node": "v22.20.0",
+  "windows_build": "26200",
+  "input_sha256": {
+    "scripts/windows_acl_oracle.py": "3af5e9cdb06daed5620f1ada359215a109aeb506db8ca7bc95439b6552f067b9",
+    "scripts/oracles/windows-acl-grant.mjs": "16892024b11da3c07a48f3aa7a082b4d9645f44fc7bcfbcbcfe08cf40b9f776f",
+    "dsh/sandbox/windows_acl.py": "27261e5d0b5827d15e70702e7d73e321aa95ff958b373677a51480362a75d94d",
+    "dsh/sandbox/windows_acl_checks.py": "1895d2e5bc8e204f8bc5b19720ebe537269552ed36fbc87722212ba5e2df4616",
+    "reference/packages/sandbox/sandbox-windows-acl/src/grant.ts": "277eaabceccf9db675b487b96ad670c039ead00cec562d90d25b2547e72e76fd",
+    "reference/packages/sandbox/sandbox-windows-acl/src/acl.ts": "d8394cf153bc941fa080044eb5e7df152028325b830234eb2a2fc859588ae740",
+    "reference/packages/sandbox/sandbox-windows-acl/src/workspace-sid.ts": "7332eef52a304789921e104b1ca38246ea8b44673ea08e952bc43791a9af6411"
+  },
+  "observations": [
+    {
+      "mode": "this-folder-only",
+      "upstream": {"mode": "this-folder-only", "grant": "applied", "changed": true, "newWrite": true, "newRead": false, "oldRead": true, "reason": null},
+      "python": {"mode": "this-folder-only", "grant": "refused", "changed": false, "newWrite": null, "newRead": null, "oldRead": true, "reason": "inheritance-gap"},
+      "classification": "reviewed-upstream-bug/UPSTREAM-WINDOWS-ACL-001"
+    },
+    {
+      "mode": "protected-null",
+      "upstream": {"mode": "protected-null", "grant": "applied", "changed": true, "newWrite": false, "newRead": false, "oldRead": true, "reason": null},
+      "python": {"mode": "protected-null", "grant": "refused", "changed": false, "newWrite": null, "newRead": null, "oldRead": true, "reason": "null-dacl"},
+      "classification": "reviewed-upstream-bug/UPSTREAM-WINDOWS-ACL-001"
+    }
+  ],
+  "local_raw_runs": [
+    {
+      "python_architecture": "x64",
+      "path": ".goose/out/acl-materialization-20261021-paired-final/observations.json",
+      "sha256": "4f838339894eae7dca55da7faea952564c7701ddfe13978d1267bf1694d344ac",
+      "exit": 0,
+      "fixture_removed": true
+    },
+    {
+      "python_architecture": "x86",
+      "path": ".goose/out/acl-materialization-20261021-paired-x86-final/observations.json",
+      "sha256": "8e4438fd39049e31464fd45f809b553d5cdb3de66bee9343e6f02eba9ac939d1",
+      "exit": 0,
+      "fixture_removed": true
+    }
+  ],
+  "targeted_tests": [
+    {"python_architecture": "x64", "passed": 100, "skipped": 1, "seconds": 20.93, "xml": ".goose/out/acl-materialization-20261021-final-targeted.xml"},
+    {"python_architecture": "x86", "passed": 9, "deselected": 15, "seconds": 1.65, "xml": ".goose/out/acl-materialization-20261021-x86-final.xml"}
+  ],
+  "limitations": [
+    "Raw local outputs are ignored working files; this checked-in summary preserves exact paired observations and their hashes, not a release evidence archive.",
+    "The existing release paired-driver list was not expanded; run this explicit driver when qualifying this fix or changing the upstream pin.",
+    "The x64 skip is the existing POSIX symlink-component test skipped by upstream on Windows.",
+    "No real MinerU service call, Win7 SP1 domain-account run, full regression, Portable rebuild, or release qualification was performed."
+  ]
+}

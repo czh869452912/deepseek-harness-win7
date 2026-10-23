@@ -9,6 +9,7 @@ from ctypes import wintypes as w
 from contextlib import contextmanager
 import hashlib
 import os
+import stat
 import subprocess
 import tempfile
 
@@ -80,6 +81,19 @@ def assert_temp_outside(workspace, temp):
         inside = False
     if inside:
         raise ValueError("private temp root must be outside the workspace")
+
+
+def temp_directory_identity(path):
+    info = os.lstat(path)
+    if (not stat.S_ISDIR(info.st_mode) or info.st_file_attributes & 0x400
+            or not info.st_ino):
+        raise OSError("private temp must be an identifiable directory, not a reparse point")
+    return info.st_dev, info.st_ino
+
+
+def verify_temp_identity(path, expected):
+    if temp_directory_identity(path) != expected:
+        raise OSError("private temp directory identity changed; refusing to use or clean it")
 
 
 class WinApi:
@@ -187,12 +201,14 @@ class WinApi:
                       Trustee(None, 0, 0, 0, sid))
 
     def grant(self, path, sid_text, revoke=False):
+        if not revoke:
+            return self.workspace_guard().ensure(path, sid_text)
         with self.path_lock(path), self.sid(sid_text) as sid:
             old, descriptor, new = P(), P(), P()
             self.status(self.GetNamedSecurityInfoW(path, 1, 4, None, None,
                         c.byref(old), None, c.byref(descriptor)), "GetNamedSecurityInfoW")
             try:
-                if (not revoke and self.exact_grant(old, sid)) or (revoke and not old.value):
+                if not old.value:
                     return
                 entry = self.entry(sid, revoke)
                 self.status(self.SetEntriesInAclW(1, c.byref(entry), old, c.byref(new)), "SetEntriesInAclW")
@@ -202,6 +218,15 @@ class WinApi:
                     self.LocalFree(new)
                 if descriptor.value:
                     self.LocalFree(descriptor)
+
+    def workspace_guard(self):
+        from dsh.sandbox.windows_acl_checks import WorkspaceAclGuard
+        if not hasattr(self, "_workspace_guard"):
+            self._workspace_guard = WorkspaceAclGuard(self)
+        return self._workspace_guard
+
+    def validate_grant(self, path, sid_text):
+        return self.workspace_guard().ensure(path, sid_text, validate_only=True)
 
     def token_info(self, token, kind):
         size = D()

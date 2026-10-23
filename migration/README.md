@@ -1,5 +1,7 @@
 # 持续对齐记录
 
+2026-10-21 独立 ACL 候选分支：保留[授权物化设计](../docs/research/2026-10-21-windows-acl-materialization-design.md)、[实施记录](../docs/research/2026-10-21-windows-acl-materialization-implementation.md)、[恢复交互](../docs/research/2026-10-21-windows-acl-recovery.md)、代码和定向验证。用户反馈方案与预期不一致，**未接受、待重新设计，不合入 master**。本分支新增的 `UPSTREAM-WINDOWS-ACL-001` 配对例外仅属于候选，不能覆盖主分支或旧发行回执，也不关闭 [issue #4](https://github.com/czh869452912/deepseek-harness-win7/issues/4)。
+
 2026-10-21 ACL 问题登记：[issue #4](https://github.com/czh869452912/deepseek-harness-win7/issues/4) 跟踪固定原版与迁移版共享的工作区授权/继承风险。主分支本次仅提交[机理与现场分析](../docs/research/2026-10-21-workspace-acl-mechanism-assessment.md)、[原版已知问题](../docs/upstream-known-issues.md)和[已知差异](../docs/known-differences.md)，尚未修复；候选实现与方案另提 PR，用户反馈当前效果不符合预期，未接受或发布。不新增已接受的机器例外，不改变旧发行候选、产物或验收回执的身份。
 
 2026-10-20 发布收口：用户确认此前交付的普通离线导入包已完成 Win7 测试、未观察到问题，并授权发布本版。见[直接反馈与授权](evidence/HANDOFF-WIN7-RELEASE-20261020-6CBCBF1C.json)和[v0.1.5-rc.3 发布说明](../docs/releases/v0.1.5-rc.3.md)。产品继续绑定 `6cbcbf1c` 和原七份发行字节，既有完整门禁回执不改写；用户未提供的架构、补丁/重启和浏览器矩阵不作推断。内网更新服务器部署继续独立延期，`accepted_upstream` 仍为 null。下文 Win7 延期叙述为当时历史状态。

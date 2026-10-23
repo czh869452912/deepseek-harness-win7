@@ -75,6 +75,8 @@ class PersistentPwshPlugin(Plugin):
             execute=self.execute, output=dict(schema=dict(type='string'), render=lambda args, value: [dict(type='text', text=value)]),
             presentCall=lambda args: dict(card='terminal', title=args['command'])))
         ctx.effect(lambda: disposer)
+        from dsh.shell.workspace_acl_tool import install_workspace_acl_tool
+        install_workspace_acl_tool(ctx)
 
     async def dispose(self):
         self.lifecycle.abort(RuntimeError('persistent pwsh disposed'))

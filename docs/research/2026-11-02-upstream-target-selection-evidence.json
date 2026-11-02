@@ -1,0 +1,112 @@
+{
+  "assessment_date": "2026-11-02",
+  "timezone": "Asia/Shanghai",
+  "product_head": "d29fae0e8761b10c7855d5f0b71f3adfdec2e220",
+  "production_upstream": "a4c74a91e06b00fe0b0937bde982170c526cc842",
+  "reference_checkout": "cd5ef8148158c3a752a658978873241fdf8e2bbc",
+  "release_api": "https://api.github.com/repos/deepseek-ai/deepseek-harness/releases?per_page=100",
+  "release_api_sha256": "236f97545be058ee5e7ba33343e0153747211287261c790162f095333c0d47cc",
+  "candidates": [
+    {
+      "tag": "dsh-v0.1.7-rc.2",
+      "sha": "477b4f420553e8a52c2fbccc464d7561b239c443",
+      "published_at": "2026-09-24T14:10:21Z",
+      "prerelease": true,
+      "release_url": "https://github.com/deepseek-ai/deepseek-harness/releases/tag/dsh-v0.1.7-rc.2",
+      "commits_from_baseline": 3647,
+      "apps_packages_cordis_diff_no_renames": "5992 files changed, 433983 insertions(+), 134291 deletions(-)",
+      "manifest_count_including_root": 349,
+      "node_engines": {
+        "node": "^22.19.0 || >=24.0.0"
+      },
+      "package_manager": "pnpm@11.7.0",
+      "electron": "^44.0.0"
+    },
+    {
+      "tag": "dsh-v0.2.0-rc.2",
+      "sha": "639ed015397290b3745d163aafe02ffee4aa3f84",
+      "published_at": "2026-09-29T09:42:36Z",
+      "prerelease": true,
+      "release_url": "https://github.com/deepseek-ai/deepseek-harness/releases/tag/dsh-v0.2.0-rc.2",
+      "commits_from_baseline": 4095,
+      "apps_packages_cordis_diff_no_renames": "6187 files changed, 460213 insertions(+), 136027 deletions(-)",
+      "manifest_count_including_root": 353,
+      "node_engines": {
+        "node": "^22.19.0 || >=24.0.0"
+      },
+      "package_manager": "pnpm@11.7.0",
+      "electron": "^44.0.0"
+    },
+    {
+      "tag": "dsh-v0.2.1-rc.4",
+      "sha": "504a01a9578abc2c6f1fb896b1dc322c9fe24f66",
+      "published_at": "2026-10-28T02:49:58Z",
+      "prerelease": true,
+      "release_url": "https://github.com/deepseek-ai/deepseek-harness/releases/tag/dsh-v0.2.1-rc.4",
+      "commits_from_baseline": 6035,
+      "apps_packages_cordis_diff_no_renames": "8317 files changed, 652571 insertions(+), 181689 deletions(-)",
+      "manifest_count_including_root": 382,
+      "node_engines": {
+        "node": "^22.19.0 || >=24.0.0"
+      },
+      "package_manager": "pnpm@11.28.5",
+      "electron": "^44.7.0"
+    },
+    {
+      "tag": "dsh-v0.2.1-rc.5",
+      "sha": "b830ec950faba0a46dda564be3e2d854afed94f1",
+      "published_at": "2026-10-30T02:12:26Z",
+      "prerelease": true,
+      "release_url": "https://github.com/deepseek-ai/deepseek-harness/releases/tag/dsh-v0.2.1-rc.5",
+      "commits_from_baseline": 6039,
+      "apps_packages_cordis_diff_no_renames": "8319 files changed, 652645 insertions(+), 181689 deletions(-)",
+      "manifest_count_including_root": 382,
+      "node_engines": {
+        "node": "^22.19.0 || >=24.0.0"
+      },
+      "package_manager": "pnpm@11.28.5",
+      "electron": "^44.7.0"
+    },
+    {
+      "tag": "dsh-v0.2.2-alpha.2",
+      "sha": "f3803c96974ad4a94195fb97e5c637e9c2a3afe3",
+      "published_at": "2026-10-28T02:50:54Z",
+      "prerelease": true,
+      "release_url": "https://github.com/deepseek-ai/deepseek-harness/releases/tag/dsh-v0.2.2-alpha.2",
+      "commits_from_baseline": 8196,
+      "apps_packages_cordis_diff_no_renames": "11550 files changed, 896742 insertions(+), 198563 deletions(-)",
+      "manifest_count_including_root": 409,
+      "node_engines": {
+        "node": ">=24.9.0"
+      },
+      "package_manager": "pnpm@11.28.5",
+      "electron": "^44.7.0"
+    }
+  ],
+  "migration_preflight": {
+    "check": {
+      "exit_code": 1,
+      "message": "migration: missing file: reference/apps/desktop-host/package.json"
+    },
+    "ready": {
+      "exit_code": 1,
+      "message": "migration: missing file: reference/apps/desktop-host/package.json"
+    }
+  },
+  "method": {
+    "commits": "git rev-list --count BASE..TAG",
+    "application_package_diff": "git diff --no-renames --shortstat BASE TAG -- apps packages cordis",
+    "manifest_count": "git ls-tree -r --name-only TAG; count root package.json and paths ending /package.json; no parity inference",
+    "qualification": "static source and release review only; no Source/native paired execution or target OS qualification"
+  },
+  "rc5_alpha2_symmetric_commit_counts": [
+    "4",
+    "2161"
+  ],
+  "rc4_to_rc5_commits": [
+    "b830ec950faba0a46dda564be3e2d854afed94f1 Merge pull request #7572 from deepseek-harness/worktree/release-dsh-0.2.1-rc.5",
+    "31cfe2aafead959a4dbd9d8cfaae258eb28a19fd release(dsh): 0.2.1-rc.5",
+    "534dac8c81662689169fcca12c52066c59a57058 fix(web): customize thinking block rendering (#7484)",
+    "083bdcf6252e46183c35810798ceee78b1f77a47 Merge pull request #7255 from deepseek-harness/worktree/release-dsh-0.2.1-rc.4"
+  ]
+}

@@ -8,6 +8,36 @@ from dsh.host.directory_picker.base import DirectoryPickerService
 from dsh.host.native_command import run_native
 
 
+# The PowerShell child has no browser HWND. Give its modal dialog a temporary
+# topmost owner instead of relying on foreground activation across processes.
+# Use only WinForms APIs available with the Win7 PowerShell 2.0 CLR.
+WINDOWS_PICKER_SCRIPT = r"""
+$ErrorActionPreference = 'Stop'
+[Console]::OutputEncoding = New-Object System.Text.UTF8Encoding
+Add-Type -AssemblyName System.Windows.Forms
+$owner = New-Object System.Windows.Forms.Form
+$dialog = $null
+try {
+    $owner.ShowInTaskbar = $false
+    $owner.FormBorderStyle = [System.Windows.Forms.FormBorderStyle]::None
+    $owner.StartPosition = [System.Windows.Forms.FormStartPosition]::CenterScreen
+    $owner.Width = 1
+    $owner.Height = 1
+    $owner.Opacity = 0
+    $owner.TopMost = $true
+    $owner.Show()
+    [void]$owner.Activate()
+    $dialog = New-Object System.Windows.Forms.FolderBrowserDialog
+    if ($dialog.ShowDialog($owner) -eq [System.Windows.Forms.DialogResult]::OK) {
+        [Console]::Write($dialog.SelectedPath)
+    }
+} finally {
+    if ($dialog) { $dialog.Dispose() }
+    $owner.Dispose()
+}
+"""
+
+
 class NativeDirectoryPickerService(DirectoryPickerService):
     def __init__(self, ctx):
         super().__init__(ctx)
@@ -20,8 +50,7 @@ class NativeDirectoryPickerService(DirectoryPickerService):
         if sys.platform == 'win32':
             # System WinForms is available on Windows 7; no Tk runtime or
             # detached UI thread can survive cancellation of this child.
-            script = "[Console]::OutputEncoding = New-Object System.Text.UTF8Encoding; Add-Type -AssemblyName System.Windows.Forms; $f = New-Object System.Windows.Forms.FolderBrowserDialog; try { if ($f.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK) { [Console]::Write($f.SelectedPath) } } finally { $f.Dispose() }"
-            output = await run_native('powershell.exe', ['-NoProfile', '-STA', '-Command', script], signal)
+            output = await run_native('powershell.exe', ['-NoProfile', '-STA', '-Command', WINDOWS_PICKER_SCRIPT], signal)
         elif sys.platform == 'darwin':
             output = await run_native('osascript', ['-e', 'try\nPOSIX path of (choose folder)\non error number -128\nreturn ""\nend try'], signal)
         else:

@@ -41,9 +41,10 @@ try {
       $snapshots+=,@{Path=$spec.Path;Existed=($null -ne $key);Values=$previous;Names=@($spec.Values.Keys)}
     } finally {if($key){$key.Close()}}
   }
-  $menu=[IO.Path]::Combine([Environment]::GetFolderPath('CommonStartMenu'),'Programs\DeepSeek Harness')
-  [void][IO.Directory]::CreateDirectory($menu)
+  # CommonStartMenu is unavailable in the CLR 2.0 used by stock Win7 PS2.
   $shell=New-Object -ComObject WScript.Shell
+  $menu=[IO.Path]::Combine($shell.SpecialFolders.Item('AllUsersPrograms'),'DeepSeek Harness')
+  [void][IO.Directory]::CreateDirectory($menu)
   foreach($name in @('DeepSeek Harness','Uninstall')) {
     $path=[IO.Path]::Combine($menu,$name+'.lnk')
     if([IO.File]::Exists($path) -and ((Get-Item -LiteralPath $path -Force).Attributes -band [IO.FileAttributes]::ReparsePoint)){throw 'Linked shortcut'}

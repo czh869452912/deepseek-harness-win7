@@ -104,12 +104,21 @@ Section "Desktop" SEC_DESKTOP
   File /oname=publish-installation.ps1 "${PUBLICATION}"
   GetTempFileName $PrereqLog
   ${DisableX64FSRedirection}
-  nsExec::ExecToLog /TIMEOUT=60000 '"$SYSDIR\WindowsPowerShell\v1.0\powershell.exe" -NoProfile -NonInteractive -ExecutionPolicy Bypass -File "$PLUGINSDIR\uninstall-files.ps1" -InstallDirectory "$INSTDIR" -CheckOnly'
+  nsExec::ExecToStack /TIMEOUT=60000 '"$SYSDIR\WindowsPowerShell\v1.0\powershell.exe" -NoProfile -NonInteractive -ExecutionPolicy Bypass -File "$PLUGINSDIR\uninstall-files.ps1" -InstallDirectory "$INSTDIR" -CheckOnly'
   Pop $0
+  Pop $1
   ${EnableX64FSRedirection}
-  ${If} $0 != 0
-    MessageBox MB_ICONSTOP "Close all DeepSeek Harness windows and quit its tray icon, then run setup again. No running application will be terminated." /SD IDOK
+  DetailPrint "$1"
+  FileOpen $2 "$PrereqLog" a
+  FileWrite $2 "Instance check exit=$0$\r$\n$1$\r$\n"
+  FileClose $2
+  ${If} $0 == 4
+    MessageBox MB_ICONSTOP "DeepSeek Harness is still running. Close its windows and choose Quit from its tray icon, then retry. Web/CLI users must stop the corresponding Host. No running application will be terminated. Details: $1 Log: $PrereqLog" /SD IDOK
     SetErrorLevel 4
+    Abort
+  ${ElseIf} $0 != 0
+    MessageBox MB_ICONSTOP "Setup could not check running applications (exit=$0). See Details and log: $PrereqLog. This does not mean an application is running. On Windows 7, extract dsh-win7-offline-upgrade.zip and run upgrade-win7.bat as administrator, restart if requested, then retry." /SD IDOK
+    SetErrorLevel 1
     Abort
   ${EndIf}
 !if "${EDITION}" == "aio"

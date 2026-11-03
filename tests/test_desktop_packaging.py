@@ -1,6 +1,7 @@
 import hashlib
 import json
 import os
+import shutil
 from pathlib import Path
 import subprocess
 import sys
@@ -168,6 +169,31 @@ def test_extraction_rollback_rejects_an_outside_generation(installed, tmp_path):
     result = invoke_cleanup(root, '-RemoveGeneration', str(tmp_path / 'outside'))
     assert result.returncode == 1, result.stdout
     assert (previous / 'app.exe').exists()
+
+
+@pytest.mark.skipif(os.name != 'nt', reason='Windows process path check')
+@pytest.mark.parametrize('inside', [True, False], ids=['owned-host', 'sibling-process'])
+def test_instance_check_blocks_only_processes_under_install_root(installed, inside):
+    root, generation = installed
+    directory = generation if inside else root.with_name(root.name + '-other')
+    directory.mkdir(exist_ok=True)
+    executable = directory / 'host.exe'
+    shutil.copyfile(Path(os.environ['WINDIR']) / 'System32/cmd.exe', executable)
+    process = subprocess.Popen([str(executable), '/d', '/q'], stdin=subprocess.PIPE,
+                               stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+                               creationflags=subprocess.CREATE_NO_WINDOW)
+    try:
+        result = invoke_cleanup(root, '-CheckOnly')
+        assert result.returncode == (4 if inside else 0), result.stdout
+        if inside:
+            assert 'PID=' + str(process.pid) in result.stdout
+            assert str(executable) in result.stdout
+        assert process.poll() is None  # Setup never kills an application.
+        assert (generation / 'app.exe').exists()
+    finally:
+        process.stdin.close()
+        process.wait(timeout=10)
+    assert invoke_cleanup(root, '-CheckOnly').returncode == 0
 
 
 @pytest.mark.parametrize('linked_root', [False, True])

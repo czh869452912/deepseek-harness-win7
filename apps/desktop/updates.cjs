@@ -14,9 +14,9 @@ function url(value){
   return parsed;
 }
 function version(value){
-  const match=typeof value==='string'&&/^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-rc\.(0|[1-9]\d*))?$/.exec(value);
-  if(!match||match.slice(1,4).some(part=>!Number.isSafeInteger(Number(part)))||match[4]!==undefined&&!Number.isSafeInteger(Number(match[4])))throw new Error('Invalid Win7 release version');
-  return match.slice(1,4).map(Number).concat(match[4]===undefined?Infinity:Number(match[4]));
+  const match=typeof value==='string'&&/^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-rc\.(0|[1-9]\d*)(?:-win7\.([1-9]\d*))?)?$/.exec(value);
+  if(!match||match.slice(1).some(part=>part!==undefined&&!Number.isSafeInteger(Number(part))))throw new Error('Invalid Win7 release version');
+  return match.slice(1,4).map(Number).concat(match[4]===undefined?Infinity:Number(match[4]),match[5]===undefined?0:Number(match[5]));
 }
 function newer(left,right){const a=version(left),b=version(right);for(let i=0;i<a.length;i++){if(a[i]!==b[i])return a[i]>b[i];}return false;}
 function configuration(value){

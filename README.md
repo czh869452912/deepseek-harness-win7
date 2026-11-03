@@ -6,9 +6,9 @@
 
 [README.md](README.md) | [AGENTS.md](AGENTS.md)
 
-当前上游目标为 **dsh-v0.1.5-rc.3**（`a4c74a91e06b00fe0b0937bde982170c526cc842`），产品版本 **0.1.5-rc.3**。冻结候选 **`6cbcbf1c`** 完成单次干净当前 Windows x64 发行门禁：Python 19,367 通过/6 跳过、21 组固定 Source、82 个配对驱动及实际解压 Portable/现代和108浏览器验收全部通过。已有明文历史的启动恢复已推广到 canonical CLI/Web 和 Desktop。x86 Portable 另有实际解压及双浏览器三预设 fresh/cold 验证；x86/x64 Standard 全新安装、旧版覆盖升级及 AIO 全新安装共六组管理员旅程全部通过，包含失败回滚、普通用户运行、卸载保留用户文件和独立系统恢复核对。两种架构 CLI 及 x64 包内原版 Desktop 已完成真实 DeepSeek 消息、读文件工具和冷恢复。
+当前上游目标为 **dsh-v0.1.5-rc.3**（`a4c74a91e06b00fe0b0937bde982170c526cc842`），产品版本 **0.1.5-rc.3-win7.1**。本次 Windows 修订修复 Web 文件夹选择器被浏览器遮挡、安装器把检查失败误报为后台实例占用，以及旧 CLR 下的安装兼容缺口。固定原版前端保持 rc.3 身份，产品版本与分发文件独立增加修订号。
 
-下载 [v0.1.5-rc.3 Release](https://github.com/czh869452912/deepseek-harness-win7/releases/tag/v0.1.5-rc.3) 的七份精确产物；此前无法启动的 x64 安装版可用其中 Standard 安装器覆盖修复。详见[发布说明](docs/releases/v0.1.5-rc.3.md)、[正式回执](migration/evidence/RUN-RC3-DESKTOP-COMPLETION-20261018-6CBCBF1C.json)、[完成记录](docs/research/2026-10-18-desktop-completion-validation.md)和[迁移台账](migration/README.md)。原版界面完成120视图/60对控件比较，仍披露原生控件约2 CSS px及既定Win7分发行为差异。2026-10-20 用户确认导入 Win7 测试未观察到问题并授权发布，见[原始反馈](migration/evidence/HANDOFF-WIN7-RELEASE-20261020-6CBCBF1C.json)；未提供的系统补丁/重启、位数和浏览器矩阵不据此扩写。内网真实更新服务器发布待用户设施就绪，本机私有CA/签名/下载及同份安装器安装已验证。既有精确 Source 例外、C58调度差异和任意插件ABI范围不扩张，`accepted_upstream` 保持 null；旧228cfacc资格保留历史身份。
+下载 [v0.1.5-rc.3-win7.1 Release](https://github.com/czh869452912/deepseek-harness-win7/releases/tag/v0.1.5-rc.3-win7.1)；产物、校验清单和本次完整验收以发行页的精确回执为准，详见[修订版说明](docs/releases/v0.1.5-rc.3-win7.1.md)。前版 `6cbcbf1c` 的完整资格、用户 Win7 反馈及原始文件保留于 [v0.1.5-rc.3](https://github.com/czh869452912/deepseek-harness-win7/releases/tag/v0.1.5-rc.3)，不算作新修订验收。Win7 SP1 补丁/重启及多屏浏览器矩阵仍需单独实测；既有 ACL 问题、Source 例外、插件 ABI 和实际内网更新部署边界不扩张。
 
 规范 JSONL 默认写 `session.v3.jsonl.zstd`；明文配置写 `session.v3.jsonl`，逻辑导出仍为 `session.jsonl`。历史代际只读时在内存转换，写打开时验证并发布新代际，保留旧文件。已有明文根目录可显式配置 `compression: none`；canonical CLI/Web 和 Desktop 对未显式设置压缩的默认目录沿用已有单一明文编码；自定义目录及显式配置仍须匹配后端。同一根目录不能混用两种压缩格式。升级前停止应用并备份整个 DSH_HOME 及自定义存储根目录；rc.1 不能读取新写的 v3 历史，回退应恢复升级前的完整备份，不能仅换回旧程序。旧私有 SQLite 仍由显式只读 reader 导出。见 [分发与升级说明](docs/distribution.md)。
 
@@ -151,7 +151,7 @@ git submodule update --init --recursive
 .venv\Scripts\python.exe scripts\build_portable.py
 ```
 
-当前构建产物放置在 `dist/dsh-win7-portable/` 并打包为 `dist/dsh-win7-portable-v0.1.5-rc.3.zip`：
+当前构建产物放置在 `dist/dsh-win7-portable/` 并打包为 `dist/dsh-win7-portable-v0.1.5-rc.3-win7.1.zip`：
 - 双击 **`dsh-web.bat`**：一键启动 Web GUI 并在浏览器中打开。
 - **`dsh.bat --profile headless "任务"`**：通过正式入口执行单次任务。
 

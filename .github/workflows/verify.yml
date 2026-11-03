@@ -2,6 +2,11 @@ name: Verify Python 3.8 portable
 on:
   pull_request:
   workflow_dispatch:
+    inputs:
+      candidate_ref:
+        description: 'Optional frozen product commit to qualify with this workflow'
+        required: false
+        type: string
   workflow_call:
 permissions:
   contents: read
@@ -16,6 +21,7 @@ jobs:
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
       - uses: actions/checkout@v4
         with:
+          ref: ${{ inputs.candidate_ref || github.sha }}
           submodules: recursive
           fetch-depth: 0
           lfs: true
@@ -38,6 +44,20 @@ jobs:
         run: |
           .venv/Scripts/python.exe -c "from scripts.agent_dependencies_oracle import source_inputs, ROOT; print('Actual Source guarded inputs:', len(source_inputs(ROOT / 'reference')))"
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Prepare pinned Electron22 Node16 test runtime
+        run: |
+          $identity = (Get-Content -Encoding utf8 scripts/desktop-tool-inputs.json | ConvertFrom-Json).electron
+          $tools = Join-Path $env:GITHUB_WORKSPACE ('.goose/tools/electron-' + $identity.version + '-win32-' + $identity.architecture)
+          New-Item -ItemType Directory -Path $tools -ErrorAction Stop | Out-Null
+          $archive = Join-Path $tools ([IO.Path]::GetFileName($identity.url))
+          Invoke-WebRequest -Uri $identity.url -OutFile $archive -ErrorAction Stop
+          if ((Get-Item -LiteralPath $archive).Length -ne $identity.bytes) { throw 'Pinned Electron archive size differs' }
+          if ((Get-FileHash -LiteralPath $archive -Algorithm SHA256).Hash.ToLowerInvariant() -ne $identity.sha256) { throw 'Pinned Electron archive SHA256 differs' }
+          $runtime = Join-Path $tools 'runtime'
+          Expand-Archive -LiteralPath $archive -DestinationPath $runtime -ErrorAction Stop
+          $env:ELECTRON_RUN_AS_NODE = '1'
+          & (Join-Path $runtime 'electron.exe') -e "if(process.versions.electron!=='22.3.27'||process.versions.node!=='16.17.1')process.exit(1)"
+          if ($LASTEXITCODE -ne 0) { throw 'Pinned Electron22 Node16 runtime identity differs' }
       - name: Prepare pinned inputs, build, and verify
         id: gate
         run: |

@@ -20,13 +20,13 @@ try {
     Test-PlainPath $uninstaller $root
     $hash=[Security.Cryptography.SHA256]::Create()
     $stream=[IO.File]::OpenRead($uninstaller)
-    try {$digest=[BitConverter]::ToString($hash.ComputeHash($stream)).Replace('-','').ToLowerInvariant()} finally {$stream.Close();$hash.Dispose()}
+    try {$digest=[BitConverter]::ToString($hash.ComputeHash($stream)).Replace('-','').ToLowerInvariant()} finally {$stream.Close();$hash.Clear()}
     [IO.File]::AppendAllText([IO.Path]::Combine($generation,'dsh-owned-files.tsv'),$digest+"`tuninstall.exe`r`n",[Text.Encoding]::UTF8)
     exit 0
   }
   foreach($process in Get-WmiObject Win32_Process) {
     if ($process.ExecutablePath -and $process.ExecutablePath.StartsWith($root+'\',[StringComparison]::OrdinalIgnoreCase)) {
-      Write-Host 'Close DeepSeek Harness and its Host before changing the installation'; exit 4
+      Write-Host ('Close DeepSeek Harness and its Host before changing the installation. PID='+$process.ProcessId+' Path='+$process.ExecutablePath); exit 4
     }
   }
   if ($CheckOnly) { exit 0 }
@@ -58,7 +58,7 @@ try {
         Test-PlainPath $path $root
         $hash=[Security.Cryptography.SHA256]::Create()
         $stream=[IO.File]::OpenRead($path)
-        try {$digest=[BitConverter]::ToString($hash.ComputeHash($stream)).Replace('-','').ToLowerInvariant()} finally {$stream.Close();$hash.Dispose()}
+        try {$digest=[BitConverter]::ToString($hash.ComputeHash($stream)).Replace('-','').ToLowerInvariant()} finally {$stream.Close();$hash.Clear()}
         if($digest -eq $fields[0]) {$planned+=,$path} else {Write-Host ('Preserved modified file: '+$relative)}
       }
     }

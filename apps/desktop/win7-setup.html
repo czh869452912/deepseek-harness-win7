@@ -13,6 +13,12 @@
 <li>完成后重新启动 DeepSeek Harness。AIO 安装包提供同一组件链，也可作为替代入口；需要重启时，重启后再次运行安装包。</li>
 </ol>
 <p>日志位置由脚本输出，默认保存在临时目录。你的 <code>DSH_HOME</code> 设置、插件和会话不会参与系统升级。</p>
+<h2>安装失败时先区分原因</h2>
+<ul>
+<li>提示仍在运行，并列出 PID/程序路径：退出托盘中的 DeepSeek Harness；Web/CLI 版需要停止对应的 Host。关闭浏览器页面不会停止后台服务。仅关闭路径属于本次安装的进程，再重新运行安装器。</li>
+<li>提示无法检查运行实例：查看安装器“Details”和提示的日志文件，保留退出码及错误原文；这条提示本身不能证明有后台实例。在未更新的 Win7 上，先按上面的步骤运行独立离线升级包，按要求重启后重试。</li>
+<li>提示组件安装失败：保留日志，不要反复安装相同补丁；确认包与系统架构匹配，并检查是否仍有待完成的重启。</li>
+</ul>
 <h2>Offline setup in English</h2>
 <p>Standard installs the application without changing Windows components. Extract the separately distributed <code>dsh-win7-offline-upgrade.zip</code>, then right-click <code>upgrade-win7.bat</code> and choose Run as administrator. Save your work first. The script selects x86/x64, skips installed packages and stops before the next package when a restart is required. Restart Windows and run the same script again to continue. Remove WMF 3.0 following Microsoft guidance before installing WMF 5.1. Unknown failures stop the chain and retain the log.</p>
 <p>The same prerequisites are available in the AIO installer. This upgrade changes Windows components and does not replace your application settings or sessions.</p>

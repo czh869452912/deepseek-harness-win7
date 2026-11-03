@@ -55,8 +55,8 @@ jobs:
           if ((Get-FileHash -LiteralPath $archive -Algorithm SHA256).Hash.ToLowerInvariant() -ne $identity.sha256) { throw 'Pinned Electron archive SHA256 differs' }
           $runtime = Join-Path $tools 'runtime'
           Expand-Archive -LiteralPath $archive -DestinationPath $runtime -ErrorAction Stop
-          $env:ELECTRON_RUN_AS_NODE = '1'
-          & (Join-Path $runtime 'electron.exe') -e "if(process.versions.electron!=='22.3.27'||process.versions.node!=='16.17.1')process.exit(1)"
+          $identityProbe = "console.log(JSON.stringify(process.versions));if(process.versions.electron!=='22.3.27'||process.versions.node!=='16.17.1')process.exit(1)"
+          .venv/Scripts/python.exe -c "import os,subprocess,sys; p=subprocess.run([sys.argv[1],'-e',sys.argv[2]],env=dict(os.environ,ELECTRON_RUN_AS_NODE='1'),capture_output=True,check=True,timeout=30); print(p.stdout.decode('utf-8'),end=''); assert not p.stderr,p.stderr" (Join-Path $runtime 'electron.exe') $identityProbe
           if ($LASTEXITCODE -ne 0) { throw 'Pinned Electron22 Node16 runtime identity differs' }
       - name: Prepare pinned inputs, build, and verify
         id: gate

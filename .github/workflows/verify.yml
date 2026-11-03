@@ -7,6 +7,11 @@ on:
         description: 'Optional frozen product commit to qualify with this workflow'
         required: false
         type: string
+      diagnose_deepseek:
+        description: 'Run only cold DeepSeek timing and its direct regression consumers'
+        required: false
+        type: boolean
+        default: false
   workflow_call:
 permissions:
   contents: read
@@ -70,6 +75,22 @@ jobs:
           python scripts/browser108_gate.py --prepare .goose/tools/chromium108
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           $browser108 = (Resolve-Path .goose/tools/chromium108/chrome-win/chrome.exe).Path
+          if ('${{ inputs.diagnose_deepseek }}' -eq 'true') {
+            $diagnostics = Join-Path $env:GITHUB_WORKSPACE '.goose/out/release-gate'
+            New-Item -ItemType Directory -Path $diagnostics -ErrorAction Stop | Out-Null
+            $env:DSH_TEST_CHROMIUM = $browser
+            $env:DSH_TEST_CHROMIUM108 = $browser108
+            .venv/Scripts/python.exe -c "import sys; from pathlib import Path; from scripts.verify_release import prepare_node_dependencies,release_environment; prepare_node_dependencies(Path(sys.argv[1]),release_environment(sys.argv[2]))" $diagnostics $browser
+            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+            .venv/Scripts/python.exe -I -m cProfile -o "$diagnostics/deepseek-native.prof" scripts/oracles/deepseek_error_python.py --root $env:GITHUB_WORKSPACE --output "$diagnostics/deepseek-native.json"
+            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+            .venv/Scripts/python.exe -c "import pstats,sys; pstats.Stats(sys.argv[1]).sort_stats('cumulative').print_stats(50)" "$diagnostics/deepseek-native.prof" *> "$diagnostics/deepseek-native-profile.log"
+            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+            .venv/Scripts/python.exe scripts/deepseek_error_oracle.py --output "$diagnostics/deepseek-errors.json"
+            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+            .venv/Scripts/python.exe -m pytest tests/test_deepseek_error_consumers.py tests/test_current_release_gate.py::test_clean_and_explicit_dirty_receipts_have_distinct_acceptance -q "--basetemp=$releaseTemp/targeted" "--junitxml=$diagnostics/pytest.xml"
+            exit $LASTEXITCODE
+          }
           .venv/Scripts/python.exe scripts/verify_release.py --prepare --browser $browser --browser108 $browser108
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           $receipt = Get-Content -Encoding utf8 .goose/out/release-gate/summary.json | ConvertFrom-Json -AsHashtable
@@ -96,6 +117,7 @@ jobs:
             .goose/out/release-primary-diagnostics.zip
           if-no-files-found: error
       - name: Upload verified portable
+        if: ${{ inputs.diagnose_deepseek != true }}
         uses: actions/upload-artifact@v4
         with:
           name: verified-portable

@@ -24,6 +24,6 @@ jobs:
           files: dist/dsh-win7-portable-v*.zip
           fail_on_unmatched_files: true
           draft: false
-          prerelease: false
+          prerelease: ${{ contains(github.ref_name, '-') }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -8,6 +8,17 @@ from scripts import prepare_reference
 ROOT = Path(__file__).resolve().parents[1]
 
 
+def test_cold_preparation_builds_every_client_index_embedded_in_sealed_frontend():
+    required = set()
+    for path in (ROOT / 'apps/web/dist').rglob('*.js.map'):
+        document = json.loads(path.read_text(encoding='utf-8'))
+        for source, content in zip(document['sources'], document['sourcesContent']):
+            if content is not None and '/packages/client/' in source and source.endswith('/lib/index.js'):
+                required.add(source.split('/packages/client/', 1)[1].split('/', 1)[0])
+    assert required, 'Sealed frontend must declare its actual library inputs'
+    assert required.issubset(prepare_reference.STATIC_CLIENT_LIBRARIES)
+
+
 def test_original_sealed_frontend_restores_cold_ignored_tree_and_refuses_changed_observation(tmp_path, monkeypatch):
     source = tmp_path / 'reference'
     source.mkdir()

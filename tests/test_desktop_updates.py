@@ -20,7 +20,7 @@ def test_actual_node16_signed_update_and_coordinator(tmp_path):
     report = json.loads(result.stdout)
     assert report['status'] == 'qualified'
     assert len(report['checks']) == 41
-    assert {'monotonic-win7-revision', 'win7-revision-before-next-upstream',
-            'reject-invalid-win7-revision', 'signed-win7-revision-release'}.issubset(report['checks'])
+    assert {'monotonic-distribution-revision', 'distribution-revision-before-next-upstream',
+            'reject-invalid-distribution-revision', 'signed-distribution-revision-release'}.issubset(report['checks'])
     assert {'reject-invalid-private-CA-configuration', 'actual-explicit-private-CA-through-HTTPS-redirect'}.issubset(report['checks'])
     assert report['installationExecuted'] is False

@@ -1,0 +1,49 @@
+# Issue #6：r1 后实例检查访问拒绝
+
+## 现场证据与判断
+
+[2026-11-05 最新反馈](https://github.com/czh869452912/deepseek-harness-win7/issues/6#issuecomment-6655696787)：报告者卸载手动安装的 .NET Framework 及更新包后，再次运行 `v0.1.5-rc.3-r1 AIO`，安装目录为 `C:\Program Files\DeepSeek Harness`。截图的详情和日志均为 `Instance check exit=1`、中文“对路径的访问被拒绝”。
+
+能确定失败发生在实例检查阶段，尚未执行前置组件安装或应用解包；不能据此认定有运行实例、空格路径不受支持，或某个 .NET 版本是唯一根因。报告者的卸载描述不等同于已确认的实际 PowerShell/CLR 版本。无需将获取第三方更多信息设为开发前提。
+
+原脚本可能在目录/父目录读取或 WMI 查询时报错，但 catch 只输出异常消息，未保留阶段、路径和行号。r1 区分返回4和其他失败是有效改进，但没有闭合 AIO 在旧环境上的安装链路。
+
+## 本次实现
+
+- 环境诊断包含实际 PowerShell、CLR、进程位数、OS 版本、管理员状态和安装路径。失败包含阶段、当前路径或 PID、ErrorId/Category、脚本位置和异常链。
+- 路径检查改用 `File.GetAttributes` 逐层读取，通过 `Path.GetDirectoryName` 计算父路径，避免依赖 PowerShell 文件系统 provider 和 `DirectoryInfo.Parent`。仍逐层拒绝 reparse point，不修改目录 ACL。
+- 安装根目录不再通过 `Directory.Exists` 将访问错误隐藏成不存在；仅明确的 FileNotFound/DirectoryNotFound 作为不存在处理。真实拒绝访问返回1；文件冒充目录同样拒绝。
+- 实例检查可接收 `-LogPath`，直接追加 UTF-8 日志。NSIS 传入原来的临时日志路径，另保留检查返回值，避免详细错误被 `ExecToStack` 字符串长度截断。日志写入失败仍在控制台报告。PowerShell 无法启动时，详情及返回结果仍是诊断入口。
+- WMI 查询明确采用 Stop 错误策略；运行实例仍返回4，检查失败仍阻止应用文件变更，不终止进程。
+
+这些改动减少兼容性依赖并提高可诊断性，不构成已复现或修复该报告者唯一根因的结论。AIO 仍先检查实例，再安装系统组件；没有绕过检查或改变系统补丁顺序。
+
+## 定向验证
+
+选择实例检查的直接消费者：安装清理/登记、运行进程保护、junction 拒绝、失败代回滚和用户文件保留；同时覆盖 Standard/AIO 前置组件策略、x86/x64 包选择、失败/重启边界。运行环境是 Windows 11、Windows PowerShell 5.1 / CLR4、Python 3.8.10。
+
+命令：
+
+```powershell
+.venv/Scripts/python.exe -m pytest tests/test_desktop_packaging.py tests/test_desktop_prerequisite_flow.py tests/test_windows_prerequisites.py -q --durations=10 --junitxml=.goose/out/issue6-diagnostics-20261105-final/targeted.xml
+```
+
+结果：46 passed，14.98秒，退出0；日志/XML位于上述自有输出目录。真实 NTFS 根目录和父目录拒绝访问、WMI 终止/非终止错误、缺目录、文件冒充目录、长中文错误日志和链接祖先均有控制。ACL 测试仅修改自有夹具对象，并恢复原始 ACL。随后将测试准备也纳入 finally 保护，相关8项复验通过，3.41秒，退出0，记录 `.goose/out/issue6-probe-cleanup-20261105/`；不将其与46项相加。
+
+初始拒绝用例只拒绝 ReadAttributes，Windows 仍可通过父目录列举取得属性，因此两项未能触发预期拒绝。补充对另一个自有父目录的 ListDirectory 拒绝后，确认实际 UnauthorizedAccessException，原失败保留于 `issue6-diagnostics-20261105-a`。后续一个测试在移动夹具目录时发生 WinError5，发生于调用产品代码之前；取消不必要的移动后，链接祖先控制通过。该观察保留在 `issue6-diagnostics-20261105-c`，不归因为安装器现场根因。
+
+固定清单校验 NSIS 3.13 ZIP 后，在新目录解压并执行 Standard/AIO × x64/x86 四种编译，全部退出0；命令、耗时和编译日志位于 `.goose/out/issue6-nsis-20261105/`。AIO 有原有的 PrereqLimited 未使用编译警告。使用占位 payload，仅为脚本编译验证，未运行安装器，不是可交付分发包。
+
+## Docker 与后续验收
+
+本机 Docker Desktop 4.48.0 / Engine 28.5.1，`desktop-linux` 后端正常运行；没有现存本地容器镜像。普通 Linux 容器不能验证 Windows NTFS/WMI、PS2/旧 CLR、UAC、系统组件和重启流程。[微软 Windows 容器支持范围](https://learn.microsoft.com/en-us/virtualization/windowscontainers/deploy-containers/system-requirements)也不包含 Win7。
+
+可以用 Docker 管理完整 Windows 虚拟机，例如 [dockur/windows](https://github.com/dockur/windows)列有 Win7 选项；这是虚拟机测试，需要核验实际镜像的 SP1/补丁/PowerShell 状态，并保留干净快照，不能把默认自动安装结果直接当作 stock Win7。其 Windows 11 Docker Desktop 路线要求嵌套虚拟化。本次读取 Docker 的 WSL2 后端，`/dev/kvm` 不存在；尚未配置该路线，没有下载镜像、改变 Docker/WSL 设置或修改系统组件。
+
+本轮为本机定向开发完成，未运行完整发布门禁、未打正式 Portable、未发布或修改 GitHub issue。仍需在 Win7 SP1 干净/已升级快照验证实际 AIO 入口、组件安装、重启及再次安装；在该阶段完成前保持 issue 打开。后续如调整 AIO 的引导顺序，须在应用文件变更之前重新完成实例检查，不能把检查失败直接转为成功。
+
+### 后续环境检查：KVM 模块已加载
+
+同日继续排查发现，本机 AMD CPU 的虚拟化已开启，WSL2 能看到 `svm`，6.6.87.2 内核的 KVM/AMD 驱动配置为模块；此前设备缺失不代表缺少内核支持。执行 `wsl -d docker-desktop --exec modprobe kvm_amd` 成功退出0，生成 `/dev/kvm`，`lsmod` 确认 `kvm_amd`、`kvm` 已加载；无需下载驱动、重启 Docker 或改写 WSL 配置。
+
+随后通过临时容器 `docker run --rm --network none --device /dev/kvm alpine:3.22 sh -c 'test -c /dev/kvm && ls -l /dev/kvm'` 验证设备能传入 Docker 容器，退出0。本次新增本地 Alpine 镜像，拉取摘要为 `sha256:2e0b81d60597f449baa56dc25d355367869d2dca4cd57e866f1e2b52af3eb55f`；临时容器已退出删除。设备可见尚不等于实际 Win7 虚拟机或安装器验收通过。模块加载属于当前 WSL 运行期状态，完整关闭 WSL 或电脑重启后应重新检查，必要时重跑上述 modprobe 命令。

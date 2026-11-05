@@ -1,3 +1,4 @@
+import base64
 import hashlib
 import json
 import os
@@ -89,6 +90,128 @@ def invoke_cleanup(root, *arguments):
     return subprocess.run(['powershell.exe','-NoProfile','-NonInteractive','-ExecutionPolicy','Bypass',
         '-File',str(ROOT / 'apps/desktop/installer/uninstall-files.ps1'),'-InstallDirectory',str(root)] + list(arguments),
         stdout=subprocess.PIPE,stderr=subprocess.STDOUT,timeout=60,encoding='utf-8')
+
+
+def cleanup_probe(root, log, before='', after=''):
+    if os.name != 'nt':
+        pytest.skip('Actual Windows PowerShell installer consumer')
+    def literal(value):
+        return "'" + str(value).replace("'", "''") + "'"
+    script = """
+$ErrorActionPreference='Stop'
+[Console]::OutputEncoding=New-Object Text.UTF8Encoding
+$root=__ROOT__
+$code=1
+try {
+  __BEFORE__
+  & __SCRIPT__ -InstallDirectory $root -CheckOnly -LogPath __LOG__
+  $code=$LASTEXITCODE
+} finally { __AFTER__ }
+exit $code
+""".replace('__ROOT__', literal(root)).replace('__SCRIPT__', literal(
+        ROOT / 'apps/desktop/installer/uninstall-files.ps1')).replace(
+        '__LOG__', literal(log)).replace('__BEFORE__', before).replace('__AFTER__', after)
+    encoded = base64.b64encode(script.encode('utf-16-le')).decode('ascii')
+    return subprocess.run(['powershell.exe', '-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass',
+                           '-EncodedCommand', encoded], stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+                          timeout=60, encoding='utf-8')
+
+
+@pytest.mark.parametrize('terminating', [False, True])
+def test_instance_query_failure_preserves_error_context_and_installed_bytes(installed, tmp_path, terminating):
+    root, generation = installed
+    log = tmp_path / 'instance.log'
+    action = "throw 'WMI unavailable'" if terminating else "Write-Error 'WMI unavailable'"
+    result = cleanup_probe(root, log, before="""
+function Get-WmiObject {
+  [CmdletBinding()] param([Parameter(Position=0)][string]$Class)
+  __ACTION__
+}
+""".replace('__ACTION__', action))
+    assert result.returncode == 1, result.stdout
+    diagnostic = log.read_text(encoding='utf-8-sig')
+    assert 'Stage=process-query Path=' + str(root) in diagnostic
+    for value in ('PowerShell=', 'CLR=', 'ProcessBits=', 'Administrator=', 'OS=',
+                  'WMI unavailable', 'Exception=', 'ErrorId=', 'Location=', 'ScriptStack='):
+        assert value in diagnostic
+    assert (generation / 'app.exe').read_bytes() == b'owned product: app.exe'
+    assert (generation / 'dsh-owned-files.tsv').exists()
+
+
+@pytest.mark.parametrize('ancestor', [False, True], ids=['install-root', 'ancestor'])
+def test_instance_check_reports_real_path_access_denial_and_preserves_installation(installed, tmp_path, ancestor):
+    old_root, old_generation = installed
+    root = tmp_path / 'guard' / 'parent' / 'installed'
+    root.parent.mkdir(parents=True)
+    old_root.rename(root)
+    generation = root / old_generation.relative_to(old_root)
+    denied = root.parent if ancestor else root
+    log = tmp_path / 'denied.log'
+    before = """
+$denied=__DENIED__
+$original=[IO.Directory]::GetAccessControl($denied)
+$changed=[IO.Directory]::GetAccessControl($denied)
+$guard=[IO.Path]::GetDirectoryName($denied)
+$guardOriginal=[IO.Directory]::GetAccessControl($guard)
+$guardChanged=[IO.Directory]::GetAccessControl($guard)
+$sid=[Security.Principal.WindowsIdentity]::GetCurrent().User
+$rule=New-Object Security.AccessControl.FileSystemAccessRule($sid,'ReadAttributes','Deny')
+$changed.AddAccessRule($rule)
+# GetFileAttributes can obtain attributes through a parent's directory listing.
+# Deny that alternative on a second, independently owned fixture directory.
+$guardRule=New-Object Security.AccessControl.FileSystemAccessRule($sid,'ListDirectory','Deny')
+$guardChanged.AddAccessRule($guardRule)
+[IO.Directory]::SetAccessControl($denied,$changed)
+[IO.Directory]::SetAccessControl($guard,$guardChanged)
+""".replace('__DENIED__', "'" + str(denied).replace("'", "''") + "'")
+    result = cleanup_probe(root, log, before=before,
+                           after="""
+try {
+  if($guardOriginal){[IO.Directory]::SetAccessControl($guard,$guardOriginal)}
+} finally {
+  if($original){[IO.Directory]::SetAccessControl($denied,$original)}
+}
+""")
+    assert result.returncode == 1, result.stdout
+    diagnostic = log.read_text(encoding='utf-8-sig')
+    stage = 'path-attributes' if ancestor else 'install-directory-attributes'
+    assert 'Stage=' + stage + ' Path=' + str(denied) in diagnostic
+    assert 'System.UnauthorizedAccessException' in diagnostic
+    assert 'Location=' in diagnostic and 'uninstall-files.ps1' in diagnostic
+    assert (generation / 'app.exe').read_bytes() == b'owned product: app.exe'
+    assert (generation / 'dsh-owned-files.tsv').exists()
+
+
+def test_instance_check_missing_directory_is_distinct_from_access_denial(tmp_path):
+    log = tmp_path / 'missing.log'
+    result = cleanup_probe(tmp_path / 'not-installed', log)
+    assert result.returncode == 0, result.stdout
+    assert 'does not exist' in log.read_text(encoding='utf-8-sig')
+
+
+def test_instance_check_rejects_file_as_installation_directory(tmp_path):
+    root = tmp_path / 'file'
+    root.write_bytes(b'preserve')
+    log = tmp_path / 'file.log'
+    result = cleanup_probe(root, log)
+    assert result.returncode == 1, result.stdout
+    assert 'not a directory' in log.read_text(encoding='utf-8-sig')
+    assert root.read_bytes() == b'preserve'
+
+
+def test_instance_check_writes_untruncated_utf8_diagnostics(installed, tmp_path):
+    root, _ = installed
+    log = tmp_path / 'full.log'
+    # Longer than the NSIS default string/ExecToStack output buffer.
+    message = '访问被拒绝' + 'x' * 2000 + 'END-OF-ERROR'
+    result = cleanup_probe(root, log, before="""
+function Get-WmiObject {
+  [CmdletBinding()] param([Parameter(Position=0)][string]$Class)
+  throw '__MESSAGE__'
+}
+""".replace('__MESSAGE__', message))
+    assert result.returncode == 1, result.stdout
+    assert message in log.read_text(encoding='utf-8-sig')
 
 
 @pytest.fixture
@@ -220,3 +343,22 @@ def test_uninstall_rejects_junctions_without_removing_external_bytes(installed, 
         assert (generation / 'resources/host.py').exists()
     finally:
         os.rmdir(str(target))  # Remove this exact junction itself, never its target.
+
+
+@pytest.mark.skipif(os.name != 'nt', reason='NTFS junction consumer')
+def test_instance_check_rejects_linked_ancestor_and_logs_its_path(installed, tmp_path):
+    root, generation = installed
+    alias = tmp_path / 'parent-link'
+    result = subprocess.run(['cmd.exe', '/c', 'mklink', '/J', str(alias), str(root.parent)],
+                            stdout=subprocess.PIPE, stderr=subprocess.STDOUT, timeout=20)
+    assert result.returncode == 0, result.stdout
+    log = tmp_path / 'linked.log'
+    try:
+        result = cleanup_probe(alias / 'installed', log)
+        assert result.returncode == 1, result.stdout
+        diagnostic = log.read_text(encoding='utf-8-sig')
+        assert 'Stage=path-attributes Path=' + str(alias) in diagnostic
+        assert 'linked path' in diagnostic
+        assert (generation / 'app.exe').read_bytes() == b'owned product: app.exe'
+    finally:
+        os.rmdir(str(alias))

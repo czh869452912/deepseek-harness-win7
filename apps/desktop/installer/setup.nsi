@@ -104,13 +104,15 @@ Section "Desktop" SEC_DESKTOP
   File /oname=publish-installation.ps1 "${PUBLICATION}"
   GetTempFileName $PrereqLog
   ${DisableX64FSRedirection}
-  nsExec::ExecToStack /TIMEOUT=60000 '"$SYSDIR\WindowsPowerShell\v1.0\powershell.exe" -NoProfile -NonInteractive -ExecutionPolicy Bypass -File "$PLUGINSDIR\uninstall-files.ps1" -InstallDirectory "$INSTDIR" -CheckOnly'
+  nsExec::ExecToStack /TIMEOUT=60000 '"$SYSDIR\WindowsPowerShell\v1.0\powershell.exe" -NoProfile -NonInteractive -ExecutionPolicy Bypass -File "$PLUGINSDIR\uninstall-files.ps1" -InstallDirectory "$INSTDIR" -CheckOnly -LogPath "$PrereqLog"'
   Pop $0
   Pop $1
   ${EnableX64FSRedirection}
   DetailPrint "$1"
   FileOpen $2 "$PrereqLog" a
-  FileWrite $2 "Instance check exit=$0$\r$\n$1$\r$\n"
+  # Script diagnostics go directly to UTF-8 log, avoiding nsExec stack truncation.
+  # Keep the launcher result even when PowerShell could not start.
+  FileWrite $2 "Instance check exit=$0$\r$\n"
   FileClose $2
   ${If} $0 == 4
     MessageBox MB_ICONSTOP "DeepSeek Harness is still running. Close its windows and choose Quit from its tray icon, then retry. Web/CLI users must stop the corresponding Host. No running application will be terminated. Details: $1 Log: $PrereqLog" /SD IDOK

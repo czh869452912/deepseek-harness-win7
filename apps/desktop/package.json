@@ -1,7 +1,7 @@
 {
   "name": "@deepseek-win7/desktop",
   "private": true,
-  "version": "0.1.5-rc.3-r1",
+  "version": "0.1.5-rc.3-r2",
   "main": "main.cjs",
   "engines": { "electron": "22.3.27" }
 }

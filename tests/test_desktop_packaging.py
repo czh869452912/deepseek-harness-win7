@@ -189,12 +189,9 @@ function Get-WmiObject {
 
 
 @pytest.mark.parametrize('ancestor', [False, True], ids=['install-root', 'ancestor'])
-def test_instance_check_reports_real_path_access_denial_and_preserves_installation(installed, tmp_path, ancestor):
-    old_root, old_generation = installed
+def test_instance_check_reports_real_path_access_denial_and_preserves_installation(tmp_path, ancestor):
     root = tmp_path / 'guard' / 'parent' / 'installed'
-    root.parent.mkdir(parents=True)
-    old_root.rename(root)
-    generation = root / old_generation.relative_to(old_root)
+    root, generation = create_installed_fixture(root)
     denied = root.parent if ancestor else root
     log = tmp_path / 'denied.log'
     before = """
@@ -301,7 +298,10 @@ function Get-WmiObject {
 
 @pytest.fixture
 def installed(tmp_path):
-    root = tmp_path / 'installed'
+    return create_installed_fixture(tmp_path / 'installed')
+
+
+def create_installed_fixture(root):
     generation = root / 'versions/0.1.5-rc.3-0123456789ab'
     generation.mkdir(parents=True)
     rows = []

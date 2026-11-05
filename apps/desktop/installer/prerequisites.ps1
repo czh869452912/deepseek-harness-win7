@@ -67,8 +67,17 @@ function Invoke-OfflineInstaller([string]$Name, [string]$Arguments) {
     $Arguments = '"' + $file + '" /quiet /norestart'
   } else { $executable = $file }
   Write-SetupLog ('Installing ' + $Name)
-  $process = Start-Process -FilePath $executable -ArgumentList $Arguments -WindowStyle Hidden -PassThru
+  # PS2 Start-Process -PassThru can lose the exit handle after WaitForExit,
+  # yielding null (then 0) for failed installers and required restarts.
+  $info = New-Object Diagnostics.ProcessStartInfo
+  $info.FileName = $executable
+  $info.Arguments = $Arguments
+  $info.UseShellExecute = $false
+  $info.CreateNoWindow = $true
+  $process = New-Object Diagnostics.Process
+  $process.StartInfo = $info
   try {
+    [void]$process.Start()
     if (!$process.WaitForExit(1800000)) {
       try { $process.Kill() } catch { }
       throw ('Offline installer exceeded 30 minute deadline: ' + $Name)

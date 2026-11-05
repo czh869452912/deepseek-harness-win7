@@ -41,6 +41,56 @@ def test_nsis_define_preserves_literal_dollar_and_rejects_quotes():
             nsis_define(value)
 
 
+@pytest.mark.skipif(os.name != 'nt', reason='Actual Windows NSIS/PowerShell carrier')
+def test_actual_nsis_preserves_diagnostics_and_prerequisite_restart_boundary(tmp_path):
+    archive = ROOT / '.goose/tools/nsis-3.13/nsis-3.13.zip'
+    if not archive.is_file():
+        pytest.skip('Pinned NSIS archive is not prepared')
+    identity = json.loads((ROOT / 'scripts/desktop-tool-inputs.json').read_text(encoding='utf-8'))['nsis']
+    compiler = tmp_path / 'compiler'
+    extract_tool(archive, identity, compiler)
+    payload, prerequisites = tmp_path / 'payload', tmp_path / 'prerequisites'
+    payload.mkdir()
+    prerequisites.mkdir()
+    (payload / 'dsh-owned-files.tsv').write_text('not extracted\n', encoding='utf-8')
+    (prerequisites / 'placeholder.txt').write_text('no system updates\n', encoding='utf-8')
+    observation = tmp_path / 'observed-log.txt'
+    command_line = tmp_path / 'policy-command.txt'
+    policy = tmp_path / 'policy.ps1'
+    policy.write_text("""param([string]$Edition,[string]$Payload,[string]$LogPath)
+$ErrorActionPreference='Stop'
+[IO.File]::WriteAllText('__COMMAND__',[Environment]::CommandLine,[Text.Encoding]::UTF8)
+[IO.File]::Copy($LogPath,'__OBSERVATION__')
+Write-Host 'POLICY_REACHED'
+exit 3010
+""".replace('__COMMAND__', str(command_line).replace("'", "''"))
+       .replace('__OBSERVATION__', str(observation).replace("'", "''")), encoding='utf-8')
+    # The policy stops before any extraction, publication or system installer.
+    # Lower only this fixture's UAC manifest so ordinary pytest needs no prompt.
+    setup = tmp_path / 'setup.nsi'
+    setup.write_text((ROOT / 'apps/desktop/installer/setup.nsi').read_text(encoding='utf-8')
+                     .replace('RequestExecutionLevel admin', 'RequestExecutionLevel user'), encoding='utf-8')
+    installer = tmp_path / 'restart-fixture.exe'
+    definitions = dict(VERSION='0.1.5', EDITION='aio', ARCHITECTURE='x64' if sys.maxsize > 2 ** 32 else 'x86',
+                       OUTPUT=installer, GENERATION='0.1.5-0123456789ab', PAYLOAD=payload,
+                       POLICY=policy, CLEANUP=ROOT / 'apps/desktop/installer/uninstall-files.ps1',
+                       PUBLICATION=ROOT / 'apps/desktop/installer/publish-installation.ps1',
+                       PREREQUISITES=prerequisites, MAX_INSTALL_ROOT=240)
+    result = subprocess.run([str(compiler / 'nsis-3.13/makensis.exe'), '/V2'] +
+                            ['/D' + name + '=' + nsis_define(value) for name, value in definitions.items()] + [str(setup)],
+                            stdout=subprocess.PIPE, stderr=subprocess.STDOUT, encoding='utf-8', timeout=60)
+    assert result.returncode == 0, result.stdout
+    installed = tmp_path / 'installed'
+    result = subprocess.run([str(installer), '/S', '/D=' + str(installed)], timeout=30)
+    assert result.returncode == 3010
+    diagnostic = observation.read_text(encoding='utf-8-sig')
+    assert diagnostic.startswith('Setup environment:')
+    assert 'Setup request: InstallDirectory=' in diagnostic
+    assert diagnostic.index('Setup request:') < diagnostic.index('Instance check exit=0')
+    assert '-InputFormat None' in command_line.read_text(encoding='utf-8-sig')
+    assert not installed.exists()
+
+
 def test_desktop_copies_complete_reviewed_package_closure_not_build_fixtures(tmp_path, monkeypatch):
     source=tmp_path / 'source'
     portable=tmp_path / 'portable'

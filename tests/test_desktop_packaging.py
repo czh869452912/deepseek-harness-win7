@@ -150,9 +150,11 @@ def test_instance_check_reports_real_path_access_denial_and_preserves_installati
     before = """
 $denied=__DENIED__
 $original=[IO.Directory]::GetAccessControl($denied)
+$originalSddl=$original.GetSecurityDescriptorSddlForm([Security.AccessControl.AccessControlSections]::Access)
 $changed=[IO.Directory]::GetAccessControl($denied)
 $guard=[IO.Path]::GetDirectoryName($denied)
 $guardOriginal=[IO.Directory]::GetAccessControl($guard)
+$guardOriginalSddl=$guardOriginal.GetSecurityDescriptorSddlForm([Security.AccessControl.AccessControlSections]::Access)
 $guardChanged=[IO.Directory]::GetAccessControl($guard)
 $sid=[Security.Principal.WindowsIdentity]::GetCurrent().User
 $rule=New-Object Security.AccessControl.FileSystemAccessRule($sid,'ReadAttributes','Deny')
@@ -167,10 +169,18 @@ $guardChanged.AddAccessRule($guardRule)
     result = cleanup_probe(root, log, before=before,
                            after="""
 try {
-  if($guardOriginal){[IO.Directory]::SetAccessControl($guard,$guardOriginal)}
+  if($guardOriginal){
+    $guardOriginal.SetSecurityDescriptorSddlForm($guardOriginalSddl,[Security.AccessControl.AccessControlSections]::Access)
+    [IO.Directory]::SetAccessControl($guard,$guardOriginal)
+  }
 } finally {
-  if($original){[IO.Directory]::SetAccessControl($denied,$original)}
+  if($original){
+    $original.SetSecurityDescriptorSddlForm($originalSddl,[Security.AccessControl.AccessControlSections]::Access)
+    [IO.Directory]::SetAccessControl($denied,$original)
+  }
 }
+if([IO.Directory]::GetAccessControl($guard).GetSecurityDescriptorSddlForm([Security.AccessControl.AccessControlSections]::Access) -ne $guardOriginalSddl){throw 'Guard ACL restoration failed'}
+if([IO.Directory]::GetAccessControl($denied).GetSecurityDescriptorSddlForm([Security.AccessControl.AccessControlSections]::Access) -ne $originalSddl){throw 'Denied ACL restoration failed'}
 """)
     assert result.returncode == 1, result.stdout
     diagnostic = log.read_text(encoding='utf-8-sig')

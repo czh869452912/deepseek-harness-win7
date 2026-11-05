@@ -47,3 +47,9 @@
 同日继续排查发现，本机 AMD CPU 的虚拟化已开启，WSL2 能看到 `svm`，6.6.87.2 内核的 KVM/AMD 驱动配置为模块；此前设备缺失不代表缺少内核支持。执行 `wsl -d docker-desktop --exec modprobe kvm_amd` 成功退出0，生成 `/dev/kvm`，`lsmod` 确认 `kvm_amd`、`kvm` 已加载；无需下载驱动、重启 Docker 或改写 WSL 配置。
 
 随后通过临时容器 `docker run --rm --network none --device /dev/kvm alpine:3.22 sh -c 'test -c /dev/kvm && ls -l /dev/kvm'` 验证设备能传入 Docker 容器，退出0。本次新增本地 Alpine 镜像，拉取摘要为 `sha256:2e0b81d60597f449baa56dc25d355367869d2dca4cd57e866f1e2b52af3eb55f`；临时容器已退出删除。设备可见尚不等于实际 Win7 虚拟机或安装器验收通过。模块加载属于当前 WSL 运行期状态，完整关闭 WSL 或电脑重启后应重新检查，必要时重跑上述 modprobe 命令。
+
+### 提交后验证：ACL 测试恢复补强
+
+产品改动及初始测试随 `54d00e6a` 推送。后续文件遍历发现，自有 ACL 测试夹具仍有本次添加的拒绝规则：原测试将未标记修改的 DirectorySecurity 对象交回 SetAccessControl，未保证 DACL 实际恢复；文件可读不能证明权限描述符已恢复。以上早期结果中“恢复原始 ACL”的说法应以本段修正为准。
+
+测试现保存原始 Access SDDL，恢复时重新应用该描述符以标记待写入部分，并在 finally 中核对两个对象的实际 SDDL 与原值完全一致。仅对已确认的四个历史自有工作区中本测试创建的24个对象作检查，移除本测试添加的当前用户显式 ReadAttributes/ListDirectory Deny，保留其他规则；逐对象前后记录在 `.goose/out/issue6-fixture-acl-restoration.json`，没有更改真实工作区权限或删除夹具。补强后的三个直接消费者模块46项通过，16.97秒，退出0，记录 `.goose/out/issue6-postpush-54d00e6a/`；该记录使用修正后的测试，不标为原54d00e6a完整提交的验收。

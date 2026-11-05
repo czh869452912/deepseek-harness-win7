@@ -1,4 +1,6 @@
-param([Parameter(Mandatory=$true)][string]$InstallDirectory, [switch]$CheckOnly, [string]$RegisterGeneration, [string]$RemoveGeneration, [string]$LogPath)
+# PS2 -File loses exit codes for advanced scripts. Validate required values in
+# the body instead of using Parameter(Mandatory), so NSIS receives 1/4 correctly.
+param([string]$InstallDirectory, [switch]$CheckOnly, [string]$RegisterGeneration, [string]$RemoveGeneration, [string]$LogPath)
 $ErrorActionPreference='Stop'
 $script:setupStage='environment'
 $script:setupPath=$InstallDirectory
@@ -27,6 +29,7 @@ function Test-PlainPath([string]$Path,[string]$Boundary) {
   throw 'Installation path is outside its boundary'
 }
 try {
+  if ([string]::IsNullOrEmpty($InstallDirectory)) { throw 'InstallDirectory is required' }
   $identity=[Security.Principal.WindowsIdentity]::GetCurrent()
   $principal=New-Object Security.Principal.WindowsPrincipal($identity)
   $administrator=$principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)

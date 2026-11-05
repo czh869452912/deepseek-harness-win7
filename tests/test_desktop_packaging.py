@@ -199,6 +199,31 @@ def test_instance_check_missing_directory_is_distinct_from_access_denial(tmp_pat
     assert 'does not exist' in log.read_text(encoding='utf-8-sig')
 
 
+@pytest.mark.skipif(os.name != 'nt', reason='Actual Windows PowerShell CLI')
+def test_cleanup_requires_install_directory_without_interactive_prompt():
+    result = subprocess.run(['powershell.exe', '-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass',
+                             '-File', str(ROOT / 'apps/desktop/installer/uninstall-files.ps1'), '-CheckOnly'],
+                            stdout=subprocess.PIPE, stderr=subprocess.STDOUT, timeout=15, encoding='utf-8')
+    assert result.returncode == 1, result.stdout
+    assert 'InstallDirectory is required' in result.stdout
+
+
+@pytest.mark.skipif(os.name != 'nt', reason='Actual Windows PowerShell CLI')
+@pytest.mark.parametrize('missing', ['InstallDirectory', 'Generation', 'Version', None])
+def test_publication_rejects_missing_or_invalid_inputs_before_system_changes(tmp_path, missing):
+    values = dict(InstallDirectory=str(tmp_path / 'installed'), Generation=str(tmp_path / 'outside'), Version='0.1.5')
+    arguments = []
+    for name, value in values.items():
+        if name != missing:
+            arguments += ['-' + name, value]
+    result = subprocess.run(['powershell.exe', '-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass',
+                             '-File', str(ROOT / 'apps/desktop/installer/publish-installation.ps1')] + arguments,
+                            stdout=subprocess.PIPE, stderr=subprocess.STDOUT, timeout=15, encoding='utf-8')
+    assert result.returncode == 1, result.stdout
+    assert ('are required' if missing else 'Invalid publication generation') in result.stdout
+    assert not (tmp_path / 'installed').exists()
+
+
 def test_instance_check_rejects_file_as_installation_directory(tmp_path):
     root = tmp_path / 'file'
     root.write_bytes(b'preserve')

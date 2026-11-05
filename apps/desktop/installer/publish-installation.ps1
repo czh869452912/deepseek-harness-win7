@@ -1,6 +1,5 @@
-param([Parameter(Mandatory=$true)][string]$InstallDirectory,
-      [Parameter(Mandatory=$true)][string]$Generation,
-      [Parameter(Mandatory=$true)][string]$Version)
+# Keep this a basic script: PS2 -File discards advanced-script exit codes.
+param([string]$InstallDirectory, [string]$Generation, [string]$Version)
 # Run after verified extraction. Restore the previous registry values and exact
 # shortcut bytes if publishing any part of the new installation fails.
 $ErrorActionPreference='Stop'
@@ -9,6 +8,9 @@ $links=@()
 $temporary=@()
 $registry=[Microsoft.Win32.Registry]::LocalMachine
 try {
+  if ([string]::IsNullOrEmpty($InstallDirectory) -or [string]::IsNullOrEmpty($Generation) -or [string]::IsNullOrEmpty($Version)) {
+    throw 'InstallDirectory, Generation and Version are required'
+  }
   $root=[IO.Path]::GetFullPath($InstallDirectory).TrimEnd('\')
   $target=[IO.Path]::GetFullPath($Generation).TrimEnd('\')
   if ([IO.Path]::GetDirectoryName($target) -ne [IO.Path]::Combine($root,'versions') -or

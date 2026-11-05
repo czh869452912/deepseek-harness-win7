@@ -1,3 +1,4 @@
+import base64
 import hashlib
 import json
 import os
@@ -38,6 +39,56 @@ def test_nsis_define_preserves_literal_dollar_and_rejects_quotes():
     for value in ['a"b', 'a\nb', 'a\rb']:
         with pytest.raises(ValueError):
             nsis_define(value)
+
+
+@pytest.mark.skipif(os.name != 'nt', reason='Actual Windows NSIS/PowerShell carrier')
+def test_actual_nsis_preserves_diagnostics_and_prerequisite_restart_boundary(tmp_path):
+    archive = ROOT / '.goose/tools/nsis-3.13/nsis-3.13.zip'
+    if not archive.is_file():
+        pytest.skip('Pinned NSIS archive is not prepared')
+    identity = json.loads((ROOT / 'scripts/desktop-tool-inputs.json').read_text(encoding='utf-8'))['nsis']
+    compiler = tmp_path / 'compiler'
+    extract_tool(archive, identity, compiler)
+    payload, prerequisites = tmp_path / 'payload', tmp_path / 'prerequisites'
+    payload.mkdir()
+    prerequisites.mkdir()
+    (payload / 'dsh-owned-files.tsv').write_text('not extracted\n', encoding='utf-8')
+    (prerequisites / 'placeholder.txt').write_text('no system updates\n', encoding='utf-8')
+    observation = tmp_path / 'observed-log.txt'
+    command_line = tmp_path / 'policy-command.txt'
+    policy = tmp_path / 'policy.ps1'
+    policy.write_text("""param([string]$Edition,[string]$Payload,[string]$LogPath)
+$ErrorActionPreference='Stop'
+[IO.File]::WriteAllText('__COMMAND__',[Environment]::CommandLine,[Text.Encoding]::UTF8)
+[IO.File]::Copy($LogPath,'__OBSERVATION__')
+Write-Host 'POLICY_REACHED'
+exit 3010
+""".replace('__COMMAND__', str(command_line).replace("'", "''"))
+       .replace('__OBSERVATION__', str(observation).replace("'", "''")), encoding='utf-8')
+    # The policy stops before any extraction, publication or system installer.
+    # Lower only this fixture's UAC manifest so ordinary pytest needs no prompt.
+    setup = tmp_path / 'setup.nsi'
+    setup.write_text((ROOT / 'apps/desktop/installer/setup.nsi').read_text(encoding='utf-8')
+                     .replace('RequestExecutionLevel admin', 'RequestExecutionLevel user'), encoding='utf-8')
+    installer = tmp_path / 'restart-fixture.exe'
+    definitions = dict(VERSION='0.1.5', EDITION='aio', ARCHITECTURE='x64' if sys.maxsize > 2 ** 32 else 'x86',
+                       OUTPUT=installer, GENERATION='0.1.5-0123456789ab', PAYLOAD=payload,
+                       POLICY=policy, CLEANUP=ROOT / 'apps/desktop/installer/uninstall-files.ps1',
+                       PUBLICATION=ROOT / 'apps/desktop/installer/publish-installation.ps1',
+                       PREREQUISITES=prerequisites, MAX_INSTALL_ROOT=240)
+    result = subprocess.run([str(compiler / 'nsis-3.13/makensis.exe'), '/V2'] +
+                            ['/D' + name + '=' + nsis_define(value) for name, value in definitions.items()] + [str(setup)],
+                            stdout=subprocess.PIPE, stderr=subprocess.STDOUT, encoding='utf-8', timeout=60)
+    assert result.returncode == 0, result.stdout
+    installed = tmp_path / 'installed'
+    result = subprocess.run([str(installer), '/S', '/D=' + str(installed)], timeout=30)
+    assert result.returncode == 3010
+    diagnostic = observation.read_text(encoding='utf-8-sig')
+    assert diagnostic.startswith('Setup environment:')
+    assert 'Setup request: InstallDirectory=' in diagnostic
+    assert diagnostic.index('Setup request:') < diagnostic.index('Instance check exit=0')
+    assert '-InputFormat None' in command_line.read_text(encoding='utf-8-sig')
+    assert not installed.exists()
 
 
 def test_desktop_copies_complete_reviewed_package_closure_not_build_fixtures(tmp_path, monkeypatch):
@@ -91,9 +142,166 @@ def invoke_cleanup(root, *arguments):
         stdout=subprocess.PIPE,stderr=subprocess.STDOUT,timeout=60,encoding='utf-8')
 
 
+def cleanup_probe(root, log, before='', after=''):
+    if os.name != 'nt':
+        pytest.skip('Actual Windows PowerShell installer consumer')
+    def literal(value):
+        return "'" + str(value).replace("'", "''") + "'"
+    script = """
+$ErrorActionPreference='Stop'
+[Console]::OutputEncoding=New-Object Text.UTF8Encoding
+$root=__ROOT__
+$code=1
+try {
+  __BEFORE__
+  & __SCRIPT__ -InstallDirectory $root -CheckOnly -LogPath __LOG__
+  $code=$LASTEXITCODE
+} finally { __AFTER__ }
+exit $code
+""".replace('__ROOT__', literal(root)).replace('__SCRIPT__', literal(
+        ROOT / 'apps/desktop/installer/uninstall-files.ps1')).replace(
+        '__LOG__', literal(log)).replace('__BEFORE__', before).replace('__AFTER__', after)
+    encoded = base64.b64encode(script.encode('utf-16-le')).decode('ascii')
+    return subprocess.run(['powershell.exe', '-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass',
+                           '-EncodedCommand', encoded], stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+                          timeout=60, encoding='utf-8')
+
+
+@pytest.mark.parametrize('terminating', [False, True])
+def test_instance_query_failure_preserves_error_context_and_installed_bytes(installed, tmp_path, terminating):
+    root, generation = installed
+    log = tmp_path / 'instance.log'
+    action = "throw 'WMI unavailable'" if terminating else "Write-Error 'WMI unavailable'"
+    result = cleanup_probe(root, log, before="""
+function Get-WmiObject {
+  [CmdletBinding()] param([Parameter(Position=0)][string]$Class)
+  __ACTION__
+}
+""".replace('__ACTION__', action))
+    assert result.returncode == 1, result.stdout
+    diagnostic = log.read_text(encoding='utf-8-sig')
+    assert 'Stage=process-query Path=' + str(root) in diagnostic
+    for value in ('PowerShell=', 'CLR=', 'ProcessBits=', 'Administrator=', 'OS=',
+                  'WMI unavailable', 'Exception=', 'ErrorId=', 'Location=', 'ScriptStack='):
+        assert value in diagnostic
+    assert (generation / 'app.exe').read_bytes() == b'owned product: app.exe'
+    assert (generation / 'dsh-owned-files.tsv').exists()
+
+
+@pytest.mark.parametrize('ancestor', [False, True], ids=['install-root', 'ancestor'])
+def test_instance_check_reports_real_path_access_denial_and_preserves_installation(tmp_path, ancestor):
+    root = tmp_path / 'guard' / 'parent' / 'installed'
+    root, generation = create_installed_fixture(root)
+    denied = root.parent if ancestor else root
+    log = tmp_path / 'denied.log'
+    before = """
+$denied=__DENIED__
+$original=[IO.Directory]::GetAccessControl($denied)
+$originalSddl=$original.GetSecurityDescriptorSddlForm([Security.AccessControl.AccessControlSections]::Access)
+$changed=[IO.Directory]::GetAccessControl($denied)
+$guard=[IO.Path]::GetDirectoryName($denied)
+$guardOriginal=[IO.Directory]::GetAccessControl($guard)
+$guardOriginalSddl=$guardOriginal.GetSecurityDescriptorSddlForm([Security.AccessControl.AccessControlSections]::Access)
+$guardChanged=[IO.Directory]::GetAccessControl($guard)
+$sid=[Security.Principal.WindowsIdentity]::GetCurrent().User
+$rule=New-Object Security.AccessControl.FileSystemAccessRule($sid,'ReadAttributes','Deny')
+$changed.AddAccessRule($rule)
+# GetFileAttributes can obtain attributes through a parent's directory listing.
+# Deny that alternative on a second, independently owned fixture directory.
+$guardRule=New-Object Security.AccessControl.FileSystemAccessRule($sid,'ListDirectory','Deny')
+$guardChanged.AddAccessRule($guardRule)
+[IO.Directory]::SetAccessControl($denied,$changed)
+[IO.Directory]::SetAccessControl($guard,$guardChanged)
+""".replace('__DENIED__', "'" + str(denied).replace("'", "''") + "'")
+    result = cleanup_probe(root, log, before=before,
+                           after="""
+try {
+  if($guardOriginal){
+    $guardOriginal.SetSecurityDescriptorSddlForm($guardOriginalSddl,[Security.AccessControl.AccessControlSections]::Access)
+    [IO.Directory]::SetAccessControl($guard,$guardOriginal)
+  }
+} finally {
+  if($original){
+    $original.SetSecurityDescriptorSddlForm($originalSddl,[Security.AccessControl.AccessControlSections]::Access)
+    [IO.Directory]::SetAccessControl($denied,$original)
+  }
+}
+if([IO.Directory]::GetAccessControl($guard).GetSecurityDescriptorSddlForm([Security.AccessControl.AccessControlSections]::Access) -ne $guardOriginalSddl){throw 'Guard ACL restoration failed'}
+if([IO.Directory]::GetAccessControl($denied).GetSecurityDescriptorSddlForm([Security.AccessControl.AccessControlSections]::Access) -ne $originalSddl){throw 'Denied ACL restoration failed'}
+""")
+    assert result.returncode == 1, result.stdout
+    diagnostic = log.read_text(encoding='utf-8-sig')
+    stage = 'path-attributes' if ancestor else 'install-directory-attributes'
+    assert 'Stage=' + stage + ' Path=' + str(denied) in diagnostic
+    assert 'System.UnauthorizedAccessException' in diagnostic
+    assert 'Location=' in diagnostic and 'uninstall-files.ps1' in diagnostic
+    assert (generation / 'app.exe').read_bytes() == b'owned product: app.exe'
+    assert (generation / 'dsh-owned-files.tsv').exists()
+
+
+def test_instance_check_missing_directory_is_distinct_from_access_denial(tmp_path):
+    log = tmp_path / 'missing.log'
+    result = cleanup_probe(tmp_path / 'not-installed', log)
+    assert result.returncode == 0, result.stdout
+    assert 'does not exist' in log.read_text(encoding='utf-8-sig')
+
+
+@pytest.mark.skipif(os.name != 'nt', reason='Actual Windows PowerShell CLI')
+def test_cleanup_requires_install_directory_without_interactive_prompt():
+    result = subprocess.run(['powershell.exe', '-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass',
+                             '-File', str(ROOT / 'apps/desktop/installer/uninstall-files.ps1'), '-CheckOnly'],
+                            stdout=subprocess.PIPE, stderr=subprocess.STDOUT, timeout=15, encoding='utf-8')
+    assert result.returncode == 1, result.stdout
+    assert 'InstallDirectory is required' in result.stdout
+
+
+@pytest.mark.skipif(os.name != 'nt', reason='Actual Windows PowerShell CLI')
+@pytest.mark.parametrize('missing', ['InstallDirectory', 'Generation', 'Version', None])
+def test_publication_rejects_missing_or_invalid_inputs_before_system_changes(tmp_path, missing):
+    values = dict(InstallDirectory=str(tmp_path / 'installed'), Generation=str(tmp_path / 'outside'), Version='0.1.5')
+    arguments = []
+    for name, value in values.items():
+        if name != missing:
+            arguments += ['-' + name, value]
+    result = subprocess.run(['powershell.exe', '-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass',
+                             '-File', str(ROOT / 'apps/desktop/installer/publish-installation.ps1')] + arguments,
+                            stdout=subprocess.PIPE, stderr=subprocess.STDOUT, timeout=15, encoding='utf-8')
+    assert result.returncode == 1, result.stdout
+    assert ('are required' if missing else 'Invalid publication generation') in result.stdout
+    assert not (tmp_path / 'installed').exists()
+
+
+def test_instance_check_rejects_file_as_installation_directory(tmp_path):
+    root = tmp_path / 'file'
+    root.write_bytes(b'preserve')
+    log = tmp_path / 'file.log'
+    result = cleanup_probe(root, log)
+    assert result.returncode == 1, result.stdout
+    assert 'not a directory' in log.read_text(encoding='utf-8-sig')
+    assert root.read_bytes() == b'preserve'
+
+
+def test_instance_check_writes_untruncated_utf8_diagnostics(installed, tmp_path):
+    root, _ = installed
+    log = tmp_path / 'full.log'
+    # Longer than the NSIS default string/ExecToStack output buffer.
+    message = '访问被拒绝' + 'x' * 2000 + 'END-OF-ERROR'
+    result = cleanup_probe(root, log, before="""
+function Get-WmiObject {
+  [CmdletBinding()] param([Parameter(Position=0)][string]$Class)
+  throw '__MESSAGE__'
+}
+""".replace('__MESSAGE__', message))
+    assert result.returncode == 1, result.stdout
+    assert message in log.read_text(encoding='utf-8-sig')
+
+
 @pytest.fixture
 def installed(tmp_path):
-    root = tmp_path / 'installed'
+    return create_installed_fixture(tmp_path / 'installed')
+
+
+def create_installed_fixture(root):
     generation = root / 'versions/0.1.5-rc.3-0123456789ab'
     generation.mkdir(parents=True)
     rows = []
@@ -220,3 +428,22 @@ def test_uninstall_rejects_junctions_without_removing_external_bytes(installed, 
         assert (generation / 'resources/host.py').exists()
     finally:
         os.rmdir(str(target))  # Remove this exact junction itself, never its target.
+
+
+@pytest.mark.skipif(os.name != 'nt', reason='NTFS junction consumer')
+def test_instance_check_rejects_linked_ancestor_and_logs_its_path(installed, tmp_path):
+    root, generation = installed
+    alias = tmp_path / 'parent-link'
+    result = subprocess.run(['cmd.exe', '/c', 'mklink', '/J', str(alias), str(root.parent)],
+                            stdout=subprocess.PIPE, stderr=subprocess.STDOUT, timeout=20)
+    assert result.returncode == 0, result.stdout
+    log = tmp_path / 'linked.log'
+    try:
+        result = cleanup_probe(alias / 'installed', log)
+        assert result.returncode == 1, result.stdout
+        diagnostic = log.read_text(encoding='utf-8-sig')
+        assert 'Stage=path-attributes Path=' + str(alias) in diagnostic
+        assert 'linked path' in diagnostic
+        assert (generation / 'app.exe').read_bytes() == b'owned product: app.exe'
+    finally:
+        os.rmdir(str(alias))

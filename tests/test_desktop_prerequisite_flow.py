@@ -94,3 +94,37 @@ def test_failed_patch_blocks_remaining_installers(flows):
 
 def test_exit_zero_does_not_replace_actual_postinstall_detection(flows):
     assert 'remains unavailable: SSU' in flows['unavailable']['error']
+
+
+@pytest.mark.skipif(os.name != 'nt', reason='Actual Windows child exit codes')
+def test_offline_installer_collects_real_failure_restart_and_unsigned_status(tmp_path):
+    # cmd only exits; this executes no servicing package and needs no elevation.
+    import shutil
+    shutil.copyfile(os.environ['COMSPEC'], str(tmp_path / 'exit-fixture.exe'))
+    log = tmp_path / 'installer.log'
+    script = r'''
+$ErrorActionPreference='Stop'
+. '__SCRIPT__' -LibraryOnly
+$Payload='__PAYLOAD__'
+$LogPath='__LOG__'
+$rows=@()
+foreach($expected in @(0,7,3010,1641,2359302,2149842967)) {
+  $actual=Invoke-OfflineInstaller 'exit-fixture.exe' ('/c exit '+$expected)
+  $rows+=@{expected=$expected;actual=$actual}
+}
+Write-Output ('RESULT_JSON='+($rows | ConvertTo-Json -Compress))
+'''
+    for name, value in dict(SCRIPT=ROOT / 'apps/desktop/installer/prerequisites.ps1',
+                            PAYLOAD=tmp_path, LOG=log).items():
+        script = script.replace('__' + name + '__', str(value).replace("'", "''"))
+    command = base64.b64encode(script.encode('utf-16-le')).decode('ascii')
+    result = subprocess.run(['powershell.exe', '-NoProfile', '-NonInteractive', '-InputFormat', 'None',
+                             '-ExecutionPolicy', 'Bypass', '-EncodedCommand', command],
+                            stdout=subprocess.PIPE, stderr=subprocess.STDOUT, encoding='utf-8', timeout=30)
+    assert result.returncode == 0, result.stdout
+    rows = json.loads(next(line[len('RESULT_JSON='):] for line in result.stdout.splitlines()
+                           if line.startswith('RESULT_JSON=')))
+    assert [row['actual'] for row in rows] == [0, 7, 3010, 1641, 2359302, 2149842967]
+    diagnostic = log.read_text(encoding='utf-8-sig')
+    for row in rows:
+        assert 'exit=' + str(row['expected']) in diagnostic

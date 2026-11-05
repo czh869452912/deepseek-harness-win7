@@ -6,9 +6,9 @@
 
 [README.md](README.md) | [AGENTS.md](AGENTS.md)
 
-当前上游目标为 **dsh-v0.1.5-rc.3**（`a4c74a91e06b00fe0b0937bde982170c526cc842`），产品版本 **0.1.5-rc.3-r1**。本次 Windows 修订修复 Web 文件夹选择器被浏览器遮挡、安装器把检查失败误报为后台实例占用，以及旧 CLR 下的安装兼容缺口。固定原版前端保持 rc.3 身份，产品版本与分发文件独立增加修订号。
+当前上游目标为 **dsh-v0.1.5-rc.3**（`a4c74a91e06b00fe0b0937bde982170c526cc842`），产品版本 **0.1.5-rc.3-r2**。本次 Windows 修订修复旧 Win7 / PowerShell 2.0 下 AIO 输入管道访问拒绝、脚本及系统补丁退出码采集，并保留完整检查日志；继续包含 r1 的安装兼容性和文件夹选择器修复。固定原版前端保持 rc.3 身份，产品版本与分发文件独立增加修订号。
 
-下载 [v0.1.5-rc.3-r1 Release](https://github.com/czh869452912/deepseek-harness-win7/releases/tag/v0.1.5-rc.3-r1)；产物、校验清单和本次完整验收以发行页的精确回执为准，详见[修订版说明](docs/releases/v0.1.5-rc.3-r1.md)。前版 `6cbcbf1c` 的完整资格、用户 Win7 反馈及原始文件保留于 [v0.1.5-rc.3](https://github.com/czh869452912/deepseek-harness-win7/releases/tag/v0.1.5-rc.3)，不算作新修订验收。Win7 SP1 补丁/重启及多屏浏览器矩阵仍需单独实测；既有 ACL 问题、Source 例外、插件 ABI 和实际内网更新部署边界不扩张。
+下载 [v0.1.5-rc.3-r2 Release](https://github.com/czh869452912/deepseek-harness-win7/releases/tag/v0.1.5-rc.3-r2)；产物、校验清单和本次完整验收以发行页的精确回执为准，详见[修订版说明](docs/releases/v0.1.5-rc.3-r2.md)。前版 `6cbcbf1c` 的完整资格、用户 Win7 反馈及原始文件保留于 [v0.1.5-rc.3](https://github.com/czh869452912/deepseek-harness-win7/releases/tag/v0.1.5-rc.3)，不算作新修订验收。修复已在独立 Win7 SP1 x64 虚拟机中完成缺失组件安装、两次重启及应用启动验证；x86 Win7 客体和实体机器/多屏矩阵尚未覆盖，最终分发包的精确资格以发行回执为准；既有 ACL 问题、Source 例外、插件 ABI 和实际内网更新部署边界不扩张。
 
 规范 JSONL 默认写 `session.v3.jsonl.zstd`；明文配置写 `session.v3.jsonl`，逻辑导出仍为 `session.jsonl`。历史代际只读时在内存转换，写打开时验证并发布新代际，保留旧文件。已有明文根目录可显式配置 `compression: none`；canonical CLI/Web 和 Desktop 对未显式设置压缩的默认目录沿用已有单一明文编码；自定义目录及显式配置仍须匹配后端。同一根目录不能混用两种压缩格式。升级前停止应用并备份整个 DSH_HOME 及自定义存储根目录；rc.1 不能读取新写的 v3 历史，回退应恢复升级前的完整备份，不能仅换回旧程序。旧私有 SQLite 仍由显式只读 reader 导出。见 [分发与升级说明](docs/distribution.md)。
 
@@ -151,7 +151,7 @@ git submodule update --init --recursive
 .venv\Scripts\python.exe scripts\build_portable.py
 ```
 
-当前构建产物放置在 `dist/dsh-win7-portable/` 并打包为 `dist/dsh-win7-portable-v0.1.5-rc.3-r1.zip`：
+当前构建产物放置在 `dist/dsh-win7-portable/` 并打包为 `dist/dsh-win7-portable-v0.1.5-rc.3-r2.zip`：
 - 双击 **`dsh-web.bat`**：一键启动 Web GUI 并在浏览器中打开。
 - **`dsh.bat --profile headless "任务"`**：通过正式入口执行单次任务。
 

@@ -1,5 +1,7 @@
 # DeepSeek Harness Win7
 
+> **此分支是未接受的 ACL 候选方案。** 包含启动预检和独立宿主恢复工具，供后续重设计评审；预检仍可能拒绝全部 pwsh 请求，无法保证既有受损文件可用。实现、配对例外及测试记录均不表示 master 已修复，见[候选设计](docs/research/2026-10-21-windows-acl-materialization-design.md)与[恢复限制](docs/research/2026-10-21-windows-acl-recovery.md)。
+
 > 2026-10-21 已确认 Windows 工作区 ACL 继承问题：固定原版与未修复迁移版均可能出现新文件写完后不可读。**master 尚未合入修复，已发布版本未修复此项**；当前候选设计未获接受，单独提交 PR 讨论。见 [issue #4](https://github.com/czh869452912/deepseek-harness-win7/issues/4)、[问题分析](docs/research/2026-10-21-workspace-acl-mechanism-assessment.md)、[原版已知问题](docs/upstream-known-issues.md)及[已知差异](docs/known-differences.md)。
 
 开发维护：[Goose 多智能体操作指南](.goose/OPERATIONS.zh-CN.md) · [编排工作流参考](.goose/README.md)

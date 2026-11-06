@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "target_upstream": "a4c74a91e06b00fe0b0937bde982170c526cc842",
-  "scope": "Finite exact rc.3 observations requalified each retained predicate. Discovery index only; not a skip list or whole-upstream parity claim.",
+  "scope": "Finite exact rc.3 observations, including the bounded Windows ACL materialization defect. Discovery index only; not a skip list, release receipt, or whole-upstream parity claim.",
   "exceptions": [
     {
       "id": "UPSTREAM-REPEAT-001",
@@ -108,6 +108,19 @@
       "record": "migration/reviews/ACP-MALFORMED-PERMISSION-20261003.md",
       "requalified_upstream": "a4c74a91e06b00fe0b0937bde982170c526cc842",
       "requalification_record": "migration/candidates/rc3/source-fixtures-current-checks.json"
+    },
+    {
+      "id": "UPSTREAM-WINDOWS-ACL-001",
+      "driver": "scripts/windows_acl_oracle.py",
+      "predicate": "classify",
+      "modes": [
+        "this-folder-only",
+        "protected-null"
+      ],
+      "finding": "An inheritable workspace capability grant can leave newly created files without ordinary-user read access, or replace a protected NULL DACL with a capability-only DACL. The port rejects these layouts before mutating the DACL.",
+      "record": "docs/upstream-known-issues.md",
+      "requalified_upstream": "a4c74a91e06b00fe0b0937bde982170c526cc842",
+      "requalification_record": "migration/candidates/rc3/windows-acl-current-checks.json"
     }
   ],
   "pending_requalification": [],

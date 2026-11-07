@@ -1,5 +1,7 @@
 # 持续对齐记录
 
+2026-11-07 创造模式收尾：干净候选 `e6443396` 的新鲜单次统一门禁通过，Python 19,481 passed/6 项既有平台或权限跳过、21 组固定 Source、82 个配对驱动，以及实际解压 x64 Portable/现代和108浏览器均通过。本轮修复同步执行期限、能力入口、真实诊断、Client 编译语境/已知正则差异和资源打包；默认七工具仍按固定原版工作流适配 Python。见[收尾记录](../docs/research/2026-11-07-creative-closeout.md)、[精确检查](../docs/research/2026-11-07-creative-closeout-checks.json)和[694 报告载体](evidence/artifacts/CREATIVE-CLOSEOUT-20261107-E6443396.zip)。不认证任意服务 ABI/全部语法或 Win7 真机，不创建发布或变更 `accepted_upstream`、任务状态与已接受例外；旧失败和发行资格保留原身份。
+
 2026-10-21 ACL 问题登记：[issue #4](https://github.com/czh869452912/deepseek-harness-win7/issues/4) 跟踪固定原版与迁移版共享的工作区授权/继承风险。主分支本次仅提交[机理与现场分析](../docs/research/2026-10-21-workspace-acl-mechanism-assessment.md)、[原版已知问题](../docs/upstream-known-issues.md)和[已知差异](../docs/known-differences.md)，尚未修复；候选实现与方案另提 PR，用户反馈当前效果不符合预期，未接受或发布。不新增已接受的机器例外，不改变旧发行候选、产物或验收回执的身份。
 
 2026-10-20 发布收口：用户确认此前交付的普通离线导入包已完成 Win7 测试、未观察到问题，并授权发布本版。见[直接反馈与授权](evidence/HANDOFF-WIN7-RELEASE-20261020-6CBCBF1C.json)和[v0.1.5-rc.3 发布说明](../docs/releases/v0.1.5-rc.3.md)。产品继续绑定 `6cbcbf1c` 和原七份发行字节，既有完整门禁回执不改写；用户未提供的架构、补丁/重启和浏览器矩阵不作推断。内网更新服务器部署继续独立延期，`accepted_upstream` 仍为 null。下文 Win7 延期叙述为当时历史状态。

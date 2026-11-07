@@ -12,6 +12,8 @@
 
 最新状态见[创造模式后续收尾](research/2026-11-07-creative-closeout.md)；[进程边界修复与闭环复核](research/2026-11-07-creative-host-process-and-parity-audit.md)和[前轮边界分类](research/2026-11-07-creative-win7-runtime-boundaries.md)保留当时输入和未修复状态。本轮不新增已接受例外或变更迁移资格。
 
+当前完整资格绑定干净候选 `e6443396`：19,481 项 Python 通过、6 项既有平台/权限跳过，21 组固定 Source、82 个配对驱动和实际解压 x64 Portable/现代及108浏览器全部通过；见[精确检查记录](research/2026-11-07-creative-closeout-checks.json)。该结果关闭本轮具体实现和资源打包遗漏，不能推广为全部 JavaScript 语法、任意服务 ABI、x86 发行包或 Win7 真机验收。可选导出和共享租约仍单列。
+
 ## UPSTREAM-WINDOWS-ACL-001：工作区授权物化
 
 跟踪：[issue #4](https://github.com/czh869452912/deepseek-harness-win7/issues/4)。状态：**问题已确认，master 尚未合入修复；当前候选方案未获接受，另由独立分支/PR 讨论。** 已发布冻结包也不含候选修复。

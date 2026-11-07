@@ -1,0 +1,432 @@
+{
+  "status": "passed-with-explicit-qualification-scope",
+  "date": "2026-11-07",
+  "product_commit": "e64433966650fa0257af4f243bcf22c2a0f06f7d",
+  "target_upstream": "a4c74a91e06b00fe0b0937bde982170c526cc842",
+  "result": "passed",
+  "exit_code": 0,
+  "clean_candidate": true,
+  "published": false,
+  "product": {
+    "path": "dist/dsh-v0.1.5-rc.3-creative-e6443396-qualified/dsh-win7-portable-v0.1.5-rc.3-r2.zip",
+    "bytes": 106641295,
+    "sha256": "416cae0b53914daf4c1cb62e10d5ee957f9b4a2c05620510c3f430216ebb5dcb",
+    "scope": "Exact qualified x64 Portable retained locally; version field remains rc.3-r2, no new release/tag created."
+  },
+  "carrier": {
+    "path": "migration/evidence/artifacts/CREATIVE-CLOSEOUT-20261107-E6443396.zip",
+    "bytes": 27192020,
+    "sha256": "254b7345533f9b9d587d83326bfee5533ce17f2b83339be8e18d2db71faadf2f",
+    "regular_members": 694,
+    "all_member_sha256_verified": true,
+    "reports_only": true,
+    "omitted_directories": [
+      {
+        "path": "acp-mcp-paired.python-runtime",
+        "mode": 16895,
+        "bytes": 0,
+        "links": 1,
+        "attributes": 16,
+        "kind": "directory-omitted",
+        "reason": "Explicit primary-report fallback; nested raw fixtures not retained in this carrier"
+      },
+      {
+        "path": "browser108-profile-cordis",
+        "mode": 16895,
+        "bytes": 4096,
+        "links": 1,
+        "attributes": 16,
+        "kind": "directory-omitted",
+        "reason": "Explicit primary-report fallback; nested raw fixtures not retained in this carrier"
+      },
+      {
+        "path": "browser108-profile-minimal",
+        "mode": 16895,
+        "bytes": 4096,
+        "links": 1,
+        "attributes": 16,
+        "kind": "directory-omitted",
+        "reason": "Explicit primary-report fallback; nested raw fixtures not retained in this carrier"
+      },
+      {
+        "path": "browser108-profile-standard",
+        "mode": 16895,
+        "bytes": 4096,
+        "links": 1,
+        "attributes": 16,
+        "kind": "directory-omitted",
+        "reason": "Explicit primary-report fallback; nested raw fixtures not retained in this carrier"
+      },
+      {
+        "path": "fs-values-paired.native.work",
+        "mode": 16895,
+        "bytes": 4096,
+        "links": 1,
+        "attributes": 16,
+        "kind": "directory-omitted",
+        "reason": "Explicit primary-report fallback; nested raw fixtures not retained in this carrier"
+      },
+      {
+        "path": "fs-values-paired.work",
+        "mode": 16895,
+        "bytes": 4096,
+        "links": 1,
+        "attributes": 16,
+        "kind": "directory-omitted",
+        "reason": "Explicit primary-report fallback; nested raw fixtures not retained in this carrier"
+      },
+      {
+        "path": "javascript-initial-paired.source-workspace",
+        "mode": 16895,
+        "bytes": 4096,
+        "links": 1,
+        "attributes": 16,
+        "kind": "directory-omitted",
+        "reason": "Explicit primary-report fallback; nested raw fixtures not retained in this carrier"
+      },
+      {
+        "path": "javascript-ready-paired.source-workspace",
+        "mode": 16895,
+        "bytes": 0,
+        "links": 1,
+        "attributes": 16,
+        "kind": "directory-omitted",
+        "reason": "Explicit primary-report fallback; nested raw fixtures not retained in this carrier"
+      },
+      {
+        "path": "javascript-workflow-paired.source-workspace",
+        "mode": 16895,
+        "bytes": 0,
+        "links": 1,
+        "attributes": 16,
+        "kind": "directory-omitted",
+        "reason": "Explicit primary-report fallback; nested raw fixtures not retained in this carrier"
+      },
+      {
+        "path": "jsonl-provider-paired.workspace",
+        "mode": 16895,
+        "bytes": 4096,
+        "links": 1,
+        "attributes": 16,
+        "kind": "directory-omitted",
+        "reason": "Explicit primary-report fallback; nested raw fixtures not retained in this carrier"
+      },
+      {
+        "path": "jsonl-sharing-paired.native.workspace",
+        "mode": 16895,
+        "bytes": 4096,
+        "links": 1,
+        "attributes": 16,
+        "kind": "directory-omitted",
+        "reason": "Explicit primary-report fallback; nested raw fixtures not retained in this carrier"
+      },
+      {
+        "path": "mcp-http-paired-source-peers",
+        "mode": 16895,
+        "bytes": 16384,
+        "links": 1,
+        "attributes": 16,
+        "kind": "directory-omitted",
+        "reason": "Explicit primary-report fallback; nested raw fixtures not retained in this carrier"
+      },
+      {
+        "path": "persistence-read-paired.native.workspace",
+        "mode": 16895,
+        "bytes": 4096,
+        "links": 1,
+        "attributes": 16,
+        "kind": "directory-omitted",
+        "reason": "Explicit primary-report fallback; nested raw fixtures not retained in this carrier"
+      },
+      {
+        "path": "portable-extracted.jsonl-provider-paired.workspace",
+        "mode": 16895,
+        "bytes": 4096,
+        "links": 1,
+        "attributes": 16,
+        "kind": "directory-omitted",
+        "reason": "Explicit primary-report fallback; nested raw fixtures not retained in this carrier"
+      },
+      {
+        "path": "projection-cache-failure-paired.workspace",
+        "mode": 16895,
+        "bytes": 0,
+        "links": 1,
+        "attributes": 16,
+        "kind": "directory-omitted",
+        "reason": "Explicit primary-report fallback; nested raw fixtures not retained in this carrier"
+      },
+      {
+        "path": "pytest-workspace",
+        "mode": 16895,
+        "bytes": 1835008,
+        "links": 1,
+        "attributes": 16,
+        "kind": "directory-omitted",
+        "reason": "Explicit primary-report fallback; nested raw fixtures not retained in this carrier"
+      },
+      {
+        "path": "rc1-capabilities",
+        "mode": 16895,
+        "bytes": 4096,
+        "links": 1,
+        "attributes": 16,
+        "kind": "directory-omitted",
+        "reason": "Explicit primary-report fallback; nested raw fixtures not retained in this carrier"
+      },
+      {
+        "path": "sdk-profile-paired.captured.files",
+        "mode": 16895,
+        "bytes": 0,
+        "links": 1,
+        "attributes": 16,
+        "kind": "directory-omitted",
+        "reason": "Explicit primary-report fallback; nested raw fixtures not retained in this carrier"
+      },
+      {
+        "path": "subagent-acp-paired-runtime",
+        "mode": 16895,
+        "bytes": 24576,
+        "links": 1,
+        "attributes": 16,
+        "kind": "directory-omitted",
+        "reason": "Explicit primary-report fallback; nested raw fixtures not retained in this carrier"
+      },
+      {
+        "path": "subagent-acp-teardown-paired-runtime",
+        "mode": 16895,
+        "bytes": 4096,
+        "links": 1,
+        "attributes": 16,
+        "kind": "directory-omitted",
+        "reason": "Explicit primary-report fallback; nested raw fixtures not retained in this carrier"
+      },
+      {
+        "path": "win32-stat-paired.files",
+        "mode": 16895,
+        "bytes": 4096,
+        "links": 1,
+        "attributes": 16,
+        "kind": "directory-omitted",
+        "reason": "Explicit primary-report fallback; nested raw fixtures not retained in this carrier"
+      }
+    ],
+    "scope": "Root raw reports/observations retained; nested execution workspaces and browser screenshot folders remain in the original local output and are explicitly omitted by the carrier inventory."
+  },
+  "inputs": {
+    "path": "inputs.json",
+    "count": 17767,
+    "sha256": "3353fd9463898e05a1adbd0cd99463a6345ec35c51e6a56a7f787ac8fb6f8ed6",
+    "unchanged_before_after": true
+  },
+  "summary_sha256": "7df854fd8b0ad8433d7cd604d32604ee157872a5f75978d002ded43d1d8f8da5",
+  "extracted_sha256": "debd8a9f86aac2bc75aa2b3ce101ca4d08d2766e58422cf2b7b22bd6023cc037",
+  "regression": {
+    "collected": 19487,
+    "passed": 19481,
+    "skipped": [
+      {
+        "module": "tests.1to1.sandbox.test_sandbox_policy",
+        "name": "test_resolves_a_symlink_sensitive_session_cwd_with_posix_component_semantics",
+        "reason": "upstream skips this case on win32; POSIX component semantics"
+      },
+      {
+        "module": "tests.test_fs_local_upstream_parity",
+        "name": "test_resolve_preserves_display_path_but_realpaths_target_identity",
+        "reason": "symlinks unavailable: [WinError 1314] 客户端没有所需的特权。: 'C:\\\\Users\\\\czh86\\\\AppData\\\\Local\\\\Temp\\\\g-ii4zn313\\\\test_resolve_preserves_display0\\\\real' -> 'C:\\\\Users\\\\czh86\\\\AppData\\\\Local\\\\Temp\\\\g-ii4zn313\\\\test_resolve_preserves_display0\\\\linked'"
+      },
+      {
+        "module": "tests.test_fs_local_upstream_parity",
+        "name": "test_lstat_does_not_follow_final_symlink",
+        "reason": "symlinks unavailable: [WinError 1314] 客户端没有所需的特权。: 'C:\\\\Users\\\\czh86\\\\AppData\\\\Local\\\\Temp\\\\g-ii4zn313\\\\test_lstat_does_not_follow_fin0\\\\real.txt' -> 'C:\\\\Users\\\\czh86\\\\AppData\\\\Local\\\\Temp\\\\g-ii4zn313\\\\test_lstat_does_not_follow_fin0\\\\link.txt'"
+      },
+      {
+        "module": "tests.test_fs_local_upstream_parity",
+        "name": "test_atomic_write_preserves_existing_mode_and_private_new_file_mode",
+        "reason": "POSIX mode assertions do not describe Windows DACL semantics"
+      },
+      {
+        "module": "tests.test_fs_local_upstream_parity",
+        "name": "test_symlink_aliases_share_identity_and_writes_keep_link",
+        "reason": "symlinks unavailable: [WinError 1314] 客户端没有所需的特权。: 'C:\\\\Users\\\\czh86\\\\AppData\\\\Local\\\\Temp\\\\g-ii4zn313\\\\test_symlink_aliases_share_ide0\\\\real.txt' -> 'C:\\\\Users\\\\czh86\\\\AppData\\\\Local\\\\Temp\\\\g-ii4zn313\\\\test_symlink_aliases_share_ide0\\\\link.txt'"
+      },
+      {
+        "module": "tests.test_tool_fs_search_upstream_parity",
+        "name": "test_glob_does_not_follow_symlinks_and_spills_complete_sorted_result",
+        "reason": "directory symlinks require a Windows privilege not available here"
+      }
+    ],
+    "required_lanes": 3939,
+    "xml_sha256": "4fa65fea42a81baac4abb92cfead6d7c06e0f7e3a5821cce4c6f4ab8fc6311c1"
+  },
+  "official_source_configurations": [
+    "official-acp-app.log",
+    "official-acp.log",
+    "official-agent-lifecycle.log",
+    "official-consumers.log",
+    "official-deepseek-source.log",
+    "official-jsonl-provider-source.log",
+    "official-llm-public-source.log",
+    "official-mcp.log",
+    "official-plan-source.log",
+    "official-query-engine-source.log",
+    "official-rc1-subagent.log",
+    "official-session-corpus.log",
+    "official-session-observation.log",
+    "official-session-projection.log",
+    "official-session-recovery.log",
+    "official-session-sqlite-query.log",
+    "official-session-tools-source.log",
+    "official-storage-cache.log",
+    "official-subagent-acp.log",
+    "official-tool-scheduler-source.log",
+    "official-web-search-deepseek-source.log"
+  ],
+  "paired_drivers": 82,
+  "raw_receipt_sha256": {
+    "upstream-delta": "f8f386181159527ea854eac3f03f2a6b0e2b54de6d90fd8775c247323647f602",
+    "agent-factory-paired": "e8eb413c09bbbd5393c6b435917ac595dc21eba1fe7901f9699fd84559170bcc",
+    "agent-config-paired": "5a8e0d79f23196559adcae4d709bbe220f0632bccfbdaaaa9bebfcf3b2c83689",
+    "session-recovery-paired": "2fa6ff8b460e9316e7ccecd88c811f4bc0a366dd4975342b7bc5caba364d231b",
+    "session-live-paired": "58d03ddc74b13d4cda6ebcfb14da7440088f147eb4de419b658e7254063ba9db",
+    "session-prepared-paired": "377176dfd4005122badd46f09fc75d48968a4041765772f035ff208b03add2be",
+    "session-storage-paired": "ddbaf3d6732c9526492db80d27d27ca945813e55548f20f285b2d3fac2754b6c",
+    "session-projection-paired": "c8a013cc6aa8de6e0f95befb2ec2c743991c5d4d2ccb43a892c93e5616f900ee",
+    "deepseek-paired": "936f4d6e0f944635ba04971e351666966642e7e7f0af295eee629a16af0ef8d6",
+    "pi-paired": "89c8ee5e515f1705f75fc0b2263537fbf1ead9e1a32243b81c2162873fcd056a",
+    "storage-cache-paired": "4e191f6892efae917be37503f1dcb1dd94a76deb277a454ae247bd36d3dc1775",
+    "workflow-ralph-paired": "15b79b7373ba798b0cc8d0ed9002d2a4e1836a6c3f96438d2a8394f67036a184",
+    "repeat-tool-paired": "989e2e760c53f49eaf2a73c93270a36d90656d1701ef81372155e609e289d8e9",
+    "token-meter-paired": "6bec1aecc0dca3151b91929f512fb14c0be899160e7104963142ee771530e34e",
+    "pruner-paired": "04f2e5c35ca037579b4d48d0d0e60d579afd7c49755022ad6b13c99195a22cf2",
+    "compaction-paired": "c1f010a188d0d6b1ae4f5dd97b9e0e9b882f213ab6478ae09e0b63383dc6cfea",
+    "maintenance-paired": "d12e4a61105d2e5d56ca9d63cea2c72e1c6063366e7824735c30516e5f51f631",
+    "timeout-policy-paired": "7efb42f0a2e16b50a02473504e3fb6e8bbc618e8ad2db665fb7fdac9c019bace",
+    "abort-paired": "cbcf4335d00fbd6a31d2abb0de48a1a668c689290940b64947bf62e0f161c6bd",
+    "approval-paired": "84915829727b176eedb2ce99abcd2c27feb3077e7fbb7b5a4c0eed15cd14f5f1",
+    "inspect-paired": "d3d5275f39943a0744b5eb3767160ecfa1e79adb42233b2e18d244cfe466a0d5",
+    "cordis-guard-paired": "e8e2bad28cb5267f6607c1ae7f90506a0af267d4f46e6317e91a7114e6a72fda",
+    "cordis-runner-paired": "375010aa6b0688b5f64ff16dacda96059ef7e22136be2929280f195efa229eff",
+    "cordis-retirement-paired": "7860f90b8b12a32190ac29897c0f046235739dc394c1f3f153ac80a5dc9adc49",
+    "cordis-tools-paired": "972b93816bd2aea0d87e6cd54481a72223a51be227d79fdc2ddd94e411892b03",
+    "acp-sessions-paired": "68734e76a6418beb6af79a9988972eb81230b0cc0460fff83035c62cd48ddcf5",
+    "acp-model-output-paired": "5da42215b1556ca15cace6deafb439e06b3c6b95de1be74d8f82735ba34355c8",
+    "acp-stdio-paired": "46cd76d7281113f470eeee33e78cee47ccd2561bd2e1d659386206dcf91a93a6",
+    "acp-permissions-paired": "77aa1de60df6cea648aac0fec232bdcade78321d7c770f207809b39a6976799a",
+    "mcp-stdio-paired": "8ec16bd76442a02d41550afb01bfa4e7e8d0b66ec0822581385583eb0bb551cd",
+    "mcp-http-paired": "692e45b743b24c5cd347b6edd0cdf811ae1bb66b8d96909f6752bd2c6fe36ab5",
+    "acp-mcp-paired": "9c3a38bec375dd6c271a236ff5b6201f1a1585d742737f87aa5f8ec835cb9278",
+    "subagent-acp-paired": "53981ca401aa480e842b5c495f055165211a486368a94b27bc5cace5b31f70c8",
+    "subagent-acp-teardown-paired": "9a1b0d7929b8e7501cf5a74a5b8c74250b36ac2764e9b9a264f8c70efea874cb",
+    "mcp-disposal-paired": "4a87b27a41e2d2c9fe439eb99512135f19ef4b0fde52b94f29cd1738d53d02c3",
+    "subprocess-ownership-paired": "5fa775b5d9d4532f3313ef1aa147a85fb2e5878df52ffdf8bcb69acd79d28aed",
+    "subprocess-tree-paired": "ed4ad3b7267352c1a508caf93e8be57dbd77b5ebc81e8e2392f3c6c928281780",
+    "projection-cache-failure-paired": "71254223a29782bc5fe50e6910fc218310b69a21891d9e29a769b4c580f00784",
+    "session-observation-read-paired": "4a556fbc1c4091c9af22bd329808c1d7b489ce33840b09b453eb152a5f77e373",
+    "session-corpus-list-paired": "c0d5db79dfcc84669f1e1ac9421eb424f763425d66ff149a06b983bb3329dd62",
+    "session-corpus-read-paired": "c2b3433b17188f80032daa1955b71caed2c991715da6548fecb12ee2fd4bae75",
+    "session-lineage-paired": "192e0f49730496468e2b66aef707c6e703d9a80f5a1e747d90a999a071d150c3",
+    "session-event-trace-paired": "c750947ebffea35b1fbceea05de7ee89855244b8e30ba1b3abcdf4e126f7be79",
+    "session-filters-paired": "126a3cfecb2fb28b84ed85b75e5d2c2c99a4151b6cb4dae26957f11695eebe08",
+    "session-requests-paired": "e92724ef469bac8ccf36b86cab2e6f32e0381f4aa9002a829fb1cb427ba21598",
+    "session-snapshots-paired": "df0c232f4dfdc5bc89796877eabdaedd5027bd8b98ffad87c44b4dbbbc106159",
+    "query-schema-paired": "f8121c13db6d7f91b2e140aa90173fc135f7bf749f20b51b4ec6b81ac32a766b",
+    "query-engine-paired": "32e24bc9b1951e74ba875cca7ee021f1b7dadd020c2fbec55c763d275fdfef07",
+    "query-unicode-paired": "b83df2deb7e4589cc7d3bea7d7734c60d64bb5fcc0a54d2b32df419adc4fab93",
+    "session-text-paired": "7ddc039039638d22b4247ec23c9aaaf40c2166107e604c323445ea472223457a",
+    "session-tools-paired": "216b9143ede286d34b40041ddd81e1470b38a3dbd28e7ac4f9da8793b2b01cfa",
+    "sqlite-format-paired": "a76a4d92676e36de478d3e57b084993e29262bd09b7537dbf581a3ba71dd5481",
+    "jsonl-provider-paired": "9dbb040e47f7865033f061ba06d16daa27481e84b5f569ee0c174ba4c95da3b9",
+    "tool-scheduler-paired": "0690824310c5d6b028ffb7800153059ee8144be5b71cfc818763456d6d6e9abf",
+    "http-redirect-paired": "248e5941730893e2811e4726b14f48e6ad2d05d6b33ae62cc9e12725ab62ebc4",
+    "javascript-workflow-paired": "10200044055f0b39198521388afa6fe7df1adcd407e8b3fab8fef115f270387b",
+    "runtime-context-paired": "aa62c3cd689dfc276c7d72ad1808a86ea3881bd5a8d97e31ddab5366575ebbaf",
+    "javascript-ready-paired": "20502c73f3a813bc3ad4292bc4adb1ce9d5f3849c884acc318fc667531146049",
+    "persistence-read-paired": "06db23308c45e3d9ad0a0fb6e30f3d38a47d4908aac67bba0dd28a75f08ab3ea",
+    "javascript-initial-paired": "23f21d3aa5af3cfea6136ffbd15e30fc23b3610c3e4a90a15405b534c9ae86bb",
+    "session-number-paired": "34242c646603cf9fa889c537bc4df8bc66aadd8795da75d32838bfd388ec100b",
+    "session-diagnostic-paired": "0c2a46afd043291abe3cc689a505946ed276c736d8af99cf36773aac46a48faf",
+    "session-restore-sign-paired": "ccbfb71760cfb82da791c35a0835107d1674e72424b6df44daab383b169c843f",
+    "runtime-full-request-paired": "5d5421d8ba0b0e56f6ea0a2edcc0bc2abbb236c76d8ac6c7ee268aa291ae29c7",
+    "deepseek-error-paired": "a47d96872fded7d367a3ac693dd42e1506eed31a2dc9ff7362bee0c485de7615",
+    "deepseek-capture-paired": "467d25cff7f20dd93c0a7a1589136fa5468d50b420dd24118c8715dd09372e27",
+    "jsonl-sharing-paired": "2a6b4e1115773160bbd76535e90c11947b8d2d318e035a6711b1df6fef7be3d1",
+    "canonical-llm-paired": "f55638b84c659c992bb9b4f348f1e79114632885dcc0d43ee192871f95c17c0b",
+    "llm-metadata-paired": "a4dd8c6ad15573372dd1881be8a10ddefdf8fd1e6a452d9e71f2be39116a9c0b",
+    "llm-prepared-paired": "c867632288d94fe7d4f802dbc07394c5b1c536127cc19c787d351b1d4c12e6f7",
+    "llm-config-paired": "9b8ce972c8594078e7a37721c00596280b97bbb97d411af46309f1589fb61207",
+    "win32-stat-paired": "6011595f0274ee8c1b1562142ba203cca5c6b84e5d91f2fd726f603c0ddc443b",
+    "sdk-profile-paired": "836a4c0529e33f26ce245cb5e800edd98958746c2d1f3567ed6d222a07267455",
+    "javascript-errors-paired": "b3f179dfed3be4bf679d594d1deb126215927abe7e775ab08144f997968baabd",
+    "permission-presets-paired": "8df219973dc62ced523e40766cd886019925497c09b619aa23eda3d894404592",
+    "tool-errors-paired": "85496a09c9ad07a2d5fa47b0a28d553fdc5b56655ce9282174255f15f9cbe159",
+    "tool-durable-paired": "d9cdd38c2b9697b3364b5c7208033bfe8bf2a1b499d7c26f01792c555ca344cf",
+    "agent-dependencies-paired": "10ba50cc14236e934260bad4d65667d9cf3d46e36e35cf847c9cfb8947d69d1f",
+    "ask-user-paired": "a75935df23a4ab0152932a33c1dcec25bfba4a5b804995a46a5a51a73b6c54af",
+    "subagent-model-paired": "4bf3cda559d9e36d65b621eaee474b9045c190d0a3769869b1de5e6058ed8256",
+    "unicode-carrier-paired": "7a7d89a15a0a6b691e098ee72937cd1222bfb0cae7ad6bd87cc4bdd93e0db973",
+    "fs-values-paired": "bd80d3107e9c966fbf6d08d2a6d05e381b204b6b978768c2f4d804b9eedc6b25",
+    "message-values-paired": "f9e4440f65bdde9ddac0980256f8acc2dca1a5d836f55ea538651955e8adac8f",
+    "rc1-capabilities": "916e8b876285d5cbd93bf10465bf9b31e0b5bce4c0e54c25deeba1a774aeecba",
+    "legacy-session-reader": "2eb0e3a4bcec4d81f2c52d2346956b8c7292f6fb2633f270ad11360883bc35b8",
+    "cordis-raw": "d3a926524e3f7c3bf704d7a1840f70cb971c564014ae1100e16115ca47cebacf",
+    "cordis-acceptance": "4c0a4e2013d43789969b811e0301bc368f3bb05d3d22b5af886febf91d2ca368",
+    "portable-extracted": "debd8a9f86aac2bc75aa2b3ce101ca4d08d2766e58422cf2b7b22bd6023cc037"
+  },
+  "extracted": {
+    "python": "3.8.10 x64",
+    "modern_browser_passed": true,
+    "chromium108_passed": true,
+    "chromium108_profiles": {
+      "minimal": [
+        "fresh",
+        "cold"
+      ],
+      "standard": [
+        "fresh",
+        "cold"
+      ],
+      "cordis": [
+        "fresh",
+        "cold"
+      ]
+    },
+    "exported_host_lifecycle_rows": 8
+  },
+  "preceding_targeted_records": {
+    "verification-targeted.json": "791c714c86b96d317ff4c620f37bd5c4a6893294355b67a3eabe5e86ffd7e461",
+    "verification-commit.json": "18e208fbc32fe9ad2289e170e49ac5bfa545ba6c8daefa0b9bbf5262701c662e",
+    "verification-packaging.json": "1ce28e96441bb98c436a295ec6ba1a8fcf36b51e8e109fdb5a02276f13b70107",
+    "verification-observers.json": "82941fd1a8947129f1870adba75b4af27b3523f06d9a9821b041c601b1dda8fa",
+    "source-freeze-equivalence.json": "6fdb29eb3c17acbe2bb7d7ec094e8d7be883817685dcebff4b0aeb19b5c82435"
+  },
+  "failed_attempts": [
+    {
+      "commit": "ad3f0931",
+      "output": ".goose/out/creative-closeout-release-20261107-ad3f0931",
+      "result": "failed",
+      "superseded_not_recertified": true
+    },
+    {
+      "commit": "3a36c7d6",
+      "output": ".goose/out/creative-closeout-release-20261107-3a36c7d6",
+      "result": "failed",
+      "superseded_not_recertified": true
+    },
+    {
+      "commit": "78456c74",
+      "output": ".goose/out/creative-closeout-release-20261107-78456c74",
+      "result": "failed",
+      "superseded_not_recertified": true
+    }
+  ],
+  "boundaries": [
+    "Finite qualified Creative workflows and selected paired contracts; not all possible JavaScript syntax or third-party service ABI.",
+    "Current modern Windows x64 complete gate; Python 3.8.10 x86/Job regressions are separate targeted phases, not x86 release qualification.",
+    "Win7 SP1 hardware, current Desktop installers/admin upgrade and real cloud providers are not certified by this run.",
+    "Optional export/distribution and shared Inspect provider leases remain explicit local additions; no new accepted Source exception."
+  ],
+  "raw_output": ".goose/out/creative-closeout-release-20261107-e6443396",
+  "migration_state_changes": false,
+  "scope": "Current Windows complete gate; selected paired contracts, original browser and extracted runtime; not full parity or Win7 certification."
+}

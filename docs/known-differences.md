@@ -14,6 +14,8 @@
 
 当前完整资格绑定干净候选 `e6443396`：19,481 项 Python 通过、6 项既有平台/权限跳过，21 组固定 Source、82 个配对驱动和实际解压 x64 Portable/现代及108浏览器全部通过；见[精确检查记录](research/2026-11-07-creative-closeout-checks.json)。该结果关闭本轮具体实现和资源打包遗漏，不能推广为全部 JavaScript 语法、任意服务 ABI、x86 发行包或 Win7 真机验收。可选导出和共享租约仍单列。
 
+同一候选的后续预览分发另有[独立补件回执](releases/creative-preview-20261107.json)：x86 实际运行时和现代/108 三预设 fresh/cold、四份桌面包内通信及六组实际安装生命周期通过，七份分发包已发布。这些补充资格不扩大上述完整门禁范围，也不替代 Win7 真机；初次 x86 审批等待超时未确定原因，原失败保留。
+
 ## UPSTREAM-WINDOWS-ACL-001：工作区授权物化
 
 跟踪：[issue #4](https://github.com/czh869452912/deepseek-harness-win7/issues/4)。状态：**问题已确认，master 尚未合入修复；当前候选方案未获接受，另由独立分支/PR 讨论。** 已发布冻结包也不含候选修复。

@@ -1,29 +1,24 @@
 {
-  "status": "published",
+  "status": "published-complete",
   "url": "https://github.com/czh869452912/deepseek-harness-win7/releases/tag/creative-preview-20261107",
   "tag": "creative-preview-20261107",
   "candidate": "e64433966650fa0257af4f243bcf22c2a0f06f7d",
+  "release_id": 437430256,
   "prerelease": true,
-  "assets": 5,
+  "distribution_complete": true,
+  "distribution_artifacts": 7,
+  "assets": 12,
+  "published_at": "2026-11-07T08:07:11Z",
   "all_remote_asset_sizes_and_sha256_match": true,
   "public_unauthenticated_api_and_page_verified": true,
+  "initial_product_and_evidence_assets_unchanged": true,
   "previous_r2_unchanged": true,
   "latest_stable_release": "v0.1.5-rc.3-r2",
-  "published_at": "2026-11-07T08:07:11Z",
-  "release_id": 437430256,
-  "qualified_product_sha256": "416cae0b53914daf4c1cb62e10d5ee957f9b4a2c05620510c3f430216ebb5dcb",
   "embedded_product_version": "0.1.5-rc.3-r2",
-  "target_upstream": "a4c74a91e06b00fe0b0937bde982170c526cc842",
-  "product_archive_modified": false,
-  "qualified_archive_external_filename_only_renamed": true,
-  "qualification": {
-    "candidate": "e64433966650fa0257af4f243bcf22c2a0f06f7d",
-    "full_gate": "passed",
-    "publishable": true,
-    "python_passed": 19481,
-    "python_skipped": 6,
-    "scope": "Exact qualified x64 Portable on current Windows, modern browser and Chromium 108; not current Win7 hardware, x86 distribution or Desktop qualification.",
-    "record": "../research/2026-11-07-creative-closeout-checks.json"
+  "superseded_initial_metadata_asset_ids": {
+    "SHA256SUMS.txt": 720057796,
+    "release-manifest.json": 720057660,
+    "release-verification.json": 720057736
   },
   "asset_records": [
     {
@@ -34,11 +29,53 @@
       "url": "https://github.com/czh869452912/deepseek-harness-win7/releases/download/creative-preview-20261107/CREATIVE-CLOSEOUT-20261107-E6443396.zip"
     },
     {
-      "id": 720057796,
+      "id": 720270372,
       "name": "SHA256SUMS.txt",
-      "bytes": 408,
-      "sha256": "fd0b92ac286cbbc8dc03dc9cf9a5101d8cb45811c2da44e80bddc1b28d6ec4df",
+      "bytes": 1235,
+      "sha256": "0a6b464e491a1ffc8e4a796118aa53409f77e09224f79baf05ed20735b03be9d",
       "url": "https://github.com/czh869452912/deepseek-harness-win7/releases/download/creative-preview-20261107/SHA256SUMS.txt"
+    },
+    {
+      "id": 720258790,
+      "name": "creative-preview-distribution-evidence.zip",
+      "bytes": 83110884,
+      "sha256": "6b9ec6975dfacf9cee9349d1d2e4d0a86d5f451ab9bd128458eaef8b3d115cf0",
+      "url": "https://github.com/czh869452912/deepseek-harness-win7/releases/download/creative-preview-20261107/creative-preview-distribution-evidence.zip"
+    },
+    {
+      "id": 720259383,
+      "name": "dsh-desktop-aio-setup-creative-preview-20261107-x64.exe",
+      "bytes": 349336591,
+      "sha256": "8ac1275f28c7b9a49fb29fd9cba22703396772a1ee3e64d981edfae9de6ac4ef",
+      "url": "https://github.com/czh869452912/deepseek-harness-win7/releases/download/creative-preview-20261107/dsh-desktop-aio-setup-creative-preview-20261107-x64.exe"
+    },
+    {
+      "id": 720261309,
+      "name": "dsh-desktop-aio-setup-creative-preview-20261107-x86.exe",
+      "bytes": 423905869,
+      "sha256": "9a398c33f42382c2bd728937c537b33f07659aa0b2f323a83aa20d2f5806dc64",
+      "url": "https://github.com/czh869452912/deepseek-harness-win7/releases/download/creative-preview-20261107/dsh-desktop-aio-setup-creative-preview-20261107-x86.exe"
+    },
+    {
+      "id": 720263497,
+      "name": "dsh-desktop-standard-setup-creative-preview-20261107-x64.exe",
+      "bytes": 126371263,
+      "sha256": "145f4ab3b4902197a80d76e90555c0530c7be54e21d4a40533404d0817e806c1",
+      "url": "https://github.com/czh869452912/deepseek-harness-win7/releases/download/creative-preview-20261107/dsh-desktop-standard-setup-creative-preview-20261107-x64.exe"
+    },
+    {
+      "id": 720264155,
+      "name": "dsh-desktop-standard-setup-creative-preview-20261107-x86.exe",
+      "bytes": 115512403,
+      "sha256": "f3b27663613fcb8733c53c00ab1958f64da3e2e55a9b3f211155702e794da2b3",
+      "url": "https://github.com/czh869452912/deepseek-harness-win7/releases/download/creative-preview-20261107/dsh-desktop-standard-setup-creative-preview-20261107-x86.exe"
+    },
+    {
+      "id": 720265013,
+      "name": "dsh-win7-offline-upgrade.zip",
+      "bytes": 306682826,
+      "sha256": "e3ab02e6acf133117ef0489d848250d5ab278441eb376809ce0a3e555d6bb4a7",
+      "url": "https://github.com/czh869452912/deepseek-harness-win7/releases/download/creative-preview-20261107/dsh-win7-offline-upgrade.zip"
     },
     {
       "id": 720056401,
@@ -48,18 +85,94 @@
       "url": "https://github.com/czh869452912/deepseek-harness-win7/releases/download/creative-preview-20261107/dsh-win7-portable-creative-preview-20261107-x64.zip"
     },
     {
-      "id": 720057660,
+      "id": 720267169,
+      "name": "dsh-win7-portable-creative-preview-20261107-x86.zip",
+      "bytes": 94685609,
+      "sha256": "51819bd0ff393f0aacf817fe9ab76ef93e797936a8acc8c01574e89a102f3682",
+      "url": "https://github.com/czh869452912/deepseek-harness-win7/releases/download/creative-preview-20261107/dsh-win7-portable-creative-preview-20261107-x86.zip"
+    },
+    {
+      "id": 720270468,
       "name": "release-manifest.json",
-      "bytes": 1410,
-      "sha256": "42a006f88a1fbf2977d1d386ba5a3d711c6f90d270a24f75853c4ca12efa6065",
+      "bytes": 4376,
+      "sha256": "c43f79954cd18e11f23e8813710c82443d138ba91f12f9f80df8e2b404914ee1",
       "url": "https://github.com/czh869452912/deepseek-harness-win7/releases/download/creative-preview-20261107/release-manifest.json"
     },
     {
-      "id": 720057736,
+      "id": 720270586,
       "name": "release-verification.json",
-      "bytes": 21965,
-      "sha256": "04dffa2faf7576878aee03e84c8e95408ec9b294f4dd10e2ede3329e8d68031a",
+      "bytes": 339865,
+      "sha256": "45fcea99786a045f32442c21b4346406c986506b6f8e7ea92890b3b7205a2c53",
       "url": "https://github.com/czh869452912/deepseek-harness-win7/releases/download/creative-preview-20261107/release-verification.json"
     }
-  ]
+  ],
+  "completed_at": "2026-11-07T09:46:29Z",
+  "target_upstream": "a4c74a91e06b00fe0b0937bde982170c526cc842",
+  "initial_publication_record": "https://github.com/czh869452912/deepseek-harness-win7/blob/8bd2d8f44572f538e61d778827d4d6e99c11678d/docs/releases/creative-preview-20261107.json",
+  "qualification": {
+    "candidate": "e64433966650fa0257af4f243bcf22c2a0f06f7d",
+    "full_gate": "passed",
+    "publishable": true,
+    "python_passed": 19481,
+    "python_skipped": 6,
+    "scope": "Exact qualified x64 Portable plus separately qualified complete distribution set from the same frozen product commit.",
+    "record": "../research/2026-11-07-creative-closeout-checks.json",
+    "full_gate_archive_sha256": "416cae0b53914daf4c1cb62e10d5ee957f9b4a2c05620510c3f430216ebb5dcb",
+    "x86": {
+      "status": "passed",
+      "browser_preset_lanes": 6,
+      "report_sha256": "35c6a940cfd79031e8ff016e281d1a1677d1ad2ed71929788fa0f02342df54df"
+    },
+    "desktop": {
+      "packaged_preflight": {
+        "x64": {
+          "status": "qualified",
+          "checks": 9
+        },
+        "x86": {
+          "status": "qualified",
+          "checks": 9
+        }
+      },
+      "administrator_lanes": 6,
+      "actual_install_upgrade_rollback_gui_fresh_cold_uninstall": "passed",
+      "original_machine_registry_and_shortcuts_restored": true,
+      "report_sha256": "17321cefa978511fc9bc4c3cdff984c019175a8ad79a72fd0efa415a190a203e"
+    },
+    "offline": {
+      "status": "built",
+      "actual_member_bytes_verified": true,
+      "new_system_installation_executed": false
+    }
+  },
+  "supplemental_evidence": {
+    "path": "../../migration/evidence/artifacts/CREATIVE-PREVIEW-DISTRIBUTION-20261107-E6443396.zip",
+    "bytes": 83110884,
+    "sha256": "6b9ec6975dfacf9cee9349d1d2e4d0a86d5f451ab9bd128458eaef8b3d115cf0",
+    "members": 511,
+    "all_member_sha256_verified": true
+  },
+  "limitations": [
+    "Full release gate applies only to exact e6443396 x64 Portable bytes. x86 and Desktop have separately identified supplementary qualification; not an aggregated new full gate.",
+    "No new Win7 SP1 guest, physical-machine servicing/reboot or multimonitor certification; prior r2 results retain their original artifact identity.",
+    "All application packages retain embedded 0.1.5-rc.3-r2. Identify this snapshot by independent preview tag, e6443396 and SHA256; the existing r2 stable release is unchanged.",
+    "Finite Creative workflows and selected paired contracts, not all JavaScript syntax or arbitrary third-party service ABI.",
+    "Initial supplementary x86 Creative browser approval wait timed out once; diagnostic run passed unchanged checks. Original failure and diagnostic observer errors retained; cause not established.",
+    "Original Desktop parent timed out awaiting human UAC. After consent, a new normal-user observer completed the same privileged run; original timeout remains failed and preserved.",
+    "No public automatic update service; use manual downloads. Evidence excludes reconstructed runtime payloads and private homes."
+  ],
+  "earlier_build_failure": {
+    "record": "build-sequence.json",
+    "reason": "NSIS input staging path reached 264 characters",
+    "recovery": "Fresh short build output; no product or compiler changes",
+    "original_failure_preserved": true,
+    "additional_attempts": [
+      "build-recovery.json",
+      "x86-independent-run.json",
+      "cordis-diagnostic-run.json",
+      "cordis-diagnostic2-run.json",
+      "cordis-diagnostic3-run.json"
+    ],
+    "browser_timeout_cause": "not established; diagnostic fresh/cold passed; original failure retained"
+  }
 }

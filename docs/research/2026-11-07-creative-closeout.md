@@ -6,7 +6,7 @@
 
 精确候选、全部回执摘要及限制见[收尾检查](2026-11-07-creative-closeout-checks.json)。[资格载体](../../migration/evidence/artifacts/CREATIVE-CLOSEOUT-20261107-E6443396.zip)保留 694 份根级原始报告/观察，已逐成员核对 SHA-256；为限制体积，21 个嵌套目录显式省略，原执行工作区和截图仍留在本地原输出。载体不声称包含这些目录。已核验的实际 ZIP 单独保存在 `dist/dsh-v0.1.5-rc.3-creative-e6443396-qualified/`，SHA-256 为 `416cae0b53914daf4c1cb62e10d5ee957f9b4a2c05620510c3f430216ebb5dcb`。验收封存时未创建新 Release、标签或推送；包内版本号仍为 rc.3-r2，不能与既有正式发行包混认。
 
-后续发布：2026-11-07 已将同一候选和原 ZIP 的逐字节副本发布为独立 [创造模式预览版](https://github.com/czh869452912/deepseek-harness-win7/releases/tag/creative-preview-20261107)，标记 Pre-release，仅外部下载文件名变更。5 个附件的远端大小、SHA-256 和匿名公开访问均已核验，既有 r2 正式版保持不变；见[发布回执](../releases/creative-preview-20261107.json)。原收尾检查中的 `published: false` 保留其验收封存时点含义，不据此改写资格或当前候选身份。
+后续发布：2026-11-07 已将同一候选和原 ZIP 的逐字节副本发布为独立 [创造模式预览版](https://github.com/czh869452912/deepseek-harness-win7/releases/tag/creative-preview-20261107)，标记 Pre-release，仅外部下载文件名变更。首次发布为 5 个附件；按用户要求后续补齐为七份产品包、十二个附件：x86/x64 Portable、Standard/AIO 和独立双架构离线组件包。全部远端大小、SHA-256 和匿名公开访问已核验，既有 r2 正式版保持不变；见[完整发布回执](../releases/creative-preview-20261107.json)及[补件证据](../../migration/evidence/artifacts/CREATIVE-PREVIEW-DISTRIBUTION-20261107-E6443396.zip)。补件单列 x86 包内运行时/六组原浏览器 fresh-cold、四包通信和六组管理员安装/升级/回滚/GUI/卸载资格；原机器注册表与快捷方式恢复。初次 x86 创造模式审批等待超时及两次诊断观察器错误原样保留，原因未确定，后续原脚本整组六组通过没有改写先前失败。本轮没有新增 Win7 客体或真机补丁/重启资格。原收尾检查中的 `published: false` 保留其验收封存时点含义，不据此改写资格或当前候选身份。
 
 这关闭已发现的具体代码与打包缺口，支持约定范围内的创造模式工作流。**仍不是任意 JavaScript、任意服务 ABI 或 Win7 真机的一比一认证**；这些边界见文末，不新增已接受例外或改写历史发行资格。后续记录提交只保存证据，不重标实际合格候选。下文保留分阶段实施、失败与修复过程。
 

@@ -1,6 +1,8 @@
 # 持续对齐记录
 
-2026-11-07 后续发布：已将 `e6443396` 的原合格 x64 Portable 发布为独立 Pre-release [`creative-preview-20261107`](https://github.com/czh869452912/deepseek-harness-win7/releases/tag/creative-preview-20261107)。仅外部文件名更改，包内版本仍为 rc.3-r2，原正式版保持；5 个附件远端摘要和公开访问均已核验，见[发布回执](../docs/releases/creative-preview-20261107.json)。不附加未经本轮完整发行验收的 x86/Desktop，不改变迁移状态或扩大原验收范围。
+2026-11-07 预览分发补齐：同一 `creative-preview-20261107` 已补齐两份 Portable、四份 x86/x64 Standard/AIO 安装器及独立双架构离线组件 ZIP，共七份产品包、十二个附件。产品均绑定 `e6443396`，原精确 x64 ZIP/完整门禁保持；新增 x86 六组原浏览器 fresh/cold、包内运行时、四包通信预检及六组实际管理员生命周期独立通过，原机器注册表和快捷方式已恢复。首次 x86 审批超时未确定原因，失败和后续原脚本整组通过分别保留。见[完整发布回执](../docs/releases/creative-preview-20261107.json)及[补件载体](evidence/artifacts/CREATIVE-PREVIEW-DISTRIBUTION-20261107-E6443396.zip)。本轮没有新增 Win7 真机/客体系统补丁和重启资格，不变更迁移状态或旧 r2 正式发行。
+
+2026-11-07 首次发布（历史范围）：已将 `e6443396` 的原合格 x64 Portable 发布为独立 Pre-release [`creative-preview-20261107`](https://github.com/czh869452912/deepseek-harness-win7/releases/tag/creative-preview-20261107)。仅外部文件名更改，包内版本仍为 rc.3-r2，原正式版保持；5 个附件远端摘要和公开访问均已核验，见[发布回执](../docs/releases/creative-preview-20261107.json)。不附加未经本轮完整发行验收的 x86/Desktop，不改变迁移状态或扩大原验收范围。
 
 2026-11-07 创造模式收尾：干净候选 `e6443396` 的新鲜单次统一门禁通过，Python 19,481 passed/6 项既有平台或权限跳过、21 组固定 Source、82 个配对驱动，以及实际解压 x64 Portable/现代和108浏览器均通过。本轮修复同步执行期限、能力入口、真实诊断、Client 编译语境/已知正则差异和资源打包；默认七工具仍按固定原版工作流适配 Python。见[收尾记录](../docs/research/2026-11-07-creative-closeout.md)、[精确检查](../docs/research/2026-11-07-creative-closeout-checks.json)和[694 报告载体](evidence/artifacts/CREATIVE-CLOSEOUT-20261107-E6443396.zip)。不认证任意服务 ABI/全部语法或 Win7 真机，验收封存步骤本身未创建发布或变更 `accepted_upstream`、任务状态与已接受例外；旧失败和发行资格保留原身份。
 

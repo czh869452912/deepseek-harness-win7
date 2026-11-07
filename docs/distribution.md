@@ -4,6 +4,8 @@
 
 当前精确交付位于 [v0.1.5-rc.3 Release](https://github.com/czh869452912/deepseek-harness-win7/releases/tag/v0.1.5-rc.3) 和本机 [dist/dsh-v0.1.5-rc.3-6cbcbf1c-qualified](../dist/dsh-v0.1.5-rc.3-6cbcbf1c-qualified/)，包含两份 Portable、四份 Standard/AIO 安装器和独立离线组件 ZIP，附 SHA256SUMS 与 manifest。这些文件从已验证源逐字节复制，没有重建。包内文档保留构建时的冻结快照；当前验收状态以[发布说明](releases/v0.1.5-rc.3.md)和正式回执为准。x64 单次完整门禁、x86 独立包内验收和六组实际管理员安装生命周期分别保留范围；查看[正式回执](../migration/evidence/RUN-RC3-DESKTOP-COMPLETION-20261018-6CBCBF1C.json)。2026-10-20 用户确认已完成导入 Win7 测试、未观察到问题并授权发布；[反馈记录](../migration/evidence/HANDOFF-WIN7-RELEASE-20261020-6CBCBF1C.json)不补造未提供的系统补丁/重启、架构和浏览器逐项结果。
 
+2026-11-07 新增[创造模式 Pre-release](https://github.com/czh869452912/deepseek-harness-win7/releases/tag/creative-preview-20261107)，同样提供七件完整分发套装；[发布说明](releases/creative-preview-20261107.md)列出下载文件、SHA 与独立验收范围。产品冻结在 `e6443396`，包内版本仍为 `0.1.5-rc.3-r2`，请用预览标签和 SHA 区分旧正式发行。当前补件验收在现代 Windows 完成，不继承旧包的 Win7 系统组件/重启资格。
+
 ## 用户升级与数据
 
 合格候选 `6cbcbf1c` 在默认会话配置没有显式压缩选项时，让 canonical CLI/Web 和 Desktop 共用默认目录的历史编码保留策略：已有单一明文历史沿用 `none`，新目录继续使用 zstd。Minimal 本身显式使用 none，继续遵循其配置。自定义根目录和显式配置须选择匹配的 `compression: none` 或 `zstd`，混合编码不自动转换。若旧程序因该冲突无法启动，按[会话升级与恢复指南](session-upgrade-recovery.md)备份配置并选择匹配后端；本轮新候选的实际验收状态见[完成记录](research/2026-10-18-desktop-completion-validation.md)。

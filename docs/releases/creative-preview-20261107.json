@@ -1,0 +1,65 @@
+{
+  "status": "published",
+  "url": "https://github.com/czh869452912/deepseek-harness-win7/releases/tag/creative-preview-20261107",
+  "tag": "creative-preview-20261107",
+  "candidate": "e64433966650fa0257af4f243bcf22c2a0f06f7d",
+  "prerelease": true,
+  "assets": 5,
+  "all_remote_asset_sizes_and_sha256_match": true,
+  "public_unauthenticated_api_and_page_verified": true,
+  "previous_r2_unchanged": true,
+  "latest_stable_release": "v0.1.5-rc.3-r2",
+  "published_at": "2026-11-07T08:07:11Z",
+  "release_id": 437430256,
+  "qualified_product_sha256": "416cae0b53914daf4c1cb62e10d5ee957f9b4a2c05620510c3f430216ebb5dcb",
+  "embedded_product_version": "0.1.5-rc.3-r2",
+  "target_upstream": "a4c74a91e06b00fe0b0937bde982170c526cc842",
+  "product_archive_modified": false,
+  "qualified_archive_external_filename_only_renamed": true,
+  "qualification": {
+    "candidate": "e64433966650fa0257af4f243bcf22c2a0f06f7d",
+    "full_gate": "passed",
+    "publishable": true,
+    "python_passed": 19481,
+    "python_skipped": 6,
+    "scope": "Exact qualified x64 Portable on current Windows, modern browser and Chromium 108; not current Win7 hardware, x86 distribution or Desktop qualification.",
+    "record": "../research/2026-11-07-creative-closeout-checks.json"
+  },
+  "asset_records": [
+    {
+      "id": 720055769,
+      "name": "CREATIVE-CLOSEOUT-20261107-E6443396.zip",
+      "bytes": 27192020,
+      "sha256": "254b7345533f9b9d587d83326bfee5533ce17f2b83339be8e18d2db71faadf2f",
+      "url": "https://github.com/czh869452912/deepseek-harness-win7/releases/download/creative-preview-20261107/CREATIVE-CLOSEOUT-20261107-E6443396.zip"
+    },
+    {
+      "id": 720057796,
+      "name": "SHA256SUMS.txt",
+      "bytes": 408,
+      "sha256": "fd0b92ac286cbbc8dc03dc9cf9a5101d8cb45811c2da44e80bddc1b28d6ec4df",
+      "url": "https://github.com/czh869452912/deepseek-harness-win7/releases/download/creative-preview-20261107/SHA256SUMS.txt"
+    },
+    {
+      "id": 720056401,
+      "name": "dsh-win7-portable-creative-preview-20261107-x64.zip",
+      "bytes": 106641295,
+      "sha256": "416cae0b53914daf4c1cb62e10d5ee957f9b4a2c05620510c3f430216ebb5dcb",
+      "url": "https://github.com/czh869452912/deepseek-harness-win7/releases/download/creative-preview-20261107/dsh-win7-portable-creative-preview-20261107-x64.zip"
+    },
+    {
+      "id": 720057660,
+      "name": "release-manifest.json",
+      "bytes": 1410,
+      "sha256": "42a006f88a1fbf2977d1d386ba5a3d711c6f90d270a24f75853c4ca12efa6065",
+      "url": "https://github.com/czh869452912/deepseek-harness-win7/releases/download/creative-preview-20261107/release-manifest.json"
+    },
+    {
+      "id": 720057736,
+      "name": "release-verification.json",
+      "bytes": 21965,
+      "sha256": "04dffa2faf7576878aee03e84c8e95408ec9b294f4dd10e2ede3329e8d68031a",
+      "url": "https://github.com/czh869452912/deepseek-harness-win7/releases/download/creative-preview-20261107/release-verification.json"
+    }
+  ]
+}

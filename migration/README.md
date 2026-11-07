@@ -1,6 +1,8 @@
 # 持续对齐记录
 
-2026-11-07 创造模式收尾：干净候选 `e6443396` 的新鲜单次统一门禁通过，Python 19,481 passed/6 项既有平台或权限跳过、21 组固定 Source、82 个配对驱动，以及实际解压 x64 Portable/现代和108浏览器均通过。本轮修复同步执行期限、能力入口、真实诊断、Client 编译语境/已知正则差异和资源打包；默认七工具仍按固定原版工作流适配 Python。见[收尾记录](../docs/research/2026-11-07-creative-closeout.md)、[精确检查](../docs/research/2026-11-07-creative-closeout-checks.json)和[694 报告载体](evidence/artifacts/CREATIVE-CLOSEOUT-20261107-E6443396.zip)。不认证任意服务 ABI/全部语法或 Win7 真机，不创建发布或变更 `accepted_upstream`、任务状态与已接受例外；旧失败和发行资格保留原身份。
+2026-11-07 后续发布：已将 `e6443396` 的原合格 x64 Portable 发布为独立 Pre-release [`creative-preview-20261107`](https://github.com/czh869452912/deepseek-harness-win7/releases/tag/creative-preview-20261107)。仅外部文件名更改，包内版本仍为 rc.3-r2，原正式版保持；5 个附件远端摘要和公开访问均已核验，见[发布回执](../docs/releases/creative-preview-20261107.json)。不附加未经本轮完整发行验收的 x86/Desktop，不改变迁移状态或扩大原验收范围。
+
+2026-11-07 创造模式收尾：干净候选 `e6443396` 的新鲜单次统一门禁通过，Python 19,481 passed/6 项既有平台或权限跳过、21 组固定 Source、82 个配对驱动，以及实际解压 x64 Portable/现代和108浏览器均通过。本轮修复同步执行期限、能力入口、真实诊断、Client 编译语境/已知正则差异和资源打包；默认七工具仍按固定原版工作流适配 Python。见[收尾记录](../docs/research/2026-11-07-creative-closeout.md)、[精确检查](../docs/research/2026-11-07-creative-closeout-checks.json)和[694 报告载体](evidence/artifacts/CREATIVE-CLOSEOUT-20261107-E6443396.zip)。不认证任意服务 ABI/全部语法或 Win7 真机，验收封存步骤本身未创建发布或变更 `accepted_upstream`、任务状态与已接受例外；旧失败和发行资格保留原身份。
 
 2026-10-21 ACL 问题登记：[issue #4](https://github.com/czh869452912/deepseek-harness-win7/issues/4) 跟踪固定原版与迁移版共享的工作区授权/继承风险。主分支本次仅提交[机理与现场分析](../docs/research/2026-10-21-workspace-acl-mechanism-assessment.md)、[原版已知问题](../docs/upstream-known-issues.md)和[已知差异](../docs/known-differences.md)，尚未修复；候选实现与方案另提 PR，用户反馈当前效果不符合预期，未接受或发布。不新增已接受的机器例外，不改变旧发行候选、产物或验收回执的身份。
 

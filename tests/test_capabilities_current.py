@@ -1,6 +1,8 @@
 """Retained capability observer must exercise the current provider closure."""
 import copy
+import hashlib
 import json
+import os
 from pathlib import Path
 import subprocess
 import sys
@@ -11,6 +13,32 @@ from scripts import rc1_capabilities_oracle as oracle
 
 
 ROOT = Path(__file__).resolve().parents[1]
+
+
+def test_source_freeze_reads_tracked_and_compiled_bytes_on_every_pass(tmp_path):
+    values = {'package.json': b'{}', 'src/plugin.ts': b'first',
+              'lib/plugin.js': b'built', 'lib/nested/data.json': b'{}',
+              '.dsh-build/client-build-environment.json': b'{}',
+              'lib/node_modules/ignored.js': b'external', 'untracked.txt': b'external'}
+    for name, data in values.items():
+        path = tmp_path / name
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_bytes(data)
+    subprocess.run(['git', 'init', '-q', str(tmp_path)], check=True, capture_output=True)
+    subprocess.run(['git', '-C', str(tmp_path), 'add', 'package.json', 'src/plugin.ts'], check=True, capture_output=True)
+    expected = {name: hashlib.sha256(values[name]).hexdigest() for name in (
+        '.dsh-build/client-build-environment.json', 'lib/nested/data.json', 'lib/plugin.js', 'package.json', 'src/plugin.ts')}
+    observed = oracle.source_inputs(tmp_path)
+    assert observed == expected and list(observed) == sorted(expected)
+    path = tmp_path / 'lib/plugin.js'
+    metadata = path.stat()
+    path.write_bytes(b'other')
+    os.utime(str(path), ns=(metadata.st_atime_ns, metadata.st_mtime_ns))
+    changed = oracle.source_inputs(tmp_path)
+    assert changed != observed and changed['lib/plugin.js'] == hashlib.sha256(b'other').hexdigest()
+    (tmp_path / 'src/plugin.ts').unlink()
+    with pytest.raises(FileNotFoundError):
+        oracle.source_inputs(tmp_path)
 
 
 @pytest.fixture(scope='module')

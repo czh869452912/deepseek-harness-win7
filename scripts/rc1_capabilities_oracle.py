@@ -1,6 +1,7 @@
 """Retained observer identity with bounded current Source/runtime checks."""
 import argparse
 import asyncio
+from concurrent.futures import ThreadPoolExecutor
 import hashlib
 import json
 import os
@@ -84,7 +85,12 @@ def source_inputs(source):
                 paths.update(path.relative_to(source).as_posix() for path in library.rglob('*')
                              if path.is_file() and 'node_modules' not in path.relative_to(library).parts)
     paths.add('.dsh-build/client-build-environment.json')
-    return {name: hashlib.sha256((source / name).read_bytes()).hexdigest() for name in sorted(paths)}
+    # Every byte is read on each pass. Bound concurrent opens so filesystem
+    # latency cannot consume the observer budget before either runtime starts.
+    def observe(name):
+        return name, hashlib.sha256((source / name).read_bytes()).hexdigest()
+    with ThreadPoolExecutor(max_workers=8) as workers:
+        return dict(workers.map(observe, sorted(paths)))
 
 
 async def native(inputs):

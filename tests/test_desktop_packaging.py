@@ -91,7 +91,8 @@ exit 3010
     assert not installed.exists()
 
 
-def test_desktop_copies_complete_reviewed_package_closure_not_build_fixtures(tmp_path, monkeypatch):
+@pytest.mark.parametrize('damage', ['browser', 'native-skill'])
+def test_desktop_copies_complete_reviewed_package_closure_not_build_fixtures(tmp_path, monkeypatch, damage):
     source=tmp_path / 'source'
     portable=tmp_path / 'portable'
     output=tmp_path / 'desktop'
@@ -101,7 +102,12 @@ def test_desktop_copies_complete_reviewed_package_closure_not_build_fixtures(tmp
     path.parent.mkdir(parents=True)
     path.write_bytes(b'original pinned browser bundle')
     row=dict(path=name,sha256=hashlib.sha256(path.read_bytes()).hexdigest())
-    (source / 'scripts/runtime-inputs.json').write_text(json.dumps(dict(files=[])),encoding='utf-8')
+    native_name='packages/preset/agent-presets/presets/cordis/skills/cordis-plugin-development/references/python-api.md'
+    native_path=portable / native_name
+    native_path.parent.mkdir(parents=True)
+    native_path.write_bytes(b'Python 3.8.10 Context bindings')
+    native_row=dict(path=native_name,sha256=hashlib.sha256(native_path.read_bytes()).hexdigest(),product_owned=True)
+    (source / 'scripts/runtime-inputs.json').write_text(json.dumps(dict(files=[],native_files=[native_row])),encoding='utf-8')
     (source / 'scripts/frontend-inputs.json').write_text(json.dumps(dict(files=[],client_files=[row])),encoding='utf-8')
     for base in (source,portable):
         alias=base / 'packages/bundle/creative/cordis.patch.yml'
@@ -112,11 +118,12 @@ def test_desktop_copies_complete_reviewed_package_closure_not_build_fixtures(tmp
     unused.write_bytes(b'not a runtime input')
     monkeypatch.setattr(build_desktop,'ROOT',source)
     result=build_desktop.desktop_package_inputs(portable,output)
-    assert result['files'] == 2
+    assert result['files'] == 3
     assert (output / name).read_bytes() == path.read_bytes()
+    assert (output / native_name).read_bytes() == native_path.read_bytes()
     assert (output / 'packages/bundle/creative/cordis.patch.yml').read_bytes() == b'[]\n'
     assert not (output / unused.relative_to(portable)).exists()
-    path.write_bytes(b'changed original bundle')
+    (path if damage == 'browser' else native_path).write_bytes(b'changed reviewed input')
     with pytest.raises(ValueError,match='differs'):
         build_desktop.desktop_package_inputs(portable,tmp_path / 'rejected')
 

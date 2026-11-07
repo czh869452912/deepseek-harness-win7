@@ -107,7 +107,7 @@ def test_portable_stages_pinned_rg_and_zip_path_matches_runtime_resolver(tmp_pat
     shutil.copyfile(ROOT / 'scripts/frontend-inputs.json', fixture_root / 'scripts/frontend-inputs.json')
     shutil.copyfile(ROOT / 'scripts/runtime-inputs.json', fixture_root / 'scripts/runtime-inputs.json')
     runtime_inputs = json.loads((fixture_root / 'scripts/runtime-inputs.json').read_text(encoding='utf-8'))
-    for row in runtime_inputs['files']:
+    for row in runtime_inputs['files'] + runtime_inputs.get('native_files', []):
         destination = fixture_root / row['path']
         destination.parent.mkdir(parents=True, exist_ok=True)
         shutil.copyfile(ROOT / row['path'], destination)

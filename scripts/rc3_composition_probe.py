@@ -43,7 +43,7 @@ def frozen_inputs(source, production=False):
                   ROOT / 'scripts/runtime-inputs.json', ROOT / 'scripts/frontend-inputs.json']
         runtime = json.loads((ROOT / 'scripts/runtime-inputs.json').read_text(encoding='utf-8'))
         frontend = json.loads((ROOT / 'scripts/frontend-inputs.json').read_text(encoding='utf-8'))
-        paths += [ROOT / row['path'] for row in runtime['files'] + frontend['files'] + frontend['client_files']]
+        paths += [ROOT / row['path'] for row in runtime['files'] + runtime.get('native_files', []) + frontend['files'] + frontend['client_files']]
     return {str(path.relative_to(ROOT)): hashlib.sha256(path.read_bytes()).hexdigest() for path in sorted(set(paths))}
 
 

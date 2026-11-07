@@ -1085,8 +1085,8 @@
     {
       "path": "packages/preset/agent-presets/presets/cordis/skills/cordis-plugin-development/SKILL.md",
       "source_sha256": "01811d3ee9c03a466abae12d54d229e7de7bd74ca6b730c54ce9d5e696b294aa",
-      "sha256": "01811d3ee9c03a466abae12d54d229e7de7bd74ca6b730c54ce9d5e696b294aa",
-      "product_overlay": false
+      "sha256": "4297e79770501036a135c5df77ac0d373be653394c07fb1bcedad9bec268355e",
+      "product_overlay": true
     },
     {
       "path": "packages/preset/agent-presets/presets/cordis/skills/editing-cordis-compositions/SKILL.md",
@@ -1847,6 +1847,59 @@
   ],
   "previous_archive_sha256": "dc9656434d5d9f917796672149fd1275ebcc54c2a9c3149cedc192259ae0bad4",
   "adaptations": [
-    "Win7 Minimal and SDK Minimal retain str_replace_editor with a local fs provider."
+    "Win7 Minimal and SDK Minimal retain str_replace_editor with a local fs provider.",
+    "Creative development guidance targets Python 3.8.10/Win7; native references and runnable examples are product-owned inputs."
+  ],
+  "native_files": [
+    {
+      "path": "packages/preset/agent-presets/presets/cordis/skills/cordis-plugin-development/examples/counter.host.py",
+      "sha256": "eab5e4ae94c4e78180d0544c3a1bf2ab33dda6e7ff59b9464de0bb2c49b75b19",
+      "product_owned": true
+    },
+    {
+      "path": "packages/preset/agent-presets/presets/cordis/skills/cordis-plugin-development/examples/echo.client.js",
+      "sha256": "185333e4d4128fb1ba7b34d040139bc6e573a0848631a8098651dec2e2ce89e8",
+      "product_owned": true
+    },
+    {
+      "path": "packages/preset/agent-presets/presets/cordis/skills/cordis-plugin-development/examples/echo.host.py",
+      "sha256": "79d8ecd04f9f86b5fa055d9767e16a81de75afc66b4f9d128d6c13e7b837ad9c",
+      "product_owned": true
+    },
+    {
+      "path": "packages/preset/agent-presets/presets/cordis/skills/cordis-plugin-development/examples/echo.overlay.client.js",
+      "sha256": "36bc54605938fa3c295e22b66618712116be1182f2930f38e2cd998687a84791",
+      "product_owned": true
+    },
+    {
+      "path": "packages/preset/agent-presets/presets/cordis/skills/cordis-plugin-development/examples/lifecycle.host.py",
+      "sha256": "6d75c5a4fff62641e0210963670a94beaa8289f9d69508e8d2417fa930e81800",
+      "product_owned": true
+    },
+    {
+      "path": "packages/preset/agent-presets/presets/cordis/skills/cordis-plugin-development/examples/stateful.host.py",
+      "sha256": "495f1b09d7d43f01e1dd87db3a4b74279ce03bc6fa7b5ed5a4f68bc66e2c7d68",
+      "product_owned": true
+    },
+    {
+      "path": "packages/preset/agent-presets/presets/cordis/skills/cordis-plugin-development/examples/verify_stateful.py",
+      "sha256": "034b17119af44508d50d92326e97f5faddf7bbed57a9fadad2806115234dfa92",
+      "product_owned": true
+    },
+    {
+      "path": "packages/preset/agent-presets/presets/cordis/skills/cordis-plugin-development/references/client.md",
+      "sha256": "4f9bb675d305a54f71847666ff12cdbf399464ea6cb81831fd22cfb060fa4cbb",
+      "product_owned": true
+    },
+    {
+      "path": "packages/preset/agent-presets/presets/cordis/skills/cordis-plugin-development/references/python-api.md",
+      "sha256": "20b28bafcbb76e9865bab0005c0f8b9b54474d2588888401c157a9aa2f1eeeb6",
+      "product_owned": true
+    },
+    {
+      "path": "packages/preset/agent-presets/presets/cordis/skills/cordis-plugin-development/references/verification.md",
+      "sha256": "58045b4860abfcf44e420619345dff01864efd550e6f7fb6368805893b128775",
+      "product_owned": true
+    }
   ]
 }

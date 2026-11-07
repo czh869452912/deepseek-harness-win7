@@ -96,7 +96,7 @@ def desktop_package_inputs(portable, destination):
         manifest = json.loads((ROOT / 'scripts' / manifest_name).read_text(encoding='utf-8'))
         # The frontend manifest separates shell files from original plugin
         # bundles. Both lists form the pinned complete browser build.
-        for row in manifest['files'] + manifest.get('client_files', []):
+        for row in manifest['files'] + manifest.get('native_files', []) + manifest.get('client_files', []):
             if row['path'].startswith('packages/'):
                 if row['path'] in selected and selected[row['path']] != row['sha256']:
                     raise ValueError('Conflicting package input identity')

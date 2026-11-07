@@ -71,7 +71,7 @@ def test_invalid_input_fails_before_release_replacement(tmp_path, monkeypatch, d
     shutil.copyfile(ROOT/'scripts/frontend-inputs.json',root/'scripts/frontend-inputs.json')
     shutil.copyfile(ROOT/'scripts/runtime-inputs.json',root/'scripts/runtime-inputs.json')
     runtime = json.loads((root/'scripts/runtime-inputs.json').read_text(encoding='utf-8'))
-    for row in runtime['files']:
+    for row in runtime['files'] + runtime.get('native_files', []):
         destination = root/row['path']
         destination.parent.mkdir(parents=True, exist_ok=True)
         shutil.copyfile(ROOT/row['path'], destination)

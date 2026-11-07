@@ -1678,10 +1678,15 @@ def test_windows_stat_consumer_lanes_are_mandatory(tmp_path, damage):
 def sdk_profile_runtime_fixture():
     with tempfile.TemporaryDirectory(prefix='dsh-sdk-profile-source-') as folder:
         output = Path(folder) / 'paired.json'
-        completed = subprocess.run([sys.executable, str(ROOT / 'scripts/sdk_profile_oracle.py'),
-            '--output', str(output)], cwd=str(ROOT), capture_output=True, timeout=600)
-        if completed.returncode:
-            raise RuntimeError(output.read_text(encoding='utf-8'))
+        try:
+            completed = subprocess.run([sys.executable, str(ROOT / 'scripts/sdk_profile_oracle.py'),
+                '--output', str(output)], cwd=str(ROOT), capture_output=True, timeout=600)
+            if completed.returncode:
+                raise RuntimeError(output.read_text(encoding='utf-8'))
+        except BaseException:
+            retained = Path(tempfile.mkdtemp(prefix='sdk-gate-fixture-failed-', dir=str(ROOT / '.goose/out')))
+            shutil.copytree(folder, str(retained), dirs_exist_ok=True)
+            raise
         return dict(source=json.loads(output.with_suffix('.source.json').read_text(encoding='utf-8')),
             native=json.loads(output.with_suffix('.native.json').read_text(encoding='utf-8')))
 
@@ -1713,7 +1718,12 @@ def tool_errors_runtime_fixture():
 @functools.lru_cache(maxsize=1)
 def host_lifecycle_runtime_fixture():
     with tempfile.TemporaryDirectory(prefix='dsh-host-lifecycle-') as folder:
-        return observe_host_lifecycle(ROOT, sys.executable, Path(folder) / 'native.json')
+        try:
+            return observe_host_lifecycle(ROOT, sys.executable, Path(folder) / 'native.json')
+        except BaseException:
+            retained = Path(tempfile.mkdtemp(prefix='host-lifecycle-gate-failed-', dir=str(ROOT / '.goose/out')))
+            shutil.copytree(folder, str(retained), dirs_exist_ok=True)
+            raise
 
 
 @pytest.mark.parametrize('damage', GATE.TOOL_ERROR_DAMAGES + ('missing', 'source-missing', 'source-changed', 'source-file'))

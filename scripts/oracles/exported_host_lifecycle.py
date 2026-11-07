@@ -21,6 +21,16 @@ plugin.inject = ['dependency']
 '''
 
 
+class ObservedDependency(asyncio.Event):
+    def __init__(self):
+        super().__init__()
+        self.entered = asyncio.Event()
+
+    async def wait(self):
+        self.entered.set()
+        return await super().wait()
+
+
 async def settled(ctx):
     for iteration in range(3):
         for fiber in ctx.registry.list_fibers():
@@ -44,13 +54,13 @@ async def observe_lifecycle(directory):
     ctx = Context()
     baseline = len(ctx.fiber.get_effects())
     try:
-        provider = await ctx.plugin(lambda child: child.provide('dependency', asyncio.Event()))
+        provider = await ctx.plugin(lambda child: child.provide('dependency', ObservedDependency()))
         mounted = await ctx.plugin(plugin)
         original = ctx.get(host_handler_service(NAME))
         assert await original.call('count', {}) == 1
-        blocked = asyncio.create_task(original.call('wait', {}))
-        await asyncio.sleep(0)
         old_dependency = ctx.get('dependency')
+        blocked = asyncio.create_task(original.call('wait', {}))
+        await asyncio.wait_for(old_dependency.entered.wait(), 5)
         await provider.dispose()
         await settled(ctx)
         assert ctx.get(host_handler_service(NAME)) is None

@@ -82,7 +82,7 @@ To ensure strict Windows 7 and Python 3.8.10 compatibility:
 
 - **Creative Mode (`dsh/presets/creative.yaml`)**:
   - Includes full tool suite plus `@deepseek-ai/dsh-cordis-manager`.
-  - Exposes runtime Cordis tools: `cordis_list_plugins`, `cordis_inspect_context`, `cordis_unload_plugin`, `cordis_dump_config`.
+  - Exposes the pinned upstream seven-tool workflow: `cordis_define`, `cordis_run`, `cordis_stop`, `cordis_undefine`, `cordis_inspect_self`, `cordis_inspect_list`, `cordis_inspect_query`. Dynamic Host source targets Python 3.8.10; Client source remains plain JavaScript. Optional Python export/distribution is separate and is not enabled in this default workflow.
 
 - **Web GUI Mode (`dsh-web.bat` / `dsh --profile web`)**:
   - Use the canonical Web profile and upstream bundle composition: Web runtime, WebServer, Connection, Typert Gateway, application Remote controllers, ClientModules, HMR and FrontendStatic.

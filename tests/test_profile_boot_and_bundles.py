@@ -60,6 +60,29 @@ def test_existing_creative_default_upgrades_without_overwriting_user_patches():
         assert customized.patches == rows
 
 
+def test_creative_bundle_anchors_only_its_own_skill_path(tmp_path, monkeypatch):
+    from pathlib import Path
+    from dsh.boot.profile import load_profile, compose_entries
+    from dsh.boot.profile_boot import INSTALL_ANCHOR
+
+    monkeypatch.chdir(tmp_path)
+    home = tmp_path / 'home'
+    loaded = load_profile('dsh', 'creative', INSTALL_ANCHOR, str(home))
+    creative = next(layer for layer in loaded.layers if layer.packageName == '@deepseek-win7/dsh-creative')
+    row = next(row for row in creative.patches if row.get('id') == 'skill-filesystem')
+    expected = Path(__file__).resolve().parents[1] / 'packages/preset/agent-presets/presets/cordis/skills'
+    assert row['config']['bundledSkillDir'] == str(expected)
+    patch_path = home / 'profiles/creative/cordis.patch.yml'
+    user_rows = [{'id': 'skill-filesystem', 'config': {'bundledSkillDir': 'custom-skills'}}]
+    patch_path.write_text(yaml.safe_dump(user_rows), encoding='utf-8')
+    overridden = load_profile('dsh', 'creative', INSTALL_ANCHOR, str(home))
+    assert overridden.patches == user_rows
+    entries = compose_entries([layer.patches for layer in overridden.layers] + [overridden.patches])
+    user_entry = next(entry for entry in entries if entry.get('id') == 'skill-filesystem')
+    assert user_entry['config']['bundledSkillDir'] == 'custom-skills'
+    assert patch_path.read_text(encoding='utf-8') == yaml.safe_dump(user_rows)
+
+
 def test_native_install_anchor_uses_the_shipped_cli_identity():
     from pathlib import Path
     from dsh.boot.profile_boot import INSTALL_ANCHOR

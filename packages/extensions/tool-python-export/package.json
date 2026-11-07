@@ -1,0 +1,6 @@
+{
+  "name": "@deepseek-ai/dsh-tool-python-export",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Explicit native Python source export tool implemented by the host registry"
+}

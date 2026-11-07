@@ -6,7 +6,9 @@ this does not interpret arbitrary JavaScript or simulate browser activation.
 import asyncio
 import copy
 import json
+import inspect
 from pathlib import Path
+import re
 import sys
 from types import SimpleNamespace as NS
 
@@ -25,6 +27,24 @@ REPLACE = "def plugin(ctx):\n    old = harness.handle('read', lambda args: 'old'
 FAIL = "def plugin(ctx):\n    raise ValueError('fixture apply failure')\n"
 GATE = "async def plugin(ctx):\n    await ctx.get('runnerGate').wait()\n    ctx.provide('probeValue', 'ready')\n"
 ERRORS = "def plugin(ctx):\n    def fail(message):\n        error = ValueError(message)\n        error.stack = 'fixture stack'\n        raise error\n    harness.handle('a\\x00b', lambda args: fail('c'))\n    harness.handle('a', lambda args: fail('b\\x00c'))\n"
+
+
+def normalize_apply_tracebacks(value):
+    """Normalize only checkout/stdlib locations, retaining every native frame."""
+    if isinstance(value, list):
+        for child in value:
+            normalize_apply_tracebacks(child)
+    elif isinstance(value, dict):
+        for key, child in value.items():
+            if key == 'stack' and isinstance(child, str):
+                def filename(match):
+                    path = match.group(1).replace('\\', '/')
+                    path = path.replace(ROOT.as_posix(), '[workspace]')
+                    path = path.replace(Path(inspect.__file__).parent.as_posix(), '[python-stdlib]')
+                    return 'File "' + path + '"'
+                value[key] = re.sub(r'File "([^"]+)"', filename, child)
+            else:
+                normalize_apply_tracebacks(child)
 
 
 async def observe(spec):
@@ -128,6 +148,8 @@ async def observe(spec):
             grants = [dict(pluginId=plugin['pluginId'], approved=sorted(plugin['approved']), future=plugin['approveFuture']) for plugin in runner.plugins.values()]
             rows.append(copy.deepcopy(dict(op=op, value=value, inventory=runner.inventory(), grants=grants,
                 events=events[before[0]:], steer=steered[before[1]:], inject=injected[before[2]:], provided=ctx.get('probeValue'))))
+        if spec['mode'] == 'actual-host-apply-failure-and-retry':
+            normalize_apply_tracebacks(rows)
         return dict(mode=spec['mode'], rows=rows)
     finally:
         released.set()

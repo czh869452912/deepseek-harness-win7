@@ -517,16 +517,19 @@ def guarded_plugin(plugin, report):
     raw_apply = plugin if callable(plugin) else plugin['apply']
     def apply(ctx, *args):
         facade = SandboxContext(ctx, report)
+        call_args = (facade,) + args
         try:
             signature = inspect.signature(raw_apply)
         except (ValueError, TypeError):
-            return raw_apply(facade, *args)
-        try:
-            signature.bind(facade, *args)
-        except TypeError:
-            signature.bind(facade)
-            return raw_apply(facade)
-        return raw_apply(facade, *args)
+            pass
+        else:
+            try:
+                signature.bind(*call_args)
+            except TypeError:
+                signature.bind(facade)
+                call_args = (facade,)
+        # Binding probes must not become the plugin's exception context.
+        return raw_apply(*call_args)
     # Python function metadata is the native plugin's inject declaration.
     wrapped = dict(vars(plugin)) if callable(plugin) else dict(plugin)
     wrapped.update(name=getattr(plugin, 'name', '<anonymous>') if callable(plugin) else plugin.get('name', '<anonymous>'), apply=apply)

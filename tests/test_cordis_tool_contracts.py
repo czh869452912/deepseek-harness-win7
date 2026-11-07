@@ -41,8 +41,14 @@ def test_native_host_guidance_and_parameter_contract_are_explicit():
     assert 'plugin.inject' in contracts['prompt']
     assert 'plain JavaScript function body' in contracts['prompt']
     assert 'DSH Node.js process' not in contracts['prompt']
-    assert 'load the cordis-plugin-development Skill' not in contracts['prompt']
+    assert 'load the cordis-plugin-development Skill' in contracts['prompt']
+    assert 'JavaScript Host examples' not in contracts['prompt']
     original = {row['name']: row for row in SOURCE_CONTRACTS['definitions']}
+    description = next(row['description'] for row in contracts['definitions'] if row['name'] == 'cordis_define')
+    assert 'Python Host syntax, and JavaScript Client syntax' in description
+    assert 'without executing either half' in description
+    assert 'execution errors, missing dependencies, or browser engine differences' in description
+    assert 'syntax failures are reported during browser activation' not in description
     for row in contracts['definitions']:
         assert row['outputSchema'] == original[row['name']]['outputSchema']
         if row['name'] != 'cordis_define':

@@ -11,6 +11,11 @@
       "minPythonVersion": [3, 8, 10],
       "minHostVersion": [0, 1, 0],
       "dependencies": []
+    },
+    "release": {
+      "formatVersion": 1,
+      "files": ["package.json", "cordis.patch.yml", "README.md", "LICENSE",
+                "python/echo/__init__.py", "python/echo/plugin.py", "python/echo/formatting.py"]
     }
   }
 }

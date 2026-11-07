@@ -9,7 +9,7 @@ import sys
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
-from dsh.extensions.cordis_prompt import native_contracts, SOURCE_CONTRACTS
+from dsh.extensions.cordis_prompt import native_contracts, SOURCE_CONTRACTS, PROMPT_ADAPTATIONS
 
 
 def main():
@@ -35,6 +35,13 @@ def main():
             'dsh/core/json_schema.py', 'dsh/llm/message.py', 'dsh/core/session/json.py', 'dsh/core/abort.py',
             'dsh/core/cancellation.py', 'dsh/cordis/context.py', 'dsh/cordis/fiber.py', 'dsh/cordis/reflect.py',
             'tests/test_cordis_tools_full.py', 'tests/test_cordis_tool_contracts.py', 'tests/fixtures/cordis-tools-source-observations.json']
+        inputs += ['dsh/javascript/runtime.py', 'dsh/javascript/bin/runtime.json',
+                   'dsh/javascript/bin/x86/runtime.json', 'tests/test_cordis_runtime_boundaries.py']
+        inputs += ['dsh/extensions/cordis_host_process.py', 'dsh/extensions/cordis_host_worker.py',
+                   'dsh/extensions/cordis_host_bridge.py', 'tests/test_cordis_host_process.py']
+        inputs += ['dsh/javascript/client_syntax.py', 'dsh/javascript/client-syntax/acorn.js',
+                   'dsh/javascript/client-syntax/driver.js', 'dsh/javascript/client-syntax/manifest.json',
+                   'dsh/javascript/client-syntax/ACORN-LICENSE']
         report['input_sha256'] = {path: hashlib.sha256((ROOT / path).read_bytes()).hexdigest() for path in inputs}
         specs = json.loads((ROOT / 'scripts/oracles/cordis-tools-cases.json').read_text(encoding='utf-8'))
         modes = [spec['mode'] for spec in specs]
@@ -69,7 +76,7 @@ def main():
         for left, right in zip(source['cases'], native['cases']):
             report['cases'].append(dict(mode=left['mode'], status='matched' if left == right else 'different', upstream=left, python=right))
         report['status'] = 'passed' if all(row['status'] == 'matched' for row in report['cases']) else 'different'
-        report['metadata'] = dict(status='matched-with-explicit-Python-language-adaptations', prompt_replacements=10,
+        report['metadata'] = dict(status='matched-with-explicit-Python-language-adaptations', prompt_replacements=len(PROMPT_ADAPTATIONS),
                                  define_description_replacements=2, host_parameter_description_replacements=1)
     except (OSError, ValueError, KeyError, TypeError, RuntimeError, subprocess.SubprocessError) as error:
         report['error'] = str(error)

@@ -1,40 +1,8 @@
 ---
 name: cordis-plugin-development
-description: Create, modify, debug, or extend dynamic Cordis Plugins, including Host Services and Events, dynamic Tools, version updates, and runtime diagnostics.
+description: Develop temporary dynamic Cordis Plugins for DSH Win7 using Python Host and plain JavaScript Client code.
 ---
 
 # Develop Dynamic Cordis Plugins
 
-First determine whether a capability belongs on Host or Agent Presets, then query the real interface before writing code. Never infer a complete API from a Service name or Event payload.
-
-## Core Plugin Concepts in Python
-
-1. **Service Registration**:
-   ```python
-   ctx.set_service("my_service", MyService(ctx))
-   ```
-
-2. **Reversible Effects**:
-   ```python
-   def cleanup():
-       ...
-   ctx.effect(cleanup)
-   ```
-
-3. **Event Dispatching Modes**:
-   - `emit`: synchronous notifications
-   - `waterfall`: middleware processing `(data, *args, next_fn)`
-   - `serial`: sequential async execution
-   - `parallel`: concurrent async execution
-   - `bail`: short-circuiting first non-None result
-
-4. **Dynamic Tools**:
-   ```python
-   tools = ctx.get("tools")
-   tools.register_tool({
-       "name": "my_tool",
-       "description": "...",
-       "parameters": {...},
-       "execute": my_exec_fn
-   })
-   ```
+The canonical shipped skill is [cordis-plugin-development](../../../../packages/preset/agent-presets/presets/cordis/skills/cordis-plugin-development/SKILL.md). Read it for the complete platform, Inspect, lifecycle, Client, RPC and repair workflow. This legacy resource is not a separate development mode.

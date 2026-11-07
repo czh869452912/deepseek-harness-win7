@@ -21,10 +21,15 @@ Portable users invoke the same arguments through `dsh.bat`. This plugin requires
 no Node, pnpm or external Python libraries. Installation copies the package;
 later edits in the development directory do not modify the installed snapshot.
 
-Developers can produce a ZIP with `package.json`, `cordis.patch.yml`, `python/`,
-this README and LICENSE at its root, or below one enclosing directory. Install
-it with `dsh plugin --profile web add ./python-echo.zip`. Node/pnpm are unnecessary
-for both producing this Python-only archive and installing it.
+The explicit `dsh.release.files` list makes this project packable:
+
+```powershell
+dsh.bat plugin --profile web pack .\examples\python-echo .\python-echo.zip
+dsh.bat plugin --profile web add .\python-echo.zip
+```
+
+Use `.venv\Scripts\python.exe dsh.py` in place of `dsh.bat` from a repository.
+The archive contains only the reviewed release list. No Node/pnpm/pip is needed.
 
 Package-local imports use relative imports, as shown by `.formatting`. Import
 host APIs from `dsh.plugin_api`; package loading does not add the plugin source
@@ -46,10 +51,11 @@ Changed installed or archived source files block replacement. Package removal
 keeps historical source snapshots under the profile; it does not remove plugin
 business data stored elsewhere. Source rollback does not reverse data migrations.
 
-Dependencies, automatic activation rollback, live source reload and
-custom browser clients remain separate implementation/acceptance work. API 1
-currently requires an empty dependency list and minimum-version arrays;
-it does not implement PEP 440 constraints. Changed installed files block removal
+This example has no dependencies. The host also supports explicitly locked,
+expanded pure-Python dependency closures; it does not resolve arbitrary pip or
+PEP 440 ranges. Exported plain-JS Client delivery is a separate supported path,
+not a generic TS/TSX build chain. Automatic activation rollback and live source
+reload are not provided by this example. Changed installed files block removal
 so user modifications are not silently deleted. Store user data outside the
 installed package directory.
 

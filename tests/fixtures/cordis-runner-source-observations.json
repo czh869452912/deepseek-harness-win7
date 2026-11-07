@@ -1,7 +1,7 @@
 {
   "target_upstream": "a4c74a91e06b00fe0b0937bde982170c526cc842",
   "source_sha256": {
-    "scripts/oracles/cordis-runner-cases.json": "7778fe560aaef7aafd7f901202435d63875147b143b78947fd4bf43e030da546",
+    "scripts/oracles/cordis-runner-cases.json": "649845f8a935a73ab56bc737dd3cbf12dfafddb67812f4420e3227d2ff223108",
     "scripts/oracles/cordis-runner.spec.ts": "bcba4ef3a26fac402d44411f75c7088ed1ded37efe7b96aa892fdb9706c103dc",
     "scripts/oracles/vitest.cordis-runner-probe.config.mts": "9a8f7505811a63a7fa52a2cf3d58f66d2645d76d7001140b2de40f25e7733831",
     "scripts/oracles/vitest.agent-lifecycle.config.mts": "1f781c93abe83d7fed3815becbacdf8b639601fae31242baf476e8314508055e",
@@ -8958,6 +8958,847 @@
                 "pluginId": "probe-1",
                 "packageId": "pkg-1",
                 "pluginRunId": "run-1"
+              }
+            ]
+          ],
+          "steer": [],
+          "inject": [],
+          "provided": null
+        }
+      ]
+    },
+    {
+      "mode": "approval-repeat-attach",
+      "rows": [
+        {
+          "op": "define",
+          "value": {
+            "pluginId": "probe-1",
+            "packageId": "pkg-1",
+            "name": "Probe",
+            "purpose": "actual lifecycle",
+            "hasHostHalf": true,
+            "hasClientHalf": true
+          },
+          "inventory": [
+            {
+              "pluginId": "probe-1",
+              "agentId": "owner",
+              "packages": [
+                {
+                  "packageId": "pkg-1",
+                  "name": "Probe",
+                  "purpose": "actual lifecycle",
+                  "hasHostHalf": true,
+                  "hasClientHalf": true
+                }
+              ]
+            }
+          ],
+          "grants": [
+            {
+              "pluginId": "probe-1",
+              "approved": [],
+              "future": false
+            }
+          ],
+          "events": [],
+          "steer": [],
+          "inject": [],
+          "provided": null
+        },
+        {
+          "op": "run",
+          "value": {
+            "ok": true,
+            "status": "awaiting-approval",
+            "pluginId": "probe-1",
+            "packageId": "pkg-1",
+            "pluginRunId": "run-1",
+            "mode": "run",
+            "waitingFor": [],
+            "nextPackageId": "pkg-1"
+          },
+          "inventory": [
+            {
+              "pluginId": "probe-1",
+              "agentId": "owner",
+              "packages": [
+                {
+                  "packageId": "pkg-1",
+                  "name": "Probe",
+                  "purpose": "actual lifecycle",
+                  "hasHostHalf": true,
+                  "hasClientHalf": true
+                }
+              ],
+              "nextPackageId": "pkg-1",
+              "latestRun": {
+                "pluginRunId": "run-1",
+                "packageId": "pkg-1",
+                "mode": "run",
+                "status": "awaiting-approval",
+                "host": {
+                  "status": "pending",
+                  "waitingFor": []
+                },
+                "client": {
+                  "status": "pending",
+                  "waitingFor": []
+                },
+                "approvalRequestId": "approval-1",
+                "requiresApproval": true
+              }
+            }
+          ],
+          "grants": [
+            {
+              "pluginId": "probe-1",
+              "approved": [],
+              "future": false
+            }
+          ],
+          "events": [
+            [
+              "cordis/request-run",
+              {
+                "requestId": "approval-1",
+                "agentId": "owner",
+                "pluginId": "probe-1",
+                "packageId": "pkg-1",
+                "mode": "run",
+                "name": "Probe",
+                "purpose": "actual lifecycle",
+                "requiresApproval": true
+              }
+            ]
+          ],
+          "steer": [],
+          "inject": [],
+          "provided": null
+        },
+        {
+          "op": "request",
+          "value": {
+            "requestId": "approval-1",
+            "agentId": "owner",
+            "pluginId": "probe-1",
+            "packageId": "pkg-1",
+            "mode": "run",
+            "name": "Probe",
+            "purpose": "actual lifecycle",
+            "requiresApproval": true
+          },
+          "inventory": [
+            {
+              "pluginId": "probe-1",
+              "agentId": "owner",
+              "packages": [
+                {
+                  "packageId": "pkg-1",
+                  "name": "Probe",
+                  "purpose": "actual lifecycle",
+                  "hasHostHalf": true,
+                  "hasClientHalf": true
+                }
+              ],
+              "nextPackageId": "pkg-1",
+              "latestRun": {
+                "pluginRunId": "run-1",
+                "packageId": "pkg-1",
+                "mode": "run",
+                "status": "awaiting-approval",
+                "host": {
+                  "status": "pending",
+                  "waitingFor": []
+                },
+                "client": {
+                  "status": "pending",
+                  "waitingFor": []
+                },
+                "approvalRequestId": "approval-1",
+                "requiresApproval": true
+              }
+            }
+          ],
+          "grants": [
+            {
+              "pluginId": "probe-1",
+              "approved": [],
+              "future": false
+            }
+          ],
+          "events": [],
+          "steer": [],
+          "inject": [],
+          "provided": null
+        },
+        {
+          "op": "half",
+          "value": {
+            "ok": true,
+            "pluginId": "probe-1",
+            "packageId": "pkg-1",
+            "pluginRunId": "run-1",
+            "waitingFor": [],
+            "startedHere": true
+          },
+          "inventory": [
+            {
+              "pluginId": "probe-1",
+              "agentId": "owner",
+              "packages": [
+                {
+                  "packageId": "pkg-1",
+                  "name": "Probe",
+                  "purpose": "actual lifecycle",
+                  "hasHostHalf": true,
+                  "hasClientHalf": true
+                }
+              ],
+              "nextPackageId": "pkg-1",
+              "activeRun": {
+                "pluginRunId": "run-1",
+                "packageId": "pkg-1"
+              },
+              "latestRun": {
+                "pluginRunId": "run-1",
+                "packageId": "pkg-1",
+                "mode": "run",
+                "status": "client-pending",
+                "host": {
+                  "status": "running",
+                  "waitingFor": []
+                },
+                "client": {
+                  "status": "pending",
+                  "waitingFor": []
+                },
+                "approvalRequestId": "approval-1",
+                "requiresApproval": true
+              }
+            }
+          ],
+          "grants": [
+            {
+              "pluginId": "probe-1",
+              "approved": [
+                "pkg-1"
+              ],
+              "future": false
+            }
+          ],
+          "events": [
+            [
+              "cordis/dynamic-package",
+              {
+                "pluginId": "probe-1",
+                "packageId": "pkg-1",
+                "pluginRunId": "run-1",
+                "name": "Probe"
+              }
+            ]
+          ],
+          "steer": [],
+          "inject": [],
+          "provided": "ready"
+        },
+        {
+          "op": "half",
+          "value": {
+            "ok": true,
+            "pluginId": "probe-1",
+            "packageId": "pkg-1",
+            "pluginRunId": "run-1",
+            "waitingFor": [],
+            "startedHere": false
+          },
+          "inventory": [
+            {
+              "pluginId": "probe-1",
+              "agentId": "owner",
+              "packages": [
+                {
+                  "packageId": "pkg-1",
+                  "name": "Probe",
+                  "purpose": "actual lifecycle",
+                  "hasHostHalf": true,
+                  "hasClientHalf": true
+                }
+              ],
+              "nextPackageId": "pkg-1",
+              "activeRun": {
+                "pluginRunId": "run-1",
+                "packageId": "pkg-1"
+              },
+              "latestRun": {
+                "pluginRunId": "run-1",
+                "packageId": "pkg-1",
+                "mode": "run",
+                "status": "client-pending",
+                "host": {
+                  "status": "running",
+                  "waitingFor": []
+                },
+                "client": {
+                  "status": "pending",
+                  "waitingFor": []
+                },
+                "approvalRequestId": "approval-1",
+                "requiresApproval": true
+              }
+            }
+          ],
+          "grants": [
+            {
+              "pluginId": "probe-1",
+              "approved": [
+                "pkg-1"
+              ],
+              "future": false
+            }
+          ],
+          "events": [],
+          "steer": [],
+          "inject": [],
+          "provided": "ready"
+        },
+        {
+          "op": "resolve",
+          "value": {
+            "accepted": true
+          },
+          "inventory": [
+            {
+              "pluginId": "probe-1",
+              "agentId": "owner",
+              "packages": [
+                {
+                  "packageId": "pkg-1",
+                  "name": "Probe",
+                  "purpose": "actual lifecycle",
+                  "hasHostHalf": true,
+                  "hasClientHalf": true
+                }
+              ],
+              "currentPackageId": "pkg-1",
+              "activeRun": {
+                "pluginRunId": "run-1",
+                "packageId": "pkg-1"
+              },
+              "latestRun": {
+                "pluginRunId": "run-1",
+                "packageId": "pkg-1",
+                "mode": "run",
+                "status": "running",
+                "host": {
+                  "status": "running",
+                  "waitingFor": []
+                },
+                "client": {
+                  "status": "running",
+                  "waitingFor": []
+                }
+              }
+            }
+          ],
+          "grants": [
+            {
+              "pluginId": "probe-1",
+              "approved": [
+                "pkg-1"
+              ],
+              "future": false
+            }
+          ],
+          "events": [
+            [
+              "cordis/request-run-resolved",
+              {
+                "requestId": "approval-1",
+                "outcome": "approved"
+              }
+            ]
+          ],
+          "steer": [
+            {
+              "content": [
+                {
+                  "type": "text",
+                  "text": "Cordis run probe-1/pkg-1 (run-1) completed successfully. currentPackageId is pkg-1. Continue using the running Plugin."
+                }
+              ],
+              "source": {
+                "kind": "plugin",
+                "plugin": "cordis-host-runner"
+              },
+              "role": "user"
+            }
+          ],
+          "inject": [],
+          "provided": "ready"
+        },
+        {
+          "op": "half",
+          "value": {
+            "ok": false,
+            "message": "run request \"approval-1\" does not authorize probe-1/pkg-1"
+          },
+          "inventory": [
+            {
+              "pluginId": "probe-1",
+              "agentId": "owner",
+              "packages": [
+                {
+                  "packageId": "pkg-1",
+                  "name": "Probe",
+                  "purpose": "actual lifecycle",
+                  "hasHostHalf": true,
+                  "hasClientHalf": true
+                }
+              ],
+              "currentPackageId": "pkg-1",
+              "activeRun": {
+                "pluginRunId": "run-1",
+                "packageId": "pkg-1"
+              },
+              "latestRun": {
+                "pluginRunId": "run-1",
+                "packageId": "pkg-1",
+                "mode": "run",
+                "status": "running",
+                "host": {
+                  "status": "running",
+                  "waitingFor": []
+                },
+                "client": {
+                  "status": "running",
+                  "waitingFor": []
+                }
+              }
+            }
+          ],
+          "grants": [
+            {
+              "pluginId": "probe-1",
+              "approved": [
+                "pkg-1"
+              ],
+              "future": false
+            }
+          ],
+          "events": [],
+          "steer": [],
+          "inject": [],
+          "provided": "ready"
+        },
+        {
+          "op": "run",
+          "value": {
+            "ok": true,
+            "status": "starting",
+            "pluginId": "probe-1",
+            "packageId": "pkg-1",
+            "pluginRunId": "run-2",
+            "mode": "run",
+            "waitingFor": [],
+            "currentPackageId": "pkg-1",
+            "nextPackageId": "pkg-1"
+          },
+          "inventory": [
+            {
+              "pluginId": "probe-1",
+              "agentId": "owner",
+              "packages": [
+                {
+                  "packageId": "pkg-1",
+                  "name": "Probe",
+                  "purpose": "actual lifecycle",
+                  "hasHostHalf": true,
+                  "hasClientHalf": true
+                }
+              ],
+              "currentPackageId": "pkg-1",
+              "nextPackageId": "pkg-1",
+              "activeRun": {
+                "pluginRunId": "run-1",
+                "packageId": "pkg-1"
+              },
+              "latestRun": {
+                "pluginRunId": "run-2",
+                "packageId": "pkg-1",
+                "mode": "run",
+                "status": "starting-host",
+                "host": {
+                  "status": "pending",
+                  "waitingFor": []
+                },
+                "client": {
+                  "status": "pending",
+                  "waitingFor": []
+                },
+                "approvalRequestId": "approval-2",
+                "requiresApproval": false
+              }
+            }
+          ],
+          "grants": [
+            {
+              "pluginId": "probe-1",
+              "approved": [
+                "pkg-1"
+              ],
+              "future": false
+            }
+          ],
+          "events": [
+            [
+              "cordis/request-run",
+              {
+                "requestId": "approval-2",
+                "agentId": "owner",
+                "pluginId": "probe-1",
+                "packageId": "pkg-1",
+                "mode": "run",
+                "name": "Probe",
+                "purpose": "actual lifecycle",
+                "requiresApproval": false
+              }
+            ]
+          ],
+          "steer": [],
+          "inject": [],
+          "provided": "ready"
+        },
+        {
+          "op": "request",
+          "value": {
+            "requestId": "approval-2",
+            "agentId": "owner",
+            "pluginId": "probe-1",
+            "packageId": "pkg-1",
+            "mode": "run",
+            "name": "Probe",
+            "purpose": "actual lifecycle",
+            "requiresApproval": false
+          },
+          "inventory": [
+            {
+              "pluginId": "probe-1",
+              "agentId": "owner",
+              "packages": [
+                {
+                  "packageId": "pkg-1",
+                  "name": "Probe",
+                  "purpose": "actual lifecycle",
+                  "hasHostHalf": true,
+                  "hasClientHalf": true
+                }
+              ],
+              "currentPackageId": "pkg-1",
+              "nextPackageId": "pkg-1",
+              "activeRun": {
+                "pluginRunId": "run-1",
+                "packageId": "pkg-1"
+              },
+              "latestRun": {
+                "pluginRunId": "run-2",
+                "packageId": "pkg-1",
+                "mode": "run",
+                "status": "starting-host",
+                "host": {
+                  "status": "pending",
+                  "waitingFor": []
+                },
+                "client": {
+                  "status": "pending",
+                  "waitingFor": []
+                },
+                "approvalRequestId": "approval-2",
+                "requiresApproval": false
+              }
+            }
+          ],
+          "grants": [
+            {
+              "pluginId": "probe-1",
+              "approved": [
+                "pkg-1"
+              ],
+              "future": false
+            }
+          ],
+          "events": [],
+          "steer": [],
+          "inject": [],
+          "provided": "ready"
+        },
+        {
+          "op": "half",
+          "value": {
+            "ok": true,
+            "pluginId": "probe-1",
+            "packageId": "pkg-1",
+            "pluginRunId": "run-2",
+            "waitingFor": [],
+            "startedHere": true
+          },
+          "inventory": [
+            {
+              "pluginId": "probe-1",
+              "agentId": "owner",
+              "packages": [
+                {
+                  "packageId": "pkg-1",
+                  "name": "Probe",
+                  "purpose": "actual lifecycle",
+                  "hasHostHalf": true,
+                  "hasClientHalf": true
+                }
+              ],
+              "currentPackageId": "pkg-1",
+              "nextPackageId": "pkg-1",
+              "activeRun": {
+                "pluginRunId": "run-2",
+                "packageId": "pkg-1"
+              },
+              "latestRun": {
+                "pluginRunId": "run-2",
+                "packageId": "pkg-1",
+                "mode": "run",
+                "status": "client-pending",
+                "host": {
+                  "status": "running",
+                  "waitingFor": []
+                },
+                "client": {
+                  "status": "pending",
+                  "waitingFor": []
+                },
+                "approvalRequestId": "approval-2",
+                "requiresApproval": false
+              }
+            }
+          ],
+          "grants": [
+            {
+              "pluginId": "probe-1",
+              "approved": [
+                "pkg-1"
+              ],
+              "future": false
+            }
+          ],
+          "events": [
+            [
+              "cordis/dynamic-retract",
+              {
+                "pluginId": "probe-1",
+                "packageId": "pkg-1",
+                "pluginRunId": "run-1"
+              }
+            ],
+            [
+              "cordis/dynamic-package",
+              {
+                "pluginId": "probe-1",
+                "packageId": "pkg-1",
+                "pluginRunId": "run-2",
+                "name": "Probe"
+              }
+            ]
+          ],
+          "steer": [],
+          "inject": [],
+          "provided": "ready"
+        },
+        {
+          "op": "half",
+          "value": {
+            "ok": true,
+            "pluginId": "probe-1",
+            "packageId": "pkg-1",
+            "pluginRunId": "run-2",
+            "waitingFor": [],
+            "startedHere": false
+          },
+          "inventory": [
+            {
+              "pluginId": "probe-1",
+              "agentId": "owner",
+              "packages": [
+                {
+                  "packageId": "pkg-1",
+                  "name": "Probe",
+                  "purpose": "actual lifecycle",
+                  "hasHostHalf": true,
+                  "hasClientHalf": true
+                }
+              ],
+              "currentPackageId": "pkg-1",
+              "nextPackageId": "pkg-1",
+              "activeRun": {
+                "pluginRunId": "run-2",
+                "packageId": "pkg-1"
+              },
+              "latestRun": {
+                "pluginRunId": "run-2",
+                "packageId": "pkg-1",
+                "mode": "run",
+                "status": "client-pending",
+                "host": {
+                  "status": "running",
+                  "waitingFor": []
+                },
+                "client": {
+                  "status": "pending",
+                  "waitingFor": []
+                },
+                "approvalRequestId": "approval-2",
+                "requiresApproval": false
+              }
+            }
+          ],
+          "grants": [
+            {
+              "pluginId": "probe-1",
+              "approved": [
+                "pkg-1"
+              ],
+              "future": false
+            }
+          ],
+          "events": [],
+          "steer": [],
+          "inject": [],
+          "provided": "ready"
+        },
+        {
+          "op": "resolve",
+          "value": {
+            "accepted": true
+          },
+          "inventory": [
+            {
+              "pluginId": "probe-1",
+              "agentId": "owner",
+              "packages": [
+                {
+                  "packageId": "pkg-1",
+                  "name": "Probe",
+                  "purpose": "actual lifecycle",
+                  "hasHostHalf": true,
+                  "hasClientHalf": true
+                }
+              ],
+              "currentPackageId": "pkg-1",
+              "activeRun": {
+                "pluginRunId": "run-2",
+                "packageId": "pkg-1"
+              },
+              "latestRun": {
+                "pluginRunId": "run-2",
+                "packageId": "pkg-1",
+                "mode": "run",
+                "status": "running",
+                "host": {
+                  "status": "running",
+                  "waitingFor": []
+                },
+                "client": {
+                  "status": "running",
+                  "waitingFor": []
+                }
+              }
+            }
+          ],
+          "grants": [
+            {
+              "pluginId": "probe-1",
+              "approved": [
+                "pkg-1"
+              ],
+              "future": false
+            }
+          ],
+          "events": [
+            [
+              "cordis/request-run-resolved",
+              {
+                "requestId": "approval-2",
+                "outcome": "completed"
+              }
+            ]
+          ],
+          "steer": [
+            {
+              "content": [
+                {
+                  "type": "text",
+                  "text": "Cordis run probe-1/pkg-1 (run-2) completed successfully. currentPackageId is pkg-1. Continue using the running Plugin."
+                }
+              ],
+              "source": {
+                "kind": "plugin",
+                "plugin": "cordis-host-runner"
+              },
+              "role": "user"
+            }
+          ],
+          "inject": [],
+          "provided": "ready"
+        },
+        {
+          "op": "stop",
+          "value": {
+            "ok": true
+          },
+          "inventory": [
+            {
+              "pluginId": "probe-1",
+              "agentId": "owner",
+              "packages": [
+                {
+                  "packageId": "pkg-1",
+                  "name": "Probe",
+                  "purpose": "actual lifecycle",
+                  "hasHostHalf": true,
+                  "hasClientHalf": true
+                }
+              ],
+              "currentPackageId": "pkg-1",
+              "latestRun": {
+                "pluginRunId": "run-2",
+                "packageId": "pkg-1",
+                "mode": "run",
+                "status": "stopped",
+                "host": {
+                  "status": "stopped",
+                  "waitingFor": []
+                },
+                "client": {
+                  "status": "stopped",
+                  "waitingFor": []
+                }
+              }
+            }
+          ],
+          "grants": [
+            {
+              "pluginId": "probe-1",
+              "approved": [
+                "pkg-1"
+              ],
+              "future": false
+            }
+          ],
+          "events": [
+            [
+              "cordis/dynamic-retract",
+              {
+                "pluginId": "probe-1",
+                "packageId": "pkg-1",
+                "pluginRunId": "run-2"
               }
             ]
           ],

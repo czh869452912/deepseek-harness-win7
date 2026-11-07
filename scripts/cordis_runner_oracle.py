@@ -27,28 +27,37 @@ INPUTS = SOURCE_INPUTS + ['scripts/cordis_runner_oracle.py', 'scripts/oracles/co
     'dsh/typert/remote.py', 'dsh/typert/dispatch.py', 'tests/test_cordis_runner_state.py',
     'tests/test_cordis_tools_full.py', 'tests/fixtures/cordis-runner-source-observations.json',
     'tests/fixtures/cordis-runner-source-async-stack.txt']
+INPUTS.append('tests/fixtures/cordis-runner-python-apply-stack.txt')
+INPUTS += ['dsh/extensions/cordis_host_process.py', 'dsh/extensions/cordis_host_worker.py',
+           'dsh/extensions/cordis_host_bridge.py', 'tests/test_cordis_host_process.py']
+INPUTS += ['dsh/javascript/runtime.py', 'dsh/javascript/bin/runtime.json',
+           'dsh/javascript/bin/x86/runtime.json', 'tests/test_cordis_runtime_boundaries.py']
+INPUTS += ['dsh/javascript/client_syntax.py', 'dsh/javascript/client-syntax/acorn.js',
+           'dsh/javascript/client-syntax/driver.js', 'dsh/javascript/client-syntax/manifest.json',
+           'dsh/javascript/client-syntax/ACORN-LICENSE']
 SOURCE_GUIDANCE = 'that Service in the returned Plugin inject list or read it with ctx.get(name) and handle undefined.'
 NATIVE_GUIDANCE = 'that Service in the plugin.inject list or read it with ctx.get(name) and handle None in Python Host code.'
 
 
 def native_projection(source):
-    """Only the reviewed Host-language guidance changes; all wire data is exact."""
+    """Use the captured Python traceback for the one translated apply failure."""
     result = copy.deepcopy(source)
     if source['mode'] == 'actual-host-apply-failure-and-retry':
-        def remove_source_stack(value):
+        native_stack = (ROOT / 'tests/fixtures/cordis-runner-python-apply-stack.txt').read_text(encoding='utf-8')
+        def replace_source_stack(value):
             if isinstance(value, list):
                 for child in value:
-                    remove_source_stack(child)
+                    replace_source_stack(child)
             elif isinstance(value, dict):
                 if 'stack' in value:
                     stack = value['stack']
                     if (value.get('message') != 'fixture apply failure' or not stack.startswith('Error: fixture apply failure\n')
                             or 'at startHostHalf ([workspace]/reference/packages/extensions/cordis-host-runner/src/lifecycle.ts:' not in stack):
                         raise ValueError('source lifecycle stack adaptation drift')
-                    del value['stack']
+                    value['stack'] = native_stack
                 for child in value.values():
-                    remove_source_stack(child)
-        remove_source_stack(result)
+                    replace_source_stack(child)
+        replace_source_stack(result)
     for row in result['rows']:
         for message in row['steer']:
             for block in message['content']:

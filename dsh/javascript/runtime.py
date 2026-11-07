@@ -89,6 +89,24 @@ def workflow_bootstrap():
         WORKFLOW_ROOT / 'driver.js').read_text(encoding='utf-8')
 
 
+def parse_javascript_body(body, name):
+    """Compile an async function body with the shipped engine, without executing it."""
+    if type(body) is not str or type(name) is not str:
+        raise TypeError('JavaScript body and name must be strings')
+    binary = verify_resources()
+    completed = subprocess.run([str(binary)], input=encode(dict(body=body, name=name, mode='parse')),
+                               stdout=subprocess.PIPE, stderr=subprocess.PIPE, env=worker_environment(),
+                               creationflags=subprocess.CREATE_NO_WINDOW if os.name == 'nt' else 0)
+    try:
+        frames = [json.loads(line.decode('utf-8')) for line in completed.stdout.splitlines()]
+    except (UnicodeError, ValueError) as error:
+        raise JavaScriptRuntimeError('JavaScript parser returned invalid protocol data') from error
+    if len(frames) == 1 and frames[0].get('type') == 'parse-error' and completed.returncode == 7:
+        raise JavaScriptParseError(frames[0]['error'])
+    if frames != [dict(type='parsed', ok=True)] or completed.returncode != 0:
+        raise JavaScriptRuntimeError('JavaScript parser failed: ' + completed.stderr.decode('utf-8', errors='replace'))
+
+
 class JavaScriptRuntime(Service):
     def __init__(self, ctx, config=None):
         self._workers = set()
@@ -104,20 +122,7 @@ class JavaScriptRuntime(Service):
     def parse(self, body, name):
         if self._closed:
             raise JavaScriptRuntimeError('JavaScript runtime already disposed')
-        if type(body) is not str or type(name) is not str:
-            raise TypeError('JavaScript body and name must be strings')
-        binary = verify_resources()
-        completed = subprocess.run([str(binary)], input=encode(dict(body=body, name=name, mode='parse')),
-                                   stdout=subprocess.PIPE, stderr=subprocess.PIPE, env=worker_environment(),
-                                   creationflags=subprocess.CREATE_NO_WINDOW if os.name == 'nt' else 0)
-        try:
-            frames = [json.loads(line.decode('utf-8')) for line in completed.stdout.splitlines()]
-        except (UnicodeError, ValueError) as error:
-            raise JavaScriptRuntimeError('JavaScript parser returned invalid protocol data') from error
-        if len(frames) == 1 and frames[0].get('type') == 'parse-error' and completed.returncode == 7:
-            raise JavaScriptParseError(frames[0]['error'])
-        if frames != [dict(type='parsed', ok=True)] or completed.returncode != 0:
-            raise JavaScriptRuntimeError('JavaScript parser failed: ' + completed.stderr.decode('utf-8', errors='replace'))
+        return parse_javascript_body(body, name)
 
     async def open(self, request, observer=None, grace_ms=5000):
         if self._closed:

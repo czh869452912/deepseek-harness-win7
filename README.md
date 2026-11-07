@@ -4,6 +4,8 @@
 
 开发维护：[Goose 多智能体操作指南](.goose/OPERATIONS.zh-CN.md) · [编排工作流参考](.goose/README.md)
 
+插件开发：[Win7/Python 创造模式开发指南](docs/plugin-development-win7.md)（CLI/Web 默认技能、动态 Host/Client 插件与生命周期）。
+
 [README.md](README.md) | [AGENTS.md](AGENTS.md)
 
 当前上游目标为 **dsh-v0.1.5-rc.3**（`a4c74a91e06b00fe0b0937bde982170c526cc842`），产品版本 **0.1.5-rc.3-r2**。本次 Windows 修订修复旧 Win7 / PowerShell 2.0 下 AIO 输入管道访问拒绝、脚本及系统补丁退出码采集，并保留完整检查日志；继续包含 r1 的安装兼容性和文件夹选择器修复。固定原版前端保持 rc.3 身份，产品版本与分发文件独立增加修订号。

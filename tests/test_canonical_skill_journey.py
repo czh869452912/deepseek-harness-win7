@@ -89,3 +89,30 @@ async def test_filesystem_change_invalidates_cache_and_disposal_removes_provider
         assert await skills.list() == []
     finally:
         await ctx.fiber.dispose()
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize('location', ['relative-config', 'absolute-config', 'relative-environment'])
+async def test_bundled_skill_paths_retain_process_cwd_semantics(tmp_path, monkeypatch, location):
+    monkeypatch.chdir(tmp_path)
+    directory = tmp_path / 'custom-skills'
+    directory.mkdir()
+    write_skill(directory / 'sample.md', body='User bundled skill')
+    ctx, agent, original = await setup(tmp_path)
+    try:
+        await original.dispose()
+        await original.await_settled()
+        config = dict(includeDefaultRoots=False, watch=False)
+        if location == 'relative-environment':
+            monkeypatch.setenv('DSH_BUNDLED_SKILL_DIR', 'custom-skills')
+            config.update(includeDefaultRoots=True, dshHome=str(tmp_path / 'empty-home'),
+                          agentsHome=str(tmp_path / 'empty-agents'))
+        else:
+            config['bundledSkillDir'] = str(directory) if location == 'absolute-config' else 'custom-skills'
+        await ctx.plugin(resolve_harness_plugin('@deepseek-ai/dsh-skill-filesystem'), config=config)
+        result = await ctx.get('tools').get('skill').execute({'name': 'sample'}, SimpleNamespace(agent=agent, signal=None))
+        assert result['content'] == 'User bundled skill'
+        assert result['provider'] == 'filesystem'
+        assert result['resourceBase']['path'] == str(directory)
+    finally:
+        await ctx.fiber.dispose()

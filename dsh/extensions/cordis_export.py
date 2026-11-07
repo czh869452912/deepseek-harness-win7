@@ -22,8 +22,10 @@ def register_export_tool(ctx):
     definition = dict(name='cordis_export', description=(
         'Export an exact owned dynamic plugin version to a native Python source project. '
         'Host projects install with the existing Python directory/ZIP installer. Session projects '
-        'include a user-preset fragment. Client source is retained but requires later build support; '
-        'such projects cannot yet be installed. Supply explicit license text. Review and test before sharing.'),
+        'include a user-preset fragment. Projects containing Client source must first use '
+        'dsh plugin --profile <profile> build <project>, then pack/install and verify in the browser. '
+        'Build supports exported plain JavaScript, not arbitrary TS/JSX projects. '
+        'Supply explicit license text. Review and test before sharing.'),
         parameters=dict(type='object', properties=strings,
             required=[key for key in strings if key != 'isolateServices'], additionalProperties=False),
         output=dict(schema=dict(type='object', properties={

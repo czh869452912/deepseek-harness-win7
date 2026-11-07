@@ -17,7 +17,7 @@ HOST_BUILTIN_INSPECTION = [
     dict(name='harness', description='Host helpers for package-private Client RPC and model-visible tools.', signatures=[
         'harness.handle(method: str, handler)', 'harness.defineTool(definition: dict)', 'harness.registerTool(ctx, tool)']),
     dict(name='plugin', description='Callable declared by the Host source and mounted by Cordis.', signatures=['def plugin(ctx): ...']),
-    dict(name='__builtins__', description='Python 3.8 builtins; imports execute in the trusted Host process.', signatures=['print(*values)', '__import__(name)']),
+    dict(name='__builtins__', description='Python 3.8 builtins; imports execute in the owned dynamic Host process.', signatures=['print(*values)', '__import__(name)']),
 ]
 
 

@@ -2,15 +2,15 @@
 
 Win7 adaptation: Host bodies are Python and return a Cordis plugin through
 ``plugin``; Client bodies remain the official JavaScript contract. Host code is
-shell-trusted, as upstream's VM is not a security boundary.
+shell-trusted. Full Python imports/builtins are a local capability expansion,
+not implied by upstream's statement that its VM is not a security boundary.
 """
 import asyncio
 import copy
 import inspect
 import math
 import re
-import sys
-import time
+import traceback
 from types import SimpleNamespace
 
 from dsh.extensions.cordis_guard import guarded_plugin, normalize_handler, sandbox_define_tool, sandbox_register_tool
@@ -18,6 +18,10 @@ from dsh.extensions.cordis_runner_state import CordisRunnerState, missing_plugin
 from dsh.core.session.json import UNDEFINED
 from dsh.extensions.inspect_registry import CordisInspectRegistryService, js_trim
 from dsh.typert.remote import Remote, TypertRemoteService
+from dsh.javascript.runtime import JavaScriptParseError
+from dsh.javascript.client_syntax import precheck_client_body
+from dsh.extensions.cordis_host_process import HostProcess
+from dsh.llm.message import create_user_message
 
 
 def refusal(reason, message):
@@ -44,7 +48,52 @@ class DynamicCordisRunner(CordisRunnerState, TypertRemoteService):
         self._closed, self._close_task = False, None
         self.root_ctx = ctx
         self._group = None
+        self._spare, self._warming = None, None
+        self._host_processes = set()
+        self._host_lock = asyncio.Lock()
         ctx.effect(lambda: self.close)
+
+    async def apply(self, ctx=None, config=None):
+        await self._warm_host()
+
+    async def _warm_host(self):
+        # Process creation can itself block on Windows; keep it outside the
+        # event loop and outside the next evaluator's synchronous deadline.
+        creation = asyncio.get_running_loop().run_in_executor(None, HostProcess)
+        try:
+            host = await asyncio.shield(creation)
+        except asyncio.CancelledError:
+            host = await creation
+            await host.close()
+            raise
+        try:
+            await host.ready()
+            if self._closed:
+                await host.close()
+            else:
+                self._spare = host
+        except BaseException:
+            await host.close()
+            raise
+
+    async def _take_host(self):
+        async with self._host_lock:
+            if self._warming is not None:
+                warming = self._warming
+                try:
+                    await warming
+                finally:
+                    if self._warming is warming:
+                        self._warming = None
+            if self._closed:
+                raise RuntimeError('dynamic Cordis runner is closed')
+            if self._spare is None:
+                await self._warm_host()
+            host, self._spare = self._spare, None
+            self._host_processes.add(host)
+            host.on_close = lambda: self._host_processes.discard(host)
+            self._warming = asyncio.create_task(self._warm_host())
+            return host
 
     async def close(self):
         if self._close_task is None:
@@ -61,6 +110,13 @@ class DynamicCordisRunner(CordisRunnerState, TypertRemoteService):
         if self._group is not None:
             await self._group.dispose()
         self.inspect_registry.close()
+        if self._warming is not None:
+            await asyncio.gather(self._warming, return_exceptions=True)
+        if self._spare is not None:
+            await self._spare.close()
+        for host in list(self._host_processes):
+            await host.close()
+        self._host_processes.clear()
 
     def owned(self, agent, plugin_id):
         plugin = self.plugins.get(plugin_id)
@@ -89,6 +145,12 @@ class DynamicCordisRunner(CordisRunnerState, TypertRemoteService):
                 raise ValueError('code halves must be non-empty strings')
         if 'host' in code:
             compile(code['host'], '<cordis-host>', 'exec')
+        if 'client' in code:
+            try:
+                precheck_client_body(code['client'])
+            except JavaScriptParseError as error:
+                raise ValueError('dynamic package `code.client` failed to parse:\nSyntaxError: ' + str(error)
+                    + '\nThe Client runs plain JavaScript as the body of an async function, not TypeScript.') from error
         spec = request['plugin']
         if spec['kind'] == 'new':
             prefix = js_trim(spec['idPrefix'])
@@ -222,23 +284,14 @@ class DynamicCordisRunner(CordisRunnerState, TypertRemoteService):
                     del run['handlers'][method]
             run['handlerDisposers'].append(dispose)
             return dispose
-        namespace = dict(harness=SimpleNamespace(handle=handle, defineTool=sandbox_define_tool,
-            registerTool=sandbox_register_tool))
+        harness = SimpleNamespace(handle=handle, defineTool=sandbox_define_tool,
+            registerTool=sandbox_register_tool)
         fiber = None
+        host = None
         try:
-            deadline, previous = time.monotonic() + self.timeout / 1000, sys.gettrace()
-            def trace(frame, event, arg):
-                if time.monotonic() > deadline:
-                    raise TimeoutError('Host evaluation exceeded vmTimeoutMs')
-                return trace
-            try:
-                sys.settrace(trace)
-                exec(compile(source, '<cordis-host>', 'exec'), namespace)
-            finally:
-                sys.settrace(previous)
-            native_plugin = namespace.get('plugin')
-            if not callable(native_plugin) and not (isinstance(native_plugin, dict) and callable(native_plugin.get('apply'))):
-                raise ValueError('Python Host code must expose a callable plugin or a plugin dict with apply(ctx)')
+            host = await self._take_host()
+            native_plugin = await host.evaluate(source, harness, self.timeout)
+            host.start_pump(lambda error: self._host_lost(plugin, run, error))
             if self._group is None:
                 self._group = self.root_ctx.plugin(dict(name='cordis-dynamic', apply=lambda ctx: None))
             group = await self._group
@@ -252,18 +305,40 @@ class DynamicCordisRunner(CordisRunnerState, TypertRemoteService):
             # Preserve the settled handle, as original startHostHalf does.
             # Native inspectors compare its original identity through ctx.fiber.
             run['fiber'] = fiber.ctx.fiber
+            run['hostProcess'] = host
             return None
         except Exception as error:
             for dispose in run['handlerDisposers']:
                 dispose()
             run['handlerDisposers'].clear()
+            if host is not None:
+                await host.close()
+                self._host_processes.discard(host)
             return self.error_details(error)
+
+    async def _host_lost(self, plugin, run, error):
+        if plugin.get('run') is not run:
+            return
+        failure = self.error_details(error)
+        await self.retract(plugin)
+        attempt = plugin.get('latestRun')
+        if attempt is not None and attempt['pluginRunId'] == run['pluginRunId']:
+            self.fail_attempt(plugin, attempt, 'host-runtime', failure)
+        agent = self.owner_agent(plugin['agentId'])
+        if agent is not None:
+            text = ('Cordis Host process for {}/{} ({}) exited. Its registrations were removed. '
+                    'Inspect the Package, correct it, and run or update it again.\n{}').format(
+                        plugin['pluginId'], run['packageId'], run['pluginRunId'], failure['message'])
+            agent.steer(create_user_message(dict(content=[dict(type='text', text=text)],
+                                                source=dict(kind='plugin', plugin='cordis-host-runner'))))
 
     @staticmethod
     def error_details(error):
         result = dict(message=getattr(error, 'message', str(error)))
         if isinstance(getattr(error, 'stack', None), str):
             result['stack'] = error.stack
+        elif error.__traceback__ is not None:
+            result['stack'] = ''.join(traceback.format_exception(type(error), error, error.__traceback__))
         return result
 
     @Remote

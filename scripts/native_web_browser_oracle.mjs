@@ -217,7 +217,8 @@ try {
     'dsh/extensions/cordis_guard.py', 'dsh/typert/dispatch.py', 'dsh/host/connection/canonical.py',
     'dsh/host/client_modules/loader_registry.py', 'dsh/boot/profile_boot.py',
     'dsh/extensions/inspect_registry.py', 'dsh/extensions/cordis_tools.py', 'dsh/core/tools.py',
-    'dsh/core/abort.py', 'dsh/typert/api_remotes.py']) {
+    'dsh/core/abort.py', 'dsh/typert/api_remotes.py', 'dsh/extensions/cordis_host_process.py',
+    'dsh/extensions/cordis_host_worker.py', 'dsh/extensions/cordis_host_bridge.py']) {
     report.inputSha256[path] = createHash('sha256').update(await readFile(join(root, path))).digest('hex');
   }
   let readyResolve, readyReject;

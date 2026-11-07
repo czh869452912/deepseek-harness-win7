@@ -10,3 +10,8 @@
     personaPrefix: >-
       You are a coding agent powered by the {{model}} model. Your working directory is {{cwd}}.
       You can inspect and extend this harness through its Cordis tools. Host plugin bodies use Python.
+
+# Native profile composition resolves this bundle-owned path before mounting.
+- id: skill-filesystem
+  config:
+    bundledSkillDir: ../../preset/agent-presets/presets/cordis/skills

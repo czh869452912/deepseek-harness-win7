@@ -867,5 +867,68 @@
         "op": "stop"
       }
     ]
+  },
+  {
+    "mode": "approval-repeat-attach",
+    "steps": [
+      {
+        "op": "define",
+        "program": "dual",
+        "existing": false
+      },
+      {
+        "op": "run",
+        "mode": "run"
+      },
+      {
+        "op": "request"
+      },
+      {
+        "op": "half",
+        "direct": false,
+        "save": "half"
+      },
+      {
+        "op": "half",
+        "direct": false
+      },
+      {
+        "op": "resolve",
+        "resolution": {
+          "ok": true,
+          "pluginRunId": "$half.pluginRunId"
+        }
+      },
+      {
+        "op": "half",
+        "direct": false
+      },
+      {
+        "op": "run",
+        "mode": "run"
+      },
+      {
+        "op": "request"
+      },
+      {
+        "op": "half",
+        "direct": false,
+        "save": "half"
+      },
+      {
+        "op": "half",
+        "direct": false
+      },
+      {
+        "op": "resolve",
+        "resolution": {
+          "ok": true,
+          "pluginRunId": "$half.pluginRunId"
+        }
+      },
+      {
+        "op": "stop"
+      }
+    ]
   }
 ]

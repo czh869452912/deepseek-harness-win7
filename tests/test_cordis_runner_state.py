@@ -29,11 +29,43 @@ async def test_actual_runner_source_journey(spec, source):
     assert await observe(spec) == expected
 
 
+@pytest.mark.asyncio
+async def test_same_approval_request_attaches_to_existing_run_for_both_approval_modes():
+    spec = next(row for row in SPECS if row['mode'] == 'approval-repeat-attach')
+    actual = await observe(spec)
+    rows = actual['rows']
+    for first, repeated in [(3, 4), (9, 10)]:
+        assert rows[first]['value']['startedHere'] is True
+        assert rows[repeated]['value']['startedHere'] is False
+        assert rows[first]['value']['pluginRunId'] == rows[repeated]['value']['pluginRunId']
+        assert rows[repeated]['inventory'][0]['latestRun']['status'] == 'client-pending'
+    assert rows[1]['value']['status'] == 'awaiting-approval'
+    assert rows[7]['value']['status'] == 'starting'
+    assert not rows[6]['value']['ok']  # The resolved request no longer authorizes an attachment.
+
+
 def test_runner_source_fixture_is_bound_to_actual_pinned_inputs():
     assert FIXTURE['target_upstream'] == json.loads((ROOT / 'migration/baseline.json').read_text(encoding='utf-8'))['target_upstream']
     assert [row['mode'] for row in FIXTURE['observations']] == [spec['mode'] for spec in SPECS]
     for path, digest in FIXTURE['source_sha256'].items():
         assert hashlib.sha256((ROOT / path).read_text(encoding='utf-8').encode('utf-8')).hexdigest() == digest, path
+
+
+@pytest.mark.parametrize('damage', ['missing-stack', 'source-line', 'exception-type', 'extra-frame'])
+def test_python_apply_projection_requires_the_complete_captured_traceback(damage):
+    source = next(row for row in FIXTURE['observations'] if row['mode'] == 'actual-host-apply-failure-and-retry')
+    native = native_projection(source)
+    assert classify(source, native) == 'matched-with-Python-lifecycle-stack'
+    failure = native['rows'][1]['value']
+    if damage == 'missing-stack':
+        del failure['stack']
+    elif damage == 'source-line':
+        failure['stack'] = failure['stack'].replace('File "<cordis-host>", line 2', 'File "<cordis-host>", line 3')
+    elif damage == 'exception-type':
+        failure['stack'] = failure['stack'].replace('ValueError: fixture apply failure', 'TypeError: fixture apply failure')
+    else:
+        failure['stack'] += '  File "foreign.py", line 1, in unexpected\n'
+    assert classify(source, native) == 'different'
 
 
 def captured_async_source_fixture():

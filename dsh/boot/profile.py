@@ -958,6 +958,14 @@ def load_profile_directory(bin_name, dir_path, install_anchor, options=None):
             raise RuntimeError(f"{bin_name}: profile bundle {json.dumps(b_name)} declares no dsh.bundle in its package.json")
         b_patch_path = os.path.normpath(os.path.join(b_dir, patch_rel))
         b_patches = load_overlay_patches(bin_name, b_patch_path)
+        if b_name == "@deepseek-win7/dsh-creative":
+            # Resolve only the shipped Creative resource; user patch paths retain
+            # the filesystem provider's process-cwd contract.
+            for patch in b_patches:
+                config = patch.get("config", {})
+                if (patch.get("id") == "skill-filesystem" and isinstance(config, dict)
+                        and config.get("bundledSkillDir") == "../../preset/agent-presets/presets/cordis/skills"):
+                    config["bundledSkillDir"] = os.path.abspath(os.path.join(b_dir, config["bundledSkillDir"]))
         layers.append(ProfileLayer(b_name, b_dir, b_patch_path, b_patches))
 
     user_patch_path = os.path.join(profile_dir, PROFILE_PATCH_FILENAME)

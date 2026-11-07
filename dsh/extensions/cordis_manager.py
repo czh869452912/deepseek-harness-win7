@@ -8,6 +8,37 @@ from dsh.extensions.cordis_prompt import native_contracts
 from dsh.extensions.cordis_tools import execute, pre_step, present_call, render_result, run_meta
 
 
+def _share_builtin_provider(registry, provider):
+    """Lease one Host manifest across independently mounted Agent presets.
+
+    Public registry.register remains strict. Queries use a live owner's Context,
+    so unloading the first preset cannot strand the remaining preset's tools.
+    """
+    leases = getattr(registry, '_cordis_manager_leases', None)
+    if leases is None:
+        leases = registry._cordis_manager_leases = {}
+    key = provider['manifest']['id']
+    lease = leases.get(key)
+    if lease is None:
+        owners = []
+        registration = dict(provider, query=lambda *args: owners[-1]['query'](*args))
+        dispose = registry.register(registration)
+        lease = leases[key] = dict(manifest=provider['manifest'], owners=owners, dispose=dispose)
+    elif lease['manifest'] != provider['manifest']:
+        raise ValueError('Conflicting builtin Cordis inspect manifest: ' + key)
+    lease['owners'].append(provider)
+
+    def release():
+        for index, owner in enumerate(lease['owners']):
+            if owner is provider:
+                del lease['owners'][index]
+                break
+        if not lease['owners'] and leases.get(key) is lease:
+            del leases[key]
+            lease['dispose']()
+    return release
+
+
 class CordisManagerPlugin(Plugin):
     id = "tool-cordis"
     name = "@deepseek-ai/dsh-tool-cordis"
@@ -22,7 +53,7 @@ class CordisManagerPlugin(Plugin):
         contracts = native_contracts()
         ctx.get('systemPrompt').section(dict(name='tool:cordis', order=contracts['order'], text=contracts['prompt']))
         for provider in host_inspect_providers(ctx):
-            ctx.effect(lambda provider=provider: ctx.get('cordisInspect').register(provider),
+            ctx.effect(lambda provider=provider: _share_builtin_provider(ctx.get('cordisInspect'), provider),
                        'tool-cordis: inspect ' + provider['manifest']['id'])
         for contract in contracts['definitions']:
             operation = contract['name'][len('cordis_'):]

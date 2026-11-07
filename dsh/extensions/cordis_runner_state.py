@@ -80,7 +80,7 @@ class CordisRunnerState:
             latest = plugin.get('latestRun')
             status = 'awaiting-approval' if pending['requiresApproval'] else 'starting-host'
             if latest is None or latest['pluginRunId'] != pending['pluginRunId'] or (
-                    latest['status'] != status and (pending['requiresApproval'] or latest['status'] != 'client-pending')):
+                    latest['status'] != status and (not pending['requiresApproval'] and latest['status'] != 'client-pending')):
                 return dict(ok=False, message='run request "{}" no longer identifies the latest run of {}'.format(requestId, pluginId))
             attempt = latest
             if pending['requiresApproval']:
@@ -373,6 +373,8 @@ class CordisRunnerState:
             dispose()
         if run.get('fiber') is not None:
             await run['fiber'].dispose()
+        if run.get('hostProcess') is not None:
+            await run['hostProcess'].close()
 
     def owner_agent(self, sid):
         agents = self.root_ctx.get('agents')

@@ -5,6 +5,8 @@ description: Create, modify, debug, or extend dynamic Cordis Plugins, including 
 
 # Develop Dynamic Cordis Plugins
 
+This is the DSH Win7 adaptation: Python 3.8.10 Host code and the original plain-JavaScript Client. Dynamic Plugins remain temporary and process-local; this Skill does not add export, dependency installation or persistent deployment to the Cordis tools.
+
 First determine whether a capability belongs on Host or Client, then query the real interface before writing code. Never infer a complete API from a Service name, Event payload, Slot props, theme token, or example.
 
 ## Standard workflow
@@ -12,7 +14,7 @@ First determine whether a capability belongs on Host or Client, then query the r
 1. Call `cordis_inspect_list` to obtain the Providers, methods, and schemas currently registered on Host and Client.
 2. Select the smallest set of `cordis_inspect_query` calls needed to read the exact Services, Events, Builtins, Slots, Theme tokens, or Tools that the implementation will use.
 3. For a new Plugin, design its first Package. To modify an existing Plugin, first use `cordis_inspect_self(pluginId, packageId)` to read the base source and diagnostics.
-4. Write plain JavaScript in `code.host`, `code.client`, or both, then call `cordis_define`.
+4. Write Python source declaring callable `plugin` in `code.host`, a plain JavaScript function body in `code.client`, or both, then call `cordis_define`.
 5. Call `cordis_run` with the final `pluginId` and `packageId` returned by define.
 6. Handle approval, waiting, Client loading, and render failures from the Run card, steering messages, or `cordis_inspect_self`.
 7. Use `cordis_stop` to disable the Plugin temporarily. Use `cordis_undefine` only when it is no longer needed.
@@ -35,7 +37,7 @@ Do not wait in the same turn for user approval or asynchronous browser results. 
 
 | Requirement | Preferred platform | Inspect first |
 | --- | --- | --- |
-| Files, commands, processes, or networking | Host | `fs`, `bash`, `subprocess`, `pty`, and `web` in `Service.listService` |
+| Files, commands, processes, or networking | Host | The currently mounted filesystem, shell, process and web Services in `Service.listService`; use Windows-compatible capabilities on Win7 |
 | Agents, durable Session data, or Host lifecycle | Host | The relevant Service and `Event.listEvents` |
 | Register a dynamic Tool callable in the next model step | Host | `harness` in `Builtin.listBuiltins`, plus `Tool.listTools` |
 | Page theme, layout, or current page state | Client | `Theme.listTokens` and Client `Service.listService` |
@@ -60,15 +62,17 @@ Provider names, methods, and inputs must come from the current list result. The 
 
 ## Execution environment
 
-Both `code.host` and `code.client` are plain JavaScript function bodies that return a Cordis Plugin. They are not compiled by TypeScript, JSX, or a bundler.
+`code.host` is Python 3.8.10 source declaring a callable named `plugin`; Cordis calls it with a guarded Context. Keep resource acquisition inside that callable. Use Python 3.8 syntax, explicit UTF-8 for text files, normalized Windows paths, and APIs supported on Win7. Inspect the mounted shell instead of assuming bash or modern PowerShell. Python imports execute in the trusted Host process; this is not a malicious-code security sandbox.
 
-Do not use:
+`code.client` remains a plain JavaScript function body returning a Cordis Plugin. It is not compiled by TypeScript, JSX, or a bundler. For Client code, do not use:
 
 - `import`, `require`, TypeScript types, `as`, decorators, or JSX;
 - globals not confirmed by `Builtin.listBuiltins`;
 - guessed access to `window`, `document`, `process`, `Buffer`, `fetch`, or native timers.
 
-Client React code must use `React.createElement(...)`.
+Client React code must use `React.createElement(...)`. Define checks Python Host and JavaScript Client syntax without executing either half. Running can still fail due to execution errors, missing dependencies, or browser engine differences. A successful define does not prove either half can run.
+
+Host Service/Event Inspect signatures retain the original protocol types. Use [Python bindings](references/python-api.md) for dictionaries, None/UNDEFINED, await and lifecycle examples; the live Provider still determines the exact API. The catalog does not prove a Service is mounted.
 
 Correct:
 
@@ -101,26 +105,24 @@ JSX is not the only problem in this example. `apply()` registers lifecycle contr
 
 Read optional capabilities with `ctx.get(name)` by default and handle their absence:
 
-```js
-return {
-  apply(ctx) {
-    const service = ctx.get('serviceName')
-    if (service === undefined) return
+```python
+def plugin(ctx):
+    service = ctx.get('serviceName')
+    if service is None:
+        return
     service.someMethod()
-  },
-}
 ```
 
-Declare `inject` only when a Service is a hard dependency and the Plugin must enter waiting until Cordis reactivates it after the Service appears:
+Declare `plugin.inject` only when a Service is a hard dependency and the Plugin must enter waiting until Cordis reactivates it after the Service appears:
 
-```js
-return {
-  inject: ['requiredService'],
-  apply(ctx) {
+```python
+def plugin(ctx):
     ctx.requiredService.someMethod()
-  },
-}
+
+plugin.inject = ['requiredService']
 ```
+
+Client uses the original `inject: ['requiredService']` field on its returned Plugin object.
 
 Do not overuse `inject` merely to avoid an `undefined` check. Do not access `ctx.requiredService` without declaring the injection; the Guard rejects undeclared dependencies.
 
@@ -135,36 +137,29 @@ Every contribution must be removed after the Plugin is stopped, updated, or remo
 
 Recommended:
 
-```js
-return {
-  apply(ctx) {
-    const service = ctx.get('serviceName')
-    if (service === undefined) return
-    ctx.effect(() => service.subscribe((value) => {
-      console.log(value)
-    }))
-  },
-}
+```python
+def plugin(ctx):
+    service = ctx.get('serviceName')
+    if service is None:
+        return
+    ctx.effect(lambda: service.subscribe(lambda value: print(value)))
 ```
+
+`ctx.effect(setup)` runs setup now and owns its returned disposer. For an existing cleanup use `ctx.effect(lambda: cleanup)`. For a dictionary use `ctx.effect(lambda: state.clear)`, not `ctx.effect(lambda: state.clear())`, which clears immediately. Async cleanup must cancel and settle owned background tasks. [lifecycle.host.py](examples/lifecycle.host.py) demonstrates owned events, timers and async work.
 
 If `subscribe()` does not return a disposer, first query whether the Service provides a supported cleanup mechanism. Do not assume unload automatically removes arbitrary third-party callbacks.
 
 ## Host and Client timers
 
-On both platforms, the timer is a Service named `timer` with the same interface; it is not a Builtin. Query `{ "service": "timer" }` through the corresponding platform's `Service.listService` before using it. Declare `inject: ['timer']` before using the timer mixin.
+On both platforms, the timer is a Service named `timer` with the same interface; it is not a Builtin. Query `{ "service": "timer" }` through the corresponding platform's `Service.listService` before using it. Declare `plugin.inject = ['timer']` on Host, or `inject: ['timer']` on the Client Plugin, before using the timer mixin.
 
 One-shot delay:
 
-```js
-return {
-  inject: ['timer'],
-  apply(ctx) {
-    const onClick = () => {
-      ctx.timeout(() => console.log('done'), 300)
-    }
-    // Pass onClick to a queried Slot UI.
-  },
-}
+```python
+def plugin(ctx):
+    ctx.timeout(lambda: print('done'), 300)
+
+plugin.inject = ['timer']
 ```
 
 Periodic work in a React component:
@@ -182,7 +177,7 @@ return {
 }
 ```
 
-Incorrect:
+Incorrect Client examples:
 
 ```js
 return {
@@ -204,28 +199,22 @@ Query the Event Provider first to confirm the platform, parameter order, return 
 
 Ordinary emit Event:
 
-```js
-return {
-  apply(ctx) {
-    ctx.on('some/event', (payload) => {
-      console.log(payload)
-    })
-  },
-}
+```python
+def plugin(ctx):
+    ctx.on('some/event', lambda payload: print(payload))
 ```
 
 The last parameter of a Waterfall Event is `next`. Unless the listener intentionally stops downstream processing, it must call and return it:
 
-```js
-return {
-  apply(ctx) {
-    ctx.on('some/waterfall', (payload, next) => {
-      console.log(payload)
-      return next()
-    })
-  },
-}
+```python
+def plugin(ctx):
+    async def listener(payload, next_fn):
+        print(payload)
+        return await next_fn()
+    ctx.on('some/waterfall', listener)
 ```
+
+These are placeholder Event names. Inspect the real listener contract, including whether it is async. The dynamic facade registers listeners; it does not expose arbitrary framework event dispatch internals.
 
 ## Register Client UI
 
@@ -324,14 +313,9 @@ Host registers a Package-private method with `harness.handle(method, handler)`, 
 
 Host:
 
-```js
-return {
-  apply(ctx) {
-    harness.handle('read-state', async (args) => {
-      return { value: args.key }
-    })
-  },
-}
+```python
+def plugin(ctx):
+    harness.handle('read-state', lambda args: {'value': args['key']})
 ```
 
 Client:
@@ -345,7 +329,7 @@ return {
 }
 ```
 
-Arguments and return values must be lossless JSON. Do not pass functions, React elements, class instances, Contexts, Services, or other runtime objects; return `null` when there is no response data. Do not register a public Remote Service or use `ctx.remote` for Package-private communication.
+Arguments and return values must be lossless JSON. Do not pass functions, React elements, class instances, Contexts, Services, or other runtime objects; return Python `None` or Client `null` when there is no response data. Do not register a public Remote Service or use `ctx.remote` for Package-private communication.
 
 ## Register a dynamic model Tool
 
@@ -353,13 +337,33 @@ Host can use `harness` to register a Tool callable in the next model step. First
 
 Tool arguments and return values must be JSON-compatible. `execute` owns the business result; render and presentation own only what the model and native UI see. Tool registration must belong to the current Plugin Fiber so it is automatically removed after stop or update.
 
+Python Host example:
+
+```python
+def plugin(ctx):
+    tool = harness.defineTool({
+        'name': 'win7_echo',
+        'description': 'Return text without modifying files.',
+        'parameters': {'text': {'type': 'string', 'required': True}},
+        'execute': lambda args, execution: args['text'],
+        'output': {'schema': {'type': 'string'},
+                   'render': lambda args, value: [{'type': 'text', 'text': value}]},
+    })
+    ctx.tools.register(tool)
+
+
+plugin.inject = ['tools']
+```
+
+Use the complete [echo.host.py](examples/echo.host.py) or [counter.host.py](examples/counter.host.py). Dynamic parameters are a property map with `required: True` on each required field; output has both `schema` and `render`. `harness.defineTool` validates and marks the definition before `ctx.tools.register` or `harness.registerTool(ctx, tool)` accepts it. `ctx.provide` publishes a Service; full native Context methods such as `set_service` and arbitrary unmarked Tool dictionaries are not part of this dynamic facade.
+
 ## Handle internal live data
 
 Service instances, Event payloads, Slot props, Session and Conversation Snapshots, Tool state, and other DSH/Cordis objects are internal live data.
 
 Do not:
 
-- call `JSON.stringify` or `structuredClone` on these objects or their descendants;
+- call `json.dumps`, `JSON.stringify` or `structuredClone` on these objects or their descendants;
 - recursively enumerate, fully copy, or display them as a whole;
 - place Host objects in the Package's long-lived state or RPC return values.
 
@@ -411,8 +415,8 @@ If the reference is unavailable, explain that the Plugin was removed, belongs to
 
 | Failure | Check first |
 | --- | --- |
-| `service "x" is not declared` | Whether code uses `ctx.x` without declaring `inject: ['x']` on the Plugin object; switch to `ctx.get('x')` with an absence check or declare a true hard dependency |
-| `cannot get property "timer" without inject` | Query the timer Service and declare `inject: ['timer']` |
+| `service "x" is not declared` | Whether code uses `ctx.x` without declaring `plugin.inject = ['x']` on Host or `inject: ['x']` on the Client Plugin; switch to `ctx.get('x')` with an absence check or declare a true hard dependency |
+| `cannot get property "timer" without inject` | Query the timer Service and declare `plugin.inject = ['timer']` on Host or `inject: ['timer']` on Client |
 | Client parse failure | Whether the code uses JSX, TypeScript, import, or an unavailable global |
 | Slot registration failure | Whether the live subtree was queried, the Slot exists, and options, key, or selector satisfy the returned protocol |
 | UI loads but the page reports an error | Inspect the `client-render` diagnostic and stack; the error belongs to an exact Run, so define a new Package to repair it |

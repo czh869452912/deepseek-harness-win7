@@ -11,6 +11,7 @@ sys.path[:0] = json.loads(os.environ.pop('DSH_CORDIS_HOST_PATH'))
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 from dsh.extensions.cordis_host_bridge import Peer
 from dsh.extensions.cordis_guard import sandbox_define_tool, sandbox_register_tool
+from dsh.extensions.cordis_host_capabilities import host_namespace
 
 
 class HostPeer(Peer):
@@ -51,13 +52,14 @@ class HostPeer(Peer):
 
     def operation(self, op, args):
         if op == 'evaluate':
-            source, = args
-            namespace = dict(harness=SimpleNamespace(handle=self.handle, defineTool=self.define_tool,
-                registerTool=sandbox_register_tool), __name__='__cordis_host__')
+            source, filename = args
+            namespace = host_namespace(SimpleNamespace(handle=self.handle, defineTool=self.define_tool,
+                registerTool=sandbox_register_tool))
+            namespace['__file__'] = filename
             self.send(dict(type='evaluation-start'))
             start = time.monotonic()
             try:
-                exec(compile(source, '<cordis-host>', 'exec'), namespace)
+                exec(compile(source, filename, 'exec'), namespace)
             finally:
                 self.send(dict(type='evaluation-finished', elapsedMs=(time.monotonic() - start) * 1000))
             plugin = namespace.get('plugin')

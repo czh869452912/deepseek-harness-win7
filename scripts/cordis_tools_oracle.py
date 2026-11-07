@@ -38,7 +38,10 @@ def main():
         inputs += ['dsh/javascript/runtime.py', 'dsh/javascript/bin/runtime.json',
                    'dsh/javascript/bin/x86/runtime.json', 'tests/test_cordis_runtime_boundaries.py']
         inputs += ['dsh/extensions/cordis_host_process.py', 'dsh/extensions/cordis_host_worker.py',
-                   'dsh/extensions/cordis_host_bridge.py', 'tests/test_cordis_host_process.py']
+                   'dsh/extensions/cordis_host_bridge.py', 'dsh/extensions/cordis_host_capabilities.py',
+           'tests/test_cordis_host_process.py', 'tests/test_cordis_host_capabilities.py',
+           'dsh/extensions/cordis_host_watchdog.py', 'dsh/sandbox/windows_acl.py',
+           'scripts/oracles/cordis_host_job_python.py', 'tests/test_cordis_host_windows_job.py']
         inputs += ['dsh/javascript/client_syntax.py', 'dsh/javascript/client-syntax/acorn.js',
                    'dsh/javascript/client-syntax/driver.js', 'dsh/javascript/client-syntax/manifest.json',
                    'dsh/javascript/client-syntax/ACORN-LICENSE']

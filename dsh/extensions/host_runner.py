@@ -19,7 +19,7 @@ from dsh.core.session.json import UNDEFINED
 from dsh.extensions.inspect_registry import CordisInspectRegistryService, js_trim
 from dsh.typert.remote import Remote, TypertRemoteService
 from dsh.javascript.runtime import JavaScriptParseError
-from dsh.javascript.client_syntax import precheck_client_body
+from dsh.javascript.client_syntax import precheck_client_body, client_parse_error_message
 from dsh.extensions.cordis_host_process import HostProcess
 from dsh.llm.message import create_user_message
 
@@ -149,8 +149,7 @@ class DynamicCordisRunner(CordisRunnerState, TypertRemoteService):
             try:
                 precheck_client_body(code['client'])
             except JavaScriptParseError as error:
-                raise ValueError('dynamic package `code.client` failed to parse:\nSyntaxError: ' + str(error)
-                    + '\nThe Client runs plain JavaScript as the body of an async function, not TypeScript.') from error
+                raise ValueError(client_parse_error_message(error)) from error
         spec = request['plugin']
         if spec['kind'] == 'new':
             prefix = js_trim(spec['idPrefix'])

@@ -1,9 +1,9 @@
 Traceback (most recent call last):
-  File "[workspace]/dsh/extensions/cordis_host_bridge.py", line 324, in dispatch
+  File "[workspace]/dsh/extensions/cordis_host_bridge.py", line 374, in dispatch
     value = self.operation(message['op'], args)
-  File "[workspace]/dsh/extensions/cordis_host_worker.py", line 72, in operation
+  File "[workspace]/dsh/extensions/cordis_host_worker.py", line 74, in operation
     return super().operation(op, args)
-  File "[workspace]/dsh/extensions/cordis_host_bridge.py", line 333, in operation
+  File "[workspace]/dsh/extensions/cordis_host_bridge.py", line 383, in operation
     return target(*positional, **keywords)
   File "<cordis-host>", line 2, in plugin
 ValueError: fixture apply failure

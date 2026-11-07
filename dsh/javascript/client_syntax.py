@@ -7,6 +7,7 @@ import hashlib
 import json
 from pathlib import Path
 import os
+import re
 import subprocess
 
 from dsh.javascript.runtime import (JavaScriptParseError, JavaScriptRuntimeError,
@@ -55,4 +56,17 @@ def precheck_client_body(body):
     lines = body.split('\n')
     if type(line) is int and 1 <= line <= len(lines) and type(column) is int and column >= 0:
         context = 'code.client:{}:{}\n{}\n{}^\n'.format(line, column + 1, lines[line - 1], ' ' * column)
-    raise JavaScriptParseError(context + result['message'])
+    error = JavaScriptParseError(context + 'SyntaxError: ' + result['message'])
+    error.offending_line = lines[line - 1] if type(line) is int and 1 <= line <= len(lines) else ''
+    raise error
+
+
+def client_parse_error_message(error):
+    message = 'dynamic package `code.client` failed to parse:\n' + str(error) + '\n'
+    if re.search(r'\bas\b', getattr(error, 'offending_line', '')):
+        return message + ('The sandbox runs plain JavaScript, not TypeScript. Remove type annotations:\n'
+                          "  ✗ { type: 'text' as const, text: x }\n"
+                          "  ✓ { type: 'text', text: x }")
+    return message + ('Note: it runs as the BODY of an async function (code.client line numbers refer to your body). '
+                      'Check bracket balance — ending the returned plugin object with `});` closes a call that was never opened; '
+                      'a plain `return { … }` ends with `}` (an optional `;`), never `)`.')

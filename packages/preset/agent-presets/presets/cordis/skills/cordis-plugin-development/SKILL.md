@@ -62,7 +62,7 @@ Provider names, methods, and inputs must come from the current list result. The 
 
 ## Execution environment
 
-`code.host` is Python 3.8.10 source declaring a callable named `plugin`; Cordis calls it with a guarded Context. Keep resource acquisition inside that callable. Use Python 3.8 syntax, explicit UTF-8 for text files, normalized Windows paths, and APIs supported on Win7. Inspect the mounted shell instead of assuming bash or modern PowerShell. Python imports execute in the trusted Host process; this is not a malicious-code security sandbox.
+`code.host` is Python 3.8.10 source declaring a callable named `plugin`; Cordis calls it with a guarded Context. Keep resource acquisition inside that callable. Use Python 3.8 syntax, explicit UTF-8 for text files, normalized Windows paths, and APIs supported on Win7. Inspect the mounted shell instead of assuming bash or modern PowerShell. The owned Host worker exposes restricted builtins and computation imports. Obtain files, network, processes and timers through Context services; inspect Host Builtins for the available Python members. This prevents accidental misuse; it is not a malicious-code security sandbox.
 
 `code.client` remains a plain JavaScript function body returning a Cordis Plugin. It is not compiled by TypeScript, JSX, or a bundler. For Client code, do not use:
 

@@ -14,7 +14,20 @@ import threading
 import time
 import traceback
 
-from dsh.core.session.json import UNDEFINED
+from dsh.core.session.json import FrozenDict, FrozenList, UNDEFINED, walk_json_value
+
+CONTAINER_KINDS = {dict: 'dict', list: 'list', FrozenDict: 'frozen_dict', FrozenList: 'frozen_list'}
+
+
+class DetachedJson:
+    """RPC snapshots have value semantics and need no Run-lifetime identity."""
+    def __init__(self, value):
+        self.value = value
+
+
+class KeywordArguments:
+    def __init__(self, value):
+        self.value = value
 
 
 class RemoteObject:
@@ -49,7 +62,13 @@ class RemoteObject:
 
 class RemoteCallable(RemoteObject):
     def __call__(self, *args, **kwargs):
-        return self._peer.call('call', self, args, kwargs)
+        return self._peer.call('call', self, args, KeywordArguments(kwargs))
+
+    async def json_call(self, args, result_path):
+        snapshot = walk_json_value(args, detach=True)
+        # Preserve direct internal callers' non-JSON argument behavior.
+        detached = DetachedJson(snapshot) if snapshot is not UNDEFINED else args
+        return await self._peer.acall('call-json', self, detached, result_path)
 
     @property
     def __signature__(self):
@@ -99,6 +118,7 @@ class Peer:
         self.closed = False
         self.lock = threading.Lock()
         self.tasks = set()
+        self.await_tasks, self.abandoned = {}, set()
         self.reader = threading.Thread(target=self._read, daemon=True)
         self.reader.start()
 
@@ -137,6 +157,10 @@ class Peer:
         definitions, patches = {}, {}
 
         def encode(item):
+            if isinstance(item, DetachedJson):
+                return ('json', pack_detached_json(item.value))
+            if isinstance(item, KeywordArguments):
+                return ('keywords', [(key, encode(value)) for key, value in item.value.items()])
             if item is UNDEFINED:
                 return ('undefined',)
             if item is None or type(item) in (str, bool, int, float, bytes):
@@ -145,7 +169,7 @@ class Peer:
                 return ('ref', item._key)
             if type(item) is tuple:
                 return ('tuple', tuple(encode(child) for child in item))
-            if type(item) in (dict, list):
+            if type(item) in CONTAINER_KINDS:
                 identity = id(item)
                 key = self.identities.get(identity)
                 if key is None:
@@ -154,7 +178,7 @@ class Peer:
                     self.identities[identity] = key
                     self.objects[key] = item
                     self.containers[key] = item
-                definitions[key] = dict(container='dict' if type(item) is dict else 'list')
+                definitions[key] = dict(container=CONTAINER_KINDS[type(item)])
                 return ('ref', key)
             return self._reference(item, definitions)
 
@@ -169,13 +193,14 @@ class Peer:
                 break
             for key, item in pending:
                 visited.add(key)
-                kind = 'dict' if type(item) is dict else 'list'
+                kind = CONTAINER_KINDS[type(item)]
+                mapping = kind in ('dict', 'frozen_dict')
                 definitions[key] = dict(container=kind)
-                current = ([(encode(k), encode(v)) for k, v in item.items()] if kind == 'dict'
+                current = ([(encode(k), encode(v)) for k, v in item.items()] if mapping
                            else [encode(v) for v in item])
                 previous = self.sent.get(key)
                 if previous != current:
-                    if kind == 'dict' and previous is not None:
+                    if mapping and previous is not None:
                         old, new = dict(previous), dict(current)
                         patches[key] = dict(set=[(k, v) for k, v in current if k not in old or old[k] != v],
                                             delete=[k for k in old if k not in new])
@@ -190,7 +215,7 @@ class Peer:
                 continue
             kind = descriptor.get('container')
             if kind:
-                value = {} if kind == 'dict' else []
+                value = {'dict': dict, 'list': list, 'frozen_dict': FrozenDict, 'frozen_list': FrozenList}[kind]()
                 self.containers[key] = value
             else:
                 cls = (RemoteCallableAwaitable if descriptor['callable'] and descriptor['awaitable']
@@ -211,6 +236,10 @@ class Peer:
                 self.identities[id(value)] = key
 
         def decode(item):
+            if item[0] == 'json':
+                return unpack_detached_json(item[1])
+            if item[0] == 'keywords':
+                return {key: decode(value) for key, value in item[1]}
             if item[0] == 'undefined':
                 return UNDEFINED
             if item[0] == 'scalar':
@@ -221,15 +250,15 @@ class Peer:
 
         for key, patch in packet['patches'].items():
             target = self.objects[key]
-            if type(target) is dict:
+            if type(target) in (dict, FrozenDict):
                 if 'replace' in patch:
-                    target.clear()
+                    dict.clear(target)
                 for k in patch.get('delete', []):
-                    target.pop(decode(k), None)
-                target.update((decode(k), decode(v)) for k, v in patch.get('replace', patch.get('set', [])))
+                    dict.pop(target, decode(k), None)
+                dict.update(target, ((decode(k), decode(v)) for k, v in patch.get('replace', patch.get('set', []))))
                 self.sent[key] = [(self._snapshot(k), self._snapshot(v)) for k, v in target.items()]
             else:
-                target[:] = [decode(child) for child in patch['replace']]
+                list.__setitem__(target, slice(None), [decode(child) for child in patch['replace']])
                 self.sent[key] = [self._snapshot(child) for child in target]
         return decode(packet['root'])
 
@@ -265,8 +294,16 @@ class Peer:
 
     async def acall(self, op, *args):
         key = self.request(op, args)
-        while key not in self.answers:
-            await self.pump()
+        try:
+            while key not in self.answers:
+                await self.pump()
+        except asyncio.CancelledError:
+            if key in self.answers:
+                self.answers.pop(key)
+            elif not self.closed:
+                self.abandoned.add(key)
+                self.send(dict(type='cancel', id=key))
+            raise
         return self.answer(key)
 
     def answer(self, key):
@@ -312,13 +349,26 @@ class Peer:
             self.evaluation_duration = message['elapsedMs']
             return
         if message['type'] == 'answer':
+            if message['id'] in self.abandoned:
+                self.abandoned.discard(message['id'])
+                if 'value' in message:
+                    self.unpack(message['value'])
+                return
             self.answers[message['id']] = message
             return
+        if message['type'] == 'cancel':
+            task = self.await_tasks.get(message['id'])
+            if task is not None:
+                task.cancel()
+            return
         args = self.unpack(message['args'])
-        if message['op'] == 'await':
-            task = asyncio.create_task(self._await_reply(message, args[0]))
+        if message['op'] in ('await', 'call-json'):
+            value = args[0] if message['op'] == 'await' else self._invoke_json(*args)
+            task = asyncio.create_task(self._await_reply(message, value))
             self.tasks.add(task)
+            self.await_tasks[message['id']] = task
             task.add_done_callback(self.tasks.discard)
+            task.add_done_callback(lambda _: self.await_tasks.pop(message['id'], None))
             return
         try:
             value = self.operation(message['op'], args)
@@ -354,6 +404,13 @@ class Peer:
             return len(args[0])
         raise ValueError('unknown dynamic Host bridge operation: ' + op)
 
+    async def _invoke_json(self, target, args, result_path):
+        from dsh.extensions.cordis_guard import clone_json
+        result = target(args)
+        if inspect.isawaitable(result):
+            result = await result
+        return DetachedJson(clone_json(result, result_path))
+
     async def _await_reply(self, request, value):
         try:
             result = await value
@@ -385,3 +442,36 @@ class Peer:
         self.descriptors.clear()
         self.sent.clear()
         self.answers.clear()
+        self.await_tasks.clear()
+        self.abandoned.clear()
+
+
+def pack_detached_json(value):
+    """Flatten validated JSON so pickle cannot impose its recursion limit."""
+    nodes, pending = [], []
+    def encode(item):
+        if type(item) not in (dict, list):
+            return ('scalar', item)
+        key = len(nodes)
+        nodes.append(None)
+        pending.append((key, item))
+        return ('node', key)
+    root = encode(value)
+    while pending:
+        key, item = pending.pop()
+        nodes[key] = (('dict', [(name, encode(child)) for name, child in item.items()]) if type(item) is dict
+                      else ('list', [encode(child) for child in item]))
+    return root, nodes
+
+
+def unpack_detached_json(packet):
+    root, nodes = packet
+    values = [{} if kind == 'dict' else [] for kind, _ in nodes]
+    def decode(item):
+        return item[1] if item[0] == 'scalar' else values[item[1]]
+    for (kind, children), value in zip(nodes, values):
+        if kind == 'dict':
+            value.update((name, decode(child)) for name, child in children)
+        else:
+            value.extend(decode(child) for child in children)
+    return decode(root)

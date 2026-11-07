@@ -22,6 +22,32 @@ from scripts.python_export_client_fixture import (NAME, HOST_SOURCE, CLIENT_SOUR
 ROOT = Path(__file__).resolve().parents[1]
 
 
+@pytest.mark.asyncio
+async def test_exported_initial_native_computation_is_killed_without_blocking_context(tmp_path, monkeypatch):
+    from dsh.extensions import packaged_host
+    source = tmp_path / 'blocking.py'
+    source.write_text("sum(range(10 ** 12))\ndef plugin(ctx):\n    ctx.provide('lateExport', True)\n", encoding='utf-8')
+    hosts = []
+    factory = packaged_host.HostProcess
+    def capture():
+        host = factory()
+        hosts.append(host)
+        return host
+    monkeypatch.setattr(packaged_host, 'HostProcess', capture)
+    ctx = await web_context(tmp_path / 'home')
+    try:
+        beat = asyncio.create_task(asyncio.sleep(.1))
+        fiber = ctx.plugin(python_host_source(str(source), NAME))
+        with pytest.raises(TimeoutError, match='vmTimeoutMs'):
+            await fiber
+        assert beat.done()
+        assert len(hosts) == 1 and hosts[0].process.poll() is not None
+        assert ctx.get('lateExport') is None
+        await fiber.dispose()
+    finally:
+        await close_web_context(ctx)
+
+
 async def call(ctx, method, args):
     return await RemoteDispatcher(ctx).invoke(dict(namespace=host_remote_namespace(NAME),
         method='call', args=dict(method=method, args=args), signal=NEVER_ABORTED))
@@ -203,7 +229,11 @@ plugin.inject = ['exportDependency']
             provider = ctx.plugin(lambda child: child.provide('exportDependency', object()))
             await provider
             await exported.await_settled()
-        old_control['release'].set()
+        if operation == 'unload':
+            with pytest.raises(RuntimeError, match='Host process is closed'):
+                old_control['release'].set()
+        else:
+            old_control['release'].set()
         with pytest.raises(RuntimeError, match='activation ended'):
             await pending
         if operation == 'dependency-cycle':

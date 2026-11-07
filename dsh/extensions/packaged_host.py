@@ -4,16 +4,16 @@ Each Loader mount evaluates fresh globals and mounts the original guarded plugin
 as a Cordis child. This is trusted Python execution, not a security sandbox.
 """
 import ast
+import asyncio
 import inspect
 import hashlib
-import sys
-import time
 from types import SimpleNamespace
 from weakref import WeakKeyDictionary
 
 from dsh.extensions.cordis_guard import (clone_json, guarded_plugin,
     normalize_handler, sandbox_define_tool, sandbox_register_tool)
 from dsh.typert.remote import Remote, TypertRemoteService
+from dsh.extensions.cordis_host_process import HostProcess
 
 
 def host_handler_service(package_name):
@@ -93,7 +93,12 @@ class PythonHostHandlers:
         if callback is None:
             raise ValueError('unknown exported Host handler: ' + method)
         activation = self.activation
-        value = await callback(clone_json(args, 'exported Host handler arguments'))
+        try:
+            value = await callback(clone_json(args, 'exported Host handler arguments'))
+        except BaseException:
+            if self.closed or not self.active or self.activation != activation:
+                raise RuntimeError('exported Python Host activation ended during the call') from None
+            raise
         if self.closed or not self.active or self.activation != activation:
             raise RuntimeError('exported Python Host activation ended during the call')
         return value
@@ -146,37 +151,41 @@ def python_host_source(source_path, package_name, enable_remote=False):
             else:
                 with open(source_path, encoding='utf-8', newline='') as stream:
                     source = stream.read()
-            namespace = dict(__file__=source_path, harness=SimpleNamespace(
+            harness = SimpleNamespace(
                 handle=handlers.handle, defineTool=sandbox_define_tool,
-                registerTool=sandbox_register_tool))
-            deadline, previous = time.monotonic() + 5.0, sys.gettrace()
-            def trace(frame, event, arg):
-                if time.monotonic() > deadline:
-                    raise TimeoutError('exported Host evaluation exceeded 5000 ms')
-                return trace
+                registerTool=sandbox_register_tool)
+            creation = asyncio.get_running_loop().run_in_executor(None, HostProcess)
             try:
-                sys.settrace(trace)
-                exec(compile(source, source_path or '<exported-client-only>', 'exec'), namespace)
-            finally:
-                sys.settrace(previous)
-            native = namespace.get('plugin')
-            if not callable(native) and not (isinstance(native, dict) and callable(native.get('apply'))):
-                raise ValueError('Python Host code must expose a callable plugin or a plugin dict with apply(ctx)')
+                host = await asyncio.shield(creation)
+            except asyncio.CancelledError:
+                host = await creation
+                await host.close()
+                raise
+            try:
+                native = await host.evaluate(source, harness, 5000, source_path or '<exported-client-only>')
+                if declared is not None and list(native.get('inject', [])) != declared:
+                    raise ValueError('exported Python Host dependency declaration changed after import')
+            except BaseException:
+                await host.close()
+                raise
             def report(error):
                 # The guard already raises at the offending access. No Agent from
                 # the originating dynamic session is retained in the installed SDK.
                 pass
             guarded = guarded_plugin(native, report)
-            if declared is not None and list(guarded.get('inject', [])) != declared:
-                raise ValueError('exported Python Host dependency declaration changed after import')
             mounted = handlers, guarded
             mounts[ctx.fiber] = mounted
             owner = ctx.parent or ctx
 
-            def close():
+            async def close():
                 handlers.close()
                 mounts.pop(ctx.fiber, None)
                 remove_observer()
+                await host.close()
+
+            async def lost(error):
+                await ctx.fiber.dispose()
+            host.start_pump(lost)
 
             def disposed(fiber):
                 if fiber is ctx.fiber and fiber.uid is None:

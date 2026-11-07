@@ -393,10 +393,12 @@ def normalize_handler(method, handler):
     if not callable(handler):
         raise ValueError('harness.handle("{}") needs a handler function as its second argument'.format(method))
     async def normalized(args):
-        value = handler(args)
+        from dsh.extensions.cordis_host_bridge import RemoteCallable
+        path = 'harness.handle("{}") result'.format(method)
+        value = handler.json_call(args, path) if isinstance(handler, RemoteCallable) else handler(args)
         if inspect.isawaitable(value):
             value = await value
-        return clone_json(value, 'harness.handle("{}") result'.format(method))
+        return clone_json(value, path)
     return method, normalized
 
 

@@ -1,6 +1,7 @@
 """Win7 process ownership and initial-evaluation deadline for dynamic Host code."""
 import asyncio
 import ctypes
+from ctypes import wintypes
 import json
 import os
 from pathlib import Path
@@ -8,6 +9,7 @@ import signal
 import subprocess
 import sys
 import time
+import threading
 
 from dsh.extensions.cordis_host_bridge import Peer
 
@@ -15,6 +17,7 @@ from dsh.extensions.cordis_host_bridge import Peer
 class HostProcess:
     def __init__(self):
         self.closed, self.job, self.api, self.pump_task = False, None, None, None
+        self.watchdog = None
         # Bypass the Windows venv redirector so the owned PID is the interpreter.
         executable = getattr(sys, '_base_executable', None) or sys.executable
         environment = dict(os.environ, DSH_CORDIS_HOST_PATH=json.dumps(sys.path))
@@ -32,12 +35,40 @@ class HostProcess:
                 limit.basic.flags = 0x2000  # KILL_ON_JOB_CLOSE, available on Win7.
                 self.api.check(self.api.SetInformationJobObject(self.job, 9, ctypes.byref(limit), ctypes.sizeof(limit)),
                                'SetInformationJobObject')
-                self.api.check(self.api.AssignProcessToJobObject(self.job, int(self.process._handle)),
-                               'AssignProcessToJobObject')
+                try:
+                    self.api.check(self.api.AssignProcessToJobObject(self.job, int(self.process._handle)),
+                                   'AssignProcessToJobObject')
+                except OSError as error:
+                    in_job = wintypes.BOOL()
+                    self.api.check(self.api.IsProcessInJob(int(self.process._handle), None, ctypes.byref(in_job)),
+                                   'IsProcessInJob')
+                    if (getattr(error, 'winerror', None) or error.errno) != 5 or not in_job.value:
+                        raise
+                    # Win7 cannot nest Jobs. Keep the inherited Job and use an
+                    # independent watcher to retain ownership on parent death.
+                    self.api.CloseHandle(self.job)
+                    self.job = None
+                    self._start_watchdog(executable)
             self.peer = Peer(self.process.stdout, self.process.stdin, 'parent')
         except BaseException:
             self.kill()
             raise
+
+    def _start_watchdog(self, executable):
+        self.watchdog = subprocess.Popen([executable, '-u', '-B',
+            str(Path(__file__).with_name('cordis_host_watchdog.py')), str(os.getpid()), str(self.process.pid)],
+            stdin=subprocess.DEVNULL, stdout=subprocess.PIPE, stderr=None,
+            creationflags=subprocess.CREATE_NO_WINDOW)
+        lines, delivered = [], threading.Event()
+        def read_ready():
+            lines.append(self.watchdog.stdout.readline())
+            delivered.set()
+        reader = threading.Thread(target=read_ready, daemon=True)
+        reader.start()
+        if not delivered.wait(15) or lines != [b'ready\n']:
+            raise RuntimeError('dynamic Host lifetime watcher did not become ready')
+        reader.join()
+        self.watchdog.stdout.close()
 
     async def ready(self):
         limit = time.monotonic() + 15
@@ -46,9 +77,9 @@ class HostProcess:
                 raise RuntimeError('dynamic Host worker did not become ready')
             await self.peer.pump()
 
-    async def evaluate(self, source, harness, timeout):
+    async def evaluate(self, source, harness, timeout, filename='<cordis-host>'):
         await self.ready()
-        key = self.peer.request('evaluate', (source,))
+        key = self.peer.request('evaluate', (source, filename))
         limit = time.monotonic() + 15
         while key not in self.peer.answers:
             await self.peer.pump()
@@ -95,6 +126,14 @@ class HostProcess:
                 except ProcessLookupError:
                     pass
         self.process.wait(timeout=5)
+        if self.watchdog is not None:
+            try:
+                self.watchdog.wait(timeout=5)
+            except subprocess.TimeoutExpired:
+                self.watchdog.kill()
+                self.watchdog.wait(timeout=5)
+            if self.watchdog.stdout is not None:
+                self.watchdog.stdout.close()
 
     async def close(self):
         self.kill()

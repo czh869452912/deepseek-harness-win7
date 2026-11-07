@@ -21,7 +21,10 @@ INPUTS = SOURCE_INPUTS + ['scripts/cordis_guard_oracle.py', 'scripts/oracles/cor
     'dsh/llm/error.py', 'tests/test_cordis_guard.py', 'tests/fixtures/cordis-guard-source-observations.json']
 BUG_MODES = ('facade/callable-context', 'facade/callable-async-context')
 INPUTS += ['dsh/extensions/cordis_host_process.py', 'dsh/extensions/cordis_host_worker.py',
-           'dsh/extensions/cordis_host_bridge.py', 'tests/test_cordis_host_process.py']
+           'dsh/extensions/cordis_host_bridge.py', 'dsh/extensions/cordis_host_capabilities.py',
+           'tests/test_cordis_host_process.py', 'tests/test_cordis_host_capabilities.py',
+           'dsh/extensions/cordis_host_watchdog.py', 'dsh/sandbox/windows_acl.py',
+           'scripts/oracles/cordis_host_job_python.py', 'tests/test_cordis_host_windows_job.py']
 BUG_MESSAGE = ('service "callable" returned a cordis Context, which the sandbox does not expose. '
     'Operate through your own plugin ctx (ctx.on / ctx.provide / ctx.tools.register) '
     'and the services you inject — never another context.')

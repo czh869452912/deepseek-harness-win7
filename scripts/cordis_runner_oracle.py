@@ -29,7 +29,10 @@ INPUTS = SOURCE_INPUTS + ['scripts/cordis_runner_oracle.py', 'scripts/oracles/co
     'tests/fixtures/cordis-runner-source-async-stack.txt']
 INPUTS.append('tests/fixtures/cordis-runner-python-apply-stack.txt')
 INPUTS += ['dsh/extensions/cordis_host_process.py', 'dsh/extensions/cordis_host_worker.py',
-           'dsh/extensions/cordis_host_bridge.py', 'tests/test_cordis_host_process.py']
+           'dsh/extensions/cordis_host_bridge.py', 'dsh/extensions/cordis_host_capabilities.py',
+           'tests/test_cordis_host_process.py', 'tests/test_cordis_host_capabilities.py',
+           'dsh/extensions/cordis_host_watchdog.py', 'dsh/sandbox/windows_acl.py',
+           'scripts/oracles/cordis_host_job_python.py', 'tests/test_cordis_host_windows_job.py']
 INPUTS += ['dsh/javascript/runtime.py', 'dsh/javascript/bin/runtime.json',
            'dsh/javascript/bin/x86/runtime.json', 'tests/test_cordis_runtime_boundaries.py']
 INPUTS += ['dsh/javascript/client_syntax.py', 'dsh/javascript/client-syntax/acorn.js',

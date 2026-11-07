@@ -31,7 +31,7 @@ def plugin(ctx):
 
     async def work():
         try:
-            await asyncio.sleep(3600)
+            await ctx.timeout(3600000)
         finally:
             state['cancelled'] = True
 

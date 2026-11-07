@@ -95,6 +95,7 @@ class WinApi:
             "CreateJobObjectW": (P, [P, w.LPCWSTR]),
             "SetInformationJobObject": (w.BOOL, [P, c.c_int, P, D]),
             "AssignProcessToJobObject": (w.BOOL, [P, P]),
+            "IsProcessInJob": (w.BOOL, [P, P, c.POINTER(w.BOOL)]),
             "ResumeThread": (D, [P]), "TerminateProcess": (w.BOOL, [P, D]),
             "WaitForSingleObject": (D, [P, D]), "GetExitCodeProcess": (w.BOOL, [P, P]),
             "CreateFileW": (P, [w.LPCWSTR, D, D, P, D, D, P]),

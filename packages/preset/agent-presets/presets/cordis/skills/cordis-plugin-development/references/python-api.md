@@ -11,7 +11,8 @@ Native source packages import Plugin from dsh.plugin_api and implement apply(sel
 ## Type and calling boundaries
 
 - TS interfaces describe names, parameters and wire shape; use Python dictionaries/lists for JSON records/arrays. Python True/False/None are not JS true/false/null source literals.
-- Missing optional ctx.get services use None. Some core protocol paths distinguish dsh.core.session.json.UNDEFINED from None. Preserve that distinction where the actual provider requires it; do not mechanically replace undefined in every upstream signature.
+- Missing optional ctx.get services use None. Some core protocol paths distinguish the supplied UNDEFINED sentinel from None. Preserve that distinction where the actual provider requires it; do not mechanically replace undefined in every upstream signature.
+- The Host has restricted computation imports, not arbitrary Python imports. Query Host Builtins for the current list. open, filesystem/process/network/thread modules and direct event-loop access are unavailable. eval/exec retain the same restricted builtins, including when supplied an empty globals dictionary; compile remains available for computation. Use inspected Context services and reversible effects. asyncio provides selected coordination primitives; asyncio.sleep(0) yields, while delays use ctx.timeout(milliseconds) after declaring plugin.inject = ['timer'].
 - Await actual async Python methods in async callbacks. A TS Promise label alone does not determine the implementation's Python calling convention. Do not use asyncio.run inside the running Host loop.
 - harness.handle accepts a sync or async function of JSON args. Return only supported JSON data; NaN, negative zero and live objects are not portable RPC payloads.
 - Dynamic tool execute receives (args, execution); output.render receives (args, value) and returns content blocks. Respect execution.signal on long-running work using its actual abort contract.
@@ -45,7 +46,7 @@ import asyncio
 
 def plugin(ctx):
     async def work():
-        await asyncio.sleep(60)
+        await ctx.timeout(60000)
 
     task = asyncio.create_task(work())
 
@@ -54,6 +55,8 @@ def plugin(ctx):
         await asyncio.gather(task, return_exceptions=True)
 
     ctx.effect(lambda: cleanup)
+
+plugin.inject = ['timer']
 ```
 
 Own external subscriptions through their disposer. Cordis cannot remove arbitrary callbacks or process-global changes that were never registered with its lifecycle. Plugin top-level definitions may be evaluated before activation; put resource acquisition in plugin, not module scope.

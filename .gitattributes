@@ -22,6 +22,7 @@ dsh/javascript/workflow/** -text whitespace=blank-at-eol,blank-at-eof,space-befo
 dsh/javascript/client-syntax/** -text whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol
 # Keep the unmodified, licensed embedded parser byte-for-byte.
 dsh/javascript/client-syntax/acorn.js -whitespace
+dsh/javascript/client-syntax/ACORN-LICENSE -whitespace
 dsh/session/resources/sql/** -text
 dsh/session/bin/unicode/** -text
 dsh/fs/tool_fs_search/bin/** -text whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol

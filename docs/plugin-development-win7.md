@@ -40,7 +40,7 @@ Python Host 采用 3.8 语法、显式 UTF-8、Windows 路径及 Win7 支持的�
 
 define 在登记 Package 前编译检查 Host 和 Client；Client 以普通函数体内的 async 包装语境解析，再构造与原版一致的 Function 包装，仅编译、不运行源码。随包解析器拒绝固定原版不支持的 using/await using 声明、正则局部修饰符和跨分支重复捕获组名，允许 new.target、普通 using 标识符及动态 import options。用户不需要安装 Node 或 TS 工具链。全部 V8 语法边缘尚未完成等价验收，浏览器运行时仍可能遇到引擎差异。
 
-Python Host 目前开放完整 builtins/imports，这是待单独认可或收窄的能力扩展，不是必要语言适配。普通插件仍应通过 Context 服务及其 effect 管理文件、网络、进程和定时器。临时 Host 的源码、闭包和任务现在由每个 Run 独立拥有的 Python 进程承载，真实 Cordis 服务与 Fiber 仍在主进程；`vmTimeoutMs` 在初始同步求值超时后终止执行进程，不再等待原生阻塞调用返回。后续异步 apply 和 RPC 不增加该超时限制。状态、验证范围及一比一对齐的剩余缺口见[进程边界修复与闭环复核](research/2026-11-07-creative-host-process-and-parity-audit.md)。
+Python Host 提供计算 builtins、受限计算模块和异步协调能力。文件、网络、进程和定时器通过 Inspect 查得的 Context 服务及其 effect 管理；`open`、任意模块导入和直接事件循环入口不可用。`eval/exec` 使用相同的受限 builtins，`compile` 可用于计算代码。每个 Run 独立拥有 Python 执行进程，真实 Cordis 服务与 Fiber 仍在主进程；`vmTimeoutMs` 在初始同步求值超时后终止执行进程，不再等待原生阻塞调用返回。后续异步 apply 和 RPC 不增加该超时限制。这是协作式能力约束，不是恶意代码隔离。状态、验证范围及一比一对齐的剩余缺口见[创造模式后续收尾](research/2026-11-07-creative-closeout.md)。
 
 ## 可选的本机源码发行
 

@@ -175,6 +175,8 @@ async def test_formal_first_request_and_actual_skill_load(tmp_path, monkeypatch,
         assert 'Python 3.8.10' in json.dumps(first['messages'])
         assert SKILL_NAME in json.dumps(first['messages'])
         assert 'load the cordis-plugin-development Skill' in json.dumps(first['messages'])
+        assert 'restricted builtins and computation imports' in json.dumps(first['messages'])
+        assert 'trusted DSH process with Python builtins and imports' not in json.dumps(first['messages'])
         assert 'cordis-plugin-development-win7' not in json.dumps(first['messages'])
         define_description = next(row['function']['description'] for row in first['tools']
                                   if row['function']['name'] == 'cordis_define')
@@ -187,6 +189,7 @@ async def test_formal_first_request_and_actual_skill_load(tmp_path, monkeypatch,
         body = tool_message['content']
         assert 'ctx.tools.register' in body and 'harness.defineTool' in body
         assert 'Python 3.8.10' in body and 'plain JavaScript' in body
+        assert 'restricted builtins and computation imports' in body
         assert 'Define checks Python Host and JavaScript Client syntax without executing either half.' in body
         assert 'execution errors, missing dependencies, or browser engine differences' in body
         assert 'Client parse failures are currently reported during browser activation' not in body
@@ -251,7 +254,7 @@ async def test_shipped_lifecycle_events_timer_and_async_cleanup(tmp_path):
         receipt = runner.define(dict(sessionId=owner.id, plugin=dict(kind='new', idPrefix='life'),
             name='Owned lifecycle', purpose='Exercise guide event/timer/cleanup', code=dict(host=source)))
         started = await runner.run(owner, receipt['pluginId'], receipt['packageId'], 'run')
-        assert started['ok'], started
+        assert started['ok'], started.get('stack', started)
         state = ctx.get('win7AuthoringLifecycle')
         assert state is not None
         ctx.emit('win7-authoring/notice', 2)

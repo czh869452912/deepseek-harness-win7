@@ -6,11 +6,11 @@
 
 固定原版 `a4c74a91`。审批重复附着条件已对齐；Client 定义前编译检查已补入，使用随包 Win7 JavaScript 引擎，其完整语法接受集合仍非已认证的 Node 等价实现。以下事项不因配对用例通过而视为被接受：
 
-- **CORDIS-SYNC-TIMEOUT-001，临时 Host 实现已修复，验收范围单列**：每个 Run 的独立进程在初始同步求值超时后终止，真实 Context/Fiber 由主进程拥有，异步 apply 和后续 RPC 不增加该超时。原生休眠、原生计算、Python 循环、晚到副作用及清理有定向回归；这不认证任意进程代理 ABI、Win7 真机或旧发行包。显式导出的持久插件使用另一个宿主，仍有 trace 超时限制，不能沿用临时 Host 的修复结论。
-- **CORDIS-HOST-CAPABILITY-001，待认可的能力扩展**：完整 Python builtins/imports 可直接访问文件、网络和进程；不是语言移植天然要求，也不表示原版承诺恶意代码隔离。
+- **CORDIS-SYNC-TIMEOUT-001，实现已修复，验收范围单列**：每个 Run 的独立进程在初始同步求值超时后终止，真实 Context/Fiber 由主进程拥有，异步 apply 和后续 RPC 不增加该超时。原生计算、Python 循环、晚到副作用及清理有定向回归；原生休眠入口现在由能力门拒绝。可选导出宿主已复用进程边界，其固定 5 秒初始期限另有真实原生阻塞回归。这不认证任意进程代理 ABI、Win7 真机或旧发行包。
+- **CORDIS-HOST-CAPABILITY-001，完整 imports/builtins 扩展已撤回**：默认 Host 仅提供计算 builtins、白名单模块与异步协调能力；文件、网络、进程、线程及定时器的普通入口被拒绝并指向 Context。`eval/exec` 保持受限 builtins，`compile` 仅编译；这不表示原版或迁移版承诺恶意代码隔离。
 - 多 manager 内置 Inspect provider 共享租约是本机修复；可选导出/发行属于额外设计，默认未挂载。它们不计入原版一一对应。Creative 自带技能资源在启动层按包名/路径定位的耦合仍为设计债。
 
-最新状态见[进程边界修复与闭环复核](research/2026-11-07-creative-host-process-and-parity-audit.md)；[前轮边界分类](research/2026-11-07-creative-win7-runtime-boundaries.md)保留当时输入和未修复状态。本轮不新增已接受例外或变更迁移资格。
+最新状态见[创造模式后续收尾](research/2026-11-07-creative-closeout.md)；[进程边界修复与闭环复核](research/2026-11-07-creative-host-process-and-parity-audit.md)和[前轮边界分类](research/2026-11-07-creative-win7-runtime-boundaries.md)保留当时输入和未修复状态。本轮不新增已接受例外或变更迁移资格。
 
 ## UPSTREAM-WINDOWS-ACL-001：工作区授权物化
 

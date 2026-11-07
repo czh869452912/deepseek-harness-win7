@@ -4,6 +4,7 @@ from pathlib import Path
 import re
 
 from dsh.core.session.json import UNDEFINED
+from dsh.extensions.cordis_host_capabilities import MODULE_MEMBERS, DENIED_BUILTINS
 
 CATALOG = json.loads(Path(__file__).with_name('inspect_catalog.json').read_text(encoding='utf-8'))['catalogs']
 SERVICE_API, EVENT_API, TYPE_API = [CATALOG[key] for key in ('SERVICE_API', 'EVENT_API', 'TYPE_API')]
@@ -17,7 +18,16 @@ HOST_BUILTIN_INSPECTION = [
     dict(name='harness', description='Host helpers for package-private Client RPC and model-visible tools.', signatures=[
         'harness.handle(method: str, handler)', 'harness.defineTool(definition: dict)', 'harness.registerTool(ctx, tool)']),
     dict(name='plugin', description='Callable declared by the Host source and mounted by Cordis.', signatures=['def plugin(ctx): ...']),
-    dict(name='__builtins__', description='Python 3.8 builtins; imports execute in the owned dynamic Host process.', signatures=['print(*values)', '__import__(name)']),
+    dict(name='__builtins__', description='Python 3.8 computation builtins in the owned Host worker. Unavailable: '
+         + ', '.join(DENIED_BUILTINS) + '. Use Context services for files, network, processes and timers.',
+         signatures=['print(*values)', '__import__(name)  # only the computation modules listed below',
+                     'eval(source, globals=None, locals=None)  # same restricted builtins',
+                     'exec(source, globals=None, locals=None)  # same restricted builtins', 'compile(source, filename, mode)']),
+    dict(name='UNDEFINED', description='Protocol undefined sentinel; distinct from Python None.', signatures=['value is UNDEFINED']),
+    dict(name='computation imports', description='Allowed modules: ' + ', '.join(MODULE_MEMBERS)
+         + '. Each module exposes computation or async coordination members only. asyncio.sleep(0) yields; '
+         + 'delays require ctx.timeout with timer injected. Filesystem, sockets, subprocesses, threads and event-loop access are unavailable.',
+         signatures=['import math, json', 'from collections import Counter', 'await ctx.timeout(milliseconds)']),
 ]
 
 

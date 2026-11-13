@@ -165,6 +165,45 @@ identified reconstructible fixtures/copies; preserve real observations, unresolv
 failures, active/unknown files, formal receipts, and protected history backups.
 Never bulk-delete `.goose/out` to recover space.
 
+### Clean Up Test Assets After Verification
+
+Cleanup is a **required part of development and verification**, not a separate
+task to postpone until disk space runs low. After the last consumer finishes and
+the required evidence is saved, agents **MUST** remove unused assets from that
+run in the same task, before reporting completion. Apply this at targeted-test,
+debugging, release-qualification, and installation/VM test milestones; do not
+accumulate every intermediate until the end of a long development effort.
+
+- Remove owned synthetic pytest fixtures and temporary workspaces, extracted
+  Portable copies, intermediate desktop/compiler builds, redundant installers,
+  isolated browser profiles, and disposable test caches once no consumer needs
+  them. Preserve the commands, results, failure reports, and required observations
+  separately from these disposable payloads.
+- Stop and remove task-owned test containers and temporary volumes/networks after
+  use. Remove test-only images when no remaining task needs them. Retire VM disks,
+  overlays, installation media, and baselines after their validation purpose ends;
+  a large baseline must not remain indefinitely merely because it might be useful
+  again. A shared asset retained for follow-up work needs a recorded owner, purpose,
+  and cleanup milestone or expiry.
+- Prefer cleanup in the test runner's teardown/finally path. On failure or
+  interruption, first retain the raw diagnostics needed to investigate; release
+  unrelated disposable assets and revisit retained fixtures when the failure is
+  resolved. Existing retention helpers have limited scopes: running one is not
+  proof that all test assets have been cleaned.
+- Verify ownership, completion, remaining consumers, and resolved absolute paths
+  before deletion. Delete only explicitly identified assets; remove links without
+  following their targets. Do not change shared hardlink attributes or apply
+  broad permission resets to clear test leftovers. Never globally prune Docker,
+  system temporary directories, or other tasks' resources as routine cleanup.
+- Keep source and user data, active/unknown assets, unresolved failure evidence,
+  required real observations, formal verification receipts and their qualified
+  archives, and protected history backups. When retiring duplicate evidence,
+  follow the archive identity/member size/SHA checks in `docs/testing.md`.
+- Before closing the task, check for leftover processes and owned test assets.
+  Report what was removed, meaningful reclaimed space, and any retained temporary
+  assets with their reason and next cleanup point. Do not claim cleanup completed
+  while known unused assets remain or deletion failures are unaddressed.
+
 See [the verification guide](docs/testing.md) for the milestone matrix, examples,
 artifact handling, and the distinction between this guidance and current CI.
 

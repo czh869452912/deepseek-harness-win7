@@ -1487,29 +1487,12 @@ class EntryTree:
         await self.await_()
 
     async def await_(self) -> None:
-        """Wait until this tree has no active tasks and settled fibers matching TS await()."""
+        """Wait for owned pending work; stored activation failures remain on fibers."""
         while True:
             tasks = self.get_tasks()
-            if tasks:
-                await asyncio.gather(*tasks, return_exceptions=True)
-                continue
-            outcomes = []
-            for entry in list(self.entries()):
-                if hasattr(entry, "_await"):
-                    try:
-                        res = entry._await()
-                        if inspect.isawaitable(res):
-                            await res
-                    except Exception as e:
-                        outcomes.append(e)
-            if len(outcomes) == 1:
-                raise outcomes[0]
-            elif len(outcomes) > 1:
-                raise AggregateError(outcomes, "loader fibers failed")
-            if self.ctx and hasattr(self.ctx, "reflect"):
-                self.ctx.reflect.notify(["loader"])
-            if not self.get_tasks():
+            if not tasks:
                 return
+            await asyncio.gather(*tasks, return_exceptions=True)
 
     def ensure_id(self, options: Dict[str, Any]) -> str:
         if not options.get("id"):
@@ -2141,54 +2124,35 @@ class Entry:
             await _cont()
 
     async def _start(self, plugin: Any) -> None:
-        fiber = None
-        try:
-            await self._patch_context([])
-            if self.loader and hasattr(self.loader, "show_log"):
-                self.loader.show_log(self, "apply")
-            ctx = self.ctx
-            fiber = self.fiber = ctx.registry.plugin(plugin, config=self.options.get("config"), get_outer_stack=self.get_outer_stack)
-
-            if fiber:
-                fiber.entry = self
-                inst = getattr(fiber, "plugin", None)
-                if inst is not None and (isinstance(inst, EntryTree) or hasattr(inst, "root")):
-                    self.subtree = inst
-                if hasattr(fiber, "await_settled"):
-                    await fiber.await_settled()
-                elif inspect.isawaitable(fiber):
-                    await fiber
-        except Exception as error:
-            if fiber is None or getattr(fiber.ctx.fiber, '_error', None) is None:
-                await self._dispose_async(fiber)
-            raise error
+        await self._patch_context([])
+        if self.loader and hasattr(self.loader, "show_log"):
+            self.loader.show_log(self, "apply")
+        self.fiber = self.ctx.registry.plugin(plugin, config=self.options.get("config"), get_outer_stack=self.get_outer_stack)
+        if self.fiber:
+            self.fiber.entry = self
+            instance = getattr(self.fiber, "plugin", None)
+            if isinstance(instance, EntryTree) or hasattr(instance, "root"):
+                self.subtree = instance
 
     async def _init(self) -> None:
         if not self.options.get("name"):
             if self.options.get("group") or self.options.get("id", "").startswith("group"):
                 await self._start(Group)
             return
-
-        plugin = None
+        tree = getattr(self.parent, "tree", None) or self.loader
         try:
-            tree = getattr(self.parent, "tree", None) or getattr(self.loader, "tree", None) or self.loader
-            raw = tree.import_plugin(self.options.get("name", ""), self.get_outer_stack)
+            raw = tree.import_plugin(self.options["name"], self.get_outer_stack)
             if inspect.isawaitable(raw):
                 raw = await raw
-            plugin = getattr(self.loader, "unwrap_exports", lambda x: x)(raw)
-            if hasattr(tree, "_last_loaded_module") and tree._last_loaded_module:
-                self._loaded_module_name = tree._last_loaded_module
-                tree._last_loaded_module = None
         except Exception as error:
-            from dsh.cordis.loader import Loader
-            if not isinstance(getattr(self, "loader", None), Loader) and getattr(self.ctx, "loader", None) is None:
-                return
-            raise LoaderUpdateError("import", self.options, error)
-
-        try:
-            await self._start(plugin)
-        except Exception as error:
-            raise LoaderUpdateError("apply", self.options, error)
+            self.ctx.logger("loader").error(error)
+            return
+        plugin = self.loader.unwrap_exports(raw)
+        if getattr(tree, "_last_loaded_module", None):
+            self._loaded_module_name = tree._last_loaded_module
+            tree._last_loaded_module = None
+        await self._start(plugin)
+        self.moduleNamespace = raw
 
     async def _await(self) -> None:
         try:
@@ -2238,10 +2202,18 @@ class Entry:
             if hasattr(self.loader, "get_tasks") and not self.loader.get_tasks():
                 if self.ctx and hasattr(self.ctx, "reflect"):
                     self.ctx.reflect.notify(["loader"])
-        await self._await()
+        if self.fiber:
+            async def notify_when_settled():
+                try:
+                    await self._await()
+                except Exception:
+                    pass
+                if not self.loader.get_tasks():
+                    self.ctx.reflect.notify(["loader"])
+            asyncio.create_task(notify_when_settled())
 
     def update(self, options: Dict[str, Any], create: bool = False, force: bool = False) -> Any:
-        """Merge new options, restart as needed, and update fiber transactionally."""
+        """Publish raw options first, then apply the required lifecycle changes."""
         try:
             loop = asyncio.get_running_loop()
             from dsh.cordis.awaiting import start_coroutine
@@ -2286,126 +2258,41 @@ class Entry:
         return True
 
     async def _update_async(self, options: Dict[str, Any], create: bool = False, force: bool = False) -> None:
-        previous_options = self.options
-        legacy = dict(previous_options)
-        candidate = dict(options) if create else dict(previous_options)
-        if not create:
-            for k, v in options.items():
-                if is_nullable(v):
-                    candidate.pop(k, None)
+        legacy = dict(self.options)
+        if create:
+            self.options = options
+        else:
+            for key, value in options.items():
+                if is_nullable(value):
+                    self.options.pop(key, None)
                 else:
-                    candidate[k] = v
-        sort_keys(candidate)
-
-        # Config distinguishes null and undefined, including inside arrays.
-        diff_keys: List[str] = list(candidate.keys())
-        for key in legacy.keys():
-            if key not in diff_keys:
-                diff_keys.append(key)
-        diff = [key for key in diff_keys
-                if not deep_equal(candidate.get(key, _UNDEFINED), legacy.get(key, _UNDEFINED), key == "config")]
-        if not diff and not force:
+                    self.options[key] = value
+        sort_keys(self.options)
+        self.name = self.options.get("name", "")
+        self.config = self.options.get("config")
+        if self.disabled:
+            if self.fiber:
+                await self.fiber.dispose()
             return
-
-        def commit():
-            if create:
-                replace_keys(options, candidate)
-                self.options = options
-                return
-            replace_keys(previous_options, candidate)
-            self.options = previous_options
-            self.name = self.options.get("name", self.name)
-            self.config = self.options.get("config", self.config)
-
-        previous = self.fiber
-        if not previous or not getattr(previous, "uid", None):
-            self.fiber = None
-            self.options = candidate
-            self.name = self.options.get("name", self.name)
-            self.config = self.options.get("config", self.config)
-            commit()
-            if not self._disabled(candidate):
-                res = self.init()
-                if inspect.isawaitable(res):
-                    await res
-            return
-
-        if self._disabled(candidate):
-            self.options = candidate
-            self.name = self.options.get("name", self.name)
-            self.config = self.options.get("config", self.config)
-            commit()
-            try:
-                await self._dispose_async(previous)
-            except Exception as error:
-                raise LoaderUpdateError("dispose", candidate, error)
-            if hasattr(self.context, "emit"):
-                self.context.emit("loader/partial-dispose", self, legacy, True)
-            return
-
-        replace = any(key in ("name", "inject", "group") for key in diff)
-        if not replace:
-            self.options = candidate
-            self.name = self.options.get("name", self.name)
-            self.config = self.options.get("config", self.config)
-            volatile_only = (diff == ["config"] and previous.state == FiberState.ACTIVE
-                             and self.parent is not None and self.ctx.parent is self.parent.ctx
+        if self.fiber and self.fiber.uid:
+            keys = list(dict.fromkeys(list(self.options) + list(legacy)))
+            changes = [key for key in keys if not deep_equal(
+                self.options.get(key, _UNDEFINED), legacy.get(key, _UNDEFINED), key == "config")]
+            volatile_only = (changes == ["config"] and self.fiber.state == FiberState.ACTIVE
+                             and self.ctx.parent is self.parent.ctx
                              and equal_except_volatile(legacy.get("config", _UNDEFINED),
-                                                       candidate.get("config", _UNDEFINED),
-                                                       getattr(previous.runtime, "Config", None)))
+                                self.options.get("config", _UNDEFINED), self.fiber.runtime.Config))
             if volatile_only:
-                previous.rawConfig = candidate.get("config")
-                if self._commit_volatile():
-                    diff = []
-                    if not force:
-                        commit()
-                        return
-            commit()
+                self.fiber.rawConfig = self.options.get("config")
+            pending = [] if volatile_only and self._commit_volatile() else changes
+            if not pending and not force:
+                return
             self.context.emit("loader/partial-dispose", self, legacy, True)
-            await self._patch_context(diff)
-            return
-
-        plugin = None
-        try:
-            if "name" in diff:
-                tree = getattr(self.parent, "tree", None) or getattr(self.loader, "tree", None) or self.loader
-                raw = tree.import_plugin(candidate.get("name", ""), self.get_outer_stack)
-                if inspect.isawaitable(raw):
-                    raw = await raw
-                plugin = getattr(self.loader, "unwrap_exports", lambda x: x)(raw)
-            else:
-                plugin = getattr(previous, "_plugin_cls", None) or getattr(previous, "plugin", None) or (previous.runtime.callback if previous.runtime else None)
-        except Exception as error:
-            raise LoaderUpdateError("import", candidate, error)
-
-        previous_plugin = getattr(previous, "_plugin_cls", None) or getattr(previous, "plugin", None) or (previous.runtime.callback if previous.runtime else None)
-        self.options = candidate
-        self.name = self.options.get("name", self.name)
-        self.config = self.options.get("config", self.config)
-        try:
-            await self._dispose_async(previous)
-        except Exception as error:
-            self.options = previous_options
-            self.name = self.options.get("name", self.name)
-            self.config = self.options.get("config", self.config)
-            raise LoaderUpdateError("dispose", candidate, error)
-
-        try:
-            await self._start(plugin)
-        except Exception as error:
-            self.options = previous_options
-            self.name = self.options.get("name", self.name)
-            self.config = self.options.get("config", self.config)
-            try:
-                await self._start(previous_plugin)
-            except Exception as rollback_error:
-                raise LoaderUpdateError("rollback", legacy, AggregateError([error, rollback_error]))
-            if hasattr(self.context, "emit"):
-                self.context.emit("loader/partial-dispose", self, candidate, True)
-            raise LoaderUpdateError("apply", candidate, error)
-        commit()
-        if hasattr(self.context, "emit"):
-            self.context.emit("loader/partial-dispose", self, legacy, True)
+            await self._patch_context(pending)
+        else:
+            result = self.init()
+            if inspect.isawaitable(result):
+                await result
 
 
 

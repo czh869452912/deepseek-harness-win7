@@ -1,7 +1,7 @@
 """Loader option comparison against cosmokit helpers and fixed rc022 contracts.
 
 Config uses strict nullish comparison recursively; other options use loose
-comparison. Equal inputs retain the raw identity unless force is requested.
+comparison. Entry options publish before comparison; Fiber raw input changes only on lifecycle update.
 """
 
 from typing import Any, Dict, List, Tuple
@@ -132,7 +132,7 @@ def test_entry_ts_148_is_nullable_deletes_an_undefined_option_value():
     The port's own `undefined` sentinel is one of the two nullish values, so
     `update({disabled: undefined})` removes `disabled` from the candidate
     instead of storing the sentinel. With the legacy option read as `null`, the
-    pair is equal and the reference returns early; `force` commits the removal.
+    pair is equal and the reference returns after publishing the removal.
     """
     _, entry, events = _entry({}, disabled=None)
     assert entry.options["disabled"] is None
@@ -140,13 +140,13 @@ def test_entry_ts_148_is_nullable_deletes_an_undefined_option_value():
     entry.update({"disabled": _UNDEFINED})
 
     assert events == []
-    assert entry.options["disabled"] is None
+    assert "disabled" not in entry.options
 
     entry.update({"disabled": _UNDEFINED}, force=True)
 
     assert "disabled" not in entry.options
     assert len(events) == 1
-    assert events[0][1]["disabled"] is None
+    assert "disabled" not in events[0][1]
 
 
 def test_entry_ts_159_diff_key_set_spans_candidate_and_legacy():
@@ -169,14 +169,11 @@ def test_entry_ts_159_diff_key_set_spans_candidate_and_legacy():
     assert applied == [{}]  # a `disabled`-only diff does not restart the fiber
 
 
-def test_entry_ts_160_empty_diff_returns_before_any_state_change():
-    """entry.ts:161: an empty diff returns, and `force` only commits.
+def test_empty_diff_publishes_entry_raw_identity_without_updating_fiber():
+    """Fixed Source publishes the caller's raw object before checking changes.
 
-    Structurally equal config arrays leave the fiber untouched; the fresh
-    caller object is discarded and the entry keeps its original config. With
-    `force` the reference commits the caller's object, but the diff it already
-    computed stays empty, so the fiber does not restart and no plugin re-applies;
-    only a diff that really contains `config` restarts it.
+    Equal raw values do not restart the Fiber. Force emits partial-dispose but
+    still does not update Fiber raw identity without an actual config change.
     """
     original = {"k": [{}]}
     _, entry, events = _entry(original)
@@ -188,7 +185,8 @@ def test_entry_ts_160_empty_diff_returns_before_any_state_change():
     assert applied == [{"k": [{}]}]
     assert events == []
     assert entry.fiber is fiber
-    assert entry.options["config"] is original
+    assert entry.options["config"] is updated
+    assert fiber.rawConfig is original
 
     entry.update({"config": updated}, force=True)
 

@@ -1,0 +1,318 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-15",
+  "unit": "C1-K-Entry-raw-publication-and-activation",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "state": "targeted-passed",
+  "paired_journeys": 8,
+  "native_batches": [
+    {
+      "scope": "Loader/Include/boot patch/Typert direct consumers",
+      "passed": 102
+    },
+    {
+      "scope": "Fiber/profile/Web boot and HMR consumers",
+      "passed": 115
+    }
+  ],
+  "verification_scope_reason": "Changed production Entry update/import/init and tree settlement; fixed Source actual runtime observes raw identity, import/activation failure separation, name-only edits, retained disposed handles, and initial-vs-direct-Fiber-update Loader admission. Direct consumers and HMR/startup covered; no full regression/release qualification.",
+  "remaining": "Synchronous Group removal/creation timing and getTasks ownership, service associated properties, strict waterfall consumers and current boot recomposition remain C1 work.",
+  "cleanup": {
+    "owner": "rc022-C1-K",
+    "removed": [
+      {
+        "path": ".goose/out/rc022-loader-lifecycle-native-20261115-01/pytest-workspace/test_failed_inflight_batch_mer0",
+        "bytes": 95,
+        "files": 1,
+        "links": 0
+      },
+      {
+        "path": ".goose/out/rc022-loader-lifecycle-native-20261115-01/pytest-workspace/test_failed_write_keeps_old_pu0",
+        "bytes": 2,
+        "files": 1,
+        "links": 0
+      },
+      {
+        "path": ".goose/out/rc022-loader-lifecycle-native-20261115-01/pytest-workspace/test_failed_write_keeps_old_pu1",
+        "bytes": 2,
+        "files": 1,
+        "links": 0
+      },
+      {
+        "path": ".goose/out/rc022-loader-lifecycle-native-20261115-01/pytest-workspace/test_guarded_write_rejects_cha0",
+        "bytes": 0,
+        "files": 0,
+        "links": 0
+      },
+      {
+        "path": ".goose/out/rc022-loader-lifecycle-native-20261115-01/pytest-workspace/test_guarded_write_rejects_cha1",
+        "bytes": 0,
+        "files": 0,
+        "links": 0
+      },
+      {
+        "path": ".goose/out/rc022-loader-lifecycle-native-20261115-01/pytest-workspace/test_independent_edits_conflic0",
+        "bytes": 1796,
+        "files": 8,
+        "links": 0
+      },
+      {
+        "path": ".goose/out/rc022-loader-lifecycle-native-20261115-01/pytest-workspace/test_initial_broken_artifact_f0",
+        "bytes": 827,
+        "files": 6,
+        "links": 0
+      },
+      {
+        "path": ".goose/out/rc022-loader-lifecycle-native-20261115-01/pytest-workspace/test_installation_artifact_sup0",
+        "bytes": 0,
+        "files": 0,
+        "links": 0
+      },
+      {
+        "path": ".goose/out/rc022-loader-lifecycle-native-20261115-01/pytest-workspace/test_readonly_retains_journal_0",
+        "bytes": 95,
+        "files": 1,
+        "links": 0
+      },
+      {
+        "path": ".goose/out/rc022-loader-lifecycle-native-20261115-01/pytest-workspace/test_real_loader_duplicate_row0",
+        "bytes": 543,
+        "files": 4,
+        "links": 0
+      },
+      {
+        "path": ".goose/out/rc022-loader-lifecycle-native-20261115-01/pytest-workspace/test_retry_rechecks_expected_a0",
+        "bytes": 12,
+        "files": 1,
+        "links": 0
+      },
+      {
+        "path": ".goose/out/rc022-loader-lifecycle-native-20261115-01/pytest-workspace/test_retry_rechecks_expected_a1",
+        "bytes": 12,
+        "files": 1,
+        "links": 0
+      },
+      {
+        "path": ".goose/out/rc022-loader-lifecycle-native-20261115-01/pytest-workspace/test_shipped_bundle_expression0",
+        "bytes": 0,
+        "files": 0,
+        "links": 0
+      },
+      {
+        "path": ".goose/out/rc022-loader-lifecycle-native-20261115-01/pytest-workspace/test_steady_state_broken_packa0",
+        "bytes": 1629,
+        "files": 8,
+        "links": 0
+      },
+      {
+        "path": ".goose/out/rc022-loader-lifecycle-native-20261115-01/pytest-workspace/test_transient_retry_succeeds_0",
+        "bytes": 27,
+        "files": 1,
+        "links": 0
+      },
+      {
+        "path": ".goose/out/rc022-loader-lifecycle-native-20261115-01/pytest-workspace/test_two_file_moves_preflight_0",
+        "bytes": 1793,
+        "files": 14,
+        "links": 0
+      },
+      {
+        "path": ".goose/out/rc022-loader-lifecycle-native-20261115-01/pytest-workspace/test_yaml_js_tag_and_relative_0",
+        "bytes": 597,
+        "files": 3,
+        "links": 0
+      },
+      {
+        "path": ".goose/out/rc022-loader-lifecycle-native-20261115-02/pytest-workspace/test_failed_inflight_batch_mer0",
+        "bytes": 95,
+        "files": 1,
+        "links": 0
+      },
+      {
+        "path": ".goose/out/rc022-loader-lifecycle-native-20261115-02/pytest-workspace/test_failed_write_keeps_old_pu0",
+        "bytes": 2,
+        "files": 1,
+        "links": 0
+      },
+      {
+        "path": ".goose/out/rc022-loader-lifecycle-native-20261115-02/pytest-workspace/test_failed_write_keeps_old_pu1",
+        "bytes": 2,
+        "files": 1,
+        "links": 0
+      },
+      {
+        "path": ".goose/out/rc022-loader-lifecycle-native-20261115-02/pytest-workspace/test_guarded_write_rejects_cha0",
+        "bytes": 0,
+        "files": 0,
+        "links": 0
+      },
+      {
+        "path": ".goose/out/rc022-loader-lifecycle-native-20261115-02/pytest-workspace/test_guarded_write_rejects_cha1",
+        "bytes": 0,
+        "files": 0,
+        "links": 0
+      },
+      {
+        "path": ".goose/out/rc022-loader-lifecycle-native-20261115-02/pytest-workspace/test_independent_edits_conflic0",
+        "bytes": 1796,
+        "files": 8,
+        "links": 0
+      },
+      {
+        "path": ".goose/out/rc022-loader-lifecycle-native-20261115-02/pytest-workspace/test_initial_broken_artifact_f0",
+        "bytes": 827,
+        "files": 6,
+        "links": 0
+      },
+      {
+        "path": ".goose/out/rc022-loader-lifecycle-native-20261115-02/pytest-workspace/test_installation_artifact_sup0",
+        "bytes": 0,
+        "files": 0,
+        "links": 0
+      },
+      {
+        "path": ".goose/out/rc022-loader-lifecycle-native-20261115-02/pytest-workspace/test_readonly_retains_journal_0",
+        "bytes": 95,
+        "files": 1,
+        "links": 0
+      },
+      {
+        "path": ".goose/out/rc022-loader-lifecycle-native-20261115-02/pytest-workspace/test_real_loader_duplicate_row0",
+        "bytes": 543,
+        "files": 4,
+        "links": 0
+      },
+      {
+        "path": ".goose/out/rc022-loader-lifecycle-native-20261115-02/pytest-workspace/test_retry_rechecks_expected_a0",
+        "bytes": 12,
+        "files": 1,
+        "links": 0
+      },
+      {
+        "path": ".goose/out/rc022-loader-lifecycle-native-20261115-02/pytest-workspace/test_retry_rechecks_expected_a1",
+        "bytes": 12,
+        "files": 1,
+        "links": 0
+      },
+      {
+        "path": ".goose/out/rc022-loader-lifecycle-native-20261115-02/pytest-workspace/test_shipped_bundle_expression0",
+        "bytes": 0,
+        "files": 0,
+        "links": 0
+      },
+      {
+        "path": ".goose/out/rc022-loader-lifecycle-native-20261115-02/pytest-workspace/test_steady_state_broken_packa0",
+        "bytes": 1629,
+        "files": 8,
+        "links": 0
+      },
+      {
+        "path": ".goose/out/rc022-loader-lifecycle-native-20261115-02/pytest-workspace/test_transient_retry_succeeds_0",
+        "bytes": 27,
+        "files": 1,
+        "links": 0
+      },
+      {
+        "path": ".goose/out/rc022-loader-lifecycle-native-20261115-02/pytest-workspace/test_two_file_moves_preflight_0",
+        "bytes": 1793,
+        "files": 14,
+        "links": 0
+      },
+      {
+        "path": ".goose/out/rc022-loader-lifecycle-native-20261115-02/pytest-workspace/test_yaml_js_tag_and_relative_0",
+        "bytes": 597,
+        "files": 3,
+        "links": 0
+      },
+      {
+        "path": ".goose/out/rc022-loader-lifecycle-native-20261115-02/pytest-workspace",
+        "bytes": 0,
+        "files": 0,
+        "links": 0
+      },
+      {
+        "path": ".goose/out/rc022-loader-lifecycle-consumers-20261115-01/pytest-workspace/test_bound_runtime_auth_and_re0",
+        "bytes": 179,
+        "files": 2,
+        "links": 0
+      },
+      {
+        "path": ".goose/out/rc022-loader-lifecycle-consumers-20261115-01/pytest-workspace/test_creative_bundle_anchors_o0",
+        "bytes": 436,
+        "files": 3,
+        "links": 0
+      },
+      {
+        "path": ".goose/out/rc022-loader-lifecycle-consumers-20261115-01/pytest-workspace/test_formal_web_profile_starts0",
+        "bytes": 1186,
+        "files": 8,
+        "links": 239
+      },
+      {
+        "path": ".goose/out/rc022-loader-lifecycle-consumers-20261115-01/pytest-workspace/test_formal_web_profile_starts1",
+        "bytes": 1186,
+        "files": 8,
+        "links": 239
+      },
+      {
+        "path": ".goose/out/rc022-loader-lifecycle-consumers-20261115-01/pytest-workspace/test_hmr_fiber_disposal_stops_0",
+        "bytes": 12,
+        "files": 1,
+        "links": 0
+      },
+      {
+        "path": ".goose/out/rc022-loader-lifecycle-consumers-20261115-01/pytest-workspace/test_module_registration_dispo0",
+        "bytes": 1327,
+        "files": 2,
+        "links": 0
+      },
+      {
+        "path": ".goose/out/rc022-loader-lifecycle-consumers-20261115-01/pytest-workspace/test_module_registration_dispo1",
+        "bytes": 7,
+        "files": 1,
+        "links": 0
+      },
+      {
+        "path": ".goose/out/rc022-loader-lifecycle-consumers-20261115-01/pytest-workspace/test_shared_path_live_change_w0",
+        "bytes": 7,
+        "files": 1,
+        "links": 0
+      },
+      {
+        "path": ".goose/out/rc022-loader-lifecycle-consumers-20261115-01/pytest-workspace/test_ssh_suppresses_browser_an0",
+        "bytes": 179,
+        "files": 2,
+        "links": 0
+      },
+      {
+        "path": ".goose/out/rc022-loader-lifecycle-consumers-20261115-01/pytest-workspace",
+        "bytes": 0,
+        "files": 0,
+        "links": 0
+      }
+    ],
+    "total_bytes": 19379,
+    "links": 478,
+    "retained": "Paired input/output and failed observations, commands/logs/XML and failed-reports; fixed Source/toolchain owned through C9."
+  },
+  "inputs": {
+    "dsh/cordis/loader.py": "b2635195f8654881bac237eeebb5d7a7b4bfe898432d7f540ce1c3cfbfe8f774",
+    "scripts/rc022_loader_lifecycle_probe.py": "231463399810c138e22149b1311983b0a38d8332eb83eab7815b34ca880563f1",
+    "scripts/oracles/rc022_loader_lifecycle.mts": "ed06370bf11c7a42dccf91f000a9013e87bd42cb65fb2d9579eea6b7808bafc8",
+    "tests/test_rc022_loader_lifecycle.py": "68629ec8778f8080717967d1d79a397c945704e4e1ac85aa253537117818b18b",
+    "tests/test_cordis_loader_upstream_parity.py": "6eb8b7f89ae3fca89cbd1ce7fba609102ee1f274b701fbd476a2d585204b2691",
+    "tests/test_loader_entry_transactions_1to1.py": "ca1f3e281ecf33da71e051e4c440a78563694e83ac7af4ad25712a2e25131e3e",
+    "tests/1to1/cordis/test_loader_deep_equal_parity.py": "9618be3a39fa08bd4e78b767ef6c4e1873b434010203d5139178997f33f6c2ee",
+    "tests/1to1/boot/app_boot/test_user_patches.py": "7d777365b7ed7099600fbc7e398bd27cefb0e3f09189cd659579f21e58fe7443",
+    ".goose/out/rc022-prep-20261114-01/source/vendor/loader/src/config/entry.ts": "650e4e1f3015bcca63c5a3474310f87a418add6249d9939d173a2b79f2ee7d9b",
+    ".goose/out/rc022-prep-20261114-01/source/vendor/loader/src/config/tree.ts": "dd856ead27ac9b81e88dd51b13753f138d7951cc6d6bf3e5cfcbe206281aa503"
+  },
+  "reports": {
+    ".goose/out/rc022-loader-lifecycle-paired-20261115-03/report.json": "a0fd93b34f800994991cf858c7d433b402178bec9d64e1d983faf6e5d2f8c600",
+    ".goose/out/rc022-loader-lifecycle-native-20261115-02/command.json": "1c790026d4096f12c0494148ff62ff1f818b124b5714147ecd28f470d8d1c494",
+    ".goose/out/rc022-loader-lifecycle-native-20261115-02/pytest.xml": "0c3a808dc65c5bdef4b505febe535f407ad976bd43d77d9c7dd6fccb09227d34",
+    ".goose/out/rc022-loader-lifecycle-native-20261115-02/cleanup.json": "98a9158b3b17102fbc6fb60a69bcbde939053814b13c1cad9d7adebf0d453314",
+    ".goose/out/rc022-loader-lifecycle-consumers-20261115-01/command.json": "a52fe8b6d1c6f025f381e481d2f3a4d9d01c9b5512227c53c4f9cdf13b23f22d",
+    ".goose/out/rc022-loader-lifecycle-consumers-20261115-01/pytest.xml": "271e14b6e1ac637b8ef007d6cc15764223f06f8947e6980eafd38e6b3fcbef67"
+  }
+}

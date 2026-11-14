@@ -1,6 +1,6 @@
 """
 Unit tests for Loader Entry and EntryGroup transactions matching reference/vendor/loader/src/config/entry.ts & tree.ts.
-Tests options updates, enable/disable toggling, duplicate id validation, and atomic rollbacks.
+Tests options updates, retained disabled handles, duplicate ids and removal.
 """
 
 import pytest
@@ -37,7 +37,8 @@ def test_entry_update_config_and_state_toggle():
 
     # Toggle disabled -> true (unloads fiber)
     entry.update({"disabled": True})
-    assert entry.fiber is None
+    assert entry.fiber.uid is None
+    assert entry.fiber.state == FiberState.DISPOSED
     assert ctx.get_service("sample") is None
 
     # Toggle disabled -> false (starts fiber)

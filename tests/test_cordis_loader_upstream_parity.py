@@ -14,7 +14,7 @@ from dsh.cordis.loader import EntryTree
 
 
 @pytest.mark.asyncio
-async def test_entry_uses_owning_async_tree_for_initial_and_replacement_imports():
+async def test_entry_uses_owning_async_tree_for_import_and_retains_loaded_module_on_name_edit():
     ctx = Context()
     loader = Loader(ctx)
     imports, active = [], []
@@ -48,12 +48,12 @@ async def test_entry_uses_owning_async_tree_for_initial_and_replacement_imports(
         assert active == ['original']
         entry = tree.resolve('owned')
         original = entry.fiber
-        with pytest.raises(Exception, match='owned-tree import failed'):
-            await entry.update(dict(name='missing'))
+        await entry.update(dict(name='missing'))
         assert entry.fiber is original and active == ['original']
         await entry.update(dict(name='replacement', config=dict(value='replacement')))
         assert active == ['replacement']
-        assert [row['name'] for row in imports] == ['relative-plugin', 'missing', 'replacement']
+        assert [row['name'] for row in imports] == ['relative-plugin']
+        assert entry.moduleNamespace.default is not None
         assert all(row['stack'] and '#owned' in row['stack'][0] for row in imports)
         await tree.root.stop()
         assert active == []
@@ -347,9 +347,13 @@ async def test_loader_await_intercept_keeps_consumer_pending_until_entries_settl
     ]))
     await started.wait()
     calls = []
+    activated = asyncio.Event()
+    def activate(_child):
+        calls.append('active')
+        activated.set()
     consumer = ctx.registry.inject(
         {"loader": {"await": True}},
-        lambda _child: calls.append("active"),
+        activate,
     )
     await asyncio.sleep(0)
 
@@ -359,6 +363,7 @@ async def test_loader_await_intercept_keeps_consumer_pending_until_entries_settl
     release.set()
     await loading
     await loader.wait()
+    await asyncio.wait_for(activated.wait(),2)
     await consumer
     assert calls == ["active"]
 
@@ -456,7 +461,7 @@ async def test_registry_delete_does_not_persist_loader_entry_as_disabled():
 
 
 @pytest.mark.asyncio
-async def test_entry_rollback_error_preserves_apply_and_rollback_failures():
+async def test_name_edit_keeps_loaded_runtime_until_a_later_import():
     loader = Loader(Context())
     old_loads = []
 
@@ -472,15 +477,14 @@ async def test_entry_rollback_error_preserves_apply_and_rollback_failures():
     loader.register_plugin_class("new", plugin(new_apply))
     await loader.root.update([{"id": "entry", "name": "old"}])
 
-    with pytest.raises(RuntimeError, match="failed to rollback") as caught:
-        await loader.update("entry", {"name": "new"})
-
-    cause = caught.value.__cause__
-    assert isinstance(cause, LoaderAggregateError)
-    assert [str(error) for error in cause.errors] == [
-        "new apply failed",
-        "rollback apply failed",
-    ]
+    await loader.wait()
+    original=loader.store['entry'].fiber
+    await loader.update('entry', {'name':'new'})
+    await loader.wait()
+    assert loader.store['entry'].fiber is original
+    assert old_loads==['load']
+    assert loader.store['entry'].options['name']=='new'
+    await loader.ctx.fiber.dispose()
 
 
 @pytest.mark.asyncio
@@ -640,7 +644,7 @@ async def test_expression_resolves_after_injected_provider_activation():
 
 
 @pytest.mark.asyncio
-async def test_tree_wait_notifies_loader_after_update_tasks_settle():
+async def test_tree_wait_does_not_notify_loader_after_direct_fiber_update():
     ctx = Context()
     loader = Loader(ctx)
     started = asyncio.Event()
@@ -655,6 +659,9 @@ async def test_tree_wait_notifies_loader_after_update_tasks_settle():
     await loader.root.update([
         {"id": "delayed", "name": "delayed", "config": {"wait": False}},
     ])
+    await loader.wait()
+    await asyncio.sleep(0)
+    await asyncio.sleep(0)
     entry = loader.resolve("delayed")
     update_result = entry.fiber.update({"wait": True})
     updating = asyncio.ensure_future(update_result)
@@ -673,8 +680,14 @@ async def test_tree_wait_notifies_loader_after_update_tasks_settle():
     await waiting
     await asyncio.sleep(0)
 
-    assert calls == ["active"]
-    assert consumer.state == FiberState.ACTIVE
+    # Fixed Source's await() only joins work; the direct Fiber call did not
+    # register a new Entry.init() settlement notification.
+    assert calls == []
+    assert consumer.state == FiberState.PENDING
+    ctx.reflect.notify(['loader'])
+    await consumer
+    assert calls == ['active']
+    await ctx.fiber.dispose()
 
 
 @pytest.mark.asyncio

@@ -259,8 +259,10 @@ async def test_waits_for_row_injections_before_resolving_js_and_resolves_again_a
         await provider.update({"disabled": True})
         await provider.update({"config": {"fail": True}})
         await provider.update({"disabled": False})
+        await ctx.loader.wait()
+        reader=next(entry for entry in ctx.loader.entries() if entry.options.get('id')=='reader')
         with pytest.raises(Exception, match="rejected provider"):
-            await ctx.loader.wait()
+            await reader.fiber
         assert ctx.get("readerResult") is None
 
         await provider.update({"disabled": True})
@@ -346,7 +348,7 @@ async def test_re_evaluates_when_update_replaces_the_expression_mounting_and_unm
 
         await entry.update({"disabled": disabled_true})
         assert entry.disabled is True
-        assert entry.fiber is None
+        assert entry.fiber.uid is None
 
         await entry.update({"disabled": disabled_false})
         assert entry.disabled is False

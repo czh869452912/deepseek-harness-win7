@@ -30,6 +30,7 @@ from dsh.cordis.include import ConfigFileError, Include
 from dsh.cordis.loader import Entry, EntryGroup, Group, Loader, apply_entry_patches, evaluate_expr, is_js_expr, js_constructor, resolve_module_specifier
 from dsh.boot.plugin_registry import install_harness_plugin_classes, install_installation_module_roots
 from dsh.boot.startup import StartupError, audit_startup_entries, capture_startup_composition
+from dsh.boot.compatibility_preflight import prepare_profile_entries, prepareProfileEntries, prepare_profile_patches, prepareProfilePatches
 from dsh.cordis.logger import Exporter
 
 
@@ -421,6 +422,7 @@ async def mount_root_include(
     absolute_config_path: str,
     patches: Optional[List[Dict[str, Any]]] = None,
     bare_module_base_url: Optional[str] = None,
+    bin_name: str = 'dsh',
 ) -> Optional[Entry]:
     """Mount the exact root Include entry used by app boot."""
     loader = ctx.get("loader")
@@ -450,11 +452,12 @@ async def mount_root_include(
 
     loader.builtins["group"] = Group
 
+    prepared = prepare_profile_patches(ctx, list(patches or []), Path(os.path.dirname(absolute_config_path)).as_uri()+'/', bin_name)
     include_config: Dict[str, Any] = {
         "path": path_to_file_url(absolute_config_path),
     }
-    if patches:
-        include_config["patches"] = list(patches)
+    if prepared:
+        include_config["patches"] = prepared
 
     root_include = {
         "id": "include",
@@ -806,7 +809,7 @@ async def boot(
             if asyncio.iscoroutine(res):
                 await res
         stage = "plugin tree failed to load"
-        await mount_root_include(ctx, absolute_config_path, patches, bare_module_base_url)
+        await mount_root_include(ctx, absolute_config_path, patches, bare_module_base_url, bin_name)
         loader = ctx.get("loader")
         if loader is not None:
             await_fn = getattr(loader, "await_", None) or getattr(loader, "await", None)

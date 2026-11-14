@@ -1,0 +1,38 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-15",
+  "unit": "C1-S-CompositionPreflight",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "state": "targeted-passed-with-source-fixture-limitation",
+  "paired": ".goose/out/rc022-preflight-paired-20261115-03/report.json",
+  "observations": 34,
+  "source": {
+    "run": "rc022-preflight-source-20261115-02",
+    "passed": 27,
+    "excluded": 1,
+    "reason": "Original loop-file symlink fixture fails EPERM on this Windows host; original failure and stack retained in source-01."
+  },
+  "native": [
+    {
+      "run": "rc022-preflight-native-20261115-01",
+      "passed": 135,
+      "failed": 1,
+      "reason": "New observer used incorrect Logger exporter shape."
+    },
+    {
+      "run": "rc022-preflight-native-20261115-02",
+      "passed": 3,
+      "failed": 1,
+      "reason": "Incorrect new Logger exporter keyword."
+    },
+    {
+      "run": "rc022-preflight-native-20261115-03",
+      "passed": 4,
+      "failed": 0
+    }
+  ],
+  "scope": "Actual root Include admission before imports, detached rows, group descent/disable, native Include all-or-nothing refusal without file edits, grants, malformed metadata, package service authority, import aliases, unresolved-module deferral, warnings and original patch preservation. Launcher now publishes profileContext facts.",
+  "verification_scope_reason": "34 actual Source/Python admission/boot journeys, original preflight tests and Python profile/Web/HMR/startup consumers. Per-plugin import/apply order compared; cross-plugin scheduling intentionally observed but not made a compatibility admission contract. Raw warnings and effect order retained separately.",
+  "cleanup": ".goose/out/rc022-preflight-native-20261115-03/cleanup.json",
+  "remaining": "Complete runtime resolution (including full npm alias grammar), profile layers/recomposition and preset consumers remain C1 work. No full gate, Web parity or release acceptance."
+}

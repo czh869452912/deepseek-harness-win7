@@ -388,6 +388,14 @@ async def _run_profile(options: Dict[str, Any]) -> Dict[str, Any]:
 
             host_ctx.disposable(release_after_shutdown, "python-profile-lease")
         host_ctx.provide(DSH_LAUNCH_ENVIRONMENT_KEY, environment)
+        host_ctx.provide('profileContext', {
+            'name': composed.profile.name, 'dir': composed.profile.dir,
+            'patchPath': composed.profile.patch_path, 'installAnchor': INSTALL_ANCHOR,
+            'cwd': os.getcwd(), 'home': os.path.abspath(dsh_home or resolve_dsh_home()),
+            'startedBundles': [layer.package_name for layer in composed.profile.layers],
+            'overlays': copy.deepcopy(composed.overlays),
+            'telemetryDisabledEnv': os.environ.get('DSH_TELEMETRY_DISABLED'),
+        })
         provide_cmdline(host_ctx, {
             "args": args,
             "exit": lambda code: shutdown.shutdown(code),

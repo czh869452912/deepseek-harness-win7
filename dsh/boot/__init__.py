@@ -39,6 +39,8 @@ from dsh.boot.app_boot import (
     renderConfigDump,
     mount_root_include,
     mountRootInclude,
+    prepare_profile_entries, prepareProfileEntries,
+    prepare_profile_patches, prepareProfilePatches,
     install_fail_loud,
     installFailLoud,
     assert_entries_loaded,
@@ -96,6 +98,7 @@ from dsh.boot.cmdline import (
 )
 
 __all__ = [
+    "prepare_profile_entries", "prepareProfileEntries", "prepare_profile_patches", "prepareProfilePatches",
     "PROFILE_COMPATIBILITY_FILENAME", "is_exact_version", "isExactPluginVersion",
     "get_dsh_runtime_version", "getDshRuntimeVersion",
     "evaluate_plugin_compatibility", "evaluatePluginCompatibility",

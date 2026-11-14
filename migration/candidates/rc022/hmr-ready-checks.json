@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-15",
+  "unit": "C1-AG-HmrApplicationReadinessAndBaseline",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "state": "targeted-passed",
+  "paired": ".goose/out/rc022-hmr-ready-paired-20261115-02/report.json",
+  "observations": 5,
+  "source": {
+    "run": "rc022-hmr-ready-source-20261115-01",
+    "passed": 9,
+    "failed": 0
+  },
+  "native": {
+    "run": "rc022-hmr-ready-native-20261115-01",
+    "passed": 37,
+    "failed": 0
+  },
+  "verification_scope_reason": "Actual providers, successful startup signals and existing disk files cover pending config callbacks, caller mutation before readiness, interrupted startup cancellation, baseline observation failure, and local/ordinary/scoped linked package cache records versus an outside sibling. Queue, file identity, HMR consumers and actual canonical CLI/Web profile boot regressions passed.",
+  "scope": "A profile HMR requires appReady. Config/module reload callbacks await startup; caller mutations do not. Disposing before readiness resolves false and releases blocked reloads without executing them. Successful startup records loaded Python cache/sys.modules URLs below real profile and linked package roots with ModuleFiles; capture failure warns and still releases readiness.",
+  "cleanup": ".goose/out/rc022-hmr-ready-native-20261115-01/cleanup.json",
+  "remaining": "Automatic profile watches, whole module batch dispatch, module replacement/cache reconciliation and old patchReload retirement. Source profile test success also covers features not yet ported; only paired readiness/initial capture is claimed here."
+}

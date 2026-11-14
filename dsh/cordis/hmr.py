@@ -21,6 +21,8 @@ from typing import Any, Callable, Dict, List, Optional, Set, Tuple, Union
 from dsh.cordis.context import Context
 from dsh.cordis.plugin import Plugin
 from dsh.cordis.service import Service
+from dsh.cordis.hmr_files import ModuleFiles
+from dsh.cordis.hmr_paths import file_path, profile_roots
 
 
 class ModuleDependencyGraph:
@@ -253,6 +255,9 @@ class ConfigWatcherService(Service):
         self._executing = contextvars.ContextVar('hmr_transaction', default=False)
         self._closing = False
         self._config_paths = set()
+        self.files = ModuleFiles()
+        self._application_ready = None
+        self._cancel_ready = None
 
         # D8: Verify loader and internal
         loader = self.ctx.get("loader")
@@ -337,6 +342,43 @@ class ConfigWatcherService(Service):
     async def init(self):
         """Service.init owns watcher shutdown and every pending refresh pass."""
         yield self._async_teardown
+        profile = self._owner_context.get('profileContext')
+        if profile is not None:
+            ready = self._owner_context.get('appReady')
+            if ready is None:
+                raise RuntimeError('Profile HMR requires application readiness')
+            started = asyncio.get_running_loop().create_future()
+            self._application_ready = started
+            def on_ready():
+                try:
+                    from dsh.boot.runtime_resolution import _field
+                    self.files.observe(self._profile_modules(profile_roots(_field(profile, 'dir'))))
+                except Exception as error:
+                    self.ctx.logger.warn(error)
+                if not started.done():
+                    started.set_result(True)
+            subscribe = getattr(ready, 'onReady', None) or ready.on_ready
+            unsubscribe = subscribe(on_ready)
+            def cancel_ready():
+                self._cancel_ready = None
+                unsubscribe()
+                if not started.done():
+                    started.set_result(False)
+            self._cancel_ready = cancel_ready
+            yield cancel_ready
+
+    def _profile_modules(self, roots):
+        """Loaded Python modules below the profile and its linked packages."""
+        from pathlib import Path
+        loader = self._owner_context.get('loader')
+        internal = getattr(loader, 'internal', None)
+        urls = list(getattr(internal, 'loadCache', {}))
+        urls.extend(Path(os.path.abspath(module.__file__)).as_uri()
+                    for module in list(sys.modules.values())
+                    if isinstance(getattr(module, '__file__', None), str))
+        return [url for url in dict.fromkeys(urls)
+                if isinstance(url, str) and url.startswith('file:')
+                and any(file_path(url).startswith(root) for root in roots)]
 
     def run_exclusive(self, operation):
         """Append a caller mutation to the reload queue, preserving its result."""
@@ -366,7 +408,12 @@ class ConfigWatcherService(Service):
     runExclusive = run_exclusive
 
     async def _run_reload(self, operation):
-        return await self.run_exclusive(operation)
+        async def reload_when_ready():
+            if self._application_ready is not None and not await asyncio.shield(self._application_ready):
+                return
+            result = operation()
+            return await result if inspect.isawaitable(result) else result
+        return await self.run_exclusive(reload_when_ready)
 
     async def watch_config(self, filename, refresh):
         paths = {os.path.abspath(filename), os.path.realpath(filename)}
@@ -1005,6 +1052,9 @@ class ConfigWatcherService(Service):
 
     async def _async_teardown(self) -> None:
         self._closing = True
+        if self._cancel_ready is not None:
+            self._cancel_ready()
+            self._cancel_ready = None
         self._running = False
         if self._poll_task and not self._poll_task.done():
             self._poll_task.cancel()

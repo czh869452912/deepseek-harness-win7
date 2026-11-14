@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-15",
+  "unit": "C1-AF-HmrSerialQueueAndExactWatch",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "state": "targeted-passed",
+  "paired": ".goose/out/rc022-hmr-queue-paired-20261115-02/report.json",
+  "observations": 7,
+  "source": {
+    "run": "rc022-hmr-queue-source-20261115-01",
+    "passed": 32,
+    "failed": 0
+  },
+  "native": {
+    "run": "rc022-hmr-queue-native-20261115-03",
+    "passed": 33,
+    "failed": 0
+  },
+  "verification_scope_reason": "Actual HMR providers and exact disk files exercise failure recovery, nested rejection, return values, initial callback behind mutation, registration inside a transaction, duplicate paths, self-disposal, external drainage and failed watcher setup. Existing module reload observations, canonical HMR config and recomposition are direct consumers; Python cancellation preserves queue ownership and parent EACCES remains fatal.",
+  "scope": "Service-owned serial transaction queue and new watchConfig API; old registerConfig remains for historical consumers. Callback and existing module reload scheduling share the queue. Exact registrations reserve configured/canonical paths and use definition-context effects. Self-disposal skips own queue joins; unrelated disposal drains.",
+  "cleanup": ".goose/out/rc022-hmr-queue-native-20261115-03/cleanup.json",
+  "remaining": "Application-ready barrier, whole module change dispatch, profile watches/reconcile, manifest/module caches and old patchReload retirement. This is not complete HMR or release acceptance."
+}

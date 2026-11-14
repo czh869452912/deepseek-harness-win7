@@ -4,8 +4,9 @@ Provides safe configuration and module watching, debouncing, serialized refreshe
 dynamic Python module reload, and 'hmr/change', 'hmr/reload', 'hmr/config-update-failed' events.
 """
 
-from dsh.cordis.awaiting import await_callback_result
 import asyncio
+import contextvars
+import errno
 import importlib
 import importlib.util
 import importlib.abc
@@ -168,6 +169,8 @@ class ConfigRegistration:
         self.state = ConfigRefreshState()
         self.disposed = False
         self._task: Optional[asyncio.Task] = None
+        self.reserved_paths = []
+        self.legacy = True
 
     def __call__(self) -> Any:
         # Retire this registration only while it still owns the path, then join
@@ -180,11 +183,13 @@ class ConfigRegistration:
         state = self.hmr._config_refreshes.get(self)
 
         async def _run() -> None:
-            if state is not None and state.running and not state.running.done():
+            if state is not None and state.running and not state.running.done() and not self.hmr._executing.get():
                 await asyncio.shield(state.running)
             if state is not None and self.hmr._config_refreshes.get(self) is state:
                 self.hmr._config_refreshes.pop(self, None)
             self.disposed = True
+            for path in self.reserved_paths:
+                self.hmr._config_paths.discard(path)
 
         try:
             loop = asyncio.get_running_loop()
@@ -220,7 +225,9 @@ def find_watch_root(filename: str) -> Tuple[str, str, int]:
             rel = os.path.relpath(filename, root)
             canonical_filename = os.path.abspath(os.path.join(canonical_root, rel))
             return canonical_filename, canonical_root, depth
-        except (FileNotFoundError, OSError):
+        except OSError as error:
+            if error.errno != errno.ENOENT:
+                raise
             parent = os.path.dirname(root)
             if parent == root:
                 raise
@@ -241,6 +248,11 @@ class ConfigWatcherService(Service):
     def __init__(self, ctx: Context, config: Optional[Dict[str, Any]] = None):
         super().__init__(ctx, name="hmr")
         self.config = config or {}
+        self._owner_context = ctx
+        self._operations = None
+        self._executing = contextvars.ContextVar('hmr_transaction', default=False)
+        self._closing = False
+        self._config_paths = set()
 
         # D8: Verify loader and internal
         loader = self.ctx.get("loader")
@@ -325,6 +337,54 @@ class ConfigWatcherService(Service):
     async def init(self):
         """Service.init owns watcher shutdown and every pending refresh pass."""
         yield self._async_teardown
+
+    def run_exclusive(self, operation):
+        """Append a caller mutation to the reload queue, preserving its result."""
+        loop = asyncio.get_running_loop()
+        if self._executing.get():
+            result = loop.create_future()
+            result.set_exception(RuntimeError('HMR transactions cannot be nested'))
+            return result
+        previous = self._operations
+        async def execute():
+            if previous is not None:
+                await asyncio.gather(previous, return_exceptions=True)
+            if self._closing:
+                raise RuntimeError('HMR is disposed')
+            token = self._executing.set(True)
+            try:
+                result = operation()
+                return await result if inspect.isawaitable(result) else result
+            finally:
+                self._executing.reset(token)
+        task = loop.create_task(execute())
+        self._operations = task
+        # The service owns queued work, even when its caller abandons a wait.
+        task.add_done_callback(lambda done: None if done.cancelled() else done.exception())
+        return asyncio.shield(task)
+
+    runExclusive = run_exclusive
+
+    async def _run_reload(self, operation):
+        return await self.run_exclusive(operation)
+
+    async def watch_config(self, filename, refresh):
+        paths = {os.path.abspath(filename), os.path.realpath(filename)}
+        if self._config_paths.intersection(paths):
+            raise ValueError('config path already registered: '+filename)
+        self._config_paths.update(paths)
+        token = self._executing.set(False)
+        try:
+            registration = await self.register_config(filename, refresh, paths)
+            registration.legacy = False
+            return registration
+        except BaseException:
+            self._config_paths.difference_update(paths)
+            raise
+        finally:
+            self._executing.reset(token)
+
+    watchConfig = watch_config
 
     def is_ignored(self, filepath: str, base_dir: str) -> bool:
         import fnmatch
@@ -545,9 +605,8 @@ class ConfigWatcherService(Service):
             while state.dirty:
                 state.dirty = False
                 try:
-                    res = refresh_fn()
-                    await await_callback_result(res)
-                    if hasattr(self.ctx, "logger"):
+                    await self._run_reload(refresh_fn)
+                    if getattr(key, 'legacy', True) and hasattr(self.ctx, "logger"):
                         self.ctx.logger("hmr").info("Reloaded config file %s", observed)
                 except asyncio.CancelledError:
                     raise
@@ -556,7 +615,7 @@ class ConfigWatcherService(Service):
                     if hasattr(self.ctx, "logger"):
                         self.ctx.logger("hmr").warn("config reload at %s failed", observed)
                         self.ctx.logger("hmr").warn("%s", error)
-                    if hasattr(self.ctx, "parallel"):
+                    if getattr(key, 'legacy', True) and hasattr(self.ctx, "parallel"):
                         try:
                             await self.ctx.parallel("hmr/config-update-failed", observed, error)
                         except Exception as rejection:
@@ -569,7 +628,11 @@ class ConfigWatcherService(Service):
 
         try:
             loop = asyncio.get_running_loop()
-            task = loop.create_task(_run())
+            token = self._executing.set(False)
+            try:
+                task = loop.create_task(_run())
+            finally:
+                self._executing.reset(token)
             state.running = task
             self._refresh_tasks.add(task)
             task.add_done_callback(lambda t: self._refresh_tasks.discard(t))
@@ -783,7 +846,10 @@ class ConfigWatcherService(Service):
                         state = self._module_refreshes.get(changed_file)
                         if state is not None:
                             state.dirty = False
-                    await _reload_batch(pending)
+                    await self._run_reload(lambda: _reload_batch(pending))
+            except Exception as error:
+                if hasattr(self.ctx, 'logger'):
+                    self.ctx.logger('hmr').warn('%s', error)
             finally:
                 # The pass drops its own serialization state in its `finally`
                 # (`index.ts:318-321`), so a settled pass is never a join target.
@@ -793,7 +859,11 @@ class ConfigWatcherService(Service):
 
         try:
             loop = asyncio.get_running_loop()
-            task = loop.create_task(_run())
+            token = self._executing.set(False)
+            try:
+                task = loop.create_task(_run())
+            finally:
+                self._executing.reset(token)
             self._module_reload_task = task
             for state in self._module_refreshes.values():
                 if state.dirty:
@@ -803,7 +873,7 @@ class ConfigWatcherService(Service):
         except RuntimeError:
             pass
 
-    def register_config(self, filename: str, refresh_fn: Callable[[], Any]) -> Any:
+    def register_config(self, filename: str, refresh_fn: Callable[[], Any], _reserved_paths=None) -> Any:
         """
         Watch one exact config path and execute refresh_fn on modification matching TS hmr.registerConfig.
         """
@@ -819,6 +889,8 @@ class ConfigWatcherService(Service):
         # `index.ts:149-155`: the registration owns the watch, the observed path
         # and the serialization state before the first refresh is scheduled.
         registration = ConfigRegistration(self, canonical_filename, filename, refresh_fn)
+        registration.reserved_paths = [] if _reserved_paths is None else _reserved_paths
+        registration.legacy = _reserved_paths is None
 
         if os.path.exists(canonical_filename):
             try:
@@ -837,8 +909,12 @@ class ConfigWatcherService(Service):
         self._configs[canonical_filename] = registration
 
         if hasattr(self.ctx, "effect"):
-            self.ctx.effect(lambda: registration,
-                            label=f"hmr.registerConfig('{canonical_filename}')")
+            try:
+                self._owner_context.effect(lambda: registration,
+                                label=f"hmr.registerConfig('{canonical_filename}')")
+            except BaseException:
+                registration()
+                raise
 
         class RegistrationPromise:
             def __init__(self, disp: Any):
@@ -928,6 +1004,7 @@ class ConfigWatcherService(Service):
     registerModule = register_module
 
     async def _async_teardown(self) -> None:
+        self._closing = True
         self._running = False
         if self._poll_task and not self._poll_task.done():
             self._poll_task.cancel()
@@ -938,7 +1015,9 @@ class ConfigWatcherService(Service):
         running_tasks.extend([s.running for s in self._module_refreshes.values()
                               if s and s.running and not s.running.done()])
         running_tasks.extend([t for t in self._refresh_tasks if not t.done()])
-        if running_tasks:
+        if self._operations is not None and not self._operations.done():
+            running_tasks.append(self._operations)
+        if running_tasks and not self._executing.get():
             try:
                 await asyncio.gather(*running_tasks, return_exceptions=True)
             except Exception:
@@ -950,6 +1029,7 @@ class ConfigWatcherService(Service):
         self._root_mtimes.clear()
         self._config_refreshes.clear()
         self._module_refreshes.clear()
+        self._config_paths.clear()
 
     def teardown(self) -> Optional[asyncio.Task]:
         """

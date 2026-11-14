@@ -85,3 +85,5 @@
 2026-11-15：C1-AD [Profile 原子替换](profile-replace-checks.json)完成 22 组固定原版/Python 实际目录快照及故障对照、20 项原版和 121 项 Python 检查。自定义目标以同目录 staging 原子替换，仅复制 bundle 元数据；移动失败恢复旧目录，恢复失败保留备份和双原因，并发新目标优先，成功后清理失败给出诊断。大小写 shipped 名拒绝、活动 Python 租约保护、依赖 junction 目标保护、dump/启动及分发消费者覆盖。旧独占创建观察原文保留，当前断言采用新合同；本批合成备份/工作区已清理。公共旧 patchReload 参数与 launcher watcher 等待真实 HMR 接线后整体退役。
 
 2026-11-15：C1-AE [HMR 模块文件身份](hmr-files-checks.json)完成 15 组固定原版/Python 实际文件观察、2 项原版与 8 项 Python 检查。比较 inode/size/mtime，保留 seen/retained 记录及 FAT 两秒边界，hardlink 造成的 ctime 不触发重载；时钟标记成功与 stat 失败均清理。此助手尚未接入生产 HMR，队列、缓存替换和 profile 监听继续推进。本批合成文件、工作区已清理。
+
+2026-11-15：C1-AF [HMR 串行事务与精确监听](hmr-queue-checks.json)完成 7 组固定原版/Python 实际服务旅程、32 项原版与 33 项 Python 定向检查。失败后队列可继续使用，拒绝嵌套；watchConfig 的初始回调在事务后运行，路径重复和启动失败释放、事务内卸载及外部卸载等待均覆盖，Python 取消调用方等待不取消服务事务。本批全部合成夹具和临时目录已清理。应用就绪、整个文件批次派发、profile 监听、模块替换和旧 patchReload 退役继续推进。

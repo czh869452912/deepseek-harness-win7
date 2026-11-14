@@ -53,6 +53,8 @@ def test_reference_remap_changes_local_coordinates_but_preserves_captures_and_nu
     assert target['surfaceOp'] == dict(op='replace', startSeq=2, endSeq=3)
     assert row == before
     assert remapV3References(row, 3, []) is row
+    row['data']['targets'][0]['seq'] = 1.0
+    assert remapV3References(row, 4, [0, 2, 3])['data']['targets'][0]['seq'] == 2
 
 
 @pytest.mark.parametrize('reference', [False, True, -1, 1.5, 3, 9])

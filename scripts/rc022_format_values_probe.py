@@ -158,7 +158,7 @@ def cases():
                 add('historicalChildCatalogSource', dict(header=header, inheritedEventCount=cut,
                     events=[dict(type='subagent/descriptor', seq=0, data=dict(version=1, provider='p', label='L'))]))
     for kind in ('command/done', 'compaction/summary', 'session/title', 'image/offload', 'opaque'):
-        for ref in (None, False, 0, 1, 2, 3, -1, 1.5):
+        for ref in (None, False, 0, 1, 1.0, 2, 3, -1, 1.5):
             row = event(kind, dict(sourceEventSeq=ref, shadowedRange=dict(start=ref, end=ref, opaque=9),
                 shadowedSeqs=[ref], messageSeqs=[ref], targets=[dict(seq=ref, width=2)], numericPayload=2))
             row['seq'] = 3
@@ -180,15 +180,170 @@ def cases():
                 if replacement:
                     row.update(surfaceOp={'op': 'replace'}, sourceEventSeqs=[1])
                 add('assertV4ForkResult', row)
+    header = dict(version=4, id='parent', createdAt=1, isSeeded=False, delegationDepth=0)
+    for field, values in {'version': [None, False, True, 3, 4.0], 'id': [None, '', 1], 'createdAt': [-1, False, 1.0],
+                          'isSeeded': [None, 0, True], 'cwd': [None, 'relative', 'C:/absolute', '/root'],
+                          'origin': [None, 'subagent'], 'parentSession': [None, 'p'], 'extra': [True]}.items():
+        for value in values:
+            item = dict(header); item[field] = value
+            add('assertReleasedV4Header', item)
+    for field in header:
+        item = dict(header); del item[field]
+        add('assertReleasedV4Header', item)
+    for version in (None, False, 0, 3, 4, 5):
+        for through in (None, False, 0, 7):
+            for current in (3, 4):
+                add('validateDeliveryAccepted', event('session-log-deepseek/delivery-accepted',
+                    dict(sessionFormatVersion=version, throughSeq=through, sessionId='parent')), current)
+
+    def row(kind, data, **extra):
+        return dict(type=kind, data=data, **extra)
+
+    def coordinates(events):
+        return [dict(value, seq=index, time=index+10) for index, value in enumerate(events)]
+
+    def artifact(events, **extra):
+        return dict(header=header, inheritedEventCount=0, events=coordinates(events), **extra)
+
+    user = dict(id='u', role='user', source={'kind': 'user'}, content=[dict(type='text', text='human')])
+    start = row('turn/start', {'turn': 1}); step = row('step/start', {'turn': 1, 'step': 1})
+    end_step = row('step/end', {'turn': 1, 'step': 1}); end_turn = row('turn/end', {'turn': 1})
+    request = row('request/header', dict(header=dict(config={'provider': 'mock'}, tools=[])))
+    system_row = row('system/message', dict(turn=1, step=1, message=dict(id='s', role='system',
+        source={'kind': 'system-prompt'}, content=[])), surfaceOp='append')
+    user_row = row('user/message', user, surfaceOp='append')
+    assistant = row('assistant/message', dict(turn=1, step=1, message=dict(id='a', role='assistant', source={'kind': 'llm'},
+        content=[dict(type='tool-call', id='call', name='read', arguments='{}')])), surfaceOp='append')
+    tool_call = row('tool/call', dict(turn=1, step=1, callId='call', name='read', arguments='{}'))
+    tool_result = row('tool/result', dict(turn=1, step=1, message=dict(id='r', role='tool', source=dict(kind='tool', callId='call'),
+        toolCallId='call', content=[dict(type='text', text='ok')])), surfaceOp='append')
+    ordinary = [start, step, system_row, user_row, request, assistant, tool_call, tool_result, end_step, end_turn]
+    known = sorted({value['type'] for value in ordinary} | {'developer/message','subagent/catalog','session/end-seed',
+        'compaction/start','compaction/summary','compaction/prune','compaction/end','llm/retry','llm/retry-started',
+        'command/run','command/done','session/title','session/title-llm-request','tool/ptc-dispatch-start','tool/ptc-dispatch'})
+    for length in range(len(ordinary)+1):
+        add('restoreReleasedV4Artifact', artifact(ordinary[:length]), known)
+    for index in range(len(ordinary)):
+        add('restoreReleasedV4Artifact', artifact(ordinary[:index]+ordinary[index+1:]), known)
+    for index, fields in ((0, ('turn',)), (1, ('turn','step')), (6, ('turn','step','callId','name','arguments')), (8, ('turn','step'))):
+        for field in fields:
+            for value in (None, False, 0, 1.0, 2, 'wrong'):
+                changed = copy.deepcopy(ordinary); changed[index]['data'][field] = value
+                add('restoreReleasedV4Artifact', artifact(changed), known)
+    for field in ('headerSeq', 'turn', 'step'):
+        for value in (None, False, 0, 1, 2, 4, 99):
+            changed = copy.deepcopy(developer)
+            changed['data'].update(headerSeq=2)
+            changed['data']['message']['content'] = [dict(type='tool-addition', toolName='read')]
+            changed['data'][field] = value
+            definition = dict(name='read', description='read files', parameters={})
+            declared = row('request/header', dict(header=dict(config={'provider': 'mock'}, tools=[definition])))
+            add('restoreReleasedV4Artifact', artifact([start, step, declared, changed]), known)
+    compact_rows = [start, user_row, row('compaction/start', dict(compactionId='c', turn=1)),
+        row('compaction/summary', dict(compactionId='c', shadowedRange={'start': 1,'end': 1}, shadowedSeqs=[1], summary=[])),
+        row('user/message', dict(user, source=dict(kind='compact-checkpoint', compactionId='c')), surfaceOp=dict(op='replace',startSeq=1,endSeq=1), sourceEventSeqs=[1,2,3]),
+        row('compaction/end', dict(compactionId='c', turn=1)), end_turn]
+    for length in range(len(compact_rows)+1):
+        add('restoreReleasedV4Artifact', artifact(compact_rows[:length]), known)
+    for index in (2,3,4,5):
+        changed = copy.deepcopy(compact_rows)
+        owner = changed[index]['data']['source'] if index == 4 else changed[index]['data']
+        owner['compactionId'] = 'wrong'
+        add('restoreReleasedV4Artifact', artifact(changed), known)
+    for provider in ('mock', 'other'):
+        for attempt in (0, 1, 2):
+            retry = row('llm/retry', dict(turn=1, step=1, retryId='retry', retry=attempt, provider=provider, policyKey='policy'))
+            retry_start = row('llm/retry-started', dict(turn=1, step=1, retryId='retry', retry=attempt))
+            for suffix in ([retry], [retry,retry_start], [retry,retry_start,retry_start], [retry,retry]):
+                add('restoreReleasedV4Artifact', artifact([start, step, request]+suffix), known)
+    dispatch = dict(rootCallId='root', parentCallId='root', subCallId='child', name='read', arguments={'a':1,'b':2})
+    for changes in ({}, {'arguments': {'b':2,'a':1}}, {'arguments': {'a':True,'b':2}}, {'rootCallId':'other'}, {'parentCallId':'other'}):
+        add('restoreReleasedV4Artifact', artifact([start,row('tool/ptc-dispatch-start',dispatch),row('tool/ptc-dispatch',dict(dispatch,**changes))]),known)
+    for names in (['alpha','beta'], ['alpha','alpha'], ['lead','beta'], ['a'*33,'beta']):
+        catalogs = [row('subagent/catalog', dict(version=3, childId=str(i),childCreatedAt=i,mode='external',name=name)) for i,name in enumerate(names)]
+        add('restoreReleasedV4Artifact', artifact(catalogs), known)
+    for opaque in (row('custom', {'arbitrary':True},ignorable=True), row('custom',{},ignorable=False), row('developer/message', [],ignorable=True)):
+        add('restoreReleasedV4Artifact', artifact([opaque]), [])
+    for source_kind in ('user', 'plugin:external'):
+        title_input = row('user/message', dict(user, source={'kind':source_kind}), surfaceOp='append')
+        for refs in ([], [0], [0,0], [1]):
+            add('restoreReleasedV4Artifact', artifact([title_input,row('session/title', dict(source={'kind':'llm'},messageSeqs=refs))]),known)
+    v3_header = dict(header, version=3)
+    splice = row('agent/inbox/spliced',dict(target='next-turn',inserted=[user]))
+    restart = [start, step, end_step, splice, row('turn/start',{'turn':2}),row('turn/end',{'turn':2})]
+    child_sources = [dict(childId='late', childCreatedAt=2, descriptorCount=0, descriptor=None),
+        dict(childId='early', childCreatedAt=1, descriptorCount=1, descriptor=dict(version=1,provider='p',label='child'))]
+    for events in ([], restart, restart[:4], ordinary, [row('custom',{'opaque':1},ignorable=True)], [row('custom',{})]):
+        for children in ([], child_sources):
+            for runs in (False, True):
+                add('migrateV3Stage', dict(sourceHeader=v3_header), children, coordinates(events), False, runs)
+    add('migrateV3Stage', dict(sourceHeader=v3_header), [], [], True)
+    for cut in (None, 0, 1, 4, 5):
+        seeded = dict(v3_header,isSeeded=True,parentSession='p')
+        stage_input = dict(sourceHeader=seeded)
+        if cut is not None:
+            stage_input['sourceInheritedEventCount']=cut
+        add('migrateV3Stage',stage_input,child_sources,coordinates(restart+[row('session/end-seed',{'inherited':True})]))
+    for children in (child_sources, child_sources+[dict(child_sources[0],childCreatedAt=99)]):
+        add('migrateV3Stage',dict(sourceHeader=v3_header),children,coordinates([row('subagent/catalog',dict(version=1,childId='late',childCreatedAt=2,mode='unknown'))]))
+    physical = dict(type='session',**header)
+    for mode in ('strict', 'recover-tail'):
+        for events in (coordinates(ordinary), coordinates(ordinary[:4])+[{'broken':True}],
+                       coordinates(ordinary[:4])+[{'broken':True},dict(type='request/header',data={'header':{'system':None}})],
+                       [dict(type='developer/message',seq=0,time=1,data=[],ignorable=True)]):
+            add('v4DecodeRows',physical,events,mode)
+    add('v4DecodeHeader',physical)
+    add('v4EncodeHeader',header,0)
+    for item in coordinates(ordinary):
+        add('v4EncodeEvent',item)
     return rows
 
 
 def native(rows):
+    from dsh.session.format_v0_to_v1.payload import compact
     from dsh.session.format_v3_to_v4 import tool_role, sources, content, developer, system_message, message_sources, retired_syntax
     from dsh.session.format_v3_to_v4 import facts, fork_result, references, extension_identities
+    from dsh.session.format_v3_to_v4 import validation, relationships, migration, codec
     modules = (tool_role, sources, content, developer, system_message, message_sources, retired_syntax,
-               facts, fork_result, references, extension_identities)
+               facts, fork_result, references, extension_identities, validation, relationships, migration, codec)
     functions = {name: getattr(module, name) for module in modules for name in dir(module) if not name.startswith('_')}
+    functions.update(v4DecodeHeader=codec.decodeHeader, v4EncodeHeader=codec.encodeHeader, v4EncodeEvent=codec.encodeEvent)
+
+    def migrate_stage(stage_input, children, events, unbound=False, runs=False):
+        declaration = migration.sessionFormatV3ToV4 if unbound else migration.createSessionFormatV3ToV4(children)
+        emitted, result = [], {}
+        result['events'] = emitted
+        from dsh.session.format.chain import SessionFormatEventCollector
+        context = SessionFormatEventCollector(); context.values = emitted
+        try:
+            result['header'] = declaration['migrateHeader'](stage_input['sourceHeader'])
+            stage = declaration['createStage'](stage_input)
+            if runs:
+                stage.transformRun(dict(expand=lambda: events), context)
+            else:
+                for event in events:
+                    stage.transformEvent(event, context)
+            result['inheritedEventCount'] = stage.finish(context)
+            if hasattr(stage, 'headerInheritedEventCount'):
+                result['headerInheritedEventCount'] = stage.headerInheritedEventCount
+        except Exception as error:
+            result['error'] = dict(name=getattr(error, 'name', type(error).__name__), message=str(error))
+        return result
+
+    def decode_rows(header, rows, recovery):
+        from dsh.session.format.chain import SessionFormatEventCollector
+        context = SessionFormatEventCollector(); result = dict(events=context.values)
+        try:
+            decoder = codec.ReleasedV4Decoder(header, recovery)
+            result['header'] = decoder.header
+            for row in rows:
+                decoder.decodeRow(row, context)
+            result['inheritedEventCount'] = decoder.finish(context)
+        except Exception as error:
+            result['error'] = dict(name=getattr(error, 'name', type(error).__name__), message=str(error))
+        return result
+
+    functions.update(migrateV3Stage=migrate_stage, v4DecodeRows=decode_rows)
     results = []
     for row in rows:
         args = copy.deepcopy(row['args'])
@@ -196,7 +351,7 @@ def native(rows):
         try:
             value = functions[row['operation']](*args)
             results.append(dict(case=row['case'], ok=True, value=value, same=value is args[0] and value is not None, unchanged=before == args,
-                                serialized=json.dumps(value, ensure_ascii=False, separators=(',', ':'))))
+                                serialized=compact(value)))
         except Exception as error:
             results.append(dict(case=row['case'], ok=False, name=getattr(error, 'name', type(error).__name__), message=str(error), unchanged=before == args))
     return results

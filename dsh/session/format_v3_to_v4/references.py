@@ -18,7 +18,7 @@ def remapV3References(event, seq, mapping):
         source = sessionFormatCount(value, 'V3 source event reference')
         if source >= event['seq'] or source >= len(mapping):
             raise SessionFormatError('V3 reference must name an earlier source event')
-        return mapping[source]
+        return mapping[int(source)]
 
     def references(value):
         if not isinstance(value, list):

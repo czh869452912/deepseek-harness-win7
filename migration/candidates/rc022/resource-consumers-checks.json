@@ -1,0 +1,25 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-15",
+  "unit": "C1-AB-ResourceConsumers",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "state": "targeted-passed",
+  "paired": ".goose/out/rc022-resource-consumers-paired-20261115-01/report.json",
+  "observations": 22,
+  "native": [
+    {
+      "run": "rc022-resource-consumers-native-20261115-01",
+      "passed": 27,
+      "failed": 0
+    },
+    {
+      "run": "rc022-resource-consumers-native-20261115-02",
+      "passed": 99,
+      "failed": 0
+    }
+  ],
+  "verification_scope_reason": "Real fixed Source ESM/Python imports and admission under conditions, patterns, arrays, self-reference, aliases, relative files and invalid targets. Direct Loader/preflight/recomposition regressions and actual Python package install/execute/remove in canonical CLI/Web profiles cover the Python descriptor/class adapters.",
+  "scope": "Canonical Loader resolves external module files with PluginPackages resources; profile aliases share that resolver with preflight. Explicit Python descriptor entry and .py:Export remain host adapters. Installation class mapping first checks exports admission. Missing-module errors also inherit Python ModuleNotFoundError. Legacy direct boot resolver retained for historical consumers.",
+  "cleanup": ".goose/out/rc022-resource-consumers-native-20261115-02/cleanup.json",
+  "remaining": "Localized metadata, linked relocation/module caches, worker semantics and real HMR. No full regression or release acceptance."
+}

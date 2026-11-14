@@ -44,32 +44,12 @@ def _bare_name(name):
     return bare_package_name(name)
 
 
-def _alias(name, base):
-    """Read package imports metadata without evaluating an entry or parent package."""
-    directory = _directory(base)
-    while True:
-        try:
-            manifest = _read_manifest(os.path.join(directory, 'package.json'))
-        except FileNotFoundError:
-            parent = os.path.dirname(directory)
-            if parent == directory:
-                raise ValueError('Package imports alias '+name+' cannot be resolved')
-            directory = parent
-            continue
-        imports = manifest.get('imports', {}) if isinstance(manifest, dict) else {}
-        target = imports.get(name) if isinstance(imports, dict) else None
-        if isinstance(target, dict):
-            target = next((v for k, v in target.items() if k in ('node', 'import', 'default')), None)
-        if not isinstance(target, str):
-            raise ValueError('Package imports alias '+name+' cannot be resolved')
-        return os.path.join(directory, target) if target.startswith('./') else target
-
-
 def _manifest_of(ctx, name, base):
     if name.startswith('cordis:'):
         return _MISSING
-    specifier = _alias(name, base) if name.startswith('#') else name
     packages = ctx.get('pluginPackages')
+    from dsh.boot.package_resolution import resolve_plugin_resource
+    specifier = resolve_plugin_resource(name, base, packages) if name.startswith('#') else name
     if packages is not None:
         package_of = getattr(packages, 'packageOf', None) or getattr(packages, 'package_of')
         package = package_of(specifier, base)

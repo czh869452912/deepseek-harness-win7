@@ -1636,7 +1636,7 @@ class EntryTree:
             return reg_map[name]
 
         # Check if name contains class colon specifier (e.g. "path/to/file.py:ClassName")
-        if ":" in name:
+        if ":" in name and runtime_resolution is None:
             target_part, class_part = name.rsplit(":", 1)
             target_part = target_part.strip()
             if target_part.endswith(".py") or os.path.exists(target_part) or not os.path.exists(name):
@@ -1667,26 +1667,46 @@ class EntryTree:
             or name.startswith("file://")
             or os.path.isabs(name)
         )
-        runtime_owned = False
-        if runtime_resolution is not None and is_bare_name:
+        if runtime_resolution is not None:
             from pathlib import Path
             from dsh.boot.plugin_packages import bare_package_name
-            package_name = bare_package_name(name)
-            package = packages.packageOf(name, Path(os.path.join(base_dir, 'package.json')).as_uri())
-            if package is None:
-                raise ModuleNotFoundError(f"Cannot find module '{name}'")
-            directory = package['dir']
+            from dsh.boot.package_resolution import package_export, package_scope
             from dsh.boot.runtime_resolution import _field
-            selected = next((row for row in reversed(_field(runtime_resolution, 'entries', [])) if row['name'] == package_name), None)
-            runtime_owned = selected is not None and selected['scope'] == 'installation' and os.path.realpath(selected['packageDir']) == os.path.realpath(directory)
-            if runtime_owned:
-                plugin = (getattr(loader, 'harness_plugins', None) or {}).get(name)
+            parent_url = Path(os.path.join(base_dir, 'package.json')).as_uri()
+            package_name = bare_package_name(name)
+            package = None
+            scope = package_scope(os.path.join(base_dir, 'package.json'))
+            self_reference = scope is not None and scope[1].get('name') == package_name and isinstance(scope[1].get('exports'), (str, list, dict))
+            if package_name is not None and not self_reference:
+                package = packages.packageOf(name, parent_url)
+            if package is not None:
+                selected = next((row for row in reversed(_field(runtime_resolution, 'entries', [])) if row['name'] == package_name), None)
+                runtime_owned = selected is not None and selected['scope'] == 'installation' and os.path.realpath(selected['packageDir']) == os.path.realpath(package['dir'])
+                plugin = (getattr(loader, 'harness_plugins', None) or {}).get(name) if runtime_owned else None
                 if plugin is not None:
+                    # Shipped JS entries are implemented by Python classes. Apply
+                    # export admission before that explicit installation adapter;
+                    # external modules always resolve and check actual files.
+                    if isinstance(package['manifest'].get('exports'), (str, list, dict)):
+                        package_export(package['dir'], package['manifest'], '.'+name[len(package_name):])
                     return plugin
-            subpath = name[len(package_name)+1:] if name != package_name else None
-            resolved_path = _entry_from_package_json(package['manifestPath'], subpath)
-            if resolved_path is None:
-                raise ModuleNotFoundError(f"Cannot find module '{name}' in {directory}")
+            descriptor = package['manifest'].get('dsh') if package is not None and name == package_name else None
+            if isinstance(descriptor, dict) and 'python' in descriptor:
+                resolved_path = package['manifestPath']
+            else:
+                request, export = name, None
+                match = re.fullmatch(r'(.+\.py):([A-Za-z_][A-Za-z_0-9]*)', name)
+                if match is not None:
+                    request, export = match.groups()
+                resolved_path = packages.resolveResource(request, parent_url)
+                if export is not None:
+                    plugin, mod_name = resolve_plugin_class(resolved_path+':'+export, {}, return_mod_name=True)
+                    if plugin is None:
+                        raise ImportError("Cannot find Python export '"+export+"' in "+resolved_path)
+                    self._last_loaded_module = mod_name
+                    if mod_name:
+                        loader._module_aliases.setdefault(mod_name, set()).add(name)
+                    return plugin
         else:
             resolved_path = resolve_module_specifier(
                 name, base_dir, getattr(loader, "installation_module_roots", None)

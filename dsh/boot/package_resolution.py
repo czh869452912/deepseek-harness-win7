@@ -15,15 +15,20 @@ _UNDEFINED = object()
 CONDITIONS = frozenset(('node', 'import', 'module-sync', 'node-addons'))
 
 
-class PackageResolutionError(RuntimeError):
+class PackageResolutionError(ImportError):
     name = 'Error'
     def __init__(self, code, message):
         self.code = code
         super().__init__(message)
 
 
+class PackageModuleNotFoundError(PackageResolutionError, ModuleNotFoundError):
+    pass
+
+
 def _error(code, message):
-    raise PackageResolutionError(code, message)
+    error_type = PackageModuleNotFoundError if code == 'ERR_MODULE_NOT_FOUND' else PackageResolutionError
+    raise error_type(code, message)
 
 
 def package_scope(parent):

@@ -1796,8 +1796,6 @@ class EntryGroup:
         entry: Entry = existing or Entry(loader=loader_inst, name=options, entry_id=eid, group=is_group)
         if existing is None:
             entry.options = options
-        if is_group and not entry.subgroup:
-            entry.subgroup = Group(entry.ctx, options.get("config", [])) if hasattr(entry, "ctx") and entry.ctx else None
         prev_parent = entry.parent
         entry.parent = self
         self.tree.store[eid] = entry
@@ -1987,10 +1985,6 @@ class Entry:
         else:
             self.ctx = Context()
 
-        if group or self.options.get("group") or self.name == "cordis:group" or self.name == "@deepseek-ai/cordis-plugin-group":
-            tree_obj = getattr(loader, "tree", loader) if loader else None
-            self.subgroup = EntryGroup(self.ctx, tree_obj)
-
     @property
     def context(self) -> Context:
         return self.ctx
@@ -2109,6 +2103,11 @@ class Entry:
             instance = getattr(self.fiber, "plugin", None)
             if isinstance(instance, EntryTree) or hasattr(instance, "root"):
                 self.subtree = instance
+                # The Python Service/Registry constructor can run before the
+                # returned handle is assigned here. Publish the tree's actual
+                # root group together with its subtree, as EntryGroup's Source
+                # constructor does on the owning fiber.
+                self.subgroup = instance.root
 
     async def _init(self) -> None:
         if not self.options.get("name"):

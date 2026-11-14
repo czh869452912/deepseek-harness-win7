@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-15",
+  "unit": "C1-X-CompleteProfileRecomposition",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "state": "targeted-passed",
+  "paired": ".goose/out/rc022-recompose-paired-20261115-07/report.json",
+  "observations": 10,
+  "reconciliation_recheck": ".goose/out/rc022-recompose-reconcile-paired-20261115-01/report.json",
+  "reconciliation_observations": 11,
+  "source": {"run": "rc022-recompose-source-20261115-01", "passed": 14, "not_selected": 73},
+  "native": {"run": "rc022-recompose-native-20261115-01", "passed": 57, "failed": 0},
+  "verification_scope_reason": "Fixed Source/native actual boot and file-backed runtime generations, original HMR recomposition settlement/publication/recovery tests and native Loader/Include/Group/volatile consumers. Multiple restored positions and applied-failure preservation have direct native regressions.",
+  "scope": "Recompute before stopping; dropped topmost rows stop under old mappings; publish only changed tables; restart-required publication restores prior composition; import failures and caller-invalidated runtime entries retry; explicit required/running activation judgment; removed Fiber settlement; zero-argument reload event only on success. Applied failure preserves the new generation. Removed eager dummy Group construction that overwrote the Include root's subgroup owner.",
+  "failures_retained": "Initial paired observations expose wrong nested Group ownership. Additional probe revisions replaced direct self-disposal (which persists disabled) with real registry invalidation and retained the prior failed Fiber's rejection while awaiting it. All original diagnostics retained.",
+  "cleanup": ".goose/out/rc022-recompose-native-20261115-01/cleanup.json",
+  "remaining": "Canonical launcher wiring, live profile readers/watchers, Python module routing and HMR module invalidation remain. No full gate, migration promotion or release acceptance."
+}

@@ -1,26 +1,7 @@
-"""
-1:1 parity tests for the unit `vendor/loader-cosmokit-deep-equal`.
+"""Loader option comparison against cosmokit helpers and fixed rc022 contracts.
 
-reference/vendor/loader/src/config/entry.ts:2 imports `deepEqual` and
-`isNullable` from `@deepseek-ai/cosmokit`; the vendored loader ships no test
-file of its own, so each case below pins one authoritative line:
-
-- entry.ts:148 - `if (isNullable(value)) delete candidate[key]` removes an
-  option whose incoming value is `null` OR `undefined`; every other value is
-  assigned, including the falsy `false`, `0` and `''`.
-- entry.ts:157-160 - the diff is
-  `Object.keys({ ...candidate, ...legacy }).filter(key => !deepEqual(
-  candidate[key], legacy[key]))` with no `strict` argument, so a key only one
-  operand owns reads as `undefined`, `null` matches it, `false` never matches
-  `0`, and containers compare structurally.
-- entry.ts:161 - `if (!diff.length && !force) return`: an empty diff leaves
-  `this.options`, the fiber and the `loader/partial-dispose` event untouched,
-  while `force` enters the update path anyway.
-
-`dsh/cordis/loader.py` compared the option values with Python `!=` and tested
-`v is None`, which coerces `false == 0` and `1 == true`, and treats the
-`undefined` sentinel as a value distinct from `null`; both the structural
-divergences and the observably different update path are asserted here.
+Config uses strict nullish comparison recursively; other options use loose
+comparison. Equal inputs retain the raw identity unless force is requested.
 """
 
 from typing import Any, Dict, List, Tuple
@@ -76,34 +57,19 @@ def test_entry_ts_2_loader_consumes_the_canonical_cosmokit_helpers():
     assert loader_module.is_nullable is cosmokit_is_nullable
 
 
-def test_entry_ts_159_option_diff_compares_containers_with_deep_equal():
-    """entry.ts:159: `deepEqual({a: null}, {})` is true, so the diff stays empty.
-
-    A `config` whose only difference is a `null` member against an absent one is
-    not a change: the non-strict `deepEqual` reads the missing key as
-    `undefined` and its nullish shortcut accepts `null`. The reference returns
-    before touching the fiber, so the caller's object is never persisted.
-    """
-    original = {"a": None}
-    _, entry, events = _entry(original)
-    assert applied == [{"a": None}]
+def test_config_diff_distinguishes_null_from_absent():
+    """Fixed rc022 compares config with strict nullish semantics."""
+    _, entry, events = _entry({'a': None})
     fiber = entry.fiber
-
-    entry.update({"config": {}})
-
-    assert applied == [{"a": None}]
-    assert events == []
-    assert entry.fiber is fiber
-    assert entry.options["config"] == {"a": None}
-    assert entry.options["config"] is original
-
-    # A member that really differs still takes the update path.
-    entry.update({"config": {"a": 1}})
-
-    assert applied == [{"a": None}, {"a": 1}]
+    entry.update({'config': {}})
+    assert applied == [{'a': None}, {}]
     assert len(events) == 1
-    assert events[0][1]["config"] == {"a": None}
-    assert entry.options["config"] == {"a": 1}
+    assert entry.fiber is fiber
+    assert entry.options['config'] == {}
+    entry.update({'config': {'a': 1}})
+    assert applied == [{'a': None}, {}, {'a': 1}]
+    assert len(events) == 2
+    assert events[1][1]['config'] == {}
 
 
 def test_entry_ts_159_boolean_and_number_option_values_never_coerce():
@@ -135,8 +101,7 @@ def test_entry_ts_159_nested_option_values_keep_the_typeof_rule():
 
     `deepEqual({n: {v: 1}}, {n: {v: true}})` recurses into the object fallback
     and finds a number against a boolean, so the config counts as changed, while
-    two numbers compare equal. The nested `null`-against-absent pair stays equal
-    as well, as in the top-level case.
+    two numbers compare equal. Nested null and absent differ in config.
     """
     _, entry, events = _entry({"n": {"v": 1}})
 
@@ -157,8 +122,8 @@ def test_entry_ts_159_nested_option_values_keep_the_typeof_rule():
 
     entry.update({"config": {"n": {"v": 1}}})
 
-    assert len(events) == 2
-    assert entry.options["config"] == {"n": {"v": 1, "absent": None}}
+    assert len(events) == 3
+    assert entry.options["config"] == {"n": {"v": 1}}
 
 
 def test_entry_ts_148_is_nullable_deletes_an_undefined_option_value():
@@ -207,36 +172,35 @@ def test_entry_ts_159_diff_key_set_spans_candidate_and_legacy():
 def test_entry_ts_160_empty_diff_returns_before_any_state_change():
     """entry.ts:161: an empty diff returns, and `force` only commits.
 
-    The array branch of `deepEqual` compares elements loosely, so
-    `{k: [{a: null}]}` equals `{k: [{}]}`: without `force` the fresh caller
-    object is discarded and the entry keeps its original config object. With
+    Structurally equal config arrays leave the fiber untouched; the fresh
+    caller object is discarded and the entry keeps its original config. With
     `force` the reference commits the caller's object, but the diff it already
     computed stays empty, so the fiber does not restart and no plugin re-applies;
     only a diff that really contains `config` restarts it.
     """
-    original = {"k": [{"a": None}]}
+    original = {"k": [{}]}
     _, entry, events = _entry(original)
     fiber = entry.fiber
     updated = {"k": [{}]}
 
     entry.update({"config": updated})
 
-    assert applied == [{"k": [{"a": None}]}]
+    assert applied == [{"k": [{}]}]
     assert events == []
     assert entry.fiber is fiber
     assert entry.options["config"] is original
 
     entry.update({"config": updated}, force=True)
 
-    assert applied == [{"k": [{"a": None}]}]
+    assert applied == [{"k": [{}]}]
     assert len(events) == 1
-    assert events[0][1]["config"] == {"k": [{"a": None}]}
+    assert events[0][1]["config"] == {"k": [{}]}
     assert events[0][2] is True
     assert entry.fiber is fiber
     assert entry.options["config"] is updated
 
     entry.update({"config": {"k": [{"a": 1}]}})
 
-    assert applied == [{"k": [{"a": None}]}, {"k": [{"a": 1}]}]
+    assert applied == [{"k": [{}]}, {"k": [{"a": 1}]}]
     assert len(events) == 2
     assert entry.options["config"] == {"k": [{"a": 1}]}

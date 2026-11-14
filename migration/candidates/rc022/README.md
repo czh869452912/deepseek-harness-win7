@@ -33,3 +33,5 @@
 2026-11-15：C1-D [定义与使用上下文](trace-context-checks.json)完成原版/Python 配对和 103/15 项定向检查，覆盖方法、getter、调用入口、继承、权限与日志归属。三批已用完的合成夹具均在提交前清理，失败诊断保留。独立 Source、node_modules 与工具链继续由 rc022-C1–C9 持有，用于其余固定上游合同和最终验收；完成 C9 或目标被否决后清理。C1 整体及其余合同仍未签收。
 
 2026-11-15：C1-E [volatile 基础](volatile-foundation-checks.json)完成 1153 组固定 Source/Python 对照、28 项原版和 253 项 Python 定向检查。实现不可变快照引用、Schema 固定路径约束及默认/缺省值、严格数组/循环/不透明值比较、按原始配置元数据忽略 volatile 字段。保留原版对未完整水合 schema 节点的拒绝边界，未用更宽松的宿主替代。Python 冻结 JSON 以 dict/list 子类表达；JS URL 对象行为不属于本轮 Python 数据语料。Loader 的引用提交、日志式配置落盘及装配仍待后续整合，C1 尚未整体验收。
+
+2026-11-15：C1-F [Loader volatile 提交](loader-volatile-checks.json)完成 4 组固定原版/Python 实际入口旅程、26 项原版与 93 项 Python 定向检查。纯 volatile 更新保留引用及插件实例，所有引用提交后只通知所属插件；无效候选保留原始输入，混合生效值变化进入普通更新，依赖未就绪和强制更新另行覆盖。本轮确认生产使用 `loader.py` 中的类，拆分的 `loader_entry/tree/group.py` 尚未被装配；此前对拆分文件的修改不作为生产 Loader 证据。已删除本批通过测试的 4188 字节合成夹具，首轮失败报告和全部运行记录保留。journal、完整上下文生命周期和 boot 仍待实现。

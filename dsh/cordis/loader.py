@@ -25,6 +25,8 @@ from dsh.cordis.fiber import Fiber, FiberState
 from dsh.cordis.plugin import Plugin
 from dsh.cordis.service import Service
 from dsh.cordis.utils import _UNDEFINED, deep_equal, is_nullable
+from dsh.cordis.loader_diff import equal_except_volatile
+from dsh.cordis.volatile import update_volatile, volatile_entries
 
 
 class AwaitableString(str):
@@ -2190,6 +2192,8 @@ class Entry:
                 if self.fiber:
                     self.fiber.ctx.baseUrl = self.ctx.baseUrl
             if self.fiber and getattr(self.fiber, "uid", None) and ("config" in diff or self.options.get("group")):
+                for name in self.fiber.inject:
+                    self.fiber._checkImpl(name)
                 res = self.fiber.update(self.options.get("config"), no_save=True)
                 if inspect.isawaitable(res):
                     await res
@@ -2308,6 +2312,42 @@ class Entry:
         except RuntimeError:
             return asyncio.run(self._update_async(options, create=create, force=force))
 
+    def _commit_volatile(self) -> bool:
+        """Commit a validated candidate before notifying only this activation."""
+        fiber = self.fiber.ctx.fiber
+        refs = volatile_entries(fiber.effectiveConfig)
+        if not refs:
+            return True
+        try:
+            candidate = fiber.resolveConfig(self.options.get("config"))
+        except Exception as error:
+            self.ctx.logger("loader").warn("volatile config update failed for %s", self.id)
+            self.ctx.logger("loader").warn(error)
+            return True
+        if not deep_equal(fiber.effectiveConfig, candidate, True):
+            self.ctx.logger("loader").debug(
+                "ordinary config values of %s changed with its volatile values; applying the ordinary update", self.id)
+            return False
+        paths = []
+        for item in refs:
+            source = candidate
+            for key in item["path"]:
+                source = source[int(key)] if isinstance(source, list) else source[key]
+            reference = item["ref"]
+            if deep_equal(reference.get(), source.get(), True):
+                continue
+            update_volatile(reference, source)
+            paths.append(item["path"])
+        if not paths:
+            return True
+        carrier = fiber.ctx.extend()
+        carrier._filter_hook = lambda owner: owner.fiber is fiber
+        try:
+            fiber.ctx.emit(carrier, "loader/volatile-update", paths)
+        except Exception as error:
+            self.ctx.logger("loader").warn(error)
+        return True
+
     async def _update_async(self, options: Dict[str, Any], create: bool = False, force: bool = False) -> None:
         previous_options = self.options
         legacy = dict(previous_options)
@@ -2320,16 +2360,13 @@ class Entry:
                     candidate[k] = v
         sort_keys(candidate)
 
-        # entry.ts:157-160: the key set is Object.keys({ ...candidate, ...legacy }) and
-        # cosmokit deepEqual(candidate[key], legacy[key]) decides each key without
-        # `strict`. A key only one side owns reads as undefined, so null matches it,
-        # false never matches 0, and structurally equal containers compare equal.
+        # Config distinguishes null and undefined, including inside arrays.
         diff_keys: List[str] = list(candidate.keys())
         for key in legacy.keys():
             if key not in diff_keys:
                 diff_keys.append(key)
         diff = [key for key in diff_keys
-                if not deep_equal(candidate.get(key, _UNDEFINED), legacy.get(key, _UNDEFINED))]
+                if not deep_equal(candidate.get(key, _UNDEFINED), legacy.get(key, _UNDEFINED), key == "config")]
         if not diff and not force:
             return
 
@@ -2383,6 +2420,18 @@ class Entry:
             self.options = candidate
             self.name = self.options.get("name", self.name)
             self.config = self.options.get("config", self.config)
+            volatile_only = (diff == ["config"] and previous.state == FiberState.ACTIVE
+                             and self.parent is not None and self.ctx.parent is self.parent.ctx
+                             and equal_except_volatile(legacy.get("config", _UNDEFINED),
+                                                       candidate.get("config", _UNDEFINED),
+                                                       getattr(previous.runtime, "Config", None)))
+            if volatile_only:
+                previous.rawConfig = candidate.get("config")
+                if self._commit_volatile():
+                    diff = []
+                    if not force:
+                        commit()
+                        return
             try:
                 await self._patch_context(diff)
             except Exception as error:

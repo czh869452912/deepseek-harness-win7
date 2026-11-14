@@ -1,0 +1,60 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-15",
+  "unit": "C1-F-Loader-volatile-commit",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "state": "targeted-passed",
+  "scope": "Active monolithic production Entry: pure volatile changes retain immutable references and activation, all values commit before one local event, invalid raw inputs are retained, mixed effective changes use update hooks; pending and forced paths retain ordinary context processing.",
+  "paired_journeys": 4,
+  "source_tests": {
+    "passed": 26,
+    "failed": 0
+  },
+  "native_tests": {
+    "passed": 93,
+    "failed": 0
+  },
+  "verification_scope_reason": "Schema/volatile providers, production Loader/Fiber and direct Typert loader consumer plus dependency/retention regressions.",
+  "remaining": "Split loader_entry/tree/group drafts are not production imports; no assembly migration claimed. Loader/Include journal, resolver, full context lifecycle and boot integration remain.",
+  "inputs": {
+    ".goose/out/rc022-prep-20261114-01/source/vendor/cordis/src/events.ts": "a464c843822da4eb31a8d998c5e2216a817b8a7dfeacb6e1aab7f830e7320d6b",
+    "dsh/cordis/events.py": "c8821d6084bd4788c28f5c83ebc84e6138eeb94067c192fe0df34f6efeeea1a5",
+    "scripts/oracles/rc022_loader_volatile.mts": "52dde269be5799a205300785f57494f00f23a8a35c80f267315b3310b1010353",
+    "scripts/rc022_events_probe.py": "528022ac1e83cad7ab4d24f0c7696caf4bfc36eab6805c220954716673dd2987",
+    "dsh/cordis/loader.py": "288df6dde29b9c98ca9762cd7d3ddf12b2f1ab42e36d49dd28375c6d081e954c",
+    "dsh/cordis/fiber.py": "7df840f8b14211ac6e82958da9cbe6280cabad53eb3b935d60663ebef17165fb",
+    "scripts/rc022_loader_volatile_probe.py": "e62e187f6ebe88e4cd319ad7877bf2f9e09706c683b576fb36a6137e0841caa6",
+    ".goose/out/rc022-prep-20261114-01/source/vendor/loader/src/config/entry.ts": "650e4e1f3015bcca63c5a3474310f87a418add6249d9939d173a2b79f2ee7d9b",
+    "tests/test_rc022_loader_volatile.py": "cd6a2c07e62115b5be0d03c670a6e451b34bc57597df96ecabf5a7089cbb1190",
+    "tests/1to1/cordis/test_loader_deep_equal_parity.py": "432507a18c6867f6c94d27452b3afecf703187f268430d2a2fe9c0757111cfc3",
+    "dsh/cordis/volatile.py": "0dba7b7b1d1d882211ddf0e1b5544dfd03a34d53fc72bc82821f02502c9bfbf4",
+    "dsh/cordis/loader_diff.py": "75c40556cba9936c58e9e98de94b1c1da1108102b152834ec940ce9f41936ef3"
+  },
+  "reports": {
+    ".goose/out/rc022-loader-volatile-paired-20261115-03/report.json": "59e9dbae24a6919bdaf2cce90eabccc73cd26df057ed74e44feecbf8e37b51e9",
+    ".goose/out/rc022-loader-volatile-native-20261115-03/command.json": "f9e1bf9230e184841d2ae10a32ba0b7a0513de4fe80f2d67db446d4904d70efb",
+    ".goose/out/rc022-loader-volatile-native-20261115-03/pytest.xml": "f69f229728b55b9027fe33f0c1f3e0516088ca35e04942929e34bcbda18cbb9b",
+    ".goose/out/rc022-loader-volatile-native-20261115-03/cleanup.json": "a0f70b700a5e3a0a2f2debc8395d8d122e59a11a878309a6d49b376c3c94aabf",
+    ".goose/out/rc022-loader-volatile-source-20261115-01/command.json": "e85685465e8d10a4e2bbfc4d6aa3eec317c8e6db318c1b778d4e8b18f11ef1e9",
+    ".goose/out/rc022-loader-volatile-source-20261115-01/source-tests.json": "6b907a2d3d686161dd5bf704ffe8790e9736e2dd7ab36c61015e652366721192"
+  },
+  "cleanup": {
+    "owner": "rc022-C1-F",
+    "removed": [
+      {
+        "path": ".goose/out/rc022-loader-volatile-native-20261115-02/pytest-workspace",
+        "bytes": 596
+      },
+      {
+        "path": ".goose/out/rc022-loader-volatile-native-20261115-03/pytest-workspace",
+        "bytes": 3592
+      },
+      {
+        "path": ".goose/out/rc022-loader-volatile-source-20261115-01/temp",
+        "bytes": 0
+      }
+    ],
+    "retained": "Failure reports, paired observations, logs and XML retained; fixed Source/toolchain retained through C9.",
+    "processes": "All subprocesses exited."
+  }
+}

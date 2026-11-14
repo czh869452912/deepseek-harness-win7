@@ -92,6 +92,77 @@ def test_nonliteral_template_cannot_silently_change_profile_roots():
         candidate.target_profiles(text)
 
 
+def test_moved_official_templates_preserve_roots_without_inventing_reload(repository, tmp_path):
+    root, base, _ = repository
+    app, bundles = candidate.PROFILE_TEMPLATE_PATHS
+    (root / app).write_text("import { PROFILE_TEMPLATES } from '@deepseek-ai/dsh-official-bundles'\n", encoding='utf-8')
+    directory = (root / bundles).parent
+    directory.mkdir(parents=True)
+    (directory / 'index.ts').write_text("export { PROFILE_TEMPLATES } from './bundles.ts'\n", encoding='utf-8')
+    (root / bundles).write_text("export const PROFILE_TEMPLATES: Record<string, ProfileTemplate> = {\n"
+        "  web: { bundles: ['@fixture/base'], },\n"
+        "  'sdk-minimal': { bundles: ['@fixture/provider'], },\n}\n", encoding='utf-8')
+    target = commit(root)
+    result = candidate.generate(root, base, target, tmp_path)
+    assert result['profile_template_source']['path'] == bundles
+    assert result['profiles']['web']['roots'] == ['@fixture/base']
+    assert 'patchReload' not in result['profiles']['web']
+    assert result['profiles']['web']['potential_dependency_closure'] == ['@fixture/base', '@fixture/consumer', '@fixture/provider']
+
+
+@pytest.mark.parametrize('invalid', ['missing', 'ambiguous', 'dynamic', 'reexport', 'consumer', 'empty'])
+def test_profile_source_move_fails_closed(invalid):
+    app, bundles = candidate.PROFILE_TEMPLATE_PATHS
+    literal = b"export const PROFILE_TEMPLATES: Record<string, X> = {\n web: { bundles: ['@fixture/base'], },\n}\n"
+    raw = {app: b"import { PROFILE_TEMPLATES } from '@deepseek-ai/dsh-official-bundles'\n",
+           bundles: literal,
+           'packages/util/official-bundles/src/index.ts': b"export { PROFILE_TEMPLATES } from './bundles.ts'\n"}
+    if invalid == 'missing':
+        del raw[bundles]
+    elif invalid == 'ambiguous':
+        raw[app] = literal
+    elif invalid == 'dynamic':
+        raw[bundles] = literal.replace(b"['@fixture/base']", b'compute()')
+    elif invalid == 'reexport':
+        raw['packages/util/official-bundles/src/index.ts'] = b"export { PROFILE_TEMPLATES } from './other.ts'\n"
+    elif invalid == 'consumer':
+        raw[app] = b'// no import\n'
+    else:
+        raw[bundles] = b'export const PROFILE_TEMPLATES: Record<string, X> = {\n}\n'
+    with pytest.raises(ValueError):
+        candidate.discover_profiles(raw)
+
+
+def test_bundle_patch_arrays_include_overlay_dependencies(repository, tmp_path):
+    root, base, _ = repository
+    manifest = root / 'packages/bundle/base/package.json'
+    body = json.loads(manifest.read_text(encoding='utf-8'))
+    body['dsh'] = {'bundle': {'patch': ['./cordis.patch.yml', './presets/standard.patch.yml']}}
+    manifest.write_text(json.dumps(body), encoding='utf-8')
+    overlay = manifest.parent / 'presets/standard.patch.yml'
+    overlay.parent.mkdir()
+    overlay.write_text("- insert:\n    - name: '@fixture/dev'\n      disabled: true\n", encoding='utf-8')
+    target = commit(root)
+    result = candidate.generate(root, base, target, tmp_path)
+    assert '@fixture/dev' in result['profiles']['web']['potential_dependency_closure']
+    assert 'packages/bundle/base/presets/standard.patch.yml' in result['declarations']
+    owner = next(row for row in result['manifests'] if row['name'] == '@fixture/base')
+    assert owner['declared_bundle_patches'] == ['packages/bundle/base/cordis.patch.yml', 'packages/bundle/base/presets/standard.patch.yml']
+    assert result['declarations']['packages/bundle/base/presets/standard.patch.yml']['conditions']
+
+
+@pytest.mark.parametrize('patches', [None, [], 2, ['../outside.yml'], ['C:/outside.yml'], ['missing.yml'], [''], [None]])
+def test_invalid_declared_bundle_patches_are_refused(repository, tmp_path, patches):
+    root, base, _ = repository
+    manifest = root / 'packages/bundle/base/package.json'
+    body = json.loads(manifest.read_text(encoding='utf-8'))
+    body['dsh'] = {'bundle': {'patch': patches}}
+    manifest.write_text(json.dumps(body), encoding='utf-8')
+    target = commit(root)
+    with pytest.raises(ValueError):
+        candidate.generate(root, base, target, tmp_path)
+
+
 def test_lane_audit_uses_actual_config_and_exposes_removed_paths_and_old_pins(tmp_path):
     script = tmp_path / 'scripts/verify_release.py'
     script.parent.mkdir()

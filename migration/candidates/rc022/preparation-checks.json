@@ -1,0 +1,212 @@
+{
+  "schema_version": 1,
+  "state": "implementation-preparation",
+  "date": "2026-11-14",
+  "timezone": "Asia/Shanghai",
+  "target_tag": "dsh-v0.2.2-rc.3",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "base_upstream": "a4c74a91e06b00fe0b0937bde982170c526cc842",
+  "product_head": "0e86930b4d24bfad7de97c14908e3c00f888f926",
+  "scope": "S0-A discovery and isolated Source/toolchain preparation only; no runtime migration or target acceptance",
+  "counts": {
+    "manifests": 414,
+    "classifications": {
+      "runtime": 300,
+      "frontend": 83,
+      "fixture": 12,
+      "platform": 8,
+      "tooling": 11
+    },
+    "changes": 17797,
+    "statuses": {
+      "M": 5029,
+      "A": 11550,
+      "R": 556,
+      "D": 662
+    }
+  },
+  "profile_template_source": {
+    "path": "packages/util/official-bundles/src/bundles.ts",
+    "sha256": "dc9f06ad9541a39284a28f509d8877413e2506037476d7c1e7b056f58e04f826"
+  },
+  "profiles": {
+    "acp": {
+      "roots": [
+        "@deepseek-ai/dsh-base",
+        "@deepseek-ai/dsh-acp-app"
+      ],
+      "potential_dependency_count": 171
+    },
+    "web": {
+      "roots": [
+        "@deepseek-ai/dsh-base",
+        "@deepseek-ai/dsh-web-app"
+      ],
+      "potential_dependency_count": 283
+    },
+    "headless": {
+      "roots": [
+        "@deepseek-ai/dsh-base",
+        "@deepseek-ai/dsh-headless"
+      ],
+      "potential_dependency_count": 169
+    },
+    "sdk": {
+      "roots": [
+        "@deepseek-ai/dsh-base",
+        "@deepseek-ai/dsh-sdk-app"
+      ],
+      "potential_dependency_count": 186
+    },
+    "sdk-minimal": {
+      "roots": [
+        "@deepseek-ai/dsh-sdk-minimal"
+      ],
+      "potential_dependency_count": 129
+    }
+  },
+  "release_lanes": {
+    "PAIRED_DRIVERS": 82,
+    "OFFICIAL_CONFIGS": 21
+  },
+  "inventory": {
+    "path": ".goose/out/rc022-prep-20261114-01/inventory-final.json",
+    "sha256": "42285178c2b654361b53d3839cdc19705ad4a1d5767bf359d65172e8e801de9a",
+    "limitation": "Git-object discovery only; active pin/tasks and runtime activation are unchanged"
+  },
+  "verification": {
+    "command": "python -m pytest tests/test_candidate_inventory.py tests/test_upstream_delta.py --junitxml <run>/inventory-final-tests.xml -q",
+    "python": "3.8.10 (default, May  6 2021, 17:27:56) [MSC v.1928 64 bit (AMD64)]",
+    "exit_code": 0,
+    "passed": 54,
+    "failed": 0,
+    "skipped": 0,
+    "duration_seconds": 24.85,
+    "xml_sha256": "09e1c371fd76f1ecf29f2db61d0c41d2ddcb51a10eb5fad00f494540d478c0d4",
+    "log_sha256": "347e021450dcd57573ca0594d4c7025d7d9bc0db9c1bcd75b217d146260aca67",
+    "coverage": "candidate template old/moved grammar, patch arrays, rejection controls, actual Git tree/read-only discovery and direct upstream delta consumer"
+  },
+  "toolchain": {
+    "versions": [
+      "v24.9.0",
+      "11.28.5"
+    ],
+    "node_sha256": "6873514c3e6a012917cc6f95ce48a6289253370d025f1b69db290d70feebfa6e",
+    "pnpm_integrity": "sha512-SEVj0wtMKtJ8tIqpT/KzAtvOvI/2vyiBbCWJiG4UbOf3bzVPO8GkOOb16XaMMCqgpvet2CMpA81M+BQmy8FNng==",
+    "sources": [
+      "https://nodejs.org/dist/v24.9.0/SHASUMS256.txt",
+      "https://registry.npmjs.org/pnpm/11.28.5"
+    ],
+    "global_environment_changed": false
+  },
+  "retention": {
+    "owner": "rc022-S0",
+    "purpose": "fixed Source build and compatibility probes",
+    "cleanup_milestone": "S0 probes complete or target rejected",
+    "retained": [
+      {
+        "path": ".goose/out/rc022-prep-20261114-01/source",
+        "bytes": 150113543
+      },
+      {
+        "path": ".goose/out/rc022-prep-20261114-01/toolchain",
+        "bytes": 125757209
+      }
+    ],
+    "removed_synthetic_workspaces": [
+      {
+        "path": ".goose\\out\\t-shbdzys4",
+        "files": 818,
+        "bytes": 467846,
+        "inventory_sha256": "9934242ab8e7ccf591cea26afdb0139fbfda2a87117f31aee8719a80d49a9f96",
+        "reason": "owned synthetic fixtures from the two completed candidate/upstream pytest runs; both passed",
+        "removed": true
+      },
+      {
+        "path": ".goose\\out\\t-_147mshw",
+        "files": 1424,
+        "bytes": 759733,
+        "inventory_sha256": "cacf24be745291831aa175009269dba3da59c9c70e1579833c8a13a056e71f41",
+        "reason": "owned synthetic fixtures from the two completed candidate/upstream pytest runs; both passed",
+        "removed": true
+      }
+    ],
+    "removed_transport_bytes": 42141964,
+    "removed_total_bytes": 49418040,
+    "removed_intermediate_inventory": {
+      "bytes": 6048497,
+      "sha256": "cbdda832592004fd5e4d7bcea062efc1fb693e41becedc0f3255708b43910c2c",
+      "reason": "superseded by final discovery including declared preset patch arrays"
+    }
+  },
+  "not_run": [
+    "frozen-lockfile dependency install",
+    "target Host/Client build",
+    "Chromium108/Electron22 target renderer probes",
+    "Source/native v3-to-v4 behavioral probe",
+    "plugin UI/Python protocol probe",
+    "full regression/release qualification",
+    "Win7 target acceptance"
+  ],
+  "next_unit": "S0-B: dependency preparation and unchanged target renderer build; then S0-C behavioral probes",
+  "acceptance_changed": false,
+  "commands": [
+    [
+      "git",
+      "-C",
+      "reference",
+      "fetch",
+      "--no-tags",
+      "origin",
+      "refs/tags/dsh-v0.2.2-rc.3:refs/tags/dsh-v0.2.2-rc.3"
+    ],
+    [
+      "git",
+      "-C",
+      "reference",
+      "-c",
+      "core.symlinks=false",
+      "worktree",
+      "add",
+      "--detach",
+      "<run>/source",
+      "38a6a5c965aa99ab525161efb7cc5cf1fe62fced"
+    ],
+    [
+      ".venv/Scripts/python.exe",
+      "scripts/candidate_inventory.py",
+      "--base",
+      "a4c74a91e06b00fe0b0937bde982170c526cc842",
+      "--target",
+      "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+      "--output",
+      "<run>/inventory-final.json"
+    ]
+  ],
+  "migration_preflight": {
+    "check": {
+      "command": [
+        ".venv/Scripts/python.exe",
+        "scripts/migration.py",
+        "check"
+      ],
+      "exit_code": 0,
+      "log_sha256": "d561dfea4b112763ef2adbe3eacb4e020fa96bf2b5e72240a666d35c9fe4cc5d",
+      "scope": "index and checkout only; external archive bytes not verified; no new acceptance"
+    },
+    "ready": {
+      "command": [
+        ".venv/Scripts/python.exe",
+        "scripts/migration.py",
+        "ready"
+      ],
+      "exit_code": 0,
+      "log_sha256": "e4798b4ba563ac0b47b4a1a2b44c04a9af290f9c4648c43c3dba9eb858ec574e",
+      "scope": "index and checkout only; external archive bytes not verified; no new acceptance"
+    }
+  },
+  "changed_code_sha256": {
+    "scripts/candidate_inventory.py": "ccb8b0434273df9d0374f0bd3d9bef807fb1a4ddb9b256fe7a395006b2df6f43",
+    "tests/test_candidate_inventory.py": "2adf570f1dc1b2f51b2554a3c9f7fd41994a5e912b2821445383eaced5f83436"
+  }
+}

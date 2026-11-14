@@ -61,7 +61,7 @@ def target_profiles(text):
     if end < 0:
         raise ValueError('Unterminated candidate profile templates')
     body = text[start.end():end]
-    pattern = re.compile(r"\s*(?:'([^']+)'|([\w-]+)):\s*\{\s*bundles:\s*\[([^\]]*)\],\s*patchReload:\s*'(startup|live)',?\s*\},?")
+    pattern = re.compile(r"\s*(?:'([^']+)'|([\w-]+)):\s*\{\s*bundles:\s*\[([^\]]*)\],?(?:\s*patchReload:\s*'(startup|live)',?)?\s*\},?")
     profiles, offset = {}, 0
     while offset < len(body):
         if not body[offset:].strip():
@@ -75,9 +75,44 @@ def target_profiles(text):
         name = match.group(1) or match.group(2)
         if name in profiles:
             raise ValueError('Duplicate candidate profile template')
-        profiles[name] = dict(roots=entries, patchReload=match.group(4))
+        profiles[name] = dict(roots=entries)
+        if match.group(4) is not None:
+            profiles[name]['patchReload'] = match.group(4)
         offset = match.end()
     return profiles, 'literal target templates; conditions and runtime activation are not evaluated'
+
+
+PROFILE_TEMPLATE_PATHS = ('packages/boot/app-boot/src/profile.ts',
+                          'packages/util/official-bundles/src/bundles.ts')
+
+
+def discover_profiles(raw):
+    """Follow the known official-bundles move, refusing missing or ambiguous roots."""
+    declarations = []
+    for path in PROFILE_TEMPLATE_PATHS:
+        if path not in raw:
+            continue
+        text = raw[path].decode('utf-8')
+        if re.search(r'export const PROFILE_TEMPLATES\s*:', text):
+            profiles, scope = target_profiles(text)
+            if not profiles:
+                raise ValueError('Empty candidate profile templates require source review')
+            declarations.append((profiles, scope, dict(path=path, sha256=hashlib.sha256(raw[path]).hexdigest())))
+    if len(declarations) > 1:
+        raise ValueError('Ambiguous candidate profile template sources require source review')
+    app = raw.get(PROFILE_TEMPLATE_PATHS[0], b'').decode('utf-8')
+    moved = re.search(r"import\s*\{[^}]*\bPROFILE_TEMPLATES\b[^}]*\}\s*from\s*'@deepseek-ai/dsh-official-bundles'", app)
+    if moved:
+        index = raw.get('packages/util/official-bundles/src/index.ts', b'').decode('utf-8')
+        if not re.search(r"export\s*\{[^}]*\bPROFILE_TEMPLATES\b[^}]*\}\s*from\s*'\./bundles.ts'", index):
+            raise ValueError('Candidate official profile re-export requires source review')
+        if not declarations or declarations[0][2]['path'] != PROFILE_TEMPLATE_PATHS[1]:
+            raise ValueError('Candidate official profile templates are missing')
+    elif declarations and declarations[0][2]['path'] == PROFILE_TEMPLATE_PATHS[1]:
+        raise ValueError('Candidate official profile consumer requires source review')
+    if not declarations:
+        raise ValueError('Candidate profile templates absent; roots require source review')
+    return declarations[0]
 
 
 def release_lanes(path):
@@ -153,9 +188,9 @@ def generate(repository, base_ref, target_ref, product_root=ROOT):
     paths = tree(repository, target)
     old_paths = tree(repository, base)
     selected = [p for p in paths if PurePosixPath(p).name == 'package.json' or p.endswith(('/cordis.patch.yml', '/agent.cordis.yml'))]
-    template = 'packages/boot/app-boot/src/profile.ts'
-    if template in paths:
-        selected.append(template)
+    for template in PROFILE_TEMPLATE_PATHS + ('packages/util/official-bundles/src/index.ts',):
+        if template in paths:
+            selected.append(template)
     raw = blobs(repository, target, selected)
     old = blobs(repository, base, [p for p in old_paths if PurePosixPath(p).name == 'package.json'])
     manifests = []
@@ -168,6 +203,33 @@ def generate(repository, base_ref, target_ref, product_root=ROOT):
         manifests.append(dict(path=path, owner=owner, relative_manifest=path, relative_owner=owner,
             name=body.get('name'), sha256=hashlib.sha256(raw[path]).hexdigest(),
             classification=role, responsibility=responsibility, body=body))
+    # Newer bundles declare ordered patch arrays, including preset overlays.
+    # Inventory every declared file rather than assuming cordis.patch.yml.
+    extra_patches = set()
+    for row in manifests:
+        bundle = row['body'].get('dsh', {}).get('bundle')
+        row['declared_bundle_patches'] = []
+        if bundle is None:
+            continue
+        if not isinstance(bundle, dict):
+            raise ValueError('Candidate bundle declaration requires source review: ' + row['path'])
+        patches = bundle.get('patch')
+        patches = [patches] if isinstance(patches, str) else patches
+        if not isinstance(patches, list) or not patches or any(not isinstance(p, str) or not p for p in patches):
+            raise ValueError('Candidate bundle patches must be literal paths: ' + row['path'])
+        for patch in patches:
+            part = PurePosixPath(patch)
+            if part.is_absolute() or '..' in part.parts or '\\' in patch or ':' in patch:
+                raise ValueError('Candidate bundle patch escapes package: ' + patch)
+            path = str(PurePosixPath(row['owner']) / part)
+            if path not in paths:
+                raise ValueError('Candidate bundle patch is missing: ' + path)
+            row['declared_bundle_patches'].append(path)
+            if path not in raw:
+                extra_patches.add(path)
+    raw.update(blobs(repository, target, sorted(extra_patches)))
+    selected.extend(sorted(extra_patches))
+    declared_patches = {p for row in manifests for p in row['declared_bundle_patches']}
     by_name = {}
     for row in manifests:
         if row['name']:
@@ -178,7 +240,7 @@ def generate(repository, base_ref, target_ref, product_root=ROOT):
 
     declarations = {}
     for path in selected:
-        if not path.endswith(('/cordis.patch.yml', '/agent.cordis.yml')):
+        if path not in declared_patches and not path.endswith(('/cordis.patch.yml', '/agent.cordis.yml')):
             continue
         owner = path_owner(path, manifests)
         text = raw[path].decode('utf-8')
@@ -195,7 +257,7 @@ def generate(repository, base_ref, target_ref, product_root=ROOT):
             for kind in ('dependencies', 'peerDependencies', 'optionalDependencies', 'devDependencies')
             for name, version in sorted(body.get(kind, {}).items()) if name in by_name]
 
-    profiles, profile_scope = target_profiles(raw[template].decode('utf-8')) if template in raw else ({}, 'target templates absent')
+    profiles, profile_scope, profile_source = discover_profiles(raw)
     for profile in profiles.values():
         pending, reached = deque(profile['roots']), set()
         while pending:
@@ -205,9 +267,10 @@ def generate(repository, base_ref, target_ref, product_root=ROOT):
             reached.add(name)
             for row in by_name.get(name, []):
                 pending.extend(dep['name'] for dep in row['workspace_dependencies'] if dep['kind'] != 'devDependencies')
-                patch = str(PurePosixPath(row['owner']) / 'cordis.patch.yml')
-                if patch in declarations:
-                    pending.extend(entry['package'] for entry in declarations[patch]['entries'])
+                patches = row['declared_bundle_patches'] or [str(PurePosixPath(row['owner']) / 'cordis.patch.yml')]
+                for patch in patches:
+                    if patch in declarations:
+                        pending.extend(entry['package'] for entry in declarations[patch]['entries'])
         profile['potential_dependency_closure'] = sorted(reached)
         profile['scope'] = 'literal bundle rows plus non-dev workspace dependencies; never observed activation'
     changes = parse_changes(git(repository, '-c', 'diff.renameLimit=10000', 'diff', '--no-ext-diff', '--no-textconv',
@@ -242,7 +305,7 @@ def generate(repository, base_ref, target_ref, product_root=ROOT):
         scope='Git-object discovery only; active pin/tasks and runtime activation are unchanged',
         counts=dict(manifests=len(manifests), classifications=dict(Counter(r['classification'] for r in manifests)),
             changes=len(changes), statuses=dict(Counter(r['status'][0] for r in changes))),
-        profiles=profiles, profile_scope=profile_scope, declarations=declarations,
+        profiles=profiles, profile_scope=profile_scope, profile_template_source=profile_source, declarations=declarations,
         manifests=sorted(manifests, key=lambda r: r['path']),
         removed_manifests=[dict(path=p, name=json.loads(v.decode('utf-8')).get('name')) for p, v in sorted(old.items()) if p not in paths],
         runtime_dependency_impact=graph, release_lanes=lanes,

@@ -1,0 +1,19 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-15",
+  "unit": "C1-Y-LiveProfileCompositionInputs",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "state": "targeted-passed",
+  "paired": ".goose/out/rc022-profile-context-paired-20261115-02/report.json",
+  "observations": 44,
+  "source": {"run": "rc022-profile-context-source-20261115-01", "passed": 1, "not_selected": 36},
+  "native": [
+    {"run": "rc022-profile-context-native-20261115-01", "passed": 32, "failed": 1, "reason": "New test incorrectly classified the explicit home disable as an additional generated privacy patch."},
+    {"run": "rc022-profile-context-native-20261115-02", "passed": 4, "failed": 0}
+  ],
+  "verification_scope_reason": "Fixed Source/native current files and launch snapshot matrix, original live composition case, native launcher reader integration, and direct profile/CLI/Web/recomposition consumers. The launcher integration supplies a fake HMR registration and captures watcher inputs; it does not claim real watcher or runtime module routing acceptance.",
+  "scope": "readBundlePatches reads current selected bundle files without the canonical user layer; readProfilePatches reads custom user path, explicit home, detached launch overlays and launch-time telemetry opt-out. Initial snapshots remain supported. Launcher compose_live uses these readers instead of cached bundle patches and ambient home; ComposedProfile retains raw overlays and appends privacy only when the composed row exists.",
+  "failures_retained": "First observer modified its stored native observation while checking detached outputs; corrected to use another read. Original observations and assertion diagnostics kept.",
+  "cleanup": ".goose/out/rc022-profile-context-native-20261115-02/cleanup.json",
+  "remaining": "Canonical runtime service/module wiring, HMR/profile watcher migration and legacy patchReload retirement remain. No full gate or release acceptance."
+}

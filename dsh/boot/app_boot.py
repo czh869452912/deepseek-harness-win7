@@ -32,6 +32,7 @@ from dsh.boot.plugin_registry import install_harness_plugin_classes, install_ins
 from dsh.boot.startup import StartupError, audit_startup_entries, capture_startup_composition
 from dsh.boot.compatibility_preflight import prepare_profile_entries, prepareProfileEntries, prepare_profile_patches, prepareProfilePatches
 from dsh.boot.recomposition import reconcile_profile_patches, reconcileProfilePatches, recompose_profile, recomposeProfile
+from dsh.boot.profile_context import read_bundle_patches, readBundlePatches, read_profile_patches, readProfilePatches, resolveTelemetryPatch
 from dsh.cordis.logger import Exporter
 
 

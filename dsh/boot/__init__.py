@@ -10,6 +10,7 @@ from dsh.boot.plugin_compatibility import (
 from dsh.boot.bundle_platform import assert_bundle_platform, assertBundlePlatform, UnsupportedBundlePlatformError
 from dsh.boot.runtime_resolution import ProfileRuntimeResolution, create_runtime_resolution, createRuntimeResolution
 from dsh.boot.plugin_packages import PluginPackages, ResolutionRouter, ResolutionRestartRequired, bare_package_name, barePackageName
+from dsh.boot.profile_context import read_bundle_patches, readBundlePatches, read_profile_patches, readProfilePatches, resolveTelemetryPatch
 from dsh.boot.profile import bundle_patch_files, bundlePatchFiles, bundle_patch_paths, bundlePatchPaths, report_skipped_bundles, reportSkippedBundles
 from dsh.boot.profile_compatibility import (
     PROFILE_COMPATIBILITY_FILENAME, is_exact_version, isExactPluginVersion,
@@ -106,6 +107,7 @@ from dsh.boot.cmdline import (
 __all__ = [
     "ProfileRuntimeResolution", "create_runtime_resolution", "createRuntimeResolution",
     "PluginPackages", "ResolutionRouter", "ResolutionRestartRequired", "bare_package_name", "barePackageName",
+    "read_bundle_patches", "readBundlePatches", "read_profile_patches", "readProfilePatches", "resolveTelemetryPatch",
     "reconcile_profile_patches", "reconcileProfilePatches",
     "recompose_profile", "recomposeProfile",
     "bundle_patch_files", "bundlePatchFiles", "bundle_patch_paths", "bundlePatchPaths",

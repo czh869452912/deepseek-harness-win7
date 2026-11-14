@@ -40,6 +40,7 @@ from dsh.boot.profile import (
 )
 from dsh.boot.cmdline import provide_cmdline, AppReady
 from dsh.boot.process_shutdown import create_process_shutdown, ProcessShutdown
+from dsh.boot.profile_context import read_profile_patches, resolve_telemetry_patch
 
 NAME = "dsh"
 
@@ -104,13 +105,6 @@ def home_patch_path(dsh_home: Optional[str] = None) -> str:
     """The home-level user patch layer ($DSH_HOME/cordis.patch.yml)."""
     home = dsh_home or resolve_dsh_home()
     return os.path.join(home, PROFILE_PATCH_FILENAME)
-
-
-def resolve_telemetry_patch(disabled_env: Optional[str], has_row: bool) -> Optional[Dict[str, Any]]:
-    """Resolve the telemetry opt-out switch into its boot patch."""
-    if (disabled_env or "") == "" or not has_row:
-        return None
-    return {"id": TELEMETRY_ROW_ID, "disabled": True}
 
 
 def initialize_profile_from_default(name, from_default_profile, home=None):
@@ -201,6 +195,7 @@ class ComposedProfile:
         bundle_patches: List[Dict[str, Any]],
         home_patches: List[Dict[str, Any]],
         overlays: List[Dict[str, Any]],
+        telemetry_disabled_env: Optional[str] = None,
     ):
         self.profile = profile
         self.bundle_patches = bundle_patches
@@ -208,14 +203,20 @@ class ComposedProfile:
         self.home_patches = home_patches
         self.homePatches = home_patches
         self.overlays = overlays
+        self.telemetry_disabled_env = telemetry_disabled_env
 
     def all_patches(self) -> List[Dict[str, Any]]:
-        return admit_historical_persona_patches([
+        patches = admit_historical_persona_patches([
             *self.bundle_patches,
             *self.profile.patches,
             *self.home_patches,
             *self.overlays,
         ])
+        telemetry = resolve_telemetry_patch(self.telemetry_disabled_env,
+            any(row.get('id') == TELEMETRY_ROW_ID for row in compose_entries([patches])))
+        if telemetry is not None:
+            patches.append(telemetry)
+        return patches
 
     allPatches = all_patches
 
@@ -261,22 +262,12 @@ async def compose_profile(
     for layer in profile.layers:
         bundle_patches.extend(layer.patches)
 
-    composed_entries = compose_entries([bundle_patches, profile.patches, home_patches, overlays])
-    has_telemetry = any(
-        isinstance(row, dict) and row.get("id") == TELEMETRY_ROW_ID
-        for row in composed_entries
-    )
-
-    composed_overlays = list(overlays)
-    telemetry_patch = resolve_telemetry_patch(os.environ.get("DSH_TELEMETRY_DISABLED"), has_telemetry)
-    if telemetry_patch is not None:
-        composed_overlays.append(telemetry_patch)
-
     return ComposedProfile(
         profile=profile,
         bundle_patches=bundle_patches,
         home_patches=home_patches,
-        overlays=composed_overlays,
+        overlays=overlays,
+        telemetry_disabled_env=os.environ.get('DSH_TELEMETRY_DISABLED'),
     )
 
 
@@ -349,13 +340,18 @@ async def _run_profile(options: Dict[str, Any]) -> Dict[str, Any]:
 
     from dsh.boot.session_compatibility import preserve_default_session_encoding
 
+    profile_context = {
+        'name': composed.profile.name, 'dir': composed.profile.dir,
+        'patchPath': composed.profile.patch_path, 'installAnchor': INSTALL_ANCHOR,
+        'cwd': os.getcwd(), 'home': os.path.abspath(dsh_home or resolve_dsh_home()),
+        'startedBundles': [layer.package_name for layer in composed.profile.layers],
+        'overlays': copy.deepcopy(composed.overlays),
+        'telemetryDisabledEnv': composed.telemetry_disabled_env,
+    }
+
     def compose_live() -> List[Dict[str, Any]]:
-        return preserve_default_session_encoding(admit_historical_persona_patches([
-            *composed.bundle_patches,
-            *(load_optional_patches(NAME, composed.profile.patch_path) or []),
-            *(load_optional_patches(NAME, home_patch_path()) or []),
-            *composed.overlays,
-        ]), dsh_home)
+        return preserve_default_session_encoding(admit_historical_persona_patches(
+            read_profile_patches(NAME, profile_context)), dsh_home)
 
     def host_setup(host_ctx: Context) -> None:
         app["current"] = host_ctx
@@ -387,14 +383,7 @@ async def _run_profile(options: Dict[str, Any]) -> Dict[str, Any]:
 
             host_ctx.disposable(release_after_shutdown, "python-profile-lease")
         host_ctx.provide(DSH_LAUNCH_ENVIRONMENT_KEY, environment)
-        host_ctx.provide('profileContext', {
-            'name': composed.profile.name, 'dir': composed.profile.dir,
-            'patchPath': composed.profile.patch_path, 'installAnchor': INSTALL_ANCHOR,
-            'cwd': os.getcwd(), 'home': os.path.abspath(dsh_home or resolve_dsh_home()),
-            'startedBundles': [layer.package_name for layer in composed.profile.layers],
-            'overlays': copy.deepcopy(composed.overlays),
-            'telemetryDisabledEnv': os.environ.get('DSH_TELEMETRY_DISABLED'),
-        })
+        host_ctx.provide('profileContext', profile_context)
         provide_cmdline(host_ctx, {
             "args": args,
             "exit": lambda code: shutdown.shutdown(code),
@@ -424,7 +413,7 @@ async def _run_profile(options: Dict[str, Any]) -> Dict[str, Any]:
             })
             await watch_user_patches(ctx, {
                 "binName": NAME,
-                "filename": home_patch_path(),
+                "filename": home_patch_path(dsh_home),
                 "compose": compose_live,
             })
         except Exception as error:

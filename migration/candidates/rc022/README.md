@@ -71,3 +71,5 @@
 2026-11-15：C1-W [包元数据路由与发布](package-routing-checks.json)完成 46 组固定原版/Python 路由、缓存与代际发布对照及 7 项原版检查。新增 Context 所有的 PluginPackages，按活动/其它 profile、安装目录、本地目录和链接 peer 确认包归属；拒绝需要重启的后继表且保留旧缓存，允许新增和安全删除。重算失败原子性、链接历史移动链与拒绝发布不改历史补充覆盖。Python 56 项通过、1 项误将跳过 bundle 当作致命错误的断言修正后，6 项通过。清理 5 个自有资产共 134257 字节及 39 个链接，观察和诊断保留。Python Loader、worker、localized metaOf 和整体重组尚未接入，未将元数据合同冒充 Node 全局模块 hook 对齐。
 
 2026-11-15：C1-X [完整 Profile 重组](recomposition-checks.json)完成 10 组固定原版/Python 实际 boot/包表旅程及原协调 11 组复验，14 项原版与 57 项 Python 定向检查通过。重算先于停止，移除项在旧映射下释放，之后才发布后继表；发布拒绝恢复原位置，已应用的新组合失败则保留并报错。重试调用方失效的 runtime 和导入失败条目，保留 required/running 判定与异步清理边界。配对发现并移除 Loader 提前构造的占位 Group，避免覆盖 Include 根组所有权。自有 20 个资产共 51313 字节已清理，首次组内停止顺序差异及观察器自禁用/失败等待修正的原始诊断保留。Launcher、实时层读取、模块路由和 HMR 仍待接入。
+
+2026-11-15：C1-Y [实时组合输入](profile-context-checks.json)完成 44 组固定原版/Python 文件与启动快照对照及 1 项原版检查。Bundle 读取不消费默认用户层，完整读取支持自定义用户路径、显式 home、分离的启动 overlay 和最后应用的隐私开关；当前 bundle 选择/内容变化都会重新读取。Launcher live reader 修复启动 bundle 缓存与环境 home 漂移，ComposedProfile 不再把隐私补丁混入原始 overlay。Python 32 项通过、1 项新增断言错误修正后，4 项通过。已清理 7 个自有资产共 177119 字节及 478 个测试链接，观察器修改自身结果和断言修正的诊断保留。真实 HMR、模块/服务接线和旧 patchReload 退役继续推进。

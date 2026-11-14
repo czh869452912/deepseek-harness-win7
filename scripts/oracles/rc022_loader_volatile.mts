@@ -24,6 +24,7 @@ for(const mode of ['ordinary','retained','throwing','whole']){
   const id=await ctx.loader.create({id:'first',name:'cordis:probe',config:{title:'hello'}})
   const entry=ctx.loader.resolve(id),fiber=entry.fiber;await fiber.await()
   await ctx.loader.create({id:'second',name:'cordis:probe',config:{title:'hello'}})
+  await ctx.loader.await()
   const initial=fiber.effectiveConfig,reference=mode==='whole'?initial:initial.title
   await entry.update({config:{title:'next',...(mode==='whole'?{}:{count:2})}})
   result[mode+'-commit']=[applied.length,fiber.effectiveConfig===initial,(mode==='whole'?initial:initial.title)===reference,[...events],[...hooks],[...disposed]]

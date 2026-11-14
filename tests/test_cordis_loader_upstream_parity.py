@@ -56,6 +56,7 @@ async def test_entry_uses_owning_async_tree_for_import_and_retains_loaded_module
         assert entry.moduleNamespace.default is not None
         assert all(row['stack'] and '#owned' in row['stack'][0] for row in imports)
         await tree.root.stop()
+        await original
         assert active == []
     finally:
         release.set()
@@ -240,6 +241,7 @@ async def test_loader_wait_observes_delayed_entry_and_remove_disposes_owned_effe
     await loader.root.update([{"id": "delayed", "name": "delayed"}])
     await loader.wait()
     await loader.remove("delayed")
+    await loader.ctx.fiber.dispose()
 
     assert lifecycle == ["started", "disposed"]
 

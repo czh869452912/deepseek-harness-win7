@@ -29,6 +29,14 @@ from dsh.cordis.loader_diff import equal_except_volatile
 from dsh.cordis.volatile import update_volatile, volatile_entries
 
 
+class AwaitableNone:
+    """A completed void operation that Python callers may optionally await."""
+    def __await__(self):
+        if False:
+            yield
+        return None
+
+
 class AwaitableString(str):
     def __new__(cls, val: str, task: Optional[Any] = None):
         inst = super().__new__(cls, val)
@@ -1464,18 +1472,19 @@ class EntryTree:
         if not task.cancelled():
             task.exception()
 
+    @property
+    def context(self) -> Context:
+        return self.ctx
+
     def get_tasks(self) -> List[Any]:
-        """Return pending import and lifecycle tasks owned by this tree."""
-        tasks: List[Any] = [task for task in self._pending_tasks if not task.done()]
-        if getattr(self.root, "_update_task", None) and not self.root._update_task.done():
-            tasks.append(self.root._update_task)
+        """Only imports and entry Fiber inertia determine Loader admission."""
+        tasks: List[Any] = []
         for entry in self.entries():
-            if getattr(entry, "_init_task", None) and not entry._init_task.done():
-                tasks.append(entry._init_task)
-            elif entry.fiber and getattr(entry.fiber, "inertia", None) and not entry.fiber.inertia.done():
-                tasks.append(entry.fiber.inertia)
-            if getattr(entry, "subgroup", None) and getattr(entry.subgroup, "_update_task", None) and not entry.subgroup._update_task.done():
-                tasks.append(entry.subgroup._update_task)
+            pending = getattr(entry, "_init_task", None)
+            if pending is None:
+                pending = getattr(entry.fiber, "inertia", None) if entry.fiber else None
+            if pending is not None and not pending.done():
+                tasks.append(pending)
         return tasks
 
     async def await_tasks(self) -> None:
@@ -1541,21 +1550,13 @@ class EntryTree:
         return group.create(options)
 
     def remove(self, entry_id: str) -> Any:
-        """Stop and remove an entry from its parent group."""
-        try:
-            loop = asyncio.get_running_loop()
-            return self._track(loop.create_task(self._remove_tree_entry_async(entry_id)))
-        except RuntimeError:
-            return asyncio.run(self._remove_tree_entry_async(entry_id))
-
-    async def _remove_tree_entry_async(self, entry_id: str) -> None:
+        """Unregister and report removal synchronously; Fiber owns teardown."""
         entry = self.resolve(entry_id)
         group = entry.parent
         legacy = entry.options
-        res = entry.parent.remove(entry_id)
-        if inspect.isawaitable(res):
-            await res
+        group.remove(legacy['id'])
         group.tree.commit(dict(id=legacy['id'], group=group, legacy=legacy))
+        return AwaitableNone()
 
     def update(self, entry_id: str, options: Dict[str, Any], parent_id: Any = _UNDEFINED, position: Optional[int] = None) -> Any:
         """Update an entry and optionally transfer its group/tree ownership."""
@@ -1807,59 +1808,40 @@ class EntryGroup:
 
         try:
             loop = asyncio.get_running_loop()
-            task = self._track_task(loop.create_task(_run_create()))
+            from dsh.cordis.awaiting import start_coroutine
+            task = self._track_task(start_coroutine(_run_create()))
             return AwaitableString(entry.id, task)
         except RuntimeError:
             asyncio.run(_run_create())
             return AwaitableString(entry.id)
 
     async def _create_async(self, options: Dict[str, Any]) -> str:
-        eid = self.tree.ensure_id(options)
-        existing = self.tree.store.get(eid)
-        loader_inst = getattr(self.tree.ctx, "loader", None) or self.tree
-        entry: Entry = existing or Entry(loader=loader_inst, name=options, entry_id=eid)
-        if existing is None:
-            entry.options = options
-        prev_parent = entry.parent
-        entry.parent = self
-        self.tree.store[eid] = entry
-
-        try:
-            res = entry.update(options, create=True, force=True)
-            if inspect.isawaitable(res):
-                await res
-        except Exception as e:
-            if existing:
-                entry.parent = prev_parent
-            else:
-                self.tree.store.pop(eid, None)
-            raise e
-        return entry.id
+        return await self.create(options)
 
     def unlink(self, options: Dict[str, Any]) -> None:
         index = next((i for i, value in enumerate(self.data) if value is options), -1)
         if index >= 0:
             self.data.pop(index)
 
-    def remove(self, entry_id: str, is_dispose: bool = False) -> Any:
-        try:
-            loop = asyncio.get_running_loop()
-            return self._track_task(loop.create_task(self._remove_async(entry_id, is_dispose=is_dispose)))
-        except RuntimeError:
-            return asyncio.run(self._remove_async(entry_id, is_dispose=is_dispose))
+    @property
+    def context(self) -> Context:
+        return self.ctx
 
-    async def _remove_async(self, entry_id: str, is_dispose: bool = False) -> None:
+    def remove(self, entry_id: str, is_dispose: bool = False) -> Any:
         entry = self.tree.store.get(entry_id)
-        if not entry or entry.parent is not self:
-            return
-        self.tree.store.pop(entry_id, None)
+        if entry is None or entry.parent is not self:
+            return AwaitableNone()
+        self.tree.store.pop(entry_id)
+        if entry.fiber:
+            result = entry.fiber.dispose()
+            entry.fiber.ctx.fiber.schedule_settlement(result)
         if not is_dispose:
             self.unlink(entry.options)
-        res = entry._dispose()
-        if inspect.isawaitable(res):
-            await res
-        if hasattr(self.ctx, "emit"):
-            self.ctx.emit("loader/partial-dispose", entry, entry.options, False)
+        self.context.emit("loader/partial-dispose", entry, entry.options, False)
+        return AwaitableNone()
+
+    async def _remove_async(self, entry_id: str, is_dispose: bool = False) -> None:
+        self.remove(entry_id, is_dispose)
 
     def update(self, config_list: List[Dict[str, Any]]) -> Any:
         old_config = self.data
@@ -1892,22 +1874,18 @@ class EntryGroup:
             else:
                 await self._remove_async(key)
         try:
-            await asyncio.gather(*(apply_one(key) for key in keys))
+            from dsh.cordis.awaiting import start_coroutine
+            await asyncio.gather(*(start_coroutine(apply_one(key)) for key in keys))
         finally:
             self._update_task = None
 
     def stop(self) -> Any:
-        try:
-            loop = asyncio.get_running_loop()
-            return self._track_task(loop.create_task(self._stop_async()))
-        except RuntimeError:
-            return asyncio.run(self._stop_async())
+        for options in self.data:
+            self.remove(options.get("id"), is_dispose=True)
+        return AwaitableNone()
 
     async def _stop_async(self) -> None:
-        for opt in list(self.data):
-            eid = opt.get("id")
-            if eid:
-                await self._remove_async(eid, is_dispose=True)
+        self.stop()
 
     def entries(self) -> Iterator["Entry"]:
         for opt in list(self.data):
@@ -2142,8 +2120,8 @@ class Entry:
         tree = getattr(self.parent, "tree", None) or self.loader
         try:
             raw = tree.import_plugin(self.options["name"], self.get_outer_stack)
-            if inspect.isawaitable(raw):
-                raw = await raw
+            from dsh.cordis.awaiting import await_callback_result
+            raw = await await_callback_result(raw)
         except Exception as error:
             self.ctx.logger("loader").error(error)
             return
@@ -2187,14 +2165,16 @@ class Entry:
             loop = asyncio.get_running_loop()
         except RuntimeError:
             return asyncio.run(self._init_task_runner())
-        task = self._track_task(loop.create_task(self._init_task_runner()))
-        self._init_task = task
+        from dsh.cordis.awaiting import start_coroutine
+        task = self._track_task(start_coroutine(self._init_task_runner()))
+        self._init_task = task if not task.done() else None
         return task
 
     async def _init_task_runner(self) -> None:
         try:
             if not self._init_inner_task:
-                self._init_inner_task = asyncio.ensure_future(self._init())
+                from dsh.cordis.awaiting import start_coroutine
+                self._init_inner_task = start_coroutine(self._init())
             await self._init_inner_task
         finally:
             self._init_inner_task = None
@@ -2210,7 +2190,8 @@ class Entry:
                     pass
                 if not self.loader.get_tasks():
                     self.ctx.reflect.notify(["loader"])
-            asyncio.create_task(notify_when_settled())
+            from dsh.cordis.awaiting import start_coroutine
+            start_coroutine(notify_when_settled())
 
     def update(self, options: Dict[str, Any], create: bool = False, force: bool = False) -> Any:
         """Publish raw options first, then apply the required lifecycle changes."""
@@ -2573,7 +2554,12 @@ class Loader(EntryTree, Service):
                     if getattr(tree_owner, "uid", None) is None or getattr(tree_owner, "state", None) == FiberState.UNLOADING:
                         return
 
-                # Case 6: Loader is replacing or removing this exact fiber
+                # The parent may be unloading while its entry stays registered.
+                if parent_fiber and parent_fiber.state == FiberState.UNLOADING:
+                    return
+                # Group.remove unregisters before starting Fiber disposal.
+                if tree and tree.store.get(entry.options.get("id")) is not entry:
+                    return
                 if getattr(entry, "_disposing", False):
                     return
 

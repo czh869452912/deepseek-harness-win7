@@ -34,6 +34,7 @@ async def native():
         first_id = await loader.create({'id': 'first', 'name': 'probe', 'config': {'title': 'hello'}})
         entry = loader.resolve(first_id); fiber = entry.fiber; await fiber
         await loader.create({'id': 'second', 'name': 'probe', 'config': {'title': 'hello'}})
+        await loader.wait()
         initial = fiber.effectiveConfig; reference = initial if mode == 'whole' else initial['title']
         await entry.update({'config': {'title': 'next', **({} if mode == 'whole' else {'count': 2})}})
         result[mode + '-commit'] = [len(applied), fiber.effectiveConfig is initial,

@@ -422,14 +422,14 @@ async def test_isolate_only_update_transfers_provider_without_restart_and_notifi
         {"id": "new", "name": "new", "isolate": {"db": "new"}},
     ])
     provider = loader.resolve("provider")
-    impl = provider.fiber.store["db"]
+    impl = next(impl for impl in provider.fiber.provisions if impl.name == "db")
     assert consumers == [("old-load", loads[0])]
 
     await loader.update("provider", {"isolate": {"db": "new"}})
     await loader.wait()
 
     assert loads == [loads[0]]
-    assert provider.fiber.store["db"] is impl
+    assert impl in provider.fiber.provisions
     assert consumers[0] == ("old-load", loads[0])
     assert set(consumers[1:]) == {
         ("old-unload", loads[0]),

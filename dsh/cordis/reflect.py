@@ -2,6 +2,7 @@
 Reflection and service-resolution layer matching reference/vendor/cordis/src/reflect.ts
 """
 
+import asyncio
 import sys
 from typing import Any, Callable, Dict, List, Optional, Set, Tuple, Union
 
@@ -31,11 +32,20 @@ class PropertyService:
 
 class Impl:
     """Concrete service implementation record."""
-    def __init__(self, name: str, fiber: Any, value: Any = None, check: Optional[Callable[[], bool]] = None):
+    def __init__(self, name: str, fiber: Any, value: Any = None, check: Optional[Callable[[], bool]] = None,
+                 ctx: Any = None, uid: int = 0, isolate: Any = None):
         self.name = name
-        self.fiber = fiber
+        self.ctx = ctx if ctx is not None else fiber.ctx
+        self.uid = uid
+        self.isolate = isolate
+        self.dependents: Set[Any] = set()
+        self.release: Optional[Callable[[], None]] = None
         self.value = value
         self.check = check
+
+    @property
+    def fiber(self) -> Any:
+        return self.ctx.fiber
 
     def __repr__(self) -> str:
         return f"<Impl {self.name} fiber={getattr(self.fiber, 'name', 'root')}>"
@@ -86,6 +96,8 @@ class ReflectService:
         self.ctx = ctx
         self.store: Dict[Any, Impl] = StoreDict()
         self.props: Dict[str, Any] = {}
+        # Bound reflect views share the provision counter with the root.
+        self._impl_counter = [0]
 
     def _bind(self, ctx: Any) -> "ReflectService":
         import copy
@@ -245,6 +257,7 @@ class ReflectService:
             key = get_isolate_symbol(target_ctx, name) or root_sym
 
             fiber = getattr(target_ctx, "fiber", None)
+            self._impl_counter[0] += 1
             if key in self.store:
                 prev = self.store[key]
                 if not allow_replace:
@@ -252,7 +265,8 @@ class ReflectService:
                     prev_name = getattr(prev_fiber, "name", "root") if prev_fiber else "root"
                     raise RuntimeError(f'service "{name}" has been registered at <{prev_name}>')
 
-            impl = Impl(name=name, fiber=fiber, value=val, check=chk)
+            impl = Impl(name=name, fiber=fiber, ctx=target_ctx, uid=self._impl_counter[0],
+                        isolate=key, value=val, check=chk)
 
             self.store[key] = impl
             target_store = target_ctx if (hasattr(target_ctx, "_isolated_keys") and name in target_ctx._isolated_keys) else (target_ctx.root if hasattr(target_ctx, "root") else target_ctx)
@@ -260,8 +274,8 @@ class ReflectService:
                 target_store._services[name] = val
                 setattr(target_store, name, val)
 
-            if fiber and hasattr(fiber, "store") and fiber.store is not None:
-                fiber.store[name] = impl
+            if fiber is not None:
+                fiber.provisions.add(impl)
 
             from dsh.cordis.fiber import FiberState
             if fiber is None or fiber.state == FiberState.ACTIVE:
@@ -271,39 +285,35 @@ class ReflectService:
                 # Mirrors the reference async disposer: the unregistration and the
                 # dependent wake-up run at the call site, and only the dependent
                 # wait is asynchronous.
-                if key in self.store and self.store[key] == impl:
-                    del self.store[key]
-                elif key in self.store:
+                actual_key = impl.isolate
+                if self.store.get(actual_key) is impl:
+                    del self.store[actual_key]
+                elif actual_key in self.store:
                     # A newer provider owns this name; keep its cache coherent.
                     if hasattr(target_store, "_services"):
-                        target_store._services[name] = self.store[key].value
-                        setattr(target_store, name, self.store[key].value)
-                if self.store.get(key) is None and hasattr(target_store, "_services") and name in target_store._services:
+                        target_store._services[name] = self.store[actual_key].value
+                        setattr(target_store, name, self.store[actual_key].value)
+                if self.store.get(actual_key) is None and hasattr(target_store, "_services") and name in target_store._services:
                     del target_store._services[name]
                     if hasattr(target_store, name):
                         try:
                             delattr(target_store, name)
                         except AttributeError:
                             pass
-                fibers = self.notify([name])
-                provider_fiber = getattr(target_ctx, "fiber", None)
-                pending = [fiber for fiber in fibers if fiber is not provider_fiber and hasattr(fiber, "await_settled")]
-                if not pending and (provider_fiber is None or getattr(provider_fiber, "store", None) is None):
-                    return None
+                self._bind(target_ctx.isolate(name, actual_key)).notify([name])
 
                 async def _await_dependents() -> None:
-                    for dependent in pending:
-                        # fiber.ts awaits each woken fiber (`fiber.await()`), which
-                        # settles the unload driven by `notify`.
-                        try:
-                            while getattr(dependent, "inertia", None) is not None and not dependent.inertia.done():
-                                await dependent.inertia
-                        except Exception:
-                            pass
-                    # The providing fiber keeps its own store entry until every
-                    # dependent finished unloading (reflect.ts provide disposer).
-                    if provider_fiber is not None and getattr(provider_fiber, "store", None) is not None:
-                        provider_fiber.store.pop(name, None)
+                    settled = asyncio.get_running_loop().create_future()
+                    def release():
+                        if not settled.done():settled.set_result(None)
+                    impl.release = release
+                    if not impl.dependents:release()
+                    # Even a provision without direct dependents yields, allowing
+                    # inherited child cleanup to finish before self access retires.
+                    await asyncio.sleep(0)
+                    await settled
+                    impl.release = None
+                    if fiber is not None:fiber.provisions.discard(impl)
 
                 return _await_dependents()
 

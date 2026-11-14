@@ -429,10 +429,11 @@ class Context:
                 from dsh.cordis.utils import get_isolate_symbol
                 key = get_isolate_symbol(self, name) or getattr(self, "_isolated_keys", {}).get(name, name)
                 while curr_fiber is not None:
-                    store = getattr(curr_fiber, "store", None)
-                    impl = None
-                    if store:
-                        impl = store.get(key) or store.get(name)
+                    committed = curr_fiber.committed
+                    impl = committed.get(name) if committed else None
+                    for provision in curr_fiber.provisions:
+                        if provision.name == name and get_isolate_symbol(provision.ctx, name) == key:
+                            impl = provision
                     if impl is not None:
                         from dsh.cordis.utils import get_traceable
                         val = getattr(impl, "value", impl)

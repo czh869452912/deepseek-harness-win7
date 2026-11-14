@@ -604,7 +604,8 @@ async def test_sync_plugin_starts_in_loading_and_reports_failure_from_await():
 async def test_restart_rebuilds_store_from_current_dependency_snapshot():
     ctx = Context()
     fiber = ctx.registry.plugin(lambda _ctx, _config: None, {})
-    dependency = object()
+    ctx.provide("dependency", object())
+    dependency = ctx.reflect._get_impl(ctx, "dependency")
     fiber._store["dependency"] = dependency
     await fiber
     first_store = fiber.store
@@ -612,6 +613,7 @@ async def test_restart_rebuilds_store_from_current_dependency_snapshot():
     await fiber.restart()
     assert fiber.store == {"dependency": dependency}
     assert fiber.store is not first_store
+    assert fiber.state == FiberState.ACTIVE
 
 
 @pytest.mark.asyncio

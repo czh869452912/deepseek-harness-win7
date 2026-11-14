@@ -1,0 +1,80 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-15",
+  "unit": "C1-C-service-retention",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "state": "targeted-passed",
+  "scope": "Per-provision identity, isolated own provisions, provider teardown barrier, retired bindings retain only their old dependents.",
+  "paired": "Five unchanged fixed Source/native service journeys matched",
+  "source_tests": {
+    "passed": 12,
+    "failed": 0
+  },
+  "native_tests": {
+    "passed": 168,
+    "failed": 0
+  },
+  "remaining": "Loader journal, expression resolution and shadow caller changes remain separate.",
+  "inputs": {
+    ".goose/out/rc022-prep-20261114-01/source/vendor/cordis/src/events.ts": "a464c843822da4eb31a8d998c5e2216a817b8a7dfeacb6e1aab7f830e7320d6b",
+    "dsh/cordis/events.py": "c8821d6084bd4788c28f5c83ebc84e6138eeb94067c192fe0df34f6efeeea1a5",
+    "scripts/oracles/rc022_provisions.mts": "8053a2ed5db4fc7b3ef25ee4cb6adcae92ac86692d5f880c8cb43ebe2e7c752e",
+    "scripts/rc022_events_probe.py": "e682b910557fea2aec57b6eaee0909252c76b1894b3813dbc98693aa131733da",
+    "dsh/cordis/fiber.py": "7df840f8b14211ac6e82958da9cbe6280cabad53eb3b935d60663ebef17165fb",
+    "dsh/cordis/reflect.py": "471a2d9879a85f8c25021480d06eda0c68c9705a5f68909f2eee1092255a387b",
+    "dsh/cordis/context.py": "7a56080a2bcff75bc274214c14c90aebef79e349619200654ba43e4204aa0f75",
+    "dsh/cordis/loader_isolate.py": "de46bd95f28f88f7effb1f6a60d7336a49065e9463fe8e61705419456d9d4f28",
+    "scripts/rc022_provisions_probe.py": "3e39c7efab867dd1fcc173405f3e47b0c4d5a2d66b8042d74eb02835957daf5d",
+    ".goose/out/rc022-prep-20261114-01/source/vendor/cordis/src/fiber.ts": "b64c3a97f15f0381479dcf3d25965e56dc4cecfa4a0881fc055a49f65b9945df",
+    ".goose/out/rc022-prep-20261114-01/source/vendor/cordis/src/reflect.ts": "047f01fcdef2aa34b4afc39deaf18c16733fabd2a5ef0d55e5c2595b22caadfd"
+  },
+  "reports": {
+    ".goose/out/rc022-provisions-native-20261115-01/pytest-command.json": "00f077f8c240ad5848bf0bacc0aea9610d3f2e520b70e2ba47ff478e05b82fa9",
+    ".goose/out/rc022-provisions-native-20261115-01/pytest.log": "f16b1caa5989b579da7e0d9cac89d9fb776a2e71c121924742f02eeb227cee4a",
+    ".goose/out/rc022-provisions-native-20261115-01/pytest.xml": "4d395111cc42e465f29f42cffb74f9af2d56b31418fe81571907d66da1ba52c6",
+    ".goose/out/rc022-provisions-consumers-20261115-01/pytest-command.json": "a03a65479b98174f027152298adf32b0667707b12218e9503181605db2b073e6",
+    ".goose/out/rc022-provisions-consumers-20261115-01/pytest-workspace/failed-reports/ecd3a02ee2a8c845a0a76615a19bb41d804964f5d7253885c059c441ae909607.json": "85dfd4b41a0efd5614253b0e835685d11549967fc1c86cdf59bb9732cb48e380",
+    ".goose/out/rc022-provisions-consumers-20261115-01/pytest.log": "9ab0ae7e7bd71930f2780322719d22ccf95058974eaa396b9bde63d5e57defb9",
+    ".goose/out/rc022-provisions-consumers-20261115-01/pytest.xml": "be187c087812f408e3d70cc68d3731816af81d6d4fd9b9ba04dcf3fcc01d6c6f",
+    ".goose/out/rc022-provisions-consumers-20261115-02/pytest-command.json": "d9e9652abe403d51b1ef9c22823072d40a063628d98025041822e03a73ec99d0",
+    ".goose/out/rc022-provisions-consumers-20261115-02/pytest.log": "6a886027626390ac3784356ded3714f4958c2692ccca317940608a22e88d3e5b",
+    ".goose/out/rc022-provisions-consumers-20261115-02/pytest.xml": "2c0d129a792a19080f261aeb81d8b491d81b220a3a722a2e91514fa8c498227c",
+    ".goose/out/rc022-provisions-paired-20261115-01/native.json": "5873d6e8317bf61ba98116000db7e28110b566311b1ab022a9f4f06996816f0b",
+    ".goose/out/rc022-provisions-paired-20261115-01/report.json": "57907a11623f606c6efdddec436e47fa23fbdcdb28619394d75d6b3d8964ae40",
+    ".goose/out/rc022-provisions-paired-20261115-01/source.json": "baf82fe796e942bd3dde123053072bf55a59ee6939899dd0ab5fcd8917892457",
+    ".goose/out/rc022-provisions-paired-20261115-01/source.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    ".goose/out/rc022-provisions-paired-20261115-02/cleanup.json": "6f8c790fd0838c2431a96e47b91d8bc9ab6c0e0cf72ed7eeeb45046b59b1210c",
+    ".goose/out/rc022-provisions-paired-20261115-02/native.json": "5873d6e8317bf61ba98116000db7e28110b566311b1ab022a9f4f06996816f0b",
+    ".goose/out/rc022-provisions-paired-20261115-02/report.json": "55936f08c0faeb85bc6122c2eb36e1c05acfcd84e3370823b4f97b518f919e53",
+    ".goose/out/rc022-provisions-paired-20261115-02/source.json": "baf82fe796e942bd3dde123053072bf55a59ee6939899dd0ab5fcd8917892457",
+    ".goose/out/rc022-provisions-paired-20261115-02/source.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    ".goose/out/rc022-provisions-source-20261115-01/source-tests-command.json": "764e83f3564efc8a7284e8c23bbde0b94b45e6a8812810f56547bebc19813776",
+    ".goose/out/rc022-provisions-source-20261115-01/source-tests.json": "b0ed261b6c33f6cad96c03cf72619f277428a82e4257e3e89e1ae725256496ca",
+    ".goose/out/rc022-provisions-source-20261115-01/source-tests.log": "e96a4cfcb681e8ccd5c76dd023660e72a8c8589002da7093b47cbdce5f1a17aa"
+  },
+  "cleanup": {
+    "owner": "rc022-provisions",
+    "removed": [
+      {
+        "path": ".goose/out/rc022-provisions-consumers-20261115-01/pytest-workspace/test_shipped_bundle_expression0",
+        "bytes": 0
+      },
+      {
+        "path": ".goose/out/rc022-provisions-consumers-20261115-01/pytest-workspace/test_yaml_js_tag_and_relative_0",
+        "bytes": 594
+      },
+      {
+        "path": ".goose/out/rc022-provisions-consumers-20261115-02/pytest-workspace/test_shipped_bundle_expression0",
+        "bytes": 0
+      },
+      {
+        "path": ".goose/out/rc022-provisions-consumers-20261115-02/pytest-workspace/test_yaml_js_tag_and_relative_0",
+        "bytes": 594
+      }
+    ],
+    "retained": [
+      ".goose/out/rc022-provisions-consumers-20261115-01/pytest-workspace/failed-reports"
+    ],
+    "processes": "All paired, Source and native commands exited; no services started."
+  }
+}

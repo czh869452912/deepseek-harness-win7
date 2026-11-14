@@ -137,7 +137,9 @@ class Fiber:
             self.entry = getattr(parent_ctx, "entry", None)
         if self.entry is not None and parent_ctx is getattr(self.entry, "ctx", None):
             self.entry.fiber = self
-        self.store: Optional[Dict[str, Any]] = {}
+        self.committed: Optional[Dict[str, Any]] = {}
+        self.provisions: Set[Any] = set()
+        self._release: Optional[Callable[[], None]] = None
         self._store: Dict[str, Any] = {}
         self.inertia: Optional[asyncio.Future] = None
         self.epoch: str = INACTIVE_EPOCH
@@ -247,6 +249,15 @@ class Fiber:
 
     def __await__(self):
         return self.await_settled().__await__()
+
+    @property
+    def store(self) -> Any:
+        """Compatibility name for the dependency snapshot; provisions are separate."""
+        return self.committed
+
+    @store.setter
+    def store(self, value: Any) -> None:
+        self.committed = value
 
     def assert_active(self, check_error: bool = False) -> None:
         if self.uid is None:
@@ -737,12 +748,10 @@ class Fiber:
 
         # Notify reflect store if transitioning between ACTIVE and non-ACTIVE states
         if (old_state == FiberState.ACTIVE or self.state == FiberState.ACTIVE) and self.ctx and hasattr(self.ctx, "reflect"):
-            provided_names = []
             for name, impl in list(self.ctx.reflect.store.items()):
                 if getattr(impl, "fiber", None) is self:
-                    provided_names.append(getattr(impl, "name", str(name)))
-            if provided_names:
-                self.ctx.reflect.notify(provided_names)
+                    owner = self.ctx.isolate(impl.name, impl.isolate)
+                    owner.reflect.notify([impl.name])
 
     def _checkImpl(self, name: str) -> None:
         """
@@ -795,8 +804,7 @@ class Fiber:
             if not impl:
                 epoch = INACTIVE_EPOCH
                 break
-            fib = getattr(impl, "fiber", None)
-            epoch += f":{getattr(fib, 'uid', 0)}"
+            epoch += ":%s" % impl.uid
 
         self.set_epoch(epoch)
 
@@ -928,7 +936,10 @@ class Fiber:
         offers an ambient microtask queue outside a running loop, so the load
         runs inline exactly as it did before.
         """
-        self.store = dict(self._store)
+        self.committed = dict(self._store)
+        for impl in self.committed.values():
+            if impl.ctx.fiber is not self:
+                impl.dependents.add(self)
         try:
             loop = asyncio.get_running_loop()
         except RuntimeError:
@@ -1216,27 +1227,45 @@ class Fiber:
         return FiberState.PENDING
 
     def _unload(self) -> None:
-        """Detach owned effects now, run cleanup after the upstream checkpoint."""
-        disposers = self._disposables.clear()
-        self._effect_metas.clear()
+        """Retain provisions through dependent teardown, then release owned effects."""
+        def detach():
+            disposers = self._disposables.clear()
+            self._effect_metas.clear()
+            return disposers
         try:
             loop = asyncio.get_running_loop()
         except RuntimeError:
             # Preserve the synchronous adapter when there is no ambient loop.
-            self._unload_disposers(disposers)
+            self._unload_disposers(detach())
             return
 
         async def _after_checkpoint():
+            while any(impl.dependents for impl in self.provisions):
+                released = loop.create_future()
+                def release():
+                    if not released.done():released.set_result(None)
+                self._release = release
+                await released
+            self._release = None
             # fiber.ts _unload awaits before invoking each disposer, including
             # synchronous ones; even an empty Promise.all settles asynchronously.
-            self._unload_disposers(disposers)
+            self._unload_disposers(detach())
 
         self.inertia = loop.create_task(_after_checkpoint())
+
+    def _release_dependencies(self) -> None:
+        for impl in (self.committed or {}).values():
+            if self not in impl.dependents:continue
+            impl.dependents.remove(self)
+            if impl.dependents:continue
+            if impl.release is not None:impl.release()
+            if impl.ctx.fiber._release is not None:impl.ctx.fiber._release()
+        self.committed = None
 
     def _unload_disposers(self, disposers: List[Callable[..., Any]]) -> None:
         """Continue the captured unload; async cleanup replaces its inertia."""
         if not disposers:
-            self.store = None
+            self._release_dependencies()
             if self.epoch == INACTIVE_EPOCH:
                 self.set_state(self._get_state())
                 self.inertia = None
@@ -1257,7 +1286,7 @@ class Fiber:
                     sys.stderr.write(f"[Cordis Fiber Error] Exception during unload for '{self.name}': {e}\n")
 
         if not async_disposers:
-            self.store = None
+            self._release_dependencies()
             if self.epoch == INACTIVE_EPOCH:
                 self.set_state(self._get_state())
                 self.inertia = None
@@ -1281,7 +1310,7 @@ class Fiber:
                             else:
                                 sys.stderr.write(f"[Cordis Fiber Error] Exception during async unload for '{self.name}': {r}\n")
                 finally:
-                    self.store = None
+                    self._release_dependencies()
                     if self.epoch == INACTIVE_EPOCH:
                         self.set_state(self._get_state())
                         self.inertia = None
@@ -1298,7 +1327,7 @@ class Fiber:
                     asyncio.run(r)
                 except Exception:
                     pass
-            self.store = None
+            self._release_dependencies()
             if self.epoch == INACTIVE_EPOCH:
                 self.set_state(self._get_state())
                 self.inertia = None

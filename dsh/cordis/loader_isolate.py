@@ -135,6 +135,7 @@ class IsolateManager:
             if not self._belongs_to(provider_ctx, entry.ctx):
                 continue
             store[new_key] = impl
+            impl.isolate = new_key
             if store.get(old_key) is impl:
                 del store[old_key]
 

@@ -273,15 +273,15 @@ async def test_c8_internal_get_dispatches_only_for_proxy_reads():
 
 @pytest.mark.asyncio
 async def test_c7_fiber_scoped_internal_update_hook_chain():
-    """C7: fiber-scoped `internal/update` hooks chain (config, noSave, next) and veto."""
+    """Fiber-local update middleware delegates or retains the instance."""
     ctx = Context()
     log = []
 
     def body(c, config=None):
         log.append("apply:" + repr(config))
 
-        def hook(cfg, no_save=False, next_fn=None, *rest):
-            log.append("hook:" + repr(cfg) + ":" + repr(no_save))
+        def hook(cfg, next_fn):
+            log.append("hook:" + repr(cfg))
             return next_fn()
 
         c.on("internal/update", hook)
@@ -297,14 +297,14 @@ async def test_c7_fiber_scoped_internal_update_hook_chain():
         await result
     await fiber.await_settled()
 
-    assert log == ["apply:{'a': 1}", "hook:{'a': 2}:False", "dispose", "apply:{'a': 2}"]
+    assert log == ["apply:{'a': 1}", "hook:{'a': 2}", "dispose", "apply:{'a': 2}"]
     assert fiber.state == FiberState.ACTIVE
 
     # A hook that never calls `next()` vetoes the restart: the earlier hook runs,
     # the chain stops at the veto, and no apply/dispose follows.
     veto_log = []
 
-    def veto(cfg, no_save=False, next_fn=None, *rest):
+    def veto(cfg, next_fn):
         veto_log.append("veto")
         return None
 
@@ -317,7 +317,8 @@ async def test_c7_fiber_scoped_internal_update_hook_chain():
 
     assert veto_log == ["veto"]
     assert fiber.state == FiberState.ACTIVE
-    assert fiber.config == {"a": 2}
+    assert fiber.rawConfig == {"a": 3}
+    assert fiber.effectiveConfig == {"a": 3}
     assert log.count("apply:{'a': 2}") == applied_before_veto
 
 @pytest.mark.asyncio

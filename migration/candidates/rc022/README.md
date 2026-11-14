@@ -79,3 +79,5 @@
 2026-11-15：C1-AA [包资源解析](resource-resolution-checks.json)完成 232 组固定原版/Python 实际文件对照和 19 项 Python 定向检查。使用原样构建产物与原生 Node，避免 tsx 扩展名补全改变观察；覆盖 exports/imports、条件与通配符、自引用、数组边界、编码分隔符及目录/缺失文件拒绝，不执行入口。已清理本批全部合成夹具，保留载体差异和修正前原始诊断。Loader/预检消费者、本地化元数据、链接移动、worker 和 HMR 继续推进。
 
 2026-11-15：C1-AB [资源解析消费者](resource-consumers-checks.json)接入 canonical Loader 与兼容预检，22 组原版实际 ESM/Python 导入及准入对照、27 项基础消费者和 99 项分发/CLI/Web 定向检查通过。外部包按完整导出规则选择真实文件，支持自引用、条件及通配符别名；安装类映射先检查导出准入，显式 Python descriptor 与文件导出语法保留。已清理本批合成工作区及链接，保留日志/XML和原始观察。元数据、缓存/移动、worker 和真实 HMR 继续推进。
+
+2026-11-15：C1-AC [插件本地化元数据](package-meta-checks.json)提供 PluginPackages.metaOf 与公开只读 API，95 组固定原版实际资源对照和 26 项 Python 检查通过。逐语言/字段回退、完整子路径、严格字段、图标优先级/归属/256KiB 限制及读取后增长覆盖；图标比较真实字节摘要，错误仅对照是否存在并保留原始措辞。原版 102 项通过、2 项文件 symlink 夹具因 Windows EPERM 创建失败、1 项大小写文件共存检查跳过，未宣称完整 Source 通过。合成目录和链接已清理；实际目录 junction 归属与注入重复清单已覆盖，UI 消费者留到 C8。

@@ -1,0 +1,25 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-15",
+  "unit": "C1-AC-LocalizedPluginMetadata",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "state": "paired-native-passed-source-partial",
+  "paired": ".goose/out/rc022-package-meta-paired-20261115-02/report.json",
+  "observations": 95,
+  "native": {
+    "run": "rc022-package-meta-native-20261115-01",
+    "passed": 26,
+    "failed": 0
+  },
+  "source": {
+    "run": "rc022-package-meta-source-20261115-01",
+    "passed": 102,
+    "failed": 2,
+    "pending": 1,
+    "limitation": "Two original file-symlink fixtures fail at creation with Windows EPERM; not product assertions. Case-equivalent files cannot coexist on this filesystem and are skipped by Source. Native duplicate-listing injection and actual directory junction ownership are covered; file-symlink cases remain environment-limited."
+  },
+  "verification_scope_reason": "Fixed original built service under plain Node paired actual locale/manifest exports, complete subpaths, per-field fallbacks, exact icon byte hash/size/type and diagnostic presence. Raw error wording retained separately; not claimed identical across language/OS. Python checks read-only/fresh data, duplicate listing, no resolver for non-package requests, growth after stat, and direct Loader/profile/routing consumers.",
+  "scope": "PluginPackages.metaOf and public readPluginMeta read exported resources without entry execution. Root exported manifest fallback, independent subpath locales/icons, strict language/value admission, ECMAScript whitespace, manifest icon priority/confinement and exported package ownership, regular-file/256KiB bounds. Python folder Portable uses actual files; Node SEA-specific virtual filesystem is not a Python carrier claim.",
+  "cleanup": ".goose/out/rc022-package-meta-native-20261115-01/cleanup.json",
+  "remaining": "C8 inventory/UI consumers, original file-symlink environment cases, module relocation/caches, worker and real HMR. No full regression or release acceptance."
+}

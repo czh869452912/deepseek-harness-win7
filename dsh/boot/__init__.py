@@ -104,7 +104,11 @@ from dsh.boot.cmdline import (
     exitOnStdinEnd,
 )
 
+from dsh.boot.package_meta import read_plugin_meta, readPluginMeta
+from dsh.boot.package_resolution import resolve_plugin_resource, resolvePluginResource
+
 __all__ = [
+    "read_plugin_meta", "readPluginMeta", "resolve_plugin_resource", "resolvePluginResource",
     "ProfileRuntimeResolution", "create_runtime_resolution", "createRuntimeResolution",
     "PluginPackages", "ResolutionRouter", "ResolutionRestartRequired", "bare_package_name", "barePackageName",
     "read_bundle_patches", "readBundlePatches", "read_profile_patches", "readProfilePatches", "resolveTelemetryPatch",

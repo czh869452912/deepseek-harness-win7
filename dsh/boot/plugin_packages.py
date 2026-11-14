@@ -300,5 +300,11 @@ class PluginPackages(Service):
 
     resolveResource = resolve_resource
 
+    def meta_of(self, specifier, parent_url):
+        from dsh.boot.package_meta import read_plugin_meta
+        return read_plugin_meta(specifier, parent_url, self)
+
+    metaOf = meta_of
+
 
 barePackageName = bare_package_name

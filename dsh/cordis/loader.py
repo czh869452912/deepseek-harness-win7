@@ -27,6 +27,7 @@ from dsh.cordis.service import Service
 from dsh.cordis.utils import _UNDEFINED, deep_equal, is_nullable
 from dsh.cordis.loader_diff import equal_except_volatile
 from dsh.cordis.volatile import update_volatile, volatile_entries
+from dsh.cordis.hmr_modules import load_python_file
 
 
 class AwaitableNone:
@@ -81,15 +82,11 @@ def resolve_plugin_class(name: str, registry_map: Optional[Dict[str, Any]] = Non
         try:
             if target_path.endswith(".py") or os.path.exists(target_path):
                 mod_name_res = f"dynamic_cordis_plugin_{abs(hash(os.path.abspath(target_path)))}"
-                spec = importlib.util.spec_from_file_location(mod_name_res, os.path.abspath(target_path))
-                if spec and spec.loader:
-                    mod = importlib.util.module_from_spec(spec)
-                    sys.modules[mod_name_res] = mod
-                    spec.loader.exec_module(mod)
-                    cls = getattr(mod, class_name, None)
-                    if cls and registry_map is not None:
-                        registry_map[name] = cls
-                    return (cls, mod_name_res) if return_mod_name else cls
+                mod = load_python_file(target_path, mod_name_res)
+                cls = getattr(mod, class_name, None)
+                if cls and registry_map is not None:
+                    registry_map[name] = cls
+                return (cls, mod_name_res) if return_mod_name else cls
             else:
                 mod = importlib.import_module(target_path)
                 cls = getattr(mod, class_name, None)
@@ -1742,21 +1739,16 @@ class EntryTree:
             if resolved_path.endswith(".py"):
                 mod_name = f"dynamic_plugin_{abs(hash(resolved_path))}"
                 self._last_loaded_module = mod_name
-                spec = importlib.util.spec_from_file_location(mod_name, resolved_path)
-                if spec and spec.loader:
-                    mod = importlib.util.module_from_spec(spec)
-                    sys.modules[mod_name] = mod
-                    spec.loader.exec_module(mod)
-                    try:
-                        import pathlib
-                        url = pathlib.Path(os.path.realpath(resolved_path)).as_uri()
-                        loader_inst = getattr(self.ctx, "loader", None) or self
-                        if hasattr(loader_inst, "internal") and hasattr(loader_inst.internal, "loadCache"):
-                            loader_inst.internal.loadCache[url] = mod
-                    except Exception:
-                        pass
-                    return mod
-                raise ImportError(f"Could not load python module from {resolved_path}")
+                mod = load_python_file(resolved_path, mod_name)
+                try:
+                    import pathlib
+                    url = pathlib.Path(os.path.realpath(resolved_path)).as_uri()
+                    loader_inst = getattr(self.ctx, "loader", None) or self
+                    if hasattr(loader_inst, "internal") and hasattr(loader_inst.internal, "loadCache"):
+                        loader_inst.internal.loadCache[url] = mod
+                except Exception:
+                    pass
+                return mod
 
             if resolved_path.endswith((".mjs", ".js", ".ts")):
                 if runtime_resolution is not None:

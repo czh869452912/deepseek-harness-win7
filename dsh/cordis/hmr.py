@@ -23,6 +23,7 @@ from dsh.cordis.plugin import Plugin
 from dsh.cordis.service import Service
 from dsh.cordis.hmr_files import ModuleFiles
 from dsh.cordis.hmr_paths import file_path, profile_roots
+from dsh.cordis.hmr_modules import PythonModules
 
 
 class ModuleDependencyGraph:
@@ -258,6 +259,7 @@ class ConfigWatcherService(Service):
         self.files = ModuleFiles()
         self._application_ready = None
         self._cancel_ready = None
+        self.modules = PythonModules(ctx)
 
         # D8: Verify loader and internal
         loader = self.ctx.get("loader")
@@ -1080,6 +1082,7 @@ class ConfigWatcherService(Service):
         self._config_refreshes.clear()
         self._module_refreshes.clear()
         self._config_paths.clear()
+        self.modules.dispose()
 
     def teardown(self) -> Optional[asyncio.Task]:
         """

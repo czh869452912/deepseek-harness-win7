@@ -1,0 +1,24 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-15",
+  "unit": "C1-AI-HmrPythonModuleCache",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "state": "targeted-passed",
+  "paired": ".goose/out/rc022-hmr-cache-paired-20261115-02/report.json",
+  "observations": 3,
+  "source": {
+    "run": "rc022-hmr-cache-source-20261115-01",
+    "passed": 2,
+    "failed": 0,
+    "not_selected": 22
+  },
+  "native": {
+    "run": "rc022-hmr-cache-native-20261115-01",
+    "passed": 71,
+    "failed": 0
+  },
+  "verification_scope_reason": "Actual Source Loader/ESM cache eviction and native Loader/Python cache compare identity before invalidation, changed-file evaluation, failed syntax and restoration. Native parent attributes, duplicate aliases, Loader alias ownership, same-size/same-tick stale pyc, partial execution failure and effect-owned finder cleanup are covered. Existing module leases, canonical resource imports, actual plugin distribution and Loader consumers passed.",
+  "scope": "PythonModules reversible eviction provider and effect-owned fresh source finder. Source Loader module/cache states are paired, Python-only parent attribute and bytecode concerns have native tests. Explicit Python file imports now reuse live modules and compile actual source on a fresh import. Historical last-owner import leases still release native modules. HMR owns the provider lifetime, but profile planning has not invoked eviction yet.",
+  "cleanup": ".goose/out/rc022-hmr-cache-native-20261115-01/cleanup.json",
+  "remaining": "Loaded dependency graph, actual replacement plan execution and profile reconciliation/watches; module-root partial reload remains the old implementation. No full HMR, Node hook or release acceptance claim."
+}

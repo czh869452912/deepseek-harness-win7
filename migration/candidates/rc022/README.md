@@ -31,3 +31,5 @@
 2026-11-15：C1-B [配置生命周期](config-lifecycle-checks.json)完成固定 Source/Python 配对及 58/98 项定向检查；原始输入与生效配置分离，提交先于更新，候选解析不发布，过期完成不覆盖新值。C1-C [服务保留](provision-retention-checks.json)完成 5 组 Source/Python 旅程、12 项原版与 168 项 Python 检查；每次 provision 独立身份，隔离服务不混入依赖快照，提供者等待消费者清理后释放。
 
 2026-11-15：C1-D [定义与使用上下文](trace-context-checks.json)完成原版/Python 配对和 103/15 项定向检查，覆盖方法、getter、调用入口、继承、权限与日志归属。三批已用完的合成夹具均在提交前清理，失败诊断保留。独立 Source、node_modules 与工具链继续由 rc022-C1–C9 持有，用于其余固定上游合同和最终验收；完成 C9 或目标被否决后清理。C1 整体及其余合同仍未签收。
+
+2026-11-15：C1-E [volatile 基础](volatile-foundation-checks.json)完成 1153 组固定 Source/Python 对照、28 项原版和 253 项 Python 定向检查。实现不可变快照引用、Schema 固定路径约束及默认/缺省值、严格数组/循环/不透明值比较、按原始配置元数据忽略 volatile 字段。保留原版对未完整水合 schema 节点的拒绝边界，未用更宽松的宿主替代。Python 冻结 JSON 以 dict/list 子类表达；JS URL 对象行为不属于本轮 Python 数据语料。Loader 的引用提交、日志式配置落盘及装配仍待后续整合，C1 尚未整体验收。

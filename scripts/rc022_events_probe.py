@@ -39,14 +39,15 @@ async def native():
     return result
 
 
-def main(observer='rc022_events.mts', scope=None, extra_inputs=()):
+def main(observer='rc022_events.mts', scope=None, extra_inputs=(), prepare=None):
     parser=argparse.ArgumentParser(description=__doc__)
     for name in ('source','node','output'):parser.add_argument('--'+name,type=Path,required=True)
     args=parser.parse_args();source=args.source.resolve();output=args.output.resolve()
     output.relative_to(ROOT/'.goose/out');output.mkdir(parents=True,exist_ok=False)
     assert subprocess.check_output(['git','-C',str(source),'rev-parse','HEAD'],encoding='utf-8').strip()==TARGET
     assert not subprocess.check_output(['git','-C',str(source),'status','--porcelain','--untracked-files=no'],encoding='utf-8').strip()
-    command=[str(args.node.resolve()),str(source/'node_modules/tsx/dist/cli.mjs'),'--tsconfig',str(source/'tsconfig.base.json'),str(ROOT/'scripts/oracles'/observer),str(source)]
+    prepared = prepare(output) if prepare is not None else []
+    command=[str(args.node.resolve()),str(source/'node_modules/tsx/dist/cli.mjs'),'--tsconfig',str(source/'tsconfig.base.json'),str(ROOT/'scripts/oracles'/observer),str(source),*[str(path) for path in prepared]]
     report=dict(target_upstream=TARGET,command=command,scope=scope or 'Waterfall single-use delegates, symbol identity, parallel observer mode, empty listener key removal. Config resolution/update lifecycle remains separate.')
     start=time.monotonic()
     try:
@@ -58,11 +59,12 @@ def main(observer='rc022_events.mts', scope=None, extra_inputs=()):
         from scripts.session_format_oracle import json_equal
         assert json_equal(json.loads(result.stdout),local),'Source/native difference'
         report['status']='passed'
+        if isinstance(local,list):report['observations']=len(local)
     except Exception as error:
         report.update(status='failed',error=str(error));raise
     finally:
         report['seconds']=time.monotonic()-start
-        paths=[source/'vendor/cordis/src/events.ts',ROOT/'dsh/cordis/events.py',ROOT/'scripts/oracles'/observer,Path(__file__).resolve(),*extra_inputs]
+        paths=[source/'vendor/cordis/src/events.ts',ROOT/'dsh/cordis/events.py',ROOT/'scripts/oracles'/observer,Path(__file__).resolve(),*extra_inputs,*prepared]
         report['inputs']={path.relative_to(ROOT).as_posix():hashlib.sha256(path.read_bytes()).hexdigest() for path in paths}
         (output/'report.json').write_text(json.dumps(report,ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
     print(report['status'])

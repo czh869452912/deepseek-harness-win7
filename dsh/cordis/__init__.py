@@ -6,6 +6,7 @@ from dsh.cordis.context import Context
 from dsh.cordis.events import EventBus, EventSymbol, Hook, is_bailed, AggregateError
 from dsh.cordis.fiber import Fiber, FiberState, CordisError, EffectMeta, INACTIVE_EPOCH
 from dsh.cordis.schema import Schema, ValidationError, z
+from dsh.cordis.volatile import Volatile
 from dsh.cordis.logger import Logger, LoggerService, LoggerLevel, Message, Exporter, ConsoleExporter
 from dsh.cordis.plugin import Plugin, PluginType
 from dsh.cordis.reflect import ReflectService, PropertyType, PropertyAccessor, PropertyService, Impl
@@ -31,6 +32,7 @@ __all__ = [
     "CordisError",
     "ValidationError",
     "Schema",
+    "Volatile",
     "z",
     "EffectMeta",
     "INACTIVE_EPOCH",

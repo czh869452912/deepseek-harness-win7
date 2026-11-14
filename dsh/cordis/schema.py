@@ -56,6 +56,8 @@ from dsh.cordis.utils import (
 )
 
 __schemastery_index__ = 0
+_CHECKED_VOLATILE = object()
+_OMITTED_INPUT = object()
 
 
 #: Memoized positional arity of resolvers, callbacks and predicates.  The
@@ -464,7 +466,7 @@ class ValidationError(TypeError):
             self.path = []
             return
 
-        self.options = options or {}
+        self.options = {key:value for key,value in (options or {}).items() if key is not _CHECKED_VOLATILE}
         self.path = self.options.get("path", [])
 
         prefix = "$"
@@ -570,8 +572,22 @@ class Schema(metaclass=_SchemaMeta):
                 setattr(self, _REFERENCE_ATTRIBUTES.get(k, k), v)
         if not isinstance(self.meta, dict):
             self.meta = {}
+        def raw_node(value):
+            if not isinstance(value,dict):return value
+            node=Schema(value)
+            node._raw_schema_node=True
+            node._raw_meta_missing='meta' not in value
+            return node
+        if isinstance(self.dict, dict):
+            self.dict = {key:raw_node(value) for key,value in self.dict.items()}
+        if isinstance(self.list, list):
+            self.list = [raw_node(value) for value in self.list]
+        for key in ('inner','s_key'):
+            value=getattr(self,key,None)
+            if isinstance(value,dict):setattr(self,key,raw_node(value))
 
-    def __call__(self, data: Any = None, options: Optional[Dict[str, Any]] = None) -> Any:
+    def __call__(self, data: Any = _OMITTED_INPUT, options: Optional[Dict[str, Any]] = None) -> Any:
+        if data is _OMITTED_INPUT:data = _UNDEFINED if self.meta.get('volatile') else None
         return Schema.resolve(data, self, options or {})[0]
 
     # --- Standard Schema V1 compatibility (@standard-schema/spec) ---
@@ -731,6 +747,11 @@ class Schema(metaclass=_SchemaMeta):
     def extra(self, key: str, value: Any) -> "Schema":
         return self._with_meta(key, value)
 
+    def volatile(self) -> "Schema":
+        if self.meta.get('volatile'):
+            raise TypeError('volatile schema is already wrapped')
+        return self.extra('volatile', True)
+
     def set(self, key: str, value: "Schema") -> "Schema":
         if self.dict is None:
             raise TypeError(f"Cannot set property '{key}' on schema without dict container")
@@ -820,6 +841,10 @@ class Schema(metaclass=_SchemaMeta):
         (``this.type === 'dict'``), which cosmokit forwards into the object
         fallback (types.ts:141) but not into array elements (types.ts:129).
         """
+        if getattr(self,'_raw_schema_node',False):
+            raise TypeError('schema?.simplify is not a function')
+        from dsh.cordis.volatile import is_volatile
+        if is_volatile(value):value = value.get()
         default_val = self.meta.get("default", _UNDEFINED)
         if deep_equal(value, default_val, self.type == "dict"):
             return None
@@ -1504,11 +1529,25 @@ class Schema(metaclass=_SchemaMeta):
         if not schema:
             return data, _UNDEFINED
 
+        if not opt.get(_CHECKED_VOLATILE):
+            _validate_volatile_schema(schema, opt.get('path') or [])
+            opt = dict(opt)
+            opt[_CHECKED_VOLATILE] = True
+        if schema.meta.get('volatile'):
+            from dsh.cordis.volatile import create_volatile
+            inner = schema._clone()
+            inner.meta = dict(schema.meta, volatile=False)
+            value, adapted = cls.resolve(data, inner, opt, strict)
+            try:return create_volatile(value), adapted
+            except Exception as error:raise ValidationError(str(error), opt) from error
+
         ignore_fn = opt.get("ignore")
         if callable(ignore_fn) and _call_with_arity(ignore_fn, (data, schema)):
             return data, _UNDEFINED
 
         if is_nullable(data) and schema.type != "lazy":
+            if getattr(schema,'_raw_meta_missing',False):
+                raise TypeError("Cannot read properties of undefined (reading 'required')")
             if schema.meta.get("required"):
                 raise ValidationError("missing required value", opt)
             fallback = schema.meta.get("default")
@@ -1527,6 +1566,8 @@ class Schema(metaclass=_SchemaMeta):
         try:
             result = _call_with_arity(callback, (data, schema, opt, strict))
         except Exception as error:
+            if getattr(schema,'_raw_meta_missing',False):
+                raise TypeError("Cannot read properties of undefined (reading 'loose')") from error
             if not schema.meta.get("loose"):
                 raise error
             return schema.meta.get("default"), _UNDEFINED
@@ -1536,6 +1577,25 @@ class Schema(metaclass=_SchemaMeta):
 
 
 # --- Built-in Type Resolvers matching TS schemastery resolvers ---
+
+
+def _validate_volatile_schema(schema: Schema, path: List[Any], blocked: bool = False,
+                              seen: Optional[Dict[int, Set[bool]]] = None) -> None:
+    if seen is None:seen = {}
+    states = seen.setdefault(id(schema), set())
+    if blocked in states:return
+    states.add(blocked)
+    if schema.meta.get('volatile') and blocked:
+        raise ValidationError('volatile fields require a fixed object path without an enclosing volatile field', {'path':path})
+    nested = blocked or bool(schema.meta.get('volatile'))
+    for key, child in (schema.dict or {}).items():
+        _validate_volatile_schema(child, path+[key], nested, seen)
+    if isinstance(schema.s_key, Schema):
+        _validate_volatile_schema(schema.s_key, path+['<key>'], True, seen)
+    if isinstance(schema.inner, Schema):
+        _validate_volatile_schema(schema.inner, path+['*'], True, seen)
+    for index, child in enumerate(schema.list or []):
+        _validate_volatile_schema(child, path+[str(index)], True, seen)
 
 def _check_range(data: Union[int, float], meta: Dict[str, Any], description: str, opt: Dict[str, Any], skip_min: bool = False) -> None:
     """Range check shared by the string, number and array resolvers."""
@@ -1607,6 +1667,7 @@ def _resolve_lazy(data: Any, schema: Schema, opt: Dict[str, Any], strict: bool) 
         return Schema.resolve(data, built, opt, strict)
     if not isinstance(schema.inner, Schema):
         schema.inner = _built_lazy_inner(schema)
+        _validate_volatile_schema(schema.inner, opt.get('path') or [], True)
     return Schema.resolve(data, schema.inner, opt, strict)
 
 
@@ -1730,7 +1791,11 @@ def _property(data: Any, key: Any, schema: Schema, opt: Dict[str, Any]) -> Any:
     """
     sub_opt = {**opt, "path": list(opt.get("path") or []) + [key]}
     try:
-        res, adapted = Schema.resolve(_read_key(data, key), schema, sub_opt)
+        raw = _read_key(data, key)
+        if schema.meta.get('volatile'):
+            if isinstance(data,dict) and key not in data:raw = _UNDEFINED
+            elif isinstance(data,(list,tuple)) and isinstance(key,int) and key >= len(data):raw = _UNDEFINED
+        res, adapted = Schema.resolve(raw, schema, sub_opt)
         if adapted is not _UNDEFINED:
             _write_key(data, key, adapted)
         return res
@@ -1738,7 +1803,9 @@ def _property(data: Any, key: Any, schema: Schema, opt: Dict[str, Any]) -> Any:
         if not opt.get("autofix"):
             raise error
         _delete_key(data, key)
-        return schema.meta.get("default")
+        from dsh.cordis.volatile import create_volatile
+        fallback = schema.meta.get('default', _UNDEFINED)
+        return create_volatile(fallback) if schema.meta.get('volatile') else schema.meta.get('default')
 
 
 def _resolve_array(data: Any, schema: Schema, opt: Dict[str, Any], strict: bool) -> Tuple[Any, Any]:

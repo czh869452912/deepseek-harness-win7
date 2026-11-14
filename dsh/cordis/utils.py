@@ -592,12 +592,19 @@ def _js_reorder_clone_keys(value: Any, seen: Set[int]) -> None:
 
 
 def deep_equal(a: Any, b: Any, strict: bool = False) -> bool:
-    """Deep equality check matching Cosmokit deepEqual."""
+    """Compare config data; volatile references compare independently of values."""
+    return _deep_equal(a, b, strict, set())
+
+
+def _deep_equal(a: Any, b: Any, strict: bool, ancestors: Set[int]) -> bool:
     # The opening reference test is `a === b`, not object identity: two equal
     # strings are distinct Python objects, so `is` would report them unequal
     # while `===` (and the reference) reports equal.
     if _js_strict_equal(a, b):
         return True
+    from dsh.cordis.volatile import is_volatile
+    if is_volatile(a) or is_volatile(b):
+        return is_volatile(a) and is_volatile(b)
     if not strict and _js_is_nullish(a) and _js_is_nullish(b):
         return True
     if _js_typeof(a) != _js_typeof(b):
@@ -606,14 +613,22 @@ def deep_equal(a: Any, b: Any, strict: bool = False) -> bool:
         return False  # non-object primitives that were not identical
     if _js_is_nullish(a) or _js_is_nullish(b):
         return False  # `if (!a || !b) return false`: null and undefined only
+    if id(a) in ancestors:
+        return False
+    ancestors.add(id(a))
+    try:
+        return _deep_equal_objects(a, b, strict, ancestors)
+    finally:
+        ancestors.remove(id(a))
+
+
+def _deep_equal_objects(a: Any, b: Any, strict: bool, ancestors: Set[int]) -> bool:
     if isinstance(a, (list, tuple)) or isinstance(b, (list, tuple)):
         if not (isinstance(a, (list, tuple)) and isinstance(b, (list, tuple))):
             return False
         if len(a) != len(b):
             return False
-        # `a.every((item, index) => deepEqual(item, b[index]))`: the array branch
-        # does not forward `strict` to its elements.
-        return all(deep_equal(x, y) for x, y in zip(a, b))
+        return all(_deep_equal(x, y, strict, ancestors) for x, y in zip(a, b))
     if isinstance(a, (datetime.datetime, datetime.date)) or isinstance(b, (datetime.datetime, datetime.date)):
         if not (isinstance(a, (datetime.datetime, datetime.date))
                 and isinstance(b, (datetime.datetime, datetime.date))):
@@ -632,12 +647,16 @@ def deep_equal(a: Any, b: Any, strict: bool = False) -> bool:
         return bytes(a) == bytes(b)
     # Reference fallback:
     # Object.keys({...a, ...b}).every(key => deepEqual(a[key], b[key], strict))
+    # Frozen JSON objects use dict subclasses on Python; their data protocol
+    # remains the plain-object protocol, including in durable session snapshots.
+    if strict and (not isinstance(a, dict) or not isinstance(b, dict)):
+        return False
     keys: List[Any] = []
     for source in (a, b):
         for key in _js_own_enumerable_keys(source):
             if key not in keys:
                 keys.append(key)
-    return all(deep_equal(_js_read_key(a, key), _js_read_key(b, key), strict=strict) for key in keys)
+    return all(_deep_equal(_js_read_key(a, key), _js_read_key(b, key), strict, ancestors) for key in keys)
 
 
 deepEqual = deep_equal

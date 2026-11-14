@@ -1,24 +1,4 @@
-"""
-1:1 parity tests for the unit `vendor/schemastery-cosmokit-deep-equal`.
-
-reference/vendor/schemastery/src/index.ts:1 imports `deepEqual` from
-`@deepseek-ai/cosmokit` and calls it at :408 (`simplify`) and :598 (`const`).
-Cosmokit `deepEqual` (reference/vendor/cosmokit/src/types.ts:118-142) has two
-branches this port must reproduce exactly:
-
-- types.ts:129 - the array branch is
-  `a.length === b.length && a.every((item, index) => deepEqual(item, b[index]))`,
-  so it does NOT forward `strict` to its elements, while the object fallback at
-  types.ts:141 is
-  `Object.keys({ ...a, ...b }).every(key => deepEqual(a[key], b[key], strict))`,
-  which does forward it.
-- types.ts:141 - a key only one operand owns is read as `undefined`, which is
-  distinct from `null` under `strict` and equal to it otherwise.
-
-`simplify` maps the schema type onto that flag: `this.type === 'dict'`
-(index.ts:408/417).  The oracle pinned by the migration contract is
-`deepEqual({ k: [{ a: null }] }, { k: [{}] }, true) === true`.
-"""
+"""Canonical schema comparison, aligned to rc022 strict nested-array semantics."""
 
 import pytest
 
@@ -38,17 +18,9 @@ def test_index_ts_1_schema_consumes_the_canonical_cosmokit_deep_equal():
     assert schema_deep_equal is cosmokit_deep_equal
 
 
-def test_types_ts_129_array_branch_does_not_forward_strict_acceptance_oracle():
-    """types.ts:129: `deepEqual({k:[{a:null}]}, {k:[{}]}, true)` is true.
-
-    The object fallback forwards `strict` (types.ts:141), the array branch does
-    not (types.ts:129), so the element `{a:null}` is compared loosely against
-    `{}` and passes.  The removed private copy forwarded the flag into the
-    array branch and answered false.
-    """
-    assert cosmokit_deep_equal({"k": [{"a": None}]}, {"k": [{}]}, True) is True
-    assert cosmokit_deep_equal([{"a": None}], [{}], True) is True
-    # Loose and strict agree here: the array branch never sees the flag.
+def test_strict_array_comparison_preserves_null_and_absent_distinction():
+    assert cosmokit_deep_equal({"k": [{"a": None}]}, {"k": [{}]}, True) is False
+    assert cosmokit_deep_equal([{"a": None}], [{}], True) is False
     assert cosmokit_deep_equal({"k": [{"a": None}]}, {"k": [{}]}, False) is True
 
 
@@ -58,7 +30,7 @@ def test_types_ts_129_array_branch_keeps_its_own_checks():
     assert cosmokit_deep_equal([None], [], True) is False
     assert cosmokit_deep_equal([True], [1], True) is False  # boolean !== number
     assert cosmokit_deep_equal([True], [1], False) is False
-    assert cosmokit_deep_equal([{"a": None}], [{"b": None}], True) is True
+    assert cosmokit_deep_equal([{"a": None}], [{"b": None}], True) is False
 
 
 def test_types_ts_141_object_fallback_forwards_strict():
@@ -79,7 +51,7 @@ def test_types_ts_141_absent_own_key_reads_as_undefined():
     `deepEqual([undefined], [null])` is true loosely and false strictly.
     """
     assert cosmokit_deep_equal([_UNDEFINED], [None], False) is True
-    assert cosmokit_deep_equal([_UNDEFINED], [None], True) is True  # array branch: loose
+    assert cosmokit_deep_equal([_UNDEFINED], [None], True) is False
     assert cosmokit_deep_equal(_UNDEFINED, None, False) is True
     assert cosmokit_deep_equal(_UNDEFINED, None, True) is False
 
@@ -87,12 +59,11 @@ def test_types_ts_141_absent_own_key_reads_as_undefined():
 def test_index_ts_408_simplify_uses_strict_for_dict_and_loose_otherwise():
     """index.ts:408: `deepEqual(value, this.meta.default, this.type === 'dict')`.
 
-    A dict-typed schema compares strictly, so an array of objects holding a
-    `null` key still matches the default whose object omits that key, and the
-    whole value simplifies away as already defaulted.
+    A dict-typed schema preserves a null key absent from its default, including
+    when that key occurs inside an array.
     """
     schema = Schema.dict(Schema.any()).default({"k": [{}]})
-    assert schema.simplify({"k": [{"a": None}]}) is None
+    assert schema.simplify({"k": [{"a": None}]}) == {"k": [{"a": None}]}
 
     # The same shape under a non-dict type compares loosely (also true here).
     assert Schema.any().default({"k": [{}]}).simplify({"k": [{"a": None}]}) is None

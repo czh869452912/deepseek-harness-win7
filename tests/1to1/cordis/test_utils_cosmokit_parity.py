@@ -1343,14 +1343,12 @@ def test_c48_deep_equal_reads_an_absent_own_key_as_undefined():
     assert deepEqual({'a': None}, {}) is True
     assert deepEqual({'a': None}, {'a': None}, True) is True
     assert deepEqual({}, {}, True) is True
-    # `strict` reaches the own-key recursion but not array elements: the array
-    # branch is `deepEqual(item, b[index])` with no third argument, so elements
-    # compare non-strict even inside a strict comparison.
+    # rc022 keeps strict comparison through array elements and nested objects.
     assert deepEqual({'x': {'a': None}}, {'x': {}}, True) is False
-    assert deepEqual([{'a': None}], [{}], True) is True
-    assert deepEqual([[{'a': None}]], [[{}]], True) is True
-    assert deepEqual([{'x': {'a': None}}], [{'x': {}}], True) is True
-    assert deepEqual({'k': [{'a': None}]}, {'k': [{}]}, True) is True
+    assert deepEqual([{'a': None}], [{}], True) is False
+    assert deepEqual([[{'a': None}]], [[{}]], True) is False
+    assert deepEqual([{'x': {'a': None}}], [{'x': {}}], True) is False
+    assert deepEqual({'k': [{'a': None}]}, {'k': [{}]}, True) is False
     assert deepEqual([1, [2]], [1, [2]], True) is True
     # Array length and the Array-vs-object branch are unchanged.
     assert deepEqual([1, 2], [1, 2, 3], True) is False

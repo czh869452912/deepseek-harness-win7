@@ -571,22 +571,24 @@ async def test_boot_installs_the_table_before_the_config_tree_mounts():
 
 
 @pytest.mark.asyncio
-async def test_boot_rejects_a_config_naming_an_unimplemented_installation_row():
+async def test_boot_rejects_a_required_unimplemented_installation_row():
     """
-    The installation fail-loud contract: a row the installation does not carry is
-    reported with its name, never skipped.
+    A required connection provider the installation does not carry rejects
+    startup. Optional failures are warning-only under rc022's startup contract.
     """
     d = tmp()
     with open(os.path.join(d, "cordis.yml"), "w", encoding="utf-8") as f:
         f.write(
             "- id: timer\n  name: '@deepseek-ai/cordis-plugin-timer'\n"
-            "- id: gateway\n  name: '@verification/unimplemented-installation'\n"
+            "- id: connection\n  name: '@verification/unimplemented-installation'\n"
         )
     with pytest.raises(RuntimeError) as raised:
         await boot(NAME, os.path.join(d, "cordis.yml"))
     message = str(raised.value)
-    assert message.startswith(f"{NAME}: plugin tree failed to load")
-    assert "failed to import loader entry gateway (@verification/unimplemented-installation): Cannot find module '@verification/unimplemented-installation'" in message
+    assert message.startswith(f"{NAME}: startup failed: 1 required plugin did not activate")
+    assert "connection (required)" in message
+    assert "Package: @verification/unimplemented-installation" in message
+    assert "Cannot find module '@verification/unimplemented-installation'" in message
 
 
 @pytest.mark.asyncio

@@ -62,7 +62,6 @@ from dsh.boot.profile import (
     loadProfileDirectory,
     compose_entries,
     composeEntries,
-    heal_profiles_module_fallback,
     healProfilesModuleFallback,
 )
 
@@ -800,16 +799,15 @@ async def boot(
         # stands in for the Node module closure a bare row name walks to.
         loader = ctx.get("loader")
         install_harness_plugin_classes(loader)
-        # The launcher heals the installation closure into profiles/node_modules;
-        # a bare row that would resolve through that fallback is an installation
-        # row, so the Loader answers it from the table instead of the shipped JS
-        # artifact the fallback links to.
-        if loader is not None:
-            install_installation_module_roots(loader, absolute_config_path)
         if prepare:
             res = prepare(ctx)
             if asyncio.iscoroutine(res):
                 await res
+        # Direct historical boot consumers can still supply the old roots.
+        # Canonical profile launch publishes its immutable package router before
+        # the config tree mounts and never installs physical fallback roots.
+        if loader is not None and ctx.get('pluginPackages') is None:
+            install_installation_module_roots(loader, absolute_config_path)
         stage = "plugin tree failed to load"
         await mount_root_include(ctx, absolute_config_path, patches, bare_module_base_url, bin_name)
         loader = ctx.get("loader")

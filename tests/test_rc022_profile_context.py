@@ -59,13 +59,11 @@ async def test_launcher_live_reader_uses_explicit_home_and_current_bundle_files(
     monkeypatch.setenv('DSH_HOME', str(tmp_path / 'other-home'))
     captured = []
     async def watch(ctx, options): captured.append(options)
-    async def heal(options): pass
     async def wrapped(name, root_config, patches, setup):
         def host(ctx):
             setup(ctx); ctx.provide('hmr', object())
         return await boot(name, root_config, patches, host)
     monkeypatch.setattr(launcher, 'watch_user_patches', watch)
-    monkeypatch.setattr(launcher, 'heal_profiles_module_fallback', heal)
     monkeypatch.setattr(launcher, 'boot', wrapped)
     result = await launcher.run_profile(dict(profile='active', dsh_home=context['home'], wait_for_exit=False))
     try:

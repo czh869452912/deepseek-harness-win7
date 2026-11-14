@@ -1,0 +1,19 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-15",
+  "unit": "C1-Z-CanonicalPythonPackageRouting",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "state": "targeted-passed",
+  "paired": ".goose/out/rc022-runtime-loader-paired-20261115-01/report.json",
+  "observations": 33,
+  "construction_recheck": ".goose/out/rc022-runtime-loader-resolution-paired-20261115-01/report.json",
+  "construction_observations": 10,
+  "native": [
+    {"run": "rc022-runtime-loader-native-20261115-01", "passed": 86, "failed": 1, "reason": "An old startup assertion required an optional gateway failure to be fatal; changed it to the current required connection provider contract."},
+    {"run": "rc022-runtime-loader-native-20261115-02", "passed": 10, "failed": 0}
+  ],
+  "verification_scope_reason": "Actual fixed Source ESM and native Python root imports, matching metadata ownership, immutable constructor recheck, and direct Loader/profile/CLI/Web/class table consumers. Native checks cover explicit Portable layout inventory, fresh generation reads, installed-copy precedence and absence of physical fallback writes.",
+  "scope": "Canonical launcher constructs and publishes PluginPackages before mounting the config tree. Python Loader consumes selected package directories and only answers installation mappings from the native class table. Hidden/unselected names cannot escape through the legacy class fallback. External JavaScript is rejected instead of running a JS test stand-in. Python Portable's flat package layout is an explicit read-only installation graph adapter; ordinary createRuntimeResolution retains actual Node ancestor lookup. Canonical launcher no longer heals or installs physical fallback roots.",
+  "cleanup": ".goose/out/rc022-runtime-loader-native-20261115-02/cleanup.json",
+  "remaining": "Complete resource exports/imports and self-reference handling, localized metadata, worker inheritance, real HMR and patchReload retirement remain. Historical direct boot helpers still exist for their consumers. No full gate, complete Node module parity or release acceptance."
+}

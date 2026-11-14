@@ -3,16 +3,18 @@ Loader plugin-class resolution table for the dsh boot glue.
 
 Every dsh surface launches a Cordis tree whose rows name npm packages
 (`packages/bundle/*/cordis.patch.yml` in `dsh --profile <name>` profiles). The
-Node runtime resolves those bare names through the installation's module graph:
-the config project's own `node_modules` first, then the harness installation
-closure the launcher heals into `$DSH_HOME/profiles/node_modules`
-(`@deepseek-ai/dsh-app-boot`'s `healProfilesModuleFallback`).
+Node resolves those names through the published profile package router. The
+canonical Python launcher publishes the same ownership table without creating
+physical fallback links; its Portable installation layout supplies package
+directories explicitly when npm's node_modules graph is absent.
 
 The Python runtime has no Node module graph, so the installation-owned half of
 that resolution is expressed here as a name -> plugin class table, and the boot
 glue installs it on the Loader through `install_harness_plugin_classes` before
-the config tree mounts. Resolution order is unchanged: a config-project-local
-module always wins, and this table answers only when nothing else resolved.
+the config tree mounts. With a runtime resolution this class table answers only
+when the selected package is an installation mapping. Local/profile packages
+load their own Python implementation. The old root helpers below remain for
+direct historical boot consumers and are not used by canonical profile launch.
 
 Matching reference/packages/boot/app-boot/src/index.ts `boot`, which mounts the
 Loader before the config tree so bare rows resolve from the installation.

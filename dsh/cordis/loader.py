@@ -1630,7 +1630,9 @@ class EntryTree:
         if name in builtins:
             return builtins[name]
         reg_map = getattr(loader, "registry_map", {})
-        if name in reg_map:
+        packages = self.ctx.get('pluginPackages')
+        runtime_resolution = getattr(packages, 'resolution', None) if packages is not None else None
+        if name in reg_map and runtime_resolution is None:
             return reg_map[name]
 
         # Check if name contains class colon specifier (e.g. "path/to/file.py:ClassName")
@@ -1665,9 +1667,30 @@ class EntryTree:
             or name.startswith("file://")
             or os.path.isabs(name)
         )
-        resolved_path = resolve_module_specifier(
-            name, base_dir, getattr(loader, "installation_module_roots", None)
-        )
+        runtime_owned = False
+        if runtime_resolution is not None and is_bare_name:
+            from pathlib import Path
+            from dsh.boot.plugin_packages import bare_package_name
+            package_name = bare_package_name(name)
+            package = packages.packageOf(name, Path(os.path.join(base_dir, 'package.json')).as_uri())
+            if package is None:
+                raise ModuleNotFoundError(f"Cannot find module '{name}'")
+            directory = package['dir']
+            from dsh.boot.runtime_resolution import _field
+            selected = next((row for row in reversed(_field(runtime_resolution, 'entries', [])) if row['name'] == package_name), None)
+            runtime_owned = selected is not None and selected['scope'] == 'installation' and os.path.realpath(selected['packageDir']) == os.path.realpath(directory)
+            if runtime_owned:
+                plugin = (getattr(loader, 'harness_plugins', None) or {}).get(name)
+                if plugin is not None:
+                    return plugin
+            subpath = name[len(package_name)+1:] if name != package_name else None
+            resolved_path = _entry_from_package_json(package['manifestPath'], subpath)
+            if resolved_path is None:
+                raise ModuleNotFoundError(f"Cannot find module '{name}' in {directory}")
+        else:
+            resolved_path = resolve_module_specifier(
+                name, base_dir, getattr(loader, "installation_module_roots", None)
+            )
         if resolved_path is not None and is_bare_name and is_installation_owned_module(
             resolved_path, getattr(loader, "installation_module_roots", None)
         ):
@@ -1716,6 +1739,8 @@ class EntryTree:
                 raise ImportError(f"Could not load python module from {resolved_path}")
 
             if resolved_path.endswith((".mjs", ".js", ".ts")):
+                if runtime_resolution is not None:
+                    raise ImportError(f"Native profile plugin '{name}' requires a Python implementation")
                 with open(resolved_path, "r", encoding="utf-8") as f:
                     content = f.read()
                 return create_js_mock_plugin(name, content)
@@ -1724,6 +1749,8 @@ class EntryTree:
             file_path = os.path.normpath(os.path.join(base_dir, name))
             raise FileNotFoundError(f"Cannot find module '{name}' at {file_path}")
 
+        if runtime_resolution is not None and is_bare_name:
+            raise ModuleNotFoundError(f"Cannot find module '{name}'")
         res = resolve_plugin_class(name, reg_map)
         if res is not None:
             return res

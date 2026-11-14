@@ -30,7 +30,6 @@ from dsh.boot.app_boot import (
 from dsh.boot.profile import (
     load_profile,
     compose_entries,
-    heal_profiles_module_fallback,
     PROFILE_PATCH_FILENAME,
     Profile,
     PROFILE_TEMPLATES,
@@ -41,6 +40,8 @@ from dsh.boot.profile import (
 from dsh.boot.cmdline import provide_cmdline, AppReady
 from dsh.boot.process_shutdown import create_process_shutdown, ProcessShutdown
 from dsh.boot.profile_context import read_profile_patches, resolve_telemetry_patch
+from dsh.boot.runtime_resolution import create_runtime_resolution
+from dsh.boot.plugin_packages import PluginPackages
 
 NAME = "dsh"
 
@@ -196,6 +197,7 @@ class ComposedProfile:
         home_patches: List[Dict[str, Any]],
         overlays: List[Dict[str, Any]],
         telemetry_disabled_env: Optional[str] = None,
+        resolution=None,
     ):
         self.profile = profile
         self.bundle_patches = bundle_patches
@@ -204,6 +206,7 @@ class ComposedProfile:
         self.homePatches = home_patches
         self.overlays = overlays
         self.telemetry_disabled_env = telemetry_disabled_env
+        self.resolution = resolution
 
     def all_patches(self) -> List[Dict[str, Any]]:
         patches = admit_historical_persona_patches([
@@ -251,7 +254,9 @@ async def compose_profile(
 ) -> ComposedProfile:
     """Load `name` and compose its effective patch stack."""
     profile = prepare_profile(name, dsh_home=dsh_home, from_default_profile=from_default_profile)
-    await heal_profiles_module_fallback({"installAnchor": INSTALL_ANCHOR, "profile": profile})
+    resolution = await create_runtime_resolution(dict(installAnchor=INSTALL_ANCHOR, profile=profile,
+        home=dsh_home or resolve_dsh_home(), installationLayout=(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
+            if os.path.abspath(INSTALL_ANCHOR) in _CANDIDATE_ANCHORS else None)))
 
     home_patches = load_optional_patches(NAME, home_patch_path(dsh_home)) or []
     overlays: List[Dict[str, Any]] = []
@@ -268,6 +273,7 @@ async def compose_profile(
         home_patches=home_patches,
         overlays=overlays,
         telemetry_disabled_env=os.environ.get('DSH_TELEMETRY_DISABLED'),
+        resolution=resolution,
     )
 
 
@@ -384,6 +390,7 @@ async def _run_profile(options: Dict[str, Any]) -> Dict[str, Any]:
             host_ctx.disposable(release_after_shutdown, "python-profile-lease")
         host_ctx.provide(DSH_LAUNCH_ENVIRONMENT_KEY, environment)
         host_ctx.provide('profileContext', profile_context)
+        PluginPackages(host_ctx, dict(resolution=composed.resolution))
         provide_cmdline(host_ctx, {
             "args": args,
             "exit": lambda code: shutdown.shutdown(code),

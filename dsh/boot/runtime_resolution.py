@@ -44,7 +44,35 @@ def native_package_dir(anchor, name):
         directory = parent
 
 
-def _installation(anchor, skipped):
+def _installation_resolver(options):
+    layout = options.get('installationLayout')
+    if layout is None:
+        return native_package_dir
+    # Python Portable keeps its installation graph as package directories,
+    # without npm-generated node_modules links. Opt in only at the launcher.
+    # Rebuild this inventory for every generation; native installed copies win.
+    from dsh.boot.profile import _workspace_manifests
+    layout = os.path.abspath(layout)
+    if os.path.commonpath([layout, os.path.abspath(options['installAnchor'])]) != layout:
+        raise ValueError('Installation anchor must belong to its Python package layout')
+    packages = {}
+    for filename in _workspace_manifests(layout):
+        manifest = _read(filename)
+        if isinstance(manifest.get('name'), str):
+            packages.setdefault(manifest['name'], os.path.dirname(filename))
+    def resolve(anchor, name):
+        found = native_package_dir(anchor, name)
+        if found is not None:
+            return found
+        try:
+            inside = os.path.commonpath([layout, os.path.realpath(anchor)]) == layout
+        except ValueError:
+            inside = False
+        return packages.get(name) if inside else None
+    return resolve
+
+
+def _installation(anchor, skipped, resolve=native_package_dir):
     from dsh.boot.profile import read_profile_manifest
     canonical = _canonical(anchor)
     manifest = _read(canonical)
@@ -58,7 +86,7 @@ def _installation(anchor, skipped):
         for name in _dependencies(current):
             if name in entries:
                 continue
-            directory = native_package_dir(parent, name)
+            directory = resolve(parent, name)
             if directory is None:
                 continue
             manifest_path = _canonical(os.path.join(directory, 'package.json'))
@@ -167,7 +195,8 @@ class ProfileRuntimeResolution:
         from dsh.boot.profile import load_profile_directory
         source = self._source
         profile = None if source.get('profileDir') is None else load_profile_directory('dsh', source['profileDir'], source['installAnchor'])
-        return await create_runtime_resolution(dict(installAnchor=source['installAnchor'], home=source['home'], profile=profile))
+        return await create_runtime_resolution(dict(installAnchor=source['installAnchor'], home=source['home'], profile=profile,
+            installationLayout=source.get('installationLayout')))
 
     computeLatestResolution = compute_latest_resolution
 
@@ -185,13 +214,14 @@ async def create_runtime_resolution(options):
         except FileNotFoundError:
             pass
     skipped = {_field(row, 'packageName') for row in _field(profile, 'skippedBundles', [])}
-    installation = _installation(anchor, skipped)
+    installation = _installation(anchor, skipped, _installation_resolver(options))
     local_names = [] if manifest is None else [name for name in _dependencies(manifest)
         if os.path.exists(os.path.join(profile_dir, 'node_modules', name, 'package.json'))]
     selected = {} if profile is None else _profile_packages(profile, installation)
     table = dict(profilesDir=profiles_dir, profileDir=profile_dir, localPackageNames=local_names,
         entries=list(installation.values())+list(selected.values()), linkedRoots=[] if profile is None else _linked_roots(profile_dir, profiles_dir))
-    return ProfileRuntimeResolution(dict(installAnchor=anchor, profileDir=profile_dir, home=home), table)
+    return ProfileRuntimeResolution(dict(installAnchor=anchor, profileDir=profile_dir, home=home,
+        installationLayout=options.get('installationLayout')), table)
 
 
 createRuntimeResolution = create_runtime_resolution

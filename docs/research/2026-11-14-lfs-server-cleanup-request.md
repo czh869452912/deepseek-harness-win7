@@ -1,8 +1,8 @@
-# GitHub LFS 服务端清理草稿（未发送）
+# GitHub LFS 服务端清理请求（已提交）
 
-下面的请求须在原始归档完成持久远端保存并核验后，再按 GitHub Support 的实际要求提交。不再使用 LFS 的源码版本 `cde273216c78f5f51f0e9f0ae3d958169e624a65` 已推送至 `master`。当前工单未发送，未强推、删除远端 LFS 对象或重建仓库。
+2026-11-14，原始归档完成远端发布和核验后，用户明确授权回收，以下正文已通过 GitHub Support 的 **Remove LFS objects** 表单提交。不再使用 LFS 的源码版本 `cde273216c78f5f51f0e9f0ae3d958169e624a65` 已推送至 `master`。未强推、删除远端 LFS 对象或重建仓库；提交请求不等于回收完成。
 
-## Support request draft
+## 已提交正文
 
 Subject: Purge retired Git LFS objects while preserving repository metadata
 
@@ -17,6 +17,10 @@ The backup is published at https://github.com/czh869452912/deepseek-harness-win7
 Please purge the 240 retired LFS objects in that inventory and stop their storage usage if this is supported while preserving the repository, issues, stars, forks, release assets, and repository identity. If branches/tags/references must first be retired or rewritten, please identify the required scope before any changes. If there are additional repository-associated LFS objects not in the inventory, please identify them before deleting them.
 
 I understand that removing LFS tracking or rewriting Git history alone does not remove server-side objects. I do not authorize deletion or recreation of the repository, deletion of published release attachments, or removal of other repository metadata.
+
+## 工单状态
+
+Support 最初以当前账户仅提供自助资源为由关闭工单。随后补充说明这是 LFS 存储配额/计费处理请求，请转交能执行存储回收的团队或提供适用于该账户的支持入口，并重申保留仓库及 Release 的边界；工单已重新打开，观察状态为 **Open**。尚无 Support 已执行回收或配额已释放的确认。工单编号、具体地址、原始页面观察和截图保存在本轮忽略的 `.goose/out/evidence-storage-20261114/`，不将账户联系信息或完整支持会话提交到公开仓库。
 
 ## 服务端操作前的检查点
 

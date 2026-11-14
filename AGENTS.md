@@ -121,6 +121,28 @@ and key qualification observations belong in release attachments or durable
 external storage. Ordinary tests use only the minimal byte-preserved members in
 `tests/fixtures/evidence`, with archive/member SHA-256 provenance.
 
+Daily development **MUST** follow both rules:
+
+1. Write test logs, temporary workspaces and generated evidence ZIPs to a fresh
+   owned ignored directory such as `.goose/out/<run-id>/`, or the test runner's
+   designated external workspace. Preserve required observations and compact
+   receipts, then clean unused owned assets in the same task under the retention
+   rules below. Never add these temporary outputs to Git or LFS, including with
+   `git add -f`; formal large assets belong in Release attachments or durable
+   external storage.
+2. For full historical evidence audits or inputs needed by an older checkout,
+   retrieve only the required original archives from the Release assets mapped
+   by `migration/storage/external-locations.json`. Check size and SHA-256 against
+   `migration/storage/external-artifacts.json`, and keep them under
+   `DSH_EVIDENCE_ROOT`. Older revisions may still contain LFS attributes: disable
+   automatic LFS downloads when inspecting them. If an older consumer requires
+   the original paths, restore only those inputs in an isolated checkout and
+   keep restored archives out of commits and uploads. Do not restore bulk LFS
+   tracking or default historical archive downloads.
+
+Remote LFS quota reclamation is separate from ordinary development, targeted
+verification, commits and pushes; waiting for Support is not a development gate.
+
 `scripts/migration.py check` and `ready` check the index/checkout by default;
 they explicitly do not verify external archive bytes or establish new acceptance.
 Use `--verify-artifacts` for full archive verification. Missing or corrupt bytes

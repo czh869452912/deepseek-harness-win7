@@ -163,6 +163,11 @@ git submodule update --init --recursive
 
 ## 单元与集成测试
 
+日常开发、提交和推送不必等待历史 LFS 配额回收。请遵守两项[证据存储规则](docs/testing.md#证据不再进入-lfs)：
+
+- 测试日志、工作区和大型证据 ZIP 放在新建的自有忽略目录（如 `.goose/out/<run-id>/`）或运行器指定的仓库外目录，保存必要记录后及时清理，不再加入 Git/LFS。
+- 审计完整历史证据或检查旧版本时，按[位置映射](migration/storage/external-locations.json)从 Release 按需取回归档，核对尺寸和 SHA-256；旧版检出关闭自动 LFS 下载，不将还原归档重新提交。
+
 日常开发默认运行原失败用例、修改模块及直接消费者的定向测试。例如，修改 SDK 等待逻辑时：
 ```powershell
 .venv\Scripts\python.exe -m pytest tests/test_sdk_stdio_wait.py --durations=20

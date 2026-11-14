@@ -11,7 +11,7 @@ from dsh.core.session.json import UNDEFINED
 from dsh.cordis.json_text import stringify_json
 from dsh.llm.assistant_stream import expandAssistantStream
 from dsh.llm.assembler import BlockAssembler
-from dsh.session.format import SessionFormatUnsupportedMigrationError
+from dsh.session.format import SessionFormatError, SessionFormatUnsupportedMigrationError
 from dsh.session.format.chain import call, member
 from dsh.session.format_v0_to_v1.payload import equal_json
 from dsh.session.format_v2_to_v3.payload import display
@@ -470,3 +470,18 @@ prepareJsonlMigration = _default_runtime.prepare
 readStableJsonlFile = _default_runtime.readStable
 verifyJsonlCurrentGeneration = _default_runtime.verify
 createJsonlGenerationRuntime = JsonlGenerationRuntime
+
+
+async def readDecodedJsonlSource(path, version, compression, format, signal=None):
+    """Read one immutable source through an explicit, publication-free codec."""
+    source = await readStableJsonlFile(path, signal)
+    try:
+        artifact = await _default_runtime.decodeMigration(source['bytes'], compression, version, format, None, signal)
+    except Exception as error:
+        if getattr(signal, 'aborted', False) or isinstance(error, SessionFormatError):
+            raise
+        name = getattr(error, 'name', 'TypeError' if isinstance(error, TypeError) else 'Error')
+        failure = SessionFormatError('%s: %s' % (name, error))
+        failure.cause = error
+        raise failure from error
+    return dict(artifact=artifact, identity=source['identity'])

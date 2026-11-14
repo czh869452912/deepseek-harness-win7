@@ -492,17 +492,28 @@ def title_source(value, label):
         literal(value.get('kind', UNDEFINED), ['fallback', 'user'], label + ' kind')
 
 
+SUBAGENT_DESCRIPTOR_VERSIONS = (1, 2, 3)
+
+
 def descriptor(data, label):
-    literal(data.get('version', UNDEFINED), [3], label + ' version')
+    literal(data.get('version', UNDEFINED), SUBAGENT_DESCRIPTOR_VERSIONS, label + ' version')
     nonempty(data.get('provider', UNDEFINED), label + ' provider')
-    if data.get('mode') == 'one-shot':
+    composition = ['agentProvider', 'agentModel', 'persona', 'toolFilter']
+    if data['version'] == 1:
+        exact_keys(data, ['version', 'provider', 'label'], composition, label + ' data')
+    elif data.get('mode') == 'one-shot':
         exact_keys(data, ['mode', 'version', 'provider'], ['label'], label + ' data')
         optional(data, label, dict(label=string))
         return
-    literal(data.get('mode', UNDEFINED), ['continuable'], label + ' mode')
-    nonempty(data.get('label', UNDEFINED), label + ' label')
-    optional(data, label, {key: nonempty for key in ['agentProvider', 'agentModel', 'agentReasoningEffort', 'persona']})
-    if ('agentProvider' in data) != ('agentModel' in data):
+    else:
+        literal(data.get('mode', UNDEFINED), ['continuable'], label + ' mode')
+        exact_keys(data, ['mode', 'version', 'provider', 'label'],
+                   composition + (['agentReasoningEffort'] if data['version'] == 3 else []), label + ' data')
+    strict = data['version'] == 3
+    string_field = nonempty if strict else string
+    string_field(data.get('label', UNDEFINED), label + ' label')
+    optional(data, label, {key: string_field for key in ['agentProvider', 'agentModel', 'agentReasoningEffort', 'persona']})
+    if strict and ('agentProvider' in data) != ('agentModel' in data):
         raise SessionFormatError(label + ' agentProvider and agentModel must be paired')
     if 'toolFilter' in data:
         value = exact(data['toolFilter'], label + ' toolFilter', [], ['allow', 'deny'])
@@ -510,7 +521,7 @@ def descriptor(data, label):
             raise SessionFormatError(label + ' toolFilter requires allow or deny')
         for key in ['allow', 'deny']:
             if key in value:
-                array(value[key], label + ' ' + key, nonempty)
+                array(value[key], label + ' ' + key, string_field)
 
 
 def allowed_models(value, label):
@@ -567,8 +578,8 @@ def search_body(value, label):
 
 def assertReleasedPayloadSemantics(event, version):
     kind, seq = event['type'], event['seq']
-    data = record(event['data'], '%s %s data' % (kind, seq))
-    label = '%s %s' % (kind, seq)
+    data = record(event['data'], '%s %s data' % (kind, js_to_string(seq)))
+    label = '%s %s' % (kind, js_to_string(seq))
     simple = {
         'agent-preset/selected': (dict(agentPreset=string), {}),
         'approval/asked': (dict(id=nonempty, toolName=nonempty), dict(callId=nonempty, reason=string)),

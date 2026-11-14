@@ -331,11 +331,11 @@
   },
   "subagent/descriptor": {
     "required": [
-      "mode",
       "version",
       "provider"
     ],
     "optional": [
+      "mode",
       "label",
       "agentProvider",
       "agentModel",

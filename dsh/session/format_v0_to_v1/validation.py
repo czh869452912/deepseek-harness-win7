@@ -3,10 +3,10 @@ import json
 from pathlib import Path
 
 from dsh.core.session.json import UNDEFINED, deep_freeze, is_json_value
-from dsh.cordis.utils import _js_strict_equal
+from dsh.cordis.utils import _js_strict_equal, js_to_string
 from dsh.session.format import SessionFormatError, SessionFormatUnsupportedMigrationError, sessionFormatCount, sessionFormatSafeInteger
 from .codec import record, exact_keys, assertReleasedSessionFormatHeader
-from .payload import assertReleasedPayloadSemantics, compact
+from .payload import assertReleasedPayloadSemantics, compact, SUBAGENT_DESCRIPTOR_VERSIONS
 
 RELEASED_V0_EVENT_DISPOSITIONS = deep_freeze(json.loads(Path(__file__).with_name('dispositions.json').read_text(encoding='utf-8')))
 RELEASED_V0_EVENT_TYPES = tuple(sorted(RELEASED_V0_EVENT_DISPOSITIONS))
@@ -85,15 +85,16 @@ def assertReleasedSurfaceMetadata(value, seq, kind, assistantSources):
 
 
 def assertReleasedEventPayload(event, version):
-    kind, seq = event['type'], event['seq']
+    kind, seq = event['type'], js_to_string(event['seq'])
     disposition = RELEASED_V0_EVENT_DISPOSITIONS.get(kind)
     if disposition is None:
         raise SessionFormatUnsupportedMigrationError('format v0 contains unknown historical event type %s at seq %s; migration refuses unknown historical events even when ignorable' % (compact(kind), seq))
     data = record(event['data'], '%s %s data' % (kind, seq))
-    if kind == 'subagent/descriptor' and not _js_strict_equal(data.get('version', UNDEFINED), 3):
+    if kind == 'subagent/descriptor' and not any(_js_strict_equal(data.get('version', UNDEFINED), known)
+                                              for known in SUBAGENT_DESCRIPTOR_VERSIONS):
         descriptor_version = sessionFormatCount(data.get('version', UNDEFINED), '%s %s version' % (kind, seq))
         if version == 0:
-            raise SessionFormatUnsupportedMigrationError('%s %s uses unsupported descriptor version %s' % (kind, seq, descriptor_version))
+            raise SessionFormatUnsupportedMigrationError('%s %s uses unsupported descriptor version %s' % (kind, seq, js_to_string(descriptor_version)))
         return
     admitted = list(disposition['optional'])
     if version == 1 and kind == 'session-log-deepseek/delivery-accepted':

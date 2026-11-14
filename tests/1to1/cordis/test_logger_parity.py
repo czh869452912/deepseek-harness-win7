@@ -129,8 +129,8 @@ def test_t5_logger_format_leftover_objects_use_o_formatter():
     assert formatted == "lead <custom:{'foo': 'bar'}>"
 
 
-def test_t6_logger_exporter_disposer_targets_latest_sn():
-    """T6: Disposer deletes latest _sn_exporter matching TS upstream quirk, and effect setup is atomic."""
+def test_t6_logger_exporter_disposer_targets_its_registration():
+    """Each exporter registration releases its own captured identity."""
     ctx = Context()
     exp1 = Exporter(colors=0)
     exp2 = Exporter(colors=0)
@@ -140,10 +140,9 @@ def test_t6_logger_exporter_disposer_targets_latest_sn():
 
     # Total is 3: 1 default internal buffer exporter + 2 user exporters
     assert len(ctx.logger.exporters) == 3
-    # Calling disp1 should pop latest sn (exp2)
     disp1()
-    assert exp2 not in ctx.logger.exporters.values()
-    assert exp1 in ctx.logger.exporters.values()
+    assert exp1 not in ctx.logger.exporters.values()
+    assert exp2 in ctx.logger.exporters.values()
 
 
 def test_t7_logger_exporter_exception_propagates():

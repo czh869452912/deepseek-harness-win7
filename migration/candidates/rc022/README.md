@@ -51,3 +51,5 @@
 2026-11-15：C1-M [严格 waterfall 与消费者](waterfall-checks.json)落实末尾零参数 continuation、原始监听参数与单次 next，并修正 prompt、请求错误和遥测生产调用。原版瀑布、5 组时序、7 组移动与 8 组持久化旅程通过对照，12 项原版生命周期检查通过。业务发现集最初 939 通过、24 失败、1 跳过；修复后原失败及新增用例 26 项通过，组合集 290 通过、1 失败，最后一个 Include 同步读文件导致 journal 提前截取的问题修复后，相关 62 项通过。并发导入共享 Future 的调度和动态 Python 模块最后所有者释放均补充覆盖。各运行独立保留，不合并宣称完整回归。已删除本批用完的合成工作区、实际文件和测试链接，失败诊断、观察与日志保留；服务关联属性和新版 boot 重组继续推进。
 
 2026-11-15：C1-N [服务关联属性](associated-properties-checks.json)完成 Service 与通用 tracker 的关联读写原版对照，并复验定义/使用上下文旅程；125 项提供端与直接消费者、115 项 Fiber/profile/Web/HMR 回归分别通过。`ctx.api.sub` 按 `api.sub` 的声明与定义方注入权限解析，accessor 保留原接收者，扩展卸载后恢复原字段；影子上下文同时继承普通元数据。Python 完整 hook 显式接收 context 与 receiver，既有简短 hook 兼容保留。合成夹具和测试链接已清理，初次失败诊断与运行记录保留。日志等级、剩余核心生命周期及新版 boot 重组继续推进。
+
+2026-11-15：C1-O [日志生命周期](logger-checks.json)完成固定原版/Python 对照及 51 项定向检查。日志等级改为 ERROR/WARN/INFO/DEBUG 对应 0/1/2/3，按 nullish 顺序选择 exporter 阈值；注销释放自身注册，各 exporter 获得独立消息对象并保留共享参数，元数据覆盖、空 AggregateError、原位裁剪共享缓冲区和显式空名称亦已覆盖。启动缓冲 exporter 在根卸载后保留，按原版观察记录。已清理合成工作区与测试链接，首次断言修正的原始诊断保留。剩余核心生命周期和新版 boot/profile 重组继续推进。

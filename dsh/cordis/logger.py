@@ -28,8 +28,8 @@ c256 = [
 
 class LoggerLevel:
     ERROR = 0
-    INFO = 1
-    WARN = 2
+    WARN = 1
+    INFO = 2
     DEBUG = 3
 
 
@@ -125,7 +125,7 @@ class Logger:
     def __init__(self, name: str, service: "LoggerService", level: Optional[int] = None, meta: Optional[Dict[str, Any]] = None):
         self.name = name
         self.service = service
-        self.level = level if level is not None else LoggerLevel.INFO
+        self.level = level
         self.meta = meta or {}
 
     @classmethod
@@ -219,33 +219,33 @@ class Logger:
             err = format_str
             if getattr(err, "__cause__", None) is not None:
                 getattr(self, msg_type)(err.__cause__)
-            elif hasattr(err, "errors") and isinstance(getattr(err, "errors"), (list, tuple)) and err.errors:
+            elif hasattr(err, "errors") and isinstance(getattr(err, "errors"), (list, tuple)):
                 for sub_err in err.errors:
                     getattr(self, msg_type)(sub_err)
                 return
 
-        all_args = [format_str] + list(args) if format_str is not None else list(args)
+        all_args = [format_str] + list(args)
         sn = self.service._next_message_sn()
         ts = int(time.time() * 1000)
         fiber = self.meta.get("fiber")
         if fiber and isinstance(fiber, weakref.ReferenceType):
             fiber = fiber()
 
-        message = Message(
-            sn=sn,
-            ts=ts,
-            name=self.name,
-            msg_type=msg_type,
-            level=level,
-            args=all_args,
-            fiber=fiber,
-            meta=self.meta
-        )
-
         for exporter in list(self.service.exporters.values()):
-            target_level = exporter.levels.get(self.name, exporter.levels.get("default", self.level))
+            target_level = exporter.levels.get(self.name)
+            if target_level is None:
+                target_level = exporter.levels.get('default')
+            if target_level is None:
+                target_level = self.level
+            if target_level is None:
+                target_level = LoggerLevel.INFO
             if target_level < level:
                 continue
+            message = Message(sn=sn, ts=ts, name=self.name, msg_type=msg_type,
+                level=level, args=all_args, fiber=fiber, meta=self.meta)
+            for key, value in self.meta.items():
+                if key not in ('args', 'fiber'):
+                    setattr(message, key, value)
             exporter.export(message)
 
     def error(self, format_str: Any, *args: Any) -> None:
@@ -284,7 +284,7 @@ class LoggerService:
         def record_buffer(msg: Message) -> None:
             self.buffer.append(msg)
             if len(self.buffer) > self.buffer_size:
-                self.buffer = self.buffer[-self.buffer_size:]
+                del self.buffer[:len(self.buffer) - self.buffer_size]
 
         self.exporter(Exporter(export_fn=record_buffer, colors=3))
 
@@ -300,8 +300,7 @@ class LoggerService:
             self.exporters[sn] = exporter
 
             def teardown() -> None:
-                # Upstream TS quirk: deletes the current _sn_exporter
-                self.exporters.pop(self._sn_exporter.value, None)
+                self.exporters.pop(sn, None)
 
             return teardown
 
@@ -336,8 +335,8 @@ class LoggerService:
         config = self.resolve_intercept_config()
         definition, _ = trace_context_sites(self.ctx)
         fiber = getattr(definition, "fiber", None)
-        target_name = name or config.get("name")
-        if not target_name:
+        target_name = name if name is not None else config.get("name")
+        if target_name is None:
             fname = getattr(fiber, "name", "root") if fiber else "root"
             target_name = hyphenate(fname) if fname else "root"
         level = config.get("level", LoggerLevel.INFO)

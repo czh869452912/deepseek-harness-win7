@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-15",
+  "unit": "C1-AE-HmrModuleFileIdentities",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "state": "targeted-passed",
+  "paired": ".goose/out/rc022-hmr-files-paired-20261115-01/report.json",
+  "observations": 15,
+  "source": {
+    "run": "rc022-hmr-files-source-20261115-01",
+    "passed": 2,
+    "failed": 0
+  },
+  "native": {
+    "run": "rc022-hmr-files-native-20261115-01",
+    "passed": 8,
+    "failed": 0
+  },
+  "verification_scope_reason": "Actual fixed Source/native disk files with controlled modification clocks, inode replacement retaining a hard link, missing files, seen/retained records and coarse 2-second edges. Clock tests cover actual file timestamp, fallback and cleanup on stat failure; recomposition remains a direct future consumer regression.",
+  "scope": "Independent ModuleFiles helper compares inode/size/mtime, excludes ctime so hard links do not restart code, preserves earlier comparisons, retains pending code records, prunes no-longer-loaded URLs and refreshes evaluated modules. No content hash claim: equal inode/size/mtime is unchanged by this contract.",
+  "cleanup": ".goose/out/rc022-hmr-files-native-20261115-01/cleanup.json",
+  "remaining": "HMR queue/watch/plan/cache eviction/profile consumer integration and old patchReload retirement. Helper availability is not production HMR parity or release acceptance."
+}

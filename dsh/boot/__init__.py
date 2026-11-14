@@ -43,6 +43,7 @@ from dsh.boot.app_boot import (
     mountRootInclude,
     prepare_profile_entries, prepareProfileEntries,
     prepare_profile_patches, prepareProfilePatches,
+    reconcile_profile_patches, reconcileProfilePatches,
     install_fail_loud,
     installFailLoud,
     assert_entries_loaded,
@@ -100,6 +101,7 @@ from dsh.boot.cmdline import (
 )
 
 __all__ = [
+    "reconcile_profile_patches", "reconcileProfilePatches",
     "bundle_patch_files", "bundlePatchFiles", "bundle_patch_paths", "bundlePatchPaths",
     "report_skipped_bundles", "reportSkippedBundles", "assert_bundle_platform", "assertBundlePlatform", "UnsupportedBundlePlatformError",
     "prepare_profile_entries", "prepareProfileEntries", "prepare_profile_patches", "prepareProfilePatches",

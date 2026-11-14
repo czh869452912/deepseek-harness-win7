@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-15",
+  "unit": "C1-U-ProfileReconciliation",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "state": "targeted-passed",
+  "paired": ".goose/out/rc022-reconcile-paired-20261115-01/report.json",
+  "observations": 11,
+  "source": {
+    "run": "rc022-reconcile-source-20261115-01",
+    "passed": 6,
+    "not_selected": 15
+  },
+  "native": {
+    "run": "rc022-reconcile-native-20261115-01",
+    "passed": 94
+  },
+  "scope": "Complete patch reconciliation over root Include with prior failure entry/Fiber/options identity, unchanged warning retention, changed/new failure rejection, required inactive rows, pending service admission, no automatic import retry, removed Fiber settlement and success-only zero-argument config-reload.",
+  "verification_scope_reason": "Actual Source/Python root boot/reconcile journeys, original reconciliation settlement tests and native startup/Loader/Include/HMR/compatibility consumers. Raw warning/error diagnostics retained.",
+  "cleanup": ".goose/out/rc022-reconcile-native-20261115-01/cleanup.json",
+  "remaining": "Full recomposeProfile package-generation publication and launcher watcher integration remain separate pending C1 work. No full gate or release acceptance."
+}

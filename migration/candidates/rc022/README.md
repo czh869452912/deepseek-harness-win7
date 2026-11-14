@@ -63,3 +63,5 @@
 2026-11-15：C1-S [装配兼容预检](preflight-checks.json)接入 root Include 和 launcher profileContext，34 组固定原版/Python 实际预检/启动旅程通过。拒绝导入不兼容插件，按 Group 后代递归检查，对包含拒绝项的原生 Include 整体禁用且文件不改写；已覆盖豁免、元数据损坏、包服务归属和缺失模块交回 Loader。组合回归 135 项通过、1 项新增测试 Logger 用法错误，修正后 4 项预检通过。原版 27 项通过，循环文件链接夹具因本机 Windows EPERM 不能执行，保留失败原文并单独排除此项复验，不宣称全量通过。每插件导入先于 apply；跨插件顺序原始观察保留，不作为预检合同固定。合成夹具已清理；完整运行时解析、profile 层与重组及 preset 消费者仍待闭合。
 
 2026-11-15：C1-T [Profile 有序层与跳过诊断](profile-layers-checks.json)完成 53 组固定原版/Python 实际文件和 Host 平台对照、36 项原版所选检查。Python profile/初始化/Web/HMR/预检 126 项通过、1 项新增测试错误地要求多行解析诊断只能一行，修正断言后 9 项通过。Bundle patch 字符串及列表均按顺序读取，每个文件的相对模块路径独立锚定；整层失败、平台不符或版本不符记入 skippedBundles，用户 patch 错误仍抛出。仅移除两个固定退役 bundle，保留其它 manifest 字段；launcher 明确报告跳过项并传播根配置写入失败。测试 helper 已收进指定工作区，合成夹具和链接已清理。旧 Python patchReload 字段留到整体重组迁移，不作为新版合同证据。
+
+2026-11-15：C1-U [Profile patch 协调](reconciliation-checks.json)完成 11 组固定原版/Python 实际 boot/reconcile 旅程及 94 项启动/Loader/Include/HMR/预检检查。协调完整 patch 栈，按 entry/Fiber/原始配置身份保留未变化的旧失败警告，拒绝新增/变化失败或显式必需的不活动条目；pending 仅警告且 provider 到达后激活。移除条目虽已离开 Loader，仍等待原 Fiber 清理；成功才发出零参数 config-reload。原版所选协调收敛测试通过，日志/观察保留，合成夹具已清理。完整 recomposeProfile 的代际发布与 launcher watcher 接入仍待后续 C1 工作。

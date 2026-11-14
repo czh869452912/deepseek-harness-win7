@@ -17,7 +17,7 @@ def prepare(output):
     return [path]
 
 
-async def observe(directory):
+async def observe(directory, settle_before_exit=True):
     from dsh.boot.app_boot import boot
     from dsh.boot.profile_context import read_profile_patches
     from dsh.boot.profile_boot import create_app_ready
@@ -108,7 +108,8 @@ async def observe(directory):
             rows[0]['insert'][-1]['config']['value'] = 'after-hmr-replacement'
             patch.write_text(json.dumps(rows), encoding='utf-8')
             await until(lambda: ctx.get('probeValue') == 'after-hmr-replacement')
-            await ctx.get('hmr').runExclusive(lambda: None)
+            if settle_before_exit:
+                await ctx.get('hmr').runExclusive(lambda: None)
             result.append(dict(step='provider-replacement', old_active=hmr._running, value=ctx.get('probeValue')))
         finally:
             await ctx.fiber.dispose()

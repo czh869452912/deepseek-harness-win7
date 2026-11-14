@@ -2,6 +2,7 @@ import {mkdirSync,readFileSync,writeFileSync,unlinkSync} from 'node:fs'
 import {dirname,join,resolve} from 'node:path'
 import {pathToFileURL} from 'node:url'
 const root=process.argv[2]!,directory=resolve(dirname(process.argv[3]!),'files/source')
+const settleBeforeExit=JSON.parse(readFileSync(process.argv[3]!,'utf8')).settleBeforeExit!==false
 const {boot,readProfilePatches}=await import(pathToFileURL(resolve(root,'packages/boot/app-boot/src/index.ts')).href)
 const {default:Timer}=await import(pathToFileURL(resolve(root,'vendor/timer/src/index.ts')).href)
 const {default:Hmr}=await import(pathToFileURL(resolve(root,'packages/boot/hmr/src/index.ts')).href)
@@ -33,7 +34,7 @@ for(const mode of ['commit','cancel']){
   manifestValue.dsh.profile.bundles=['added'];writeFileSync(manifest,JSON.stringify(manifestValue));await until(()=>[...ctx.loader.entries()].some((entry:any)=>entry.options.id==='bundled'));await hmr.runExclusive(async()=>{});count=events.length;result.push({step:'bundles',bundled:true,value:ctx.get('probeValue')})
   writeFileSync(patch,JSON.stringify(rows)+'\n');await until(()=>events.length>count);await hmr.runExclusive(async()=>{});count=events.length;writeFileSync(patch,JSON.stringify(rows)+'\n');await sleep(200);await hmr.runExclusive(async()=>{});result.push({step:'unchanged-inputs',reloaded:events.length!==count})
   rows[0].insert[1].config={root:[],debounce:1,awaitWriteFinish:{stabilityThreshold:20,pollInterval:10}};writeFileSync(patch,JSON.stringify(rows));await until(()=>ctx.get('hmr')!==undefined&&(ctx.hmr as any).executing!==hmr.executing)
-  rows[0].insert.at(-1).config.value='after-hmr-replacement';writeFileSync(patch,JSON.stringify(rows));await until(()=>ctx.get('probeValue')==='after-hmr-replacement');await ctx.hmr.runExclusive(async()=>{});result.push({step:'provider-replacement',old_active:!hmr.closing,value:ctx.get('probeValue')})
+  rows[0].insert.at(-1).config.value='after-hmr-replacement';writeFileSync(patch,JSON.stringify(rows));await until(()=>ctx.get('probeValue')==='after-hmr-replacement');if(settleBeforeExit)await ctx.hmr.runExclusive(async()=>{});result.push({step:'provider-replacement',old_active:!hmr.closing,value:ctx.get('probeValue')})
  }finally{await ctx.fiber.dispose()}
 }
 process.stdout.write(JSON.stringify(result))

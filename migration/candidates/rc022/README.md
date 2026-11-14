@@ -105,3 +105,5 @@
 2026-11-15：C1-AN [已求值依赖变更分类](hmr-changes-checks.json)完成 606 组固定原版/Python 有序集合对照，3 项原版所选依赖消费者及 8 项 Python 检查通过。保持环、重复路径、宿主边界与 node_modules/builtin 排除规则，读取运行中 getLinked 图；此助手尚未接入旧部分替换算法，不据此宣称完整模块重载通过。自有合成输入和测试工作区已清理，继续实现 namespace/runtime 替换与恢复。
 
 2026-11-15：C1-AO [HMR 模块代际部分替换](hmr-partial-checks.json)完成 12 组固定原版实际 ESM/Python 文件旅程、24 项原版模块检查，Python 初轮 17 项通过/1 项夹具边界错误及修正后的 25 项通过分别保留。生产 root 派发接入已求值依赖、namespace/runtime 归组、全部导入准备、停止/激活和失败恢复；最新 entry 配置、共享/无 entry 实例、disabled/已移除 runtime、语法/激活失败再恢复覆盖。原版 root HMR 排除 node_modules，修正 descriptor 夹具并显式测试本地替换与安装包不替换；Python :Export 模块缓存、同文件多导出、相对导入及后续失败清理亦通过。全部自有合成目录及链接已清理，更多重导出/消费者、监听规则和退出竞争继续推进。
+
+2026-11-15：C1-AP [Profile 重组与立即退出](hmr-exit-checks.json)已修复 AL 留存的等待环，8 组固定原版/Python 无最终队列屏障旅程通过；13 项生命周期/重组与 8 项 CLI/Web/队列/就绪定向检查通过，初轮 19 通过/2 个 Root uid 假设相关失败记录保留。Root 卸载期间停止重组准入等待，保留待收敛 Loader join 的根所有权，不重新激活正在释放的条目；真实异步资源未释放时退出仍等待，最终无待清理所有者任务。Root 可复用且 uid 保持 0，以 UNLOADING/服务退役识别退出。全部自有合成夹具和工作区已清理，继续更多模块与监听消费者。

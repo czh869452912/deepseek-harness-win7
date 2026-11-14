@@ -62,11 +62,44 @@ def _import_failed(row):
 
 
 async def _resume(ctx, rows):
+    if _stopping(ctx):
+        return
     entries = set(ctx.loader.entries())
     for row in rows:
         if row in entries and (row.fiber is None or not row.fiber.uid):
             await row.update({}, False, True)
-    await ctx.loader.await_()
+    await _await_loader(ctx)
+
+
+def _stopping(ctx):
+    return ctx.fiber.uid is None or ctx.fiber.state == FiberState.UNLOADING or ctx.get('loader') is None
+
+
+async def _await_loader(ctx):
+    """Do not make a reload await the teardown that is draining that reload.
+
+    Python lifecycle tasks may still be queued when a newly provided value is
+    visible to another task. Root disposal ends admission; the root continues
+    to own the pending Loader join through final resource settlement.
+    """
+    if _stopping(ctx):
+        return
+    loop = asyncio.get_running_loop()
+    stopping = loop.create_future()
+    def disposed(fiber, previous):
+        if fiber is ctx.fiber and _stopping(ctx) and not stopping.done():
+            stopping.set_result(None)
+    dispose = ctx.on('internal/status', disposed, global_listener=True)
+    task = loop.create_task(ctx.loader.await_())
+    async def owned():
+        await asyncio.shield(task)
+    ctx.fiber.schedule_settlement(owned())
+    try:
+        await asyncio.wait([task, stopping], return_when=asyncio.FIRST_COMPLETED)
+        if task.done():
+            task.result()
+    finally:
+        dispose()
 
 
 def _table(resolution):
@@ -84,7 +117,7 @@ async def _recompose(ctx, patches, bin_name, options, with_resolution):
     try:
         return await _apply(ctx, patches, bin_name, options, with_resolution, stopped, mark_applying)
     finally:
-        if not applying and (stopped or running):
+        if not applying and not _stopping(ctx) and (stopped or running):
             try:
                 for group, row, index in sorted(stopped, key=lambda item: item[2]):
                     group.data.insert(index, row)
@@ -128,7 +161,7 @@ async def _apply(ctx, patches, bin_name, options, with_resolution, stopped, mark
                 row.options['disabled'] = True
                 row.parent.remove(row.options['id'])
             await asyncio.gather(*(fiber.await_() for fiber in dropped_fibers), return_exceptions=True)
-            await ctx.loader.await_()
+            await _await_loader(ctx)
         try:
             if _table(current) != _table(successor):
                 packages.replace(successor)
@@ -147,10 +180,14 @@ async def _apply(ctx, patches, bin_name, options, with_resolution, stopped, mark
         await entry.update(dict(config=dict(include_config, patches=prepared)))
     finally:
         await _resume(ctx, [row for row in retried if row.parent.data is prior_data[row]])
+    if _stopping(ctx):
+        return dict(warnings=[])
     # Removed rows leave Loader immediately; their owned disposers still need
     # joining even though Loader.getTasks can no longer find them.
     await asyncio.gather(*(fiber.await_() for fiber in fibers), return_exceptions=True)
-    await ctx.loader.await_()
+    await _await_loader(ctx)
+    if _stopping(ctx):
+        return dict(warnings=[])
     failures = await inactive_entries(ctx)
     introduced = [failure for failure in failures if failure['entry'].options['id'] in options.get('requiredIds', [])
         or (failure['outcome']['kind'] != 'pending' and (failure['entry'] in running or not any(_same(row, failure) for row in previous)))]

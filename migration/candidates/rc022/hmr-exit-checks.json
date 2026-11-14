@@ -1,0 +1,30 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-15",
+  "unit": "C1-AP-HmrUnbarrieredProfileExit",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "state": "targeted-passed",
+  "paired": ".goose/out/rc022-hmr-exit-paired-20261115-03/report.json",
+  "observations": 8,
+  "native": [
+    {
+      "run": "rc022-hmr-exit-native-20261115-01",
+      "passed": 19,
+      "failed": 2
+    },
+    {
+      "run": "rc022-hmr-exit-native-20261115-02",
+      "passed": 13,
+      "failed": 0
+    },
+    {
+      "run": "rc022-hmr-exit-native-20261115-03",
+      "passed": 8,
+      "failed": 0
+    }
+  ],
+  "verification_scope_reason": "Fixed Source and Python actual watcher journey immediately disposes the application after self-replaced provider publishes its new value, with no final queue barrier. Initial native wait cycle failed; raw report and earlier task stacks kept. Final paired 8 observations pass. Native explicit held resource cleanup proves admission can end on shutdown while real resource cleanup still blocks root disposal and the owned Loader join settles. Recomposition/reconcile, HMR watchers/queue/ready/profile and canonical CLI/Web startup consumers passed.",
+  "scope": "Python task scheduling exposes new services before all lifecycle continuation tasks finish. During root UNLOADING, profile recomposition ends Loader admission waits and does not restart or audit rows being disposed. Pending Loader joins remain root-owned settlements; actual resource disposers are awaited. Root contexts retain uid=0 after reusable disposal, so shutdown is detected from lifecycle state/service retirement, not a null root uid. This corrects the AL remaining unbarriered profile-exit race.",
+  "cleanup": ".goose/out/rc022-hmr-exit-native-20261115-03/cleanup.json",
+  "remaining": "Additional partial-reload namespace/provider/cancellation consumers, root watcher details and launcher patchReload retirement. Not complete HMR or release acceptance."
+}

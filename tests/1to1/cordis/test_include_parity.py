@@ -80,8 +80,7 @@ async def test_t2_include_internal_update_short_circuits_and_awaits():
         await ctx.events.waterfall(
             "internal/update",
             update_data,
-            False,
-            next_fn=subsequent_listener,
+            subsequent_listener,
             caller_ctx=ctx
         )
 

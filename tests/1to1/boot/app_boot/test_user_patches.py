@@ -266,6 +266,13 @@ async def test_waits_for_row_injections_before_resolving_js_and_resolves_again_a
         await provider.update({"disabled": True})
         await provider.update({"config": {"value": "recovered"}})
         await provider.update({"disabled": False})
+        # The fixed target retains a failed activation until an explicit update.
+        reader = next(entry for entry in ctx.loader.entries() if entry.options.get("id") == "reader")
+        with pytest.raises(Exception, match="rejected provider"):
+            await reader.fiber
+        result = reader.fiber.update(reader.fiber.rawConfig, True)
+        if inspect.isawaitable(result):
+            await result
         await ctx.loader.wait()
         assert ctx.get("readerResult") == {"value": "recovered"}
     finally:
@@ -379,7 +386,8 @@ async def test_applies_id_targeted_overrides_inserts_and_interpolates_js_from_th
         ctx = await boot(NAME, tree_cfg, patches)
         try:
             noop = next(entry for entry in ctx.loader.entries() if entry.options.get("id") == "noop")
-            assert getattr(noop.fiber, "config", {}) == {"value": "user-value"}
+            assert noop.fiber.effectiveConfig == {"value": "user-value"}
+            assert noop.fiber.rawConfig == {"value": {"__jsExpr": "process.env.DSH_APP_BOOT_USER_SPEC"}}
             assert any(entry.options.get("id") == "user-extra" for entry in ctx.loader.entries())
         finally:
             await ctx.fiber.dispose()

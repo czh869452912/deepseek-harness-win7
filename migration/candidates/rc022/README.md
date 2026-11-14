@@ -35,3 +35,5 @@
 2026-11-15：C1-E [volatile 基础](volatile-foundation-checks.json)完成 1153 组固定 Source/Python 对照、28 项原版和 253 项 Python 定向检查。实现不可变快照引用、Schema 固定路径约束及默认/缺省值、严格数组/循环/不透明值比较、按原始配置元数据忽略 volatile 字段。保留原版对未完整水合 schema 节点的拒绝边界，未用更宽松的宿主替代。Python 冻结 JSON 以 dict/list 子类表达；JS URL 对象行为不属于本轮 Python 数据语料。Loader 的引用提交、日志式配置落盘及装配仍待后续整合，C1 尚未整体验收。
 
 2026-11-15：C1-F [Loader volatile 提交](loader-volatile-checks.json)完成 4 组固定原版/Python 实际入口旅程、26 项原版与 93 项 Python 定向检查。纯 volatile 更新保留引用及插件实例，所有引用提交后只通知所属插件；无效候选保留原始输入，混合生效值变化进入普通更新，依赖未就绪和强制更新另行覆盖。本轮确认生产使用 `loader.py` 中的类，拆分的 `loader_entry/tree/group.py` 尚未被装配；此前对拆分文件的修改不作为生产 Loader 证据。已删除本批通过测试的 4188 字节合成夹具，首轮失败报告和全部运行记录保留。journal、完整上下文生命周期和 boot 仍待实现。
+
+2026-11-15：C1-G [Include journal 基础](include-journal-foundation-checks.json)完成 1634 组固定原版/Python 对照、11 项原版及 64 项 Python 检查。新增逐 entry 增量、创建/删除折叠、外部文件优先的三方协调，以及 patch 字段与插入条目的归属路由；当前仍是独立助手，尚未替代生产 Include 队列。直接消费者旧断言按固定原版更新为 raw/effective 分离、新更新参数和失败激活的显式恢复。已删除用完的合成夹具，保留失败报告和运行记录。

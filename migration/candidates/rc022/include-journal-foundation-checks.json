@@ -1,0 +1,69 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-15",
+  "unit": "C1-G-Include-journal-foundations",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "state": "targeted-passed",
+  "scope": "Per-entry delta folding, file-wins conflict reconciliation, nested relocation and patch owner routing. Independent foundation; not production Include persistence acceptance.",
+  "paired_observations": 1634,
+  "source_tests": {
+    "passed": 11,
+    "failed": 0
+  },
+  "native_tests": {
+    "passed": 64,
+    "failed": 0
+  },
+  "verification_scope_reason": "Journal/patch foundations and current Include, Loader and user-patch direct consumers. Legacy consumer assertions updated to fixed raw/effective, update arguments and failed activation recovery contracts.",
+  "remaining": "Journal and ownership helpers are independent; production Include queue integration and Loader synchronous commits remain.",
+  "inputs": {
+    ".goose/out/rc022-prep-20261114-01/source/vendor/cordis/src/events.ts": "a464c843822da4eb31a8d998c5e2216a817b8a7dfeacb6e1aab7f830e7320d6b",
+    "dsh/cordis/events.py": "c8821d6084bd4788c28f5c83ebc84e6138eeb94067c192fe0df34f6efeeea1a5",
+    "scripts/oracles/rc022_include_journal.mts": "3a55172303fcad2cb307cd8d2b926ce48c21d76b571bf0c5ce26b32bbc2e8575",
+    "scripts/rc022_events_probe.py": "528022ac1e83cad7ab4d24f0c7696caf4bfc36eab6805c220954716673dd2987",
+    "scripts/rc022_include_journal_probe.py": "470881d6d7eecc02edf73ca75eee4c02d2b2cb2048bf2b15a169f451a41d0083",
+    "dsh/cordis/include_journal.py": "80dc2a97082ad065b5071099e8626b649421e9c895cbfe1af890e9087cc542ec",
+    "dsh/cordis/include_patch.py": "9107833c9e5b0b55fbe5d78546e706b48fd168ed58453280a1ae58cdf2059a90",
+    ".goose/out/rc022-prep-20261114-01/source/vendor/include/src/journal.ts": "219b874ab6a7045fb5065fdbd114fe307eae89e68ab5a59d25aff9b53710187d",
+    ".goose/out/rc022-prep-20261114-01/source/vendor/include/src/patch.ts": "38281b6365faaca6d99027716644d58ee85cba133e1fe2c36afc017cf011ae57",
+    ".goose/out/rc022-include-journal-paired-20261115-01/cases.json": "0132345c7b5b139f27e8948df2f23d289e4a9974aa1793ff534d6cea95508590",
+    "tests/test_rc022_include_journal.py": "9986d4433fdd1c7a8b8fc81c05d2d31c69d18ead8d53297dbfac21290e91af52",
+    "tests/1to1/boot/app_boot/test_user_patches.py": "30013c3ff4734aac269174d4c1df15b1927ecf82339894e6de3d62479ceed2a2",
+    "tests/1to1/cordis/test_include_parity.py": "9d07fb0f9565c9d31bfbd8c605e89fc4f948a62ad5445c8a22f293474ccaa876"
+  },
+  "reports": {
+    ".goose/out/rc022-include-journal-paired-20261115-01/report.json": "daea654b76870f208e527b9f830433754ce6ec6283b0199b670598f4e582d4ef",
+    ".goose/out/rc022-include-journal-native-20261115-03/command.json": "46fdeced1da719e563cd3829c84a411a6aa4b2fdc1851cb4cbdf5f930535db6f",
+    ".goose/out/rc022-include-journal-native-20261115-03/pytest.xml": "25839e89108602876f0188153c055d01f40e99cadb92ff5036d1f76b3e08f093",
+    ".goose/out/rc022-include-journal-native-20261115-03/cleanup.json": "8cd9a1fcb6725a2db19fa69f38d84ee6bf0086922c7acfd99f6edf12d693f9e1",
+    ".goose/out/rc022-include-journal-source-20261115-01/command.json": "b006e2f8b56c013643f139dfbde8418375c1056fafdd88249165545175d61394",
+    ".goose/out/rc022-include-journal-source-20261115-01/source-tests.json": "17b08b88c5d6468c5247756d38b21ac70f5e9235bb4f8166cf7098cae5f314e4"
+  },
+  "cleanup": {
+    "owner": "rc022-C1-G",
+    "removed": [
+      {
+        "path": ".goose/out/rc022-include-journal-native-20261115-02/pytest-workspace/test_shipped_bundle_expression0",
+        "bytes": 0
+      },
+      {
+        "path": ".goose/out/rc022-include-journal-native-20261115-02/pytest-workspace/test_yaml_js_tag_and_relative_0",
+        "bytes": 596
+      },
+      {
+        "path": ".goose/out/rc022-include-journal-native-20261115-03/pytest-workspace/test_shipped_bundle_expression0",
+        "bytes": 0
+      },
+      {
+        "path": ".goose/out/rc022-include-journal-native-20261115-03/pytest-workspace/test_yaml_js_tag_and_relative_0",
+        "bytes": 596
+      },
+      {
+        "path": ".goose/out/rc022-include-journal-source-20261115-01/temp",
+        "bytes": 0
+      }
+    ],
+    "retained": "Raw failure reports, paired observations and corpus, logs and XML retained. Source/toolchain retained through C9.",
+    "processes": "All owned subprocesses exited."
+  }
+}

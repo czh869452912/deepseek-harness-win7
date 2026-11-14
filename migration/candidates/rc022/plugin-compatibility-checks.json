@@ -1,0 +1,25 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-15",
+  "unit": "C1-R-PluginCompatibility",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "state": "targeted-passed",
+  "paired": ".goose/out/rc022-compatibility-paired-20261115-02/report.json",
+  "observations": 5867,
+  "source": {
+    "run": "rc022-compatibility-source-20261115-01",
+    "passed": 114
+  },
+  "native": {
+    "run": "rc022-compatibility-native-20261115-02",
+    "passed": 159
+  },
+  "scope": "Pure-Python npm strict prerelease ranges; engines.dsh precedence, dsh peer validation and workspace aliases; exact plugin/runtime exemptions; independent compatibility.json read/grant/revoke with locked atomic persistence and malformed-content retention.",
+  "verification_scope_reason": "Actual fixed Source range/manifest/file decisions and permission writes, original provider tests, Python metadata/permission failure and concurrent writes, profile initialization, app boot and atomic lock consumers. Runtime default remains the installed Python version until C9; paired fixture explicitly uses fixed Source runtime.",
+  "cleanup": ".goose/out/rc022-compatibility-native-20261115-02/cleanup.json",
+  "failures_retained": [
+    "rc022-compatibility-paired-20261115-01: four strict comparator prefix differences corrected",
+    "rc022-compatibility-native-20261115-01: missing test path, no tests ran"
+  ],
+  "remaining": "Composition preflight, runtime resolution and profile recomposition remain C1 work. No complete or release acceptance."
+}

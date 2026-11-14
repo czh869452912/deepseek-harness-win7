@@ -2,6 +2,19 @@
 dsh.boot package: Application boot, profile management, and configuration dump orchestration.
 """
 
+from dsh.boot.plugin_compatibility import (
+    get_dsh_runtime_version, getDshRuntimeVersion,
+    evaluate_plugin_compatibility, evaluatePluginCompatibility,
+    plugin_compatibility_warning, pluginCompatibilityWarning,
+)
+from dsh.boot.profile_compatibility import (
+    PROFILE_COMPATIBILITY_FILENAME, is_exact_version, isExactPluginVersion,
+    validate_plugin_version_exemption, validatePluginVersionExemption,
+    read_profile_compatibility, readProfileCompatibility,
+    read_profile_version_exemptions, readProfileVersionExemptions,
+    set_profile_version_exemption, setProfileVersionExemption,
+)
+
 from dsh.boot.app_boot import (
     PROFILES_DIR,
     PROFILE_PATCH_FILENAME,
@@ -83,6 +96,14 @@ from dsh.boot.cmdline import (
 )
 
 __all__ = [
+    "PROFILE_COMPATIBILITY_FILENAME", "is_exact_version", "isExactPluginVersion",
+    "get_dsh_runtime_version", "getDshRuntimeVersion",
+    "evaluate_plugin_compatibility", "evaluatePluginCompatibility",
+    "plugin_compatibility_warning", "pluginCompatibilityWarning",
+    "validate_plugin_version_exemption", "validatePluginVersionExemption",
+    "read_profile_compatibility", "readProfileCompatibility",
+    "read_profile_version_exemptions", "readProfileVersionExemptions",
+    "set_profile_version_exemption", "setProfileVersionExemption",
     "PROFILES_DIR",
     "PROFILE_PATCH_FILENAME",
     "PROFILE_TEMPLATES",

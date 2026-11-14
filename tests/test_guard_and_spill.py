@@ -61,7 +61,7 @@ async def test_repeat_guard_preserves_downstream_decision_isolates_agents_and_re
         return downstream
     ctx.on('tools/post-execute', block)
     async def attempt(agent):
-        return await ctx.waterfall('tools/post-execute', SimpleNamespace(agent=agent, name='view', arguments={}), None)
+        return await ctx.waterfall('tools/post-execute', SimpleNamespace(agent=agent, name='view', arguments={}), None, lambda: None)
     try:
         assert await attempt(first) is downstream
         assert await attempt(second) is downstream
@@ -71,9 +71,9 @@ async def test_repeat_guard_preserves_downstream_decision_isolates_agents_and_re
         assert repeat['additionalContexts'][0]['source']['form'] == 'notice'
         assert repeat['additionalContexts'][1] is downstream['additionalContexts'][0]
         assert len(downstream['additionalContexts']) == 1
-        await ctx.waterfall('agent/pre-step', dict(agent=second, messages=[dict(source=dict(kind='plugin'))]))
+        await ctx.waterfall('agent/pre-step', dict(agent=second, messages=[dict(source=dict(kind='plugin'))]), lambda: None)
         assert len((await attempt(second))['additionalContexts']) == 2
-        await ctx.waterfall('agent/pre-step', dict(agent=first, messages=[dict(source=dict(kind='user'))]))
+        await ctx.waterfall('agent/pre-step', dict(agent=first, messages=[dict(source=dict(kind='user'))]), lambda: None)
         assert await attempt(first) is downstream
         await fiber.dispose()
         assert await attempt(first) is downstream

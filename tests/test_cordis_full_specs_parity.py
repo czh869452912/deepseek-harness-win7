@@ -46,7 +46,7 @@ def test_events_waterfall_middleware_pipeline():
     ctx.on("test/waterfall", middleware_1)
     ctx.on("test/waterfall", middleware_2)
 
-    final_result = ctx.waterfall_sync("test/waterfall", "init", lambda v: f"{v}+final")
+    final_result = ctx.waterfall_sync("test/waterfall", "init", lambda: "init+final")
     assert final_result == "init+final+m2+m1"
     assert trail == ["m1_pre", "m2_pre", "m2_post", "m1_post"]
 

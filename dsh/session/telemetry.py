@@ -80,7 +80,8 @@ class OpenTelemetrySessionBackend(Service):
                 self.adopt(session)
 
     def enqueue(self, record):
-        record = self.ctx.waterfall_sync('session-telemetry/record', copy.deepcopy(record), lambda value: value)
+        record = copy.deepcopy(record)
+        record = self.ctx.waterfall_sync('session-telemetry/record', record, lambda: record)
         self._export_record(record)
 
     def _export_record(self, record):

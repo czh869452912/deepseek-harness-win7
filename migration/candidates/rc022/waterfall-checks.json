@@ -1,0 +1,64 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-15",
+  "unit": "C1-M-strict-waterfall-and-consumers",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "state": "targeted-passed",
+  "paired": {
+    "rc022-waterfall-paired-20261115-02": {
+      "path": ".goose/out/rc022-waterfall-paired-20261115-02/report.json",
+      "sha256": "8daf8d37b6f00137b8147f358b9fc404384491bbeafab5599b54fb2a64b388e0"
+    },
+    "rc022-waterfall-moves-20261115-02": {
+      "path": ".goose/out/rc022-waterfall-moves-20261115-02/report.json",
+      "sha256": "607e8fb09bc0501d1447724cccb160f45c9f32c20c6614b259d0a5404a5a57ec"
+    },
+    "rc022-waterfall-queue-20261115-02": {
+      "path": ".goose/out/rc022-waterfall-queue-20261115-02/report.json",
+      "sha256": "2508ca11de236af5223f56cc03334a758c0804ec9498be8fa93e4a7f0f6cbd3f"
+    },
+    "rc022-waterfall-timing-20261115-01": {
+      "path": ".goose/out/rc022-waterfall-timing-20261115-01/report.json",
+      "sha256": "4e8a0170244c3d1a71b4895ade674523b1e20506e52f0647b5d7b421ff757cb1"
+    }
+  },
+  "source_tests": 12,
+  "native_runs": [
+    {
+      "run": "rc022-waterfall-consumers-20261115-03",
+      "passed": 939,
+      "failed": 24,
+      "skipped": 1,
+      "note": "Discovery run before fixes; original failures retained."
+    },
+    {
+      "run": "rc022-waterfall-failures-20261115-01",
+      "passed": 26
+    },
+    {
+      "run": "rc022-waterfall-final-20261115-01",
+      "passed": 290,
+      "failed": 1,
+      "note": "Remaining journal I/O boundary mismatch fixed next."
+    },
+    {
+      "run": "rc022-waterfall-io-20261115-01",
+      "passed": 62
+    }
+  ],
+  "verification_scope_reason": "Strict final continuation semantics affect all waterfall providers and business callers. Discovery selected event and consumer contracts; fixes rechecked the original failures plus Events/Loader/Include/Fiber/profile/Web/HMR. Final I/O change checked real Source file journeys and 62 direct persistence consumers. No complete regression or release acceptance claim.",
+  "python_adaptations": [
+    "Async handlers can await a synchronous downstream value while dispatch itself begins immediately.",
+    "Framework-entered shared Futures clear blocking ownership before scheduling their resume task.",
+    "Owned dynamic Python module imports are retained until the final root Fiber owner releases; only matching cache aliases are evicted.",
+    "Include awaits actual file I/O before snapshotting its journal, as the Source writer does."
+  ],
+  "remaining": "Associated service properties, remaining core details and canonical boot recomposition; C1 and C2-C9 remain unaccepted.",
+  "cleanup": {
+    "path": ".goose/out/rc022-waterfall-io-20261115-01/cleanup.json",
+    "assets": 150,
+    "bytes": 1646592,
+    "links": 6931,
+    "earlier": ".goose/out/rc022-waterfall-consumers-20261115-02/cleanup.json"
+  }
+}

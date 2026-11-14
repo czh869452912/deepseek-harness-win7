@@ -33,9 +33,9 @@ async def test_d1_d2_waterfall_onion_middleware_and_veto():
         call_order.append("mw2_after")
         return f"{res}_mw2"
 
-    async def inner(data, next_fn=None):
+    async def inner():
         call_order.append("inner")
-        return f"{data}_inner"
+        return "root_inner"
 
     bus.on("test.waterfall", mw1)
     bus.on("test.waterfall", mw2)
@@ -60,7 +60,7 @@ async def test_d2_waterfall_short_circuit_veto():
     bus.on("test.veto", mw_veto)
     bus.on("test.veto", mw_never)
 
-    res = await bus.waterfall("test.veto", "input", lambda d, n=None: "inner")
+    res = await bus.waterfall("test.veto", "input", lambda: "inner")
     assert res == "vetoed"
 
 
@@ -79,7 +79,7 @@ def test_d2_waterfall_sync_onion_and_none_continuation():
     bus.on("sync.test", mw_observer)
     bus.on("sync.test", mw_modify)
 
-    res = bus.waterfall_sync("sync.test", "hello", lambda d, n=None: d.upper())
+    res = bus.waterfall_sync("sync.test", "hello", lambda: 'HELLO')
     assert res == "HELLO!"
 
 
@@ -98,27 +98,23 @@ def test_d2_waterfall_sync_veto_without_next():
     bus.on("sync.test", mw_veto)
     bus.on("sync.test", mw_modify)
 
-    res = bus.waterfall_sync("sync.test", "hello", lambda d, n=None: d.upper())
+    res = bus.waterfall_sync("sync.test", "hello", lambda: 'HELLO')
     assert res is None
 
 
 @pytest.mark.asyncio
-async def test_d3_waterfall_inner_receives_all_args():
-    """ts:cordis/events.ts:236-242 - inner receives all remaining arguments plus next."""
+async def test_waterfall_inner_receives_zero_arguments():
+    """Fixed rc022 invokes the final continuation without arguments."""
     bus = EventBus()
 
     captured = {}
 
-    def inner_callback(arg1, arg2, next_fn=None):
-        captured["arg1"] = arg1
-        captured["arg2"] = arg2
-        captured["next_callable"] = callable(next_fn)
+    def inner_callback(*args):
+        captured['args']=args
         return "done"
 
     await bus.waterfall("test.args", "val1", "val2", inner_callback)
-    assert captured["arg1"] == "val1"
-    assert captured["arg2"] == "val2"
-    assert captured["next_callable"] is True
+    assert captured['args']==()
 
 
 def test_d2_waterfall_reducer_via_next():
@@ -135,7 +131,7 @@ def test_d2_waterfall_reducer_via_next():
     ctx.on("test.reduce", step1)
     ctx.on("test.reduce", step2)
 
-    res = ctx.waterfall_sync("test.reduce", "init", lambda d: d)
+    res = ctx.waterfall_sync("test.reduce", "init", lambda: 'init')
     assert res == "init_step2_step1"
 
 
@@ -144,15 +140,15 @@ def test_d5_internal_listener_prepend_unshift():
     ctx = Context()
     order = []
 
-    def first_listener(cfg, no_save, n=None):
+    def first_listener(cfg, n):
         order.append("first")
         if n and callable(n):
-            return n(cfg, no_save)
+            return n()
 
-    def prepended_listener(cfg, no_save, n=None):
+    def prepended_listener(cfg, n):
         order.append("prepended")
         if n and callable(n):
-            return n(cfg, no_save)
+            return n()
 
     ctx.on("internal/update", first_listener, prepend=False)
     ctx.on("internal/update", prepended_listener, prepend=True)
@@ -165,7 +161,7 @@ def test_d5_internal_listener_prepend_unshift():
     assert getattr(items[1], "__wrapped__", items[1]) is first_listener
 
     # Verify execution order: prepended listener executes first
-    ctx.emit("internal/update", {}, False)
+    ctx.waterfall_sync("internal/update", {}, lambda: None)
     assert order == ["prepended", "first"]
 
 

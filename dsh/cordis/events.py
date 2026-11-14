@@ -706,135 +706,54 @@ class EventBus:
     bail_sync = bail
 
     def waterfall_sync(self, event_name: str, *args: Any, **kwargs: Any) -> Any:
-        """
-        Synchronous waterfall middleware pipeline matching TS waterfall semantics.
-        Supports onion middleware return-threading and short-circuit veto.
-        """
+        """Compose listeners around the final zero-argument continuation."""
+        return self._waterfall(event_name, args, kwargs, False)
+
+    def _waterfall(self, event_name: Any, args: Any, kwargs: Any, await_continuations: bool) -> Any:
         event_name, actual_args, caller_ctx = _normalize_event_call(event_name, args, self.ctx, kwargs)
         listeners = list(self._dispatch_hooks("waterfall", event_name, list(actual_args), caller_ctx))
-        args_list = list(actual_args)
-        inner = args_list.pop() if args_list and callable(args_list[-1]) else None
+        values = list(actual_args)
+        inner = values.pop() if values else None
 
-        idx = 0
-        def next_fn(*override_args: Any) -> Any:
-            nonlocal idx
-            current_args = list(args_list)
-            if idx < len(listeners):
-                cb = listeners[idx]
-                idx += 1
-                sig = None
+        def start_result(result: Any) -> Any:
+            if inspect.iscoroutine(result):
                 try:
-                    sig = inspect.signature(cb)
-                except Exception:
-                    pass
-                takes_next = False
-                pos_count = len(current_args)
-                if sig is not None:
-                    param_names = list(sig.parameters.keys())
-                    params = list(sig.parameters.values())
-                    has_var = any(p.kind == inspect.Parameter.VAR_POSITIONAL for p in params)
-                    takes_next = "next" in param_names or "next_fn" in param_names or has_var or len(params) >= len(current_args) + 1
-                    pos_count = sum(1 for p in params if p.kind in (inspect.Parameter.POSITIONAL_ONLY, inspect.Parameter.POSITIONAL_OR_KEYWORD))
+                    asyncio.get_running_loop()
+                except RuntimeError:
+                    return result
+                from dsh.cordis.awaiting import start_coroutine
+                return start_coroutine(result)
+            return result
 
-                if takes_next:
-                    call_args = list(current_args) + [_single_use_next(next_fn)]
-                    return cb(*call_args, **kwargs)
-                elif pos_count == 0:
-                    return cb()
-                else:
-                    call_args = current_args[:pos_count] if pos_count < len(current_args) else current_args
-                    return cb(*call_args, **kwargs)
-            elif inner is not None:
-                sig = None
-                try:
-                    sig = inspect.signature(inner)
-                except Exception:
-                    pass
-                takes_next = False
-                pos_count = len(current_args)
-                if sig is not None:
-                    param_names = list(sig.parameters.keys())
-                    params = list(sig.parameters.values())
-                    has_var = any(p.kind == inspect.Parameter.VAR_POSITIONAL for p in params)
-                    takes_next = "next" in param_names or "next_fn" in param_names or has_var or len(params) >= len(current_args) + 1
-                    pos_count = sum(1 for p in params if p.kind in (inspect.Parameter.POSITIONAL_ONLY, inspect.Parameter.POSITIONAL_OR_KEYWORD))
-
-                call_args = (list(current_args) + [next_fn]) if takes_next else (current_args[:pos_count] if pos_count < len(current_args) else current_args)
-                return inner(*call_args)
+        def dispatch() -> Any:
+            if not listeners:
+                return start_result(inner())
+            callback = listeners.pop(0)
+            def continuation() -> Any:
+                result = dispatch()
+                if await_continuations:
+                    # Python's await spelling needs an awaitable even for a
+                    # synchronous downstream value; enter dispatch first.
+                    from dsh.cordis.awaiting import start_coroutine
+                    return start_coroutine(await_callback_result(result))
+                return result
+            call_args = values + [_single_use_next(continuation)]
+            # JavaScript ignores surplus arguments. Adapt Python arity only;
+            # parameter names never decide where the continuation is placed.
+            try:
+                parameters = list(inspect.signature(callback).parameters.values())
+            except (TypeError, ValueError):
+                pass
             else:
-                return current_args[0] if current_args else None
+                if not any(p.kind == inspect.Parameter.VAR_POSITIONAL for p in parameters):
+                    count = sum(p.kind in (inspect.Parameter.POSITIONAL_ONLY,
+                        inspect.Parameter.POSITIONAL_OR_KEYWORD) for p in parameters)
+                    call_args = call_args[:count]
+            return start_result(callback(*call_args, **kwargs))
 
-        return next_fn()
+        return dispatch()
 
     async def waterfall(self, event_name: str, *args: Any, **kwargs: Any) -> Any:
-        """
-        Waterfall middleware pipeline matching TS waterfall semantics.
-        Supports onion middleware return-threading and short-circuit veto.
-        """
-        event_name, actual_args, caller_ctx = _normalize_event_call(event_name, args, self.ctx, kwargs)
-        listeners = list(self._dispatch_hooks("waterfall", event_name, list(actual_args), caller_ctx))
-        args_list = list(actual_args)
-        inner = args_list.pop() if args_list and callable(args_list[-1]) else None
-
-        idx = 0
-        async def next_fn(*override_args: Any) -> Any:
-            nonlocal idx
-            current_args = list(args_list)
-            if idx < len(listeners):
-                cb = listeners[idx]
-                idx += 1
-                sig = None
-                try:
-                    sig = inspect.signature(cb)
-                except Exception:
-                    pass
-                takes_next = False
-                pos_count = len(current_args)
-                if sig is not None:
-                    param_names = list(sig.parameters.keys())
-                    params = list(sig.parameters.values())
-                    has_var = any(p.kind == inspect.Parameter.VAR_POSITIONAL for p in params)
-                    takes_next = "next" in param_names or "next_fn" in param_names or has_var or len(params) >= len(current_args) + 1
-                    pos_count = sum(1 for p in params if p.kind in (inspect.Parameter.POSITIONAL_ONLY, inspect.Parameter.POSITIONAL_OR_KEYWORD))
-
-                if takes_next:
-                    call_args = list(current_args) + [_single_use_next(next_fn)]
-                    res = cb(*call_args, **kwargs)
-                    if inspect.isawaitable(res):
-                        res = await res
-                    return res
-                elif pos_count == 0:
-                    res = cb()
-                    if inspect.isawaitable(res):
-                        res = await res
-                    return res
-                else:
-                    call_args = current_args[:pos_count] if pos_count < len(current_args) else current_args
-                    res = cb(*call_args, **kwargs)
-                    if inspect.isawaitable(res):
-                        res = await res
-                    return res
-            elif inner is not None:
-                sig = None
-                try:
-                    sig = inspect.signature(inner)
-                except Exception:
-                    pass
-                takes_next = False
-                pos_count = len(current_args)
-                if sig is not None:
-                    param_names = list(sig.parameters.keys())
-                    params = list(sig.parameters.values())
-                    has_var = any(p.kind == inspect.Parameter.VAR_POSITIONAL for p in params)
-                    takes_next = "next" in param_names or "next_fn" in param_names or has_var or len(params) >= len(current_args) + 1
-                    pos_count = sum(1 for p in params if p.kind in (inspect.Parameter.POSITIONAL_ONLY, inspect.Parameter.POSITIONAL_OR_KEYWORD))
-
-                call_args = (list(current_args) + [next_fn]) if takes_next else (current_args[:pos_count] if pos_count < len(current_args) else current_args)
-                res = inner(*call_args)
-                if inspect.isawaitable(res):
-                    res = await res
-                return res
-            else:
-                return current_args[0] if current_args else None
-
-        return await next_fn()
+        """Await the composed result without changing the dispatch arguments."""
+        result = self._waterfall(event_name, args, kwargs, True)
+        return await await_callback_result(result)

@@ -39,9 +39,11 @@ def write_skill(path, body="first body", invocation=""):
 async def test_real_filesystem_catalog_invocation_and_structured_tool(tmp_path):
     write_skill(tmp_path / "sample.md")
     ctx, agent, _ = await setup(tmp_path)
+    async def pre_step(payload):
+        return await ctx.waterfall("agent/pre-step", payload, lambda: payload)
     try:
         message = create_user_message({"content": [dict(type='text', text="Please use /sample now")], 'source': dict(kind='user')})
-        decision = await ctx.waterfall("agent/pre-step", {"agent": agent, "messages": [message]})
+        decision = await pre_step({"agent": agent, "messages": [message]})
         assert [row["source"]["kind"] for row in decision["messages"]] == ["user", "skill-catalog", "skill-invocation"]
         assert message["content"][0]["text"] == "Please use /sample now"
         definition = ctx.get("tools").get("skill")
@@ -51,15 +53,15 @@ async def test_real_filesystem_catalog_invocation_and_structured_tool(tmp_path):
         for row in decision["messages"]:
             agent.session.append("user/message", row, surface_op="append")
         next_message = create_user_message({"content": [dict(type='text', text="Continue")], 'source': dict(kind='user')})
-        next_decision = await ctx.waterfall("agent/pre-step", {"agent": agent, "messages": [next_message]})
+        next_decision = await pre_step({"agent": agent, "messages": [next_message]})
         assert next_decision["messages"] == [next_message]
         # External plugin content cannot forge a direct-human gesture.
         external = create_user_message({"content": [dict(type='text', text="/sample")], "source": {"kind": "plugin", "plugin": "external"}})
-        decision = await ctx.waterfall("agent/pre-step", {"agent": agent, "messages": [external]})
+        decision = await pre_step({"agent": agent, "messages": [external]})
         assert not any(row["source"]["kind"] == "skill-invocation" for row in decision["messages"])
         other = Agent(Session("other"), ctx=create_scope(ctx, ScopeKey("other")).ctx)
         other_message = create_user_message({"content": [dict(type='text', text="New session")], 'source': dict(kind='user')})
-        other_decision = await ctx.waterfall("agent/pre-step", {"agent": other, "messages": [other_message]})
+        other_decision = await pre_step({"agent": other, "messages": [other_message]})
         assert other_decision["messages"][-1]["source"]["kind"] == "skill-catalog"
     finally:
         await ctx.fiber.dispose()

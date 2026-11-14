@@ -6,10 +6,11 @@ const root=process.argv[2]!,input=process.argv[3]!
 const load=(path:string)=>import(pathToFileURL(resolve(root,path)).href)
 const {Context}=await load('vendor/cordis/src/context.ts'),{default:Loader}=await load('vendor/loader/src/index.ts'),{default:Include}=await load('vendor/include/src/index.ts')
 const row=(id:string,value:number)=>({id,name:'cordis:example',config:{value}}),result:any={}
-for(const mode of ['refresh-first','update-first','conflict','recovery','patch','failed-refresh','duplicate']){
+for(const mode of ['refresh-first','update-first','conflict','recovery','patch','failed-refresh','duplicate','missing-import']){
   const directory=resolve(dirname(input),'files/source',mode);await mkdir(directory,{recursive:true})
   const filename=resolve(directory,'root.json'),write=(data:any)=>writeFile(filename,JSON.stringify(data))
   await write(mode==='duplicate'?[row('a',1),row('a',2)]:[row('a',1),row('b',1)])
+  if(mode==='missing-import')await write([{id:'missing',name:'rc022-package-that-does-not-exist'}])
   const ctx=new Context();ctx.baseUrl=pathToFileURL(directory).href+'/'
   let entered!:()=>void,release!:()=>void
   const started=new Promise<void>(resolve=>entered=resolve),gate=new Promise<void>(resolve=>release=resolve)
@@ -19,6 +20,10 @@ for(const mode of ['refresh-first','update-first','conflict','recovery','patch',
   const id=await ctx.loader.create({name:'cordis:include',config:{path:pathToFileURL(filename).href}})
   await ctx.loader.await();const include=ctx.loader.resolve(id).subtree,errors:any[]=[]
   try{
+    if(mode==='missing-import'){
+      result[mode]=[include.cache.content!==undefined,include.cache.data.length,include.root.data.length,
+        Object.keys(include.store).sort(),!include.store.missing.fiber,include.getTasks().length];continue
+    }
     if(mode==='duplicate'){result[mode]=[include.root.data.length,Object.keys(include.store),include.store.a.fiber.effectiveConfig];continue}
     if(mode==='refresh-first'||mode==='update-first'){
       await write([row('a',1),row('b',3)])

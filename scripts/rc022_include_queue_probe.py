@@ -23,11 +23,12 @@ async def native():
     from dsh.cordis import Context,Loader
     from dsh.cordis.include import Include
     result={}
-    for mode in ('refresh-first','update-first','conflict','recovery','patch','failed-refresh','duplicate'):
+    for mode in ('refresh-first','update-first','conflict','recovery','patch','failed-refresh','duplicate','missing-import'):
         directory=OUTPUT/'files'/'native'/mode;directory.mkdir(parents=True)
         path=directory/'root.json'
         def write(data):path.write_text(json.dumps(data),encoding='utf-8')
         write([row('a',1),row('a',2)] if mode=='duplicate' else [row('a',1),row('b',1)])
+        if mode=='missing-import':write([dict(id='missing',name='rc022-package-that-does-not-exist')])
         ctx=Context();ctx.baseUrl=directory.as_uri()+'/'
         await ctx.plugin(Loader);ctx.loader.builtins['include']=Include
         entered=asyncio.Event();release=asyncio.Event()
@@ -42,6 +43,10 @@ async def native():
             try:await include.flush()
             except Exception as error:errors.append(['Error' if type(error) is RuntimeError else type(error).__name__,getattr(error,'stage',None)])
         try:
+            if mode=='missing-import':
+                result[mode]=[include.content is not None,len(include.data),len(include.root.data),
+                    sorted(include.store),include.store['missing'].fiber is None,len(include.get_tasks())]
+                continue
             if mode=='duplicate':
                 result[mode]=[len(include.root.data),list(include.store),include.store['a'].fiber.effectiveConfig]
                 continue

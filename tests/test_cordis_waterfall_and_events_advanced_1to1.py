@@ -36,7 +36,7 @@ async def test_waterfall_async_pipeline_and_short_circuit():
     ctx.on("test/pipeline", m2)
     ctx.on("test/pipeline", m3)
 
-    result = await ctx.waterfall("test/pipeline", "init")
+    result = await ctx.waterfall("test/pipeline", "init", lambda: 'init')
     assert result == "init_short_m1"
     assert calls == ["m1_in", "m2_short", "m1_out"]
 
@@ -55,7 +55,7 @@ def test_waterfall_sync_pipeline():
     ctx.on("math/calc", step1)
     ctx.on("math/calc", step2)
 
-    res = ctx.waterfall_sync("math/calc", 5)
+    res = ctx.waterfall_sync("math/calc", 5, lambda: 5)
     # Onion pipeline: step1 wraps step2 wraps 5: (5 + 10) * 2 = 30
     assert res == 30
 

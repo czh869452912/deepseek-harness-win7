@@ -123,9 +123,9 @@ def test_g3_d4_waterfall_next_does_not_accept_override_args():
         seen_args.append(("mw2", val))
         return next_fn()
 
-    def inner(val):
-        seen_args.append(("inner", val))
-        return f"done:{val}"
+    def inner():
+        seen_args.append(("inner",))
+        return "done:initial_val"
 
     bus.on("waterfall/test", mw1)
     bus.on("waterfall/test", mw2)
@@ -135,7 +135,7 @@ def test_g3_d4_waterfall_next_does_not_accept_override_args():
     assert seen_args == [
         ("mw1", "initial_val"),
         ("mw2", "initial_val"),
-        ("inner", "initial_val"),
+        ("inner",),
     ]
 
 
@@ -149,14 +149,14 @@ async def test_g3_d4_waterfall_async_next_does_not_accept_override_args():
         seen_args.append(("mw1", val))
         return await next_fn("hacked_val")
 
-    def inner(val):
-        seen_args.append(("inner", val))
-        return f"async_done:{val}"
+    def inner():
+        seen_args.append(("inner",))
+        return "async_done:initial_val"
 
     bus.on("waterfall/async_test", mw1)
     res = await bus.waterfall("waterfall/async_test", "initial_val", inner)
     assert res == "async_done:initial_val"
-    assert seen_args == [("mw1", "initial_val"), ("inner", "initial_val")]
+    assert seen_args == [("mw1", "initial_val"), ("inner",)]
 
 
 def test_g3_d6_internal_dispatch_passes_four_positional_args():

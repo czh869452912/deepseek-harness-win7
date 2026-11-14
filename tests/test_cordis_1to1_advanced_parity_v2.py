@@ -46,7 +46,7 @@ async def test_waterfall_next_continuation_and_pipeline():
     ctx.on("test/pipeline", mw1)
     ctx.on("test/pipeline", mw2)
 
-    result = await ctx.waterfall("test/pipeline", "initial", lambda d: d + " -> final")
+    result = await ctx.waterfall("test/pipeline", "initial", lambda: "initial -> final")
     assert result == "initial -> final -> mw2 -> mw1"
     assert order == ["mw1_start", "mw2_start", "mw2_end", "mw1_end"]
 
@@ -67,7 +67,7 @@ def test_waterfall_sync_veto_without_calling_next():
     ctx.on("test/veto", vetoing_mw)
     ctx.on("test/veto", never_reached_mw)
 
-    res = ctx.waterfall_sync("test/veto", "start", lambda d: d + " -> default")
+    res = ctx.waterfall_sync("test/veto", "start", lambda: "start -> default")
     assert res == "blocked"
     assert called == ["veto"]
 

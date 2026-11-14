@@ -105,8 +105,8 @@ def test_waterfall_passes_original_arguments_and_composes_around_inner_next():
         calls.append(("listener", config, no_save))
         return next_fn()
 
-    def builtin(config, no_save):
-        calls.append(("builtin", config, no_save))
+    def builtin():
+        calls.append(("builtin",))
         return "done"
 
     bus.on("event", outer)
@@ -116,7 +116,7 @@ def test_waterfall_passes_original_arguments_and_composes_around_inner_next():
     assert calls == [
         ("outer:before", {"x": 1}, False),
         ("listener", {"x": 1}, False),
-        ("builtin", {"x": 1}, False),
+        ("builtin",),
         ("outer:after", "done"),
     ]
 
@@ -138,7 +138,8 @@ def test_waterfall_listener_can_veto_inner_next():
 def test_waterfall_treats_non_callable_last_argument_as_inner():
     bus = EventBus()
 
-    assert bus.waterfall_sync("event", "not-a-callback") == "not-a-callback"  # legacy seed-only adapter
+    with pytest.raises(TypeError):
+        bus.waterfall_sync("event", "not-a-callback")
 
 
 def test_waterfall_distinguishes_registered_listener_from_same_inner_callable():
@@ -154,7 +155,7 @@ def test_waterfall_distinguishes_registered_listener_from_same_inner_callable():
     bus.on("event", shared)
 
     assert bus.waterfall_sync("event", "value", shared) == "done"
-    assert arities == [2, 2]
+    assert arities == [2, 0]
 
 
 def test_prepend_once_and_bail_match_upstream_ordering():
@@ -216,20 +217,19 @@ def test_internal_update_hooks_are_local_to_the_target_fiber():
 
     bus.on(
         "internal/update",
-        lambda config, no_save, next_fn: calls.append("one") or next_fn(),
+        lambda config, next_fn: calls.append("one") or next_fn(),
         ctx=owner_one,
     )
     bus.on(
         "internal/update",
-        lambda config, no_save, next_fn: calls.append("two") or next_fn(),
+        lambda config, next_fn: calls.append("two") or next_fn(),
         ctx=owner_two,
     )
 
     result = bus.waterfall_sync(
         "internal/update",
         {"value": 1},
-        False,
-        lambda config, no_save: calls.append("builtin") or "updated",
+        lambda: calls.append("builtin") or "updated",
         caller_ctx=owner_one,
     )
 
@@ -247,18 +247,18 @@ def test_internal_update_bridge_keeps_global_prepend_priority():
 
     bus.on(
         "internal/update",
-        lambda config, no_save, next_fn: calls.append("local") or next_fn(),
+        lambda config, next_fn: calls.append("local") or next_fn(),
         ctx=owner,
     )
     bus.on(
         "internal/update",
-        lambda config, no_save, next_fn: calls.append("global-normal")
+        lambda config, next_fn: calls.append("global-normal")
         or next_fn(),
         global_listener=True,
     )
     bus.on(
         "internal/update",
-        lambda config, no_save, next_fn: calls.append("global-prepend")
+        lambda config, next_fn: calls.append("global-prepend")
         or next_fn(),
         prepend=True,
         global_listener=True,
@@ -267,8 +267,7 @@ def test_internal_update_bridge_keeps_global_prepend_priority():
     bus.waterfall_sync(
         "internal/update",
         {},
-        False,
-        lambda config, no_save: calls.append("builtin"),
+        lambda: calls.append("builtin"),
         caller_ctx=owner,
     )
 
@@ -301,10 +300,10 @@ def test_fiber_local_internal_bridges_keep_global_hooks(event_name):
         global_listener=True,
     )
 
-    payload = [1, False] if event_name == "internal/update" else [1]
+    payload = [first.fiber] if event_name == 'internal/config' else [1]
     result = bus.waterfall_sync(
         event_name, *payload,
-        lambda value, *rest: calls.append("builtin") or value + 1,
+        lambda: calls.append("builtin") or 2,
         caller_ctx=first,
     )
 

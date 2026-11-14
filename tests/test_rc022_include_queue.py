@@ -20,6 +20,7 @@ def test_independent_edits_conflicts_recovery_patch_ownership_and_failed_refresh
     assert observed['patch']==[True,[{'id':'x','disabled':False},{'insert':[probe.row('y',2)]}]]
     assert observed['failed-refresh']==[[{'value':3},{'value':1}],[probe.row('a',3),probe.row('b',1)],[],0]
     assert observed['duplicate']==[2,['a'],{'value':2}]
+    assert observed['missing-import']==[True,1,1,['missing'],True,0]
 
 
 async def mounted(directory):

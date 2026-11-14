@@ -1641,6 +1641,8 @@ class EntryTree:
                 cls, mod_name = resolve_plugin_class(name, reg_map, return_mod_name=True)
                 if cls is not None:
                     self._last_loaded_module = mod_name
+                    if mod_name and mod_name.startswith(('dynamic_plugin_', 'dynamic_cordis_plugin_')):
+                        loader._module_aliases.setdefault(mod_name, set()).add(name)
                     return cls
 
         base_dir = (
@@ -2075,10 +2077,6 @@ class Entry:
                 await res
         finally:
             self._disposing -= 1
-            if self._loaded_module_name and self._loaded_module_name in sys.modules:
-                del sys.modules[self._loaded_module_name]
-                self._loaded_module_name = None
-                importlib.invalidate_caches()
 
     async def _patch_context(self, diff: List[str]) -> None:
         async def _cont():
@@ -2129,6 +2127,8 @@ class Entry:
         if getattr(tree, "_last_loaded_module", None):
             self._loaded_module_name = tree._last_loaded_module
             tree._last_loaded_module = None
+        elif getattr(plugin, '__module__', None) in getattr(self.loader, '_module_owners', {}):
+            self._loaded_module_name = plugin.__module__
         await self._start(plugin)
         self.moduleNamespace = raw
 
@@ -2358,6 +2358,8 @@ class Loader(EntryTree, Service):
         self.entries_list: List[Entry] = []
         self._realms: Dict[str, GlobalRealm] = {}
         self._delims: Dict[str, str] = {}
+        self._module_owners: Dict[Any, Any] = {}
+        self._module_aliases: Dict[str, Any] = {}
         self.internal = LoaderInternal()
 
         if self.ctx:
@@ -2526,6 +2528,34 @@ class Loader(EntryTree, Service):
                         Inject.resolve(opt_inject, fiber.inject)
 
                 # 2. handle self-dispose (7 cases matching reference index.ts:128-157)
+                module_name = getattr(parent_entry, '_loaded_module_name', None)
+                parent_fiber = getattr(getattr(fiber, 'parent', None), 'fiber', None)
+                if (fiber.uid and module_name and module_name.startswith(('dynamic_plugin_', 'dynamic_cordis_plugin_'))
+                        and getattr(parent_fiber, 'entry', None) is not parent_entry):
+                    module = sys.modules.get(module_name)
+                    lease = self._module_owners.get(module_name)
+                    if lease is None or lease['module'] is not module:
+                        lease = dict(module=module, owners=set())
+                        self._module_owners[module_name] = lease
+                    token = object()
+                    lease['owners'].add(token)
+                    def release_module():
+                        lease['owners'].discard(token)
+                        if parent_entry._loaded_module_name == module_name:
+                            parent_entry._loaded_module_name = None
+                        if lease['owners']:
+                            return
+                        if self._module_owners.get(module_name) is lease:
+                            self._module_owners.pop(module_name)
+                        if sys.modules.get(module_name) is module:
+                            sys.modules.pop(module_name, None)
+                            importlib.invalidate_caches()
+                            for alias in self._module_aliases.pop(module_name, set()):
+                                value = self.registry_map.get(alias)
+                                if (getattr(value, '__module__', None) == module_name
+                                        and getattr(module, getattr(value, '__name__', ''), None) is value):
+                                    self.registry_map.pop(alias, None)
+                    fiber.effect(lambda: release_module, label='loader.module')
                 # Case 1: fiber is created (uid is not None)
                 if getattr(fiber, "uid", None) is not None:
                     return

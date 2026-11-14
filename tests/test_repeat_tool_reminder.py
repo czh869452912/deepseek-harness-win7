@@ -108,7 +108,7 @@ async def test_direct_calls_untracked_transparency_downstream_block_and_unload()
     ctx.on("tools/post-execute", block)
     async def attempt(agent, name="probe", args=None):
         return await ctx.waterfall("tools/post-execute", SimpleNamespace(
-            agent=agent, name=name, arguments={} if args is None else args), None)
+            agent=agent, name=name, arguments={} if args is None else args), None, lambda: None)
     try:
         assert not ctx.has("repeat_tool_reminder")
         assert await attempt(None) is downstream
@@ -120,10 +120,10 @@ async def test_direct_calls_untracked_transparency_downstream_block_and_unload()
         notice = repeated["additionalContexts"][0]
         assert notice["source"] == dict(kind="plugin", plugin="repeat-tool-reminder", form="notice", summary="probe \u00d7 2")
         assert await attempt(fresh) is downstream
-        await ctx.waterfall("agent/pre-step", dict(agent=first, messages=[dict(source=dict(kind="tool"))]))
+        await ctx.waterfall("agent/pre-step", dict(agent=first, messages=[dict(source=dict(kind="tool"))]), lambda: None)
         detailed = await attempt(first)
         assert "consecutive_calls: 3" in detailed["additionalContexts"][0]["content"][0]["text"]
-        await ctx.waterfall("agent/pre-step", dict(agent=first, messages=[dict(source=dict(kind="user"))]))
+        await ctx.waterfall("agent/pre-step", dict(agent=first, messages=[dict(source=dict(kind="user"))]), lambda: None)
         assert await attempt(first) is downstream
         await fiber.dispose()
         assert await attempt(first) is downstream
@@ -145,7 +145,7 @@ async def test_downstream_failure_still_advances_chain():
     data = SimpleNamespace(agent=agent, name="probe", arguments={})
     try:
         with pytest.raises(RuntimeError):
-            await ctx.waterfall("tools/post-execute", data, None)
+            await ctx.waterfall("tools/post-execute", data, None, lambda: None)
         detach()
         outcome = await ctx.waterfall("tools/post-execute", data, None, lambda *_: dict(kind="accept"))
         assert outcome["additionalContexts"][0]["content"][0]["text"] == GENTLE_REMINDER

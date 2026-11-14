@@ -52,9 +52,9 @@ def test_internal_listener_fiber_hooks_redirection():
         inject = []
 
         def apply(self, c: Context) -> None:
-            def on_update(config: Any, no_save: bool, next_fn: Any):
+            def on_update(config: Any, next_fn: Any):
                 updates.append(config)
-                return next_fn(config)
+                return next_fn()
 
             c.on("internal/update", on_update)
 
@@ -63,13 +63,13 @@ def test_internal_listener_fiber_hooks_redirection():
     assert fiber._hooks["internal/update"].length == 1
 
     # Trigger internal/update on the fiber's context
-    res = fiber.ctx.waterfall_sync("internal/update", {"key": "val1"}, False, lambda cfg: cfg)
+    res = fiber.ctx.waterfall_sync("internal/update", {"key": "val1"}, lambda: {"key": "val1"})
     assert res == {"key": "val1"}
     assert updates == [{"key": "val1"}]
 
 
-def test_fiber_epoch_clean_empty_string():
-    """Verify that a plugin with empty inject has epoch == '' matching TS Cordis."""
+def test_fiber_epoch_includes_initial_config_revision():
+    """Fixed rc022 includes config revision zero even without dependencies."""
     ctx = Context()
 
     class StandalonePlugin(Plugin):
@@ -81,7 +81,7 @@ def test_fiber_epoch_clean_empty_string():
 
     fiber = ctx.registry.plugin(StandalonePlugin())
     assert fiber.state == FiberState.ACTIVE
-    assert fiber.epoch == ""
+    assert fiber.epoch == "0"
 
 
 @pytest.mark.asyncio

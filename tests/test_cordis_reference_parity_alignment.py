@@ -140,7 +140,7 @@ async def test_waterfall_veto_without_calling_next():
     ctx.on("pipeline", middleware_veto)
     ctx.on("pipeline", middleware_never)
 
-    res = await ctx.waterfall("pipeline", "start")
+    res = await ctx.waterfall("pipeline", "start", lambda: "start")
     assert res == "start -> vetoed (via m1)"
 
 
@@ -235,7 +235,7 @@ async def test_include_plugin_initialization_and_patches():
 
 
 @pytest.mark.asyncio
-async def test_include_initial_import_failure_does_not_publish_uncommitted_data(tmp_path):
+async def test_include_import_failure_keeps_accepted_file_and_unloaded_rows(tmp_path):
     ctx = Context()
     await ctx.plugin(Loader)
     captured = {}
@@ -252,14 +252,13 @@ async def test_include_initial_import_failure_does_not_publish_uncommitted_data(
     ]), encoding="utf-8")
     fiber = ctx.plugin(ObservedInclude, {"path": str(filename)})
     try:
-        with pytest.raises(AggregateError) as error:
-            await fiber.await_settled()
-        assert "failed to import loader entry missing-a" in str(error.value)
+        await fiber.await_settled()
         include = captured["include"]
         await include.await_()
-        assert include.content is None
-        assert include.data is None
-        assert include.root.data == []
+        assert include.content == filename.read_text(encoding='utf-8')
+        assert len(include.data) == 2
+        assert len(include.root.data) == 2
+        assert all(entry.fiber is None for entry in include.store.values())
         assert include.get_tasks() == []
     finally:
         await ctx.fiber.dispose()
@@ -488,6 +487,7 @@ async def test_include_patch_insert_into_nested_group():
         assert entry2 is not None
         assert entry2.options.get("config", {}).get("port") == 7777
 
+        await inc_svc.await_()
         assert include_fiber.state == FiberState.ACTIVE
         assert inc_svc.get_tasks() == []
 

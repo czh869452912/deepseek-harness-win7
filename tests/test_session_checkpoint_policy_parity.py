@@ -39,7 +39,7 @@ async def test_llm_stream_waits_for_live_session_flush_before_downstream():
     result = await ctx.waterfall(
         "llm/stream",
         {"sessionId": "s"},
-        lambda options: downstream(options),
+        lambda: downstream({"sessionId": "s"}),
     )
     # The wrapper is intentionally lazy: checkpoint starts on first pull.
     assert order == []

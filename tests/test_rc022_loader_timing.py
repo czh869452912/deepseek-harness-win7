@@ -14,3 +14,4 @@ def test_mutation_prefixes_and_parent_owned_teardown():
     assert result['stop']['rows']==1 and result['stop']['commits']==['a']
     assert result['replace']==dict(published=True,partials=[['a',True]],empty_pending=False,empty_store=[],calls=[1,2])
     assert result['import']==dict(prefix=['import'],pending=True,registered=True,calls=['import',1])
+    assert result['concurrent-import']==result['import']

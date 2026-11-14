@@ -3,7 +3,7 @@ import {pathToFileURL} from 'node:url'
 const root=process.argv[2]!,load=(path:string)=>import(pathToFileURL(resolve(root,path)).href)
 const {Context}=await load('vendor/cordis/src/context.ts'),{default:Loader}=await load('vendor/loader/src/index.ts')
 const result:any={}
-for(const mode of ['remove','stop','replace','import']){
+for(const mode of ['remove','stop','replace','import','concurrent-import']){
   const ctx=new Context();await ctx.plugin(Loader);const loader=ctx.loader
   let enter!:()=>void,release!:()=>void
   const entered=new Promise<void>(r=>enter=r),gate=new Promise<void>(r=>release=r),cleaned:boolean[]=[],calls:any[]=[],partials:any[]=[],commits:string[]=[]
@@ -12,11 +12,12 @@ for(const mode of ['remove','stop','replace','import']){
   ctx.on('loader/partial-dispose',(entry:any,_old:any,partial:boolean)=>{partials.push([entry.options.id,partial])})
   const options={id:'a',name:'cordis:example',config:{value:1}}
   try{
-    if(mode==='import'){
+    if(mode==='import'||mode==='concurrent-import'){
       let finish!:(value:any)=>void;const imported=new Promise(r=>finish=r)
       loader.import=()=>{calls.push('import');return imported}
-      const pending=loader.create(options);result[mode]={prefix:[...calls],pending:!!loader.getTasks().length,registered:'a'in loader.store}
-      finish(example);await pending;await loader.await();result[mode].calls=calls;continue
+      const pending=loader.create(options),second=mode==='concurrent-import'?loader.store.a.init():undefined
+      result[mode]={prefix:[...calls],pending:!!loader.getTasks().length,registered:'a'in loader.store}
+      finish(example);await pending;await second;await loader.await();result[mode].calls=calls;continue
     }
     await loader.create(options);await loader.await();const entry=loader.store.a,fiber=entry.fiber
     if(mode==='replace'){

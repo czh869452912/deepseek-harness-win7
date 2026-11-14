@@ -10,7 +10,7 @@ from scripts import rc022_events_probe as probe
 async def native():
     from dsh.cordis import Context,Loader
     result={}
-    for mode in ('remove','stop','replace','import'):
+    for mode in ('remove','stop','replace','import','concurrent-import'):
         ctx=Context();await ctx.plugin(Loader);loader=ctx.loader
         entered=asyncio.Event();release=asyncio.Event();cleaned=[];calls=[];partials=[];commits=[]
         async def cleanup():entered.set();await release.wait();cleaned.append(True)
@@ -22,13 +22,16 @@ async def native():
         ctx.on('loader/partial-dispose',lambda entry,old,partial:partials.append([entry.options['id'],partial]))
         options=dict(id='a',name='cordis:example',config={'value':1})
         try:
-            if mode=='import':
+            if mode in ('import','concurrent-import'):
                 imported=asyncio.get_running_loop().create_future()
                 def load(*args):calls.append('import');return imported
                 loader.import_plugin=load
                 pending=loader.create(options)
+                second=loader.store['a'].init() if mode=='concurrent-import' else None
                 result[mode]=dict(prefix=list(calls),pending=bool(loader.get_tasks()),registered='a' in loader.store)
-                imported.set_result(example);await pending;await loader.wait()
+                imported.set_result(example);await pending
+                if second is not None:await second
+                await loader.wait()
                 result[mode]['calls']=calls
                 continue
             await loader.create(options);await loader.wait();entry=loader.store['a'];fiber=entry.fiber

@@ -103,7 +103,7 @@ async def test_goal_slash_command(goal_ctx):
     payload = {
         "messages": [{"role": "user", "content": "/goal Refactor codebase"}]
     }
-    await goal_ctx.waterfall("agent/pre-step", payload, lambda value: value)
+    await goal_ctx.waterfall("agent/pre-step", payload, lambda: payload)
     goal = goal_svc.get_goal()
     assert goal is not None
     assert goal.objective == "Refactor codebase"
@@ -113,7 +113,7 @@ async def test_goal_slash_command(goal_ctx):
     payload_pause = {
         "messages": [{"role": "user", "content": "/goal pause"}]
     }
-    await goal_ctx.waterfall("agent/pre-step", payload_pause, lambda value: value)
+    await goal_ctx.waterfall("agent/pre-step", payload_pause, lambda: payload_pause)
     assert goal_svc.get_goal().phase == "paused"
 
 

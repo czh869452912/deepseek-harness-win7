@@ -24,23 +24,28 @@ async def test_install_model_selection_snapshots_variables_and_request_routing()
     selection = ModelSelectionRef(current=None, assembled=None)
     dispose = install_model_selection(ctx, selection)
 
+    async def assemble(payload):
+        return await ctx.waterfall("system-prompt/assemble", payload, None, lambda: payload)
+    async def request(payload):
+        return await ctx.waterfall("agent/request", payload, lambda: payload)
+
     seed_assembly = {"variables": {}}
-    res_assembly = await ctx.waterfall("system-prompt/assemble", seed_assembly, None)
+    res_assembly = await assemble(seed_assembly)
     assert res_assembly.get("variables", {}) == {}
 
     seed_request = {"provider": "seed", "model": "seed", "temperature": 0.2}
-    res_req = await ctx.waterfall("agent/request", seed_request)
+    res_req = await request(seed_request)
     assert res_req == seed_request
 
     # 1. Set current selection with reasoning effort
     selection.current = ModelSelection(provider="alpha", model="a1", reasoning_effort="high")
-    res_assembly2 = await ctx.waterfall("system-prompt/assemble", {"variables": {}}, None)
+    res_assembly2 = await assemble({"variables": {}})
     assert res_assembly2["variables"]["provider"] == "alpha"
     assert res_assembly2["variables"]["model"] == "a1"
 
     # Next step request uses assembled selection
     selection.current = ModelSelection(provider="beta", model="b1")
-    res_req2 = await ctx.waterfall("agent/request", dict(seed_request))
+    res_req2 = await request(dict(seed_request))
     assert res_req2 == {
         "provider": "alpha",
         "model": "a1",
@@ -49,20 +54,20 @@ async def test_install_model_selection_snapshots_variables_and_request_routing()
     }
 
     # Next assembly captures beta/b1
-    res_assembly3 = await ctx.waterfall("system-prompt/assemble", {"variables": {}}, None)
+    res_assembly3 = await assemble({"variables": {}})
     assert res_assembly3["variables"]["provider"] == "beta"
     assert res_assembly3["variables"]["model"] == "b1"
 
     inherited = {"provider": "alpha", "model": "a1", "reasoningEffort": "max", "temperature": 0.2}
-    res_req3 = await ctx.waterfall("agent/request", inherited)
+    res_req3 = await request(inherited)
     assert res_req3 == {"provider": "beta", "model": "b1", "temperature": 0.2}
 
     # Dispose unregisters both listeners
     dispose()
-    res_assembly_after = await ctx.waterfall("system-prompt/assemble", {"variables": {}}, None)
+    res_assembly_after = await assemble({"variables": {}})
     assert res_assembly_after.get("variables", {}) == {}
 
-    res_req_after = await ctx.waterfall("agent/request", dict(seed_request))
+    res_req_after = await request(dict(seed_request))
     assert res_req_after == seed_request
 
 

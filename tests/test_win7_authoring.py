@@ -261,7 +261,7 @@ async def test_shipped_lifecycle_events_timer_and_async_cleanup(tmp_path):
         await ctx.serial('win7-authoring/serial', 3)
         await ctx.parallel('win7-authoring/parallel', 4)
         data = {}
-        await ctx.waterfall('win7-authoring/middleware', data)
+        await ctx.waterfall('win7-authoring/middleware', data, lambda: data)
         assert data == {'visited': True}
         for _ in range(50):
             if state['timer']:

@@ -36,14 +36,14 @@ async def test_real_cordis_events_bridge_to_gateway_and_delegate_by_scope():
             return {'handled': 'fallback'}
         ctx.on('approval/request', fallback)
         request = dict(agent=agent, signal=AbortController().signal, title='May I proceed?')
-        pending = asyncio.create_task(ctx.waterfall(scope_target(None, agent), 'approval/request', request))
+        pending = asyncio.create_task(ctx.waterfall(scope_target(None, agent), 'approval/request', request, lambda: None))
         frame = await asyncio.wait_for(stream.__anext__(), 2)
         assert frame['type'] == 'waterfall' and frame['agentId'] == 'agent-1'
         assert frame['request'] == {'title': 'May I proceed?'}
         gateway.events.result({'args': dict(clientId=ready['clientId'], eventId=frame['eventId'], outcome={'kind': 'next'})})
         assert await asyncio.wait_for(pending, 2) == {'handled': 'fallback'}
         assert calls == [request]
-        pending = asyncio.create_task(ctx.waterfall(scope_target(None, agent), 'approval/request', request))
+        pending = asyncio.create_task(ctx.waterfall(scope_target(None, agent), 'approval/request', request, lambda: None))
         frame = await asyncio.wait_for(stream.__anext__(), 2)
         gateway.events.result({'args': dict(clientId=ready['clientId'], eventId=frame['eventId'], outcome={'kind': 'result', 'value': {'allow': True}})})
         assert await pending == {'allow': True} and len(calls) == 1

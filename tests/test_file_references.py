@@ -237,7 +237,7 @@ async def test_remote_agent_routing_scoped_guidance_refresh_and_service_unload(t
         assert next(s["text"] for s in assembly["sections"] if s["name"] == "context:file-reference") == FILE_REFERENCE_PROMPT
         payload = dict(messages=[dict(role="user", content="Inspect @first.py")])
         before = copy.deepcopy(payload)
-        await ctx.waterfall("agent/pre-step", payload, lambda value: value)
+        await ctx.waterfall("agent/pre-step", payload, lambda: payload)
         assert payload == before
         (tmp_path / "first" / "first-new.py").write_text("", encoding="utf-8")
         ctx.emit("session/event", agents[0].session, dict(type="tool/result"))

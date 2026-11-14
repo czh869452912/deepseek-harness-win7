@@ -147,9 +147,13 @@ class IncludePersistence:
     async def _journal_write(self) -> None:
         if self.data is None or not self.journal:
             return
-        try:
+        def read_current() -> str:
             with open(self.filename, 'r', encoding='utf-8', newline='') as stream:
-                current = stream.read()
+                return stream.read()
+        try:
+            # Source awaits filesystem I/O before taking the journal batch.
+            # Keep edits made during that read in the same batch on Python 3.8.
+            current = await asyncio.get_running_loop().run_in_executor(None, read_current)
         except FileNotFoundError:
             self._persistence_warn('config file %s is missing, %d pending change(s) kept in memory',
                                    self.filename, len(self.journal))

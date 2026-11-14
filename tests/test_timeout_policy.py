@@ -379,7 +379,7 @@ async def test_guard_restores_signal_when_downstream_wrapper_throws(clock):
     ctx.on("tools/execute", fail)
     try:
         with pytest.raises(asyncio.TimeoutError, match="wrapper failed"):
-            await ctx.waterfall("tools/execute", data)
+            await ctx.waterfall("tools/execute", data, lambda: None)
         assert data["signal"] is upstream.signal
         assert all(row[2].cancelled for row in clock.timers)
     finally:

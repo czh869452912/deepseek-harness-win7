@@ -18,6 +18,8 @@ def start_coroutine(coroutine: Any) -> Any:
         result = loop.create_future()
         result.set_exception(error)
         return result
+    if isinstance(awaited, asyncio.Future):
+        awaited._asyncio_future_blocking = False
     return loop.create_task(resume_coroutine(coroutine, awaited))
 
 
@@ -54,6 +56,8 @@ async def await_callback_result(result: Any) -> Any:
             await asyncio.sleep(0)
             raise
         else:
+            if isinstance(awaited, asyncio.Future):
+                awaited._asyncio_future_blocking = False
             task = context.run(asyncio.create_task, resume_coroutine(result, awaited))
             try:
                 return await task

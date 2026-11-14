@@ -614,10 +614,10 @@ class AgentLoopService:
                     if persona and hasattr(persona, "get_prompt"):
                         system_prompt = persona.get_prompt()
 
-                    system_prompt = await self.ctx.waterfall("system-prompt/assemble", system_prompt)
-                    system_prompt = await self.ctx.waterfall("agent/prompt-assemble", system_prompt)
+                    system_prompt = await self.ctx.waterfall("system-prompt/assemble", system_prompt, lambda: system_prompt)
+                    system_prompt = await self.ctx.waterfall("agent/prompt-assemble", system_prompt, lambda: system_prompt)
 
-                    runtime_ctx_text = await self.ctx.waterfall("agent/runtime-context", "")
+                    runtime_ctx_text = await self.ctx.waterfall("agent/runtime-context", "", lambda: "")
                     if runtime_ctx_text:
                         candidate_ctx = runtime_context_proj.project(runtime_ctx_text, [])
                         if candidate_ctx:
@@ -857,6 +857,7 @@ class AgentLoopService:
                 {"agent": agent, "error": failure["message"], "failure": failure,
                  "provider": provider_name, "turn": turn, "step": step,
                  "retryPolicy": retry_policy, "signal": getattr(agent, "_cancel_event", None)},
+                lambda: None,
             )
             if agent.is_cancelled():
                 raise asyncio.CancelledError()

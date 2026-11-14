@@ -367,7 +367,16 @@ class ConfigWatcherService(Service):
                 if not started.done():
                     started.set_result(False)
             self._cancel_ready = cancel_ready
+            owner_fiber = self._owner_context.fiber
+            def retiring(fiber):
+                # Release the startup barrier when disposal starts, before watchers
+                # join callbacks that are waiting on that barrier.
+                if fiber is owner_fiber and fiber.uid is None and self._cancel_ready is not None:
+                    self._cancel_ready()
+            self._owner_context.on('internal/plugin', retiring, global_listener=True)
             yield cancel_ready
+            from dsh.cordis.hmr_profile_watch import watch_profile
+            await watch_profile(self, profile)
 
     def _profile_modules(self, roots):
         """Loaded Python modules below the profile and its linked packages."""

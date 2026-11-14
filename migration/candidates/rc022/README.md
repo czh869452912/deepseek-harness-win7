@@ -97,3 +97,5 @@
 2026-11-15：C1-AJ [已求值的 Python 导入图](hmr-graph-checks.json)完成 2 组实际 ESM/CJS/Python 模块图旅程、4 项原版所选消费者与 58/11 项 Python 检查。文件及 descriptor Host 导入记录实际成功的 import，保留函数运行时 import 与显式 importlib 动态加载的差别；已求值链接不随源码改写变化。旧未跟踪模块采用一次性语法/绑定快照，不宣称重建任意旧导入历史；弱快照不保留已卸载模块。Descriptor 缓存键修正为真实 Host 文件。全部合成目录及链接已清理，生产 plan/stop/profile 重组继续推进。
 
 2026-11-15：C1-AK [生产 HMR Profile 重组](hmr-profile-checks.json)完成 12 组固定原版/Python 实际 boot→模块替换→重组对照、13 项原版所选检查与 16/10 项 Python 定向检查。接入模块比较、只读规划、驱逐与停止、完整重组及观察记录；失败不回滚已应用代码，修正后恢复，删除再加入覆盖，宿主/无 Loader 所有者留待重启。初次探针服务名冲突/重复提供者修正，重复 realpath 导致的超时以弱模块 URL 缓存解决，原始诊断保留。全部合成夹具及时清理。自动监听、launcher 旧生命周期退役及 root 部分重载继续推进，未据此整体验收 HMR。
+
+2026-11-15：C1-AL [HMR 自动 profile 监听](hmr-watch-checks.json)完成 8 组固定原版/Python 实际文件旅程、9 项原版 profile 与 11 项 Python 定向检查。HMR 自持 profile/home/manifest 精确监听，按成功输入签名去重，忽略仅依赖变化；launcher 移除旧双 patch watcher。覆盖 HMR 自身替换和启动取消，计数前两端均等待上一事务完成。初次未等待事务便退出暴露 Python 卸载等待环，原始任务栈保留，作为下一生命周期回归处理，未将该竞争宣称通过。清理 18 处合成夹具/工作区共 19212 字节及 2 个链接；旧 patchReload、模块整批派发和 root 部分重载继续推进。

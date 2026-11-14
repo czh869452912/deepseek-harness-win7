@@ -26,7 +26,6 @@ from dsh.boot.app_boot import (
     install_fail_loud,
     load_optional_patches,
     load_overlay_patches,
-    watch_user_patches,
 )
 from dsh.boot.profile import (
     load_profile,
@@ -40,7 +39,7 @@ from dsh.boot.profile import (
 )
 from dsh.boot.cmdline import provide_cmdline, AppReady
 from dsh.boot.process_shutdown import create_process_shutdown, ProcessShutdown
-from dsh.boot.profile_context import read_profile_patches, resolve_telemetry_patch
+from dsh.boot.profile_context import resolve_telemetry_patch
 from dsh.boot.runtime_resolution import create_runtime_resolution
 from dsh.boot.plugin_packages import PluginPackages
 
@@ -393,10 +392,6 @@ async def _run_profile(options: Dict[str, Any]) -> Dict[str, Any]:
         'telemetryDisabledEnv': composed.telemetry_disabled_env,
     }
 
-    def compose_live() -> List[Dict[str, Any]]:
-        return preserve_default_session_encoding(admit_historical_persona_patches(
-            read_profile_patches(NAME, profile_context)), dsh_home)
-
     def host_setup(host_ctx: Context) -> None:
         app["current"] = host_ctx
         holder = options.get("_python_profile_context")
@@ -451,16 +446,6 @@ async def _run_profile(options: Dict[str, Any]) -> Dict[str, Any]:
                 if ctx.get("timer") is None:
                     await ctx.loader.create({"name": "@deepseek-ai/cordis-plugin-timer"})
                 await ctx.loader.create({"name": "@deepseek-ai/cordis-plugin-hmr", "config": {"root": []}})
-            await watch_user_patches(ctx, {
-                "binName": NAME,
-                "filename": composed.profile.patch_path,
-                "compose": compose_live,
-            })
-            await watch_user_patches(ctx, {
-                "binName": NAME,
-                "filename": home_patch_path(dsh_home),
-                "compose": compose_live,
-            })
         except Exception as error:
             suppress_shutdown_error(ctx, signal_shutdown, error)
 

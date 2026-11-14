@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-15",
+  "unit": "C1-AL-HmrAutomaticProfileWatch",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "state": "targeted-passed",
+  "paired": ".goose/out/rc022-hmr-watch-paired-20261115-05/report.json",
+  "observations": 8,
+  "source": {
+    "run": "rc022-hmr-watch-source-20261115-01",
+    "passed": 9,
+    "failed": 0
+  },
+  "native": {
+    "run": "rc022-hmr-watch-native-20261115-02",
+    "passed": 11,
+    "failed": 0
+  },
+  "verification_scope_reason": "Actual boot/HMR profile and home patch files, unlink, bundle manifest selection, dependency-only suppression, byte-identical input suppression, provider self-replacement and startup cancellation. Both observers explicitly drain preceding transactions before measuring independent notification counts or graceful final teardown. Native queue/readiness/profile and canonical CLI/Web startup consumers passed.",
+  "scope": "Every profile HMR owns exact profile/home/manifest watchers; successful input signatures deduplicate complete generation recomposition. Manifest dependency-only changes are ignored. Launcher no longer registers the historical pair of patch reload watchers. Startup disposal releases readiness before joining waiting callbacks.",
+  "cleanup": ".goose/out/rc022-hmr-watch-native-20261115-02/cleanup.json",
+  "remaining": "Unbarriered application exit while profile reconciliation still owns Loader settlement produced a waiting cycle in initial native observations and remains a separate explicit lifecycle regression to resolve; task stacks and failed paired runs retained. Whole module batch dispatch, root partialReload modernization and public patchReload/fallback retirement remain. This receipt is targeted automatic-watch acceptance, not complete HMR or release acceptance."
+}

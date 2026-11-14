@@ -173,7 +173,9 @@ def import_package(directory):
         package.__spec__ = importlib.machinery.ModuleSpec(namespace, loader=None, is_package=True)
         sys.modules[namespace] = package
     try:
-        module = importlib.import_module(namespace + "." + module_name)
+        from dsh.cordis.hmr_modules import source_imports
+        with source_imports(directory):
+            module = importlib.import_module(namespace + "." + module_name)
         plugin = getattr(module, export)
         if not callable(plugin) and not callable(getattr(plugin, "apply", None)):
             raise TypeError("Python entry export is not a Cordis plugin")

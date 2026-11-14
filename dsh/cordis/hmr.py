@@ -371,16 +371,14 @@ class ConfigWatcherService(Service):
 
     def _profile_modules(self, roots):
         """Loaded Python modules below the profile and its linked packages."""
-        from pathlib import Path
-        loader = self._owner_context.get('loader')
-        internal = getattr(loader, 'internal', None)
-        urls = list(getattr(internal, 'loadCache', {}))
-        urls.extend(Path(os.path.abspath(module.__file__)).as_uri()
-                    for module in list(sys.modules.values())
-                    if isinstance(getattr(module, '__file__', None), str))
-        return [url for url in dict.fromkeys(urls)
+        return [url for url in self.modules.loaded_urls()
                 if isinstance(url, str) and url.startswith('file:')
                 and any(file_path(url).startswith(root) for root in roots)]
+
+    async def get_linked(self, url):
+        return self.modules.get_linked(url)
+
+    getLinked = get_linked
 
     def run_exclusive(self, operation):
         """Append a caller mutation to the reload queue, preserving its result."""

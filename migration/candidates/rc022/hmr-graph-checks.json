@@ -1,0 +1,31 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-15",
+  "unit": "C1-AJ-EvaluatedPythonImportGraph",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "state": "targeted-passed",
+  "paired": ".goose/out/rc022-hmr-graph-paired-20261115-02/report.json",
+  "observations": 2,
+  "source": {
+    "run": "rc022-hmr-graph-source-20261115-01",
+    "passed": 4,
+    "failed": 0,
+    "not_selected": 83
+  },
+  "native": [
+    {
+      "run": "rc022-hmr-graph-native-20261115-01",
+      "passed": 58,
+      "failed": 0
+    },
+    {
+      "run": "rc022-hmr-graph-native-20261115-02",
+      "passed": 11,
+      "failed": 0
+    }
+  ],
+  "verification_scope_reason": "Actual evaluated ESM static/dynamic and CommonJS runtime require edges match Python statement imports and explicit importlib dynamic imports, before and after evaluation-time imports and subsequent edits to disk. Native checks prove traced links do not reparse source, untraced fallback snapshots stay stable, opaque values are not inspected, weak snapshots release old modules and actual Python descriptor packages record relative dependencies and host-file URLs. Existing distribution, Loader leases, resource resolution, queue/ready/plan/cache and recomposition consumers passed.",
+  "scope": "Production Loader and Python Host descriptor imports trace successful Python import statements through per-module builtins, including statements later executed in functions. Explicit importlib dynamic imports behave like dynamic ESM imports and add no static edge. No global builtins replacement remains; temporary finders are removed in finally. Traced graphs use evaluated links; preexisting untraced modules have a one-time syntax/binding fallback and are not claimed to reconstruct arbitrary earlier Python import history. HMR getLinked/initial module enumeration consume this provider; replacement plan execution remains separate.",
+  "cleanup": ".goose/out/rc022-hmr-graph-native-20261115-02/cleanup.json",
+  "remaining": "Production plan/stop/recompose and automatic profile watches, manifest invalidation adapter, whole module batch scheduling and legacy module HMR replacement. Not full HMR acceptance."
+}

@@ -3,10 +3,14 @@ import importlib
 import importlib.abc
 import importlib.machinery
 import importlib.util
+import ast
+import builtins
+from contextlib import contextmanager
 import os
 from pathlib import Path
 import sys
 import types
+import weakref
 
 
 def module_url(module):
@@ -21,6 +25,19 @@ class FreshSourceLoader(importlib.machinery.SourceFileLoader):
         source = self.get_data(self.path)
         code = compile(source, self.path, 'exec')
         module._dsh_hmr_source = source
+        module._dsh_hmr_links = []
+        original_import = builtins.__import__
+        def tracked_import(name, globals=None, locals=None, fromlist=(), level=0):
+            imported = original_import(name, globals, locals, fromlist, level)
+            absolute = importlib.util.resolve_name('.'*level+name, (globals or {}).get('__package__')) if level else name
+            targets = [imported, sys.modules.get(absolute)]
+            targets.extend(sys.modules.get(absolute+'.'+child) for child in (fromlist or ()) if isinstance(child, str))
+            for target in targets:
+                url = module_url(target)
+                if url is not None and url not in module._dsh_hmr_links:
+                    module._dsh_hmr_links.append(url)
+            return imported
+        module.__dict__['__builtins__'] = dict(vars(builtins), __import__=tracked_import)
         exec(code, module.__dict__)
 
 
@@ -46,18 +63,31 @@ def load_python_file(filename, module_name):
 
 
 class _FreshFinder(importlib.abc.MetaPathFinder):
-    def __init__(self, urls):
+    def __init__(self, urls, roots=()):
         self.urls = urls
+        self.roots = roots
 
     def find_spec(self, fullname, path=None, target=None):
-        if not self.urls:
+        if not self.urls and not self.roots:
             return None
         spec = importlib.machinery.PathFinder.find_spec(fullname, path, target)
         if spec is not None and isinstance(spec.loader, importlib.machinery.SourceFileLoader):
-            if Path(os.path.realpath(spec.origin)).as_uri() in self.urls:
+            filename = os.path.realpath(spec.origin)
+            if Path(filename).as_uri() in self.urls or any(filename.startswith(root) for root in self.roots):
                 spec.loader = FreshSourceLoader(fullname, spec.origin)
                 return spec
         return None
+
+
+@contextmanager
+def source_imports(directory):
+    """Capture executed imports of a Python Host package and its local modules."""
+    finder = _FreshFinder(set(), (os.path.realpath(directory)+os.sep,))
+    sys.meta_path.insert(0, finder)
+    try:
+        yield
+    finally:
+        sys.meta_path[:] = [value for value in sys.meta_path if value is not finder]
 
 
 class PythonModules:
@@ -65,12 +95,107 @@ class PythonModules:
         self.ctx = ctx
         self._fresh_urls = set()
         self._finder = None
+        self._snapshots = weakref.WeakKeyDictionary()
+        self._host = None
+
+    def loaded_modules(self):
+        loader = self.ctx.get('loader')
+        cache = getattr(getattr(loader, 'internal', None), 'loadCache', {})
+        modules = {}
+        for url, module in list(cache.items()):
+            if isinstance(module, types.ModuleType):
+                modules.setdefault(url, {})[id(module)] = module
+        for module in list(sys.modules.values()):
+            url = module_url(module)
+            if url is not None:
+                modules.setdefault(url, {})[id(module)] = module
+        return {url:list(values.values()) for url, values in modules.items()}
+
+    def loaded_urls(self):
+        loader = self.ctx.get('loader')
+        cache = getattr(getattr(loader, 'internal', None), 'loadCache', {})
+        return list(dict.fromkeys([*cache, *self.loaded_modules()]))
+
+    def _links(self, module):
+        traced = getattr(module, '_dsh_hmr_links', None)
+        if isinstance(traced, list):
+            return list(traced)
+        # Modules imported before tracing began keep a one-time syntax snapshot;
+        # bindings to imported modules/classes/functions supplement those edges.
+        if module not in self._snapshots:
+            targets = []
+            source = getattr(module, '_dsh_hmr_source', None)
+            filename = getattr(module, '__file__', '')
+            if source is None and isinstance(filename, str) and filename.endswith(('.py', '.pyw')):
+                try:
+                    with open(filename, 'rb') as stream:
+                        source = stream.read()
+                except OSError:
+                    pass
+            if source is not None:
+                try:
+                    work = list(ast.iter_child_nodes(ast.parse(source, filename=filename)))
+                except (SyntaxError, ValueError):
+                    work = []
+                while work:
+                    node = work.pop(0)
+                    if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.Lambda)):
+                        continue
+                    if isinstance(node, ast.Import):
+                        for alias in node.names:
+                            targets.extend([sys.modules.get(alias.name), sys.modules.get(alias.name.split('.')[0])])
+                    elif isinstance(node, ast.ImportFrom):
+                        absolute = importlib.util.resolve_name('.'*node.level+(node.module or ''), module.__package__) if node.level else node.module or ''
+                        targets.append(sys.modules.get(absolute))
+                        targets.extend(sys.modules.get(absolute+'.'+alias.name) for alias in node.names)
+                    else:
+                        work.extend(ast.iter_child_nodes(node))
+            for value in list(module.__dict__.values()):
+                if isinstance(value, types.ModuleType):
+                    targets.append(value)
+                elif isinstance(value, (types.FunctionType, types.MethodType, type)):
+                    origin = value.__module__
+                    if isinstance(origin, str) and origin != module.__name__:
+                        targets.append(sys.modules.get(origin))
+            self._snapshots[module] = list(dict.fromkeys(url for url in map(module_url, targets) if url is not None))
+        return list(self._snapshots[module])
+
+    def get_linked(self, url):
+        return list(dict.fromkeys(child for module in self.loaded_modules().get(url, ()) for child in self._links(module)))
+
+    def module_graph(self):
+        importers = {}
+        for url, modules in self.loaded_modules().items():
+            for child in dict.fromkeys(child for module in modules for child in self._links(module)):
+                importers.setdefault(child, {})[url] = None
+        return {url:list(values) for url, values in importers.items()}
+
+    def host_modules(self):
+        if self._host is None:
+            filename = sys.argv[0] if sys.argv else None
+            main = sys.modules.get('__main__')
+            root = module_url(main)
+            if not filename or not os.path.isfile(filename) or root != Path(os.path.realpath(filename)).as_uri():
+                self._host = set()
+            else:
+                modules = self.loaded_modules()
+                work, seen = [root], {root}
+                for url in work:
+                    for module in modules.get(url, ()):
+                        for child in self._links(module):
+                            if child not in seen:
+                                seen.add(child)
+                                work.append(child)
+                self._host = seen
+        return set(self._host)
 
     def dispose(self):
         if self._finder is not None:
             sys.meta_path[:] = [finder for finder in sys.meta_path if finder is not self._finder]
             self._finder = None
         self._fresh_urls.clear()
+        self._snapshots.clear()
+        self._host = None
 
     def _install(self):
         if self._finder is None:

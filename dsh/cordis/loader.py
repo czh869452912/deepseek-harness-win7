@@ -1733,7 +1733,7 @@ class EntryTree:
                 loader_inst = getattr(self.ctx, "loader", None) or self
                 if hasattr(loader_inst, "internal"):
                     from pathlib import Path
-                    loader_inst.internal.loadCache[Path(os.path.realpath(resolved_path)).as_uri()] = module
+                    loader_inst.internal.loadCache[Path(os.path.realpath(module.__file__)).as_uri()] = module
                 return plugin
 
             if resolved_path.endswith(".py"):

@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-15",
+  "unit": "C1-Q-LayeredEnvironment",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "state": "targeted-passed",
+  "paired": ".goose/out/rc022-environment-paired-20261115-02/report.json",
+  "observations": 48,
+  "native": {
+    "run": "rc022-environment-native-20261115-01",
+    "xml": ".goose/out/rc022-environment-native-20261115-01/pytest.xml"
+  },
+  "scope": "Exact DeepSeek endpoint and case-insensitive proxy exemptions only in Harness home; project rejection, spelling guidance, inherited precedence, same-directory provenance and validation before materialization.",
+  "verification_scope_reason": "Fixed Source/native real .env matrix plus environment, credentials/configuration-chain and canonical app boot consumers. The prior 103-test Source startup batch already includes upstream home endpoint cases; not rerun for this Python-only correction.",
+  "cleanup": ".goose/out/rc022-environment-native-20261115-01/cleanup.json",
+  "remaining": "Compatibility preflight, runtime resolution and profile recomposition remain C1 work. No full gate or release acceptance."
+}

@@ -198,13 +198,18 @@ def _read_env_layer(
     values = parse_dotenv(content)
     for name in values.keys():
         if is_bootstrap_only(name):
-            proxy_name = name.upper() in {"HTTP_PROXY", "HTTPS_PROXY", "ALL_PROXY", "NO_PROXY"}
-            if proxy_name and home is not None and os.path.abspath(target_dir) == home:
+            upper = name.upper()
+            endpoint_names = {"DEEPSEEK_BASE_URL", "DEEPSEEK_SEARCH_BASE_URL"}
+            route_name = upper in {"HTTP_PROXY", "HTTPS_PROXY", "ALL_PROXY", "NO_PROXY"} or name in endpoint_names
+            if route_name and home is not None and os.path.abspath(target_dir) == home:
                 continue
-            remedy = (
-                f"export {name}, or put it in {os.path.join(home or resolve_dsh_home(), '.env')}, which does not travel with a repository"
-                if proxy_name else f"export {name} instead of putting it in a .env file"
-            )
+            home_env = os.path.join(home or resolve_dsh_home(), '.env')
+            if route_name:
+                remedy = f"export {name}, or put it in {home_env}, which does not travel with a repository"
+            elif upper in endpoint_names:
+                remedy = f"spell it {upper}, then export it or put it in {home_env}, which does not travel with a repository"
+            else:
+                remedy = f"export {name} instead of putting it in a .env file"
             raise BootstrapEnvError(
                 f'{bin_name}: {path} sets "{name}", which only the launching environment may set '
                 f"(it decides how this process starts, where its code and instructions load from, or how it reaches the network); "

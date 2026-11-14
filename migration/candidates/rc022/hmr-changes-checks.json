@@ -1,0 +1,24 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-15",
+  "unit": "C1-AN-HmrEvaluatedChanges",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "state": "targeted-passed",
+  "paired": ".goose/out/rc022-hmr-changes-paired-20261115-01/report.json",
+  "observations": 606,
+  "source": {
+    "run": "rc022-hmr-changes-source-20261115-01",
+    "passed": 3,
+    "not_selected": 21,
+    "failed": 0
+  },
+  "native": {
+    "run": "rc022-hmr-changes-native-20261115-01",
+    "passed": 8,
+    "failed": 0
+  },
+  "verification_scope_reason": "Actual upstream analyzeChanges over 6 explicit and 600 deterministic evaluated graphs. Compare ordered accepted/declined sets, dependency cycles, duplicate paths, builtins, node_modules and external overlap. Selected Source partial replacement dependency consumers and native evaluated graph/dispatch consumers passed.",
+  "scope": "ConfigWatcherService exposes the dependency acceptance operation used by the upcoming modern partial replacement. It reads evaluated getLinked relationships, not freshly parsed changed source. This helper is not yet called by the legacy replacement body.",
+  "cleanup": ".goose/out/rc022-hmr-changes-native-20261115-01/cleanup.json",
+  "remaining": "Integrate acceptance with namespace/runtime-aware modern partial replacement and failure rollback; no complete module HMR or release acceptance."
+}

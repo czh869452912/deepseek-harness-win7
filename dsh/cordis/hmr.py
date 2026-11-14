@@ -390,6 +390,12 @@ class ConfigWatcherService(Service):
 
     getLinked = get_linked
 
+    async def analyze_changes(self):
+        from dsh.cordis.hmr_changes import analyze_changes
+        await analyze_changes(self)
+
+    analyzeChanges = analyze_changes
+
     async def reconcile_profile(self, required_ids=()):
         from dsh.cordis.hmr_profile import reconcile_profile
         return await reconcile_profile(self, required_ids)

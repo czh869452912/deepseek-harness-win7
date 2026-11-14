@@ -101,3 +101,5 @@
 2026-11-15：C1-AL [HMR 自动 profile 监听](hmr-watch-checks.json)完成 8 组固定原版/Python 实际文件旅程、9 项原版 profile 与 11 项 Python 定向检查。HMR 自持 profile/home/manifest 精确监听，按成功输入签名去重，忽略仅依赖变化；launcher 移除旧双 patch watcher。覆盖 HMR 自身替换和启动取消，计数前两端均等待上一事务完成。初次未等待事务便退出暴露 Python 卸载等待环，原始任务栈保留，作为下一生命周期回归处理，未将该竞争宣称通过。清理 18 处合成夹具/工作区共 19212 字节及 2 个链接；旧 patchReload、模块整批派发和 root 部分重载继续推进。
 
 2026-11-15：C1-AM [HMR root 整批派发](hmr-dispatch-checks.json)完成 6 组固定原版/Python 实际服务受控事件对照、13 项原版调度检查与 31 项 Python 定向检查。root 轮询进入有序去重的统一事务，精确配置路径免于重复处理，Include 故障不阻止同批后续刷新，宿主重载优先且替换失败清空 stash；真实轮询覆盖时间戳倒退与事务阻塞。模块替换边界在探针中明确受控，不以此认证仍旧的替换算法。全部自有合成夹具和工作区已清理；旧算法现代化、root 监听细节、patchReload 与退出竞争继续推进。
+
+2026-11-15：C1-AN [已求值依赖变更分类](hmr-changes-checks.json)完成 606 组固定原版/Python 有序集合对照，3 项原版所选依赖消费者及 8 项 Python 检查通过。保持环、重复路径、宿主边界与 node_modules/builtin 排除规则，读取运行中 getLinked 图；此助手尚未接入旧部分替换算法，不据此宣称完整模块重载通过。自有合成输入和测试工作区已清理，继续实现 namespace/runtime 替换与恢复。

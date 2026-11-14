@@ -1,0 +1,134 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-15",
+  "unit": "S0-B-Source-build-browser",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "state": "build-passed-browser-boundaries-recorded",
+  "source_clean": true,
+  "install": {
+    "owner": "rc022-S0",
+    "purpose": "target dependency installation and Source build probes",
+    "cleanup_milestone": "after last S0 probe consumer; preserve unresolved diagnostics",
+    "command": [
+      "C:\\Users\\czh86\\Documents\\Codex\\deepseek-harness-win7\\.goose\\out\\rc022-prep-20261114-01\\toolchain\\node-v24.9.0-win-x64\\node.exe",
+      "C:\\Users\\czh86\\Documents\\Codex\\deepseek-harness-win7\\.goose\\out\\rc022-prep-20261114-01\\toolchain\\pnpm\\package\\bin\\pnpm.cjs",
+      "install",
+      "--frozen-lockfile",
+      "--store-dir",
+      "C:\\Users\\czh86\\Documents\\Codex\\deepseek-harness-win7\\.goose\\out\\rc022-build-20261115-01\\pnpm-store"
+    ],
+    "cwd": "C:\\Users\\czh86\\Documents\\Codex\\deepseek-harness-win7\\.goose\\out\\rc022-prep-20261114-01\\source",
+    "started": 1794673209.9241598,
+    "state": "finished",
+    "exit_code": 0,
+    "elapsed_seconds": 154.4208481311798
+  },
+  "build": {
+    "command": [
+      "C:\\Users\\czh86\\Documents\\Codex\\deepseek-harness-win7\\.goose\\out\\rc022-prep-20261114-01\\toolchain\\node-v24.9.0-win-x64\\node.exe",
+      "C:\\Users\\czh86\\Documents\\Codex\\deepseek-harness-win7\\.goose\\out\\rc022-prep-20261114-01\\toolchain\\pnpm\\package\\bin\\pnpm.cjs",
+      "run",
+      "build:artifacts",
+      "--profile",
+      "official"
+    ],
+    "cwd": "C:\\Users\\czh86\\Documents\\Codex\\deepseek-harness-win7\\.goose\\out\\rc022-prep-20261114-01\\source",
+    "started": 1794673421.950641,
+    "state": "finished",
+    "exit_code": 0,
+    "elapsed_seconds": 305.52139711380005
+  },
+  "artifacts": {
+    "passed": 8,
+    "failed": 0,
+    "skipped": 0,
+    "client_artifacts": 371,
+    "public_values": 4
+  },
+  "compatibility": {
+    "change": "Conditional Array.prototype.toSorted from fixed core-js 3.49.0; upstream frontend unchanged",
+    "native_tests": {
+      "passed": 14,
+      "failed": 0,
+      "skipped": 0
+    },
+    "chromium108": {
+      "basic_interaction": true,
+      "application_errors": 0
+    },
+    "electron22": {
+      "basic_interaction": true,
+      "application_errors": 0,
+      "explained_warning": "Unpackaged observer opens HTTP Source host without a CSP; Electron development warning retained"
+    }
+  },
+  "open_issues": [
+    {
+      "id": "S0-B-anchor",
+      "severity": "blocking-C9-visual-acceptance",
+      "observation": "Model menu appears at viewport upper left because Chromium108 lacks CSS anchor positioning; captured on both engines",
+      "upstream": "packages/client/ui-model-selection/src/client/ModelSelect.module.css",
+      "next": "Audit all active anchor grammar and add Host compatibility; original client bytes must remain unchanged"
+    },
+    {
+      "id": "S0-B-plugin-inventory",
+      "severity": "needs-investigation",
+      "observation": "Plugin page navigates and renders heading, but snapshot remains loading and refresh disabled; no inventory parity claimed",
+      "next": "Observe Source Remote manager completion before Python controller parity"
+    }
+  ],
+  "scope": "Source build and initial browser compatibility discovery only. No Python host, full upstream desktop, Win7, migration acceptance or release certification.",
+  "reports": {
+    ".goose/out/rc022-build-20261115-01/browser-adapted.mjs": "b7fdeb65d5378644020f43729dca26b95f12c5d99e6de57bfdb7fb2673050669",
+    ".goose/out/rc022-build-20261115-01/browser-initial-networkidle-failed.mjs": "04b8b593bf33cbe5218b8e9954ade41df369cca82b082596f3f2cc8c32d122bc",
+    ".goose/out/rc022-build-20261115-01/browser-initial.mjs": "5e6ee77a93e34efee547afe3e5150099822b00beff1844020b6bd1f20dbb8e53",
+    ".goose/out/rc022-build-20261115-01/browser-interact.mjs": "77d516ecefe035a2ff22963ce462497069203755a997a0a2685bea00aa893f82",
+    ".goose/out/rc022-build-20261115-01/browser-plugins.mjs": "cdcfba0ebd1c08fda4f8661f8788371dae3ec26308432f82386060559aeebb4b",
+    ".goose/out/rc022-build-20261115-01/build-command.json": "851a58628585653cc9c67ce6acf26ff65fdae6fac9fb74142381c218b14c73dd",
+    ".goose/out/rc022-build-20261115-01/build.log": "489c2569a1db1b46d83afe82616f95ce334a76d005f2ff357aa6a1dedb14ca8d",
+    ".goose/out/rc022-build-20261115-01/chromium108-adapted.json": "71a3976153ff2cbb5762f6691efca57a2153e49e8dc687c73e82911b2787eee3",
+    ".goose/out/rc022-build-20261115-01/chromium108-adapted.png": "4b7060975e58d3f540f4b14e82bf0b5f34a0010ef28ace3883aa3bd716398caf",
+    ".goose/out/rc022-build-20261115-01/chromium108-after-continue.json": "2228c0b778109513c0f6f270824ea74e70827e5c295a0e8a6086a571096fbbeb",
+    ".goose/out/rc022-build-20261115-01/chromium108-after-continue.png": "805364728d14c055fc25366837334c8a8247ccd55aec6f3949ff903f8cbf560a",
+    ".goose/out/rc022-build-20261115-01/chromium108-initial.json": "89068f927b4eb2664c1157e446cabbfd5f406029fe210679f26d4cfa7693feb2",
+    ".goose/out/rc022-build-20261115-01/chromium108-initial.png": "4cde23bdc2863f1d4a3f967338c2502fc853eba92a8bc5aa51eedbc277bdb791",
+    ".goose/out/rc022-build-20261115-01/host-command.json": "5f6ed7a04c9607e377d894a0baa23de80ed69f11f2114359b887fffec26d6e5a",
+    ".goose/out/rc022-build-20261115-01/host.log": "04f8c9a68dd4c24b9a02c13e08f8639116743570ed027ed23c35c66151f8e62d",
+    ".goose/out/rc022-build-20261115-01/install-command.json": "4ab6ab8d3142a9807d5515fa0e874187cf14cc84e484f85bafe070c0a3fbe016",
+    ".goose/out/rc022-build-20261115-01/install.log": "13a9e5effb236295d7e66ffb77c63a0efdb4173cb4f6893e59fdf5475d77f696",
+    ".goose/out/rc022-browser-20261115-01/browser-journey.mjs": "e250c935700cafaf7d5599e57677881ceedd78284c46f5d3e11ea568b5c9db28",
+    ".goose/out/rc022-browser-20261115-01/chromium108-failure.png": "0263146ac81877782c35fa372929224d428c03c308e12b2efa93c751f35b7a61",
+    ".goose/out/rc022-browser-20261115-01/chromium108-home.png": "95f7c63bf2ad40c5e8b8b088d17767cf6f4eb4b81b9bee35f11e8b7f9bbfc88b",
+    ".goose/out/rc022-browser-20261115-01/chromium108-model-picker.png": "3f8b133950342df9c4ef80fb6d30a8f27c69b7672df1a36bc216f630e83010fe",
+    ".goose/out/rc022-browser-20261115-01/chromium108.json": "cf0056efd7dffdd146d16029786cbe618cbf9f86c7dcf8e6e0f65ee538670210",
+    ".goose/out/rc022-browser-20261115-01/pytest-command.json": "9c25f027bfb281a094f2c62df550a442cb2847cc2f76443f0b3e29dab50face0",
+    ".goose/out/rc022-browser-20261115-01/pytest.log": "b145c9fdf2d147a9aa107d96584532523c102da990a82473e0e3d37428800cc4",
+    ".goose/out/rc022-browser-20261115-01/pytest.xml": "572614c7b7e147f376d291060f9edba5b50861d7abf15047d43559c1f27f5d5e",
+    ".goose/out/rc022-browser-20261115-02/browser-journey-launch-path-failed.mjs": "36ff63b624e913b52404d5c6fbc23d8138725f3f4ba311661827404970c03f6f",
+    ".goose/out/rc022-browser-20261115-02/browser-journey.mjs": "dc40fcada180362c64aa129ed83cd97542bee436677146ec8da3fcdfc70db2d1",
+    ".goose/out/rc022-browser-20261115-02/chromium108-home.png": "95f7c63bf2ad40c5e8b8b088d17767cf6f4eb4b81b9bee35f11e8b7f9bbfc88b",
+    ".goose/out/rc022-browser-20261115-02/chromium108-model-picker.png": "3f8b133950342df9c4ef80fb6d30a8f27c69b7672df1a36bc216f630e83010fe",
+    ".goose/out/rc022-browser-20261115-02/chromium108-plugins.png": "88c756468437dd8a074bcc584a421de3818e6becfa7c0f290151c055dc6363cc",
+    ".goose/out/rc022-browser-20261115-02/chromium108.json": "c3583318b9442f82ff21aeffbb5d36b4c719a0aabee712dc086f5ab289005e44",
+    ".goose/out/rc022-browser-20261115-02/electron-main.cjs": "0982c5048ece2beb616bf090b1d97da4617cd12a769d33c1e29fe33e343f7464",
+    ".goose/out/rc022-browser-20261115-02/electron22-failure.png": "b2d9c36a7e6032fd15349fe86c8162f2dfbcc86f52538c4a1d19d9ff3d082c4c",
+    ".goose/out/rc022-browser-20261115-02/electron22-home.png": "caafe40bb9382381f2758c61baed6f83cb8422ed05b4e5ecaa0c4f62bb8e05e2",
+    ".goose/out/rc022-browser-20261115-02/electron22-model-picker.png": "2509359c89db11096171876d2c62cd4705a1ad96879690e418fa96e596b249c9",
+    ".goose/out/rc022-browser-20261115-02/electron22-plugins.png": "438f06dd1797cfa29cbfe5aa549e28c34756164e78394f3940bb77647fe4fd2d",
+    ".goose/out/rc022-browser-20261115-02/electron22.json": "aa4699df9d10bf42c6f197e000fb976ef8a1050689c7e177202fb1ebc16beb4e",
+    ".goose/out/rc022-browser-20261115-03/browser-journey.mjs": "ff351a615569a5cdbaf19e1fd3077a30b7a7a1e08a7fe93b84c8dc8958b3cf3a",
+    ".goose/out/rc022-browser-20261115-03/cleanup.json": "5a72e1a805cd540cf17253d65cbef82d4561ea94fbb82878aaaf0557842e553b",
+    ".goose/out/rc022-browser-20261115-03/electron-main.cjs": "0982c5048ece2beb616bf090b1d97da4617cd12a769d33c1e29fe33e343f7464",
+    ".goose/out/rc022-browser-20261115-03/electron22-home.png": "d610f93a8195fc9ddede772a2b8bcf43209e3ad1a48f6a583fa8570249be4e93",
+    ".goose/out/rc022-browser-20261115-03/electron22-model-picker.png": "2509359c89db11096171876d2c62cd4705a1ad96879690e418fa96e596b249c9",
+    ".goose/out/rc022-browser-20261115-03/electron22-plugins.png": "438f06dd1797cfa29cbfe5aa549e28c34756164e78394f3940bb77647fe4fd2d",
+    ".goose/out/rc022-browser-20261115-03/electron22.json": "899deaeb96498cf02875bcfa770f571de01e50f72c9abfb78649e8902cff9a44",
+    ".goose/out/rc022-browser-20261115-04/before-adapter.mjs": "2f456e74dc2daea0214663b06e711dc1ccd53cc823359be6e3dcfdb5a0926473",
+    ".goose/out/rc022-browser-20261115-04/chromium108-previous-adapter.json": "e7800ebfd6c9af1e18d54a95c325083bb498ccfa8e084440e477874bbe61cbc9",
+    ".goose/out/rc022-browser-20261115-04/chromium108-previous-adapter.png": "e5f63d5270c1e5614e696ba4a5c9ad4c803563ea3ddf7452956190687cb35b42",
+    ".goose/out/rc022-prep-20261114-01/source/.dsh-build/client-build-environment.json": "7a9221c75f0771b547eb59b28e670fb79930a7234e22638bb72b0efc0e13c2b6",
+    ".goose/out/rc022-prep-20261114-01/source/pnpm-lock.yaml": "c24a38565023f08480f3832a554a676ad7479d36c0868063c85ad66ba6d3e68a",
+    ".goose/out/rc022-prep-20261114-01/source/package.json": "23d0b7ff113a11437900ab0a3c55fcd86f6d62027f4ff3e1aeb5ae08bee8db9c"
+  },
+  "acceptance_changed": false
+}

@@ -246,6 +246,10 @@
       "sha256": "9b57f753fb76152ad08ee17f841f08b1bbee88ee0b3ef704286b7ee18a9f8570"
     },
     {
+      "path": "internals/get-built-in-prototype-method.js",
+      "sha256": "3d86c47bff87ad0fe9f69bd4bfb9f0026a8cc0f8ade1603b00fad4e0b1521a19"
+    },
+    {
       "path": "internals/get-built-in.js",
       "sha256": "45cfa392f287d6424058e3f997a3916098e7fe8f12cfa025d079277f2b64fbee"
     },
@@ -598,6 +602,10 @@
       "sha256": "ef47d2bd86c7f1159dbb6e4a34f414c45d25fa86945f6d72abdb2e28f6eeace7"
     },
     {
+      "path": "modules/es.array.to-sorted.js",
+      "sha256": "490b390b7939bca1fb78ad6ac14051e9ee7115f3aa212efae72e4c19fd6e87e0"
+    },
+    {
       "path": "modules/es.map.get-or-insert-computed.js",
       "sha256": "f572719140ee992c15f71730a66905bfa976f5b244e39f4b03e51fe3ad092a0b"
     },
@@ -655,13 +663,13 @@
     },
     {
       "path": "url-entry.cjs",
-      "sha256": "1d15d1bd6bace0a86eb42fb200b403a624e99f728c7637b0cbd1e2176513e90f"
+      "sha256": "08471aa1d7cafefedd184e31f24fd833417b9ba960cdc026f82e76b86f020df7"
     }
   ],
   "output": {
     "path": "url.js",
-    "sha256": "73ab2ae6c52319f2dd808612618f489a5b4fdd74f2a14ad13d94ca4d6931a083",
-    "bytes": 60376
+    "sha256": "d4ee03603a1a56cc92284568fa75f141b59d9edb41775549626bb80c82f64300",
+    "bytes": 60790
   },
   "licenseSha256": "b87653fff2d44426ab5cd4723cee3b1364dc8d35a0acdf098c54689543123bf8"
 }

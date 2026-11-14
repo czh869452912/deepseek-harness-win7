@@ -24,6 +24,7 @@ def script():
             'typeof Uint8Array.prototype.toBase64 !== "function" || typeof Map.prototype.getOrInsertComputed !== "function" || '
             'typeof Set.prototype.intersection !== "function" || '
             'typeof Map.prototype.getOrInsert !== "function" || typeof ArrayBuffer.prototype.transferToFixedLength !== "function" || '
+            'typeof Array.prototype.toSorted !== "function" || '
             '(typeof URL === "function" && new URL("dsh-resource://file/x").hostname !== "file");\n' +
             base + '\nif (legacy) {\n' + workers + '\n}\n})();')
 

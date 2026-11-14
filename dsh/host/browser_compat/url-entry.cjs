@@ -19,3 +19,5 @@ if (typeof Map.prototype.getOrInsertComputed !== 'function') require('core-js/mo
 if (typeof Map.prototype.getOrInsert !== 'function') require('core-js/modules/es.map.get-or-insert');
 if (typeof Set.prototype.intersection !== 'function') require('core-js/modules/es.set.intersection.v2');
 if (typeof ArrayBuffer.prototype.transferToFixedLength !== 'function') require('core-js/modules/es.array-buffer.transfer-to-fixed-length');
+// The 0.2.2 model provider picker sorts a copy while retaining catalog order.
+if (typeof Array.prototype.toSorted !== 'function') require('core-js/modules/es.array.to-sorted');

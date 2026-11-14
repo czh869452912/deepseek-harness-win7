@@ -10,7 +10,7 @@ let observations = 0;
 try {
   delete AbortSignal.any;
   const realm = vm.createContext({AbortSignal, AbortController, EventTarget, Event});
-  vm.runInContext('delete globalThis.Iterator', realm);
+  vm.runInContext('delete globalThis.Iterator; delete Array.prototype.toSorted;', realm);
   vm.runInContext(code, realm);
   observations += await vm.runInContext(`(async () => {
     let count = 0;
@@ -32,6 +32,19 @@ try {
     items[Symbol.toStringTag] = 'Own'; check(Object.prototype.toString.call(items) === '[object Own]');
     throws(() => {Iterator.prototype.constructor = null;});
     const installedIterator = Iterator;
+    const groups = [{id:'other',index:0},{id:'official',index:1},{id:'other',index:2}];
+    const sorted = groups.toSorted((a,b)=>(a.id==='official'?0:1)-(b.id==='official'?0:1));
+    check(sorted !== groups && sorted.map(v=>v.index).join(',') === '1,0,2');
+    check(groups.map(v=>v.index).join(',') === '0,1,2');
+    check(Object.keys([,1].toSorted()).join(',') === '0,1');
+    check([,1].toSorted()[1] === undefined);
+    check(Array.prototype.toSorted.call({0:'b',1:'a',length:2}).join(',') === 'a,b');
+    throws(() => [].toSorted(null));
+    throws(() => Array.prototype.toSorted.call(null));
+    class CustomArray extends Array {static get [Symbol.species]() {throw new Error('species must not be used');}}
+    check(new CustomArray(2,1).toSorted().constructor === Array);
+    check(!Object.getOwnPropertyDescriptor(Array.prototype,'toSorted').enumerable);
+    const installedSorted = Array.prototype.toSorted;
     const any = AbortSignal.any;
     check(any.length === 1);
     throws(() => any()); throws(() => any(null)); throws(() => any(''));
@@ -74,6 +87,7 @@ try {
     const installed = Promise.withResolvers;
     ${code}
     check(Promise.withResolvers === installed && AbortSignal.any === any && Iterator === installedIterator);
+    check(Array.prototype.toSorted === installedSorted);
     return count;
   })()`, realm);
 } finally {

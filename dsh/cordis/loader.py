@@ -1560,7 +1560,7 @@ class EntryTree:
         else:
             if entry.options not in group.data:
                 group.data.append(entry.options)
-        self.write()
+        group.tree.commit(dict(id=entry.options['id'], group=group, options=entry.options))
         if isinstance(eid, AwaitableString):
             return eid
         return AwaitableString(str(eid))
@@ -1575,22 +1575,26 @@ class EntryTree:
 
     async def _remove_tree_entry_async(self, entry_id: str) -> None:
         entry = self.resolve(entry_id)
+        group = entry.parent
+        legacy = entry.options
         res = entry.parent.remove(entry_id)
         if inspect.isawaitable(res):
             await res
-        entry.parent.tree.write()
+        group.tree.commit(dict(id=legacy['id'], group=group, legacy=legacy))
 
     def update(self, entry_id: str, options: Dict[str, Any], parent_id: Optional[str] = None, position: Optional[int] = None) -> Any:
         """Update an entry and optionally move it to another group with rollback on failure."""
         try:
             loop = asyncio.get_running_loop()
-            return self._track(loop.create_task(self._update_tree_entry_async(entry_id, options, parent_id, position)))
+            from dsh.cordis.awaiting import start_coroutine
+            return self._track(start_coroutine(self._update_tree_entry_async(entry_id, options, parent_id, position)))
         except RuntimeError:
             return asyncio.run(self._update_tree_entry_async(entry_id, options, parent_id, position))
 
     async def _update_tree_entry_async(self, entry_id: str, options: Dict[str, Any], parent_id: Optional[str] = None, position: Optional[int] = None) -> None:
         entry = self.resolve(entry_id)
         source = entry.parent
+        legacy = dict(entry.options)
         source_index = source.data.index(entry.options) if entry.options in source.data else -1
         target = source
 
@@ -1605,6 +1609,14 @@ class EntryTree:
 
         try:
             res = entry.update(options, create=False, force=True)
+            if target.tree is not source.tree:
+                source.tree.commit(dict(id=legacy['id'], group=source, legacy=legacy))
+                target.tree.commit(dict(id=legacy['id'], group=target, options=entry.options))
+            else:
+                change = dict(id=legacy['id'], group=target, options=entry.options, legacy=legacy)
+                if target is not source:
+                    change['from'] = source
+                target.tree.commit(change)
             if inspect.isawaitable(res):
                 await res
         except Exception as e:
@@ -1623,9 +1635,6 @@ class EntryTree:
                     raise AggregateError([e, rollback_err], f"failed to roll back loader entry move {entry_id}")
             raise e
 
-        source.tree.write()
-        if target != source:
-            target.tree.write()
 
     def import_plugin(self, name: str, get_outer_stack: Optional[Callable[[], List[str]]] = None) -> Any:
         """Import a plugin module from a specifier, builtin, or file path matching TS EntryTree.import."""
@@ -1759,6 +1768,10 @@ class EntryTree:
         d = getattr(module, "default", module)
         return d if d is not None else module
 
+    def commit(self, change: Dict[str, Any]) -> None:
+        """Report a tree mutation; file-backed trees override the persistence."""
+        self.write()
+
     def write(self) -> None:
         """Persist tree state. If filepath is set, writes out YAML atomically matching TS EntryTree.write()."""
         if not getattr(self, "filepath", None):
@@ -1814,16 +1827,9 @@ class EntryGroup:
             self.data.append(options)
 
         async def _run_create():
-            try:
-                res = entry.update(options, create=True, force=True)
-                if inspect.isawaitable(res):
-                    await res
-            except Exception as e:
-                if existing:
-                    entry.parent = prev_parent
-                else:
-                    self.tree.store.pop(eid, None)
-                raise e
+            res = entry.update(options, create=True, force=True)
+            if inspect.isawaitable(res):
+                await res
             return str(eid)
 
         try:
@@ -1870,113 +1876,51 @@ class EntryGroup:
 
     async def _remove_async(self, entry_id: str, is_dispose: bool = False) -> None:
         entry = self.tree.store.get(entry_id)
-        if not entry:
+        if not entry or entry.parent is not self:
             return
+        self.tree.store.pop(entry_id, None)
+        if not is_dispose:
+            self.unlink(entry.options)
         res = entry._dispose()
         if inspect.isawaitable(res):
             await res
-        if not is_dispose:
-            self.unlink(entry.options)
-        self.tree.store.pop(entry_id, None)
         if hasattr(self.ctx, "emit"):
             self.ctx.emit("loader/partial-dispose", entry, entry.options, False)
 
     def update(self, config_list: List[Dict[str, Any]]) -> Any:
-        old_config = list(self.data)
-        seen: Set[str] = set()
-        for opt in config_list:
-            eid = self.tree.ensure_id(opt)
-            if eid in seen:
-                raise DuplicateEntryIdError(f"Duplicate loader entry id: {eid}")
-            seen.add(eid)
-
-        # Synchronously populate entries in store and parent reference
-        for opt in config_list:
-            eid = self.tree.ensure_id(opt)
-            existing = self.tree.store.get(eid)
-            loader_inst = getattr(self.tree.ctx, "loader", None) or self.tree
-            is_group = opt.get("group", False) or opt.get("name") == "cordis:group"
-            entry = existing or Entry(loader=loader_inst, name=opt, entry_id=eid, group=is_group)
-            if existing is None:
-                entry.options = dict(opt)
-            if is_group and not entry.subgroup:
-                entry.subgroup = Group(entry.ctx, opt.get("config", [])) if hasattr(entry, "ctx") and entry.ctx else None
-            entry.parent = self
-            self.tree.store[eid] = entry
-            if is_group:
-                sub_config = opt.get("config", [])
-                if isinstance(sub_config, list):
-                    for sub_opt in sub_config:
-                        sub_eid = self.tree.ensure_id(sub_opt)
-                        sub_existing = self.tree.store.get(sub_eid)
-                        sub_entry = sub_existing or Entry(loader=loader_inst, name=sub_opt, entry_id=sub_eid)
-                        if sub_existing is None:
-                            sub_entry.options = dict(sub_opt)
-                        sub_entry.parent = entry.subgroup or self
-                        self.tree.store[sub_eid] = sub_entry
-
+        old_config = self.data
+        self.data = config_list
         try:
-            loop = asyncio.get_running_loop()
-            task = self._track_task(loop.create_task(self._update_async(config_list)))
-            self._update_task = task
-            return task
+            asyncio.get_running_loop()
         except RuntimeError:
-            return asyncio.run(self._update_async(config_list))
+            return asyncio.run(self._update_async(config_list, old_config))
+        from dsh.cordis.awaiting import start_coroutine
+        task = self._track_task(start_coroutine(self._update_async(config_list, old_config)))
+        self._update_task = task
+        return task
 
-    async def _update_async(self, config_list: List[Dict[str, Any]]) -> None:
-        old_config = list(self.data)
-        seen: Set[str] = set()
-        for opt in config_list:
-            eid = self.tree.ensure_id(opt)
-            if eid in seen:
-                raise DuplicateEntryIdError(f"Duplicate loader entry id: {eid}")
-            seen.add(eid)
-
-        old_map = {opt["id"]: opt for opt in old_config if "id" in opt}
-        new_map = {opt["id"]: opt for opt in config_list if "id" in opt}
-
-        try:
-            outcomes = await asyncio.gather(*(self._create_async(opt) for opt in config_list), return_exceptions=True)
-            fiber = getattr(self.ctx, "fiber", None)
-            if fiber is not None and fiber.uid is None:
-                return
-            failures = [o for o in outcomes if isinstance(o, Exception)]
-            if len(failures) == 1:
-                raise failures[0]
-            elif len(failures) > 1:
-                raise AggregateError(failures, "loader entries failed to apply")
-
-            for eid in list(old_map.keys()):
-                if eid not in new_map:
-                    await self._remove_async(eid, is_dispose=True)
-            self.data = config_list
-        except Exception as error:
-            fiber = getattr(self.ctx, "fiber", None)
-            if fiber is not None and fiber.uid is None:
-                return
-            rollback_errors: List[Any] = []
-            for eid in reversed(list(new_map.keys())):
-                if eid not in old_map:
-                    try:
-                        await self._remove_async(eid, is_dispose=True)
-                    except Exception as rb_err:
-                        rollback_errors.append(rb_err)
-            for opt in old_config:
+    async def _update_async(self, config_list: List[Dict[str, Any]],
+                            old_config: Optional[List[Dict[str, Any]]] = None) -> None:
+        old_map = {opt.get('id'): opt for opt in (old_config or [])}
+        new_map = {}
+        for options in config_list:
+            key = options.get('id') or object()
+            new_map[key] = options
+        keys = list(dict.fromkeys(list(old_map) + list(new_map)))
+        async def apply_one(key: Any) -> None:
+            if key in new_map:
                 try:
-                    await self._create_async(opt)
-                except Exception as rb_err:
-                    rollback_errors.append(rb_err)
-            self.data = old_config
-            if rollback_errors:
-                error = AggregateError([error] + rollback_errors, "loader entry rollback failed")
-            raise error
+                    result = self.create(new_map[key])
+                    if inspect.isawaitable(result):
+                        await result
+                except Exception as error:
+                    self.ctx.logger('loader').error(error)
+            else:
+                await self._remove_async(key)
+        try:
+            await asyncio.gather(*(apply_one(key) for key in keys))
         finally:
-            try:
-                curr = asyncio.current_task()
-            except RuntimeError:
-                curr = None
-            if getattr(self, "_update_task", None) is curr:
-                self._update_task = None
+            self._update_task = None
 
     def stop(self) -> Any:
         try:
@@ -2015,7 +1959,7 @@ class Group(EntryGroup):
         EntryGroup.__init__(self, ctx, target_tree)
         if entry:
             entry.subgroup = self
-        self.config = config or []
+        self.config = config if config is not None else []
 
         async def _on_group_update(cfg: Any, next_fn: Optional[Callable[[], Any]] = None, *args: Any, **kwargs: Any) -> Any:
             res = self.update(cfg)
@@ -2027,7 +1971,7 @@ class Group(EntryGroup):
 
     async def init(self) -> Any:
         yield lambda: self._stop_async()
-        await self._update_async(self.config)
+        await self.update(self.config)
 
 
 setattr(Group, EntryGroup.key, True)
@@ -2224,7 +2168,8 @@ class Entry:
                 elif inspect.isawaitable(fiber):
                     await fiber
         except Exception as error:
-            await self._dispose_async(fiber)
+            if fiber is None or getattr(fiber.ctx.fiber, '_error', None) is None:
+                await self._dispose_async(fiber)
             raise error
 
     async def _init(self) -> None:
@@ -2308,7 +2253,8 @@ class Entry:
         """Merge new options, restart as needed, and update fiber transactionally."""
         try:
             loop = asyncio.get_running_loop()
-            return self._track_task(loop.create_task(self._update_async(options, create=create, force=force)))
+            from dsh.cordis.awaiting import start_coroutine
+            return self._track_task(start_coroutine(self._update_async(options, create=create, force=force)))
         except RuntimeError:
             return asyncio.run(self._update_async(options, create=create, force=force))
 
@@ -2432,22 +2378,9 @@ class Entry:
                     if not force:
                         commit()
                         return
-            try:
-                await self._patch_context(diff)
-            except Exception as error:
-                self.options = previous_options
-                self.name = self.options.get("name", self.name)
-                self.config = self.options.get("config", self.config)
-                try:
-                    await self._patch_context(diff)
-                except Exception as rollback_error:
-                    raise LoaderUpdateError("rollback", legacy, AggregateError([error, rollback_error]))
-                if hasattr(self.context, "emit"):
-                    self.context.emit("loader/partial-dispose", self, candidate, True)
-                raise LoaderUpdateError("apply", candidate, error)
             commit()
-            if hasattr(self.context, "emit"):
-                self.context.emit("loader/partial-dispose", self, legacy, True)
+            self.context.emit("loader/partial-dispose", self, legacy, True)
+            await self._patch_context(diff)
             return
 
         plugin = None
@@ -2781,12 +2714,14 @@ class Loader(EntryTree, Service):
                 if getattr(entry, "disabled", False):
                     return
 
+                legacy = dict(entry.options)
                 entry.disabled = True
                 if hasattr(entry, "options") and isinstance(entry.options, dict):
                     entry.options["disabled"] = True
 
-                if tree and hasattr(tree, "write"):
-                    tree.write()
+                if tree:
+                    tree.commit(dict(id=entry.options['id'], group=entry.parent,
+                                     options=entry.options, legacy=legacy))
 
             self.ctx.on("internal/plugin", _on_internal_plugin, global_listener=True)
 
@@ -2866,14 +2801,16 @@ class Loader(EntryTree, Service):
                 parent_fiber = getattr(getattr(fiber, "parent", None), "fiber", None)
                 if not parent_fiber or getattr(parent_fiber, "entry", None) != fiber.entry:
                     entry = fiber.entry
+                    legacy = dict(entry.options)
                     cfg_schema = getattr(getattr(fiber, "runtime", None), "Config", None) or getattr(getattr(fiber, "plugin", None), "Config", None)
                     if cfg_schema and hasattr(cfg_schema, "simplify") and callable(cfg_schema.simplify):
                         simplified = cfg_schema.simplify(config)
                         entry.options["config"] = simplified if simplified is not None else config
                     else:
                         entry.options["config"] = config
-                    if entry.parent and hasattr(entry.parent, "tree") and hasattr(entry.parent.tree, "write"):
-                        entry.parent.tree.write()
+                    if entry.parent and hasattr(entry.parent, "tree"):
+                        entry.parent.tree.commit(dict(id=entry.options['id'], group=entry.parent,
+                                                      options=entry.options, legacy=legacy))
 
         _do_save()
 

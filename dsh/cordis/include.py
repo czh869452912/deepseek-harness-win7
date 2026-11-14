@@ -18,6 +18,8 @@ from dsh.cordis.context import Context
 from dsh.cordis.loader import EntryTree, EntryGroup, Entry, apply_entry_patches, sort_keys, js_constructor
 from dsh.cordis.service import Service, ServiceSymbols
 from dsh.cordis.utils import _UNDEFINED
+from dsh.cordis.include_persistence import IncludePersistence
+from dsh.cordis.include_patch import ensure_insert_ids, ensure_ids
 
 
 class ConfigFileError(Exception):
@@ -45,7 +47,7 @@ WRITE_RETRY_DELAY_SEC = 0.02
 SUPPORTED_EXTENSIONS = {".json", ".yaml", ".yml"}
 
 
-class Include(EntryTree, Service):
+class Include(IncludePersistence, EntryTree, Service):
     """
     Loader entry tree backed by a YAML or JSON file.
     Matching reference/vendor/include/src/index.ts.
@@ -114,6 +116,7 @@ class Include(EntryTree, Service):
         self.pending_write: Optional[List[Dict[str, Any]]] = None
         self._write_task: Optional[Any] = None
         self._seq = 0
+        self._initialize_journal()
 
         async def _on_update(new_config: Any, *args: Any, **kwargs: Any) -> Any:
             next_fn = args[-1] if args and callable(args[-1]) else kwargs.get("next_fn")
@@ -125,16 +128,11 @@ class Include(EntryTree, Service):
                     return res
                 return None
 
-            async with self._apply_lock:
-                if self.data is not None:
-                    patches = new_config.get("patches") if isinstance(new_config, dict) else None
-                    patched_data = self.apply_patches(self.data, patches)
-                    res = self.root.update(patched_data)
-                    if inspect.isawaitable(res):
-                        await res
-                    self.config = dict(new_config)
-            # Short-circuit waterfall matching TS behavior
-            return None
+            self.config = new_config
+            ensure_insert_ids(self.config.get('patches'), lambda entry_id: entry_id in self.store)
+            self._schedule_apply()
+            if self._applyTask is not None:
+                await self._applyTask
 
         ctx.on("internal/update", _on_update)
 
@@ -190,25 +188,10 @@ class Include(EntryTree, Service):
 
 
     async def stop(self) -> None:
-        """Stop child entries and flush pending writes matching TS stop()."""
-        res = self.root.stop()
-        if inspect.isawaitable(res):
-            await res
-        await self.flush_write()
+        await self._stop_journal()
 
     async def refresh(self) -> None:
-        """Re-read backing file and transactionally update child entries under applyQueue lock."""
-        async with self._apply_lock:
-            candidate = await self.read()
-            if not candidate:
-                return
-            patched = self.apply_patches(candidate["data"], self.config.get("patches"))
-            res = self.root.update(patched)
-            if inspect.isawaitable(res):
-                await res
-            self.content = candidate["content"]
-            self.data = candidate["data"]
-            self.check_access()
+        await self._refresh_journal()
 
     @staticmethod
     def _retryable_write_error(error: Exception) -> bool:
@@ -326,6 +309,9 @@ class Include(EntryTree, Service):
             self._write_file_sync(config_data)
 
     async def flush_write(self) -> None:
+        if self.pending_write is None:
+            await self.flush()
+            return
         config_data = self.pending_write
         self.pending_write = None
         if config_data is None:
@@ -345,38 +331,9 @@ class _IncludeInitDual:
     def __init__(self, include: "Include"):
         self.include = include
         self.candidate = self._prepare_candidate()
-        try:
-            loop = asyncio.get_running_loop()
-        except RuntimeError:
-            loop = None
-        if loop is not None:
-            # Initial apply and refresh mutate the same transactional tree.
-            # Own the queued task and publish content only after it commits.
-            async def apply_initial():
-                async with include._apply_lock:
-                    if self.candidate:
-                        patched = include.apply_patches(self.candidate["data"], include.config.get("patches"))
-                        result = include.root.update(patched)
-                        if inspect.isawaitable(result):
-                            await result
-                        self._commit_candidate()
-            self._update_res = include._track(loop.create_task(apply_initial()))
-            include._update_task = self._update_res
-            return
         if self.candidate:
-            patched = self.include.apply_patches(self.candidate["data"], self.include.config.get("patches"))
-            res = self.include.root.update(patched)
-            if inspect.isawaitable(res):
-                # `root.update` already returned the task that owns the apply
-                # (`tree.ts` `apply()` returns the queued promise); wrapping it
-                # in a second task would create work the tree does not own.
-                self.include._update_task = res
-                self._update_res = res
-            else:
-                self._update_res = None
-        else:
-            self._update_res = None
-        self._commit_candidate()
+            include._accept_snapshot(self.candidate)
+        self._update_res = include._applyTask
 
     def _prepare_candidate(self) -> Optional[Dict[str, Any]]:
         try:
@@ -384,19 +341,15 @@ class _IncludeInitDual:
         except ConfigFileError as error:
             if error.stage == "read" and isinstance(error.cause, FileNotFoundError):
                 if "initial" in self.include.config and isinstance(self.include.config["initial"], list):
-                    self.include._write_file_sync(self.include.config["initial"])
+                    initial = copy.deepcopy(self.include.config['initial'])
+                    ensure_ids(initial, lambda entry_id: entry_id in self.include.store)
+                    self.include._write_text_sync(self.include.dump(initial))
                     candidate = self.include._read_file(forced=True)
                 else:
                     raise ConfigFileError("read", self.include.filename, FileNotFoundError(f"config file not found: {self.include.filename}"))
             else:
                 raise error
         return candidate
-
-    def _commit_candidate(self) -> None:
-        if self.candidate:
-            self.include.content = self.candidate["content"]
-            self.include.data = self.candidate["data"]
-            self.include.check_access()
 
     def __iter__(self):
         yield self.include.stop

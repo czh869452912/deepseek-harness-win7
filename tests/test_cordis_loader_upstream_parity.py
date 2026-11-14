@@ -93,7 +93,7 @@ def test_unknown_plugin_fails_loudly():
 
 
 @pytest.mark.asyncio
-async def test_entry_group_update_rolls_back_new_entries_on_failure():
+async def test_entry_group_update_keeps_desired_rows_and_reports_failed_activation():
     ctx = Context()
     loader = Loader(ctx)
     active = []
@@ -114,15 +114,17 @@ async def test_entry_group_update_rolls_back_new_entries_on_failure():
     original = [{"id": "good", "name": "good", "config": {"value": "old"}}]
     await loader.root.update(original)
 
-    with pytest.raises(RuntimeError, match="failed to apply loader entry bad"):
-        await loader.root.update([
-            {"id": "good", "name": "good", "config": {"value": "new"}},
-            {"id": "bad", "name": "bad"},
-        ])
-
-    assert loader.root.data == original
-    assert list(loader.store) == ["good"]
-    assert active == ["old"]
+    candidate = [
+        {'id':'good','name':'good','config':{'value':'new'}},
+        {'id':'bad','name':'bad'},
+    ]
+    await loader.root.update(candidate)
+    assert loader.root.data is candidate
+    assert list(loader.store) == ['good', 'bad']
+    assert active == ['new']
+    with pytest.raises(RuntimeError, match='apply exploded'):
+        await loader.store['bad'].fiber
+    await ctx.fiber.dispose()
 
 
 @pytest.mark.asyncio
@@ -501,7 +503,7 @@ async def test_group_update_stops_after_owner_disposal_without_rollback():
     gate.set()
 
     await update
-    assert group.data == []
+    assert group.data == [{"id": "late", "name": "unused"}]
 
 
 @pytest.mark.asyncio

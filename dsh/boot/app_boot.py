@@ -843,10 +843,18 @@ async def watch_user_patches(ctx: Context, options: Dict[str, Any]) -> Callable[
 
     async def on_change():
         cfg = dict(entry.options.get("config", {}))
+        previous = copy.deepcopy(cfg)
         cfg.pop("patches", None)
         user_patches = load_optional_patches(bin_name, filename) or []
         patches = compose(user_patches)
-        await entry.update({"config": dict(cfg, patches=patches)})
+        try:
+            await entry.update({"config": dict(cfg, patches=patches)})
+            await assert_entries_activated(ctx, bin_name)
+        except Exception:
+            # Preserve the existing watcher policy until profile recomposition
+            # takes over activation judgment; Group itself no longer rolls back.
+            await entry.update({"config": previous})
+            raise
 
     try:
         disposer = await hmr.register_config(filename, on_change)

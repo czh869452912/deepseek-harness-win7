@@ -47,31 +47,22 @@ def test_entry_update_config_and_state_toggle():
     assert ctx.get_service("sample")["count"] == 10
 
 
-def test_entry_group_duplicate_id_raises_and_rolls_back():
-    """Verify that EntryGroup.update raises ValueError on duplicate IDs and restores original entries."""
+def test_entry_group_duplicate_ids_use_last_row_without_reverting_desired_list():
+    """Fixed Source maps explicit ids to the last row and retains the input list."""
     ctx = Context()
     loader = Loader(ctx)
-    loader.register_plugin_class("sample-service", SampleServicePlugin)
-
+    loader.register_plugin_class('sample-service', SampleServicePlugin)
     group = loader.root
-    group.create({"id": "p1", "name": "sample-service", "config": {"count": 1}})
-    group.create({"id": "p2", "name": "sample-service", "config": {"count": 2}})
-
-    assert len(group.data) == 2
-
-    # Attempt to update with duplicate IDs
     duplicate_batch = [
-        {"id": "dup1", "name": "sample-service"},
-        {"id": "dup1", "name": "sample-service"},
+        {'id':'dup1','name':'sample-service','config':{'count':1}},
+        {'id':'dup1','name':'sample-service','config':{'count':2}},
     ]
-
-    with pytest.raises(ValueError, match="Duplicate loader entry id"):
-        group.update(duplicate_batch)
-
-    # State restored to original 2 entries
-    assert len(group.data) == 2
-    assert group.data[0]["id"] == "p1"
-    assert group.data[1]["id"] == "p2"
+    group.update(duplicate_batch)
+    assert group.data is duplicate_batch
+    assert list(loader.store) == ['dup1']
+    assert loader.store['dup1'].fiber.effectiveConfig == {'count':2}
+    import asyncio
+    asyncio.run(ctx.fiber.dispose())
 
 
 def test_entry_tree_nested_resolve_and_remove():

@@ -1549,21 +1549,13 @@ class EntryTree:
         return self.store.get(entry_id)
 
     def create(self, options: Dict[str, Any], parent_id: Optional[str] = None, position: Optional[int] = None) -> Any:
-        """Create an entry in root group or nested group."""
+        """Report insertion before starting the child lifecycle, as Source does."""
         group = self.resolve_group(parent_id)
-        eid = group.create(options)
-        entry = self.resolve(str(eid))
-        if position is not None and 0 <= position < len(group.data):
-            if entry.options in group.data:
-                group.data.remove(entry.options)
-            group.data.insert(position, entry.options)
-        else:
-            if entry.options not in group.data:
-                group.data.append(entry.options)
-        group.tree.commit(dict(id=entry.options['id'], group=group, options=entry.options))
-        if isinstance(eid, AwaitableString):
-            return eid
-        return AwaitableString(str(eid))
+        entry_id = group.tree.ensure_id(options)
+        index = len(group.data) if position is None else int(min(position, len(group.data)))
+        group.data.insert(index, options)
+        group.tree.commit(dict(id=entry_id, group=group, options=options))
+        return group.create(options)
 
     def remove(self, entry_id: str) -> Any:
         """Stop and remove an entry from its parent group."""
@@ -1582,8 +1574,8 @@ class EntryTree:
             await res
         group.tree.commit(dict(id=legacy['id'], group=group, legacy=legacy))
 
-    def update(self, entry_id: str, options: Dict[str, Any], parent_id: Optional[str] = None, position: Optional[int] = None) -> Any:
-        """Update an entry and optionally move it to another group with rollback on failure."""
+    def update(self, entry_id: str, options: Dict[str, Any], parent_id: Any = _UNDEFINED, position: Optional[int] = None) -> Any:
+        """Update an entry and optionally transfer its group/tree ownership."""
         try:
             loop = asyncio.get_running_loop()
             from dsh.cordis.awaiting import start_coroutine
@@ -1591,50 +1583,50 @@ class EntryTree:
         except RuntimeError:
             return asyncio.run(self._update_tree_entry_async(entry_id, options, parent_id, position))
 
-    async def _update_tree_entry_async(self, entry_id: str, options: Dict[str, Any], parent_id: Optional[str] = None, position: Optional[int] = None) -> None:
+    async def _update_tree_entry_async(self, entry_id: str, options: Dict[str, Any], parent_id: Any = _UNDEFINED, position: Optional[int] = None) -> None:
         entry = self.resolve(entry_id)
         source = entry.parent
         legacy = dict(entry.options)
-        source_index = source.data.index(entry.options) if entry.options in source.data else -1
         target = source
-
-        if parent_id is not None:
+        if parent_id is not _UNDEFINED:
             target = self.resolve_group(parent_id)
-            source.unlink(entry.options)
-            if position is not None and position < len(target.data):
-                target.data.insert(position, entry.options)
-            else:
-                target.data.append(entry.options)
-            entry.parent = target
-
-        try:
-            res = entry.update(options, create=False, force=True)
+            moved = []
             if target.tree is not source.tree:
-                source.tree.commit(dict(id=legacy['id'], group=source, legacy=legacy))
-                target.tree.commit(dict(id=legacy['id'], group=target, options=entry.options))
-            else:
-                change = dict(id=legacy['id'], group=target, options=entry.options, legacy=legacy)
-                if target is not source:
-                    change['from'] = source
-                target.tree.commit(change)
-            if inspect.isawaitable(res):
-                await res
-        except Exception as e:
-            if parent_id is not None:
-                target.unlink(entry.options)
-                if source_index >= 0:
-                    source.data.insert(source_index, entry.options)
-                else:
-                    source.data.append(entry.options)
-                entry.parent = source
-                try:
-                    res = entry.update({}, create=False, force=True)
-                    if inspect.isawaitable(res):
-                        await res
-                except Exception as rollback_err:
-                    raise AggregateError([e, rollback_err], f"failed to roll back loader entry move {entry_id}")
-            raise e
-
+                def members(current: Any) -> None:
+                    moved.append(current)
+                    group = current.subgroup
+                    if group is None or group.tree is not source.tree:
+                        return
+                    for row in group.data:
+                        member = source.tree.store.get(row.get('id'))
+                        if member is not None and member.parent is group:
+                            members(member)
+                members(entry)
+            for member in moved:
+                local_id = member.options['id']
+                if local_id in target.tree.store:
+                    raise ValueError('entry %s already exists in the target tree' % local_id)
+            source.unlink(entry.options)
+            index = len(target.data) if position is None else int(min(position, len(target.data)))
+            target.data.insert(index, entry.options)
+            entry.parent = target
+            for member in moved:
+                local_id = member.options['id']
+                source.tree.store.pop(local_id, None)
+                target.tree.store[local_id] = member
+                if member.subgroup is not None and member.subgroup.tree is source.tree:
+                    member.subgroup.tree = target.tree
+        result = entry.update(options, create=False, force=True)
+        if target.tree is not source.tree:
+            source.tree.commit(dict(id=legacy['id'], group=source, legacy=legacy))
+            target.tree.commit(dict(id=legacy['id'], group=target, options=entry.options))
+        else:
+            change = dict(id=legacy['id'], group=target, options=entry.options, legacy=legacy)
+            if target is not source:
+                change['from'] = source
+            target.tree.commit(change)
+        if inspect.isawaitable(result):
+            await result
 
     def import_plugin(self, name: str, get_outer_stack: Optional[Callable[[], List[str]]] = None) -> Any:
         """Import a plugin module from a specifier, builtin, or file path matching TS EntryTree.import."""
@@ -1823,8 +1815,6 @@ class EntryGroup:
         prev_parent = entry.parent
         entry.parent = self
         self.tree.store[eid] = entry
-        if options not in self.data:
-            self.data.append(options)
 
         async def _run_create():
             res = entry.update(options, create=True, force=True)
@@ -1835,10 +1825,10 @@ class EntryGroup:
         try:
             loop = asyncio.get_running_loop()
             task = self._track_task(loop.create_task(_run_create()))
-            return AwaitableString(eid, task)
+            return AwaitableString(entry.id, task)
         except RuntimeError:
             asyncio.run(_run_create())
-            return AwaitableString(eid)
+            return AwaitableString(entry.id)
 
     async def _create_async(self, options: Dict[str, Any]) -> str:
         eid = self.tree.ensure_id(options)
@@ -1864,8 +1854,9 @@ class EntryGroup:
         return entry.id
 
     def unlink(self, options: Dict[str, Any]) -> None:
-        if options in self.data:
-            self.data.remove(options)
+        index = next((i for i, value in enumerate(self.data) if value is options), -1)
+        if index >= 0:
+            self.data.pop(index)
 
     def remove(self, entry_id: str, is_dispose: bool = False) -> Any:
         try:
@@ -2332,31 +2323,22 @@ class Entry:
             self.options = candidate
             self.name = self.options.get("name", self.name)
             self.config = self.options.get("config", self.config)
-            try:
-                if not self._disabled(candidate):
-                    res = self.init()
-                    if inspect.isawaitable(res):
-                        await res
-            except Exception as error:
-                self.options = previous_options
-                self.name = self.options.get("name", self.name)
-                self.config = self.options.get("config", self.config)
-                raise error
             commit()
+            if not self._disabled(candidate):
+                res = self.init()
+                if inspect.isawaitable(res):
+                    await res
             return
 
         if self._disabled(candidate):
             self.options = candidate
             self.name = self.options.get("name", self.name)
             self.config = self.options.get("config", self.config)
+            commit()
             try:
                 await self._dispose_async(previous)
             except Exception as error:
-                self.options = previous_options
-                self.name = self.options.get("name", self.name)
-                self.config = self.options.get("config", self.config)
                 raise LoaderUpdateError("dispose", candidate, error)
-            commit()
             if hasattr(self.context, "emit"):
                 self.context.emit("loader/partial-dispose", self, legacy, True)
             return

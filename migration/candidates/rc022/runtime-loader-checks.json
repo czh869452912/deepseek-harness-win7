@@ -9,11 +9,26 @@
   "construction_recheck": ".goose/out/rc022-runtime-loader-resolution-paired-20261115-01/report.json",
   "construction_observations": 10,
   "native": [
-    {"run": "rc022-runtime-loader-native-20261115-01", "passed": 86, "failed": 1, "reason": "An old startup assertion required an optional gateway failure to be fatal; changed it to the current required connection provider contract."},
-    {"run": "rc022-runtime-loader-native-20261115-02", "passed": 10, "failed": 0}
+    {
+      "run": "rc022-runtime-loader-native-20261115-01",
+      "passed": 86,
+      "failed": 1,
+      "reason": "An old startup assertion required an optional gateway failure to be fatal; changed it to the current required connection provider contract."
+    },
+    {
+      "run": "rc022-runtime-loader-native-20261115-02",
+      "passed": 10,
+      "failed": 0
+    }
   ],
   "verification_scope_reason": "Actual fixed Source ESM and native Python root imports, matching metadata ownership, immutable constructor recheck, and direct Loader/profile/CLI/Web/class table consumers. Native checks cover explicit Portable layout inventory, fresh generation reads, installed-copy precedence and absence of physical fallback writes.",
   "scope": "Canonical launcher constructs and publishes PluginPackages before mounting the config tree. Python Loader consumes selected package directories and only answers installation mappings from the native class table. Hidden/unselected names cannot escape through the legacy class fallback. External JavaScript is rejected instead of running a JS test stand-in. Python Portable's flat package layout is an explicit read-only installation graph adapter; ordinary createRuntimeResolution retains actual Node ancestor lookup. Canonical launcher no longer heals or installs physical fallback roots.",
   "cleanup": ".goose/out/rc022-runtime-loader-native-20261115-02/cleanup.json",
-  "remaining": "Complete resource exports/imports and self-reference handling, localized metadata, worker inheritance, real HMR and patchReload retirement remain. Historical direct boot helpers still exist for their consumers. No full gate, complete Node module parity or release acceptance."
+  "remaining": "Complete resource exports/imports and self-reference handling, localized metadata, worker inheritance, real HMR and patchReload retirement remain. Historical direct boot helpers still exist for their consumers. No full gate, complete Node module parity or release acceptance.",
+  "post_commit_export_fix": {
+    "run": "rc022-runtime-loader-export-fix-20261115-01",
+    "passed": 1,
+    "reason": "Restored app_boot forwarding import consumed by dsh.boot public compatibility export; detected by the next Source/native resource probe. The import was removed after the prior test run.",
+    "cleanup": ".goose\\out\\rc022-runtime-loader-export-fix-20261115-01\\cleanup.json"
+  }
 }

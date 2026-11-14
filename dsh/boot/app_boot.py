@@ -37,6 +37,7 @@ from dsh.cordis.logger import Exporter
 
 
 from dsh.boot.profile import (
+    heal_profiles_module_fallback,
     PROFILES_DIR,
     PROFILE_PATCH_FILENAME,
     PROFILE_MODULE_FALLBACK_DIR,

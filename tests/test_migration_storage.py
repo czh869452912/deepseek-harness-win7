@@ -106,6 +106,14 @@ def test_exact_conversion_and_no_manifest_behavior(converted, tmp_path):
     assert storage.verify_rewrite(tmp_path) == {}
 
 
+def test_metadata_proof_is_separate_from_external_archive_byte_verification(converted):
+    root, record, _, _ = converted
+    (root / record['archives'][0]['path']).unlink()
+    assert storage.verify_rewrite(root, verify_archives=False) == {record['original_tip']: record['rewritten_tip']}
+    with pytest.raises(storage.StorageError, match='not verified'):
+        storage.verify_rewrite(root)
+
+
 def test_conversion_verified_in_clone_without_original_commit_objects(converted, tmp_path):
     root, record, _, _ = converted
     clone = tmp_path / 'clone'

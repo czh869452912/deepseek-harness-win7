@@ -1,0 +1,69 @@
+{
+  "schema_version": 1,
+  "members": [
+    {
+      "archive": "HANDOFF-COMPOSITION-QUALIFICATION-20261009-5961F1AB.zip",
+      "archive_sha256": "a8e3c3e660fb82356b930e69c7ca7fc0bc8b2d50c9119ee5aa080da22a696db4",
+      "member": "engine/source-v1.json",
+      "size": 2400306,
+      "sha256": "8b736c1bbed9cda4f9fb918e885b93e505f523b71dfa845521c86c354f0a5c45",
+      "fixture": "8b736c1bbed9cda4f9fb918e885b93e505f523b71dfa845521c86c354f0a5c45.json.gz"
+    },
+    {
+      "archive": "HANDOFF-COMPOSITION-QUALIFICATION-20261009-5961F1AB.zip",
+      "archive_sha256": "a8e3c3e660fb82356b930e69c7ca7fc0bc8b2d50c9119ee5aa080da22a696db4",
+      "member": "engine/native-v1.json",
+      "size": 2488330,
+      "sha256": "aee46bccde33f4274c125c930839fbab2c92969d88c51ba3e43c1feca5c6fe8b",
+      "fixture": "aee46bccde33f4274c125c930839fbab2c92969d88c51ba3e43c1feca5c6fe8b.json.gz"
+    },
+    {
+      "archive": "HANDOFF-COMPOSITION-QUALIFICATION-20261009-5961F1AB.zip",
+      "archive_sha256": "a8e3c3e660fb82356b930e69c7ca7fc0bc8b2d50c9119ee5aa080da22a696db4",
+      "member": "engine/owned-qualification-v1.json",
+      "size": 51264,
+      "sha256": "9db78a5c583840d72cb1fc45fe9dfc7a311d199407353858041dc4dacf67ee39",
+      "fixture": "9db78a5c583840d72cb1fc45fe9dfc7a311d199407353858041dc4dacf67ee39.json.gz"
+    },
+    {
+      "archive": "ROUTE-PATH-BROWSER-RESEARCH-20261007-6AABEA10.zip",
+      "archive_sha256": "a6d37689e5b2f51c4e89cc543dadf14d4cce7c77b8b8bd142dae1d7baf0694c8",
+      "member": "route-execution-source-v10.json",
+      "size": 4216327,
+      "sha256": "003121453ec8d6138c8f52c25f71e7e327c63d83605d470d125ff446e8a927c4",
+      "fixture": "003121453ec8d6138c8f52c25f71e7e327c63d83605d470d125ff446e8a927c4.json.gz"
+    },
+    {
+      "archive": "RC3-ENGINE-ROUTE-TARGETED-20261017.zip",
+      "archive_sha256": "bb4a614fb41c61f29475446e79f42babb7aba48f894698fe40afa22036171c69",
+      "member": "rc3-engine-current-diagnostic-20261017-a/source.json",
+      "size": 2471625,
+      "sha256": "bdac2b8a2b82b594c50ebe6a4b268a807a4d208de97d446d205e3513be0f919b",
+      "fixture": "bdac2b8a2b82b594c50ebe6a4b268a807a4d208de97d446d205e3513be0f919b.json.gz"
+    },
+    {
+      "archive": "RC3-ENGINE-ROUTE-TARGETED-20261017.zip",
+      "archive_sha256": "bb4a614fb41c61f29475446e79f42babb7aba48f894698fe40afa22036171c69",
+      "member": "rc3-engine-current-diagnostic-20261017-a/native.json",
+      "size": 2573225,
+      "sha256": "e4624e3035652f401a916d2b1d9abe0b37c99366802a77775e22baef268dcd06",
+      "fixture": "e4624e3035652f401a916d2b1d9abe0b37c99366802a77775e22baef268dcd06.json.gz"
+    },
+    {
+      "archive": "RC3-ENGINE-ROUTE-TARGETED-20261017.zip",
+      "archive_sha256": "bb4a614fb41c61f29475446e79f42babb7aba48f894698fe40afa22036171c69",
+      "member": "rc3-route-current-diagnostic-20261017-a/source.json",
+      "size": 4541122,
+      "sha256": "fcaba59f89ba39d12975c1dce290f4376c34982c9070c44b8fadc4063a0056f0",
+      "fixture": "fcaba59f89ba39d12975c1dce290f4376c34982c9070c44b8fadc4063a0056f0.json.gz"
+    },
+    {
+      "archive": "RC3-ENGINE-ROUTE-TARGETED-20261017.zip",
+      "archive_sha256": "bb4a614fb41c61f29475446e79f42babb7aba48f894698fe40afa22036171c69",
+      "member": "rc3-route-current-diagnostic-20261017-a/native.json",
+      "size": 4675729,
+      "sha256": "6cbabcf3c20e40e82a4a7eb31d7d0778a99e4d20770833cd275cbe5cf9d16619",
+      "fixture": "6cbabcf3c20e40e82a4a7eb31d7d0778a99e4d20770833cd275cbe5cf9d16619.json.gz"
+    }
+  ]
+}

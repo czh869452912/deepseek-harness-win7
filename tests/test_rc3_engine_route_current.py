@@ -1,9 +1,7 @@
 """Current full captures retain system-message and catalog identity constraints."""
 import copy
-import hashlib
-import json
 from pathlib import Path
-import zipfile
+from evidence_fixtures import read_member
 
 import pytest
 
@@ -15,10 +13,8 @@ ARCHIVE = Path(__file__).resolve().parents[1] / 'migration/evidence/artifacts/RC
 
 @pytest.fixture(scope='module', params=['engine', 'route'])
 def current_pair(request):
-    assert hashlib.sha256(ARCHIVE.read_bytes()).hexdigest() == 'bb4a614fb41c61f29475446e79f42babb7aba48f894698fe40afa22036171c69'
     folder = 'rc3-%s-current-diagnostic-20261017-a/' % request.param
-    with zipfile.ZipFile(str(ARCHIVE)) as package:
-        source, native = [json.loads(package.read(folder + name + '.json')) for name in ('source', 'native')]
+    source, native = [read_member(ARCHIVE.name, folder + name + '.json') for name in ('source', 'native')]
     oracle = engine_composition_oracle if request.param == 'engine' else route_execution_oracle
     return oracle, source, native
 

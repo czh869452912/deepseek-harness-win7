@@ -36,7 +36,9 @@ migration/evidence/artifacts/** -text
 migration/evidence/artifacts/*.txt -whitespace
 # Archived JSON preserves original bytes, including Windows CRLF line endings.
 migration/evidence/artifacts/*.json whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol
-migration/evidence/artifacts/*.zip filter=lfs diff=lfs merge=lfs -text
+# Historical archives live outside Git; see migration/storage/external-artifacts.json.
+tests/fixtures/evidence/*.gz -text -diff
+scripts/frontend-build-record.json -text
 migration/storage/*.zip -text
 dsh/host/browser_compat/url.js -text
 dsh/host/browser_compat/url.LICENSE.txt -text

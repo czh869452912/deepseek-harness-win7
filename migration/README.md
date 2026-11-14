@@ -1,5 +1,7 @@
 # 持续对齐记录
 
+2026-11-14 存储调整：历史 ZIP 改由仓库外保存，索引见 `storage/external-artifacts.json`。默认 `scripts/migration.py check/ready` 只检查索引与 checkout，外部字节未核验时不提供当前验收资格；显式 `check --verify-artifacts` 配合 `DSH_EVIDENCE_ROOT` 才核验原始归档。最小回归成员及原前端构建输入留在普通 Git，CI 不再默认下载 LFS。历史回执、候选身份与整合状态保持，以下关于 LFS 的记录是当时操作历史。详见 [证据存储规则](../docs/testing.md#证据不再进入-lfs)。
+
 2026-11-07 预览分发补齐：同一 `creative-preview-20261107` 已补齐两份 Portable、四份 x86/x64 Standard/AIO 安装器及独立双架构离线组件 ZIP，共七份产品包、十二个附件。产品均绑定 `e6443396`，原精确 x64 ZIP/完整门禁保持；新增 x86 六组原浏览器 fresh/cold、包内运行时、四包通信预检及六组实际管理员生命周期独立通过，原机器注册表和快捷方式已恢复。首次 x86 审批超时未确定原因，失败和后续原脚本整组通过分别保留。见[完整发布回执](../docs/releases/creative-preview-20261107.json)及[补件载体](evidence/artifacts/CREATIVE-PREVIEW-DISTRIBUTION-20261107-E6443396.zip)。本轮没有新增 Win7 真机/客体系统补丁和重启资格，不变更迁移状态或旧 r2 正式发行。
 
 2026-11-07 首次发布（历史范围）：已将 `e6443396` 的原合格 x64 Portable 发布为独立 Pre-release [`creative-preview-20261107`](https://github.com/czh869452912/deepseek-harness-win7/releases/tag/creative-preview-20261107)。仅外部文件名更改，包内版本仍为 rc.3-r2，原正式版保持；5 个附件远端摘要和公开访问均已核验，见[发布回执](../docs/releases/creative-preview-20261107.json)。不附加未经本轮完整发行验收的 x86/Desktop，不改变迁移状态或扩大原验收范围。

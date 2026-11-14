@@ -1,19 +1,17 @@
 import copy
 import json
 from pathlib import Path
-import zipfile
+from evidence_fixtures import read_member
 
 import pytest
 
-from scripts.route_execution_oracle import compare, digest
+from scripts.route_execution_oracle import compare
 
 
 @pytest.fixture(scope='module')
 def historical_route_values():
     archive = Path(__file__).resolve().parents[1] / 'migration/evidence/artifacts/ROUTE-PATH-BROWSER-RESEARCH-20261007-6AABEA10.zip'
-    assert digest(archive) == 'a6d37689e5b2f51c4e89cc543dadf14d4cce7c77b8b8bd142dae1d7baf0694c8'
-    with zipfile.ZipFile(str(archive)) as package:
-        source = json.loads(package.read('route-execution-source-v10.json'))
+    source = read_member(archive.name, 'route-execution-source-v10.json')
     native = copy.deepcopy(source)
     native['root'] = source['sourceRoot'] + '\\'
     return source, native

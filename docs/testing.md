@@ -46,6 +46,28 @@
 
 ## 临时输出与证据
 
+### 证据不再进入 LFS
+
+历史测试 ZIP 存放在仓库外；Git 保存 `migration/storage/external-artifacts.json` 中的原路径、尺寸和 SHA-256。用 `DSH_EVIDENCE_ROOT` 指定镜像原路径的外部目录，不自动联网或下载整个历史档案。正式发行包及必要资格材料放在对应 Release 附件或持久外部存储；已解决调试材料设置保留期限，未解决失败和独有真实观察继续保留。原始回执及其候选身份不改写。
+
+```powershell
+# 离线结构校验，不证明原始证据字节存在或测试通过。
+.venv/Scripts/python.exe scripts/evidence_assets.py check
+.venv/Scripts/python.exe scripts/migration.py check
+.venv/Scripts/python.exe scripts/migration.py ready
+
+# 显式核验仓库外原始材料，缺失或损坏必须失败。
+$env:DSH_EVIDENCE_ROOT = 'D:\archives\deepseek-harness-win7-evidence'
+.venv/Scripts/python.exe scripts/evidence_assets.py verify
+.venv/Scripts/python.exe scripts/migration.py check --verify-artifacts
+```
+
+默认台账检查只验证外部资产索引，并显示 `external-bytes-unverified`；这类记录不提供当前验收资格。完整字节校验是独立操作，也不等于重新运行历史测试或取得新候选发行资格。只有验证过尺寸及完整 SHA-256 的原始副本才能替代工作树中的归档。按需恢复到旧路径的 ZIP 被 `.gitignore` 排除，禁止强制添加回源码仓库。
+
+日常回归使用 `tests/fixtures/evidence` 中按原字节提取的最小 JSON 成员，gzip 仅用于无损减小体积；manifest 保存原归档和成员 SHA-256。固定前端的冷恢复使用仓库已保存的原构建成员、完整构建摘要和原构建记录，不依赖历史测试 ZIP。CI 默认关闭 LFS 下载。
+
+### 输出保留与清理
+
 为有实际验证价值的运行保留命令、范围、退出状态、XML/日志和用时。完整门禁还需保留冻结输入、候选身份、实际 ZIP 和必要的原始观察。失败时及时保存定位所需原始材料；未得到完整 XML 的中断运行不能声称最终通过数量。
 
 定向运行通常使用 `tests/conftest.py` 已配置的 `.goose/out/t-*` 新短工作区；完整门禁使用系统临时目录下映射明确的 `g-*` 短工作区，执行位置必须在仓库外。结束后原子移动到本次输出的 `pytest-workspace`，保留失败原文和运行路径。系统临时目录与输出须在同一卷；否则启动前拒绝，请把 `TEMP` 指向输出卷上的仓库外目录。若手工指定 `--basetemp`，必须是该次运行新的自有目录，不能复用未结案失败或其他任务的目录，因为 pytest 会清空指定目录。日志/XML也应使用新的输出身份。

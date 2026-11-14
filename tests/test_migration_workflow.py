@@ -78,6 +78,39 @@ def test_dependency_requires_integrated_exact_contract_evidence(ledger):
     assert not m.blockers(consumer, data)
 
 
+def test_external_index_preserves_history_without_certifying_missing_bytes(ledger, monkeypatch):
+    data, root = ledger
+    consumer = add_consumer(data)
+    run = certify(data, root)
+    name = 'migration/evidence/artifacts/original.zip'
+    content = b'original captured bytes'
+    row = dict(path=name, size=len(content), sha256=hashlib.sha256(content).hexdigest())
+    run['artifacts'] = [dict(path=name, sha256=row['sha256'])]
+    index = root / 'migration/storage/external-artifacts.json'
+    index.parent.mkdir(parents=True)
+    index.write_text(json.dumps(dict(schema_version=1, artifacts=[row])), encoding='utf-8')
+    monkeypatch.delenv('DSH_EVIDENCE_ROOT', raising=False)
+    m.validate(data, root, verify_artifacts=False)
+    assert data['tasks']['TASK-A']['state'] == 'integrated'
+    assert m.valid_runs(data['tasks']['TASK-A'], data, current=False)
+    assert not m.valid_runs(data['tasks']['TASK-A'], data)
+    assert m.blockers(consumer, data)
+    assert 'external-bytes-unverified' in m.render_status(data)
+    with pytest.raises(m.RecordError, match='not verified'):
+        m.validate(data, root)
+    store = root.parent / 'external-store'
+    original = store / name
+    original.parent.mkdir(parents=True)
+    original.write_bytes(content)
+    monkeypatch.setenv('DSH_EVIDENCE_ROOT', str(store))
+    m.validate(data, root)
+    assert m.valid_runs(data['tasks']['TASK-A'], data)
+    assert not m.blockers(consumer, data)
+    original.write_bytes(b'X' * len(content))
+    with pytest.raises(m.RecordError, match='bytes differ'):
+        m.validate(data, root)
+
+
 def test_historical_contract_keeps_old_source_identity_without_certifying_new_target(ledger):
     data, root = ledger
     certify(data, root)

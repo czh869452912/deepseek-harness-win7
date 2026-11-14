@@ -13,6 +13,9 @@ import sys
 from collections import Counter
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from scripts import evidence_assets
+
 
 ROOT = Path(__file__).resolve().parents[1]
 STATES = {"draft", "ready", "running", "review", "verified", "queued", "integrated"}
@@ -115,11 +118,32 @@ def load(root):
             **{name: records(root, name) for name in ("contracts", "tasks", "evidence", "mappings")}}
 
 
-def validate(data, root):
+def validate(data, root, verify_artifacts=True):
+    try:
+        external = evidence_assets.read_index(root)
+    except (ValueError, KeyError, TypeError) as exc:
+        raise RecordError('external evidence index: ' + str(exc))
     observed_files = {}
+    missing_files = set()
     def observed_digest(name):
+        if name in missing_files:
+            raise RecordError('Previously unavailable input: ' + name)
         if name not in observed_files:
-            observed_files[name] = hashlib.sha256(file_path(root, name).read_bytes()).hexdigest()
+            if name in external:
+                if not verify_artifacts:
+                    raise RecordError('External input bytes not verified: ' + name)
+                try:
+                    evidence_assets.resolve_asset(root, name, external)
+                except ValueError as exc:
+                    raise RecordError(str(exc))
+                observed_files[name] = external[name]['sha256']
+            else:
+                try:
+                    path = file_path(root, name)
+                except RecordError:
+                    missing_files.add(name)
+                    raise
+                observed_files[name] = hashlib.sha256(path.read_bytes()).hexdigest()
         return observed_files[name]
 
     base = data["baseline"]
@@ -162,6 +186,7 @@ def validate(data, root):
         need(run["validity"] in {"current", "historical", "stale"}, key + ": invalid validity")
         strings(run["commands"], key + ".commands", True)
         run["_inputs_current"] = True
+        run["_artifacts_verified"] = True
         if run["kind"] == "acceptance":
             fields(run, {"task_id": str, "acceptance_digest": str, "inputs": list,
                          "exit_code": int}, key)
@@ -181,7 +206,20 @@ def validate(data, root):
             need(cid in contracts and type(rev) is int and rev > 0, key + ": unknown contract/revision")
         for artifact in run["artifacts"]:
             fields(artifact, {"path": str, "sha256": str}, key + ".artifact")
-            need(observed_digest(artifact["path"]) == artifact["sha256"], key + ": artifact hash mismatch")
+            name = artifact['path']
+            if name in external:
+                need(external[name]['sha256'] == artifact['sha256'], key + ': external artifact identity mismatch')
+                if verify_artifacts:
+                    if name not in observed_files:
+                        try:
+                            evidence_assets.resolve_asset(root, name, external)
+                        except ValueError as exc:
+                            raise RecordError(str(exc))
+                        observed_files[name] = external[name]['sha256']
+                else:
+                    run['_artifacts_verified'] = False
+            else:
+                need(observed_digest(name) == artifact["sha256"], key + ": artifact hash mismatch")
     graph = {}
     # Validate the dependency surface before following references to later rows.
     for key, task in tasks.items():
@@ -247,9 +285,10 @@ def validate(data, root):
             if task["state"] == "integrated":
                 require_sha(task.get("integrated_commit"), key + ".integrated_commit")
             need(not task["open_findings"], key + ": unresolved findings prevent verification")
-            need(bool(valid_runs(task, data, current=task["state"] != "integrated")), key + ": no matching passing evidence")
+            need(bool(valid_runs(task, data, current=task["state"] != "integrated",
+                                 require_artifacts=verify_artifacts)), key + ": no matching passing evidence")
             if task["state"] != "integrated":
-                need(not blockers(task, data), key + ": unresolved dependency/conflict")
+                need(not blockers(task, data, require_artifacts=verify_artifacts), key + ": unresolved dependency/conflict")
     for key, mapping in data["mappings"].items():
         fields(mapping, {"target_upstream": str, "cases": list}, key)
         require_sha(mapping['target_upstream'], key + '.target_upstream')
@@ -283,7 +322,7 @@ def validate(data, root):
         need(root.resolve() in path.parents and path.exists(), "missing/outside non-package surface: " + surface["path"])
 
 
-def valid_runs(task, data, current=True):
+def valid_runs(task, data, current=True, require_artifacts=True):
     """Only exact candidate/contract evidence can satisfy a gate; no model PASS."""
     revisions = {row["contract"]: row["revision"] for row in task["provides"] + task["requires"]}
     if current and (task["target_upstream"] != data["baseline"]["target_upstream"] or
@@ -292,6 +331,7 @@ def valid_runs(task, data, current=True):
     commit = task.get("integrated_commit") if task["state"] == "integrated" else task.get("candidate_commit")
     return [data["evidence"][eid] for eid in task["evidence_ids"]
             if data["evidence"][eid]["result"] == "passed"
+            and (not current or not require_artifacts or data['evidence'][eid].get('_artifacts_verified', True))
             and (not current or (data["evidence"][eid]["validity"] == "current" and data["evidence"][eid].get("_inputs_current", False)))
             and data["evidence"][eid]["kind"] == "acceptance"
             and data["evidence"][eid].get("exit_code") == 0
@@ -303,14 +343,14 @@ def valid_runs(task, data, current=True):
             and data["evidence"][eid]["artifacts"]]
 
 
-def blockers(task, data):
+def blockers(task, data, require_artifacts=True):
     reasons = []
     if task.get("blocked_reason"):
         reasons.append(task["blocked_reason"])
     for dep in task["requires"]:
         provider = data["tasks"][dep["task"]]
         contract = data["contracts"][dep["contract"]]
-        if contract["status"] != "specified" or provider["state"] != "integrated" or not valid_runs(provider, data):
+        if contract["status"] != "specified" or provider["state"] != "integrated" or not valid_runs(provider, data, require_artifacts=require_artifacts):
             reasons.append("requires {} {}@{}".format(dep["task"], dep["contract"], dep["revision"]))
     for key, other in data["tasks"].items():
         conflict = key in task["conflicts_with"] or task["id"] in other["conflicts_with"]
@@ -319,7 +359,7 @@ def blockers(task, data):
     return reasons
 
 
-def validate_checkout(data, root):
+def validate_checkout(data, root, verify_artifacts=True):
     need(git(root / "reference", "rev-parse", "HEAD") == data["baseline"]["target_upstream"], "reference HEAD differs from target")
     need(not git(root / "reference", "status", "--porcelain", "--untracked-files=no"), "reference has tracked modifications")
     actual = {r["path"]: r["sha256"] for r in source_inventory(root)}
@@ -331,7 +371,7 @@ def validate_checkout(data, root):
         storage = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(storage)
         try:
-            aliases = storage.verify_rewrite(root)
+            aliases = storage.verify_rewrite(root, verify_archives=verify_artifacts)
         except (ValueError, OSError, KeyError) as exc:
             raise RecordError("storage conversion proof: " + str(exc))
     subprocess.check_call(["git", "-C", str(root), "merge-base", "--is-ancestor",
@@ -365,6 +405,8 @@ def render_status(data):
     lines += ["", "Evidence:", ""]
     for key, run in sorted(data["evidence"].items()):
         validity = "stale-inputs" if not run.get("_inputs_current", True) else run["validity"]
+        if not run.get('_artifacts_verified', True):
+            validity += ' / external-bytes-unverified'
         lines.append("- {}: {} / {} / {}".format(key, run["kind"], run["result"], validity))
     return "\n".join(lines) + "\n"
 
@@ -374,6 +416,8 @@ def main(argv=None):
     parser.add_argument("command", choices=["check", "ready", "status", "inventory"])
     parser.add_argument("--root", type=Path, default=ROOT)
     parser.add_argument("--write", action="store_true", help="Write migration/status.md (status command only)")
+    parser.add_argument('--verify-artifacts', action='store_true',
+                        help='Verify original external archive bytes; requires DSH_EVIDENCE_ROOT')
     args = parser.parse_args(argv)
     try:
         need(not args.write or args.command == "status", "--write is only supported by status")
@@ -381,8 +425,10 @@ def main(argv=None):
             print(json.dumps(source_inventory(args.root), ensure_ascii=False, indent=2))
             return 0
         data = load(args.root)
-        validate(data, args.root)
-        validate_checkout(data, args.root)
+        validate(data, args.root, verify_artifacts=args.verify_artifacts)
+        validate_checkout(data, args.root, verify_artifacts=args.verify_artifacts)
+        if not args.verify_artifacts:
+            print('Index/checkout check only: external artifact bytes NOT verified; no new acceptance.', file=sys.stderr)
         if args.command == "status":
             rendered = render_status(data)
             if args.write:

@@ -55,3 +55,6 @@ hello_test.txt
 
 /node_modules/.vite/
 .goose/tools/
+
+# Original historical evidence is restored on demand via DSH_EVIDENCE_ROOT.
+/migration/evidence/artifacts/*.zip

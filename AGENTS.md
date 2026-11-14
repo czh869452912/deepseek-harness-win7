@@ -112,6 +112,23 @@ writers before overlapping changes. Do not treat a task report, test filename,
 or manifest inventory as proof of upstream parity. The current CLI does not
 provide concurrent task claiming or automatic state transitions.
 
+### Evidence Storage (No LFS)
+
+Do not add historical test archives to Git or Git LFS. Preserve original archive
+identities in `migration/storage/external-artifacts.json`; store original bytes
+outside the checkout, selected through `DSH_EVIDENCE_ROOT`. Formal release assets
+and key qualification observations belong in release attachments or durable
+external storage. Ordinary tests use only the minimal byte-preserved members in
+`tests/fixtures/evidence`, with archive/member SHA-256 provenance.
+
+`scripts/migration.py check` and `ready` check the index/checkout by default;
+they explicitly do not verify external archive bytes or establish new acceptance.
+Use `--verify-artifacts` for full archive verification. Missing or corrupt bytes
+must fail explicit verification and cannot establish current task eligibility.
+Historical receipts and integration states must not be relabelled by migration.
+An external archive retained for follow-up must have an owner, purpose and review
+milestone. Never remove the only verified copy to save repository space.
+
 ### Select Verification by Change Scope
 
 Before declaring a development task complete, agents **MUST** execute verification

@@ -1,7 +1,7 @@
 """Prepare ignored pinned Source dependencies and the sealed original frontend.
 
-The frontend is restored from its original observed carrier, never relabelled
-from a rebuild at a different absolute path. No tracked Source bytes change.
+The frontend is restored from hash-verified, tracked original build members,
+never relabelled from a rebuild. No tracked Source bytes change.
 """
 import argparse
 import hashlib
@@ -10,11 +10,10 @@ import os
 from pathlib import Path
 import subprocess
 import sys
-import zipfile
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
-from scripts import import_frontend
+from scripts import import_frontend, evidence_assets
 ARCHIVE = 'migration/evidence/artifacts/OFFICIAL-FRONTEND-QUALIFICATION-20261007-8D129C7D.zip'
 ARCHIVE_SHA256 = 'b2ef057fe8308932708b76b1ef47576bda9b8ba27c9585a0886b6a1002d75abc'
 STATIC_CLIENT_LIBRARIES = ('web', 'store', 'ui-slots', 'ui-primitives', 'ui-dockkit')
@@ -28,21 +27,18 @@ def restore_frontend(root, source):
     if pin != manifest['target_upstream'] or dirty:
         raise ValueError('Frontend restore requires the unchanged pinned Source')
     carrier = manifest.get('original_carrier', dict(path=ARCHIVE, sha256=ARCHIVE_SHA256))
-    archive = root / carrier['path']
-    archive.resolve().relative_to(root.resolve())
-    if import_frontend.digest(archive) != carrier['sha256']:
-        raise ValueError('Original frontend observation carrier differs')
-    with zipfile.ZipFile(str(archive)) as bundle:
-        if bundle.testzip() is not None:
-            raise ValueError('Original frontend observation carrier CRC differs')
-        record = bundle.read('proposed/reference/.dsh-build/client-build-environment.json')
-        if json.loads(record) != manifest['build_record']:
-            raise ValueError('Original frontend build record differs')
-        payloads = {row['path']: bundle.read('imported/' + row['path']) for row in manifest['files'] + manifest['client_files']}
-        for row in manifest['files'] + manifest['client_files']:
-            if hashlib.sha256(payloads[row['path']]).hexdigest() != row['sha256']:
-                raise ValueError('Original frontend member differs: ' + row['path'])
-        payloads['.dsh-build/client-build-environment.json'] = record
+    # The already imported, tracked files are the original carrier members.
+    # Verify the complete original build identity without fetching history ZIPs.
+    import_frontend.validate_import(root, manifest)
+    record = (root / 'scripts/frontend-build-record.json').read_bytes()
+    if json.loads(record) != manifest['build_record']:
+        raise ValueError('Original frontend build record differs')
+    payloads = {row['path']: evidence_assets.safe_path(root, row['path']).read_bytes()
+                for row in manifest['files'] + manifest['client_files']}
+    for row in manifest['files'] + manifest['client_files']:
+        if hashlib.sha256(payloads[row['path']]).hexdigest() != row['sha256']:
+            raise ValueError('Original frontend member differs: ' + row['path'])
+    payloads['.dsh-build/client-build-environment.json'] = record
     # Refuse unknown existing observations and reparse destinations. Fresh
     # files are atomically placed; identical originals are left in place.
     for name, content in payloads.items():
@@ -65,7 +61,7 @@ def restore_frontend(root, source):
             row['path']: row['sha256'] for row in manifest['files'] + manifest['client_files']}:
         raise ValueError('Restored original frontend observations differ')
     return dict(originalCarrier=carrier['path'], sha256=carrier['sha256'], restored=restored, buildRecord=actual,
-                scope='Original sealed build bytes, not a build at the current checkout path')
+                scope='Hash-verified tracked original build members; historical carrier bytes not reverified')
 
 
 def main():

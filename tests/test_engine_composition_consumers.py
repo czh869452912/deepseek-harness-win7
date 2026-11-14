@@ -6,7 +6,7 @@ from pathlib import Path
 
 import pytest
 
-import zipfile
+from evidence_fixtures import read_member
 from scripts import engine_composition_values as comparison
 
 ROOT=Path(__file__).resolve().parents[1]
@@ -14,11 +14,9 @@ ARCHIVE=ROOT/'migration/evidence/artifacts/HANDOFF-COMPOSITION-QUALIFICATION-202
 
 @pytest.fixture(scope='module')
 def actual_pair():
-    assert hashlib.sha256(ARCHIVE.read_bytes()).hexdigest()=='a8e3c3e660fb82356b930e69c7ca7fc0bc8b2d50c9119ee5aa080da22a696db4'
-    with zipfile.ZipFile(str(ARCHIVE)) as package:
-        source=json.loads(package.read('engine/source-v1.json'))
-        native=json.loads(package.read('engine/native-v1.json'))
-        receipt=json.loads(package.read('engine/owned-qualification-v1.json'))
+    source=read_member(ARCHIVE.name, 'engine/source-v1.json')
+    native=read_member(ARCHIVE.name, 'engine/native-v1.json')
+    receipt=read_member(ARCHIVE.name, 'engine/owned-qualification-v1.json')
     before=comparison.project(source,source['sourceRoot']+'\\')
     assert before==comparison.project(native,native['root'])
     digest=hashlib.sha256(json.dumps(before,sort_keys=True,ensure_ascii=True,separators=(',',':')).encode('utf-8')).hexdigest()

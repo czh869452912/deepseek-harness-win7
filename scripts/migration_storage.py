@@ -8,6 +8,8 @@ import stat
 import subprocess
 import zipfile
 
+from scripts import evidence_assets
+
 
 SHA = re.compile(r'^[0-9a-f]{40}$')
 SHA256 = re.compile(r'^[0-9a-f]{64}$')
@@ -114,7 +116,7 @@ def ancestors(root, commit):
         encoding='ascii').splitlines())
 
 
-def _verify_rewrite(root):
+def _verify_rewrite(root, verify_archives=True):
     root = Path(root)
     manifest_path = root / 'migration/storage/lfs-transport.json'
     if not manifest_path.exists():
@@ -155,8 +157,9 @@ def _verify_rewrite(root):
                 and type(row['size']) is int and row['size'] >= 0
                 and row['git_blob'] not in archives and row['path'].startswith(PREFIX)
                 and row['path'].endswith('.zip'), 'invalid original archive identity')
-        path = owned_file(root, row['path'])
-        require(file_digests(path) == (row['size'], row['git_blob'], row['sha256']), 'original archive bytes changed')
+        if verify_archives:
+            path = evidence_assets.resolve_asset(root, row['path'])
+            require(file_digests(path) == (row['size'], row['git_blob'], row['sha256']), 'original archive bytes changed')
         archives[row['git_blob']] = row
     objects = GitObjects(root)
     compared = set()
@@ -230,9 +233,9 @@ def _verify_rewrite(root):
     return aliases
 
 
-def verify_rewrite(root):
+def verify_rewrite(root, verify_archives=True):
     try:
-        return _verify_rewrite(root)
+        return _verify_rewrite(root, verify_archives=verify_archives)
     except StorageError:
         raise
     except (OSError, ValueError, KeyError, TypeError, subprocess.SubprocessError, zipfile.BadZipFile) as exc:

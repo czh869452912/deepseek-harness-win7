@@ -51,9 +51,10 @@ class SessionFormatCatalog:
         return FrozenDict(status='unsupported', storedVersion=stored, targetVersion=self.currentVersion, reason=reason)
 
     def _malformed(self, error, stored=UNDEFINED):
-        result = dict(status='malformed', targetVersion=self.currentVersion, reason=str(error))
+        result = dict(status='malformed')
         if stored is not UNDEFINED:
             result['storedVersion'] = stored
+        result.update(targetVersion=self.currentVersion, reason=str(error))
         return FrozenDict(result)
 
     def encodeCurrentHeader(self, header, inheritedEventCount):

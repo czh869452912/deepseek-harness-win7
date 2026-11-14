@@ -72,9 +72,14 @@ def decodePhysicalHeader(value, version):
             raise SessionFormatError(label + ' %s must be a string' % key)
     if 'origin' in source and source['origin'] != 'subagent':
         raise SessionFormatError(label + ' origin must be "subagent"')
-    header = dict(version=version, id=source['id'], createdAt=created, isSeeded='seedLength' in source,
-        delegationDepth=depth)
-    header.update({key: source[key] for key in LOGICAL_OPTIONAL if key in source})
+    header = dict(version=version, id=source['id'], createdAt=created)
+    header.update({key: source[key] for key in ('cwd', 'parentSession') if key in source})
+    header['isSeeded'] = 'seedLength' in source
+    if 'origin' in source:
+        header['origin'] = source['origin']
+    header['delegationDepth'] = depth
+    if 'agentPreset' in source:
+        header['agentPreset'] = source['agentPreset']
     assertReleasedSessionFormatHeader(header, version)
     return header, cut
 

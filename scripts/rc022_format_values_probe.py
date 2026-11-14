@@ -296,6 +296,24 @@ def cases():
     add('v4EncodeHeader',header,0)
     for item in coordinates(ordinary):
         add('v4EncodeEvent',item)
+    for version in (0, 1, 2, 3, 4):
+        value = dict(physical, version=version)
+        add('historicalReadHeader', value)
+        for validation in ('current', 'historical'):
+            for recovery in ('strict', 'recover-tail'):
+                for body in ([], [dict(type='custom',seq=0,time=1,data={'opaque':True},ignorable=True)],
+                             [dict(type='developer/message',seq=0,time=1,data=[])], [{'broken':True}]):
+                    add('historicalRead',value,body,dict(validation=validation,recovery=recovery))
+    for version in (0, 1):
+        for seeded in (False, True):
+            value = dict(type='session',version=version,id='child',createdAt=1,delegationDepth=1,
+                         parentSession='parent',origin='subagent',agentPreset='worker')
+            if seeded:
+                value['seedLength'] = 0
+            add('historicalReadHeader',value)
+            for validation in ('current', 'historical'):
+                for recovery in ('strict', 'recover-tail'):
+                    add('historicalRead',value,[],dict(validation=validation,recovery=recovery))
     return rows
 
 
@@ -308,6 +326,16 @@ def native(rows):
                facts, fork_result, references, extension_identities, validation, relationships, migration, codec)
     functions = {name: getattr(module, name) for module in modules for name in dir(module) if not name.startswith('_')}
     functions.update(v4DecodeHeader=codec.decodeHeader, v4EncodeHeader=codec.encodeHeader, v4EncodeEvent=codec.encodeEvent)
+    from dsh.session.format_catalog import historicalSessionFormatCatalog
+    functions['historicalReadHeader'] = historicalSessionFormatCatalog.readHeader
+
+    def historical_read(header, rows, options):
+        restore = historicalSessionFormatCatalog.createRestore(header, options)
+        for row in rows:
+            restore.decodeRow(row)
+        return restore.finish()
+
+    functions['historicalRead'] = historical_read
 
     def migrate_stage(stage_input, children, events, unbound=False, runs=False):
         declaration = migration.sessionFormatV3ToV4 if unbound else migration.createSessionFormatV3ToV4(children)
@@ -378,11 +406,14 @@ def main():
     (output/'source.json').write_bytes(result.stdout)
     (output/'source.stderr').write_bytes(result.stderr)
     report = dict(target_upstream=TARGET, command=command, source_exit_code=result.returncode,
-                  scope='Pure candidate value helpers only; not v4 migration, native admission or production persistence')
+                  scope='Candidate V3-to-V4 helpers, migration, V4 admission and historical catalog; not installed Session, production persistence or release acceptance')
     try:
         if result.returncode:
             raise RuntimeError('Source observer failed; see source.stderr')
-        observed, local = json.loads(result.stdout), native(rows)
+        # Frozen JSON containers are a Python representation detail. Compare the
+        # same wire JSON domain on both sides, retaining the explicit identity
+        # and serialized-order observations collected before normalization.
+        observed, local = json.loads(result.stdout), json.loads(json.dumps(native(rows), ensure_ascii=False))
         (output/'native.json').write_text(json.dumps(local, ensure_ascii=False), encoding='utf-8')
         from scripts.session_format_oracle import json_equal
         assert len(observed) == len(local) == len(rows)
@@ -397,6 +428,8 @@ def main():
         inputs = list((source/'packages/session/session-format-v3-to-v4/src').glob('*.ts'))
         inputs += list((ROOT/'dsh/session/format_v3_to_v4').glob('*.py'))
         inputs += [ROOT/'scripts/oracles/rc022_format_values.mts', Path(__file__).resolve(), output/'cases.json']
+        inputs += list((source/'packages/session/session-format-catalog/src').glob('*.ts'))
+        inputs += list((ROOT/'dsh/session/format_catalog').glob('*.py'))
         report['inputs'] = {str(path.relative_to(ROOT)): hashlib.sha256(path.read_bytes()).hexdigest() for path in inputs}
         (output/'report.json').write_text(json.dumps(report, ensure_ascii=False, indent=2)+'\n', encoding='utf-8')
     print(json.dumps(dict(status=report['status'], matched=report['matched'])))

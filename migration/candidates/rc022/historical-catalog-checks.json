@@ -1,0 +1,122 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-15",
+  "unit": "C2-E-historical-catalog",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "state": "targeted-passed",
+  "scope": "Detached V0-V3 historical prerequisite reads and shared header output order; production catalog remains V3 until Session/storage/consumers integration.",
+  "paired": {
+    "cases": 1426,
+    "matched": 1426,
+    "differences": 0
+  },
+  "source_tests": {
+    "passed": 155,
+    "failed": 0,
+    "skipped": 0
+  },
+  "native_tests": {
+    "passed": 785,
+    "failed": 0,
+    "skipped": 0
+  },
+  "reports": {
+    ".goose/out/rc022-historical-20261115-01/cases.json": "6a978dbc51434efc3bdbeb6592923bde98c3dbf19a2bfd6aac24f5957c89f272",
+    ".goose/out/rc022-historical-20261115-01/native.json": "c7f11d3b451cc5ee7c45e4648d3004486d979c67049f73369acae6c5a751dd64",
+    ".goose/out/rc022-historical-20261115-01/report.json": "c67e56e273191cb2fca72ca40a47827be0d3d8160892b83dc95ec473a8cb40d9",
+    ".goose/out/rc022-historical-20261115-01/source.json": "25a01e8e84fbcd89587a9e4b3154c561328380cffe5b58422146f9ecd72734cc",
+    ".goose/out/rc022-historical-20261115-01/source.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    ".goose/out/rc022-historical-20261115-02/cases.json": "77bed1d3932813f8d7d69043c2b70a5b41fd74374e3d4a37f85d8f8d8049016f",
+    ".goose/out/rc022-historical-20261115-02/native.json": "1957a21c1a18b985c56c9d1ea4c063816c2e84bad04e98f659f6972bae9c46d7",
+    ".goose/out/rc022-historical-20261115-02/report.json": "473d2906e0cfd792fba2dc7f032ff80b17b7dcd67a5d3c3e720eca95d756653c",
+    ".goose/out/rc022-historical-20261115-02/source.json": "9fc4954ab26ab9a745256fef7d5b251923094b4d5bb24258888e8b605fbfcd44",
+    ".goose/out/rc022-historical-20261115-02/source.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    ".goose/out/rc022-historical-20261115-03/cases.json": "77bed1d3932813f8d7d69043c2b70a5b41fd74374e3d4a37f85d8f8d8049016f",
+    ".goose/out/rc022-historical-20261115-03/cleanup.json": "54b03f25fa9cf66d02b8c6bff3d99843280520bf90299918f1cbf5d6ef08a86c",
+    ".goose/out/rc022-historical-20261115-03/native.json": "ba21c3abfc27af79c35b032fb69c242ee203903e6a023a2a5dc90e5350ebbd19",
+    ".goose/out/rc022-historical-20261115-03/report.json": "32ccce4629f2d837703c12e507e277d2ca2082a8c1bc02dbe97f78f93a931822",
+    ".goose/out/rc022-historical-20261115-03/source.json": "9fc4954ab26ab9a745256fef7d5b251923094b4d5bb24258888e8b605fbfcd44",
+    ".goose/out/rc022-historical-20261115-03/source.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    ".goose/out/rc022-historical-native-20261115-01/pytest-command.json": "573572603b5f3a38e348b556d9654ef926987a32b68d287c58fc2e77688ad9c9",
+    ".goose/out/rc022-historical-native-20261115-01/pytest.log": "b5961a9b3640ed0831f317cec2283931a73ce6bd4a7c2c2e9060569bb7af34c3",
+    ".goose/out/rc022-historical-native-20261115-01/pytest.xml": "0cabde91bdc649b14898df992513cea2c64ba3ec986944485ec97f76f9a9a66e",
+    ".goose/out/rc022-historical-native-20261115-01/pytest-workspace/failed-reports/37669cc20684e7baa3d53aff67e1e74666749b5e0e06562f7dea6bee28c61a4a.json": "fac9d26c1ba3bc137ae4562e3d9b828e7c1099d4dc200f134d2ab8689324e2e7",
+    ".goose/out/rc022-historical-native-20261115-01/pytest-workspace/failed-reports/b7704fb9685e11569e0e6e0bb4d3461669e42594df14ea0d9599e161f88bfa39.json": "aaeeae8f66adc2f9a7d3b9a752718a41afa21f59eac148ac9a24d234a340df44",
+    ".goose/out/rc022-historical-native-20261115-01/pytest-workspace/failed-reports/e87374c0048c255492ab33ee32ddb0db8c3da6245600d4b560484ab29b1eb59c.json": "dd7df009019dc72d01ee12f0940aa1161d1e8c22480d20c15c2a079a5d882e30",
+    ".goose/out/rc022-historical-native-20261115-02/pytest-command.json": "39cd1e3b218c9a1d014080d42daa87f1e9eec8709d09bed14b935ef67e9ba7f4",
+    ".goose/out/rc022-historical-native-20261115-02/pytest.log": "5d04742dfc25244872a57effcea7fa3949fa9329c56abd634832c73b72632371",
+    ".goose/out/rc022-historical-native-20261115-02/pytest.xml": "998832d2428f4c7fbd68edc31fc055bf51700dca7c48623d01c14c5d50c330b6",
+    ".goose/out/rc022-historical-source-20261115-01/source-tests-command.json": "f2f25e86f1c0378059545dc8df34be924b0cdb3deb1f5a1cc72d8ffc98bc1635",
+    ".goose/out/rc022-historical-source-20261115-01/source-tests.json": "8fd6efce4bbfea5af0fc3ba769a604127c9f9bc5a6664c4e3ab651ccaad6e266",
+    ".goose/out/rc022-historical-source-20261115-01/source-tests.log": "13d307c6fcfdfc6f5c0b1467e2201bd770706a11b1a99b96780aa032a71f9218"
+  },
+  "inputs": {
+    ".goose\\out\\rc022-prep-20261114-01\\source\\packages\\session\\session-format-v3-to-v4\\src\\codec.ts": "2e82811f3a805c3985b6ad56ab5129a3c656a2712357e02da1e9653679f384f0",
+    ".goose\\out\\rc022-prep-20261114-01\\source\\packages\\session\\session-format-v3-to-v4\\src\\content.ts": "6015ff507bcbbe776c3af36ce5e9c2ca5d18f15c82305d1db05226993279d234",
+    ".goose\\out\\rc022-prep-20261114-01\\source\\packages\\session\\session-format-v3-to-v4\\src\\developer.ts": "176b7ad6479672351ca08419ff6fca35d635289e9651a672b009ed972d973e5b",
+    ".goose\\out\\rc022-prep-20261114-01\\source\\packages\\session\\session-format-v3-to-v4\\src\\extension-identities.ts": "9737373f41a47c209938de8ec015b4fd3b3e591141905607a4a52bae652bb0ed",
+    ".goose\\out\\rc022-prep-20261114-01\\source\\packages\\session\\session-format-v3-to-v4\\src\\facts.ts": "ce1bb0dd3cc8eec269fd923eb2ca9ab4f9409d95b2673cc7437c3be97482582f",
+    ".goose\\out\\rc022-prep-20261114-01\\source\\packages\\session\\session-format-v3-to-v4\\src\\fork-result.ts": "c9bdc6bfe83c454e5a1b929660541a7398927a891a0a0a7cec50431a4088697c",
+    ".goose\\out\\rc022-prep-20261114-01\\source\\packages\\session\\session-format-v3-to-v4\\src\\index.ts": "aa59d82dab8cfb1616e687c8f2543ebae055baffd6a3d1927ba4bea1d4252a28",
+    ".goose\\out\\rc022-prep-20261114-01\\source\\packages\\session\\session-format-v3-to-v4\\src\\message-sources.ts": "880cf946c56416cabb3aba30a17be32d39f60961ff6568460567442b8fba28d0",
+    ".goose\\out\\rc022-prep-20261114-01\\source\\packages\\session\\session-format-v3-to-v4\\src\\migration.ts": "96a68188aaeb61a81f72c7fc7137929640d3aaf5d0745f5a610e3cf76797be12",
+    ".goose\\out\\rc022-prep-20261114-01\\source\\packages\\session\\session-format-v3-to-v4\\src\\references.ts": "472fca4d333c00e6a9c79d5301403a5db657defab269ca1673498ca42037a746",
+    ".goose\\out\\rc022-prep-20261114-01\\source\\packages\\session\\session-format-v3-to-v4\\src\\relationships.ts": "4802f65c6dee1d5da515116f7171e408cc9bf63219e04fd669d22db484493ebb",
+    ".goose\\out\\rc022-prep-20261114-01\\source\\packages\\session\\session-format-v3-to-v4\\src\\retired-syntax.ts": "6941b51779964c30367299c44579b1ed31b00115e7c74d69171f711e5e61c1aa",
+    ".goose\\out\\rc022-prep-20261114-01\\source\\packages\\session\\session-format-v3-to-v4\\src\\sources.ts": "3848aeb9c12e5c962c882405d88173956483103d4b53670b5f25f3185018e004",
+    ".goose\\out\\rc022-prep-20261114-01\\source\\packages\\session\\session-format-v3-to-v4\\src\\system-message.ts": "50c19486a8c378e4755d610de1dff5d3bdad3cf9e1021d1dbf3a46501e9fa32c",
+    ".goose\\out\\rc022-prep-20261114-01\\source\\packages\\session\\session-format-v3-to-v4\\src\\tool-role.ts": "867aded1027588ffa65439efc2eb18748db5255370b65552b1c05130ecb6fa9d",
+    ".goose\\out\\rc022-prep-20261114-01\\source\\packages\\session\\session-format-v3-to-v4\\src\\validation.ts": "8aa4f5dad881870baece3ef8f2e5803235d0d51d04a6251ffa05adde76b77c3f",
+    "dsh\\session\\format_v3_to_v4\\codec.py": "453946c91ca7ae02c4844ba3b8e880ec57a2f7ef69add6dd1d6cd638030c3f6e",
+    "dsh\\session\\format_v3_to_v4\\content.py": "a01a020ad804e06110ecf59e3a13f5831121645c6ba60a884c9986360ebb1770",
+    "dsh\\session\\format_v3_to_v4\\developer.py": "3a08e208ba5cfe6b2b5b31425aeb2072ea16ccaac8eb306adebb581e9acc7a5c",
+    "dsh\\session\\format_v3_to_v4\\extension_identities.py": "988b1457be86fc3da09266c35cd058bea3cac0b42699627c8d9e490d9348830f",
+    "dsh\\session\\format_v3_to_v4\\facts.py": "5b3ab9a4438894ee2d282ab82ff775fa5454f4735ff2dfee510e58c0dedf2909",
+    "dsh\\session\\format_v3_to_v4\\fork_result.py": "ca7bf66cbb1eed3713acbcfa533f8437955ba85282919b6ff32ff8ae49b00385",
+    "dsh\\session\\format_v3_to_v4\\message_sources.py": "e67a83ec2a61eb72cd2e26c798a8575ef821d879ed87d652bcb945f6c7ae513c",
+    "dsh\\session\\format_v3_to_v4\\migration.py": "eea9f573692cabe12bf3b4db22a5f53b5e841ea7916d5076c9dce2d018b7fa9c",
+    "dsh\\session\\format_v3_to_v4\\references.py": "d179e69c06ecda2a2a149e3f4bb716105e2c034864cfbc73bd582471160a0e0b",
+    "dsh\\session\\format_v3_to_v4\\relationships.py": "d933da918773f98cb8852776cc15197e80fa30dec6c3eb8963e7953b1ca90edc",
+    "dsh\\session\\format_v3_to_v4\\retired_syntax.py": "da0d11f1170f5a3477e1ea3381a9f3ae64b87b18eb189ac2b44f4896bd01ec19",
+    "dsh\\session\\format_v3_to_v4\\sources.py": "375047e0fbd7e68d46b403a3fb02637912dec9e03d01565f71b86189f3e4d180",
+    "dsh\\session\\format_v3_to_v4\\system_message.py": "02bfc7315cdb5e4f6b7fb477d1eeb5b039c88b437f22d581abccc2703316dbb0",
+    "dsh\\session\\format_v3_to_v4\\tool_role.py": "2d63f5e97bd5f87cb03eb24b940f1bc03600b7189cad77cb4886650c9ea4f88a",
+    "dsh\\session\\format_v3_to_v4\\validation.py": "0a72ee05670199a8f44cdc7f239830cab1084d51f8f05df5d022321e77b4da6f",
+    "dsh\\session\\format_v3_to_v4\\__init__.py": "2bd99b3b51dff9157ff775b27d6c43490365b4f3a6b3ca519d097fae0591031a",
+    "scripts\\oracles\\rc022_format_values.mts": "8d3bb344497e7162748a0fd0ec57551908b9a7dbb14f3d0214b57ade3c4e78eb",
+    "scripts\\rc022_format_values_probe.py": "10b020fa6864430ecada3350bb0a123729b97d982d9536ac53afdf5925c4b34e",
+    ".goose\\out\\rc022-historical-20261115-03\\cases.json": "77bed1d3932813f8d7d69043c2b70a5b41fd74374e3d4a37f85d8f8d8049016f",
+    ".goose\\out\\rc022-prep-20261114-01\\source\\packages\\session\\session-format-catalog\\src\\children.ts": "b7ea141d1b004086b690c3b52d52e76eff6f0e362869e8fad79866dd84c37d5d",
+    ".goose\\out\\rc022-prep-20261114-01\\source\\packages\\session\\session-format-catalog\\src\\current.ts": "20e66609c38e3b6128dfd7be18423e86c4d7d5886d0c183f5e12d2a2dc62bb3a",
+    ".goose\\out\\rc022-prep-20261114-01\\source\\packages\\session\\session-format-catalog\\src\\generated.ts": "deda09f61c604774e0ec08a96459fe68113da4f651dfc4399a39d4a433840a8d",
+    ".goose\\out\\rc022-prep-20261114-01\\source\\packages\\session\\session-format-catalog\\src\\historical.ts": "9573da19b464db0b2afafc7e027f5a104f08e3bfd273e89f718055442039e882",
+    ".goose\\out\\rc022-prep-20261114-01\\source\\packages\\session\\session-format-catalog\\src\\index.ts": "37e13aba514de83c0e7ad3a16be83e5ea48f7d7537b02675f71d1b31b35d2328",
+    ".goose\\out\\rc022-prep-20261114-01\\source\\packages\\session\\session-format-catalog\\src\\message-projections.ts": "55440dba1a74e200d303d9653e069f2c49d226860d91159eb17e65262e0b8d89",
+    "dsh\\session\\format_catalog\\current.py": "4644dbbacaf9bce1822f8eeb9a253b74d8e506c6e1774a8b6805b17dc6945d58",
+    "dsh\\session\\format_catalog\\historical.py": "3c97755b2e77b25fed68c14c00df5db51f8cbade159037228ec26588ca65649a",
+    "dsh\\session\\format_catalog\\__init__.py": "d96f575dd88cea73f2787c9887e8a5f00e50b090cf4a03a6ea1ece3f43907138"
+  },
+  "cleanup": {
+    "owner": "rc022-historical-catalog",
+    "completed_consumers": true,
+    "removed": [
+      {
+        "path": ".goose\\out\\rc022-historical-native-20261115-01\\pytest-workspace\\test_paired_runner_refuses_wro0",
+        "bytes": 339
+      },
+      {
+        "path": ".goose\\out\\rc022-historical-native-20261115-01\\pytest-workspace\\test_paired_runner_rejects_dup0",
+        "bytes": 373
+      },
+      {
+        "path": ".goose\\out\\rc022-historical-native-20261115-02\\pytest-workspace\\test_paired_runner_refuses_wro0",
+        "bytes": 339
+      },
+      {
+        "path": ".goose\\out\\rc022-historical-native-20261115-02\\pytest-workspace\\test_paired_runner_rejects_dup0",
+        "bytes": 373
+      }
+    ],
+    "retained": "Logs, XML, paired inputs/results and initial resolved-failure reports remain; shared fixed Source/toolchain retained for subsequent C1-C9 work."
+  }
+}

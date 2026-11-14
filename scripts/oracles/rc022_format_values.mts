@@ -9,6 +9,13 @@ const modules = await Promise.all(['tool-role', 'sources', 'content', 'developer
   'message-sources', 'retired-syntax', 'facts', 'fork-result', 'references',
   'extension-identities', 'validation', 'relationships', 'migration', 'codec'].map(name => import(pathToFileURL(resolve(base, name + '.ts')).href)))
 const functions = Object.assign({}, ...modules)
+const { historicalSessionFormatCatalog } = await import(pathToFileURL(resolve(source!, 'packages/session/session-format-catalog/src/historical.ts')).href)
+functions.historicalReadHeader = (header: any) => historicalSessionFormatCatalog.readHeader(header)
+functions.historicalRead = (header: any, rows: any[], options: any) => {
+  const restore = historicalSessionFormatCatalog.createRestore(header, options)
+  for (const row of rows) restore.decodeRow(row)
+  return restore.finish()
+}
 for (const name of ['restoreReleasedV4Artifact', 'assertReleasedV4Relationships', 'assertV4LifecycleRelationships', 'assertV4RowAdmission']) {
   const original = functions[name]
   functions[name] = (value: any, known?: string[]) => original(value, known === undefined ? undefined : new Set(known))

@@ -21,3 +21,5 @@
 2026-11-15：C2-C [子会话事实与引用检查](child-facts-checks.json)完成 1025 组 Source/native 对照、54 项相关原版测试、59 项 Python 定向测试；历史自有 descriptor 选择、fork not-started 身份、未知可忽略事件归属和移动后的本地引用已按独立助手落地，完整流式迁移与生命周期关系仍待实现。
 
 2026-11-15：C2-D [显式格式库检查](format-library-checks.json)完成 1321 组固定 Source/native 对照、404 项原版格式包测试和 778 项 Python 定向回归；新增流式 v3→v4、V4 编解码、生命周期/压缩/工具/重试/标题/命令/目录/交付关系校验。测试合成工作区清理完毕；这些 API 已作为独立版本模块导出，生产 format catalog、CurrentSession、持久化与消费者尚未切换，C2 不据此整体验收。
+
+2026-11-15：C2-E [历史目录检查](historical-catalog-checks.json)完成 1426 组固定 Source/native 对照、155 项原版提供端测试和 785 项 Python 定向回归。独立 V0–V3 历史读取用于收集迁移前置事实，修正旧物理头与损坏头结果的字段输出顺序；生产目录仍为 V3。已删除本批用完的合成夹具，保留初次失败诊断与所有运行记录。

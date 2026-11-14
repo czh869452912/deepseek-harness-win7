@@ -5,6 +5,7 @@ from dsh.session.format_v0_to_v1 import releasedV0SessionFormatCodec, releasedV1
 from dsh.session.format_v1_to_v2 import releasedV2SessionFormatCodec, sessionFormatV1ToV2
 from dsh.session.format_v2_to_v3 import assertReleasedV3Header, releasedV3SessionFormatCodec, restoreReleasedV3Artifact, sessionFormatV2ToV3
 from .current import validateInstalledCurrentSessionArtifact, validateInstalledCurrentSessionHeader
+from .historical import historicalSessionFormatCatalog
 
 
 def restore_current(artifact):

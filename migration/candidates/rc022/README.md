@@ -53,3 +53,5 @@
 2026-11-15：C1-N [服务关联属性](associated-properties-checks.json)完成 Service 与通用 tracker 的关联读写原版对照，并复验定义/使用上下文旅程；125 项提供端与直接消费者、115 项 Fiber/profile/Web/HMR 回归分别通过。`ctx.api.sub` 按 `api.sub` 的声明与定义方注入权限解析，accessor 保留原接收者，扩展卸载后恢复原字段；影子上下文同时继承普通元数据。Python 完整 hook 显式接收 context 与 receiver，既有简短 hook 兼容保留。合成夹具和测试链接已清理，初次失败诊断与运行记录保留。日志等级、剩余核心生命周期及新版 boot 重组继续推进。
 
 2026-11-15：C1-O [日志生命周期](logger-checks.json)完成固定原版/Python 对照及 51 项定向检查。日志等级改为 ERROR/WARN/INFO/DEBUG 对应 0/1/2/3，按 nullish 顺序选择 exporter 阈值；注销释放自身注册，各 exporter 获得独立消息对象并保留共享参数，元数据覆盖、空 AggregateError、原位裁剪共享缓冲区和显式空名称亦已覆盖。启动缓冲 exporter 在根卸载后保留，按原版观察记录。已清理合成工作区与测试链接，首次断言修正的原始诊断保留。剩余核心生命周期和新版 boot/profile 重组继续推进。
+
+2026-11-15：C1-P [启动判定与诊断](startup-checks.json)完成 8 组实际 boot 原版/Python 对照、103 项原版启动检查；Python 启动/持久化 84 项、Fiber/profile/Web/HMR 118 项分别通过，测试工作区修正后另有 55 项通过。仅固定必需入口及根 Include 的失败拒绝启动，可选失败警告并保留正常兄弟节点；StartupError 保存原始原因，卸载前采集限额配置无关快照，外部日志收集器保留卸载期间的告警。循环 cause 不再无限遍历，Include 使用目录 file URL，7 组跨树旅程复验通过。已删除本轮 98 个精确识别的系统临时夹具及指定工作区资产，旧测试已改为在指定工作区内生成；原始失败、命令与观察保留。profile 重组、解析与兼容预检等 C1 工作继续推进。

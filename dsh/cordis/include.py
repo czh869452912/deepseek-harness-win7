@@ -11,6 +11,7 @@ import json
 import os
 import sys
 import time
+from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Set, Tuple, Union
 import yaml
 
@@ -96,7 +97,7 @@ class Include(IncludePersistence, EntryTree, Service):
         self.content: Optional[str] = None
         self.data: Optional[List[Dict[str, Any]]] = None
 
-        self.base_url = os.path.dirname(self.filename)
+        self.base_url = Path(os.path.dirname(self.filename)).as_uri() + '/'
         self.baseUrl = self.base_url
         self.ctx.base_url = self.base_url
         self.ctx.baseUrl = self.base_url

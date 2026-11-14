@@ -44,6 +44,13 @@ def tmp() -> str:
     return tempfile.mkdtemp(prefix="dsh-app-boot-")
 
 
+@pytest.fixture(autouse=True)
+def owned_boot_files(tmp_path, monkeypatch):
+    def create():
+        return tempfile.mkdtemp(prefix='dsh-app-boot-', dir=str(tmp_path))
+    monkeypatch.setattr(sys.modules[__name__], 'tmp', create)
+
+
 class FakeProc:
     """Mock process object for installFailLoud tests."""
 
@@ -915,16 +922,20 @@ async def test_boot_settles_the_root_fiber_teardown_a_script_bridge_starts_mid_s
 
 
 @pytest.mark.asyncio
-async def test_boot_rejects_when_config_names_plugin_that_cannot_be_imported():
+async def test_boot_warns_when_optional_plugin_cannot_be_imported(capsys):
     d = tmp()
     with open(os.path.join(d, "cordis.yml"), "w", encoding="utf-8") as f:
         f.write("- id: ghost\n  name: ./missing.mjs\n")
-    with pytest.raises(RuntimeError, match=f"{NAME}: plugin tree failed to load: failed to apply loader entry"):
-        await boot(NAME, os.path.join(d, "cordis.yml"))
+    ctx = await boot(NAME, os.path.join(d, "cordis.yml"))
+    try:
+        assert 'ghost (./missing.mjs): failed to import:' in capsys.readouterr().err
+        assert ctx.get('loader') is not None
+    finally:
+        await ctx.fiber.dispose()
 
 
 @pytest.mark.asyncio
-async def test_boot_labels_deferred_config_failure_with_its_row_and_leaves_file_unchanged():
+async def test_boot_labels_deferred_config_warning_with_its_row_and_leaves_file_unchanged(capsys):
     d = tmp()
     config_path = os.path.join(d, "cordis.yml")
     config = (
@@ -938,8 +949,11 @@ async def test_boot_labels_deferred_config_failure_with_its_row_and_leaves_file_
     with open(config_path, "w", encoding="utf-8") as f:
         f.write(config)
 
-    with pytest.raises(RuntimeError, match="failed to apply loader entry invalid-config \\(\\./noop\\.mjs\\)"):
-        await boot(NAME, config_path)
+    ctx = await boot(NAME, config_path)
+    try:
+        assert 'invalid-config (./noop.mjs):' in capsys.readouterr().err
+    finally:
+        await ctx.fiber.dispose()
     with open(config_path, "r", encoding="utf-8") as f:
         assert f.read() == config
 
@@ -955,7 +969,7 @@ async def test_boot_appends_deepest_cause_with_original_stack():
             "}\n"
         )
     with open(os.path.join(d, "cordis.yml"), "w", encoding="utf-8") as f:
-        f.write("- id: failing\n  name: ./failing.mjs\n")
+        f.write("- id: agent-loop\n  name: ./failing.mjs\n")
 
     with pytest.raises(RuntimeError, match="pinned activation failure"):
         await boot(NAME, os.path.join(d, "cordis.yml"))
@@ -1013,13 +1027,13 @@ async def test_boot_reports_pending_real_loader_fiber_and_service_unresolved():
     with open(os.path.join(d, "waiting.mjs"), "w", encoding="utf-8") as f:
         f.write('export const inject = ["neverProvided"]\nexport function apply() {}\n')
     with open(os.path.join(d, "cordis.yml"), "w", encoding="utf-8") as f:
-        f.write("- id: waiting\n  name: ./waiting.mjs\n")
+        f.write("- id: agent-loop\n  name: ./waiting.mjs\n")
 
     with pytest.raises(RuntimeError) as exc_info:
         await boot(NAME, os.path.join(d, "cordis.yml"))
     msg = str(exc_info.value)
-    assert f"{NAME}: 1 entry did not activate" in msg
-    assert "./waiting.mjs: pending (waiting for service: neverProvided)" in msg
+    assert f"{NAME}: startup failed: 1 required plugin did not activate" in msg
+    assert 'agent-loop (required)' in msg and 'neverProvided' in msg
 
 
 # ---------------------------------------------------------------------------

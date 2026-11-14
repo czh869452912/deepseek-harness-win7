@@ -1,0 +1,45 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-15",
+  "unit": "C1-P-startup-audit-and-diagnostics",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "state": "targeted-passed",
+  "paired": {
+    "run": ".goose/out/rc022-startup-paired-20261115-03/report.json",
+    "journeys": 8,
+    "cross_tree": ".goose/out/rc022-startup-moves-20261115-01/report.json"
+  },
+  "source": {
+    "run": "rc022-startup-source-20261115-01",
+    "passed": 103
+  },
+  "native": [
+    {
+      "run": "rc022-startup-native-20261115-01",
+      "passed": 93,
+      "failed": 4
+    },
+    {
+      "run": "rc022-startup-native-20261115-02",
+      "passed": 84
+    },
+    {
+      "run": "rc022-startup-consumers-20261115-01",
+      "passed": 118
+    },
+    {
+      "run": "rc022-startup-workspaces-20261115-01",
+      "passed": 55
+    }
+  ],
+  "scope": "Actual boot requires only the fixed global required entry IDs and bootstrap Include. Optional failures warn while healthy siblings run. StartupError keeps original causes, captures bounded configuration-free composition before teardown, and retains warning/error records through cleanup. Include contexts use directory file URLs. Setup cause cycles terminate.",
+  "verification_scope_reason": "Fixed Source actual boot and diagnostic tests, new paired native journeys, boot and profile direct consumers, ACP/SDK, shutdown, persistence and Fiber/profile/Web/HMR scopes. Initial four old all-entries-fatal expectations replaced according to fixed Source policy. No complete regression or release qualification.",
+  "cleanup": {
+    "path": ".goose/out/rc022-startup-workspaces-20261115-01/cleanup.json",
+    "assets": 191,
+    "bytes": 509171,
+    "links": 717,
+    "external_fixtures": 98
+  },
+  "remaining": "Profile recomposition, runtime package resolution and compatibility, environment/profile initialization, and remaining core lifecycle before C1 acceptance. C2-C9 unaccepted."
+}

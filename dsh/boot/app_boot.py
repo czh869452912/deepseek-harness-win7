@@ -29,6 +29,8 @@ from dsh.cordis.fiber import FiberState
 from dsh.cordis.include import ConfigFileError, Include
 from dsh.cordis.loader import Entry, EntryGroup, Group, Loader, apply_entry_patches, evaluate_expr, is_js_expr, js_constructor, resolve_module_specifier
 from dsh.boot.plugin_registry import install_harness_plugin_classes, install_installation_module_roots
+from dsh.boot.startup import StartupError, audit_startup_entries, capture_startup_composition
+from dsh.cordis.logger import Exporter
 
 
 from dsh.boot.profile import (
@@ -768,6 +770,13 @@ async def boot(
 ) -> Context:
     """Boot the Loader against absolute_config_path and return when settled."""
     ctx = Context()
+    startup_logs: List[Dict[str, Any]] = []
+    diagnostics = Context()
+    diagnostics.logger = ctx.logger._bind(diagnostics)
+    def collect(message: Any) -> None:
+        if message.type in ('warn', 'error'):
+            startup_logs.append(dict(ts=message.ts, name=message.name, type=message.type, args=message.args))
+    diagnostics.logger.exporter(Exporter(export_fn=collect, levels={'default': 2}))
     stage = "host preparation failed"
     try:
         ctx.base_url = path_to_file_url(os.path.dirname(absolute_config_path)) + "/"
@@ -805,16 +814,26 @@ async def boot(
         await settle_fibers(ctx)
         if ctx.get("loader") is None:
             return ctx
-        await assert_entries_activated(ctx, bin_name)
+        await audit_startup_entries(ctx, bin_name)
         return ctx
     except (Exception, asyncio.CancelledError) as cause:
+        if isinstance(cause, StartupError):
+            try:
+                cause.composition = capture_startup_composition(ctx)
+            except Exception as error:
+                ctx.logger.warn('Startup composition diagnostic unavailable', error)
         if hasattr(ctx, "fiber") and hasattr(ctx.fiber, "dispose"):
             await ctx.fiber.dispose()
+        if isinstance(cause, StartupError):
+            cause.startup = dict(configurationPath=absolute_config_path, messages=startup_logs)
+            raise
         if isinstance(cause, asyncio.CancelledError):
             raise
         detail = str(cause)
         deepest: Any = cause
-        while getattr(deepest, "__cause__", None) is not None or getattr(deepest, "cause", None) is not None:
+        seen: Set[int] = set()
+        while id(deepest) not in seen and (getattr(deepest, "__cause__", None) is not None or getattr(deepest, "cause", None) is not None):
+            seen.add(id(deepest))
             deepest = getattr(deepest, "__cause__", None) or getattr(deepest, "cause", None)
 
         if hasattr(deepest, "errors") and isinstance(getattr(deepest, "errors", None), (list, tuple)):
@@ -826,6 +845,8 @@ async def boot(
         else:
             stack = ""
         raise RuntimeError(f"{bin_name}: {stage}: {detail}{stack}") from cause
+    finally:
+        await diagnostics.fiber.dispose()
 
 
 async def watch_user_patches(ctx: Context, options: Dict[str, Any]) -> Callable[[], Any]:
@@ -892,6 +913,8 @@ loadEnv = load_env
 loadLayeredEnv = load_layered_env
 assertEntriesLoaded = assert_entries_loaded
 assertEntriesActivated = assert_entries_activated
+auditStartupEntries = audit_startup_entries
+captureStartupComposition = capture_startup_composition
 mountRootInclude = mount_root_include
 installFailLoud = install_fail_loud
 watchUserPatches = watch_user_patches

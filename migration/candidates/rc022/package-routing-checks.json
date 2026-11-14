@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-15",
+  "unit": "C1-W-PackageMetadataRoutingAndPublication",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "state": "targeted-passed",
+  "paired": ".goose/out/rc022-packages-paired-20261115-01/report.json",
+  "observations": 46,
+  "source": {"run": "rc022-packages-source-20261115-01", "passed": 7, "not_selected": 5},
+  "native": [
+    {"run": "rc022-packages-native-20261115-01", "passed": 56, "failed": 1, "reason": "Test incorrectly expected a skipped malformed bundle to reject recomputation; changed the fixture to malformed profile input."},
+    {"run": "rc022-packages-native-20261115-02", "passed": 6, "failed": 0}
+  ],
+  "verification_scope_reason": "Actual fixed Source metadata routes and successor publication, original metadata service cases, and native table/profile/admission/reconciliation consumers. Extra native checks cover recompute failure atomicity, service ownership, link move chains and rejected publication retaining history.",
+  "scope": "Context-owned PluginPackages, bare package classification, active/sibling/custom profile scopes, installation mappings, nearest local directories, linked peer precedence, parsed metadata identity and absence cache, successor validation and historical directory relocation. Preflight shares the canonical bare classifier.",
+  "cleanup": ".goose/out/rc022-packages-native-20261115-02/cleanup.json",
+  "remaining": "The Python service does not install Node ESM/CommonJS hooks. Python Loader consumption, worker inheritance, localized metaOf, complete recomposition and old fallback retirement remain. This is neither runtime import parity nor a complete gate/release acceptance."
+}

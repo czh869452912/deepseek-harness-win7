@@ -67,3 +67,5 @@
 2026-11-15：C1-U [Profile patch 协调](reconciliation-checks.json)完成 11 组固定原版/Python 实际 boot/reconcile 旅程及 94 项启动/Loader/Include/HMR/预检检查。协调完整 patch 栈，按 entry/Fiber/原始配置身份保留未变化的旧失败警告，拒绝新增/变化失败或显式必需的不活动条目；pending 仅警告且 provider 到达后激活。移除条目虽已离开 Loader，仍等待原 Fiber 清理；成功才发出零参数 config-reload。原版所选协调收敛测试通过，日志/观察保留，合成夹具已清理。完整 recomposeProfile 的代际发布与 launcher watcher 接入仍待后续 C1 工作。
 
 2026-11-15：C1-V [运行时包表构建](runtime-resolution-checks.json)完成 10 组固定原版/Python 实际依赖图/后继表对照和 8 项原版所选构建检查。安装与 profile 依赖采用 BFS 首次解析优先，包含 peers/optional，记录 declarer/version/scope、直接安装名称和外部链接；表不可变，读取不写 fallback，重算重新读取磁盘而不保留合成层。Python 112 项通过、2 项夹具/异常断言错误修正后，17 项补充通过。首次悬空 junction 创建失败的诊断保留，改为先创建自有目标、建立 junction 后移除目标；本批全部合成工作区和链接已清理。运行时路由/发布、完整重组及旧 fallback launcher 替换仍待后续 C1 工作。
+
+2026-11-15：C1-W [包元数据路由与发布](package-routing-checks.json)完成 46 组固定原版/Python 路由、缓存与代际发布对照及 7 项原版检查。新增 Context 所有的 PluginPackages，按活动/其它 profile、安装目录、本地目录和链接 peer 确认包归属；拒绝需要重启的后继表且保留旧缓存，允许新增和安全删除。重算失败原子性、链接历史移动链与拒绝发布不改历史补充覆盖。Python 56 项通过、1 项误将跳过 bundle 当作致命错误的断言修正后，6 项通过。清理 5 个自有资产共 134257 字节及 39 个链接，观察和诊断保留。Python Loader、worker、localized metaOf 和整体重组尚未接入，未将元数据合同冒充 Node 全局模块 hook 对齐。

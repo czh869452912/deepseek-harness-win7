@@ -11,6 +11,7 @@ from urllib.request import url2pathname
 import yaml
 from dsh.boot.plugin_compatibility import evaluate_plugin_compatibility, plugin_compatibility_warning
 from dsh.boot.profile_compatibility import read_profile_compatibility
+from dsh.boot.plugin_packages import bare_package_name
 from dsh.cordis.loader import apply_entry_patches
 _MISSING = object()
 
@@ -40,10 +41,7 @@ def _read_manifest(filename):
 
 
 def _bare_name(name):
-    if not name or name.startswith(('.', '/', '#')) or os.path.isabs(name) or ':' in name:
-        return None
-    parts = name.split('/')
-    return '/'.join(parts[:2]) if name.startswith('@') and len(parts) >= 2 else parts[0]
+    return bare_package_name(name)
 
 
 def _alias(name, base):

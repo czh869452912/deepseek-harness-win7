@@ -17,6 +17,7 @@ import yaml
 from dsh.cordis.context import Context
 from dsh.cordis.loader import EntryTree, EntryGroup, Entry, apply_entry_patches, sort_keys, js_constructor
 from dsh.cordis.service import Service, ServiceSymbols
+from dsh.cordis.utils import _UNDEFINED
 
 
 class ConfigFileError(Exception):
@@ -33,8 +34,13 @@ class ConfigFileError(Exception):
         self.name = "ConfigFileError"
 
 
+class StaleWriteError(Exception):
+    """The backing file changed before the guarded atomic rename."""
+    name = "StaleWriteError"
+
+
 WRITE_RETRY_LIMIT = 10
-WRITE_RETRY_DELAY_SEC = 0.05
+WRITE_RETRY_DELAY_SEC = 0.02
 
 SUPPORTED_EXTENSIONS = {".json", ".yaml", ".yml"}
 
@@ -107,6 +113,7 @@ class Include(EntryTree, Service):
                 self._write_lock = None
         self.pending_write: Optional[List[Dict[str, Any]]] = None
         self._write_task: Optional[Any] = None
+        self._seq = 0
 
         async def _on_update(new_config: Any, *args: Any, **kwargs: Any) -> Any:
             next_fn = args[-1] if args and callable(args[-1]) else kwargs.get("next_fn")
@@ -149,7 +156,7 @@ class Include(EntryTree, Service):
 
     def _read_file(self, forced: bool = False) -> Optional[Dict[str, Any]]:
         try:
-            with open(self.filename, "r", encoding="utf-8") as f:
+            with open(self.filename, "r", encoding="utf-8", newline='') as f:
                 content = f.read()
         except Exception as error:
             raise ConfigFileError("read", self.filename, error)
@@ -214,57 +221,84 @@ class Include(EntryTree, Service):
             return True
         return isinstance(error, PermissionError)
 
+    def dump(self, config_data: List[Dict[str, Any]]) -> str:
+        if self.type == "application/yaml":
+            return yaml.safe_dump(config_data, sort_keys=False, allow_unicode=True)
+        return json.dumps(config_data, indent=2, ensure_ascii=False)
+
+    def _temporary_filename(self) -> str:
+        filename = os.path.join(os.path.dirname(self.filename), '.%s.%s.%s.tmp' % (
+            os.path.basename(self.filename), os.getpid(), self._seq))
+        self._seq += 1
+        return filename
+
+    def _check_expected(self, expected: Any) -> None:
+        if expected is _UNDEFINED:
+            return
+        try:
+            with open(self.filename, 'r', encoding='utf-8', newline='') as stream:
+                current = stream.read()
+        except FileNotFoundError:
+            current = _UNDEFINED
+        if current != expected:
+            raise StaleWriteError()
+
+    def _write_text_sync(self, text: str, expected: Any = _UNDEFINED) -> None:
+        temporary = self._temporary_filename()
+        try:
+            with open(temporary, 'w', encoding='utf-8', newline='') as stream:
+                stream.write(text)
+            for retry in range(WRITE_RETRY_LIMIT + 1):
+                self._check_expected(expected)
+                try:
+                    os.replace(temporary, self.filename)
+                    return
+                except Exception as error:
+                    if not self._retryable_write_error(error) or retry >= WRITE_RETRY_LIMIT:
+                        raise
+                time.sleep(WRITE_RETRY_DELAY_SEC * (retry + 1))
+        finally:
+            try:
+                os.remove(temporary)
+            except FileNotFoundError:
+                pass
+
+    async def _write_text(self, text: str, expected: Any = _UNDEFINED) -> None:
+        temporary = self._temporary_filename()
+        try:
+            with open(temporary, 'w', encoding='utf-8', newline='') as stream:
+                stream.write(text)
+            for retry in range(WRITE_RETRY_LIMIT + 1):
+                self._check_expected(expected)
+                try:
+                    os.replace(temporary, self.filename)
+                    return
+                except Exception as error:
+                    if not self._retryable_write_error(error) or retry >= WRITE_RETRY_LIMIT:
+                        raise
+                await asyncio.sleep(WRITE_RETRY_DELAY_SEC * (retry + 1))
+        finally:
+            try:
+                os.remove(temporary)
+            except FileNotFoundError:
+                pass
+
     def _write_file_sync(self, config_data: List[Dict[str, Any]]) -> None:
-        """Synchronously write config data."""
+        """Compatibility wrapper; publish the cache only after a successful write."""
         if self.readonly:
             raise PermissionError(f"cannot overwrite readonly config: {self.filename}")
-
-        tmp_filename = self.filename + ".tmp"
-        if self.type == "application/yaml":
-            self.content = yaml.safe_dump(config_data, sort_keys=False, allow_unicode=True)
-        else:
-            self.content = json.dumps(config_data, indent=2, ensure_ascii=False)
-
-        with open(tmp_filename, "w", encoding="utf-8") as f:
-            f.write(self.content)
-
-        for retry in range(WRITE_RETRY_LIMIT + 1):
-            try:
-                if os.path.exists(self.filename):
-                    os.replace(tmp_filename, self.filename)
-                else:
-                    os.rename(tmp_filename, self.filename)
-                return
-            except Exception as e:
-                if not self._retryable_write_error(e) or retry >= WRITE_RETRY_LIMIT:
-                    raise
-                time.sleep(WRITE_RETRY_DELAY_SEC * (retry + 1))
+        content = self.dump(config_data)
+        self._write_text_sync(content)
+        self.content = content
 
     async def _write_file_async(self, config_data: List[Dict[str, Any]]) -> None:
         """Asynchronously write config data with retry on Win7 lock contention."""
         if self.readonly:
             raise PermissionError(f"cannot overwrite readonly config: {self.filename}")
 
-        tmp_filename = self.filename + ".tmp"
-        if self.type == "application/yaml":
-            self.content = yaml.safe_dump(config_data, sort_keys=False, allow_unicode=True)
-        else:
-            self.content = json.dumps(config_data, indent=2, ensure_ascii=False)
-
-        with open(tmp_filename, "w", encoding="utf-8") as f:
-            f.write(self.content)
-
-        for retry in range(WRITE_RETRY_LIMIT + 1):
-            try:
-                if os.path.exists(self.filename):
-                    os.replace(tmp_filename, self.filename)
-                else:
-                    os.rename(tmp_filename, self.filename)
-                return
-            except Exception as e:
-                if not self._retryable_write_error(e) or retry >= WRITE_RETRY_LIMIT:
-                    raise
-                await asyncio.sleep(WRITE_RETRY_DELAY_SEC * (retry + 1))
+        content = self.dump(config_data)
+        await self._write_text(content)
+        self.content = content
 
     def write(self) -> None:
         """Schedule a write of current root entry data."""

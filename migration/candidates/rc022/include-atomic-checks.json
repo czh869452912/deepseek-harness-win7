@@ -1,0 +1,47 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-15",
+  "unit": "C1-H-Include-atomic-writer",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "state": "targeted-passed",
+  "scope": "Actual guarded/unconditional file replacement with exact UTF-8/CRLF bytes, externally changed and missing files, temporary cleanup. Queue integration remains separate.",
+  "paired_observations": 32,
+  "native_tests": {
+    "passed": 32,
+    "failed": 0
+  },
+  "verification_scope_reason": "Production writer, stale/missing/external modifications, retry and failure injection plus existing Include and boot consumers.",
+  "remaining": "Journal queue and Loader commit integration remain; atomic writer targeted results do not certify persistence reconciliation.",
+  "inputs": {
+    ".goose/out/rc022-prep-20261114-01/source/vendor/cordis/src/events.ts": "a464c843822da4eb31a8d998c5e2216a817b8a7dfeacb6e1aab7f830e7320d6b",
+    "dsh/cordis/events.py": "c8821d6084bd4788c28f5c83ebc84e6138eeb94067c192fe0df34f6efeeea1a5",
+    "scripts/oracles/rc022_include_atomic.mts": "3689b4d514b2baba2ca7b00704ec223dfc378a7ba1fb7be8bb4957ca9800b00a",
+    "scripts/rc022_events_probe.py": "528022ac1e83cad7ab4d24f0c7696caf4bfc36eab6805c220954716673dd2987",
+    "dsh/cordis/include.py": "c719b1f06d797acac5062dc9d18cd6af4b8f53e71dcb22da45cd64279edeabf4",
+    "scripts/rc022_include_atomic_probe.py": "8f2139f686f60748428688d5bf765dac6d79e1b6f814bed8b17347f500651f3b",
+    ".goose/out/rc022-prep-20261114-01/source/vendor/include/src/index.ts": "43ddf01220a45fbbe8c0fd64d5d4944fe42dedcd0862127d6ede1d6086b9d053",
+    ".goose/out/rc022-include-atomic-paired-20261115-01/cases.json": "bb02611de645db0c27ac5b33331608236d780a6dcb20ade2a96a9a995940defc",
+    "tests/test_rc022_include_atomic_write.py": "48c16946ed003e1a868667f523ada22c9d859c7fa0a6c41a8bab3b1b9c59c6a7"
+  },
+  "reports": {
+    ".goose/out/rc022-include-atomic-paired-20261115-01/report.json": "55afb95f2fc3e19573a163141603e6928f511c3d2a47ce479910c74934f6d4cc",
+    ".goose/out/rc022-include-atomic-native-20261115-01/command.json": "1c83b33b8e7cf1033c9f51a2e07a081f77e14f96535dc455843eee5450e30696",
+    ".goose/out/rc022-include-atomic-native-20261115-01/pytest.xml": "b917e7cab1d618f4fceac1fcc59b51ed785ef530b1a9163dc85c7f4cf9ea955e",
+    ".goose/out/rc022-include-atomic-native-20261115-01/cleanup.json": "90fa20801362daf3652293ef04b0f4b4c7d4966c23c175574a2187b6facbeb2f"
+  },
+  "cleanup": {
+    "owner": "rc022-C1-H",
+    "removed": [
+      {
+        "path": ".goose/out/rc022-include-atomic-native-20261115-01/pytest-workspace",
+        "bytes": 55
+      },
+      {
+        "path": ".goose/out/rc022-include-atomic-paired-20261115-01/files",
+        "bytes": 496
+      }
+    ],
+    "retained": "Commands, observations, corpus, logs and XML; shared fixed Source retained through C9.",
+    "processes": "All owned subprocesses exited."
+  }
+}

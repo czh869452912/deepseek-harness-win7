@@ -37,3 +37,5 @@
 2026-11-15：C1-F [Loader volatile 提交](loader-volatile-checks.json)完成 4 组固定原版/Python 实际入口旅程、26 项原版与 93 项 Python 定向检查。纯 volatile 更新保留引用及插件实例，所有引用提交后只通知所属插件；无效候选保留原始输入，混合生效值变化进入普通更新，依赖未就绪和强制更新另行覆盖。本轮确认生产使用 `loader.py` 中的类，拆分的 `loader_entry/tree/group.py` 尚未被装配；此前对拆分文件的修改不作为生产 Loader 证据。已删除本批通过测试的 4188 字节合成夹具，首轮失败报告和全部运行记录保留。journal、完整上下文生命周期和 boot 仍待实现。
 
 2026-11-15：C1-G [Include journal 基础](include-journal-foundation-checks.json)完成 1634 组固定原版/Python 对照、11 项原版及 64 项 Python 检查。新增逐 entry 增量、创建/删除折叠、外部文件优先的三方协调，以及 patch 字段与插入条目的归属路由；当前仍是独立助手，尚未替代生产 Include 队列。直接消费者旧断言按固定原版更新为 raw/effective 分离、新更新参数和失败激活的显式恢复。已删除用完的合成夹具，保留失败报告和运行记录。
+
+2026-11-15：C1-H [Include 原子写入](include-atomic-checks.json)完成 32 组原版/Python 实际文件对照及 32 项 Python 检查。生产写入器采用独立临时文件，每次重命名重试前核对预期原文；拒绝覆盖外部修改或消失的文件，失败清除临时文件，成功后才发布内容缓存。保留 UTF-8 与 CRLF 原文，并覆盖暂时锁冲突和不可恢复写入失败。已清理本批实际文件和合成工作区。journal 队列和 Loader commit 接入仍未完成，未据此宣称完整持久化验收。

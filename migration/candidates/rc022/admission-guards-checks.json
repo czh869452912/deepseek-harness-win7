@@ -1,0 +1,73 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-15",
+  "unit": "C2-B-admission-guards",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "state": "targeted-passed",
+  "scope": "Explicit candidate validation helpers; not connected to streaming migration, catalog, persistence or production admission",
+  "paired": {
+    "cases": 620,
+    "matched": 620,
+    "differences": 0
+  },
+  "source_tests": {
+    "success": true,
+    "numTotalTests": 80,
+    "numPassedTests": 80,
+    "numFailedTests": 0,
+    "numPendingTests": 0
+  },
+  "native_tests": {
+    "passed": 43,
+    "failed": 0,
+    "skipped": 0
+  },
+  "output": "C:\\Users\\czh86\\Documents\\Codex\\deepseek-harness-win7\\.goose\\out\\rc022-guards-20261115-01",
+  "reports": {
+    "cases.json": "929a4c4e6fec79930659a9588c029af4091e362dff19fe71d80d31a3f4e90c6b",
+    "native.json": "e04b7d65b61d119ff492ab1b190b66dadf9b54c718fd16d17e821a492fbeabfe",
+    "pytest-command.json": "3b22cbe6866e2e3427b88dcebee0767760300065f8dfb366a6a9ef8e2a55d5e1",
+    "pytest.log": "bc52b5c1d5dd542740982bbdb04fabf64cb0181b3b1bdb35aef77521724c29c5",
+    "pytest.xml": "210815c36ee37fbf0827f506a9d50ddecbdef0f49eb3683726fa3099fbde639d",
+    "report.json": "f42044824df7c77cc84bc5fae13276277ce3d7937a3881e8ce3c4909078a42b4",
+    "source-tests-command.json": "df95b546cfd6074cd37dca9adb739e155cfd908b0839a8b182cb4a772f1f2982",
+    "source-tests.json": "f72e0608f3062832df400e0f34c4d44a957d61a27660ca17e2fe622c5df16327",
+    "source-tests.log": "35acc153102c5334be193cac122f39c8d17c5bd9ecd967b77d0967c5b5500278",
+    "source.json": "149b1d55fcb8950a6dccbc711a6b804dad53fafae0e9ffb0247eb8d59cdf997f",
+    "source.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "inputs": {
+    ".goose\\out\\rc022-prep-20261114-01\\source\\packages\\session\\session-format-v3-to-v4\\src\\codec.ts": "2e82811f3a805c3985b6ad56ab5129a3c656a2712357e02da1e9653679f384f0",
+    ".goose\\out\\rc022-prep-20261114-01\\source\\packages\\session\\session-format-v3-to-v4\\src\\content.ts": "6015ff507bcbbe776c3af36ce5e9c2ca5d18f15c82305d1db05226993279d234",
+    ".goose\\out\\rc022-prep-20261114-01\\source\\packages\\session\\session-format-v3-to-v4\\src\\developer.ts": "176b7ad6479672351ca08419ff6fca35d635289e9651a672b009ed972d973e5b",
+    ".goose\\out\\rc022-prep-20261114-01\\source\\packages\\session\\session-format-v3-to-v4\\src\\extension-identities.ts": "9737373f41a47c209938de8ec015b4fd3b3e591141905607a4a52bae652bb0ed",
+    ".goose\\out\\rc022-prep-20261114-01\\source\\packages\\session\\session-format-v3-to-v4\\src\\facts.ts": "ce1bb0dd3cc8eec269fd923eb2ca9ab4f9409d95b2673cc7437c3be97482582f",
+    ".goose\\out\\rc022-prep-20261114-01\\source\\packages\\session\\session-format-v3-to-v4\\src\\fork-result.ts": "c9bdc6bfe83c454e5a1b929660541a7398927a891a0a0a7cec50431a4088697c",
+    ".goose\\out\\rc022-prep-20261114-01\\source\\packages\\session\\session-format-v3-to-v4\\src\\index.ts": "aa59d82dab8cfb1616e687c8f2543ebae055baffd6a3d1927ba4bea1d4252a28",
+    ".goose\\out\\rc022-prep-20261114-01\\source\\packages\\session\\session-format-v3-to-v4\\src\\message-sources.ts": "880cf946c56416cabb3aba30a17be32d39f60961ff6568460567442b8fba28d0",
+    ".goose\\out\\rc022-prep-20261114-01\\source\\packages\\session\\session-format-v3-to-v4\\src\\migration.ts": "96a68188aaeb61a81f72c7fc7137929640d3aaf5d0745f5a610e3cf76797be12",
+    ".goose\\out\\rc022-prep-20261114-01\\source\\packages\\session\\session-format-v3-to-v4\\src\\references.ts": "472fca4d333c00e6a9c79d5301403a5db657defab269ca1673498ca42037a746",
+    ".goose\\out\\rc022-prep-20261114-01\\source\\packages\\session\\session-format-v3-to-v4\\src\\relationships.ts": "4802f65c6dee1d5da515116f7171e408cc9bf63219e04fd669d22db484493ebb",
+    ".goose\\out\\rc022-prep-20261114-01\\source\\packages\\session\\session-format-v3-to-v4\\src\\retired-syntax.ts": "6941b51779964c30367299c44579b1ed31b00115e7c74d69171f711e5e61c1aa",
+    ".goose\\out\\rc022-prep-20261114-01\\source\\packages\\session\\session-format-v3-to-v4\\src\\sources.ts": "3848aeb9c12e5c962c882405d88173956483103d4b53670b5f25f3185018e004",
+    ".goose\\out\\rc022-prep-20261114-01\\source\\packages\\session\\session-format-v3-to-v4\\src\\system-message.ts": "50c19486a8c378e4755d610de1dff5d3bdad3cf9e1021d1dbf3a46501e9fa32c",
+    ".goose\\out\\rc022-prep-20261114-01\\source\\packages\\session\\session-format-v3-to-v4\\src\\tool-role.ts": "867aded1027588ffa65439efc2eb18748db5255370b65552b1c05130ecb6fa9d",
+    ".goose\\out\\rc022-prep-20261114-01\\source\\packages\\session\\session-format-v3-to-v4\\src\\validation.ts": "8aa4f5dad881870baece3ef8f2e5803235d0d51d04a6251ffa05adde76b77c3f",
+    "dsh\\session\\format_v3_to_v4\\content.py": "a01a020ad804e06110ecf59e3a13f5831121645c6ba60a884c9986360ebb1770",
+    "dsh\\session\\format_v3_to_v4\\developer.py": "3a08e208ba5cfe6b2b5b31425aeb2072ea16ccaac8eb306adebb581e9acc7a5c",
+    "dsh\\session\\format_v3_to_v4\\message_sources.py": "e67a83ec2a61eb72cd2e26c798a8575ef821d879ed87d652bcb945f6c7ae513c",
+    "dsh\\session\\format_v3_to_v4\\retired_syntax.py": "da0d11f1170f5a3477e1ea3381a9f3ae64b87b18eb189ac2b44f4896bd01ec19",
+    "dsh\\session\\format_v3_to_v4\\sources.py": "375047e0fbd7e68d46b403a3fb02637912dec9e03d01565f71b86189f3e4d180",
+    "dsh\\session\\format_v3_to_v4\\system_message.py": "02bfc7315cdb5e4f6b7fb477d1eeb5b039c88b437f22d581abccc2703316dbb0",
+    "dsh\\session\\format_v3_to_v4\\tool_role.py": "2d63f5e97bd5f87cb03eb24b940f1bc03600b7189cad77cb4886650c9ea4f88a",
+    "dsh\\session\\format_v3_to_v4\\__init__.py": "f46a8e747824cc248d4a95268804494da17ea2e810dcc1f200e4dcab9f945dc1",
+    "scripts\\oracles\\rc022_format_values.mts": "0787df731a4ee7cd2b2fa34c9451425d923bbc53adefbe06c761a8b93b4bd550",
+    "scripts\\rc022_format_values_probe.py": "f727d860be1aeaf2d50630c91efb5972ea2cd5cd1c8231ed6e38cfdf73ab3343",
+    ".goose\\out\\rc022-guards-20261115-01\\cases.json": "929a4c4e6fec79930659a9588c029af4091e362dff19fe71d80d31a3f4e90c6b"
+  },
+  "cleanup": {
+    "disposable_payloads_created": false,
+    "retained": "Only commands, corpora, observations and test reports; shared S0 Source retained for remaining consumers"
+  },
+  "acceptance_changed": false
+}

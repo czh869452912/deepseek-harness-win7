@@ -78,19 +78,77 @@ def cases():
             add('migrateV3EventContent', event('assistant/attempt', dict(stream=[dict(type='chunk', chunk=dict(type=kind, blockType=value, block=value))])))
     for tool in ({}, {'deferLoading': None}, {'deferLoading': False}, {'parameters': {'deferLoading': True}}, None):
         add('migrateV3EventContent', event('request/header', dict(header=dict(tools=[tool]))))
+    for operation in ('assertV4MessageSources', 'assertV4SourceRowAdmission', 'assertV4RetiredSyntax', 'assertV4DeveloperData'):
+        for kind in ('user/message', 'system/message', 'developer/message', 'assistant/message', 'tool/result',
+                     'agent/inbox/spliced', 'session/title-llm-request', 'team/message/queued', 'unknown'):
+            for source in (None, {}, {'kind': ''}, {'kind': 'plugin', 'plugin': 'goal'}, {'kind': 'plugin:goal'}, {'kind': 'custom'}):
+                msg = dict(id='m', role='user', source=source, content=[])
+                data = msg if kind == 'user/message' else dict(turn=1, step=1, message=msg, inserted=[msg], messages=[msg])
+                add(operation, event(kind, data))
+        for data in (None, [], {}, {'message': None}):
+            add(operation, event('developer/message', data))
+    developer = dict(type='developer/message', seq=1, data=dict(turn=1, step=1,
+        message=dict(id='d', role='developer', source={'kind': 'tools'}, content=[])))
+    for contents in ([], [None], [dict(type='text')], [dict(type='tool-removal', toolName='x')],
+                     [dict(type='tool-addition', toolName='x')], [dict(type='tool-addition', toolName='')],
+                     [dict(type='tool-addition', toolName='x', tool=None)]):
+        for header in ('absent', None, False, 0, 1, -1, 1.5, 9007199254740992):
+            value = copy.deepcopy(developer); value['data']['message']['content'] = contents
+            if header != 'absent':
+                value['data']['headerSeq'] = header
+            add('assertV4DeveloperData', value)
+    for kind in ('user/message', 'assistant/message', 'compaction/summary', 'assistant/attempt', 'unknown'):
+        for tag in ('tool-addition', 'tool-removal', 'tool-result', 'text'):
+            block = dict(type=tag, toolName='x')
+            msg = dict(role='developer', content=[block])
+            data = msg if kind == 'user/message' else dict(message=msg, summary=[block], rawOutput=[block],
+                stream=[dict(type='chunk', chunk=dict(type='block-start', blockType=tag)),
+                        dict(type='chunk', chunk=dict(type='block-end', block=block))])
+            for operation in ('assertV4DeveloperData', 'assertV4RetiredSyntax'):
+                add(operation, event(kind, data))
+    for flag in ('absent', None, False, True, 0, 1):
+        tool = {} if flag == 'absent' else dict(deferLoading=flag)
+        add('assertV4DeveloperData', event('request/header', dict(header=dict(tools=[tool]))))
+    for kind in ('tool/code-dispatch', 'tool/code-dispatch-start', 'tool/ptc-dispatch'):
+        for flag in (None, False, True, 0, 1):
+            add('assertV4RetiredSyntax', dict(event(kind, {}), ignorable=flag))
+    for data in (None, {}, {'header': None}, {'header': {}}, {'header': {'system': None}}, {'header': {'opaque': {'system': 1}}}):
+        add('assertV4RetiredSyntax', event('request/header', data))
+    system = dict(type='system/message', seq=1, data=dict(turn=1, step=1,
+        message=dict(id='s', role='system', content=[])))
+    for field in ('turn', 'step'):
+        for value in (None, False, True, 0, 1, -1, 1.5, 9007199254740991, 9007199254740992):
+            row = copy.deepcopy(system); row['data'][field] = value
+            add('assertV4SystemMessageFields', row)
+            row = copy.deepcopy(developer); row['data'][field] = value
+            add('assertV4DeveloperData', row)
+    image = dict(type='image', attachment=dict(attachmentId='a', mediaType='image/png', bytes=0, width=1, height=1))
+    for contents in (None, {}, [None], [{}], [dict(type='')], [dict(type='text', text='')], [dict(type='reasoning', text=1)],
+                     [dict(type='tool-call', id='c', name='t', arguments='{}')], [dict(type='tool-result')],
+                     [dict(type='plugin:opaque', nested={'type': 'tool-result'})], [image]):
+        row = copy.deepcopy(system); row['data']['message']['content'] = contents
+        add('assertV4SystemMessageFields', row)
+    for field, values in {'attachmentId': [None, ''], 'mediaType': ['image/svg+xml', 'image/webp'],
+                          'bytes': [False, -1, 1.5], 'width': [0, True], 'name': [None, '', 5],
+                          'originalDimensions': [None, {}, {'width': 1, 'height': 2}]}.items():
+        for value in values:
+            row = copy.deepcopy(system); block = copy.deepcopy(image); block['attachment'][field] = value
+            row['data']['message']['content'] = [block]
+            add('assertV4SystemMessageFields', row)
     return rows
 
 
 def native(rows):
-    from dsh.session.format_v3_to_v4 import tool_role, sources, content
-    functions = {name: getattr(module, name) for module in (tool_role, sources, content) for name in dir(module) if not name.startswith('_')}
+    from dsh.session.format_v3_to_v4 import tool_role, sources, content, developer, system_message, message_sources, retired_syntax
+    modules = (tool_role, sources, content, developer, system_message, message_sources, retired_syntax)
+    functions = {name: getattr(module, name) for module in modules for name in dir(module) if not name.startswith('_')}
     results = []
     for row in rows:
         args = copy.deepcopy(row['args'])
         before = copy.deepcopy(args)
         try:
             value = functions[row['operation']](*args)
-            results.append(dict(case=row['case'], ok=True, value=value, same=value is args[0], unchanged=before == args,
+            results.append(dict(case=row['case'], ok=True, value=value, same=value is args[0] and value is not None, unchanged=before == args,
                                 serialized=json.dumps(value, ensure_ascii=False, separators=(',', ':'))))
         except Exception as error:
             results.append(dict(case=row['case'], ok=False, name=getattr(error, 'name', type(error).__name__), message=str(error), unchanged=before == args))

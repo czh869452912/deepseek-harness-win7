@@ -39,7 +39,7 @@ async def native():
     return result
 
 
-def main(observer='rc022_events.mts', scope=None, extra_inputs=(), prepare=None, node_args=()):
+def main(observer='rc022_events.mts', scope=None, extra_inputs=(), prepare=None, node_args=(), plain_node=False):
     parser=argparse.ArgumentParser(description=__doc__)
     for name in ('source','node','output'):parser.add_argument('--'+name,type=Path,required=True)
     args=parser.parse_args();source=args.source.resolve();output=args.output.resolve()
@@ -47,7 +47,8 @@ def main(observer='rc022_events.mts', scope=None, extra_inputs=(), prepare=None,
     assert subprocess.check_output(['git','-C',str(source),'rev-parse','HEAD'],encoding='utf-8').strip()==TARGET
     assert not subprocess.check_output(['git','-C',str(source),'status','--porcelain','--untracked-files=no'],encoding='utf-8').strip()
     prepared = prepare(output) if prepare is not None else []
-    command=[str(args.node.resolve()),*node_args,str(source/'node_modules/tsx/dist/cli.mjs'),'--tsconfig',str(source/'tsconfig.base.json'),str(ROOT/'scripts/oracles'/observer),str(source),*[str(path) for path in prepared]]
+    loader=[] if plain_node else [str(source/'node_modules/tsx/dist/cli.mjs'),'--tsconfig',str(source/'tsconfig.base.json')]
+    command=[str(args.node.resolve()),*node_args,*loader,str(ROOT/'scripts/oracles'/observer),str(source),*[str(path) for path in prepared]]
     report=dict(target_upstream=TARGET,command=command,scope=scope or 'Waterfall single-use delegates, symbol identity, parallel observer mode, empty listener key removal. Config resolution/update lifecycle remains separate.')
     start=time.monotonic()
     try:

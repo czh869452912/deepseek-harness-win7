@@ -75,3 +75,5 @@
 2026-11-15：C1-Y [实时组合输入](profile-context-checks.json)完成 44 组固定原版/Python 文件与启动快照对照及 1 项原版检查。Bundle 读取不消费默认用户层，完整读取支持自定义用户路径、显式 home、分离的启动 overlay 和最后应用的隐私开关；当前 bundle 选择/内容变化都会重新读取。Launcher live reader 修复启动 bundle 缓存与环境 home 漂移，ComposedProfile 不再把隐私补丁混入原始 overlay。Python 32 项通过、1 项新增断言错误修正后，4 项通过。已清理 7 个自有资产共 177119 字节及 478 个测试链接，观察器修改自身结果和断言修正的诊断保留。真实 HMR、模块/服务接线和旧 patchReload 退役继续推进。
 
 2026-11-15：C1-Z [canonical Python 模块路由](runtime-loader-checks.json)完成 33 组原版真实 ESM/Python 根模块导入及元数据归属对照，并复验包表构建 10 组。Launcher 挂载配置树前发布包服务，不再 heal 或安装物理 fallback 根；Loader 按选中目录导入 Python，仅安装映射使用原生类表，未选中名称不再透过旧表逃逸，外部 JS 不执行测试占位函数。Portable 平铺目录通过显式只读安装图适配，重算重新枚举，真实安装副本优先，普通包表 API 不引入 workspace fallback。Python 86 项通过、1 项旧可选 gateway 致命断言改为新版必需 connection 合同后，10 项通过。已清理 6 个自有资产共 144114 字节及 12 个链接；历史直接 boot 辅助仍保留。完整 exports/imports、自引用、元数据、worker 和 HMR 尚待后续闭合。
+
+2026-11-15：C1-AA [包资源解析](resource-resolution-checks.json)完成 232 组固定原版/Python 实际文件对照和 19 项 Python 定向检查。使用原样构建产物与原生 Node，避免 tsx 扩展名补全改变观察；覆盖 exports/imports、条件与通配符、自引用、数组边界、编码分隔符及目录/缺失文件拒绝，不执行入口。已清理本批全部合成夹具，保留载体差异和修正前原始诊断。Loader/预检消费者、本地化元数据、链接移动、worker 和 HMR 继续推进。

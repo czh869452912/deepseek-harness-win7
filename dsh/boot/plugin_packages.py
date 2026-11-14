@@ -145,6 +145,25 @@ class ResolutionRouter:
 
     packageDir = package_dir
 
+    def resource_directory(self, name, parent_url):
+        """Module lookup also admits legacy directories without package.json."""
+        parent = _parent(parent_url)
+        if parent is None:
+            return None
+        layer = self._layer(parent)
+        state = dict(kind='native') if layer is None else self._routes.get((parent_url, name))
+        if state is None:
+            state = self._route(name, parent, layer)
+            if layer['kind'] == 'profile' and state['kind'] != 'after':
+                self._routes[(parent_url, name)] = state
+        if state.get('directory') is not None:
+            return state['directory']
+        for search in _search_paths(state.get('parent', parent)):
+            candidate = os.path.join(search, name)
+            if os.path.isdir(candidate):
+                return candidate
+        return None
+
     def _route(self, name, parent, layer):
         if layer['kind'] == 'profile' and layer['active'] and name in self._locals:
             return dict(kind='native')
@@ -274,6 +293,12 @@ class PluginPackages(Service):
         return self._packages[key]
 
     packageOf = package_of
+
+    def resolve_resource(self, specifier, parent_url):
+        from dsh.boot.package_resolution import resolve_plugin_resource
+        return resolve_plugin_resource(specifier, parent_url, self)
+
+    resolveResource = resolve_resource
 
 
 barePackageName = bare_package_name

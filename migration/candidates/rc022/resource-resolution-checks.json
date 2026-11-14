@@ -1,0 +1,19 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-15",
+  "unit": "C1-AA-PackageResourceResolution",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "state": "targeted-passed",
+  "paired": ".goose/out/rc022-resources-paired-20261115-05/report.json",
+  "observations": 232,
+  "native": {
+    "run": "rc022-resources-native-20261115-01",
+    "passed": 19,
+    "failed": 0
+  },
+  "verification_scope_reason": "Fixed original built artifacts under plain Node avoid tsx loader extension fallback. Actual files exercise exports/imports selection and errors, self-reference, legacy root entry and explicit resource checks; Python checks resource-only execution, metadata cache independence and direct routing/Loader consumers.",
+  "scope": "Read-only ESM resource resolution through PluginPackages. No entry evaluation. Python resource errors preserve Node error codes. Existing probes retain their tsx default; this observer opts into plain Node and hashes original built artifacts.",
+  "diagnostics": "First run exposed the restored forwarding export; tsx observations then exposed an observer carrier mismatch. Plain Node narrowed differences to primitive exports and encoded separators, fixed before paired/native success. Failed observations retained unchanged.",
+  "cleanup": ".goose/out/rc022-resources-native-20261115-01/cleanup.json",
+  "remaining": "Loader/preflight integration, localized metadata, relocation and worker/module hook consumers, real HMR. No full regression or release acceptance."
+}

@@ -478,10 +478,8 @@ class ConfigWatcherService(Service):
         importlib.invalidate_caches()
 
     async def partial_reload(self):
-        # The canonical classifier now owns a whole URL batch. The historical
-        # Python replacement algorithm is modernized separately.
-        paths = [file_path(url) for url in self._stashed]
-        await self._reload_module_batch([(path, self._modules.get(path)) for path in paths])
+        from dsh.cordis.hmr_partial import partial_reload
+        await partial_reload(self)
 
     partialReload = partial_reload
 

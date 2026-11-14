@@ -1,0 +1,30 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-15",
+  "unit": "C1-AO-HmrPartialModuleGenerations",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "state": "targeted-passed",
+  "paired": ".goose/out/rc022-hmr-partial-paired-20261115-03/report.json",
+  "observations": 12,
+  "source": {
+    "run": "rc022-hmr-partial-source-20261115-01",
+    "passed": 24,
+    "failed": 0
+  },
+  "native": [
+    {
+      "run": "rc022-hmr-partial-native-20261115-01",
+      "passed": 17,
+      "failed": 1
+    },
+    {
+      "run": "rc022-hmr-partial-native-20261115-02",
+      "passed": 25,
+      "failed": 0
+    }
+  ],
+  "verification_scope_reason": "Actual ESM/Python source files exercise modern partialReload, entry namespace and runtime grouping, shared/unmanaged instances, current raw entry configuration, helper upgrade, disabled and removed runtime, syntax/activation failure then correction. Python adds multiple :Export classes per module, native descriptor relative imports and late failure after a shared replacement runtime activates. Loader import/resource/cache consumers passed. Initial descriptor fixture wrongly expected root HMR to replace node_modules; corrected to explicitly verify both local replacement and installed exclusion, preserving original failed diagnostics.",
+  "scope": "Root dispatch now uses evaluated dependency acceptance, identity-based entry namespaces and runtime groups, complete import preparation before stopping old plugins, awaited activation, cache restoration and old-plugin reactivation on failure. Update entry namespaces only on successful replacement and refresh module file records. Native explicit export imports now publish actual module cache entries; fresh descriptor exports keep their original Python package context. Historical register_module adapter remains separate.",
+  "cleanup": ".goose/out/rc022-hmr-partial-native-20261115-02/cleanup.json",
+  "remaining": "Broader namespace/re-export divergence, changed mappings, volatile/provider-consumer and cancellation/cleanup failures require additional native paired journeys. Root watch initialization/path/glob rules, launcher patchReload retirement and unbarriered exit cycle remain. Not complete HMR or release acceptance."
+}

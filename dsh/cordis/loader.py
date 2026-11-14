@@ -1640,6 +1640,10 @@ class EntryTree:
                 cls, mod_name = resolve_plugin_class(name, reg_map, return_mod_name=True)
                 if cls is not None:
                     self._last_loaded_module = mod_name
+                    module = sys.modules.get(mod_name)
+                    if module is not None and getattr(module, '__file__', None):
+                        from pathlib import Path
+                        loader.internal.loadCache[Path(os.path.realpath(module.__file__)).as_uri()] = module
                     if mod_name and mod_name.startswith(('dynamic_plugin_', 'dynamic_cordis_plugin_')):
                         loader._module_aliases.setdefault(mod_name, set()).add(name)
                     return cls
@@ -1701,6 +1705,9 @@ class EntryTree:
                     if plugin is None:
                         raise ImportError("Cannot find Python export '"+export+"' in "+resolved_path)
                     self._last_loaded_module = mod_name
+                    module = sys.modules.get(mod_name)
+                    if module is not None and getattr(module, '__file__', None):
+                        loader.internal.loadCache[Path(os.path.realpath(module.__file__)).as_uri()] = module
                     if mod_name:
                         loader._module_aliases.setdefault(mod_name, set()).add(name)
                     return plugin

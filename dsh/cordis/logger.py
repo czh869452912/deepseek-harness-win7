@@ -332,9 +332,10 @@ class LoggerService:
 
     def __call__(self, name: Optional[str] = None) -> Logger:
         """Create or get a named Logger instance."""
-        from dsh.cordis.utils import hyphenate
+        from dsh.cordis.utils import hyphenate, trace_context_sites
         config = self.resolve_intercept_config()
-        fiber = getattr(self.ctx, "fiber", None)
+        definition, _ = trace_context_sites(self.ctx)
+        fiber = getattr(definition, "fiber", None)
         target_name = name or config.get("name")
         if not target_name:
             fname = getattr(fiber, "name", "root") if fiber else "root"

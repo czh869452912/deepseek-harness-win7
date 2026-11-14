@@ -326,6 +326,10 @@ class Context:
         shadow = getattr(self, "_shadow", None)
         if shadow is not None:
             child._shadow = shadow
+        from dsh.cordis.utils import symbols
+        definition = getattr(self, symbols.shadow, None)
+        if definition is not None:
+            setattr(child, symbols.shadow, definition)
         if meta:
             for k, v in meta.items():
                 setattr(child, k, v)
@@ -401,7 +405,9 @@ class Context:
 
         # 2. Strict Dependency Injection Enforcement matching TS Cordis ReflectService.handler:152-167
         # TS reflect.ts:152: if (!ctx.fiber.runtime) return ctx.reflect.get(prop, false)
-        if getattr(self, "fiber", None) and getattr(self.fiber, "runtime", None) is None:
+        from dsh.cordis.utils import trace_context_sites
+        definition, _ = trace_context_sites(self)
+        if getattr(definition, "fiber", None) and getattr(definition.fiber, "runtime", None) is None:
             if hasattr(self, "reflect") and hasattr(self.reflect, "get"):
                 val = self.reflect.get(self, name, default=None, strict=False)
                 if val is not None:
@@ -409,7 +415,7 @@ class Context:
                     return get_traceable(self, val)
             raise AttributeError(f"Context object has no attribute or service '{name}'")
 
-        if getattr(self, "fiber", None) is not None and getattr(self.fiber, "runtime", None) is not None and not getattr(self, "strict_inject", True):
+        if getattr(definition, "fiber", None) is not None and getattr(definition.fiber, "runtime", None) is not None and not getattr(self, "strict_inject", True):
             # Plugin-fiber context without strict injection: the reference proxy
             # dispatches `internal/get` for every fiber-owned context.
             def _resolve_loose():
@@ -423,11 +429,11 @@ class Context:
                 return self.waterfall_sync("internal/get", self, name, err, _resolve_loose)
             return _resolve_loose()
 
-        if getattr(self, "strict_inject", True) and getattr(self, "fiber", None) and self.fiber.runtime is not None:
+        if getattr(self, "strict_inject", True) and getattr(definition, "fiber", None) and definition.fiber.runtime is not None:
             def _resolve_strict():
-                curr_fiber = getattr(self, "_shadow_fiber", None) or self.fiber
+                curr_fiber = getattr(self, "_shadow_fiber", None) or definition.fiber
                 from dsh.cordis.utils import get_isolate_symbol
-                key = get_isolate_symbol(self, name) or getattr(self, "_isolated_keys", {}).get(name, name)
+                key = get_isolate_symbol(definition, name) or getattr(definition, "_isolated_keys", {}).get(name, name)
                 while curr_fiber is not None:
                     committed = curr_fiber.committed
                     impl = committed.get(name) if committed else None

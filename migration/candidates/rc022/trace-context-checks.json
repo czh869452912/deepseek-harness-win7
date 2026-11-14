@@ -1,0 +1,82 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-15",
+  "unit": "C1-D-definition-use-context",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "state": "targeted-passed",
+  "scope": "Definition-site injection, consumption-site effects and public context, callable/getter/inherited service methods, logger ownership and readonly tracing context.",
+  "paired": "Unchanged fixed Source/native method, denied scope, inherited descriptor and noShadow journeys matched",
+  "native_suites": [
+    {
+      "passed": 103,
+      "failed": 0
+    },
+    {
+      "passed": 15,
+      "failed": 0
+    }
+  ],
+  "remaining": "Loader/Include journals, volatile references, resolver and boot contracts remain separate C1 work.",
+  "inputs": {
+    ".goose/out/rc022-prep-20261114-01/source/vendor/cordis/src/events.ts": "a464c843822da4eb31a8d998c5e2216a817b8a7dfeacb6e1aab7f830e7320d6b",
+    "dsh/cordis/events.py": "c8821d6084bd4788c28f5c83ebc84e6138eeb94067c192fe0df34f6efeeea1a5",
+    "scripts/oracles/rc022_trace.mts": "5cd95a5646899c61c18f1b8fc200da9cc26d1d225aface7376336102aae0c23b",
+    "scripts/rc022_events_probe.py": "e682b910557fea2aec57b6eaee0909252c76b1894b3813dbc98693aa131733da",
+    "dsh/cordis/service.py": "26b6676c6005d92372681e30975ceadefa9369eb6b8a817a119c32249c0879b4",
+    "dsh/cordis/utils.py": "49446a5b495eea015dd8b78aabf3fca309a1911ab5036346b17be0fc44b37a0e",
+    "dsh/cordis/context.py": "bb8ca376538a1824cf77927760332ebc8cff967b77ceae6585a586865453b126",
+    "dsh/cordis/logger.py": "4d57d2ad81ca6bd33385c7d07bad376a79cc0815052919f2897571574a5f842e",
+    "scripts/rc022_trace_probe.py": "00dde03473a74d340a6cf51f057442784a387c05a52c6f3be9d0ed02ab57b5ae",
+    ".goose/out/rc022-prep-20261114-01/source/vendor/cordis/src/utils.ts": "c68bab85514ebd8cb08227367ea306b0109a214cd10965c497474eeadaaca756",
+    ".goose/out/rc022-prep-20261114-01/source/vendor/cordis/src/service.ts": "614205c6ce7cf1a057b8b352e96aa4fcd734c967a3d2283a126c9c61f268e3be",
+    ".goose/out/rc022-prep-20261114-01/source/vendor/cordis/src/reflect.ts": "047f01fcdef2aa34b4afc39deaf18c16733fabd2a5ef0d55e5c2595b22caadfd",
+    ".goose/out/rc022-prep-20261114-01/source/vendor/cordis/src/logger.ts": "a6836ace311d0bd1abc9c1211cffcba73eff61c89ca47641efd82d91747401cb"
+  },
+  "reports": {
+    ".goose/out/rc022-trace-native-20261115-01/pytest-command.json": "d5b1e59e02a3e057685f3b1a73beb63523ccdbeae7ae5b526eb7ed28f7c2a264",
+    ".goose/out/rc022-trace-native-20261115-01/pytest.log": "58a369389c5bca6b6d800bd1d7736124d722d487f1908c978b9142e33868d70b",
+    ".goose/out/rc022-trace-native-20261115-01/pytest.xml": "fa05dc7e79ab7eb6d5eabcf46013dcd6f815e91d0d8e2942df1b9317a2d0e6ba",
+    ".goose/out/rc022-trace-native-20261115-02/pytest-command.json": "4b791f06db36426a511ec00de40e799a0203c52d3a160b9d1dd4f99117cd55ad",
+    ".goose/out/rc022-trace-native-20261115-02/pytest.log": "3bf3a29ec8e890e6072c21c65cc198e231618862abee3ae8c0cdd86e0dcabb4f",
+    ".goose/out/rc022-trace-native-20261115-02/pytest.xml": "ea813a823aa550dd90eaa09e48185d0a32eb3d45e44cd259d5f022cc281293ff",
+    ".goose/out/rc022-trace-native-20261115-03/pytest-command.json": "dd7b076e187829ca3d3fa4b994beaa02a7fd5526c05d326961f99893cda83d5b",
+    ".goose/out/rc022-trace-native-20261115-03/pytest-workspace/failed-reports/b53b5246cd15506c29f329d9c9b02ee25a8769e67db8dfdc20512698cfc8b48b.json": "2f62570b8e96eba2946fcb7618518ca19d5b90e2c6d5c13d84c1b3454f62b3d3",
+    ".goose/out/rc022-trace-native-20261115-03/pytest.log": "736cb0ed6829c4723aa7841bb36506dea127bce9025cb5816322b4760028d5d6",
+    ".goose/out/rc022-trace-native-20261115-03/pytest.xml": "ed4867197e9287298633a26db2c71e54db77358cf2d8c7f24a707cabaa3d7927",
+    ".goose/out/rc022-trace-native-20261115-04/pytest-command.json": "524ea60462947cef1c23649e0a0866d41f8dd60dab336f8dc35ac31e96501972",
+    ".goose/out/rc022-trace-native-20261115-04/pytest.log": "d62b1231a0ef655ecf35922b2ba252537a88ec01d23563a12441c4513a4259fd",
+    ".goose/out/rc022-trace-native-20261115-04/pytest.xml": "503fae96312942d20d800eafa23effb682da4cee8c65d819f0d21c75e4f79833",
+    ".goose/out/rc022-trace-native-20261115-05/pytest-command.json": "54ac2646d18178b7d30bf8642f79ecb1c6d143699ea0b8644fc40c18e69d5298",
+    ".goose/out/rc022-trace-native-20261115-05/pytest.log": "27d64da231052300647a7ff5bb0740d99a7fa84a00140cb621e54dfb6db60b7b",
+    ".goose/out/rc022-trace-native-20261115-05/pytest.xml": "b58bc5ffdc9f43c1463e843582e58fe68e8f69bc284ce4f2d1cac33d4a4d4552",
+    ".goose/out/rc022-trace-paired-20261115-01/native.json": "927fb51190aeff6a6d178059fb85823ebf8faf70e2dd6ff2207f3a5ec93ab1d7",
+    ".goose/out/rc022-trace-paired-20261115-01/report.json": "61708b5804b2f5dbf63dee16dfbe28d2cf68fb8d9105ee1a1ce981e5fd339547",
+    ".goose/out/rc022-trace-paired-20261115-01/source.json": "0210a3fbbab0e681e129841a9c3a15d33012c48bcf1f615519e17238238d5fed",
+    ".goose/out/rc022-trace-paired-20261115-01/source.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    ".goose/out/rc022-trace-paired-20261115-02/cleanup.json": "23c926a9967e70a69be3ce20cf62037ab9c558464c74340899f2f661483fcb36",
+    ".goose/out/rc022-trace-paired-20261115-02/native.json": "adf43823c3f09b6c8b571e2b3db5cc3699773dbcc65c085f264df7c791da1733",
+    ".goose/out/rc022-trace-paired-20261115-02/report.json": "4968114e1c5afd12b28df964d780c4a754d13a8b968b5ce8703d6df3330d474a",
+    ".goose/out/rc022-trace-paired-20261115-02/source.json": "73a8c81ed4b2e386904285af35d4598bf6e40781401dd379fe94aa5328071d2e",
+    ".goose/out/rc022-trace-paired-20261115-02/source.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    ".goose/out/rc022-trace-logging-20261115-01/pytest-command.json": "9754214cacc91fcc801d48c6d6016f599de31aeb69c39d7b9d58ab35600194c5",
+    ".goose/out/rc022-trace-logging-20261115-01/pytest.log": "4e331b6818048521205a375e19526ff23c56c0eff9f5f3447b6aa09f3e67e73f",
+    ".goose/out/rc022-trace-logging-20261115-01/pytest.xml": "16e6bc735aed0537499938bf5ecbcb5536fa0ecf99ebae1eb286a51cc7f7c30c"
+  },
+  "cleanup": {
+    "owner": "rc022-trace",
+    "removed": [
+      {
+        "path": ".goose/out/rc022-trace-logging-20261115-01/pytest-workspace/test_bound_runtime_auth_and_re0",
+        "bytes": 179
+      },
+      {
+        "path": ".goose/out/rc022-trace-logging-20261115-01/pytest-workspace/test_ssh_suppresses_browser_an0",
+        "bytes": 179
+      }
+    ],
+    "retained": [
+      ".goose/out/rc022-trace-native-20261115-03/pytest-workspace/failed-reports"
+    ],
+    "processes": "All paired and pytest processes exited; no services started."
+  }
+}

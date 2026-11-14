@@ -21,6 +21,7 @@ class ServiceSymbols:
     resolve_config = symbols.resolve_config
     original = symbols.original
     shadow = symbols.shadow
+    caller = symbols.caller
     filter = symbols.filter
 
 
@@ -41,13 +42,19 @@ class _ServiceExtendedProxy:
         if "_props" in self.__dict__ and name in self.__dict__["_props"]:
             return self.__dict__["_props"][name]
         target = self.__dict__["_target"]
-        attr = getattr(target, name)
         import inspect, types
+        from dsh.cordis.utils import TraceCallReceiver, trace_method_context
+        origin = getattr(target, "ctx", None)
+        receiver = TraceCallReceiver(self, "ctx", trace_method_context(self.ctx, origin))
+        descriptor = inspect.getattr_static(target, name, None)
+        attr = descriptor.__get__(receiver, type(target)) if isinstance(descriptor, property) else getattr(target, name)
         if inspect.ismethod(attr) and getattr(attr, "__self__", None) is target:
-            return types.MethodType(attr.__func__, self)
+            return types.MethodType(attr.__func__, receiver)
         return attr
 
     def __setattr__(self, name: str, value: Any) -> None:
+        if self.__dict__.get("_trace_writes") and name in ("ctx", symbols.caller, symbols.original):
+            return
         if "_props" in self.__dict__ and name in self.__dict__["_props"]:
             self.__dict__["_props"][name] = value
         elif self.__dict__.get("_trace_writes"):

@@ -968,6 +968,7 @@ class Symbols:
     """
     # Internal symbols
     shadow = "cordis.shadow"
+    caller = "cordis.caller"
     receiver = "cordis.receiver"
     original = "cordis.original"
     metadata = "cordis.metadata"
@@ -2363,13 +2364,52 @@ class Time:
         return res
 
 
+def trace_context_sites(ctx: Any) -> Tuple[Any, Any]:
+    """Return the definition and consumption contexts of a traced access."""
+    definition = getattr(ctx, Symbols.shadow, None) or getattr(ctx, "_shadow", None)
+    if definition is not None and hasattr(definition, "fiber"):
+        return definition, getattr(ctx, "_parent", None) or ctx
+    return ctx, ctx
+
+
+def trace_method_context(use_site: Any, origin: Any) -> Any:
+    """Code keeps its definition's injection scope while effects belong to its caller."""
+    if origin is None or not hasattr(use_site, "extend"):
+        return use_site
+    definition, _ = trace_context_sites(origin)
+    return use_site.extend({Symbols.shadow: definition})
+
+
+class TraceCallReceiver:
+    """Property overlay used while executing a traced method or descriptor."""
+    def __init__(self, proxy: Any, property_name: str, context: Any):
+        object.__setattr__(self, "_trace_proxy", proxy)
+        object.__setattr__(self, "_trace_property", property_name)
+        object.__setattr__(self, "_trace_context", context)
+
+    def __getattr__(self, name: str) -> Any:
+        if name == object.__getattribute__(self, "_trace_property"):
+            return object.__getattribute__(self, "_trace_context")
+        return getattr(object.__getattribute__(self, "_trace_proxy"), name)
+
+    def __setattr__(self, name: str, value: Any) -> None:
+        if name != object.__getattribute__(self, "_trace_property"):
+            setattr(object.__getattribute__(self, "_trace_proxy"), name, value)
+
+    @property
+    def __class__(self) -> Any:
+        return object.__getattribute__(self, "_trace_proxy").__class__
+
+
 class TracedProxy:
     """
     Traceable proxy wrapper binding a service or callable to a caller Context
     matching TS getTraceable(ctx, value).
     """
     def __init__(self, ctx: Any, target: Any, tracker: Optional[Dict[str, Any]] = None):
-        object.__setattr__(self, "_ctx", ctx)
+        definition, use_site = trace_context_sites(ctx)
+        object.__setattr__(self, "_ctx", use_site)
+        object.__setattr__(self, "_caller", definition)
         object.__setattr__(self, "_target", target)
         object.__setattr__(self, "_tracker", tracker or getattr(target, Symbols.tracker, None) or getattr(target, "_cordis_tracker", {}))
 
@@ -2383,19 +2423,28 @@ class TracedProxy:
     def __getattr__(self, name: str) -> Any:
         if name in (Symbols.original, "cordis.original"):
             return object.__getattribute__(self, "_target")
+        if name == Symbols.caller:
+            return object.__getattribute__(self, "_caller")
         if name in (Symbols.shadow, "cordis.shadow"):
             ctx = object.__getattribute__(self, "_ctx")
             return getattr(ctx, Symbols.shadow, getattr(ctx, "_parent", None))
-        if name == "ctx":
+        tracker = object.__getattribute__(self, "_tracker")
+        property_name = tracker.get('property', 'ctx')
+        if name == property_name:
             return object.__getattribute__(self, "_ctx")
         if name in ("_target", "_ctx", "_tracker"):
             return object.__getattribute__(self, name)
         target = object.__getattribute__(self, "_target")
-        attr = getattr(target, name)
-        tracker = object.__getattribute__(self, "_tracker")
-        if inspect.ismethod(attr) and getattr(attr, "__self__", None) is target and not tracker.get("noShadow"):
+        receiver = self
+        if not tracker.get('noShadow') and property_name:
+            origin = getattr(target, property_name, None)
+            receiver = TraceCallReceiver(self, property_name,
+                                         trace_method_context(object.__getattribute__(self, '_ctx'), origin))
+        descriptor = inspect.getattr_static(target, name, None)
+        attr = descriptor.__get__(receiver, type(target)) if isinstance(descriptor, property) else getattr(target, name)
+        if inspect.ismethod(attr) and getattr(attr, "__self__", None) is target:
             import types
-            attr = types.MethodType(attr.__func__, self)
+            attr = types.MethodType(attr.__func__, receiver)
         if callable(attr):
             @functools.wraps(attr)
             def wrapper(*args: Any, **kwargs: Any) -> Any:
@@ -2414,7 +2463,7 @@ class TracedProxy:
     def __setattr__(self, name: str, value: Any) -> None:
         if name in ("_ctx", "_target", "_tracker"):
             object.__setattr__(self, name, value)
-        elif name in (Symbols.original, "cordis.original", "ctx"):
+        elif name in (Symbols.original, Symbols.caller, "cordis.original", "ctx", object.__getattribute__(self, '_tracker').get('property')):
             return
         else:
             target = object.__getattribute__(self, "_target")
@@ -2423,6 +2472,16 @@ class TracedProxy:
     def __call__(self, *args: Any, **kwargs: Any) -> Any:
         target = object.__getattribute__(self, "_target")
         if callable(target):
+            tracker = object.__getattribute__(self, '_tracker')
+            receiver = self
+            property_name = tracker.get('property')
+            if property_name and not tracker.get('noShadow'):
+                receiver = TraceCallReceiver(self, property_name,
+                    trace_method_context(object.__getattribute__(self, '_ctx'), getattr(target, property_name, None)))
+            call = target.__call__
+            if inspect.ismethod(call) and call.__self__ is target:
+                import types
+                call = types.MethodType(call.__func__, receiver)
             if "caller_ctx" not in kwargs:
                 try:
                     sig = inspect.signature(target)
@@ -2430,7 +2489,7 @@ class TracedProxy:
                         kwargs["caller_ctx"] = object.__getattribute__(self, "_ctx")
                 except (ValueError, TypeError):
                     pass
-            res = target(*args, **kwargs)
+            res = call(*args, **kwargs)
             return get_traceable(object.__getattribute__(self, "_ctx"), res)
         raise TypeError(f"Target '{target}' is not callable")
 
@@ -2522,20 +2581,17 @@ def get_traceable(ctx: Any, value: Any) -> Any:
     if isinstance(tracker, dict):
         no_shadow = tracker.get("noShadow", False) or tracker.get("no_shadow", False)
 
-    effective_ctx = ctx
-    is_shadow = getattr(ctx, "is_shadow", False) or getattr(ctx, "_shadow", None) is not None or getattr(ctx, "_shadow_fiber", None) is not None
-    if is_shadow and not no_shadow:
-        effective_ctx = getattr(ctx, "_shadow", getattr(ctx, "_parent", ctx)) or ctx
+    definition, effective_ctx = trace_context_sites(ctx)
 
     from dsh.cordis.service import Service
     if isinstance(value, Service):
-        proxy = value._extend({"ctx": effective_ctx})
+        proxy = value._extend({"ctx": effective_ctx, Symbols.caller: definition})
         proxy.__dict__["_trace_writes"] = True
         return proxy
     if hasattr(value, "_extend") and not hasattr(value, "_mock_return_value") and callable(getattr(value, "_extend")):
         return value._extend({"ctx": effective_ctx})
     if tracker and not hasattr(value, "_mock_return_value"):
-        return TracedProxy(effective_ctx, value, tracker=tracker if isinstance(tracker, dict) else {})
+        return TracedProxy(ctx, value, tracker=tracker if isinstance(tracker, dict) else {})
     # reference/vendor/cordis/src/utils.ts:122-124 - a value without
     # `symbols.tracker` is returned unchanged, callable or not.
     return value

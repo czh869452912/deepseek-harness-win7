@@ -1,0 +1,31 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-15",
+  "unit": "C1-AK-HmrProductionProfileReconciliation",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "state": "targeted-passed",
+  "paired": ".goose/out/rc022-hmr-profile-paired-20261115-06/report.json",
+  "observations": 12,
+  "source": {
+    "run": "rc022-hmr-profile-source-20261115-01",
+    "passed": 13,
+    "failed": 0,
+    "not_selected": 74
+  },
+  "native": [
+    {
+      "run": "rc022-hmr-profile-native-20261115-02",
+      "passed": 16,
+      "failed": 0
+    },
+    {
+      "run": "rc022-hmr-profile-native-20261115-03",
+      "passed": 10,
+      "failed": 0
+    }
+  ],
+  "verification_scope_reason": "Actual boot/Loader/HMR profiles compare running code identity, stop/start trace, values, failures, pending reasons and recovery. Cover unchanged code, same-path source upgrades, activation/syntax failure then correction, removal/reinsert, unmanaged instances, host graph, static shared helper and contained comparison error. Native transaction/profile guards and historical actual reload observations passed; queue/ready/cache/graph/plan/recomposition consumers passed. Initial observer service collision and duplicate provision were fixed, raw diagnostics kept. Repeated realpath calls caused the original probe deadline overrun; module-owned weak URL identities fixed it without raising deadlines.",
+  "scope": "reconcileProfile now runs the actual read/compare/plan/evict/stop/recompose/record production chain. Keeps host/unmanaged code pending, starts changed managed code with new configuration, propagates applied failures without rollback, resumes corrected failed imports and evicts dropped mappings except host/retained mappings. Python explicit package metadata/resource reads are fresh; importlib directory caches are invalidated without Node hooks. Python module URL caching is weak and bound to the evaluated module identity.",
+  "cleanup": ".goose/out/rc022-hmr-profile-native-20261115-03/cleanup.json",
+  "remaining": "Automatic profile/home/manifest watches and launcher lifecycle retirement, whole module batch scheduling, root partialReload modernization, additional package/link/cache failure consumer coverage. This is targeted profile API acceptance only, not complete HMR or release acceptance."
+}

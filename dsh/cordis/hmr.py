@@ -380,6 +380,12 @@ class ConfigWatcherService(Service):
 
     getLinked = get_linked
 
+    async def reconcile_profile(self, required_ids=()):
+        from dsh.cordis.hmr_profile import reconcile_profile
+        return await reconcile_profile(self, required_ids)
+
+    reconcileProfile = reconcile_profile
+
     def run_exclusive(self, operation):
         """Append a caller mutation to the reload queue, preserving its result."""
         loop = asyncio.get_running_loop()

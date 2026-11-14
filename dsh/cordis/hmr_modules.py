@@ -12,10 +12,20 @@ import sys
 import types
 import weakref
 
+_MODULE_URLS = weakref.WeakKeyDictionary()
+
 
 def module_url(module):
+    if not isinstance(module, types.ModuleType):
+        return None
     filename = getattr(module, '__file__', None)
-    return Path(os.path.realpath(filename)).as_uri() if isinstance(filename, str) else None
+    if not isinstance(filename, str):
+        return None
+    previous = _MODULE_URLS.get(module)
+    if previous is None or previous[0] != filename:
+        previous = (filename, Path(os.path.realpath(filename)).as_uri())
+        _MODULE_URLS[module] = previous
+    return previous[1]
 
 
 class FreshSourceLoader(importlib.machinery.SourceFileLoader):
@@ -188,6 +198,23 @@ class PythonModules:
                                 work.append(child)
                 self._host = seen
         return set(self._host)
+
+    def plugins_of(self, url):
+        loader = self.ctx.get('loader')
+        values = []
+        for module in self.loaded_modules().get(url, ()):
+            exported = loader.unwrap_exports(module)
+            if self.ctx.registry.resolve(exported) is not None:
+                values.append(exported)
+            # Native :Export and dsh.python descriptors can expose several
+            # classes from one Python module; include actual running exports.
+            for value in list(module.__dict__.values()):
+                if isinstance(value, (type, types.FunctionType)) and self.ctx.registry.get(value) is not None:
+                    values.append(value)
+        result = {}
+        for value in values:
+            result.setdefault(id(self.ctx.registry.resolve(value)), value)
+        return list(result.values())
 
     def dispose(self):
         if self._finder is not None:

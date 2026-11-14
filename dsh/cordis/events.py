@@ -247,14 +247,38 @@ def _release_loopless_barrier(barrier: "_LooplessDispatchBarrier") -> None:
         barrier.release()
 
 
-def _normalize_event_call(event_name: Any, args: Sequence[Any], default_caller: Any, kwargs: Dict[str, Any]) -> Tuple[str, List[Any], Any]:
+class EventSymbol:
+    """Identity-only event key, corresponding to an ECMAScript Symbol."""
+    __slots__ = ('description',)
+
+    def __init__(self, description=''):
+        self.description = description
+
+    def __str__(self):
+        return 'Symbol(%s)' % self.description
+
+
+def _single_use_next(callback):
+    called = False
+
+    def next_fn(*_ignored):
+        nonlocal called
+        if called:
+            raise RuntimeError('next() called multiple times')
+        called = True
+        return callback()
+
+    return next_fn
+
+
+def _normalize_event_call(event_name: Any, args: Sequence[Any], default_caller: Any, kwargs: Dict[str, Any]) -> Tuple[Any, List[Any], Any]:
     caller_ctx = kwargs.pop("caller_ctx", None)
-    if not isinstance(event_name, str) and args and isinstance(args[0], str):
+    if not isinstance(event_name, (str, EventSymbol)) and args and isinstance(args[0], (str, EventSymbol)):
         caller_ctx = event_name
         actual_event_name = args[0]
         actual_args = list(args[1:])
     else:
-        actual_event_name = str(event_name)
+        actual_event_name = event_name if isinstance(event_name, EventSymbol) else str(event_name)
         actual_args = list(args)
     if caller_ctx is None:
         caller_ctx = default_caller
@@ -269,7 +293,7 @@ class EventBus:
 
     def __init__(self, ctx: Optional[Any] = None):
         self.ctx = ctx
-        self._hooks: Dict[str, List[Hook]] = {}
+        self._hooks: Dict[Any, List[Hook]] = {}
         self._loopless_settlements: Set[Any] = set()
         self._emit_settlements: Set[Any] = set()
 
@@ -293,9 +317,8 @@ class EventBus:
                     from dsh.cordis.utils import DisposableList
                     fiber._hooks["internal/update"] = DisposableList()
                 hooks = fiber._hooks["internal/update"]
-                if prepend:
-                    return hooks.unshift(listener)
-                return hooks.push(listener)
+                return fiber.effect(lambda: hooks.unshift(listener) if prepend else hooks.push(listener),
+                                    label='ctx.on("internal/update")')
             return None
 
         self.on("internal/listener", _on_internal_listener, global_listener=True)
@@ -378,6 +401,8 @@ class EventBus:
         def disposer() -> bool:
             if event_name in self._hooks and hook in self._hooks[event_name]:
                 self._hooks[event_name].remove(hook)
+                if not self._hooks[event_name]:
+                    del self._hooks[event_name]
                 return True
             return False
 
@@ -433,7 +458,7 @@ class EventBus:
             elif args_or_ctx is not None:
                 actual_args = [args_or_ctx]
 
-        if not event_name.startswith("internal/"):
+        if (not isinstance(event_name, str) or not event_name.startswith("internal/")) and self._hooks.get('internal/dispatch'):
             # Fired for non-internal events to diagnose dispatches (mode, name, args, caller_ctx)
             self.emit("internal/dispatch", dispatch_type, event_name, actual_args, actual_ctx)
 
@@ -470,7 +495,7 @@ class EventBus:
         """
         if not args:
             return []
-        if isinstance(args[0], str):
+        if isinstance(args[0], (str, EventSymbol)):
             event_name = args[0]
             event_args = list(args[1:])
             caller_ctx = None
@@ -626,7 +651,7 @@ class EventBus:
         Resolves with no value; raises AggregateError if any listeners fail.
         """
         event_name, actual_args, caller_ctx = _normalize_event_call(event_name, args, self.ctx, kwargs)
-        listeners = self._dispatch_hooks("emit", event_name, actual_args, caller_ctx)
+        listeners = self._dispatch_hooks("parallel", event_name, actual_args, caller_ctx)
         if not listeners:
             return None
 
@@ -715,7 +740,7 @@ class EventBus:
                     pos_count = sum(1 for p in params if p.kind in (inspect.Parameter.POSITIONAL_ONLY, inspect.Parameter.POSITIONAL_OR_KEYWORD))
 
                 if takes_next:
-                    call_args = list(current_args) + [next_fn]
+                    call_args = list(current_args) + [_single_use_next(next_fn)]
                     return cb(*call_args, **kwargs)
                 elif pos_count == 0:
                     return cb()
@@ -776,7 +801,7 @@ class EventBus:
                     pos_count = sum(1 for p in params if p.kind in (inspect.Parameter.POSITIONAL_ONLY, inspect.Parameter.POSITIONAL_OR_KEYWORD))
 
                 if takes_next:
-                    call_args = list(current_args) + [next_fn]
+                    call_args = list(current_args) + [_single_use_next(next_fn)]
                     res = cb(*call_args, **kwargs)
                     if inspect.isawaitable(res):
                         res = await res

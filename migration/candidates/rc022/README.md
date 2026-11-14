@@ -25,3 +25,5 @@
 2026-11-15：C2-E [历史目录检查](historical-catalog-checks.json)完成 1426 组固定 Source/native 对照、155 项原版提供端测试和 785 项 Python 定向回归。独立 V0–V3 历史读取用于收集迁移前置事实，修正旧物理头与损坏头结果的字段输出顺序；生产目录仍为 V3。已删除本批用完的合成夹具，保留初次失败诊断与所有运行记录。
 
 2026-11-15：C3-A [历史前置事实读取](catalog-prerequisite-checks.json)完成 240 组明文/zstd 实际文件对照、124 项原版提供端测试与 899 项 Python 定向回归。新增只读解码、子会话局部失败隔离及物理身份复核；补齐固定原版对历史 descriptor v1/v2 的读取规则。本批原始诊断和矩阵保留，已用完的实际文件夹具及时删除。此阶段仅证明 V0–V3 前置事实读取，V4 子会话读取、父目录补全、Session 与生产发布整合仍待闭合。
+
+2026-11-15：C1-A [事件分发检查](event-dispatch-checks.json)完成固定原版/Python 的独立观察对照、12 项原版生命周期测试，以及两组 95/116 项 Python 定向回归。新增 Symbol 身份事件键、每个 middleware 独立的单次 next、parallel 调度标识、空监听键清除与 internal/update 注册 effect；配置解析/更新参数和 Fiber 依赖生命周期属于后续同合同整合工作，未据此宣称 C1 完成。

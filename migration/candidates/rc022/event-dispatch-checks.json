@@ -1,0 +1,64 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-15",
+  "unit": "C1-A-event-dispatch",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "state": "targeted-passed",
+  "scope": "Waterfall single-use delegates, symbol identity, parallel observer mode, empty listener key removal. Config resolution/update lifecycle remains separate.",
+  "paired": "Focused unchanged Source/native observations matched",
+  "source_tests": {
+    "passed": 12,
+    "failed": 0,
+    "skipped": 0
+  },
+  "native_suites": [
+    {
+      "passed": 95,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "passed": 116,
+      "failed": 0,
+      "skipped": 0
+    }
+  ],
+  "reports": {
+    ".goose/out/rc022-events-20261115-01/native.json": "3e4d34092ea44e62d2318619b9ff1562605ab8be7db1a29719726e01c33eddf7",
+    ".goose/out/rc022-events-20261115-01/report.json": "9019d7a0dffb7c2220b063545e667ec3e59b790d4f467852a523c1afa4f44a24",
+    ".goose/out/rc022-events-20261115-01/source.json": "21425c6212b61b2356e400b6e3cb7765e87ebf500175c6cc9404c5032ec6cb04",
+    ".goose/out/rc022-events-20261115-01/source.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    ".goose/out/rc022-events-20261115-02/cleanup.json": "fe401c769852b6c05c6ea34812c4c21b49003dd77e6c05a3bb03a3539c5eedf5",
+    ".goose/out/rc022-events-20261115-02/native.json": "3e4d34092ea44e62d2318619b9ff1562605ab8be7db1a29719726e01c33eddf7",
+    ".goose/out/rc022-events-20261115-02/report.json": "ff20293358f444c6526f8cea7892d1d96305caf49a4639f2b2c09f79a6101e38",
+    ".goose/out/rc022-events-20261115-02/source.json": "1cd11e03092617dc100a948eb7e4c44d9162d0eae37fbff0d35507175696d48a",
+    ".goose/out/rc022-events-20261115-02/source.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    ".goose/out/rc022-events-native-20261115-01/pytest-command.json": "22fa5d08938abbb14d8887cb366dfd18a57f3a5a7f975aa29655ac342bfa6088",
+    ".goose/out/rc022-events-native-20261115-01/pytest.log": "4bb5f3f9435ac255f6ae5622d7093b84ed4e9af49211fa00c3c1083b4d0fae2d",
+    ".goose/out/rc022-events-native-20261115-01/pytest.xml": "d80364009faf3007e4006c9b8ef116d99a72cd209642e9343111a38fb2253163",
+    ".goose/out/rc022-events-native-20261115-02/pytest-command.json": "c7c9d516b9a130136bbfee7e81195511237c9ec15364dd3f63a1595c561ddff3",
+    ".goose/out/rc022-events-native-20261115-02/pytest.log": "0620168c6f42b3e1c4a3052593af4e14215ad092d298584243e8d267ff7622d2",
+    ".goose/out/rc022-events-native-20261115-02/pytest.xml": "99d7a84577576988598254a107f815e0c6cc633829cc97e18458933670bfd76a",
+    ".goose/out/rc022-events-native-20261115-02/pytest-workspace/failed-reports/afaa6305e8032e8657e762bba56bc71505ee28a67d8cd06a2e1fcabd505a89b9.json": "fca431dc4a41a82b2206b304b318c6b3b77c93fb9cb68379d7bef0c8d7f48fc0",
+    ".goose/out/rc022-events-native-20261115-03/pytest-command.json": "9c07d6f219277b2b71794d81319d01d801dda445d6b26e7910fe9422599722b3",
+    ".goose/out/rc022-events-native-20261115-03/pytest.log": "9a4d808f37148b68624b20c57f1dd940cb00176ddd289330af7ccb97731b0faa",
+    ".goose/out/rc022-events-native-20261115-03/pytest.xml": "767126a1dc7a06276fb01ae4a0c092ee4cca09ea9b1229871b20b0959430a62b",
+    ".goose/out/rc022-events-source-20261115-01/source-tests-command.json": "bb0da0abe41ef8cdf3ab1050fb8e326c52524c442e2b34d35a34379d5412c48e",
+    ".goose/out/rc022-events-source-20261115-01/source-tests.json": "a57a9244b02ad4bb00cbb4381d75675eb8dd680b737c3e50724f809644f8c40a",
+    ".goose/out/rc022-events-source-20261115-01/source-tests.log": "185127fd0c1c6a0d7b492c96217e1b7a42f3bdd97fdf8b4ca41d75ec484e4520"
+  },
+  "inputs": {
+    ".goose/out/rc022-prep-20261114-01/source/vendor/cordis/src/events.ts": "a464c843822da4eb31a8d998c5e2216a817b8a7dfeacb6e1aab7f830e7320d6b",
+    "dsh/cordis/events.py": "ecf3a0bb893df7ba36d6617ad16fb27eb5ff86a9ee89618ca945243df901dad6",
+    "scripts/oracles/rc022_events.mts": "2eebaaef64aec525a3a89837d01663cbc3448d20628ccd190df988595c91dc30",
+    "scripts/rc022_events_probe.py": "207c384680bc203988956f84a6dd5830c379658670cfe78916c09bd56b52ddd2"
+  },
+  "cleanup": {
+    "owner": "rc022-events",
+    "removed": [],
+    "retained": [
+      ".goose\\out\\rc022-events-native-20261115-02\\pytest-workspace\\failed-reports"
+    ],
+    "processes": "All test and observer commands exited; no task-owned services launched."
+  }
+}

@@ -3,7 +3,7 @@ Cordis framework core architecture module.
 """
 
 from dsh.cordis.context import Context
-from dsh.cordis.events import EventBus, Hook, is_bailed, AggregateError
+from dsh.cordis.events import EventBus, EventSymbol, Hook, is_bailed, AggregateError
 from dsh.cordis.fiber import Fiber, FiberState, CordisError, EffectMeta, INACTIVE_EPOCH
 from dsh.cordis.schema import Schema, ValidationError, z
 from dsh.cordis.logger import Logger, LoggerService, LoggerLevel, Message, Exporter, ConsoleExporter
@@ -22,6 +22,7 @@ from dsh.cordis.profile import Profile, compose_profile, dump_config, render_con
 __all__ = [
     "Context",
     "EventBus",
+    "EventSymbol",
     "Hook",
     "is_bailed",
     "AggregateError",

@@ -184,15 +184,15 @@ def test_d7_bail_error_propagation_not_swallowed():
 
 
 @pytest.mark.asyncio
-async def test_d8_parallel_dispatch_mode_emit():
-    """ts:cordis/events.ts:184 - parallel dispatches with mode 'emit'."""
+async def test_d8_parallel_dispatch_mode_parallel():
+    """0.2.2-rc.3 events.ts:192 reports the actual parallel dispatch mode."""
     bus = EventBus()
     dispatch_modes = []
 
     bus.on("internal/dispatch", lambda disp_type, *_: dispatch_modes.append(disp_type), global_listener=True)
     await bus.parallel("test.parallel", 1, 2)
 
-    assert "emit" in dispatch_modes
+    assert dispatch_modes == ["parallel"]
 
 
 def test_d9_dispatch_hooks_filter_exception_propagates():

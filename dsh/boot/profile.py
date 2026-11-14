@@ -25,6 +25,7 @@ PROFILE_MODULE_FALLBACK_DIR = ".dsh-module-fallback"
 
 DEFAULT_PROFILE_BUNDLES: Tuple[str, ...] = ("@deepseek-ai/dsh-base",)
 DEFAULT_PROFILE_PATCH_RELOAD = "live"
+RETIRED_BUNDLES = frozenset(('@deepseek-ai/dsh-experimental-schedule-bundle', '@deepseek-ai/dsh-experimental-agent-team-profile'))
 
 PROFILE_PATCH_TEMPLATE = """# Your patch layer for this dsh profile, applied after every bundle layer:
 # a top-level YAML array of loader patch entries (id-targeted config
@@ -87,15 +88,18 @@ class ProfileLayer:
         self,
         package_name: str,
         package_dir: str,
-        patch_path: str,
+        patch_path: Union[str, Sequence[str]],
         patches: List[Dict[str, Any]],
     ):
         self.packageName = package_name
         self.package_name = package_name
         self.packageDir = package_dir
         self.package_dir = package_dir
-        self.patchPath = patch_path
-        self.patch_path = patch_path
+        self.patchPaths = [patch_path] if isinstance(patch_path, str) else list(patch_path)
+        self.patch_paths = self.patchPaths
+        # Compatibility for older Python consumers; composition uses all paths.
+        self.patchPath = self.patchPaths[0] if self.patchPaths else None
+        self.patch_path = self.patchPath
         self.patches = patches
 
     def __getitem__(self, key: str) -> Any:
@@ -116,6 +120,7 @@ class Profile:
         patch_path: str,
         patches: List[Dict[str, Any]],
         patch_reload: str = DEFAULT_PROFILE_PATCH_RELOAD,
+        skipped_bundles: Optional[List[Dict[str, str]]] = None,
     ):
         self.name = name
         self.dir = dir_path
@@ -125,6 +130,8 @@ class Profile:
         self.patches = patches
         self.patchReload = patch_reload
         self.patch_reload = patch_reload
+        self.skippedBundles = [] if skipped_bundles is None else skipped_bundles
+        self.skipped_bundles = self.skippedBundles
 
     def __getitem__(self, key: str) -> Any:
         return getattr(self, key)
@@ -941,6 +948,11 @@ def load_profile_directory(bin_name, dir_path, install_anchor, options=None):
     manifest_path = os.path.join(profile_dir, 'package.json')
     manifest = read_profile_manifest(bin_name, profile_dir)
     bundles = manifest.get("dsh", {}).get("profile", {}).get("bundles", [])
+    kept = [bundle for bundle in bundles if bundle not in RETIRED_BUNDLES]
+    if len(kept) != len(bundles):
+        manifest['dsh']['profile']['bundles'] = kept
+        write_profile_manifest(profile_dir, manifest)
+        bundles = kept
     raw_reload = manifest.get("dsh", {}).get("profile", {}).get("patchReload")
     if raw_reload is not None and raw_reload not in ("live", "startup"):
         raise RuntimeError(
@@ -948,25 +960,36 @@ def load_profile_directory(bin_name, dir_path, install_anchor, options=None):
         )
     patch_reload = raw_reload or DEFAULT_PROFILE_PATCH_RELOAD
 
+    from dsh.boot.bundle_platform import assert_bundle_platform, UNDECLARED
+    from dsh.boot.plugin_compatibility import evaluate_plugin_compatibility, plugin_compatibility_warning
+    from dsh.boot.profile_compatibility import read_profile_version_exemptions
+    exemptions = read_profile_version_exemptions(profile_dir) if bundles else {}
     layers: List[ProfileLayer] = []
+    skipped = []
     for b_name in bundles:
-        b_dir = resolve_bundle_dir(bin_name, b_name, install_anchor, profile_dir)
-        with open(os.path.join(b_dir, "package.json"), "r", encoding="utf-8") as f:
-            b_manifest = json.load(f)
-        patch_rel = b_manifest.get("dsh", {}).get("bundle", {}).get("patch")
-        if patch_rel is None:
-            raise RuntimeError(f"{bin_name}: profile bundle {json.dumps(b_name)} declares no dsh.bundle in its package.json")
-        b_patch_path = os.path.normpath(os.path.join(b_dir, patch_rel))
-        b_patches = load_overlay_patches(bin_name, b_patch_path)
-        if b_name == "@deepseek-win7/dsh-creative":
-            # Resolve only the shipped Creative resource; user patch paths retain
-            # the filesystem provider's process-cwd contract.
-            for patch in b_patches:
-                config = patch.get("config", {})
-                if (patch.get("id") == "skill-filesystem" and isinstance(config, dict)
-                        and config.get("bundledSkillDir") == "../../preset/agent-presets/presets/cordis/skills"):
-                    config["bundledSkillDir"] = os.path.abspath(os.path.join(b_dir, config["bundledSkillDir"]))
-        layers.append(ProfileLayer(b_name, b_dir, b_patch_path, b_patches))
+        try:
+            b_dir = resolve_bundle_dir(bin_name, b_name, install_anchor, profile_dir)
+            b_manifest = read_profile_manifest(bin_name, b_dir)
+            bundle = b_manifest.get('dsh', {}).get('bundle')
+            if bundle is None:
+                raise RuntimeError(f"{bin_name}: profile bundle {json.dumps(b_name)} declares no dsh.bundle in its package.json")
+            assert_bundle_platform(bundle.get('platforms', UNDECLARED))
+            issue = evaluate_plugin_compatibility(b_manifest, exemptions)
+            if issue is not None and not issue['exempted']:
+                raise ValueError(plugin_compatibility_warning(issue))
+            paths = bundle_patch_paths(b_dir, bundle)
+            b_patches = [patch for path in paths for patch in load_overlay_patches(bin_name, path)]
+            if b_name == "@deepseek-win7/dsh-creative":
+                # This product-owned resource retains its existing path adapter.
+                for patch in b_patches:
+                    config = patch.get("config", {})
+                    if (patch.get("id") == "skill-filesystem" and isinstance(config, dict)
+                            and config.get("bundledSkillDir") == "../../preset/agent-presets/presets/cordis/skills"):
+                        config["bundledSkillDir"] = os.path.abspath(os.path.join(b_dir, config["bundledSkillDir"]))
+            layers.append(ProfileLayer(b_name, b_dir, paths, b_patches))
+        except Exception as error:
+            name = getattr(error, 'name', 'Error')
+            skipped.append(dict(packageName=b_name, reason=name+': '+str(error)))
 
     user_patch_path = os.path.join(profile_dir, PROFILE_PATCH_FILENAME)
     user_patches: List[Dict[str, Any]] = []
@@ -980,7 +1003,30 @@ def load_profile_directory(bin_name, dir_path, install_anchor, options=None):
         patch_path=user_patch_path,
         patches=user_patches,
         patch_reload=patch_reload,
+        skipped_bundles=skipped,
     )
+
+
+def bundle_patch_files(bundle):
+    declared = bundle.get('patch')
+    files = [declared] if isinstance(declared, str) else declared
+    if not isinstance(files, list) or not all(isinstance(path, str) for path in files):
+        raise ValueError('dsh.bundle.patch must be a file path or a list of file paths')
+    return list(files)
+
+
+def bundle_patch_paths(package_dir, bundle):
+    return [os.path.normpath(os.path.join(package_dir, path)) for path in bundle_patch_files(bundle)]
+
+
+def report_skipped_bundles(bin_name, profile):
+    for skipped in profile.skippedBundles:
+        sys.stderr.write(bin_name+': skipping profile bundle '+json.dumps(skipped['packageName'])+': '+skipped['reason']+'\n')
+
+
+bundlePatchFiles = bundle_patch_files
+bundlePatchPaths = bundle_patch_paths
+reportSkippedBundles = report_skipped_bundles
 
 
 def compose_entries(

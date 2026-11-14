@@ -7,6 +7,8 @@ from dsh.boot.plugin_compatibility import (
     evaluate_plugin_compatibility, evaluatePluginCompatibility,
     plugin_compatibility_warning, pluginCompatibilityWarning,
 )
+from dsh.boot.bundle_platform import assert_bundle_platform, assertBundlePlatform, UnsupportedBundlePlatformError
+from dsh.boot.profile import bundle_patch_files, bundlePatchFiles, bundle_patch_paths, bundlePatchPaths, report_skipped_bundles, reportSkippedBundles
 from dsh.boot.profile_compatibility import (
     PROFILE_COMPATIBILITY_FILENAME, is_exact_version, isExactPluginVersion,
     validate_plugin_version_exemption, validatePluginVersionExemption,
@@ -98,6 +100,8 @@ from dsh.boot.cmdline import (
 )
 
 __all__ = [
+    "bundle_patch_files", "bundlePatchFiles", "bundle_patch_paths", "bundlePatchPaths",
+    "report_skipped_bundles", "reportSkippedBundles", "assert_bundle_platform", "assertBundlePlatform", "UnsupportedBundlePlatformError",
     "prepare_profile_entries", "prepareProfileEntries", "prepare_profile_patches", "prepareProfilePatches",
     "PROFILE_COMPATIBILITY_FILENAME", "is_exact_version", "isExactPluginVersion",
     "get_dsh_runtime_version", "getDshRuntimeVersion",

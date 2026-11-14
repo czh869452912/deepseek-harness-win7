@@ -36,6 +36,7 @@ from dsh.boot.profile import (
     PROFILE_TEMPLATES,
     resolve_profile_dir,
     init_profile,
+    report_skipped_bundles,
 )
 from dsh.boot.cmdline import provide_cmdline, AppReady
 from dsh.boot.process_shutdown import create_process_shutdown, ProcessShutdown
@@ -152,12 +153,10 @@ def prepare_profile(name: str, user_layer: bool = True, dsh_home: Optional[str] 
     if from_default_profile is not None:
         initialize_profile_from_default(name, from_default_profile, dsh_home)
     profile = load_profile(NAME, name, INSTALL_ANCHOR, home=dsh_home, options={"userLayer": user_layer})
+    report_skipped_bundles(NAME, profile)
     root_path = os.path.join(profile.dir, PROFILE_ROOT_FILENAME)
-    try:
-        with open(root_path, "w", encoding="utf-8") as f:
-            f.write(PROFILE_ROOT_CONFIG)
-    except Exception:
-        pass
+    with open(root_path, "w", encoding="utf-8") as f:
+        f.write(PROFILE_ROOT_CONFIG)
     return profile
 
 

@@ -1,0 +1,31 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-15",
+  "unit": "C1-T-ProfileLayers",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "state": "targeted-passed",
+  "paired": ".goose/out/rc022-profile-layers-paired-20261115-01/report.json",
+  "observations": 53,
+  "source": {
+    "run": "rc022-profile-layers-source-20261115-01",
+    "passed": 36,
+    "not_selected": 18
+  },
+  "native": [
+    {
+      "run": "rc022-profile-layers-native-20261115-01",
+      "passed": 126,
+      "failed": 1,
+      "reason": "Incorrect new assertion assumed parser diagnostic is one line; fixed without modifying diagnostics."
+    },
+    {
+      "run": "rc022-profile-layers-native-20261115-02",
+      "passed": 9,
+      "failed": 0
+    }
+  ],
+  "scope": "Ordered patchPaths with all-or-nothing bundle load; platform and compatibility checks; structured skipped bundle reasons and explicit launcher reporting; user errors remain fatal; only named retired bundles removed while other manifest fields preserved; root write errors propagated.",
+  "verification_scope_reason": "Actual Source/native files and Host facts matrix, selected upstream loadProfile/bundle/platform tests, native profile/initialization/Web/HMR and admission consumers. Legacy Python patchReload fields remain until full profile recomposition changes its lifecycle.",
+  "cleanup": ".goose/out/rc022-profile-layers-native-20261115-02/cleanup.json",
+  "remaining": "Runtime resolution and profile recomposition remain C1 work. Legacy init/patchReload compatibility not counted as rc022 parity. No full gate or release acceptance."
+}

@@ -44,6 +44,11 @@ def tmp() -> str:
     return tempfile.mkdtemp(prefix="dsh-profile-")
 
 
+@pytest.fixture(autouse=True)
+def owned_profile_files(tmp_path, monkeypatch):
+    monkeypatch.setattr(sys.modules[__name__], 'tmp', lambda:tempfile.mkdtemp(prefix='dsh-profile-', dir=str(tmp_path)))
+
+
 def stage_installation(
     bundles: Dict[str, Dict[str, Any]],
     app_name: str = "dsh-app",
@@ -350,13 +355,15 @@ def test_load_profile_fails_loud_on_unknown_patch_reload_value_from_disk():
         loadProfile("t", "demo", anchor, home)
 
 
-def test_load_profile_fails_loud_when_listed_bundle_declares_no_dsh_bundle():
+def test_load_profile_reports_skipped_bundle_without_stopping_profile():
     anchor = stage_installation({"not-a-bundle": {}})
     home = tmp()
     dir_path = resolveProfileDir("demo", home)
     initProfile(dir_path, ["not-a-bundle"])
-    with pytest.raises(RuntimeError, match="declares no dsh.bundle"):
-        loadProfile("t", "demo", anchor, home)
+    profile = loadProfile("t", "demo", anchor, home)
+    assert profile.layers == []
+    assert profile.skippedBundles[0]['packageName'] == 'not-a-bundle'
+    assert 'declares no dsh.bundle' in profile.skippedBundles[0]['reason']
 
 
 # ---------------------------------------------------------------------------

@@ -50,6 +50,8 @@
 
 历史测试 ZIP 存放在仓库外；Git 保存 `migration/storage/external-artifacts.json` 中的原路径、尺寸和 SHA-256。用 `DSH_EVIDENCE_ROOT` 指定镜像原路径的外部目录，不自动联网或下载整个历史档案。正式发行包及必要资格材料放在对应 Release 附件或持久外部存储；已解决调试材料设置保留期限，未解决失败和独有真实观察继续保留。原始回执及其候选身份不改写。
 
+历史档案的实际下载地址、Release 标签及附件 ID 见 [位置映射](../migration/storage/external-locations.json)，远端发布与身份核验见 [迁移记录](research/2026-11-14-lfs-remote-migration.md)。映射只提供位置，原始身份仍以 `external-artifacts.json` 为准；下载单份材料后核对其尺寸及 SHA-256，并放在 `DSH_EVIDENCE_ROOT` 下对应原路径。下面的完整原件校验需要全部 240 份材料，缺失任何一份均失败，不是按需下载单份时必须执行的日常门禁。
+
 ```powershell
 # 离线结构校验，不证明原始证据字节存在或测试通过。
 .venv/Scripts/python.exe scripts/evidence_assets.py check

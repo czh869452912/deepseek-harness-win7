@@ -1,0 +1,48 @@
+{
+  "schema_version": 1,
+  "verified_at_utc": "2026-11-14T10:35:57.386919+00:00",
+  "scope": "Original storage identities only; not a new software qualification",
+  "repository": "czh869452912/deepseek-harness-win7",
+  "tag": "evidence-archive-20261114",
+  "release_id": 445183073,
+  "draft": false,
+  "prerelease": true,
+  "release_url": "https://github.com/czh869452912/deepseek-harness-win7/releases/tag/evidence-archive-20261114",
+  "original_archives": 240,
+  "original_bytes": 13586583847,
+  "reused_assets": 2,
+  "archive_assets_in_release": 238,
+  "assets_in_release": 241,
+  "verification": "Every asset state, size and GitHub SHA-256 digest matched; two metadata assets and one original object read back byte-for-byte",
+  "public_metadata_readback": true,
+  "index_sha256": "47bdb484028bf8161cde53810f8404a402a1d2d0a10fb18bc2936a426c7d3c5c",
+  "locations_sha256": "b992f65a783dee81b2cbd7fbeb4a53607afb0bc3899d2352fb1b19ee6f0e13ee",
+  "sample_readback": {
+    "path": "migration/evidence/artifacts/NOTICE-OBSERVER-BOOTSTRAP-20261010-DBC3876E.zip",
+    "size": 673,
+    "sha256": "01a52c206593ca1e3dc614ab0b2fd4c685a3aac4bf6c7333cd434214e6cb3d0a"
+  },
+  "additional_assets": [
+    {
+      "name": "external-artifacts.json",
+      "size": 71549,
+      "sha256": "47bdb484028bf8161cde53810f8404a402a1d2d0a10fb18bc2936a426c7d3c5c",
+      "asset_id": 747141217
+    },
+    {
+      "name": "evidence-locations.json",
+      "size": 105064,
+      "sha256": "b992f65a783dee81b2cbd7fbeb4a53607afb0bc3899d2352fb1b19ee6f0e13ee",
+      "asset_id": 747143509
+    },
+    {
+      "name": "historical-receipts-20261114.zip",
+      "size": 185433473,
+      "sha256": "31b4abc276f757cb369195483b73cdb906184ed3300364e01b34a4fb04f012c3",
+      "asset_id": 747085357
+    }
+  ],
+  "source_migration_commit": "cde273216c78f5f51f0e9f0ae3d958169e624a65",
+  "history_rewritten": false,
+  "lfs_server_purged": false
+}

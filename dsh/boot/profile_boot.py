@@ -15,6 +15,7 @@ import os
 import json
 import shutil
 import sys
+import tempfile
 from typing import Any, Callable, Dict, List, Optional, Sequence, Set
 
 from dsh.cordis.context import Context
@@ -109,7 +110,7 @@ def home_patch_path(dsh_home: Optional[str] = None) -> str:
 
 
 def initialize_profile_from_default(name, from_default_profile, home=None):
-    """Exclusively claim a new profile, copying only shipped template metadata."""
+    """Replace a custom profile with a fully staged shipped bundle list."""
     profiles_root = os.path.abspath(os.path.join(home or resolve_dsh_home(), 'profiles'))
     directory = os.path.abspath(resolve_profile_dir(name, home))
     if os.path.dirname(directory) != profiles_root or os.path.basename(directory) != name:
@@ -118,29 +119,66 @@ def initialize_profile_from_default(name, from_default_profile, home=None):
     if template is None:
         expected = ', '.join(json.dumps(value, ensure_ascii=False) for value in sorted(PROFILE_TEMPLATES))
         raise RuntimeError('dsh: unknown default profile %s; expected one of %s' % (json.dumps(from_default_profile, ensure_ascii=False), expected))
-    if name in PROFILE_TEMPLATES:
-        raise RuntimeError('dsh: profile %s is shipped and cannot be a custom profile target; omit --from-default-profile to use it' % json.dumps(name, ensure_ascii=False))
-    os.makedirs(os.path.dirname(directory), exist_ok=True)
+    shipped = next((key for key in PROFILE_TEMPLATES if key.lower() == name.lower()), None)
+    if shipped is not None:
+        raise RuntimeError('dsh: profile %s names shipped profile %s and cannot be a custom profile target; omit --from-default-profile to use it' % (json.dumps(name, ensure_ascii=False), json.dumps(shipped, ensure_ascii=False)))
+    os.makedirs(profiles_root, exist_ok=True)
+    staging = tempfile.mkdtemp(prefix='.'+name+'.staging-', dir=profiles_root)
+    previous = os.path.join(staging, 'previous')
+    def remove_owned(path):
+        # The stage is allocated here, beside the target. Remove a link itself
+        # and let Python 3.8 rmtree preserve junction targets in nested packages.
+        if os.path.commonpath([os.path.abspath(path), staging]) != staging:
+            raise RuntimeError('profile staging cleanup target changed')
+        from dsh.boot.profile import is_symlink_or_junction
+        if is_symlink_or_junction(path):
+            if os.path.isdir(path): os.rmdir(path)
+            else: os.unlink(path)
+        elif os.path.isdir(path):
+            shutil.rmtree(path)
+        elif os.path.lexists(path):
+            os.unlink(path)
+    lease = None
     try:
-        os.mkdir(directory)
-    except FileExistsError:
-        manifest = os.path.join(directory, 'package.json')
-        if os.path.exists(manifest):
-            raise RuntimeError('dsh: profile %s already exists at %s; omit --from-default-profile to use it' % (json.dumps(name, ensure_ascii=False), manifest))
-        raise RuntimeError('dsh: profile directory %s already exists; choose an unused profile name' % directory)
-    try:
-        init_profile(directory, template['bundles'], template['patchReload'])
-    except BaseException as error:
-        # Only the exact directory exclusively claimed above is removable.
-        if os.path.dirname(os.path.abspath(directory)) != profiles_root or os.path.basename(directory) != name:
-            raise RuntimeError('profile cleanup target changed') from error
+        fresh = os.path.join(staging, 'new', name)
+        init_profile(fresh, template['bundles'], None)
+        # Windows open profile leases already deny rename. POSIX permits it,
+        # so retain an exclusive old-directory lease through the replacement.
+        if os.name != 'nt' and os.path.isdir(directory):
+            from dsh.boot.profile_lease import ProfileLease
+            lease = ProfileLease(directory, exclusive=True)
+        moved = False
         try:
-            shutil.rmtree(directory)
-        except BaseException as cleanup_error:
-            aggregate = RuntimeError('dsh: profile initialization failed and %s could not be removed' % directory)
-            aggregate.errors = [error, cleanup_error]
-            raise aggregate from error
+            os.rename(directory, previous)
+            moved = True
+        except FileNotFoundError:
+            pass
+        try:
+            os.rename(fresh, directory)
+        except OSError as error:
+            if os.path.exists(directory):
+                remove_owned(previous)
+                raise RuntimeError('dsh: profile %s was recreated concurrently at %s' % (json.dumps(name, ensure_ascii=False), directory)) from error
+            if moved:
+                try:
+                    os.rename(previous, directory)
+                except OSError as restore_error:
+                    from dsh.cordis.errors import AggregateError
+                    raise AggregateError([error, restore_error], 'dsh: profile replacement failed and %s could not be restored from %s' % (directory, previous)) from error
+            raise
+    except BaseException:
+        if lease is not None:
+            lease.close(); lease = None
+        if not os.path.exists(previous):
+            remove_owned(staging)
         raise
+    finally:
+        if lease is not None:
+            lease.close()
+    try:
+        remove_owned(staging)
+    except OSError as error:
+        sys.stderr.write('dsh: replaced profile %s but could not remove %s: %s\n' % (json.dumps(name, ensure_ascii=False), staging, error))
 
 
 def prepare_profile(name: str, user_layer: bool = True, dsh_home: Optional[str] = None, from_default_profile=None) -> Profile:

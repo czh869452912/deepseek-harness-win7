@@ -1,4 +1,4 @@
-"""Exclusive creation, no local-state inheritance and real launcher consumers."""
+"""Staged replacement, independent template metadata and real launcher consumers."""
 import asyncio
 import json
 import os
@@ -18,8 +18,11 @@ from scripts.session_format_oracle import json_equal
 CASES=json.loads((Path(__file__).resolve().parents[1]/'scripts/oracles/profile_init_current_cases.json').read_text(encoding='utf-8'))
 
 
-@pytest.mark.parametrize('case',CASES,ids=lambda case:case['case'])
-def test_actual_source_profile_init_contract(case):assert json_equal(execute(case),case['expected'])
+# The immutable rc.3 initialization IO observations remain historical. Only
+# their unchanged argument cases apply to the current parser; rc022 replacement
+# IO is observed independently in test_rc022_profile_replace.
+@pytest.mark.parametrize('case',[row for row in CASES if row['operation']=='args'],ids=lambda case:case['case'])
+def test_existing_profile_launcher_argument_contract(case):assert json_equal(execute(case),case['expected'])
 
 
 def test_product_templates_remain_explicit_and_independent(tmp_path):
@@ -27,16 +30,16 @@ def test_product_templates_remain_explicit_and_independent(tmp_path):
         initialize_profile_from_default('custom-'+key,key,str(tmp_path))
         directory=tmp_path/'profiles'/('custom-'+key)
         manifest=json.loads((directory/'package.json').read_text(encoding='utf-8'))
-        assert manifest['dependencies']=={} and manifest['dsh']['profile']==template
+        assert manifest['dependencies']=={} and manifest['dsh']['profile']==dict(bundles=template['bundles'])
         assert 'fromDefaultProfile' not in manifest['dsh']['profile']
-        with pytest.raises(RuntimeError,match='is shipped'):
+        with pytest.raises(RuntimeError,match='names shipped profile'):
             initialize_profile_from_default(key,'web',str(tmp_path))
 
 
 def test_failure_removes_only_exclusively_claimed_directory_and_can_retry(tmp_path):
     other=tmp_path/'profiles'/'other';other.mkdir(parents=True);(other/'keep').write_text('keep',encoding='utf-8')
     def broken(directory,*args):
-        Path(directory,'partial').write_text('partial',encoding='utf-8');raise RuntimeError('failed writing template')
+        Path(directory).mkdir(parents=True);Path(directory,'partial').write_text('partial',encoding='utf-8');raise RuntimeError('failed writing template')
     with patch('dsh.boot.profile_boot.init_profile',broken):
         with pytest.raises(RuntimeError,match='failed writing template'):
             initialize_profile_from_default('rescue','web',str(tmp_path))
@@ -45,16 +48,16 @@ def test_failure_removes_only_exclusively_claimed_directory_and_can_retry(tmp_pa
     assert (tmp_path/'profiles'/'rescue'/'package.json').is_file()
 
 
-def test_cleanup_failure_preserves_both_causes_and_partial_files(tmp_path):
+def test_cleanup_failure_preserves_staging_for_diagnosis(tmp_path):
     first,second=RuntimeError('write failed'),OSError('cleanup denied')
     with patch('dsh.boot.profile_boot.init_profile',side_effect=first),patch('dsh.boot.profile_boot.shutil.rmtree',side_effect=second):
-        with pytest.raises(RuntimeError,match='could not be removed') as failure:
+        with pytest.raises(OSError,match='cleanup denied'):
             initialize_profile_from_default('rescue','web',str(tmp_path))
-    assert failure.value.errors==[first,second] and failure.value.__cause__ is first
-    assert (tmp_path/'profiles'/'rescue').is_dir()
+    assert not (tmp_path/'profiles'/'rescue').exists()
+    assert len(list((tmp_path/'profiles').glob('.rescue.staging-*')))==1
 
 
-def test_two_synchronized_actual_processes_only_one_can_claim_profile(tmp_path):
+def test_two_synchronized_actual_processes_leave_a_complete_profile(tmp_path):
     child=tmp_path/'claim.py'
     child.write_text('''import sys,time
 from pathlib import Path
@@ -77,24 +80,24 @@ except RuntimeError as error:
             assert time.monotonic()<deadline;time.sleep(.01)
         (tmp_path/'start').write_text('start',encoding='utf-8')
         results=[process.communicate(timeout=8) for process in children]
-        assert sorted(process.returncode for process in children)==[0,1],results
+        assert 0 in [process.returncode for process in children],results
+        for process,output in zip(children,results):
+            if process.returncode:assert b'was recreated concurrently' in output[0],output
         manifest=json.loads((tmp_path/'profiles'/'rescue'/'package.json').read_text(encoding='utf-8'))
-        winner=next(i for i,process in enumerate(children) if process.returncode==0)
-        assert manifest['dsh']['profile']==PROFILE_TEMPLATES[('web','headless')[winner]]
+        assert manifest['dsh']['profile'] in [dict(bundles=PROFILE_TEMPLATES[key]['bundles']) for key in ('web','headless')]
     finally:
         for process in children:
             if process.poll() is None:process.kill()
             process.communicate(timeout=5)
 
 
-def test_dump_initializes_once_and_preserves_patch_bytes_on_rejection(tmp_path):
+def test_dump_explicit_template_replacement_resets_user_patch(tmp_path):
     text=run_dump_config('rescue',True,dsh_home=str(tmp_path),from_default_profile='web')
     assert '@deepseek-ai/dsh-web-app' in text or 'web-app' in text
     directory=tmp_path/'profiles'/'rescue';user=directory/'cordis.patch.yml'
     user.write_text('- id: hand-edited\n  disabled: true\n',encoding='utf-8');before=user.read_bytes()
-    with pytest.raises(RuntimeError,match='already exists'):
-        run_dump_config('rescue',True,dsh_home=str(tmp_path),from_default_profile='web')
-    assert user.read_bytes()==before
+    run_dump_config('rescue',True,dsh_home=str(tmp_path),from_default_profile='web')
+    assert user.read_bytes()!=before and 'hand-edited' not in user.read_text(encoding='utf-8')
 
 
 def test_application_owned_profile_loads_without_home_or_shipped_normalization(tmp_path):

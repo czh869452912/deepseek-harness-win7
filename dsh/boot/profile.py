@@ -823,7 +823,7 @@ def init_profile(
             "name": f"dsh-profile-{os.path.basename(dir_path)}",
             "private": True,
             "dependencies": {},
-            "dsh": {"profile": {"bundles": list(bundles), "patchReload": patch_reload}},
+            "dsh": {"profile": dict(bundles=list(bundles), **({"patchReload": patch_reload} if patch_reload is not None else {}))},
         }
         with open(manifest_path, "w", encoding="utf-8") as f:
             json.dump(manifest, f, indent=2)

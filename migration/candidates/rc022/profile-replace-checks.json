@@ -1,0 +1,24 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-15",
+  "unit": "C1-AD-AtomicProfileReplacement",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "state": "targeted-passed",
+  "paired": ".goose/out/rc022-profile-replace-paired-20261115-01/report.json",
+  "observations": 22,
+  "source": {
+    "run": "rc022-profile-replace-source-20261115-01",
+    "passed": 20,
+    "failed": 0
+  },
+  "native": {
+    "run": "rc022-profile-replace-native-20261115-01",
+    "passed": 121,
+    "failed": 0
+  },
+  "verification_scope_reason": "Actual fixed Source staged IO with rename/write/cleanup fault injection and complete resulting directory snapshots. Native actual synchronized processes, active profile lease, dependency junction cleanup, dump/launcher and Python plugin distribution consumers.",
+  "scope": "Custom profiles are staged beside target then replaced; only bundle metadata is copied and no new patchReload field is authored by this path. Shipped names rejected without case. Restore old state on move failure, preserve backup plus both original errors on restore failure, retain concurrent winner, warn after successful replacement if cleanup fails. Windows host leases deny rename; POSIX holds exclusive old-directory lease during replacement.",
+  "historical_evidence": "Original profile_init_current_cases.json IO remains immutable historical observations. Current tests retain unchanged argument cases; independent rc022 probe supersedes exclusive-create IO assertions. Old gate registration awaits C9 review.",
+  "cleanup": ".goose/out/rc022-profile-replace-native-20261115-01/cleanup.json",
+  "remaining": "Public legacy init_profile optional patchReload support, old launcher watchers and complete patchReload retirement are coupled to real HMR migration. No full regression or release acceptance."
+}

@@ -1,0 +1,77 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-15",
+  "unit": "C2-C-child-facts-references",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "state": "targeted-passed",
+  "scope": "Explicit child discovery evidence, local reference remap, opaque event identity and fork-result guards; not connected to streaming migration or production persistence",
+  "paired": {
+    "cases": 1025,
+    "matched": 1025,
+    "differences": 0
+  },
+  "source_tests": {
+    "success": true,
+    "numTotalTests": 54,
+    "numPassedTests": 54,
+    "numFailedTests": 0,
+    "numPendingTests": 0
+  },
+  "native_tests": {
+    "passed": 59,
+    "failed": 0,
+    "skipped": 0
+  },
+  "output": "C:\\Users\\czh86\\Documents\\Codex\\deepseek-harness-win7\\.goose\\out\\rc022-facts-20261115-01",
+  "reports": {
+    "cases.json": "b2b796dbdc5b4d48b7dc22332dfcfaff9fc2c2c5a79cc5915a0f425542bf994e",
+    "native.json": "473b96ca493fc9cb687633fe659346e0984c3592fcbacbdcb8cd739a81dde61e",
+    "pytest-command.json": "b40482c7658609760258290b1514f4c9ea0ee14e3936a37bdc718f7ef019b3d5",
+    "pytest.log": "f6579893a36ed59ad10d8099799df314a1a1ae69c3d7f72ce1b0a157d4703098",
+    "pytest.xml": "a9b5982c279392c4ea0a3e4588e1dd39bd467a475341645a4a178b859e4e5640",
+    "report.json": "c3995e32d25abe740f8e46a0d5dd58df0c9182660e0f650c709053f8f66e410d",
+    "source-tests-command.json": "767fbb42895ad937e2c2353985005054e25bf35a5885c675eeeff5a2e62ba035",
+    "source-tests.json": "52cf3a4605d8c9a49aa74e7a7503e1383889f25b1d96be226cf0ce7ac1b4262a",
+    "source-tests.log": "57d38bff7f4ec54397f812b71a688a46c503b58f4f89deaad6cd225d9be4aa1a",
+    "source.json": "f6d8dce5b39e4d34c65f01caa381d16195e96813f1094487c6f935f9324ca4b2",
+    "source.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "inputs": {
+    ".goose\\out\\rc022-prep-20261114-01\\source\\packages\\session\\session-format-v3-to-v4\\src\\codec.ts": "2e82811f3a805c3985b6ad56ab5129a3c656a2712357e02da1e9653679f384f0",
+    ".goose\\out\\rc022-prep-20261114-01\\source\\packages\\session\\session-format-v3-to-v4\\src\\content.ts": "6015ff507bcbbe776c3af36ce5e9c2ca5d18f15c82305d1db05226993279d234",
+    ".goose\\out\\rc022-prep-20261114-01\\source\\packages\\session\\session-format-v3-to-v4\\src\\developer.ts": "176b7ad6479672351ca08419ff6fca35d635289e9651a672b009ed972d973e5b",
+    ".goose\\out\\rc022-prep-20261114-01\\source\\packages\\session\\session-format-v3-to-v4\\src\\extension-identities.ts": "9737373f41a47c209938de8ec015b4fd3b3e591141905607a4a52bae652bb0ed",
+    ".goose\\out\\rc022-prep-20261114-01\\source\\packages\\session\\session-format-v3-to-v4\\src\\facts.ts": "ce1bb0dd3cc8eec269fd923eb2ca9ab4f9409d95b2673cc7437c3be97482582f",
+    ".goose\\out\\rc022-prep-20261114-01\\source\\packages\\session\\session-format-v3-to-v4\\src\\fork-result.ts": "c9bdc6bfe83c454e5a1b929660541a7398927a891a0a0a7cec50431a4088697c",
+    ".goose\\out\\rc022-prep-20261114-01\\source\\packages\\session\\session-format-v3-to-v4\\src\\index.ts": "aa59d82dab8cfb1616e687c8f2543ebae055baffd6a3d1927ba4bea1d4252a28",
+    ".goose\\out\\rc022-prep-20261114-01\\source\\packages\\session\\session-format-v3-to-v4\\src\\message-sources.ts": "880cf946c56416cabb3aba30a17be32d39f60961ff6568460567442b8fba28d0",
+    ".goose\\out\\rc022-prep-20261114-01\\source\\packages\\session\\session-format-v3-to-v4\\src\\migration.ts": "96a68188aaeb61a81f72c7fc7137929640d3aaf5d0745f5a610e3cf76797be12",
+    ".goose\\out\\rc022-prep-20261114-01\\source\\packages\\session\\session-format-v3-to-v4\\src\\references.ts": "472fca4d333c00e6a9c79d5301403a5db657defab269ca1673498ca42037a746",
+    ".goose\\out\\rc022-prep-20261114-01\\source\\packages\\session\\session-format-v3-to-v4\\src\\relationships.ts": "4802f65c6dee1d5da515116f7171e408cc9bf63219e04fd669d22db484493ebb",
+    ".goose\\out\\rc022-prep-20261114-01\\source\\packages\\session\\session-format-v3-to-v4\\src\\retired-syntax.ts": "6941b51779964c30367299c44579b1ed31b00115e7c74d69171f711e5e61c1aa",
+    ".goose\\out\\rc022-prep-20261114-01\\source\\packages\\session\\session-format-v3-to-v4\\src\\sources.ts": "3848aeb9c12e5c962c882405d88173956483103d4b53670b5f25f3185018e004",
+    ".goose\\out\\rc022-prep-20261114-01\\source\\packages\\session\\session-format-v3-to-v4\\src\\system-message.ts": "50c19486a8c378e4755d610de1dff5d3bdad3cf9e1021d1dbf3a46501e9fa32c",
+    ".goose\\out\\rc022-prep-20261114-01\\source\\packages\\session\\session-format-v3-to-v4\\src\\tool-role.ts": "867aded1027588ffa65439efc2eb18748db5255370b65552b1c05130ecb6fa9d",
+    ".goose\\out\\rc022-prep-20261114-01\\source\\packages\\session\\session-format-v3-to-v4\\src\\validation.ts": "8aa4f5dad881870baece3ef8f2e5803235d0d51d04a6251ffa05adde76b77c3f",
+    "dsh\\session\\format_v3_to_v4\\content.py": "a01a020ad804e06110ecf59e3a13f5831121645c6ba60a884c9986360ebb1770",
+    "dsh\\session\\format_v3_to_v4\\developer.py": "3a08e208ba5cfe6b2b5b31425aeb2072ea16ccaac8eb306adebb581e9acc7a5c",
+    "dsh\\session\\format_v3_to_v4\\extension_identities.py": "988b1457be86fc3da09266c35cd058bea3cac0b42699627c8d9e490d9348830f",
+    "dsh\\session\\format_v3_to_v4\\facts.py": "5b3ab9a4438894ee2d282ab82ff775fa5454f4735ff2dfee510e58c0dedf2909",
+    "dsh\\session\\format_v3_to_v4\\fork_result.py": "ca7bf66cbb1eed3713acbcfa533f8437955ba85282919b6ff32ff8ae49b00385",
+    "dsh\\session\\format_v3_to_v4\\message_sources.py": "e67a83ec2a61eb72cd2e26c798a8575ef821d879ed87d652bcb945f6c7ae513c",
+    "dsh\\session\\format_v3_to_v4\\references.py": "125e64491e3376f8d79bc26c41388847ff87de29411d9bd01e4c95f1bf3264e6",
+    "dsh\\session\\format_v3_to_v4\\retired_syntax.py": "da0d11f1170f5a3477e1ea3381a9f3ae64b87b18eb189ac2b44f4896bd01ec19",
+    "dsh\\session\\format_v3_to_v4\\sources.py": "375047e0fbd7e68d46b403a3fb02637912dec9e03d01565f71b86189f3e4d180",
+    "dsh\\session\\format_v3_to_v4\\system_message.py": "02bfc7315cdb5e4f6b7fb477d1eeb5b039c88b437f22d581abccc2703316dbb0",
+    "dsh\\session\\format_v3_to_v4\\tool_role.py": "2d63f5e97bd5f87cb03eb24b940f1bc03600b7189cad77cb4886650c9ea4f88a",
+    "dsh\\session\\format_v3_to_v4\\__init__.py": "f46a8e747824cc248d4a95268804494da17ea2e810dcc1f200e4dcab9f945dc1",
+    "scripts\\oracles\\rc022_format_values.mts": "748fbc6e1b54866ccf274e2dd6fd01b9f91169c81bf45593ce26c82a4afee42d",
+    "scripts\\rc022_format_values_probe.py": "04470b748857dc7514cd4f1cbbbeb54745b97e2b269956ea1e96dc5c1f0f12ff",
+    ".goose\\out\\rc022-facts-20261115-01\\cases.json": "b2b796dbdc5b4d48b7dc22332dfcfaff9fc2c2c5a79cc5915a0f425542bf994e"
+  },
+  "cleanup": {
+    "disposable_payloads_created": false,
+    "retained": "Commands, corpora, observations and test reports only"
+  },
+  "acceptance_changed": false
+}

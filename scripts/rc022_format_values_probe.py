@@ -135,12 +135,59 @@ def cases():
             row = copy.deepcopy(system); block = copy.deepcopy(image); block['attachment'][field] = value
             row['data']['message']['content'] = [block]
             add('assertV4SystemMessageFields', row)
+    for version in (None, False, True, 0, 1, 2, 3, '1'):
+        for mode in ('continuable', 'one-shot', 'external', 'unknown'):
+            value = dict(version=version, childId='child', childCreatedAt=0, mode=mode, label='')
+            add('catalogFact', value)
+            source = dict(childId='child', childCreatedAt=0, descriptorCount=1,
+                          descriptor=dict(version=version, provider='provider', mode=mode, label='label'))
+            add('childCatalogSource', source)
+            add('childCatalogFact', source)
+    for count in (None, False, True, 0, 1, 2, 1.5, -1):
+        for descriptor in (None, {}, {'version': 1}, {'version': 1, 'provider': '', 'label': ''},
+                           {'version': 3, 'provider': 'p', 'mode': 'one-shot', 'label': None}):
+            source = dict(childId='child', childCreatedAt=0, descriptorCount=count, descriptor=descriptor, sourcePath='C:/logs/child')
+            add('childCatalogFact', source)
+            add('childCatalogSource', source)
+    for origin in (None, 'subagent'):
+        for parent in ('absent', None, 'parent'):
+            for cut in (0, 1, 2):
+                header = dict(id='child', origin=origin, createdAt=0)
+                if parent != 'absent':
+                    header['parentSession'] = parent
+                add('historicalChildCatalogSource', dict(header=header, inheritedEventCount=cut,
+                    events=[dict(type='subagent/descriptor', seq=0, data=dict(version=1, provider='p', label='L'))]))
+    for kind in ('command/done', 'compaction/summary', 'session/title', 'image/offload', 'opaque'):
+        for ref in (None, False, 0, 1, 2, 3, -1, 1.5):
+            row = event(kind, dict(sourceEventSeq=ref, shadowedRange=dict(start=ref, end=ref, opaque=9),
+                shadowedSeqs=[ref], messageSeqs=[ref], targets=[dict(seq=ref, width=2)], numericPayload=2))
+            row['seq'] = 3
+            for target in (3, 4):
+                add('remapV3References', row, target, [0, 2, 3])
+    for surface in ('append', None, {}, dict(op='replace', startSeq=1, endSeq=2, opaque=3)):
+        row = dict(event('opaque', {'number': 2}), seq=3, surfaceOp=surface, sourceEventSeqs=[1, 2])
+        add('remapV3References', row, 4, [0, 2, 3])
+    for kind in ('user/message', 'custom', 'plugin:custom', 'developer/message', 'tool/code-dispatch'):
+        for flag in (False, True, 1):
+            add('namespaceV3OpaqueEvent', dict(event(kind, {'opaque': {'seq': 1}}), ignorable=flag))
+    fork = dict(type='tool/result', seq=2, surfaceOp='append', data=dict(error=dict(code='TOOL_NOT_STARTED', name='ToolNotStartedError'),
+        message=dict(id='forked-tool-result-call-2', role='tool', isError=True, source=dict(kind='tool', callId='call'),
+                     toolCallId='call', content=[dict(type='text', text='not started')])))
+    for seq in (None, False, True, 0, 1, 2, 3, 2.5):
+        for suffix in ('0', '1', '2', '02', '-1', '1.0', '9007199254740992'):
+            for replacement in (False, True):
+                row = copy.deepcopy(fork); row['seq'] = seq; row['data']['message']['id'] = 'forked-tool-result-call-' + suffix
+                if replacement:
+                    row.update(surfaceOp={'op': 'replace'}, sourceEventSeqs=[1])
+                add('assertV4ForkResult', row)
     return rows
 
 
 def native(rows):
     from dsh.session.format_v3_to_v4 import tool_role, sources, content, developer, system_message, message_sources, retired_syntax
-    modules = (tool_role, sources, content, developer, system_message, message_sources, retired_syntax)
+    from dsh.session.format_v3_to_v4 import facts, fork_result, references, extension_identities
+    modules = (tool_role, sources, content, developer, system_message, message_sources, retired_syntax,
+               facts, fork_result, references, extension_identities)
     functions = {name: getattr(module, name) for module in modules for name in dir(module) if not name.startswith('_')}
     results = []
     for row in rows:

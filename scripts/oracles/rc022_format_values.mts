@@ -6,7 +6,8 @@ import { pathToFileURL } from 'node:url'
 const [source, corpus] = process.argv.slice(2)
 const base = resolve(source!, 'packages/session/session-format-v3-to-v4/src')
 const modules = await Promise.all(['tool-role', 'sources', 'content', 'developer', 'system-message',
-  'message-sources', 'retired-syntax'].map(name => import(pathToFileURL(resolve(base, name + '.ts')).href)))
+  'message-sources', 'retired-syntax', 'facts', 'fork-result', 'references',
+  'extension-identities'].map(name => import(pathToFileURL(resolve(base, name + '.ts')).href)))
 const functions = Object.assign({}, ...modules)
 const rows = JSON.parse(readFileSync(corpus!, 'utf8'))
 const result = rows.map((row: any) => {

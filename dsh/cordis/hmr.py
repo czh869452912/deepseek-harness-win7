@@ -329,7 +329,8 @@ class ConfigWatcherService(Service):
         except Exception:
             pass
 
-        self._stashed: Set[str] = set()
+        self._changed = {}
+        self._stashed = {}
         self._debounce_handle: Optional[asyncio.TimerHandle] = None
         self._root_mtimes: Dict[str, float] = {}
         self._initial_scanned = False
@@ -465,24 +466,39 @@ class ConfigWatcherService(Service):
                 return True
         return False
 
-    def _schedule_partial_reload(self) -> None:
+    def invalidate_manifest(self, filename):
+        # Python profile/resource metadata reads are uncached. Directory finder
+        # caches still need expiry when package files are replaced in place.
+        importlib.invalidate_caches()
+
+    async def partial_reload(self):
+        # The canonical classifier now owns a whole URL batch. The historical
+        # Python replacement algorithm is modernized separately.
+        paths = [file_path(url) for url in self._stashed]
+        await self._reload_module_batch([(path, self._modules.get(path)) for path in paths])
+
+    partialReload = partial_reload
+
+    def _module_changed(self, path):
+        self._changed[path] = None
         if self._debounce_handle is not None:
             self._debounce_handle.cancel()
+        def dispatch():
             self._debounce_handle = None
-
-        def _on_timeout():
-            self._debounce_handle = None
-            if self._stashed:
-                stashed_files = list(self._stashed)
-                self._stashed.clear()
-                for f in stashed_files:
-                    self._trigger_module_reload(f, self._modules.get(f))
-
+            from dsh.cordis.hmr_dispatch import dispatch as dispatch_batch
+            task = self.run_exclusive(lambda: dispatch_batch(self))
+            self._refresh_tasks.add(task)
+            def done(result):
+                self._refresh_tasks.discard(result)
+                if not result.cancelled() and result.exception() is not None:
+                    self.ctx.logger.warn(result.exception())
+            task.add_done_callback(done)
+        loop = asyncio.get_running_loop()
+        token = self._executing.set(False)
         try:
-            loop = asyncio.get_running_loop()
-            self._debounce_handle = loop.call_later(max(0.01, self.debounce_ms / 1000.0), _on_timeout)
-        except RuntimeError:
-            _on_timeout()
+            self._debounce_handle = loop.call_later(max(0, self.debounce_ms / 1000.0), dispatch)
+        finally:
+            self._executing.reset(token)
 
     async def _poll_loop(self) -> None:
         while self._running:
@@ -582,44 +598,9 @@ class ConfigWatcherService(Service):
                                     last_info = self._root_mtimes.get(full_path)
                                     if last_info is not None:
                                         last_m, last_sz = last_info
-                                        if mtime > last_m or size != last_sz:
+                                        if mtime != last_m or size != last_sz:
                                             self._root_mtimes[full_path] = (mtime, size)
-                                            url = pathlib.Path(os.path.realpath(full_path)).as_uri()
-
-                                            # D17: Match include subtree
-                                            loader = getattr(self.ctx, "loader", None)
-                                            matched_include = False
-                                            if loader and hasattr(loader, "entries"):
-                                                for entry in list(loader.entries()):
-                                                    include = getattr(entry, "subtree", None)
-                                                    inc_fn = getattr(include, "filename", None)
-                                                    if inc_fn and os.path.realpath(full_path) == os.path.realpath(inc_fn):
-                                                        self._trigger_config_refresh(
-                                                            include, inc_fn, lambda inc=include: inc.refresh())
-                                                        matched_include = True
-                                                        break
-                                            if matched_include:
-                                                continue
-
-                                            # D1: Match externals -> loader.exit()
-                                            if url in self.externals:
-                                                if loader and hasattr(loader, "exit"):
-                                                    loader.exit()
-                                                    return
-                                                continue
-
-                                            # D2: Match loadCache -> stashed partial reload
-                                            internal = getattr(loader, "internal", None) if loader else None
-                                            load_cache = getattr(internal, "loadCache", None) if internal else None
-                                            in_cache = False
-                                            if load_cache is not None and hasattr(load_cache, "has"):
-                                                in_cache = load_cache.has(url)
-
-                                            if in_cache:
-                                                self._stashed.add(full_path)
-                                                self._schedule_partial_reload()
-                                            elif hasattr(self.ctx, "emit"):
-                                                self.ctx.emit("hmr/change", url)
+                                            self._module_changed(os.path.relpath(full_path, self.watch_base_dir))
                                     elif last_info is None:
                                         self._root_mtimes[full_path] = (mtime, size)
                     self._initial_scanned = True
@@ -725,180 +706,6 @@ class ConfigWatcherService(Service):
         if self._module_reload_task is not None and not self._module_reload_task.done():
             return
 
-        async def _reload_batch(changes: List[Tuple[str, Any]]) -> None:
-            reloads: Dict[Any, Dict[str, Any]] = {}
-            targets = {os.path.abspath(path): plugin for path, plugin in changes}
-            filename = ", ".join(targets)
-            try:
-                files_to_reload: List[str] = []
-                for changed in targets:
-                    if hasattr(self.ctx, "emit"):
-                        self.ctx.emit("hmr/change", changed)
-                    self.graph.scan_file(changed)
-                    dependents = self.graph.get_transitive_dependents(changed)
-                    for path in [changed] + list(reversed(dependents)):
-                        if path not in files_to_reload:
-                            files_to_reload.append(path)
-                registry = getattr(self.ctx, "registry", None)
-                saved_fibers: Dict[Any, List[Any]] = {}
-
-                async def reload_plugin(plugin_target: Any, r_time: Any, old_key: Any = None) -> None:
-                    if not r_time:
-                        return
-                    target_fibers = (saved_fibers.get(old_key) if old_key else None) or list(getattr(r_time, "fibers", []))
-                    for old_fiber in list(target_fibers):
-                        parent = getattr(old_fiber, "parent", None) or self.ctx
-                        reg = getattr(parent, "registry", None) or getattr(self.ctx, "registry", None)
-                        new_fiber = reg.plugin(plugin_target, getattr(old_fiber, "config", None))
-                        # Upstream HMR registers replacements without awaiting
-                        # startup. Apply rejection is a FAILED replacement, not
-                        # a synchronous registration failure requiring rollback.
-                        new_fiber.entry = getattr(old_fiber, "entry", None)
-                        if new_fiber.entry:
-                            new_fiber.entry.fiber = new_fiber
-
-                new_modules_created: List[str] = []
-                cache_backup: Dict[str, Any] = {}
-                loader = self.ctx.get("loader", None)
-                load_cache = getattr(getattr(loader, "internal", None), "loadCache", {})
-                loader_backup = dict(load_cache)
-                prepared: Dict[str, Any] = {}
-                parent_backup: List[Tuple[Any, str, Any]] = []
-                try:
-                    # Remove the whole accepted module set before importing.
-                    # A temporary source loader supports Python cycles/relative
-                    # imports without stale pyc or references to an old sibling.
-                    importlib.invalidate_caches()
-                    names_by_path: Dict[str, List[str]] = {}
-                    paths_by_name: Dict[str, str] = {}
-                    parent_backup: List[Tuple[Any, str, Any]] = []
-                    for file_path in files_to_reload:
-                        if not os.path.isfile(file_path):
-                            raise FileNotFoundError(file_path)
-                        aliases = [name for name, module in list(sys.modules.items())
-                                   if getattr(module, "__file__", None)
-                                   and os.path.realpath(module.__file__) == os.path.realpath(file_path)]
-                        names_by_path[file_path] = aliases or ["hmr_reloaded_%s" % abs(hash(file_path))]
-                        for name in names_by_path[file_path]:
-                            paths_by_name[name] = file_path
-                            if name in sys.modules:
-                                cache_backup[name] = sys.modules.pop(name)
-                            else:
-                                new_modules_created.append(name)
-                            parent_name, _, child = name.rpartition(".")
-                            parent_module = sys.modules.get(parent_name)
-                            if parent_module is not None and hasattr(parent_module, child):
-                                parent_backup.append((parent_module, child, getattr(parent_module, child)))
-                                delattr(parent_module, child)
-                    class SourceLoader(importlib.abc.MetaPathFinder, importlib.abc.Loader):
-                        def find_spec(self, fullname, path=None, target=None):
-                            filename = paths_by_name.get(fullname)
-                            if filename is None:
-                                return None
-                            return importlib.util.spec_from_file_location(fullname, filename, loader=self,
-                                submodule_search_locations=[os.path.dirname(filename)]
-                                if os.path.basename(filename) == "__init__.py" else None)
-                        def create_module(self, spec):
-                            return None
-                        def exec_module(self, module):
-                            with open(module.__spec__.origin, "r", encoding="utf-8") as stream:
-                                code = compile(stream.read(), module.__spec__.origin, "exec")
-                            exec(code, module.__dict__)
-                    source_loader = SourceLoader()
-                    sys.meta_path.insert(0, source_loader)
-                    try:
-                        for file_path in files_to_reload:
-                            aliases = names_by_path[file_path]
-                            mod = importlib.import_module(aliases[0])
-                            for alias in aliases:
-                                sys.modules[alias] = mod
-                            prepared[file_path] = mod
-                            from pathlib import Path
-                            load_cache[Path(os.path.realpath(file_path)).as_uri()] = mod
-                    finally:
-                        sys.meta_path.remove(source_loader)
-                    for file_path in files_to_reload:
-                        mod = prepared[file_path]
-                        if not registry:
-                            continue
-
-                        # Find all plugin classes in module
-                        found_classes: List[Tuple[Any, Any]] = []
-                        tgt = targets.get(file_path) or self._modules.get(file_path)
-                        if tgt and isinstance(tgt, type):
-                            new_cls = getattr(mod, tgt.__name__, None)
-                            if new_cls:
-                                found_classes.append((tgt, new_cls))
-                        else:
-                            for attr_name in dir(mod):
-                                obj = getattr(mod, attr_name)
-                                if isinstance(obj, type) and (issubclass(obj, Plugin) or hasattr(obj, "apply")):
-                                    for reg_key in list(registry._runtimes.keys()):
-                                        if getattr(reg_key, "__name__", "") == attr_name:
-                                            found_classes.append((reg_key, obj))
-
-                        for old_key, new_cls in found_classes:
-                            r_entry = registry.get(old_key)
-                            if r_entry and old_key not in saved_fibers:
-                                saved_fibers[old_key] = list(getattr(r_entry, "fibers", []))
-
-                        for old_key, new_cls in found_classes:
-                            runtime = registry.get(old_key)
-                            if runtime:
-                                reloads[old_key] = {"filename": file_path, "runtime": runtime, "attempt": new_cls}
-                                try:
-                                    await registry.delete_async(old_key)
-                                except Exception as err:
-                                    if hasattr(self.ctx, "logger"):
-                                        self.ctx.logger("hmr").warn("failed to dispose plugin %s: %s", old_key, err)
-
-                                try:
-                                    await reload_plugin(new_cls, runtime, old_key)
-                                    if hasattr(self.ctx, "logger"):
-                                        self.ctx.logger("hmr").info("reload plugin %s", new_cls)
-                                except Exception as err:
-                                    if hasattr(self.ctx, "logger"):
-                                        self.ctx.logger("hmr").warn("failed to reload plugin %s: %s", new_cls, err)
-                                    raise err
-                except Exception as step_err:
-                    for m_name in new_modules_created:
-                        sys.modules.pop(m_name, None)
-                    sys.modules.update(cache_backup)
-                    for parent_module, child, value in parent_backup:
-                        setattr(parent_module, child, value)
-                    load_cache.clear()
-                    load_cache.update(loader_backup)
-                    if registry:
-                        for old_key, info in reloads.items():
-                            runtime = info.get("runtime")
-                            attempt = info.get("attempt")
-                            if not runtime:
-                                continue
-                            try:
-                                if attempt:
-                                    await registry.delete_async(attempt)
-                                await reload_plugin(old_key, runtime, old_key)
-                            except Exception as err:
-                                if hasattr(self.ctx, "logger"):
-                                    self.ctx.logger("hmr").warn("failed during rollback of %s: %s", old_key, err)
-                    raise step_err
-
-                # Future changes must target the replacement runtime, not the
-                # disposed class retained by the original watch registration.
-                for old_key, info in reloads.items():
-                    path = info["filename"]
-                    if self._modules.get(path) is old_key:
-                        self._modules[path] = info["attempt"]
-                if reloads and hasattr(self.ctx, "emit"):
-                    self.ctx.emit("hmr/reload", reloads)
-
-                if hasattr(self.ctx, "logger"):
-                    self.ctx.logger("hmr").info("Reloaded module %s (%d plugins affected)", filename, len(reloads))
-
-            except Exception as reason:
-                if hasattr(self.ctx, "logger"):
-                    self.ctx.logger("hmr").warn("Module reload at %s failed: %s", filename, reason)
-
         async def _run() -> None:
             try:
                 while self._module_changes:
@@ -908,7 +715,7 @@ class ConfigWatcherService(Service):
                         state = self._module_refreshes.get(changed_file)
                         if state is not None:
                             state.dirty = False
-                    await self._run_reload(lambda: _reload_batch(pending))
+                    await self._run_reload(lambda: self._reload_module_batch(pending))
             except Exception as error:
                 if hasattr(self.ctx, 'logger'):
                     self.ctx.logger('hmr').warn('%s', error)
@@ -934,6 +741,181 @@ class ConfigWatcherService(Service):
             task.add_done_callback(lambda t: self._refresh_tasks.discard(t))
         except RuntimeError:
             pass
+
+    async def _reload_module_batch(self, changes: List[Tuple[str, Any]]) -> None:
+        reloads: Dict[Any, Dict[str, Any]] = {}
+        targets = {os.path.abspath(path): plugin for path, plugin in changes}
+        filename = ", ".join(targets)
+        try:
+            files_to_reload: List[str] = []
+            for changed in targets:
+                if hasattr(self.ctx, "emit"):
+                    self.ctx.emit("hmr/change", changed)
+                self.graph.scan_file(changed)
+                dependents = self.graph.get_transitive_dependents(changed)
+                for path in [changed] + list(reversed(dependents)):
+                    if path not in files_to_reload:
+                        files_to_reload.append(path)
+            registry = getattr(self.ctx, "registry", None)
+            saved_fibers: Dict[Any, List[Any]] = {}
+
+            async def reload_plugin(plugin_target: Any, r_time: Any, old_key: Any = None) -> None:
+                if not r_time:
+                    return
+                target_fibers = (saved_fibers.get(old_key) if old_key else None) or list(getattr(r_time, "fibers", []))
+                for old_fiber in list(target_fibers):
+                    parent = getattr(old_fiber, "parent", None) or self.ctx
+                    reg = getattr(parent, "registry", None) or getattr(self.ctx, "registry", None)
+                    new_fiber = reg.plugin(plugin_target, getattr(old_fiber, "config", None))
+                    # Upstream HMR registers replacements without awaiting
+                    # startup. Apply rejection is a FAILED replacement, not
+                    # a synchronous registration failure requiring rollback.
+                    new_fiber.entry = getattr(old_fiber, "entry", None)
+                    if new_fiber.entry:
+                        new_fiber.entry.fiber = new_fiber
+
+            new_modules_created: List[str] = []
+            cache_backup: Dict[str, Any] = {}
+            loader = self.ctx.get("loader", None)
+            load_cache = getattr(getattr(loader, "internal", None), "loadCache", {})
+            loader_backup = dict(load_cache)
+            prepared: Dict[str, Any] = {}
+            parent_backup: List[Tuple[Any, str, Any]] = []
+            try:
+                # Remove the whole accepted module set before importing.
+                # A temporary source loader supports Python cycles/relative
+                # imports without stale pyc or references to an old sibling.
+                importlib.invalidate_caches()
+                names_by_path: Dict[str, List[str]] = {}
+                paths_by_name: Dict[str, str] = {}
+                parent_backup: List[Tuple[Any, str, Any]] = []
+                for file_path in files_to_reload:
+                    if not os.path.isfile(file_path):
+                        raise FileNotFoundError(file_path)
+                    aliases = [name for name, module in list(sys.modules.items())
+                               if getattr(module, "__file__", None)
+                               and os.path.realpath(module.__file__) == os.path.realpath(file_path)]
+                    names_by_path[file_path] = aliases or ["hmr_reloaded_%s" % abs(hash(file_path))]
+                    for name in names_by_path[file_path]:
+                        paths_by_name[name] = file_path
+                        if name in sys.modules:
+                            cache_backup[name] = sys.modules.pop(name)
+                        else:
+                            new_modules_created.append(name)
+                        parent_name, _, child = name.rpartition(".")
+                        parent_module = sys.modules.get(parent_name)
+                        if parent_module is not None and hasattr(parent_module, child):
+                            parent_backup.append((parent_module, child, getattr(parent_module, child)))
+                            delattr(parent_module, child)
+                class SourceLoader(importlib.abc.MetaPathFinder, importlib.abc.Loader):
+                    def find_spec(self, fullname, path=None, target=None):
+                        filename = paths_by_name.get(fullname)
+                        if filename is None:
+                            return None
+                        return importlib.util.spec_from_file_location(fullname, filename, loader=self,
+                            submodule_search_locations=[os.path.dirname(filename)]
+                            if os.path.basename(filename) == "__init__.py" else None)
+                    def create_module(self, spec):
+                        return None
+                    def exec_module(self, module):
+                        with open(module.__spec__.origin, "r", encoding="utf-8") as stream:
+                            code = compile(stream.read(), module.__spec__.origin, "exec")
+                        exec(code, module.__dict__)
+                source_loader = SourceLoader()
+                sys.meta_path.insert(0, source_loader)
+                try:
+                    for file_path in files_to_reload:
+                        aliases = names_by_path[file_path]
+                        mod = importlib.import_module(aliases[0])
+                        for alias in aliases:
+                            sys.modules[alias] = mod
+                        prepared[file_path] = mod
+                        from pathlib import Path
+                        load_cache[Path(os.path.realpath(file_path)).as_uri()] = mod
+                finally:
+                    sys.meta_path.remove(source_loader)
+                for file_path in files_to_reload:
+                    mod = prepared[file_path]
+                    if not registry:
+                        continue
+
+                    # Find all plugin classes in module
+                    found_classes: List[Tuple[Any, Any]] = []
+                    tgt = targets.get(file_path) or self._modules.get(file_path)
+                    if tgt and isinstance(tgt, type):
+                        new_cls = getattr(mod, tgt.__name__, None)
+                        if new_cls:
+                            found_classes.append((tgt, new_cls))
+                    else:
+                        for attr_name in dir(mod):
+                            obj = getattr(mod, attr_name)
+                            if isinstance(obj, type) and (issubclass(obj, Plugin) or hasattr(obj, "apply")):
+                                for reg_key in list(registry._runtimes.keys()):
+                                    if getattr(reg_key, "__name__", "") == attr_name:
+                                        found_classes.append((reg_key, obj))
+
+                    for old_key, new_cls in found_classes:
+                        r_entry = registry.get(old_key)
+                        if r_entry and old_key not in saved_fibers:
+                            saved_fibers[old_key] = list(getattr(r_entry, "fibers", []))
+
+                    for old_key, new_cls in found_classes:
+                        runtime = registry.get(old_key)
+                        if runtime:
+                            reloads[old_key] = {"filename": file_path, "runtime": runtime, "attempt": new_cls}
+                            try:
+                                await registry.delete_async(old_key)
+                            except Exception as err:
+                                if hasattr(self.ctx, "logger"):
+                                    self.ctx.logger("hmr").warn("failed to dispose plugin %s: %s", old_key, err)
+
+                            try:
+                                await reload_plugin(new_cls, runtime, old_key)
+                                if hasattr(self.ctx, "logger"):
+                                    self.ctx.logger("hmr").info("reload plugin %s", new_cls)
+                            except Exception as err:
+                                if hasattr(self.ctx, "logger"):
+                                    self.ctx.logger("hmr").warn("failed to reload plugin %s: %s", new_cls, err)
+                                raise err
+            except Exception as step_err:
+                for m_name in new_modules_created:
+                    sys.modules.pop(m_name, None)
+                sys.modules.update(cache_backup)
+                for parent_module, child, value in parent_backup:
+                    setattr(parent_module, child, value)
+                load_cache.clear()
+                load_cache.update(loader_backup)
+                if registry:
+                    for old_key, info in reloads.items():
+                        runtime = info.get("runtime")
+                        attempt = info.get("attempt")
+                        if not runtime:
+                            continue
+                        try:
+                            if attempt:
+                                await registry.delete_async(attempt)
+                            await reload_plugin(old_key, runtime, old_key)
+                        except Exception as err:
+                            if hasattr(self.ctx, "logger"):
+                                self.ctx.logger("hmr").warn("failed during rollback of %s: %s", old_key, err)
+                raise step_err
+
+            # Future changes must target the replacement runtime, not the
+            # disposed class retained by the original watch registration.
+            for old_key, info in reloads.items():
+                path = info["filename"]
+                if self._modules.get(path) is old_key:
+                    self._modules[path] = info["attempt"]
+            if reloads and hasattr(self.ctx, "emit"):
+                self.ctx.emit("hmr/reload", reloads)
+
+            if hasattr(self.ctx, "logger"):
+                self.ctx.logger("hmr").info("Reloaded module %s (%d plugins affected)", filename, len(reloads))
+
+        except Exception as reason:
+            if hasattr(self.ctx, "logger"):
+                self.ctx.logger("hmr").warn("Module reload at %s failed: %s", filename, reason)
+
 
     def register_config(self, filename: str, refresh_fn: Callable[[], Any], _reserved_paths=None) -> Any:
         """
@@ -1071,6 +1053,9 @@ class ConfigWatcherService(Service):
             self._cancel_ready()
             self._cancel_ready = None
         self._running = False
+        if self._debounce_handle is not None:
+            self._debounce_handle.cancel()
+            self._debounce_handle = None
         if self._poll_task and not self._poll_task.done():
             self._poll_task.cancel()
         if self._poll_task is not None:
@@ -1112,6 +1097,9 @@ class ConfigWatcherService(Service):
         @returns the owned settlement task, or `None` after an inline run.
         """
         self._running = False
+        if self._debounce_handle is not None:
+            self._debounce_handle.cancel()
+            self._debounce_handle = None
         if self._poll_task and not self._poll_task.done():
             self._poll_task.cancel()
         settlement = self._async_teardown()

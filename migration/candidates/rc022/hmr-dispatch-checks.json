@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-15",
+  "unit": "C1-AM-HmrRootBatchDispatch",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "state": "targeted-passed",
+  "paired": ".goose/out/rc022-hmr-dispatch-paired-20261115-04/report.json",
+  "observations": 6,
+  "source": {
+    "run": "rc022-hmr-dispatch-source-20261115-01",
+    "passed": 13,
+    "failed": 0
+  },
+  "native": {
+    "run": "rc022-hmr-dispatch-native-20261115-01",
+    "passed": 31,
+    "failed": 0
+  },
+  "verification_scope_reason": "Real HMR service receives controlled root notifications; paired observations verify batch deduplication, queue ordering, manifest/lock distinction, exact watcher suppression, Include failure containment, host full-reload precedence and failure recovery. Partial replacement is deliberately instrumented at its boundary, not certified by this probe. Actual native portable polling covers file timestamp moving backwards and mutation serialization. Historical module replacement/config-watch consumers and current queue/readiness/profile watchers passed.",
+  "scope": "Root polling schedules one debounced ordered batch on the HMR transaction queue. Includes refresh once before module replacement, full reload wins the batch, unrelated notifications remain fire-and-forget and do not wait Loader, cached URL stash is ordered and cleared after replacement failures. Existing Python replacement body was mechanically extracted for direct in-transaction dispatch; its modernization is separate.",
+  "cleanup": ".goose/out/rc022-hmr-dispatch-native-20261115-01/cleanup.json",
+  "remaining": "Modern partialReload and namespace/runtime identity, root glob/readiness/file-target and additional path/cache tests, launcher patchReload retirement and unbarriered shutdown race. No complete HMR/release acceptance."
+}

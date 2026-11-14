@@ -1,0 +1,24 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-15",
+  "unit": "C1-AH-HmrReadOnlyReplacementPlan",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "state": "targeted-passed",
+  "paired": ".goose/out/rc022-hmr-plan-paired-20261115-01/report.json",
+  "observations": 360,
+  "source": {
+    "run": "rc022-hmr-plan-source-20261115-01",
+    "passed": 4,
+    "failed": 0,
+    "not_selected": 83
+  },
+  "native": {
+    "run": "rc022-hmr-plan-native-20261115-02",
+    "passed": 5,
+    "failed": 0
+  },
+  "verification_scope_reason": "Unchanged Hmr.planReplacement called with controlled module graphs, plugin exports, registry fibers and Loader entries, plus actual on-disk manifest ancestry. Ten explicit cases and 350 deterministic graphs cover cycles, ordering, host precedence, unmanaged instances, affected parent ownership, stale entry wrappers and overlapping changes. Source selected real consumers cover host/unmanaged exclusions and shared importers; queue/readiness native regressions passed.",
+  "scope": "Read-only ordered replacement planning helper; no stop, eviction or production graph adapter yet. Preserves discovery order and plugin/fiber identity, retains host/unmanaged changes as pending, and bounds manifest ancestors to profile roots. file URL helper now rejects encoded separators.",
+  "cleanup": ".goose/out/rc022-hmr-plan-native-20261115-02/cleanup.json",
+  "remaining": "Actual Python module graph/cache adapter and plan execution, profile reconciliation and watches, whole file batch dispatch, legacy HMR retirement. Synthetic graph parity alone is not runtime HMR acceptance."
+}

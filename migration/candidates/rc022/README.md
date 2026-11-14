@@ -89,3 +89,5 @@
 2026-11-15：C1-AF [HMR 串行事务与精确监听](hmr-queue-checks.json)完成 7 组固定原版/Python 实际服务旅程、32 项原版与 33 项 Python 定向检查。失败后队列可继续使用，拒绝嵌套；watchConfig 的初始回调在事务后运行，路径重复和启动失败释放、事务内卸载及外部卸载等待均覆盖，Python 取消调用方等待不取消服务事务。本批全部合成夹具和临时目录已清理。应用就绪、整个文件批次派发、profile 监听、模块替换和旧 patchReload 退役继续推进。
 
 2026-11-15：C1-AG [HMR 应用就绪与模块基线](hmr-ready-checks.json)完成 5 组固定原版/Python 实际服务对照、9 项原版与 37 项 Python 定向检查。Profile HMR 缺少 appReady 即拒绝，重载回调等待成功启动，调用方事务可先运行；启动中断释放屏障且不执行回调。ModuleFiles 接入启动记录，覆盖普通包、scoped junction 包及根外 sibling；观察失败警告后继续启动。本批合成文件、工作区及链接已清理。自动 profile 监听、整个批次派发、模块替换和旧 patchReload 退役仍待完成。
+
+2026-11-15：C1-AH [HMR 只读替换规划](hmr-plan-checks.json)完成 360 组固定原版/Python 受控图与真实 manifest 祖先对照，4 项原版所选真实消费者及 5 项 Python 检查通过。保持发现顺序与实例身份，宿主依赖及无受影响 Loader 祖先的实例留待重启；依赖环、重叠变更、子插件和过期 entry wrapper 覆盖。首个 Python 断言顺序错误修正，配对值未变化；原始诊断保留，全部合成工作区已清理。此助手尚未接入生产模块图/缓存，停止执行与 profile 重组继续推进。

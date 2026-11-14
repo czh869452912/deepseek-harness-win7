@@ -1,0 +1,36 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-15",
+  "unit": "C1-N-associated-service-properties",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "state": "targeted-passed",
+  "scope": "Service and generic tracker associations route declared dotted reads/writes using definition-site permissions, use-site effects and original accessor receiver. Reversible extension removal restores own fields; ordinary Context metadata inherits through shadow extensions.",
+  "python_adaptation": "Full accessor hooks receive explicit context plus receiver: get(context,receiver,error), set(context,value,receiver,error). Existing shorter hooks retain their legacy spelling.",
+  "native": [
+    {
+      "run": "rc022-associated-native-20261115-01",
+      "passed": 124,
+      "failed": 1
+    },
+    {
+      "run": "rc022-associated-native-20261115-02",
+      "passed": 125
+    },
+    {
+      "run": "rc022-associated-consumers-20261115-01",
+      "passed": 115
+    }
+  ],
+  "paired": [
+    ".goose/out/rc022-associated-paired-20261115-02/report.json",
+    ".goose/out/rc022-associated-trace-20261115-01/report.json"
+  ],
+  "verification_scope_reason": "Reflect/Service/Context provider changes checked against unchanged Source journeys and direct injection, trace, effects, Connection and Typert consumers, plus Fiber/profile/Web/HMR regressions. No complete or release qualification.",
+  "cleanup": {
+    "path": ".goose/out/rc022-associated-native-20261115-02/cleanup.json",
+    "assets": 9,
+    "bytes": 4513,
+    "links": 478
+  },
+  "remaining": "Logger severity, remaining core lifecycle and canonical boot recomposition; C1-C9 not yet accepted."
+}

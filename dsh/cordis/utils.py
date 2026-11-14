@@ -2420,6 +2420,20 @@ class TraceCallReceiver:
         return object.__getattribute__(self, "_trace_proxy").__class__
 
 
+def associated_context(ctx: Any, definition: Any, receiver: Any, tracker: Any, name: str) -> Any:
+    """Resolve an associated service member with the original definition site."""
+    associate = tracker.get('associate') if isinstance(tracker, dict) else None
+    if not associate or name in (Symbols.original, Symbols.caller, tracker.get('property')):
+        return None
+    key = associate + '.' + name
+    if key not in ctx.reflect.props:
+        return None
+    props = {Symbols.receiver: receiver}
+    if definition is not ctx:
+        props[Symbols.shadow] = definition
+    return ctx.extend(props), key
+
+
 class TracedProxy:
     """
     Traceable proxy wrapper binding a service or callable to a caller Context
@@ -2453,6 +2467,11 @@ class TracedProxy:
             return object.__getattribute__(self, "_ctx")
         if name in ("_target", "_ctx", "_tracker"):
             return object.__getattribute__(self, name)
+        associated = associated_context(object.__getattribute__(self, '_ctx'),
+            object.__getattribute__(self, '_caller'), self, tracker, name)
+        if associated is not None:
+            ctx, key = associated
+            return getattr(ctx, key)
         target = object.__getattribute__(self, "_target")
         receiver = self
         if not tracker.get('noShadow') and property_name:
@@ -2485,6 +2504,13 @@ class TracedProxy:
         elif name in (Symbols.original, Symbols.caller, "cordis.original", "ctx", object.__getattribute__(self, '_tracker').get('property')):
             return
         else:
+            associated = associated_context(object.__getattribute__(self, '_ctx'),
+                object.__getattribute__(self, '_caller'), self,
+                object.__getattribute__(self, '_tracker'), name)
+            if associated is not None:
+                ctx, key = associated
+                ctx.set(key, value)
+                return
             target = object.__getattribute__(self, "_target")
             setattr(target, name, value)
 

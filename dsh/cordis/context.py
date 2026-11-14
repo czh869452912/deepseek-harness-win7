@@ -394,14 +394,23 @@ class Context:
         if name.startswith("_") or name.startswith("cordis.") or name.startswith("symbols.") or name in RESERVED_ATTRS or name.isdigit():
             raise AttributeError(f"Context object has no attribute '{name}'")
 
+        # Context extensions inherit ordinary metadata through their prototype.
+        # Python's service cache attributes still go through inject resolution.
+        parent = self.__dict__.get('_parent')
+        while parent is not None:
+            if name in parent.__dict__ and name not in parent.__dict__.get('_services', {}):
+                from dsh.cordis.utils import get_traceable
+                return get_traceable(self, parent.__dict__[name])
+            parent = parent.__dict__.get('_parent')
+
         # 1. Accessor check matching TS def?.type === 'accessor'
         err = RuntimeError(f'cannot get property "{name}" without inject')
         if hasattr(self, "reflect") and self.reflect and hasattr(self.reflect, "props"):
             def_prop = self.reflect.props.get(name)
             if def_prop and getattr(def_prop, "type", None) == "accessor":
                 from dsh.cordis.utils import Symbols
-                receiver = getattr(self, Symbols.receiver, self)
-                return def_prop.get(receiver, err)
+                receiver = getattr(self, Symbols.receiver, None)
+                return def_prop.read(self, receiver, err)
 
         # 2. Strict Dependency Injection Enforcement matching TS Cordis ReflectService.handler:152-167
         # TS reflect.ts:152: if (!ctx.fiber.runtime) return ctx.reflect.get(prop, false)

@@ -36,6 +36,24 @@ class _ServiceExtendedProxy:
         self.__dict__["ctx"] = self.__dict__["_props"].get("ctx", getattr(target, "ctx", None))
         self.__dict__["name"] = getattr(target, "name", "")
 
+    def _associated(self, name: str) -> Any:
+        data = object.__getattribute__(self, '__dict__')
+        if not data.get('_trace_writes'):
+            return None
+        from dsh.cordis.utils import associated_context
+        props = data['_props']
+        target = data['_target']
+        tracker = getattr(target, symbols.tracker, None) or {}
+        return associated_context(data['ctx'], props.get(symbols.caller, data['ctx']), self, tracker, name)
+
+    def __getattribute__(self, name: str) -> Any:
+        if not name.startswith('_') and name not in ('ctx', symbols.original, symbols.caller):
+            associated = object.__getattribute__(self, '_associated')(name)
+            if associated is not None:
+                ctx, key = associated
+                return getattr(ctx, key)
+        return object.__getattribute__(self, name)
+
     def __getattr__(self, name: str) -> Any:
         if name in self.__dict__:
             return self.__dict__[name]
@@ -54,6 +72,11 @@ class _ServiceExtendedProxy:
 
     def __setattr__(self, name: str, value: Any) -> None:
         if self.__dict__.get("_trace_writes") and name in ("ctx", symbols.caller, symbols.original):
+            return
+        associated = self._associated(name)
+        if associated is not None:
+            ctx, key = associated
+            ctx.set(key, value)
             return
         if "_props" in self.__dict__ and name in self.__dict__["_props"]:
             self.__dict__["_props"][name] = value
@@ -106,6 +129,7 @@ class Service:
                 cls_name = cls_name[:-7]
             resolved_name = cls_name
         self.name = resolved_name
+        setattr(self, symbols.tracker, {'associate': resolved_name, 'property': 'ctx'})
 
         check_fn = None
         if hasattr(self, symbols.check) and callable(getattr(self, symbols.check)):

@@ -3,6 +3,7 @@ Reflection and service-resolution layer matching reference/vendor/cordis/src/ref
 """
 
 import asyncio
+import inspect
 import sys
 from typing import Any, Callable, Dict, List, Optional, Set, Tuple, Union
 
@@ -17,12 +18,36 @@ class PropertyType:
 class PropertyAccessor:
     def __init__(
         self,
-        get_fn: Callable[[Any, Exception], Any],
-        set_fn: Optional[Callable[[Any, Any, Exception], bool]] = None,
+        get_fn: Callable[..., Any],
+        set_fn: Optional[Callable[..., bool]] = None,
     ):
         self.type = PropertyType.ACCESSOR
         self.get = get_fn
         self.set = set_fn
+
+    @staticmethod
+    def _accepts(callback: Any, count: int) -> bool:
+        try:
+            parameters = list(inspect.signature(callback).parameters.values())
+        except (TypeError, ValueError):
+            return False
+        return any(p.kind == inspect.Parameter.VAR_POSITIONAL for p in parameters) or sum(
+            p.kind in (inspect.Parameter.POSITIONAL_ONLY, inspect.Parameter.POSITIONAL_OR_KEYWORD)
+            for p in parameters) >= count
+
+    def read(self, ctx: Any, receiver: Any, error: Exception) -> Any:
+        # Python spells the JavaScript hook's `this` explicitly. Existing
+        # two-argument hooks retain their receiver/context spelling.
+        if self._accepts(self.get, 3):
+            return self.get(ctx, receiver, error)
+        return self.get(ctx if receiver is None else receiver, error)
+
+    def write(self, ctx: Any, value: Any, receiver: Any, error: Exception) -> bool:
+        if not self.set:
+            return False
+        if self._accepts(self.set, 4):
+            return self.set(ctx, value, receiver, error)
+        return self.set(ctx if receiver is None else receiver, value, error)
 
 
 class PropertyService:
@@ -127,7 +152,7 @@ class ReflectService:
         def_prop = self.props.get(name)
         if def_prop and getattr(def_prop, "type", None) == PropertyType.ACCESSOR:
             err = KeyError(f"cannot get property '{name}'")
-            return def_prop.get(ctx, err)
+            return def_prop.read(ctx, getattr(ctx, symbols.receiver, None), err)
 
         def _resolve_default():
             # 2. Store implementation check
@@ -193,7 +218,7 @@ class ReflectService:
             if not def_prop.set:
                 return False
             err = RuntimeError(f'cannot set property "{name}"')
-            return def_prop.set(ctx, value, err)
+            return def_prop.write(ctx, value, getattr(ctx, symbols.receiver, None), err)
 
 
         def _do_set():
@@ -380,6 +405,9 @@ class ReflectService:
     def accessor(self, name: str, options: Dict[str, Any]) -> Callable[[], None]:
         """
         Define a computed context property backed by get/set hooks.
+
+        Full hooks receive (context, receiver, error) or
+        (context, value, receiver, error); shorter legacy hooks omit context.
         """
         def setup() -> Callable[[], None]:
             if name in self.props:

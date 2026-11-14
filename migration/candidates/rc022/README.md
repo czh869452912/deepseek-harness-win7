@@ -65,3 +65,5 @@
 2026-11-15：C1-T [Profile 有序层与跳过诊断](profile-layers-checks.json)完成 53 组固定原版/Python 实际文件和 Host 平台对照、36 项原版所选检查。Python profile/初始化/Web/HMR/预检 126 项通过、1 项新增测试错误地要求多行解析诊断只能一行，修正断言后 9 项通过。Bundle patch 字符串及列表均按顺序读取，每个文件的相对模块路径独立锚定；整层失败、平台不符或版本不符记入 skippedBundles，用户 patch 错误仍抛出。仅移除两个固定退役 bundle，保留其它 manifest 字段；launcher 明确报告跳过项并传播根配置写入失败。测试 helper 已收进指定工作区，合成夹具和链接已清理。旧 Python patchReload 字段留到整体重组迁移，不作为新版合同证据。
 
 2026-11-15：C1-U [Profile patch 协调](reconciliation-checks.json)完成 11 组固定原版/Python 实际 boot/reconcile 旅程及 94 项启动/Loader/Include/HMR/预检检查。协调完整 patch 栈，按 entry/Fiber/原始配置身份保留未变化的旧失败警告，拒绝新增/变化失败或显式必需的不活动条目；pending 仅警告且 provider 到达后激活。移除条目虽已离开 Loader，仍等待原 Fiber 清理；成功才发出零参数 config-reload。原版所选协调收敛测试通过，日志/观察保留，合成夹具已清理。完整 recomposeProfile 的代际发布与 launcher watcher 接入仍待后续 C1 工作。
+
+2026-11-15：C1-V [运行时包表构建](runtime-resolution-checks.json)完成 10 组固定原版/Python 实际依赖图/后继表对照和 8 项原版所选构建检查。安装与 profile 依赖采用 BFS 首次解析优先，包含 peers/optional，记录 declarer/version/scope、直接安装名称和外部链接；表不可变，读取不写 fallback，重算重新读取磁盘而不保留合成层。Python 112 项通过、2 项夹具/异常断言错误修正后，17 项补充通过。首次悬空 junction 创建失败的诊断保留，改为先创建自有目标、建立 junction 后移除目标；本批全部合成工作区和链接已清理。运行时路由/发布、完整重组及旧 fallback launcher 替换仍待后续 C1 工作。

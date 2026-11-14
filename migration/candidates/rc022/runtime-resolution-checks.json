@@ -1,0 +1,32 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-15",
+  "unit": "C1-V-PackageGenerationConstruction",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "state": "targeted-passed",
+  "paired": ".goose/out/rc022-resolution-paired-20261115-03/report.json",
+  "observations": 10,
+  "source": {
+    "run": "rc022-resolution-source-20261115-01",
+    "passed": 8,
+    "not_selected": 262
+  },
+  "native": [
+    {
+      "run": "rc022-resolution-native-20261115-01",
+      "passed": 112,
+      "failed": 2,
+      "reason": "Fixture omitted persisted bundle selection on recompute; wrong expected native manifest exception."
+    },
+    {
+      "run": "rc022-resolution-native-20261115-02",
+      "passed": 17,
+      "failed": 0
+    }
+  ],
+  "scope": "Immutable read-only installation and profile package tables, BFS dependencies/peers/optional fields, first-root precedence, local installed names, selected bundle exclusion, external linked roots and recomputation from current disk inputs. Actual junctions include missing targets without needing symlink privilege.",
+  "verification_scope_reason": "Fixed Source/native real graphs and successor tables, original table construction tests and native profile/admission/reconciliation consumers. No table construction writes module fallbacks; recompute uses normal profile loading.",
+  "cleanup": ".goose/out/rc022-resolution-native-20261115-02/cleanup.json",
+  "failures_retained": "Initial dangling-junction fixture creation failed before observation; fixed creation uses a live owned target removed afterward. Original reports/logs kept.",
+  "remaining": "Runtime routing/publication and complete profile recomposition not implemented by this table constructor. Legacy fallback launcher remains until those consumers migrate. No full gate or release acceptance."
+}

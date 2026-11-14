@@ -1070,6 +1070,7 @@ loadProfileDirectory = load_profile_directory
 composeEntries = compose_entries
 healProfilesModuleFallback = heal_profiles_module_fallback
 healProfileModuleFallback = heal_profile_module_fallback
+from dsh.boot.runtime_resolution import ProfileRuntimeResolution, create_runtime_resolution, createRuntimeResolution
 ensureSymlink = ensure_symlink
 ensureProfileSymlink = ensure_profile_symlink
 removeProfileSymlink = remove_profile_symlink

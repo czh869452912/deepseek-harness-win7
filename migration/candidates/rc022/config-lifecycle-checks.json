@@ -1,0 +1,77 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-15",
+  "unit": "C1-B-raw-effective-config",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "state": "targeted-passed",
+  "scope": "Candidate resolution, raw/effective identities, commit ordering, retained and loading updates, stale completion rejection.",
+  "paired": "Unchanged fixed Source/native journeys matched",
+  "native_suites": [
+    {
+      "passed": 58,
+      "failed": 0
+    },
+    {
+      "passed": 98,
+      "failed": 0
+    }
+  ],
+  "remaining": "Service implementation retention/epochs and Loader journal remain separate C1 batches.",
+  "inputs": {
+    ".goose/out/rc022-prep-20261114-01/source/vendor/cordis/src/events.ts": "a464c843822da4eb31a8d998c5e2216a817b8a7dfeacb6e1aab7f830e7320d6b",
+    "dsh/cordis/events.py": "c8821d6084bd4788c28f5c83ebc84e6138eeb94067c192fe0df34f6efeeea1a5",
+    "scripts/oracles/rc022_config.mts": "6839acad67c99ddbebeb71eb746b3927237c605f696bc6875a5551307cde1009",
+    "scripts/rc022_events_probe.py": "e682b910557fea2aec57b6eaee0909252c76b1894b3813dbc98693aa131733da",
+    "dsh/cordis/fiber.py": "3a4ce65f3e08e2661d182ed6d6b0cb70335cd2096a064d256cfc3e61429c145f",
+    "dsh/cordis/loader.py": "99bfc818d70ec5188ef430cd6061fc5a48c020cc5f427317cdc80610f80a0c64",
+    "dsh/cordis/loader_entry.py": "f8bcdc04e9487f8948bf31bcceac53e60e78d0f726c6750ce60521d760bab02d",
+    "scripts/rc022_config_probe.py": "4419aa2ae938e485e6fbe7a11e9fb0422bb08109356db89447bf9dd44a32a22f",
+    ".goose/out/rc022-prep-20261114-01/source/vendor/cordis/src/fiber.ts": "b64c3a97f15f0381479dcf3d25965e56dc4cecfa4a0881fc055a49f65b9945df"
+  },
+  "reports": {
+    ".goose/out/rc022-config-debug-20261115-01/pytest.log": "c38cdc988b625404766187ffc2ac1b4bbc7254d41d4f79b4d3b05ef16aa11a1d",
+    ".goose/out/rc022-config-debug-20261115-01/pytest.xml": "f960b5b10381d404fa5bb250274fcdddcfa28aec39d50bf348348325332d0c63",
+    ".goose/out/rc022-config-native-20261115-01/pytest-command.json": "ecbeea4ad137fce851abbaccdeb09757d94e7c0d6bf7a3b1f2f7be547689b1d8",
+    ".goose/out/rc022-config-native-20261115-01/pytest.log": "3d6285e5fe8d3fe0852dd5b48230e137a9dbe9fa743ded47b425878ef29f9836",
+    ".goose/out/rc022-config-native-20261115-01/pytest.xml": "74f828462520b530e9e030045af8071292a0049c01f1d9e4c0c5a4f4d947a38e",
+    ".goose/out/rc022-config-consumers-20261115-01/pytest-command.json": "7d854e06e10059ecb0a781e344fdb897365135a1a83a6247cec388da3bfe119a",
+    ".goose/out/rc022-config-consumers-20261115-01/pytest-workspace/failed-reports/432b12e4023c0067dbb3ae6641fcc067a8986c55d2009a9e4a631cbe80bcda73.json": "f57f6b6a8e0125491d5d1d215507c6611c022f66c945674a59c8b9119ab8446d",
+    ".goose/out/rc022-config-consumers-20261115-01/pytest-workspace/failed-reports/434b7d6e9397791777feba2826cd1295e5ef9f135daaab19e31bef289dc01e95.json": "8f9e59eff2dbf2b6a0a8aea4a5c99cd9bcc9d290dc17f01627a151c478da722b",
+    ".goose/out/rc022-config-consumers-20261115-01/pytest-workspace/failed-reports/9997c8c5e93f3c83edd9cbc5874ca9eb7dca568c4958ec033262d1d4bb933695.json": "9fb024e49474fcd0d38b90fde3855cfde458a645f56072704b6616a69cc7b809",
+    ".goose/out/rc022-config-consumers-20261115-01/pytest.log": "37f0a2ab51717db2e9256d0b058de8a8dd7e2843e2392861a49fefab2b890d70",
+    ".goose/out/rc022-config-consumers-20261115-01/pytest.xml": "f70e7802d9ed731c766c905f28c49c362f1c892c2c6ff5fc9cd52ea238322525",
+    ".goose/out/rc022-config-consumers-20261115-02/pytest-command.json": "e3de713940d94595747174300a9600ae0f31a74bf16ff2472a2a621e6559f10b",
+    ".goose/out/rc022-config-consumers-20261115-02/pytest.log": "65f5064b91fd90a64ebc0f76b1fbbc7be79e073c81033fd9de238edb33593d52",
+    ".goose/out/rc022-config-consumers-20261115-02/pytest.xml": "2ceec28e532bbe765e939bdbc90930f02d81f7f156949e1c5fe5c747086e6eff",
+    ".goose/out/rc022-config-paired-20261115-01/cleanup.json": "29de5caf4c9d7d956ad1e72159b82b09689e074e4e51ccc673ff79d4a3bac08b",
+    ".goose/out/rc022-config-paired-20261115-01/native.json": "f858119ea10f74165c8ef8a610f0f6909f831d1b1ef160426ff28f279fa76906",
+    ".goose/out/rc022-config-paired-20261115-01/report.json": "9fc3c734de08f7859ada89796adb7a78cbc67ff2ff52861161f206e929dbf9b6",
+    ".goose/out/rc022-config-paired-20261115-01/source.json": "fb3bdb90c53cd33ef11c0f017f0fd88cb999fe224f1011deab3e989e920cbe35",
+    ".goose/out/rc022-config-paired-20261115-01/source.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "cleanup": {
+    "owner": "rc022-config",
+    "removed": [
+      {
+        "path": ".goose/out/rc022-config-consumers-20261115-01/pytest-workspace/test_shipped_bundle_expression0",
+        "bytes": 0
+      },
+      {
+        "path": ".goose/out/rc022-config-consumers-20261115-01/pytest-workspace/test_yaml_js_tag_and_relative_0",
+        "bytes": 590
+      },
+      {
+        "path": ".goose/out/rc022-config-consumers-20261115-02/pytest-workspace/test_shipped_bundle_expression0",
+        "bytes": 0
+      },
+      {
+        "path": ".goose/out/rc022-config-consumers-20261115-02/pytest-workspace/test_yaml_js_tag_and_relative_0",
+        "bytes": 590
+      }
+    ],
+    "retained": [
+      ".goose\\out\\rc022-config-consumers-20261115-01\\pytest-workspace\\failed-reports"
+    ],
+    "processes": "All observer and pytest commands exited; no services started."
+  }
+}

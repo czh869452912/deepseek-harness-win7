@@ -128,8 +128,10 @@ class Fiber:
         self.parent = parent_ctx
         self.plugin = plugin
         self.runtime = runtime
-        self._config = config
         self.config = config
+        self._effective_config = None
+        self._revision = 0
+        self._config_revision = 0
         self.entry: Optional[Any] = None
         if parent_ctx:
             self.entry = getattr(parent_ctx, "entry", None)
@@ -219,7 +221,7 @@ class Fiber:
             self.uid = 0
             self.ctx = parent_ctx
             self.state = FiberState.ACTIVE
-            self.epoch = ""
+            self.epoch = "0"
 
     @property
     def name(self) -> str:
@@ -252,12 +254,26 @@ class Fiber:
         if check_error and self._error is not None:
             raise self._error
 
-    def _resolve_config(self, config: Any) -> Any:
-        """Resolve raw plugin config through internal/config waterfall matching TS."""
-        if self.ctx and hasattr(self.ctx, "waterfall_sync"):
-            config = self.ctx.waterfall_sync("internal/config", config, caller_ctx=self.ctx)
-        target = self.plugin or getattr(self, "_plugin_cls", None) or (self.runtime.callback if self.runtime else None)
-        return resolve_config(target, config, runtime=self.runtime)
+    @property
+    def rawConfig(self):
+        return self.ctx.fiber.config
+
+    @rawConfig.setter
+    def rawConfig(self, config):
+        fiber = self.ctx.fiber
+        fiber.config = config
+        fiber._config_revision += 1
+
+    @property
+    def effectiveConfig(self):
+        return self.ctx.fiber._effective_config
+
+    def resolveConfig(self, config):
+        """Resolve a candidate without publishing raw or effective config."""
+        fiber = self.ctx.fiber
+        return fiber.ctx.waterfall_sync('internal/config', fiber, lambda: config)
+
+    _resolve_config = resolveConfig
 
     def effect(self, execute_or_disposer: Any, label: str = "anonymous", is_disposer: bool = False) -> Callable[[], Any]:
         """
@@ -773,7 +789,7 @@ class Fiber:
         Computes composite epoch hash of all active dependencies (:uid1:uid2)
         and triggers state reload if changed.
         """
-        epoch = ""
+        epoch = str(self._revision)
         for name in self.inject.keys():
             impl = self._store.get(name)
             if not impl:
@@ -788,7 +804,7 @@ class Fiber:
         """Update fiber epoch and trigger reload or unload transition if needed."""
         self._epoch_transition_driven = False
         old_epoch = self.epoch
-        if epoch == old_epoch:
+        if epoch == old_epoch or self._error is not None:
             return
         self.epoch = epoch
         if self.inertia is not None and not self.inertia.done():
@@ -832,7 +848,7 @@ class Fiber:
             sig = inspect.signature(init_fn)
         except (ValueError, TypeError):
             # Uninspectable callable (C extension or builtin): use the upstream call.
-            return (self.ctx, self.config), {}
+            return (self.ctx, self._effective_config), {}
 
         for name, param in sig.parameters.items():
             if name == "self":
@@ -851,21 +867,21 @@ class Fiber:
             if param.name in self._CTX_PARAM_NAMES:
                 kwargs[param.name] = self.ctx
             elif param.name in self._CONFIG_PARAM_NAMES:
-                kwargs[param.name] = self.config
+                kwargs[param.name] = self._effective_config
 
         if has_varargs or len(positionals) >= 2:
-            return (self.ctx, self.config), kwargs
+            return (self.ctx, self._effective_config), kwargs
         if len(positionals) == 1:
             p_name = positionals[0].name
             if p_name in self._CONFIG_PARAM_NAMES:
-                return (self.config,), kwargs
+                return (self._effective_config,), kwargs
             # `new callback(this.ctx, this.config)`: the first positional slot is
             # the context, so an unrecognized single parameter still receives it.
             return (self.ctx,), kwargs
         if has_varkw and not keyword_only:
             # `constructor(...args)`-style rest parameter: JavaScript hands over
             # both values, so a Python `**kwargs` constructor receives them too.
-            return (), {"ctx": self.ctx, "config": self.config}
+            return (), {"ctx": self.ctx, "config": self._effective_config}
         return (), kwargs
 
     def _instantiate_plugin(self) -> Any:
@@ -885,7 +901,7 @@ class Fiber:
         if issubclass(cls, Plugin) and parameters and parameters[0].name == "config":
             # The Python Plugin adapter accepts config followed by optional
             # legacy overrides; service/ordinary class constructors use ctx/config.
-            inst = cls(config=self.config)
+            inst = cls(config=self._effective_config)
         else:
             args, kwargs = self._constructor_arguments(init_fn)
             inst = cls(*args, **kwargs)
@@ -953,12 +969,12 @@ class Fiber:
             self._unload()
             return
         try:
-            self.config = self._resolve_config(self._config)
+            self._effective_config = self.resolveConfig(self.config)
             if getattr(self, "_plugin_cls", None) is not None:
                 self.plugin = self._instantiate_plugin()
 
-            if hasattr(self.plugin, "config") and self.config is not None:
-                self.plugin.config = self.config
+            if hasattr(self.plugin, "config") and self._effective_config is not None:
+                self.plugin.config = self._effective_config
             if hasattr(self.plugin, "ctx"):
                 from dsh.cordis.loader import EntryTree
                 if not isinstance(self.plugin, EntryTree):
@@ -998,8 +1014,9 @@ class Fiber:
                             self._error = None
                             self.set_state(FiberState.ACTIVE)
                         except Exception as e:
-                            self._error = e
-                            self.epoch = INACTIVE_EPOCH
+                            if self.epoch == epoch:
+                                self._error = e
+                                self.epoch = INACTIVE_EPOCH
                             if self.ctx and hasattr(self.ctx, "logger"):
                                 self.ctx.logger("fiber").error("Exception during async init in fiber '%s': %s", self.name, e)
                             self.set_state(FiberState.UNLOADING)
@@ -1025,8 +1042,9 @@ class Fiber:
                             self._error = None
                             self.set_state(FiberState.ACTIVE)
                         except Exception as e:
-                            self._error = e
-                            self.epoch = INACTIVE_EPOCH
+                            if self.epoch == epoch:
+                                self._error = e
+                                self.epoch = INACTIVE_EPOCH
                             if self.ctx and hasattr(self.ctx, "logger"):
                                 self.ctx.logger("fiber").error("Exception during coro init in fiber '%s': %s", self.name, e)
                             self.set_state(FiberState.UNLOADING)
@@ -1051,7 +1069,7 @@ class Fiber:
                     pass
                 if call_single:
                     return fn(self.ctx)
-                return fn(self.ctx, self.config)
+                return fn(self.ctx, self._effective_config)
 
             res = None
             from dsh.cordis.service import Service
@@ -1091,8 +1109,9 @@ class Fiber:
                             self._error = None
                             self.set_state(FiberState.ACTIVE)
                         except Exception as e:
-                            self._error = e
-                            self.epoch = INACTIVE_EPOCH
+                            if self.epoch == epoch:
+                                self._error = e
+                                self.epoch = INACTIVE_EPOCH
                             if self.ctx and hasattr(self.ctx, "logger"):
                                 self.ctx.logger("fiber").error("Exception during async apply in fiber '%s': %s", self.name, e)
                             else:
@@ -1147,8 +1166,9 @@ class Fiber:
                             self._error = None
                             self.set_state(FiberState.ACTIVE)
                         except Exception as e:
-                            self._error = e
-                            self.epoch = INACTIVE_EPOCH
+                            if self.epoch == epoch:
+                                self._error = e
+                                self.epoch = INACTIVE_EPOCH
                             if self.ctx and hasattr(self.ctx, "logger"):
                                 self.ctx.logger("fiber").error("Exception consuming async apply in fiber '%s': %s", self.name, e)
                             else:
@@ -1165,8 +1185,8 @@ class Fiber:
                 elif res is not None:
                     raise TypeError("Invalid effect")
 
-            self._error = None
-            self.set_state(FiberState.ACTIVE)
+            if self.epoch == epoch:
+                self.set_state(FiberState.ACTIVE)
         except Exception as e:
             # fiber.ts `_reload` records the failure and invalidates the epoch,
             # then derives the state transition: the epoch is INACTIVE, so the
@@ -1174,8 +1194,9 @@ class Fiber:
             # before the failure, and only its final `_getState()` publishes
             # FAILED. Publishing FAILED here would emit a state the reference
             # never reaches.
-            self._error = e
-            self.epoch = INACTIVE_EPOCH
+            if self.epoch == epoch:
+                self._error = e
+                self.epoch = INACTIVE_EPOCH
             if self.ctx and hasattr(self.ctx, "logger"):
                 self.ctx.logger("fiber").error("Exception during apply in fiber '%s': %s", self.name, e)
             else:
@@ -1524,45 +1545,57 @@ class Fiber:
             pass
 
     def update(self, config: Any, no_save: bool = False) -> Any:
-        """
-        Validate and apply new config, then restart the plugin via internal/update waterfall.
-        Matching TS Fiber.update(config, noSave).
-        """
-        self.assert_active(check_error=False)
-        self._config = config
-        if self.state != FiberState.ACTIVE:
-            self._error = None
-            self.set_epoch(INACTIVE_EPOCH)
-            self._refresh()
+        """Resolve, commit raw input, then apply or restart the current owner."""
+        fiber = self.ctx.fiber
+        fiber.assert_active()
+        loaded = fiber.epoch != INACTIVE_EPOCH
+        resolved = fiber.resolveConfig(config) if loaded else None
+        if not no_save:
+            fiber.ctx.emit('internal/commit', fiber, config)
+        fiber.config = config
+        fiber._error = None
+        fiber._config_revision += 1
+        revision, epoch, committed = fiber._config_revision, fiber.epoch, fiber.store
+        restarted = False
+
+        def restart():
+            nonlocal restarted
+            restarted = True
+            return fiber.restart()
+
+        def publish():
+            if (not restarted and fiber.uid is not None and fiber._config_revision == revision
+                    and fiber.epoch == epoch and fiber.store is committed):
+                fiber._effective_config = resolved
+
+        result = fiber.ctx.waterfall_sync('internal/update', resolved, restart) if loaded else restart()
+        if result is None:
+            publish()
             return None
 
-        resolved_config = self._resolve_config(config)
+        async def settle():
+            if inspect.isawaitable(result):
+                await result
+            publish()
 
-        def _do_update(cfg=resolved_config):
-            self.config = cfg
-            self._error = None
-            return self.restart()
-
-        if hasattr(self.ctx, "waterfall"):
-            try:
-                loop = asyncio.get_running_loop()
-                return loop.create_task(self.ctx.waterfall("internal/update", resolved_config, no_save, _do_update, caller_ctx=self.ctx))
-            except RuntimeError:
-                result = self.ctx.waterfall_sync("internal/update", resolved_config, no_save, _do_update, caller_ctx=self.ctx)
-                if inspect.isawaitable(result):
-                    return run_async_setup_sync(result)
-                return result
-        return _do_update()
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            return asyncio.run(settle())
+        task = loop.create_task(settle())
+        task.add_done_callback(lambda job: None if job.cancelled() else job.exception())
+        return task
 
     def restart(self) -> Any:
         """Dispose and immediately reload this plugin matching TS fiber.restart()."""
-        self.assert_active()
-        self.set_epoch(INACTIVE_EPOCH)
-        self._refresh()
+        fiber = self.ctx.fiber
+        fiber.assert_active()
+        fiber._revision += 1
+        fiber._refresh()
 
         async def _do_restart() -> "Fiber":
-            await self.await_settled()
-            return self
+            await fiber.await_settled()
+            return fiber
 
         try:
             loop = asyncio.get_running_loop()

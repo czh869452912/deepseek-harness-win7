@@ -108,12 +108,12 @@ def test_internal_get_middleware_can_replace_a_missing_service() -> None:
     assert seen[0][3] is True
 
 
-def test_internal_config_runs_during_activation_with_config_then_next() -> None:
+def test_internal_config_runs_during_activation_with_fiber_then_next() -> None:
     ctx = Context()
     calls: List[Any] = []
 
-    def hook(config: Dict[str, Any], next_fn: Any) -> Dict[str, Any]:
-        calls.append((config, callable(next_fn)))
+    def hook(target: Any, next_fn: Any) -> Dict[str, Any]:
+        calls.append((target, callable(next_fn)))
         resolved = dict(next_fn())
         resolved["interpolated"] = True
         return resolved
@@ -125,8 +125,9 @@ def test_internal_config_runs_during_activation_with_config_then_next() -> None:
 
     fiber = ctx.registry.plugin(ConfigPlugin, config={"raw": True})
 
-    assert calls == [({"raw": True}, True)]
-    assert fiber.config == {"raw": True, "interpolated": True}
+    assert calls == [(fiber.ctx.fiber, True)]
+    assert fiber.config == {"raw": True}
+    assert fiber.effectiveConfig == {"raw": True, "interpolated": True}
 
 
 def test_internal_update_and_loader_hooks_receive_upstream_positions() -> None:
@@ -139,15 +140,15 @@ def test_internal_update_and_loader_hooks_receive_upstream_positions() -> None:
 
     fiber = ctx.registry.plugin(UpdatePlugin, config={"version": 1})
 
-    def hook(config: Dict[str, Any], no_save: bool, next_fn: Any) -> Any:
-        seen.append((config, no_save, callable(next_fn)))
+    def hook(config: Dict[str, Any], next_fn: Any) -> Any:
+        seen.append((config, callable(next_fn)))
         return next_fn()
 
     fiber.ctx.on("internal/update", hook)
 
     fiber.update({"version": 2}, no_save=True)
 
-    assert seen == [({"version": 2}, True, True)]
+    assert seen == [({"version": 2}, True)]
     assert fiber.config == {"version": 2}
 
 

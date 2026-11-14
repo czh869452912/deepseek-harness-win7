@@ -76,26 +76,14 @@ class _EntryRuntimePlugin(Plugin):
         self.name = getattr(plugin, "name", None) or getattr(plugin, "__name__", "loaded-plugin")
 
     def apply(self, ctx: Any) -> Any:
-        def resolve_config(config: Any, next_fn: Any) -> Any:
+        def resolve_config(fiber: Any, next_fn: Any) -> Any:
             value = next_fn()
-            if self.entry.options.get("group"):
+            if fiber is not ctx.fiber or self.entry.options.get("group"):
                 return value
             return self.entry.loader.interpolate(ctx, value)
 
-        async def persist_update(config: Any, no_save: bool, next_fn: Any) -> Any:
-            result = next_fn()
-            if inspect.isawaitable(result):
-                result = await result
-            if not no_save:
-                self.entry.options["config"] = config
-                write_result = self.entry.parent.tree.write()
-                if inspect.isawaitable(write_result):
-                    await write_result
-            return result
-
         ctx.on("internal/config", resolve_config)
-        ctx.on("internal/update", persist_update, prepend=True)
-        runtime_config = getattr(ctx.fiber, "config", self.raw_config)
+        runtime_config = ctx.fiber.effectiveConfig
         if getattr(self.plugin, "_cordis_entry_group", False):
             if isinstance(runtime_config, list):
                 self.plugin.rows = runtime_config

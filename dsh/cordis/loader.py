@@ -2015,7 +2015,7 @@ class Group(EntryGroup):
             entry.subgroup = self
         self.config = config or []
 
-        async def _on_group_update(cfg: Any, no_save: bool = False, next_fn: Optional[Callable[[], Any]] = None, *args: Any, **kwargs: Any) -> Any:
+        async def _on_group_update(cfg: Any, next_fn: Optional[Callable[[], Any]] = None, *args: Any, **kwargs: Any) -> Any:
             res = self.update(cfg)
             if inspect.isawaitable(res):
                 await res
@@ -2530,7 +2530,7 @@ class Loader(EntryTree, Service):
 
         if self.ctx:
             self.ctx.on("internal/config", self._on_internal_config, global_listener=True)
-            self.ctx.on("internal/update", self._on_internal_update, global_listener=True, prepend=True)
+            self.ctx.on("internal/commit", self._on_internal_commit)
             self.ctx.on("internal/update", self._on_internal_update_log, global_listener=True)
 
             def _on_entry_init(entry: Entry) -> None:
@@ -2766,15 +2766,14 @@ class Loader(EntryTree, Service):
         if logger_ctx and hasattr(logger_ctx, "logger"):
             logger_ctx.logger("loader").info("%s plugin %s", action_type, entry_name)
 
-    def _on_internal_update_log(self, config: Any, no_save: bool = False, *args: Any, **kwargs: Any) -> Any:
-        target_ctx = kwargs.get("caller_ctx") or (args[0] if args and hasattr(args[0], "fiber") else None)
+    def _on_internal_update_log(self, config: Any, next_fn: Any, **kwargs: Any) -> Any:
+        target_ctx = kwargs.get("caller_ctx")
         fiber = getattr(target_ctx, "fiber", None) if target_ctx else None
-        next_fn = args[-1] if args and callable(args[-1]) else (lambda c=config: c)
         if fiber and getattr(fiber, "entry", None):
             parent_fiber = getattr(getattr(fiber, "parent", None), "fiber", None)
             if not parent_fiber or getattr(parent_fiber, "entry", None) != fiber.entry:
                 self.show_log(fiber.entry, "reload")
-        return next_fn(config) if callable(next_fn) else config
+        return next_fn()
 
     def locate(self, fiber: Any = None) -> Optional[str]:
         """Return the loader entry id owning the given fiber matching TS Loader.locate."""
@@ -2795,12 +2794,8 @@ class Loader(EntryTree, Service):
 
     entries = EntriesDescriptor()
 
-    def _on_internal_config(self, config: Any, *args: Any, **kwargs: Any) -> Any:
-        target_ctx = kwargs.get("caller_ctx") or (args[0] if args and hasattr(args[0], "fiber") else None)
-        fiber = getattr(target_ctx, "fiber", None) if target_ctx else None
-
-        next_fn = args[-1] if args and callable(args[-1]) else (lambda c=config: c)
-        resolved = next_fn(config) if callable(next_fn) else config
+    def _on_internal_config(self, fiber: Any, next_fn: Any, **kwargs: Any) -> Any:
+        resolved = next_fn()
 
         if not fiber or not getattr(fiber, "entry", None):
             return resolved
@@ -2813,18 +2808,12 @@ class Loader(EntryTree, Service):
         if getattr(plugin, EntryGroup.key, False):
             return resolved
 
-        eval_ctx = target_ctx or (fiber.ctx if fiber and hasattr(fiber, "ctx") else (self.ctx.root if hasattr(self.ctx, "root") else self.ctx))
+        eval_ctx = fiber.ctx
         return interpolate(eval_ctx, resolved)
 
-    def _on_internal_update(self, config: Any, no_save: bool = False, *args: Any, **kwargs: Any) -> Any:
-        target_ctx = kwargs.get("caller_ctx") or (args[0] if args and hasattr(args[0], "fiber") else None)
-        fiber = getattr(target_ctx, "fiber", None) if target_ctx else None
-
-        next_fn = args[-1] if args and callable(args[-1]) else (lambda c=config: c)
-        res = next_fn(config) if callable(next_fn) else config
-
+    def _on_internal_commit(self, fiber: Any, config: Any) -> Any:
         def _do_save():
-            if fiber and getattr(fiber, "entry", None) and not no_save:
+            if fiber and getattr(fiber, "entry", None):
                 parent_fiber = getattr(getattr(fiber, "parent", None), "fiber", None)
                 if not parent_fiber or getattr(parent_fiber, "entry", None) != fiber.entry:
                     entry = fiber.entry
@@ -2837,15 +2826,7 @@ class Loader(EntryTree, Service):
                     if entry.parent and hasattr(entry.parent, "tree") and hasattr(entry.parent.tree, "write"):
                         entry.parent.tree.write()
 
-        if inspect.isawaitable(res):
-            async def _await_and_save():
-                val = await res
-                _do_save()
-                return val
-            return _await_and_save()
-        else:
-            _do_save()
-            return res
+        _do_save()
 
     def register_plugin_class(self, name_or_id: str, plugin_cls: Any) -> None:
         """

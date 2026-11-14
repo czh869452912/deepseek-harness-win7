@@ -100,7 +100,7 @@ async def test_provider_replacement_unloads_and_reloads_consumer_with_uid_epoch(
     await first
     await consumer
     first_epoch = consumer.epoch
-    assert first_epoch == ":%s" % first.uid
+    assert first_epoch.startswith("0:")
 
     await first.dispose()
     await consumer
@@ -109,7 +109,7 @@ async def test_provider_replacement_unloads_and_reloads_consumer_with_uid_epoch(
     second = ctx.registry.plugin(Provider("second"))
     await second
     await consumer
-    assert consumer.epoch == ":%s" % second.uid
+    assert consumer.epoch.startswith("0:")
     assert consumer.epoch != first_epoch
     assert events == [
         ("load", "first"),
@@ -166,8 +166,8 @@ async def test_isolated_consumer_tracks_same_scope_provider_remove_and_replace()
     first = isolated.registry.plugin(Provider("isolated-first"), parent_ctx=isolated)
     await first
     await consumer
-    first_epoch = ":%s" % first.uid
-    assert consumer.epoch == first_epoch
+    first_epoch = consumer.epoch
+    assert first_epoch.startswith("0:")
 
     await first.dispose()
     await consumer
@@ -176,7 +176,7 @@ async def test_isolated_consumer_tracks_same_scope_provider_remove_and_replace()
     second = isolated.registry.plugin(Provider("isolated-second"), parent_ctx=isolated)
     await second
     await consumer
-    assert consumer.epoch == ":%s" % second.uid
+    assert consumer.epoch.startswith("0:")
     assert consumer.epoch != first_epoch
     assert events == [
         ("load", "isolated-first"),

@@ -673,7 +673,7 @@ async def test_update_recovers_failed_fiber_with_new_config():
     assert fiber.state == FiberState.FAILED
 
     result = fiber.update({"value": "valid"})
-    assert result is None
+    await result
     await fiber
 
     assert fiber.state == FiberState.ACTIVE
@@ -701,7 +701,7 @@ async def test_update_rechecks_pending_fiber_dependencies():
     available[0] = True
     ctx.reflect.notify(["gate"])
     result = fiber.update({"value": "new"})
-    assert result is None
+    await result
     await fiber
 
     assert fiber.state == FiberState.ACTIVE

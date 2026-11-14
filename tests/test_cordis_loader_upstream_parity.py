@@ -535,7 +535,7 @@ async def test_nested_group_data_is_owner_config_and_persists_child_mutations():
 
 
 @pytest.mark.asyncio
-async def test_runtime_update_persists_only_after_restart_succeeds():
+async def test_runtime_update_commits_raw_config_before_restart_failure():
     loader = RecordingLoader(Context())
 
     def apply(_ctx, config):
@@ -554,8 +554,8 @@ async def test_runtime_update_persists_only_after_restart_succeeds():
             await update
         await entry.fiber
 
-    assert entry.options["config"] == {"fail": False}
-    assert loader.writes == []
+    assert entry.options["config"] == {"fail": True}
+    assert loader.writes[-1][0]["config"] == {"fail": True}
 
 
 def test_shipped_bundle_expression_matrix(monkeypatch, tmp_path):

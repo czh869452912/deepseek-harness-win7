@@ -323,40 +323,37 @@ class EventBus:
 
         self.on("internal/listener", _on_internal_listener, global_listener=True)
 
-        def _on_internal_update(config: Any, no_save: bool = False, *args: Any, **kwargs: Any) -> Any:
-            target_ctx = kwargs.get("caller_ctx") or self.ctx
-            fiber = getattr(target_ctx, "fiber", None) if target_ctx else None
-            cbs = list(getattr(fiber, "_hooks", {}).get("internal/update", [])) if fiber else []
+        def _on_internal_update(config, next_fn, *, caller_ctx=None):
+            target = caller_ctx or self.ctx
+            fiber = getattr(target, 'fiber', None)
+            callbacks = list(getattr(fiber, '_hooks', {}).get('internal/update', [])) if fiber else []
 
-            next_callback = args[-1] if args and callable(args[-1]) else None
+            def delegate():
+                if not callbacks:
+                    return next_fn()
+                callback = callbacks.pop(0)
+                try:
+                    parameters = list(inspect.signature(callback).parameters.values())
+                except (ValueError, TypeError):
+                    return callback(config, delegate)
+                variadic = any(item.kind == inspect.Parameter.VAR_POSITIONAL for item in parameters)
+                count = sum(item.kind in (inspect.Parameter.POSITIONAL_ONLY, inspect.Parameter.POSITIONAL_OR_KEYWORD)
+                            for item in parameters)
+                return callback(*((config, delegate) if variadic else (config, delegate)[:count]))
 
-            def _next(cfg=config, ns=no_save):
-                if cbs:
-                    cb = cbs.pop(0)
-                    return cb(cfg, ns, _next)
-                elif next_callback and callable(next_callback):
-                    try:
-                        sig = inspect.signature(next_callback)
-                        params = list(sig.parameters.values())
-                        has_var = any(p.kind == inspect.Parameter.VAR_POSITIONAL for p in params)
-                        if has_var or len(params) >= 3:
-                            return next_callback(cfg, ns, _next)
-                        elif len(params) == 2:
-                            return next_callback(cfg, ns)
-                        elif len(params) == 1:
-                            return next_callback(cfg)
-                        else:
-                            return next_callback()
-                    except (ValueError, TypeError):
-                        try:
-                            return next_callback(cfg, ns, _next)
-                        except TypeError:
-                            return next_callback(cfg)
-                return cfg
+            return delegate()
 
-            return _next()
+        self.on('internal/update', _on_internal_update, global_listener=True, prepend=True)
 
-        self.on("internal/update", _on_internal_update, global_listener=True, prepend=True)
+        def _on_internal_config(fiber, next_fn):
+            value = next_fn()
+            if fiber.runtime is None:
+                return value
+            from dsh.cordis.fiber import resolve_config
+            target = fiber.plugin or getattr(fiber, '_plugin_cls', None) or fiber.runtime.callback
+            return resolve_config(target, value, runtime=fiber.runtime)
+
+        self.on('internal/config', _on_internal_config)
 
     def on(
         self,

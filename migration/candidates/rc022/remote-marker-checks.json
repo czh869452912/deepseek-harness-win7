@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-15",
+  "unit": "C7-B-RemoteResourceMarkers",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "state": "targeted-passed",
+  "paired": ".goose/out/rc022-remote-markers-paired-2-20261115-01/comparison/report.json",
+  "observations": 19,
+  "native": {
+    "run": "rc022-remote-markers-native-20261115-01",
+    "passed": 48,
+    "failed": 0
+  },
+  "source": {
+    "run": "rc022-remote-markers-source-20261115-01",
+    "passed": 27,
+    "failed": 0
+  },
+  "verification_scope_reason": "Remote and RemoteScope options/resources, copied immutable reader records, naming/stream declarations, invalid options, inheritance, snapshot isolation and owner/non-owner principal extraction. Native regressions exercise actual dispatcher and existing subagent Remote controls.",
+  "activation_boundary": "Shared markers support resource declarations. No candidate target-control or preset-select Remote is enabled until actual Gateway resource authorization is integrated.",
+  "cleanup": ".goose/out/rc022-remote-markers-source-20261115-01/cleanup.json",
+  "retained_assets": "Commands/results and failed Source observation retained; synthetic pytest workspace removed. Shared Source/toolchain retained through C9."
+}

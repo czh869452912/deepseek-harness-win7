@@ -1,5 +1,4 @@
 """Explicit Remote method markers and service binding, without reflection stubs."""
-import copy
 import weakref
 from types import MappingProxyType
 
@@ -55,7 +54,7 @@ class TypertRemoteService(Service):
         self.typertRemote = bind_typert_remote(self, self.name, options)
 
 
-def _decorate(method, invocation, mode=None, export=None):
+def _decorate(method, invocation, mode=None, export=None, resources=None):
     if not callable(method) or method.__name__.startswith("_"):
         raise TypeError("Remote decorators require public instance methods")
     if export is not None:
@@ -67,26 +66,47 @@ def _decorate(method, invocation, mode=None, export=None):
         marker["mode"] = mode
     if export is not None and export != method.__name__:
         marker["exportName"] = export
+    if resources is not None:
+        marker['resources'] = resources
     previous = _markers.get(method)
-    if previous is not None and previous != marker:
+    if previous is not None and (previous != marker or previous.get('resources') is not resources):
         raise ValueError("Remote method has conflicting invocation markers")
     _markers[method] = marker
     return method
 
 
+def _options(option, scoped=False):
+    requirement = 'RemoteScope options require name or resources' if scoped else 'Remote options require name, mode: "stream", or resources'
+    accepted = {'name', 'resources'} if scoped else {'name', 'mode', 'resources'}
+    if not isinstance(option, dict) or not option or set(option) - accepted or 'mode' in option and option['mode'] != 'stream':
+        raise TypeError('typert-protocol: ' + requirement)
+    resources = None
+    if 'resources' in option:
+        source = option['resources']
+        if not isinstance(source, dict):
+            raise TypeError('typert-protocol: Remote resources require at least one reader')
+        readers = {}
+        for kind, reader in source.items():
+            if not callable(reader):
+                raise TypeError('typert-protocol: Remote resource reader "%s" must be a function' % kind)
+            readers[kind] = reader
+        if not readers:
+            raise TypeError('typert-protocol: Remote resources require at least one reader')
+        resources = MappingProxyType(readers)
+    return option.get('mode'), option.get('name'), resources
+
+
 def Remote(option=None):
     if callable(option):
         return _decorate(option, {"kind": "direct"})
-    def decorate(method):
-        return _decorate(method, {"kind": "direct"},
-                         option.get("mode") if isinstance(option, dict) else None,
-                         option if isinstance(option, str) else None)
-    return decorate
+    mode, export, resources = _options(option) if option is not None and not isinstance(option, str) else (None, option, None)
+    return lambda method: _decorate(method, {"kind": "direct"}, mode, export, resources)
 
 
 def RemoteScope(context, export=None):
     wire_name("Scope key", context)
-    return lambda method: _decorate(method, {"kind": "context", "context": context}, export=export)
+    mode, export, resources = _options(export, True) if isinstance(export, dict) else (None, export, None)
+    return lambda method: _decorate(method, {"kind": "context", "context": context}, export=export, resources=resources)
 
 
 def remote_methods(service):
@@ -99,7 +119,7 @@ def remote_methods(service):
                 if previous is not None and previous != marker:
                     raise ValueError("Remote method has conflicting inherited markers")
                 found[name] = marker
-    return [dict(copy.deepcopy(marker), method=name) for name, marker in found.items()]
+    return [dict(marker, invocation=dict(marker['invocation']), method=name) for name, marker in found.items()]
 
 
 bindTypertRemote = bind_typert_remote

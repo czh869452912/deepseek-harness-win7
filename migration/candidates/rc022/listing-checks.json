@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-15",
+  "unit": "C3-E-SharedBoundedListing",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "state": "targeted-passed",
+  "paired": ".goose/out/rc022-listing-paired-20261115-01/report.json",
+  "observations": 28,
+  "native": {"run": "rc022-listing-native-20261115-01", "passed": 382, "failed": 0},
+  "additional_consumers": {"run": "rc022-listing-consumers-20261115-01", "passed": 3, "failed": 0},
+  "source": {"run": "rc022-listing-source-20261115-01", "passed": 5, "failed": 0, "unselected": 184},
+  "verification_scope_reason": "One backend-owned limiter bounds root/project/session scans, header reads, corpus revision stats and list snapshots across simultaneous requests. Scheduled tasks settle before ordered failure selection; an earlier directory error takes priority over a later project-listing failure. Configuration follows the positive-integer default of three. Paired observations cover limits one/two/three and injected failures in different traversal positions. Native real-file consumers concurrently list/read corpus/artifacts and verify the combined bound; cancellation after the final stat rejects with the original reason. Existing V4 migrations, V3 framing/metadata/recovery and handle consumers pass.",
+  "cleanup": ".goose/out/rc022-listing-native-20261115-01/cleanup.json",
+  "cleanup_bytes": 42921,
+  "remaining": "Persistence service ownership and asynchronous Session/projection/Agent consumers, coordinated production switch and full release qualification. Unselected Source cases are not claimed as passing."
+}

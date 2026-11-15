@@ -52,9 +52,11 @@ class CurrentJsonlSessionPersistence(JsonlStore):
     """Handle-based service; shared base supplies only durable file primitives."""
     name = 'session-persistence-jsonl'
 
-    def __init__(self, root, compression='zstd', ctx=None, format_version=3):
+    def __init__(self, root, compression='zstd', ctx=None, format_version=3, list_concurrency=3):
         super().__init__(root, compression, pack_chunks=False)
         self.ctx = ctx
+        self.list_concurrency = int(Schema.natural().min(1)(list_concurrency))
+        self._list_limit = None
         self.format_version, self.catalog = format_version, sessionFormatCatalog
         if format_version == 4:
             from dsh.session.format_catalog import candidateSessionFormatCatalog
@@ -101,8 +103,63 @@ class CurrentJsonlSessionPersistence(JsonlStore):
 
     async def ensureRootEncoding(self):
         if self._encoding_task is None:
-            self._encoding_task = asyncio.create_task(self._run(self._ensure_encoding))
+            self._encoding_task = asyncio.create_task(self._check_root_encoding() if self.format_version == 4 else self._run(self._ensure_encoding))
         await asyncio.shield(self._encoding_task)
+
+    async def _check_root_encoding(self):
+        async def check(directory):
+            path = await self._run(self._opposite_generation,directory)
+            if path is not None:
+                raise self._encoding_error(path)
+        await self.mapSessionDirectories(check)
+
+    async def _limited(self, task, item):
+        if self._list_limit is None:
+            self._list_limit = asyncio.Semaphore(self.list_concurrency)
+        async with self._list_limit:
+            return await task(item)
+
+    async def _settle_limited(self, items, task):
+        async def settle(item):
+            try:
+                return True, await self._limited(task,item)
+            except Exception as error:
+                return False, error
+        return await asyncio.gather(*(settle(item) for item in items))
+
+    @staticmethod
+    def _settled_values(outcomes):
+        values = []
+        for success, value in outcomes:
+            if not success:
+                raise value
+            values.append(value)
+        return values
+
+    async def mapSessionDirectories(self, task, signal=None):
+        """Settle bounded reads, then report the first sequential failure."""
+        async def projects(_):
+            throw_aborted(signal)
+            result = await self._run(self._projects)
+            throw_aborted(signal)
+            return result
+        async def sessions(project):
+            throw_aborted(signal)
+            result = await self._run(self._sessions,project)
+            throw_aborted(signal)
+            return result
+        project_dirs = await self._limited(projects,None)
+        outcomes = await self._settle_limited(project_dirs,sessions)
+        directories, project_failure = [], None
+        for success, value in outcomes:
+            if not success:
+                project_failure = value
+                break
+            directories.extend(value)
+        values = self._settled_values(await self._settle_limited(directories,task))
+        if project_failure is not None:
+            raise project_failure
+        return values
 
     def _resolve_generation(self, directory):
         try:
@@ -299,13 +356,24 @@ class CurrentJsonlSessionPersistence(JsonlStore):
         pending = list(self.tracker.pendingEntries())
         artifacts = await self.listArtifacts(signal)
         corpus = await self.historicalCorpusRevision(signal) if any(item['sourceVersion'] < self.format_version for item in artifacts) else None
-        snapshots, ids = [], set()
-        for artifact in artifacts:
+        async def stat_artifact(artifact):
             throw_aborted(signal)
             try:
                 identity = await self._physical_identity(artifact['path'])
+                throw_aborted(signal)
+                return artifact, identity
             except FileNotFoundError:
+                throw_aborted(signal)
+                return None
+            except Exception:
+                throw_aborted(signal)
+                raise
+        statted = self._settled_values(await self._settle_limited(artifacts,stat_artifact))
+        snapshots, ids = [], set()
+        for entry in statted:
+            if entry is None:
                 continue
+            artifact, identity = entry
             ids.add(artifact['header']['id'])
             token = revision(identity)
             snapshots.append(dict(header=artifact['header'],formatStatus=artifact['formatStatus'],
@@ -557,13 +625,21 @@ class CurrentJsonlSessionPersistence(JsonlStore):
         """Read selected physical memberships without preparing any child body."""
         throw_aborted(signal)
         await self.ensureRootEncoding()
-        artifacts, ids = [], set()
-        for selected in await self.listGenerations(signal):
+        throw_aborted(signal)
+        generations = await self.listGenerations(signal)
+        async def read_header(selected):
             throw_aborted(signal)
             try:
                 header = await self.readGenerationHeader(selected,None,signal)
             except (SessionFormatUnsupportedError,SessionPersistenceCorruptionError):
-                continue
+                header = None
+            return selected, header
+        headers = await self._settle_limited(generations,read_header)
+        artifacts, ids = [], set()
+        for success, value in headers:
+            if not success:
+                raise value
+            selected, header = value
             if header is None:
                 continue
             if header['id'] in ids:
@@ -575,24 +651,23 @@ class CurrentJsonlSessionPersistence(JsonlStore):
         return artifacts
 
     async def listGenerations(self, signal=None):
-        selected = []
-        for project in await self._run(self._projects):
-            for directory in await self._run(self._sessions,project):
-                throw_aborted(signal)
-                value = await self._run(self._resolve_generation,directory)
-                if value is not None:
-                    selected.append(value)
-        return selected
+        async def select(directory):
+            throw_aborted(signal)
+            return await self._run(self._resolve_generation,directory)
+        return [value for value in await self.mapSessionDirectories(select,signal) if value is not None]
 
     async def historicalCorpusRevision(self, signal=None):
         paths = sorted(item['sourcePath'] for item in await self.listGenerations(signal))
-        digest = hashlib.sha256()
-        for path in paths:
+        async def stat_path(path):
             throw_aborted(signal)
             try:
                 token = revision(await self._physical_identity(path))
             except FileNotFoundError:
                 token = 'missing'
+            return path, token
+        entries = self._settled_values(await self._settle_limited(paths,stat_path))
+        digest = hashlib.sha256()
+        for path, token in entries:
             digest.update(stringify_json([path,token]).encode('utf-8'))
         throw_aborted(signal)
         return digest.hexdigest()
@@ -758,9 +833,11 @@ class CurrentJsonlSessionPersistencePlugin(Plugin):
     id = 'session-persistence-jsonl'
     name = '@deepseek-ai/dsh-session-persistence-jsonl'
     Config = Schema.object({'root':Schema.string().required(),
-                            'compression':Schema.union(['zstd','none']).default('zstd')})
+                            'compression':Schema.union(['zstd','none']).default('zstd'),
+                            'listConcurrency':Schema.natural().min(1).default(3)})
 
     def apply(self, ctx):
-        persistence = CurrentJsonlSessionPersistence(self.config['root'],self.config.get('compression','zstd'),ctx)
+        persistence = CurrentJsonlSessionPersistence(self.config['root'],self.config.get('compression','zstd'),ctx,
+            list_concurrency=self.config.get('listConcurrency',3))
         ctx.set_service('sessionPersistence',persistence)
         ctx.set_service('session_persistence',persistence)

@@ -184,7 +184,7 @@ class SessionHistoryReads:
             if through_seq > observation.cursor:
                 raise RemoteError('gateway/internal', 'Session history no longer covers the wait cursor', {})
             records = []
-            for index in range(through_seq, after_seq, -1):
+            for index in range(int(through_seq), int(after_seq), -1):
                 event = observation.events[index]
                 if event['type'] != 'assistant/message' or event.get('surfaceOp') != 'append':
                     continue

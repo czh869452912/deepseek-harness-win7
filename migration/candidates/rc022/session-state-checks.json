@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-16",
+  "unit": "C7-AD-PassiveSessionStateWait",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "state": "targeted-passed",
+  "paired": ".goose/out/rc022-session-state-paired-2-20261116-01/comparison/report.json",
+  "observations": 20,
+  "native": {"run": "rc022-session-state-native-3-20261116-01", "passed": 47, "failed": 0},
+  "source": {"run": "rc022-session-state-source-20261116-01", "passed": 49, "failed": 0},
+  "verification_scope_reason": "Paired actual Session/Agent/Inbox/JSONL/query/history providers cover live/cold state, queue RPC identities and placement, pending input classification, coalesced invalidation, actual running-Agent deadlines, caller cancellation, periodic pending input, quiescence and cold assistant output. Native additionally verifies stale reads, lifecycle invalidation, registration cleanup, no-state timeouts, unrelated read failures after deadlines, latest accepted state, armed-read failures, idle ownership races, driver failures, and actual Gateway admission/cancellation for all three new Remotes. Direct history/follow/passive-listener consumers and Source state/history suites pass.",
+  "implementation": "StateListener combines lifecycle invalidations with listener-local revisions and complete passive reads. SessionStateController confirms accepted revisions and Agent/Session identity, races quiescence with the next state, refreshes pending input every second and reads output through the last accepted cursor using the caller signal. Wait cancellation never cancels Agent execution. Assistant output now converts validated integral wire cursors to Python range indices, including cold JSONL reads.",
+  "observer_boundary": "Gateway pending-event inventory is controlled in paired observations; actual native Gateway resource admission is separately verified. The initial run exposed cold integral float cursors in output traversal and retained its diagnostics. A synthetic 5ms last-state test expired before its initial sample under concurrent Source startup; its test deadline is now 100ms, with no production timing change. Python owns and cancels only the whenIdle observer task when another state wins, never the Agent driver. Full SessionController initialization/list remain separate. Targeted results are not full regression or release acceptance.",
+  "activation_boundary": "Candidate providers only; production pin and accepted_upstream unchanged pending C9.",
+  "cleanup": ".goose/out/rc022-session-state-source-20261116-01/cleanup.json",
+  "retained_assets": "Owned fixture journals, pytest workspaces and tmp/home removed after teardown; no task workers remain. Commands, observations and diagnostics retained; shared Source/toolchain retained through C9."
+}

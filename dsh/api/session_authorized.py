@@ -10,6 +10,7 @@ from dsh.util_time import canonical_client_time_zone
 from dsh.api.session_agents_authorized import AuthorizedSessionAgents
 from dsh.api.session_history_authorized import SessionHistoryController
 from dsh.api.session_web_authorized import SessionWebController
+from dsh.api.session_state_authorized import SessionStateController
 
 
 class ProjectionSessionControl(CurrentSessionControl):
@@ -36,6 +37,7 @@ class AuthorizedSessionController(CurrentSessionController):
     async def init(self):
         self.history_reads = SessionHistoryController(self.ctx)
         self.web_controller = SessionWebController(self.ctx, self.history_reads, self.promote)
+        self.state_controller = SessionStateController(self.ctx, self.history_reads)
         await self.commands.initialize()
 
     def event(self, session, event):
@@ -84,6 +86,18 @@ class AuthorizedSessionController(CurrentSessionController):
     @Remote(dict(mode='stream'))
     def follow(self, request, signal):
         return self.web_controller.follow(request, signal)
+
+    @Remote
+    async def state(self, request, signal):
+        return await self.state_controller.state(request, signal)
+
+    @Remote(dict(mode='stream'))
+    def observeState(self, request, signal):
+        return self.state_controller.observeState(request, signal)
+
+    @Remote
+    async def wait(self, request, signal):
+        return await self.state_controller.wait(request, signal)
 
     @Remote
     async def list(self, _request, signal):

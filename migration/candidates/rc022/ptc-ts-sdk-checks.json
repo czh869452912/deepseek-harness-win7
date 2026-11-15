@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-15",
+  "unit": "C5-N-TypeScriptPtcSdkProjection",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "state": "targeted-passed",
+  "paired": ".goose/out/rc022-ptc-ts-sdk-paired-20261115-01/comparison/report.json",
+  "observations": 101,
+  "native": {"run": "rc022-ptc-ts-sdk-native-20261115-01", "passed": 62, "failed": 0},
+  "source": {"run": "rc022-ptc-ts-sdk-source-20261115-01", "passed": 13, "failed": 0},
+  "verification_scope_reason": "Byte-identical fixed Source/native TypeScript SDK argument/output maps, exact numeric/string literals, arbitrary quoted keys, escaped JSDoc, union/array precedence including union characters inside string literals, open/closed objects and iterative deep schemas. Function-body/repl/script instructions and bash examples are driven by the actual argument schema; changed required fields or incompatible constants suppress misleading examples. Native additionally renders a 1500-deep schema without Python recursion. Existing enforced-schema and Python SDK consumers pass.",
+  "activation_boundary": "Prompt text projection only: this does not add a Node runtime to Win7 or certify retained evaluation modes. Both supported SDK languages are now available to the forthcoming independent PTC executor; language/format are selected by the mounted runtime. Production pin unchanged.",
+  "cleanup": ".goose/out/rc022-ptc-ts-sdk-source-20261115-01/cleanup.json",
+  "cleanup_bytes": 427806,
+  "retained_assets": "Commands, XML, logs and paired text observations retained; owned workspaces removed and no owned test process remains. Shared Source/toolchain retained until C9."
+}

@@ -20,6 +20,8 @@ from dsh.subagent.lifetime import SubagentLifetime,future,contain
 from dsh.subagent.messages import create_agent_message,with_result_delivery_guidance
 from dsh.subagent.names import join_agent_path,agent_address
 from dsh.subagent.structured import attach_structured_runtime
+from dsh.subagent.archive_admission import install_subagent_archive_admission
+from dsh.subagent.tree import activation_agent
 
 
 def has_image(content):
@@ -27,6 +29,13 @@ def has_image(content):
 
 
 class SubagentManager(SubagentLifetime):
+    def __init__(self, ctx, host, max_active_subagents):
+        super().__init__(ctx,host,max_active_subagents)
+        def ancestors(agent):
+            activation = self.resident.get(agent.id)
+            return activation.ancestors if activation is not None and activation_agent(activation) is agent else None
+        install_subagent_archive_admission(ctx,ancestors,host.identityOf)
+
     def require_persistence(self):
         persistence = self.ctx.get('sessionPersistence')
         if persistence is None:

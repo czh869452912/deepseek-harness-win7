@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-15",
+  "unit": "C6-I-ArchiveAdmission",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "state": "targeted-passed",
+  "paired": ".goose/out/rc022-archive-admission-paired-20261115-01/comparison/report.json",
+  "observations": 10,
+  "native": {
+    "run": "rc022-archive-admission-native-20261115-01",
+    "passed": 10,
+    "failed": 0
+  },
+  "source": {
+    "run": "rc022-archive-admission-source-20261115-01",
+    "passed": 12,
+    "failed": 0
+  },
+  "verification_scope_reason": "Fixed archive-admission helper paired for verified resident ancestry, header fallback, own-label versus inherited identity, idle filtering, ordinary fork/offline/cycle boundaries, cancellation failure fan-out and archived ancestor pre-step rejection. Actual Cordis waterfall/emit verifies scoped registration cleanup. Unified manager now installs the helper and all actual manager/factory/lifetime journeys and workspace archive regressions pass.",
+  "activation_boundary": "Candidate manager archive integration; runtime/Team/SDK/PTC/Remote and production composition still pending. Production pin unchanged.",
+  "cleanup": ".goose/out/rc022-archive-admission-source-20261115-01/cleanup.json",
+  "retained_assets": "Commands/logs/XML and paired observations retained; synthetic workspaces removed; shared Source/toolchain retained through C9."
+}

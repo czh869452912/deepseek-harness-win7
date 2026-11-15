@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-16",
+  "unit": "C8-O-InstructionRuntimeProjection",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "state": "targeted-passed",
+  "paired": ".goose/out/rc022-instruction-runtime-paired-3-20261116-01/comparison/report.json",
+  "observations": 15,
+  "native": {"run": "rc022-instruction-runtime-native-2-20261116-01", "passed": 50, "failed": 0},
+  "source": {"run": "rc022-instruction-runtime-source-20261116-01", "passed": 137, "failed": 0, "excluded": 69},
+  "verification_scope_reason": "Actual plugin, Session/Inbox, WorkingDirectory, FsLocal tools and scoped pre-step compare pending baseline reuse, exact insertion order, visible suppression, successful/failed tool filtering, durable open-step deferral, successful child projection only at outer completion even if outer fails, concurrent projection serialization, directory replacement and reversible unload. Native actual Agent driver confirms baseline is durable by model streaming and not duplicated on the second turn; lifecycle cancellation during a held provider read prevents inbox mutation. Existing instruction consumers pass. Source runs its request injection, dynamic nested injection, inbox synchronization and plugin export groups; symlink names excluded on this Windows host.",
+  "implementation": "Candidate plugin requires agents and workingDirectory with optional fs. Baseline identity and omitted/duplicate scope preparation feed the reconciler. Per-Agent projection tails serialize asynchronous tool notifications; execution ancestry and Session step/end delay mutation to commit boundaries. Pre-step folds context after claimed messages and before driver context, preserving rejected/no-step inbox work and removing equivalent supplied payloads. Lifecycle abort and reversible listeners stop late mutation.",
+  "observer_boundary": "Driver decisions in the paired probe are controlled; tool pipeline and Session state are real. Message IDs omitted and owned project roots projected to <work>. Native model check uses a scripted adapter. Initial fixture export and assertion-timing corrections retained as diagnostics; no product changes were needed for those failures.",
+  "activation_boundary": "Candidate provider; production package mapping, pin and accepted_upstream unchanged pending composition and C9. Targeted checks do not establish release acceptance.",
+  "cleanup": ".goose/out/rc022-instruction-runtime-source-20261116-01/cleanup.json",
+  "external_cleanup": ".goose/out/rc022-instruction-runtime-source-20261116-01/external-cleanup.json",
+  "retained_assets": "Removed 6057594 bytes of owned fixture trees and workspaces plus the empty external Source fixture root. No task workers remain. Commands, observations and diagnostics retained; shared fixed Source/toolchain retained through C9."
+}

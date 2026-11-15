@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-15",
+  "unit": "C7-D-AuthorizedCallResolution",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "state": "targeted-passed",
+  "paired": ".goose/out/rc022-authorized-calls-paired-final-20261115-01/comparison/report.json",
+  "observations": 20,
+  "native": {
+    "run": "rc022-authorized-calls-native-20261115-01",
+    "passed": 50,
+    "failed": 0
+  },
+  "source": {
+    "run": "rc022-authorized-calls-source-20261115-01",
+    "passed": 33,
+    "failed": 0
+  },
+  "verification_scope_reason": "Native resolver/binder seam versus actual Source Gateway unary dispatch: exact/strict JSON validation and stripping before policy, resources before lookup/Context activation, all reader IDs required, no business side effects on denial, original wire versus decoded business arguments, scoped receiver principal and per-item filtering, owner bypass and disposed Peer first. Native tests add concurrent receiver isolation, shared Peer close and creator-owned lifetime.",
+  "activation_boundary": "Preparation/binding unit and Peer primitive only. Caller supplies the trusted carrier invocation object. New Gateway invocation/uplink lifecycle, network peer admission and event transport remain C7 follow-up; no target-control/preset-select Remote activation or production composition promotion.",
+  "cleanup": ".goose/out/rc022-authorized-calls-source-20261115-01/cleanup.json",
+  "retained_assets": "Commands/results/diagnostics retained; owned temporary directories removed. Shared Source/toolchain retained through C9."
+}

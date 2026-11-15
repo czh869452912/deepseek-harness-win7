@@ -90,4 +90,6 @@
 
 | C8-BB | Auto 审核封闭决策协议、流结束/关闭与拒绝显示文本 | [Auto 审核协议](auto-review-decision-checks.json) |
 
+| C8-BC | Auto 审核会话快照、调用事实校验与指令权限分层 | [Auto 审核输入](auto-review-snapshot-checks.json) |
+
 后续继续设置及完整应用组合；最终资格使用 C9 冻结候选的完整门禁。

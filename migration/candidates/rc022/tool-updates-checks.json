@@ -1,0 +1,20 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-15",
+  "unit": "C5-H-SessionToolHistoryAndRouteProjection",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "state": "targeted-passed",
+  "paired": ".goose/out/rc022-tool-updates-paired-restored-20261115-01/comparison/report.json",
+  "observations": 41,
+  "native_initial": {"run": "rc022-tool-updates-native-20261115-01", "passed": 311, "failed": 2},
+  "native_import_inventory_failure": {"run": "rc022-tool-updates-native-fixed-20261115-01", "passed": 95, "errors": 414},
+  "native_wrapper_timeout": {"run": "rc022-tool-updates-native-consumers-20261115-01", "exit_code": 124, "seconds": 120},
+  "native_consumers": {"run": "rc022-tool-updates-native-consumers-final-20261115-01", "passed": 509, "failed": 0, "seconds": 123.781},
+  "source": {"run": "rc022-tool-updates-source-20261115-01", "passed": 194, "failed": 0},
+  "verification_scope_reason": "Session incrementally folds committed declaration series, headers and referenced historical additions into immutable cached history, including restoration, changed definitions and old unmatched headers. Actual Agents log capability-independent developer additions/removals with exact header references. Prepared and direct LLM dispatch projects unsupported, in-history and addition-only routes, deferred declarations, incomplete prefixes, duplicate/earlier updates and retained guidance without mutating durable inputs. Real seven-turn drivers cover add/remove/re-add/redeclare and capability switching. Existing prepared-call, metadata, file, canonical LLM, header and Agent consumers pass, including strict import/runtime identity and deliberate damage checks.",
+  "repairs": "Initial developer-message append used a Source-style option object in Python's surface-op position, which Python correctly rejected; fixed to its surface_op keyword. Historical oracle import inventories lagged C1-C4 transitive modules plus this helper: reviewed actual exact module sets and added explicit static paths without relaxing byte, identity or behavior validation. The first complete consumer retry exceeded the task wrapper's 120-second total budget; no children remained, diagnostics retained, then the same selected set passed with a 360-second total budget and unchanged per-operation deadlines.",
+  "activation_boundary": "Tool history emission is selected by Session format 4. Current LLM routes validate and expose toolUpdate and project at their shared adapter boundary. Legacy active tools/Session defaults and production pin remain unchanged. Provider-specific native wire encoders, PTC, remaining C5-C9 work and full release qualification are separate; targeted results do not certify them.",
+  "cleanup": ".goose/out/rc022-tool-updates-source-20261115-01/cleanup.json",
+  "cleanup_bytes": 8692553,
+  "retained_assets": "Commands, logs, XML, Source/native observations and historical oracle diagnostics retained. All owned temporary workspaces removed, including diagnosed failed/timeout fixtures after the passing retry. No task test process remains. Shared Source/toolchain retained until C9."
+}

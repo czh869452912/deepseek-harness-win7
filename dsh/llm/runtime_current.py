@@ -14,7 +14,7 @@ class CurrentLLMService(LLMService):
         return normalize_model_info(provider, identifier, model, error_type, system_prompt_update=True)
 
     def _call_capabilities(self, model_info):
-        return {key: model_info[key] for key in ('systemPromptUpdate',) if key in model_info}
+        return {key: model_info[key] for key in ('systemPromptUpdate', 'toolUpdate') if key in model_info}
 
     def _file_read_path(self, ref):
         try:
@@ -38,7 +38,16 @@ class CurrentLLMService(LLMService):
             request = dict(options, messages=messages)
             if isinstance(options, FrozenDict):
                 request = deep_freeze(request)
-        return super()._project_adapter_request(request, model_info)
+        request = super()._project_adapter_request(request, model_info)
+        from dsh.llm.tool_updates import project_tool_updates
+        projected = project_tool_updates(request['messages'], request.get('tools'),
+                                         model_info.get('toolUpdate'), request.get('toolHistory'))
+        if projected['messages'] is not request['messages'] or projected['tools'] is not request.get('tools'):
+            result = dict(request, messages=projected['messages'])
+            if projected['tools'] is not None:
+                result['tools'] = projected['tools']
+            request = deep_freeze(result) if isinstance(options, FrozenDict) else result
+        return request
 
     async def stream(self, options):
         """Direct calls share the final boundary with prepared Agent calls.

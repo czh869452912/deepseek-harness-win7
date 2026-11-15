@@ -123,6 +123,18 @@ class CurrentSession(Session):
 
     requestHeader = request_header
 
+    def tool_history(self):
+        if not hasattr(self, '_tool_history_projection'):
+            from .tool_history import ToolHistoryProjection
+            self._tool_history_projection = ToolHistoryProjection()
+            self._tool_history_seq = 0
+        for event in self._log[self._tool_history_seq:]:
+            self._tool_history_projection.apply(event)
+        self._tool_history_seq = len(self._log)
+        return self._tool_history_projection.snapshot()
+
+    toolHistory = tool_history
+
     def append_event(self, event_type, data):
         eligible = V4_SURFACE_EVENT_TYPES if self.format_version == 4 else SURFACE_EVENT_TYPES
         return self.append(event_type,data,surface_op='append' if event_type in eligible else None)

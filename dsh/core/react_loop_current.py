@@ -22,7 +22,7 @@ from dsh.core.tools import ToolActivationError, ToolBatchExecutionError
 from dsh.llm.agent_request import mark_agent_loop_request
 from dsh.llm.error import error_chain
 from dsh.llm.llm_service import LlmError
-from dsh.llm.message import create_assistant_message
+from dsh.llm.message import create_assistant_message, create_message
 from dsh.llm.stream_bridge import iter_chunks
 
 
@@ -344,7 +344,8 @@ class ReactLoopAgent:
             starts_series = first_attempt and decision.get('startsRequestSeries') is True
             commits = self.system_prompt.project(rendered_prompt, dict(
                 inHistory=prepared is not None and prepared.get('systemPromptUpdate') == 'in-history',
-                startsSeries=starts_series or self.request_surface_generation != self.session.surface.replaceGeneration or self._tools_changed(assembly['tools'])))
+                startsSeries=starts_series or self.request_surface_generation != self.session.surface.contentGeneration
+                    or ((prepared is None or prepared.get('toolUpdate') is None) and self._tools_changed(assembly['tools']))))
             for commit in commits:
                 self.session.append('system/message', dict(turn=turn, step=step, message=commit['message']), opts=commit['intent'])
             context_admitted = False
@@ -492,7 +493,8 @@ class ReactLoopAgent:
         return config, prepared
 
     def _build_request(self, config, prepared, tools, starts_request_series, signal):
-        generation = self.session.surface.replaceGeneration
+        current = getattr(self.session, 'format_version', 3) == 4
+        generation = self.session.surface.contentGeneration
         header = dict(config=config)
         if prepared is not None:
             header['adapterDefaults'] = prepared['adapterDefaults']
@@ -503,16 +505,31 @@ class ReactLoopAgent:
         header = canonicalHeader(header)
         baseline = self.session.requestHeader()
         starts_series = starts_request_series or self.request_surface_generation != generation
+        header_seq = None
         if not self.request_header_logged:
-            self.session.append('request/header', dict(header=header, reason='initial' if baseline is None else 'resume'))
+            data = dict(header=header, reason='initial' if baseline is None else 'resume')
+            if current and starts_series:
+                data['startsSeries'] = True
+            header_seq = self.session.append('request/header', data)['seq']
             self.request_header_logged = True
         elif baseline is None or not headerEquals(baseline, header):
             data = dict(header=header, reason='change')
             if starts_series:
                 data['startsSeries'] = True
-            self.session.append('request/header', data)
+            header_seq = self.session.append('request/header', data)['seq']
         elif starts_series:
             self.session.append('request/header', dict(header=header, reason='series'))
+        if current and baseline is not None and header_seq is not None:
+            previous_names = {tool['name'] for tool in baseline.get('tools', [])}
+            current_names = {tool['name'] for tool in tools}
+            additions = [dict(type='tool-addition', toolName=tool['name']) for tool in tools if tool['name'] not in previous_names]
+            removals = [dict(type='tool-removal', toolName=tool['name']) for tool in baseline.get('tools', []) if tool['name'] not in current_names]
+            if additions or removals:
+                data = dict(turn=self.phase['turn'], step=self.phase['step'], message=create_message(
+                    dict(role='developer', source=dict(kind='tool-registry'), content=additions + removals)))
+                if additions:
+                    data['headerSeq'] = header_seq
+                self.session.append('developer/message', data, surface_op='append')
         self.request_surface_generation = generation
         request_context = dict(provider=config['provider'], model=config['model'])
         if prepared is not None:
@@ -528,6 +545,8 @@ class ReactLoopAgent:
         frozen_header = deep_freeze(header)
         messages = FrozenList(self.session.deriveMessages())
         request = dict(frozen_header['config'], messages=messages, sessionId=self.id, signal=signal)
+        if current:
+            request['toolHistory'] = self.session.toolHistory()
         if 'tools' in frozen_header:
             request['tools'] = frozen_header['tools']
         return mark_agent_loop_request(FrozenDict(request))

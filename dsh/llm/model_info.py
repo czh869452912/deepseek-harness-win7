@@ -53,6 +53,10 @@ def normalize_model_info(provider, identifier, model, error_type, system_prompt_
         if model['systemPromptUpdate'] != 'in-history':
             raise error_type('adapter returned invalid system prompt update mode ' + route, 'INVALID_MODEL_INFO')
         result['systemPromptUpdate'] = model['systemPromptUpdate']
+    if system_prompt_update and 'toolUpdate' in model:
+        if model['toolUpdate'] not in ('in-history', 'addition-only'):
+            raise error_type('adapter returned invalid tool update mode ' + route, 'INVALID_MODEL_INFO')
+        result['toolUpdate'] = model['toolUpdate']
     if 'defaultMaxTokens' in model:
         maximum = model['defaultMaxTokens']
         if not _integer(maximum) or maximum <= 0 or maximum > 9007199254740991:

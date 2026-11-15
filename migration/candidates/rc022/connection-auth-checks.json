@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-15",
+  "unit": "C7-I-ConnectionAuthentication",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "state": "targeted-passed",
+  "paired": ".goose/out/rc022-connection-auth-paired-20261115-01/comparison/report.json",
+  "observations": 42,
+  "native": {
+    "run": "rc022-connection-auth-native-20261115-01",
+    "passed": 7,
+    "failed": 0
+  },
+  "source": {
+    "run": "rc022-connection-auth-source-20261115-01",
+    "passed": 10,
+    "failed": 0
+  },
+  "verification_scope_reason": "Actual upstream BrowserAuth with deterministic secret/clock versus candidate: exact signed browser/API cookie bytes and headers; independent API operator exchange, default/answer interaction publication and validation ordering, token cardinality/path/method fences, HEAD response, cookie cleanup redirect, API credential refused for index, HTTPS audience and Secure cookies, invalid authority/version/id/timestamps, URL mount/query/hash preservation. Native tests also reject signature tampering and malformed framing.",
+  "activation_boundary": "Signed credential helpers and exchanges only; actual credential persistence reuses existing BrowserAuth.create, and Connection Peer publication/admission/network integration is next.",
+  "cleanup": ".goose/out/rc022-connection-auth-source-20261115-01/cleanup.json",
+  "retained_assets": "Commands/results retained; owned temporary payloads removed. Shared Source/toolchain retained through C9."
+}

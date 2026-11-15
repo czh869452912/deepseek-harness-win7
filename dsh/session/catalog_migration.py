@@ -18,7 +18,7 @@ async def _stat(path):
     return await asyncio.get_running_loop().run_in_executor(None, lambda: filesystem_identity(path))
 
 
-async def prepareCatalogFacts(parentId, sources, compression, signal):
+async def prepareCatalogFacts(parentId, sources, compression, signal, current_catalog=None):
     """Retain compact facts, local failures and physical revision witnesses."""
     facts, failures, witnesses = [], [], []
     for source in sources:
@@ -32,7 +32,7 @@ async def prepareCatalogFacts(parentId, sources, compression, signal):
         unavailable = dict(childId=source_header['id'], childCreatedAt=source_header['createdAt'],
                            descriptorCount=0, descriptor=None, sourcePath=path)
         try:
-            catalog = historicalSessionFormatCatalog if version <= 3 else sessionFormatCatalog
+            catalog = historicalSessionFormatCatalog if version <= 3 else (current_catalog or sessionFormatCatalog)
             restored = await readDecodedJsonlSource(path, version, compression, dict(createRestore=lambda header:
                 catalog.createRestore(header, dict(recovery='recoverable', validation='current'))), signal)
         except Exception as error:

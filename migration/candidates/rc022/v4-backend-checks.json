@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-15",
+  "unit": "C3-D-V4BackendChildPreparation",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "state": "targeted-passed",
+  "paired": ".goose/out/rc022-v4-backend-paired-20261115-03/report.json",
+  "observations": 24,
+  "native": {"run": "rc022-v4-backend-native-20261115-01", "passed": 387, "failed": 16, "errors": 24},
+  "native_retry": {"run": "rc022-v4-backend-legacy-retry-20261115-01", "passed": 46, "failed": 0},
+  "retry_reason": "Old Source probes require Node 22.22.2, but initial PATH selected 22.20.0. Repeated the two affected modules with the existing pinned toolchain; all 46 cases passed. The initial diagnostics remain distinct.",
+  "source": {"run": "rc022-v4-backend-source-20261115-01", "passed": 167, "failed": 0},
+  "verification_scope_reason": "Actual V4 plaintext/Zstandard backend handles create, append, reopen and project image events. Historical v0-v3 read prepares without publication; write opens publish through the real independent verifier. Direct child facts use the installed V4 catalog, retain invalid children as unknown, bind physical membership and revision witnesses, and reject reuse after child addition/removal/change. Unrelated corpus changes alter historical revisions without blocking valid publication. Existing V3 provider, metadata, framing/recovery, sharing and handle consumers are covered.",
+  "cleanup": ".goose/out/rc022-v4-backend-native-20261115-01/cleanup.json",
+  "cleanup_bytes": 5373748,
+  "remaining": "Shared bounded listing and deterministic concurrent failure ordering; service/Session/Agent consumers; production pin switch and complete release qualification. This is an explicit internal V4 selection; the active provider default remains V3."
+}

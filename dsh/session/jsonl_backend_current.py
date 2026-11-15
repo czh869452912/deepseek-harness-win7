@@ -5,6 +5,7 @@ publishes it, while holding the native cross-process lease. The active profile
 is switched separately together with Session and its handle-owning consumers.
 """
 import asyncio
+import hashlib
 import os
 import tempfile
 import time
@@ -18,7 +19,7 @@ from dsh.session.durable_publish import ensure_durable_directory, publish_new_fi
 from dsh.session.file_io import filesystem_path, open_shared_read
 from dsh.session.file_revision import file_revision
 from dsh.session.generation import (
-    readStableJsonlFile, prepareJsonlMigration, default_format_adapter,
+    readStableJsonlFile, default_format_adapter, JsonlGenerationRuntime,
     JsonlGenerationSourceChangedError, JsonlGenerationUnsupportedMigrationError)
 from dsh.session.format_catalog import sessionFormatCatalog
 from dsh.session.format_v2_to_v3.payload import display
@@ -51,9 +52,14 @@ class CurrentJsonlSessionPersistence(JsonlStore):
     """Handle-based service; shared base supplies only durable file primitives."""
     name = 'session-persistence-jsonl'
 
-    def __init__(self, root, compression='zstd', ctx=None):
+    def __init__(self, root, compression='zstd', ctx=None, format_version=3):
         super().__init__(root, compression, pack_chunks=False)
         self.ctx = ctx
+        self.format_version, self.catalog = format_version, sessionFormatCatalog
+        if format_version == 4:
+            from dsh.session.format_catalog import candidateSessionFormatCatalog
+            self.catalog = candidateSessionFormatCatalog
+        self.generation_runtime = JsonlGenerationRuntime(dict(formatVersion=format_version))
         self.tracker = JsonlBackendTracker(self.name)
         self.coldLogMemo = OrderedDict()
         self.migrationPreparations = {}
@@ -63,7 +69,7 @@ class CurrentJsonlSessionPersistence(JsonlStore):
 
     def locate(self, meta, opposite=False):
         return logPath(self.root, field(meta,'cwd'), field(meta,'id'),
-                       ('none' if self.compression=='zstd' else 'zstd') if opposite else self.compression)
+                       ('none' if self.compression=='zstd' else 'zstd') if opposite else self.compression, self.format_version)
 
     def _opposite_generation(self, directory):
         try:
@@ -115,7 +121,7 @@ class CurrentJsonlSessionPersistence(JsonlStore):
             return None
         version,name = max(generations,key=lambda item:item[0])
         return dict(sourcePath=os.path.join(directory,name), sourceVersion=version,
-                    currentPath=os.path.join(directory,generationLogFilename(3,self.compression)))
+                    currentPath=os.path.join(directory,generationLogFilename(self.format_version,self.compression)))
 
     def _find(self, session_id):
         from dsh.session.jsonl_format import encode_segment
@@ -147,7 +153,7 @@ class CurrentJsonlSessionPersistence(JsonlStore):
             snapshot = materializeCreateHeader(header)
             from dsh.session.jsonl_current import toHeaderLine
             cut = field(options,'inheritedEventCount')
-            toHeaderLine(snapshot,cut)
+            toHeaderLine(snapshot,cut,self.format_version)
             cut = SessionLogOffset(0 if cut is UNDEFINED or cut is None else cut)
         except Exception as error:
             return failed(error)
@@ -241,12 +247,21 @@ class CurrentJsonlSessionPersistence(JsonlStore):
         try:
             identity = await self._physical_identity(selected['sourcePath'])
             throw_aborted(signal)
-            return dict(header=header,revision=revision(identity),sizeBytes=identity['size'])
+            token = revision(identity)
+            result = dict(header=header,revision=token,sizeBytes=identity['size'])
+            if self.format_version == 4:
+                if selected['sourceVersion'] < self.format_version:
+                    result['revision'] = token+':'+await self.historicalCorpusRevision(signal)
+                result.update(formatStatus='migration-required' if selected['sourceVersion'] < self.format_version else 'current',
+                              location=dict(kind='jsonl',path=selected['sourcePath']))
+            return result
         except FileNotFoundError:
             throw_aborted(signal)
             return None
 
     async def list(self, options=None):
+        if self.format_version == 4:
+            return await self._list_v4(options)
         signal = signal_of(options)
         throw_aborted(signal)
         pending = list(self.tracker.pendingEntries())
@@ -279,14 +294,35 @@ class CurrentJsonlSessionPersistence(JsonlStore):
         throw_aborted(signal)
         return snapshots
 
+    async def _list_v4(self, options):
+        signal = signal_of(options)
+        pending = list(self.tracker.pendingEntries())
+        artifacts = await self.listArtifacts(signal)
+        corpus = await self.historicalCorpusRevision(signal) if any(item['sourceVersion'] < self.format_version for item in artifacts) else None
+        snapshots, ids = [], set()
+        for artifact in artifacts:
+            throw_aborted(signal)
+            try:
+                identity = await self._physical_identity(artifact['path'])
+            except FileNotFoundError:
+                continue
+            ids.add(artifact['header']['id'])
+            token = revision(identity)
+            snapshots.append(dict(header=artifact['header'],formatStatus=artifact['formatStatus'],
+                revision=token+':'+corpus if artifact['sourceVersion'] < self.format_version else token,
+                sizeBytes=identity['size'],location=dict(kind='jsonl',path=artifact['path'])))
+        snapshots.extend(dict(header=entry['header'],revision=entry['revision']) for sid,entry in pending if sid not in ids)
+        throw_aborted(signal)
+        return snapshots
+
     async def _physical_identity(self, path):
         from dsh.session.file_revision import filesystem_identity
         return await self._run(filesystem_identity,path)
 
     def _current_header(self, header):
-        if header['version']!=3:
+        if header['version']!=self.format_version:
             raise ValueError('format catalog returned non-current logical header v%s' % display(header['version']))
-        result = dict(version=3,id=SessionId(header['id']),createdAt=header['createdAt'],
+        result = dict(version=self.format_version,id=SessionId(header['id']),createdAt=header['createdAt'],
                       isSeeded=header['isSeeded'],delegationDepth=header['delegationDepth'])
         for key in ('cwd','parentSession','origin','agentPreset'):
             if key in header:
@@ -325,11 +361,11 @@ class CurrentJsonlSessionPersistence(JsonlStore):
         except Exception:
             return None
         assertNoRetiredHeaderFields(value)
-        result = sessionFormatCatalog.readHeader(value)
+        result = self.catalog.readHeader(value)
         if 'storedVersion' in result and result['storedVersion']!=selected['sourceVersion']:
             raise ValueError('session generation filename identifies v%s, but its header identifies v%s' % (display(selected['sourceVersion']),display(result['storedVersion'])))
         if result['status']=='unsupported':
-            reason = sessionFormatVersionRefusal(field(value,'id'),result['storedVersion']) if result['storedVersion']>3 else result['reason']
+            reason = sessionFormatVersionRefusal(field(value,'id'),result['storedVersion'],self.format_version) if result['storedVersion']>self.format_version else result['reason']
             raise unsupported(reason,dict(kind='jsonl',path=selected['sourcePath']))
         if result['status']=='malformed':
             return None
@@ -386,7 +422,7 @@ class CurrentJsonlSessionPersistence(JsonlStore):
         selected = await self.findLog(session_id,signal)
         if selected is None:
             raise SessionPersistenceNotFoundError(session_id)
-        if selected['sourceVersion']<3:
+        if selected['sourceVersion']<self.format_version:
             token = await self._run(file_revision,selected['sourcePath'])
             throw_aborted(signal)
             entry = self.migrationPreparations.get(session_id)
@@ -396,7 +432,16 @@ class CurrentJsonlSessionPersistence(JsonlStore):
                 async def prepare(owned=entry):
                     try:
                         memo = self._memo(session_id,token,'prepared')
-                        return memo if memo is not None else await self._prepare_migration(session_id,selected,controller.signal)
+                        if memo is not None:
+                            validate = memo.get('validateRelatedSources')
+                            if validate is not None:
+                                try:
+                                    await validate()
+                                except Exception as error:
+                                    self.coldLogMemo.pop(session_id,None)
+                                    raise self._generation_failure(session_id,selected,error)
+                            return memo
+                        return await self._prepare_migration(session_id,selected,controller.signal)
                     finally:
                         owned['settled'] = True
                         if self.migrationPreparations.get(session_id) is owned:
@@ -407,11 +452,11 @@ class CurrentJsonlSessionPersistence(JsonlStore):
                 self.migrationPreparations[session_id] = entry
             throw_aborted(signal)
             return await self._wait_preparation(session_id,entry,signal)
-        if selected['sourceVersion']>3:
+        if selected['sourceVersion']>self.format_version:
             header = await self.readGenerationHeader(selected,session_id,signal)
             if header is None:
                 raise SessionPersistenceCorruptionError('session "%s": stored log has a malformed header (raw log: %s)' % (session_id,selected['sourcePath']),dict(cause=ValueError('malformed Session header')))
-            raise unsupported(sessionFormatVersionRefusal(session_id,selected['sourceVersion']),dict(kind='jsonl',path=selected['sourcePath']))
+            raise unsupported(sessionFormatVersionRefusal(session_id,selected['sourceVersion'],self.format_version),dict(kind='jsonl',path=selected['sourcePath']))
         return await self.readStoredLog(selected['sourcePath'],session_id,signal)
 
     async def _wait_preparation(self, session_id, entry, signal):
@@ -457,22 +502,100 @@ class CurrentJsonlSessionPersistence(JsonlStore):
 
     async def _prepare_migration(self, session_id, selected, signal):
         async def validate(value):
-            result = sessionFormatCatalog.readHeader(value)
+            result = self.catalog.readHeader(value)
             if result['status'] in ('current','migration-required'):
                 await self._run(self._assert_identity,selected['sourcePath'],selected['sourceVersion'],self._current_header(result['header']),session_id)
                 throw_aborted(signal)
         try:
-            prepared = await prepareJsonlMigration(dict(selected,compression=self.compression,format=default_format_adapter,validateHistoricalHeader=validate,signal=signal))
+            adapter = default_format_adapter
+            validate_related = None
+            if self.format_version == 4:
+                from dsh.session.catalog_migration import prepareCatalogFacts
+                from dsh.session.format_catalog import createSessionFormatCatalogWithChildren
+                from dsh.session.format import SessionFormatUnsupportedMigrationError
+                async def children():
+                    return [item for item in await self.listArtifacts(signal)
+                            if item['header'].get('origin') == 'subagent' and item['header'].get('parentSession') == session_id]
+                sources = await children()
+                related = await prepareCatalogFacts(session_id,sources,self.compression,signal,self.catalog)
+                for failure in related.failures:
+                    if self.ctx is not None:
+                        self.ctx.logger.warn('%s: session "%s" catalog retained a child with unknown descriptor (raw log: %s): %s' %
+                            (self.name,session_id,failure['path'],error_string(failure['error'])))
+                membership = sorted(item['path'] for item in sources)
+                async def validate_related():
+                    current = sorted(item['path'] for item in await children())
+                    before, after = set(membership), set(current)
+                    changed = next((path for path in current if path not in before), None)
+                    if changed is None:
+                        changed = next((path for path in membership if path not in after), None)
+                    if changed is not None:
+                        raise JsonlGenerationSourceChangedError(changed)
+                    await related.validate()
+                catalog = createSessionFormatCatalogWithChildren(related.facts)
+                adapter = dict(currentVersion=4,createRestore=lambda header:catalog.createRestore(header,dict(recovery='recoverable',validation='transformed')),
+                    encodeHeader=catalog.encodeCurrentHeader,encodeEvent=catalog.encodeCurrentEvent,
+                    isUnsupportedMigrationError=lambda error:isinstance(error,SessionFormatUnsupportedMigrationError))
+            options = dict(selected,compression=self.compression,format=adapter,validateHistoricalHeader=validate,signal=signal)
+            if validate_related is not None:
+                options['validateRelatedSources'] = validate_related
+            prepared = await self.generation_runtime.prepare(options)
         except Exception as error:
             raise self._generation_failure(session_id,selected,error)
         artifact = prepared.artifact
         meta = self._current_header(artifact['header'])
         assertStoredId(session_id,meta)
-        validateStoredEvents(meta,artifact['events'],dict(kind='jsonl',path=selected['sourcePath']))
+        validateStoredEvents(meta,artifact['events'],dict(kind='jsonl',path=selected['sourcePath']),self.format_version)
         stored = dict(status='prepared',meta=meta,eventState='shared-frozen',events=deep_freeze(artifact['events']),
                       recoveredTail=[],inheritedEventCount=SessionLogOffset(artifact['inheritedEventCount']),
                       revision=revision(prepared.sourceIdentity),publication=dict(source=selected,value=prepared))
+        if validate_related is not None:
+            stored['validateRelatedSources'] = validate_related
         return self._memoize(session_id,stored)
+
+    async def listArtifacts(self, signal=None):
+        """Read selected physical memberships without preparing any child body."""
+        throw_aborted(signal)
+        await self.ensureRootEncoding()
+        artifacts, ids = [], set()
+        for selected in await self.listGenerations(signal):
+            throw_aborted(signal)
+            try:
+                header = await self.readGenerationHeader(selected,None,signal)
+            except (SessionFormatUnsupportedError,SessionPersistenceCorruptionError):
+                continue
+            if header is None:
+                continue
+            if header['id'] in ids:
+                raise ValueError('duplicate JSONL session id "%s" appears in multiple project directories' % header['id'])
+            ids.add(header['id'])
+            artifacts.append(dict(header=header,path=selected['sourcePath'],sourceVersion=selected['sourceVersion'],
+                formatStatus='migration-required' if selected['sourceVersion'] < self.format_version else 'current'))
+        throw_aborted(signal)
+        return artifacts
+
+    async def listGenerations(self, signal=None):
+        selected = []
+        for project in await self._run(self._projects):
+            for directory in await self._run(self._sessions,project):
+                throw_aborted(signal)
+                value = await self._run(self._resolve_generation,directory)
+                if value is not None:
+                    selected.append(value)
+        return selected
+
+    async def historicalCorpusRevision(self, signal=None):
+        paths = sorted(item['sourcePath'] for item in await self.listGenerations(signal))
+        digest = hashlib.sha256()
+        for path in paths:
+            throw_aborted(signal)
+            try:
+                token = revision(await self._physical_identity(path))
+            except FileNotFoundError:
+                token = 'missing'
+            digest.update(stringify_json([path,token]).encode('utf-8'))
+        throw_aborted(signal)
+        return digest.hexdigest()
 
     async def publishStoredMigration(self, session_id, stored):
         publication = stored['publication']
@@ -498,7 +621,7 @@ class CurrentJsonlSessionPersistence(JsonlStore):
             if self.compression=='zstd':
                 parsed = await self._scan_current_zstd(data,signal)
             else:
-                parsed = scanLog(data)
+                parsed = scanLog(data,self.format_version)
                 parsed['recoveredTail'] = []
                 if parsed['committedBytes']<len(data):
                     parsed['tornTruncateTo'] = parsed['committedBytes']
@@ -509,10 +632,10 @@ class CurrentJsonlSessionPersistence(JsonlStore):
             throw_aborted(signal)
             raise SessionPersistenceCorruptionError('session "%s": stored log is corrupt: %s (raw log: %s)' % (expected_id,error_string(error),path),dict(cause=error)) from error
         throw_aborted(signal)
-        await self._run(self._assert_identity,path,3,parsed['meta'],expected_id)
+        await self._run(self._assert_identity,path,self.format_version,parsed['meta'],expected_id)
         throw_aborted(signal)
         assertStoredId(expected_id,parsed['meta'])
-        validateStoredEvents(parsed['meta'],parsed['events'],dict(kind='jsonl',path=self.locate(parsed['meta'])))
+        validateStoredEvents(parsed['meta'],parsed['events'],dict(kind='jsonl',path=self.locate(parsed['meta'])),self.format_version)
         stored = dict(status='current',meta=parsed['meta'],eventState='shared-frozen',events=deep_freeze(parsed['events']),
                       inheritedEventCount=parsed['inheritedEventCount'],recoveredTail=parsed['recoveredTail'],revision=revision(snapshot['identity']))
         if parsed.get('tornTruncateTo') is not None:
@@ -528,7 +651,7 @@ class CurrentJsonlSessionPersistence(JsonlStore):
         first = frames[0]
         header = self._decode(data,first)
         self._header_frame(header)
-        scanner = SessionLogScanner(header)
+        scanner = SessionLogScanner(header,format_version=self.format_version)
         deadline = time.monotonic()+0.5
         for frame in frames[1:]:
             throw_aborted(signal)
@@ -554,10 +677,10 @@ class CurrentJsonlSessionPersistence(JsonlStore):
     async def resolveCurrentLog(self, session_id, signal=None):
         await self.ensureRootEncoding()
         selected = await self.findLog(session_id,signal)
-        if selected is None or selected['sourceVersion']<3:
+        if selected is None or selected['sourceVersion']<self.format_version:
             return None
-        if selected['sourceVersion']>3:
-            raise unsupported(sessionFormatVersionRefusal(session_id,selected['sourceVersion']),dict(kind='jsonl',path=selected['sourcePath']))
+        if selected['sourceVersion']>self.format_version:
+            raise unsupported(sessionFormatVersionRefusal(session_id,selected['sourceVersion'],self.format_version),dict(kind='jsonl',path=selected['sourcePath']))
         return selected['sourcePath']
 
     async def persistBatch(self, header, events, isMaterialized, inheritedEventCount):
@@ -576,7 +699,7 @@ class CurrentJsonlSessionPersistence(JsonlStore):
         self.tracker.materialized(header['id'])
 
     def _event_frame(self, events):
-        content = (eventLines(events)+'\n').encode('utf-8')
+        content = (eventLines(events,self.format_version)+'\n').encode('utf-8')
         return compress_frame(content) if self.compression=='zstd' else content
 
     def _materialize(self, header, cut, events):
@@ -585,7 +708,7 @@ class CurrentJsonlSessionPersistence(JsonlStore):
         opposite = self._opposite_generation(directory)
         if opposite is not None:
             raise self._encoding_error(opposite)
-        content = header_bytes(header,cut)
+        content = header_bytes(header,cut,self.format_version)
         if self.compression=='zstd':
             content = compress_frame(content)
         if events:

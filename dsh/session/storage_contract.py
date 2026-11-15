@@ -10,11 +10,11 @@ def field(value, name, default=UNDEFINED):
     return value.get(name, default) if isinstance(value, dict) else getattr(value, name, default)
 
 
-def sessionFormatVersionRefusal(session_id, version):
+def sessionFormatVersionRefusal(session_id, version, format_version=3):
     start = 'session "%s" uses log format v%s' % (session_id, display(version))
-    if isinstance(version, (int, float)) and version > 3:
-        return start + ', but this harness reads only v3: the log was written by a newer harness — upgrade the harness to open it'
-    return start + ', older than the supported v3, and this build ships no upgrade path for it'
+    if isinstance(version, (int, float)) and version > format_version:
+        return start + ', but this harness reads only v%s: the log was written by a newer harness — upgrade the harness to open it' % format_version
+    return start + ', older than the supported v%s, and this build ships no upgrade path for it' % format_version
 
 
 def unsupported(reason, location):

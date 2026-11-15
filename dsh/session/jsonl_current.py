@@ -48,8 +48,8 @@ def generationLogPath(root, cwd, identity, version, compression):
     return os.path.join(sessionDir(root, cwd, identity), generationLogFilename(version, compression))
 
 
-def logPath(root, cwd, identity, compression):
-    return generationLogPath(root, cwd, identity, 3, compression)
+def logPath(root, cwd, identity, compression, format_version=3):
+    return generationLogPath(root, cwd, identity, format_version, compression)
 
 
 def assertNoRetiredHeaderFields(value):
@@ -57,7 +57,7 @@ def assertNoRetiredHeaderFields(value):
         raise ValueError('session header uses retired policy baseline fields')
 
 
-def toHeaderLine(header, inheritedEventCount=UNDEFINED):
+def toHeaderLine(header, inheritedEventCount=UNDEFINED, format_version=3):
     if hasattr(header, 'to_dict'):
         header = header.to_dict()
     if header.get('isSeeded') and inheritedEventCount is UNDEFINED:
@@ -66,19 +66,27 @@ def toHeaderLine(header, inheritedEventCount=UNDEFINED):
     if not header.get('isSeeded') and cut != 0:
         raise ValueError('unseeded session header inherited event count must be 0')
     depth = header.get('delegationDepth', UNDEFINED)
-    return sessionFormatCatalog.encodeCurrentHeader(dict(header, delegationDepth=0 if depth is UNDEFINED or depth is None else depth), cut)
+    catalog = sessionFormatCatalog
+    if format_version == 4:
+        from dsh.session.format_catalog import candidateSessionFormatCatalog
+        catalog = candidateSessionFormatCatalog
+    return catalog.encodeCurrentHeader(dict(header, delegationDepth=0 if depth is UNDEFINED or depth is None else depth), cut)
 
 
-def eventLine(event):
-    return stringify_json(sessionFormatCatalog.encodeCurrentEvent(event))
+def eventLine(event, format_version=3):
+    catalog = sessionFormatCatalog
+    if format_version == 4:
+        from dsh.session.format_catalog import candidateSessionFormatCatalog
+        catalog = candidateSessionFormatCatalog
+    return stringify_json(catalog.encodeCurrentEvent(event))
 
 
-def eventLines(events):
-    return '\n'.join(eventLine(event) for event in events)
+def eventLines(events, format_version=3):
+    return '\n'.join(eventLine(event, format_version) for event in events)
 
 
-def header_bytes(header, inheritedEventCount=UNDEFINED):
-    return (stringify_json(toHeaderLine(header, inheritedEventCount))+'\n').encode('utf-8')
+def header_bytes(header, inheritedEventCount=UNDEFINED, format_version=3):
+    return (stringify_json(toHeaderLine(header, inheritedEventCount, format_version))+'\n').encode('utf-8')
 
 
 def is_header(value):
@@ -200,10 +208,10 @@ class SessionLogScanner:
         self.committed_bytes = end
 
 
-def scanLog(buffer):
+def scanLog(buffer, format_version=3):
     boundary = buffer.find(b'\n')
     if boundary < 0:
         raise ValueError('empty or header-less session log')
-    scanner = SessionLogScanner(buffer[:boundary+1])
+    scanner = SessionLogScanner(buffer[:boundary+1], format_version=format_version)
     scanner.write(buffer[boundary+1:])
     return scanner.finish()

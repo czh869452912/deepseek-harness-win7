@@ -111,3 +111,5 @@
 2026-11-15：C1-AQ [共享 runtime 与重导出 namespace](hmr-namespaces-checks.json)完成 4 组实际 ESM/Python 重导出旅程，并复核 12 组部分替换；4 项原版所选消费者及 12 项 Python 检查通过。覆盖共享实现更新、按 entry 分配分裂实现、无 entry 实例歧义恢复及保留 node_modules 的旧 namespace。修复异步替换拒绝过早进入 Python 回滚的 Promise 边界；首轮 Source 观察器误用 DisposableList.size 亦独立修正，原始差异保留。全部自有夹具和工作区及时清理，继续映射变化与监听生命周期。
 
 2026-11-15：C1-AR [包入口变更与运行中 namespace](hmr-mapping-checks.json)完成 10 条固定原版/Python 实际链接包观察、5 项原版与 11 项 Python 检查。旧活实例继续绑定原 namespace，新启用条目按新 exports 解析；双活代际独立更新、重复实例和 disabled shadow 均覆盖，无需生产修正。首轮 tsx 异步加载器的独立缓存超出原版失效器支持范围，改用未改动的构建库直接运行 Node，原始观察保留且不作通过证据。全部自有合成目录和链接已清理，继续消费者生命周期与监听规则。
+
+2026-11-15：C1-AS [根监听就绪、选项和宿主边界](hmr-roots-checks.json)完成 10 条真实文件监听及 580 个忽略规则值的固定原版/Python 对照，2 项原版与 18/5 项 Python 定向检查通过。启动先建立库存；支持文件 root、相对 base、depth、目录链接与 followSymlinks；按原版只派发 change，新增/删除/重现不触发。移除额外 dist/build/venv 忽略，显式空规则生效；保留 Windows path.relative 与 picomatch 的反斜杠行为。宿主依赖图停止于 node_modules，单次索引避免重复扫描。初次通配文件名错误、分隔符差异和模式探索记录保留，自有合成文件/链接/工作区全部清理。高级 glob/deployment 选项、部分替换消费者和 patchReload 仍待闭合；轮询不保证发现两次扫描间尺寸/mtime 均未变化的编辑。

@@ -290,44 +290,18 @@ class ConfigWatcherService(Service):
         self._poll_task: Optional[asyncio.Task] = None
         self._running = True
 
-        self.base_dir = self.config.get("base")
-        if not self.base_dir:
-            base_url = getattr(ctx, "baseUrl", None) or getattr(ctx, "base_url", None)
-            if not base_url and hasattr(ctx, "root") and ctx.root:
-                base_url = getattr(ctx.root, "baseUrl", None) or getattr(ctx.root, "base_url", None)
-            if not base_url and hasattr(ctx, "_parent") and ctx._parent:
-                base_url = getattr(ctx._parent, "baseUrl", None) or getattr(ctx._parent, "base_url", None)
-            if base_url:
-                if base_url.startswith("file://"):
-                    import urllib.parse
-                    parsed = urllib.parse.urlparse(base_url)
-                    p = urllib.parse.unquote(parsed.path)
-                    if sys.platform == "win32" and p.startswith("/"):
-                        p = p[1:]
-                    self.base_dir = os.path.normpath(p)
-                else:
-                    self.base_dir = base_url
-            else:
-                self.base_dir = "."
-        self.base_dir = os.path.abspath(self.base_dir)
+        from urllib.parse import urljoin
+        base_url = getattr(ctx, 'baseUrl', None) or getattr(ctx, 'base_url', None)
+        configured_base = self.config.get('base') or '.'
+        if base_url and base_url.startswith('file:'):
+            self.base_dir = os.path.abspath(file_path(urljoin(base_url, configured_base)))
+        else:
+            self.base_dir = os.path.abspath(os.path.join(base_url or '.', configured_base))
         self.watch_base_dir = os.path.realpath(self.base_dir)
-
-        # D7: Root & ignored defaults matching TS Hmr.Config
-        self.root = list(self.config.get("root", ["."]))
-        default_ignored = ["**/node_modules/**", "**/.*", "cache", "data", "**/.venv/**", "**/__pycache__/**", "**/.git/**", "**/dist/**", "**/.pytest_cache/**"]
-        user_ignored = list(self.config.get("ignored", []))
-        self.ignored = list(set(default_ignored + user_ignored))
-
-        # D1: Externals matching TS index.ts:220-226
-        self.externals: Set[str] = set()
-        try:
-            if sys.argv and sys.argv[0]:
-                main_f = os.path.realpath(sys.argv[0])
-                if os.path.isfile(main_f):
-                    import pathlib
-                    self.externals.add(pathlib.Path(main_f).as_uri())
-        except Exception:
-            pass
+        self.root = list(self.config.get('root', ['.']))
+        self.ignored = list(self.config.get('ignored', ['**/node_modules', '**/.*', 'cache', 'data']))
+        self.externals = set()
+        self._watch_started = False
 
         self._changed = {}
         self._stashed = {}
@@ -378,6 +352,16 @@ class ConfigWatcherService(Service):
             yield cancel_ready
             from dsh.cordis.hmr_profile_watch import watch_profile
             await watch_profile(self, profile)
+        from dsh.cordis.hmr_root_watch import scan
+        from dsh.cordis.hmr_glob import _compile
+        # Like Chokidar's ready event, the initial inventory precedes service
+        # activation. Root changes cannot race an uninitialized classifier.
+        os.stat(self.watch_base_dir)
+        for pattern in self.ignored:
+            _compile(pattern[1:] if pattern.startswith('!') and not pattern.startswith('!(') else pattern)
+        self.externals = self.modules.external_modules()
+        await scan(self, initial=True)
+        self._watch_started = True
 
     def _profile_modules(self, roots):
         """Loaded Python modules below the profile and its linked packages."""
@@ -456,21 +440,11 @@ class ConfigWatcherService(Service):
     watchConfig = watch_config
 
     def is_ignored(self, filepath: str, base_dir: str) -> bool:
-        import fnmatch
-        try:
-            rel = os.path.relpath(filepath, base_dir).replace("\\", "/")
-        except ValueError:
-            rel = filepath.replace("\\", "/")
-        name = os.path.basename(filepath)
-        if name.startswith(".") or name in ("node_modules", "__pycache__", "dist", "build", ".venv", "venv", "cache", "data"):
-            return True
-        for pat in self.ignored:
-            if fnmatch.fnmatch(rel, pat) or fnmatch.fnmatch(name, pat) or fnmatch.fnmatch(f"**/{name}", pat) or fnmatch.fnmatch(f"**/{rel}", pat):
-                return True
-            pat_stripped = pat.strip("*/")
-            if pat_stripped and (pat_stripped in rel.split("/") or pat_stripped == name):
-                return True
-        return False
+        from dsh.cordis.hmr_glob import matches
+        relative = os.path.relpath(filepath, base_dir)
+        # Upstream passes path.relative directly to picomatch, including native
+        # Windows separators. Its root-relative empty path is not a dotfile.
+        return matches('' if relative == '.' else relative, self.ignored)
 
     def invalidate_manifest(self, filename):
         # Python profile/resource metadata reads are uncached. Directory finder
@@ -572,42 +546,9 @@ class ConfigWatcherService(Service):
                         if last_mtime > 0.0:
                             self._module_mtimes[filename] = (0.0, -1)
 
-                # 3. Check roots
-                if self.root:
-                    import pathlib
-                    for r in self.root:
-                        scan_dir = os.path.realpath(os.path.join(self.watch_base_dir, r))
-                        if not os.path.exists(scan_dir):
-                            continue
-                        if os.path.isdir(scan_dir):
-                            for root_path, dirs, files in os.walk(scan_dir):
-                                # Large repositories must not starve tool calls,
-                                # reload settlement or cancellation on the loop.
-                                await asyncio.sleep(0)
-                                dirs[:] = [d for d in dirs if not self.is_ignored(os.path.join(root_path, d), scan_dir)]
-                                for file_index, f in enumerate(files):
-                                    if file_index % 128 == 0:
-                                        await asyncio.sleep(0)
-                                    full_path = os.path.join(root_path, f)
-                                    if self.is_ignored(full_path, scan_dir):
-                                        continue
-                                    try:
-                                        mtime = os.path.getmtime(full_path)
-                                        size = os.path.getsize(full_path)
-                                    except OSError:
-                                        continue
-                                    if not self._initial_scanned:
-                                        self._root_mtimes[full_path] = (mtime, size)
-                                        continue
-                                    last_info = self._root_mtimes.get(full_path)
-                                    if last_info is not None:
-                                        last_m, last_sz = last_info
-                                        if mtime != last_m or size != last_sz:
-                                            self._root_mtimes[full_path] = (mtime, size)
-                                            self._module_changed(os.path.relpath(full_path, self.watch_base_dir))
-                                    elif last_info is None:
-                                        self._root_mtimes[full_path] = (mtime, size)
-                    self._initial_scanned = True
+                if self._watch_started and self.root:
+                    from dsh.cordis.hmr_root_watch import scan
+                    await scan(self)
 
             except asyncio.CancelledError:
                 break

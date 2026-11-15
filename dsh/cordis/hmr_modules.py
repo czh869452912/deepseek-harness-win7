@@ -199,6 +199,22 @@ class PythonModules:
                 self._host = seen
         return set(self._host)
 
+    def external_modules(self):
+        """The evaluated entry graph, stopping traversal at installed packages."""
+        main = module_url(sys.modules.get('__main__'))
+        filename = sys.argv[0] if sys.argv else None
+        if not filename or not os.path.isfile(filename) or main != Path(os.path.realpath(filename)).as_uri():
+            return set()
+        modules = self.loaded_modules()
+        work, seen = [main], set()
+        for url in work:
+            if url in seen or '/node_modules/' in url or url.startswith('node:'):
+                continue
+            seen.add(url)
+            for module in modules.get(url, ()):
+                work.extend(self._links(module))
+        return seen
+
     def plugins_of(self, url):
         loader = self.ctx.get('loader')
         values = []

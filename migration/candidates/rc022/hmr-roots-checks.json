@@ -1,0 +1,32 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-15",
+  "unit": "C1-AS-HmrRootWatcherLifecycle",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "state": "targeted-passed",
+  "paired": ".goose/out/rc022-hmr-roots-paired-20261115-06/report.json",
+  "observations": 11,
+  "glob_observations": 580,
+  "source": {
+    "run": "rc022-hmr-roots-source-20261115-01",
+    "passed": 2,
+    "failed": 0,
+    "not_selected": 11
+  },
+  "native": [
+    {
+      "run": "rc022-hmr-roots-native-20261115-01",
+      "passed": 18,
+      "failed": 0
+    },
+    {
+      "run": "rc022-hmr-roots-native-20261115-02",
+      "passed": 5,
+      "failed": 0
+    }
+  ],
+  "verification_scope_reason": "Actual original Chokidar and native portable polling compare initial readiness, defaults/empty ignores, relative base, file root, depth, literal non-glob root, linked roots with followSymlinks enabled/disabled, and add/change/unlink/recreate. Direct pattern comparisons exercise globstar, dotfiles, braces, bracket classes, case, negation and Windows path separators. Native entry graph and prior config/root dispatch/exit/profile/queue consumers cover lifecycle ownership.",
+  "scope": "Await root inventory before service activation; classify changes with the evaluated host dependency graph collected once using one module index. Respect configured ignore replacement, exact Source defaults, file targets, depth, links and change-only notifications. Do not silently add dist/build/venv exclusions. Source passes native Windows path.relative separators directly to picomatch; preserve that platform behavior. Invalid wildcard root filenames are absent watch targets on Windows, not glob expansion. Glob exploratory empty pattern rejection and the initial path separator differences retained; final root pairs include all selected patterns.",
+  "cleanup": ".goose/out/rc022-hmr-roots-native-20261115-02/cleanup.json",
+  "remaining": "Advanced ignore extglob/range semantics and other deployment options, provider/consumer partial replacement and profile patchReload retirement. Native polling cannot observe edits whose size and mtime are both unchanged between scans. No complete HMR or release qualification."
+}

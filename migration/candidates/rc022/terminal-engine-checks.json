@@ -1,0 +1,19 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-16",
+  "unit": "C8-S-OriginalTerminalScreenEngine",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "state": "targeted-passed",
+  "paired": ".goose/out/rc022-terminal-engine-paired-final-20261116-01/comparison/report.json",
+  "observations": 27,
+  "native": {"run": "rc022-terminal-engine-native-20261116-01", "passed": 33, "failed": 0},
+  "source": {"run": "rc022-terminal-engine-source-20261116-01", "passed": 47, "failed": 0},
+  "verification_scope_reason": "Original headless6.0.0 and serialize0.14.0 execute on Source Node24 and the shipped x64 QuickJS worker. Each ordered operation compares exact ANSI serialization, pages and marks across carriage rewrites, wrapped/wide text, split escape sequences, normal/alternate buffers, trimming, clear, Unicode and resize/reflow. Native tests cover mark/write ordering, disposed-mark semantics, creation cancellation, unload joining late creation, worker crash cleanup and tampered resource refusal, plus the existing JavaScript runtime tests. Complete Source screen and terminal test files pass.",
+  "implementation": "Unchanged xterm artifacts and MIT license are pinned by byte identity and a reproducible Source-checked vendor script. A host adapter runs xterm's synchronous parser inside ordered worker operations; DOM painting/blink/write timers are unused. Python caches the original emulator's dense rows and marker state for synchronous reads, delegates exact serialization to the original addon, and owns creation/cleanup through ctx.jsRuntime and the terminalScreens service. Individually disposed screens release owner records and cached buffers.",
+  "observer_boundary": "The shipped worker was executed on the current Windows host; this does not qualify an actual Win7 VM or x86 screen path. Original libraries are unchanged. Worker transport and lifecycle are real; no PTY, BrowserTerminal, Remote terminal controller or frontend acceptance. Unexpected worker failure remains observable while cleanup still removes its record.",
+  "activation_boundary": "Candidate host substrate; production composition must mount terminalScreens with jsRuntime. Production mapping, pin and accepted_upstream unchanged pending composition and C9. Targeted checks do not establish release acceptance.",
+  "cleanup": ".goose/out/rc022-terminal-engine-source-20261116-01/cleanup.json",
+  "input_cleanup": ".goose/out/rc022-terminal-screen-control-20261116-01/input-cleanup.json",
+  "external_cleanup": ".goose/out/rc022-terminal-engine-source-20261116-01/external-cleanup.json",
+  "retained_assets": "Removed 20220361 bytes of owned runtime copies, fixture trees, generated matrices and duplicate verified license input. Empty external Source root removed. No task runners or JavaScript workers remain. Commands, observations, prototype diagnostics and generation receipts retained; shared fixed Source/toolchain retained through C9."
+}

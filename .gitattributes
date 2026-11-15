@@ -56,3 +56,4 @@ dsh/session/bin/icu/x86/** -whitespace
 dsh/session/bin/zstd/x86/** -whitespace
 dsh/subprocess/bin/winpty/x86/** -whitespace
 dsh/terminal/unicode16/LICENSE.txt -text
+dsh/javascript/terminal-screen/** -text

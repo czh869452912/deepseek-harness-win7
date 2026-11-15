@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-15",
+  "unit": "C5-M-OrderedNestedPtcDispatch",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "state": "targeted-passed",
+  "paired": ".goose/out/rc022-ptc-dispatches-paired-final-20261115-01/comparison/report.json",
+  "observations": 15,
+  "native": {"run": "rc022-ptc-dispatches-native-final-20261115-01", "passed": 321, "failed": 0},
+  "source": {"run": "rc022-ptc-dispatches-source-20261115-01", "passed": 170, "failed": 0},
+  "verification_scope_reason": "Actual Source createRunCodeTool program bridge and native PtcDispatches use real Context/tools/pipelines. Explicit gates prove body overlap, head-of-line commit under reverse completion, single pre-policy lane, exclusive barrier through asynchronous post-policy, reclassification immediately before start, policy/body/post failures, canonical binding values, ordered deferred contexts and terminal marker, detached durable start/settle records including metadata/error info, slow-log independence/backpressure, failing-log content fallback, unlogged queued abandonment, external Error cancellation and exact allowance error text. Existing actual Agent/admission/executor/prompt/factory consumers pass.",
+  "initial_failures": "Source fixture omitted provide before assigning workingDirectory; native fixture released bodies before establishing overlap. Later assertions incorrectly expected an exclusive barrier after the exclusive post-stage had completed and expected log backpressure to erase already-started bodies. Fixed controlled observation gates to assert the actual ordered-commit contract on both sides. Pairing also exposed a missing Error name in run-over diagnostics; fixed without removing message comparison. Original logs and observations retained.",
+  "activation_boundary": "PtcDispatches is the nested scheduler for the forthcoming separate executor transport. Its integration into run_code, runtime release ownership, schema controls, native process confinement and protocol framing remain subsequent C5 work. The old semaphore-based registry-owned code path is unchanged and not qualified here. Production pin unchanged; no full release claim.",
+  "cleanup": ".goose/out/rc022-ptc-dispatches-source-20261115-01/cleanup.json",
+  "cleanup_bytes": 2566053,
+  "retained_assets": "Commands, XML, logs, paired observations and original failure diagnostics retained. Owned synthetic workspaces removed; no owned dispatch test process remains. Shared Source/toolchain retained until C9."
+}

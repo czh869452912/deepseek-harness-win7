@@ -1,17 +1,23 @@
 {
   "schema_version": 1,
-  "date": "2026-11-16",
-  "unit": "C8-AE-SdkClientRun",
+  "date": "2026-11-15",
+  "unit": "C6-V-SdkRun",
   "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
   "state": "targeted-passed",
-  "paired": ".goose/out/rc022-sdk-run-paired-20261116-01/comparison/report.json",
-  "observations": 28,
-  "native": {"run": "rc022-sdk-run-native-20261116-01", "passed": 21, "failed": 0},
-  "source": {"run": "rc022-sdk-run-source-20261116-01", "passed": 55, "failed": 0},
-  "verification_scope_reason": "Actual Source client and Python client use the identical pinned independently running Node query wire fixture. Compare complete results, observed notifications, preserved input blocks and errors for prompt/command routing, receipt exclusion, child-tree scope, lifecycle identity, late or missing command/done, malformed execution/completion, observer failure and subscription release. Native tests additionally execute actual Python SDK/Agent command and prompt processing and persist/close/resume a session across two SDK subprocesses. Direct query server consumers included.",
-  "observer_boundary": "Paired server is the unchanged Source protocol fixture, not the Source SDK server or a live provider. Native process integration is separate evidence. Held overlapping work, all disconnect races and whole production SDK composition remain separate qualification work.",
-  "activation_boundary": "HarnessSession.run, DeepSeekHarness.run and high-level resumeSession now consume canonical session/query. Internal query_input remains absent from the client public class, matching Source. No production pin/accepted_upstream promotion or release acceptance.",
-  "cleanup": ".goose/out/rc022-sdk-run-source-20261116-01/cleanup.json",
-  "cleanup_bytes": 534077,
-  "retained_assets": "Owned synthetic workspaces/homes and empty external Source root removed; logs/XML/JSON paired observations/commands retained. No owned query peer, SDK subprocess or runner remains. Shared Source/toolchain retained through C9."
+  "paired": ".goose/out/rc022-sdk-run-paired-final-20261115-01/comparison/report.json",
+  "observations": 25,
+  "native": {
+    "run": "rc022-sdk-run-native-final-20261115-01",
+    "passed": 4,
+    "failed": 0
+  },
+  "source": {
+    "run": "rc022-sdk-run-source-20261115-01",
+    "passed": 55,
+    "failed": 0
+  },
+  "verification_scope_reason": "SDK run coordinator and direct shared settlement consumer: ready-before-publication, distinct origin/effective cwd, explicit route and scrubbed environment, safe typed diagnostics, terminal outcome folding, partial output, cancellation, startup aggregates and memoized cleanup. Includes consumed SDK event validation.",
+  "activation_boundary": "Controlled client seam only. Does not qualify native SDK process client, real pipe/process cleanup, provider assembly or production composition.",
+  "cleanup": ".goose/out/rc022-sdk-run-source-20261115-01/cleanup.json",
+  "retained_assets": "Commands/logs/XML and observations retained; synthetic payloads removed (1769612 bytes). Shared Source/toolchain retained through C9."
 }

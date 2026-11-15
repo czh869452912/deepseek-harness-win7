@@ -5,38 +5,12 @@ from dsh.cordis.json_text import stringify_json
 from dsh.cordis.utils import js_to_string
 from dsh.core.session.json import UNDEFINED
 from .errors import SdkProtocolError
+from .event_validation import validated_session_event
 from .query_input import js_trim
 
 
 def protocol(message, value):
     raise SdkProtocolError(message + stringify_json(value))
-
-
-def validated_session_event(value):
-    if not isinstance(value, dict) or not isinstance(value.get('type'), str):
-        protocol('session.event carried no event envelope: ', value)
-    kind, data = value['type'], value.get('data')
-    if kind == 'assistant/message':
-        message = data.get('message') if isinstance(data, dict) else None
-        content = message.get('content') if isinstance(message, dict) else None
-        if not isinstance(content, list) or not all(isinstance(block, dict) and isinstance(block.get('type'), str) for block in content):
-            protocol('assistant/message event carried malformed content: ', value)
-    if kind == 'turn/end':
-        if not isinstance(data, dict):
-            protocol('turn/end event carried malformed data: ', value)
-        reason = data.get('reason')
-        if not isinstance(reason, dict) or not isinstance(reason.get('kind'), str):
-            protocol('turn/end carried no reason envelope: ', reason)
-        if reason['kind'] == 'aborted':
-            detail = reason.get('reason')
-            if not isinstance(detail, dict) or not isinstance(detail.get('kind'), str):
-                protocol('turn/end carried a malformed aborted reason: ', reason)
-            if detail['kind'] == 'hook':
-                if not isinstance(detail.get('reason'), str):
-                    protocol('turn/end carried a malformed hook abort reason: ', reason)
-            elif detail['kind'] not in ('user', 'parent', 'disposed', 'legacy'):
-                protocol('turn/end carried an unknown abort reason: ', reason)
-    return value
 
 
 def final_response(events):

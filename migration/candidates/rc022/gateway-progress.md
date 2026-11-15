@@ -29,4 +29,6 @@
 
 | C7-V | 会话资源默认识别、预设选择和目标子代理控制的实际 Gateway 授权 | [应用资源声明](application-resource-checks.json) |
 
-后续：Session 非所有者过滤、生成物和原版客户端整体接入。最终资格使用 C9 冻结候选的完整门禁；当前生产 pin 与 `accepted_upstream` 不提升。
+| C7-W | 非所有者列表/搜索过滤、v4 投影实时流、权限变化与取消 | [会话读取过滤](session-access-checks.json) |
+
+后续：Session 调用者/重试、生成物和原版客户端整体接入。最终资格使用 C9 冻结候选的完整门禁；当前生产 pin 与 `accepted_upstream` 不提升。

@@ -42,6 +42,7 @@ async def build_model_catalog(ctx, default_selection=None):
 
 
 class CurrentSessionController(TypertRemoteService):
+    control_class = CurrentSessionControl
     inject = ['agentDefaultModel', 'agents', 'attachments', 'fileUploads', 'llm', 'sessions', 'sessionProjections', 'sessionQuery', 'typert', 'workspaceRegistry']
 
     def __init__(self, ctx, config=None, internals=None):
@@ -57,7 +58,7 @@ class CurrentSessionController(TypertRemoteService):
                 raise found['error']
             return found['agent']
         ctx.effect(lambda: ctx.get('fileUploads').registerAgentResolver(resolve), 'session-controller: file-upload Agent resolver')
-        self.control_state = CurrentSessionControl(ctx)
+        self.control_state = self.control_class(ctx)
         ctx.effect(lambda: self.drain, 'session-controller.promotions')
         self.history = CurrentSessionHistory(ctx, self.promote)
         self.list_state = CurrentSessionList(ctx)

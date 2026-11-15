@@ -1,0 +1,25 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-15",
+  "unit": "C7-W-SessionReadFilteringAndProjectionControl",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "state": "targeted-passed",
+  "paired": ".goose/out/rc022-session-access-paired-2-20261115-01/comparison/report.json",
+  "observations": 11,
+  "native": {
+    "run": "rc022-session-access-native-20261115-01",
+    "passed": 41,
+    "failed": 0
+  },
+  "source": {
+    "run": "rc022-session-access-source-20261115-01",
+    "passed": 75,
+    "failed": 0
+  },
+  "verification_scope_reason": "Actual Session Remote method wrappers and Gateway admission with controlled list/search IO: owner/guest rows, unchanged pre-filter hasMore, global refusal before IO. Actual v4 Session, Agent and Projection providers supply control baselines and grouped per-event changes; owner receives both Sessions, guest receives only granted Sessions, live policy replacement affects the next frame, cancellation yields gateway/cancelled and releases both stream subscriptions. Native adds accepted-frame draining and owned listener teardown plus application declarations and existing facade consumers.",
+  "observer_boundary": "Source constructs its actual SessionController but controls listState and installs the actual SessionControlController directly. Native binds the actual AuthorizedSessionController wrapper to the same controlled list/search collaborators and actual ProjectionSessionControl. This tests the wrapper and projection stream contract, not full SessionController initialization, cold summary IO, prompt commands or arbitrary projection value parity. Baselines project keys and accessProbe values; live frames retain sequence and accessProbe changes.",
+  "implementation": "AuthorizedSessionController is the candidate resource-aware face. Its required services match the fixed Source and its SRC list wire parameter is _request. ProjectionSessionControl emits only baseline/projection frames with per-event changes; queue and job data belong to projections. The pre-existing CurrentSessionController remains for earlier facade regressions until coordinated composition replacement.",
+  "activation_boundary": "Production composition and pin not promoted. Candidate whole-controller initialization, prompt/retry metadata, strict artifacts and original-client qualification remain pending.",
+  "cleanup": ".goose/out/rc022-session-access-source-20261115-01/cleanup.json",
+  "retained_assets": "4277078 bytes of owned journals, synthetic workspaces and tmp/home removed after teardown. Commands, paired observations, XML/JSON/logs and initial cancellation-observer failure retained. No task workers remain. Shared Source/toolchain retained through C9."
+}

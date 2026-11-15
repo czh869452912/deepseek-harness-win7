@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-15",
+  "unit": "C4-P-AgentFactorySlot",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "state": "targeted-passed",
+  "paired": ".goose/out/rc022-factory-slot-paired-20261115-01/comparison/report.json",
+  "observations": 6,
+  "native": {"run": "rc022-factory-slot-native-20261115-01", "passed": 134, "failed": 0},
+  "verification_scope_reason": "Actual Source/native registry calls preserve request/result identity and explicit caller ownership for plain factories and canonicalized traced Services. The exact factory effect disposer nests under caller lifetimes; occupied slots reject replacement even while the owner is unloading, and owner disposal permits a fresh slot. Native direct consumers exercise real V4 loop creation with the Python-to-Source request adapter, model selection and inbox handles, plus V3 lifecycle, machine and Agent consumers. The unchanged Source Agent suite's 16 passing tests from C4-O remain separately identified; this unit adds six fresh paired journeys rather than relabelling that run.",
+  "activation_boundary": "V4 registry calls the factory's createAgent(ownerCtx, request) / resume(ownerCtx, request) surface and re-traces the canonical target for each caller. The Python loop accepts those requests while retaining its existing positional internal methods and options alias for Python consumers. V3 factory delegation and default production pin remain unchanged. Factory initialization/publication ordering is still separate work.",
+  "cleanup": ".goose/out/rc022-factory-slot-paired-20261115-01/cleanup.json",
+  "remaining": "Factory Session publication/setup and maintenance ownership, real driver initiator integration, downstream contracts and release qualification."
+}

@@ -5,7 +5,7 @@ import inspect
 
 from dsh.core.agent import AgentRegistry, AgentPlugin
 from dsh.core.agent_dispatch_current import AgentEventDispatch, agent_carrier, agent_events, emit_agent_event
-from dsh.cordis.utils import _js_call_callback, _js_error_to_string
+from dsh.cordis.utils import _js_call_callback, _js_error_to_string, get_traceable, symbols
 from dsh.cordis.awaiting import start_coroutine
 from dsh.cordis.fiber import FiberState
 
@@ -172,6 +172,43 @@ class CurrentAgentRegistry(AgentRegistry):
 
     def _factory_request_options(self, request):
         return dict(parent_agent=request.get('parentAgent', request.get('parent_agent')))
+
+    def set_factory(self, factory):
+        if self.format_version != 4:return super().set_factory(factory)
+        def setup():
+            if self._factory is not None:
+                raise RuntimeError('an agent factory is already registered')
+            self._factory = getattr(factory, symbols.original, None) or factory
+            def remove():self._factory = None
+            return remove
+        return self.ctx.effect(setup, 'agents.setFactory()')
+
+    setFactory = set_factory
+
+    def _require_factory_receiver(self):
+        if self._factory is None:
+            raise RuntimeError('no agent factory registered (load an agent-loop plugin)')
+        return get_traceable(self.ctx, self._factory)
+
+    async def create(self, session_id=None, options=None, meta=None, setup=None, **kwargs):
+        if self.format_version != 4:
+            return await super().create(session_id, options, meta, setup, **kwargs)
+        request = session_id
+        if not isinstance(request, dict):
+            request = dict(kwargs, sessionId=session_id, agentOptions=options, meta=meta, setup=setup)
+        receiver = self._require_factory_receiver()
+        result = receiver.createAgent(self.ctx, request)
+        return await result if inspect.isawaitable(result) else result
+
+    async def resume(self, resume_session_id, options=None, setup=None, **kwargs):
+        if self.format_version != 4:
+            return await super().resume(resume_session_id, options, setup, **kwargs)
+        request = resume_session_id
+        if not isinstance(request, dict):
+            request = dict(kwargs, resumeSessionId=resume_session_id, agentOptions=options, setup=setup)
+        receiver = self._require_factory_receiver()
+        result = receiver.resume(self.ctx, request)
+        return await result if inspect.isawaitable(result) else result
 
     def enter(self, agent, owner=None, creator=None):
         detach = super().enter(agent, owner=owner, creator=creator)

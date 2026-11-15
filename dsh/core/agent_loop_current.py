@@ -1,5 +1,6 @@
 """rc.3 concrete Agent factory over current Session handles and request machine."""
-from dsh.core.agent import AgentHandle
+from dsh.core.agent import AgentHandle, AgentOptions
+from dsh.core.session.json import UNDEFINED
 from dsh.core.agent_lifecycle_current import CurrentAgentLifecycleService, CurrentAgentLifecyclePlugin
 from dsh.core.agent_dispatch_current import emit_agent_event
 from dsh.core.react_loop_current import ReactLoopAgent
@@ -21,6 +22,28 @@ class CurrentAgentLoopService(CurrentAgentLifecycleService):
         if getattr(projections, 'format_version', 3) == 4:
             self._model_projection_handle = await projections.register(MODEL_SELECTION_PROJECTION_DEFINITION)
             self._inbox_projection_handle = await projections.register(INBOX_PROJECTION_DEFINITION)
+
+    @staticmethod
+    def _request_options(request):
+        options = request.get('agentOptions', request.get('options'))
+        if not isinstance(options, dict):return options
+        return AgentOptions(provider=options.get('provider'), model=options.get('model'),
+                            reasoning_effort=options.get('reasoningEffort', options.get('reasoning_effort')),
+                            max_tokens=options.get('maxTokens', options.get('max_tokens')))
+
+    async def createAgent(self, owner_ctx, request):
+        return await self.create_agent(request.get('sessionId'), self._request_options(request),
+                                       request.get('meta'), request.get('setup'), request.get('seed'),
+                                       request.get('signal'), owner_ctx,
+                                       request.get('inheritedEventCount', UNDEFINED), request.get('parentAgent'))
+
+    async def resume(self, resume_session_id, options=None, setup=None, **kwargs):
+        if hasattr(resume_session_id, 'fiber') and isinstance(options, dict):
+            owner_ctx, request = resume_session_id, options
+            return await super().resume(request.get('resumeSessionId'), self._request_options(request),
+                                        request.get('setup'), request.get('signal'), owner_ctx,
+                                        parent_agent=request.get('parentAgent'))
+        return await super().resume(resume_session_id, options, setup, **kwargs)
 
     async def _publish_preparation(self, tx, preparation, options, setup, source):
         session = preparation.session

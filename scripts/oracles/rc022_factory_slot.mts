@@ -1,0 +1,18 @@
+import {resolve} from 'node:path'
+import {pathToFileURL} from 'node:url'
+const load=(path:string)=>import(pathToFileURL(resolve(process.argv[2]!,path)).href)
+const {Context,Service,symbols}=await load('vendor/cordis/src/index.ts'),{default:Registry}=await load('packages/session/session-projection/src/index.ts'),{default:Agents}=await load('packages/core/agent/src/index.ts'),rows:any[]=[]
+for(const action of ['missing','plain','traced','duplicate','owner-replace','closing-slot']){
+ const ctx=new Context(),row:any={action},requests:any={create:{sessionId:'new'},resume:{resumeSessionId:'old'}},handles:any={create:{},resume:{}},calls:any[]=[],states=new WeakMap<object,string[]>(),raw:any[]=[];let caller:any,release:any,start:any,closing:any;const gate=new Promise(resolve=>{release=resolve}),started=new Promise(resolve=>{start=resolve})
+ const plain=()=>({async createAgent(owner:any,request:any){calls.push({kind:'create',request:request===requests.create,owner:owner.fiber===caller});return handles.create},async resume(owner:any,request:any){calls.push({kind:'resume',request:request===requests.resume,owner:owner.fiber===caller});return handles.resume}})
+ class Factory extends Service{constructor(scope:any){super(scope,'tracedFactory');states.set(this,[]);raw.push(this)}record(kind:string,owner:any,request:any){const original=(this as any)[symbols.original]??this;states.get(original)!.push(kind);calls.push({kind,request:request===requests[kind],owner:owner.fiber===caller,receiver:this.ctx.fiber===caller,canonical:original===raw[0]})}async createAgent(owner:any,request:any){this.record('create',owner,request);return handles.create}async resume(owner:any,request:any){this.record('resume',owner,request);return handles.resume}}
+ try{
+  await ctx.plugin(Registry);await ctx.plugin(Agents);const agents=ctx.agents;let factory:any=plain()
+  if(action==='missing'){for(const kind of ['create','resume'])try{await agents[kind](requests[kind])}catch(error:any){row[kind]=error.message}}
+  else if(['plain','traced'].includes(action)){if(action==='traced'){await ctx.plugin(Factory);factory=ctx.tracedFactory}agents.setFactory(factory);const owner=await ctx.plugin(Object.assign(async(scope:any)=>{caller=scope.fiber;row.createSame=await scope.agents.create(requests.create)===handles.create;row.resumeSame=await scope.agents.resume(requests.resume)===handles.resume},{inject:['agents']}));row.calls=calls;if(action==='traced')row.rawCalls=states.get(raw[0]);await owner.dispose();row.slotRetained=agents.factory!==undefined}
+  else if(action==='duplicate'){const dispose=agents.setFactory(factory);try{agents.setFactory(plain())}catch(error:any){row.error=error.message}row.same=agents.factory.target===factory;dispose();row.repeat=dispose()===undefined;row.cleared=agents.factory===undefined}
+  else{const owner=await ctx.plugin(Object.assign((scope:any)=>{const slot=scope.agents.setFactory(factory);if(action==='owner-replace')return;scope.effect(function*(){yield slot;yield async()=>{start();await gate}},'factory slot lifetime')},{inject:['agents']}));row.retained=agents.factory.target===factory;closing=owner.dispose();if(action==='closing-slot'){await started;try{agents.setFactory(plain())}catch(error:any){row.closingDuplicate=error.message}}release();await closing;row.cleared=agents.factory===undefined;const replacement=plain(),dispose=agents.setFactory(replacement);row.replacement=agents.factory.target===replacement;dispose()}
+  rows.push(row)
+ }finally{release();if(closing)await closing.catch(()=>{});await ctx.fiber.dispose()}
+}
+process.stdout.write(JSON.stringify(rows))

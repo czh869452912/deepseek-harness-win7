@@ -6,6 +6,7 @@ import sys
 import types
 from pathlib import Path
 
+from dsh.cordis.awaiting import await_callback_result
 from dsh.cordis.hmr_changes import excluded
 from dsh.cordis.hmr_modules import module_url
 from dsh.cordis.hmr_paths import file_path
@@ -190,7 +191,7 @@ async def partial_reload(hmr):
                 await asyncio.gather(*(item['fiber'].await_() for item in attempt['fibers']))
             except Exception as error:
                 hmr.ctx.logger.warn(error)
-            await reload(attempt['replacement'], attempt['fibers'], attempt['replacements'], attempt['activated'])
+            await await_callback_result(reload(attempt['replacement'], attempt['fibers'], attempt['replacements'], attempt['activated']))
     except Exception:
         rollback()
         for attempt in attempts:
@@ -203,7 +204,7 @@ async def partial_reload(hmr):
                         replacement_fibers = list(runtime.fibers)
                         registry.delete(runtime.callback)
                         await asyncio.gather(*(value.await_() for value in replacement_fibers), return_exceptions=True)
-                await reload(attempt['previous'], attempt['fibers'])
+                await await_callback_result(reload(attempt['previous'], attempt['fibers']))
             except Exception as error:
                 hmr.ctx.logger.warn(error)
         raise

@@ -1,0 +1,26 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-15",
+  "unit": "C1-AQ-HmrSharedNamespaceGenerations",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "state": "targeted-passed",
+  "paired": ".goose/out/rc022-hmr-namespaces-paired-20261115-02/report.json",
+  "observations": 4,
+  "partial_recheck": ".goose/out/rc022-hmr-namespaces-partial-recheck-20261115-01/report.json",
+  "partial_observations": 12,
+  "source": {
+    "run": "rc022-hmr-namespaces-source-20261115-01",
+    "passed": 4,
+    "not_selected": 52,
+    "failed": 0
+  },
+  "native": {
+    "run": "rc022-hmr-namespaces-native-20261115-01",
+    "passed": 12,
+    "failed": 0
+  },
+  "verification_scope_reason": "Actual alias entry modules share one executable callback, then update coherently or split into distinct callbacks. Compare exact start/stop traces, entry namespace identity, retained cache identities, runtime sharing and restored original instance counts. An unmanaged instance makes split replacement ambiguous and must restore every old instance. An unchanged installed namespace retains old code. Rechecked 12 earlier real module journeys and selected original namespace/runtime consumers.",
+  "scope": "Partial replacement now awaits its async reload/restore calls through the framework Promise continuation boundary. An asynchronous ambiguity rejection must give already scheduled activations their original microtask opportunity before outer rollback; immediate Python propagation previously skipped the first activation. Initial Source observer incorrectly read DisposableList.size instead of counting its iterable; fixed separately, original differing observations retained.",
+  "cleanup": ".goose/out/rc022-hmr-namespaces-native-20261115-01/cleanup.json",
+  "remaining": "Changed package mappings, disabled/uninitialized namespace consumers, provider/consumer/volatile and cancellation cases, root watch lifecycle/options and patchReload retirement. No complete HMR/release acceptance."
+}

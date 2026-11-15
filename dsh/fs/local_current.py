@@ -15,6 +15,13 @@ from .patch import apply_hunks
 
 
 class CurrentFileSystem(FsService):
+    def __init__(self,*args,**kwargs):
+        super().__init__(*args,**kwargs);self.watchers=set()
+
+    async def watch(self,target,changed,signal):
+        from .watch_current import watch
+        return await watch(self,target,changed,signal)
+
     async def _with_locks(self,keys,operation):
         ordered=sorted(set(keys),key=lambda value:value.encode('utf-16-be','surrogatepass'))
         async def acquire(index):

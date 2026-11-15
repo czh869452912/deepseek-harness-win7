@@ -1,0 +1,25 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-16",
+  "unit": "C8-AV-FsWatchLifecycle",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "state": "targeted-passed",
+  "paired": ".goose/out/rc022-fs-watch-paired2-20261116-01/comparison/report.json",
+  "observations": 5,
+  "native": {
+    "run": "rc022-fs-watch-native-20261116-01",
+    "passed": 8,
+    "failed": 0
+  },
+  "source": {
+    "run": "rc022-fs-watch-source-20261116-01",
+    "passed": 8,
+    "failed": 0
+  },
+  "verification_scope_reason": "Actual Source Chokidar/native polling on real files compares existing/missing target initialization, sibling filtering, notification of real writes, active watch surviving initialization signal abort, awaited close quiescence, direct directory entries and ignored grandchildren, abort identity before acquisition and during metadata. Native controlled backend tests additionally prove readiness barrier, filtering, exact error identity/string normalization, closure before initialization failure returns, cancellation cleanup and independently cancelled close waiter. Original Source watch suite selected. First paired run used two writes inside Source throttle window and timed out; corrected corpus separates semantic writes by 200ms; raw failure retained.",
+  "legal_adaptation": "Win7/Python 3.8 standard-library shallow metadata polling (50ms) replaces Chokidar native watchers. Notification coalescing and backend latency are explicitly not compared as exact counts/timing; raw notifications are preserved, observed/ignored semantics compare. This is a backend adaptation, not evidence of full Chokidar/native event dialect parity.",
+  "activation_boundary": "Current filesystem watch only. Current mutation providers inherit this capability. Profile/HMR/provider activation and model apply_patch integration remain separate; no release/Win7 VM acceptance.",
+  "cleanup": ".goose/out/rc022-fs-watch-source-20261116-01/cleanup.json",
+  "cleanup_bytes": 848869,
+  "retained_assets": "All acquired watchers closed/joined in tests; owned files/workspaces, homes and external root removed. No owned worker remains. Raw failed/final observations, commands, XML and logs retained; shared Source/toolchain through C9."
+}

@@ -1,0 +1,27 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-15",
+  "unit": "C4-O-AgentSerialRegistration",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "state": "targeted-passed",
+  "paired": ".goose/out/rc022-agent-registration-paired-recorded-20261115-01/comparison/report.json",
+  "observations": 11,
+  "native": [
+    {"run": "rc022-agent-registration-native-fiber-retry-20261115-01", "passed": 78, "failed": 0},
+    {"run": "rc022-agent-registration-native-consumers-20261115-01", "passed": 131, "failed": 0}
+  ],
+  "source": {"run": "rc022-agent-registration-source-20261115-01", "passed": 16, "failed": 0},
+  "verification_scope_reason": "Real V4 Agent registration awaits serial agent/created listeners, passes source/signal, propagates exact sync/async vetoes, rolls back paired lifecycle edges, defers detach until async announcement settles, refuses reentrant/stale announcements and retains the exact effect disposer for ordered ownership. Paired generic effects additionally prove single-shot public cleanup, a distinct awaited cleanup capability and structural owner joins through retained inertia. Cordis regressions cover effects, rollback, cancellation, loopless setup and dependency teardown; Agent regressions cover the loop's awaited announcement, V3 consumers, machine, model selection and initiators.",
+  "corrections": [
+    "Initial native selection named a nonexistent dispatch test and collected nothing (exit 4); the corrected selection uses the actual Agent consumer suite.",
+    "Initial Source observer omitted the owner plugin's agents injection; its rejection was retained and the fixture corrected.",
+    "Actual Source pairing exposed a repeated async-effect disposer returning a native coroutine and composite cleanup entering later sync disposers before earlier async cleanup settled. Fiber now separates single-shot public calls from structural inertia and awaits composite cleanup in reverse order.",
+    "Two older native tests expected repeat-call joins; their assertions now require the observed rc022 no-op and join through owner disposal. Initial/retry diagnostics remain under their original run identities."
+  ],
+  "activation_boundary": "Serial registration is explicit V4 only; default V3 Agent announcement remains synchronous. Generic Cordis effect cleanup follows the fixed new Source behavior, including structural owner joins. Factory setup/Session publication order and removal of old downstream startup consumers remain separate migration work; no production pin or release qualification changes.",
+  "cleanup": [
+    ".goose/out/rc022-agent-registration-paired-verified-20261115-01/cleanup.json",
+    ".goose/out/rc022-agent-registration-paired-recorded-20261115-01/cleanup.json"
+  ],
+  "remaining": "Agent factory slot/tracing and setup/publication ordering, tools/Workspace/Remote consumers, coordinated activation and release qualification."
+}

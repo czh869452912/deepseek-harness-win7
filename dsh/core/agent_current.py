@@ -4,8 +4,8 @@ import contextvars
 import inspect
 
 from dsh.core.agent import AgentRegistry, AgentPlugin
-from dsh.core.agent_dispatch_current import agent_events, emit_agent_event
-from dsh.cordis.utils import _js_call_callback
+from dsh.core.agent_dispatch_current import AgentEventDispatch, agent_carrier, agent_events, emit_agent_event
+from dsh.cordis.utils import _js_call_callback, _js_error_to_string
 from dsh.cordis.awaiting import start_coroutine
 from dsh.cordis.fiber import FiberState
 
@@ -172,6 +172,49 @@ class CurrentAgentRegistry(AgentRegistry):
 
     def _factory_request_options(self, request):
         return dict(parent_agent=request.get('parentAgent', request.get('parent_agent')))
+
+    def enter(self, agent, owner=None, creator=None):
+        detach = super().enter(agent, owner=owner, creator=creator)
+        if self.format_version == 4:
+            self._store[agent.id].carrier = agent_carrier(agent)
+        return detach
+
+    def _detach_entered(self, entry):
+        if self.format_version != 4:return super()._detach_entered(entry)
+        entry.detach_requested = False
+        if self._store.get(entry.id) is not entry:return
+        self._store.pop(entry.id)
+        if not entry.announced:return
+        class DisposalDispatch(AgentEventDispatch):
+            def _warn(dispatch, name, failure, error):
+                text = _js_error_to_string(error) if isinstance(error, BaseException) else str(error)
+                dispatch.ctx.logger.warn('agent "%s": agent/disposed listener %s: %s' % (entry.id, failure, text))
+        DisposalDispatch(self.ctx, entry.agent, entry.carrier).emit('agent/disposed', {})
+
+    def announce(self, agent, source='startup', signal=None):
+        if self.format_version != 4:return super().announce(agent)
+        async def dispatch():
+            entry = self._store.get(agent.id)
+            if entry is None or entry.agent is not agent:
+                raise RuntimeError('agent "%s" is not live in this registry' % agent.id)
+            if entry.announced or entry.announcing:
+                raise RuntimeError('agent "%s" was already announced' % entry.id)
+            entry.announcing = entry.announced = True
+            payload = dict(agent=entry.agent, source=source)
+            if signal is not None:payload['signal'] = signal
+            try:
+                await self.ctx.serial(entry.carrier, 'agent/created', payload)
+            finally:
+                entry.announcing = False
+                if entry.detach_requested:self._detach_entered(entry)
+        return start_coroutine(dispatch())
+
+    def register(self, agent):
+        if self.format_version != 4:return super().register(agent)
+        async def lifecycle():
+            yield self.enter(agent)
+            await self.announce(agent, 'startup')
+        return self.ctx.effect(lifecycle, 'agents.register()')
 
     def _emit_subject(self, name, agent):
         if name != 'agent/created':

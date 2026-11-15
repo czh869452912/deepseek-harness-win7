@@ -332,7 +332,8 @@ async def test_cancelling_dispose_waiter_does_not_cancel_shared_cleanup():
         await first
 
     release.set()
-    await settle(dispose())
+    assert dispose() is None
+    await ctx.fiber.dispose()
     assert calls == ["disposed"]
 
 

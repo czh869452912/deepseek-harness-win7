@@ -47,7 +47,7 @@ Covers:
 - T35: An async-iterable effect body outside a loop is drained and its disposers
   are disposed in reverse order
 - T36: An ordinary effect stays owner-visible while its async cleanup is in
-  flight and a repeated disposal joins that cleanup (fiber.ts `finalizeDisposal`)
+  flight; rc022 public disposal is single-shot and owner unload joins its inertia
 - T37: A failing startup derives LOADING -> UNLOADING -> FAILED, unloads the
   effects collected before the failure and rethrows only after cleanup settled
   (fiber.ts `_reload` catch + `_unload`)
@@ -898,8 +898,8 @@ async def test_t36_ordinary_effect_stays_owner_visible_until_async_cleanup_settl
 
     Reference: `fiber.ts` `finalizeDisposal` calls the `removeWrapper()` closure
     from the cleanup promise's `finally`, so `getEffects()` keeps reporting the
-    effect for as long as its asynchronous teardown is in flight and a repeated
-    disposal joins that same cleanup.
+    effect for as long as its asynchronous teardown is in flight. The rc022
+    public disposer is single-shot; a structural owner joins its effect inertia.
     """
     ctx = Context()
     release = asyncio.Event()
@@ -923,12 +923,14 @@ async def test_t36_ordinary_effect_stays_owner_visible_until_async_cleanup_settl
     await started.wait()
     assert [label_of(meta) for meta in ctx.fiber.get_effects()] == ["owner-visible"]
 
-    # A repeated disposal joins the in-flight cleanup instead of starting another.
+    # rc022: repeated public disposal is a no-op; unload joins the cleanup.
     second = dispose()
-    assert second is first
+    assert second is None
+    owner = asyncio.ensure_future(ctx.fiber.dispose())
 
     release.set()
     await first
+    await owner
     assert cleanup_runs == ["cleanup"]
     assert ctx.fiber.get_effects() == []
 

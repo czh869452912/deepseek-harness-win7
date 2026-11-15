@@ -49,7 +49,9 @@ class CurrentAgentLoopService(CurrentAgentLifecycleService):
         tx.detach_agent = agents.enter(tx.agent, owner=tx.parent_agent)
         sessions.announce(session)
         tx.assert_live()
-        agents.announce(tx.agent)
+        announcement = agents.announce(tx.agent, source, tx.controller.signal) if getattr(agents, 'format_version', 3) == 4 else agents.announce(tx.agent)
+        if announcement is not None:
+            await announcement
         tx.assert_live()
         # send() already starts this machine, including from this notification.
         emit_agent_event(runtime_ctx, tx.agent, 'agent/session-start', dict(source=source))

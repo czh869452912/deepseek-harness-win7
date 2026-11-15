@@ -6,10 +6,24 @@ matching reference/vendor/cordis/src/fiber.ts
 import asyncio
 import inspect
 import sys
+import weakref
 from typing import Any, Callable, Dict, List, Optional, Set, Tuple, Union
 
 from dsh.cordis.schema import Schema, ValidationError
 from dsh.cordis.utils import DisposableList, build_outer_stack, compose_error, symbols
+
+
+_EFFECT_INERTIA = weakref.WeakKeyDictionary()
+
+
+def _run_disposable(dispose):
+    result = dispose()
+    try:
+        inertia = _EFFECT_INERTIA.get(dispose)
+    except TypeError:
+        inertia = None
+    pending = inertia() if inertia is not None else None
+    return pending if pending is not None else result
 
 
 class FiberState:
@@ -358,7 +372,7 @@ class Fiber:
                 disp = disposables.pop()
                 self._disposables.delete(disp)
                 try:
-                    res = disp()
+                    res = _run_disposable(disp)
                     if inspect.isawaitable(res):
                         pending.append(res)
                 except Exception as error:
@@ -441,7 +455,7 @@ class Fiber:
                             disp = disposables.pop()
                             self._disposables.delete(disp)
                             try:
-                                r = disp()
+                                r = _run_disposable(disp)
                                 if inspect.isawaitable(r):
                                     await r
                             except Exception as err:
@@ -460,7 +474,7 @@ class Fiber:
                         disp = disposables.pop()
                         self._disposables.delete(disp)
                         try:
-                            r = disp()
+                            r = _run_disposable(disp)
                             if inspect.isawaitable(r):
                                 pass
                         except Exception:
@@ -479,9 +493,10 @@ class Fiber:
                 disp = disposables.pop()
                 self._disposables.delete(disp)
                 try:
-                    r = disp()
+                    r = _run_disposable(disp)
                     if inspect.isawaitable(r):
                         async_disposers.append(r)
+                        break
                 except Exception as e:
                     if self.ctx and hasattr(self.ctx, "logger"):
                         self.ctx.logger("fiber").error("Exception running disposer '%s': %s", label, e)
@@ -502,6 +517,17 @@ class Fiber:
                             except Exception as err:
                                 if self.ctx and hasattr(self.ctx, "logger"):
                                     self.ctx.logger("fiber").error("Exception in async disposer '%s': %s", label, err)
+                        # A composite owns a teardown order. Enter its next
+                        # disposer only after the previous async boundary settles.
+                        while disposables:
+                            disp = disposables.pop()
+                            self._disposables.delete(disp)
+                            try:
+                                result = _run_disposable(disp)
+                                if inspect.isawaitable(result):
+                                    await result
+                            except Exception as err:
+                                self._log_error(err)
                     finally:
                         # Same `finalizeDisposal` rule as the barrier teardown: the
                         # owner-list entry outlives the cleanup and is dropped with
@@ -520,22 +546,7 @@ class Fiber:
                     # outside a task) has no loop to schedule the cleanup on;
                     # drain it on a fresh loop so disposal still reaches
                     # quiescence before returning.
-                    for r in async_disposers:
-                        try:
-                            if inspect.iscoroutine(r):
-                                asyncio.run(r)
-                            else:
-                                new_loop = asyncio.new_event_loop()
-                                try:
-                                    new_loop.run_until_complete(r)
-                                finally:
-                                    new_loop.close()
-                        except Exception as err:
-                            if self.ctx and hasattr(self.ctx, "logger"):
-                                self.ctx.logger("fiber").error("Exception in async disposer '%s': %s", label, err)
-                            else:
-                                sys.stderr.write(f"[Cordis Fiber Error] Exception in async disposer '{label}': {err}\n")
-                    retire_effect()
+                    asyncio.run(_run_cleanup())
                     return None
             retire_effect()
             return None
@@ -555,8 +566,21 @@ class Fiber:
                 self._c_fn = c_fn
                 self._get_task = get_task
                 self.retire = retire_fn
+                self._called = False
+                self._pending = None
+                self._ready_disposer = self._dispose_ready
+
+            def _dispose_ready(self):
+                if self._called:
+                    return None
+                self._called = True
+                self._pending = self._c_fn()
+                return self._pending
 
             def __call__(self, *args: Any, **kwargs: Any) -> Any:
+                if self._called:
+                    return None
+                self._called = True
                 t = self._get_task()
                 if t is not None:
                     async def _call_after():
@@ -571,8 +595,23 @@ class Fiber:
                         if inspect.isawaitable(res):
                             return await res
                         return res
-                    return _call_after()
-                return self._c_fn(*args, **kwargs)
+                    from dsh.cordis.awaiting import start_coroutine
+                    operation = _call_after()
+                    try:
+                        asyncio.get_running_loop()
+                    except RuntimeError:
+                        self._pending = operation
+                    else:
+                        self._pending = start_coroutine(operation)
+                    return self._pending
+                self._pending = self._c_fn(*args, **kwargs)
+                return self._pending
+
+            def _inertia(self):
+                pending = self._pending
+                if isinstance(pending, asyncio.Future) and pending.done():
+                    return None
+                return pending
 
             def __await__(self):
                 # fiber.ts `wrapper.then`: wait for the setup task, then hand
@@ -582,10 +621,11 @@ class Fiber:
                     t = self._get_task()
                     if t is not None:
                         await t
-                    return self._c_fn
+                    return self._ready_disposer
                 return _await_wrapper().__await__()
 
         wrapper = _EffectWrapper(cancel_effect, lambda: setup_task, retire_effect)
+        _EFFECT_INERTIA[wrapper] = lambda ref=weakref.ref(wrapper): ref()._inertia() if ref() is not None else None
         self._effect_metas[wrapper] = meta
         self._effect_metas[cancel_effect] = meta
         remove_wrapper = self._disposables.push(wrapper)
@@ -1276,7 +1316,7 @@ class Fiber:
         async_disposers = []
         for disposer in disposers:
             try:
-                res = disposer()
+                res = _run_disposable(disposer)
                 if inspect.isawaitable(res):
                     async_disposers.append(res)
             except Exception as e:

@@ -348,6 +348,9 @@ class WebServerService:
             headers.get("accept-encoding"),
         )
 
+    def parse_request_target(self, value):
+        return urlparse(value)
+
     def match(self, pathname: str) -> Optional[WebRoute]:
         """
         Longest-prefix-wins over the prefix table after an exact-table miss.
@@ -532,14 +535,15 @@ class WebServerService:
 
             content_length = int(headers.get("content-length", "0"))
             body = b""
-            parsed = urlparse(raw_url)
+            parsed = self.parse_request_target(raw_url)
             pathname = parsed.path or "/"
             route = self.match(pathname)
-            deferred = route is not None and getattr(route.handler, "defer_body", False)
+            body_owner = route.handler if route is not None else self._fallback
+            deferred = getattr(body_owner, "defer_body", False)
             if content_length > 0 and not deferred:
                 body = await reader.readexactly(content_length)
 
-            parsed = urlparse(raw_url)
+            parsed = self.parse_request_target(raw_url)
             pathname = parsed.path or "/"
 
             request = {
@@ -564,6 +568,7 @@ class WebServerService:
             response = HttpResponseWriter(
                 writer, compression=self._response_compression(headers)
             )
+            response.head_only = method.upper() == 'HEAD'
 
             route = self.match(pathname)
             if route is not None:
@@ -631,6 +636,7 @@ class HttpResponseWriter:
         self.compression = compression
         self._compressing = False
         self._gzip_stream: Optional[Any] = None
+        self.head_only = False
 
     def write_status(self, status: int) -> None:
         self.status = status
@@ -684,6 +690,8 @@ class HttpResponseWriter:
             self._set_header("Vary", "Accept-Encoding")
         elif "accept-encoding" not in vary.lower():
             self._set_header("Vary", vary + ", Accept-Encoding")
+        if self.head_only:
+            return
         if self.header("content-encoding") is not None:
             return
         length: Optional[int] = None
@@ -740,6 +748,9 @@ class HttpResponseWriter:
             ):
                 self._set_header("Content-Length", str(len(self.body)))
             await self.send_headers()
+        if self.head_only:
+            self.body.clear()
+            return
         if self.body:
             await self._write_encoded(bytes(self.body))
         if self._compressing and self._gzip_stream is not None:

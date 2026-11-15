@@ -22,5 +22,6 @@
 | C7-P | 事件授权、同 Peer 答复、重连补投与取消/卸载 | [事件转发](authorized-events-checks.json) |
 | C7-Q | 完整应用事件清单、会话资源声明、实际 WS 与 HTTP 答复/卸载重载 | [应用事件组合](event-composition-checks.json) |
 | C7-R | 实际 Peer 的首页注入与访问快照、动态更新和注入方兼容 | [首页 Peer 注入](peer-index-checks.json) |
+| C7-S | HTTP/进程内资源共用路由、HEAD、gzip、响应头与断开取消 | [资源载体](web-resource-checks.json) |
 
 后续：首页 HTTP 准入与资源读取集成、应用 Remote 资源声明、生成物和原版客户端整体接入。最终资格使用 C9 冻结候选的完整门禁；当前生产 pin 与 `accepted_upstream` 不提升。

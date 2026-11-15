@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-15",
+  "unit": "C7-S-WebResourceCarrier",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "state": "targeted-passed",
+  "paired": ".goose/out/rc022-web-resources-paired-final-20261115-01/comparison/report.json",
+  "observations": 26,
+  "native": {"run": "rc022-web-resources-native-final-20261115-01", "passed": 11, "failed": 0},
+  "source": {"run": "rc022-web-resources-source-20261115-01", "passed": 19, "failed": 0},
+  "verification_scope_reason": "Actual Source WebServer resources observed through real HTTP and caller-admitted in-process reads. Exact/longest prefix/fallback ordering, handler shadowing, absent fallback, actual Peer identity only on admitted reads, placeholder HTTP URL versus Host header, literal/encoded dot segments and semicolon paths, HEAD body cancellation, POST rejection before consuming advertised bodies, failure propagation versus HTTP containment, delayed headers before body availability, actual small-resource gzip with HEAD suppression, physical disconnect cancellation and fallback unload. Native tests cover returned response ownership, default request signal/method, cancellation failure, natural EOF without cancellation, Peer index and direct Connection/WebServer consumers.",
+  "native_adaptation": "Python requests/responses are explicit dictionaries and response bodies are bytes or async byte iterators. A native Request constructor adaptation canonicalizes the covered URL forms and supplies default method/headers/signal on in-process reads. HTTP streaming uses close-delimited bytes and the existing owned socket writer; semantic response headers, decoded payloads, streaming order and cancellation are compared, not transfer-chunk bytes or gzip bitstreams. Async body cancellation closes the owned native iterator. This does not claim complete WHATWG URL conformance.",
+  "activation_boundary": "Candidate resource registration/read API and HTTP adapter. TLS/concrete bind configuration and authenticated static frontend resource integration are separate pending units. All 19 Source tests passing includes Source TLS/bind cases but establishes no native TLS/bind acceptance. Production profile and pin unchanged.",
+  "cleanup": ".goose/out/rc022-web-resources-source-20261115-01/cleanup.json",
+  "retained_assets": "Commands, raw paired data, XML and logs retained. Owned pytest fixtures/home/tmp removed (818248 bytes). Resources, sockets, abort monitors, Peer and Context are closed in teardown; no owned workers remain. Shared Source/toolchain retained through C9."
+}

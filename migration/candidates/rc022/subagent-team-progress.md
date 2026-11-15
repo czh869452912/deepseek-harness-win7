@@ -5,6 +5,7 @@
 | 单元 | 已验证边界 | 记录 |
 | --- | --- | --- |
 | C6-A | 名称、兄弟预留、路径回退、目录 v0–v3/stateVersion 6 | [名称与目录](named-catalog-checks.json) |
+| C6-R | 模型发现、父路由回退、授权清单过滤与工具注册生命周期 | [模型发现](model-discovery-checks.json) |
 | C6-Q | 创建时模型授权采样、父策略继承、历史恢复和可逆卸载 | [授权设置](selection-settings-checks.json) |
 | C6-P | 委派模型/预设选择、授权路由、显式 effort 清除和检查点 | [委派选择](delegation-selection-checks.json) |
 | C6-O | 命名发现/消息/中断工具、身份提示、输入等待与监听器释放 | [控制工具](control-tools-checks.json) |

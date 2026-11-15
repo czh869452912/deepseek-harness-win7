@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-15",
+  "unit": "C6-R-ModelDiscovery",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "state": "targeted-passed",
+  "paired": ".goose/out/rc022-model-discovery-paired-final-20261115-01/comparison/report.json",
+  "observations": 5,
+  "native": {
+    "run": "rc022-model-discovery-native-20261115-01",
+    "passed": 7,
+    "failed": 0
+  },
+  "source": {
+    "run": "rc022-model-discovery-source-20261115-01",
+    "passed": 25,
+    "failed": 0
+  },
+  "verification_scope_reason": "Actual pipeline schemas, exact parent unadvertised route fallback, authorized provider/model/effort metadata, invalid routes/providers/callers, duplicate registration rollback and unload. Native delayed catalog cancellation retains exact abort exception. Direct selection and subagent service regressions cover dependencies.",
+  "activation_boundary": "Candidate discovery helper; full delegation integration and production composition pending.",
+  "cleanup": ".goose/out/rc022-model-discovery-source-20261115-01/cleanup.json",
+  "retained_assets": "Commands/logs/XML and observations retained; synthetic payloads removed. Shared Source/toolchain retained through C9."
+}

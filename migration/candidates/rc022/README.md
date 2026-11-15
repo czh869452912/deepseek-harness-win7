@@ -119,3 +119,5 @@
 2026-11-15：C1-AU [YAML 所有的 HMR 与 Profile 策略退役](profile-hmr-checks.json)完成 13 组固定原版/Python 配对、10 项原版、263/30/53 项 Python 定向检查（最后一轮 1 项独立浏览器未选跳过），另复核 22 组原子替换、12 组代际、4 组消费者及 580 个 ignore 值。移除 patchReload 字段/参数和 launcher 隐式 HMR，旧字段作为未知扩展保留；canonical/facade 层合成共用。修复 Web 退出期间同步图扫描阻塞事件循环，按模块让出并在根卸载时终止规划，资源释放仍等待。初次失败、聚合超时及 CPU/任务栈保留；清理 3949055 字节合成资产和 78 个链接，无遗留测试进程。高级监听规则和后续合同继续推进，未宣称完整 C1/发行资格。
 
 2026-11-15：C1-AV [HMR ignore 语法](hmr-glob-checks.json)完成 101952 个固定 picomatch/Python 精确匹配值与原有 580 值、真实根监听复验，24 项 Python 定向检查通过。覆盖嵌套 extglob、brace、范围、POSIX 类、重复否定、dot/trailing slash 和原生分隔符，保留原依赖的非直觉语义；未声称任意 JavaScript 正则完全等价。初次解析/语义差异保留，全部自有合成输入/工作区和链接已清理。继续写入稳定性选项及后续迁移。
+
+2026-11-15：C1-AW [HMR 写入稳定性与原子替换](hmr-writes-checks.json)完成 9 组固定原版真实文件旅程与 15 项 Python 定向检查。支持 awaitWriteFinish 默认/自定义稳定窗口、未完成新增的 change 抑制、卸载取消、atomic 布尔/数值窗口和编辑器临时文件过滤；轮询观察与通知 debounce 分离。保留便携轮询的扫描间盲区，未认证全部 Chokidar 调度选项。全部自有合成文件和工作区已清理，后续合同继续推进，生产 pin 不变。

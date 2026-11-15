@@ -307,6 +307,10 @@ class ConfigWatcherService(Service):
         self._stashed = {}
         self._debounce_handle: Optional[asyncio.TimerHandle] = None
         self._root_mtimes: Dict[str, float] = {}
+        self._root_unlinks = {}
+        self._root_unlink_deadlines = []
+        self._root_writes = {}
+        self._root_emitted = {}
         self._initial_scanned = False
 
         # Start background polling timer for portable zero-dependency Windows 7 file watching
@@ -481,7 +485,9 @@ class ConfigWatcherService(Service):
     async def _poll_loop(self) -> None:
         while self._running:
             try:
-                await asyncio.sleep(max(0.02, self.debounce_ms / 1000.0))
+                # Debounce combines notifications; it must not delay observing
+                # the filesystem or joining exact configuration changes.
+                await asyncio.sleep(0.02)
 
                 # 1. Check registered config files
                 for filename, registration in list(self._configs.items()):
@@ -1022,6 +1028,10 @@ class ConfigWatcherService(Service):
         self._mtimes.clear()
         self._module_mtimes.clear()
         self._root_mtimes.clear()
+        self._root_unlinks.clear()
+        self._root_unlink_deadlines.clear()
+        self._root_writes.clear()
+        self._root_emitted.clear()
         self._config_refreshes.clear()
         self._module_refreshes.clear()
         self._config_paths.clear()

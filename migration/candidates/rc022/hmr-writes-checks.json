@@ -1,0 +1,20 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-15",
+  "unit": "C1-AW-HmrWriteNormalization",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "state": "targeted-passed",
+  "paired": ".goose/out/rc022-hmr-writes-paired-20261115-02/report.json",
+  "observations": 9,
+  "native": {
+    "run": "rc022-hmr-writes-native-20261115-01",
+    "passed": 15,
+    "failed": 0
+  },
+  "verification_scope_reason": "Actual unchanged built HMR and chokidar watch staged writes, add suppression, unlink/add replacements inside/outside atomic windows, editor files and disposal. Native regression includes roots, dispatch, profile self-replacement, exit, queue and readiness.",
+  "scope": "awaitWriteFinish default/custom thresholds, pending add identity, cancellation, atomic true/false/numeric windows and temporary-file filtering. Poll observation is independent of notification debounce. Native portable polling cannot observe edits absent between scans; usePolling interval/binaryInterval and environment controls are not qualified by this batch.",
+  "cleanup": ".goose/out/rc022-hmr-writes-native-20261115-01/cleanup.json",
+  "cleanup_bytes": 5166,
+  "cleanup_links": 3,
+  "remaining": "Remaining migration contracts; production reference unchanged."
+}

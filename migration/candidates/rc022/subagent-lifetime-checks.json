@@ -1,0 +1,24 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-15",
+  "unit": "C6-F-ExecutionLifetime",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "state": "targeted-passed",
+  "paired": ".goose/out/rc022-subagent-lifetime-paired-20261115-01/comparison/report.json",
+  "observations": 16,
+  "native": {
+    "run": "rc022-subagent-lifetime-native-fixed-20261115-01",
+    "passed": 34,
+    "failed": 0
+  },
+  "source": {
+    "run": "rc022-subagent-lifetime-source-20261115-01",
+    "passed": 15,
+    "failed": 0
+  },
+  "verification_scope_reason": "Fixed manager methods paired for exact ancestor/user interrupt, parked input preservation, shared synchronous close cutoff, local and external disposal, provider result versus lifecycle failure, capacity release ordering and independent descendant residency. Native actual v4 factory/Agents verify natural settlement under maintenance, parked FIFO survival, input arriving during final flush, and scoped drain waiting for owned startup while another tree remains admitted. The injected ownership scope is disposed with Context.",
+  "initial_diagnostics": "Native fixture initially accessed owner_ctx.agents without declared injection; changed to the supported ctx.get service interface used by the production factory consumer. Original failure diagnostics retained.",
+  "activation_boundary": "Candidate lifetime component consumed by direct actual Agent tests. Materialization, delivery, archive admission and runtime service binding remain C6 integration work; production pin unchanged.",
+  "cleanup": ".goose/out/rc022-subagent-lifetime-source-20261115-01/cleanup.json",
+  "retained_assets": "Commands/logs/XML and actual observations retained; owned synthetic workspaces removed, shared Source/toolchain retained through C9."
+}

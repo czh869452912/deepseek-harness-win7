@@ -98,6 +98,10 @@ def _invoke_contained_session_observers(
                 try:
                     loop = asyncio.get_event_loop()
                     if loop.is_running():
+                        if args and getattr(args[0], 'format_version', 3) == 4 and inspect.iscoroutine(res):
+                            import contextvars
+                            from dsh.cordis.awaiting import start_coroutine
+                            res = contextvars.copy_context().run(start_coroutine, res)
                         loop.create_task(_watch(res))
                 except Exception:
                     pass

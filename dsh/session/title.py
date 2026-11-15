@@ -4,6 +4,7 @@ Log-backed session title service, normalization, and fallback.
 """
 
 import re
+import math
 from typing import Any, Callable, Dict, List, Optional, Union
 from dsh.cordis.plugin import Plugin
 
@@ -15,19 +16,36 @@ CONTROL_CHARACTER = re.compile(r"[\x00-\x08\x0b\x0c\x0e-\x1f\x7f-\x9f]", re.UNIC
 DIRECTIONAL_CONTROL = re.compile(r"[\u200b\u200e\u200f\u202a-\u202e\u2060-\u2064\u2066-\u206f\ufeff]", re.UNICODE)
 
 
+def _positive_integer(value):
+    return type(value) in (int, float) and math.isfinite(value) and value > 0 and int(value) == value
+
+
+def _title_characters(text):
+    index = 0
+    while index < len(text):
+        char = text[index];index += 1
+        if 0xd800 <= ord(char) <= 0xdbff and index < len(text) and 0xdc00 <= ord(text[index]) <= 0xdfff:
+            char = chr(0x10000 + ((ord(char) - 0xd800) << 10) + ord(text[index]) - 0xdc00);index += 1
+        yield char
+
+
+def _title_character_bytes(char):
+    # Node's UTF-8 encoder counts an unpaired UTF-16 surrogate as U+FFFD.
+    return 3 if 0xd800 <= ord(char) <= 0xdfff else len(char.encode('utf-8'))
+
+
 def truncate_title_utf8(input_text: str, max_bytes: int) -> str:
     """
     Truncate a string to a UTF-8 byte budget without splitting a Unicode code point.
     """
-    if not isinstance(max_bytes, int) or isinstance(max_bytes, bool) or max_bytes <= 0:
+    if not _positive_integer(max_bytes):
         raise ValueError("maxBytes must be a positive integer")
-    encoded = input_text.encode("utf-8")
-    if len(encoded) <= max_bytes:
+    if sum(_title_character_bytes(char) for char in _title_characters(input_text)) <= max_bytes:
         return input_text
     output = ""
     used = 0
-    for ch in input_text:
-        ch_bytes = len(ch.encode("utf-8"))
+    for ch in _title_characters(input_text):
+        ch_bytes = _title_character_bytes(ch)
         if used + ch_bytes > max_bytes:
             break
         output += ch
@@ -50,7 +68,7 @@ def normalize_session_title(input_text: str, max_bytes: int = 80) -> str:
     """
     Normalize one accepted session title and enforce its UTF-8 byte budget.
     """
-    if not isinstance(max_bytes, int) or isinstance(max_bytes, bool) or max_bytes <= 0:
+    if not _positive_integer(max_bytes):
         raise ValueError("maxBytes must be a positive integer")
     if not input_text:
         return ""
@@ -65,9 +83,9 @@ def fallback_session_title(
     """
     Derive the deterministic first-prompt fallback.
     """
-    if not isinstance(max_words, int) or isinstance(max_words, bool) or max_words <= 0:
+    if not _positive_integer(max_words):
         raise ValueError("maxWords must be a positive integer")
-    if not isinstance(max_bytes, int) or isinstance(max_bytes, bool) or max_bytes <= 0:
+    if not _positive_integer(max_bytes):
         raise ValueError("maxBytes must be a positive integer")
 
     if isinstance(source, list):
@@ -83,7 +101,7 @@ def fallback_session_title(
                             return fallback_session_title(b.get("text", ""), max_words=max_words, max_bytes=max_bytes)
         return ""
 
-    words = [w for w in clean_title_text(source).split(" ") if w][:max_words]
+    words = [w for w in clean_title_text(source).split(" ") if w][:int(max_words)]
     return truncate_title_utf8(" ".join(words), max_bytes).rstrip()
 
 

@@ -56,7 +56,7 @@ def main(observer='rc022_events.mts', scope=None, extra_inputs=(), prepare=None,
         (output/'source.json').write_bytes(result.stdout);(output/'source.stderr').write_bytes(result.stderr)
         report['source_exit_code']=result.returncode
         if result.returncode:raise RuntimeError('Source observer failed')
-        local=asyncio.run(native());(output/'native.json').write_text(json.dumps(local,ensure_ascii=False),encoding='utf-8')
+        local=asyncio.run(native());(output/'native.json').write_text(json.dumps(local,ensure_ascii=True),encoding='utf-8')
         from scripts.session_format_oracle import json_equal
         assert json_equal(json.loads(result.stdout),local),'Source/native difference'
         report['status']='passed'

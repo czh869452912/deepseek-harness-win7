@@ -1,0 +1,24 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-15",
+  "unit": "C4-K-TitleInputAndProviderRevisions",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "state": "targeted-passed",
+  "paired": ".goose/out/rc022-title-paired-verified-20261115-01/comparison/report.json",
+  "observations": 157,
+  "native_initial": {"run": "rc022-title-native-20261115-01", "exit_code": 4, "reason": "Nonexistent registry test path; no tests ran."},
+  "native_title_consumers": {"run": "rc022-title-retry-20261115-01", "passed": 34, "failed": 0},
+  "native_extended": {"run": "rc022-title-final-20261115-01", "passed": 123, "failed": 1, "reason": "New seeded synthetic session omitted required inheritedEventCount; both Source and native refused it."},
+  "native_final": {"run": "rc022-title-verified-20261115-01", "passed": 2, "failed": 0},
+  "source": {"run": "rc022-title-source-20261115-01", "failed": 0},
+  "verification_scope_reason": "V4 SessionTitle awaits title and host-only titleInput v3 handles. The retained input stores first/count/lastSeq, keeps summary wire inventory unchanged and supplies automatic/explicit admission. Eleven real journeys cover concurrent fallback, activation during each registration, one-snapshot currentTitle with a message watermark, replacement while a disposed provider drains, queued rename and root/ordinary-parent/seeded/subagent eligibility. Sixteen captured Source input-schema cases and eighteen real Source result-validator cases qualify refusal boundaries. 112 normalization/truncation cases cover controls, CJK, astral and unpaired UTF-16 surrogates. Legacy title/projection tests and V3/V4 machine/lifecycle/model/Inbox consumers pass.",
+  "discovered_and_fixed": [
+    "V4 Session observers must execute an async listener's synchronous prefix before later observers and the next event. The real watermark journey exposed the delayed prefix; a batch regression verifies both member order and publication visibility across suspension.",
+    "Source Zod integer state rejects unsafe title-input counts; a captured schema observation fixed that boundary.",
+    "An array provider result reaches the Source missing-title error, distinct from primitive/null invalid-result refusal.",
+    "The paired runner must ASCII-escape JSON when persisting unpaired surrogates; original Source/native values remain lossless."
+  ],
+  "activation_boundary": "Title handle/input semantics select the explicit V4 projection registry. Default V3 service compositions remain supported until coordinated activation. Required dependency admission, complete cancellation/unload diagnostics and ambient-loop-free V4 Session async notification settlement remain separate qualification work; passing Source tests is not proof for unpaired native cases.",
+  "cleanup": ".goose/out/rc022-title-verified-20261115-01/cleanup.json",
+  "remaining": "Remaining Agent and title lifecycle/dependency boundaries, ToolSet/context consumers, coordinated production activation and release qualification."
+}

@@ -1,0 +1,32 @@
+import {resolve} from 'node:path'
+import {pathToFileURL} from 'node:url'
+import {readFileSync} from 'node:fs'
+const load=(path:string)=>import(pathToFileURL(resolve(process.argv[2]!,path)).href)
+const {Context}=await load('vendor/cordis/src/index.ts'),{default:Store}=await load('packages/core/session/src/index.ts'),{default:Registry}=await load('packages/session/session-projection/src/index.ts'),{default:Agents}=await load('packages/core/agent/src/index.ts'),{default:Titles,normalizeSessionTitle,fallbackSessionTitle,truncateTitleUtf8}=await load('packages/session/session-title/src/index.ts')
+const rows:any[]=[],config={fallbackMaxWords:5,fallbackMaxBytes:40,maxTitleBytes:80},message=(text:string)=>({id:'input',role:'user',content:[{type:'text',text}],source:{kind:'user'}}),inputs=JSON.parse(readFileSync(process.argv[3]!,'utf8'))
+for(const test of inputs.normalization)rows.push({normalize:normalizeSessionTitle(test.text,test.bytes),fallback:fallbackSessionTitle(test.text,2,test.bytes),truncate:truncateTitleUtf8(test.text,test.bytes)})
+let inputDefinition:any;const originalRegister=Registry.prototype.register;Registry.prototype.register=function(definition:any){if(definition.key==='titleInput')inputDefinition=definition;return originalRegister.call(this,definition)}
+const oldNow=Date.now;Date.now=()=>1000
+try{for(const action of ['fallback','provider-current','watermark','replacement','activation-title','activation-input','rename-queued','eligibility-root','eligibility-parent','eligibility-seeded','eligibility-subagent']){
+ const ctx=new Context(),releases:any[]=[];try{
+  await ctx.plugin(Store);await ctx.plugin(Registry);await ctx.plugin(Agents);const projections=ctx.sessionProjections,row:any={action};let writtenResolve:any;const written=new Promise(resolve=>{writtenResolve=resolve});ctx.on('session/event',(_session:any,event:any)=>{if(event.type==='session/title')writtenResolve()});let titles:any,session:any
+  if(action.startsWith('activation-')){
+   let enteredResolve:any,release:any;const entered=new Promise(resolve=>{enteredResolve=resolve}),gate=new Promise(resolve=>{release=resolve}),original=projections.register.bind(projections);releases.push(release)
+   projections.register=async(definition:any)=>{const handle=await original(definition);if(definition.key===(action==='activation-title'?'title':'titleInput')){enteredResolve();await gate}return handle};const fiber=ctx.plugin(Titles,config);await entered;row.hidden=ctx.get('sessionTitle')===undefined;session=ctx.sessions.create('title');session.append('user/message',message('First during activation'),{surfaceOp:'append'});session.append('user/message',message('Second during activation'),{surfaceOp:'append'});release();await fiber;projections.register=original;await written;titles=ctx.sessionTitle;row.title=titles.get(session)
+  }else{
+   await ctx.plugin(Titles,config);titles=ctx.sessionTitle;const meta=action==='eligibility-parent'?{parentSession:'parent'}:action==='eligibility-seeded'?{parentSession:'parent',isSeeded:true}:action==='eligibility-subagent'?{parentSession:'parent',origin:'subagent',delegationDepth:1}:{};session=ctx.sessions.create('title',{meta,...action==='eligibility-seeded'?{seed:[],inheritedEventCount:0}:{} });const requests:any[]=[],generate=async(request:any)=>{requests.push({messages:request.messages,...request.route===undefined?{}:{route:request.route},...request.currentTitle===undefined?{}:{currentTitle:request.currentTitle}});return {title:'Generated',messageSeqs:request.messages.map((m:any)=>m.seq)}}
+   if(action==='watermark'||action.startsWith('eligibility-'))titles.register({id:'provider',automatic:'first-prompt',generate});session.append('user/message',message('First human prompt'),{surfaceOp:'append'})
+   if(action.startsWith('eligibility-')){session.append('request/header',{header:{config:{provider:'main',model:'model'}},reason:'initial'});await titles.drain(titles.inFlight);row.requests=requests;row.title=titles.get(session)}
+   else if(action==='watermark'){session.append('request/header',{header:{config:{provider:'main',model:'model'}},reason:'initial'});session.append('user/message',message('Second before provider'),{surfaceOp:'append'});while(!requests.length)await Promise.resolve();await titles.drain(titles.inFlight);row.requests=requests;row.title=titles.get(session)}
+   else if(action==='rename-queued'){const pending=titles.refresh(session);titles.rename(session,'Pinned');row.title=await pending;await titles.drain(titles.inFlight)}
+   else if(action==='replacement'){
+    await written;let enteredResolve:any,release:any;const entered=new Promise(resolve=>{enteredResolve=resolve}),gate=new Promise(resolve=>{release=resolve});releases.push(release);const dispose=titles.register({id:'old',automatic:'first-prompt',generate:async(request:any)=>{enteredResolve();await gate;return {title:'Late old title',messageSeqs:[request.messages[0].seq]}}}),pending=titles.refresh(session);void pending.catch(()=>{});await entered;let done=false;const closing=dispose().then(()=>{done=true});await Promise.resolve();row.draining=!done;titles.register({id:'replacement',automatic:'first-prompt',generate});row.new=await titles.refresh(session);release();await closing;try{await pending}catch(error:any){row.oldError=error.message}row.title=titles.get(session)
+   }else if(action==='provider-current'){await written;titles.register({id:'provider',automatic:'all-prompts',generate});row.title=await titles.refresh(session);row.requests=requests}
+   else{await Promise.all([titles.refresh(session),titles.refresh(session),titles.refresh(session)]);row.title=titles.get(session)}
+  }
+  await titles.drain(titles.inFlight);row.input=projections.checkpoint(session).titleInput;row.summary=[...projections.summaryKeys()].sort();row.titleEvents=session.snapshotEvents().filter((e:any)=>e.type==='session/title').map((e:any)=>e.data);rows.push(row)
+ }finally{for(const release of releases)release();await ctx.fiber.dispose()}
+}}finally{Date.now=oldNow;Registry.prototype.register=originalRegister}
+for(const state of inputs.schemas){const parsed=inputDefinition.stateSchema.safeParse(state);rows.push(parsed.success?{schema:true,value:parsed.data}:{schema:false})}
+for(const result of inputs.results){try{rows.push({result:Titles.prototype.validateResult.call({config},result,[{seq:0,text:'first'},{seq:2,text:'second'}])})}catch(error:any){rows.push({error:error.message})}}
+process.stdout.write(JSON.stringify(rows))

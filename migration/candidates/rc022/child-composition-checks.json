@@ -1,0 +1,24 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-15",
+  "unit": "C6-G-ChildComposition",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "state": "targeted-passed",
+  "paired": ".goose/out/rc022-child-composition-paired-20261115-01/comparison/report.json",
+  "observations": 14,
+  "native": {
+    "run": "rc022-child-composition-native-final-20261115-01",
+    "passed": 91,
+    "failed": 0
+  },
+  "source": {
+    "run": "rc022-child-composition-source-20261115-01",
+    "passed": 51,
+    "failed": 0
+  },
+  "verification_scope_reason": "Fixed child composition and structured runtime paired for inherited/explicit presets, cold host composition and historical overrides, captured Auto/Full permission identity and never approval pin, ordered own policy events and explicit child metadata. Structured staging closes new input before authoritative result, direct failures reopen input, nested PTC successes wait for enclosing acceptance and enclosing errors reopen. Actual v4 tools pipeline checks pending-message refusal, terminal result capture, conclude-turn marker, monotonic repeated-call guard and scope cleanup. Existing continuation/runtime/unit consumers pass.",
+  "initial_diagnostics": "Native tools fixture omitted required caller-owned signal and incorrectly expected a caller conclude callback instead of authoritative result.concludes_turn. Corrected fixture; original diagnostics retained.",
+  "activation_boundary": "Final-domain child composition and structured attachment helpers; full manager creation/resume and service binding remain pending. No profile or production pin switch.",
+  "cleanup": ".goose/out/rc022-child-composition-source-20261115-01/cleanup.json",
+  "retained_assets": "Commands/logs/XML and actual paired observations retained; owned synthetic workspaces removed, shared Source/toolchain retained through C9."
+}

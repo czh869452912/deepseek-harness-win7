@@ -1,5 +1,6 @@
 """Child-local structured capture committed by the authoritative tool result."""
 import weakref
+from types import SimpleNamespace
 
 from dsh.core.tools import ToolArgsError, _schema_violations
 
@@ -8,13 +9,15 @@ INSTRUCTION = ('When you have your final answer, you MUST report it by calling t
     'Do not finish with a plain text answer: only the tool call counts as your result.')
 
 
-def attach_structured(child_ctx, schema):
+def _attach(child_ctx, schema, can_complete=None):
     staged = weakref.WeakKeyDictionary()
     state = {"captured": None, "pending": None}
     async def execute(args, execution):
         violations = _schema_violations(args, schema, "arguments")
         if violations:
             raise ToolArgsError("structured_output", violations)
+        if can_complete is not None and not can_complete():
+            raise RuntimeError('Process pending messages before submitting structured output.')
         staged[execution] = {"value": args}
         execution.concludeTurn()
         return {"recorded": True}
@@ -41,4 +44,17 @@ def attach_structured(child_ctx, schema):
             if not outcome.isError and state["captured"] is None:
                 state["captured"] = {"value": entry["value"]}
     child_ctx.on("tools/result", result)
-    return state
+    return state, staged
+
+
+def attach_structured(child_ctx, schema):
+    return _attach(child_ctx, schema)[0]
+
+
+def attach_structured_runtime(child_ctx, schema, can_complete):
+    state, staged = _attach(child_ctx, schema, can_complete)
+    return SimpleNamespace(captured=lambda:state['captured'],
+        acceptsInput=lambda:not staged and state['pending'] is None and state['captured'] is None)
+
+
+attachStructuredRuntime = attach_structured_runtime

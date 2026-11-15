@@ -78,4 +78,6 @@
 
 | C8-AV | 当前文件监听就绪、过滤、错误/取消清理与可等待关闭 | [文件监听生命周期](fs-watch-checks.json) |
 
+| C8-AW | Guarded patch execution / deletion observation | targeted-passed | 27 paired; 4 native; 56 Source + 3 platform skips; 1,140,980 B cleaned | `patch-execution-checks.json` |
+
 后续继续设置及完整应用组合；最终资格使用 C9 冻结候选的完整门禁。

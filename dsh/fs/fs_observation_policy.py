@@ -103,6 +103,15 @@ class ObservedStateGate:
             )
         return {"version": prior.get("version")}
 
+    def delete_intent(self, target: FsTarget, actor: Any) -> Dict[str, Any]:
+        owner = self.owner(actor)
+        prior = self._get(owner, target.targetKey) if owner is not None else None
+        if prior is None:
+            raise FsError('delete requires reading "{}" first'.format(target.displayPath), 'FS_NOT_OBSERVED')
+        if prior.get('kind') == 'absent':
+            raise FsError('cannot delete "{}": not found'.format(target.displayPath), 'FS_NOT_FOUND')
+        return {'version': prior.get('version')}
+
     def observe(self, target: FsTarget, observation: Dict[str, Any], actor: Any) -> None:
         """Record an authoritative present or absent observation for this owner."""
         owner = self.owner(actor)
@@ -153,3 +162,17 @@ class FsObservationPolicyPlugin(Plugin):
         ctx.on("fs/write-intent", on_write_intent)
         ctx.on("fs/edit-intent", on_edit_intent)
         ctx.on("fs/observed", on_observed)
+
+
+class CurrentFsObservationPolicy(FsObservationPolicyPlugin):
+    """Current provider adds guarded deletion without changing historical profiles."""
+    def apply(self, ctx):
+        gate = ObservedStateGate()
+        ctx.disposable(gate.clear, label='fs-observation-policy observed-state teardown')
+        async def write(target, actor=None): return gate.write_intent(target, actor)
+        async def edit(target, actor=None): return gate.edit_intent(target, actor)
+        async def delete(target, actor=None): return gate.delete_intent(target, actor)
+        ctx.on('fs/write-intent', write)
+        ctx.on('fs/edit-intent', edit)
+        ctx.on('fs/delete-intent', delete)
+        ctx.on('fs/observed', gate.observe)

@@ -1,0 +1,34 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-16",
+  "unit": "C8-AW-PatchExecution",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "state": "targeted-passed",
+  "paired": ".goose/out/rc022-patch-execution-paired2-20261116-01/comparison/report.json",
+  "observations": 27,
+  "native": {
+    "run": "rc022-patch-execution-native-20261116-01",
+    "passed": 4,
+    "failed": 0
+  },
+  "source": {
+    "run": "rc022-patch-execution-source-20261116-01",
+    "passed": 56,
+    "failed": 0,
+    "skipped": 3,
+    "skipped_cases": [
+      "rejects a symbolic-link delete source without changing its target",
+      "rejects a symbolic-link move source without changing its target",
+      "updates through a symbolic link and shares its observation with the target"
+    ]
+  },
+  "verification_scope_reason": "Whole-patch admission and sequential commit are compared against actual Source over 27 shared cases and real files: canonical aliases/current directory, observations and CAS, independent refusals with no writes, all four mutations, repeated operations/move chains, Unicode preview, late binary detection, partial move, cancellation boundaries, unchanged versus uncertain I/O failures and propagation of unexpected defects. Native additional tests cover canonical target identity, session-owned deletion gates/unload, exact programming-error identity and syntax before acquisition. Original Source patch executor suite passes with its three existing platform skips. First probe fixture used Context.dispose rather than awaited fiber.dispose; corrected before paired/native passes, diagnostics retained.",
+  "activation_boundary": "Current guarded patch executor and explicit CurrentFsObservationPolicy only; model registration/schema/rendering, current escalation controller and profile activation remain subsequent work.",
+  "cleanup": {
+    "removed_bytes": 1140980,
+    "removed_links": 0,
+    "external_empty_root_removed": true,
+    "owned_processes_remaining": 0,
+    "retained": "Compact commands, logs, XML/JSON observations, corpus and receipts. Shared pinned Source/toolchains retained until C9 qualification."
+  }
+}

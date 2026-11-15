@@ -46,7 +46,7 @@ def profile(tmp_path, monkeypatch):
     home = tmp_path / "home"
     monkeypatch.setenv("DSH_HOME", str(home))
     directory = home / "profiles" / "python-test"
-    init_profile(str(directory), [], "startup")
+    init_profile(str(directory), [])
     (directory / "cordis.patch.yml").write_text(
         "- insert:\n    - id: system-prompt\n      name: '@deepseek-ai/dsh-system-prompt'\n    - id: tools\n      name: '@deepseek-ai/dsh-tools'\n", encoding="utf-8")
     real_which = shutil.which

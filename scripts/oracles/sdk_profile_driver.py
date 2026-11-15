@@ -43,7 +43,7 @@ def run(side, scenario, options, destination):
     profile.mkdir(parents=True)
     with (profile / 'package.json').open('x', encoding='utf-8') as stream:
         json.dump(dict(name='sdk-profile-probe', private=True, type='module',
-            dsh=dict(profile=dict(bundles=['@deepseek-ai/dsh-sdk-minimal'], patchReload='startup'))), stream, indent=2)
+            dsh=dict(profile=dict(bundles=['@deepseek-ai/dsh-sdk-minimal']))), stream, indent=2)
         stream.write('\n')
     if side == 'source':
         (profile / 'cordis.patch.yml').write_text(SOURCE_MINIMAL_EDITOR_PATCH, encoding='utf-8')

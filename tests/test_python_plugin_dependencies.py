@@ -110,7 +110,7 @@ async def test_complete_offline_closure_boot_restart_upgrade_and_rollback(profil
 
 def second_profile(home, name):
     directory = home / 'profiles' / name
-    init_profile(str(directory), [], 'startup')
+    init_profile(str(directory), [])
     (directory / 'cordis.patch.yml').write_text(
         "- insert:\n    - id: system-prompt\n      name: '@deepseek-ai/dsh-system-prompt'\n"
         "    - id: tools\n      name: '@deepseek-ai/dsh-tools'\n", encoding='utf-8')
@@ -250,15 +250,23 @@ def test_profile_conflict_rejects_all_replacement_paths(profile, tmp_path, opera
 
 
 @pytest.mark.asyncio
-async def test_failed_host_import_releases_libraries_paths_namespaces_and_lock(profile, tmp_path):
+async def test_failed_host_import_releases_libraries_paths_namespaces_and_lock(profile, tmp_path, capsys):
     home, directory = profile
     source = project(tmp_path)
     file = source / 'python/echo/plugin.py'
     file.write_text('import test_helper\nraise RuntimeError("fixture import failed")\n', encoding='utf-8')
     before = sys.path[:]
     cli.run_plugin('python-test', ['add', str(source)])
-    with pytest.raises(Exception, match='fixture import failed'):
-        await boot_profile(home)
+    # Optional import failures are reported by startup; the profile still owns
+    # its dependency lease until shutdown, even when no plugin activated.
+    result = await boot_profile(home)
+    try:
+        assert 'fixture import failed' in capsys.readouterr().err
+        entry = next(entry for entry in result['ctx'].loader.entries()
+                     if entry.options.get('name') == PACKAGE)
+        assert entry.fiber is None
+    finally:
+        await close(result)
     assert sys.path == before and 'test_helper' not in sys.modules
     assert not dependencies._POOL and not dependencies._PACKAGES
     assert cli.run_plugin('python-test', ['remove', PACKAGE]) == 0

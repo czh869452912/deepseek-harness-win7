@@ -20,7 +20,7 @@ NAME = '@example/python-echo'
 def setup(tmp_path, monkeypatch):
     monkeypatch.setenv('DSH_HOME', str(tmp_path / 'home'))
     directory = tmp_path / 'profile'
-    init_profile(str(directory), [], 'startup')
+    init_profile(str(directory), [])
     source = tmp_path / 'source'
     shutil.copytree(str(EXAMPLE), str(source))
     manifest_path = source / 'package.json'

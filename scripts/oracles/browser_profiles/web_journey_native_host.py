@@ -95,7 +95,7 @@ async def main():
     profile = home / 'profiles/web'
     profile.mkdir(parents=True, exist_ok=True)
     manifest = dict(name='controlled-browser-journey', private=True, type='module',
-        dsh=dict(profile=dict(bundles=['@deepseek-ai/dsh-base', '@deepseek-ai/dsh-web-app'], patchReload='startup')))
+        dsh=dict(profile=dict(bundles=['@deepseek-ai/dsh-base', '@deepseek-ai/dsh-web-app'])))
     (profile / 'package.json').write_text(json.dumps(manifest, indent=2) + '\n', encoding='utf-8')
     patch = [dict(insert=[dict(id='web-journey-fixture', name=str(FIXTURE) + ':FixturePlugin')]),
         dict(id='agent-default-model', config=dict(provider='web-journey-fixture', model='fixture')),

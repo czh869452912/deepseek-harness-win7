@@ -1,0 +1,61 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-15",
+  "unit": "C1-AU-YamlOwnedHmrAndProfilePolicyRetirement",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "state": "targeted-passed",
+  "paired": ".goose/out/rc022-profile-hmr-paired-20261115-03/report.json",
+  "observations": 13,
+  "source": {
+    "run": "rc022-profile-hmr-source-20261115-01",
+    "passed": 10,
+    "failed": 0,
+    "not_selected": 33
+  },
+  "native": [
+    {
+      "run": "rc022-profile-hmr-native-20261115-03",
+      "passed": 263,
+      "failed": 0
+    },
+    {
+      "run": "rc022-profile-hmr-dependencies-recheck-20261115-01",
+      "passed": 30,
+      "failed": 0
+    },
+    {
+      "run": "rc022-profile-hmr-exit-recheck-20261115-01",
+      "passed": 53,
+      "failed": 0,
+      "skipped": 1
+    }
+  ],
+  "rechecks": [
+    {
+      "run": "rc022-profile-hmr-replace-recheck-20261115-01",
+      "observations": 22
+    },
+    {
+      "run": "rc022-profile-hmr-generation-recheck-20261115-01",
+      "observations": 12
+    },
+    {
+      "run": "rc022-profile-hmr-consumers-recheck-20261115-01",
+      "observations": 4
+    },
+    {
+      "run": "rc022-profile-hmr-roots-recheck-20261115-01",
+      "observations": 11,
+      "glob_values": 580
+    }
+  ],
+  "verification_scope_reason": "Actual template/manifest and base/headless/sdk/acp composition from the fixed Source; native launcher with contradictory legacy metadata and actual enabled/disabled HMR rows; canonical CLI/Desktop/SDK/ACP/proxy and optional session tool consumers. Actual Python plugin installation, import failure, dependency lease, Remote call/withdrawal, cold restart and complete Web shutdown cover direct lifecycle consumers. Rechecked atomic profile replacement, module generations and root watchers after changes.",
+  "diagnostics": "Initial circular facade import, missed three-argument CLI and probe calls, optional uninstalled tool fixture and old fatal-import assumption resolved. A 180s aggregate timeout retained partial failures without claiming completion. Two real Web shutdown timeout reproductions and CPU/task captures identified synchronous fallback module graph planning delaying event-loop cleanup beyond the unchanged 5s exit deadline. The cooperative graph path yields per module and stops planning when root unload begins; resources still settle. First broad Web consumer run: 97 passed/3 failed/1 skipped, dependency recheck resolves old fatal-import assumption plus resulting leaked test ownership. Boundary run 37 passed/2 shutdown failures/1 skipped, followed by actual 53 passed/1 skipped recheck. Browser lane skipped because DSH_TEST_CHROMIUM was not selected; no browser acceptance.",
+  "cleanup": [
+    ".goose/out/rc022-profile-hmr-native-20261115-03/cleanup.json",
+    ".goose/out/rc022-profile-hmr-exit-recheck-20261115-01/cleanup.json"
+  ],
+  "cleanup_bytes": 3949055,
+  "cleanup_links": 78,
+  "remaining": "Advanced glob/watcher deployment options and remaining C1 integration; not complete C1 or release acceptance. Production reference and accepted_upstream unchanged."
+}

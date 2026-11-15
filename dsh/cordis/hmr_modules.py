@@ -4,6 +4,7 @@ import importlib.abc
 import importlib.machinery
 import importlib.util
 import ast
+import asyncio
 import builtins
 from contextlib import contextmanager
 import os
@@ -180,6 +181,17 @@ class PythonModules:
                 importers.setdefault(child, {})[url] = None
         return {url:list(values) for url, values in importers.items()}
 
+    async def module_graph_async(self, stopping):
+        """Yield while inspecting older modules so shutdown can end planning."""
+        importers = {}
+        for url, modules in self.loaded_modules().items():
+            await asyncio.sleep(0)
+            if stopping():
+                return None
+            for child in dict.fromkeys(child for module in modules for child in self._links(module)):
+                importers.setdefault(child, {})[url] = None
+        return {url:list(values) for url, values in importers.items()}
+
     def host_modules(self):
         if self._host is None:
             filename = sys.argv[0] if sys.argv else None
@@ -201,6 +213,7 @@ class PythonModules:
 
     def external_modules(self):
         """The evaluated entry graph, stopping traversal at installed packages."""
+        from dsh.cordis.hmr_changes import excluded
         main = module_url(sys.modules.get('__main__'))
         filename = sys.argv[0] if sys.argv else None
         if not filename or not os.path.isfile(filename) or main != Path(os.path.realpath(filename)).as_uri():
@@ -208,7 +221,7 @@ class PythonModules:
         modules = self.loaded_modules()
         work, seen = [main], set()
         for url in work:
-            if url in seen or '/node_modules/' in url or url.startswith('node:'):
+            if url in seen or excluded(url):
                 continue
             seen.add(url)
             for module in modules.get(url, ()):

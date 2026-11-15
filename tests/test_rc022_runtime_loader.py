@@ -72,7 +72,7 @@ async def test_canonical_launcher_publishes_runtime_without_healing_fallback(tmp
     import dsh.boot.profile_boot as launcher
     from dsh.boot.profile import init_profile
     home = tmp_path/'explicit-home'; active = home/'profiles/test'
-    init_profile(str(active), [], 'startup')
+    init_profile(str(active), [])
     monkeypatch.setenv('DSH_HOME',str(tmp_path/'ambient-home'))
     result = await launcher.run_profile(dict(profile='test',dsh_home=str(home),wait_for_exit=False))
     try:

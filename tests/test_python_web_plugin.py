@@ -116,7 +116,7 @@ def test_web_build_inputs_rejected_before_profile_commit(tmp_path, monkeypatch, 
     from dsh.boot.profile import init_profile
     home = tmp_path / 'home'
     profile = home / 'profiles/web'
-    init_profile(str(profile), [], 'startup')
+    init_profile(str(profile), [])
     monkeypatch.setenv('DSH_HOME', str(home))
     before = (profile / 'package.json').read_bytes()
     with pytest.raises(ValueError, match=message):

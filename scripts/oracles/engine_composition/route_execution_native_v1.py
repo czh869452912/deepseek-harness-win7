@@ -35,8 +35,7 @@ async def main():
     workspace.mkdir(parents=True, exist_ok=True)
     fixture = Path(__file__).resolve().with_name('route_execution_fixture_v1.py')
     (profile / 'package.json').write_text(json.dumps(dict(name='route-execution-fixture', private=True,
-        type='module', dsh=dict(profile=dict(bundles=['@deepseek-ai/dsh-base', '@deepseek-ai/dsh-web-app'],
-            patchReload='startup')))) + '\n', encoding='utf-8')
+        type='module', dsh=dict(profile=dict(bundles=['@deepseek-ai/dsh-base', '@deepseek-ai/dsh-web-app'])))) + '\n', encoding='utf-8')
     patch = [dict(insert=[dict(id='route-execution-fixture', name=str(fixture) + ':FixturePlugin')]),
         dict(id='agent-default-model', config=dict(provider='route-alpha', model='parent')),
         dict(id='subagent-model-selection-settings', config=dict(enabled=True,

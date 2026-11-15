@@ -79,7 +79,7 @@ def run_plugin(profile, args):
             if not os.path.isfile(os.path.join(directory, 'package.json')):
                 with ProfileLease(directory, exclusive=True):
                     template = PROFILE_TEMPLATES.get(profile, {})
-                    init_profile(directory, template.get('bundles', DEFAULT_PROFILE_BUNDLES), template.get('patchReload', 'live'))
+                    init_profile(directory, template.get('bundles', DEFAULT_PROFILE_BUNDLES))
             name = (install if args[0] == 'add' else upgrade)(directory, source, INSTALL_ANCHOR, acquisition=acquisition)
         sys.stdout.write('dsh: {} Python plugin {} into {}\n'.format('installed' if args[0] == 'add' else 'upgraded', name, profile))
         return 0
@@ -91,7 +91,7 @@ def run_plugin(profile, args):
         if not os.path.isfile(os.path.join(directory, "package.json")):
             with ProfileLease(directory, exclusive=True):
                 template = PROFILE_TEMPLATES.get(profile, {})
-                init_profile(directory, template.get("bundles", DEFAULT_PROFILE_BUNDLES), template.get("patchReload", "live"))
+                init_profile(directory, template.get("bundles", DEFAULT_PROFILE_BUNDLES))
         name = (install if args[0] == 'add' else upgrade)(directory, args[1], INSTALL_ANCHOR)
         sys.stdout.write("dsh: {} Python plugin {} into {}\n".format('installed' if args[0] == 'add' else 'upgraded', name, profile))
         return 0
@@ -117,7 +117,7 @@ def run_plugin(profile, args):
 def run_pnpm(profile, directory, args):
     if not os.path.isfile(os.path.join(directory, "package.json")):
         template = PROFILE_TEMPLATES.get(profile, {})
-        init_profile(directory, template.get("bundles", DEFAULT_PROFILE_BUNDLES), template.get("patchReload", "live"))
+        init_profile(directory, template.get("bundles", DEFAULT_PROFILE_BUNDLES))
     before = read_profile_manifest("dsh", directory)
     if before.get("dsh", {}).get("pythonPlugins") and (not args or args[0] not in ("list", "ls", "why", "outdated")):
         raise ValueError("pnpm mutations cannot manage this profile's Python snapshots; use Python add/upgrade/rollback/remove commands")

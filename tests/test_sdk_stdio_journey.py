@@ -29,7 +29,7 @@ def test_sdk_launcher_accepts_interleaved_reply_already_observed(tmp_path, defau
 
 def sdk_journey(tmp_path, default_profile, notification_first):
     profile = tmp_path / 'home' / 'profiles' / 'sdk-journey'
-    init_profile(str(profile), [], 'startup')
+    init_profile(str(profile), [])
     rows = [dict(id=name, name='@deepseek-ai/dsh-' + name) for name in (
         'session', 'session-projection', 'tools', 'system-prompt', 'agent', 'agent-loop', 'llm', 'llm-deepseek', 'sdk-app')]
     rows.extend([

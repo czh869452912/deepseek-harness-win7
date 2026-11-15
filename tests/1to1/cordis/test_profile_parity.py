@@ -41,7 +41,7 @@ def test_t1_prepare_profile_unknown_name_fails_loud():
         assert "invalid profile name" in str(exc4.value)
 
         # Unknown profile name
-        with pytest.raises(ValueError) as exc5:
+        with pytest.raises(RuntimeError) as exc5:
             prepare_profile("nonexistent-profile", dsh_home=tmp_home)
         assert "does not exist" in str(exc5.value)
 

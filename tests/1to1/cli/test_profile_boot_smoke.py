@@ -16,7 +16,7 @@ from dsh.boot.profile import init_profile
 async def test_run_profile_smoke_and_app_exit():
     with tempfile.TemporaryDirectory() as tmpdir:
         profile_dir = os.path.join(tmpdir, "profiles", "test-prof")
-        init_profile(profile_dir, [], "startup")
+        init_profile(profile_dir, [])
 
         res = await run_profile({
             "profile": "test-prof",
@@ -60,7 +60,7 @@ def test_portable_layout_bundle_resolution_smoke():
 
         from dsh.boot.profile import resolve_bundle_dir, load_profile
         prof_dir = os.path.join(tmpdir, "profiles", "test-portable")
-        init_profile(prof_dir, ["@deepseek-ai/dsh-base"], "startup")
+        init_profile(prof_dir, ["@deepseek-ai/dsh-base"])
 
         resolved = resolve_bundle_dir("dsh", "@deepseek-ai/dsh-base", anchor, prof_dir)
         assert os.path.normpath(resolved) == os.path.normpath(base_pkg_dir)

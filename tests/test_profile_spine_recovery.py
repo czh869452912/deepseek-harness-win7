@@ -12,7 +12,7 @@ from test_e2e_core_spine_strict_parity import StrictMockLlmAdapter
 @pytest.mark.asyncio
 async def test_profile_tool_turn_persists_and_resumes_after_shutdown(tmp_path):
     profile = tmp_path / 'profiles' / 'spine'
-    init_profile(str(profile), [], 'startup')
+    init_profile(str(profile), [])
     rows = [{'id':name, 'name':'@deepseek-ai/dsh-' + name} for name in
             ['session', 'session-projection', 'tools', 'system-prompt', 'agent', 'agent-loop']]
     rows.append(dict(id='test-llm', name=str(Path(__file__).with_name('profile_llm_fixture.py')) + ':plugin'))

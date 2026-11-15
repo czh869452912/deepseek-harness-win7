@@ -30,18 +30,24 @@ def hmr(layers):
     return row
 
 
-@pytest.mark.parametrize("mode", ["web-app", "headless", "sdk-app", "acp-app"])
-def test_mode_bundle_inherits_the_disabled_base_row_without_a_mode_override(mode):
-    mode_patches = bundle(mode)
-    assert not any(patch.get("id") == "hmr" for patch in mode_patches)
-    assert hmr([bundle("base"), mode_patches])["disabled"] is True
-    assert hmr([bundle("base"), mode_patches])["config"] == {"root": ["."]}
+def test_web_inherits_the_profile_owned_configuration_watch_row():
+    row = hmr([bundle('base'), bundle('web-app')])
+    assert row['name'] == '@deepseek-ai/dsh-hmr'
+    assert row['disabled'] == {'__jsExpr': "!ctx.get('profileContext')"}
+    assert row['config'] == {'root': []}
+
+
+@pytest.mark.parametrize('mode', ['headless', 'sdk-app', 'acp-app'])
+def test_noninteractive_modes_disable_the_yaml_owned_row(mode):
+    row = hmr([bundle('base'), bundle(mode)])
+    assert row['disabled'] is True
+    assert row['config'] == {'root': []}
 
 
 def test_requires_an_explicit_later_layer_to_enable_source_module_reload():
     row = hmr([bundle("base"), [{"id": "hmr", "disabled": False}]])
     assert row["disabled"] is False
-    assert row["config"] == {"root": ["."]}
+    assert row["config"] == {"root": []}
 
 
 def test_keeps_the_standalone_sdk_minimal_tree_free_of_module_hmr():

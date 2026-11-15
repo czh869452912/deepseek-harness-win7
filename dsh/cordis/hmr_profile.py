@@ -69,8 +69,12 @@ async def reconcile_profile(hmr, required_ids=()):
         unavailable = cache is None
         if not unavailable and comparison is not None and pending:
             async def plan_and_stop():
+                from dsh.boot.recomposition import _stopping
+                importers = await hmr.modules.module_graph_async(lambda: _stopping(hmr._owner_context.root))
+                if importers is None:
+                    return pending
                 plan = plan_replacement(hmr.ctx, [item['url'] for item in pending], comparison['roots'],
-                    hmr.modules.module_graph(), hmr.modules.host_modules(), hmr.modules.plugins_of)
+                    importers, hmr.modules.host_modules(), hmr.modules.plugins_of)
                 await stop_planned(hmr, plan)
                 return plan['pending']
             pending = await _contained(hmr, 'planning module replacement', plan_and_stop, pending)

@@ -42,7 +42,7 @@ def test_existing_creative_default_upgrades_without_overwriting_user_patches():
     from dsh.boot.profile_boot import INSTALL_ANCHOR
     with tempfile.TemporaryDirectory() as home:
         profile_dir = os.path.join(home, 'profiles', 'creative')
-        init_profile(profile_dir, PROFILE_TEMPLATES['standard']['bundles'], 'startup')
+        init_profile(profile_dir, PROFILE_TEMPLATES['standard']['bundles'])
         patch = os.path.join(profile_dir, 'cordis.patch.yml')
         rows = [{'id': 'system-prompt', 'config': {'persona': 'Keep my persona'}}]
         with open(patch, 'w', encoding='utf-8') as stream:

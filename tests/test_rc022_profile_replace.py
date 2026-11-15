@@ -25,7 +25,7 @@ def test_real_replacement_restoration_and_concurrent_winner_journeys(tmp_path):
 
 def test_active_python_profile_lease_prevents_replacement(tmp_path):
     directory = tmp_path/'profiles/rescue'
-    init_profile(str(directory), ['existing-bundle'], None)
+    init_profile(str(directory), ['existing-bundle'])
     before = (directory/'package.json').read_bytes()
     with ProfileLease(str(directory)):
         with pytest.raises((OSError,RuntimeError)):
@@ -38,7 +38,7 @@ def test_active_python_profile_lease_prevents_replacement(tmp_path):
 
 def test_replacement_cleans_old_dependency_junctions_without_touching_targets(tmp_path):
     directory = tmp_path/'profiles/rescue'
-    init_profile(str(directory), [], None)
+    init_profile(str(directory), [])
     external = tmp_path/'external'; external.mkdir()
     (external/'keep').write_text('user dependency',encoding='utf-8')
     modules = directory/'node_modules'; modules.mkdir()

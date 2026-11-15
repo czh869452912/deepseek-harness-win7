@@ -283,7 +283,7 @@ async def test_real_profile_installs_before_first_plugin_and_restores_after_shut
     from dsh.boot.profile_boot import run_profile
     from dsh.cordis.environment import LaunchEnvironmentSnapshot
     directory = tmp_path / 'profiles/rescue'
-    init_profile(str(directory), [], 'startup')
+    init_profile(str(directory), [])
     plugin = directory / 'observe.py'
     plugin.write_text('import urllib.request\ndef apply(ctx, config):\n    with urllib.request.urlopen("http://origin.test/boot", timeout=2) as response:\n        ctx.provide("bootProxyObservation", response.read().decode("ascii"))\n', encoding='utf-8')
     (directory / 'cordis.patch.yml').write_text(json.dumps([{'insert': [{'id': 'observe', 'name': str(plugin)}]}]), encoding='utf-8')
@@ -306,7 +306,7 @@ async def test_failed_profile_restores_policy_and_environment(network, tmp_path)
     from dsh.boot.profile_boot import run_profile
     from dsh.cordis.environment import LaunchEnvironmentSnapshot
     directory = tmp_path / 'profiles/rescue'
-    init_profile(str(directory), [], 'startup')
+    init_profile(str(directory), [])
     (directory / 'cordis.patch.yml').write_text('invalid: [yaml', encoding='utf-8')
     proxy_url = 'http://127.0.0.1:%s' % network['proxy'].server_port
     environment = LaunchEnvironmentSnapshot([{'source': 'user-env', 'values': {'HTTP_PROXY': proxy_url}}])

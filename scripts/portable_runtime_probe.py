@@ -121,7 +121,7 @@ async def journey(workspace, home, architecture='x64'):
         require(result.returncode == 0 and result.stdout.strip(), 'profile dump failed: ' + profile + ': ' + result.stderr)
         report['steps'].append('dump-' + profile)
     directory = home / 'profiles' / 'portable-probe'
-    init_profile(str(directory), [], 'startup')
+    init_profile(str(directory), [])
     (directory / 'cordis.patch.yml').write_text(
         "- insert:\n    - id: system-prompt\n      name: '@deepseek-ai/dsh-system-prompt'\n"
         "    - id: tools\n      name: '@deepseek-ai/dsh-tools'\n", encoding='utf-8')

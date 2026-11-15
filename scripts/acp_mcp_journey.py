@@ -70,7 +70,7 @@ def prepare_profile(root, workspace):
     import yaml
     home = workspace / 'home'
     profile = home / 'profiles/acp'
-    init_profile(str(profile), [], 'startup')
+    init_profile(str(profile), [])
     rows = [{'id': name, 'name': '@deepseek-ai/dsh-' + name} for name in
             ('session', 'tools', 'system-prompt', 'llm', 'llm-deepseek', 'credentials-local',
              'agent', 'session-projection', 'agent-loop', 'acp-app')]

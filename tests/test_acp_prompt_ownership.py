@@ -204,7 +204,7 @@ async def test_claimed_turn_error_uses_durable_end_instead_of_interval_error():
 async def test_canonical_profile_acp_prompt_claims_real_turn_and_releases_agent(tmp_path, monkeypatch):
     home = tmp_path / 'home'
     profile = home / 'profiles' / 'acp-owned'
-    init_profile(str(profile), [], 'startup')
+    init_profile(str(profile), [])
     rows = [{'id': name, 'name': '@deepseek-ai/dsh-' + name} for name in
             ('session', 'session-projection', 'tools', 'system-prompt', 'llm', 'agent', 'agent-loop', 'acp')]
     rows.append({'id': 'persistence', 'name': '@deepseek-ai/dsh-session-persistence-jsonl',

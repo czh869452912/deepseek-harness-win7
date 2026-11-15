@@ -17,7 +17,7 @@ from dsh.boot.profile import init_profile
     (False, 'headless'), (False, 'standard'), (False, 'creative')])
 def test_headless_runner_http_tool_roundtrip_and_exit(tmp_path, truncated, default_profile):
     profile = tmp_path / "home" / "profiles" / "http-journey"
-    init_profile(str(profile), [], "startup")
+    init_profile(str(profile), [])
     rows = [{"id": name, "name": "@deepseek-ai/dsh-" + name} for name in (
         "session", "session-projection", "tools", "system-prompt", "agent", "agent-loop", "llm", "llm-deepseek",
         "agent-default-model", "fs-local", "tool-str-replace-editor", "cli-visualizer")]

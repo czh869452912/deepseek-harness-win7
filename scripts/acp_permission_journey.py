@@ -37,7 +37,7 @@ def prepare_profile(root, workspace):
     from dsh.boot.python_plugins import install
     home = workspace / 'home'
     profile = home / 'profiles/acp'
-    init_profile(str(profile), [], 'startup')
+    init_profile(str(profile), [])
     rows = [{'id': name, 'name': '@deepseek-ai/dsh-' + name} for name in
             ('session', 'tools', 'system-prompt', 'llm', 'llm-deepseek', 'credentials-local',
              'agent', 'session-projection', 'agent-loop', 'user-approval', 'acp-app')]

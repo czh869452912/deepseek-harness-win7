@@ -18,13 +18,16 @@ from test_e2e_core_spine_strict_parity import StrictMockLlmAdapter
 @pytest.mark.parametrize('backend', ['jsonl', 'jsonl-zstd'])
 async def test_optional_profile_model_tools_next_request_and_cold_restart(tmp_path, backend):
     profile = tmp_path / 'profiles' / 'session-tools'
-    init_profile(str(profile), [], 'startup')
+    init_profile(str(profile), [])
     rows = [dict(id=name, name='@deepseek-ai/dsh-' + name) for name in ['session', 'session-projection', 'tools', 'system-prompt', 'agent', 'agent-loop']]
     rows.append(dict(id='test-llm', name=str(Path(__file__).with_name('profile_llm_fixture.py')) + ':plugin'))
     persistence_config = dict(root=str(tmp_path / 'sessions'), compression='none' if backend == 'jsonl' else 'zstd') if backend.startswith('jsonl') else dict(path=str(tmp_path / 'sessions.db'))
     rows.extend([dict(id='storage', name='@deepseek-ai/dsh-session-persistence-' + ('jsonl' if backend.startswith('jsonl') else backend), config=persistence_config),
                  dict(id='query', name='@deepseek-ai/dsh-session-query-sqlite', config=dict(path=str(tmp_path / 'query.db'), defaultLimit=1)),
-                 dict(id='history-tools', name='@deepseek-ai/dsh-tool-session-query', config=dict(maxSearchResults=2))])
+                 # This opt-in tool is not an installation dependency. Select
+                 # its actual Python entry instead of relying on a class-table
+                 # fallback for an uninstalled package name.
+                 dict(id='history-tools', name=str(Path(__file__).resolve().parents[1] / 'dsh/session/tool_query.py') + ':ToolSessionQueryPlugin', config=dict(maxSearchResults=2))])
     (profile / 'cordis.patch.yml').write_text(yaml.safe_dump([dict(insert=rows)]), encoding='utf-8')
     options = dict(profile='session-tools', dsh_home=str(tmp_path), wait_for_exit=False)
     first = await run_profile(options)

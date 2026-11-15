@@ -3,6 +3,7 @@ import os
 import tempfile
 import yaml
 import pytest
+from dsh.boot.profile import init_profile
 
 from dsh.cordis.profile import (
     BUILTIN_BUNDLES,
@@ -24,7 +25,7 @@ from dsh.cordis.loader import apply_entry_patches
 def test_prepare_profile_custom_directory():
     with tempfile.TemporaryDirectory() as tmpdir:
         profile_dir = os.path.join(tmpdir, "profiles", "custom-team")
-        os.makedirs(profile_dir, exist_ok=True)
+        init_profile(profile_dir, [])
         patch_file = os.path.join(profile_dir, "cordis.patch.yml")
         with open(patch_file, "w", encoding="utf-8") as f:
             yaml.safe_dump([{"id": "agent-team", "name": "@deepseek-ai/dsh-agent-team"}], f)
@@ -87,7 +88,7 @@ def test_composed_profile_all_patches_ordering():
     with tempfile.TemporaryDirectory() as tmpdir:
         # Profile patch
         p_dir = os.path.join(tmpdir, "profiles", "test-p")
-        os.makedirs(p_dir, exist_ok=True)
+        init_profile(p_dir, [])
         with open(os.path.join(p_dir, "cordis.patch.yml"), "w", encoding="utf-8") as f:
             yaml.safe_dump([{"id": "layer-profile", "name": "profile"}], f)
 

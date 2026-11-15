@@ -2,8 +2,8 @@
 Shared profile boot for every dsh surface: resolve the profile, stack its
 patch layers (bundle layers in dsh.profile.bundles order, the profile's
 own cordis.patch.yml, --patch overlays, the telemetry switch), mount the
-tree over the profile's empty root config, apply its selected patch-reload
-lifecycle, and wire fail-loud plus bounded shutdown.
+tree over the profile's empty root config, and wire fail-loud plus bounded
+shutdown. HMR belongs to the composed Loader entries.
 
 Matching reference/apps/cli/src/profile-boot.ts 1:1.
 Compatible with Python 3.8.10 and Windows 7 SP1.
@@ -140,7 +140,7 @@ def initialize_profile_from_default(name, from_default_profile, home=None):
     lease = None
     try:
         fresh = os.path.join(staging, 'new', name)
-        init_profile(fresh, template['bundles'], None)
+        init_profile(fresh, template['bundles'])
         # Windows open profile leases already deny rename. POSIX permits it,
         # so retain an exclusive old-directory lease through the replacement.
         if os.name != 'nt' and os.path.isdir(directory):
@@ -295,6 +295,13 @@ async def compose_profile(
         home=dsh_home or resolve_dsh_home(), installationLayout=(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
             if os.path.abspath(INSTALL_ANCHOR) in _CANDIDATE_ANCHORS else None)))
 
+    composed = compose_profile_layers(profile, patch_files, dsh_home)
+    composed.resolution = resolution
+    return composed
+
+
+def compose_profile_layers(profile, patch_files=(), dsh_home=None):
+    """Read the canonical patch layers, shared by launch and offline callers."""
     home_patches = load_optional_patches(NAME, home_patch_path(dsh_home)) or []
     overlays: List[Dict[str, Any]] = []
     for file in patch_files:
@@ -310,7 +317,7 @@ async def compose_profile(
         home_patches=home_patches,
         overlays=overlays,
         telemetry_disabled_env=os.environ.get('DSH_TELEMETRY_DISABLED'),
-        resolution=resolution,
+        resolution=None,
     )
 
 
@@ -434,20 +441,6 @@ async def _run_profile(options: Dict[str, Any]) -> Dict[str, Any]:
         None, preserve_default_session_encoding, copy.deepcopy(composed.all_patches()), dsh_home)
     ctx = await boot(NAME, root_config, all_patch_rows, host_setup)
     app["current"] = ctx
-
-    if (
-        composed.profile.patch_reload == "live"
-        and not signal_shutdown.aborted
-        and ctx.fiber.state == FiberState.ACTIVE
-        and ctx.get("loader") is not None
-    ):
-        try:
-            if ctx.get("hmr") is None:
-                if ctx.get("timer") is None:
-                    await ctx.loader.create({"name": "@deepseek-ai/cordis-plugin-timer"})
-                await ctx.loader.create({"name": "@deepseek-ai/cordis-plugin-hmr", "config": {"root": []}})
-        except Exception as error:
-            suppress_shutdown_error(ctx, signal_shutdown, error)
 
     if (
         not signal_shutdown.aborted

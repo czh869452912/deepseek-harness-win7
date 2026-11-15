@@ -64,7 +64,7 @@ HARNESS_PLUGIN_CLASSES: Dict[str, str] = {
     "@deepseek-ai/dsh-session-log-export": "dsh.session.log_export:SessionLogExportPlugin",
     "@deepseek-ai/dsh-session-reference": "dsh.context.session_reference:SessionReferenceResolver",
     # Vendored Cordis plugins the bundles carry.
-    "@deepseek-ai/cordis-plugin-hmr": "dsh.cordis.hmr:ConfigWatcherService",
+    "@deepseek-ai/dsh-hmr": "dsh.cordis.hmr:ConfigWatcherService",
     "@deepseek-ai/cordis-plugin-timer": "dsh.cordis.timer:TimerService",
     # Core spine.
     "@deepseek-ai/dsh-agent-spine-demo": "dsh.bundle.agent_spine:AgentSpine",

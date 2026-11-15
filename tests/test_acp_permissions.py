@@ -121,7 +121,7 @@ async def test_same_id_foreign_agent_and_absent_call_id_delegate_without_request
 async def test_canonical_agent_tool_permission_and_next_request_preserve_machine_decision(tmp_path, monkeypatch, choice, executions):
     home = tmp_path / 'home'
     profile = home / 'profiles' / 'permission-owned'
-    init_profile(str(profile), [], 'startup')
+    init_profile(str(profile), [])
     rows = [{'id': name, 'name': '@deepseek-ai/dsh-' + name} for name in
             ('session', 'session-projection', 'tools', 'system-prompt', 'llm', 'agent', 'agent-loop', 'user-approval', 'acp')]
     rows.append({'id': 'persistence', 'name': '@deepseek-ai/dsh-session-persistence-jsonl',

@@ -108,6 +108,8 @@ def _table(resolution):
 
 
 async def _recompose(ctx, patches, bin_name, options, with_resolution):
+    if _stopping(ctx):
+        return dict(warnings=[])
     applying = False
     stopped = []
     running = options.get('running', [])

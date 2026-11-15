@@ -124,7 +124,7 @@ async def run_desktop_host(profile_dir, environment=None, patches=None):
     with ProfileLease(str(directory), exclusive=True):
         from dsh.boot.python_plugins import recover
         recover(str(directory))
-        init_profile(str(directory), ['@deepseek-ai/dsh-base', '@deepseek-ai/dsh-web-app'], 'startup')
+        init_profile(str(directory), ['@deepseek-ai/dsh-base', '@deepseek-ai/dsh-web-app'])
     lease, dependencies, dispose_proxy, ctx = ProfileLease(str(directory)), None, None, None
     async def release():
         try:

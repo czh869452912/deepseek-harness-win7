@@ -37,7 +37,7 @@ async def main():
         real_which = shutil.which
         shutil.which = lambda name, *args, **kwargs: None if name in ('node', 'pnpm') else real_which(name, *args, **kwargs)
         template = PROFILE_TEMPLATES['web']
-        init_profile(str(home / 'profiles/web'), template['bundles'], template.get('patchReload', 'live'))
+        init_profile(str(home / 'profiles/web'), template['bundles'])
         original = Path(directory) / 'v1.zip'
         if EXPORTED:
             source_project, receipt = await export_project_at(Path(directory), placement='session' if SESSION else 'host')

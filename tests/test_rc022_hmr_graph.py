@@ -89,6 +89,20 @@ async def test_unloaded_fallback_snapshots_do_not_keep_old_modules_alive(tmp_pat
 
 
 @pytest.mark.asyncio
+async def test_graph_inventory_yields_and_stops_before_inspecting_retired_modules(monkeypatch):
+    import asyncio
+    from dsh.cordis import Context
+    from dsh.cordis.hmr_modules import PythonModules
+    cache = PythonModules(Context())
+    module = types.ModuleType('uninspected')
+    monkeypatch.setattr(cache, 'loaded_modules', lambda: {'entry': [module]})
+    monkeypatch.setattr(cache, '_links', lambda module: pytest.fail('retired graph inspected'))
+    stopping = [False]
+    asyncio.get_running_loop().call_soon(lambda: stopping.__setitem__(0, True))
+    assert await cache.module_graph_async(lambda: stopping[0]) is None
+
+
+@pytest.mark.asyncio
 async def test_preexisting_module_graph_keeps_snapshot_and_ignores_opaque_values(tmp_path):
     from dsh.cordis import Context
     from dsh.cordis.hmr_modules import PythonModules

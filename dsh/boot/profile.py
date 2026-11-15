@@ -24,7 +24,6 @@ PROFILE_PATCH_FILENAME = "cordis.patch.yml"
 PROFILE_MODULE_FALLBACK_DIR = ".dsh-module-fallback"
 
 DEFAULT_PROFILE_BUNDLES: Tuple[str, ...] = ("@deepseek-ai/dsh-base",)
-DEFAULT_PROFILE_PATCH_RELOAD = "live"
 RETIRED_BUNDLES = frozenset(('@deepseek-ai/dsh-experimental-schedule-bundle', '@deepseek-ai/dsh-experimental-agent-team-profile'))
 
 PROFILE_PATCH_TEMPLATE = """# Your patch layer for this dsh profile, applied after every bundle layer:
@@ -43,35 +42,27 @@ autoInstallPeers: false
 PROFILE_TEMPLATES: Dict[str, Dict[str, Any]] = {
     "acp": {
         "bundles": ["@deepseek-ai/dsh-base", "@deepseek-ai/dsh-acp-app"],
-        "patchReload": "startup",
     },
     "web": {
         "bundles": ["@deepseek-ai/dsh-base", "@deepseek-ai/dsh-web-app"],
-        "patchReload": "live",
     },
     "headless": {
         "bundles": ["@deepseek-ai/dsh-base", "@deepseek-ai/dsh-headless"],
-        "patchReload": "startup",
     },
     "standard": {
         "bundles": ["@deepseek-ai/dsh-base", "@deepseek-ai/dsh-headless"],
-        "patchReload": "startup",
     },
     "minimal": {
         "bundles": ["@deepseek-ai/dsh-sdk-minimal"],
-        "patchReload": "startup",
     },
     "creative": {
         "bundles": ["@deepseek-ai/dsh-base", "@deepseek-ai/dsh-headless", "@deepseek-win7/dsh-creative"],
-        "patchReload": "startup",
     },
     "sdk": {
         "bundles": ["@deepseek-ai/dsh-base", "@deepseek-ai/dsh-sdk-app"],
-        "patchReload": "startup",
     },
     "sdk-minimal": {
         "bundles": ["@deepseek-ai/dsh-sdk-minimal"],
-        "patchReload": "startup",
     },
 }
 
@@ -119,7 +110,6 @@ class Profile:
         layers: List[ProfileLayer],
         patch_path: str,
         patches: List[Dict[str, Any]],
-        patch_reload: str = DEFAULT_PROFILE_PATCH_RELOAD,
         skipped_bundles: Optional[List[Dict[str, str]]] = None,
     ):
         self.name = name
@@ -128,8 +118,6 @@ class Profile:
         self.patchPath = patch_path
         self.patch_path = patch_path
         self.patches = patches
-        self.patchReload = patch_reload
-        self.patch_reload = patch_reload
         self.skippedBundles = [] if skipped_bundles is None else skipped_bundles
         self.skipped_bundles = self.skippedBundles
 
@@ -813,7 +801,6 @@ def resolve_profile_dir(name: str, home: Optional[str] = None) -> str:
 def init_profile(
     dir_path: str,
     bundles: Sequence[str],
-    patch_reload: str = DEFAULT_PROFILE_PATCH_RELOAD,
 ) -> None:
     """Initialize a profile directory: manifest, empty user patch layer, pnpm workspace."""
     os.makedirs(dir_path, exist_ok=True)
@@ -823,7 +810,7 @@ def init_profile(
             "name": f"dsh-profile-{os.path.basename(dir_path)}",
             "private": True,
             "dependencies": {},
-            "dsh": {"profile": dict(bundles=list(bundles), **({"patchReload": patch_reload} if patch_reload is not None else {}))},
+            "dsh": {"profile": dict(bundles=list(bundles))},
         }
         with open(manifest_path, "w", encoding="utf-8") as f:
             json.dump(manifest, f, indent=2)
@@ -880,17 +867,11 @@ def normalize_shipped_profile(
         return manifest
 
     is_retired = installation_owned is not None and bundles == installation_owned
-    is_current = bundles == template["bundles"]
-    needs_reload = manifest.get("dsh", {}).get("profile", {}).get("patchReload") is None and is_current
-
-    if not is_retired and not needs_reload:
+    if not is_retired:
         return manifest
 
     normalized = copy.deepcopy(manifest)
     normalized.setdefault("dsh", {}).setdefault("profile", {})["bundles"] = list(template["bundles"])
-    normalized["dsh"]["profile"]["patchReload"] = (
-        manifest.get("dsh", {}).get("profile", {}).get("patchReload") or template["patchReload"]
-    )
     write_profile_manifest(dir_path, normalized)
     return normalized
 
@@ -934,7 +915,7 @@ def load_profile(
             raise RuntimeError(
                 f"{bin_name}: profile {json.dumps(name)} does not exist; create it with 'dsh plugin --profile {name} add <package>'"
             )
-        init_profile(profile_dir, template["bundles"], template["patchReload"])
+        init_profile(profile_dir, template["bundles"])
 
     normalize_shipped_profile(name, profile_dir, read_profile_manifest(bin_name, profile_dir))
     return load_profile_directory(bin_name, profile_dir, install_anchor, opts)
@@ -953,13 +934,6 @@ def load_profile_directory(bin_name, dir_path, install_anchor, options=None):
         manifest['dsh']['profile']['bundles'] = kept
         write_profile_manifest(profile_dir, manifest)
         bundles = kept
-    raw_reload = manifest.get("dsh", {}).get("profile", {}).get("patchReload")
-    if raw_reload is not None and raw_reload not in ("live", "startup"):
-        raise RuntimeError(
-            f"{bin_name}: profile manifest {manifest_path} dsh.profile.patchReload must be \"live\" or \"startup\""
-        )
-    patch_reload = raw_reload or DEFAULT_PROFILE_PATCH_RELOAD
-
     from dsh.boot.bundle_platform import assert_bundle_platform, UNDECLARED
     from dsh.boot.plugin_compatibility import evaluate_plugin_compatibility, plugin_compatibility_warning
     from dsh.boot.profile_compatibility import read_profile_version_exemptions
@@ -1002,7 +976,6 @@ def load_profile_directory(bin_name, dir_path, install_anchor, options=None):
         layers=layers,
         patch_path=user_patch_path,
         patches=user_patches,
-        patch_reload=patch_reload,
         skipped_bundles=skipped,
     )
 

@@ -25,7 +25,7 @@ def prepare_profiles(root, workspace, endpoint):
             repr(str(pid_path)), repr(str(root)), repr(str(root / 'dsh.py')), repr(str(root / 'dsh.py')))
     for name in ('acp', 'child-acp'):
         profile = home / 'profiles' / name
-        init_profile(str(profile), [], 'startup')
+        init_profile(str(profile), [])
         rows = [{'id': package, 'name': '@deepseek-ai/dsh-' + package} for package in
             ('session', 'session-projection', 'tools', 'system-prompt', 'llm', 'llm-deepseek', 'credentials-local',
              'agent', 'agent-loop', 'acp-app')]

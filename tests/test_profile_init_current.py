@@ -101,10 +101,10 @@ def test_dump_explicit_template_replacement_resets_user_patch(tmp_path):
 
 
 def test_application_owned_profile_loads_without_home_or_shipped_normalization(tmp_path):
-    directory=tmp_path/'application'/'desktop';init_profile(str(directory),[], 'startup')
+    directory=tmp_path/'application'/'desktop';init_profile(str(directory),[])
     (directory/'cordis.patch.yml').write_text('broken: [yaml',encoding='utf-8')
     loaded=load_profile_directory('test',str(directory),INSTALL_ANCHOR,dict(userLayer=False))
-    assert loaded.name=='desktop' and loaded.patchReload=='startup' and loaded.patches==[] and loaded.layers==[]
+    assert loaded.name=='desktop' and not hasattr(loaded,'patchReload') and loaded.patches==[] and loaded.layers==[]
     with pytest.raises(Exception):load_profile_directory('test',str(directory),INSTALL_ANCHOR)
 
 
@@ -114,7 +114,7 @@ async def test_profile_run_initializes_before_python_lease_claim_then_boots_actu
     # compose. Initialization must happen first, or the lease's mkdir falsely
     # makes a fresh target look like pre-existing state.
     from dsh.cordis.environment import LaunchEnvironmentSnapshot
-    with patch.dict(PROFILE_TEMPLATES,{'fixture':dict(bundles=[],patchReload='startup')}):
+    with patch.dict(PROFILE_TEMPLATES,{'fixture':dict(bundles=[])}):
         result=await asyncio.wait_for(run_profile(dict(profile='rescue',fromDefaultProfile='fixture',dshHome=str(tmp_path),environment=LaunchEnvironmentSnapshot([]),args=[],waitForExit=False)),10)
     try:
         assert result['ctx'].get('loader') is not None

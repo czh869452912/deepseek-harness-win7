@@ -78,3 +78,22 @@ async def test_host_external_graph_stops_at_installed_modules(tmp_path, monkeypa
         assert hmr.modules.host_modules() == set(urls)
     finally:
         await ctx.fiber.dispose()
+
+
+def test_external_graph_does_not_traverse_native_installed_runtime(tmp_path, monkeypatch):
+    from dsh.cordis.context import Context
+    from dsh.cordis.hmr_modules import PythonModules, module_url
+    import dsh.cordis.context as runtime
+    main = types.ModuleType('__main__')
+    main.__file__ = str(tmp_path/'entry.py')
+    (tmp_path/'entry.py').write_text('', encoding='utf-8')
+    main._dsh_hmr_links = [module_url(runtime)]
+    monkeypatch.setitem(sys.modules, '__main__', main)
+    monkeypatch.setattr(sys, 'argv', [main.__file__])
+    modules = PythonModules(Context())
+    original = modules._links
+    def links(module):
+        assert module is main, 'installed SDK graph must remain opaque'
+        return original(module)
+    monkeypatch.setattr(modules, '_links', links)
+    assert modules.external_modules() == {module_url(main)}

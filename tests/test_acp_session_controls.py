@@ -414,7 +414,7 @@ async def test_bridge_close_cancels_all_owners_before_any_drain_and_aggregates(t
 async def boot_profile(tmp_path, backend, monkeypatch):
     home = tmp_path / 'home'
     profile = home / 'profiles' / 'acp-controls'
-    init_profile(str(profile), [], 'startup')
+    init_profile(str(profile), [])
     rows = [{'id': name, 'name': '@deepseek-ai/dsh-' + name} for name in
             ('session', 'session-projection', 'tools', 'system-prompt', 'llm', 'agent', 'agent-loop', 'acp')]
     config = {'root': str(tmp_path / 'sessions'), 'packChunks': False,

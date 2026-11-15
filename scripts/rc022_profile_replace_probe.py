@@ -48,7 +48,7 @@ async def native():
         name=case.get('name','rescue');mode=case.get('mode','new');directory=home/'profiles'/name
         if mode not in ('new','write'):
             directory.mkdir(parents=True)
-            if mode!='residual':init_profile(str(directory),['old-bundle'],None)
+            if mode!='residual':init_profile(str(directory),['old-bundle'])
             (directory/'old-marker').write_text('old',encoding='utf-8')
         original_rename=os.rename;original_remove=launcher.shutil.rmtree;original_init=launcher.init_profile
         def rename(source,target):
@@ -56,7 +56,7 @@ async def native():
             if mode=='old-rename' and source==str(directory):raise OSError('injected old rename')
             if target==str(directory) and (mode=='restore' or (mode=='new-rename' and source.endswith(os.path.join('new',name)))):raise OSError('injected rename')
             if mode=='concurrent' and source.endswith(os.path.join('new',name)):
-                original_init(str(directory),['concurrent-bundle'],None)
+                original_init(str(directory),['concurrent-bundle'])
             return original_rename(source,target)
         def initialize(*args):
             if mode=='write':raise OSError('injected write')

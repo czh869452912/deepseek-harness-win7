@@ -17,7 +17,6 @@ from typing import Any, Dict, List, Optional
 import pytest
 
 from dsh.boot.profile import (
-    DEFAULT_PROFILE_PATCH_RELOAD,
     PROFILE_PATCH_FILENAME,
     PROFILE_TEMPLATES,
     Profile,
@@ -115,7 +114,6 @@ def stage_profile(home: str, name: str, bundle_anchor: str) -> Profile:
         ],
         patch_path=os.path.join(dir_path, PROFILE_PATCH_FILENAME),
         patches=[],
-        patch_reload="live",
     )
 
 
@@ -143,7 +141,7 @@ def test_init_profile_creates_manifest_user_patch_layer_and_pnpm_workspace_once_
     initProfile(dir_path, ["@deepseek-ai/dsh-base"])
     manifest = readProfileManifest("t", dir_path)
     assert manifest.get("dsh", {}).get("profile", {}).get("bundles") == ["@deepseek-ai/dsh-base"]
-    assert manifest.get("dsh", {}).get("profile", {}).get("patchReload") == "live"
+    assert "patchReload" not in manifest.get("dsh", {}).get("profile", {})
     with open(os.path.join(dir_path, PROFILE_PATCH_FILENAME), "r", encoding="utf-8") as f:
         assert "[]" in f.read()
     with open(os.path.join(dir_path, "pnpm-workspace.yaml"), "r", encoding="utf-8") as f:
@@ -152,10 +150,10 @@ def test_init_profile_creates_manifest_user_patch_layer_and_pnpm_workspace_once_
     # Re-init keeps user edits.
     with open(os.path.join(dir_path, PROFILE_PATCH_FILENAME), "w", encoding="utf-8") as f:
         f.write("- id: x\n  config: {}\n")
-    initProfile(dir_path, ["other"], "startup")
+    initProfile(dir_path, ["other"])
     manifest2 = readProfileManifest("t", dir_path)
     assert manifest2.get("dsh", {}).get("profile", {}).get("bundles") == ["@deepseek-ai/dsh-base"]
-    assert manifest2.get("dsh", {}).get("profile", {}).get("patchReload") == "live"
+    assert "patchReload" not in manifest2.get("dsh", {}).get("profile", {})
     with open(os.path.join(dir_path, PROFILE_PATCH_FILENAME), "r", encoding="utf-8") as f:
         assert "- id: x" in f.read()
 
@@ -240,7 +238,7 @@ def test_load_profile_resolves_each_bundle_to_patch_layer_in_order_plus_user_lay
     profile = loadProfile("t", "demo", anchor, home)
     assert [layer.package_name for layer in profile.layers] == ["bundle-a", "bundle-b"]
     assert len(profile.patches) == 1
-    assert profile.patch_reload == "live"
+    assert not hasattr(profile, "patch_reload")
     entries = composeEntries([
         *(layer.patches for layer in profile.layers),
         profile.patches,
@@ -253,7 +251,7 @@ def test_load_profile_resolves_each_bundle_to_patch_layer_in_order_plus_user_lay
     writeProfileManifest(dir_path, {"name": "bare"})
     bare = loadProfile("t", "demo", anchor, home)
     assert bare.layers == []
-    assert bare.patch_reload == "live"
+    assert not hasattr(bare, "patch_reload")
 
 
 def test_load_profile_auto_initializes_only_shipped_templates_and_fails_loud_otherwise():
@@ -263,19 +261,16 @@ def test_load_profile_auto_initializes_only_shipped_templates_and_fails_loud_oth
         loadProfile("t", "custom", anchor, home)
 
     assert "@deepseek-ai/dsh-base" in PROFILE_TEMPLATES["web"]["bundles"]
-    assert PROFILE_TEMPLATES["web"]["patchReload"] == "live"
-    assert PROFILE_TEMPLATES["headless"]["patchReload"] == "startup"
+    assert "patchReload" not in PROFILE_TEMPLATES["web"]
+    assert "patchReload" not in PROFILE_TEMPLATES["headless"]
     assert PROFILE_TEMPLATES["acp"] == {
         "bundles": ["@deepseek-ai/dsh-base", "@deepseek-ai/dsh-acp-app"],
-        "patchReload": "startup",
     }
     assert PROFILE_TEMPLATES["sdk"] == {
         "bundles": ["@deepseek-ai/dsh-base", "@deepseek-ai/dsh-sdk-app"],
-        "patchReload": "startup",
     }
     assert PROFILE_TEMPLATES["sdk-minimal"] == {
         "bundles": ["@deepseek-ai/dsh-sdk-minimal"],
-        "patchReload": "startup",
     }
 
     try:
@@ -286,7 +281,7 @@ def test_load_profile_auto_initializes_only_shipped_templates_and_fails_loud_oth
 
     manifest = readProfileManifest("t", resolveProfileDir("web", home))
     assert manifest.get("dsh", {}).get("profile", {}).get("bundles") == list(PROFILE_TEMPLATES["web"]["bundles"])
-    assert manifest.get("dsh", {}).get("profile", {}).get("patchReload") == "live"
+    assert "patchReload" not in manifest.get("dsh", {}).get("profile", {})
 
 
 def test_load_profile_normalizes_only_exact_installation_owned_headless_bundle_tuple():
@@ -308,7 +303,6 @@ def test_load_profile_normalizes_only_exact_installation_owned_headless_bundle_t
     loadProfile("t", "headless", anchor, home)
     assert readProfileManifest("t", stock).get("dsh", {}).get("profile") == {
         "bundles": ["@deepseek-ai/dsh-base", "@deepseek-ai/dsh-headless"],
-        "patchReload": "startup",
     }
 
     custom_home = tmp()
@@ -322,37 +316,23 @@ def test_load_profile_normalizes_only_exact_installation_owned_headless_bundle_t
     ]
 
 
-def test_load_profile_adds_shipped_reload_default_only_to_exact_stock_tuple_and_preserves_explicit():
-    anchor = stage_installation({
-        "@deepseek-ai/dsh-base": {"patch": "[]\n"},
-        "@deepseek-ai/dsh-web-app": {"patch": "[]\n"},
-    })
-    stock_home = tmp()
-    stock = resolveProfileDir("web", stock_home)
-    initProfile(stock, PROFILE_TEMPLATES["web"]["bundles"])
-    stock_manifest = readProfileManifest("t", stock)
-    if "patchReload" in stock_manifest.get("dsh", {}).get("profile", {}):
-        del stock_manifest["dsh"]["profile"]["patchReload"]
-    writeProfileManifest(stock, stock_manifest)
-    assert loadProfile("t", "web", anchor, stock_home).patch_reload == "live"
-    assert readProfileManifest("t", stock).get("dsh", {}).get("profile", {}).get("patchReload") == "live"
-
-    explicit_home = tmp()
-    explicit = resolveProfileDir("web", explicit_home)
-    initProfile(explicit, PROFILE_TEMPLATES["web"]["bundles"], "startup")
-    assert loadProfile("t", "web", anchor, explicit_home).patch_reload == "startup"
-
-
-def test_load_profile_fails_loud_on_unknown_patch_reload_value_from_disk():
+def test_load_profile_preserves_unknown_manifest_fields_without_reload_policy():
     anchor = stage_installation({})
-    home = tmp()
-    dir_path = resolveProfileDir("demo", home)
-    initProfile(dir_path, [])
-    manifest = readProfileManifest("t", dir_path)
-    manifest.setdefault("dsh", {}).setdefault("profile", {})["patchReload"] = "sometimes"
-    writeProfileManifest(dir_path, manifest)
-    with pytest.raises(RuntimeError, match='patchReload must be "live" or "startup"'):
-        loadProfile("t", "demo", anchor, home)
+    for value in ('startup', 'live', 'sometimes', {'future': True}):
+        home = tmp()
+        directory = resolveProfileDir('demo', home)
+        initProfile(directory, [])
+        manifest = readProfileManifest('t', directory)
+        manifest['dsh']['profile']['patchReload'] = value
+        writeProfileManifest(directory, manifest)
+        filename = os.path.join(directory, 'package.json')
+        with open(filename, 'rb') as stream:
+            before = stream.read()
+        loaded = loadProfile('t', 'demo', anchor, home)
+        assert not hasattr(loaded, 'patchReload')
+        assert not hasattr(loaded, 'patch_reload')
+        with open(filename, 'rb') as stream:
+            assert stream.read() == before
 
 
 def test_load_profile_reports_skipped_bundle_without_stopping_profile():
@@ -481,7 +461,6 @@ async def test_heal_profiles_module_fallback_keeps_selected_bundle_closures_prof
         layers=[],
         patch_path=profile_a.patch_path,
         patches=profile_a.patches,
-        patch_reload=profile_a.patch_reload,
     )
     await healProfilesModuleFallback({
         "installAnchor": installation_anchor,
@@ -540,7 +519,6 @@ async def test_heal_profiles_module_fallback_discovers_dependencies_beside_symli
         ],
         patch_path=os.path.join(dir_path, PROFILE_PATCH_FILENAME),
         patches=[],
-        patch_reload="live",
     )
 
     await healProfilesModuleFallback({"installAnchor": installation_anchor, "profile": profile, "home": home})
@@ -588,7 +566,6 @@ async def test_heal_profiles_module_fallback_traverses_every_explicit_bundle_roo
         ],
         patch_path=os.path.join(dir_path, PROFILE_PATCH_FILENAME),
         patches=[],
-        patch_reload="live",
     )
 
     await healProfilesModuleFallback({"installAnchor": installation_anchor, "profile": profile, "home": home})
@@ -630,7 +607,6 @@ async def test_heal_profiles_module_fallback_ignores_owned_projections_while_rec
         ],
         patch_path=os.path.join(dir_path, PROFILE_PATCH_FILENAME),
         patches=[],
-        patch_reload="live",
     )
 
     await healProfilesModuleFallback({"installAnchor": installation_anchor, "profile": profile, "home": home})
@@ -668,7 +644,6 @@ async def test_heal_profiles_module_fallback_cleans_owned_projections_without_re
         layers=[],
         patch_path=profile.patch_path,
         patches=profile.patches,
-        patch_reload=profile.patch_reload,
     )
     await healProfilesModuleFallback({
         "installAnchor": installation_anchor,
@@ -707,7 +682,6 @@ async def test_heal_profiles_module_fallback_cleans_owned_projections_whose_junc
         layers=[],
         patch_path=profile.patch_path,
         patches=profile.patches,
-        patch_reload=profile.patch_reload,
     )
     await healProfilesModuleFallback({
         "installAnchor": installation_anchor,

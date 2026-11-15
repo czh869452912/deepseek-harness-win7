@@ -34,7 +34,7 @@ def cases():
     ]
 
 
-async def observe():
+async def observe(use_gateway=False):
     from types import SimpleNamespace as NS
     from dsh.cordis import Context
     from dsh.core.abort import NEVER_ABORTED
@@ -70,6 +70,9 @@ async def observe():
             def list(self):return self.seen([identity for identity in ['a','b'] if self.ctx.remoteAccess.allows(dict(kind='session',id=identity))])
         try:
             await ctx.plugin(Fixture)
+            if use_gateway:
+                from dsh.typert.gateway_core import AuthorizedGatewayCore
+                await ctx.plugin(AuthorizedGatewayCore)
             ctx.typert.resources.register('session',dict(field='sessionId'))
             def lookup(identity):counts['lookup']+=1;return NS(id=identity)
             def context(identity):counts['context']+=1;return ctx
@@ -87,10 +90,13 @@ async def observe():
             request=dict(namespace='fixture',method=case['method'],args=case['args'],peer=peer,signal=NEVER_ABORTED)
             resolver=AuthorizedCallResolver(ctx)
             try:
-                prepared=await resolver.resolve(request)
-                invocation=NS(request=dict(namespace='fixture',method=case['method'],args=case['args']),service='fixture',peer=peer,signal=NEVER_ABORTED)
-                method,args=resolver.bind(prepared,invocation);value=method(*args)
-                if inspect.isawaitable(value):value=await value
+                if use_gateway:
+                    value=await ctx.typertGateway.invoke(request)
+                else:
+                    prepared=await resolver.resolve(request)
+                    invocation=NS(request=dict(namespace='fixture',method=case['method'],args=case['args']),service='fixture',peer=peer,signal=NEVER_ABORTED)
+                    method,args=resolver.bind(prepared,invocation);value=method(*args)
+                    if inspect.isawaitable(value):value=await value
                 result=dict(value=value)
             except Exception as error:result=dict(error=dict(code=error.code,details=error.details))
             rows.append(dict(name=case['name'],**result,counts=dict(counts)))

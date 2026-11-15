@@ -1,0 +1,24 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-15",
+  "unit": "C7-E-GatewayInvocationCore",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "state": "targeted-passed",
+  "paired": ".goose/out/rc022-invocation-paired-final-20261115-01/comparison/report.json",
+  "observations": 13,
+  "native": {
+    "run": "rc022-invocation-native-20261115-01",
+    "passed": 11,
+    "failed": 0
+  },
+  "source": {
+    "run": "rc022-invocation-source-20261115-01",
+    "passed": 100,
+    "failed": 0
+  },
+  "verification_scope_reason": "Actual authorized Gateway core unary/duplex dispatch, single-use decoded uplink, strict item failure aborting whole stream, undefined SRC items, empty/unread/early closed inputs, peer/carrier cancellation and listener release. Native checks integrate all 20 C7-D authorization scenarios through the core, wake/settle owned pending Python reads, preserve Remote abort failure identity, no-read stream join cleanup and unary carrier signal identity.",
+  "activation_boundary": "Carrier-independent Gateway core. Network Connection peer admission, RPC serialization, mux/uplink carrier and forwarded-event authorization remain C7 follow-up; no production composition or target-control/preset-select Remote promotion.",
+  "native_adaptations": "Python owns/cancels/settles source read Tasks before closing a running async generator; native strong signal subscriptions are removed explicitly where Source uses weak AbortSignal.any references. A rejected unary call to a stream method preserves Source behavior: it does not claim or return its carrier uplink. Natural uplink EOF likewise does not call carrier return.",
+  "cleanup": ".goose/out/rc022-invocation-source-20261115-01/cleanup.json",
+  "retained_assets": "Commands/results and repaired comparison diagnostics retained; owned temporary directories removed. Shared Source/toolchain retained through C9."
+}

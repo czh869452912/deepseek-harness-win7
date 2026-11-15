@@ -19,6 +19,10 @@ scripts/native/quickjs_worker.c text eol=lf
 scripts/native/workflow/** text eol=lf
 scripts/build_workflow.mjs text eol=lf
 dsh/javascript/workflow/** -text whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol
+dsh/workflow/ptc_guest.js -text
+dsh/workflow/PTC-GUEST-LICENSE -text
+dsh/workflow/ptc-executor/** -text
+scripts/native/workflow-ptc/** text eol=lf
 dsh/javascript/client-syntax/** -text whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol
 # Keep the unmodified, licensed embedded parser byte-for-byte.
 dsh/javascript/client-syntax/acorn.js -whitespace

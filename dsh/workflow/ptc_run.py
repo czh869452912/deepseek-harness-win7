@@ -42,6 +42,10 @@ def json_value(value):
     return result
 
 
+def field(value, key):
+    return value[key] if isinstance(value, dict) else getattr(value, key)
+
+
 def child_request(value):
     request = object_value(value)
     result = dict(prompt=text(request.get('prompt'), 'prompt'))
@@ -187,7 +191,7 @@ class PtcWorkflowRun:
         if self.controller.signal.aborted:
             await self.dispose_child(record)
             raise ValueError('workflow child started after cancellation')
-        return dict(callId=call_id, childId=run.childId)
+        return dict(callId=call_id, childId=field(run, 'childId'))
 
     async def child_result(self, record):
         self.require_active()
@@ -198,9 +202,10 @@ class PtcWorkflowRun:
                 cancelled.set_exception(abort_reason_error(signal))
         detach = subscribe_abort(signal, abort)
         try:
-            completed, _ = await asyncio.wait((record['run'].result, cancelled), return_when=asyncio.FIRST_COMPLETED)
+            child_result = field(record['run'], 'result')
+            completed, _ = await asyncio.wait((child_result, cancelled), return_when=asyncio.FIRST_COMPLETED)
             # Promise.race registers the result first; preserve that order when both settled.
-            result = record['run'].result.result() if record['run'].result in completed else cancelled.result()
+            result = child_result.result() if child_result in completed else cancelled.result()
             selected = dict(output=result.get('output', UNDEFINED), stopReason=result.get('stopReason', UNDEFINED))
             if 'structured' in result:
                 selected['structured'] = result['structured']
@@ -216,7 +221,7 @@ class PtcWorkflowRun:
         if 'disposal' not in record:
             async def cleanup():
                 try:
-                    await record['run'].dispose()
+                    await field(record['run'], 'dispose')()
                 except Exception as error:
                     self.ctx.logger.warn('workflow-ptc: child dispose failed: ' + render_error(error))
                 finally:

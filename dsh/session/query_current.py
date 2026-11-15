@@ -110,9 +110,10 @@ class CurrentSessionQueryService(SessionQueryService):
 
     async def readSession(self,session_id):
         loaded=await self._corpus.load(session_id)
-        CurrentSession.create(session_id,loaded['events'],loaded['header'],loaded['inheritedEventCount'])
+        CurrentSession.create(session_id,loaded['events'],loaded['header'],loaded['inheritedEventCount'],
+                              format_version=loaded['header'].version)
         return dict(session=copy.deepcopy(loaded['header']),inheritedEventCount=loaded['inheritedEventCount'],
-                    events=[snapshotSessionEvent(event) for event in loaded['events']])
+                    events=[snapshotSessionEvent(event,loaded['header'].version) for event in loaded['events']])
 
     async def listSessions(self,signal=None):
         throw_aborted(signal)

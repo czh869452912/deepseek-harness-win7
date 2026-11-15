@@ -1,0 +1,17 @@
+[
+ {"name":"value","body":"return {answer: args.value + 1, missing: null}","args":{"value":41}},
+ {"name":"realm","body":"return [typeof process, typeof require, typeof fetch, typeof __emit, typeof workflowHost, typeof __request]"},
+ {"name":"plain-child","body":"phase('draft'); log('starting'); return await agent('hello', {label:'writer',phase:'compose',provider:'llm',model:'m'})"},
+ {"name":"structured-child","body":"return await agent('schema', {schema:{type:'object',properties:{ok:{type:'boolean'}}}})"},
+ {"name":"parallel","body":"return await parallel([() => agent('one'), () => agent('two'), () => agent('three')])","concurrent":2},
+ {"name":"pipeline","body":"return await pipeline([1,2,3], (x) => x + 2, (x, original, index) => [x,original,index])"},
+ {"name":"caught","body":"return await parallel([() => {throw Error('caught')}, () => 7])"},
+ {"name":"agent-cap","body":"await agent('one'); return await agent('two')","total":1},
+ {"name":"item-cap","body":"return await parallel([() => 1, () => 2])","items":1},
+ {"name":"invalid-option","body":"return await agent('one',{unknown:true})"},
+ {"name":"lossy-result","body":"return {bad:undefined}"},
+ {"name":"child-failure","body":"return await agent('one')","childStop":"error"},
+ {"name":"progress-drain","body":"for (let n=0;n<100;n++) log(String(n)); return 'done'"},
+ {"name":"sync-timeout","body":"while (true) {}","timeout":20},
+ {"name":"syntax","body":"return )"}
+]

@@ -1,0 +1,28 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-16",
+  "unit": "C8-Y-WorkflowPtcGuest",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "state": "targeted-passed",
+  "paired": ".goose/out/rc022-workflow-guest-paired-final-20261116-01/comparison/report.json",
+  "observations": 15,
+  "native": {
+    "run": "rc022-workflow-guest-native-qualified-20261116-01",
+    "passed": 75,
+    "failed": 0
+  },
+  "source": {
+    "run": "rc022-workflow-guest-source-20261116-01",
+    "passed": 53,
+    "failed": 0
+  },
+  "verification_scope_reason": "Actual original Guest and current Host run on Win7-compatible QuickJS worker: return values, private realm API exclusion, text/structured children, parallel/pipeline behavior, total/item caps, option validation, JSON loss, child failure, 100-progress drain, synchronous timeout and syntax failure. Native additionally verifies abort during actual process execution, late child startup ownership, actual v4 Spawn/Agent/WorkingDirectory/Session persistence, resource integrity, independent disposal waiters and existing v3 query consumers.",
+  "observer_boundary": "Source oracle executes the original generated Guest in Node VM through a controlled executor, not the complete Node PTC subprocess/sandbox implementation. Activations are controlled in paired cases; separate native case exercises actual spawn activation. Error stacks are excluded; syntax and synchronous VM timeout messages are classified by exercised failure kind. Concurrent child results deliberately staggered to avoid comparing uncontrolled timer interleavings; total cap checked after a completed child. Current Windows x64 host only; Win7 VM/x86, default engine composition and full generic Node/TypeScript PTC are not certified.",
+  "initial_failures": "Initial simultaneous timer results differed in valid independent-child interleaving; fixtures staggered. Concurrent cap fixture replaced with sequential cap to avoid Source same-process versus native IPC race. Actual provider required mapping-based receipt adaptation. Actual cold v4 query exposed two v3-default validation calls; both now use persisted header.version, and all 60 existing query tests pass. Final directory assertion checks durable change events rather than immutable origin header.",
+  "activation_boundary": "Private Workflow executor only; Python ptcRuntime and legacy Workflow path unchanged. Candidate Host now accepts actual activation mappings. Production pin and accepted_upstream unchanged.",
+  "resources": "dsh/workflow/ptc-executor/resources.json",
+  "rebuild": ".goose/out/rc022-workflow-guest-control-20261116-01/rebuild-cleanup.json",
+  "cleanup": ".goose/out/rc022-workflow-guest-source-20261116-01/cleanup.json",
+  "external_cleanup": ".goose/out/rc022-workflow-guest-source-20261116-01/external-cleanup.json",
+  "retained_assets": "Removed owned synthetic workspaces, homes and exact reconstructed carrier copy after SHA checks. Raw failure/final observations, logs, XML and commands retained. No owned worker/runner remains; shared Source/toolchain remains through C9."
+}

@@ -30,4 +30,6 @@
 
 | C8-X | 新版 Workflow PTC Host、固定目录、绑定校验及晚启动子代理取消回收 | [Workflow PTC Host](workflow-host-checks.json) |
 
+| C8-Y | 原版 Workflow Guest 私有执行域、真实子代理、进度排空与 v4 冷查询 | [Workflow Guest 执行](workflow-guest-checks.json) |
+
 后续继续设置及完整应用组合；最终资格使用 C9 冻结候选的完整门禁。

@@ -1,0 +1,10 @@
+{
+  "upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "adaptation": "Only ESM import/export envelope removed in memory; node:vm delegated to the previously qualified native private-realm adapter. Carrier exposes only five Workflow Host RPC functions.",
+  "resources": {
+    "ptc_guest.js": "9eb27db9d976c22b90231c5b749d8cfaa33b7c5538a542e198ef95c3f9efd12f",
+    "ptc-executor/vm.js": "c92a4e2eb1fa498e025c6b16cb54afa21af1f387c7fa97e12076ab25271c61b3",
+    "ptc-executor/driver.js": "b789e202968b151d3f8c7790430b0f7bc125dc0f60cdc73810578dc0c6100874",
+    "ptc-executor/error-stack.js": "7be209e48673472e6d14b9cff3d7fee4ac90a624378e9a6e49364f101f2d858b"
+  }
+}

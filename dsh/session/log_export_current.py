@@ -185,7 +185,7 @@ class CurrentSessionLogExportPlugin(Plugin):
         async def command(invocation):
             return (dict(kind='error', text='The Web /export command does not accept a path.') if invocation.rawInput.strip()
                     else dict(kind='success', text='Session log download requested.'))
-        ctx.effect(lambda: ctx.get('commands').register(dict(name='export',
+        ctx.effect(lambda: ctx.get('commands').register(dict(name='export', definitionId='@deepseek-ai/dsh-session-log-export',
             description='Download this Session log as a ZIP archive', handler=command)), 'session-log-download: command')
 
         async def fetch(request):

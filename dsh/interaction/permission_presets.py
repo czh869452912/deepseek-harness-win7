@@ -114,7 +114,7 @@ class PermissionPresetService:
             self.pin_initial_permission(session)
 
         def commands(scope):
-            scope.get('commands').register(dict(name='permission',
+            scope.get('commands').register(dict(name='permission', definitionId='@deepseek-ai/dsh-permission-presets',
                 description='Switch the permission preset (sandbox mode + approval policy)',
                 input=dict(hint='<preset>'), handler=self._command_handler))
 

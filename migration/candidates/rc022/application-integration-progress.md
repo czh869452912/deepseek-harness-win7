@@ -38,4 +38,6 @@
 
 | C8-AB | SDK 审批归属、提问回答校验、实际工具往返及即时取消 | [SDK 人工交互](sdk-interaction-checks.json) |
 
+| C8-AC | 内置命令定义身份、精确名称/中文别名优先级与 SDK 查询输入准入 | [SDK 输入与命令身份](sdk-input-checks.json) |
+
 后续继续设置及完整应用组合；最终资格使用 C9 冻结候选的完整门禁。

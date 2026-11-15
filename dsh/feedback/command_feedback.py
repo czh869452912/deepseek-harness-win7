@@ -150,6 +150,7 @@ def apply(ctx: Any) -> Callable[[], None]:
     return commands.register(
         {
             "name": "feedback",
+            "definitionId": "@deepseek-ai/dsh-command-feedback",
             "description": "record feedback about this session",
             "input": {"hint": "<text>"},
             "recordInput": False,

@@ -320,7 +320,7 @@ class PlanModePlugin(Plugin):
                 return dict(kind='success', text='Plan mode on. Use /plan off to leave.'
                     if outcome == 'committed' else 'Entering plan mode (applies from the next step). Use /plan off to leave.')
 
-            cmd_svc.register(dict(name='plan', description='Enter or leave plan mode',
+            cmd_svc.register(dict(name='plan', definitionId='@deepseek-ai/dsh-plan-mode', description='Enter or leave plan mode',
                 input=dict(hint='[off|message]', images=True), handler=plan_command))
 
         ctx.inject(["commands"], mount_commands)

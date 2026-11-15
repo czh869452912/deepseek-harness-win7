@@ -30,7 +30,7 @@ class CommandGoal(Plugin):
 
     def apply(self, ctx):
         self.ctx = ctx
-        ctx.get("commands").register({"name": "goal", "description": "set or view the goal for a long-running task",
+        ctx.get("commands").register({"name": "goal", "definitionId": "@deepseek-ai/dsh-command-goal", "description": "set or view the goal for a long-running task",
             "input": {"hint": "[<objective>|clear|edit <objective>|pause|resume]", "images": True}, "handler": self.execute})
 
     def execute(self, invocation):

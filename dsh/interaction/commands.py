@@ -122,12 +122,17 @@ class CommandDescriptor:
     `AttributeError` where a strict-mode write to a frozen object throws.
     """
 
-    __slots__ = ("_name", "_description", "_input")
+    __slots__ = ("_name", "_description", "_input", "_definition_id")
 
-    def __init__(self, name: str, description: str, input_descriptor: Optional[Mapping[str, Any]]) -> None:
+    def __init__(self, name: str, description: str, input_descriptor: Optional[Mapping[str, Any]], definition_id=UNDEFINED) -> None:
         self._name = name
         self._description = description
         self._input = input_descriptor
+        self._definition_id = definition_id
+
+    @property
+    def definitionId(self):
+        return self._definition_id
 
     @property
     def name(self) -> str:
@@ -144,6 +149,8 @@ class CommandDescriptor:
     def to_dict(self) -> Dict[str, Any]:
         """The descriptor's discovered shape, matching the reference literal."""
         view: Dict[str, Any] = {"name": self._name, "description": self._description}
+        if self._definition_id is not UNDEFINED:
+            view['definitionId'] = self._definition_id
         if self._input is not None:
             view["input"] = self._input
         return view
@@ -179,7 +186,7 @@ class CommandDefinition:
     `command/run` payload shape, and both record the input.
     """
 
-    __slots__ = ("_name", "_description", "_input", "_record_input", "_handler")
+    __slots__ = ("_name", "_description", "_input", "_record_input", "_handler", "_definition_id")
 
     def __init__(
         self,
@@ -188,12 +195,18 @@ class CommandDefinition:
         input_descriptor: Optional[Mapping[str, Any]],
         record_input: Optional[bool],
         handler: Callable[[Any], Any],
+        definition_id=UNDEFINED,
     ) -> None:
         self._name = name
         self._description = description
         self._input = input_descriptor
         self._record_input = record_input
         self._handler = handler
+        self._definition_id = definition_id
+
+    @property
+    def definitionId(self):
+        return self._definition_id
 
     @property
     def name(self) -> str:
@@ -503,9 +516,10 @@ def normalize_definition(definition: Any, attachment_field: str = 'images') -> R
         input_descriptor=normalized_input,
         record_input=record_input if isinstance(record_input, bool) else None,
         handler=handler,
+        definition_id=_field(definition, 'definitionId') if _has_field(definition, 'definitionId') else UNDEFINED,
     )
     return RegisteredCommand(
-        normalized, CommandDescriptor(name, description, normalized_input)
+        normalized, CommandDescriptor(name, description, normalized_input, normalized.definitionId)
     )
 
 

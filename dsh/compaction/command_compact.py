@@ -72,6 +72,6 @@ class CommandCompactPlugin(Plugin):
             # Composite cleanup is LIFO: unregister before awaiting active calls.
             yield drain
             yield ctx.get("commands").register({
-                "name": "compact", "description": "Compact older conversation history", "handler": handler,
+                "name": "compact", "definitionId": "@deepseek-ai/dsh-command-compact", "description": "Compact older conversation history", "handler": handler,
             })
         ctx.effect(lifecycle, "command-compact lifecycle")

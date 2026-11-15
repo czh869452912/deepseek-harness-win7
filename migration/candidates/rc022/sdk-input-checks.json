@@ -1,0 +1,34 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-16",
+  "unit": "C8-AC-SdkInputIdentity",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "state": "targeted-passed",
+  "paired": ".goose/out/rc022-sdk-input-paired-qualified-20261116-01/comparison/report.json",
+  "observations": 276,
+  "native": {
+    "run": "rc022-sdk-input-native-qualified-20261116-01",
+    "passed": 4,
+    "failed": 0
+  },
+  "prior_native": {
+    "run": "rc022-sdk-input-native-20261116-01",
+    "passed": 173,
+    "failed": 1,
+    "resolution": "Only failure was the permission descriptor assertion lacking the new Source definitionId. Expected public field updated from actual pinned Source; failed case and new helper consumers rerun and pass. No complete rerun or new unified/full acceptance claim."
+  },
+  "source": {
+    "run": "rc022-sdk-input-source-expanded-20261116-01",
+    "passed": 115,
+    "failed": 0
+  },
+  "verification_scope_reason": "Actual Source/native command registries retain immutable optional definition identities and catalog DTOs. Alias lookup uses identity after exact registered names, including a third-party exact-name shadow and renamed builtins. SDK input compares English/Chinese names, JS-specific whitespace and normalization, routing grammar, content-block validation, merge-extensible content, encoded/durable image admission and exact first-text object identity. Existing commands, plan, goal, compact, feedback and session consumers exercised; selected failed assertion updated and rerun.",
+  "observer_boundary": "Helpers and provider descriptor contract only. SDK session/query dispatch and command/goal activity notifications not enabled by this unit. No user strings are rewritten into fixed command names when exact third-party commands shadow aliases.",
+  "activation_boundary": "First-party compact, permission, plan, goal, feedback and current log-export registrations now publish Source definitionId. Production pin and accepted_upstream unchanged.",
+  "cleanup": ".goose/out/rc022-sdk-input-source-expanded-20261116-01/cleanup.json",
+  "external_cleanup": [
+    "C:\\Users\\czh86\\AppData\\Local\\Temp\\dsh-rc022-sdk-input-source-20261116-01",
+    "C:\\Users\\czh86\\AppData\\Local\\Temp\\dsh-rc022-sdk-input-source-expanded-20261116-01"
+  ],
+  "retained_assets": "Removed owned synthetic workspaces/homes/comparison stores after the last consumer; empty external roots removed. Raw diagnostics/logs/XML/observations preserved. No owned runner remains; shared Source/toolchain remains through C9."
+}

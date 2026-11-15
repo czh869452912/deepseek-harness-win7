@@ -897,6 +897,7 @@ async def test_the_permission_presets_row_registers_its_command_through_the_regi
 
     descriptor = {d.name: d for d in ctx.commands.list(agent)}["permission"]
     assert descriptor.to_dict() == {
+        "definitionId": "@deepseek-ai/dsh-permission-presets",
         "name": "permission",
         "description": "Switch the permission preset (sandbox mode + approval policy)",
         "input": {"hint": "<preset>"},

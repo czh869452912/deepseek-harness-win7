@@ -4,6 +4,7 @@ from dsh.core.agent_lifecycle_current import CurrentAgentLifecycleService, Curre
 from dsh.core.agent_dispatch_current import emit_agent_event
 from dsh.core.react_loop_current import ReactLoopAgent
 from dsh.core.inbox_current import INBOX_PROJECTION_DEFINITION
+from dsh.core.model_selection import MODEL_SELECTION_PROJECTION_DEFINITION
 
 
 class CurrentAgentLoopService(CurrentAgentLifecycleService):
@@ -13,10 +14,12 @@ class CurrentAgentLoopService(CurrentAgentLifecycleService):
         # Their final writer/cache barriers still need the live service graph.
         ctx.on('app/stopping', self.teardown)
         self._inbox_projection_handle = None
+        self._model_projection_handle = None
 
     async def initialize_projections(self):
         projections = self._runtime['ctx'].get('sessionProjections')
         if getattr(projections, 'format_version', 3) == 4:
+            self._model_projection_handle = await projections.register(MODEL_SELECTION_PROJECTION_DEFINITION)
             self._inbox_projection_handle = await projections.register(INBOX_PROJECTION_DEFINITION)
 
     async def _publish_preparation(self, tx, preparation, options, setup, source):
@@ -26,7 +29,9 @@ class CurrentAgentLoopService(CurrentAgentLifecycleService):
         def lifecycle():
             reader = (self._inbox_projection_handle.readerFor(session)
                       if self._inbox_projection_handle is not None else None)
-            tx.agent = ReactLoopAgent(runtime_ctx, session, options, inbox_reader=reader)
+            model_reader = (self._model_projection_handle.readerFor(session)
+                            if self._model_projection_handle is not None else None)
+            tx.agent = ReactLoopAgent(runtime_ctx, session, options, inbox_reader=reader, model_reader=model_reader)
             tx.scope = tx.agent.scope
             yield tx.scope.raw_dispose
             yield tx.owner_dispose

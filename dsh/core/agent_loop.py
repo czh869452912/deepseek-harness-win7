@@ -1128,8 +1128,12 @@ class AgentLoopPlugin(Plugin):
         def prompt_variables(runtime_ctx):
             prompt = runtime_ctx.get("systemPrompt")
             for name in ("provider", "model"):
-                prompt.variable(name, lambda context, key=name: getattr(
-                    getattr(context.get("agent"), "options", None), key, None))
+                def selected_variable(context, key=name):
+                    selection = context.get('modelSelection')
+                    value = selection.get(key) if selection is not None else None
+                    return value if value is not None else getattr(
+                        getattr(context.get("agent"), "options", None), key, None)
+                prompt.variable(name, selected_variable)
             prompt.variable("cwd", lambda context: getattr(
                 getattr(getattr(context.get("agent"), "session", None), "header", None), "cwd", None))
 

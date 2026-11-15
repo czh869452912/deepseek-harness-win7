@@ -45,7 +45,7 @@ async def test_loop_awaits_one_inbox_registration_before_factory_publication(mon
         assert fiber.state==1
         assert ctx.get('agents')._factory is None
         release.set();await fiber
-        assert calls==['inbox'] and fiber.state==2
+        assert calls==['modelSelection','inbox'] and fiber.state==2
         def forbidden(*args,**kwargs):raise AssertionError('Agent re-registered Inbox')
         projections.register=forbidden
         for sid in ('first','second'):

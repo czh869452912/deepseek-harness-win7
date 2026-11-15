@@ -11,6 +11,108 @@ from dsh.cordis.service import Service
 from dsh.cordis.schema import Schema as z
 from dsh.settings.provider import install_settings_section
 from dsh.settings.types import settings_namespace
+from dsh.core.session.json import UNDEFINED
+
+
+def _selection(provider, model, effort=UNDEFINED):
+    result = dict(provider=provider, model=model)
+    if effort is not UNDEFINED:
+        result['reasoningEffort'] = effort
+    return result
+
+
+def _same_selection(left, right):
+    return left is right or (left is not None and right is not None and all(
+        left.get(key, UNDEFINED) == right.get(key, UNDEFINED)
+        for key in ('provider', 'model', 'reasoningEffort')))
+
+
+def _selection_state(state, event):
+    if event['type'] == 'model/selection':
+        return state if _same_selection(state['pending'], event['data']) else dict(state, pending=event['data'])
+    if event['type'] != 'request/header':
+        return state
+    header = event['data']['header'];config = header['config']
+    effort = (UNDEFINED if header.get('adapterDefaults', {}).get('reasoningEffort') is True
+              else config.get('reasoningEffort', UNDEFINED))
+    last = _selection(config['provider'], config['model'], effort)
+    pending = None if _same_selection(state['pending'], last) else state['pending']
+    return (state if _same_selection(state['lastUsed'], last) and pending is state['pending']
+            else dict(lastUsed=last, pending=pending))
+
+
+def _selection_schema(value):
+    if value is None:
+        return None
+    if not isinstance(value, dict):
+        raise TypeError('model selection must be an object')
+    keys = ('provider', 'model', 'reasoningEffort') if 'reasoningEffort' in value else ('provider', 'model')
+    if any(not isinstance(value.get(key), str) or not value[key] for key in keys):
+        raise TypeError('model selection fields must be nonempty strings')
+    return {key: value[key] for key in keys}
+
+
+MODEL_SELECTION_PROJECTION_DEFINITION = dict(
+    key='modelSelection', stateVersion=3,
+    stateSchema=lambda state: {key: _selection_schema(state[key]) for key in ('lastUsed', 'pending')},
+    init=lambda *_: dict(lastUsed=None, pending=None), apply=_selection_state,
+    wire=dict(viewSchema=lambda value: {key: _selection_schema(value[key]) for key in ('lastUsed', 'next')},
+              view=lambda state: dict(lastUsed=state['lastUsed'], next=state['pending'] if state['pending'] is not None else state['lastUsed'])))
+modelSelectionProjectionDefinition = MODEL_SELECTION_PROJECTION_DEFINITION
+
+
+class AgentModel:
+    """Read the driver's retained selection and persist explicit complete choices."""
+    def __init__(self, read_state, session, options):
+        self.read_state, self.session, self.options = read_state, session, options
+
+    def _recorded(self):
+        state = self.read_state()
+        return state['pending'] if state['pending'] is not None else state['lastUsed']
+
+    def current(self):
+        recorded = self._recorded()
+        if recorded is not None:
+            return dict(recorded)
+        options = self.options if isinstance(self.options, dict) else self.options.to_dict()
+        return (_selection(options['provider'], options['model'], options.get('reasoningEffort', UNDEFINED))
+                if options.get('provider') and options.get('model') else UNDEFINED)
+
+    def select(self, selection):
+        if _same_selection(self._recorded(), selection):
+            return
+        self.session.append('model/selection', _selection(selection['provider'], selection['model'],
+                            selection.get('reasoningEffort', UNDEFINED)))
+
+
+def _install_switch_notices(agent_ctx):
+    from dsh.llm.message import create_user_message
+    from dsh.cordis.awaiting import await_callback_result
+    async def before_step(input, next_fn):
+        decision = await await_callback_result(next_fn())
+        if decision['kind'] == 'reject' or input['signal'].aborted:
+            return decision
+        if not decision['messages'] and (input['step'] == 1 or input['messages']):
+            return decision
+        header = input['agent'].session.requestHeader()
+        selected = input['modelSelection']
+        if header is None:
+            return decision
+        previous = header['config']
+        if all(previous[key] == selected[key] for key in ('provider', 'model')):
+            return decision
+        def label(route, other):
+            return route['model'] if route['provider'] == other['provider'] else route['provider'] + '/' + route['model']
+        old, new = label(previous, selected), label(selected, previous)
+        summary = old + ' → ' + new
+        encoded = summary.encode('utf-16-le', 'surrogatepass')
+        if len(encoded) > 240:
+            summary = encoded[:238].decode('utf-16-le', 'surrogatepass') + '…'
+        notice = create_user_message(dict(content=[dict(type='text', text=(
+            '[model changed: assistant turns above this point were generated by %s; the session continues with %s]' % (old, new)))],
+            source=dict(kind='model-selection', form='notice', summary=summary)))
+        return dict(decision, messages=list(decision['messages']) + [notice])
+    return agent_ctx.on('agent/pre-step', before_step, prepend=True)
 
 
 AGENT_DEFAULT_MODEL_SETTINGS_NAMESPACE = settings_namespace("agent-default-model")
@@ -107,10 +209,12 @@ class ModelSelectionRef:
         self.assembled = assembled
 
 
-def install_model_selection(agent_ctx: Context, selection: ModelSelectionRef) -> Callable[[], None]:
+def install_model_selection(agent_ctx: Context, selection: Optional[ModelSelectionRef] = None) -> Callable[[], None]:
     """
     Couple one mutable selection to Agent-scoped prompt assembly and request routing.
     """
+    if selection is None:
+        return _install_switch_notices(agent_ctx)
     import inspect
 
     async def _on_assembly(*args: Any, **kwargs: Any) -> Any:

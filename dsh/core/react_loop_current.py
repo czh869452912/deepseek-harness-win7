@@ -10,6 +10,7 @@ from dsh.core.agent import AgentOptions
 from dsh.core.agent_dispatch_current import agent_events, assemble_context_for
 from dsh.core.assistant_stream_current import AssistantStreamAttempt
 from dsh.core.inbox_current import ReactLoopInbox
+from dsh.core.model_selection import AgentModel
 from dsh.core.runtime_context_current import RuntimeContextProjection, SystemPromptProjection
 from dsh.core.scope import create_scope
 from dsh.core.session.current_request_header import canonicalHeader, headerEquals
@@ -32,9 +33,10 @@ def request_proposal(header):
 
 
 class ReactLoopAgent:
-    def __init__(self, loop_ctx, session, options=None, inbox_reader=None):
+    def __init__(self, loop_ctx, session, options=None, inbox_reader=None, model_reader=None):
         self.loop_ctx, self.session, self.id = loop_ctx, session, session.id
         self.options = options or AgentOptions()
+        self.model = AgentModel(model_reader, session, self.options) if model_reader is not None else None
         self.request_header_logged = False
         self.request_surface_generation = session.surface.replaceGeneration
         self.dispatch = agent_events(loop_ctx, self)
@@ -178,14 +180,23 @@ class ReactLoopAgent:
     async def _pre_step(self, target, turn, step):
         signal = self.phase['abort'].signal
         claimed = self.inbox.claim(target, turn)
-        assembly = await await_callback_result(self.loop_ctx.get('systemPrompt').assemble(assemble_context_for(self, signal)))
+        selection = self.model.current() if self.model is not None else None
+        if selection is UNDEFINED:
+            raise RuntimeError('agent "%s" has no provider/model: set AgentOptions.provider and AgentOptions.model or record a model selection' % self.id)
+        context = assemble_context_for(self, signal)
+        if selection is not None:
+            context['modelSelection'] = selection
+        assembly = await await_callback_result(self.loop_ctx.get('systemPrompt').assemble(context))
         signal.throwIfAborted()
         sections = render_context_sections(assembly)
         context = self.runtime_context.project(join_context_sections(sections), sections)
-        decision = await await_callback_result(self.dispatch.waterfall('agent/pre-step', dict(messages=claimed, turn=turn, step=step, signal=signal),
+        payload = dict(messages=claimed, turn=turn, step=step, signal=signal)
+        if selection is not None:
+            payload['modelSelection'] = selection
+        decision = await await_callback_result(self.dispatch.waterfall('agent/pre-step', payload,
             lambda: dict(kind='enter', messages=claimed if context is None else claimed + [context])))
         signal.throwIfAborted()
-        return decision if decision['kind'] == 'reject' else dict(decision, assembly=assembly)
+        return decision if decision['kind'] == 'reject' else dict(decision, assembly=assembly, selection=selection)
 
     def _tools_changed(self, tools):
         baseline = self.session.requestHeader()
@@ -259,7 +270,7 @@ class ReactLoopAgent:
         rendered_prompt = render_prompt(assembly)
         first_attempt = True
         while True:
-            config, prepared = await await_callback_result(self._prepare_request(turn, step, signal))
+            config, prepared = await await_callback_result(self._prepare_request(turn, step, signal, decision.get('selection')))
             starts_series = first_attempt and decision.get('startsRequestSeries') is True
             commits = self.system_prompt.project(rendered_prompt, dict(
                 inHistory=prepared is not None and prepared.get('systemPromptUpdate') == 'in-history',
@@ -347,7 +358,7 @@ class ReactLoopAgent:
         live.settle('assistant/message', lambda: self.session.append('assistant/message', data, 'append')['seq'])
         return message
 
-    async def _prepare_request(self, turn, step, signal):
+    async def _prepare_request(self, turn, step, signal, selection=None):
         persisted = self.session.requestHeader()
         route = dict(provider=self.options.provider or '', model=self.options.model or '')
         old_config = persisted['config'] if persisted is not None else {}
@@ -360,8 +371,22 @@ class ReactLoopAgent:
         if self.options.maxTokens is not None:
             config['maxTokens'] = self.options.maxTokens
         seed = deep_freeze(copy.deepcopy(request_proposal(persisted) if self.request_header_logged else config))
+        if selection is not None:
+            controls = (request_proposal(persisted) if self.request_header_logged
+                        else dict(maxTokens=self.options.maxTokens) if self.options.maxTokens is not None else {})
+            seed = deep_freeze(copy.deepcopy(dict(
+                {key: value for key, value in controls.items() if key not in ('provider', 'model', 'reasoningEffort')}, **selection)))
         proposed = await await_callback_result(self.dispatch.waterfall('agent/request', dict(turn=turn, step=step, signal=signal), lambda: seed))
         signal.throwIfAborted()
+        if selection is not None:
+            if any(proposed.get(key) != selection.get(key) for key in ('provider', 'model')):
+                from dsh.cordis.utils import js_to_string
+                raise RuntimeError('agent "%s": agent/request proposed "%s/%s" after step preparation fixed "%s/%s"; use agent.model.select() before step preparation' % (
+                    self.id, js_to_string(proposed.get('provider', UNDEFINED)), js_to_string(proposed.get('model', UNDEFINED)), selection['provider'], selection['model']))
+            if proposed.get('reasoningEffort', UNDEFINED) != selection.get('reasoningEffort', UNDEFINED):
+                raise RuntimeError('agent "%s": agent/request proposed reasoning effort "%s" after step preparation fixed "%s"; use agent.model.select() before step preparation' % (
+                    self.id, proposed.get('reasoningEffort') if proposed.get('reasoningEffort') is not None else 'adapter default',
+                    selection.get('reasoningEffort') if selection.get('reasoningEffort') is not None else 'adapter default'))
         if not proposed.get('provider') or not proposed.get('model'):
             raise RuntimeError('agent "%s" has no provider/model: set AgentOptions.provider and AgentOptions.model or supply both via the agent/request waterfall' % self.id)
         prepared = None

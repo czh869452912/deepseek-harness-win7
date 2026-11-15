@@ -1,0 +1,24 @@
+import {resolve} from 'node:path'
+import {pathToFileURL} from 'node:url'
+import {readFileSync} from 'node:fs'
+const load=(path:string)=>import(pathToFileURL(resolve(process.argv[2]!,path)).href)
+const {Context}=await load('vendor/cordis/src/index.ts'),{default:Store,Session}=await load('packages/core/session/src/index.ts'),{default:Registry}=await load('packages/session/session-projection/src/index.ts'),{AgentModel,modelSelectionProjectionDefinition,installModelSelection}=await load('packages/core/agent/src/model-selection.ts'),{agentEvents}=await load('packages/core/agent/src/index.ts'),{ReactLoopAgent}=await load('packages/core/agent-loop/src/agent.ts')
+const tests=JSON.parse(readFileSync(process.argv[3]!,'utf8')),rows:any[]=[],clean=(v:any):any=>v===undefined?null:Array.isArray(v)?v.map(clean):v&&typeof v==='object'?Object.fromEntries(Object.entries(v).filter(([k,x])=>!['id','time'].includes(k)&&x!==undefined).map(([k,x])=>[k,clean(x)])):v
+for(const test of tests){
+ const ctx=new Context();try{
+  await ctx.plugin(Store);await ctx.plugin(Registry);const registry=ctx.sessionProjections,handle=await registry.register(modelSelectionProjectionDefinition),session=ctx.sessions.create('model'),options={...test.options},model=new AgentModel(handle.readerFor(session),session,options),row:any={test},header=(config:any,defaults?:any)=>session.append('request/header',{header:{config,...defaults===undefined?{}:{adapterDefaults:defaults}},reason:'initial'})
+  if(test.operation==='model'){
+   row.initial=model.current();model.select({provider:'alpha',model:'a0'});row.selected=model.current();const same=session.snapshotEvents().length;model.select({provider:'alpha',model:'a0'});row.duplicateSkipped=session.snapshotEvents().length===same
+   const chosen={provider:'beta',model:'b1',...test.effort===null?{}:{reasoningEffort:test.effort}};model.select(chosen);chosen.model='mutated';const detached=model.current();detached.model='mutated-again';row.detached=model.current();header({provider:'other',model:'b1'});row.unmatched=handle.stateOf(session)
+   const config:any={provider:'beta',model:'b1',...test.effort===null?{}:{reasoningEffort:test.effort}};if(test.defaulted&&test.effort===null)config.reasoningEffort='high';header(config,test.defaulted?{reasoningEffort:true}:undefined);const state=handle.stateOf(session);row.state=state;header(config,test.defaulted?{reasoningEffort:true}:undefined);row.sameState=state===handle.stateOf(session);const restored=Session.create('restored',session.snapshotEvents());row.cold=new AgentModel(handle.readerFor(restored),restored,{}).current();row.wire=registry.snapshot(session).values;await handle.dispose();row.retained=model.current()
+  }else if(test.operation==='notice'){
+   const kind=test.kind,controller=new AbortController(),input={role:'user',source:{kind:'user'},content:[{type:'text',text:'continue'}]},agent={id:session.id,session,ctx,options,model},dispose=installModelSelection(ctx);if(kind!=='initial')header({provider:'alpha',model:'a0'});let selected:any={provider:'beta',model:'b1'};if(['same','effort'].includes(kind))selected={provider:'alpha',model:'a0',...kind==='effort'?{reasoningEffort:'high'}:{}};if(kind==='same-provider')selected={provider:'alpha',model:'a1'};if(kind==='long')selected={provider:'beta',model:'b'.repeat(130)};if(kind==='aborted')controller.abort();if(kind==='disposed')dispose();const messages=kind.startsWith('empty-')?[]:[input],offered=kind==='empty-continuation'?[]:[input],step=['empty-offered','empty-continuation'].includes(kind)?2:1,decision=kind==='rejected'?{kind:'reject'}:{kind:'enter',messages,startsRequestSeries:true};row.decision=await agentEvents(ctx,agent).waterfall('agent/pre-step',{turn:1,step,messages:offered,signal:controller.signal,modelSelection:selected},async()=>decision)
+  }else{
+   const kind=test.kind,selection={provider:'alpha',model:'a0',...kind==='effort-drop'?{reasoningEffort:'high'}:{}},persisted=['persisted','defaults','controls'].includes(kind);if(persisted)header({provider:'old',model:'old',reasoningEffort:'low',maxTokens:99,temperature:0.3},kind==='defaults'?{reasoningEffort:true,maxTokens:true}:undefined)
+   const agent={id:session.id,session,options:{provider:'ignored',model:'ignored',maxTokens:17},requestHeaderLogged:persisted,dispatch:{waterfall:async(_name:any,_payload:any,terminal:any)=>{const proposed={...await terminal()};if(kind==='route-change')proposed.model='other';if(['effort-change','effort-add'].includes(kind))proposed.reasoningEffort='low';if(kind==='effort-drop')delete proposed.reasoningEffort;return proposed}},loopCtx:{llm:{prepareCall:async(config:any)=>({config})}}}
+   try{row.config=(await ReactLoopAgent.prototype.prepareRequest.call(agent,1,1,selection,new AbortController().signal)).config}catch(error:any){row.error=error.message}
+  }
+  rows.push(clean(row))
+ }finally{await ctx.fiber.dispose()}
+}
+process.stdout.write(JSON.stringify(rows))

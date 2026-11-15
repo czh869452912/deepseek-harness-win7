@@ -1,0 +1,19 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-15",
+  "unit": "C4-J-AgentModelSelection",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "state": "targeted-passed",
+  "paired": ".goose/out/rc022-model-selection-paired-retry-20261115-01/comparison/report.json",
+  "observations": 32,
+  "native": {"run": "rc022-model-selection-native-20261115-01", "passed": 189, "failed": 1},
+  "native_retry": {"run": "rc022-model-selection-retry-20261115-01", "passed": 2, "failed": 0},
+  "native_consumers": {"run": "rc022-model-selection-consumers-20261115-01", "passed": 92, "failed": 0},
+  "source_model": {"run": "rc022-model-selection-source-20261115-01", "passed": 8, "failed": 0},
+  "source_loop": {"run": "rc022-model-selection-source-consumers-20261115-01", "failed": 0},
+  "verification_scope_reason": "The V4 loop awaits modelSelection v3 before Inbox, passes a retained reader to AgentModel and captures its detached choice before prompt/pre-step execution. Pure fold identity, pending retirement, omitted/defaulted effort, cold reconstruction, retained reads, notice suppression/ordering/summary bounds and the real Source prepareRequest method are paired. Request middleware cannot change a fixed route or effort; output controls retain their own default behavior. A real native V4 loop records a later selection during pre-step, uses the already fixed choice for that call, then uses and consumes the later selection on the next turn. Default-model/API/Session consumers and existing V3 machine/factory regressions pass.",
+  "retry_reason": "The first paired/native observer used an invalid persisted adapterDefaults marker without a corresponding config value. Both implementations rejected cold reconstruction. The synthetic header now includes an actually resolved effort when its marker is present; the corrected observer and semantic tests pass. Initial diagnostics are retained.",
+  "activation_boundary": "The projection/AgentModel path activates only beside an explicit V4 registry. The optional one-argument install_model_selection installs Source switch notices; existing two-argument V3 callers retain their prior adapter. V4 API consumers, ToolSet resolution, context refresh and coordinated production activation remain separate contracts.",
+  "cleanup": ".goose/out/rc022-model-selection-native-20261115-01/cleanup.json",
+  "remaining": "Title input/lifecycle, remaining Agent contracts and ToolSet/context consumers; C7 API selection migration and C9 coordinated activation/release qualification."
+}

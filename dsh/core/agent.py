@@ -330,11 +330,14 @@ class AgentRegistry(Service):
         if ctx is not None:
             def contribute(type_ctx):
                 registry = type_ctx.get('typert')
-                registry.lookups.register('agent', dict(parameter='agent', wire='agentId',
-                    hostTypeSymbol='@deepseek-ai/dsh-agent#Agent',
-                    wireTypeSymbol='@deepseek-ai/dsh-session/types#SessionId', resolve=self.get))
+                registry.lookups.register('agent', self._host_lookup_provider())
                 registry.contexts.registerHost('agent', self._host_context_adapter())
             ctx.inject(['typert'], contribute)
+
+    def _host_lookup_provider(self):
+        return dict(parameter='agent', wire='agentId',
+                    hostTypeSymbol='@deepseek-ai/dsh-agent#Agent',
+                    wireTypeSymbol='@deepseek-ai/dsh-session/types#SessionId', resolve=self.get)
 
     def _host_context_adapter(self):
         return dict(wire='agentId', wireTypeSymbol='@deepseek-ai/dsh-session/types#SessionId',

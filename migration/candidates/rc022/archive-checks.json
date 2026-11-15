@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-15",
+  "unit": "C4-N-AgentArchiveAdmission",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "state": "targeted-passed",
+  "paired": ".goose/out/rc022-archive-paired-final-20261115-01/comparison/report.json",
+  "observations": 8,
+  "native_initial": {"run": "rc022-archive-native-20261115-01", "passed": 60, "failed": 1},
+  "native_retry": {"run": "rc022-archive-native-retry-20261115-01", "passed": 2, "failed": 0},
+  "source": {"run": "rc022-archive-source-20261115-01", "passed": 3, "failed": 0},
+  "verification_scope_reason": "Real V4 Agent registry hooks observe running/idle/unknown/detached entries, provider ordering, status capture before downstream asynchronous work, no-wait cancel with the user cause and no keepInbox, exact original failure inside the parallel AggregateError, fiber withdrawal, and both early/late Typert provider mounting. Native regressions cover V3 behavior, initiator lifetimes, boundary ownership and existing Typert/Remote consumers.",
+  "retry_reason": "The first test incorrectly expected direct cancel-error identity; both actual implementations wrap it in Cordis parallel's AggregateError. The corrected paired observation and native assertion require its one member to retain exact identity. No production change followed that failure.",
+  "activation_boundary": "Archive hooks and resource declarations apply only to explicit V4 Agent registries. Provider declarations retain resource=session; Typert definition serialization, configured resolver resource preservation and gateway authorization consumers remain C7 work. This does not establish whole Workspace archive or Web qualification.",
+  "cleanup": ".goose/out/rc022-archive-paired-final-20261115-01/cleanup.json",
+  "remaining": "Agent async creation/factory lifecycle, downstream tools/Workspace/Remote contracts, production activation and release qualification."
+}

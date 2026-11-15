@@ -27,6 +27,22 @@ class CurrentAgentRegistry(AgentRegistry):
                 yield self.dispose_initiators
                 yield self.close_initiators
             ctx.effect(lifecycle, 'agents.initiatorLifecycle()')
+            self._install_archive_admission(ctx)
+
+    def _install_archive_admission(self, ctx):
+        async def activity(request, next_fn):
+            agent = self.get(request['sessionId'])
+            running = agent is not None and agent.status == 'running'
+            rest = await next_fn()
+            return [dict(kind='turn')] + list(rest) if running else rest
+
+        def stop(request):
+            agent = self.get(request['sessionId'])
+            if agent is not None and agent.status == 'running':
+                agent.cancel(dict(kind='user'))
+
+        ctx.on('workspace/session-activity', activity)
+        ctx.on('workspace/session-stop', stop)
 
     def _has_lifecycle_ancestor(self, candidate):
         fiber = self._initiator_runtime['ctx'].fiber
@@ -144,8 +160,15 @@ class CurrentAgentRegistry(AgentRegistry):
         return self.ctx.get('sessionProjections').stateOf(session,'turnBoundary')
 
     def _host_context_adapter(self):
-        return dict(wire='agentId', wireTypeSymbol='@deepseek-ai/dsh-session/types#SessionId',
-                    resolve=lambda sid: self.get(sid).ctx if self.get(sid) is not None else None)
+        adapter = dict(wire='agentId', wireTypeSymbol='@deepseek-ai/dsh-session/types#SessionId',
+                       resolve=lambda sid: self.get(sid).ctx if self.get(sid) is not None else None)
+        if self.format_version == 4:adapter['resource'] = 'session'
+        return adapter
+
+    def _host_lookup_provider(self):
+        provider = super()._host_lookup_provider()
+        if self.format_version == 4:provider['resource'] = 'session'
+        return provider
 
     def _factory_request_options(self, request):
         return dict(parent_agent=request.get('parentAgent', request.get('parent_agent')))

@@ -5,6 +5,7 @@
 | 单元 | 已验证边界 | 记录 |
 | --- | --- | --- |
 | C6-A | 名称、兄弟预留、路径回退、目录 v0–v3/stateVersion 6 | [名称与目录](named-catalog-checks.json) |
+| C6-M | Lead 任务事务、权限/CAS、冷成员分配、持久化失败与模式切换 | [Team 服务](team-service-checks.json) |
 | C6-L | Team v7 投影、任务 DAG、损坏隔离、历史事件和客户端视图 | [Team 投影](team-projection-checks.json) |
 | C6-K | 实际跨分支消息、离线创建者、异步读取后身份复查与容量变更 | [兄弟消息](sibling-messaging-checks.json) |
 | C6-J | 公开服务、Provider 注册与替换、实际 spawn/fork 创建和冷恢复 | [公开服务](subagent-service-checks.json) |

@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-15",
+  "unit": "C6-M-TeamService",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "state": "targeted-passed",
+  "paired": ".goose/out/rc022-team-service-paired-final-20261115-01/comparison/report.json",
+  "observations": 13,
+  "native": {
+    "run": "rc022-team-service-native-20261115-01",
+    "passed": 7,
+    "failed": 0
+  },
+  "source": {
+    "run": "rc022-team-service-source-20261115-01",
+    "passed": 46,
+    "failed": 0
+  },
+  "verification_scope_reason": "Actual Team/subagent/factory/persistence service workflows, revision-CAS and queued stale/mode races, cold assignees, mode retry, task limits, failed flush visible state, reload and configuration retirement. Actual subagent factory, live exact member identity and durable catalog discovery; controlled workingDirectory excluded. Initial native probe accidentally passed AgentHandle as parent, corrected to its exact Agent; original observation retained.",
+  "activation_boundary": "Candidate Team service; tools, SDK/PTC/Remote consumers and production composition pending.",
+  "cleanup": ".goose/out/rc022-team-service-source-20261115-01/cleanup.json",
+  "retained_assets": "Commands/logs/XML and paired observations retained; synthetic workspaces removed. Shared Source/toolchain retained through C9."
+}

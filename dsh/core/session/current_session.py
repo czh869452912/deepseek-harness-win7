@@ -14,6 +14,7 @@ from dsh.core.session.types import validate_session_header, SessionLogOffset, Se
 from dsh.core.session.lineage import inherited_cut
 from dsh.cordis.errors import ThrownValueError
 from dsh.session.format_v2_to_v3.payload import display
+from .plugin_records import appendPluginRecord, pluginRecordOf
 
 
 class CurrentSession(Session):

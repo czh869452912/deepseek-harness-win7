@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-15",
+  "unit": "C4-E-ExperimentalPluginRecords",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "state": "targeted-passed",
+  "paired": ".goose/out/rc022-plugin-records-paired-20261115-02/report.json",
+  "observations": 553,
+  "native": {"run": "rc022-plugin-records-native-20261115-01", "passed": 1629, "failed": 0},
+  "source": {"run": "rc022-plugin-records-source-20261115-01", "passed": 30, "failed": 0},
+  "verification_scope_reason": "543 grammar inputs include every ASCII character in four segment positions and selected Unicode/line terminators. Durable snapshot payload identity, retained records across resume/shared restore/fork, non-record rejection, four lossy payloads and five actual Context/store publication journeys cover announcements, observer reentry, dispatch veto, deferred detach and stale same-id objects. Existing current runtime, batch append and V4 catalog consumers pass.",
+  "initial_observation_failure": "The first oracle left the deliberate failing session/created listener active when constructing its replacement. Removed that test listener before replacement on both sides; raw failure retained.",
+  "scope": "appendPluginRecord and pluginRecordOf are exported from the explicit current Session provider. No production plugin record caller or product selection change introduced.",
+  "cleanup": ".goose/out/rc022-plugin-records-native-20261115-01/cleanup.json",
+  "remaining": "V4 backend verification/publication, asynchronous projection consumers and Agent migration; this is not full regression or release acceptance."
+}

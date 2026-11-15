@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-15",
+  "unit": "C5-G-ContentProjectionAndPolicySettlement",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "state": "targeted-passed",
+  "paired": ".goose/out/rc022-tool-pipeline-paired-20261115-01/comparison/report.json",
+  "observations": 13,
+  "native": {"run": "rc022-tool-pipeline-native-20261115-01", "passed": 308, "failed": 0},
+  "source": {"run": "rc022-tool-pipeline-source-consumers-20261115-01", "passed": 192, "failed": 0},
+  "source_agent_consumers": {"run": "rc022-tool-pipeline-source-20261115-01", "passed": 173, "failed": 0},
+  "verification_scope_reason": "Actual prepare/dispatch/complete pipelines capture projectContent before pre-policy, project before post-policy, retain finalization across tool/policy/projector errors, and publish the exact final result once. Paired observations cover later callback mutation, unload, policy content replacement, structured guard/denial identity, cancel, immutable argument selection and nested presentation metadata. Existing native scheduler, mode, failure, admission, prompt, factory and driver consumers pass. Source registry/scoped/activation/native-executor suites pass independently.",
+  "activation_boundary": "Current Tools contract 4 selects canonical cancellation, denial metadata, arguments, nested presentation and final execution immutability. Added projectContent is optional. Separate executor-owned lookup/rejection and PTC remain later work. Targeted results do not certify the whole C5 batch, promote the production pin or replace a full qualification.",
+  "cleanup": ".goose/out/rc022-tool-pipeline-source-consumers-20261115-01/cleanup.json",
+  "cleanup_bytes": 569866,
+  "retained_assets": "Commands, paired observations, XML and logs retained; owned synthetic workspaces removed. No task test processes remain. Shared Source/toolchain retained until C9."
+}

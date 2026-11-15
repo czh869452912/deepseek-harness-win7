@@ -304,7 +304,8 @@ class Tool:
                  finalize_content: Optional[Callable[..., Any]] = None,
                  timeout_ms: Optional[float] = None,
                  concurrency_classifier: Optional[Callable[[Any], Any]] = None,
-                 canonical: bool = False):
+                 canonical: bool = False,
+                 project_content: Optional[Callable[..., Any]] = None):
         self.name = name
         self.description = description
         self.parameters = parameters
@@ -314,6 +315,7 @@ class Tool:
         self._present_result = present_result
         self.output = output
         self.finalize_content = finalize_content
+        self.project_content = project_content
         self.timeout_ms = timeout_ms
         self.concurrency_classifier = concurrency_classifier
         self.canonical = canonical
@@ -480,10 +482,13 @@ class ToolRunContext(ToolExecutionInput):
         self._body_invoked = False
         self._approval_cancelled = False
         self._finalizer: Optional[Callable[..., Any]] = None
+        self._projector: Optional[Callable[..., Any]] = None
+        self._finished = False
         object.__setattr__(self, "_sealed", True)
 
     def __setattr__(self, name: str, value: Any) -> None:
-        if getattr(self, "_sealed", False) and not name.startswith("_") and name != "signal":
+        if (getattr(self, "_sealed", False) and not name.startswith("_")
+                and (name != "signal" or getattr(self, "_finished", False))):
             raise AttributeError("tool execution identity is readonly")
         object.__setattr__(self, name, value)
 
@@ -1101,6 +1106,7 @@ class ToolsService:
                 timeout_ms,
                 definition.get("isConcurrencySafe") or definition.get("is_concurrency_safe"),
                 canonical,
+                definition.get("projectContent") or definition.get("project_content"),
             )
         elif spec_name and (handler is not None or callable(tool_or_spec)):
             tool = Tool(spec_name, description or "", parameters or {},
@@ -1328,7 +1334,7 @@ class ToolsService:
         self._register_owned_cleanup(self.ctx, dispose, "tools.restrict()")
         return dispose
 
-    def guard(self, callback: Callable[[ToolRunContext], Optional[str]]) -> Callable[[], None]:
+    def guard(self, callback: Callable[[ToolRunContext], Optional[Union[str, Dict[str, Any]]]]) -> Callable[[], None]:
         owner_ctx = self._current_scope_context()
         layer = self._layer_for(owner_ctx, create=True)
         assert layer is not None
@@ -1346,7 +1352,7 @@ class ToolsService:
         self._register_owned_cleanup(self.ctx, dispose, "tools.guard()")
         return dispose
 
-    def _guard_reason(self, exec_input: ToolRunContext) -> Optional[str]:
+    def _guard_reason(self, exec_input: ToolRunContext) -> Optional[Union[str, Dict[str, Any]]]:
         for callback in self._global_layer.guards:
             reason = callback(exec_input)
             if reason is not None:
@@ -1414,6 +1420,7 @@ class ToolsService:
         try:
             exec_ctx = ToolRunContext(exec_input)
             exec_ctx._finalizer = captured_finalizer
+            exec_ctx._projector = visible.project_content if visible is not None else None
         except Exception as error:
             fallback = ToolRunContext(ToolExecutionInput(
                 exec_input.call_id, exec_input.name, {}, agent=exec_input.agent,
@@ -1449,7 +1456,7 @@ class ToolsService:
                 exec_ctx._prepared_kind = "final-result"
                 exec_ctx._prepared_result = result
                 return {"kind": "final-result", "exec": exec_ctx, "result": result}
-            if kind == "allow" and "arguments" in decision:
+            if kind == "allow" and "arguments" in decision and self.contract_version < 4:
                 object.__setattr__(exec_ctx, "arguments", _deep_freeze(_json_snapshot(decision["arguments"])))
             if kind == "ask":
                 decision = await self._resolve_ask(exec_ctx, decision)
@@ -1461,10 +1468,18 @@ class ToolsService:
                     exec_ctx._prepared_kind = "post-result"
                     exec_ctx._prepared_result = result
                     return {"kind": "post-result", "exec": exec_ctx, "result": result}
+            if kind == "cancel" and self.contract_version >= 4:
+                result = self._aborted_before_result()
+                exec_ctx._prepared_kind = "post-result"
+                exec_ctx._prepared_result = result
+                return {"kind": "post-result", "exec": exec_ctx, "result": result}
             if kind == "deny":
                 reason = decision.get("reason") or "tool call denied"
+                failure = {"message": reason}
+                if self.contract_version >= 4 and decision.get("info") is not None:
+                    failure["info"] = decision["info"]
                 result = ToolExecutionResult([{"type": "text", "text": "Error: %s" % reason}],
-                                             is_error=True, error={"message": reason})
+                                             is_error=True, error=failure)
                 exec_ctx._prepared_kind = "post-result"
                 exec_ctx._prepared_result = result
                 return {"kind": "post-result", "exec": exec_ctx, "result": result}
@@ -1472,9 +1487,15 @@ class ToolsService:
                 raise TypeError("unknown tools/pre-execute decision %r" % kind)
             guard_reason = self._guard_reason(exec_ctx)
             if guard_reason is not None:
+                failure = {"message": guard_reason}
+                if self.contract_version >= 4 and isinstance(guard_reason, dict):
+                    failure = {"message": guard_reason["reason"]}
+                    if guard_reason.get("info") is not None:
+                        failure["info"] = guard_reason["info"]
+                    guard_reason = guard_reason["reason"]
                 result = ToolExecutionResult(
                     [{"type": "text", "text": "Error: %s" % guard_reason}],
-                    is_error=True, error={"message": guard_reason})
+                    is_error=True, error=failure)
                 exec_ctx._prepared_kind = "post-result"
                 exec_ctx._prepared_result = result
                 return {"kind": "post-result", "exec": exec_ctx, "result": result}
@@ -1542,7 +1563,7 @@ class ToolsService:
                 content = _json_snapshot(tool.output["render"](exec_input.arguments, value))
                 meta = _MISSING_META
                 projector = tool.output.get("presentationMeta")
-                if projector is not None and exec_input.parent is None:
+                if projector is not None and (exec_input.parent is None or self.contract_version >= 4):
                     meta = _json_snapshot(projector(exec_input.arguments, value))
                 result = ToolExecutionResult(content=content, value=value, meta=meta)
                 result._execution_token = exec_input.token
@@ -1564,7 +1585,7 @@ class ToolsService:
             return result
         if result.is_error:
             return result
-        tool = self.get_tool(exec_input.name, exec_input.agent)
+        tool = self.executable(exec_input.name, exec_input.agent, exec_input.toolSet)
         if tool is None:
             return _error_result(ToolNotFoundError(exec_input.name))
         if not tool.canonical:
@@ -1577,7 +1598,7 @@ class ToolsService:
             content = _json_snapshot(tool.output["render"](exec_input.arguments, value))
             meta = _MISSING_META
             projector = tool.output.get("presentationMeta")
-            if projector is not None and exec_input.parent is None:
+            if projector is not None and (exec_input.parent is None or self.contract_version >= 4):
                 meta = _json_snapshot(projector(exec_input.arguments, value))
             normalized = ToolExecutionResult(content, value=value, meta=meta,
                                                additional_contexts=result.additional_contexts,
@@ -1634,6 +1655,12 @@ class ToolsService:
                        result: ToolExecutionResult) -> ToolExecutionResult:
         try:
             result.freeze()
+            projector = exec_input._projector
+            exec_input._projector = None
+            if projector is not None:
+                content = projector(exec_input, result)
+                if content is not None:
+                    result = self._copy_result(result, content=_json_snapshot(content)).freeze()
             decision = await self._carrier(exec_input).waterfall(
                 "tools/post-execute", exec_input, result,
                 lambda *_args: {"kind": "accept"})
@@ -1663,7 +1690,7 @@ class ToolsService:
         if "value" in decision:
             if result.is_error:
                 raise TypeError("tools/post-execute cannot replace the value of a failed result")
-            tool = self.get_tool(exec_input.name, exec_input.agent)
+            tool = self.executable(exec_input.name, exec_input.agent, exec_input.toolSet)
             if tool is None:
                 raise ToolNotFoundError(exec_input.name)
             if tool.output is None:
@@ -1677,7 +1704,7 @@ class ToolsService:
                     content = _json_snapshot(tool.output["render"](exec_input.arguments, value))
                     meta = _MISSING_META
                     projector = tool.output.get("presentationMeta")
-                    if projector is not None and exec_input.parent is None:
+                    if projector is not None and (exec_input.parent is None or self.contract_version >= 4):
                         meta = _json_snapshot(projector(exec_input.arguments, value))
                     result = ToolExecutionResult(
                         content, value=value, meta=meta,
@@ -1720,6 +1747,8 @@ class ToolsService:
         except Exception as error:
             result = _error_result(error)
         result.freeze()
+        if self.contract_version >= 4:
+            exec_input._finished = True
         self._notify_result(exec_input, result)
         return result
 

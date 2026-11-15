@@ -21,7 +21,7 @@ class LifecycleEmitter:
 
 
 def observe_run(emit,provider,parent,run):
-    identity=dict(runId=str(uuid.uuid4()),provider=provider,id=run.id,local=getattr(run,'localAgent',None) is not None)
+    identity=dict(runId=str(uuid.uuid4()),provider=provider,id=run.id,parentSessionId=parent.session.id,local=getattr(run,'localAgent',None) is not None)
     def settled(future):
         info=dict(identity)
         try:
@@ -37,7 +37,7 @@ def observe_run(emit,provider,parent,run):
 class ActivationObserver:
     def __init__(self,emit,provider,child_id,parent):
         self.emit,self.parent=emit,parent
-        self.identity=dict(runId=str(uuid.uuid4()),provider=provider,id=child_id,local=True)
+        self.identity=dict(runId=str(uuid.uuid4()),provider=provider,id=child_id,parentSessionId=parent.session.id,local=True)
         self.boundary=0;self.captured=dict(stopReason='completed')
 
     def start(self,child):

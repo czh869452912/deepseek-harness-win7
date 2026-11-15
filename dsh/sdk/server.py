@@ -4,7 +4,6 @@ import contextvars
 import os
 
 from dsh.attachment.admission import admit_encoded_images
-from dsh.core.scope import carrier_key_of
 from dsh.cordis.events import AggregateError
 from dsh.cordis.awaiting import await_callback_result
 from dsh.llm.message import create_user_message
@@ -101,25 +100,18 @@ class HarnessSdkJsonRpcServer:
 
     def session_created(self, session):
         parent = getattr(session.header, 'parentSession', None)
-        if parent is not None:
+        if getattr(session.header, 'origin', None) == 'subagent' and parent is not None:
             self.transport.notify('subagent.started', dict(parentSessionId=str(parent), childSessionId=str(session.id)))
 
     def subagent_end(self, info, caller_ctx=None):
         if not info.get('local'):
             return
-        key = carrier_key_of(caller_ctx)
-        # Current carriers use the exact Agent. Historical carriers retained
-        # a session-id ScopeKey; both recover identity from the service carrier.
-        value = getattr(key, 'value', key)
-        parent_id = value.get('sessionId') if isinstance(value, dict) else getattr(getattr(value, 'session', None), 'id', None)
-        if parent_id is None:
-            raise RuntimeError('subagent/end requires a scoped parent carrier')
         reason = info['stopReason']
-        payload = dict(provider=info['provider'], agentId=str(info['id']), parentSessionId=str(parent_id),
+        payload = dict(provider=info['provider'], agentId=str(info['id']), parentSessionId=str(info['parentSessionId']),
                        childSessionId=str(info['id']), stopReason=reason,
                        status='ok' if reason == 'completed' or reason == 'max-tokens' and self.options.get('maxTokensAsSuccess') is True else 'error')
         if 'lastAssistantMessage' in info:
-            payload['lastAssistantMessage'] = info['lastAssistantMessage']
+            payload['lastAssistantMessage'] = list(info['lastAssistantMessage'])
         self.transport.notify('subagent.finished', payload)
 
     async def initialize(self, params):

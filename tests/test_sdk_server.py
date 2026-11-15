@@ -74,11 +74,11 @@ async def test_real_sdk_prompt_reuses_agent_preserves_message_identity_and_drain
 
 
 @pytest.mark.asyncio
-async def test_sdk_rejects_retired_agent_and_uses_scoped_local_subagent_authority():
+async def test_sdk_rejects_retired_agent_and_uses_local_subagent_payload_authority():
     ctx, peer, server = await setup()
     try:
         handle = await server.get_or_create('parent')
-        info = dict(local=False, provider='remote', id='child', stopReason='completed')
+        info = dict(local=False, provider='remote', id='child', parentSessionId='parent', stopReason='completed')
         emit_contained(ctx, 'subagent/end', info, handle.agent, object())
         assert not any(name == 'subagent.finished' for name, _ in peer.notifications)
         emit_contained(ctx, 'subagent/end', dict(info, local=True, provider='spawn'), handle.agent, object())

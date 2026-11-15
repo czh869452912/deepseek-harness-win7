@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-16",
+  "unit": "C8-AG-SdkDirectLineage",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "state": "targeted-passed",
+  "paired": ".goose/out/rc022-sdk-lineage-paired-wire-20261116-01/comparison/report.json",
+  "observations": 3,
+  "native": {"run": "rc022-sdk-lineage-native-20261116-01", "passed": 27, "failed": 0},
+  "source": {"run": "rc022-sdk-lineage-source-20261116-01", "passed": 38, "failed": 0},
+  "verification_scope_reason": "Actual Source/native SDK observers receive real root/child/grandchild local activations. Start and post-disposal finish notifications preserve direct creator ids despite tree-root scoped dispatch. Additional controlled events verify subagent origin requirement, exclusion of external runs, provider/locality snapshots after disposal, max-token status and copied final output list. Native direct helper/SDK server, subagent service/lifetime and client-run consumers pass.",
+  "prior_diagnostics": "Initial Source observer teardown used ctx.dispose instead of ctx.fiber.dispose. After repair, strict in-memory comparison rejected native immutable Session block subclasses although serialized JSON observations were identical. Observer now compares actual JSON-RPC representation. Raw diagnostics and both raw wire JSONs retained; no product payload was normalized to conceal a field/value difference.",
+  "observer_boundary": "Paired transport is a notification recorder with JSON wire serialization; real SDK stdio consumers are covered by the native run tests. Main activation manager already snapshots parentSessionId; compatibility one-shot/epoch helper edges now also carry this field. No broad lifecycle retirement claim.",
+  "activation_boundary": "SDK finish notifications use the authoritative lifecycle payload rather than scoped carrier identity. Historical SDK test publishes the current required parentSessionId contract. Production pin/accepted_upstream unchanged; targeted evidence is not release acceptance.",
+  "cleanup": ".goose/out/rc022-sdk-lineage-source-20261116-01/cleanup.json",
+  "cleanup_bytes": 6037766,
+  "retained_assets": "Owned synthetic session stores/workspaces/homes and empty external Source root removed. Logs/XML/commands/raw observations and resolved failure diagnostics retained. No owned SDK or runner process remains; shared Source/toolchain retained through C9."
+}

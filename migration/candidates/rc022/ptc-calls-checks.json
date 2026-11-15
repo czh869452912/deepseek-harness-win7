@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-15",
+  "unit": "C5-J-PtcCallAndResetOwnership",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "state": "targeted-passed",
+  "paired": ".goose/out/rc022-ptc-calls-paired-20261115-01/comparison/report.json",
+  "observations": 10,
+  "native": {"run": "rc022-ptc-calls-native-20261115-01", "passed": 319, "failed": 0},
+  "source": {"run": "rc022-ptc-calls-source-20261115-01", "passed": 9, "failed": 0},
+  "verification_scope_reason": "Real Context-owned PtcCalls eagerly admits calls, permits same-policy overlap, cancels on exact Session policy changes and waits for canceled predecessors' complete cleanup before rereading authority. Resets synchronously cancel calls, share one pending Future, release the runtime and drain nested work before notification/admission. Failed release or notification blocks programs until explicit successful reset. Other Sessions remain independent; owner disposal drains active calls and resets and rejects late admission. Signal relays are removed after completion and failed authority lookup. Existing actual Agent/tool/prompt/factory consumers pass alongside new lifecycle tests.",
+  "activation_boundary": "This is the lifecycle owner for the forthcoming separate PTC executor; the legacy codeRuntime and registry-owned run_code path are not qualified by this record. Python uses eagerly entered coroutines, native AbortSignal relays and shared Future barriers instead of modern JS Promise/AbortSignal.any APIs. Complete PTC runtime/transport and C5-C9 qualification remain subsequent work; production pin is unchanged.",
+  "cleanup": ".goose/out/rc022-ptc-calls-source-20261115-01/cleanup.json",
+  "cleanup_bytes": 529345,
+  "retained_assets": "Commands, XML, logs and paired observations retained. Owned synthetic workspaces removed; no task test process remains. Shared Source/toolchain retained until C9."
+}

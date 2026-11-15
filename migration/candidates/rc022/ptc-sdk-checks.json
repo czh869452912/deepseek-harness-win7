@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-15",
+  "unit": "C5-K-PythonPtcSdkProjection",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "state": "targeted-passed",
+  "paired": ".goose/out/rc022-ptc-sdk-paired-retry-20261115-01/comparison/report.json",
+  "observations": 38,
+  "native": {"run": "rc022-ptc-sdk-native-retry-20261115-01", "passed": 322, "failed": 0},
+  "source": {"run": "rc022-ptc-sdk-source-20261115-01", "passed": 53, "failed": 0},
+  "verification_scope_reason": "Byte-identical fixed Source/native Python SDK text over canonical argument/output schemas, nested TypedDicts, required/open/closed fields, exact scalar literals, Unicode names in shared tables, exotic names, class collisions and bounded deep schemas. Native checks compile emitted declarations on actual Python 3.8.10; existing admission/executor/prompt/Agent consumers pass. Declarations are static prompt text, not imports or dependencies of the worker.",
+  "python_overlay": "Identifier membership, case mapping and normalization use the target interpreter tables, avoiding Node24-new characters that Python 3.8 cannot parse at all four naming sites. Nested list annotations cap at 80 rather than Source's 180 to fit Python 3.8's old parser with wrapper headroom. Shared-domain text is paired; these two deliberate target-runtime adaptations have separate native checks and are not claimed byte-identical outside that domain.",
+  "initial_failure": "Native compilation of Source's 180-list limit overflowed the actual 3.8 parser; initial paired/native diagnostics retained. After implementing the target cap, shared-domain comparison and the explicit 240-deep native input pass.",
+  "activation_boundary": "The SDK renderer is ready for the separate PTC executor. Legacy tools.sdk_text remains its historical contract. Complete runtime/transport, ordered nested pipeline and C5-C9 qualification remain pending; production pin unchanged.",
+  "cleanup": ".goose/out/rc022-ptc-sdk-source-20261115-01/cleanup.json",
+  "cleanup_bytes": 1045801,
+  "retained_assets": "Commands, logs, XML, Source test results and paired observations retained. Owned synthetic workspaces removed; no task test process remains. Shared Source/toolchain retained until C9."
+}

@@ -33,8 +33,9 @@ def request_proposal(header):
 
 
 class ReactLoopAgent:
-    def __init__(self, loop_ctx, session, options=None, inbox_reader=None, model_reader=None):
+    def __init__(self, loop_ctx, session, options=None, inbox_reader=None, model_reader=None, lifetime_signal=None):
         self.loop_ctx, self.session, self.id = loop_ctx, session, session.id
+        self.lifetime_signal = lifetime_signal
         self.options = options or AgentOptions()
         self.model = AgentModel(model_reader, session, self.options) if model_reader is not None else None
         self.request_header_logged = False
@@ -82,12 +83,18 @@ class ReactLoopAgent:
     def cancel(self, cause=None, options=None, keep_inbox=False):
         keep = keep_inbox or (options.get('keepInbox', False) if isinstance(options, dict)
                              else getattr(options, 'keepInbox', False))
-        if not keep:
-            self.inbox.clear()
+        if getattr(self.session,'format_version',3) != 4:
+            if not keep:
+                self.inbox.clear()
+                if self.phase['kind'] != 'idle':self.phase['wakeRequested'] = False
+            if self.phase['kind'] != 'idle':self.phase['abort'].abort(cause if cause is not None else dict(kind='user'))
+            return
+        try:
+            if not keep:self.inbox.clear()
+        finally:
             if self.phase['kind'] != 'idle':
-                self.phase['wakeRequested'] = False
-        if self.phase['kind'] != 'idle':
-            self.phase['abort'].abort(cause if cause is not None else dict(kind='user'))
+                if not keep:self.phase['wakeRequested'] = False
+                self.phase['abort'].abort(cause if cause is not None else dict(kind='user'))
 
     def run_maintenance(self, job):
         if self.phase['kind'] != 'idle':
@@ -101,7 +108,9 @@ class ReactLoopAgent:
                 return await await_callback_result(job(phase['abort'].signal))
             finally:
                 self._set_phase(dict(kind='idle', lastTurn=phase['lastTurn']))
-                if phase['wakeRequested'] and self.inbox.hasPending:
+                reason=phase['abort'].signal.reason
+                disposed=isinstance(reason,dict) and reason.get('kind')=='disposed'
+                if (not disposed or getattr(self.session,'format_version',3) != 4) and phase['wakeRequested'] and self.inbox.hasPending:
                     self._wake_driver()
                 done.set_result(None)
         return self._start(perform())
@@ -124,6 +133,8 @@ class ReactLoopAgent:
         return asyncio.create_task(resume_coroutine(coroutine, awaited))
 
     def _wake_driver(self, wake_after_abort=False):
+        if self.lifetime_signal is not None and self.lifetime_signal.aborted:
+            return
         if self.phase['kind'] != 'idle':
             reason = self.phase['abort'].signal.reason
             disposed = isinstance(reason, dict) and reason.get('kind') == 'disposed'

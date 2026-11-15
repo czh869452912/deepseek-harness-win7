@@ -1,0 +1,19 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-15",
+  "unit": "C4-R-FactoryPublicationMaintenance",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "state": "targeted-passed",
+  "paired": ".goose/out/rc022-factory-publication-paired-final-20261115-01/comparison/report.json",
+  "observations": 10,
+  "native": [
+    {"run": "rc022-factory-publication-native-20261115-01", "passed": 136, "failed": 0},
+    {"run": "rc022-factory-publication-native-retry-20261115-01", "passed": 1, "failed": 0}
+  ],
+  "source": {"run": "rc022-factory-publication-source-20261115-01", "passed": 50, "failed": 0},
+  "verification_scope_reason": "Actual V4 factories enter/announce Session before setup, call the synchronous setup commit, then enter/serially announce Agent under maintenance. Queued setup/announcement input cannot start before publication. Failure preserves input and prevents replay; disposal waits for the publication window before cancelling/draining the machine and detaching entries. Caller cancellation retains reason identity during setup, stops governing the lifecycle after readiness, and owner unload retains both entries until the awaited creation listener finishes. A real queue-clear failure additionally proves cancel finally-aborts maintenance and disposal waits for it despite the original write failure. Direct regressions cover V3 lifecycle/machine/consumers and V4 drivers, registration, factories, model, inbox and initiators.",
+  "fixture_correction": "The first Source observer used the removed session.events property. The failure remains preserved; its observation now reads actual snapshotEvents(). Nine initial pairs passed, then the final ten cover the added clear-failure/owner queued-wake boundaries. Production code was unchanged during those observer extensions.",
+  "activation_boundary": "The new publication order and cancellation/lifetime behavior are explicit V4. Legacy V3 setup/publication and notification behavior remain intact. These ten pairs mount the real loop without persistence; actual V4 backend seed/setup/resume durability, full teardown failure aggregation and configured route restoration still require their own consumer qualification. No whole migration or release acceptance is claimed.",
+  "cleanup": ".goose/out/rc022-factory-publication-paired-final-20261115-01/cleanup.json",
+  "remaining": "V4 factory/storage and configured-start consumers, tool/context and downstream contracts, coordinated production activation and release qualification."
+}

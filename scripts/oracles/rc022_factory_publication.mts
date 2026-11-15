@@ -1,0 +1,28 @@
+import {resolve} from 'node:path'
+import {pathToFileURL} from 'node:url'
+const load=(path:string)=>import(pathToFileURL(resolve(process.argv[2]!,path)).href)
+const {Context}=await load('vendor/cordis/src/index.ts'),{default:Store}=await load('packages/core/session/src/index.ts'),{default:Registry}=await load('packages/session/session-projection/src/index.ts'),{default:Agents}=await load('packages/core/agent/src/index.ts'),{default:Loop}=await load('packages/core/agent-loop/src/index.ts'),{default:Prompt}=await load('packages/core/system-prompt/src/index.ts'),{default:Tools}=await load('packages/core/tools/src/index.ts'),Native=await load('packages/core/tool-executor-native/src/index.ts'),{default:Llm,createUserMessage}=await load('packages/llm/llm/src/index.ts'),{MockAdapter,textResponse}=await load('packages/core/agent-loop/tests/mock-adapter.ts'),rows:any[]=[]
+const message=(text:string)=>createUserMessage({content:[{type:'text',text}],source:{kind:'user'}})
+for(const action of ['visible','setup-wake','created-wake','setup-reject','created-reject','caller-setup','caller-ready','owner-created','commit','clear-failure']){
+ const ctx=new Context(),trace:any[]=[],row:any={action},controller=new AbortController(),primary=new Error('primary'),jobs:any[]=[],handles:any[]=[],captured:any[]=[],calls:any[]=[];let start:any,release:any,lateResolve:any,scope:any;const entered=new Promise(resolve=>{start=resolve}),gate=new Promise(resolve=>{release=resolve}),late=new Promise(resolve=>{lateResolve=resolve})
+ try{
+  for(const plugin of [Llm,Store,Registry,Prompt,Tools,Native,Agents])await ctx.plugin(plugin);await ctx.plugin(Loop,{agents:[]});ctx.llm.registerAdapter(['script'],new MockAdapter(Array.from({length:4},()=>textResponse('done'))));const sessions=ctx.sessions,agents=ctx.agents,owner=await ctx.plugin(Object.assign((inner:any)=>{scope=inner},{inject:['agents']}))
+  const snapshot=(stage:string,agent?:any)=>{trace.push({stage,session:sessions.get('subject')!==undefined,agent:agents.get('subject')!==undefined,turns:agent===undefined?0:agent.session.snapshotEvents().filter((e:any)=>e.type==='turn/start').length})}
+  ctx.on('session/created',()=>{snapshot('session')});ctx.on('agent/disposed',()=>{trace.push({stage:'agent-disposed'})});ctx.on('session/disposed',()=>{trace.push({stage:'session-disposed'})})
+  const setup=async(_scope:any,agent:any)=>{captured.push(agent);snapshot('setup',agent);const original=agent.cancel.bind(agent);agent.cancel=(cause:any,options:any={})=>{calls.push({kind:cause.kind,keep:options.keepInbox??false});return original(cause,options)};if(['setup-wake','setup-reject','caller-setup'].includes(action))agent.followup(message('queued'));if(action==='setup-reject')throw primary;if(action==='caller-setup'){start();await gate;lateResolve()}if(action==='commit')return {commit:()=>{snapshot('commit',agent)}}}
+  ctx.on('agent/created',async(payload:any)=>{const agent=payload.agent;snapshot('created',agent);row.source=payload.source;row.signal=payload.signal!==undefined;if(['created-wake','created-reject','owner-created'].includes(action))agent.followup(message('queued'));if(['owner-created','created-reject'].includes(action)){start();await gate}if(action==='created-reject')throw primary;snapshot('created-end',agent)})
+  const task=scope.agents.create({sessionId:'subject',agentOptions:{provider:'script',model:'model'},setup,signal:controller.signal}).then((handle:any)=>{handles.push(handle);return handle},(error:any)=>{row.rejected=true;row.same=error===primary;return undefined});jobs.push(task)
+  if(['caller-setup','owner-created','created-reject'].includes(action)){await entered;if(action==='caller-setup'){controller.abort(primary);await task;release();await late}else if(action==='owner-created'){let done=false;const closing=owner.dispose().then(()=>{done=true});jobs.push(closing);await Promise.resolve();row.waiting=!done;snapshot('unloading',captured[0]);release();await Promise.all([task,closing])}else release()}
+  const handle=await task
+  if(handle!==undefined){
+   if(action==='caller-ready'){controller.abort(primary);handle.agent.followup(message('after-ready'))}
+   if(action==='clear-failure'){
+    let maintenanceStart:any;const maintenanceEntered=new Promise(resolve=>{maintenanceStart=resolve}),work=handle.agent.runMaintenance(async(signal:any)=>{maintenanceStart();await gate;row.cancelled=signal.aborted});jobs.push(work);await maintenanceEntered;handle.agent.followup(message('queued'));handle.agent.inbox.clear=()=>{throw primary};try{handle.agent.cancel({kind:'user'})}catch(error){row.cancelSame=error===primary}let done=false;const closing=handle.dispose().catch((error:any)=>{row.disposeSame=error===primary}).finally(()=>{done=true});jobs.push(closing);await Promise.resolve();row.waiting=!done;snapshot('stopping',handle.agent);release();await Promise.all([work,closing])
+   }
+   await handle.agent.whenIdle()
+  }
+  const agent=captured[0];row.pending=agent.inbox.nextTurn.map((msg:any)=>msg.content[0].text);row.turns=agent.session.snapshotEvents().filter((e:any)=>e.type==='turn/start').length;row.messages=agent.session.snapshotEvents().filter((e:any)=>e.type==='user/message').map((e:any)=>e.data.content[0].text);row.idle=agent.status==='idle';if(handle!==undefined&&action!=='clear-failure')await handle.dispose();row.trace=trace;row.cancels=calls;row.removed=sessions.list().length===0&&agents.list().length===0;rows.push(JSON.parse(JSON.stringify(row)))
+ }finally{release();await Promise.allSettled(jobs);await Promise.allSettled(handles.reverse().map(handle=>handle.dispose()));await ctx.fiber.dispose()}
+}
+process.stdout.write(JSON.stringify(rows))
+

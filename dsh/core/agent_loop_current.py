@@ -1,4 +1,6 @@
 """rc.3 concrete Agent factory over current Session handles and request machine."""
+import asyncio
+
 from dsh.core.agent import AgentHandle, AgentOptions
 from dsh.core.session.json import UNDEFINED
 from dsh.core.agent_lifecycle_current import CurrentAgentLifecycleService, CurrentAgentLifecyclePlugin
@@ -54,11 +56,14 @@ class CurrentAgentLoopService(CurrentAgentLifecycleService):
                       if self._inbox_projection_handle is not None else None)
             model_reader = (self._model_projection_handle.readerFor(session)
                             if self._model_projection_handle is not None else None)
-            tx.agent = ReactLoopAgent(runtime_ctx, session, options, inbox_reader=reader, model_reader=model_reader)
+            tx.agent = ReactLoopAgent(runtime_ctx, session, options, inbox_reader=reader, model_reader=model_reader,
+                                      lifetime_signal=tx.controller.signal if getattr(session,'format_version',3) == 4 else None)
             tx.scope = tx.agent.scope
             yield tx.scope.raw_dispose
             yield tx.owner_dispose
         runtime_ctx.effect(lifecycle, label='agentLoop.lifecycle(%s)' % session.id)
+        if getattr(session, 'format_version', 3) == 4:
+            return await self._publish_current(tx, session, setup, source)
         if setup is not None:
             result = await tx.race(lambda: self._invoke_setup(setup, tx.agent))
             commit = getattr(result, 'commit', None)
@@ -80,6 +85,37 @@ class CurrentAgentLoopService(CurrentAgentLifecycleService):
         emit_agent_event(runtime_ctx, tx.agent, 'agent/session-start', dict(source=source))
         tx.assert_live()
         return AgentHandle(tx.agent, tx.dispose)
+
+    async def _publish_current(self, tx, session, setup, source):
+        runtime_ctx=self._runtime['ctx']
+        async def publish(_signal):
+            tx.publication=asyncio.get_running_loop().create_future()
+            try:
+                tx.assert_live()
+                await self._before_publish(tx,session)
+                tx.assert_live()
+                sessions,agents=tx.agent.ctx.get('sessions'),runtime_ctx.get('agents')
+                tx.detach_session=sessions.enter(session)
+                sessions.announce(session)
+                tx.assert_live()
+                if setup is not None:
+                    result=await tx.race(lambda:self._invoke_setup(setup,tx.agent))
+                    tx.assert_live()
+                    commit=getattr(result,'commit',None)
+                    if callable(commit):commit()
+                tx.assert_live()
+                tx.detach_agent=agents.enter(tx.agent)
+                await agents.announce(tx.agent,source,tx.controller.signal)
+                tx.assert_live()
+                tx.mark_ready()
+                return AgentHandle(tx.agent,tx.dispose)
+            except BaseException:
+                tx.agent.cancel(dict(kind='disposed'),dict(keepInbox=True))
+                raise
+            finally:
+                tx.publication.set_result(None)
+                tx.publication=None
+        return await tx.agent.runMaintenance(publish)
 
 
 class CurrentAgentLoopPlugin(CurrentAgentLifecyclePlugin):

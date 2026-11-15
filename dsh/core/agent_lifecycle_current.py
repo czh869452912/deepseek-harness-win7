@@ -21,7 +21,19 @@ from dsh.session.persistence import SessionPersistenceNotFoundError
 class CurrentFactoryTransaction(FactoryTransaction):
     def __init__(self,*args,**kwargs):
         self.stored=None
+        self.ready=False
+        self.publication=None
         super().__init__(*args,**kwargs)
+        self.format_version=getattr(self.factory._runtime['ctx'].get('agents'),'format_version',3)
+        signal=args[3] if len(args)>3 else kwargs.get('signal')
+        self.caller_remove=self.listeners[0] if signal is not None else None
+
+    def mark_ready(self):
+        self.ready=True
+        if self.caller_remove is not None:
+            self.caller_remove()
+            if self.caller_remove in self.listeners:self.listeners.remove(self.caller_remove)
+            self.caller_remove=None
 
     def dispose(self, owner_triggered=False):
         if self.disposing is None:
@@ -53,8 +65,13 @@ class CurrentFactoryTransaction(FactoryTransaction):
         self.listeners.clear()
         try:
             try:
+                if self.format_version == 4 and self.publication is not None:
+                    await asyncio.shield(self.publication)
                 if self.agent is not None:
-                    self.agent.cancel(dict(kind='disposed'))
+                    if self.format_version == 4:
+                        try:self.agent.cancel(dict(kind='disposed'),dict(keepInbox=not self.ready))
+                        except BaseException as error:failures.append(error)
+                    else:self.agent.cancel(dict(kind='disposed'))
                     await self.agent.when_idle()
                 if self.driver is not None:
                     self.driver.cancel()

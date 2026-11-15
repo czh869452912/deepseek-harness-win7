@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-15",
+  "unit": "C4-F-AwaitedProjectionHandles",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "state": "targeted-passed",
+  "paired": ".goose/out/rc022-projection-handles-paired-20261115-02/report.json",
+  "observations": 17,
+  "native": {"run": "rc022-projection-handles-native-20261115-01", "passed": 143, "failed": 0},
+  "source": {"run": "rc022-projection-handles-source-20261115-01", "passed": 81, "failed": 0},
+  "verification_scope_reason": "Explicit V4 registry registration installs synchronously then yields a ready retained handle after an asynchronous owner-active check. Readers bind one exact Session without reading or folding unrelated units; released readers retain the original definition across replacement. Released cells remain checkpointable without eager advancement, and retained reads advance those cells until replacement. Shared registrations enforce version and summary membership. Summary key identity, selected lazy reads, idempotent release, synchronous failures/undefined state, mutable definition closures and event-level changes after partial drive failures match Source. Legacy callable registration preserves the exact effect disposer identity through returned/composed/generator effects. Existing projection/cache/Agent-loop and Session publication consumers pass.",
+  "language_adaptation": "The Source callable thenable becomes a Python callable awaitable. A per-object disposer subclass supplies __await__ while retaining its original effect identity; calling it still releases. Retained handle methods remain synchronous reads and asynchronous disposal.",
+  "cleanup": ".goose/out/rc022-projection-handles-native-20261115-01/cleanup.json",
+  "cleanup_bytes": 24861,
+  "remaining": "Migrate domain owners to await handles and publish retained readers, integrate canonical prepared-session persistence/cache ownership, and align Agent lifecycle. Production registry default remains the existing contract until coordinated activation; no full-release acceptance is claimed."
+}

@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-15",
+  "unit": "C8-D-LiveSettingsDescriptorsAndEdits",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "state": "targeted-passed",
+  "paired": ".goose/out/rc022-settings-forms-paired-20261115-01/comparison/report.json",
+  "observations": 11,
+  "native": {"run": "rc022-settings-forms-native-2-20261115-01", "passed": 20, "failed": 0},
+  "source": {"run": "rc022-settings-forms-source-20261115-01", "passed": 34, "failed": 0},
+  "verification_scope_reason": "Actual SettingsForms and real plugin fibers/Config/Volatile values exercise editable descriptors, inherited/user layers, secret redaction, presentation policy with unchanged data revision, updates, stale revision refusal, array member edit, inherited reset, ordinary field refusal and replacement preserving secrets. Native adds invalid array indices, append/removal over defaults and lossy/cyclic write rejection. Source runs full configuration/inheritance/editor-failure suites, including its actual editor; that Source-only coverage does not qualify native persistence.",
+  "observer_boundary": "Paired ConfigEditor supplies controlled inherited/override snapshots and applies edits to real Config fibers. The paired observer establishes descriptor/form edit semantics only. The native ConfigEditor service is still missing; profile persistence, file locking, disk rollback, legacy settings import and actual application boot require subsequent qualification. Revision 2 after the first controlled edit matches Source because both fiber/raw identity changes can be observed; no single-increment assumption is made.",
+  "implementation": "SettingsForms projects live Config values, owns per-fiber page presentation, tracks descriptor revisions and removal, emits document changes and validates form writes before delegating to ConfigEditor. Path edits preserve redacted secrets, reset absent object fields to inherited values and remove array members. Legacy import is implemented but not qualified in this unit.",
+  "activation_boundary": "Production composition and pin unchanged; ConfigEditor, integrated settings and C9 remain pending.",
+  "cleanup": ".goose/out/rc022-settings-forms-source-20261115-01/cleanup.json",
+  "retained_assets": "235739 bytes of owned fixtures and tmp/home removed after teardown. Commands, observations, XML/JSON/logs and initial revision-expectation failure retained. No task workers remain; shared Source/toolchain retained through C9."
+}

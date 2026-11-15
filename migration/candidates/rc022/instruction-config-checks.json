@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-16",
+  "unit": "C8-K-InstructionHomesAndLogicalScopes",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "state": "targeted-passed",
+  "paired": ".goose/out/rc022-instruction-config-paired-20261116-01/comparison/report.json",
+  "observations": 47,
+  "native": {"run": "rc022-instruction-config-native-20261116-01", "passed": 56, "failed": 0},
+  "source": {"run": "rc022-instruction-config-source-20261116-01", "passed": 15, "failed": 0, "excluded": 2},
+  "verification_scope_reason": "Actual Source helper calls and native helpers compare discovery/plugin configuration, baseline identity, explicit/default/environment home roots, blank/BOM overrides, two independent root labels, empty candidate lists, reserved candidate filtering, UNC/drive/trailing path scopes, and collision escaping. Native additionally asserts plugin-row versus discovery-owner home authority, empty configured root versus blank environment, and JSON-null identity for disabled non-finite budgets. Existing instruction consumers pass. Source home helper selection excludes unrelated path joining/watch canonicalization checks.",
+  "implementation": "New candidate instruction configuration resolves process .dsh and shared .agents roots independently, ignores undeclared home/legacy fields in plugin rows, retains explicit empty arrays, and serializes the Source baseline identity with ECMAScript number spelling. Logical scope helpers preserve existing user-global keys, add agents-global in the same deduplication group, and escape project-name collisions without path normalization.",
+  "observer_boundary": "Pure helpers on the present Windows host; no filesystem discovery, content rendering, runtime projection or actual Windows 7 qualification established here. Those consumers remain subsequent work.",
+  "activation_boundary": "Candidate helpers only; production pin and accepted_upstream unchanged pending C9. Targeted checks do not establish release acceptance.",
+  "cleanup": ".goose/out/rc022-instruction-config-source-20261116-01/cleanup.json",
+  "retained_assets": "Removed 119407 bytes of owned synthetic pytest inputs and tmp/home. No task workers remain. Commands and observations retained; shared fixed Source/toolchain retained through C9."
+}

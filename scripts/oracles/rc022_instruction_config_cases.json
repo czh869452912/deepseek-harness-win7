@@ -1,0 +1,25 @@
+{
+  "configs": [
+    {"maxBytes": 65536},
+    {"maxBytes": 1.0, "projectRootMarkers": [], "instructionFileCandidates": [], "localInstructionFileCandidates": []},
+    {"maxBytes": 0, "instructionFileCandidates": ["", ".", "..", "a/b", "a\\b", " AGENTS.md ", "AGENTS.md", "AGENTS.md"]},
+    {"maxBytes": -1, "maxSourceBytes": 123},
+    {"maxBytes": 1e-7, "maxSourceBytes": null},
+    {"maxBytes": 65536, "dshHome": "C:/forged", "agentsHome": "C:/forged-agents", "max_bytes": 1, "candidates": ["forged"]},
+    {"maxBytes": 20, "projectRootMarkers": null, "instructionFileCandidates": null, "localInstructionFileCandidates": null}
+  ],
+  "roots": [
+    {},
+    {"env": {"DSH_HOME": "", "DSH_AGENTS_HOME": ""}},
+    {"env": {"DSH_HOME": " \t\ufeff", "DSH_AGENTS_HOME": " \t\ufeff"}},
+    {"env": {"DSH_HOME": "./environment-home", "DSH_AGENTS_HOME": "./shared-agents"}},
+    {"configured": "", "env": {"DSH_HOME": "C:/ignored", "DSH_AGENTS_HOME": "C:/ignored"}},
+    {"configured": "~"},
+    {"configured": "~/test-home"},
+    {"configured": "~\\test-home"},
+    {"configured": "./configured", "env": {"DSH_HOME": "C:/ignored", "DSH_AGENTS_HOME": "C:/ignored"}},
+    {"configured": "~someone/retained"},
+    {"configured": "C:/Users/Example/.agents"}
+  ],
+  "paths": ["", ".", "..", "AGENTS.md", "dir/AGENTS.md", "dir\\CLAUDE.md", "dir/../AGENTS.md", "dir/", "dir//", "/", "//", "C:", "C:/", "C:\\", "C:/dir/AGENTS.md", "C:/dir/", "\\\\server\\share", "\\\\server\\share\\", "\\\\server\\share\\AGENTS.md", "~/.dsh/AGENTS.md", "$DSH_HOME/AGENTS.md", "~/.agents/AGENTS.md", "$DSH_AGENTS_HOME/AGENTS.md", "user-global/AGENTS.md", "agents-global/AGENTS.md", "user-global\\AGENTS.local.md", "./user-global/AGENTS.md", "用户/CLAUDE.md"]
+}

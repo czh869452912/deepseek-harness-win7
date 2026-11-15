@@ -14,5 +14,6 @@
 | C8-H | 目录切换后的文件读写、检索、补全索引、一次性 shell 与绝对交付路径 | [工具目录消费者](directory-consumers-checks.json) |
 | C8-I | 本地终端启动目录、持久 shell 复用、重置及实际 WinPTY 检查 | [终端启动目录](terminal-directory-checks.json) |
 | C8-J | 持久 PowerShell 的分段输出、退出竞争、取消、创建合并与卸载回滚 | [持久 shell 协议](persistent-protocol-checks.json) |
+| C8-K | 指令双用户根目录、配置空列表、基线身份与全局/项目逻辑作用域 | [指令配置与作用域](instruction-config-checks.json) |
 
 后续继续设置及完整应用组合；最终资格使用 C9 冻结候选的完整门禁。

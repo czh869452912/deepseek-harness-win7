@@ -5,6 +5,7 @@
 | 单元 | 已验证边界 | 记录 |
 | --- | --- | --- |
 | C6-A | 名称、兄弟预留、路径回退、目录 v0–v3/stateVersion 6 | [名称与目录](named-catalog-checks.json) |
+| C6-U | 进程外结果、取消优先级、安全诊断截断和共享关闭 | [外部结算](external-settlement-checks.json) |
 | C6-T | 目标会话续聊/中断、真实队列/Steer/冷恢复、调用者归属 | [目标控制](target-control-checks.json) |
 | C6-S | 委派工具、真实 spawn/fork、深度/路由预检、Provider 替换和共享提示 | [委派工具](delegation-tool-checks.json) |
 | C6-R | 模型发现、父路由回退、授权清单过滤与工具注册生命周期 | [模型发现](model-discovery-checks.json) |
@@ -25,4 +26,4 @@
 | C6-C | 完成状态、身份重置、fork 一次性种子与实际工厂消费者 | [计时与 fork](subagent-timing-checks.json) |
 | C6-B | 目录预序遍历、分支诊断、取消、名称路径解析 | [目录读取](catalog-walk-checks.json) |
 
-后续推进模型授权设置、委派工具、SDK/PTC/Remote；已完成的创建/恢复、Team 和命名控制仍需在最终产品装配中统一验收。定向检查不代表完整发布验收。生产 pin 和 accepted_upstream 保持原状态；共享 Source/工具链保留到 C9，结束运行的可重建工作区已清理。
+后续推进 SDK/ACP 进程外驱动、实际可选预设服务集成，以及 C7 Gateway 资源授权后激活目标控制 Remote 声明；已完成的创建/恢复、Team、委派和命名控制仍需在最终产品装配中统一验收。定向检查不代表完整发布验收。生产 pin 和 accepted_upstream 保持原状态；共享 Source/工具链保留到 C9，结束运行的可重建工作区已清理。

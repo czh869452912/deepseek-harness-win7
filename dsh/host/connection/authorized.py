@@ -15,7 +15,7 @@ from dsh.host.connection.http_current import current_bridge_handler
 from dsh.host.connection.http_bridge import DEFAULT_MAX_REQUEST_BODY_BYTES
 
 
-def peer_bridge_handler(connection, api, limit=DEFAULT_MAX_REQUEST_BODY_BYTES):
+def peer_bridge_handler(connection, api, limit=DEFAULT_MAX_REQUEST_BODY_BYTES, request_scope=None):
     async def handler(request, writer):
         admission = connection.admit(request)
         if 'rejection' in admission:
@@ -26,7 +26,12 @@ def peer_bridge_handler(connection, api, limit=DEFAULT_MAX_REQUEST_BODY_BYTES):
         carrier = SimpleNamespace(request_rejection=lambda _: None)
         fetch = SimpleNamespace(requestBodyMode=api.requestBodyMode,
                                 fetch=lambda req: api.fetch(req, admission['peer']))
-        await current_bridge_handler(carrier, fetch, limit)(request, writer)
+        async def delegate():
+            await current_bridge_handler(carrier, fetch, limit)(request, writer)
+        if request_scope is None:
+            await delegate()
+        else:
+            await request_scope(request, writer, delegate)
     handler.defer_body = True
     return handler
 

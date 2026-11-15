@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-15",
+  "unit": "C7-K-ConnectionPlugin",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "state": "targeted-passed",
+  "paired": ".goose/out/rc022-connection-plugin-paired-20261115-01/comparison/report.json",
+  "observations": 8,
+  "native": {
+    "run": "rc022-connection-plugin-native-20261115-01",
+    "passed": 36,
+    "failed": 0
+  },
+  "source": {
+    "run": "rc022-connection-plugin-source-20261115-01",
+    "passed": 30,
+    "failed": 0
+  },
+  "verification_scope_reason": "Actual upstream and candidate Connection plugins with credential record provider and late actual WebServer. Real HTTP exchanges verify unknown request rejected before advertised body, /connect exchange and API RPC, trusted Peer interactions, connection/request middleware surrounds body/response, refusing middleware does not enter bridge, recovery injection, route/provider removal and browser Peer abort on unload, persistent signing secret and process token retained on reload. Direct consumers cover existing current streaming body and new Peer bridge.",
+  "activation_boundary": "Candidate plugin is implemented and tested independently. Production profile mappings/pin remain unchanged until coordinated Gateway mux/events and final qualification. Actual websocket upgrade and Electron/IPC admission are not established by these HTTP journeys.",
+  "cleanup": ".goose/out/rc022-connection-plugin-source-20261115-01/cleanup.json",
+  "retained_assets": "Commands/results retained; owned temporary payloads removed, real listeners stopped in finally. Shared Source/toolchain retained through C9."
+}

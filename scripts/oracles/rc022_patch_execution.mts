@@ -1,6 +1,7 @@
 import {readFileSync,mkdirSync,writeFileSync,readdirSync} from 'node:fs'
 import {join,relative} from 'node:path'
 import {load} from './rc022_subagent_fixture.mts'
+import {pathToFileURL} from 'node:url'
 const {Context}=await load('vendor/cordis/src/index.ts'),{default:Fs}=await load('packages/fs/fs-local/src/index.ts'),Policy=await load('packages/fs/fs-observation-policy/src/index.ts'),{FsError}=await load('packages/fs/fs/src/index.ts'),{executePatch}=await load('packages/fs/tool-fs/src/patch/index.ts'),{FsSandboxController}=await load('packages/fs/tool-fs/src/sandbox.ts')
 const input=JSON.parse(readFileSync(process.argv[3]!,'utf8')),root=join(input.workspace,'source'),rows:any[]=[]
 for(const item of input.cases){
@@ -21,4 +22,6 @@ for(const item of input.cases){
   rows.push({name:item.name,report,observations,files,providerEmpty:readdirSync(provider).length===0})
  }finally{await ctx.fiber.dispose()}
 }
-function normalize(value:any):any{if(typeof value==='string')return value.replaceAll(root,'<root>');if(Array.isArray(value))return value.map(normalize);if(value&&typeof value==='object')return Object.fromEntries(Object.entries(value).map(([key,item])=>[key,normalize(item)]));return value}console.log(JSON.stringify(normalize(rows)))
+function normalize(value:any):any{if(typeof value==='string')return value.replaceAll(root,'<root>');if(Array.isArray(value))return value.map(normalize);if(value&&typeof value==='object')return Object.fromEntries(Object.entries(value).map(([key,item])=>[key,normalize(item)]));return value}
+export const observations=normalize(rows)
+if(import.meta.url===pathToFileURL(process.argv[1]!).href)console.log(JSON.stringify(observations))

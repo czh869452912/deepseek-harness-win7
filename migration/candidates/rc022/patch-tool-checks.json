@@ -1,0 +1,34 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-16",
+  "unit": "C8-AX-PatchTool",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "state": "targeted-passed",
+  "paired": ".goose/out/rc022-patch-tool-paired2-20261116-01/comparison/report.json",
+  "observations": 62,
+  "native": {
+    "run": "rc022-patch-tool-native3-20261116-01",
+    "passed": 70,
+    "failed": 0
+  },
+  "source": {
+    "run": "rc022-patch-tool-source3-20261116-01",
+    "passed": 162,
+    "failed": 0,
+    "skipped": 4,
+    "skipped_cases": [
+      "preserves the symbolic-link refusal code",
+      "retains completed operations after a real write permission failure",
+      "bare provider (no dsh-fs-observation-policy) reports a host metadata fault as a typed filesystem failure",
+      "bare provider (no dsh-fs-observation-policy) reports unreadable content as FS_PERMISSION_DENIED"
+    ]
+  },
+  "verification_scope_reason": "Compare model values/error routing, compact output, pure call previews, bounded applied hunks, stopped metadata and replay fallbacks over real paired patch reports; compare actual Source defineTool extracted local/confined schemas. Native current Agent/tool runtime executes create-then-update aliases, edit and delete handoff, current working directory, structured syntax/schema errors, scope prompt visibility, unload and selection/defaults. Confined real filesystem test proves typed denial, rejection before directory access, approved single-call retry and unchanged standing policy. Existing file-tool/current-directory regressions and patch executor are direct consumers. Original apply-patch/presentation/tools/integration suites selected. Source integration symlink-loop fixture EPERM is explicitly excluded after preserving failure; three additional original platform skips retained. Initial native test expected error.code rather than error.info.code; corrected fixture and all targeted checks pass. Initial paired fixture used str(HarnessError) rather than its wire message; corrected projection; implementation unchanged.",
+  "activation_boundary": "Explicit CurrentPatchToolFs provides current configuration selection, optional apply_patch default false, directory-aware existing tools and current sandbox controller. Production/profile switch remains pending. Existing read/write/edit implementation deltas still need exact current Source consumer comparison; this receipt qualifies apply_patch and shared controller, not a wholesale suite parity claim.",
+  "cleanup": {
+    "removed_bytes": 1393718,
+    "external_empty_roots_removed": 3,
+    "owned_processes_remaining": 0,
+    "retained": "Commands, logs, XML/JSON observations and compact receipts. Shared fixed Source/toolchain retained for C9."
+  }
+}

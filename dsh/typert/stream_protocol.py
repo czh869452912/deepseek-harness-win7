@@ -1,11 +1,21 @@
 """Exact-key JSON frames for the duplex Remote stream carrier."""
 import json
-from dsh.typert.dispatch import assert_json
+import math
+from dsh.typert.remote_events import lossless
+
+
+def _integer(text):
+    # JSON.parse stores every JSON number in an IEEE-754 double. Preserve -0
+    # for the lossless item check and round large integers before Host use.
+    value = float(text)
+    if value == 0 and text.startswith('-'):
+        return -0.0
+    return int(value) if math.isfinite(value) else value
 
 
 def _parse(text, direction):
     try:
-        value = json.loads(text, parse_constant=lambda _: (_ for _ in ()).throw(ValueError()))
+        value = json.loads(text, parse_int=_integer, parse_constant=lambda _: (_ for _ in ()).throw(ValueError()))
     except (ValueError, TypeError):
         raise ValueError('api gateway: Remote stream message is not JSON')
     if type(value) is not dict:
@@ -21,7 +31,7 @@ def _parse(text, direction):
         elif kind == 'item' and keys in ({'type', 'streamId'}, {'type', 'streamId', 'value'}):
             try:
                 if 'value' in value:
-                    assert_json(value['value'])
+                    lossless(value['value'])
                 admitted = True
             except ValueError:
                 pass

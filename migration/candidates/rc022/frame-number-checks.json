@@ -1,0 +1,24 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-15",
+  "unit": "C7-O-FrameNumberBoundaries",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "state": "targeted-passed",
+  "paired": ".goose/out/rc022-frame-number-paired-20261115-01/comparison/report.json",
+  "observations": 86,
+  "native": {
+    "run": "rc022-frame-number-native-20261115-01",
+    "passed": 9,
+    "failed": 0
+  },
+  "source": {
+    "run": "rc022-frame-number-source-20261115-01",
+    "passed": 25,
+    "failed": 0
+  },
+  "verification_scope_reason": "Extend actual frame/parser and inbox matrix with raw negative zero, nested negative zero and integers beyond exact IEEE-754 range. Observe sign explicitly before JSON response projection. Client items reject negative zero; server items retain their broader parser contract; integer conversion rounds like JSON.parse. Actual native duplex and complete Gateway transport consumers pass.",
+  "corrects": "C7-L native client item parser used general JSON-safe validation instead of lossless JSON validation. Original receipt remains historical for its original corpus; this receipt establishes the added numeric cases.",
+  "activation_boundary": "Candidate stream frame parser only. General Gateway argument decoding intentionally retains the separate upstream finite-JSON contract, which permits negative zero.",
+  "cleanup": ".goose/out/rc022-frame-number-source-20261115-01/cleanup.json",
+  "retained_assets": "Commands/results retained; owned temporary payloads removed. Shared Source/toolchain retained through C9."
+}

@@ -7,7 +7,12 @@ from dsh.typert.uplink_inbox import UplinkInbox
 @pytest.mark.asyncio
 async def test_frames_and_single_consumer_queue_boundaries():
     rows=await observe();boxes={row['name']:row for row in rows if 'name'in row}
-    assert len(rows)==80
+    assert len(rows)==86
+    clients=[row for row in rows if row.get('direction')=='client']
+    servers=[row for row in rows if row.get('direction')=='server']
+    assert all('error'in clients[index] for index in (5,6))
+    assert all(servers[index]['negativeZero'] for index in (5,6))
+    assert clients[7]['value']['value']==9007199254740992
     assert boxes['overflow']['bytes']==0
     assert boxes['overflow']['violations'][0]['code']=='gateway/uplink-overflow'
     assert boxes['after-end']['results'][0]['error']['code']=='gateway/protocol'

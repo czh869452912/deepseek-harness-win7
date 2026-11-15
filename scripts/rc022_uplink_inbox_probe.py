@@ -8,7 +8,10 @@ from scripts import rc022_events_probe as probe
 
 
 def cases():
-    messages=['{','[]','null','NaN','{"type":"item","streamId":"s","value":1e400}']
+    messages=['{','[]','null','NaN','{"type":"item","streamId":"s","value":1e400}',
+              '{"type":"item","streamId":"s","value":-0}',
+              '{"type":"item","streamId":"s","value":[-0]}',
+              '{"type":"item","streamId":"s","value":9007199254740993}']
     for value in [dict(type='open',streamId='s',endpoint='fixture/echo',payload={}),dict(type='item',streamId='s'),dict(type='item',streamId='s',value=dict(text='中文')),dict(type='end',streamId='s'),dict(type='cancel',streamId='s'),dict(type='error',streamId='s',error=dict(code='',message='',details={}))]:
         for change in ({},{'streamId':''},{'streamId':2},{'extra':None}):messages.append(json.dumps(dict(value,**change),ensure_ascii=False))
     messages.extend(json.dumps(value) for value in [dict(type='open',streamId='s',endpoint='fixture'),dict(type='item',streamId='s',value=None),dict(type='error',streamId='s',error=dict(code='x',message='no',details=[])),dict(type='error',streamId='s',error=dict(code='x',message='no',details={},extra=True))])
@@ -39,7 +42,14 @@ async def observe():
     rows=[]
     for direction,parse in [('client',parse_client_message),('server',parse_server_message)]:
         for index,text in enumerate(cases()['messages']):
-            try:result=dict(value=parse(text))
+            try:
+                import math
+                value=parse(text)
+                def negative_zero(value):
+                    if type(value) is float:return value==0 and math.copysign(1,value)<0
+                    if isinstance(value,(dict,list)):return any(negative_zero(item) for item in (value.values() if isinstance(value,dict) else value))
+                    return False
+                result=dict(value=value,negativeZero=negative_zero(value))
             except Exception as error:result=dict(error=str(error))
             rows.append(dict(direction=direction,index=index,**result))
     async def read(box):

@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-15",
+  "unit": "C5-Q-BoundedPtcTransport",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "state": "targeted-passed",
+  "paired": ".goose/out/rc022-ptc-protocol-paired-final-20261115-01/comparison/report.json",
+  "observations": 22,
+  "native": {"run": "rc022-ptc-protocol-native-final-20261115-01", "passed": 53, "failed": 0},
+  "source": {"run": "rc022-ptc-protocol-source-retry-20261115-01", "passed": 96, "failed": 0},
+  "verification_scope_reason": "Fixed createProcessRpc framing paired for fragmented UTF-8/replacement, multiple and exact-boundary JSON objects, CRLF, malformed JSON, non-JSON numbers, foreign framing, incomplete/empty EOF and queued outgoing byte ceilings. Actual Python and Node processes both reject excess outstanding binding count/argument bytes before a second host callback, while the first remains caller-owned. Native additionally verifies released budget charges, bounded reader handoff cancellation, oversized boot/reply cleanup, safe integer/timer configuration, and unchanged legacy process/PTC consumers.",
+  "initial_diagnostics": "Preserved two fixture mistakes (hardcoded frame size and replacement of the argument key), one incorrect Source test path, and an actual Source/native observation: a 512-byte child write burst can trip the Node child's outgoing limit first and appear as worker-exit. The host pending-byte comparison now spaces the two child writes, independently of the blocked first host binding, to observe the intended host limit. No runtime error-kind assertion was relaxed.",
+  "adaptation": "Python-specific bootstrap protocol, not Node/birpc ABI. Current PTC opts into strict framed/queued/pending limits and rejects malformed state transitions; legacy codeRuntime keeps its established behavior. Reader-thread handoff additionally bounds queued input bytes. Private output/control separation and confinement remain subsequent C5 work; production pin/profile not activated.",
+  "cleanup": ".goose/out/rc022-ptc-protocol-paired-final-20261115-01/cleanup.json",
+  "retained_assets": "Commands, logs/XML, original failure observations and fixed Source/native comparisons retained. All owned synthetic workspaces removed; no owned runtime worker remained. Shared Source/toolchain retained through C9."
+}

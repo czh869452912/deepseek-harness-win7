@@ -20,6 +20,8 @@ import time
 from dsh.cordis.service import Service
 from dsh.cordis.schema import Schema
 from dsh.code_runtime.contract import validate_bindings, snapshot_json, OutputLedger, encoded
+from dsh.code_runtime.protocol import (JsonLines, QueuedBytes, PendingCalls,
+                                       IncomingBytes, ProtocolError, ControlClosedError)
 from dsh.core.cancellation import aborted
 
 
@@ -130,6 +132,10 @@ class PythonProcessRuntime(Service):
 
     async def _execute(self, request, bindings):
         limits = self._run_limits(request)
+        protocol = self._protocol_limits()
+        outgoing = QueuedBytes(protocol['maxMessageBytes']) if protocol else None
+        pending = PendingCalls(protocol['maxPendingCalls'], protocol['maxMessageBytes']) if protocol else None
+        incoming = IncomingBytes(protocol['maxMessageBytes']) if protocol else None
         ledger = OutputLedger(int(limits['maxOutputBytes']))
         failure = lambda kind, message: ledger.result(error=dict(kind=kind, message=message))
         if aborted(request.get('signal')):
@@ -141,23 +147,37 @@ class PythonProcessRuntime(Service):
         calls = set()
         boot_task = None
         call_ids = set()
+        last_call_id = 0
         active = [True]
+        wire_failure = [None]
         try:
             owner = ProcessOwner(limits['maxOldGenerationSizeMb'] * 1024 * 1024,
                                  self._process_cwd(request))
             process = owner.process
             loop = asyncio.get_running_loop()
 
-            def put(value):
+            def put(value, size=0):
+                if incoming is not None and not incoming.admit(size, stopped):
+                    return
                 while not stopped.is_set():
                     try:
-                        messages.put(value, timeout=.025)
+                        messages.put((value, size), timeout=.025)
                         return
                     except queue.Full:
                         pass
+                if incoming is not None:
+                    incoming.release(size)
 
             def read():
                 try:
+                    if protocol:
+                        decoder = JsonLines(protocol['maxMessageBytes'])
+                        while not stopped.is_set():
+                            chunk = process.stdout.read1(4096)
+                            if not chunk:
+                                decoder.end()
+                            decoder.feed(chunk, put)
+                        return
                     while not stopped.is_set():
                         # Binding traffic is independent of outer-output caps.
                         line = process.stdout.readline()
@@ -167,6 +187,10 @@ class PythonProcessRuntime(Service):
                             put(json.loads(line.decode('utf-8')))
                         except (ValueError, UnicodeError):
                             continue
+                except ProtocolError as error:
+                    put(dict(type='protocol-error', message=str(error)))
+                except (ControlClosedError, OSError, ValueError):
+                    pass
                 finally:
                     put({'type': 'worker-exit'})
 
@@ -174,14 +198,20 @@ class PythonProcessRuntime(Service):
             reader.start()
 
             async def send(value):
-                data = encoded(value) + b'\n'
-                async with writes:
-                    if not active[0]:
-                        return
-                    def write():
-                        process.stdin.write(data)
-                        process.stdin.flush()
-                    await loop.run_in_executor(None, write)
+                if not active[0]:
+                    return
+                data = outgoing.admit(value) if outgoing is not None else encoded(value) + b'\n'
+                try:
+                    async with writes:
+                        if not active[0]:
+                            return
+                        def write():
+                            process.stdin.write(data)
+                            process.stdin.flush()
+                        await loop.run_in_executor(None, write)
+                finally:
+                    if outgoing is not None:
+                        outgoing.release(data)
 
             # Rebuild metadata only; host callables never cross the wire.
             boot_bindings = [dict({'global': name, 'functions': list(binding['functions'])},
@@ -191,21 +221,29 @@ class PythonProcessRuntime(Service):
             boot_task = asyncio.create_task(send(dict(program=request['program'], bindings=boot_bindings,
                             memoryBytes=int(limits['maxOldGenerationSizeMb'] * 1024 * 1024))))
 
-            async def invoke(message):
+            async def invoke(message, charged=0):
                 try:
-                    value = bindings[message['globalName']]['functions'][message['name']](snapshot_json(message.get('args')))
-                    if inspect.isawaitable(value):
-                        value = await value
-                    reply = dict(id=message['id'], value=snapshot_json(value))
-                except BaseException as error:
-                    reply = dict(id=message['id'], error=str(error))
+                    try:
+                        value = bindings[message['globalName']]['functions'][message['name']](snapshot_json(message.get('args')))
+                        if inspect.isawaitable(value):
+                            value = await value
+                        reply = dict(id=message['id'], value=snapshot_json(value))
+                    except BaseException as error:
+                        reply = dict(id=message['id'], error=str(error))
+                finally:
+                    if pending is not None:
+                        pending.release(charged)
                 if active[0]:
                     try:
                         await send(reply)
+                    except ProtocolError as error:
+                        wire_failure[0] = str(error)
                     except (OSError, ValueError):
                         pass
 
             while True:
+                if wire_failure[0] is not None:
+                    return failure('protocol', wire_failure[0])
                 if boot_task.done():
                     boot_task.result()
                 if aborted(request.get('signal')):
@@ -215,44 +253,73 @@ class PythonProcessRuntime(Service):
                 if baseline is not None and limits['computeMs'] is not None and owner.cpu_ms() - baseline > limits['computeMs']:
                     return failure('timeout', 'compute-time budget exceeded')
                 try:
-                    message = messages.get_nowait()
+                    message, size = messages.get_nowait()
+                    if incoming is not None:
+                        incoming.release(size)
                 except queue.Empty:
                     await asyncio.sleep(.01)
                     continue
                 if not isinstance(message, dict):
                     continue
                 kind = message.get('type')
+                if kind == 'protocol-error' and protocol:
+                    return failure('protocol', message['message'])
                 if kind == 'ready' and baseline is None:
                     baseline = owner.cpu_ms()
                     await send(dict(type='start'))
                     continue
                 if kind == 'worker-exit':
                     return failure('worker-exit', 'worker exited before completion')
+                if protocol and baseline is None:
+                    return failure('protocol', 'program message arrived before readiness')
                 if kind == 'log' and isinstance(message.get('text'), str):
                     if not ledger.admit(message['text']):
                         return ledger.limit()
                 elif kind == 'call':
                     call_id, global_name, name = message.get('id'), message.get('globalName'), message.get('name')
                     if type(call_id) is not int or call_id in call_ids or not isinstance(global_name, str) or not isinstance(name, str):
+                        if protocol:
+                            return failure('protocol', 'invalid binding call')
                         continue
                     if global_name not in bindings or name not in bindings[global_name]['functions']:
+                        if protocol:
+                            return failure('protocol', 'program requested an undeclared binding')
                         continue
-                    call_ids.add(call_id)
-                    task = asyncio.create_task(invoke(message))
+                    charged = 0
+                    if pending is not None:
+                        if call_id <= last_call_id:
+                            return failure('protocol', 'invalid binding call identity')
+                        last_call_id = call_id
+                        try:
+                            args = snapshot_json(message.get('args'))
+                        except (ValueError, OverflowError, RecursionError):
+                            return failure('protocol', 'binding arguments must be lossless JSON')
+                        charged = pending.admit(args)
+                    else:
+                        call_ids.add(call_id)
+                    task = asyncio.create_task(invoke(message, charged))
                     calls.add(task)
                     task.add_done_callback(calls.discard)
                 elif kind == 'done':
                     error = message.get('error')
+                    if protocol and 'error' in message and error is None:
+                        return failure('protocol', 'invalid program error')
                     if error is not None:
                         if not isinstance(error, dict) or error.get('kind') not in ('exception', 'invalid-output', 'output-limit') or not isinstance(error.get('message'), str):
+                            if protocol:
+                                return failure('protocol', 'invalid program error')
                             continue
                         return failure(error['kind'], error['message'])
                     try:
                         return ledger.result(snapshot_json(message.get('value')), has_value='value' in message)
                     except (ValueError, OverflowError, RecursionError) as error:
                         return failure('invalid-output', str(error))
+                elif protocol:
+                    return failure('protocol', 'invalid program message')
         except asyncio.CancelledError:
             return failure('abort', 'code execution aborted')
+        except ProtocolError as error:
+            return failure('protocol', str(error))
         except (OSError, ValueError, RuntimeError) as error:
             return failure('worker-exit', str(error))
         finally:
@@ -273,4 +340,7 @@ class PythonProcessRuntime(Service):
         return self.config
 
     def _process_cwd(self, request):
+        return None
+
+    def _protocol_limits(self):
         return None

@@ -11,7 +11,8 @@ from dsh.cordis.schema import Schema
 from dsh.core.timeout import clamp_timeout
 
 DEFAULTS = dict(timeoutMs=120000, maxTimeoutMs=600000,
-                maxOutputBytes=67108864, maxOldGenerationSizeMb=512)
+                maxOutputBytes=67108864, maxOldGenerationSizeMb=512,
+                maxMessageBytes=134217728, maxPendingCalls=128)
 
 
 class PythonPtcRuntime(PythonProcessRuntime):
@@ -37,8 +38,12 @@ class PythonPtcRuntime(PythonProcessRuntime):
         for key, value in config.items():
             if type(value) not in (int, float) or not math.isfinite(value) or value <= 0:
                 raise ValueError('ptc-runtime-python: %s must be a positive finite number' % key)
-        if config['maxTimeoutMs'] > 2147483647:
-            raise ValueError('ptc-runtime-python: maxTimeoutMs exceeds timer bound')
+        for key in ('timeoutMs', 'maxTimeoutMs'):
+            if config[key] > 2147483647:
+                raise ValueError('ptc-runtime-python: %s exceeds timer bound' % key)
+        for key in ('maxMessageBytes', 'maxPendingCalls', 'maxOutputBytes', 'maxOldGenerationSizeMb'):
+            if config[key] != int(config[key]) or config[key] > 9007199254740991:
+                raise ValueError('ptc-runtime-python: %s must be a safe integer' % key)
         self.ptc_config = config
         self.default_cwd = os.path.abspath(os.getcwd())
         super().__init__(ctx, dict(maxWallMs=config['maxTimeoutMs'], computeMs=60000,
@@ -83,3 +88,6 @@ class PythonPtcRuntime(PythonProcessRuntime):
 
     def _process_cwd(self, request):
         return request['cwd']
+
+    def _protocol_limits(self):
+        return self.ptc_config

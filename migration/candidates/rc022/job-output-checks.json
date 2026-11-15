@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-16",
+  "unit": "C8-AJ-JobOutput",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "state": "targeted-passed",
+  "paired": ".goose/out/rc022-job-output-paired-20261116-01/comparison/report.json",
+  "observations": 10,
+  "native": {"run": "rc022-job-output-native-20261116-01", "passed": 8, "failed": 0},
+  "source": {"run": "rc022-job-output-source-20261116-01", "passed": 11, "failed": 0},
+  "verification_scope_reason": "Actual Source/native ring traces compare absolute byte coordinates, whole-chunk head eviction, UTF8 codepoint-safe oversized tails, surrogate replacement, zero/small caps, gap/channel fields and fresh read projections. Pump traces compare ordered sources/cursors, live spill publication and withdrawal, final drain on producer resolution/rejection and immediate timer release. Native tests cover independently cancelled waiters and source failure observing a later producer rejection.",
+  "activation_boundary": "New utilities prepare the current job-registry integration. Historical registry remains unchanged; no claim of integrated consuming model cursor or foreground promotion yet. Production pin/accepted_upstream unchanged; targeted checks are not full release qualification.",
+  "cleanup": ".goose/out/rc022-job-output-source-20261116-01/cleanup.json",
+  "cleanup_bytes": 13855,
+  "retained_assets": "Owned synthetic workspaces/homes and empty external Source root removed. Commands/logs/XML/paired observations retained. Pump tasks settle, final timer is cleared, no external worker is allocated; shared Source/toolchain retained through C9."
+}

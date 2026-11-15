@@ -45,4 +45,6 @@
 
 | C7-AD | 被动状态、合并订阅、版本与所有权复核、等待超时及调用取消 | [状态与等待](session-state-checks.json) |
 
-后续：完整 Session 组合、列表、生成物和原版客户端整体接入。上传提供方已另记 C8-A。最终资格使用 C9 冻结候选的完整门禁；当前生产 pin 与 `accepted_upstream` 不提升。
+| C7-AE | 列表投影句柄、摘要排除、冷缓存提示、格式状态与分片工作预算 | [列表摘要](session-summary-checks.json) |
+
+后续：完整 Session 组合、生成物和原版客户端整体接入。上传提供方已另记 C8-A。最终资格使用 C9 冻结候选的完整门禁；当前生产 pin 与 `accepted_upstream` 不提升。

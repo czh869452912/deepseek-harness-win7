@@ -43,8 +43,13 @@ def header_value(value):
 
 
 async def list_persisted(persistence,signal):
+    return [record['header'] for record in await list_persisted_records(persistence,signal)]
+
+
+async def list_persisted_records(persistence,signal):
     try:
-        return [header_value(field(snapshot,'header')) for snapshot in
+        return [dict(header=header_value(field(snapshot,'header')),
+                     **({'formatStatus':field(snapshot,'formatStatus')} if field(snapshot,'formatStatus',None) is not None else {})) for snapshot in
                 await persistence.list(None if signal is None else dict(signal=signal))]
     except Exception as error:
         throw_aborted(signal)
@@ -112,13 +117,15 @@ class CurrentSessionQueryService(SessionQueryService):
     async def listSessions(self,signal=None):
         throw_aborted(signal)
         persistence=self.ctx.get('sessionPersistence')
-        headers=[] if persistence is None else await list_persisted(persistence,signal)
+        persisted=[] if persistence is None else await list_persisted_records(persistence,signal)
         throw_aborted(signal)
-        records={header.id:dict(header=copy.deepcopy(header),live=False,persisted=True) for header in headers}
+        current_format=getattr(self.ctx.get('sessions'),'format_version',3)>=4
+        records={record['header'].id:dict(record if current_format else {},header=copy.deepcopy(record['header']),live=False,persisted=True) for record in persisted}
         for session in self.ctx.get('sessions').list():
             stored=records.get(session.id)
             if stored is not None:assert_headers_compatible(session.header,stored['header'])
-            records[session.id]=dict(header=copy.deepcopy(session.header),live=True,persisted=stored is not None)
+            records[session.id]=dict(header=copy.deepcopy(session.header),live=True,persisted=stored is not None,
+                                    **(dict(formatStatus='current') if current_format else {}))
         return sorted(records.values(),key=lambda row:(-row['header'].createdAt,cmp_to_key(locale_compare)(row['header'].id)))
 
     async def readSurface(self,session_id,options=None):

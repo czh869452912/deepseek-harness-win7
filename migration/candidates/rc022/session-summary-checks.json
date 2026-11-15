@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-16",
+  "unit": "C7-AE-SessionSummaryWorkSlices",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "state": "targeted-passed",
+  "paired": ".goose/out/rc022-session-summary-paired-receipt-20261116-01/comparison/report.json",
+  "observations": 10,
+  "native": {"run": "rc022-session-summary-native-2-20261116-01", "passed": 137, "failed": 0},
+  "source": {"run": "rc022-session-summary-source-20261116-01", "passed": 61, "failed": 0},
+  "verification_scope_reason": "Paired actual Session/Agent/projection handles/JSONL/storage-domain/header cache verify live blankness and recency, summary exclusion, sequence-space hints, seeded cached rows, missing hints, attached Sessions without Agents and wire failure isolation. Native verifies cooperative work across live/cold/classification phases, first/last-row cancellation and query format-status precedence. Existing list/search, query/SQLite and cache/history consumers pass; corresponding Source summary, blankness, search and scheduling suites pass.",
+  "implementation": "AuthorizedSessionList acquires projection handles asynchronously, reads live metadata independently of optional wire views, excludes image limits from summaries, carries Agent availability and format status, and uses header-only cache hints for seeded and ordinary cold rows. Live classification and cold summarization share a configurable work budget and cancellation checks. The v4 query listing preserves persisted formatStatus and marks live records current; the retained v3 provider contract remains version-scoped.",
+  "observer_boundary": "Seeded/missing cold headers are controlled row inputs against the real cache; scheduling uses a controlled monotonic clock. Actual cold list reads count persistence opens and open none. The first paired failure identified discarded query formatStatus; the first regression then caught the existing v3 Source contract, so the new metadata is scoped to the v4 Session store. Both diagnostics retained. Public controller budget configuration and complete initialization remain separate. Targeted results are not full regression or release acceptance.",
+  "activation_boundary": "Candidate list provider only; production pin and accepted_upstream unchanged pending C9.",
+  "cleanup": ".goose/out/rc022-session-summary-source-20261116-01/cleanup.json",
+  "retained_assets": "Owned fixture journals, pytest workspaces and tmp/home removed after teardown; no task workers remain. Commands, observations and diagnostics retained; shared Source/toolchain retained through C9."
+}

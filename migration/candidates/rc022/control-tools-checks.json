@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-15",
+  "unit": "C6-O-ControlTools",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "state": "targeted-passed",
+  "paired": ".goose/out/rc022-control-tools-paired-final-20261115-01/comparison/report.json",
+  "observations": 32,
+  "native": {
+    "run": "rc022-control-tools-native-20261115-01",
+    "passed": 9,
+    "failed": 0
+  },
+  "source": {
+    "run": "rc022-control-tools-source-20261115-01",
+    "passed": 68,
+    "failed": 0
+  },
+  "verification_scope_reason": "Real named control pipeline and identity context, whole-tree running/inactive discovery, sibling relay, ancestor-only interruption, exact schemas; controlled-clock inbox waits cover repeated rootCallId, new input/calls, timeout, unrelated agents, cancellation, disposal and plugin unload. Explicit paired listener/timer release after all settlements. Actual Team mutation does not wake waiters; native raw wait retains exact abort exception. Shared workingDirectory fixture remains outside qualification.",
+  "activation_boundary": "Candidate control tools; delegation/model/preset selection, SDK/PTC/Remote and production composition pending.",
+  "cleanup": ".goose/out/rc022-control-tools-source-20261115-01/cleanup.json",
+  "retained_assets": "Commands/logs/XML and paired observations retained; synthetic payloads removed. Shared Source/toolchain retained through C9."
+}

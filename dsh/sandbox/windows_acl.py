@@ -259,7 +259,7 @@ class WinApi:
                 self.CloseHandle(restricted)
             self.CloseHandle(current)
 
-    def run(self, token, argv, cwd):
+    def run(self, token, argv, cwd, memory_bytes=None, breakaway=False):
         """Suspend -> assign kill-on-close Job -> resume, inheriting only stdio.
 
         This runs in a dedicated runner process, which owns no unrelated
@@ -270,6 +270,9 @@ class WinApi:
         try:
             limit = JobLimit()
             limit.basic.flags = 0x2000
+            if memory_bytes is not None:
+                limit.basic.flags |= 0x100
+                limit.processMemory = memory_bytes
             self.check(self.SetInformationJobObject(job, 9, c.byref(limit), c.sizeof(limit)), "SetInformationJobObject")
             startup = Startup()
             startup.cb, startup.flags = c.sizeof(startup), 0x100
@@ -283,6 +286,11 @@ class WinApi:
             self.kernel.GetConsoleWindow.argtypes = []
             self.kernel.GetConsoleWindow.restype = P
             creation_flags = 4 | (0 if self.kernel.GetConsoleWindow() else 0x08000000)
+            if breakaway:
+                # Win7 does not support nested Jobs. The trusted runner leaves
+                # the host's explicitly breakaway-enabled Job, then assigns the
+                # suspended model child to its own non-breakaway memory Job.
+                creation_flags |= 0x01000000
             self.check(self.CreateProcessAsUserW(token, None, command, None, None, True,
                        creation_flags, None, cwd, c.byref(startup), c.byref(process)), "CreateProcessAsUserW")
             self.check(self.AssignProcessToJobObject(job, process.process), "AssignProcessToJobObject")

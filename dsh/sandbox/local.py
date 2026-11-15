@@ -103,6 +103,25 @@ class LocalSandboxProvider(Service):
         return {"argv": argv, "enforcement": enforcement,
                 "denialSignatures": denials, "runnerFailureRules": failures}
 
+    def confine_process(self, argv, policy, memory_bytes):
+        """Python process resource overlay; ordinary confine() stays unchanged.
+
+        The native Windows runner owns the restricted child's memory/kill Job.
+        Its trusted parent may leave the host Job only at suspended creation;
+        model code starts after assignment to a non-breakaway child Job.
+        """
+        if type(memory_bytes) is not int or not 0 < memory_bytes <= sys.maxsize:
+            raise ValueError('process memory limit must be a positive native-size integer')
+        facts = self.confine(argv, policy)
+        if sys.platform == 'win32' and not self.runner:
+            # The venv redirector owns an additional Job and can change the
+            # intended hierarchy. The runner needs only stdlib and local code.
+            facts['argv'][0] = getattr(sys, '_base_executable', sys.executable)
+            position = facts['argv'].index('--')
+            facts['argv'][position:position] = ['--memory-bytes', str(memory_bytes), '--breakaway']
+            facts['windowsJobBreakaway'] = True
+        return facts
+
     def materialize(self, session_id, workspace):
         assert_temp_outside(workspace, tempfile.gettempdir())
         if self.api is None:

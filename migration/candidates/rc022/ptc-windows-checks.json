@@ -1,0 +1,15 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-15",
+  "unit": "C5-S-WindowsProcessConfinementOwnership",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "state": "targeted-passed",
+  "native": {"run": "rc022-ptc-windows-native-retry2-20261115-01", "passed": 52, "failed": 0},
+  "added_ownership_regression": {"run": "rc022-ptc-windows-native-owner-20261115-01", "passed": 4, "failed": 0},
+  "verification_scope_reason": "Actual local Windows restricted token permits workspace writes, denies outside writes, rejects model child breakaway, enforces a 64 MiB private memory cap, and kills restricted descendants when the host owner closes. Existing runner filesystem/private-temp/default-ACL/descendant and canonical process/control/budget consumers passed. Custom runner argv/failure contracts stay unchanged; invalid resource inputs are rejected.",
+  "adaptation": "Explicit local sandbox confine_process(argv, policy, memory_bytes) extension. Only the native Windows provider opts into a breakaway-enabled trusted outer Job; its suspended restricted child leaves that Job and is assigned a separate non-breakaway memory/kill Job before resumption. Killing the trusted runner closes its child Job. Ordinary confine and other/custom providers retain their contracts. This avoids requiring nested Jobs on Windows 7; execution here used the current Windows host, not a Win7 guest or release qualification.",
+  "initial_failures": "Initial actual child breakaway succeeded through the development venv redirector. Native runner and PTC worker now launch through sys._base_executable; retry exposed runner package initialization importing unavailable host dependencies. Standalone runner now imports its stdlib-only ACL sibling without the service graph. Both original failure runs retained; direct base-interpreter tests now enforce denial/resources/cleanup.",
+  "activation_boundary": "Resource/confinement provider prerequisite only; current production pin/profile and C5-C9 acceptance remain unchanged.",
+  "cleanup": ".goose/out/rc022-ptc-windows-native-owner-20261115-01/cleanup.json",
+  "retained_assets": "Commands, logs/XML and original failure diagnostics retained; owned synthetic workspaces removed and no owned runner/worker remained. Shared Source/toolchain retained through C9."
+}

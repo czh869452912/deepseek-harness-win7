@@ -6,9 +6,11 @@ import sys
 import tempfile
 
 if __package__ in (None, ""):
-    sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
-
-from dsh.sandbox.windows_acl import WinApi, assert_temp_outside, capability_sid
+    # This dedicated native runner needs only stdlib. Import its sibling
+    # directly so a base interpreter does not initialize the host service graph.
+    from windows_acl import WinApi, assert_temp_outside, capability_sid
+else:
+    from dsh.sandbox.windows_acl import WinApi, assert_temp_outside, capability_sid
 
 
 class RunnerParser(argparse.ArgumentParser):
@@ -23,11 +25,17 @@ def main(argv=None):
     parser.add_argument("--mode", required=True, choices=["read-only", "workspace-write"])
     parser.add_argument("--write-sid")
     parser.add_argument("--temp-write-sid")
+    parser.add_argument("--memory-bytes", type=int)
+    parser.add_argument("--breakaway", action="store_true")
     parser.add_argument("command", nargs=argparse.REMAINDER)
     args = parser.parse_args(argv)
     command = args.command[1:] if args.command[:1] == ["--"] else args.command
     if not command:
         raise ValueError("missing command after --")
+    if args.memory_bytes is not None and not 0 < args.memory_bytes <= sys.maxsize:
+        raise ValueError("memory-bytes must be a positive native-size integer")
+    if args.breakaway and args.memory_bytes is None:
+        raise ValueError("breakaway requires a child memory limit")
     for path in (args.workspace, args.temp):
         if not os.path.isdir(path):
             raise ValueError("not an existing directory: " + path)
@@ -57,6 +65,9 @@ def main(argv=None):
             sids = [workspace_sid, temp_sid]
             os.environ["TMP"] = os.environ["TEMP"] = private
         with api.restricted_token(sids) as token:
+            if args.memory_bytes is not None:
+                return api.run(token, command, os.getcwd(), memory_bytes=args.memory_bytes,
+                               breakaway=args.breakaway)
             return api.run(token, command, os.getcwd())
     finally:
         if owned:

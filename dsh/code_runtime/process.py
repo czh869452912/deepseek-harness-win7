@@ -30,7 +30,7 @@ DEFAULTS = dict(computeMs=60000, maxWallMs=600000, maxOutputBytes=67108864, maxO
 
 
 class ProcessOwner:
-    def __init__(self, memory, cwd=None, private_control=False):
+    def __init__(self, memory, cwd=None, private_control=False, argv=None, windows_breakaway=False):
         self.job, self.api, self.closed = None, None, False
         self.process = None
         self.control = None
@@ -38,7 +38,8 @@ class ProcessOwner:
             if private_control:
                 from dsh.code_runtime.control import ControlListener
                 self.control = ControlListener()
-            self.process = subprocess.Popen([sys.executable, '-u', '-B', os.path.join(os.path.dirname(__file__), 'worker.py')],
+            executable = getattr(sys, '_base_executable', sys.executable) if private_control else sys.executable
+            self.process = subprocess.Popen(argv or [executable, '-u', '-B', os.path.join(os.path.dirname(__file__), 'worker.py')],
                 stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE if private_control else subprocess.DEVNULL,
                 env={'SystemRoot': os.environ.get('SystemRoot', r'C:\Windows')} if os.name == 'nt' else {},
                 cwd=cwd, start_new_session=os.name != 'nt', creationflags=0x08000000 if os.name == 'nt' else 0)
@@ -48,6 +49,8 @@ class ProcessOwner:
                 self.job = self.api.check(self.api.CreateJobObjectW(None, None), 'CreateJobObjectW')
                 limit = JobLimit()
                 limit.basic.flags = 0x2000 | 0x100
+                if windows_breakaway:
+                    limit.basic.flags |= 0x800
                 limit.processMemory = int(memory)
                 self.api.check(self.api.SetInformationJobObject(self.job, 9, ctypes.byref(limit), ctypes.sizeof(limit)), 'SetInformationJobObject')
                 # The child is blocked on its boot record; no model code can

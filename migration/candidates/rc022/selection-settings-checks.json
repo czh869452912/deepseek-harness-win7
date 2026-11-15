@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-15",
+  "unit": "C6-Q-SelectionSettings",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "state": "targeted-passed",
+  "paired": ".goose/out/rc022-selection-settings-paired-verified-20261115-01/comparison/report.json",
+  "observations": 8,
+  "native": {
+    "run": "rc022-selection-settings-native-verified-20261115-01",
+    "passed": 7,
+    "failed": 0
+  },
+  "source": {
+    "run": "rc022-selection-settings-source-20261115-01",
+    "passed": 14,
+    "failed": 0
+  },
+  "verification_scope_reason": "Actual Agent creation samples volatile settings before later created consumers; managed child receives detached durable parent policy. Paired exact parent/missing-parent inheritance, seeded roots, saved policy, real persisted cold resume without resampling, invalid settings creation rollback, reversible unload. Controlled fixture workingDirectory and volatile writes do not establish those provider qualifications.",
+  "activation_boundary": "Candidate creation-time settings; delegation and discovery tool integration and production composition pending.",
+  "cleanup": ".goose/out/rc022-selection-settings-source-20261115-01/cleanup.json",
+  "retained_assets": "Commands/logs/XML and observations including repaired probe setup diagnostics retained; synthetic payloads removed. Shared Source/toolchain retained through C9."
+}

@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-16",
+  "unit": "C8-AO-SandboxEscalation",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "state": "targeted-passed",
+  "paired": ".goose/out/rc022-sandbox-escalation-paired2-20261116-01/comparison/report.json",
+  "observations": 30,
+  "native": {"run": "rc022-sandbox-escalation-native-20261116-01", "passed": 4, "failed": 0},
+  "source": {"run": "rc022-sandbox-escalation-source-20261116-01", "passed": 16, "failed": 0},
+  "verification_scope_reason": "Actual escalation helpers compare missing argument pairing, exact JS whitespace, all effective/requested mode cases, equal-mode short circuit without approval, strict widening before dependency lookup, missing service/agent, four typed approval outcomes, rejected-operation stop guidance, cancelled-call original reason identity, unexpected outcome diagnostic and verbatim audit/display reasons in eight locales. Approval collaborator is controlled; no actual external approval was requested.",
+  "activation_boundary": "New explicit current helper supplies current enforcing tool consumers; historical helper remains for legacy consumers until coordinated activation. No production composition or permission preset promotion, targeted results only.",
+  "cleanup": ".goose/out/rc022-sandbox-escalation-source-20261116-01/cleanup.json",
+  "cleanup_bytes": 108651,
+  "retained_assets": "Owned temporary homes/workspaces and empty external Source root removed; no escalation worker remains. Commands/logs/XML and paired observations retained; shared Source/toolchain retained through C9."
+}

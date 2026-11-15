@@ -62,4 +62,6 @@
 
 | C8-AN | 当前 PowerShell 执行对象、准备期限、结果投影与真实 Windows Job 进程 | [Shell 执行生命周期](shell-execution-checks.json) |
 
+| C8-AO | 当前沙箱提权类型错误、有效模式短路及八语审批显示文本 | [沙箱提权合同](sandbox-escalation-checks.json) |
+
 后续继续设置及完整应用组合；最终资格使用 C9 冻结候选的完整门禁。

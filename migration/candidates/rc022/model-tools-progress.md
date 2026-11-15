@@ -29,5 +29,6 @@
 | C5-S | 无嵌套 Job 的 Windows 资源适配 | [Windows 所有权](ptc-windows-checks.json) |
 | C5-T | 真实策略隔离、提权和 Session 消费者 | [受限提供端](ptc-confinement-checks.json) |
 | C5-U | 默认/可选执行器的真实 Loader 装配、旧配置退役 | [执行器装配](executor-composition-checks.json) |
+| C5-V | 配置驱动恢复时固定完整路由与 reasoning | [启动模型恢复](configured-model-checks.json) |
 
-后续继续闭合 C5 启动时模型恢复的消费者集成，再推进 C6–C9。生产 pin、原样前端和注册表仍在 C9 协调切换；`accepted_upstream` 不随上述定向结果变化。共享 Source/工具链保留到 C9；各运行的可重建工作区已按记录清理，真实观察、原始失败和检查回执保留。
+后续先处理工厂收尾和旧配置恢复检查中发现的失败，再推进 C6–C9。生产 pin、原样前端和注册表仍在 C9 协调切换；`accepted_upstream` 不随上述定向结果变化。共享 Source/工具链保留到 C9；已结束运行的可重建工作区已清理，旧工厂失败工作区按上述记录留待紧接着的调查，真实观察、原始失败和检查回执保留。

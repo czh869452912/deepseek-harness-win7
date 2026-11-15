@@ -1,0 +1,36 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-15",
+  "unit": "C5-V-ConfiguredModelRestore",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "state": "targeted-passed-with-legacy-followup",
+  "paired": ".goose/out/rc022-configured-model-paired-final-20261115-01/comparison/report.json",
+  "observations": 12,
+  "native": {
+    "run": "rc022-configured-model-native-current-20261115-01",
+    "passed": 37,
+    "failed": 0
+  },
+  "source": {
+    "run": "rc022-configured-model-source-20261115-01",
+    "passed": 28,
+    "failed": 0
+  },
+  "verification_scope_reason": "Real JSONL configured exact-identity restore and explicit resume. A complete route is selected in factory setup before announcement; same-route omitted reasoning preserves the previous effort, changed routes drop it, explicit effort overrides, partial routes do nothing, equal selection avoids duplicate events. Missing explicit resume is specifically SessionPersistenceNotFoundError and cannot silently create. Current factory/storage/publication/model consumers pass.",
+  "implementation": "CurrentConfiguredStartup applies the fixed Source configured-route algorithm through the existing factory setup callback, so the event is durable before Agent publication and receives normal rollback/ownership.",
+  "fixture_failures": "Initial Source observer used an obsolete LLM path and then a default import for the module-shaped JSONL backend; corrected the observer, preserved both diagnostics.",
+  "legacy_followup": {
+    "owner": "rc022 migration C4/C9",
+    "purpose": "Investigate legacy configured Agent overlap disposal/deferred storage tests before coordinated activation",
+    "next_milestone": "Following factory cleanup unit",
+    "runs": [
+      "rc022-configured-model-native-20261115-01",
+      "rc022-configured-model-native-isolated-20261115-01",
+      "rc022-configured-model-native-debug-20261115-01",
+      "rc022-configured-model-native-trace-20261115-01"
+    ],
+    "observed": "Original mixed scope had two failures (overlap resume and deferred provider); isolation reproduced overlap, deferred resume passed. Tracing shows the old factory becomes inactive during resume without reporting a start failure. These legacy cases use AgentLoopPlugin, not CurrentConfiguredStartup. Their diagnostics/workspaces are retained for immediate investigation; no full regression pass is claimed."
+  },
+  "cleanup": ".goose/out/rc022-configured-model-source-20261115-01/cleanup.json",
+  "activation_boundary": "Candidate path only; C4 cleanup/legacy failure follow-up and C6-C9 remain. Production pin and accepted_upstream unchanged. Shared Source/toolchain held through C9."
+}

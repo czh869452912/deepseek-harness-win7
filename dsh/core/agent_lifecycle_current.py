@@ -104,13 +104,31 @@ class CurrentFactoryTransaction(FactoryTransaction):
 
 
 class CurrentConfiguredStartup(ConfiguredStartup):
+    @staticmethod
+    def apply_configured_route(agent, options):
+        options = options if isinstance(options, dict) else options.to_dict()
+        provider, model = options.get('provider'), options.get('model')
+        if not provider or not model:
+            return
+        previous = agent.model.current()
+        selection = dict(provider=provider, model=model)
+        if 'reasoningEffort' in options:
+            selection['reasoningEffort'] = options['reasoningEffort']
+        elif (previous is not UNDEFINED and previous is not None
+              and previous['provider'] == provider and previous['model'] == model
+              and 'reasoningEffort' in previous):
+            selection['reasoningEffort'] = previous['reasoningEffort']
+        agent.model.select(selection)
+
     async def restore(self,row,options,meta,persistence,explicit=False):
         sid=row['resumeSessionId'] if explicit else row['sessionId']
         try:
             if not explicit:await self.wait_released(sid)
             if not self.active():return
             try:
-                await self.factory.resume(sid,options,owner_ctx=self.ctx,persistence=persistence)
+                await self.factory.resume(sid,options,
+                    setup=lambda scope,agent:self.apply_configured_route(agent,options),
+                    owner_ctx=self.ctx,persistence=persistence)
                 return
             except Exception as error:
                 if not self.active():return

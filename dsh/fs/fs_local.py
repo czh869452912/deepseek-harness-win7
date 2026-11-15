@@ -156,6 +156,8 @@ class FsIoInternals:
         self.removeStagingDir = None
         self.inspectTemp = None
         self.inspectReadBytesAfterStat = None
+        self.inspectBeforeMutation = None
+        self.removeFile = None
 
 
 class FsConfig:
@@ -661,7 +663,9 @@ class FsService:
                 os.unlink(_native_path(temp))
             os.rmdir(_native_path(staging))
 
-    async def _atomic_write(self, target: FsTarget, content: str, mode: Optional[int], signal: Optional[Any], guarded_create: bool) -> None:
+    async def _atomic_write(self, target: FsTarget, content: str, mode: Optional[int], signal: Optional[Any], guarded_create: bool,
+                            existing_destination: Optional[bool] = None) -> None:
+        existing_destination = mode is not None if existing_destination is None else existing_destination
         _throw_if_aborted(signal, "write")
         directory = os.path.dirname(target.targetKey)
         default_staging_name = ".%s.%s.%s.tmpdir" % (os.path.basename(target.targetKey), os.getpid(), uuid.uuid4().hex)
@@ -688,7 +692,7 @@ class FsService:
             try:
                 temp_identity = os.fstat(descriptor)
                 platform = self.internals.platform or ("win32" if os.name == "nt" else os.name)
-                if platform == "win32" and mode is not None:
+                if platform == "win32" and existing_destination:
                     stage = "copy-target-acl"
                     copy_dacl = self.internals.copyFileDacl or self._copy_windows_dacl
                     await _maybe_await(copy_dacl(target.targetKey, temp))
@@ -744,7 +748,7 @@ class FsService:
                     if error.errno == errno.EEXIST:
                         raise FsError('cannot overwrite existing "%s" without reading it first' % target.displayPath, "FS_NOT_OBSERVED", error)
                     raise FsError('cannot write "%s": %s' % (target.displayPath, error), "FS_IO_ERROR", error)
-            elif platform == "win32" and mode is not None:
+            elif platform == "win32" and existing_destination:
                 stage = "replace-target"
                 replace_file = self.internals.replaceFile or self._replace_windows
                 try:

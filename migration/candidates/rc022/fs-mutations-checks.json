@@ -1,0 +1,32 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-16",
+  "unit": "C8-AU-CurrentFsMutations",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "state": "targeted-passed",
+  "paired": ".goose/out/rc022-fs-mutations-paired2-20261116-01/comparison/report.json",
+  "observations": 36,
+  "native": {
+    "run": "rc022-fs-mutations-native-20261116-01",
+    "passed": 109,
+    "failed": 0,
+    "skipped": 4
+  },
+  "native_new_assertions": {
+    "run": "rc022-fs-mutations-native-final-20261116-01",
+    "passed": 6,
+    "failed": 0
+  },
+  "source": {
+    "run": "rc022-fs-mutations-source2-20261116-01",
+    "passed": 57,
+    "failed": 0,
+    "skipped": 4
+  },
+  "source_environment_limit": "Initial original suite: 57 passed, three EPERM failures creating directory symlinks, one existing skip. Final run excludes exactly those three descriptions as recorded in command.json. Their original symlink fixtures remain unqualified; actual paired Windows junction tests separately prove existing/new out-of-workspace targets and replaced additional-root rejection.",
+  "verification_scope_reason": "Actual filesystem/policy/projection and real files compare write/edit/patch/delete/move, CRLF preservation, opaque version guard before matching, binary and hunk errors, create-if-absent and same-target checks, source/destination fences, partial move outcome, pre-commit cancellation versus post-checkpoint completion, runtime grant/revoke and immutable held policy. Native regressions cover shared legacy atomic boundary, new/existing Windows destination ACL distinction, opposing multi-target lock order, single-target overlap, cancelled awaiter retaining owned publication, stale queued patch guard, nonrecursive directory substitution and lock/staging cleanup. Extra-root OS diagnostic body normalized; opaque version values compare presence.",
+  "activation_boundary": "New explicit current local/sandbox filesystem mutation providers. Core read/atomic storage stays Win7 backend; watch capability, model apply_patch tool and coordinated profile activation remain next steps. Historical providers stay active. No full regression/release or Win7 VM qualification.",
+  "cleanup": ".goose/out/rc022-fs-mutations-source2-20261116-01/cleanup.json",
+  "cleanup_bytes": 2249217,
+  "retained_assets": "Owned workspaces, staging files, two fixture links, homes and empty external roots removed without following links. No owned worker remains. Raw Source EPERM failures, observations, XML/logs and commands retained; shared Source/toolchain through C9."
+}

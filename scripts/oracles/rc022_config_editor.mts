@@ -1,0 +1,19 @@
+import {createRequire} from 'node:module'
+import {readFileSync} from 'node:fs'
+import {mkdir,writeFile,readFile} from 'node:fs/promises'
+import {join} from 'node:path'
+import {load} from './rc022_subagent_fixture.mts'
+const {boot,readProfilePatches}=await load('packages/boot/app-boot/src/index.ts'),Editor=(await load('packages/boot/config-editor/src/index.ts')).default,Settings=(await load('packages/settings/settings/src/index.ts')).default,z=(await load('vendor/schemastery/src/index.ts')).default,yaml=createRequire(join(process.argv[2]!, 'packages/boot/config-editor/package.json'))('yaml')
+const root=join(JSON.parse(readFileSync(process.argv[3]!,'utf8')),'source'),directory=join(root,'profiles/test'),bundle=join(directory,'node_modules/test-bundle');await mkdir(bundle,{recursive:true});const write=(path:string,value:any)=>writeFile(path,JSON.stringify(value))
+await write(join(root,'package.json'),{name:'test-installation'});await write(join(directory,'package.json'),{name:'test-profile',dsh:{profile:{bundles:['test-bundle']}}});await write(join(bundle,'package.json'),{name:'test-bundle',version:'1.0.0',dsh:{bundle:{patch:'cordis.patch.yml'}}});await write(join(bundle,'cordis.patch.yml'),[{insert:[{id:'config-editor',name:'cordis:editor'},{id:'settings',name:'cordis:settings'},{id:'probe',name:'cordis:probe',config:{ordinary:'fixed',count:2,token:'private'}}]}]);await write(join(directory,'cordis.yml'),[]);const patch=join(directory,'cordis.patch.yml');await write(patch,[])
+const profile:any={name:'test',startedBundles:['test-bundle'],dir:directory,patchPath:patch,installAnchor:join(root,'package.json'),cwd:root,home:root,overlays:[],telemetryDisabledEnv:undefined},plugin={Config:z.object({ordinary:z.string().required(),count:z.number().min(1).default(2).volatile(),token:z.string().role('secret').volatile()}),apply(_ctx:any,config:any){if(config.ordinary==='rejected')throw Error('fixture rejects ordinary value')}}
+const start=()=>boot('test',join(directory,'cordis.yml'),readProfilePatches('test',profile),(ctx:any)=>{ctx.provide('profileContext',profile);Object.assign(ctx.loader.builtins,{editor:Editor,settings:Settings,probe:plugin})}),rows:any[]=[];let ctx=await start()
+try{
+ const editor=ctx.configEditor,settings=ctx.settings;function snapshot(name:string){const descriptor=settings.describe({redactSecrets:true})[0];delete descriptor.schema;rows.push({name,value:descriptor})}
+ snapshot('initial');rows.push({name:'entries',values:editor.entries().map((entry:any)=>entry.options.id)});await settings.update('probe',{count:3});snapshot('updated');rows.push({name:'disk',value:yaml.parse(await readFile(patch,'utf8'))});const entry=editor.entries().find((entry:any)=>entry.options.id==='probe');await editor.edit(entry,(current:any)=>({...current,ordinary:'changed'}));snapshot('ordinary-edit');const before=await readFile(patch,'utf8')
+ try{await editor.edit(entry,(current:any)=>({...current,ordinary:'rejected'}))}catch{rows.push({name:'activation-rollback',unchanged:await readFile(patch,'utf8')===before,ordinary:editor.entries().find((row:any)=>row.options.id==='probe').fiber.effectiveConfig.ordinary})}
+ try{await settings.update('probe',{count:0})}catch{rows.push({name:'invalid-refusal',unchanged:await readFile(patch,'utf8')===before})}
+ profile.overlays=[{id:'probe',config:{ordinary:'changed',count:7,token:'private'}}];try{await settings.update('probe',{count:4})}catch(error:any){rows.push({name:'overlay-refusal',message:error.message,unchanged:await readFile(patch,'utf8')===before})}profile.overlays=[]
+}finally{await ctx.fiber.dispose()}
+ctx=await start();try{rows.push({name:'restart',value:ctx.settings.describe({redactSecrets:true})[0].value});await ctx.settings.mutate('probe',[{op:'unset',path:['count']}]);rows.push({name:'reset',value:ctx.settings.describe({redactSecrets:true})[0].value})}finally{await ctx.fiber.dispose()}
+process.stdout.write(JSON.stringify(rows))

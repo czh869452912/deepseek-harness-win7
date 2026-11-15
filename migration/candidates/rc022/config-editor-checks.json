@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-15",
+  "unit": "C8-E-ProfileConfigEditor",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "state": "targeted-passed",
+  "paired": ".goose/out/rc022-config-editor-paired-receipt-20261115-01/comparison/report.json",
+  "observations": 10,
+  "native": {"run": "rc022-config-editor-native-final-20261115-01", "passed": 12, "failed": 0, "seconds": 23.41},
+  "source": {"run": "rc022-config-editor-source-20261115-01", "passed": 34, "failed": 0},
+  "verification_scope_reason": "Actual boot/profile bundle/Loader/ConfigEditor/Settings integration checks unique top-level entries, inherited/user descriptors, live edit persistence, ordinary Config remount, activation-failure disk and runtime rollback, validation and higher-overlay refusal before publication, fresh boot and inherited reset. Native adds untouched YAML rows/comments and !!js restoration, bounded atomic replacement retry/fatal cleanup, settings consumers and existing actual HMR module recomposition. Source configuration/inheritance/editor-failure suites pass.",
+  "observer_boundary": "Profile fixture uses controlled builtin probe plugins with real boot, filesystem and Loader reconciliation. Exact changed-row YAML formatting/comment preservation, duplicate/nested entry ownership, HMR concurrent edits and legacy settings import need subsequent checks. Block rows not edited are preserved byte-for-byte; changed rows are emitted anew by PyYAML, unlike Source's node-level YAML edits. This is not a claim of full document-format parity.",
+  "implementation": "ConfigEditor addresses unique profile entries, rereads/reconciles complete patch layers under the package writer lock, validates the candidate, rejects overriding home/CLI layers, atomically publishes profile changes and restores prior disk/runtime on activation failure. Edits join HMR runExclusive when present. Atomic utility uses exclusive random siblings, explicit mode and bounded Windows sharing retries.",
+  "diagnostics": "First Source observer failures were fixture dependency resolution and using Entry.id instead of options.id. Initial native regression hit its existing 25-second HMR aggregate deadline while Source ran concurrently. Per-mode diagnostic execution completed every original scenario in 0.078-2.266 seconds; the identical selected native suite then passed without a budget or implementation change. Original logs/XML and per-mode timings are retained; no hang claim or acceptance substitution.",
+  "activation_boundary": "Candidate settings/editor composition now demonstrated in a real fixture; production capability mapping and pin unchanged. Whole application composition and C9 remain pending.",
+  "cleanup": [".goose/out/rc022-config-editor-source-20261115-01/cleanup.json", ".goose/out/rc022-config-editor-paired-receipt-20261115-01/cleanup.json"],
+  "retained_assets": "3028186 bytes of owned profiles, journals, pytest workspaces and timing fixtures removed after teardown. Commands, observations, XML/JSON/logs and failure diagnostics retained. No task workers remain; shared Source/toolchain retained through C9."
+}

@@ -1,7 +1,17 @@
 """Fresh and restored child composition and delegation policy snapshots."""
-from dsh.subagent.composition import child_options, parent_options, DELEGATION_CONTEXT
+from dsh.subagent.composition import child_options as _child_options, parent_options, DELEGATION_CONTEXT
 from dsh.subagent.composition_current import resolve_depth
 from dsh.subagent.errors import SubagentError
+from dsh.core.session.json import UNDEFINED
+
+
+def child_options(parent,requested,depth):
+    # Python AgentOptions stores an omitted effort as None. Keep the key during
+    # inheritance so explicit JS undefined still clears a compatible parent value.
+    if requested is UNDEFINED:requested=None
+    if requested is not None:
+        requested={key:None if value is UNDEFINED else value for key,value in requested.items()}
+    return _child_options(parent,requested,depth)
 
 
 def child_session_meta(parent, depth, is_seeded, selected_preset=None):

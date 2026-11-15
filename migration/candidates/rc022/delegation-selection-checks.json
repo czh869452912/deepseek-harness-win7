@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-15",
+  "unit": "C6-P-DelegationSelection",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "state": "targeted-passed",
+  "paired": ".goose/out/rc022-delegation-selection-paired-20261115-01/comparison/report.json",
+  "observations": 97,
+  "native": {
+    "run": "rc022-delegation-selection-native-20261115-01",
+    "passed": 6,
+    "failed": 0
+  },
+  "source": {
+    "run": "rc022-delegation-selection-source-20261115-01",
+    "passed": 65,
+    "failed": 0
+  },
+  "verification_scope_reason": "Exact model/preset route authority and defaults, omitted versus explicit effort, actual child factory default effort, preflight, live route validation and checkpoint policy. Covers changed selection providers and direct child composition/manager consumers.",
+  "activation_boundary": "Candidate selection helpers and child options; settings, delegation tool integration and production composition pending.",
+  "cleanup": ".goose/out/rc022-delegation-selection-source-20261115-01/cleanup.json",
+  "retained_assets": "Commands/logs/XML and paired observations retained; 373682 bytes of synthetic payloads removed. Shared Source/toolchain retained through C9."
+}

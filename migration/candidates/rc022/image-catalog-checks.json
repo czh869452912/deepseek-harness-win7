@@ -1,0 +1,20 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-15",
+  "unit": "C4-D-C2-F-ImageOffloadAndInstalledV4Catalog",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "state": "targeted-passed",
+  "paired": ".goose/out/rc022-image-catalog-paired-20261115-05/report.json",
+  "observations": {"images": 31, "catalog": 660},
+  "native": [
+    {"run": "rc022-image-catalog-native-20261115-01", "passed": 2487, "failed": 9},
+    {"run": "rc022-image-catalog-native-20261115-02", "passed": 658, "failed": 3},
+    {"run": "rc022-image-catalog-native-20261115-03", "passed": 661, "failed": 0}
+  ],
+  "source": {"run": "rc022-image-catalog-source-20261115-01", "passed": 56, "failed": 0},
+  "verification_scope_reason": "Live immutable image selection, invalid selectors including negative zero, cumulative decisions, atomic batch rejection, pure fold, restore, resume, fork, tool images and shadowed/assistant rejection. Physical V4 current/transformed strict/recoverable restoration, header classification, child-bound historical migration and a complete system/developer/assistant/tool lifecycle exercise the actual installed Session validator. Existing V3 runtime, catalog, child facts, generation and Agent projection consumers passed in the first native run.",
+  "initial_failures": "Observer first used unsupported camelCase Python append options and object batch members; corrected to the existing Python call adapter and upstream tuple batches. Semantic tests then caught negative-zero rejection occurring before projection, constructor-only positive fixtures lacking lifecycle coordinates, and a new lifecycle fixture with retired plugin source/object tool arguments. Corrected fixtures and expectations; retained every failed observation/log/XML. No passing acceptance is inferred from those failures.",
+  "scope": "Pure built-in image interpretation and an explicit V4 build-static candidate catalog. Production catalog and Session defaults remain V3 pending storage/Agent consumer migration. Unchanged frozen live content blocks retain identity; detached Python JSON containers freeze by copy under the existing ownership adapter.",
+  "cleanup": ".goose/out/rc022-image-catalog-native-20261115-03/cleanup.json",
+  "remaining": "V4 backend strict verification and publication, plugin records, asynchronous projection consumers, Agent and coordinated product switch. This is targeted evidence, not full regression or release qualification."
+}

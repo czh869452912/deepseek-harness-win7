@@ -13,7 +13,7 @@ _permits = threading.BoundedSemaphore(2)
 
 
 async def verifyCurrentGenerationInWorker(path, compression, expectedId,
-        expectedEventCount, expectedPrefix=None, signal=None):
+        expectedEventCount, expectedPrefix=None, signal=None, format_version=3):
     # The bound covers every event loop in this Python process. Waiting owns no child.
     while True:
         throw_aborted(signal)
@@ -26,7 +26,7 @@ async def verifyCurrentGenerationInWorker(path, compression, expectedId,
     try:
         throw_aborted(signal)
         request = dict(path=path, compression=compression, expectedId=expectedId,
-                       expectedEventCount=expectedEventCount)
+                       expectedEventCount=expectedEventCount, formatVersion=format_version)
         if expectedPrefix is not None:
             request['expectedPrefix'] = dict(bytes=expectedPrefix['bytes'], digest=expectedPrefix['digest'])
         arguments = dict(stdin=asyncio.subprocess.PIPE, stdout=asyncio.subprocess.PIPE,
@@ -87,6 +87,7 @@ def parse_request(value):
     prefix = value.get('expectedPrefix')
     import re
     if (not isinstance(value.get('path'), str) or value.get('compression') not in ('none', 'zstd')
+            or type(value.get('formatVersion', 3)) is not int or value.get('formatVersion', 3) not in (3, 4)
             or not isinstance(value.get('expectedId'), str)
             or not safe(value.get('expectedEventCount'), True, True)
             or prefix is not None and (not isinstance(prefix, dict)
@@ -98,10 +99,11 @@ def parse_request(value):
 
 
 async def worker():
-    from dsh.session.generation import verifyJsonlCurrentGeneration
+    from dsh.session.generation import JsonlGenerationRuntime
     try:
         request = parse_request(json.loads(sys.stdin.buffer.read().decode('utf-8')))
-        result = await verifyJsonlCurrentGeneration(request['path'], request['compression'],
+        runtime = JsonlGenerationRuntime(dict(formatVersion=request.get('formatVersion', 3)))
+        result = await runtime.verify(request['path'], request['compression'],
             request['expectedId'], request['expectedEventCount'], request.get('expectedPrefix'))
         response = dict(ok=True, result=result)
     except Exception as error:

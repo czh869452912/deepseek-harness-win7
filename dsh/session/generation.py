@@ -167,6 +167,7 @@ def assertCurrentAssistantStreams(events):
 class JsonlGenerationRuntime:
     def __init__(self, overrides=None):
         options = overrides or {}
+        self.format_version = options.get('formatVersion', 3)
         self.fs = options.get('fs', NativeGenerationFileSystem())
         self.randomToken = options.get('randomToken', lambda:secrets.token_hex(12))
         self.barrier = options.get('barrier', lambda phase,attempt:None)
@@ -279,7 +280,7 @@ class JsonlGenerationRuntime:
             end = data.find(b'\n')
             if end < 0:
                 raise ValueError('empty or header-less session log')
-            scanner = SessionLogScanner(data[:end+1], 'strict')
+            scanner = SessionLogScanner(data[:end+1], 'strict', self.format_version)
             scanner.write(data[end+1:])
         else:
             scanned = scan_frames(data)
@@ -290,7 +291,7 @@ class JsonlGenerationRuntime:
             first = scanned['frames'][0]
             header = decompress_frame(data[first['start']:first['end']])
             assertIndependentHeaderFrame(header)
-            scanner = SessionLogScanner(header, 'strict')
+            scanner = SessionLogScanner(header, 'strict', self.format_version)
             for frame in scanned['frames'][1:]:
                 scanner.write(decompress_frame(data[frame['start']:frame['end']]))
         decoded = scanner.finish()
@@ -299,12 +300,12 @@ class JsonlGenerationRuntime:
         # Stored vocabulary/relationships and installed Session admission are separate boundaries.
         from dsh.session.storage_contract import validateStoredEvents
         artifact = dict(header=decoded['meta'], inheritedEventCount=decoded['inheritedEventCount'], events=decoded['events'])
-        validateStoredEvents(decoded['meta'], decoded['events'], dict(kind='jsonl', path=path))
+        validateStoredEvents(decoded['meta'], decoded['events'], dict(kind='jsonl', path=path), self.format_version)
         if decoded['meta']['id'] != expectedId:
             raise ValueError('current session generation contains id "%s", expected "%s"' % (decoded['meta']['id'], expectedId))
         if len(decoded['events']) != expectedEventCount:
             raise ValueError('current session generation contains %s events, expected %s' % (len(decoded['events']), expectedEventCount))
-        validateInstalledCurrentSessionArtifact(artifact)
+        validateInstalledCurrentSessionArtifact(artifact, self.format_version)
         assertCurrentAssistantStreams(decoded['events'])
         return dict(identity=after, bytes=len(data), digest=hashlib.sha256(data).hexdigest())
 
@@ -420,7 +421,9 @@ class PreparedJsonlMigration:
         runtime, options = self.runtime, self.options
         source, current, compression = str(options['sourcePath']), str(options['currentPath']), options['compression']
         from dsh.session.generation_verifier import verifyCurrentGenerationInWorker
-        verify = options.get('verifyCurrentFile', verifyCurrentGenerationInWorker)
+        async def installed_verify(*args):
+            return await verifyCurrentGenerationInWorker(*args, format_version=self.runtime.format_version)
+        verify = options.get('verifyCurrentFile', installed_verify)
         staged = await self._write_stage()
         try:
             verified = await resolved(verify(staged['path'], compression, self.artifact['header']['id'], len(self.artifact['events'])))

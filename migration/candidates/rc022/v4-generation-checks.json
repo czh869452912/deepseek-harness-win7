@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-15",
+  "unit": "C3-C-InstalledV4GenerationVerification",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "state": "targeted-passed-with-source-environment-limitation",
+  "paired": ".goose/out/rc022-v4-generation-paired-20261115-01/report.json",
+  "observations": 66,
+  "native": {"run": "rc022-v4-generation-native-20261115-01", "passed": 1004, "failed": 0, "warnings": 7},
+  "source": {"run": "rc022-v4-generation-source-20261115-01", "passed": 73, "failed": 1},
+  "source_failure": "Unmodified generation.spec.ts symlink-collision fixture cannot create its NTFS symbolic link: EPERM. The fixture fails before publication. Retained full Vitest diagnostics; this platform-specific case has no passing qualification from this run.",
+  "verification_scope_reason": "Actual plaintext/Zstandard V4 files pass strict framing, relationship, vocabulary, surface, built-in image and embedded-stream checks. Malformed metadata, unknown rows, missing markers, invalid image selection, lifecycle mismatch, torn tails, wrong id/count and prefix rules reject as Source. Selected successes/refusals also run through real fresh Source workers/Python verifier processes. Eight v0-v3 to V4 publications use actual isolated verification and leave the old source unchanged. Existing V3 scanner, generation, storage and related-publication consumers pass; warnings are existing unawaited test close calls.",
+  "scope": "Existing scanner, stored-event admission and generation runtime accept an internal explicit format version. Worker requests carry that selection. Default production remains V3; no duplicate scanner or test-only byte verifier is used for the new V4 publication paths.",
+  "cleanup": ".goose/out/rc022-v4-generation-native-20261115-01/cleanup.json",
+  "remaining": "Current V4 child facts and live backend adoption, projection/Agent consumers, coordinated switch and complete release qualification. Symlink fixture environment limitation remains explicit."
+}

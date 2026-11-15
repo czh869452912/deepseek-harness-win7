@@ -94,7 +94,7 @@ def is_header(value):
         and (value.get('agentPreset', UNDEFINED) is UNDEFINED or isinstance(value['agentPreset'], str)))
 
 
-def parseHeaderRecord(record):
+def parseHeaderRecord(record, format_version=3):
     if not record or record[-1:] != b'\n' or record.find(b'\n') != len(record)-1:
         raise ValueError('empty or header-less session log')
     try:
@@ -104,23 +104,28 @@ def parseHeaderRecord(record):
     if not isinstance(value, dict):
         raise ValueError('corrupt session log: first line is not a JSON object')
     version = value.get('version', UNDEFINED)
-    if type(version) in (int, float) and not _js_strict_equal(version, 3):
+    if type(version) in (int, float) and not _js_strict_equal(version, format_version):
         identity = display(value.get('id', UNDEFINED))
-        message = ('session "%s" uses log format v%s, but this harness reads only v3: the log was written by a newer harness — upgrade the harness to open it' if version > 3 else 'session "%s" uses log format v%s, older than the supported v3, and this build ships no upgrade path for it') % (identity, display(version))
+        message = (('session "%s" uses log format v%s, but this harness reads only v%s: the log was written by a newer harness — upgrade the harness to open it' if version > format_version else 'session "%s" uses log format v%s, older than the supported v%s, and this build ships no upgrade path for it') % (identity, display(version), format_version))
         raise SessionFormatUnsupportedError(message)
     assertNoRetiredHeaderFields(value)
     if not is_header(value):
         raise ValueError('corrupt session log: first line is not a session header')
     try:
-        restore = sessionFormatCatalog.createRestore(value, dict(recovery='strict', validation='transformed'))
+        catalog = sessionFormatCatalog
+        if format_version == 4:
+            from dsh.session.format_catalog import candidateSessionFormatCatalog
+            catalog = candidateSessionFormatCatalog
+        restore = catalog.createRestore(value, dict(recovery='strict', validation='transformed'))
     except Exception:
         raise ValueError('corrupt session log: first line is not a session header') from None
     return dict(meta={key:item for key,item in value.items() if key != 'type'}, restore=restore)
 
 
 class SessionLogScanner:
-    def __init__(self, headerRecord, recovery='recoverable'):
-        parsed = parseHeaderRecord(headerRecord)
+    def __init__(self, headerRecord, recovery='recoverable', format_version=3):
+        parsed = parseHeaderRecord(headerRecord, format_version)
+        self.format_version = format_version
         self.meta, self.restore = parsed['meta'], parsed['restore']
         self.recovery, self.event_count, self.event_line = recovery, 0, 0
         self.fragments = bytearray()
@@ -150,6 +155,10 @@ class SessionLogScanner:
     def finish(self):
         self.finished = True
         artifact = self.restore.finish()
+        if self.format_version == 4:
+            from dsh.session.format_v3_to_v4 import assertReleasedV4Relationships
+            from dsh.core.session.current_vocabulary import V4_SESSION_EVENT_TYPES
+            assertReleasedV4Relationships(artifact, V4_SESSION_EVENT_TYPES)
         return dict(meta=self.meta, inheritedEventCount=SessionLogOffset(artifact['inheritedEventCount']),
             events=artifact['events'], committedBytes=self.committed_bytes)
 
@@ -164,7 +173,12 @@ class SessionLogScanner:
             self.issue = self.issue or issue
             return
         try:
-            assertV3RowAdmission(decoded)
+            if self.format_version == 4:
+                from dsh.session.format_v3_to_v4 import assertV4RowAdmission
+                from dsh.core.session.current_vocabulary import V4_SESSION_EVENT_TYPES
+                assertV4RowAdmission(decoded, V4_SESSION_EVENT_TYPES)
+            else:
+                assertV3RowAdmission(decoded)
         except SessionFormatUnsupportedMigrationError as error:
             raise SessionFormatUnsupportedError(str(error)) from None
         if self.issue is not None:

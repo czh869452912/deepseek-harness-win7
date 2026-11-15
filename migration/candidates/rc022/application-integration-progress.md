@@ -92,4 +92,6 @@
 
 | C8-BC | Auto 审核会话快照、调用事实校验与指令权限分层 | [Auto 审核输入](auto-review-snapshot-checks.json) |
 
+| C8-BD | Auto 审核工具钩子、当前审批服务与卸载/关闭语义 | [Auto 审核接入](auto-review-gate-checks.json) |
+
 后续继续设置及完整应用组合；最终资格使用 C9 冻结候选的完整门禁。

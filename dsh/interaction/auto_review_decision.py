@@ -8,6 +8,8 @@ import re
 
 from dsh.core.session.json import UNDEFINED
 from dsh.llm.assembler import BlockAssembler
+from dsh.cordis.errors import ThrownValueError
+from dsh.cordis.utils import js_to_string
 
 
 def _member_count(text):
@@ -104,5 +106,6 @@ def ask_user(name, reason=UNDEFINED):
 
 
 def failed(name, error):
-    return dict(kind='deny', reason='Auto review of tool "%s" failed; its body was not executed: %s' % (name, str(error)),
+    message = js_to_string(error.value) if isinstance(error, ThrownValueError) else getattr(error, 'message', str(error))
+    return dict(kind='deny', reason='Auto review of tool "%s" failed; its body was not executed: %s' % (name, message),
                 info=dict(name='AutoReviewFailedError', code='AUTO_REVIEW_FAILED'))

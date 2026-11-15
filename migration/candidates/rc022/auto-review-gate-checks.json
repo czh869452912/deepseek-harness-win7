@@ -1,0 +1,28 @@
+{
+  "part": "C8-BD",
+  "upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "paired": {
+    "run": "rc022-auto-review-gate-paired2-20261116-01",
+    "cases": 32,
+    "passed": true
+  },
+  "native": {
+    "run": "rc022-auto-review-gate-native6-20261116-01",
+    "passed": 109,
+    "failed": 0
+  },
+  "source": {
+    "run": "rc022-auto-review-gate-source2-20261116-01",
+    "passed": 81,
+    "failed": 0,
+    "unselected": 0
+  },
+  "verification_scope_reason": "Mount actual pinned Auto plugin under real Cordis with controlled dependencies; compare exact review policy/request/route/messages, unscoped/non-Auto/outer run_code bypass, inner call review, allow/ask/final deny and downstream guard precedence, failed reviewer typed/non-Error diagnostics, caller cancellation identity, close during review/downstream guard, admission veto before migration, root shutdown preservation and reinstall. Also invoke actual Source ToolExecutionPipeline.serviceAsk and real projected ApprovalService to compare localized request forwarding, current denial codes, empty audit reason, closed outcome handling, projected policy/turn state, idle refusal, audit pairs, one-shot approval and producer-owned policy notice. Native actual Agent/current ToolRuntime/current LLM/current permission/current approval test persists allowed calls and rejects high-risk or malformed-review calls without body effects. Legacy tools and approval regressions selected because current-only branch and shared failure presentation changed. Original full auto-review and approval/projection suites pass. Initial native Probe fixture omitted inject; then answered with a non-vocabulary outcome. Corrected both fixtures. Actual integration exposed legacy approval notice source and missing displayReason forwarding; added independent current projected service and current-only pipeline resolution. One retry script failed stdin text encoding before edits and repeated the prior failing run; its diagnostics are retained.",
+  "activation_boundary": "CurrentAutoReview and CurrentApprovalService are explicit providers; current tool contract v4 consumes the new ask resolution. Production registry/profile, original browser flow, optional late-provider lifecycle and final C9 acceptance are not promoted by these targeted checks.",
+  "cleanup": {
+    "removed_bytes": 1239670,
+    "external_empty_roots_removed": 2,
+    "owned_processes_remaining": 0,
+    "retained": "Compact commands, logs, XML and raw paired JSON including resolved failures. Shared pinned Source/toolchains retained through C9."
+  }
+}

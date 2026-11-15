@@ -10,6 +10,7 @@ from dsh.cordis.plugin import Plugin
 from dsh.cordis.schema import Schema
 from dsh.cordis.errors import ThrownValueError
 from dsh.cordis.utils import Tracker
+from dsh.cordis.json_text import stringify_json
 from dsh.llm.error import HarnessError, stringify_value
 from dsh.core.json_schema import (
     JsonSchemaError, assert_supported_json_schema, assert_object_json_schema,
@@ -1496,7 +1497,9 @@ class ToolsService:
                 exec_ctx._prepared_result = result
                 return {"kind": "post-result", "exec": exec_ctx, "result": result}
             if kind == "deny":
-                reason = decision.get("reason") or "tool call denied"
+                reason = decision.get("reason")
+                if reason is None or (self.contract_version < 4 and not reason):
+                    reason = "tool call denied"
                 failure = {"message": reason}
                 if self.contract_version >= 4 and decision.get("info") is not None:
                     failure["info"] = decision["info"]
@@ -1654,6 +1657,8 @@ class ToolsService:
 
     async def _resolve_ask(self, exec_input: ToolRunContext,
                            decision: Dict[str, Any]) -> Dict[str, Any]:
+        if self.contract_version >= 4:
+            return await self._resolve_current_ask(exec_input, decision)
         approval = self._optional_service("approval")
         if approval is None:
             return {"kind": "deny", "reason": decision.get("reason") or "tool call requires approval"}
@@ -1679,6 +1684,33 @@ class ToolsService:
             allowed = await allowed if inspect.isawaitable(allowed) else allowed
             return {"kind": "allow"} if allowed else {"kind": "deny", "reason": decision.get("reason") or "tool call requires approval"}
         return {"kind": "deny", "reason": decision.get("reason") or "tool call requires approval"}
+
+    async def _resolve_current_ask(self, execution, ask):
+        def deny(reason, code):
+            return dict(kind='deny', reason=reason, info=dict(name='ApprovalError', code=code))
+        approval = self._optional_service('approval')
+        if approval is None:
+            reason = ask.get('reason')
+            return deny('tool "%s" requires approval (not yet supported)' % execution.name if reason is None else reason, 'APPROVAL_UNAVAILABLE')
+        if execution.agent is None:
+            return deny('tool "%s" requires approval, but the call has no agent to route it through' % execution.name, 'APPROVAL_UNAVAILABLE')
+        request = dict(agent=execution.agent, toolName=execution.name, callId=execution.callId, signal=execution.signal)
+        for key in ('reason', 'displayReason'):
+            if key in ask:
+                request[key] = ask[key]
+        outcome = approval.request(request)
+        if inspect.isawaitable(outcome):
+            outcome = await outcome
+        if outcome == 'allowed-once':
+            return dict(kind='allow')
+        if outcome == 'rejected':
+            return deny('the user rejected tool "%s"' % execution.name, 'APPROVAL_REJECTED')
+        if outcome == 'cancelled':
+            execution._approval_cancelled = True
+            return deny('approval for tool "%s" was cancelled' % execution.name, 'APPROVAL_CANCELLED')
+        if outcome == 'unavailable':
+            return deny('tool "%s" requires approval, but no approval channel is available' % execution.name, 'APPROVAL_UNAVAILABLE')
+        raise RuntimeError('unreachable variant in ApprovalOutcome: ' + stringify_json(outcome))
 
     async def finalize(self, exec_input: ToolRunContext,
                        result: ToolExecutionResult) -> ToolExecutionResult:

@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-15",
+  "unit": "C7-X-SessionPromptCallerAndExplicitRetry",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "state": "targeted-passed",
+  "paired": ".goose/out/rc022-session-prompt-paired-20261115-01/comparison/report.json",
+  "observations": 11,
+  "native": {"run": "rc022-session-prompt-native-20261115-01", "passed": 60, "failed": 0},
+  "source": {"run": "rc022-session-prompt-source-20261115-01", "passed": 45, "failed": 0},
+  "verification_scope_reason": "Actual Gateway prompt wrapper, command admission, Agent Loop, Session journal and continuation projection exercise two recoverable failures, empty retries, durable owner/guest source metadata, duplicate original/retry receipts and completion refusal. Native additionally checks persisted sequence limits, admission/attempt prerequisites, first insertion across inherited messages, removed local receipt retention and typed staged image resolution. Existing Session read/resource/facade consumers and Source empty-prompt/continuation/access suites pass.",
+  "observer_boundary": "Actual command and Agent Loop providers with controlled Agent resolver, attachment admission and upload binding. Full SessionController initialization and actual staged upload provider are not qualified by this probe. Typed staged image/file admission now expects the fixed Source ABI; the old bare-file upload provider needs coordinated replacement.",
+  "implementation": "Candidate AuthorizedSessionController initializes the v4 conversationContinuation projection, records non-owner principals and canonical client time zones, and routes empty content to maintenance retry admission. AuthorizedSessionCommands caches first insertion receipt identities per exact Session, rejects unavailable continuation or pending human input, serializes image admission and preserves accepted requests across concurrent/partial admission failures.",
+  "activation_boundary": "Production composition and pin not promoted; upload provider, whole-controller initialization, generated clients and C9 acceptance remain pending.",
+  "cleanup": ".goose/out/rc022-session-prompt-source-20261115-01/cleanup.json",
+  "retained_assets": "2155008 bytes of owned journals, synthetic workspaces and tmp/home removed after teardown. Commands, paired observations, XML/JSON and logs retained. No task workers remain; shared Source/toolchain retained through C9."
+}

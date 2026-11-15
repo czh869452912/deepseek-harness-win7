@@ -1,7 +1,12 @@
 """Resource-filtered Session Remote reads and v4 projection control frames."""
 from dsh.api.session_current import CurrentSessionController
 from dsh.api.session_control_current import CurrentSessionControl
-from dsh.typert.remote import Remote
+from dsh.typert.remote import Remote, RemoteError
+from dsh.typert.principal import principal_of
+from dsh.core.session.json import UNDEFINED
+from dsh.api.session_commands_authorized import AuthorizedSessionCommands
+from dsh.api.session_commands_current import has_prompt_content
+from dsh.util_time import canonical_client_time_zone
 
 
 class ProjectionSessionControl(CurrentSessionControl):
@@ -21,6 +26,26 @@ class AuthorizedSessionController(CurrentSessionController):
     inject = ['agentDefaultModel', 'agents', 'attachments', 'fileUploads', 'fs', 'llm', 'remoteAccess',
               'sessions', 'sessionProjections', 'sessionQuery', 'typert', 'typertGateway', 'workspaceRegistry']
     control_class = ProjectionSessionControl
+    commands_class = AuthorizedSessionCommands
+
+    async def init(self):
+        await self.commands.initialize()
+
+    @Remote
+    async def prompt(self, request, signal):
+        signal.throwIfAborted()
+        if request['content'] and not has_prompt_content(request['content']):
+            raise RemoteError('gateway/bad-request', 'prompt content must include non-whitespace text or an attachment', {})
+        zone = canonical_client_time_zone(request['clientTimeZone']) if 'clientTimeZone' in request else None
+        if 'clientTimeZone' in request and zone is None:
+            raise RemoteError('session/invalid-time-zone', 'clientTimeZone must be UTC or a valid IANA Area/Location name', dict(value=request['clientTimeZone']))
+        source = dict(kind='user' if request['content'] else 'retry', rpcId=request['requestId'])
+        if zone is not None:
+            source['clientTimeZone'] = zone
+        principal = principal_of(getattr(self.ctx, 'invocation', None))
+        if principal is not UNDEFINED:
+            source['principal'] = principal
+        return await self.commands.prompt(request, source)
 
     def allows_session(self, identity):
         return self.ctx.get('remoteAccess').allows(dict(kind='session', id=identity))

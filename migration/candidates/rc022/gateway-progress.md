@@ -31,4 +31,6 @@
 
 | C7-W | 非所有者列表/搜索过滤、v4 投影实时流、权限变化与取消 | [会话读取过滤](session-access-checks.json) |
 
-后续：Session 调用者/重试、生成物和原版客户端整体接入。最终资格使用 C9 冻结候选的完整门禁；当前生产 pin 与 `accepted_upstream` 不提升。
+| C7-X | 消息调用者、时区、持久去重与真实失败后的显式空提交重试 | [消息提交与重试](session-prompt-checks.json) |
+
+后续：上传提供方与完整 Session 组合、生成物和原版客户端整体接入。最终资格使用 C9 冻结候选的完整门禁；当前生产 pin 与 `accepted_upstream` 不提升。

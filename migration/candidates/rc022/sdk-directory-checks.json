@@ -1,0 +1,29 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-16",
+  "unit": "C8-W-SdkWorkingDirectoryRpc",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "state": "targeted-passed",
+  "paired": ".goose/out/rc022-sdk-directory-paired-final-20261116-01/comparison/report.json",
+  "observations": 16,
+  "native": {
+    "run": "rc022-sdk-directory-native-final-20261116-01",
+    "passed": 6,
+    "failed": 0
+  },
+  "source": {
+    "run": "rc022-sdk-directory-source-20261116-01",
+    "passed": 1,
+    "failed": 0,
+    "excluded": 37,
+    "selection": "changes effective directories"
+  },
+  "verification_scope_reason": "Actual Source/native SDK server and real v4 Session/Agent/WorkingDirectory/FS compare pre-initialize rejection, RPC type admission, unknown identity creation, relative/absolute directory changes, independent origins, missing directory recovery, durable change events, stale Agent refusal, concurrent reuse and shutdown rejection. Native real HarnessSession/client starts an owned Python child with actual SDK plugin/server and candidate v4 providers over stdio, then verifies shutdown, child reaping, pipe closure and empty pending requests. Existing SDK server regressions cover direct consumers.",
+  "observer_boundary": "The Source directory case ran;37 other cases in that file were excluded by explicit -t selection. Paired error observations use actual message/name properties for HarnessError, not its Python display string. Native fixture composes actual candidate providers explicitly; this is not production SDK-profile/launcher acceptance. Arbitrary generated Session event ids/timestamps are outside selected directory event data.",
+  "initial_failures": "First paired observer rendered Python HarnessError through str(), adding its display code; corrected to message/name without changing product behavior. First stdio test omitted the custom runtime required environment callback; fixture corrected. Diagnostics retained, final pair and native run pass.",
+  "activation_boundary": "SDK server now handles canonical get/set RPC; client interface already existed. Full SDK query/resume/wait/user-question parity and production composition remain separate. Production pin and accepted_upstream unchanged.",
+  "cleanup": ".goose/out/rc022-sdk-directory-source-20261116-01/cleanup.json",
+  "external_cleanup": ".goose/out/rc022-sdk-directory-source-20261116-01/external-cleanup.json",
+  "retained_assets": "Removed4183590 bytes of owned comparison/session/pytest workspaces and temporary homes. Empty external Source root removed. No owned SDK child or runner remains. Commands/logs/XML/raw observations preserved; shared Source/toolchain retained through C9.",
+  "migration_check": ".goose/out/rc022-sdk-directory-control-20261116-01/migration-check.json"
+}

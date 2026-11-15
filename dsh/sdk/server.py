@@ -120,6 +120,21 @@ class HarnessSdkJsonRpcServer:
         self.sessions[session_id] = handle
         return handle
 
+    async def working_directory_agent(self, session_id):
+        if not self.initialized:
+            raise RuntimeError('SDK server is not initialized')
+        handle = await self.get_or_create(session_id)
+        self.assert_live(handle, session_id)
+        return handle.agent
+
+    async def getWorkingDirectory(self, params):
+        agent = await self.working_directory_agent(params['sessionId'])
+        return dict(cwd=await self.ctx.get('workingDirectory').ensure(agent))
+
+    async def setWorkingDirectory(self, params):
+        agent = await self.working_directory_agent(params['sessionId'])
+        return dict(cwd=await self.ctx.get('workingDirectory').set(agent, params['path']))
+
     async def shutdown(self):
         if self.shutdown_task is None:
             self.shutdown_task = asyncio.create_task(self.perform_shutdown())
@@ -152,6 +167,15 @@ class HarnessSdkJsonRpcServer:
             return await self.initialize(params or {})
         if method == 'session/prompt':
             return await self.prompt(params or {})
+        if method in ('session/working-directory/get', 'session/working-directory/set'):
+            value = params or {}
+            if not isinstance(value, dict) or not isinstance(value.get('sessionId'), str) or not value['sessionId']:
+                raise TypeError('working-directory requests require a non-empty sessionId')
+            if method == 'session/working-directory/get':
+                return await self.getWorkingDirectory(dict(sessionId=value['sessionId']))
+            if not isinstance(value.get('path'), str):
+                raise TypeError('working-directory set requires a path string')
+            return await self.setWorkingDirectory(dict(sessionId=value['sessionId'], path=value['path']))
         if method == 'shutdown':
             return await self.shutdown()
         raise RuntimeError('unknown DeepSeek Harness SDK runtime method: ' + method)

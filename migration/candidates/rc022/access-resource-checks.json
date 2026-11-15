@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-15",
+  "unit": "C7-A-ResourceResolution",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "state": "targeted-passed",
+  "paired": ".goose/out/rc022-access-paired-20261115-01/comparison/report.json",
+  "observations": 40,
+  "native": {
+    "run": "rc022-access-native-20261115-01",
+    "passed": 148,
+    "failed": 0
+  },
+  "source": {
+    "run": "rc022-access-source-final-20261115-01",
+    "passed": 62,
+    "failed": 0
+  },
+  "verification_scope_reason": "Validated wire resource extraction: method reader > Context/lookup > default field/resolver, kind order, duplicates, cancellation position, omitted versus malformed IDs, first-object-only fallback, required event resources, prototype resolvers, configured provider metadata, reversible caller-owned registry entries and frozen inventories. Direct consumers include session facade and workspace files.",
+  "activation_boundary": "Candidate CurrentTypertRegistry gains resource declarations; independent extraction functions. Actual Gateway non-owner decisions/peer lifetime and Remote resource markers remain C7-B/C7-C; this unit does not claim authorization enforcement.",
+  "cleanup": ".goose/out/rc022-access-source-final-20261115-01/cleanup.json",
+  "retained_assets": "Run logs, results and commands retained; synthetic native workspaces and temporary directories removed. Shared Source/toolchain retained through C9."
+}

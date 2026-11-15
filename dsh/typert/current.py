@@ -10,6 +10,7 @@ from dsh.typert.gateway import TypertGatewayService
 from dsh.typert.api_remotes import ForwardedEventSource, ApiRemotesPlugin, EMIT_EVENTS
 from dsh.typert.dispatch import RemoteDispatcher, TypertGatewayError
 from dsh.typert.remote import remote_error_of, TypertLookupFailure
+from dsh.typert.resource_registry import ResourceStore, ResourceView, ResourceLookupView
 
 
 class CurrentContextView:
@@ -29,13 +30,20 @@ class CurrentContextView:
         adapter, resolver = entry['provider'], self.store.resolvers.get(key)
         if resolver is None:
             return adapter
-        return SimpleNamespace(wire=field(adapter, 'wire'), wireTypeSymbol=field(adapter, 'wireTypeSymbol'),
-                               resolve=lambda identity: resolve_async(resolver['provider'], identity))
+        values = dict(wire=field(adapter, 'wire'), wireTypeSymbol=field(adapter, 'wireTypeSymbol'))
+        if field(adapter, 'resource') is not None:
+            values['resource'] = field(adapter, 'resource')
+        return SimpleNamespace(**values, resolve=lambda identity: resolve_async(resolver['provider'], identity))
 
 
 class CurrentTypertRegistry(TypertRegistry):
+    def __init__(self, ctx):
+        self.resource_store = ResourceStore()
+        super().__init__(ctx)
+
     def _views(self, ctx):
-        return dict(super()._views(ctx), contexts=CurrentContextView(ctx, self.context_store))
+        return dict(super()._views(ctx), contexts=CurrentContextView(ctx, self.context_store),
+                    resources=ResourceView(ctx, self.resource_store), lookups=ResourceLookupView(ctx, self.lookup_store))
 
 
 class CurrentRemoteEvents(RemoteEvents):

@@ -30,7 +30,7 @@ def envelope(rpc_id, result):
     return response(200, stringify_json({"type": "server-response", "rpcId": rpc_id, "result": result}), {"content-type": "application/json"})
 
 
-async def rpc_fetch(channel, handler, request, bad_request_code='bad-request', error_text=str, require_payload=False):
+async def rpc_fetch(channel, handler, request, bad_request_code='bad-request', error_text=str, require_payload=False, respond=envelope):
     endpoint = endpoint_from_path(channel, request["path"])
     if request.get("method") != "POST" or endpoint is None:
         return response(404, "not found")
@@ -57,15 +57,15 @@ async def rpc_fetch(channel, handler, request, bad_request_code='bad-request', e
         issues = [{"expected": "object", "code": "invalid_type", "path": [], "message": "Invalid input: expected object, received " + received}]
     if issues:
         rpc_id = body.get("rpcId") if isinstance(body, dict) and isinstance(body.get("rpcId"), str) else "invalid-request"
-        return envelope(rpc_id, {"ok": False, "error": {"code": bad_request_code, "message": "invalid client-request message", "details": {"issues": issues}}})
+        return respond(rpc_id, {"ok": False, "error": {"code": bad_request_code, "message": "invalid client-request message", "details": {"issues": issues}}})
     if body["method"] != endpoint:
         message = "method {} does not match endpoint {}".format(json.dumps(body["method"]), json.dumps(endpoint))
-        return envelope(body["rpcId"], {"ok": False, "error": {"code": bad_request_code, "message": message, "details": {"issues": []}}})
+        return respond(body["rpcId"], {"ok": False, "error": {"code": bad_request_code, "message": message, "details": {"issues": []}}})
     try:
         result = handler(endpoint, body.get("payload", UNDEFINED), request.get("signal") or NEVER_ABORTED)
         if inspect.isawaitable(result):
             result = await result
-        return envelope(body["rpcId"], result)
+        return respond(body["rpcId"], result)
     except Exception as error:
         return response(500, "handler failure: " + error_text(error))
 

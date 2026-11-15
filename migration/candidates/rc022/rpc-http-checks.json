@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-15",
+  "unit": "C7-G-RpcHttpMultipart",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "state": "targeted-passed",
+  "paired": ".goose/out/rc022-rpc-http-paired-2-20261115-01/comparison/report.json",
+  "observations": 16,
+  "native": {
+    "run": "rc022-rpc-http-native-20261115-01",
+    "passed": 13,
+    "failed": 0
+  },
+  "source": {
+    "run": "rc022-rpc-http-source-20261115-01",
+    "passed": 43,
+    "failed": 0
+  },
+  "verification_scope_reason": "Actual upstream HostConnectionService shared Fetch handler, independently wired to actual Gateway RPC handler, versus native Gateway and candidate HTTP adapter. Compare decoded multipart part names, filenames, media types, logical byte views, result-relative metadata, empty/root/nested attachments, absent/null/error JSON, invalid envelopes/media/method/body, trusted Peer and signal identity. Native regression covers existing RPC channel and boot consumers plus immutable byte response snapshot.",
+  "activation_boundary": "Candidate adapter only; actual authenticated admission, exact-route owner fence, Peer lifecycle and network bridge composition follow in C7. Source Gateway and transport contexts are separate because Gateway automatically registers an interceptor when Connection activates; both contexts are disposed.",
+  "cleanup": ".goose/out/rc022-rpc-http-source-20261115-01/cleanup.json",
+  "retained_assets": "Commands, results and repaired observer failure retained; owned synthetic workspaces removed. Shared Source/toolchain retained through C9."
+}

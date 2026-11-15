@@ -1,0 +1,24 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-15",
+  "unit": "C1-AR-HmrPackageMappingNamespaces",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "state": "targeted-passed",
+  "paired": ".goose/out/rc022-hmr-mapping-paired-20261115-02/report.json",
+  "observations": 10,
+  "source": {
+    "run": "rc022-hmr-mapping-source-20261115-01",
+    "passed": 5,
+    "failed": 0,
+    "not_selected": 27
+  },
+  "native": {
+    "run": "rc022-hmr-mapping-native-20261115-01",
+    "passed": 11,
+    "failed": 0
+  },
+  "verification_scope_reason": "Actual linked package manifest exports move to a new file while previous active namespaces remain authoritative for their instances. Compare two active generations independently, duplicate runtime ownership, disabled shadows and reenable resolution; select corresponding upstream manifest consumers and native partial/cache regressions.",
+  "scope": "No production change required. Initial tsx observer used an asynchronous loader with a separate resolution cache explicitly outside upstream package-manifest invalidation support. Replaced the observer imports with unchanged built libraries and direct Node execution; built input hashes captured in report. Original unsupported-run observations retained, not used as product parity.",
+  "cleanup": ".goose/out/rc022-hmr-mapping-native-20261115-01/cleanup.json",
+  "remaining": "Provider/consumer lifecycle, root watch options and readiness, patchReload retirement, other C1 contracts. No complete HMR or release qualification."
+}

@@ -109,3 +109,5 @@
 2026-11-15：C1-AP [Profile 重组与立即退出](hmr-exit-checks.json)已修复 AL 留存的等待环，8 组固定原版/Python 无最终队列屏障旅程通过；13 项生命周期/重组与 8 项 CLI/Web/队列/就绪定向检查通过，初轮 19 通过/2 个 Root uid 假设相关失败记录保留。Root 卸载期间停止重组准入等待，保留待收敛 Loader join 的根所有权，不重新激活正在释放的条目；真实异步资源未释放时退出仍等待，最终无待清理所有者任务。Root 可复用且 uid 保持 0，以 UNLOADING/服务退役识别退出。全部自有合成夹具和工作区已清理，继续更多模块与监听消费者。
 
 2026-11-15：C1-AQ [共享 runtime 与重导出 namespace](hmr-namespaces-checks.json)完成 4 组实际 ESM/Python 重导出旅程，并复核 12 组部分替换；4 项原版所选消费者及 12 项 Python 检查通过。覆盖共享实现更新、按 entry 分配分裂实现、无 entry 实例歧义恢复及保留 node_modules 的旧 namespace。修复异步替换拒绝过早进入 Python 回滚的 Promise 边界；首轮 Source 观察器误用 DisposableList.size 亦独立修正，原始差异保留。全部自有夹具和工作区及时清理，继续映射变化与监听生命周期。
+
+2026-11-15：C1-AR [包入口变更与运行中 namespace](hmr-mapping-checks.json)完成 10 条固定原版/Python 实际链接包观察、5 项原版与 11 项 Python 检查。旧活实例继续绑定原 namespace，新启用条目按新 exports 解析；双活代际独立更新、重复实例和 disabled shadow 均覆盖，无需生产修正。首轮 tsx 异步加载器的独立缓存超出原版失效器支持范围，改用未改动的构建库直接运行 Node，原始观察保留且不作通过证据。全部自有合成目录和链接已清理，继续消费者生命周期与监听规则。

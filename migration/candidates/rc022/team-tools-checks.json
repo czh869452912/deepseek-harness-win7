@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-15",
+  "unit": "C6-N-TeamTools",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "state": "targeted-passed",
+  "paired": ".goose/out/rc022-team-tools-paired-20261115-01/comparison/report.json",
+  "observations": 34,
+  "native": {
+    "run": "rc022-team-tools-native-final-20261115-01",
+    "passed": 7,
+    "failed": 0
+  },
+  "source": {
+    "run": "rc022-team-tools-source-20261115-01",
+    "passed": 42,
+    "failed": 0
+  },
+  "verification_scope_reason": "Exact upstream tool schemas/guidance plus actual pipeline: per-Agent admission, named task owner/filter, pagination, schema/domain errors, held admission after mode off, detached child and reversible tool/prompt disposal. Schema/guidance data is captured from fixed Source definitions and independently compared with the actual Python registration. Team mutations add no inbox messages; actual Team service/factory consumers included.",
+  "activation_boundary": "Candidate Team tools; subagent delegation/control tools, SDK/PTC/Remote consumers and production composition pending.",
+  "cleanup": ".goose/out/rc022-team-tools-source-20261115-01/cleanup.json",
+  "retained_assets": "Commands/logs/XML, initial incorrect pagination assertion and paired observations retained; synthetic payloads removed. Shared Source/toolchain retained through C9."
+}

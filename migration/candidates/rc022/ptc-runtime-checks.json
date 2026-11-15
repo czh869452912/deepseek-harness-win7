@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-15",
+  "unit": "C5-L-PythonPtcRuntimeSeam",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "state": "targeted-passed",
+  "paired": ".goose/out/rc022-ptc-runtime-paired-retry-20261115-01/comparison/report.json",
+  "observations": 25,
+  "native": {"run": "rc022-ptc-runtime-native-retry-20261115-01", "passed": 26, "failed": 0},
+  "source": {"run": "rc022-ptc-runtime-source-20261115-01", "passed": 35, "failed": 0},
+  "verification_scope_reason": "Actual fixed Node/process and native Python/process executions compare supported timeout resolution including explicit null, exact bindings identity, resolved cwd, empty program environment, canonical JSON, arbitrary own callable names, typed binding failures, unrestricted binding-result size, absent state retention, explicit null completion, execution/output/timeout failures, hard abort, caller-owned in-flight bindings, process disposal and late-call refusal. Native adds unresolved-spec/unsupported-authority rejection, simultaneous per-call budgets and no-deadline execution. Historical process backend real CPU/memory/output/isolation consumers remain passing.",
+  "python_overlay": "This explicit Python 3.8 process provider advertises function-body, stateless execution and elapsed per-call budgets. It has no confinement capability, rejects every explicit sandboxPolicy and never implicitly substitutes for a confining provider. Source Node sandbox reporting and language-specific exception diagnostics are deliberately outside the portable observation projection. Resource memory caps retain the existing Win7 Job/POSIX implementation. The legacy codeRuntime service keeps its CPU/wall-budget contract.",
+  "initial_difference": "The initial 256-byte outer cap truncated the Source JavaScript exception stack into output-limit while the shorter Python diagnostic remained exception. Retained original observations; reran both with 4096 bytes and an explicit 10000-byte overflow case, without normalizing the differing failure classes away.",
+  "activation_boundary": "No profile or production pin switch. Confining Python provider, protocol framing/backpressure, separate PTC transport and ordered nested scheduler remain subsequent C5 work. This unit is not full Node provider or Portable acceptance.",
+  "cleanup": ".goose/out/rc022-ptc-runtime-source-20261115-01/cleanup.json",
+  "cleanup_bytes": 2116735,
+  "retained_assets": "Commands, logs, XML and paired process observations retained. Owned synthetic workspaces removed; no owned runtime test process remains. Shared Source/toolchain retained until C9."
+}

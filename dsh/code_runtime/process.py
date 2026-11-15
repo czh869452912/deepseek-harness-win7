@@ -27,12 +27,12 @@ DEFAULTS = dict(computeMs=60000, maxWallMs=600000, maxOutputBytes=67108864, maxO
 
 
 class ProcessOwner:
-    def __init__(self, memory):
+    def __init__(self, memory, cwd=None):
         self.job, self.api, self.closed = None, None, False
         self.process = subprocess.Popen([sys.executable, '-u', '-B', os.path.join(os.path.dirname(__file__), 'worker.py')],
             stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL,
             env={'SystemRoot': os.environ.get('SystemRoot', r'C:\Windows')} if os.name == 'nt' else {},
-            start_new_session=os.name != 'nt', creationflags=0x08000000 if os.name == 'nt' else 0)
+            cwd=cwd, start_new_session=os.name != 'nt', creationflags=0x08000000 if os.name == 'nt' else 0)
         try:
             if os.name == 'nt':
                 from dsh.sandbox.windows_acl import WinApi, JobLimit, P, D
@@ -86,6 +86,7 @@ class ProcessOwner:
 
 class PythonProcessRuntime(Service):
     language, isolation = 'python', 'process'
+    service_name = 'codeRuntime'
     Config = Schema.object({key: Schema.number().default(value) for key, value in DEFAULTS.items()})
 
     def __init__(self, ctx, config=None):
@@ -98,7 +99,7 @@ class PythonProcessRuntime(Service):
         if self.config['maxWallMs'] > 2147483647:
             raise ValueError('maxWallMs exceeds timer bound')
         self.closed, self.runs = False, set()
-        super().__init__(ctx, 'codeRuntime')
+        super().__init__(ctx, self.service_name)
         ctx.effect(lambda: self.dispose)
 
     def apply(self, ctx=None, config=None):
@@ -128,7 +129,8 @@ class PythonProcessRuntime(Service):
             self.runs.discard(task)
 
     async def _execute(self, request, bindings):
-        ledger = OutputLedger(int(self.config['maxOutputBytes']))
+        limits = self._run_limits(request)
+        ledger = OutputLedger(int(limits['maxOutputBytes']))
         failure = lambda kind, message: ledger.result(error=dict(kind=kind, message=message))
         if aborted(request.get('signal')):
             return failure('abort', 'code execution aborted')
@@ -141,7 +143,8 @@ class PythonProcessRuntime(Service):
         call_ids = set()
         active = [True]
         try:
-            owner = ProcessOwner(self.config['maxOldGenerationSizeMb'] * 1024 * 1024)
+            owner = ProcessOwner(limits['maxOldGenerationSizeMb'] * 1024 * 1024,
+                                 self._process_cwd(request))
             process = owner.process
             loop = asyncio.get_running_loop()
 
@@ -186,7 +189,7 @@ class PythonProcessRuntime(Service):
             baseline = None
             start = time.monotonic()
             boot_task = asyncio.create_task(send(dict(program=request['program'], bindings=boot_bindings,
-                            memoryBytes=int(self.config['maxOldGenerationSizeMb'] * 1024 * 1024))))
+                            memoryBytes=int(limits['maxOldGenerationSizeMb'] * 1024 * 1024))))
 
             async def invoke(message):
                 try:
@@ -207,9 +210,9 @@ class PythonProcessRuntime(Service):
                     boot_task.result()
                 if aborted(request.get('signal')):
                     return failure('abort', 'code execution aborted')
-                if (time.monotonic() - start) * 1000 > self.config['maxWallMs']:
+                if limits['maxWallMs'] is not None and (time.monotonic() - start) * 1000 > limits['maxWallMs']:
                     return failure('timeout', 'wall-time budget exceeded')
-                if baseline is not None and owner.cpu_ms() - baseline > self.config['computeMs']:
+                if baseline is not None and limits['computeMs'] is not None and owner.cpu_ms() - baseline > limits['computeMs']:
                     return failure('timeout', 'compute-time budget exceeded')
                 try:
                     message = messages.get_nowait()
@@ -265,3 +268,9 @@ class PythonProcessRuntime(Service):
                 await asyncio.gather(boot_task, return_exceptions=True)
             # Binding calls are caller-owned and must not be cancelled when
             # the model run ends. They settle without writing to the dead peer.
+
+    def _run_limits(self, request):
+        return self.config
+
+    def _process_cwd(self, request):
+        return None

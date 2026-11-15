@@ -1,0 +1,28 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-16",
+  "unit": "C8-AY-CurrentTextFileConsumers",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "state": "targeted-passed",
+  "paired": ".goose/out/rc022-file-consumers-paired-20261116-01/comparison/report.json",
+  "observations": 29,
+  "native": {
+    "run": "rc022-file-consumers-native2-20261116-01",
+    "passed": 69,
+    "failed": 0
+  },
+  "source": {
+    "run": "rc022-file-consumers-source-20261116-01",
+    "passed": 47,
+    "failed": 0
+  },
+  "verification_scope_reason": "Current read/write/edit callbacks and schemas compare to Source with intentionally distinct display and execution paths: current-directory before resolve, exact guidance/scoped edit restriction, JS trim and typed preconditions before effects, whole/stream/unknown-size read routing and windows, observation identity, remediated provider errors, canonical result/diff/meta paths and identical-write replay fallback. Real Windows junction + current Agent/tool runtime verifies read observation authorizes edit at the same physical target, result metadata targets physical path, identical write replay uses canonical path, link remains intact and is explicitly removed. Direct file tool/patch/current-directory consumers pass. Source read-render/diff/error suites selected; Source tools/integration results remain separately recorded in C8-AX (not counted twice here). First native fixture passed ToolExecutionResult directly to a wire-result presenter; corrected to its canonical isError/meta/content wire structure and preserved original failure.",
+  "activation_boundary": "CurrentPatchToolFs latest read/write/edit branch only; prior candidate and historical provider behavior unchanged. read_image latest path/schema/routing deltas and application/profile activation remain separately pending.",
+  "cleanup": {
+    "removed_bytes": 611223,
+    "external_empty_root_removed": true,
+    "test_junctions_removed_by_finally": 1,
+    "owned_processes_remaining": 0,
+    "retained": "Compact logs, commands, JSON/XML observations, corpus and receipts; shared fixed Source/toolchain through C9."
+  }
+}

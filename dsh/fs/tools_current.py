@@ -29,11 +29,11 @@ class CurrentPatchToolFs(CurrentToolFs):
         config = self.config
         if config.get('read', True):
             apply_read_tool(ctx, dict(limit=self.read_limit, maxLineLength=self.read_max_line_length,
-                maxBytes=self.read_max_bytes, streamMinSize=self.read_stream_min_size), current=True, directory_aware=True)
+                maxBytes=self.read_max_bytes, streamMinSize=self.read_stream_min_size), current=True, directory_aware=True, latest=True)
         if config.get('readImage', True):
             ctx.inject(['attachments'], lambda inner: apply_read_image_tool(inner, current=True, directory_aware=True))
         if config.get('write', True) or config.get('edit', True) or config.get('applyPatch', False):
             sandbox = CurrentFsSandboxController(ctx)
             for name in ('write', 'edit'):
-                if config.get(name, True): apply_mutation_tool(ctx, sandbox, name, current=True, directory_aware=True)
+                if config.get(name, True): apply_mutation_tool(ctx, sandbox, name, current=True, directory_aware=True, latest=True)
             if config.get('applyPatch', False): apply_patch_tool(ctx, sandbox)

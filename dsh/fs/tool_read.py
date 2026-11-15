@@ -5,26 +5,30 @@ from dsh.fs.fs_local import FsError
 from dsh.fs.tool_read_render import _integer, build_window, format_read_output, lang_from_path, read_meta_from_meta
 
 
-def parse_read_args(arguments, maximum):
-    if not arguments['file_path'].strip():
-        raise ValueError('file_path must be a non-empty string')
+def parse_read_args(arguments, maximum, latest=False):
+    from dsh.cordis.text import trim_js
+    from dsh.core.tools import ToolArgsError
+    def invalid(message): return ToolArgsError('read', [message]) if latest else ValueError(message)
+    if not (trim_js(arguments['file_path']) if latest else arguments['file_path'].strip()):
+        raise invalid('file_path must be a non-empty string')
     offset, limit = arguments.get('offset', 1), arguments.get('limit', maximum)
     for name, value in (('offset', offset), ('limit', limit)):
         if not _integer(value, 1):
-            raise ValueError(name + ' must be a positive integer')
+            raise invalid(name + ' must be a positive integer')
     if limit > maximum:
-        raise ValueError('limit must be less than or equal to ' + js_to_string(maximum))
+        raise invalid('limit must be less than or equal to ' + js_to_string(maximum))
     return dict(filePath=arguments['file_path'], offset=offset, limit=limit)
 
 
-def apply_read_tool(ctx, caps, current=False, directory_aware=False):
+def apply_read_tool(ctx, caps, current=False, directory_aware=False, latest=False):
     guidance='Use the read tool — not shell commands like cat — to inspect text files. Results include line numbers. Use offset and limit to continue reading large files.'
+    if latest: guidance='Use the read tool — not shell commands like cat, sed, head, or tail — to inspect text files. Use offset and limit to read a line range or continue a large file.'
     ctx.get('systemPrompt').section(dict(name='tool:read', order=1100,
         text=(lambda context: guidance if ctx.get('tools').get('read', context.get('scope')) is not None else '') if current else guidance))
 
     async def execute(arguments, execution):
         from dsh.fs.tool_fs import _observation_target
-        requested = parse_read_args(arguments, caps['limit'])
+        requested = parse_read_args(arguments, caps['limit'], latest)
         filesystem = ctx.get('fs')
         target = await _observation_target(filesystem, requested['filePath'], execution,
             directories=ctx.get('workingDirectory') if directory_aware else None)
@@ -41,10 +45,10 @@ def apply_read_tool(ctx, caps, current=False, directory_aware=False):
         window = await build_window(chunks, dict(offset=requested['offset'], limit=requested['limit'],
             maxLineLength=caps['maxLineLength'], maxBytes=caps['maxBytes']), target.displayPath)
         ctx.emit('fs/observed', target, dict(kind='present', version=info.version), execution)
-        return dict(path=target.displayPath, offset=requested['offset'], lines=window['lines'], totalLines=window['totalLines'])
+        return dict(path=filesystem.processPath(target) if latest else target.displayPath, offset=requested['offset'], lines=window['lines'], totalLines=window['totalLines'])
 
     def render(arguments, value):
-        requested = parse_read_args(arguments, caps['limit'])
+        requested = parse_read_args(arguments, caps['limit'], latest)
         end = value['lines'][-1]['number'] if value['lines'] else max(0, value['offset'] - 1)
         truncated = len(value['lines']) < requested['limit'] and end < value['totalLines']
         return [dict(type='text', text=format_read_output(value['path'], dict(offset=value['offset'], lines=value['lines'],
@@ -83,6 +87,6 @@ def apply_read_tool(ctx, caps, current=False, directory_aware=False):
             offset=dict(type='number', description='1-based first line to return. Defaults to 1.'),
             limit=dict(type='number', description='Maximum number of lines to return. Defaults to %s.' % js_to_string(caps['limit']))), required=['file_path']),
         output=dict(schema=dict(type='object', additionalProperties=False,
-            properties=dict(path=dict(type='string'), offset=dict(type='integer'), lines=dict(type='array', items=line_schema), totalLines=dict(type='integer')),
+            properties=dict(path=dict(type='string', **(dict(description='Canonical absolute path in the filesystem execution world.') if latest else {})), offset=dict(type='integer'), lines=dict(type='array', items=line_schema), totalLines=dict(type='integer')),
             required=['path', 'offset', 'lines', 'totalLines']), render=render, presentationMeta=metadata),
         isConcurrencySafe=lambda execution: True, execute=execute, presentCall=present_call, presentResult=present_result))

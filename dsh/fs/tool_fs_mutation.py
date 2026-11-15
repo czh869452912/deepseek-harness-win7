@@ -10,7 +10,7 @@ def remediate_fs_error(error, display_path=None):
     return FsError('%s — %s' % (error, remedy), error.code, error) if remedy else error
 
 
-def apply_mutation_tool(ctx, sandbox, kind, current=False, directory_aware=False):
+def apply_mutation_tool(ctx, sandbox, kind, current=False, directory_aware=False, latest=False):
     editing = kind == 'edit'
     if editing:
         description = 'Edit an existing UTF-8 text file by replacing literal text.'
@@ -28,6 +28,10 @@ def apply_mutation_tool(ctx, sandbox, kind, current=False, directory_aware=False
         output_properties = dict(path=dict(type='string'), operation=dict(type='string', enum=['create', 'update']),
             before=dict(oneOf=[dict(type='string'), dict(type='null')]), after=dict(type='string'))
     parameters = dict(file_path=dict(type='string', description='Path to %s, resolved by the filesystem backend.' % kind), **properties)
+    if latest:
+        parameters['file_path']['description'] += (' Provide `file_path` before `old_string` and `new_string` in the arguments.' if editing else ' Provide `file_path` before `content` in the arguments.')
+        if editing: parameters['old_string']['description'] = 'Literal text to replace.'
+        output_properties['path']['description'] = 'Canonical absolute path in the filesystem execution world.'
     if sandbox.escalation_modes:
         parameters.update(sandbox.schema_fields())
     def scoped_guidance(context):
@@ -35,20 +39,26 @@ def apply_mutation_tool(ctx, sandbox, kind, current=False, directory_aware=False
         if tools.get(kind, scope) is None:
             return ''
         if editing:
-            return guidance
+            return 'Read a file before editing it unless you just created or edited it in this session.' if latest else guidance
+        if latest:
+            return 'Read an existing file before overwriting it with write' + (' and prefer edit for targeted changes' if tools.get('edit', scope) is not None else '') + '.'
         return ('Use the write tool to create files or completely replace file contents. Existing files are overwritten, so read an existing file first (the default fs-observation-policy requires it)'
                 + (' and prefer edit for targeted changes' if tools.get('edit', scope) is not None else '') + '.')
     ctx.get('systemPrompt').section(dict(name='tool:' + kind, order=1300 if editing else 1200, text=scoped_guidance if current else guidance))
 
     async def execute(arguments, execution):
         from dsh.fs.tool_fs import _fire_waterfall, _observation_target
-        if not arguments['file_path'].strip():
-            raise ValueError('file_path must be a non-empty string')
+        from dsh.cordis.text import trim_js
+        from dsh.core.tools import ToolArgsError
+        def invalid(message):
+            return ToolArgsError(kind, [message]) if latest else ValueError(message)
+        if not (trim_js(arguments['file_path']) if latest else arguments['file_path'].strip()):
+            raise invalid('file_path must be a non-empty string')
         if editing:
             if not arguments['old_string']:
-                raise ValueError('old_string must be a non-empty string')
+                raise invalid('old_string must be a non-empty string')
             if arguments['old_string'] == arguments['new_string']:
-                raise ValueError('old_string and new_string must differ')
+                raise invalid('old_string and new_string must differ')
         policy = await sandbox.resolve_policy(kind, arguments, execution)
         filesystem = ctx.get('fs')
         target = await _observation_target(filesystem, arguments['file_path'], execution, policy,
@@ -66,7 +76,7 @@ def apply_mutation_tool(ctx, sandbox, kind, current=False, directory_aware=False
         except Exception as error:
             raise remediate_fs_error(sandbox.map_error(error, policy), target.displayPath if current else None)
         ctx.emit('fs/observed', target, dict(kind='present', version=outcome.version), execution)
-        result = dict(path=target.displayPath, before=outcome.before, after=outcome.after)
+        result = dict(path=filesystem.processPath(target) if latest else target.displayPath, before=outcome.before, after=outcome.after)
         if not editing:
             result['operation'] = outcome.operation
         return result
@@ -77,7 +87,11 @@ def apply_mutation_tool(ctx, sandbox, kind, current=False, directory_aware=False
         return [dict(type='text', text=text)]
 
     def metadata(arguments, value):
-        return dict(diffs=[] if value['before'] is None else compute_hunk_diffs(arguments['file_path'], value['before'], value['after']))
+        result = dict(diffs=[] if value['before'] is None else compute_hunk_diffs(value['path'] if latest else arguments['file_path'], value['before'], value['after']))
+        if latest:
+            result['path'] = value['path']
+            if not editing: result['operation'] = value['operation']
+        return result
 
     def fallback(arguments):
         return [dict(path=arguments['file_path'], oldText=arguments['old_string'] or None if editing else None,
@@ -94,6 +108,9 @@ def apply_mutation_tool(ctx, sandbox, kind, current=False, directory_aware=False
             if editing:
                 return None
             diffs = fallback(arguments)
+            if latest and isinstance(result.get('meta'), dict):
+                path = result['meta'].get('path')
+                if isinstance(path, str) and path: diffs[0]['path'] = path
         return dict(card='diff', title=kind.capitalize() + ' ' + arguments['file_path'], diffs=diffs)
 
     ctx.get('tools').register(dict(name=kind, description=description,

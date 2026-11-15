@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-15",
+  "unit": "C7-J-ConnectionPeers",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "state": "targeted-passed",
+  "paired": ".goose/out/rc022-connection-peer-paired-3-20261115-01/comparison/report.json",
+  "observations": 11,
+  "native": {
+    "run": "rc022-connection-peer-native-final-20261115-01",
+    "passed": 11,
+    "failed": 0
+  },
+  "source": {
+    "run": "rc022-connection-peer-source-20261115-01",
+    "passed": 35,
+    "failed": 0
+  },
+  "verification_scope_reason": "Actual signed BrowserAuth and Connection service: shared browser owner, independent API operator publication, synchronous single-socket claim, HTTP admission before socket, shared release and immediate credential revocation, browser no-op release, caller-owned Peer/route cleanup, exact Fetch owner fence, trusted Peer RPC binding, service unload. Native test opens real HTTP sockets through WebServer and generic channel, rejects unauthenticated advertised body before reading, carries binary multipart for admitted operator, then rejects revoked credential and removes route.",
+  "activation_boundary": "Candidate AuthorizedHostConnection service and Peer-aware HTTP bridge. Full Connection plugin composition, actual websocket upgrade/claim lifecycle, Gateway mux/uplink and events remain subsequent C7 work. Native Cordis effect disposer is synchronous for the tested HTTP route; observed removal is asserted without claiming JS Promise disposer ABI.",
+  "cleanup": ".goose/out/rc022-connection-peer-source-20261115-01/cleanup.json",
+  "retained_assets": "Commands/results and repaired fixture failures retained; owned temporary payloads removed. Real test HTTP listener stopped in finally. Shared Source/toolchain retained through C9."
+}

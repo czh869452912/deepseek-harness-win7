@@ -72,4 +72,6 @@
 
 | C8-AS | 当前物理可写根派生、目录联接拒绝与每次操作重新校验 | [物理可写目录](writable-roots-checks.json) |
 
+| C8-AT | 补丁批量解析、原输入行诊断及 Unicode/EOF 文本匹配 | [补丁解析与应用](fs-patch-checks.json) |
+
 后续继续设置及完整应用组合；最终资格使用 C9 冻结候选的完整门禁。

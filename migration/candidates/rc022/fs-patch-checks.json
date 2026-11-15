@@ -1,0 +1,25 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-16",
+  "unit": "C8-AT-FsPatchCore",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "state": "targeted-passed",
+  "paired": ".goose/out/rc022-fs-patch-paired-20261116-01/comparison/report.json",
+  "observations": 196,
+  "native": {
+    "run": "rc022-fs-patch-native-20261116-01",
+    "passed": 6,
+    "failed": 0
+  },
+  "source": {
+    "run": "rc022-fs-patch-source-20261116-01",
+    "passed": 147,
+    "failed": 0
+  },
+  "verification_scope_reason": "Shared corpus executes actual pure Source/native parser and updater. Syntax includes exact original line errors, wrappers and CR handling, add/delete/update/move order, implicit hunks, unsupported Environment ID headers, EOF boundaries and Unicode White_Space excluding BOM/C0 controls. Text updates cover four ordered matching passes, EOF tail overriding cursor, immutable original-text searches, stable same-index insertions, sentinel retry, no partial text on failure and final LF. Complete original fs-patch parse/apply suites selected.",
+  "activation_boundary": "Pure foundation for upcoming current filesystem patch/delete/move and model tool batch. No production capability activation or release qualification.",
+  "licensing": "Byte-preserved upstream fs-patch/LICENSE retained next to Python adaptation; source header records OpenAI Apache-2.0 portions, DeepSeek MIT contribution and Python modifications.",
+  "cleanup": ".goose/out/rc022-fs-patch-source-20261116-01/cleanup.json",
+  "cleanup_bytes": 21218,
+  "retained_assets": "Temporary homes and empty external root removed; no test workspace or owned worker remains. Shared input corpus, raw observations, commands, XML and logs retained. Shared Source/toolchain through C9."
+}

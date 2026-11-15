@@ -69,13 +69,21 @@ def _truncate(value):
 class ReactLoopInbox:
     def __init__(self, projections, session, dispatch):
         self.projections, self.session, self.dispatch = projections, session, dispatch
-        projections.register(INBOX_PROJECTION_DEFINITION)
+        # Services themselves are callable; only an actual reader takes this path.
+        if callable(projections) and not hasattr(projections, 'register'):
+            self._read_state = projections
+        else:
+            projections.register(INBOX_PROJECTION_DEFINITION)
+            self._read_state = self._legacy_state
 
-    def current(self):
+    def _legacy_state(self):
         state = self.projections.stateOf(self.session, 'inbox')
         if state is None:
             raise RuntimeError('agent "%s" cannot read inbox state: its projection registration is not active' % self.session.id)
         return state
+
+    def current(self):
+        return self._read_state()
 
     @property
     def nextTurn(self):

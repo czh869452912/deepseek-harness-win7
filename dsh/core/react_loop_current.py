@@ -32,7 +32,7 @@ def request_proposal(header):
 
 
 class ReactLoopAgent:
-    def __init__(self, loop_ctx, session, options=None):
+    def __init__(self, loop_ctx, session, options=None, inbox_reader=None):
         self.loop_ctx, self.session, self.id = loop_ctx, session, session.id
         self.options = options or AgentOptions()
         self.request_header_logged = False
@@ -40,7 +40,8 @@ class ReactLoopAgent:
         self.dispatch = agent_events(loop_ctx, self)
         self.scope = create_scope(loop_ctx, self)
         self.ctx = self.scope.ctx
-        self.inbox = ReactLoopInbox(self.ctx.get('sessionProjections'), session, self.dispatch)
+        self.inbox = ReactLoopInbox(inbox_reader if inbox_reader is not None
+                                    else self.ctx.get('sessionProjections'), session, self.dispatch)
         boundary = (loop_ctx.get('agents').turnBoundaryOf(session) if getattr(session,'format_version',3) == 4
                     else loop_ctx.get('sessionProjections').stateOf(session, 'turnBoundary'))
         self.phase = dict(kind='idle', lastTurn=boundary['lastTurn'] if boundary else 0)

@@ -1115,6 +1115,16 @@ class AgentLoopPlugin(Plugin):
         ctx.set_service("agent_loop", agent_loop)
         ctx.set_service("agentLoop", agent_loop)
 
+        initialize = getattr(agent_loop, 'initialize_projections', None)
+        if callable(initialize) and getattr(ctx.get('sessionProjections'), 'format_version', 3) == 4:
+            async def activate():
+                await initialize()
+                return self._activate(ctx, registry, agent_loop, rows)
+            return activate()
+        return self._activate(ctx, registry, agent_loop, rows)
+
+    def _activate(self, ctx, registry, agent_loop, rows):
+
         def prompt_variables(runtime_ctx):
             prompt = runtime_ctx.get("systemPrompt")
             for name in ("provider", "model"):

@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-15",
+  "unit": "C4-I-InboxRetainedReaders",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "state": "targeted-passed",
+  "paired": ".goose/out/rc022-inbox-readers-paired-20261115-01/comparison/report.json",
+  "observations": 6,
+  "native": {"run": "rc022-inbox-readers-native-20261115-01", "passed": 188, "failed": 2},
+  "native_retry": {"run": "rc022-inbox-readers-retry-20261115-01", "passed": 2, "failed": 0},
+  "source": {"run": "rc022-inbox-readers-source-20261115-01", "passed": 16, "failed": 0},
+  "verification_scope_reason": "Inbox accepts a lazy bound reader and never registers in that path. Paired live/detached sessions cover retained reads after disposal, replacement registration, independent sessions, captured arrays, claims, clearing, durable payloads, notifications and exact reader failure identity. Native loop initialization awaits one Inbox registration before factory publication, two real V4 Agents borrow distinct readers without registering again, and loop disposal releases ownership. Existing V3 machine, lifecycle, projection, factory and launcher consumers pass.",
+  "retry_reason": "Two new assertions needed correction: Source also initializes a live session's Inbox cell before a reader is called; patching a bound register method in the test discarded traced caller ownership. The corrected test patches the class method to preserve that ownership. No production changes were needed after the initial verification.",
+  "activation_boundary": "The V4 projection registry selects loop-owned registration. Default V3 compositions retain their existing synchronous facade. Model-selection ownership and the remaining loop contracts are separate work; this is not complete C4 or release acceptance.",
+  "cleanup": ".goose/out/rc022-inbox-readers-native-20261115-01/cleanup.json",
+  "remaining": "Model-selection/runtime consumers, title retained input and lifecycle, remaining Agent service contracts, coordinated activation and release qualification."
+}

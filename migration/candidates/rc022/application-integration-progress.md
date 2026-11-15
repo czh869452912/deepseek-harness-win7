@@ -16,5 +16,6 @@
 | C8-J | 持久 PowerShell 的分段输出、退出竞争、取消、创建合并与卸载回滚 | [持久 shell 协议](persistent-protocol-checks.json) |
 | C8-K | 指令双用户根目录、配置空列表、基线身份与全局/项目逻辑作用域 | [指令配置与作用域](instruction-config-checks.json) |
 | C8-L | 用户级/项目双链预算、截断与生效记录、变更批次及帧转义 | [指令预算渲染](instruction-render-checks.json) |
+| C8-M | 指令发现、限额流读取、内容去重、作用域探测与文件系统 BOM 解码 | [指令文件读取](instruction-files-checks.json) |
 
 后续继续设置及完整应用组合；最终资格使用 C9 冻结候选的完整门禁。

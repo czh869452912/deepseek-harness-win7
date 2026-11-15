@@ -217,7 +217,7 @@ def _restore_line_endings(content: str, line_endings: str) -> str:
 
 def _decode_utf8(raw: bytes, verb: str, display_path: str) -> str:
     try:
-        return raw.decode("utf-8", errors="strict")
+        return raw.decode("utf-8-sig", errors="strict")
     except UnicodeDecodeError as error:
         raise FsError('cannot %s "%s": invalid UTF-8 text' % (verb, display_path), "FS_NOT_TEXT", error)
 
@@ -492,7 +492,7 @@ class FsService:
         self._regular_info(local, signal)
 
         async def chunks() -> AsyncIterator[str]:
-            decoder = codecs.getincrementaldecoder("utf-8")(errors="strict")
+            decoder = codecs.getincrementaldecoder("utf-8-sig")(errors="strict")
             sampled = 0
             with _open_binary_read(local.targetKey) as handle:
                 while True:

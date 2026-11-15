@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-16",
+  "unit": "C8-M-InstructionDiscoveryReads",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "state": "targeted-passed",
+  "paired": ".goose/out/rc022-instruction-files-paired-receipt-20261116-01/comparison/report.json",
+  "observations": 15,
+  "native": {"run": "rc022-instruction-files-native-final-20261116-01", "passed": 153, "failed": 0, "skipped": 4},
+  "source": {"run": "rc022-instruction-files-source-2-20261116-01", "passed": 20, "failed": 0, "excluded": 186},
+  "verification_scope_reason": "Actual host and FsLocal discovery and reads cover both user roots, project marker files, nested instructions, duplicate content, scope collisions, missing paths, source byte caps and empty replacement baselines. Native checks stream early-close and cleanup errors, cancellation identity, unavailable scope versus absence and one-byte decoder chunks. Existing filesystem and instruction consumers pass. Source discovery cases run outside the checkout to avoid ancestor .git/AGENTS.md fixture contamination; symlink cases excluded on this Windows host.",
+  "implementation": "Candidate discovery preserves ordered global/project scopes, independent candidate failures, exact JS trimmed-content deduplication, bounded streaming and cancellation. FsLocal whole/stream decoding now strips only the first UTF-8 BOM, matching Source TextDecoder and preserving a second BOM; actual edit verifies persisted bytes. Host fallback retains BOM and CRLF as Source does.",
+  "observer_boundary": "Owned roots normalize to <work>; opaque versions normalize to <opaque-version> because each observer creates distinct physical files. This does not qualify version-token equivalence. Initial BOM mismatch and Source fixture-contamination diagnostics retained. Runtime reconciliation is a later unit.",
+  "activation_boundary": "Candidate instruction helpers only; production pin and accepted_upstream unchanged pending C9. Targeted checks do not establish release acceptance.",
+  "cleanup": ".goose/out/rc022-instruction-files-source-2-20261116-01/cleanup.json",
+  "external_cleanup": ".goose/out/rc022-instruction-files-source-2-20261116-01/external-cleanup.json",
+  "retained_assets": "Removed 4161129 bytes of owned test workspaces and inputs plus the empty external Source fixture root. No task workers remain. Commands, observations and failure diagnostics retained; shared fixed Source/toolchain retained through C9."
+}

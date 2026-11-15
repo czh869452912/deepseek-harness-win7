@@ -76,6 +76,7 @@ class FsSearchService:
         run = await run_ripgrep(
             ctx, exec_context, "glob", build_glob_command(parsed),
             self.raw_output_max_bytes, self.grace_ms, self.stderr_max_bytes, current=getattr(self, 'current_contract', False),
+            directory_aware=getattr(self, 'directory_aware', False),
         )
         root_display = "." if parsed.get("path") is None else to_workdir_relative(
             parsed["path"], run["workdir"])
@@ -90,6 +91,7 @@ class FsSearchService:
         run = await run_ripgrep(
             ctx, exec_context, "grep", build_grep_command(parsed),
             self.raw_output_max_bytes, self.grace_ms, self.stderr_max_bytes, current=getattr(self, 'current_contract', False),
+            directory_aware=getattr(self, 'directory_aware', False),
         )
         if run["noMatches"]:
             return {"matches": []}
@@ -111,6 +113,7 @@ class ToolFsSearchPlugin(Plugin):
         service = self.service
         current = getattr(self, 'current_contract', False)
         service.current_contract = current
+        service.directory_aware = getattr(self, 'directory_aware', False)
 
         def setup() -> Any:
             # Cordis inject properties are caller-bound traceable proxies.  Using

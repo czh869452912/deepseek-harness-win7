@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-16",
+  "unit": "C8-H-WorkingDirectoryConsumers",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "state": "targeted-passed",
+  "paired": ".goose/out/rc022-directory-consumers-paired-final-20261116-01/comparison/report.json",
+  "observations": 17,
+  "native": {"run": "rc022-directory-consumers-native-3-20261116-01", "passed": 137, "failed": 0},
+  "source": {"run": "rc022-directory-consumers-source-2-20261116-01", "passed": 440, "failed": 0, "skipped": 3},
+  "verification_scope_reason": "Actual Agent/Session, WorkingDirectory, local filesystem, tool pipeline and ripgrep subprocess cover directory changes, read/write/edit, glob/grep, completion index retirement, one-shot shell relative workdir and canonical cwd result, absolute deliverables and teardown. Native failure tests prevent file/delivery side effects when ensure fails. Direct legacy file tools, read-image/range, observation-policy, search, completion, present and shell consumers pass; Source suites cover the corresponding providers.",
+  "implementation": "Candidate providers require workingDirectory and ensure it per Agent call. File observations and mutations share its target; completion replaces the index on exact cwd changes; present commits processPath-qualified paths only after successful tool completion. working_directory reads/changes the exact calling Session and uses typed context/argument failures. Legacy providers retain their prior defaults.",
+  "observer_boundary": "Shell resolve/run execution is controlled; file operations and search children are real. Initial shell observer had an incomplete interface and was fixed before acceptance. Initial native fixture omitted subprocess and required search config; corrected. One pre-existing observation-version case failed once, then passed in both subsequent collections and 20 actual read/edit/write diagnostic sequences; initial failure and diagnostic observations retained. Source first run: two file-symlink setups fail with Windows EPERM. Unchanged Source rerun excludes those two names; one further upstream platform skip. Symlink behavior is not newly qualified here. One-shot job promotion and persistent terminals remain separate work.",
+  "activation_boundary": "Candidate composition only; production pin and accepted_upstream unchanged pending C9. Targeted checks do not establish full regression or release acceptance.",
+  "cleanup": ".goose/out/rc022-directory-consumers-source-2-20261116-01/cleanup.json",
+  "retained_assets": "Removed 10169237 bytes of owned synthetic inputs, pytest workspaces and tmp/home. No task workers remain. Commands, observations and diagnostics retained; shared fixed Source/toolchain retained through C9."
+}

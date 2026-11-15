@@ -17,7 +17,7 @@ def parse_read_args(arguments, maximum):
     return dict(filePath=arguments['file_path'], offset=offset, limit=limit)
 
 
-def apply_read_tool(ctx, caps, current=False):
+def apply_read_tool(ctx, caps, current=False, directory_aware=False):
     guidance='Use the read tool — not shell commands like cat — to inspect text files. Results include line numbers. Use offset and limit to continue reading large files.'
     ctx.get('systemPrompt').section(dict(name='tool:read', order=1100,
         text=(lambda context: guidance if ctx.get('tools').get('read', context.get('scope')) is not None else '') if current else guidance))
@@ -26,7 +26,8 @@ def apply_read_tool(ctx, caps, current=False):
         from dsh.fs.tool_fs import _observation_target
         requested = parse_read_args(arguments, caps['limit'])
         filesystem = ctx.get('fs')
-        target = await _observation_target(filesystem, requested['filePath'], execution)
+        target = await _observation_target(filesystem, requested['filePath'], execution,
+            directories=ctx.get('workingDirectory') if directory_aware else None)
         info = await filesystem.stat(target, execution.signal)
         if info is None:
             ctx.emit('fs/observed', target, dict(kind='absent'), execution)

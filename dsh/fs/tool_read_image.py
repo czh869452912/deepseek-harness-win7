@@ -75,7 +75,7 @@ def image_read_content(value: Dict[str, Any]) -> List[Dict[str, Any]]:
         dict(type='image', attachment=image_ref_from_value(value['image']))]
 
 
-def apply_read_image_tool(ctx: Any, current: bool = False) -> None:
+def apply_read_image_tool(ctx: Any, current: bool = False, directory_aware=False) -> None:
     async def execute(arguments: Dict[str, Any], execution: Any) -> Dict[str, Any]:
         requested_path = arguments['file_path']
         if not requested_path.strip():
@@ -92,7 +92,8 @@ def apply_read_image_tool(ctx: Any, current: bool = False) -> None:
             raise ImageReadError('cannot read "%s": %s images are not accepted by this deployment' % (requested_path, declared))
         await assert_image_capable_route(ctx, execution, requested_path)
         filesystem = ctx.get('fs')
-        target = await _observation_target(filesystem, requested_path, execution)
+        target = await _observation_target(filesystem, requested_path, execution,
+            directories=ctx.get('workingDirectory') if directory_aware else None)
         information = await filesystem.stat(target, execution.signal)
         if information is None:
             ctx.emit('fs/observed', target, dict(kind='absent'), execution)

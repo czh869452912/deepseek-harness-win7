@@ -10,7 +10,7 @@ def remediate_fs_error(error, display_path=None):
     return FsError('%s — %s' % (error, remedy), error.code, error) if remedy else error
 
 
-def apply_mutation_tool(ctx, sandbox, kind, current=False):
+def apply_mutation_tool(ctx, sandbox, kind, current=False, directory_aware=False):
     editing = kind == 'edit'
     if editing:
         description = 'Edit an existing UTF-8 text file by replacing literal text.'
@@ -51,7 +51,8 @@ def apply_mutation_tool(ctx, sandbox, kind, current=False):
                 raise ValueError('old_string and new_string must differ')
         policy = await sandbox.resolve_policy(kind, arguments, execution)
         filesystem = ctx.get('fs')
-        target = await _observation_target(filesystem, arguments['file_path'], execution, policy)
+        target = await _observation_target(filesystem, arguments['file_path'], execution, policy,
+            directories=ctx.get('workingDirectory') if directory_aware else None)
         options = dict(sandbox_policy=policy) if policy is not None else {}
         if not editing:
             intent = await _fire_waterfall(ctx, 'fs/write-intent', target, execution)

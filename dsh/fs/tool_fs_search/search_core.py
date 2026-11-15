@@ -123,9 +123,11 @@ def _run_failure(tool_name: str, exit_code: int, stderr: Any) -> SearchError:
 
 async def run_ripgrep(ctx: Any, exec_context: Any, tool_name: str,
                       argv: List[str], raw_output_max_bytes: int,
-                      grace_ms: int, stderr_max_bytes: int, current: bool = False) -> Dict[str, Any]:
+                      grace_ms: int, stderr_max_bytes: int, current: bool = False, directory_aware=False) -> Dict[str, Any]:
     throw_if_aborted(exec_context.signal, tool_name)
     workdir = workdir_from_exec(exec_context)
+    if directory_aware and getattr(exec_context, 'agent', None) is not None:
+        workdir = await ctx.get('workingDirectory').ensure(exec_context.agent, exec_context.signal)
     try:
         rg_path = await resolve_rg_path()
         # Resolve through the caller-bound injected property so subprocess

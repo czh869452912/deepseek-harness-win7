@@ -114,6 +114,8 @@ class CanonicalToolPwsh(Plugin):
             if _signal_aborted(signal):
                 raise aborted()
             cwd = getattr(getattr(session, 'header', None), 'cwd', None)
+            if getattr(self, 'directory_aware', False) and agent is not None:
+                cwd = await ctx.get('workingDirectory').ensure(agent, signal)
             workdir = args.get('workdir', cwd)
             if workdir is not None and cwd and not os.path.isabs(workdir):
                 workdir = os.path.abspath(os.path.join(cwd, workdir))
@@ -131,9 +133,10 @@ class CanonicalToolPwsh(Plugin):
                 jobs = ctx.get('jobs')
                 if jobs is None:
                     raise ValueError('background jobs unavailable: load jobs and tool-jobs')
+                resolved = shell.resolve(request) if getattr(self, 'directory_aware', False) else None
 
                 def start():
-                    process = shell.start(shell.resolve(request))
+                    process = shell.start(resolved if resolved is not None else shell.resolve(request))
 
                     async def finish():
                         await process.done
@@ -157,15 +160,28 @@ class CanonicalToolPwsh(Plugin):
                     return dict(done=asyncio.create_task(finish()), cancel=lambda *_: process.kill(), readOutput=read)
 
                 job_id = jobs.start(dict(kind='pwsh', label=args['command'], owner=agent, run=start))
-                return dict(kind='background', jobId=job_id)
-            result = await shell.run(shell.resolve(dict(request, signal=signal)))
+                return dict(kind='background', jobId=job_id, **(
+                    dict(cwd=resolved['workdir']) if resolved is not None else {}))
+            spec = shell.resolve(dict(request, signal=signal))
+            result = await shell.run(spec)
             if result['aborted']:
                 raise aborted()
+            if getattr(self, 'directory_aware', False):
+                return dict({key: result[key] for key in
+                             ('exitCode', 'signal', 'timedOut', 'aborted', 'timeoutMs', 'stdout', 'stderr', 'sandbox')
+                             if key in result}, kind='foreground', cwd=spec['workdir'])
             return dict(result, kind='foreground')
 
         parameters = dict(type='object', properties=fields, required=['command', 'description'])
         description = pwsh_description(background)
         if confined:
             description += ' Under the Windows sandbox, read-only pwsh runs in PowerShell ConstrainedLanguage mode, while workspace-write stays in FullLanguage unless host policy says otherwise. In read-only, prefer cmdlets and core types (`[string]`, `[datetime]`, `[regex]`, `[guid]`); .NET static calls (`[System.IO.*]::`, `[math]::`), `Add-Type`, COM objects, and reflection fail with "only core types" errors. `-f` formatting, property access, and core cmdlets work. In both confined modes, programs cannot open named pipes, so a command that captures another program\'s output through piped stdio (Node.js `child_process.spawn`/`exec` with the default `stdio: \'pipe\'`) fails with EPERM, while `stdio: \'inherit\'` and `stdio: \'ignore\'` spawns work and PowerShell\'s own pipelines are unaffected. That EPERM is the documented boundary: do not retry the command another way — escalate the exact command once or restructure it to avoid capturing output. Attempting a command the sandbox may deny is safe and expected: run it and read the marker rather than assuming the denial. When a command is denied and a wider mode would let it succeed, escalate immediately in the same turn — the one sanctioned exception to a denial: retry the exact same command once with `sandbox_permissions` (the narrowest wider mode that suffices) plus a one-sentence `justification`. Do not detour through chat to ask permission first — the approval prompt raised by that retry is how the user consents. If the session states approval prompts are disabled, there is no exception: a denial is final — do not set `sandbox_permissions`. Never escalate speculatively: ground the request in a real denial — normally the one this command just hit; escalating up front is fine only when this session already denied the same access. A rejected escalation is final for that command — stop and explain, never work around it — but it does not forbid attempting or escalating other commands later.'
+        output_schema = OUTPUT
+        if getattr(self, 'directory_aware', False):
+            import copy
+            output_schema = copy.deepcopy(OUTPUT)
+            for variant in output_schema['oneOf']:
+                variant['properties']['cwd'] = dict(type='string')
+                variant['required'].append('cwd')
         ctx.get('tools').register(dict(name='pwsh', description=description, parameters=parameters, execute=execute,
-            output=dict(schema=OUTPUT, render=lambda args, value: [{'type': 'text', 'text': render_foreground(value, confined)}])))
+            output=dict(schema=output_schema, render=lambda args, value: [{'type': 'text', 'text': render_foreground(value, confined)}])))

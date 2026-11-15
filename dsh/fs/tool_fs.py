@@ -21,7 +21,7 @@ async def _fire_waterfall(ctx: Optional[Any], event_name: str, target: Any, acto
     return await ctx.waterfall(event_name, target, actor, lambda: default)
 
 
-async def _observation_target(fs: Any, file_path: str, actor: Any = None, policy: Any = None) -> FsTarget:
+async def _observation_target(fs: Any, file_path: str, actor: Any = None, policy: Any = None, directories=None) -> FsTarget:
     """
     The exact target the observation events and mutations share.
 
@@ -32,7 +32,9 @@ async def _observation_target(fs: Any, file_path: str, actor: Any = None, policy
     agent = getattr(actor, 'agent', None)
     header = getattr(getattr(agent, 'session', None), 'header', None)
     cwd = header.get('cwd') if isinstance(header, dict) else getattr(header, 'cwd', None)
-    if policy and policy.get('workspaceRoot'):
+    if directories is not None:
+        cwd = None if agent is None else await directories.ensure(agent, actor.signal)
+    elif policy and policy.get('workspaceRoot'):
         cwd = policy['workspaceRoot']
     elif cwd and (re.search(r'(?:^|[\\/])\.\.(?:[\\/]|$)', cwd) or
                   re.search(r'(?:^|[\\/])\.\.(?:[\\/]|$)', file_path)):
@@ -122,7 +124,8 @@ class ToolFsPlugin(Plugin):
                 raise ValueError('tool-fs: %s must be a positive integer' % name)
         from dsh.fs.tool_read_image import apply_read_image_tool
         current = getattr(self, 'current_contract', False)
-        ctx.inject(['attachments'], lambda inner: apply_read_image_tool(inner, current=current))
+        directory_aware = getattr(self, 'directory_aware', False)
+        ctx.inject(['attachments'], lambda inner: apply_read_image_tool(inner, current=current, directory_aware=directory_aware))
         tools = ctx.get("tools")
         if not tools:
             return
@@ -130,10 +133,10 @@ class ToolFsPlugin(Plugin):
         from dsh.fs.tool_read import apply_read_tool
         from dsh.fs.tool_fs_mutation import apply_mutation_tool
         apply_read_tool(ctx, dict(limit=self.read_limit, maxLineLength=self.read_max_line_length,
-            maxBytes=self.read_max_bytes, streamMinSize=self.read_stream_min_size), current=current)
+            maxBytes=self.read_max_bytes, streamMinSize=self.read_stream_min_size), current=current, directory_aware=directory_aware)
         sandbox = FsSandboxController(ctx)
-        apply_mutation_tool(ctx, sandbox, 'write', current=current)
-        apply_mutation_tool(ctx, sandbox, 'edit', current=current)
+        apply_mutation_tool(ctx, sandbox, 'write', current=current, directory_aware=directory_aware)
+        apply_mutation_tool(ctx, sandbox, 'edit', current=current, directory_aware=directory_aware)
 
 
 __all__ = ["ToolFsPlugin", "format_read_output", "format_write_output", "format_edit_output"]

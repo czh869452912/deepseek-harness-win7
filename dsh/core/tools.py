@@ -42,6 +42,11 @@ class ToolArgsError(HarnessError):
         super().__init__("invalid arguments: %s" % "; ".join(violations), TOOL_ARGS_INVALID)
 
 
+class ToolContextUnavailableError(HarnessError):
+    def __init__(self, message, cause=None):
+        super().__init__(message, 'TOOL_CONTEXT_UNAVAILABLE', cause=cause)
+
+
 class ToolOutputError(HarnessError):
     def __init__(self, tool_name: str, violations: List[str]):
         self.violations = violations

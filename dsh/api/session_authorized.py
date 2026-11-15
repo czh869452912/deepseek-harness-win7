@@ -1,7 +1,9 @@
 """Resource-filtered Session Remote reads and v4 projection control frames."""
+import os
+
 from dsh.api.session_current import CurrentSessionController
 from dsh.api.session_control_current import CurrentSessionControl
-from dsh.typert.remote import Remote, RemoteError
+from dsh.typert.remote import Remote, RemoteError, TypertRemoteService
 from dsh.typert.principal import principal_of
 from dsh.core.session.json import UNDEFINED
 from dsh.api.session_commands_authorized import AuthorizedSessionCommands
@@ -11,6 +13,14 @@ from dsh.api.session_agents_authorized import AuthorizedSessionAgents
 from dsh.api.session_history_authorized import SessionHistoryController
 from dsh.api.session_web_authorized import SessionWebController
 from dsh.api.session_state_authorized import SessionStateController
+from dsh.api.session_list_authorized import AuthorizedSessionList
+from dsh.api.archived_session_gate import ArchivedSessionGate
+from dsh.api.session_resource import register_session_resource
+from dsh.api.session_catalogs_current import SessionFileReferences, CurrentSessionSkillCatalog
+from dsh.api.session_media_current import CurrentSessionMediaReferences
+from dsh.cordis.schema import Schema
+from dsh.host.native_command_current import can_open_native_path, open_native_path, reveal_native_path
+from dsh.llm.error import error_chain
 
 
 class ProjectionSessionControl(CurrentSessionControl):
@@ -27,6 +37,7 @@ class ProjectionSessionControl(CurrentSessionControl):
 
 
 class AuthorizedSessionController(CurrentSessionController):
+    Config = Schema.object(dict(nativeOpen=Schema.boolean(), listWorkSliceMs=Schema.natural().min(1).default(16)))
     inject = ['agentDefaultModel', 'agents', 'attachments', 'fileUploads', 'fs', 'llm', 'remoteAccess',
               'sessions', 'sessionProjections', 'sessionQuery', 'typert', 'typertGateway', 'workspaceRegistry']
     control_class = ProjectionSessionControl
@@ -34,11 +45,50 @@ class AuthorizedSessionController(CurrentSessionController):
     agents_class = AuthorizedSessionAgents
     model_projection = staticmethod(lambda ctx: None)
 
+    def __init__(self, ctx, config=None, internals=None):
+        TypertRemoteService.__init__(self, ctx, 'sessionController', dict(namespace='session'))
+        config, internals = self.Config(config or {}), internals or {}
+        self.list_work_slice_ms = config['listWorkSliceMs']
+        self.open_path, self.reveal_path = internals.get('openPath', open_native_path), internals.get('revealPath', reveal_native_path)
+        self.can_open = internals.get('canOpenPath', lambda: config['nativeOpen'] if 'nativeOpen' in config else 'openPath' in internals or can_open_native_path())
+
     async def init(self):
-        self.history_reads = SessionHistoryController(self.ctx)
-        self.web_controller = SessionWebController(self.ctx, self.history_reads, self.promote)
-        self.state_controller = SessionStateController(self.ctx, self.history_reads)
+        ctx = self.ctx
+        register_session_resource(ctx)
+        self.agents, self.promotions = self.agents_class(ctx), set()
+        self.commands = self.commands_class(ctx, self.agents, os.getcwd())
+        async def resolve(identity):
+            found = await self.agents.resolveAgent(identity)
+            if 'error' in found:
+                raise found['error']
+            return found['agent']
+        ctx.effect(lambda: ctx.get('fileUploads').registerAgentResolver(resolve), 'session-controller: file-upload Agent resolver')
+        self.control_state = self.control_class(ctx)
+        ctx.effect(lambda: self.drain, 'session-controller.promotions')
+        # Capture Assistant openings before either awaited initialization can yield.
+        self.history_reads = SessionHistoryController(ctx)
+        self.state_controller = SessionStateController(ctx, self.history_reads)
+        self.web_controller = SessionWebController(ctx, self.history_reads, self.promote)
+        self.list_state = AuthorizedSessionList(ctx, self.list_work_slice_ms)
         await self.commands.initialize()
+        ctx.fiber.assert_active()
+        await self.list_state.initialize()
+        ctx.fiber.assert_active()
+        ctx.plugin(SessionFileReferences)
+        ctx.plugin(CurrentSessionMediaReferences)
+        ctx.plugin(CurrentSessionSkillCatalog)
+        ctx.plugin(ArchivedSessionGate)
+        ctx.on('session/created', lambda session: ctx.emit('api-session/added', self.list_state.summaryFor(session)))
+        ctx.on('session/disposed', lambda session: ctx.emit('api-session/removed', session.id))
+        def availability(payload):
+            agent = payload['agent']
+            if ctx.get('sessions').get(agent.id) is agent.session:
+                ctx.emit('api-session/added', self.list_state.summaryFor(agent.session))
+        ctx.on('agent/created', availability)
+        ctx.on('agent/disposed', availability)
+        ctx.on('agent/status', lambda payload: ctx.emit('api-session/status', payload['agent'].id, payload['status']=='running'))
+        ctx.on('agent/error', lambda payload: ctx.emit('api-session/error', payload['agent'].id, error_chain(payload['error'])))
+        ctx.on('session/event', self.event)
 
     def event(self, session, event):
         if event['type'] == 'user/message' and event['data']['source']['kind'] == 'user':

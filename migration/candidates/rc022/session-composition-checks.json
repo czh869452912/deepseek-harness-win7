@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-16",
+  "unit": "C7-AF-SessionControllerInitialization",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "state": "targeted-passed",
+  "paired": ".goose/out/rc022-session-composition-paired-2-20261116-01/comparison/report.json",
+  "observations": 8,
+  "native": {"run": "rc022-session-composition-native-2-20261116-01", "passed": 64, "failed": 0},
+  "source": {"run": "rc022-session-composition-source-20261116-01", "passed": 35, "failed": 0},
+  "verification_scope_reason": "Paired actual Cordis controller/Agent/Session/FS/WorkingDirectory/Typert/Gateway verify Assistant frames racing awaited initialization, public list budget, passive Remote state/wait, upload resolver, Session/Agent availability ordering, projection-only control, archived execution blocked before a model request and complete provider unload. Native additionally checks constructor isolation, configuration bounds, lineage/fork/missing-parent/cycle admission, actual execution after restore, joining pending promotions and failed initialization cleanup. Direct read/prompt/archive consumers and Source controller/scheduling suites pass.",
+  "implementation": "The candidate controller constructor configures only native integrations and the list budget. Service initialization now owns routing, commands, control, shared history/state/Web providers and async list handles in Source order, with active-fiber checks after awaits. It mounts archive admission and publishes Agent availability only for the exact currently attached Session. The retired combined CurrentSessionHistory and its duplicate Assistant listeners are absent from the candidate controller.",
+  "observer_boundary": "Model defaults, attachment limits, upload registration and archive membership are controlled collaborators. Initial Source observer imports used stale package paths, corrected against the existing access observer; original diagnostics retained. Native desktop/file/media and skill-catalog surface deltas remain separate work. Targeted results are not full regression or release acceptance.",
+  "activation_boundary": "Candidate controller only; production pin and accepted_upstream unchanged pending C9.",
+  "cleanup": ".goose/out/rc022-session-composition-source-20261116-01/cleanup.json",
+  "retained_assets": "Owned fixture journals, pytest workspaces and tmp/home removed after teardown; no task workers remain. Commands, observations and diagnostics retained; shared Source/toolchain retained through C9."
+}

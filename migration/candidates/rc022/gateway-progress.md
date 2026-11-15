@@ -47,4 +47,6 @@
 
 | C7-AE | 列表投影句柄、摘要排除、冷缓存提示、格式状态与分片工作预算 | [列表摘要](session-summary-checks.json) |
 
-后续：完整 Session 组合、生成物和原版客户端整体接入。上传提供方已另记 C8-A。最终资格使用 C9 冻结候选的完整门禁；当前生产 pin 与 `accepted_upstream` 不提升。
+| C7-AF | 完整控制器初始化顺序、可用性事件、归档准入与失败/卸载清理 | [控制器组合](session-composition-checks.json) |
+
+后续：原生文件能力、目录和技能消费者、生成物与原版客户端整体接入。上传提供方已另记 C8-A。最终资格使用 C9 冻结候选的完整门禁；当前生产 pin 与 `accepted_upstream` 不提升。

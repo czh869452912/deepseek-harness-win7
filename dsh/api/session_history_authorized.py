@@ -193,3 +193,10 @@ class SessionHistoryReads:
                 records.append(dict(type='event', event=event))
             return dict(records=records, truncated=False)
         return await self.usingObservation(dict(sessionId=session_id, projection=False), signal, read)
+
+
+class SessionHistoryController(SessionHistoryReads):
+    def __init__(self, ctx):
+        super().__init__(ctx)
+        from dsh.api.session_assistant_listeners import SessionAssistantStreamsListener
+        self.streamsListener = SessionAssistantStreamsListener(ctx)

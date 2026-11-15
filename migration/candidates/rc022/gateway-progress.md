@@ -39,4 +39,6 @@
 
 | C7-AA | 被动事件/投影订阅、创建补帧与去重、单消费者、取消和卸载 | [被动订阅](session-listeners-checks.json) |
 
+| C7-AB | 助手重连基线、每连接到达游标、生成取消结束帧与生命周期清理 | [助手重连](assistant-reconnect-checks.json) |
+
 后续：完整 Session 组合、历史/状态/列表、生成物和原版客户端整体接入。上传提供方已另记 C8-A。最终资格使用 C9 冻结候选的完整门禁；当前生产 pin 与 `accepted_upstream` 不提升。

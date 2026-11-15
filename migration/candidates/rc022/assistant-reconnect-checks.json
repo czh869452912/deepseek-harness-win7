@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-15",
+  "unit": "C7-AB-AssistantReconnectListeners",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "state": "targeted-passed",
+  "paired": ".goose/out/rc022-assistant-reconnect-paired-2-20261115-01/comparison/report.json",
+  "observations": 10,
+  "native": {"run": "rc022-assistant-reconnect-native-20261115-01", "passed": 13, "failed": 0},
+  "source": {"run": "rc022-assistant-reconnect-source-20261115-01", "scope": "SessionAssistantStreamAccumulator|AssistantStreamListener", "passed": 5, "failed": 0},
+  "verification_scope_reason": "Paired actual Session/Cordis/Assistant accumulator and notification buffer providers verify shared identity-stable baselines, retained old snapshots, connection-local arrival cuts, durable start cursors, lifecycle resets, frame gaps, unbound queue ownership and cancellation. Native additionally binds to an actual generating Agent after partial text, observes the cancellation end frame and disposal reset, checks registration failure leaves the queue usable, and verifies provider unload clears reconnect state. Passive listener/Gateway direct consumers and the corresponding Source accumulator/listener suites pass.",
+  "implementation": "SessionAssistantStreamsListener retains one process-local accumulator per Session and clears it on Agent disposal or provider unload. AssistantStreamListener adds durable start cursors and connection-local ordinals to shared queues, dropping baseline-covered or unbound arrivals. The candidate SessionHistoryController composes this shared state with the passive read/subscription provider.",
+  "observer_boundary": "Paired Agent notifications are controlled trusted frames; actual generation is separately exercised by the native integration test. The initial observer used unhashable SimpleNamespace for its synthetic Agent, which other installed lifecycle listeners rejected; it now supplies an ordinary identity-hashable object. Original diagnostics retained. Composite Web follow/state/wait and full controller initialization remain separate. These are targeted results, not full regression or release acceptance.",
+  "activation_boundary": "Candidate providers only; production pin and accepted_upstream unchanged pending C9.",
+  "cleanup": ".goose/out/rc022-assistant-reconnect-source-20261115-01/cleanup.json",
+  "retained_assets": "Owned fixture journals, pytest workspaces and tmp/home removed after teardown; no task workers remain. Commands, observations and diagnostics retained; shared Source/toolchain retained through C9."
+}

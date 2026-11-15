@@ -50,4 +50,6 @@
 
 | C8-AH | 子进程错误继承、启动失败分类与原始原因保留 | [子进程错误合同](subprocess-errors-checks.json) |
 
+| C8-AI | 规范普通进程对象合同、挂起后 Job 分配与后代生命周期 | [普通进程启动](ordinary-spawn-checks.json) |
+
 后续继续设置及完整应用组合；最终资格使用 C9 冻结候选的完整门禁。

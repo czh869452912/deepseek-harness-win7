@@ -13,6 +13,21 @@ def check(signal):
 
 
 class AuthorizedLocalSubprocessRuntime(LocalSubprocessRuntime):
+    def __init__(self,ctx):
+        super().__init__(ctx)
+        self.ordinary_cleanups=set()
+
+    async def _dispose_managed_processes(self):
+        await super()._dispose_managed_processes()
+        if self.ordinary_cleanups:
+            await asyncio.gather(*list(self.ordinary_cleanups))
+
+    def spawn(self,spec):
+        if not isinstance(spec,dict):return super().spawn(spec)
+        if sys.platform!='win32':raise RuntimeError('Canonical Win7 ordinary process provider requires Windows')
+        from .ordinary_authorized import spawn
+        return spawn(self,spec)
+
     async def spawnTerminal(self, spec):
         if not spec.get('argv') or not spec['argv'][0]:
             from dsh.subprocess.error import SubprocessError

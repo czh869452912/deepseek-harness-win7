@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-16",
+  "unit": "C8-AI-OrdinarySpawn",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "state": "targeted-passed",
+  "paired": ".goose/out/rc022-ordinary-spawn-paired-qualified-20261116-01/comparison/report.json",
+  "observations": 5,
+  "native": {"run": "rc022-ordinary-spawn-native-consumers-20261116-01", "passed": 38, "failed": 0},
+  "source": {"run": "rc022-ordinary-spawn-source-supported-20261116-01", "passed": 96, "failed": 0, "skipped": 19},
+  "verification_scope_reason": "Actual Source Windows Job path (reported ordinaryContainment=windows-job) and native suspended/CreateProcess/Job launch compare exit facts, UTF8 collection, byte tail loss/offset, large batch input, raw pipe ownership and failed launch collectors. Native tests additionally verify cancellation-safe done waiters, detached descendants surviving direct-child exit remain owned, Job termination retry after an injected failure, owner unload, suspended assignment-failure rollback before target code, and explicit inherited-handle isolation. Legacy spawn/collector and actual terminal/shell consumers included.",
+  "source_selection": "Owned control config reuses Source plugins and runs exact spawn.spec.ts/windows-job.spec.ts despite default Windows package exclusion. Initial run: 96 passed, 3 failed, 16 skipped. Two failures are missing Windows fixture translations for exec sleep 60; third performs an unsupported POSIX kill in an EPERM probe. Raw failures retained. Exact three names excluded on rerun: 96 passed, 19 skipped. No Source fixture edits or claim that excluded cases pass. Native direct tests cover Job range termination/host unload independently.",
+  "platform_boundary": "Canonical dict spawn is explicitly Windows-only; existing class-shaped legacy spawn remains available for its current consumers. Native public pipes remain Python binary streams. control is absent (None): the optional dedicated control-fd channel is not provided by this unit. No POSIX native-owner, Win7 VM, x86, or full shell/background consumer qualification is established.",
+  "ownership": "Only stdio handles inherit. Target starts suspended, enters a kill-on-close non-breakaway Job, then resumes. Direct outcome is separate from Job range exit; runtime retains ownership and joins cleanup/writer operations before unload succeeds. Failed termination remains retryable. Collected streams stay readable after settlement.",
+  "cleanup": ".goose/out/rc022-ordinary-spawn-source-supported-20261116-01/cleanup.json",
+  "cleanup_bytes": 766991,
+  "retained_assets": "Owned synthetic workspaces/homes/comparison stores removed. Four empty Source spill directories and both empty external roots removed. Logs/XML/commands/config/raw observations and resolved platform-failure diagnostics retained. No owned long-running Python/Node target remains. Shared Source/toolchain retained through C9; production pin/accepted_upstream unchanged."
+}

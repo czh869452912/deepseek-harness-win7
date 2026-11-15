@@ -221,7 +221,7 @@ class LocalSubprocessHandle(SubprocessHandle):
             }
             if sys.platform != "win32":
                 popen_kwargs["start_new_session"] = True
-            self._proc = subprocess.Popen([program] + args, **popen_kwargs)
+            self._proc = self.internals.get('launch', subprocess.Popen)([program] + args, **popen_kwargs)
             self.pid = self._proc.pid
         except Exception as e:
             self.pid = -1
@@ -233,7 +233,13 @@ class LocalSubprocessHandle(SubprocessHandle):
             self.stdin = io.BytesIO() if stdin_mode == 'pipe' else None
             self.stdout = io.BytesIO() if stdout_mode == 'pipe' else None
             self.stderr = io.BytesIO() if stderr_mode == 'pipe' else None
-            self.collected = SubprocessCollectedOutputs()
+            def failed_collector(mode,label):
+                if not isinstance(mode,SubprocessCollect):return None
+                collector=OutputCollector(mode.maxBytes,mode.spill.get('maxBytes') if mode.spill else None,label,
+                    spill_dir=self.spill_dir,text_encoding=mode.textEncoding)
+                collector.seal()
+                return collector
+            self.collected = SubprocessCollectedOutputs(failed_collector(stdout_mode,'stdout'),failed_collector(stderr_mode,'stderr'))
             self._tree_exit_observed = True
             self._abort_task = None
             self._grace_timer_handle = None
@@ -350,7 +356,7 @@ class LocalSubprocessHandle(SubprocessHandle):
         if self._stderr_collector:
             self._stderr_collector.seal()
 
-        if sys.platform == "win32":
+        if sys.platform == "win32" and not hasattr(self._proc, 'range_alive'):
             self._tree_exit_observed = True
         elif not self._tree_alive():
             self._tree_exit_observed = True
@@ -376,6 +382,10 @@ class LocalSubprocessHandle(SubprocessHandle):
     def terminate(self) -> None:
         if self._tree_exit_observed or self.pid <= 0 or self._termination_started:
             return
+        if hasattr(getattr(self, '_proc', None), 'kill_range'):
+            self._proc.kill_range()
+            self._termination_started = True
+            return
         self._termination_started = True
         signal_tree(self.pid, "SIGTERM")
         loop = asyncio.get_event_loop()
@@ -388,6 +398,9 @@ class LocalSubprocessHandle(SubprocessHandle):
         self._grace_timer_handle = loop.call_later(grace_sec, _kill_now)
 
     def terminate_for_host_exit(self) -> None:
+        if hasattr(getattr(self, '_proc', None), 'kill_range'):
+            self._proc.kill_range()
+            return
         if self.pid > 0:
             signal_tree(self.pid, "SIGKILL")
 
@@ -405,6 +418,8 @@ class LocalSubprocessHandle(SubprocessHandle):
     def _tree_alive(self) -> bool:
         if self._tree_exit_observed or self.pid <= 0:
             return False
+        if hasattr(self._proc, 'range_alive'):
+            return self._proc.range_alive()
         if sys.platform == "win32":
             return self._proc.poll() is None
         try:

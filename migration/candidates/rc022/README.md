@@ -117,3 +117,5 @@
 2026-11-15：C1-AT [HMR live 消费者与 Python 运行时边界](hmr-consumers-checks.json)完成 4 组真实文件旅程、606 组依赖分类复核、4 项原版与 16 项 Python 定向检查。volatile 更新后替换获得新引用，旧引用停止更新；provider/consumer 更新、父子实例归属和遍历中移除 runtime 均一致。修复 Python 框架导入使标准库进入缓存驱逐的问题，解释器/SDK/site-packages 保持宿主边界，本地插件仍可更新。观察器构建后缀/遍历门位置及 synthetic file:N 处理错误分别修正，原始诊断保留；全部自有合成文件和工作区已清理。继续高级监听规则与旧 patchReload 退役，尚未整体验收 C1。
 
 2026-11-15：C1-AU [YAML 所有的 HMR 与 Profile 策略退役](profile-hmr-checks.json)完成 13 组固定原版/Python 配对、10 项原版、263/30/53 项 Python 定向检查（最后一轮 1 项独立浏览器未选跳过），另复核 22 组原子替换、12 组代际、4 组消费者及 580 个 ignore 值。移除 patchReload 字段/参数和 launcher 隐式 HMR，旧字段作为未知扩展保留；canonical/facade 层合成共用。修复 Web 退出期间同步图扫描阻塞事件循环，按模块让出并在根卸载时终止规划，资源释放仍等待。初次失败、聚合超时及 CPU/任务栈保留；清理 3949055 字节合成资产和 78 个链接，无遗留测试进程。高级监听规则和后续合同继续推进，未宣称完整 C1/发行资格。
+
+2026-11-15：C1-AV [HMR ignore 语法](hmr-glob-checks.json)完成 101952 个固定 picomatch/Python 精确匹配值与原有 580 值、真实根监听复验，24 项 Python 定向检查通过。覆盖嵌套 extglob、brace、范围、POSIX 类、重复否定、dot/trailing slash 和原生分隔符，保留原依赖的非直觉语义；未声称任意 JavaScript 正则完全等价。初次解析/语义差异保留，全部自有合成输入/工作区和链接已清理。继续写入稳定性选项及后续迁移。

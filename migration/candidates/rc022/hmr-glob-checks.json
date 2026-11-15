@@ -1,0 +1,26 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-15",
+  "unit": "C1-AV-HmrIgnoreGrammar",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "state": "targeted-passed",
+  "paired": ".goose/out/rc022-hmr-glob-paired-20261115-08/report.json",
+  "patterns": 288,
+  "paths": 354,
+  "decisions": 101952,
+  "root_recheck": ".goose/out/rc022-hmr-glob-roots-recheck-20261115-03/report.json",
+  "root_observations": 11,
+  "original_ignore_values": 580,
+  "native": {
+    "run": "rc022-hmr-glob-native-20261115-01",
+    "passed": 24,
+    "failed": 0
+  },
+  "verification_scope_reason": "Actual pinned picomatch dependency evaluates every nested extglob/brace/range/POSIX/repeated-negation combination and ASCII input; exact booleans compared, including observed unexpected semantics. Rechecked actual root watchers and native batch dispatch/profile consumers after grammar changes.",
+  "scope": "Negated extglob suffix handling, nested alternatives, literal equality shortcut, leading-dot and trailing slash semantics, repeated leading negation, control-character guards, and POSIX classes follow observed dependency behavior. This is bounded grammar coverage, not a claim to reproduce every JavaScript regexp or unbounded adversarial nesting.",
+  "diagnostics": "Initial Python punctuation literal escaping error and real grammar differences retained. Native compiler corrected against original observations rather than changing expected Source results.",
+  "cleanup": ".goose/out/rc022-hmr-glob-native-20261115-01/cleanup.json",
+  "cleanup_bytes": 68323,
+  "cleanup_links": 14,
+  "remaining": "Root watcher write stability/atomic options and remaining migration contracts; production reference unchanged."
+}

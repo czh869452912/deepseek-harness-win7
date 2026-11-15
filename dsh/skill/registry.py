@@ -192,7 +192,7 @@ class SkillRegistry(Service):
 
     async def snapshot(self, options=None):
         entries, complete = await self._collect(options or {})
-        keys = ("name", "description", "whenToUse", "invocation", "source", "provider", "resourceBase")
+        keys = ("name", "path", "description", "whenToUse", "invocation", "source", "provider", "resourceBase")
         return {"skills": [{key: entries[name][0][key] for key in keys if key in entries[name][0]} for name in sorted(entries)], "complete": complete}
 
     async def list(self, options=None):

@@ -10,5 +10,6 @@
 | C8-D | 实际 Config 实例的表单描述、版本、脱敏、继承重置与字段编辑 | [设置描述与编辑](settings-forms-checks.json) |
 | C8-E | 真实 profile 持久编辑、配置重挂载、激活失败回滚和重启 | [配置编辑器](config-editor-checks.json) |
 | C8-F | 注释保留、HMR 并行编辑串行提交、旧设置重命名导入 | [设置生命周期](settings-lifecycle-checks.json) |
+| C8-G | 会话技能目录使用实际工作目录、冷读预设租约、热替换与失败释放 | [技能目录](skill-catalog-checks.json) |
 
 后续继续设置及完整应用组合；最终资格使用 C9 冻结候选的完整门禁。

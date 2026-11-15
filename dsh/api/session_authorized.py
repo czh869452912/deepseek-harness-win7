@@ -16,7 +16,8 @@ from dsh.api.session_state_authorized import SessionStateController
 from dsh.api.session_list_authorized import AuthorizedSessionList
 from dsh.api.archived_session_gate import ArchivedSessionGate
 from dsh.api.session_resource import register_session_resource
-from dsh.api.session_catalogs_current import SessionFileReferences, CurrentSessionSkillCatalog
+from dsh.api.session_catalogs_current import SessionFileReferences
+from dsh.api.session_catalogs_authorized import AuthorizedSessionSkillCatalog
 from dsh.api.session_media_current import CurrentSessionMediaReferences
 from dsh.cordis.schema import Schema
 from dsh.host.native_command_current import can_open_native_path, open_native_associated_path, reveal_native_path
@@ -79,7 +80,7 @@ class AuthorizedSessionController(CurrentSessionController):
         ctx.fiber.assert_active()
         ctx.plugin(SessionFileReferences)
         ctx.plugin(CurrentSessionMediaReferences)
-        ctx.plugin(CurrentSessionSkillCatalog)
+        ctx.plugin(AuthorizedSessionSkillCatalog)
         ctx.plugin(ArchivedSessionGate)
         ctx.on('session/created', lambda session: ctx.emit('api-session/added', self.list_state.summaryFor(session)))
         ctx.on('session/disposed', lambda session: ctx.emit('api-session/removed', session.id))

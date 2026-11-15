@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-16",
+  "unit": "C8-G-SessionSkillCatalogLeases",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "state": "targeted-passed",
+  "paired": ".goose/out/rc022-skill-catalog-paired-3-20261116-01/comparison/report.json",
+  "observations": 12,
+  "native": {"run": "rc022-skill-catalog-native-20261116-01", "passed": 25, "failed": 0},
+  "source": {"run": "rc022-skill-catalog-source-20261116-01", "passed": 50, "failed": 0},
+  "verification_scope_reason": "Actual Session/query/JSONL, local FS/WorkingDirectory, SkillRegistry and declarative Loader/preset registry cover cold projected/default/offline directories, live ensure, persisted reads without activation, optional paths, invocation filtering, old-generation retention across replacement, and release after success/failure. Native additionally checks observation lifetime across ensure, Agent disappearance during that await, admitted cold cancellation versus live cancellation, missing projections/registry, scope-acquisition fallback and unwrapped disposal failure. Existing skill lifetimes and complete controller consumers pass. Source skill catalog and skill registry suites pass.",
+  "implementation": "The candidate skills Remote derives cwd from projections/header/default, coordinates live directories within the observation lease, selects the live scoped registry, and retains an async standing scope lease for cold reads. Registry summaries now preserve optional skill paths. The complete candidate controller mounts the new catalog.",
+  "observer_boundary": "Delayed and failed list wrappers are controlled scheduling/error boundaries over the actual registry. Initial observer failures were missing plugin inject and incomplete test definitions; both corrected with diagnostics retained. Targeted results do not establish full regression or release acceptance.",
+  "activation_boundary": "Candidate composition only; production pin and accepted_upstream unchanged pending C9.",
+  "cleanup": ".goose/out/rc022-skill-catalog-source-20261116-01/cleanup.json",
+  "retained_assets": "Removed 6909300 bytes of owned synthetic inputs, pytest workspaces and tmp/home. No task workers remain. Commands, observations and diagnostics retained; shared fixed Source/toolchain retained through C9."
+}

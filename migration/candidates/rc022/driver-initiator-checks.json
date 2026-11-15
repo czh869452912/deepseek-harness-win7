@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-15",
+  "unit": "C4-Q-DriverInitiatorIntegration",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "state": "targeted-passed",
+  "paired": ".goose/out/rc022-driver-initiators-paired-final-20261115-01/comparison/report.json",
+  "observations": 3,
+  "native": {"run": "rc022-driver-initiators-native-20261115-01", "passed": 135, "failed": 0},
+  "source": {"run": "rc022-driver-initiators-source-20261115-01", "passed": 6, "failed": 0},
+  "verification_scope_reason": "Actual V4 Agent drivers now enter the registry's withInitiator boundary instead of using the legacy global variable/count pair. Paired real loop/model journeys require both overlapping drivers to keep exact identity after awaiting, a cleared async sub-boundary to restore its parent, and parent-triggered child setup to retain the parent while the child's own driver runs as the child. Assertions require nonempty model observations, exact subject identities and idle/outside convergence. Regressions cover V3 machine/lifecycle/consumers and V4 model, inbox, registration, factory slots and initiator lifetimes.",
+  "fixture_correction": "The first Source composition omitted rc022's mandatory NativeToolExecutor, so no model stream was reached. The failed paired run and diagnostic ToolExecutorUnavailableError are retained; the corrected fixture mounts the actual executor and rejects any Agent error before comparing real model observations. No native production change was made for this fixture correction.",
+  "activation_boundary": "Only V4 drivers use the registry-local entry. This does not yet qualify factory publication ordering, lifetime-signal wake admission, current ToolSet resolution/execution, or whole downstream/production composition.",
+  "cleanup": ".goose/out/rc022-driver-initiators-paired-final-20261115-01/cleanup.json",
+  "remaining": "Factory Session/setup/publication and teardown barriers, machine cancellation/lifetime contracts, tools/context and downstream consumers, coordinated activation and release qualification."
+}

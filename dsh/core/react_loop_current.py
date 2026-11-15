@@ -133,9 +133,17 @@ class ReactLoopAgent:
         done = asyncio.get_running_loop().create_future()
         self.activity_done = done
         self._set_phase(dict(kind='running', abort=AbortController(), turn=self.phase['lastTurn'], step=0, wakeRequested=False))
+        agents = self.loop_ctx.get('agents')
+        if getattr(agents, 'format_version', 3) == 4:
+            async def driver():
+                try:
+                    await self._kick()
+                finally:
+                    done.set_result(None)
+            self._driver_task = agents.withInitiator(self, lambda:self._start(driver()))
+            return
         # The eager prefix and every continuation run under the same initiator.
         from dsh.core.agent import _CURRENT_INITIATOR
-        agents = self.loop_ctx.get('agents')
         agents._enter_initiator_run()
         token = _CURRENT_INITIATOR.set(self)
         async def driver():

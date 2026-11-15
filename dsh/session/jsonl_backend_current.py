@@ -838,6 +838,7 @@ class CurrentJsonlSessionPersistencePlugin(Plugin):
 
     def apply(self, ctx):
         persistence = CurrentJsonlSessionPersistence(self.config['root'],self.config.get('compression','zstd'),ctx,
+            format_version=getattr(ctx.get('sessions'),'format_version',3),
             list_concurrency=self.config.get('listConcurrency',3))
         ctx.set_service('sessionPersistence',persistence)
         ctx.set_service('session_persistence',persistence)

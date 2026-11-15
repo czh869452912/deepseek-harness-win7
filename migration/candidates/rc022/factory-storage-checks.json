@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-15",
+  "unit": "C4-S-V4FactoryStorageConsumers",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "state": "targeted-passed",
+  "paired": ".goose/out/rc022-factory-storage-paired-inherited-20261115-01/comparison/report.json",
+  "observations": 16,
+  "native_initial": {"run": "rc022-factory-storage-native-20261115-01", "passed": 291, "failed": 1},
+  "native_final": {"run": "rc022-factory-storage-native-verified-20261115-01", "passed": 1, "failed": 0},
+  "source": {"run": "rc022-factory-storage-source-20261115-01", "passed": 50, "failed": 0, "pending": 1},
+  "verification_scope_reason": "The candidate JSONL plugin selects the mounted Session format (default V3 preserved). Real factory/backend journeys for both physical encodings cover never-materialized empty creation, seed durability before setup, exact inherited cut, setup/commit/serial-announcement failure with stored events retained, durable queued input after failed initialization, interrupted-turn resume repair and cold reopening. Pairing retains logical sequence, event types, payloads, routing and inserted input content; only event time and generated inserted-message ids are excluded. Native consumers additionally cover V4 migration/child witness handoff, JSONL contracts and existing V3/V4 factory/driver consumers.",
+  "assertion_corrections": "Initial native assertions incorrectly expected cold resume to add no boundary and every insertion to store removedCount=0. Actual Source/native records agree on a new session/end-seed boundary at resume and omitted zero removals for pure insertion. Tests now require the exact additional marker, unchanged preceding history, retained inserted content and no removal. The initial and intermediate diagnostics remain independently preserved; production code was unchanged after the backend plugin format selection.",
+  "activation_boundary": "This qualifies actual V4 create/resume storage consumers for these sixteen journeys. It does not certify all configured-start routes, persistence providers, external archive bytes, factory failure aggregation, tools/downstream protocols or release acceptance. Production pin and accepted_upstream are unchanged.",
+  "cleanup": ".goose/out/rc022-factory-storage-native-verified-20261115-01/cleanup.json",
+  "remaining": "Configured-start routes and remaining lifecycle edges, tools/context, subagent/Workspace/Remote/plugin-manager consumers, coordinated production activation and release qualification."
+}

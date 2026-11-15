@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-15",
+  "unit": "C7-T-AuthenticatedFrontendResource",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "state": "targeted-passed",
+  "paired": ".goose/out/rc022-frontend-resource-paired-final-20261115-01/comparison/report.json",
+  "observations": 25,
+  "native": {"run": "rc022-frontend-resource-native-20261115-01", "passed": 9, "failed": 0},
+  "source": {"run": "rc022-frontend-resource-source-20261115-01", "passed": 3, "failed": 0},
+  "verification_scope_reason": "Actual Source FrontendStatic, WebServer, Connection and RemoteAccess composition. Real browser v1 token exchange, anonymous/API-v2/wrong-audience refusal, browser owner versus admitted guest snapshots, both index entry paths and HEAD, relative base preceding raw taps and injected resources, public JS/other HTML/PNG/binary, exact SHA1 weak ETag and HTTP/in-process 304, live file rebuild, index without cache headers, missing/directory/traversal/malformed/NUL paths, method refusal and fallback unload. Native adds explicit config requirements and cancellation joining a real file read held in its executor operation, plus resource carrier and auth consumers.",
+  "native_adaptation": "Fetch resources use native dict/byte responses. File reads use Python 3.8 executor IO and explicitly join the owned read on cancellation before teardown can remove its fixture. Native Win7 readiness bootstrap is retained; the paired observer reads actual rendered access/browser globals and base/tap ordering rather than claiming byte-identical markup. Non-index asset bodies and cache headers compare byte-for-byte. No frontend bundle or Source edits.",
+  "activation_boundary": "Candidate authenticated static resource with Peer-specific index. Production composition/pin and original-browser whole-app qualification remain pending; TLS and concrete bind support remain separate WebServer work.",
+  "cleanup": ".goose/out/rc022-frontend-resource-source-20261115-01/cleanup.json",
+  "retained_assets": "Commands, raw observations, logs and XML retained. Owned dist fixtures, short pytest workspace, home/tmp assets removed (631732 bytes); all socket/Peer/Context and file-read owners closed. No task workers remain. Shared Source/toolchain retained through C9."
+}

@@ -1,0 +1,20 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-15",
+  "unit": "C4-B-SessionProjectionOwnership",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "state": "targeted-passed",
+  "paired": ".goose/out/rc022-session-projection-store-paired-20261115-01/report.json",
+  "observations": 4,
+  "native": {
+    "run": "rc022-session-projection-store-native-20261115-01",
+    "passed": 1158,
+    "failed": 0
+  },
+  "verification_scope_reason": "Actual Context services register by calling plugin fiber, reject duplicate types, withdraw by explicit disposer or owner unload, and keep one borrowed array across live, pending, fork and shared-frozen restoration. Agent lifecycle/machine, scoped Session, runtime and pure interpreter regressions cover default V3 consumers.",
+  "scope": "Store registers reversible pure message definitions and forwards them through all CurrentSession construction paths; explicit V4 store selects the same runtime. No promotion of production V4 or arbitrary plugin payload validation.",
+  "cleanup": ".goose/out/rc022-session-projection-store-native-20261115-01/cleanup.json",
+  "cleanup_bytes": 5724,
+  "cleanup_links": 0,
+  "remaining": "Atomic batch append, store announcement write guards, built-in image interpreter and V4 persistence integration."
+}

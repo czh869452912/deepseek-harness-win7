@@ -130,6 +130,30 @@ class CurrentSession(Session):
 
 
 class CurrentSessionStore(SessionStore):
+    def __init__(self, ctx=None, format_version=3):
+        self.format_version = format_version
+        self._message_projections = []
+        super().__init__(ctx)
+
+    @property
+    def messageProjections(self):
+        return self._message_projections
+
+    def registerMessageProjection(self, projection):
+        if any(item['type'] == projection['type'] for item in self._message_projections):
+            raise ValueError('session message projection "%s" is already registered' % projection['type'])
+        def setup():
+            self._message_projections.append(projection)
+            def dispose():
+                for index, item in enumerate(self._message_projections):
+                    if item is projection:
+                        del self._message_projections[index]
+                        break
+            return dispose
+        if self.ctx is None:
+            return setup()
+        return self.ctx.effect(setup, 'sessions.registerMessageProjection()')
+
     def prepare(self, session_id=None, options=None, **kwargs):
         opts = dict(options or {})
         opts.update(kwargs)
@@ -145,16 +169,18 @@ class CurrentSessionStore(SessionStore):
             raise ValueError('session "%s" already exists' % sid)
         state = opts.get('eventState', UNDEFINED)
         if state in ('detached', 'shared-frozen'):
-            return CurrentSession.from_restore(sid, opts['seed'], opts['meta'], opts['inheritedEventCount'], state, self.ctx)
+            return CurrentSession.from_restore(sid, opts['seed'], opts['meta'], opts['inheritedEventCount'], state, self.ctx,
+                                               self.format_version, self._message_projections)
         if state is not UNDEFINED:
             raise ValueError('SessionStore.prepare event state: ' + display(state))
         meta = opts.get('meta') or {}
-        header = dict(version=3,id=sid,createdAt=meta.get('createdAt') if meta.get('createdAt') is not None else int(time.time()*1000),
+        header = dict(version=self.format_version,id=sid,createdAt=meta.get('createdAt') if meta.get('createdAt') is not None else int(time.time()*1000),
                       isSeeded=False if meta.get('isSeeded') is None else meta['isSeeded'])
         for key in ('cwd','parentSession','origin','delegationDepth','agentPreset'):
             if key in meta and meta[key] is not UNDEFINED:
                 header[key] = meta[key]
-        return CurrentSession.create(sid, opts.get('seed'), header, opts.get('inheritedEventCount', UNDEFINED), self.ctx)
+        return CurrentSession.create(sid, opts.get('seed'), header, opts.get('inheritedEventCount', UNDEFINED), self.ctx,
+                                     self.format_version, self._message_projections)
 
     def _fork_seed(self, session, requested_boundary):
         events=session.snapshotEvents()

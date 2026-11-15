@@ -125,3 +125,5 @@
 2026-11-15：C3-B [关联子代际发布检查](related-publication-checks.json)补齐迁移准备返回前和父代际发布前的 validateRelatedSources 异步检查。18 组明文/zstd 真实文件旅程、8 项原版和 174 项 Python 检查通过，子文件变化/删除拒绝且保留父源，失败暂存清理、并发发布和失败身份覆盖。首轮观察器漏传必需子证据，两端均提前拒绝；语义断言发现并修正，原始结果不作发布通过证据。全部自有合成夹具及时清理；实际安装 v4 Session、成员重收集和生产存储仍待接入。
 
 2026-11-15：C4-A [显式 v4 Session 准入](session-admission-checks.json)在同一 CurrentSession 中增加候选 v4 边界，166 组原版/Python 构造与重放、175 项原版和 1839 项 Python 定向检查通过。developer/header 引用、扁平 tool 角色与重写保护、system-prompt 来源、继承 marker、firstLifecycleSeq、消息解释器身份和内容代际缓存覆盖。原有 v3 默认保留；数组发布、Store 注册、内建 image 解释器及生产 v4 尚未认证。初次 JSON 容器比较与六个浮点 cut 索引失败修正，诊断保留；全部自有合成夹具清理。
+
+2026-11-15：C4-B [Store 消息解释器所有权](session-projection-store-checks.json)完成 4 组真实 Context/Fiber 配对与 1158 项 Python 定向检查。registerMessageProjection 随调用插件 effect 所有，重复类型拒绝；显式释放/插件卸载撤销同一 borrowed 列表，live/pending/fork/shared-frozen restore 的已用解释器均拒绝继续解释。无关注册撤销不影响存活会话，旧派生快照可读。全部自有合成工作区清理；继续原子批量 append 和 Store 发布准入。

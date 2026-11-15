@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-16",
+  "unit": "C7-AI-VersionedMediaReferences",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "state": "targeted-passed",
+  "paired": ".goose/out/rc022-media-references-paired-20261116-01/comparison/report.json",
+  "observations": 24,
+  "native": {"run": "rc022-media-references-native-final-20261116-01", "passed": 51, "failed": 0},
+  "source": {"run": "rc022-media-references-source-2-20261116-01", "passed": 21, "failed": 0, "skipped": 2},
+  "verification_scope_reason": "Paired mounted contributions cover version redirects and exact URLSearchParams form encoding, immutable GET/HEAD, pre-read existence/type/size refusal, unknown sizes, MIME fallback, Range behavior, FS error statuses, unexpected failures and route withdrawal. Native integration uses actual TCP WebServer, Connection/browser token/cookie authentication and local FS for unauthenticated refusal, redirects without content I/O, HEAD, HTML bytes and sandbox headers, file changes invalidating old versions, size refusal and unload; the file is outside the configured default cwd. Actual FS post-stat growth and cancellation remain uncached. Existing prior-generation media and complete candidate controller consumers pass.",
+  "implementation": "Candidate /api/file stats before content reads, redirects missing/stale v to the current version, preserves deployment/scheme prefixes with a query-relative Location, and serves current version URLs with private immutable caching. Failures and redirects use private no-store. The candidate controller mounts this provider.",
+  "observer_boundary": "Paired Connection registration and FS are controlled; actual authentication/disk/HTTP are separate native integration evidence. The initial Source suite had one Windows EPERM failure creating a file symlink; its raw report is retained. A name-filtered unchanged Source run passes 21 tests, excludes that unavailable symlink case, and retains the upstream FIFO platform skip. Neither actual symlink behavior nor FIFO behavior is newly qualified on this host. Initial native integration lacked the attachment aggregate limit in its fixture; fixed with diagnostics retained. Targeted results do not establish full regression or release acceptance.",
+  "activation_boundary": "Candidate only; production pin and accepted_upstream unchanged pending C9.",
+  "cleanup": ".goose/out/rc022-media-references-source-2-20261116-01/cleanup.json",
+  "retained_assets": "Removed 364421 bytes of owned pytest workspaces and tmp/home; no task workers remain. Commands, raw observations and failure diagnostics retained; shared fixed Source/toolchain retained through C9."
+}

@@ -53,4 +53,6 @@
 
 | C7-AH | 精确事件分叉、继承标记、开放工具/回合补全与迁移前置检查 | [会话分叉](session-fork-checks.json) |
 
+| C7-AI | 媒体版本 URL、重定向、不可变缓存与实际认证 HTTP/FS | [媒体引用](media-references-checks.json) |
+
 后续：目录和技能消费者、生成物与原版客户端整体接入。上传提供方已另记 C8-A。最终资格使用 C9 冻结候选的完整门禁；当前生产 pin 与 `accepted_upstream` 不提升。

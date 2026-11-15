@@ -1,0 +1,25 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-16",
+  "unit": "C8-X-WorkflowPtcHost",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "state": "targeted-passed",
+  "paired": ".goose/out/rc022-workflow-host-paired-20261116-01/comparison/report.json",
+  "observations": 13,
+  "native": {
+    "run": "rc022-workflow-host-native-20261116-01",
+    "passed": 10,
+    "failed": 0
+  },
+  "source": {
+    "run": "rc022-workflow-host-source-20261116-01",
+    "passed": 28,
+    "failed": 0
+  },
+  "verification_scope_reason": "Actual PtcWorkflowRun Source and native Host use controlled executor, directory and activation seams: binding admission, atomic progress validation, per-run cwd capture, confined/full-access policy forwarding, result validation, late startup cancellation, child-result abort race, disposal failure containment and terminal cleanup. Native verifies independent disposal awaiters, retained cwd and original generated Guest SHA.",
+  "observer_boundary": "Controlled executor does not run Guest or exercise actual child provider/OS sandbox. Error stack frames are excluded; actual messages are compared. Native snapshot is detached. Full current Guest execution and production composition remain next units.",
+  "activation_boundary": "Candidate module only; original generated Guest retained byte-for-byte with license/provenance. Production mapping, pin and accepted_upstream unchanged.",
+  "cleanup": ".goose/out/rc022-workflow-host-source-20261116-01/cleanup.json",
+  "external_cleanup": ".goose/out/rc022-workflow-host-source-20261116-01/external-cleanup.json",
+  "retained_assets": "Owned workspaces/homes removed; raw observations, commands, logs and test reports retained. Shared Source/toolchain remains required through C9."
+}

@@ -1,0 +1,8 @@
+{
+  "upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "source": "packages/workflow/workflow-ptc/src/guest-source.ts",
+  "source_sha256": "5c002a19329f7f910f42553c58a218cc83c73316ba96b23ecdcccc1e31626468",
+  "output": "dsh/workflow/ptc_guest.js",
+  "sha256": "9eb27db9d976c22b90231c5b749d8cfaa33b7c5538a542e198ef95c3f9efd12f",
+  "adaptation": "Byte-preserved generated ESM; original node:vm runtime dependency. Not executed by the legacy worker."
+}

@@ -1,0 +1,26 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-16",
+  "unit": "C8-T-BrowserTerminalOwner",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "state": "targeted-passed",
+  "paired": ".goose/out/rc022-browser-terminal-paired-20261116-01/comparison/report.json",
+  "observations": 17,
+  "native": {
+    "run": "rc022-browser-terminal-native-20261116-01",
+    "passed": 21,
+    "failed": 0
+  },
+  "source": {
+    "run": "rc022-browser-terminal-source-20261116-01",
+    "passed": 47,
+    "failed": 0
+  },
+  "verification_scope_reason": "Original BrowserTerminal/AgentTerminalHandle against Python owner with real unchanged xterm on shipped Win7 worker: UTF-8/BOM, reconnect snapshots, exclusive input and read-only refusals, typed user takeover, resize, marked lines, process exit/failure, final output drainage, cleanup retry, exact abort reason. Native direct Gateway UplinkDecoder/UplinkInbox cleanup interrupts pending reads; early process completion blocks input before output drainage, close awaiter cancellation preserves ownership, cancelled baseline rolls back, overflow is isolated to one follower, changed waits remove callbacks, retention disposal joins owner callbacks. Screen engine and follower/retention direct consumers plus complete Source screen/terminal tests pass.",
+  "implementation": "Ordered owner queue serializes screen writes, input, snapshots and resize. Browser detach returns the interruptible uplink and joins its pump without terminating the process. Provider completion is observed separately from byte stream drainage. Failed cleanup remains retryable; each Python waiter is shielded from cancelling the owned cleanup. Screen worker disposal is awaited. AgentTerminalHandle shares input-control priority and exact screen/read/mark behavior.",
+  "observer_boundary": "Controlled async provider handle, actual worker and actual native Gateway input decoder. This unit does not qualify real PTY activity/foreground capabilities, Remote terminal controller allocation, production mounting, Win7 VM or x86 execution.",
+  "activation_boundary": "Candidate implementation only; production mapping, pin and accepted_upstream unchanged pending composition and C9. Targeted checks are not release acceptance.",
+  "cleanup": ".goose/out/rc022-browser-terminal-source-20261116-01/cleanup.json",
+  "external_cleanup": ".goose/out/rc022-browser-terminal-source-20261116-01/external-cleanup.json",
+  "retained_assets": "Removed 246909 bytes of owned temporary/runtime fixtures and empty external Source root. No task runners or JavaScript workers remain. Commands, logs, XML, paired raw observations and receipts retained. Shared fixed Source/toolchain retained through C9."
+}

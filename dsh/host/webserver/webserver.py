@@ -369,6 +369,9 @@ class WebServerService:
                 best = route
         return best
 
+    def bind_port(self):
+        return self.port
+
     async def start(self) -> None:
         """Start the async HTTP server."""
         if self._is_running:
@@ -389,7 +392,7 @@ class WebServerService:
         # Bind to port (or find free port if 0). A listen failure rejects
         # activation: the composition reports the failed fiber instead of
         # silently serving on a different port than the one configured.
-        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        sock = socket.socket(socket.AF_INET6 if ':' in self.host else socket.AF_INET, socket.SOCK_STREAM)
         if os.name != "nt":
             # POSIX: reuse a socket in TIME_WAIT. On Windows SO_REUSEADDR means
             # "allow hijacking a bound port", which would silently let a second
@@ -397,7 +400,7 @@ class WebServerService:
             # reference listen does (libuv sets no such option there).
             sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         try:
-            sock.bind((self.host, self.port))
+            sock.bind((self.host, self.bind_port()))
             sock.listen(128)
             sock.setblocking(False)
             self.listened_port = sock.getsockname()[1]
@@ -409,8 +412,9 @@ class WebServerService:
             raise
 
         try:
-            if os.name == "nt":
-                self._server = OwnedSocketServer(sock, _client_connected_cb, self._log_warning)
+            ssl_context = getattr(self, 'ssl_context', None)
+            if os.name == "nt" or ssl_context is not None:
+                self._server = OwnedSocketServer(sock, _client_connected_cb, self._log_warning, ssl_context)
             else:
                 self._server = await asyncio.start_server(_client_connected_cb, sock=sock)
         except BaseException:

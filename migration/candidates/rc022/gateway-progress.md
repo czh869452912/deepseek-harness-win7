@@ -25,4 +25,6 @@
 | C7-S | HTTP/进程内资源共用路由、HEAD、gzip、响应头与断开取消 | [资源载体](web-resource-checks.json) |
 | C7-T | 认证首页资源、浏览器/调用者 Peer、ETag/304 和静态文件 | [静态首页](frontend-resource-checks.json) |
 
-后续：WebServer TLS/具体绑定地址、应用 Remote 资源声明、生成物和原版客户端整体接入。最终资格使用 C9 冻结候选的完整门禁；当前生产 pin 与 `accepted_upstream` 不提升。
+| C7-U | 具体 IP 绑定、IPv6、TLS 证书加载、独立握手与卸载收敛 | [监听与 TLS](web-tls-checks.json) |
+
+后续：应用 Remote 资源声明、生成物和原版客户端整体接入。最终资格使用 C9 冻结候选的完整门禁；当前生产 pin 与 `accepted_upstream` 不提升。

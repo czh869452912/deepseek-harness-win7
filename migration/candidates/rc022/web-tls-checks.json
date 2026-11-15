@@ -1,0 +1,24 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-15",
+  "unit": "C7-U-ConcreteBindAndTLS",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "state": "targeted-passed",
+  "paired": ".goose/out/rc022-web-tls-paired-final-20261115-01/comparison/report.json",
+  "observations": 59,
+  "native": {
+    "run": "rc022-web-tls-native-final-20261115-01",
+    "passed": 34,
+    "failed": 0
+  },
+  "source": {
+    "run": "rc022-web-tls-source-20261115-01",
+    "passed": 19,
+    "failed": 0
+  },
+  "verification_scope_reason": "Fixed Source literal/config/normalization/URL-host corpus plus real trusted HTTPS, untrusted/plaintext rejection, a half-open handshake while another request completes, TLS upgrade and idle/handshaking/upgraded unload, listener refusal after unload, and null TLS. Native adds actual IPv6 loopback, required schema fields, six invalid TLS material cases before an occupied port bind, real gated executor acquisition joined by disposal, prior peer-reset/socket-lifetime and resource/frontend consumers. Source uses its entire WebServer file.",
+  "native_adaptation": "Python 3.8 OpenSSL 1.1.1k, TLS minimum 1.2, no interactive encrypted-key prompt. TLS PEM files are read once into owned bytes; Python SSL requires paths, so ephemeral private copies are immediately removed after loading. A small stdlib SSLProtocol adapter observes raw connection closure before handshake completion; each handshake runs independently and teardown joins transport closure. OS/OpenSSL diagnostic tails are native; field/path and unusable-pair prefixes are preserved. No claim of identical cipher inventory or OS TLS implementation.",
+  "activation_boundary": "Candidate provider only; production pin/composition and whole-app original-browser/release qualification remain pending.",
+  "cleanup": ".goose/out/rc022-web-tls-source-20261115-01/cleanup.json",
+  "retained_assets": "954235 bytes of owned synthetic workspaces and home/tmp assets removed. Commands, paired observations, XML/JSON/logs and initial observer/close-race diagnostics retained. No task workers remain. Shared Source/toolchain retained through C9."
+}

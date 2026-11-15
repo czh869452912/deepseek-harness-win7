@@ -5,7 +5,7 @@ workingDirectory is an explicit controlled collaborator, not provider qualificat
 from types import SimpleNamespace as NS
 
 
-async def setup(workspace,script=None):
+async def setup(workspace,script=None,directory=None):
     from dsh.cordis import Context
     from dsh.cordis.plugin import Plugin
     from dsh.core.abort import NEVER_ABORTED
@@ -35,10 +35,17 @@ async def setup(workspace,script=None):
         ctx.get('llm').registerAdapter(['script'],ScriptAdapter(dict(script=['hang']*100 if script is None else script)))
         ctx.set_service('sessionQuery',CurrentSessionQueryService(ctx))
         async def ensure(agent,signal):return 'C:/rc022-work'
-        async def directory(agent,path,signal):return path
-        ctx.set_service('workingDirectory',NS(ensure=ensure,set=directory))
+        async def set_directory(agent,path,signal):return path
+        directory_provider=None
+        if directory is None:
+            ctx.set_service('workingDirectory',NS(ensure=ensure,set=set_directory))
+        else:
+            from dsh.fs.fs_local import FsLocalPlugin
+            from dsh.session.working_directory import WorkingDirectoryService
+            await ctx.plugin(FsLocalPlugin,dict(cwd=str(directory)))
+            directory_provider=await ctx.plugin(WorkingDirectoryService,dict(defaultDirectory=str(directory)))
         await ctx.plugin(SubagentPlugin)
         provider=await ctx.plugin(SpawnInProcessPlugin)
-        return NS(ctx=ctx,service=ctx.get('subagents'),provider=provider,signal=NEVER_ABORTED)
+        return NS(ctx=ctx,service=ctx.get('subagents'),provider=provider,signal=NEVER_ABORTED,directory_provider=directory_provider)
     except BaseException:
         await ctx.fiber.dispose();raise

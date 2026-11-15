@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-15",
+  "unit": "C8-B-DurableWorkingDirectory",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "state": "targeted-passed",
+  "paired": ".goose/out/rc022-directory-paired-2-20261115-01/comparison/report.json",
+  "observations": 9,
+  "native": {"run": "rc022-directory-native-final-20261115-01", "passed": 26, "failed": 0},
+  "source": {"run": "rc022-directory-source-20261115-01", "passed": 26, "failed": 0},
+  "verification_scope_reason": "Actual working-directory provider, Local FS, v4 Agent/Session/Projection and SystemPrompt exercise relative changes, same-Session operation serialization, independent Sessions, original immutable header, empty/missing refusal, restoration after directory removal and required non-interpolated prompt context. Native additionally checks access listener rejection, cancellation without commit, actual provider unload joining blocked operations, replay, notice failure after durable commit and unavailable original/current directories. Prompt/upload fixture consumers also pass.",
+  "observer_boundary": "Paths are projected to the owned workspace root, including JSON-quoted paths inside notices. The fixture optionally mounts the actual directory/FS providers while preserving previous controlled collaborators for unrelated probes. Working-directory tool, profile composition and arbitrary confined filesystem policies are not qualified by this probe.",
+  "implementation": "WorkingDirectoryService owns a nullable projection, coordinated access waterfall, per-exact-Session operation chain, lifecycle cancellation and join, directory recovery and durable transition notices. CurrentSystemPrompt includes the fixed Source runtime context ordering. Python awaiter cancellation shields an already admitted operation so lifecycle teardown still owns it.",
+  "activation_boundary": "Production composition and pin not promoted; complete application composition and C9 remain pending.",
+  "cleanup": ".goose/out/rc022-directory-source-20261115-01/cleanup.json",
+  "retained_assets": "3624347 bytes of owned journals, synthetic workspaces and tmp/home removed after teardown. Commands, paired observations, XML/JSON/logs and initial observer/test-fixture failures retained. No task workers remain; shared Source/toolchain retained through C9."
+}

@@ -1,7 +1,7 @@
 import {resolve} from 'node:path'
 import {pathToFileURL} from 'node:url'
 export const load=(path:string)=>import(pathToFileURL(resolve(process.argv[2]!,path)).href)
-export async function setup(workspace:string){
+export async function setup(workspace:string,directory?:string){
  const {Context}=await load('vendor/cordis/src/index.ts'),ctx=new Context()
  try{
   for(const path of ['packages/llm/llm/src/index.ts','packages/core/session/src/index.ts','packages/session/session-projection/src/index.ts','packages/core/system-prompt/src/index.ts','packages/core/tools/src/index.ts','packages/core/tool-executor-native/src/index.ts','packages/core/agent/src/index.ts']){const module=await load(path);await ctx.plugin(module.default??module)}
@@ -13,7 +13,8 @@ export async function setup(workspace:string){
    }
   }
   await ctx.plugin(Backend,{root:workspace,compression:'none'});await ctx.plugin(Loop,{agents:[]});ctx.llm.registerAdapter(['script'],new Hanging([]));await ctx.plugin(TestSessionQuery)
-  ctx.provide('workingDirectory');ctx.workingDirectory={ensure:async()=> 'C:/rc022-work',set:async(_agent:any,path:string)=>path}
+  if(directory===undefined){ctx.provide('workingDirectory');ctx.workingDirectory={ensure:async()=> 'C:/rc022-work',set:async(_agent:any,path:string)=>path}}
+  else{await ctx.plugin((await load('packages/fs/fs-local/src/index.ts')).default,{cwd:directory});await ctx.plugin((await load('packages/session/working-directory/src/index.ts')).default,{defaultDirectory:directory})}
   await ctx.plugin(Subagents);const provider=await ctx.plugin(Spawn)
   return {ctx,service:ctx.subagents,provider,signal:new AbortController().signal}
  }catch(error){await ctx.fiber.dispose();throw error}

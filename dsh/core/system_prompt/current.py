@@ -15,6 +15,12 @@ class CurrentSystemPrompt(SystemPrompt):
     _section_orders = FIRST_PARTY_SECTION_ORDER
     _authoritative_tools = True
 
+    def get_context_order(self, name):
+        return dict(WORKING_DIRECTORY=100, SANDBOX_POLICY=110, APPROVAL_POLICY=115,
+                    SUBAGENT_DELEGATION=120, HARNESS_SOURCE=200, WEB_SURFACE=210)[name]
+
+    getContextOrder = get_context_order
+
     def _persona_sections(self, config):
         return [dict(name=PERSONA_PREFIX_SECTION, order=0, text=config.get('personaPrefix', '')),
                 dict(name=PERSONA_SUFFIX_SECTION, order=10200, text=config.get('personaSuffix', ''))]

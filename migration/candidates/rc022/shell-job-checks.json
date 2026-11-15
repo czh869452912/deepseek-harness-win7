@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-16",
+  "unit": "C8-AM-ShellJobBridge",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "state": "targeted-passed",
+  "paired": ".goose/out/rc022-shell-job-paired-20261116-01/comparison/report.json",
+  "observations": 25,
+  "native": {"run": "rc022-shell-job-native-20261116-01", "passed": 7, "failed": 0},
+  "source": {"run": "rc022-shell-job-source-20261116-01", "passed": 28, "failed": 0},
+  "verification_scope_reason": "Paired actual PowerShell bridge/render helpers cover job outcome vocabulary for nonzero command exits and signal-less kills, sandbox denial/runner failure detail, foreground and promotion markers, byte-stream sources before/after process publication, preparation/running cancellation, original preparation/process failure boxes and thrown non-Error values. Native ownership checks ensure a cancelled waiter cannot cancel preparation/process settlement, and a failed late kill still joins process completion before reporting the exact original failure. Source original background/background-start tests pass.",
+  "activation_boundary": "Bridge helpers prepare current shell executor/tool integration; they do not claim actual PowerShell promotion or current production composition. The Source infrastructure-outcome ambiguity is preserved: a nonzero command exit remains completed, and runner failure appears in detail. Production pin unchanged, targeted verification only.",
+  "cleanup": ".goose/out/rc022-shell-job-source-20261116-01/cleanup.json",
+  "cleanup_bytes": 390522,
+  "retained_assets": "Owned pytest fixtures and temporary homes/workspaces removed, empty external Source root removed, no shell-job worker remains. Commands/logs/XML and comparisons retained; shared Source/toolchain retained through C9."
+}

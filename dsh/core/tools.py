@@ -48,6 +48,36 @@ class ToolOutputError(HarnessError):
                          (tool_name, "; ".join(violations)), "INVALID_TOOL_OUTPUT")
 
 
+class ToolActivationError(HarnessError):
+    def __init__(self, name: str, cause: BaseException):
+        super().__init__('cannot resolve availability of tool "%s"' % name,
+                         "TOOL_ACTIVATION_FAILED")
+        self.cause = cause
+        self.__cause__ = cause
+
+
+class ResolvedToolSet:
+    """A step's admission, retaining registration identity and exact scope."""
+
+    def __init__(self, service: Any, agent: Any, view: Dict[str, Any], admitted: Dict[str, Any]):
+        self._service = service
+        self._agent = agent
+        self._registrations = view["registrations"]
+        self._admitted = admitted
+        self._closed = False
+
+    def dispose(self) -> None:
+        self._closed = True
+
+    def view(self, scope: Any = None) -> Dict[str, Any]:
+        if self._closed or scope is not self._agent:
+            return {}
+        current = self._service._view(self._agent)
+        return {name: definition for name, definition in self._admitted.items()
+                if current["visible"].get(name) is definition
+                and current["registrations"].get(name) is self._registrations.get(name)}
+
+
 class CodeRunFailedError(HarnessError):
     def __init__(self, message: str):
         super().__init__(message, "CODE_RUN_FAILED")
@@ -233,6 +263,7 @@ class _FusedSignal:
 class _ToolLayer:
     def __init__(self) -> None:
         self.tools: Dict[str, "Tool"] = {}
+        self.registrations: Dict[str, Any] = {}
         self.restrictions: List[Dict[str, Any]] = []
         self.guards: List[Callable[[Any], Optional[str]]] = []
         self.mode: Optional[str] = None
@@ -407,6 +438,7 @@ class ToolExecutionInput:
         self.root_call_id = root_call_id or kwargs.get("rootCallId")
         self.rootCallId = self.root_call_id
         self.parent = parent
+        self.toolSet = kwargs.get("toolSet", kwargs.get("tool_set"))
         self.metadata = dict(metadata or kwargs.get("call_metadata") or {})
 
     def get(self, name: str, default: Any = None) -> Any:
@@ -424,7 +456,7 @@ class ToolRunContext(ToolExecutionInput):
         super().__init__(source.call_id, source.name, _deep_freeze(_json_snapshot(source.arguments)),
                          agent=source.agent, signal=source.signal, session=source.session,
                          root_call_id=source.root_call_id or source.call_id,
-                         parent=source.parent, metadata=source.metadata)
+                         parent=source.parent, metadata=source.metadata, toolSet=source.toolSet)
         self.token = object()
         self._additional_contexts: List[Any] = []
         self._concludes_turn = False
@@ -656,6 +688,7 @@ class ToolsService:
         own_ctx = chain[-1] if chain else None
         own = self._layer_for(own_ctx)
         inherited: Dict[str, Tool] = dict(self._global_layer.tools)
+        registrations = dict(self._global_layer.registrations)
         layers = []
         for scope_ctx in chain:
             layer = self._layer_for(scope_ctx)
@@ -665,6 +698,7 @@ class ToolsService:
             if layer is own:
                 continue
             inherited.update(layer.tools)
+            registrations.update(layer.registrations)
         visible: Dict[str, Tool] = {}
         known = set()
         restrictable = set()
@@ -677,9 +711,11 @@ class ToolsService:
             for name, tool in own.tools.items():
                 known.add(name)
                 visible[name] = tool
+                registrations[name] = own.registrations[name]
         if self._mode_for(scope) != "native":
             visible[RUN_CODE_NAME] = self._require_code_transport()
-        return {"visible": visible, "known": known, "restrictable": restrictable}
+        return {"visible": visible, "known": known, "restrictable": restrictable,
+                "registrations": {name: registrations.get(name) for name in visible}}
 
     def _mode_for(self, scope: Any = None) -> str:
         mode = self.mode
@@ -971,7 +1007,8 @@ class ToolsService:
                  execution_mode: str = "parallel",
                  present_call: Optional[Callable[[Dict[str, Any]], Any]] = None,
                  present_result: Optional[Callable[[Any], Any]] = None,
-                 name: Optional[str] = None) -> Callable[[], None]:
+                 name: Optional[str] = None,
+                 registration_options: Optional[Dict[str, Any]] = None) -> Callable[[], None]:
         spec_name = name or (tool_or_spec if isinstance(tool_or_spec, str) else None)
         if isinstance(tool_or_spec, Tool):
             tool = tool_or_spec
@@ -1001,10 +1038,14 @@ class ToolsService:
         else:
             raise ValueError("Invalid tool registration spec: %r, name=%r" % (tool_or_spec, name))
         self._validate_definition(tool)
-        return self._insert(tool)
+        return self._insert(tool, registration_options)
 
     def register(self, definition: Any = None, *legacy_args: Any, **kwargs: Any) -> Callable[[], None]:
         """Canonical definitions plus the historical keyword-based adapter."""
+        if (len(legacy_args) == 1 and isinstance(legacy_args[0], dict)
+                and isinstance(definition, dict) and definition.get("output") is not None
+                and not kwargs):
+            return self.register_canonical(definition, legacy_args[0])
         if legacy_args:
             return self.register_legacy(definition, *legacy_args, **kwargs)
         if kwargs or isinstance(definition, Tool):
@@ -1012,11 +1053,11 @@ class ToolsService:
             return self.register_tool(*(() if definition is None else (definition,)), **kwargs)
         return self.register_canonical(definition)
 
-    def register_canonical(self, definition: Dict[str, Any]) -> Callable[[], None]:
+    def register_canonical(self, definition: Dict[str, Any], options: Optional[Dict[str, Any]] = None) -> Callable[[], None]:
         if not isinstance(definition, dict) or definition.get("output") is None:
             name = definition.get("name", "") if isinstance(definition, dict) else ""
             raise TypeError('tool "%s" must declare output { schema, render, presentationMeta? }' % name)
-        return self._register(definition)
+        return self._register(definition, registration_options=options)
 
     def register_legacy(
         self,
@@ -1054,7 +1095,7 @@ class ToolsService:
                 or tool.timeout_ms <= 0):
             raise ValueError('tool "%s" timeoutMs must be a positive finite number' % tool.name)
 
-    def _insert(self, tool: Tool) -> Callable[[], None]:
+    def _insert(self, tool: Tool, options: Optional[Dict[str, Any]] = None) -> Callable[[], None]:
         if tool.name == RUN_CODE_NAME:
             raise ValueError('tool name "%s" is reserved for the Code Mode presentation transport and cannot be registered or shadowed' % RUN_CODE_NAME)
         owner_ctx = self._current_scope_context()
@@ -1064,6 +1105,8 @@ class ToolsService:
             suffix = "" if owner_ctx is None else " in this scope"
             raise ValueError('tool "%s" is already registered%s' % (tool.name, suffix))
         layer.tools[tool.name] = tool
+        registration = {"when": (options or {}).get("when")}
+        layer.registrations[tool.name] = registration
         disposed = False
 
         def disposer() -> None:
@@ -1073,6 +1116,7 @@ class ToolsService:
             disposed = True
             if layer.tools.get(tool.name) is tool:
                 del layer.tools[tool.name]
+                layer.registrations.pop(tool.name, None)
                 if owner_ctx is not None and not layer.tools and not layer.restrictions and not layer.guards and layer.mode is None:
                     self._scoped_layers.pop(owner_ctx, None)
                 self.ctx.emit("tools/change")
@@ -1089,11 +1133,45 @@ class ToolsService:
             return self.register_legacy(definition)
         return self.register_legacy(*args, **kwargs)
 
-    def get_tool(self, name: str, scope: Any = None) -> Optional[Tool]:
-        return self._view(scope)["visible"].get(name)
+    def get_tool(self, name: str, scope: Any = None, tool_set: Any = None) -> Optional[Tool]:
+        return (self._view(scope)["visible"] if tool_set is None else tool_set.view(scope)).get(name)
 
-    def get(self, name: str, scope: Any = None) -> Optional[Tool]:
-        return self.get_tool(name, scope)
+    def get(self, name: str, scope: Any = None, tool_set: Any = None) -> Optional[Tool]:
+        return self.get_tool(name, scope, tool_set)
+
+    def executable(self, name: str, scope: Any = None, tool_set: Any = None) -> Optional[Tool]:
+        if tool_set is not None:
+            return tool_set.view(scope).get(name)
+        view = self._view(scope)
+        registration = view["registrations"].get(name)
+        if registration is not None and registration["when"] is not None:
+            return None
+        return view["visible"].get(name)
+
+    async def resolve(self, context: Any) -> ResolvedToolSet:
+        def field(name: str) -> Any:
+            return context.get(name) if isinstance(context, dict) else getattr(context, name)
+        agent, signal = field("agent"), field("signal")
+        signal.throwIfAborted()
+        view = self._view(agent)
+        admitted = {}
+        for name, definition in view["visible"].items():
+            registration = view["registrations"].get(name)
+            condition = registration["when"] if registration is not None else None
+            try:
+                enabled = True if condition is None else condition(context)
+                if inspect.isawaitable(enabled):
+                    enabled = await enabled
+            except Exception as cause:
+                signal.throwIfAborted()
+                raise ToolActivationError(name, cause)
+            signal.throwIfAborted()
+            if enabled:
+                admitted[name] = definition
+        return ResolvedToolSet(self, agent, view, admitted)
+
+    def definitions(self, scope: Any = None, tool_set: Any = None) -> List[Tool]:
+        return list((self._view(scope)["visible"] if tool_set is None else tool_set.view(scope)).values())
 
     def has_tool(self, name: str, scope: Any = None) -> bool:
         return self.get_tool(name, scope) is not None
@@ -1104,12 +1182,12 @@ class ToolsService:
     def list_tools(self, scope: Any = None) -> List[Tool]:
         return list(self._view(scope)["visible"].values())
 
-    def schemas(self, scope: Optional[Any] = None) -> List[Dict[str, Any]]:
+    def schemas(self, scope: Optional[Any] = None, tool_set: Any = None) -> List[Dict[str, Any]]:
         mode = self._mode_for(scope)
         if mode != "native":
             self._require_code_runtime(mode)
         projected = []
-        for tool in self._view(scope)["visible"].values():
+        for tool in self.definitions(scope, tool_set):
             try:
                 parameters = _json_snapshot(tool.parameters)
             except Exception:
@@ -1135,7 +1213,8 @@ class ToolsService:
         name = exec_input.name if isinstance(exec_input, ToolExecutionInput) else exec_input.get("name", "")
         arguments = exec_input.arguments if isinstance(exec_input, ToolExecutionInput) else exec_input.get("arguments", {})
         agent = exec_input.agent if isinstance(exec_input, ToolExecutionInput) else exec_input.get("agent")
-        tool = self.get_tool(name, agent)
+        tool_set = exec_input.toolSet if isinstance(exec_input, ToolExecutionInput) else exec_input.get("toolSet")
+        tool = self.executable(name, agent, tool_set)
         if tool is None:
             return {"kind": "exclusive"}
         if tool.concurrency_classifier is not None:
@@ -1264,7 +1343,7 @@ class ToolsService:
         return agent_ctx if agent_ctx is not None else self.ctx
 
     async def prepare(self, exec_input: ToolExecutionInput) -> Dict[str, Any]:
-        visible = self.get_tool(exec_input.name, exec_input.agent)
+        visible = self.executable(exec_input.name, exec_input.agent, exec_input.toolSet)
         captured_finalizer = visible.finalize_content if visible is not None else None
         try:
             exec_ctx = ToolRunContext(exec_input)
@@ -1274,7 +1353,7 @@ class ToolsService:
                 exec_input.call_id, exec_input.name, {}, agent=exec_input.agent,
                 signal=exec_input.signal, session=exec_input.session,
                 root_call_id=exec_input.root_call_id, parent=exec_input.parent,
-                metadata=exec_input.metadata))
+                metadata=exec_input.metadata, toolSet=exec_input.toolSet))
             fallback._finalizer = captured_finalizer
             return {"kind": "final-result", "exec": fallback, "result": _error_result(error)}
         try:
@@ -1375,7 +1454,7 @@ class ToolsService:
                 fused_signal.dispose()
             return self._aborted_before_result()
         exec_input.signal = fused_signal
-        tool = self.get_tool(exec_input.name, exec_input.agent)
+        tool = self.executable(exec_input.name, exec_input.agent, exec_input.toolSet)
         if tool is None:
             if isinstance(fused_signal, _FusedSignal):
                 fused_signal.dispose()
@@ -1674,6 +1753,7 @@ __all__ = [
     "TOOL_RUNTIME_SCHEDULER", "TOOL_NOT_FOUND", "TOOL_ARGS_INVALID",
     "CodeRunFailedError", "Tool", "ToolArgsError", "ToolExecutionInput",
     "ToolExecutionResult", "ToolNotFoundError", "ToolOutputError", "ToolRegistry",
+    "ToolActivationError", "ResolvedToolSet",
     "ToolRunContext", "ToolsPlugin", "ToolsService",
 ]
 

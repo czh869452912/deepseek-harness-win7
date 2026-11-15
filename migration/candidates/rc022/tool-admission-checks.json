@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-15",
+  "unit": "C5-A-StepToolAdmission",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "state": "targeted-passed",
+  "paired": ".goose/out/rc022-tool-admission-paired-scoped-fixed-20261115-01/comparison/report.json",
+  "observations": 15,
+  "native": {"run": "rc022-tool-admission-native-scoped-20261115-01", "passed": 75, "failed": 0},
+  "source": {"run": "rc022-tool-admission-source-20261115-01", "passed": 154, "failed": 0},
+  "verification_scope_reason": "Conditional registrations resolve serially once with captured agent/model/signal. Inspection remains distinct from executable lookup. A resolved set owns exact scope and registration identity, removes unloaded/replaced/restricted entries, never falls through a disabled shadow, and closes idempotently. Actual prepare/dispatch/complete consumers receive the same set; absent or closed admission cannot dispatch a conditional tool. Cancellation preserves the original reason ahead of condition failures. Existing scheduler, execution classification, request model selection and driver consumers remain covered.",
+  "observer_repairs": "The initial Source observer incorrectly called a removed pipeline.execute shortcut; repaired to prepare/dispatch/complete. The expanded scoped observer initially minted under a context without tools injection; repaired to use an injected owner. Production implementation was unchanged during both observer repairs. Initial diagnostics remain preserved.",
+  "activation_boundary": "Additive registry/pipeline contract. Agent step resolution, executor providers, prompt refresh, nested PTC binding and production composition are subsequent C5 work; this is not whole-tool parity or release acceptance. Production pin and accepted_upstream remain unchanged.",
+  "cleanup": ".goose/out/rc022-tool-admission-paired-scoped-fixed-20261115-01/cleanup.json",
+  "cleanup_bytes": 1927300,
+  "retained_assets": "Commands, JSON observations, XML and logs retained. Shared fixed Source and toolchain remain owned by the migration until C9 qualification."
+}

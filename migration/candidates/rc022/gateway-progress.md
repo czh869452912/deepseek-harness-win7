@@ -35,4 +35,6 @@
 
 | C7-Y | 普通会话串行复用、空白预设切换、冷恢复、动态默认模型与后台保存 | [会话激活](session-activation-checks.json) |
 
+| C7-Z | 被动精确历史、轮次分页、助手输出、投影读取与会话头缓存提示 | [历史读取](history-reads-checks.json) |
+
 后续：完整 Session 组合、历史/状态/列表、生成物和原版客户端整体接入。上传提供方已另记 C8-A。最终资格使用 C9 冻结候选的完整门禁；当前生产 pin 与 `accepted_upstream` 不提升。

@@ -62,16 +62,51 @@ class CurrentSessionProjectionCache(SessionProjectionCache):
         await self.table.put(sid, dict(identity=identity_of(header, inherited_event_count), rows=snapshot))
 
 
+class HeaderSessionProjectionCache(CurrentSessionProjectionCache):
+    """Header-only views never seed a fold or claim an exact log cut."""
+    def _header_record(self, header, predecessor=False):
+        expected = identity_of(header, 0)
+        sid = header['id'] if isinstance(header, dict) else header.id
+        record = self.table.get(sid)
+        if record is None:
+            return None
+        stored = record['identity']
+        version = stored.get('formatVersion')
+        matches = ((version is None or version < expected['formatVersion']) if predecessor
+                   else version == expected['formatVersion'])
+        if not matches or any(stored.get(key, default) != expected.get(key, default)
+                              for key, default in (('createdAt', None), ('cwd', None), ('isSeeded', False))):
+            return None
+        return record
+
+    def _view_record(self, record, keys=None):
+        if record is None:
+            return None
+        values = self.ctx.get('sessionProjections').viewCheckpoint(record['rows'], keys)
+        if not values:
+            return None
+        return dict(asOfSeq=min(record['rows'][key]['seq'] for key in values), values=values)
+
+    def cached_snapshot(self, header, keys=None):
+        return self._view_record(self._header_record(header), keys)
+
+    cachedSnapshot = cached_snapshot
+
+    def cachedPredecessorTitle(self, header):
+        return self._view_record(self._header_record(header, predecessor=True), ['title'])
+
+
 class CurrentSessionProjectionCachePlugin(Plugin):
     id = 'session-projection-cache'
     inject = ['storageDomain', 'sessionProjections', 'sessions']
+    cache_class = CurrentSessionProjectionCache
 
     async def apply(self, ctx):
         for key in ('writeEveryEvents', 'writeIntervalMs'):
             if type(self.config.get(key)) is not int or self.config[key] < 1:
                 raise ValueError('session-projection-cache requires positive ' + key)
         domain = await ctx.get('storageDomain').open(PROJECTION_CACHE_SPEC)
-        cache = CurrentSessionProjectionCache(ctx, domain.table('sessions'), self.config)
+        cache = self.cache_class(ctx, domain.table('sessions'), self.config)
         ctx.set_service('sessionProjectionCache', cache)
         ctx.on('session/event', cache.event)
         ctx.on('session/created', lambda session: cache._schedule(cache.write(session)))
@@ -80,3 +115,7 @@ class CurrentSessionProjectionCachePlugin(Plugin):
             await cache.close()
             await domain.close()
         ctx.effect(lambda: close)
+
+
+class HeaderSessionProjectionCachePlugin(CurrentSessionProjectionCachePlugin):
+    cache_class = HeaderSessionProjectionCache

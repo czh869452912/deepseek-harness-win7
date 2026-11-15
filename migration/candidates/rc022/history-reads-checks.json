@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-15",
+  "unit": "C7-Z-PassiveHistoryReads",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "state": "targeted-passed",
+  "paired": ".goose/out/rc022-history-reads-paired-final-20261115-01/comparison/report.json",
+  "observations": 22,
+  "native": {"run": "rc022-history-reads-native-2-20261115-01", "passed": 68, "failed": 0},
+  "source": {"run": "rc022-history-reads-source-20261115-01", "passed": 66, "failed": 0},
+  "verification_scope_reason": "Actual Session/Agent/JSONL/query/projection and JSON domain/cache providers verify live/cold history at exact/default/empty cuts, message and turn windows, bounded newest-first assistant output, exact projections, header-only seeded lifecycle matching and predecessor title watermarks. Native adds invalid numeric windows, opaque cancellation and Remote error mapping, async callback/cancellation lease ownership, unknown-mode durable subagent validation and grouped pagination. Existing authorized read filtering and old cache/list consumers pass. Source history/projection/cache suites pass.",
+  "implementation": "SessionHistoryReads borrows exact observations without Agent activation, releases leases after callback settlement, serves projections from live/cold reads or migration cache hints, and exposes page/events/projections through the candidate controller. HeaderSessionProjectionCache provides the target header-only listing API while strict inherited-cut matching remains on fold hydration; its plugin is separately selectable and the old provider remains unchanged.",
+  "observer_boundary": "Committed event timestamps are normalized to zero. Migration-required stat is controlled, while its cache uses the actual JSON domain. Seeded/predecessor checkpoint rows are inserted through the real table to test identity/view policy. Passive subscriptions, assistant reconnect state, state/wait/follow, complete controller initialization and production composition remain separate. Targeted results do not establish full regression or release acceptance.",
+  "resolved_failures": "Source observer fixtures corrected Schemastery to Zod projection schemas, added step boundaries required by released JSONL relationship validation, and changed a controlled stat override to mutate the existing owned provider. Native direct import now initializes Session position types before the legacy shared history helpers to avoid their existing import cycle. Pytest's reserved request parameter was renamed. Original logs, XML and observations retained.",
+  "activation_boundary": "Candidate providers only; production pin and accepted_upstream unchanged pending C9.",
+  "cleanup": ".goose/out/rc022-history-reads-source-20261115-01/cleanup.json",
+  "retained_assets": "10911204 bytes of owned journals, storage/project fixtures, pytest workspaces and tmp/home removed after teardown. No task workers remain. Commands, observations and diagnostics retained; shared Source/toolchain retained through C9."
+}

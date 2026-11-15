@@ -8,6 +8,7 @@ from dsh.api.session_commands_authorized import AuthorizedSessionCommands
 from dsh.api.session_commands_current import has_prompt_content
 from dsh.util_time import canonical_client_time_zone
 from dsh.api.session_agents_authorized import AuthorizedSessionAgents
+from dsh.api.session_history_authorized import SessionHistoryReads
 
 
 class ProjectionSessionControl(CurrentSessionControl):
@@ -32,6 +33,7 @@ class AuthorizedSessionController(CurrentSessionController):
     model_projection = staticmethod(lambda ctx: None)
 
     async def init(self):
+        self.history_reads = SessionHistoryReads(self.ctx)
         await self.commands.initialize()
 
     def event(self, session, event):
@@ -56,6 +58,18 @@ class AuthorizedSessionController(CurrentSessionController):
 
     def allows_session(self, identity):
         return self.ctx.get('remoteAccess').allows(dict(kind='session', id=identity))
+
+    @Remote
+    async def events(self, request, signal):
+        return await self.history_reads.events(request, signal)
+
+    @Remote
+    async def page(self, request, signal):
+        return await self.history_reads.events(request, signal)
+
+    @Remote
+    async def projections(self, request, signal):
+        return await self.history_reads.projections(request, signal)
 
     @Remote
     async def list(self, _request, signal):

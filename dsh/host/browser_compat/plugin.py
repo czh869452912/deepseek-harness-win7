@@ -62,7 +62,7 @@ class BrowserCompatibilityPlugin(Plugin):
     inject = []
 
     def apply(self, ctx):
-        def inject(rows):
+        def inject(rows, *_peer):
             rows.insert(0, dict(kind='script', placement='head', text=SCRIPT))
         ctx.on('webserver/index-inject', inject)
         ctx.set_service('browserCompatibility', self)

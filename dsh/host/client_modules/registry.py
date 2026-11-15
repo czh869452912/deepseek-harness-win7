@@ -1013,7 +1013,7 @@ class ClientModulesPlugin(Plugin):
         # The index rows arrive through the webserver's injection table, so a
         # subscriber reads the live graph at every emit (upstream
         # `webserver/index-inject`).
-        def inject_index(table: List[Dict[str, Any]]) -> None:
+        def inject_index(table: List[Dict[str, Any]], *_peer: Any) -> None:
             table.extend(self.registry.boot_injections())
 
         ctx.on("webserver/index-inject", inject_index)

@@ -108,7 +108,7 @@ class CurrentConnectionPlugin(Plugin):
         connection = CurrentHostConnection(ctx, trusted, BrowserAuth.create(ctx.root, ctx.get('credentials'), days))
         def web(child):
             capacity(child)
-            child.on('webserver/index-inject', lambda table: table.append(dict(kind='global', name='__DSH_CONNECTION_RECOVERY__', value=recovery)))
+            child.on('webserver/index-inject', lambda table, *peer: table.append(dict(kind='global', name='__DSH_CONNECTION_RECOVERY__', value=recovery)))
             handler = current_bridge_handler(connection, connection.create_shared_fetch_handler('/api'), limit)
             child.effect(lambda: child.get('webServer').register('prefix', '/api', handler), 'Connection /api route')
         ctx.inject(['webServer'], web)

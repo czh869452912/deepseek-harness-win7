@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-15",
+  "unit": "C7-R-PeerIndexInjection",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "state": "targeted-passed",
+  "paired": ".goose/out/rc022-peer-index-paired-2-20261115-01/comparison/report.json",
+  "observations": 9,
+  "native": {"run": "rc022-peer-index-native-20261115-01", "passed": 70, "failed": 0},
+  "source": {"run": "rc022-peer-index-source-20261115-01", "passed": 1, "filtered_out": 18, "failed": 0},
+  "verification_scope_reason": "Actual Source WebServer emits the actual Peer to RemoteAccess and a second injection listener. Compare owner and two non-owner snapshots, fresh per-call tables and live policy updates, unchanged prior snapshots, JSON row ordering/readiness projection, raw tap order and policy/access/listener unload. Native tests mount the real Loader-backed ClientModules registry, theme provider and compatibility adapter with the Peer-bearing API, plus their direct regression suites and access consumers. Source selects its actual index injection/tap case only.",
+  "native_adaptation": "Object.freeze snapshots use FrozenDict/FrozenList in Python; observer serializes injection values through JSON, as the page renderer does. The existing Win7 boot-readiness adapter differs textually from Source Promise.withResolvers, so this unit compares actual injection tables and observable render ordering rather than claiming byte-identical HTML. Theme, ClientModules, compatibility and historical Connection listeners accept the additional Peer argument while retaining their existing single-table callers.",
+  "activation_boundary": "Candidate CurrentWebServer requires the caller's Peer for index collection/render. Frontend HTTP browser admission and in-process resource-reader integration remain follow-up; production profile and pinned upstream are unchanged.",
+  "cleanup": ".goose/out/rc022-peer-index-source-20261115-01/cleanup.json",
+  "retained_assets": "Commands, raw paired observations and logs retained, including the initial strict Python container-type comparison failure. Owned synthetic test workspace/home/tmp assets removed (487922 bytes); Source listener and Peer/Context lifetimes closed in finally. Shared Source/toolchain retained through C9."
+}

@@ -128,7 +128,7 @@ class ClientUiThemePlugin(Plugin):
 
         ctx.inject(["settings"], _register)
 
-        def _on_index_inject(table: Any) -> None:
+        def _on_index_inject(table: Any, *_peer: Any) -> None:
             section = read_section(ctx)
             table.append(
                 boot_theme_injection(section.get(THEME_PREFERENCE_FIELD), section.get(FONT_SIZE_FIELD))

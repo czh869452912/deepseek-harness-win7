@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-15",
+  "unit": "C6-V-SdkRun",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "state": "targeted-passed",
+  "paired": ".goose/out/rc022-sdk-run-paired-final-20261115-01/comparison/report.json",
+  "observations": 25,
+  "native": {
+    "run": "rc022-sdk-run-native-final-20261115-01",
+    "passed": 4,
+    "failed": 0
+  },
+  "source": {
+    "run": "rc022-sdk-run-source-20261115-01",
+    "passed": 55,
+    "failed": 0
+  },
+  "verification_scope_reason": "SDK run coordinator and direct shared settlement consumer: ready-before-publication, distinct origin/effective cwd, explicit route and scrubbed environment, safe typed diagnostics, terminal outcome folding, partial output, cancellation, startup aggregates and memoized cleanup. Includes consumed SDK event validation.",
+  "activation_boundary": "Controlled client seam only. Does not qualify native SDK process client, real pipe/process cleanup, provider assembly or production composition.",
+  "cleanup": ".goose/out/rc022-sdk-run-source-20261115-01/cleanup.json",
+  "retained_assets": "Commands/logs/XML and observations retained; synthetic payloads removed (1769612 bytes). Shared Source/toolchain retained through C9."
+}

@@ -5,6 +5,7 @@
 | 单元 | 已验证边界 | 记录 |
 | --- | --- | --- |
 | C6-A | 名称、兄弟预留、路径回退、目录 v0–v3/stateVersion 6 | [名称与目录](named-catalog-checks.json) |
+| C6-V | SDK 握手后发布、终止原因、安全错误、部分输出、取消和共享关闭 | [SDK 协调](sdk-run-checks.json) |
 | C6-U | 进程外结果、取消优先级、安全诊断截断和共享关闭 | [外部结算](external-settlement-checks.json) |
 | C6-T | 目标会话续聊/中断、真实队列/Steer/冷恢复、调用者归属 | [目标控制](target-control-checks.json) |
 | C6-S | 委派工具、真实 spawn/fork、深度/路由预检、Provider 替换和共享提示 | [委派工具](delegation-tool-checks.json) |

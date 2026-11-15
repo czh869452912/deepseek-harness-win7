@@ -1,0 +1,24 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-15",
+  "unit": "C7-L-UplinkInboxAndFrames",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "state": "targeted-passed",
+  "paired": ".goose/out/rc022-uplink-inbox-paired-final-20261115-01/comparison/report.json",
+  "observations": 80,
+  "native": {
+    "run": "rc022-uplink-inbox-native-20261115-01",
+    "passed": 6,
+    "failed": 0
+  },
+  "source": {
+    "run": "rc022-uplink-inbox-source-20261115-01",
+    "passed": 53,
+    "failed": 0
+  },
+  "verification_scope_reason": "Exact upstream client/server frame parser results and errors, including extra keys, absent versus null items and overflowing JSON numbers. Actual upstream UplinkInbox class captured from RemoteStreamMuxServer real WebSocket opener, then direct queue journeys compare draining/refill, byte budget overflow dropping queued values, half-close violations, sticky failure, return priority, sole consumer and pending reads. Native cancellation test releases pending reader slot without closing the queue.",
+  "native_adaptation": "Python task cancellation has no cancellable Promise analogue; inbox explicitly relinquishes its pending-reader slot on task cancellation. Peer/socket heartbeat, actual complete-frame accounting and network backpressure remain mux integration work.",
+  "activation_boundary": "Transport-free protocol and inbox. The Source class is obtained from an actual server; direct queue observations do not certify a native network mux.",
+  "cleanup": ".goose/out/rc022-uplink-inbox-source-20261115-01/cleanup.json",
+  "retained_assets": "Commands/results and repaired observer failures retained; owned temporary payloads removed. Source probe closes WebSocket/mux/listener/Peer in finally. Shared Source/toolchain retained through C9."
+}

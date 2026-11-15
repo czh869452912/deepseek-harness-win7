@@ -1,0 +1,19 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-16",
+  "unit": "C8-R-TerminalScreenProjection",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "state": "targeted-passed",
+  "paired": ".goose/out/rc022-terminal-screen-tests-paired-final-20261116-01/comparison/report.json",
+  "observations": 1679,
+  "native": {"run": "rc022-terminal-screen-tests-native-20261116-01", "passed": 8, "failed": 0},
+  "source": {"run": "rc022-terminal-screen-tests-source-20261116-01", "passed": 9, "failed": 0},
+  "verification_scope_reason": "1093 official Unicode 16 grapheme conformance sequences plus compound emoji, Indic and surrogate cases compare with actual Node 24 Intl.Segmenter (Unicode 16.0, ICU 77.1). 576 page combinations compare exact byte limits, empty lines, count and newest-relative offsets; five dense buffer snapshots compare wrapped-row joins, cursor line starts, trailing content and JS trimEnd. Native asserts whole newest-grapheme preservation and generated resource SHA identities. Complete Source screen test file passes with its real xterm emulator.",
+  "implementation": "Candidate plain-text screen helpers retain newest complete logical lines and cut an oversized newest line only at extended grapheme boundaries. Pure Python UAX29 revision45 segmentation uses compact Unicode 16 property ranges, algorithmic Hangul and surrogate-aware UTF-8; no new runtime distribution. Verified generation inputs, URLs, hashes, Unicode license and compact reusable conformance fixtures are recorded with the generated tables.",
+  "observer_boundary": "Paired buffer inputs are controlled dense snapshots, not a native emulator. Native JSON round-trip matches Source's JSON representation of explicit UTF-16 pairs; initial observer normalization failure retained. QuickJS running original xterm is only an ignored prototype so far, not qualified by this unit. BrowserTerminal, PTY and controller integration remain separate.",
+  "activation_boundary": "Candidate helpers; production mapping, pin and accepted_upstream unchanged pending composition and C9. Targeted checks do not establish release acceptance.",
+  "cleanup": ".goose/out/rc022-terminal-screen-tests-source-20261116-01/cleanup.json",
+  "input_cleanup": ".goose/out/rc022-grapheme-control-20261116-01/cleanup.json",
+  "external_cleanup": ".goose/out/rc022-terminal-screen-tests-source-20261116-01/external-cleanup.json",
+  "retained_assets": "Removed 1777749 bytes of owned generated matrices, verified reconstructible Unicode downloads and tmp/home; empty external fixture root removed. Commands, generation receipts, observations and diagnostics retained. No task workers remain; shared fixed Source/toolchain retained through C9."
+}

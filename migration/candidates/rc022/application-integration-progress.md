@@ -21,5 +21,6 @@
 | C8-O | 指令运行时、嵌套工具/步骤提交边界、串行投影及真实 Agent 请求 | [指令运行时](instruction-runtime-checks.json) |
 | C8-P | 终端流字节背压、窗口独立保留、活动观察与失败清理重试 | [终端流与保留](terminal-flow-checks.json) |
 | C8-Q | 执行环境默认 shell、并行候选发现、PATH/PATHEXT 与带类型缺失错误 | [终端 shell 发现](terminal-shells-checks.json) |
+| C8-R | 屏幕逻辑行投影、最新相对分页与 Unicode 16 字素安全截断 | [终端屏幕投影](terminal-screen-checks.json) |
 
 后续继续设置及完整应用组合；最终资格使用 C9 冻结候选的完整门禁。

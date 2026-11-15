@@ -55,3 +55,4 @@ dsh/javascript/bin/x86/** -whitespace
 dsh/session/bin/icu/x86/** -whitespace
 dsh/session/bin/zstd/x86/** -whitespace
 dsh/subprocess/bin/winpty/x86/** -whitespace
+dsh/terminal/unicode16/LICENSE.txt -text

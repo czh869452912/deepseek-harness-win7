@@ -1,0 +1,53 @@
+{
+  "unicode": "16.0.0",
+  "specification": "https://www.unicode.org/reports/tr29/tr29-45.html",
+  "input_base": "https://www.unicode.org/Public/16.0.0/ucd/",
+  "inputs": [
+    {
+      "name": "GraphemeBreakProperty.txt",
+      "url": "https://www.unicode.org/Public/16.0.0/ucd/auxiliary/GraphemeBreakProperty.txt",
+      "bytes": 98751,
+      "sha256": "c29360bd6f7132811d701d29069541e827eb44bfc4c8fbde8c370d6982689dc1"
+    },
+    {
+      "name": "GraphemeBreakTest.txt",
+      "url": "https://www.unicode.org/Public/16.0.0/ucd/auxiliary/GraphemeBreakTest.txt",
+      "bytes": 171927,
+      "sha256": "ee2b9354d270ac061b29f09662cafea06341d77e704b8cc6bd72aaeeda363cb5"
+    },
+    {
+      "name": "emoji-data.txt",
+      "url": "https://www.unicode.org/Public/16.0.0/ucd/emoji/emoji-data.txt",
+      "bytes": 113024,
+      "sha256": "f1365a5173eee18e1f98b240cdc492e84a25f1ce7e0c9d1094eb29c41a22696a"
+    },
+    {
+      "name": "DerivedCoreProperties.txt",
+      "url": "https://www.unicode.org/Public/16.0.0/ucd/DerivedCoreProperties.txt",
+      "bytes": 1115959,
+      "sha256": "39d35161f2954497f69e08bdb9e701493f476a3d30222de20028feda36c1dabd"
+    },
+    {
+      "name": "LICENSE.txt",
+      "url": "https://www.unicode.org/license.txt",
+      "bytes": 1995,
+      "sha256": "e7a93b009565cfce55919a381437ac4db883e9da2126fa28b91d12732bc53d96"
+    }
+  ],
+  "generator": "scripts/generate_grapheme_data.py",
+  "conformance_cases": 1093,
+  "outputs": {
+    "dsh/terminal/unicode16/grapheme.json": {
+      "bytes": 44463,
+      "sha256": "17cf5fd0bf4291d168616822921d4e050f69ba553437aeb5289ae7f4bb7c013f"
+    },
+    "dsh/terminal/unicode16/LICENSE.txt": {
+      "bytes": 1995,
+      "sha256": "e7a93b009565cfce55919a381437ac4db883e9da2126fa28b91d12732bc53d96"
+    },
+    "tests/fixtures/unicode/grapheme16.json": {
+      "bytes": 23968,
+      "sha256": "954c316c86b569f41db38c578c2f5859f53de0f76b637cf1737d8df06f2c6db8"
+    }
+  }
+}

@@ -2,9 +2,10 @@
 import inspect
 from dsh.cordis.service import Service
 from dsh.core.abort import AbortController
-from dsh.typert.authorized_calls import AuthorizedCallResolver
-from dsh.typert.dispatch import TypertGatewayError
+from dsh.typert.authorized_calls import AuthorizedCallResolver, assert_peer_live
+from dsh.typert.dispatch import TypertGatewayError, remote_request, rpc_failure
 from dsh.typert.invocation import create_invocation, InvocationStream, cancelled
+from dsh.typert.rpc_result import encode_rpc_result
 
 
 class AuthorizedGatewayCore(Service):
@@ -27,6 +28,9 @@ class AuthorizedGatewayCore(Service):
 
     async def invoke(self, request):
         prepared = await self.prepare(request)
+        return await self._invoke_prepared(prepared)
+
+    async def _invoke_prepared(self, prepared):
         if prepared.descriptor.get('mode') is not None:
             # Source rejects this carrier before claiming/returning its uplink.
             # Drop Python's strong signal subscriptions (Source uses weak joins).
@@ -42,6 +46,16 @@ class AuthorizedGatewayCore(Service):
                 raise
         finally:
             await prepared.invocation.close()
+
+    async def invoke_rpc(self, endpoint, payload, signal, peer):
+        try:
+            assert_peer_live(peer, endpoint)
+            request = dict(remote_request(endpoint, payload, signal), peer=peer)
+            prepared = await self.prepare(request)
+            value = await self._invoke_prepared(prepared)
+            return encode_rpc_result(value, prepared.descriptor['result'])
+        except Exception as error:
+            return rpc_failure(error)
 
     async def stream(self, request):
         prepared = await self.prepare(request)

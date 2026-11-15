@@ -1,0 +1,24 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-15",
+  "unit": "C7-F-RpcResultEncoding",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "state": "targeted-passed",
+  "paired": ".goose/out/rc022-rpc-result-paired-final-20261115-01/comparison/report.json",
+  "observations": 16,
+  "native": {
+    "run": "rc022-rpc-result-native-20261115-01",
+    "passed": 13,
+    "failed": 0
+  },
+  "source": {
+    "run": "rc022-rpc-result-source-20261115-01",
+    "passed": 90,
+    "failed": 0
+  },
+  "verification_scope_reason": "Actual Gateway RPC path: runtime materialization, root/nested/empty/view bytes, copied result-relative attachment paths, numeric own-key order, shared versus cyclic values, one-time toJSON/getter access, date projection, absent/function/nonfinite JSON behavior, strict optional encoder and nullish fallback. Native tests add attachment backing-view identity/path detachment and false/zero/empty encoder results without output input-schema parsing.",
+  "activation_boundary": "RPC core returns data plus byte attachments. HTTP multipart encoding, authenticated Connection admission, mux framing and forwarded events remain C7 follow-up; no production composition promotion.",
+  "native_adaptations": "Python bytes/bytearray/byte memoryview implement Uint8Array payloads; datetime implements the observed Date projection, dict/custom dict and ordinary instance fields implement tested own-field access. This does not certify arbitrary JavaScript object ABI or all possible Python objects.",
+  "cleanup": ".goose/out/rc022-rpc-result-source-20261115-01/cleanup.json",
+  "retained_assets": "Commands/results retained; owned temporary directories removed. Shared Source/toolchain retained through C9."
+}

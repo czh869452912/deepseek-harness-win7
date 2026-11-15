@@ -455,6 +455,7 @@ class ToolExecutionInput:
         self.rootCallId = self.root_call_id
         self.parent = parent
         self.toolSet = kwargs.get("toolSet", kwargs.get("tool_set"))
+        self.schema = kwargs.get("schema")
         self.metadata = dict(metadata or kwargs.get("call_metadata") or {})
 
     def get(self, name: str, default: Any = None) -> Any:
@@ -472,7 +473,8 @@ class ToolRunContext(ToolExecutionInput):
         super().__init__(source.call_id, source.name, _deep_freeze(_json_snapshot(source.arguments)),
                          agent=source.agent, signal=source.signal, session=source.session,
                          root_call_id=source.root_call_id or source.call_id,
-                         parent=source.parent, metadata=source.metadata, toolSet=source.toolSet)
+                         parent=source.parent, metadata=source.metadata, toolSet=source.toolSet,
+                         schema=source.schema)
         self.token = object()
         self._additional_contexts: List[Any] = []
         self._concludes_turn = False
@@ -1287,10 +1289,11 @@ class ToolsService:
         agent = exec_input.agent if isinstance(exec_input, ToolExecutionInput) else exec_input.get("agent")
         tool_set = exec_input.toolSet if isinstance(exec_input, ToolExecutionInput) else exec_input.get("toolSet")
         tool = self.executable(name, agent, tool_set)
-        if tool is None:
+        nested = exec_input.parent is not None if isinstance(exec_input, ToolExecutionInput) else exec_input.get('parent') is not None
+        if tool is None or self._execution_rejection(name, nested, agent) is not None:
             return {"kind": "exclusive"}
         if tool.concurrency_classifier is not None:
-            if tool.validate_arguments(arguments):
+            if self.contract_version < 4 and tool.validate_arguments(arguments):
                 return {"kind": "exclusive"}
             try:
                 return {"kind": "parallel" if tool.concurrency_classifier(arguments) is True else "exclusive"}
@@ -1414,19 +1417,35 @@ class ToolsService:
         agent_ctx = getattr(exec_input.agent, "ctx", None)
         return agent_ctx if agent_ctx is not None else self.ctx
 
+    def _execution_rejection(self, name: str, nested: bool, scope: Any = None) -> Optional[BaseException]:
+        if not nested and name != RUN_CODE_NAME and self._mode_for(scope) == 'code':
+            return ToolNotFoundError(name,
+                "only `run_code` is callable directly - call `%s` from inside a `run_code` program instead" % name)
+        return None
+
+    def _execution_definition(self, exec_input: ToolExecutionInput) -> Optional[Tool]:
+        tool = self.executable(exec_input.name, exec_input.agent, exec_input.toolSet)
+        if tool is not None and self._execution_rejection(exec_input.name, exec_input.parent is not None, exec_input.agent) is None:
+            return tool
+        return None
+
     async def prepare(self, exec_input: ToolExecutionInput) -> Dict[str, Any]:
         visible = self.executable(exec_input.name, exec_input.agent, exec_input.toolSet)
+        rejection = None if visible is None else self._execution_rejection(
+            exec_input.name, exec_input.parent is not None, exec_input.agent)
         captured_finalizer = visible.finalize_content if visible is not None else None
+        if rejection is not None and not self._is_aborted(exec_input.signal):
+            captured_finalizer = None
         try:
             exec_ctx = ToolRunContext(exec_input)
             exec_ctx._finalizer = captured_finalizer
-            exec_ctx._projector = visible.project_content if visible is not None else None
+            exec_ctx._projector = visible.project_content if visible is not None and rejection is None else None
         except Exception as error:
             fallback = ToolRunContext(ToolExecutionInput(
                 exec_input.call_id, exec_input.name, {}, agent=exec_input.agent,
                 signal=exec_input.signal, session=exec_input.session,
                 root_call_id=exec_input.root_call_id, parent=exec_input.parent,
-                metadata=exec_input.metadata, toolSet=exec_input.toolSet))
+                metadata=exec_input.metadata, toolSet=exec_input.toolSet, schema=exec_input.schema))
             fallback._finalizer = captured_finalizer
             return {"kind": "final-result", "exec": fallback, "result": _error_result(error)}
         try:
@@ -1435,11 +1454,8 @@ class ToolsService:
                 exec_ctx._prepared_kind = "final-result"
                 exec_ctx._prepared_result = result
                 return {"kind": "final-result", "exec": exec_ctx, "result": result}
-            if (visible is not None and self._mode_for(exec_ctx.agent) == "code"
-                    and exec_ctx.parent is None and exec_ctx.name != RUN_CODE_NAME):
-                result = _error_result(ToolNotFoundError(
-                    exec_ctx.name,
-                    "only `run_code` is callable directly - call `%s` from inside a `run_code` program instead" % exec_ctx.name))
+            if rejection is not None:
+                result = _error_result(rejection)
                 exec_ctx._prepared_kind = "final-result"
                 exec_ctx._prepared_result = result
                 exec_ctx._finalizer = None
@@ -1541,7 +1557,7 @@ class ToolsService:
                 fused_signal.dispose()
             return self._aborted_before_result()
         exec_input.signal = fused_signal
-        tool = self.executable(exec_input.name, exec_input.agent, exec_input.toolSet)
+        tool = self._execution_definition(exec_input)
         if tool is None:
             if isinstance(fused_signal, _FusedSignal):
                 fused_signal.dispose()
@@ -1552,7 +1568,14 @@ class ToolsService:
                 exec_input._body_invoked = True
                 raw = await tool.execute(exec_input.arguments, exec_input, self.ctx)
             except Exception as error:
-                return _error_result(error).freeze()
+                result = _error_result(error)
+                if self.contract_version >= 4 and self._is_aborted(fused_signal):
+                    thrown = error.value if isinstance(error, ThrownValueError) else error
+                    if not isinstance(thrown, HarnessError) and (thrown is getattr(fused_signal, 'reason', None)
+                            or isinstance(thrown, BaseException) and getattr(thrown, 'name', type(thrown).__name__) == 'AbortError'):
+                        result = self._copy_result(result, error=dict(message=result.error['message'],
+                            info=dict(name='AbortError', code=TOOL_ABORTED)))
+                return result.freeze()
             try:
                 if tool.output is None:
                     return ToolExecutionResult.from_raw(raw).freeze()
@@ -1585,7 +1608,7 @@ class ToolsService:
             return result
         if result.is_error:
             return result
-        tool = self.executable(exec_input.name, exec_input.agent, exec_input.toolSet)
+        tool = self._execution_definition(exec_input)
         if tool is None:
             return _error_result(ToolNotFoundError(exec_input.name))
         if not tool.canonical:
@@ -1690,7 +1713,7 @@ class ToolsService:
         if "value" in decision:
             if result.is_error:
                 raise TypeError("tools/post-execute cannot replace the value of a failed result")
-            tool = self.executable(exec_input.name, exec_input.agent, exec_input.toolSet)
+            tool = self._execution_definition(exec_input)
             if tool is None:
                 raise ToolNotFoundError(exec_input.name)
             if tool.output is None:

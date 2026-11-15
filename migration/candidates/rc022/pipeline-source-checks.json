@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-15",
+  "unit": "C5-I-ExecutorOwnedPipelineSource",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "state": "targeted-passed",
+  "paired": ".goose/out/rc022-pipeline-source-paired-20261115-01/comparison/report.json",
+  "observations": 12,
+  "native": {"run": "rc022-pipeline-source-native-20261115-01", "passed": 318, "failed": 0},
+  "source": {"run": "rc022-pipeline-source-source-20261115-01", "passed": 192, "failed": 0},
+  "verification_scope_reason": "Native executor now retains a shared invocation view rather than treating registry presentation as its execution policy. Executor get/reject overrides resolve private capabilities without registering them, refuse direct calls before extensible policy, preserve cancellation precedence/finalization and recheck live availability. Binding-time schema and step admission preserve exact identity through dispatch. Canonical scheduling invokes the tool classifier without an extra schema validation. Cancellation reason and unclassified AbortError gain ABORTED, while HarnessError and unrelated body failures keep their own identity. Paired cases run actual staged pipelines; native batch, scheduler/mode/failure, admission, recovery, history, prompt and factory consumers pass together.",
+  "activation_boundary": "The invocation view shares the existing ToolsService stages and scheduler; it does not provide another registry. Native provider uses it now. Separate PTC transport/runtime and its private lookup source remain subsequent work. This targeted verification does not qualify complete C5-C9, promote the production pin or replace unified release acceptance.",
+  "cleanup": ".goose/out/rc022-pipeline-source-source-20261115-01/cleanup.json",
+  "cleanup_bytes": 573321,
+  "retained_assets": "Commands, XML, logs and paired observations retained; owned synthetic workspaces removed. No task test process remains. Shared Source/toolchain retained until C9."
+}

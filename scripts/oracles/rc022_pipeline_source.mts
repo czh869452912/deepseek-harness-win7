@@ -1,0 +1,16 @@
+import {resolve} from 'node:path'
+import {pathToFileURL} from 'node:url'
+const load=(path:string)=>import(pathToFileURL(resolve(process.argv[2]!,path)).href)
+const {Context}=await load('vendor/cordis/src/index.ts'),{default:Prompt}=await load('packages/core/system-prompt/src/index.ts'),{default:Tools,ToolNotFoundError}=await load('packages/core/tools/src/index.ts'),{ToolExecutionPipeline}=await load('packages/core/tools/src/pipeline.ts'),{HarnessError}=await load('packages/llm/llm/src/index.ts'),rows:any[]=[]
+for(const action of ['virtual','refuse','refuse-aborted','nested','disappeared','unknown','post-value','classifier','abort-reason','abort-name','abort-identity','abort-other']){
+ const ctx=new Context();await ctx.plugin(Prompt);await ctx.plugin(Tools)
+ const controller=new AbortController(),primary=new Error('cancel reason'),trace:string[]=[],lookups:any[]=[],agent={},admission={},schema=Object.freeze({name:'private',description:'bound',parameters:Object.freeze({})}),row:any={action};let available=true
+ const definition={name:'private',description:'private',parameters:{type:'object'},output:{schema:{type:'string'},render:(_:any,v:string)=>[{type:'text',text:v}]},isConcurrencySafe:()=>true,execute(_:any,execution:any){trace.push('body');row.schemaSame=execution.schema===schema;if(action.startsWith('abort-')){controller.abort(primary);if(action==='abort-reason')throw primary;if(action==='abort-identity')throw new HarnessError('own failure','OWN_FAILURE');const error=new Error('operation failed');if(action==='abort-name')error.name='AbortError';throw error}return 'ok'},projectContent(){trace.push('project');return [{type:'text',text:'prepared'}]},finalizeContent(_:any,r:any){trace.push('final');return r.content}}
+ const pipeline=new ToolExecutionPipeline(ctx,{get(name:any,scope:any,toolSet:any){lookups.push({name,agent:scope===agent,admission:toolSet===admission});return name==='private'&&available?definition:undefined},reject(name:any,nested:any){return !nested&&['refuse','refuse-aborted'].includes(action)?new ToolNotFoundError(name,'direct invocation forbidden'):undefined}})
+ ctx.on('tools/pre-execute',async(_:any,next:any)=>{trace.push('pre');if(action==='disappeared')available=false;return next()});ctx.on('tools/post-execute',async()=>{trace.push('post');return {kind:'accept',...action==='post-value'?{value:'replacement'}:{}}});ctx.on('tools/result',()=>trace.push('result'))
+ if(action==='refuse-aborted')controller.abort(primary)
+ const execution={callId:'call',name:action==='unknown'?'absent':'private',arguments:action==='classifier'?42:{},agent,signal:controller.signal,toolSet:admission,schema,...action==='nested'?{parent:{}}:{}};row.mode=pipeline.executionMode(execution).kind
+ if(action!=='classifier'){const prepared=await pipeline.prepare(execution),outcome=prepared.kind==='dispatch'?await pipeline.dispatch(prepared.exec):prepared,result=await pipeline.complete(prepared.exec,outcome);Object.assign(row,{stage:prepared.kind,isError:result.isError,error:result.isError?result.error:null,content:result.content,value:result.isError?null:result.value})}
+ Object.assign(row,{trace,lookups,registry:ctx.tools.get('private')!==undefined});rows.push(row);await ctx.fiber.dispose()
+}
+process.stdout.write(JSON.stringify(rows))

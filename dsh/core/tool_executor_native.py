@@ -3,12 +3,13 @@ from typing import Any, Callable, Dict, List, Optional
 from dsh.cordis.plugin import Plugin
 from dsh.core.tools import _json_snapshot
 from dsh.core.tool_calls import execute_tool_batch
+from dsh.core.tool_pipeline import ToolExecutionPipeline
 
 
 class NativeToolExecutor:
     def __init__(self, ctx: Any, max_parallel: Optional[Callable[[], int]] = None):
         self.ctx = ctx
-        self.pipeline = ctx.get('tools')
+        self.pipeline = ToolExecutionPipeline(ctx)
         self.max_parallel = max_parallel or (lambda: 10)
 
     def describe(self, tools: List[Any]) -> Dict[str, Any]:

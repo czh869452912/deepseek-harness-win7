@@ -425,7 +425,15 @@ class DeepSeekHarness:
         return self.initialized
 
     def session(self, sessionId=None):
-        return HarnessSession(self, sessionId or 'session-' + uuid.uuid4().hex)
+        return HarnessSession(self, 'session-' + uuid.uuid4().hex if sessionId is None else sessionId)
+
+    async def resumeSession(self, sessionId):
+        await self.start()
+        await self.client.resumeSession(sessionId)
+        return HarnessSession(self, sessionId)
+
+    async def run(self, input, options=None):
+        return await self.session((options or {}).get('sessionId')).run(input, options)
 
     def close(self):
         self.closed = True
@@ -435,6 +443,10 @@ class DeepSeekHarness:
 class HarnessSession:
     def __init__(self, harness, identity):
         self.harness, self.id = harness, identity
+
+    async def run(self, input, options=None):
+        from .run import run_session
+        return await run_session(self, input, options)
 
     async def setWorkingDirectory(self, path):
         await self.harness.start()

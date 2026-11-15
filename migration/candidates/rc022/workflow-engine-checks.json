@@ -1,0 +1,26 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-16",
+  "unit": "C8-Z-WorkflowPtcEngine",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "state": "targeted-passed",
+  "paired": ".goose/out/rc022-workflow-engine-paired-20261116-01/comparison/report.json",
+  "observations": 12,
+  "native": {
+    "run": "rc022-workflow-engine-native-fixed-20261116-01",
+    "passed": 3,
+    "failed": 0
+  },
+  "source": {
+    "run": "rc022-workflow-engine-source-20261116-01",
+    "passed": 35,
+    "failed": 0
+  },
+  "verification_scope_reason": "Actual Source/native engine start admission order for meta, exported meta statement, syntax, provider route and total cap. Controlled PTC executor compares detached args, limits, start/phase/end order and omission of holder-owned return value from end events. Native real process tests unload engine while child allocation pending, then complete held run and cleanup; existing Workflow/Ralph tools execute through current Host/Guest engine.",
+  "observer_boundary": "Explicit Win7 overlay injects jsRuntime and a private JavaScript Workflow executor. Source requires the Node TypeScript ptcRuntime; native does not mislabel or replace Python PTC. Meta and limits are compatible JSON request values; arbitrary non-JSON structuredClone behavior is outside this carrier.",
+  "initial_failures": "First tool-consumer fixture returned a provider without capabilities; corrected controlled provider advertises actual required outputSchema capability. Product behavior unchanged.",
+  "activation_boundary": "Candidate engine only; production mapping and upstream pin unchanged. Canonical profile integration and frozen full release qualification remain C9.",
+  "cleanup": ".goose/out/rc022-workflow-engine-source-20261116-01/cleanup.json",
+  "external_cleanup": ".goose/out/rc022-workflow-engine-source-20261116-01/external-cleanup.json",
+  "retained_assets": "Owned pytest workspaces/homes removed and empty external root removed; diagnostics/commands/XML retained. No owned worker/runner remains. Shared Source/toolchain remains through C9."
+}

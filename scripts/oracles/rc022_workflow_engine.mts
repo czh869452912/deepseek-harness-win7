@@ -1,0 +1,11 @@
+import {load} from './rc022_subagent_fixture.mts'
+const {Context}=await load('vendor/cordis/src/index.ts'),{default:Engine}=await load('packages/workflow/workflow-ptc/src/index.ts'),ctx=new Context(),rows:any[]=[],events:any[]=[],requests:any[]=[]
+const runtime={language:'typescript',sandboxMode:'read-only',programFormat:'function-body',resolve:(spec:any)=>spec,async run(spec:any){const b=spec.bindings[0].functions,initial=await b.begin({});requests.push(initial);await b.progress([{type:'phase',title:'working'}]);return {value:{value:initial.args??null,stopReason:'completed',agentsStarted:0}}}}
+for(const [name,value] of [['subagents',{getProvider:(name:string)=>['stub','override'].includes(name)?{}:undefined}],['workingDirectory',{async ensure(){return 'C:/engine'}}],['sandboxPolicy',{resolve(){return {mode:'read-only'}}}],['ptcRuntime',runtime]] as const){ctx.provide(name);ctx[name]=value}
+const owner=await ctx.plugin(Engine,{provider:'stub',maxConcurrentAgents:2,maxTotalAgents:3}),engine=ctx.workflowEngine,parent={session:{}},base={script:'return 7',meta:{name:'engine',description:'admission'},parent}
+for(const name of ['start','phase','end'])ctx.on('workflow/'+name,(info:any,...rest:any[])=>events.push({event:name,meta:info.meta,data:rest}))
+try{
+ for(const [name,patch] of [['meta-object',{meta:null}],['meta-unknown',{meta:{name:'engine',description:'d',unknown:1}}],['export',{script:'export const meta = {}'}],['syntax',{script:'return )'}],['provider-empty',{subagentProvider:''}],['provider-space',{subagentProvider:' stub'}],['provider-missing',{subagentProvider:'missing'}],['cap-zero',{maxTotalAgents:0}],['cap-float',{maxTotalAgents:1.5}],['cap-bool',{maxTotalAgents:true}],['cap-ceiling',{maxTotalAgents:4}]] as const){try{engine.start({...base,...patch})}catch(error:any){rows.push({name,code:error.code,error:name==='syntax'?'syntax':error.message,events:events.length})}}
+ const args={value:[1]},run=engine.start({...base,args,maxTotalAgents:2,subagentProvider:'override'});args.value.push(2);const result=await run.result;await run.dispose()
+ rows.push({name:'run',result,events,initial:requests,infoMeta:run.meta});process.stdout.write(JSON.stringify(rows))
+}finally{await owner.dispose();await ctx.fiber.dispose()}

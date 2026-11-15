@@ -32,4 +32,6 @@
 
 | C8-Y | 原版 Workflow Guest 私有执行域、真实子代理、进度排空与 v4 冷查询 | [Workflow Guest 执行](workflow-guest-checks.json) |
 
+| C8-Z | 新版 Workflow 引擎准入、事件、卸载后运行及 Workflow/Ralph 消费者 | [Workflow 引擎](workflow-engine-checks.json) |
+
 后续继续设置及完整应用组合；最终资格使用 C9 冻结候选的完整门禁。

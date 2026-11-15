@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-15",
+  "unit": "C8-C-VolatileSettingsFormSchema",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "state": "targeted-passed",
+  "paired": ".goose/out/rc022-settings-schema-paired-20261115-01/comparison/report.json",
+  "observations": 7,
+  "native": {"run": "rc022-settings-schema-native-20261115-01", "passed": 16, "failed": 0},
+  "source": {"run": "rc022-settings-schema-source-20261115-01", "passed": 12, "failed": 0},
+  "verification_scope_reason": "Actual Schema/Volatile and form helpers check nearest live ancestors, ordinary-field exclusion, nested containers, secret required/default removal including container defaults, detached plain values, original schema preservation, raw expression retention and null/empty schemas. Existing redaction and candidate live selection consumers pass; Source schema/redaction suites pass.",
+  "observer_boundary": "Schema projection only. No settings descriptor revisions, ConfigEditor persistence, Loader reconciliation or profile integration qualification.",
+  "activation_boundary": "ConfigEditor and SettingsForms providers remain to be implemented; production composition and pin unchanged.",
+  "cleanup": ".goose/out/rc022-settings-schema-source-20261115-01/cleanup.json",
+  "retained_assets": "88215 bytes of owned workspaces and tmp/home removed after teardown. Commands, observations, XML/JSON/logs retained; no task workers remain. Shared Source/toolchain retained through C9."
+}

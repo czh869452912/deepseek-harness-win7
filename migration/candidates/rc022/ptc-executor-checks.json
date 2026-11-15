@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-15",
+  "unit": "C5-O-SelectedPtcExecutorAndTransport",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "state": "targeted-passed",
+  "paired": ".goose/out/rc022-ptc-executor-paired-retry-20261115-01/comparison/report.json",
+  "observations": 27,
+  "native": {"run": "rc022-ptc-executor-native-retry-20261115-01", "passed": 349, "failed": 0},
+  "source": {"run": "rc022-ptc-dispatches-source-20261115-01", "passed": 170, "failed": 0, "reuse": "Same fixed Source PTC executor tests already run for C5-M; Source bytes unchanged."},
+  "verification_scope_reason": "Selected executor through actual tools batch service: private transport and explicit direct-call rejection, Python/TypeScript/repl dynamic model schemas and SDK sections, runtime controls and missing-provider diagnostics, binding-time schema and same resolved admission, working directory dependency, program/runtime/caller-abort/allowance classifications, null completion and bounded JSON result rendering, retained-state reset/notice/failure and one release per exact Agent/original provider. Real selected plugin plus Python subprocess executes two concurrent canonical tools and writes start/settle events inside a real v4 Session outer call/result. Existing actual model/prompt/admission/factory consumers and process runtime checks pass.",
+  "initial_difference": "Pairing found run_code parameters incorrectly declared additionalProperties:false. Source's defineTool parameter DSL leaves that root open; corrected both model projection and static validation while retaining explicit runtime control checks. Original mismatch observations retained.",
+  "activation_boundary": "Explicit candidate plugin, not production profile/pin activation. Native process provider confinement, protocol traffic budgets/backpressure and more integration consumers remain C5 work; retained runtime capability is exercised with an actual in-repo seam fixture, not claimed as retained Python-process implementation. Complete C5-C9/release qualification remains pending.",
+  "cleanup": ".goose/out/rc022-ptc-executor-native-retry-20261115-01/cleanup.json",
+  "retained_assets": "Commands, XML, logs, fixed Source/native observations and legacy runtime-context consumer paired receipts retained. Owned synthetic workspaces removed; process inventory confirms no owned executor/worker process. Shared Source/toolchain retained until C9."
+}

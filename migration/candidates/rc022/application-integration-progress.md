@@ -66,4 +66,6 @@
 
 | C8-AP | 当前 PowerShell 工具动态注册、前台转后台、实际进程输出接续与取消 | [PowerShell 工具](pwsh-tool-checks.json) |
 
+| C8-AQ | 当前受限 PowerShell、每进程沙箱事实与真实 ACL 拒绝映射 | [受限 Shell 执行](sandbox-shell-checks.json) |
+
 后续继续设置及完整应用组合；最终资格使用 C9 冻结候选的完整门禁。

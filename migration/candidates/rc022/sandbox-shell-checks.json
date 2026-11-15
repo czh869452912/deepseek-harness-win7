@@ -1,0 +1,33 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-16",
+  "unit": "C8-AQ-CurrentSandboxPwsh",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "state": "targeted-passed",
+  "paired": ".goose/out/rc022-sandbox-shell-paired2-20261116-01/comparison/report.json",
+  "observations": 13,
+  "native": {
+    "run": "rc022-sandbox-shell-native-final-20261116-01",
+    "passed": 11,
+    "failed": 0
+  },
+  "direct_consumers": {
+    "run": "rc022-sandbox-shell-native-20261116-01",
+    "passed": 9,
+    "scope": "Unchanged current local executor and PowerShell tool tests passed during initial run; initial new ACL test fixture failed before correction. Not a combined full gate."
+  },
+  "source": {
+    "run": "rc022-sandbox-shell-source-20261116-01",
+    "passed": 29,
+    "failed": 0,
+    "skipped": 2
+  },
+  "verification_scope_reason": "Actual current confined executor compares per-call policy/full-access bypass, process sandbox facts before done, first fatal line versus informational rule, runner-specific sync/async errors versus unrelated provider failure, preparation rejection/deadline/caller abort, memoized foreground projection and strict executable evidence helpers. Native tests additionally cover overlapping process dialects, independently cancelled result waiter, provider abort before capabilities and real Windows ACL read-only refusal versus full-access write. Original Source sandbox and foreground-timeout suites selected.",
+  "legal_adaptations": [
+    "Only the known Source/newer-PowerShell UTF8 preamble and Win7 New-Object equivalent are replaced by an explicit marker in recorded spawn argv; all other arguments and facts compare exactly. Native error attribution uses errno/filename or specific CreateProcess executable Win32 errors after usable cwd verification; synthetic Node code/path/syscall follows Source exactly."
+  ],
+  "activation_boundary": "Explicit current provider. Historical executor remains until coordinated profile activation. Native ACL test runs current Windows host, not Win7 VM/x86. Two Source platform skips remain unqualified.",
+  "cleanup": ".goose/out/rc022-sandbox-shell-source-20261116-01/cleanup.json",
+  "cleanup_bytes": 1143324,
+  "retained_assets": "Owned synthetic workspaces, temporary homes and external Source tsx cache removed. No owned runner remains. Raw failures, commands, XML and paired observations retained; shared Source/toolchain through C9."
+}

@@ -50,7 +50,9 @@ class LocalSandboxProvider(Service):
     def apply(self, ctx=None, config=None):
         pass
 
-    def confine(self, argv, policy):
+    def confine(self, argv, policy, signal=None):
+        if signal is not None:
+            signal.throwIfAborted()
         mode = policy["mode"]
         if self.closed:
             raise SandboxUnavailableError(mode, "provider disposed")

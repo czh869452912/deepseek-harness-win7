@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-15",
+  "unit": "C6-S-DelegationTool",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "state": "targeted-passed",
+  "paired": ".goose/out/rc022-delegation-tool-paired-verified-20261115-01/comparison/report.json",
+  "observations": 13,
+  "native": {
+    "run": "rc022-delegation-tool-native-verified-20261115-01",
+    "passed": 8,
+    "failed": 0
+  },
+  "source": {
+    "run": "rc022-delegation-tool-source-20261115-01",
+    "passed": 62,
+    "failed": 0
+  },
+  "verification_scope_reason": "Actual named spawn/fork pipeline, immediate activation, exact schemas/prompts and Source metadata, runtime and volatile depth limits, explicit/configured routes, provider removal and late registration validation, shared guidance and unsupported config. Native scope override/restriction regression and provider replacement during delayed preflight reject before child creation.",
+  "activation_boundary": "Candidate delegation composition; actual selectable preset registry/consumer integration, SDK/PTC/Remote and production composition remain pending. Shared workingDirectory fixture is controlled and unqualified.",
+  "cleanup": ".goose/out/rc022-delegation-tool-source-20261115-01/cleanup.json",
+  "retained_assets": "Commands/logs/XML and observations including repaired failures retained; synthetic payloads removed. Shared Source/toolchain retained through C9."
+}

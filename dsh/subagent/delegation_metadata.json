@@ -1,0 +1,96 @@
+{
+  "fresh": {
+    "name": "subagent",
+    "description": "Delegate a self-contained task to a subagent (a separate agent that works in its own context) to offload focused, independent work — research, a scoped implementation, an analysis — so it does not consume this conversation's context. The subagent returns its result, not its intermediate steps. This tool starts an independently managed subagent and immediately returns its name. If you are still online when it finishes, the runtime automatically delivers its completion notice. The notice includes the final answer unless the child sent you a message just before finishing. Use `send_message` to steer it while running or continue its conversation after it finishes.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "cwd": {
+          "type": "string",
+          "description": "Initial child working directory. Relative paths use your current directory; omitted inherits it. Later directory changes in either agent are independent."
+        },
+        "description": {
+          "type": "string",
+          "description": "A short (3-5 word) description of the delegated task, for display. Use the language of the user's current request."
+        },
+        "name": {
+          "type": "string",
+          "description": "Optional short name for the subagent, unique among the subagents you create: lower-case letters, digits, and hyphens, starting with a letter, at most 32 characters; lead is reserved for the root agent. Omitted names default to agent-1, agent-2, and so on."
+        },
+        "prompt": {
+          "type": "string",
+          "description": "The complete, self-contained task for the subagent. It does not share this conversation's context, so include everything it needs."
+        }
+      },
+      "required": [
+        "description",
+        "prompt"
+      ]
+    },
+    "outputSchema": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "type": "string",
+          "const": "activation"
+        },
+        "name": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "kind",
+        "name"
+      ]
+    },
+    "guidance": "Start independent delegations with `subagent` together in one assistant message and continue useful work while they run. When only waiting for their results remains, end your turn instead of sleeping or polling; the next result starts a new turn. Collect the subagent results required to complete the task before giving the user a final answer.\n\nBash, formatters, code generators, and scripts can overwrite concurrent edits without conflict detection; coordinate their changes explicitly. The agent integrating the work must review the final diff and run relevant tests."
+  },
+  "inherited": {
+    "name": "subagent",
+    "description": "Delegate a task to a subagent that inherits this conversation: a child agent seeded with all completed turns so far (it does not see the current in-flight turn). Use this when the subtask builds on this conversation's context — a follow-up analysis, a review, a continuation — without consuming this conversation's context for the work itself. You receive its result, not its intermediate steps. This tool starts an independently managed subagent and immediately returns its name. If you are still online when it finishes, the runtime automatically delivers its completion notice. The notice includes the final answer unless the child sent you a message just before finishing. Use `send_message` to steer it while running or continue its conversation after it finishes.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "cwd": {
+          "type": "string",
+          "description": "Initial child working directory. Relative paths use your current directory; omitted inherits it. Later directory changes in either agent are independent."
+        },
+        "description": {
+          "type": "string",
+          "description": "A short (3-5 word) description of the delegated task, for display. Use the language of the user's current request."
+        },
+        "name": {
+          "type": "string",
+          "description": "Optional short name for the subagent, unique among the subagents you create: lower-case letters, digits, and hyphens, starting with a letter, at most 32 characters; lead is reserved for the root agent. Omitted names default to agent-1, agent-2, and so on."
+        },
+        "prompt": {
+          "type": "string",
+          "description": "The task for the subagent. It already sees this conversation's completed turns, so build on them freely and state only what is new."
+        }
+      },
+      "required": [
+        "description",
+        "prompt"
+      ]
+    },
+    "outputSchema": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "type": "string",
+          "const": "activation"
+        },
+        "name": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "kind",
+        "name"
+      ]
+    },
+    "guidance": "Start independent delegations with `subagent` together in one assistant message and continue useful work while they run. When only waiting for their results remains, end your turn instead of sleeping or polling; the next result starts a new turn. Collect the subagent results required to complete the task before giving the user a final answer.\n\nBash, formatters, code generators, and scripts can overwrite concurrent edits without conflict detection; coordinate their changes explicitly. The agent integrating the work must review the final diff and run relevant tests."
+  }
+}

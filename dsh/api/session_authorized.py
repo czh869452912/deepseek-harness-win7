@@ -7,6 +7,7 @@ from dsh.core.session.json import UNDEFINED
 from dsh.api.session_commands_authorized import AuthorizedSessionCommands
 from dsh.api.session_commands_current import has_prompt_content
 from dsh.util_time import canonical_client_time_zone
+from dsh.api.session_agents_authorized import AuthorizedSessionAgents
 
 
 class ProjectionSessionControl(CurrentSessionControl):
@@ -27,9 +28,15 @@ class AuthorizedSessionController(CurrentSessionController):
               'sessions', 'sessionProjections', 'sessionQuery', 'typert', 'typertGateway', 'workspaceRegistry']
     control_class = ProjectionSessionControl
     commands_class = AuthorizedSessionCommands
+    agents_class = AuthorizedSessionAgents
+    model_projection = staticmethod(lambda ctx: None)
 
     async def init(self):
         await self.commands.initialize()
+
+    def event(self, session, event):
+        if event['type'] == 'user/message' and event['data']['source']['kind'] == 'user':
+            self.ctx.emit('api-session/activity', session.id, event['time'])
 
     @Remote
     async def prompt(self, request, signal):

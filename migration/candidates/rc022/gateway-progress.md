@@ -33,4 +33,6 @@
 
 | C7-X | 消息调用者、时区、持久去重与真实失败后的显式空提交重试 | [消息提交与重试](session-prompt-checks.json) |
 
-后续：上传提供方与完整 Session 组合、生成物和原版客户端整体接入。最终资格使用 C9 冻结候选的完整门禁；当前生产 pin 与 `accepted_upstream` 不提升。
+| C7-Y | 普通会话串行复用、空白预设切换、冷恢复、动态默认模型与后台保存 | [会话激活](session-activation-checks.json) |
+
+后续：完整 Session 组合、历史/状态/列表、生成物和原版客户端整体接入。上传提供方已另记 C8-A。最终资格使用 C9 冻结候选的完整门禁；当前生产 pin 与 `accepted_upstream` 不提升。

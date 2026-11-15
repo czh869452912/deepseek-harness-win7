@@ -42,6 +42,8 @@ async def build_model_catalog(ctx, default_selection=None):
 
 
 class CurrentSessionController(TypertRemoteService):
+    agents_class = CurrentSessionAgents
+    model_projection = staticmethod(install_model_selection_projection)
     control_class = CurrentSessionControl
     commands_class = CurrentSessionCommands
     inject = ['agentDefaultModel', 'agents', 'attachments', 'fileUploads', 'llm', 'sessions', 'sessionProjections', 'sessionQuery', 'typert', 'workspaceRegistry']
@@ -50,8 +52,8 @@ class CurrentSessionController(TypertRemoteService):
         super().__init__(ctx, 'sessionController', dict(namespace='session'))
         config, internals = config or {}, internals or {}
         register_session_resource(ctx)
-        install_model_selection_projection(ctx)
-        self.agents, self.promotions = CurrentSessionAgents(ctx), set()
+        self.model_projection(ctx)
+        self.agents, self.promotions = self.agents_class(ctx), set()
         self.commands = self.commands_class(ctx, self.agents, os.getcwd())
         async def resolve(sid):
             found = await self.agents.resolveAgent(sid)

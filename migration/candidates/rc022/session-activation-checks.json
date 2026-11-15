@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-15",
+  "unit": "C7-Y-OrdinarySessionActivation",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "state": "targeted-passed",
+  "paired": ".goose/out/rc022-session-activation-paired-final-20261115-01/comparison/report.json",
+  "observations": 19,
+  "native": {"run": "rc022-session-activation-native-final-20261115-01", "passed": 93, "failed": 0},
+  "source": {"run": "rc022-session-activation-source-20261115-01", "passed": 83, "failed": 0},
+  "verification_scope_reason": "Actual Agent/Session/projection/preset/Loader/JSONL/query providers verify ordered blank reuse, explicit/default preset changes, started/archived/foreign-workspace minting, cold reuse/refusal and identity error precedence. The actual request uses the selected model while default persistence remains blocked. Native adds canceled create waiters, failed predecessor recovery, absent roster policy, shared cold resolution and writer-held error translation, with prompt/core model and legacy facade consumers. Source Agent/preset/model/create-fork suites pass.",
+  "resolved_failures": "Observer fixtures initially used removed Session.events and omitted provider in model metadata; fixed to real v4 APIs. Native cold-resolution fixture initially had no durable events; records a model selection before disposal. Native resolver lacked writer-held translation; implemented the target mapping and post-resume ownership recheck. Original logs/XML retained.",
+  "implementation": "AuthorizedSessionAgents serializes named claims without canceling shared work when a waiter cancels, resolves presets after placement/identity checks, uses actual blank-turn/preset selection policy and rechecks cold blankness under the writer. Model defaults are live getters; the candidate controller skips the retired v2 model projection and mutable API selection. Commands return the actual minted identity, attach that identity, select through agent.model and save defaults asynchronously with owned observed tasks.",
+  "observer_boundary": "Workspace membership and deployment-default persistence are controlled collaborators. Source claim/save private-map sizes are not observed; its settled row uses constants, while native sizes are checked directly. Full SessionController boot, archived prompt gate, history/state/list composition and production mapping remain separate. This is targeted completion, not full regression or release acceptance.",
+  "activation_boundary": "Candidate providers only; production pin and accepted_upstream remain unchanged until C9 qualification.",
+  "cleanup": ".goose/out/rc022-session-activation-source-20261115-01/cleanup.json",
+  "retained_assets": "Owned fixture journals/project directories, pytest workspaces and tmp/home removed after teardown. Commands, observations, XML/JSON/logs retained; no task workers remain. Shared Source/toolchain retained through C9."
+}

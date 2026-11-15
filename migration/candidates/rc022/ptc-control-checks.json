@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-15",
+  "unit": "C5-R-IndependentProcessControlAndOutput",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "state": "targeted-passed",
+  "paired": ".goose/out/rc022-ptc-control-paired-retry-20261115-01/comparison/report.json",
+  "observations": 4,
+  "native": {"run": "rc022-ptc-control-native-retry-20261115-01", "passed": 57, "failed": 0},
+  "added_regression": {"run": "rc022-ptc-control-native-unicode-20261115-01", "passed": 5, "failed": 0},
+  "source": {"run": "rc022-ptc-protocol-source-retry-20261115-01", "passed": 96, "reuse": "Unchanged fixed Source control RPC and host failure tests already passed for C5-Q."},
+  "verification_scope_reason": "Actual Python/Node programs write forged completion JSON to inherited stdout, Unicode to stderr, invalid UTF-8 bytes, and raw over-budget output. Native also checks wrong-token refusal, non-inheritable sockets, listener/socket disposal, completion reaps descendants holding output pipes, and UTF-8 boot through the legacy process consumer. Existing real pending call/message budgets, abort, disposal, SDK/executor/queue consumers passed.",
+  "initial_failures": "Original Unicode observation and 120-second native timeout retained, with actual faulthandler stacks in rc022-ptc-control-debug-20261115-01/debug.log. Fixed Windows locale-dependent stdin decoding by reading binary boot bytes. Fixed BufferedReader-lock shutdown deadlock with unbuffered host control reads and process-range termination before stream disposal. Owned debug process tree was explicitly identified and terminated; retry passed.",
+  "adaptation": "A new per-run authenticated IPv4 loopback endpoint separates protocol from inherited stdout/stderr on Python 3.8/Win7; no Node file-descriptor or birpc ABI claim. Random endpoint facts cross only the private boot input. This channel is not an isolation boundary against arbitrary code running within the same interpreter. Filesystem confinement and canonical provider composition remain C5 work.",
+  "cleanup": ".goose/out/rc022-ptc-control-native-unicode-20261115-01/cleanup.json",
+  "retained_assets": "Commands, logs/XML, original comparison failure, timeout identity and raw faulthandler observations retained. Owned synthetic workspaces removed; no owned worker/debug process remained. Shared Source/toolchain retained through C9."
+}

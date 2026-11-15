@@ -12,8 +12,12 @@ from dsh.code_runtime.contract import snapshot_json, encoded
 
 
 async def main():
-    incoming, outgoing = sys.stdin, sys.stdout.buffer
+    incoming, outgoing = sys.stdin.buffer, sys.stdout.buffer
     boot = json.loads(incoming.readline())
+    control = None
+    if 'control' in boot:
+        from dsh.code_runtime.control import connect_control
+        control, incoming, outgoing = connect_control(boot.pop('control'))
     # Windows' loader needs SystemRoot during interpreter initialization;
     # it is not part of the model program's environment.
     os.environ.clear()
@@ -27,6 +31,11 @@ async def main():
     serial = [0]
 
     def send(value):
+        if control is not None and value.get('type') == 'done':
+            # Inherited streams use their own channel and must reach the pipe
+            # before the host receives completion and retires the process range.
+            sys.__stdout__.flush()
+            sys.__stderr__.flush()
         data = encoded(value) + b'\n'
         with lock:
             outgoing.write(data)

@@ -6,6 +6,7 @@ implicit return is JSON null. Programs remain shell-trusted, not sandboxed.
 """
 import asyncio
 import ctypes
+import codecs
 import inspect
 import json
 import math
@@ -29,13 +30,18 @@ DEFAULTS = dict(computeMs=60000, maxWallMs=600000, maxOutputBytes=67108864, maxO
 
 
 class ProcessOwner:
-    def __init__(self, memory, cwd=None):
+    def __init__(self, memory, cwd=None, private_control=False):
         self.job, self.api, self.closed = None, None, False
-        self.process = subprocess.Popen([sys.executable, '-u', '-B', os.path.join(os.path.dirname(__file__), 'worker.py')],
-            stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL,
-            env={'SystemRoot': os.environ.get('SystemRoot', r'C:\Windows')} if os.name == 'nt' else {},
-            cwd=cwd, start_new_session=os.name != 'nt', creationflags=0x08000000 if os.name == 'nt' else 0)
+        self.process = None
+        self.control = None
         try:
+            if private_control:
+                from dsh.code_runtime.control import ControlListener
+                self.control = ControlListener()
+            self.process = subprocess.Popen([sys.executable, '-u', '-B', os.path.join(os.path.dirname(__file__), 'worker.py')],
+                stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE if private_control else subprocess.DEVNULL,
+                env={'SystemRoot': os.environ.get('SystemRoot', r'C:\Windows')} if os.name == 'nt' else {},
+                cwd=cwd, start_new_session=os.name != 'nt', creationflags=0x08000000 if os.name == 'nt' else 0)
             if os.name == 'nt':
                 from dsh.sandbox.windows_acl import WinApi, JobLimit, P, D
                 self.api = WinApi()
@@ -75,6 +81,10 @@ class ProcessOwner:
         if self.job:
             self.api.CloseHandle(self.job)
             self.job = None
+        if self.process is None:
+            if self.control is not None:
+                self.control.close()
+            return
         if self.process.poll() is None:
             if os.name == 'nt':
                 self.process.kill()
@@ -84,6 +94,8 @@ class ProcessOwner:
                 except ProcessLookupError:
                     pass
         self.process.wait(timeout=5)
+        if self.control is not None:
+            self.control.close()
 
 
 class PythonProcessRuntime(Service):
@@ -141,6 +153,8 @@ class PythonProcessRuntime(Service):
         if aborted(request.get('signal')):
             return failure('abort', 'code execution aborted')
         owner, reader = None, None
+        output_readers = []
+        outputs_done = [0]
         messages = queue.Queue(maxsize=128)
         stopped = threading.Event()
         writes = asyncio.Lock()
@@ -152,7 +166,7 @@ class PythonProcessRuntime(Service):
         wire_failure = [None]
         try:
             owner = ProcessOwner(limits['maxOldGenerationSizeMb'] * 1024 * 1024,
-                                 self._process_cwd(request))
+                                 self._process_cwd(request), private_control=bool(protocol))
             process = owner.process
             loop = asyncio.get_running_loop()
 
@@ -172,8 +186,11 @@ class PythonProcessRuntime(Service):
                 try:
                     if protocol:
                         decoder = JsonLines(protocol['maxMessageBytes'])
+                        endpoint = owner.control.accept(stopped, lambda: process.poll() is not None)
+                        if endpoint is None:
+                            return
                         while not stopped.is_set():
-                            chunk = process.stdout.read1(4096)
+                            chunk = endpoint.read(4096)
                             if not chunk:
                                 decoder.end()
                             decoder.feed(chunk, put)
@@ -197,7 +214,30 @@ class PythonProcessRuntime(Service):
             reader = threading.Thread(target=read, daemon=True)
             reader.start()
 
-            async def send(value):
+            if protocol:
+                def read_output(stream, name):
+                    decoder = codecs.getincrementaldecoder('utf-8')(errors='replace')
+                    try:
+                        while not stopped.is_set():
+                            chunk = stream.read1(min(4096, int(protocol['maxMessageBytes'])))
+                            if not chunk:
+                                break
+                            text = decoder.decode(chunk)
+                            if text:
+                                put(dict(type='raw-output', text=text, stream=name), len(chunk))
+                        tail = decoder.decode(b'', final=True)
+                        if tail:
+                            put(dict(type='raw-output', text=tail, stream=name))
+                    except (OSError, ValueError):
+                        pass
+                    finally:
+                        outputs_done[0] += 1
+                for stream, name in ((process.stdout, 'stdout'), (process.stderr, 'stderr')):
+                    thread = threading.Thread(target=read_output, args=(stream, name), daemon=True)
+                    output_readers.append(thread)
+                    thread.start()
+
+            async def send(value, boot=False):
                 if not active[0]:
                     return
                 data = outgoing.admit(value) if outgoing is not None else encoded(value) + b'\n'
@@ -206,8 +246,9 @@ class PythonProcessRuntime(Service):
                         if not active[0]:
                             return
                         def write():
-                            process.stdin.write(data)
-                            process.stdin.flush()
+                            stream = process.stdin if boot or not protocol else owner.control.outgoing
+                            stream.write(data)
+                            stream.flush()
                         await loop.run_in_executor(None, write)
                 finally:
                     if outgoing is not None:
@@ -218,8 +259,11 @@ class PythonProcessRuntime(Service):
                                  **({'errorClass': binding['errorClass']} if 'errorClass' in binding else {})) for name, binding in bindings.items()]
             baseline = None
             start = time.monotonic()
-            boot_task = asyncio.create_task(send(dict(program=request['program'], bindings=boot_bindings,
-                            memoryBytes=int(limits['maxOldGenerationSizeMb'] * 1024 * 1024))))
+            boot = dict(program=request['program'], bindings=boot_bindings,
+                        memoryBytes=int(limits['maxOldGenerationSizeMb'] * 1024 * 1024))
+            if protocol:
+                boot['control'] = owner.control.spec
+            boot_task = asyncio.create_task(send(boot, boot=True))
 
             async def invoke(message, charged=0):
                 try:
@@ -270,6 +314,10 @@ class PythonProcessRuntime(Service):
                     continue
                 if kind == 'worker-exit':
                     return failure('worker-exit', 'worker exited before completion')
+                if kind == 'raw-output' and protocol:
+                    if not ledger.admit(message['text']):
+                        return ledger.limit()
+                    continue
                 if protocol and baseline is None:
                     return failure('protocol', 'program message arrived before readiness')
                 if kind == 'log' and isinstance(message.get('text'), str):
@@ -301,6 +349,29 @@ class PythonProcessRuntime(Service):
                     calls.add(task)
                     task.add_done_callback(calls.discard)
                 elif kind == 'done':
+                    if protocol:
+                        # Completion on control can precede final inherited output.
+                        # Reap the process, then drain the separately owned readers.
+                        active[0] = False
+                        owner.close()
+                        drain_start = time.monotonic()
+                        while outputs_done[0] != 2 and time.monotonic()-drain_start < 3:
+                            if aborted(request.get('signal')):
+                                return failure('abort', 'code execution aborted')
+                            if limits['maxWallMs'] is not None and (time.monotonic()-start)*1000 > limits['maxWallMs']:
+                                return failure('timeout', 'wall-time budget exceeded')
+                            try:
+                                extra, size = messages.get_nowait()
+                                incoming.release(size)
+                                if extra.get('type') == 'raw-output' and not ledger.admit(extra['text']):
+                                    return ledger.limit()
+                            except queue.Empty:
+                                await asyncio.sleep(.01)
+                        while not messages.empty():
+                            extra, size = messages.get_nowait()
+                            incoming.release(size)
+                            if extra.get('type') == 'raw-output' and not ledger.admit(extra['text']):
+                                return ledger.limit()
                     error = message.get('error')
                     if protocol and 'error' in message and error is None:
                         return failure('protocol', 'invalid program error')
@@ -329,8 +400,12 @@ class PythonProcessRuntime(Service):
                 owner.close()
                 if reader is not None:
                     reader.join(timeout=2)
+                for thread in output_readers:
+                    thread.join(timeout=2)
                 owner.process.stdin.close()
                 owner.process.stdout.close()
+                if owner.process.stderr is not None:
+                    owner.process.stderr.close()
             if boot_task is not None:
                 await asyncio.gather(boot_task, return_exceptions=True)
             # Binding calls are caller-owned and must not be cancelled when

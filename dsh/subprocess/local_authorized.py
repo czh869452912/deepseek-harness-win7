@@ -17,6 +17,32 @@ def check(signal):
 
 
 class AuthorizedLocalSubprocessRuntime(LocalSubprocessRuntime):
+    async def spawnTerminal(self, spec):
+        if not spec.get('argv') or not spec['argv'][0]:
+            from dsh.subprocess.error import SubprocessError
+            raise SubprocessError('subprocess-local: terminal argv must contain a program','SUBPROCESS_INVALID_ARGV')
+        signal=spec.get('signal');check(signal)
+        if sys.platform!='win32':raise RuntimeError('Canonical Win7 terminal provider requires Windows')
+        from dsh.subprocess.types import SubprocessTerminalSpawnSpec
+        from dsh.subprocess.winpty import WinPtyTerminalHandle
+        from dsh.subprocess.terminal_authorized import WindowsTerminalHandle
+        environment=child_env(spec.get('env'));environment['TERM']=spec['terminalType']
+        native=SubprocessTerminalSpawnSpec(spec['argv'],spec['cwd'],spec['rows'],spec['cols'],spec['graceMs'],signal=signal)
+        raw=WinPtyTerminalHandle(native,environment)
+        try:
+            handle=WindowsTerminalHandle(raw,self.terminals.discard)
+            self.terminals.add(handle)
+        except BaseException:
+            raw.defer_output_close=False;await raw.terminate();raise
+        # The canonical provider checks cancellation before its synchronous
+        # allocation; the controller owns cancellation after publication.
+        if not spec.get('shellActivity'):
+            def exited(_):
+                task=asyncio.ensure_future(handle.terminate())
+                task.add_done_callback(lambda done:None if done.cancelled() else done.exception())
+            handle.done.add_done_callback(exited)
+        return handle
+
     async def resolve_executable(self, command, env=None, signal=None):
         if not command:raise ValueError('subprocess-local: executable must be non-empty')
         check(signal);environment = child_env(env);absolute = os.path.isabs(command)

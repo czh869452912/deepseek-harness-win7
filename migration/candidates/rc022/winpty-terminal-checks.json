@@ -1,0 +1,28 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-16",
+  "unit": "C8-V-CanonicalWinPTYProvider",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "state": "targeted-passed",
+  "paired": ".goose/out/rc022-winpty-terminal-paired-final-20261116-01/comparison/report.json",
+  "observations": 14,
+  "native": {
+    "run": "rc022-winpty-terminal-native-complete-20261116-01",
+    "passed": 25,
+    "failed": 0
+  },
+  "source": {
+    "run": "rc022-winpty-terminal-source-20261116-01",
+    "passed": 13,
+    "failed": 0,
+    "excluded_file": "packages/subprocess/subprocess-local/tests/terminal.spec.ts is explicitly excluded by the pinned Windows vitest configuration; it did not run"
+  },
+  "verification_scope_reason": "Paired original Source LocalTerminalHandle(platform win32) and WindowsProcessTree compare shell/descendant activity, orphan retention, root/child PID reuse fencing, stable revision, pseudo foreground, SIGINT/TERM and refused signals. Actual current-host WinPTY tests verify C ABI resize to 73x11, TERM/session environment, Unicode output, Ctrl-C reaching a real child signal handler, process exit7/final bytes retained until cleanup, child Job termination, full output queue without consumer releasing on terminate, and real subprocess-to-controller-to-original-screen reconnect/unload. Direct legacy WinPTY, Session controller, retention/cleanup and shell discovery regressions pass.",
+  "implementation": "Canonical spawnTerminal adapts the existing pre-spawn Job-owned WinPTY C ABI. A bounded async byte queue reads only available named-pipe bytes, applies backpressure, then drains the terminated pipe before closing it; final buffered bytes remain consumable. Resize RPC joins under the same native lifetime lock as writes/free. Toolhelp32/GetProcessTimes/wait-state identities fence adopted descendants; Windows shell pseudo-group and false inputWaiting match Source. SIGINT writes Ctrl-C; SIGTERM uses taskkill /T without /F; shell SIGKILL is refused. CleanupPromise moved unchanged to shared core and re-exported by retention, so the subprocess provider has no dependency on an API plugin. The raw legacy interface retains its original foreground policy.",
+  "observer_boundary": "Real current Windows x64 host and shipped WinPTY/QuickJS engines, not an actual Windows7 VM or x86 run. Source terminal.spec.ts is excluded on Windows; original class decisions are directly exercised by the paired probe, and windows-inspector.spec.ts ran13 tests. Canonical provider currently targets Windows; its existing snake_case API remains available. WinPTY observes console paint updates; unobserved one-shot redraw bursts are not asserted as a lossless byte trace.",
+  "initial_failure": "native-final backpressure fixture emitted one unpaced 600KB console overwrite and never reached the byte queue cap. Diagnostics retained. Revised fixture paces uniquely numbered lines within a larger viewport to establish actual backpressure; final native-complete passes. No product change was made to hide the failure.",
+  "activation_boundary": "Candidate provider and terminal composition only; production mapping, pin and accepted_upstream unchanged pending C9.",
+  "cleanup": ".goose/out/rc022-winpty-terminal-source-20261116-01/cleanup.json",
+  "external_cleanup": ".goose/out/rc022-winpty-terminal-source-20261116-01/external-cleanup.json",
+  "retained_assets": "Removed84941 bytes of all owned test homes/fixture trees after their last consumer, including the resolved failed fixture. Empty external Source root removed. No task runners, WinPTY agents or JavaScript workers remain. Commands, logs, XML and raw paired reports preserved. Shared Source/toolchain retained through C9."
+}

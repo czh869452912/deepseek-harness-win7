@@ -2,23 +2,13 @@
 import asyncio
 
 from dsh.core.abort import AbortController
+from dsh.core.cleanup import CleanupPromise
 from dsh.typert.remote import RemoteError
 
 
 class LoopScheduler:
     def now(self):return asyncio.get_running_loop().time() * 1000
     def later(self, delay, callback):return asyncio.get_running_loop().call_later(delay / 1000, callback)
-
-
-class CleanupPromise:
-    """One non-cancellable owner operation, with independent Python awaiters."""
-    def __init__(self, operation):
-        self.task = asyncio.ensure_future(operation)
-        self.task.add_done_callback(lambda done:None if done.cancelled() else done.exception())
-    def __await__(self):return asyncio.shield(self.task).__await__()
-    def add_done_callback(self, callback):self.task.add_done_callback(lambda _:callback(self))
-    def cancelled(self):return self.task.cancelled()
-    def exception(self):return self.task.exception()
 
 
 class TerminalRetention:

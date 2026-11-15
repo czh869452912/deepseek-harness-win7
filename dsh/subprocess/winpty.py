@@ -59,6 +59,7 @@ class WinPtyTerminalHandle:
             'winpty_spawn_config_new': (P, [c.c_ulonglong, c.c_wchar_p, c.c_wchar_p, c.c_wchar_p, c.c_wchar_p, P]),
             'winpty_spawn_config_free': (None, [P]),
             'winpty_spawn': (c.c_int, [P, P, P, P, P, P]),
+            'winpty_set_size': (c.c_int, [P, c.c_int, c.c_int, P]),
             'winpty_error_msg': (c.c_wchar_p, [P]),
             'winpty_error_free': (None, [P]),
             'winpty_free': (None, [P]),
@@ -163,6 +164,16 @@ class WinPtyTerminalHandle:
     async def inspect_foreground(self):
         return None
 
+    async def resize(self, cols, rows):
+        async with self._write_lock:
+            if self.pty is None or self.done.done():raise RuntimeError('terminal process has exited')
+            # The DLL's RPC can wait for its agent. Join it before releasing
+            # the same lock that protects winpty_free during termination.
+            resizing = asyncio.get_running_loop().run_in_executor(None,self.call,'winpty_set_size',self.pty,cols,rows)
+            try:await asyncio.shield(resizing)
+            except asyncio.CancelledError:
+                await asyncio.gather(resizing,return_exceptions=True);raise
+
     async def signal_foreground(self, signal_name):
         # Console Ctrl-C is supported, but WinPTY cannot verify a POSIX-style
         # foreground group. Do not fabricate a delivered targetPgid result.
@@ -175,7 +186,7 @@ class WinPtyTerminalHandle:
         if self.job:
             self.api.kernel.TerminateJobObject(self.job, 1)
 
-    def close_native(self):
+    def close_native(self, keep_output=False):
         if self.job:
             self.api.CloseHandle(self.job)
             self.job = None
@@ -183,7 +194,7 @@ class WinPtyTerminalHandle:
             self.api.kernel.CancelIoEx(self.input, None)
             self.api.CloseHandle(self.input)
             self.input = None
-        if self.output:
+        if self.output and not keep_output:
             self.output.close()
             self.output = None
         if self.process:
@@ -196,6 +207,9 @@ class WinPtyTerminalHandle:
     async def terminate(self):
         if self._terminate_task is None:
             self._terminate_task = asyncio.create_task(self._terminate())
+            def finished(task):
+                if task.cancelled() or task.exception() is not None:self._terminate_task = None
+            self._terminate_task.add_done_callback(finished)
         await asyncio.shield(self._terminate_task)
 
     async def _terminate(self):
@@ -209,4 +223,4 @@ class WinPtyTerminalHandle:
                 await asyncio.sleep(.01)
         await self.done
         async with self._write_lock:
-            self.close_native()
+            self.close_native(keep_output=getattr(self,'defer_output_close',False))

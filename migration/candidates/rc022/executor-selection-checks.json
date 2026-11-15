@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-15",
+  "unit": "C5-B-ScopedExecutorOwnership",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "state": "targeted-passed",
+  "paired": ".goose/out/rc022-executor-selection-paired-verified-20261115-01/comparison/report.json",
+  "observations": 10,
+  "native_initial": {"run": "rc022-executor-selection-native-20261115-01", "passed": 170, "failed": 1},
+  "native": {"run": "rc022-executor-selection-native-verified-20261115-01", "passed": 173, "failed": 0},
+  "source": {"run": "rc022-executor-selection-source-20261115-01", "passed": 192, "failed": 0},
+  "verification_scope_reason": "Candidate Tools composition rejects removed mode/maxParallelSubCalls configuration. Executor contributions own prompt sections through exact nested effects. Nearest scope wins; unloaded selections remain unavailable instead of falling through to a root provider. A replacement may occupy the same unavailable slot. Accepted dispatch captures its provider before awaiting. Prompt descriptions and executor sections use the scope's selection. Tool registration now returns the exact effect disposer and rolls back registration when tools/change fails; real nested cleanup retains registration until its turn. Existing registries, policy/scheduling, model selection and actual driver consumers remain covered.",
+  "qualification_limit": "Executor section pairing deliberately selects fixture-owned sections. Full prompt assembly differs at deployment persona prefix/suffix and remains a later C5 contract. This provider-selection change does not yet implement a native batch executor, PTC executor, Agent step consumer or production activation; fake provider results qualify dispatch ownership only.",
+  "initial_failure": "The initial test expected only executor sections in a full prompt assembly. Actual records also contain built-in persona sections. Observer scope now explicitly selects executor-owned fixture sections, preserving the full initial diagnostics and recording the unported persona contract above.",
+  "cleanup": ".goose/out/rc022-executor-selection-native-verified-20261115-01/cleanup.json",
+  "cleanup_bytes": 878878,
+  "retained_assets": "Commands, logs, XML and JSON observations retained. No task test process remains. Shared fixed Source/toolchain retained through C9. Production pin and accepted_upstream remain unchanged."
+}

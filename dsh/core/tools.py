@@ -56,6 +56,12 @@ class ToolActivationError(HarnessError):
         self.__cause__ = cause
 
 
+class ToolExecutorUnavailableError(HarnessError):
+    def __init__(self):
+        super().__init__("The selected tool executor is unavailable. Load an executor in this composition before running the agent.",
+                         "TOOL_EXECUTOR_UNAVAILABLE")
+
+
 class ResolvedToolSet:
     """A step's admission, retaining registration identity and exact scope."""
 
@@ -587,8 +593,11 @@ def _decision_contexts(decision: Dict[str, Any]) -> List[Any]:
 class ToolsService:
     """Core catalog plus pre/around/post execution orchestration."""
 
-    def __init__(self, ctx: Any, config: Optional[Dict[str, Any]] = None):
+    def __init__(self, ctx: Any, config: Optional[Dict[str, Any]] = None, contract_version: int = 3):
         self.ctx = ctx
+        self.contract_version = contract_version
+        self._root_executor = None
+        self._scoped_executors = {}
         self._tools: Dict[str, Tool] = {}
         self._cordis_tracker = Tracker(property_name="ctx")
         self._global_layer = _ToolLayer()
@@ -596,6 +605,10 @@ class ToolsService:
         self._scoped_layers: Dict[Any, _ToolLayer] = {}
         self._code_transport: Optional[Tool] = None
         config = config or {}
+        if contract_version == 4:
+            for removed in ("mode", "maxParallelSubCalls"):
+                if removed in config:
+                    raise ValueError('tools.%s has been removed; mount a tool executor instead' % removed)
         self.mode = config.get("mode") or "native"
         if self.mode == "ptc":
             self.mode = "code"
@@ -613,8 +626,8 @@ class ToolsService:
         if system_prompt is None:
             return
         if hasattr(system_prompt, "tools"):
-            system_prompt.tools(lambda context: self.schemas(
-                self._prompt_scope(context)))
+            system_prompt.tools(self._describe_context if self.contract_version == 4 else
+                                lambda context: self.schemas(self._prompt_scope(context)))
         if self.mode != "native":
             self._mount_code_prompt_sections(system_prompt)
 
@@ -623,6 +636,55 @@ class ToolsService:
         if type(context) is dict:
             return context.get("scope")
         return getattr(context, "scope", None)
+
+    def _describe_context(self, context: Any) -> Dict[str, Any]:
+        scope = self._prompt_scope(context)
+        tool_set = context.get("toolSet") if isinstance(context, dict) else getattr(context, "toolSet", None)
+        executor = self._select_executor(scope)
+        description = dict(executor.describe(self.definitions(scope, tool_set)))
+        if description.get("knownNames") is None:
+            description["knownNames"] = list(self._view(scope)["known"])
+        return description
+
+    def _select_executor(self, scope: Any = None) -> Any:
+        record = None
+        for key in reversed(self._scope_chain(scope)):
+            record = self._scoped_executors.get(key)
+            if record is not None:
+                break
+        if record is None:
+            record = self._root_executor
+        executor = record.get("executor") if record is not None else None
+        if executor is None:
+            raise ToolExecutorUnavailableError()
+        return executor
+
+    def set_executor(self, executor: Any) -> Callable[[], None]:
+        scope = self._current_scope_context()
+        existing = self._root_executor if scope is None else self._scoped_executors.get(scope)
+        if existing is not None and existing.get("executor") is not None:
+            raise RuntimeError("Only one tool executor may be registered in each scope")
+        record = {"executor": executor}
+
+        def lifecycle():
+            for section in getattr(executor, "sections", ()):
+                def text(context, section=section):
+                    viewing_scope = self._prompt_scope(context)
+                    if self._select_executor(viewing_scope) is not executor:
+                        return ""
+                    value = section["text"]
+                    tool_set = context.get("toolSet") if isinstance(context, dict) else getattr(context, "toolSet", None)
+                    return value(self.definitions(viewing_scope, tool_set)) if callable(value) else value
+                contribution = dict(section, text=text)
+                yield self.ctx.get("systemPrompt").section(contribution)
+            if scope is None:
+                self._root_executor = record
+            else:
+                self._scoped_executors[scope] = record
+            yield lambda: record.update(executor=None)
+        return self.ctx.effect(lifecycle, label="tools.setExecutor()")
+
+    setExecutor = set_executor
 
     def _collapse_section(self) -> Dict[str, Any]:
         return {
@@ -700,16 +762,16 @@ class ToolsService:
             inherited.update(layer.tools)
             registrations.update(layer.registrations)
         visible: Dict[str, Tool] = {}
-        known = set()
+        known = {}
         restrictable = set()
         for name, tool in inherited.items():
-            known.add(name)
+            known[name] = None
             restrictable.add(name)
             if all(layer.admits(name) for layer in layers):
                 visible[name] = tool
         if own is not None:
             for name, tool in own.tools.items():
-                known.add(name)
+                known[name] = None
                 visible[name] = tool
                 registrations[name] = own.registrations[name]
         if self._mode_for(scope) != "native":
@@ -1104,26 +1166,22 @@ class ToolsService:
         if tool.name in layer.tools:
             suffix = "" if owner_ctx is None else " in this scope"
             raise ValueError('tool "%s" is already registered%s' % (tool.name, suffix))
-        layer.tools[tool.name] = tool
         registration = {"when": (options or {}).get("when")}
-        layer.registrations[tool.name] = registration
-        disposed = False
 
         def disposer() -> None:
-            nonlocal disposed
-            if disposed:
-                return
-            disposed = True
-            if layer.tools.get(tool.name) is tool:
+            if layer.registrations.get(tool.name) is registration:
                 del layer.tools[tool.name]
                 layer.registrations.pop(tool.name, None)
                 if owner_ctx is not None and not layer.tools and not layer.restrictions and not layer.guards and layer.mode is None:
                     self._scoped_layers.pop(owner_ctx, None)
                 self.ctx.emit("tools/change")
 
-        self.ctx.emit("tools/change")
-        self._register_owned_cleanup(self.ctx, disposer, "tools.register()")
-        return disposer
+        def lifecycle():
+            layer.tools[tool.name] = tool
+            layer.registrations[tool.name] = registration
+            yield disposer
+            self.ctx.emit("tools/change")
+        return self.ctx.effect(lifecycle, label="tools.register()")
 
     def register_tool(self, *args: Any, **kwargs: Any) -> Callable[[], None]:
         classifier = kwargs.pop("is_concurrency_safe", None)
@@ -1689,6 +1747,10 @@ class ToolsService:
 
     async def execute(self, exec_input: ToolExecutionInput) -> ToolExecutionResult:
         if isinstance(exec_input, dict):
+            if "calls" in exec_input:
+                executor = self._select_executor(exec_input.get("agent"))
+                result = executor.execute(exec_input)
+                return await result if inspect.isawaitable(result) else result
             # Preserve the harness's public dictionary invocation adapter.
             raw = dict(exec_input)
             raw.setdefault("call_id", raw.pop("callId", ""))
@@ -1744,6 +1806,11 @@ class ToolsPlugin(Plugin):
         ctx.provide("tools", ToolsService(ctx, config=self.config))
 
 
+class CurrentToolsPlugin(ToolsPlugin):
+    def apply(self, ctx: Any) -> None:
+        ctx.provide("tools", ToolsService(ctx, config=self.config, contract_version=4))
+
+
 ToolRegistry = ToolsService
 
 __all__ = [
@@ -1754,6 +1821,7 @@ __all__ = [
     "CodeRunFailedError", "Tool", "ToolArgsError", "ToolExecutionInput",
     "ToolExecutionResult", "ToolNotFoundError", "ToolOutputError", "ToolRegistry",
     "ToolActivationError", "ResolvedToolSet",
+    "ToolExecutorUnavailableError", "CurrentToolsPlugin",
     "ToolRunContext", "ToolsPlugin", "ToolsService",
 ]
 

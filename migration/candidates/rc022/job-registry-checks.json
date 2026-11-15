@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-16",
+  "unit": "C8-AK-JobRegistry",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "state": "targeted-passed",
+  "paired": ".goose/out/rc022-job-registry-paired2-20261116-01/comparison/report.json",
+  "observations": 23,
+  "native": {"run": "rc022-job-registry-native-20261116-01", "passed": 12, "failed": 0},
+  "source": {"run": "rc022-job-registry-source-20261116-01", "passed": 97, "failed": 0},
+  "verification_scope_reason": "Actual current Agent/Session/registry comparisons cover controller admission, exact session ownership, per-owner limits, staged producer writes, live output/progress, UI versus consuming cursor, one-shot terminal result and ordered durable lifecycle. Failure comparisons cover throwing cancel then retry, aborted and timed-out waits, settlement detaching abort before listeners, rejected producer containment and teardown first-wins against late completion. Native tests additionally exercise actual owner disposal awaiting producer quiescence, failed pull-source containment, final spill withdrawal, scoped subscriptions and reversible listeners. Source runs original jobs-local jobs/events tests.",
+  "activation_boundary": "New explicit current registry; historical registry and production composition unchanged until coordinated consumers land. A throwing teardown cancel force-fails the record and reports potentially orphaned work, as Source does; late producer continuation stays observed. Python exception names remain native when rendered through String(error). No full release qualification or production pin promotion.",
+  "cleanup": ".goose/out/rc022-job-registry-source-20261116-01/cleanup.json",
+  "cleanup_bytes": 3490149,
+  "retained_assets": "Owned pytest fixtures, paired synthetic session stores, homes and temporary workspaces removed; empty external Source root removed. Commands, raw comparison observations, logs and XML retained. No owned registry worker processes remain; shared pinned Source/toolchain retained through C9."
+}

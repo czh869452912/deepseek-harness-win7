@@ -1,0 +1,15 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-15",
+  "unit": "C4-G-StatisticsOutlineOwners",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "state": "targeted-passed",
+  "paired": ".goose/out/rc022-projection-domains-paired-20261115-02/report.json",
+  "observations": 71,
+  "native": {"run": "rc022-projection-domains-native-20261115-01", "passed": 118, "failed": 0},
+  "source": {"run": "rc022-projection-domains-source-20261115-01", "passed": 30, "failed": 0},
+  "verification_scope_reason": "Statistics and turn-outline plugins now await registration before becoming ready and declare summary exclusion, matching fixed Source. Actual V4 fresh/late plugin mounting, complete snapshots, checkpoints, cold replay, release and remount agree. Delayed registration keeps each plugin loading until its handle is ready. Sixty-seven existing statistics fold/schema inputs were freshly observed against the new Source rather than relabelled. Existing Agent statistics persistence, outline changes, registry and projection cache consumers pass.",
+  "cleanup": ".goose/out/rc022-projection-domains-native-20261115-01/cleanup.json",
+  "cleanup_bytes": 4121,
+  "remaining": "Other domain registrations/readers, canonical prepared-session/cache ownership, Agent lifecycle and coordinated production activation. This targeted receipt is not full migration or release acceptance."
+}

@@ -88,7 +88,7 @@ def apply_stats(state, event):
 
 STATS_DEFINITION = dict(key='sessionStats', stateVersion=1, stateSchema=parse_stats_state,
     init=lambda *_: init_session_stats(), apply=apply_stats,
-    wire=dict(viewSchema=parse_stats_view, view=view_session_stats))
+    wire=dict(viewSchema=parse_stats_view, view=view_session_stats,summary=False))
 
 
 class CurrentSessionStatsPlugin(Plugin):
@@ -96,5 +96,5 @@ class CurrentSessionStatsPlugin(Plugin):
     name = '@deepseek-ai/dsh-session-stats'
     inject = ['sessionProjections']
 
-    def apply(self, ctx):
-        ctx.get('sessionProjections').register(STATS_DEFINITION)
+    async def apply(self, ctx):
+        await ctx.get('sessionProjections').register(STATS_DEFINITION)

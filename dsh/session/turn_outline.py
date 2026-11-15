@@ -103,7 +103,7 @@ def apply_outline(state, event):
 TURN_OUTLINE_DEFINITION = dict(
     key="turnOutline", stateVersion=2, stateSchema=_state,
     init=lambda *_: EMPTY_OUTLINE, apply=apply_outline,
-    wire=dict(viewSchema=_entries, view=lambda state: state["turns"]),
+    wire=dict(viewSchema=_entries, view=lambda state: state["turns"],summary=False),
 )
 
 
@@ -111,5 +111,5 @@ class SessionTurnOutlinePlugin(Plugin):
     id = "session-turn-outline"
     inject = ["sessionProjections"]
 
-    def apply(self, ctx):
-        ctx.get("sessionProjections").register(TURN_OUTLINE_DEFINITION)
+    async def apply(self, ctx):
+        await ctx.get("sessionProjections").register(TURN_OUTLINE_DEFINITION)

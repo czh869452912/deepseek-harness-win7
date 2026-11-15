@@ -71,6 +71,14 @@ class AuthorizedSessionController(CurrentSessionController):
     async def projections(self, request, signal):
         return await self.history_reads.projections(request, signal)
 
+    @Remote(dict(mode='stream'))
+    def observeEvent(self, request, signal):
+        return self.history_reads.observeEvent(request, signal)
+
+    @Remote(dict(mode='stream'))
+    def observeProjections(self, request, signal):
+        return self.history_reads.observeProjections(request, signal)
+
     @Remote
     async def list(self, _request, signal):
         items = await self.list_state.list(signal)

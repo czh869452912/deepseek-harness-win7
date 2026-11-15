@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-15",
+  "unit": "C7-AA-PassiveSessionListeners",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "state": "targeted-passed",
+  "paired": ".goose/out/rc022-session-listeners-paired-20261115-01/comparison/report.json",
+  "observations": 18,
+  "native": {"run": "rc022-session-listeners-native-20261115-01", "passed": 31, "failed": 0},
+  "source": {"run": "rc022-session-listeners-source-20261115-01", "scope": "ListenerBuffer|EventListener|ProjectionListener", "failed": 0},
+  "verification_scope_reason": "Actual Session/projection/Cordis effects pair lazy mixed-input ordering, single consumer, captured failures, self-closing transforms, readiness before existence, creation-prefix replay/cursor deduplication, explicit gap refusal, external-buffer ownership, per-event grouped projection changes, cancellation discarding queued frames and provider unload waking a reader without queries. Native adds partial registration/effect failures, transform failure identity, mid-batch listener disposal, consumer task cancellation and actual Gateway resource admission/cancellation for the new Remote methods. History/access direct consumers and the matching Source listener suites pass.",
+  "implementation": "ListenerBuffer owns registrations and lifetime, transforms notifications lazily and admits one consumer. EventListener fills only uncovered creation/live prefixes and fails gaps. ProjectionListener emits one grouped change frame per committed event without requiring contiguous projection seqs. Candidate History reads and Remote faces expose observeEvent and observeProjections.",
+  "observer_boundary": "Committed event timestamps normalize to zero. External creation/gap cases use explicit notification replay over actual Session data. Native fault injection uses controlled registration failures. Assistant-stream reconnect state, composite state/wait/follow and complete controller initialization remain separate. The earlier progress commentary said 19 observations; the actual report contains 18. These targeted results do not establish full regression or release acceptance.",
+  "activation_boundary": "Candidate providers only; production pin and accepted_upstream unchanged pending C9.",
+  "cleanup": ".goose/out/rc022-session-listeners-source-20261115-01/cleanup.json",
+  "retained_assets": "Owned fixture journals, pytest workspaces and tmp/home removed after teardown; no task workers remain. Commands, observations and diagnostics retained; shared Source/toolchain retained through C9."
+}

@@ -8,6 +8,7 @@ from dsh.api.session_history_current import (
 )
 from dsh.typert.remote import RemoteError, remote_error_of
 from dsh.cordis.errors import ThrownValueError
+from dsh.api.session_listeners import EventListener, ProjectionListener
 
 
 def failure_code(error):
@@ -88,6 +89,28 @@ class SessionHistoryReads:
     """Read side of the History Controller; stream providers are composed separately."""
     def __init__(self, ctx):
         self.ctx = ctx
+
+    async def observeEvent(self, request, signal):
+        listener = EventListener(self.ctx, address_id(request['address']), signal)
+        source = listener.events()
+        try:
+            yield dict(type='ready')
+            async for item in source:
+                yield item
+        finally:
+            await source.aclose()
+            listener.dispose()
+
+    async def observeProjections(self, request, signal):
+        listener = ProjectionListener(self.ctx, request['sessionId'], signal)
+        source = listener.changes()
+        try:
+            yield dict(type='ready')
+            async for item in source:
+                yield item
+        finally:
+            await source.aclose()
+            listener.dispose()
 
     async def usingObservation(self, request, signal, callback=None):
         sid = request['sessionId']

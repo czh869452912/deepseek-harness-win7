@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-15",
+  "unit": "C8-A-TypedUploadsAndStoredImageAdmission",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "state": "targeted-passed",
+  "paired": ".goose/out/rc022-upload-paired-final-20261115-01/comparison/report.json",
+  "observations": 14,
+  "native": {"run": "rc022-upload-native-20261115-01", "passed": 58, "failed": 0},
+  "source": {"run": "rc022-upload-source-20261115-01", "passed": 55, "failed": 0},
+  "verification_scope_reason": "Actual typed upload service with actual Session identities and attachment base admission checks image/file receipts, foreign Session isolation, file-only command resolver, rollback and committed retirement, stored-only and mixed image batches, count/byte limits before storage, streamed image size/type/cancellation, image HTTP dispatch and route/resolver unload. Native adds cancellation/disposal races after actual LocalAttachmentStore image publication, preserved Remote errors and subagent refusal before storage. Existing streaming file/attachment consumers and new prompt consumers pass; Source runs upload route, command upload and attachment admission suites.",
+  "observer_boundary": "Paired storage implements deterministic controlled image/file publication beneath the actual admission provider; command receipt registration and Connection route registry are controlled collaborators. Codec byte identity, authenticated physical upload transport and whole-controller composition are not established by this probe. Native image race tests separately use the actual local storage provider.",
+  "implementation": "AuthorizedFileUploads stages tagged file/image attachments under exact Session identity, preserves uploaded encoded byte lengths, limits buffered image bodies, checks cancellation before and after storage, and withholds receipts after Agent removal. CurrentAttachmentAPI accepts stored images and applies combined stored/encoded message budgets before writes. The shared HTTP handler dispatches mediaType queries to image intake. Earlier file-only provider remains for historical consumers pending composition switch.",
+  "activation_boundary": "Production composition and pin remain unchanged; complete Session initialization, generated client integration and C9 acceptance remain pending.",
+  "cleanup": ".goose/out/rc022-upload-source-20261115-01/cleanup.json",
+  "retained_assets": "7646004 bytes of owned journals, pytest fixtures and tmp/home removed after teardown. Commands, paired observations, XML/JSON and logs retained. No task workers remain; shared Source/toolchain retained through C9."
+}

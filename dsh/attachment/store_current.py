@@ -50,10 +50,22 @@ class CurrentAttachmentAPI:
         return await disk(self.save_images, inputs)
 
     async def admitPromptContent(self, content):
-        images = [part for part in content if part['type'] == 'image']
+        images = [part for part in content if part['type'] == 'image' and 'attachment' not in part]
+        stored = [part for part in content if part['type'] == 'image' and 'attachment' in part]
+        if stored:
+            if len(images) + len(stored) > self.imageLimits['maxImagesPerMessage']:
+                raise AttachmentError('Image batch exceeds the configured image-count limit.', 'TOO_MANY_IMAGES')
+            # Node's byteLength(base64) estimates length before canonical decoding.
+            def encoded_length(part):
+                value = part['data']
+                padding = 2 if value.endswith('==') else 1 if value.endswith('=') else 0
+                units = len(value.encode('utf-16-le', errors='surrogatepass')) // 2
+                return max(0, (units - padding) * 3 // 4)
+            if sum(encoded_length(part) for part in images) + sum(part['encodedBytes'] for part in stored) > self.imageLimits['maxMessageImageBytes']:
+                raise AttachmentError('Image batch exceeds the configured aggregate image-byte limit.', 'IMAGES_TOO_LARGE')
         refs = iter(await self.admitEncodedImages(images)) if images else iter(())
         return [dict(type='text', text=part['text']) if part['type'] == 'text' else
-                dict(type=part['type'], attachment=next(refs) if part['type'] == 'image' else part['attachment'])
+                dict(type=part['type'], attachment=next(refs) if part['type'] == 'image' and 'attachment' not in part else part['attachment'])
                 for part in content]
 
     async def admitEncodedImages(self, images):

@@ -155,9 +155,11 @@ async def handle_file_upload_http(service, request):
         elif body:
             yield body
     try:
-        result = dict(ok=True, value=await service.uploadStream(dict(sessionId=session_id, data=chunks(),
+        upload = dict(sessionId=session_id, data=chunks(),
             **({'signal': request['signal']} if 'signal' in request else {}),
-            **({'name': query['name'][0]} if 'name' in query else {}))))
+            **({'name': query['name'][0]} if 'name' in query else {}))
+        result = dict(ok=True, value=await service.uploadImageStream(dict(upload, mediaType=query['mediaType'][0]))
+            if 'mediaType' in query else await service.uploadStream(upload))
     except Exception as error:
         failure = remote_error_of(error)
         result = dict(ok=False, error=failure if failure is not None else dict(code='gateway/internal', message=str(error), details={}))

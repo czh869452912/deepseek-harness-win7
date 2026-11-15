@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-16",
+  "unit": "C8-AL-JobTools",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "state": "targeted-passed",
+  "paired": ".goose/out/rc022-job-tools-paired5-20261116-01/comparison/report.json",
+  "observations": 20,
+  "native": {"run": "rc022-job-tools-native2-20261116-01", "passed": 8, "failed": 0},
+  "source": {"run": "rc022-job-tools-source-20261116-01", "passed": 88, "failed": 0},
+  "verification_scope_reason": "Actual current registry, tool pipeline, Agent Inbox and persisted Session compare progress/list projections, consuming stdout/stderr/log rendering, inline final result notices, held oversized results, pending notice withdrawal and durable logged notice one-shot delivery. Eight byte caps compare complete notice and pipeline result truncation including tiny caps recovering through job_list. Wait timeout, real next-step user insertion, preserved live progress and model-requested kill suppression are paired. Native tests additionally check abort-listener/waiter detachment, output availability after cancellation, exact-Agent wake budget and user-only reset, controller effect unload and UTF8/UTF16 bounds. Source original tool-jobs and steer-wait collections pass.",
+  "resolved_diagnostics": "Initial observer omitted v4 surfaceOp for its synthetic logged notice; corrected in both. Initial native definitions passed raw ParameterSchemaSpec to the Python registry; converted to canonical JSON Schema, as Source defineTool does. Raw diagnostics retained.",
+  "activation_boundary": "Explicit current job tools now consume the current registry; historical tooling and production composition remain until coordinated application activation. No promotion/PowerShell acceptance is inferred from these checks. Production pin unchanged and no full release qualification claimed.",
+  "cleanup": ".goose/out/rc022-job-tools-source-20261116-01/cleanup.json",
+  "cleanup_bytes": 9000641,
+  "retained_assets": "Owned paired session stores, pytest workspaces, homes and temporary fixtures removed. Empty external Source root removed; no task-owned job-tools processes remain. Commands, observations, resolved failure logs and XML retained; shared Source/toolchain stays through C9."
+}

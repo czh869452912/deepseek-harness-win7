@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-15",
+  "unit": "C5-D-AgentStepAdmissionConsumer",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "state": "targeted-passed",
+  "paired": ".goose/out/rc022-step-admission-paired-20261115-01/comparison/report.json",
+  "observations": 7,
+  "native": {"run": "rc022-step-admission-native-20261115-01", "passed": 183, "failed": 0},
+  "source": {"run": "rc022-step-admission-source-20261115-01", "passed": 40, "failed": 0},
+  "verification_scope_reason": "Actual V4 factory-created Agent resolves against its fixed model selection before prompt assembly. The same admission reaches declarations and actual native batch calls. Rejection, empty initial steps, condition failure, request failure and normal completion release the set. A later model selection cannot rewrite this step's declarations/admission; its next turn uses the new model and resolved tools. Activation failures preserve TOOL_ACTIVATION_FAILED classification. Candidate batch dispatch reads the current loop concurrency setting, accepts returned context, and unwraps batch failures after accepting partial context. Existing lifecycle/storage and registry/scheduler/model/driver consumers remain covered.",
+  "activation_boundary": "New consumption is selected by the explicitly mounted current Tools contract. Existing production Tools composition retains its old consumer until C9. Prompt runtime-context refresh, complete system/context framing, live pending-tool recovery on failures, tool-update envelopes and PTC bindings remain subsequent work. The forty unchanged Source cases are reference validation, not a claim that their entire prompt/update semantics have been ported. Production pin and accepted_upstream remain unchanged.",
+  "cleanup": ".goose/out/rc022-step-admission-native-20261115-01/cleanup.json",
+  "cleanup_bytes": 743504,
+  "retained_assets": "Commands, JSON observations, XML and logs retained. No task test process remains; shared fixed Source/toolchain retained through C9."
+}

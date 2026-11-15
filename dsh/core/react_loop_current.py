@@ -17,6 +17,7 @@ from dsh.core.session.current_request_header import canonicalHeader, headerEqual
 from dsh.core.session.json import UNDEFINED, FrozenDict, FrozenList, deep_freeze
 from dsh.core.system_prompt import render_prompt, render_context_sections, join_context_sections
 from dsh.core.tool_calls import execute_tool_calls
+from dsh.core.tools import ToolActivationError, ToolBatchExecutionError
 from dsh.llm.agent_request import mark_agent_loop_request
 from dsh.llm.error import error_chain
 from dsh.llm.llm_service import LlmError
@@ -202,9 +203,29 @@ class ReactLoopAgent:
         selection = self.model.current() if self.model is not None else None
         if selection is UNDEFINED:
             raise RuntimeError('agent "%s" has no provider/model: set AgentOptions.provider and AgentOptions.model or record a model selection' % self.id)
+        tools = self.loop_ctx.get('tools')
+        tool_set = None
+        if getattr(tools, 'contract_version', 3) == 4:
+            tool_set = await tools.resolve(dict(agent=self, modelSelection=selection, signal=signal))
+        try:
+            decision = await self._assemble_pre_step(claimed, turn, step, signal, selection, tool_set)
+            if tool_set is not None:
+                if decision['kind'] == 'reject':
+                    tool_set.dispose()
+                else:
+                    decision['toolSet'] = tool_set
+            return decision
+        except BaseException:
+            if tool_set is not None:
+                tool_set.dispose()
+            raise
+
+    async def _assemble_pre_step(self, claimed, turn, step, signal, selection, tool_set):
         context = assemble_context_for(self, signal)
         if selection is not None:
             context['modelSelection'] = selection
+        if tool_set is not None:
+            context['toolSet'] = tool_set
         assembly = await await_callback_result(self.loop_ctx.get('systemPrompt').assemble(context))
         signal.throwIfAborted()
         sections = render_context_sections(assembly)
@@ -240,20 +261,24 @@ class ReactLoopAgent:
                 if decision['kind'] == 'reject':
                     ending = dict(kind='blocked')
                     return False
-                if ending is not None and not decision['messages']:
-                    break
-                if phase['step'] == 0 and not decision['messages']:
-                    ending = dict(kind='completed')
-                    return False
-                signal.throwIfAborted()
-                self.session.append('step/start', dict(turn=turn, step=step))
-                phase['step'] = step
                 try:
-                    step_end = await await_callback_result(self._step(decision))
-                    if ending is None or ending['kind'] != 'max-tokens':
-                        ending = step_end
+                    if ending is not None and not decision['messages']:
+                        break
+                    if phase['step'] == 0 and not decision['messages']:
+                        ending = dict(kind='completed')
+                        return False
+                    signal.throwIfAborted()
+                    self.session.append('step/start', dict(turn=turn, step=step))
+                    phase['step'] = step
+                    try:
+                        step_end = await await_callback_result(self._step(decision))
+                        if ending is None or ending['kind'] != 'max-tokens':
+                            ending = step_end
+                    finally:
+                        self.session.append('step/end', dict(turn=turn, step=step))
                 finally:
-                    self.session.append('step/end', dict(turn=turn, step=step))
+                    if decision.get('toolSet') is not None:
+                        decision['toolSet'].dispose()
                 signal.throwIfAborted()
                 if ending is not None and not self.inbox.nextStep:
                     await await_callback_result(self.dispatch.serial('agent/turn-stopping', dict(turn=turn, signal=signal)))
@@ -266,7 +291,7 @@ class ReactLoopAgent:
                 ending = dict(kind='aborted', reason=signal.reason)
                 raise
             ending = dict(kind='error', error=error.failure if isinstance(error, LlmError)
-                          else dict(message=error_chain(error), code='UNKNOWN'))
+                          else dict(message=error_chain(error), code=error.code if isinstance(error, ToolActivationError) else 'UNKNOWN'))
             self._throw_error(error)
         finally:
             try:
@@ -352,8 +377,21 @@ class ReactLoopAgent:
                 calls = [block for block in message['content'] if block['type'] == 'tool-call']
                 if not calls:
                     return dict(kind='completed')
-                outcome = await await_callback_result(execute_tool_calls(self.loop_ctx, self, turn, step, calls, signal,
-                    lambda context: self.inbox.splice('next-step', len(self.inbox.nextStep), 0, [context])))
+                if decision.get('toolSet') is not None:
+                    try:
+                        outcome = await self.loop_ctx.get('tools').execute(dict(
+                            calls=calls, signal=signal, agent=self, log=dict(turn=turn, step=step),
+                            maxParallelToolCalls=self.loop_ctx.get('agentLoop').config['maxParallelToolCalls'],
+                            toolSet=decision['toolSet']))
+                    except ToolBatchExecutionError as error:
+                        for context in error.partial['additionalContexts']:
+                            self.inbox.splice('next-step', len(self.inbox.nextStep), 0, [context])
+                        raise error.cause
+                    for context in outcome['additionalContexts']:
+                        self.inbox.splice('next-step', len(self.inbox.nextStep), 0, [context])
+                else:
+                    outcome = await await_callback_result(execute_tool_calls(self.loop_ctx, self, turn, step, calls, signal,
+                        lambda context: self.inbox.splice('next-step', len(self.inbox.nextStep), 0, [context])))
                 return dict(kind='completed') if outcome['concluded'] else None
             except BaseException:
                 if not live.ended:

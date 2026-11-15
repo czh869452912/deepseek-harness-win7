@@ -1,0 +1,26 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-15",
+  "unit": "C1-AT-HmrLiveConsumersAndRuntimeBoundary",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "state": "targeted-passed",
+  "paired": ".goose/out/rc022-hmr-consumers-paired-20261115-06/report.json",
+  "observations": 4,
+  "changes_recheck": ".goose/out/rc022-hmr-consumers-changes-recheck-20261115-02/report.json",
+  "graph_observations": 606,
+  "source": {
+    "run": "rc022-hmr-consumers-source-20261115-01",
+    "passed": 4,
+    "failed": 0,
+    "not_selected": 20
+  },
+  "native": {
+    "run": "rc022-hmr-consumers-native-20261115-01",
+    "passed": 16,
+    "failed": 0
+  },
+  "verification_scope_reason": "Actual source files import the framework Schema and undergo volatile in-place update, fresh reference replacement, subsequent updates, provider/consumer updates, parent plus child plus independent runtime replacement, and controlled graph traversal where the live runtime is removed before planning resumes. Original tests select these same consumers; native Loader volatile, cache and partial failure regressions also run. Rechecked all 606 dependency classifier pairs after adding the native runtime boundary.",
+  "scope": "Partial dependency traversal excludes Python SDK/stdlib and interpreter site-packages, corresponding to Node builtin and installed framework package boundaries. Previously a real plugin framework import brought urllib.parse into accepted cache eviction and broke the running Loader. Local profile/source modules remain eligible. First observer used the wrong schemastery build suffix and then gated getLinked although Source partial traversal directly reads ModuleJob.linked; corrected the observer gate. Synthetic file:N graph names are opaque test identifiers, not absolute file URLs, and do not enter native filesystem classification. Original failures retained.",
+  "cleanup": ".goose/out/rc022-hmr-consumers-native-20261115-01/cleanup.json",
+  "remaining": "Advanced root ignore/deployment details and canonical patchReload retirement remain; not a complete C1/HMR/release acceptance."
+}

@@ -445,9 +445,9 @@ class HarnessSession:
         return await self.harness.client.getWorkingDirectory(self.id)
 
 
-def create_process_harness_client(runtime):
-    return HarnessClient(runtime=runtime)
+def create_process_harness_client(runtime, options=None):
+    return HarnessClient(options, runtime=runtime)
 
 
 def create_process_deepseek_harness(runtime, options=None):
-    return DeepSeekHarness(options, lambda: create_process_harness_client(runtime))
+    return DeepSeekHarness(options, lambda: create_process_harness_client(runtime, options))

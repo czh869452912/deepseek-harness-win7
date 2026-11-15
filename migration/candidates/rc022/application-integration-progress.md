@@ -36,4 +36,6 @@
 
 | C8-AA | SDK 持久会话恢复、拥有者等待、定时恢复共享与托管子树退出 | [SDK 会话所有权](sdk-session-checks.json) |
 
+| C8-AB | SDK 审批归属、提问回答校验、实际工具往返及即时取消 | [SDK 人工交互](sdk-interaction-checks.json) |
+
 后续继续设置及完整应用组合；最终资格使用 C9 冻结候选的完整门禁。

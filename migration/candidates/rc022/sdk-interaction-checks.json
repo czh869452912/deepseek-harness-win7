@@ -1,0 +1,26 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-16",
+  "unit": "C8-AB-SdkHumanInteraction",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "state": "targeted-passed",
+  "paired": ".goose/out/rc022-sdk-interaction-paired-final-20261116-01/comparison/report.json",
+  "observations": 29,
+  "native": {
+    "run": "rc022-sdk-interaction-native-complete-20261116-01",
+    "passed": 31,
+    "failed": 0
+  },
+  "source": {
+    "run": "rc022-sdk-interaction-source-20261116-01",
+    "passed": 80,
+    "failed": 0
+  },
+  "verification_scope_reason": "Actual SDK question bridge validates exact answer IDs/labels/custom shape, dismissal, provider error and abort codes, cancellation notifications, optional/disabled/unowned fallback and bridge close. Actual server approval waterfall compares disabled/fallback, accepted/rejected/cancelled/malformed responses, live owned root and actual managed child versus unowned/stale Agent. Native actual model/tool/UserQuestions/SDK-plugin stdio/client callback pipeline verifies successful durable tool output and closed pipes/process. Direct SDK transport/client/subagent-run/session regressions cover immediate abort removal, primitive reason formatting, exact exception identity and callback option forwarding.",
+  "observer_boundary": "Question request UUIDs excluded; selected question/approval semantic data retained. Absent optional Agent is omitted in both observers. Controlled peer serves paired host answers. Separate native actual stdio tool verifies roundtrip. Source protocol suite run does not by itself prove all native transport failure/lifecycle behavior.",
+  "initial_failures": "Probe peer initially assumed every notification had sessionId; constrained its observation to question cancellation notifications. Missing Agent fixture initially sent JSON null; corrected to omit the optional Agent in both observers. Raw diagnostics retained. Actual stdio verification led to forwarding caller options through the process client factory.",
+  "activation_boundary": "SDK initialize enables question capability and strict approval boolean; shutdown closes question admission and aborts outstanding requests. Transport abort preserves exception identity and synchronously releases pending entry; no polling task. Production pin and accepted_upstream unchanged. General query/command/goal activity remains separate.",
+  "cleanup": ".goose/out/rc022-sdk-interaction-source-20261116-01/cleanup.json",
+  "external_cleanup": ".goose/out/rc022-sdk-interaction-source-20261116-01/external-cleanup.json",
+  "retained_assets": "Owned comparison/pytest/home/workspace payloads removed and empty external Source root removed. Raw observations, logs, XML and commands retained. No owned SDK child or runner remains; shared Source/toolchain retained through C9."
+}

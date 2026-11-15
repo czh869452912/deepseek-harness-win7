@@ -5,7 +5,13 @@ import inspect
 import json
 import uuid
 
-from dsh.core.cancellation import aborted
+from dsh.core.cancellation import aborted, subscribe_abort
+from dsh.cordis.utils import js_to_string
+
+
+def abort_error(signal):
+    reason = getattr(signal, 'reason', None)
+    return reason if isinstance(reason, BaseException) else RuntimeError('JSON-RPC request aborted: ' + js_to_string(reason))
 
 
 class JsonRpcResponseError(RuntimeError):
@@ -58,25 +64,21 @@ class JsonRpcLineTransport:
 
     async def request(self, method, params, signal=None):
         if aborted(signal):
-            raise RuntimeError('JSON-RPC request aborted: ' + str(getattr(signal, 'reason', None)))
+            raise abort_error(signal)
         identity = 'req_' + uuid.uuid4().hex
         future = asyncio.get_running_loop().create_future()
         self.pending[identity] = future
-        async def watch():
-            while not future.done():
-                if aborted(signal):
-                    future.set_exception(RuntimeError('JSON-RPC request aborted: ' + str(getattr(signal, 'reason', None))))
-                    return
-                await asyncio.sleep(.01)
-        monitor = asyncio.create_task(watch()) if signal is not None else None
+        def cancel(_reason):
+            self.pending.pop(identity, None)
+            if not future.done():
+                future.set_exception(abort_error(signal))
+        detach = subscribe_abort(signal, cancel)
         try:
             self.write(dict(jsonrpc='2.0', id=identity, method=method, params=params))
             return await future
         finally:
             self.pending.pop(identity, None)
-            if monitor is not None:
-                monitor.cancel()
-                await asyncio.gather(monitor, return_exceptions=True)
+            detach()
 
     def on_data(self, chunk):
         self.buffer += chunk if isinstance(chunk, str) else self.decoder.decode(chunk)

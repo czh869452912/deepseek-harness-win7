@@ -9,6 +9,7 @@ from dsh.cordis.awaiting import await_callback_result
 from dsh.llm.message import create_user_message
 from dsh.core.abort import AbortController
 from dsh.session.storage_contract import field
+from dsh.sdk.user_questions import SdkUserQuestionBridge, joined_signals
 
 
 class HarnessSdkJsonRpcServer:
@@ -22,6 +23,9 @@ class HarnessSdkJsonRpcServer:
         self.failures, self.scheduled_sessions = {}, {}
         self.lifetime = AbortController()
         self.initialization = asyncio.get_event_loop().create_future()
+        self.approval_requests = False
+        self.user_questions = SdkUserQuestionBridge(ctx, transport,
+            lambda agent: self.sessions.get(agent.session.id) is not None and self.sessions[agent.session.id].agent is agent)
         self.shutdown_task = None
         self.shutting_down = self.initialized = False
         self.disposers = [
@@ -31,7 +35,40 @@ class HarnessSdkJsonRpcServer:
             ctx.on('subagent/end', self.subagent_end),
             ctx.on('agent/error', self.agent_error),
             ctx.on('schedule/resolve-agent', self.resolve_scheduled_agent),
+            ctx.on('approval/request', self.approval_request),
         ]
+
+    def owns_agent(self, agent):
+        if self.ctx.get('agents').get(agent.id) is not agent:
+            return False
+        handle = self.sessions.get(agent.session.id)
+        if handle is not None and handle.agent is agent:
+            return True
+        subagents = self.ctx.get('subagents')
+        if subagents is None:
+            return False
+        try:
+            root = subagents.rootOf(agent)
+        except Exception as error:
+            if getattr(error, 'name', None) == 'SubagentError' and getattr(error, 'code', None) == 'UNAUTHORIZED':
+                return False
+            raise
+        handle = self.sessions.get(root.session.id)
+        return handle is not None and handle.agent is root
+
+    async def approval_request(self, request, next_fn):
+        if not self.approval_requests or not self.owns_agent(request['agent']):
+            return await next_fn()
+        params = dict(sessionId=request['agent'].session.id, toolName=request['toolName'])
+        params.update({key: request[key] for key in ('callId', 'reason') if key in request})
+        signal, detach = joined_signals(request.get('signal'), self.lifetime.signal)
+        try:
+            result = await self.transport.request('approval/request', params, signal)
+            if not isinstance(result, dict) or result.get('outcome') not in ('allowed-once', 'rejected', 'cancelled'):
+                raise TypeError('approval/request response requires an allowed-once, rejected, or cancelled outcome')
+            return result['outcome']
+        finally:
+            detach()
 
     def session_event(self, session, event):
         handle = self.sessions.get(session.id)
@@ -74,6 +111,8 @@ class HarnessSdkJsonRpcServer:
         self.transport.notify('subagent.finished', payload)
 
     async def initialize(self, params):
+        if 'approvalRequests' in params and type(params['approvalRequests']) is not bool:
+            raise TypeError('initialize approvalRequests must be a boolean')
         effort, cap = params.get('reasoningEffort'), params.get('maxTokens')
         if 'reasoningEffort' in params and (not isinstance(effort, str) or not effort):
             raise TypeError('initialize reasoningEffort must be a non-empty string')
@@ -93,6 +132,9 @@ class HarnessSdkJsonRpcServer:
         await llm.resolveCallConfig(dict(provider=provider, model=model, **call))
         self.cwd, self.provider, self.model, self.call_options = cwd, provider, model, call
         self.initialized = True
+        self.approval_requests = params.get('approvalRequests') is True
+        capabilities = params.get('capabilities')
+        self.user_questions.enabled = isinstance(capabilities, dict) and capabilities.get('userQuestions') is True
         if not self.initialization.done():
             self.initialization.set_result(None)
         return dict(serverInfo=dict(name='deepseek-harness-sdk-runtime', version='0.0.1'))
@@ -244,6 +286,7 @@ class HarnessSdkJsonRpcServer:
     async def perform_shutdown(self):
         self.shutting_down = True
         self.lifetime.abort(RuntimeError('SDK server is shutting down'))
+        self.user_questions.close()
         if not self.initialization.done():
             self.initialization.set_result(None)
         await await_callback_result(asyncio.gather(*list(self.creations.values()), return_exceptions=True))

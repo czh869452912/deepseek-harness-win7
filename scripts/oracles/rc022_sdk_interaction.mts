@@ -1,0 +1,24 @@
+import {readFileSync} from 'node:fs'
+import {join} from 'node:path'
+import {load,setup} from './rc022_subagent_fixture.mts'
+const {Context}=await load('vendor/cordis/src/index.ts'),{SdkUserQuestionBridge}=await load('packages/sdk/server/src/user-questions.ts'),ctx=new Context(),rows:any[]=[],calls:any[]=[],notifications:any[]=[];let response:any=null,waiting=Promise.withResolvers<void>()
+const questions=[{id:'q',question:'Choose',options:[{label:'A'}]}],controller=new AbortController()
+const peer={async request(method:string,params:any,signal:AbortSignal){calls.push({method,sessionId:params.sessionId,questions:params.questions??null,toolName:params.toolName??null,callId:params.callId??null,reason:params.reason??null});if(response==='failure')throw Error('offline');if(response==='wait'){waiting.resolve();await new Promise((_resolve,reject)=>signal.addEventListener('abort',()=>reject(signal.reason),{once:true}))}return response},notify(name:string,params:any){if(name==='user-question.cancelled')notifications.push({name,sessionId:params.sessionId})}}
+const bridge=new SdkUserQuestionBridge(ctx,peer,(agent:any)=>agent.id==='owned'),agent={id:'owned',session:{id:'owned'}},fallback=async()=>({fallback:true})
+async function ask(name:string,value:any,selected:any=agent){response=value;let result;try{result={value:await ctx.waterfall('user-questions/request',{...selected===null?{}:{agent:selected},questions},fallback)}}catch(error:any){result={error:error.message,code:error.code??null}}rows.push({name,result,calls:calls.length})}
+try{
+ await ask('disabled',null);bridge.enabled=true;await ask('unowned',null,{id:'other',session:{id:'other'}});await ask('no-agent',null,null)
+ for(const [name,value] of [['answer',{answers:[{id:'q',selected:['A'],custom:'text',extra:true}]}],['outer-extra',{answers:[{id:'q',selected:[]}],extra:true}],['dismissed',{cancelled:true}],['cancel-false',{cancelled:false}],['cancel-extra',{cancelled:true,extra:1}],['null',null],['missing',{}],['empty',{answers:[]}],['wrong-id',{answers:[{id:'x',selected:[]}]}],['duplicate',{answers:[{id:'q',selected:[]},{id:'q',selected:[]}]}],['selected-type',{answers:[{id:'q',selected:'A'}]}],['selected-value',{answers:[{id:'q',selected:[1]}]}],['custom-type',{answers:[{id:'q',selected:[],custom:1}]}],['provider-failure','failure']] as const)await ask(name,value)
+ response='wait';let pending=ctx.waterfall('user-questions/request',{agent,questions,signal:controller.signal},fallback);await waiting.promise;controller.abort(Error('request stopped'));try{await pending}catch(error:any){rows.push({name:'request-abort',error:error.message,code:error.code??null,notifications:[...notifications]})}
+ waiting=Promise.withResolvers<void>();pending=ctx.waterfall('user-questions/request',{agent,questions},fallback);await waiting.promise;bridge.close();try{await pending}catch(error:any){rows.push({name:'question-shutdown',error:error.message,code:error.code??null,notifications:[...notifications]})}
+}finally{bridge.close();await ctx.fiber.dispose()}
+const workspace=readFileSync(process.argv[3]!,'utf8'),fixture=await setup(join(workspace,'source')),{HarnessSdkJsonRpcServer}=await load('packages/sdk/server/src/server.ts'),host=fixture.ctx,server=new HarnessSdkJsonRpcServer(host,peer)
+try{
+ await server.initialize({cwd:workspace,provider:'script',model:'model'});const record=await server.getOrCreateSession('root'),root=record.handle.agent
+ async function decision(name:string,value:any,selected:any=root){response=value;let result;try{result={value:await host.waterfall('approval/request',{agent:selected,toolName:'terminal',callId:'call',reason:'test'},async()=> 'fallback')}}catch(error:any){result={error:error.message,code:error.code??null}}rows.push({name,result,calls:calls.length})}
+ await decision('approval-disabled',{outcome:'allowed-once'});server.approvalRequests=true
+ for(const [name,value] of [['allow',{outcome:'allowed-once',extra:1}],['reject',{outcome:'rejected'}],['cancel',{outcome:'cancelled'}],['unavailable',{outcome:'unavailable'}],['approval-null',null],['approval-missing',{}]] as const)await decision(name,value)
+ const outsider=await host.agents.create({sessionId:'outsider',agentOptions:{provider:'script',model:'model'}});await decision('approval-unowned',{outcome:'allowed-once'},outsider.agent)
+ const receipt=await host.subagents.startActivation({provider:'spawn',parent:root,label:'child',delivery:'caller',signal:fixture.signal,prompt:[{type:'text',text:'hold'}]});await decision('approval-descendant',{outcome:'allowed-once'},host.agents.get(receipt.childId))
+ await receipt.dispose();await outsider.dispose();await record.handle.dispose();await decision('approval-stale',{outcome:'allowed-once'});process.stdout.write(JSON.stringify(rows))
+}finally{await server.shutdown();await host.fiber.dispose()}

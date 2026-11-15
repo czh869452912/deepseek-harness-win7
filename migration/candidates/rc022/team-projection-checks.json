@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-15",
+  "unit": "C6-L-TeamProjection",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "state": "targeted-passed",
+  "paired": ".goose/out/rc022-team-projection-paired-20261115-01/comparison/report.json",
+  "observations": 61,
+  "native": {
+    "run": "rc022-team-projection-native-20261115-01",
+    "passed": 3,
+    "failed": 0
+  },
+  "source": {
+    "run": "rc022-team-projection-source-20261115-01",
+    "passed": 26,
+    "failed": 0
+  },
+  "verification_scope_reason": "Team v7 durable projection: revision/strict schemas, first failure preservation and mode continuation, inherited and retired records, DAG/readiness/scopes, weak client view reuse and checkpoint boundaries. Native actual v4 Session registry verifies independent fork selection and version-7 checkpoint restore; cache collection test checks retired arrays are not retained.",
+  "activation_boundary": "Candidate durable domain only. Team journal/service/tools and production composition pending.",
+  "cleanup": ".goose/out/rc022-team-projection-source-20261115-01/cleanup.json",
+  "retained_assets": "Commands/logs/XML and paired observations retained; 357644 bytes of synthetic payload removed. Shared Source/toolchain retained through C9."
+}

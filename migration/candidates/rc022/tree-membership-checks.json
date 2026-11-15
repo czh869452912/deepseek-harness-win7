@@ -1,0 +1,24 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-15",
+  "unit": "C6-D-TreeMembership",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "state": "targeted-passed",
+  "paired": ".goose/out/rc022-tree-membership-paired-20261115-01/comparison/report.json",
+  "observations": 34,
+  "native": {
+    "run": "rc022-tree-membership-native-20261115-01",
+    "passed": 68,
+    "failed": 0
+  },
+  "source": {
+    "run": "rc022-tree-membership-source-20261115-01",
+    "passed": 17,
+    "failed": 0
+  },
+  "verification_scope_reason": "Actual fixed manager membership/ancestry methods and runtime name resolution paired with controlled residency fixtures, not a claim of full manager integration. Exact caller and root identities, delegated own-seq exclusion, missing creator residency, external activation rejection, named/unnamed ancestry, closing admission and historical-id lookup are checked. Cold ancestry verifies every catalog edge, rejects inherited identities/cycles/foreign roots, requires a live independent root and disposes each observation before the next. Actual native v4 SessionQuery + projections prove missing-edge denial and no ancestor Agent activation; query regressions also pass.",
+  "implementation": "Final-domain SubagentTree component owns one resident map and provides tree authority to the forthcoming execution manager. Name resolution returns an address only; delivery still checks membership.",
+  "activation_boundary": "Full execution manager, Team and other consumers remain pending. Production pin and active runtime unchanged.",
+  "cleanup": ".goose/out/rc022-tree-membership-source-20261115-01/cleanup.json",
+  "retained_assets": "Commands/logs/XML and actual paired observations retained; owned synthetic workspaces removed. Shared Source/toolchain retained through C9."
+}

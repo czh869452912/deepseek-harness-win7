@@ -84,4 +84,6 @@
 
 | C8-AY | 当前文本工具、规范执行路径、差异元数据与类型化校验 | [文本工具消费者](file-consumers-checks.json) |
 
+| C8-AZ | 权限目录 Remote、当前选择投影与 Auto 生命周期/恢复准入 | [权限目录](permission-catalog-checks.json) |
+
 后续继续设置及完整应用组合；最终资格使用 C9 冻结候选的完整门禁。

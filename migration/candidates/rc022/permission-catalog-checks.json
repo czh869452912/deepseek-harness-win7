@@ -1,0 +1,27 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-16",
+  "unit": "C8-AZ-PermissionCatalog",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "state": "targeted-passed",
+  "paired": ".goose/out/rc022-permission-catalog-paired2-20261116-01/comparison/report.json",
+  "observations": 17,
+  "native": {
+    "run": "rc022-permission-catalog-native3-20261116-01",
+    "passed": 14,
+    "failed": 0
+  },
+  "source": {
+    "run": "rc022-permission-catalog-source-20261116-01",
+    "passed": 31,
+    "failed": 0
+  },
+  "verification_scope_reason": "Actual Service/v4 Session projection compares process-level options/defaultOptions/catalog separately from currentValue-only selection, creation/seed pinning, duplicate-bundle identity, command query/unknown, child-owned live Auto admission/unload, duplicate contribution rejection, non-vetoing sync/async invalidation listeners, delegated never, restore with/without live integration, failed admission with no events, custom derivation and service unload. Native real Agent tests prove creation veto rollback, sandbox-policy direct consumer and existing-session immunity to volatile default changes; reserved table names, Remote marker and settings presentation effect release verified. Original permission-presets Source suite passes. First probe awaited synchronous effect cleanup; fixed await_callback_result fixture. Native2 misselected old-baseline archive validator, terminated only verified owned oracle subtree after 95s; preserved XML/logs for resulting 120 fixture errors and one Remote marker fixture failure; current Remote marker assertion corrected. Historical validator is not current eligibility or acceptance and is not claimed passing.",
+  "activation_boundary": "Explicit CurrentPermissionPresets service/Remote marker only. Production boot activation, browser catalog invalidation Remote consumers and complete frozen-candidate acceptance remain pending.",
+  "cleanup": {
+    "removed_bytes": 1175249,
+    "external_empty_root_removed": true,
+    "owned_processes_remaining": 0,
+    "retained": "Commands, logs, XML/JSON observations including failed historical-validator run diagnostics. Shared fixed Source/toolchain retained for C9."
+  }
+}

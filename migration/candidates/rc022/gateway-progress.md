@@ -51,4 +51,6 @@
 
 | C7-AG | Host 路径校验、原生应用目录/指定打开、关联打开与实际 Windows Shell | [文件应用](file-applications-checks.json) |
 
+| C7-AH | 精确事件分叉、继承标记、开放工具/回合补全与迁移前置检查 | [会话分叉](session-fork-checks.json) |
+
 后续：目录和技能消费者、生成物与原版客户端整体接入。上传提供方已另记 C8-A。最终资格使用 C9 冻结候选的完整门禁；当前生产 pin 与 `accepted_upstream` 不提升。

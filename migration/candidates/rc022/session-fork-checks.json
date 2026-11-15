@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-16",
+  "unit": "C7-AH-ExactSessionFork",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "state": "targeted-passed",
+  "paired": ".goose/out/rc022-session-fork-paired-receipt-20261116-01/comparison/report.json",
+  "observations": 19,
+  "native": {"run": "rc022-session-fork-native-final-20261116-01", "passed": 76, "failed": 0},
+  "source": {"run": "rc022-session-fork-source-20261116-01", "passed": 61, "failed": 0},
+  "verification_scope_reason": "Actual Agent factory, Session/query/JSONL, Loader preset and core model projection pair every exact cut, omitted completed-prefix selection, explicit inherited markers and fork closers, started/unstarted tool uncertainty, independent lineage, workspace attachment, unchanged source, real subsequent generation and cold reads without activation. Direct core SessionStore open/empty forks share the new helper. An actual v3 file demonstrates migration preflight refusal and permitted passive preparation without rewriting or activating the source. Native adds ownership validation order, branded invalid boundaries, checkpoint/input boundaries, observation disposal across workspace/composition/create/attach failures, creation side effects, and a residency race during stat. Direct projection-store and prior-generation fork regressions pass; Source controller command and core fork suites pass.",
+  "implementation": "The candidate Remote rejects explicitly disallowed historical migration before observation, rechecking residency after stat. Business fork now uses an exact inclusive boundary, with only the omitted default extending over standalone post-turn events before pending input. Fork seeds mark inherited events separately from synthetic forked tool results and step/turn closers. Both Remote and v4 core forks create independent Session metadata. The prior-generation path remains version-scoped.",
+  "observer_boundary": "The model adapter and workspace membership are controlled collaborators; migration preflight calls the real controller method over actual commands and persistence rather than transport. Existing complete-controller tests cover mounting/Remote dispatch. Initial observer failures exposed invalid fixture plugin append, missing assistant source/stream, mismatched tool arguments and missing historical delegationDepth; corrected and diagnostics retained. Targeted results do not establish full regression or release acceptance.",
+  "activation_boundary": "Candidate only; production pin and accepted_upstream unchanged pending C9.",
+  "cleanup": [".goose/out/rc022-session-fork-source-20261116-01/cleanup.json", ".goose/out/rc022-session-fork-paired-receipt-20261116-01/cleanup.json"],
+  "retained_assets": "Removed 21057802 bytes of owned synthetic journals, pytest workspaces and tmp/home. No task workers remain. Commands, raw observations and diagnostics retained; shared fixed Source/toolchain retained through C9."
+}

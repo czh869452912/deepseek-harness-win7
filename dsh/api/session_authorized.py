@@ -143,6 +143,17 @@ class AuthorizedSessionController(CurrentSessionController):
             raise RemoteError('gateway/internal', 'file application query failed', {}, cause=error) from None
 
     @Remote
+    async def fork(self, request):
+        sid = request['sessionId']
+        sessions = self.ctx.get('sessions')
+        if request.get('allowMigration') is False and sessions.get(sid) is None:
+            persistence = self.ctx.get('sessionPersistence')
+            stored = await persistence.stat(sid) if persistence is not None else None
+            if stored is not None and stored.get('formatStatus') == 'migration-required' and sessions.get(sid) is None:
+                raise RemoteError('session/migration-required', 'Open the source Session to complete migration before forking', dict(sessionId=sid))
+        return await self.commands.fork(request)
+
+    @Remote
     async def prompt(self, request, signal):
         signal.throwIfAborted()
         if request['content'] and not has_prompt_content(request['content']):

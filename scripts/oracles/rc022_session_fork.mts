@@ -1,0 +1,31 @@
+import {readFileSync,writeFileSync,mkdirSync} from 'node:fs'
+import {join,dirname} from 'node:path'
+import {pathToFileURL} from 'node:url'
+import {load,setup} from './rc022_subagent_fixture.mts'
+const base=JSON.parse(readFileSync(process.argv[3]!,'utf8')),fixture=await setup(join(base,'source')),ctx=fixture.ctx,rows:any[]=[],members=['source'],attached:any[]=[]
+const {ApiSessionAgentController}=await load('packages/api/session-controller/src/agent.ts'),{SessionCommandController}=await load('packages/api/session-controller/src/commands.ts'),{MockAdapter,textResponse}=await load('packages/core/agent-loop/tests/mock-adapter.ts')
+const {appendPluginRecord}=await load('packages/core/session/src/index.ts')
+const message=(text:string)=>({id:text,role:'user',content:[{type:'text',text}],source:{kind:'user'}})
+try{
+ for(const path of ['packages/typert/registry/src/index.ts','vendor/loader/src/index.ts'])await ctx.plugin((await load(path)).default)
+ ctx.baseUrl=pathToFileURL(base).href+'/';await ctx.plugin((await load('packages/preset/agent-preset-registry/src/index.ts')).default,{default:'coding'});await ctx.agentPresets.register({id:'coding',plugins:[]})
+ ctx.provide('agentDefaultModel',{currentSelection:()=>({provider:'record',model:'default'})});const adapter=new MockAdapter([textResponse('done')]);ctx.llm.registerAdapter(['record'],adapter)
+ const entity={id:'work',sessionIds:members,attachSession:async(identity:string)=>{members.push(identity);attached.push(identity)}};ctx.provide('workspaceRegistry',{list:()=>[entity],archivedSessionIds:[]})
+ const agents=new ApiSessionAgentController(ctx),commands=new SessionCommandController(ctx,agents,'C:/fork');await commands.initialize();const composition=await agents.composeAgent('coding')
+ const sourceHandle=await ctx.agents.create({sessionId:'source',meta:{cwd:'C:/fork',agentPreset:'coding'},agentOptions:{provider:'record',model:'original'},setup:composition.setup}),source=sourceHandle.agent.session
+ source.append('turn/start',{turn:1});source.append('user/message',message('first'),{surfaceOp:'append'});source.append('turn/end',{turn:1,reason:{kind:'completed'}});appendPluginRecord(source,'plugin:fixture/checkpoint',{value:'kept'})
+ source.append('user/message',message('next'),{surfaceOp:'append'});source.append('turn/start',{turn:2});source.append('step/start',{turn:2,step:1});source.append('assistant/message',{turn:2,step:1,stream:[],message:{id:'assistant',role:'assistant',source:{kind:'model',provider:'record',model:'original'},content:['started','pending'].map(id=>({type:'tool-call',id,name:'example',arguments:'{}'}))}},{surfaceOp:'append'});source.append('tool/call',{turn:2,step:1,callId:'started',name:'example',arguments:'{}'})
+ const original=JSON.stringify(source.snapshotEvents()),value=(child:any)=>({inherited:child.session.inheritedEventCount,events:child.session.snapshotEvents().map((event:any)=>({...event,time:0})),model:child.model.current(),preset:child.session.header.agentPreset??null,origin:child.session.header.origin??null,parent:child.session.header.parentSession??null,workspace:members.includes(child.id)}),children:any[]=[]
+ const core=ctx.sessions.fork(source,8,'core-fork');rows.push({name:'core-open-fork',inherited:core.inheritedEventCount,types:core.snapshotEvents().map((event:any)=>event.type),parent:core.header.parentSession??null})
+ const empty=ctx.sessions.create('empty'),emptyChild=ctx.sessions.fork(empty,undefined,'empty-fork');rows.push({name:'core-empty-fork',inherited:emptyChild.inheritedEventCount,types:emptyChild.snapshotEvents().map((event:any)=>event.type),parent:emptyChild.header.parentSession??null})
+ for(const [name,cut] of [['default',undefined],['first-event',0],['closed',2],['checkpoint',3],['queued-input',4],['open-turn',5],['open-step',6],['unstarted-tools',7],['started-tool',8]]){const created=await commands.fork({sessionId:'source',...cut===undefined?{}:{atSeq:cut}}),child=ctx.agents.get(created.sessionId);children.push(child);rows.push({name,value:value(child)})}
+ for(const [name,request] of [['missing',{sessionId:'missing'}],['past-end',{sessionId:'source',atSeq:999}],['invalid',{sessionId:'source',atSeq:-0}]])try{await commands.fork(request)}catch(error:any){rows.push({name,code:error.code,message:error.message})}
+ rows.push({name:'parent-unmodified',same:original===JSON.stringify(source.snapshotEvents()),attachments:attached.length})
+ const child=children.at(-1);child.followup(message('continue fork'));await child.whenIdle();rows.push({name:'continued-actual-agent',provider:adapter.requests.at(-1).provider,model:adapter.requests.at(-1).model,forkResults:child.session.snapshotEvents().filter((event:any)=>event.type==='tool/result').length,turnEnd:child.session.snapshotEvents().at(-1).data.reason.kind})
+ await sourceHandle.dispose();const created=await commands.fork({sessionId:'source',atSeq:8});rows.push({name:'cold-exact',value:value(ctx.agents.get(created.sessionId)),sourceInactive:ctx.agents.get('source')===undefined})
+ const {generationLogPath}=await load('packages/session/session-persistence-jsonl/src/format.ts'),historical=generationLogPath(join(base,'source'),'C:/fork','historical',3,'none'),header={type:'session',version:3,id:'historical',createdAt:1,isSeeded:false,delegationDepth:0,cwd:'C:/fork',agentPreset:'coding'},raw=[header,...JSON.parse(original).slice(0,3)].map(row=>JSON.stringify(row)+'\n').join('');mkdirSync(dirname(historical),{recursive:true});writeFileSync(historical,raw,'utf8')
+ const {default:Controller}=await load('packages/api/session-controller/src/index.ts'),facade={ctx,commands}
+ try{await Controller.prototype.fork.call(facade,{sessionId:'historical',allowMigration:false})}catch(error:any){rows.push({name:'migration-refused',code:error.code,details:error.details})}
+ const migrated=await Controller.prototype.fork.call(facade,{sessionId:'historical',allowMigration:true});rows.push({name:'migration-permitted-passive',value:value(ctx.agents.get(migrated.sessionId)),sourceInactive:ctx.agents.get('historical')===undefined,sourceUnchanged:readFileSync(historical,'utf8')===raw,sourceStatus:(await ctx.sessionPersistence.stat('historical')).formatStatus})
+}finally{await ctx.fiber.dispose()}
+process.stdout.write(JSON.stringify(rows))

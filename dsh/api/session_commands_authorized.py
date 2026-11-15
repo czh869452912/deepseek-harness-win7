@@ -1,10 +1,15 @@
 """Current prompt admission: durable first receipts, caller source and retries."""
 import asyncio
 import weakref
+import uuid
 from dsh.api.session_commands_current import CurrentSessionCommands, error_text
 from dsh.api.session_continuation import CONTINUATION
 from dsh.attachment.error import AttachmentError
 from dsh.core.session.json import UNDEFINED
+from dsh.core.session.fork import build_fork_seed
+from dsh.core.session.types import SessionSeq
+from dsh.cordis.utils import js_to_string
+from dsh.session.session_query import SessionQueryError
 from dsh.llm.message import create_user_message
 from dsh.typert.remote import RemoteError, remote_error_of
 
@@ -24,6 +29,19 @@ def resolve_prompt_receipts(content, staged):
     return resolved, receipts
 
 
+def latest_completed_prefix_boundary(events):
+    ending = next((event for event in reversed(events) if event['type'] == 'turn/end'), None)
+    if ending is None:
+        return None
+    boundary = ending['seq']
+    for event in events[int(boundary) + 1:]:
+        if (event['type'] in ('turn/start', 'agent/inbox/spliced')
+                or event['type'] == 'user/message' and event.get('surfaceOp') == 'append'):
+            break
+        boundary = event['seq']
+    return boundary
+
+
 class AuthorizedSessionCommands(CurrentSessionCommands):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -36,6 +54,52 @@ class AuthorizedSessionCommands(CurrentSessionCommands):
 
     async def drain_default_saves(self):
         await asyncio.gather(*list(self.default_saves), return_exceptions=True)
+
+    async def fork(self, request):
+        try:
+            at_seq = SessionSeq(request['atSeq']) if 'atSeq' in request else None
+        except (ValueError, TypeError):
+            raise RemoteError('gateway/bad-request', 'atSeq must be a non-negative safe integer', {}) from None
+        sid = request['sessionId']
+        try:
+            source = await self.ctx.get('sessionQuery').observeSession(sid)
+        except Exception as error:
+            if isinstance(error, SessionQueryError) and error.code == 'SESSION_QUERY_SESSION_NOT_FOUND':
+                raise RemoteError('session/not-found', 'session "{}" not found'.format(sid), dict(sessionId=sid)) from None
+            raise RemoteError('gateway/internal', 'fork source unavailable for session "{}": {}'.format(sid, error_text(error)), {}) from None
+        try:
+            boundary = latest_completed_prefix_boundary(source.events) if at_seq is None else at_seq
+            if boundary is None or boundary >= len(source.events) or source.events[int(boundary)]['seq'] != boundary:
+                message = ('session "{}" has no completed turn to fork from'.format(sid) if at_seq is None else
+                    'event {} does not exist in session "{}" (last seq: {})'.format(js_to_string(at_seq), sid,
+                        js_to_string(source.events[-1]['seq']) if source.events else 'none'))
+                raise RemoteError('session/fork-unavailable', message, dict(sessionId=sid))
+            seed = build_fork_seed(source.events, boundary)
+            try:
+                workspace = await self.fork_workspace(source.header)
+            except Exception as error:
+                raise RemoteError('gateway/internal', 'failed to resolve fork workspace for session "{}": {}'.format(sid, error_text(error)), {}) from None
+            child_id = 'session-' + str(uuid.uuid4())
+            composition = await self.agents.composeAgent(self.agents.presetForObservation(source))
+            try:
+                model = self.ctx.get('agentDefaultModel').currentSelection()
+                meta = dict(isSeeded=True)
+                if source.header.cwd is not None:
+                    meta['cwd'] = source.header.cwd
+                if composition.get('agentPreset') is not None:
+                    meta['agentPreset'] = composition['agentPreset']
+                await self.ctx.get('agents').create(dict(sessionId=child_id, seed=seed, inheritedEventCount=boundary + 1,
+                    meta=meta, agentOptions=dict(provider=model['provider'], model=model['model']), setup=composition['setup']))
+            except Exception as error:
+                raise RemoteError('gateway/internal', 'failed to fork session "{}": {}'.format(sid, error_text(error)), {}) from None
+            if workspace is not None:
+                try:
+                    await workspace.attachSession(child_id)
+                except Exception as error:
+                    raise RemoteError('session/workspace-attach-failed', 'session "{}" was forked but could not attach to workspace "{}": {}'.format(child_id, workspace.id, error_text(error)), dict(sessionId=child_id, workspaceId=workspace.id)) from None
+            return dict(sessionId=child_id)
+        finally:
+            source.dispose()
 
     async def create(self, request):
         from dsh.api.session_agents_current import ApiSessionPresetConflict, ApiSessionCwdConflict, ApiSessionSubagentOwnership

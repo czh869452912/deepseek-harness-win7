@@ -230,6 +230,31 @@ class CurrentSessionStore(SessionStore):
         super().announce(session)
         entry.announcement_complete = True
 
+    def fork(self, source, boundary=None, child_session_id=None):
+        if self.format_version != 4:
+            return super().fork(source, boundary, child_session_id)
+        from dsh.core.session.fork import build_fork_seed
+        if child_session_id is not None and self.get(child_session_id) is not None:
+            raise SessionForkError('session "%s" already exists' % child_session_id, 'SESSION_ALREADY_EXISTS')
+        live = self._resolve_fork_source(source)
+        events = live.snapshotEvents()
+        resolved = boundary if boundary is not None else events[-1]['seq'] if events else None
+        if resolved is not None:
+            if not safe(resolved, True):
+                raise SessionForkError('fork boundary for session "%s" must be a non-negative safe integer, got %s' %
+                    (live.id, display(resolved)), 'INVALID_BOUNDARY')
+            if resolved >= len(events):
+                raise SessionForkError('fork boundary %s does not exist in session "%s" (last seq: %s)' %
+                    (display(resolved), live.id, display(events[-1]['seq']) if events else 'none'), 'INVALID_BOUNDARY')
+            if events[int(resolved)]['seq'] != resolved:
+                raise SessionForkError('fork boundary %s does not match a contiguous event seq in session "%s"' %
+                    (display(resolved), live.id), 'INVALID_BOUNDARY')
+        meta = dict(isSeeded=True)
+        if live.header.cwd is not None:
+            meta['cwd'] = live.header.cwd
+        return self.create(child_session_id, dict(seed=[] if resolved is None else build_fork_seed(events, resolved),
+            inheritedEventCount=0 if resolved is None else resolved+1, meta=meta))
+
     def _fork_seed(self, session, requested_boundary):
         events=session.snapshotEvents()
         if requested_boundary is None:

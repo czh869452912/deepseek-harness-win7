@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-16",
+  "unit": "C8-Q-TerminalShellDiscovery",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "state": "targeted-passed",
+  "paired": ".goose/out/rc022-terminal-shells-paired-2-20261116-01/comparison/report.json",
+  "observations": 19,
+  "native": {"run": "rc022-terminal-shells-native-20261116-01", "passed": 3, "failed": 0},
+  "source": {"run": "rc022-terminal-shells-source-20261116-01", "passed": 26, "failed": 0, "excluded": 55},
+  "verification_scope_reason": "Target-provider shell profiles cover Windows/POSIX fallback, declared defaults, configured args/name, ordered candidate discovery, name deduplication and typed executable misses versus transport failure. Actual local PATH/PATHEXT lookup verifies first match, absolute names, directory rejection, missing/relative/empty paths and original cancellation identity. Native adds cancellation after asynchronous filesystem inspection and environment cancellation. Source selects its controller shell/executable cases, including discovery consumers.",
+  "implementation": "Candidate shell helpers resolve against the execution provider. Candidate LocalSubprocess subclass adds environment inspection, canonical lookup methods and typed SUBPROCESS_EXECUTABLE_NOT_FOUND while retaining process ownership from its base. Async lookup preserves original cancellation reasons; missing optional candidates alone are suppressed.",
+  "observer_boundary": "Owned roots are projected in plain strings and JSON-quoted diagnostics. Default environment shell is compared by presence, not cross-process path. Executable fixture files are looked up, not launched. No PTY activity, terminal allocation, screen or controller acceptance.",
+  "activation_boundary": "Candidate providers; production mapping, pin and accepted_upstream unchanged pending composition and C9. Targeted checks do not establish release acceptance.",
+  "cleanup": ".goose/out/rc022-terminal-shells-source-20261116-01/cleanup.json",
+  "external_cleanup": ".goose/out/rc022-terminal-shells-source-20261116-01/external-cleanup.json",
+  "retained_assets": "Removed 741703 bytes of owned fixture trees and tmp/home. Empty external Source fixture root removed; no task workers remain. Commands and observations retained; shared fixed Source/toolchain retained through C9."
+}

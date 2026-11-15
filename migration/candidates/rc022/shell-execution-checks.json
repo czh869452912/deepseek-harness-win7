@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-16",
+  "unit": "C8-AN-ShellExecution",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "state": "targeted-passed",
+  "paired": ".goose/out/rc022-shell-execution-paired3-20261116-01/comparison/report.json",
+  "observations": 11,
+  "native": {"run": "rc022-shell-execution-native2-20261116-01", "passed": 17, "failed": 0},
+  "source": {"run": "rc022-shell-execution-source2-20261116-01", "passed": 46, "failed": 0, "skipped": 2},
+  "verification_scope_reason": "Controlled canonical subprocess comparisons exercise the real executor's handle publication, consuming and observed reads, environment precedence, stable result projection, synchronous/asynchronous provider failure and exact original error, manual kill, first-cause timeout versus caller abort, no-expiry execution and preparation timeout/abort without publication or spawn. Candidate executable ordering is paired, including quoted PATH entries. Both actual current executors also run real PowerShell through their Windows Job providers and compare Unicode raw-byte tail/full spill/nonzero exit; Source reports windows-job. Native tests cover actual process deadline, missing executable, executor-only reload versus subprocess-owner disposal, optional volatile defaults/live budgets and independently cancelled execution/result awaiters.",
+  "resolved_diagnostics": "Initial comparison exposed publication-before-settlement ordering for synchronous failure and Node Windows path normalization differences; corrected. Initial native assertion incorrectly expected UTF8-safe raw subprocess tails; paired actual Source output confirms replacement characters at a split byte boundary, unlike the later job ring's codepoint-safe trim. Native default optional volatile values were mapped from undefined to the local absence representation.",
+  "source_environment_limit": "Original Source run: 46 passed, 1 failed, 1 skipped. Failure is EPERM creating a file symlink under this account. Rerun excludes exactly 'accepts a link-shaped PATH candidate whose target cannot be stat-ed': 46 passed, 2 skipped. This fixture is not claimed passed; raw failure retained.",
+  "activation_boundary": "New explicit current executor registers shell and uses canonical subprocess dictionary contracts. Its PowerShell encoding preamble retains the reviewed New-Object/FullLanguage form for Win7 compatibility, instead of Source's newer ::new spelling. Confined subclass integration, foreground promotion and production composition remain subsequent work; no production pin promotion or release qualification.",
+  "cleanup": [".goose/out/rc022-shell-execution-source2-20261116-01/cleanup.json", ".goose/out/rc022-shell-execution-source2-20261116-01/external-cleanup.json"],
+  "cleanup_bytes": 1461807,
+  "retained_assets": "Owned spills, pytest fixtures, paired workspace, homes, temporary directories and two external Source roots including disposable tsx caches removed. Commands, logs/XML, paired real output and resolved failure diagnostics retained. No owned shell-execution/PowerShell child remains; shared Source/toolchain retained through C9."
+}

@@ -34,4 +34,6 @@
 
 | C8-Z | 新版 Workflow 引擎准入、事件、卸载后运行及 Workflow/Ralph 消费者 | [Workflow 引擎](workflow-engine-checks.json) |
 
+| C8-AA | SDK 持久会话恢复、拥有者等待、定时恢复共享与托管子树退出 | [SDK 会话所有权](sdk-session-checks.json) |
+
 后续继续设置及完整应用组合；最终资格使用 C9 冻结候选的完整门禁。

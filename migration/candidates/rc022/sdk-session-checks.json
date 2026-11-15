@@ -1,0 +1,26 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-16",
+  "unit": "C8-AA-SdkSessionOwnership",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "state": "targeted-passed",
+  "paired": ".goose/out/rc022-sdk-session-paired-fixed-20261116-01/comparison/report.json",
+  "observations": 19,
+  "native": {
+    "run": "rc022-sdk-session-native-complete-20261116-01",
+    "passed": 12,
+    "failed": 0
+  },
+  "source": {
+    "run": "rc022-sdk-session-source-20261116-01",
+    "passed": 24,
+    "failed": 0
+  },
+  "verification_scope_reason": "Actual SDK server and v4 Agent/Session/WorkingDirectory/JSONL compare initialized admission, RPC identities, cold resume, stored identity/directory/model preservation, owned idle wait, infrastructure failure versus durable terminal retirement, unknown/stale/subagent refusal and shutdown ordering. Native tests schedule initialization barrier/coalescing/shared resume, interrupted turn repair, real managed hanging child wait and shutdown drain, and two actual SDK-plugin subprocesses over stdio cold resume/wait with reaped processes and closed pipes. Existing SDK directory/server direct consumers rerun.",
+  "observer_boundary": "Generated event IDs/timestamps excluded. Native server retains handles plus a separate failure map instead of Source SessionRecord objects; exact Agent identity checks retained. No general query/command, approval, question or goal activity parity claim. Candidate runtime fixture composition remains explicit rather than production profile qualification.",
+  "initial_failures": "Empty fresh sessions intentionally do not persist until events exist. Tests now seed actual turn/change events for cold restore and subagent-origin admission. Low-level stdio test now awaits harness initialization before direct resume RPC. Raw diagnostics retained; final native/paired tests pass.",
+  "activation_boundary": "Canonical resume/wait RPC and scheduled ownership are enabled on SDK server; prompt uses lifetime checks around asynchronous attachment admission and shutdown drains managed descendants. Production pin and accepted_upstream unchanged.",
+  "cleanup": ".goose/out/rc022-sdk-session-source-20261116-01/cleanup.json",
+  "external_cleanup": ".goose/out/rc022-sdk-session-source-20261116-01/external-cleanup.json",
+  "retained_assets": "Owned synthetic workspaces/homes/comparison Session stores removed, empty external root removed. Raw commands/logs/XML/observations retained; shared Source/toolchain remains through C9. No owned SDK child or runner remains."
+}

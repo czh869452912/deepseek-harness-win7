@@ -5,11 +5,7 @@ import sys
 
 from dsh.cordis.json_text import stringify_json
 from .local import LocalSubprocessRuntime, child_env
-
-
-class SubprocessExecutableNotFoundError(ValueError):
-    name = 'SubprocessExecutableNotFoundError'
-    code = 'SUBPROCESS_EXECUTABLE_NOT_FOUND'
+from .error import SubprocessExecutableNotFoundError
 
 
 def check(signal):

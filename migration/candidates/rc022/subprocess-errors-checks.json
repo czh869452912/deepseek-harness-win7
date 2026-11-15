@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-16",
+  "unit": "C8-AH-SubprocessErrors",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "state": "targeted-passed",
+  "paired": ".goose/out/rc022-subprocess-errors-paired-20261116-01/comparison/report.json",
+  "observations": 12,
+  "native": {"run": "rc022-subprocess-errors-native-20261116-01", "passed": 12, "failed": 0},
+  "source": {"run": "rc022-subprocess-errors-source-portable-20261116-01", "passed": 5, "failed": 0},
+  "verification_scope_reason": "Actual Source/native canonical error list, lookup subclass, errno classification, unchanged HarnessError/non-errno values and original cause identity. Native numeric OSError errno adaptation and real missing-executable lookup tested; terminal shell and actual WinPTY consumers pass.",
+  "source_selection": "Initial default Source invocation selects zero tests because its Windows configuration excludes packages/subprocess/*. Preserved as a nonpassing no-selection observation. Owned .goose/out/rc022-subprocess-errors-control-20261116-01/vitest.config.mts reuses Source configuration with projects disabled and exact portable error.spec.ts inclusion; it invokes no unsupported process implementation. The five actual tests pass; Source checkout unchanged.",
+  "activation_boundary": "Lookup failures now use the canonical SubprocessError subclass and subprocessSpawnFailure preserves original launch errors. Native OSError errno integers are translated to Node errno spellings only for classification. Ordinary object-shaped spawn and managed process ownership remain separate work; no production or release acceptance claim.",
+  "cleanup": ".goose/out/rc022-subprocess-errors-source-portable-20261116-01/cleanup.json",
+  "cleanup_bytes": 10013,
+  "retained_assets": "Owned synthetic workspaces/homes and both empty external Source roots removed. Exact control config/commands/logs/XML/paired observations and initial no-selection diagnostics retained. No owned process remains; shared Source/toolchain retained through C9."
+}

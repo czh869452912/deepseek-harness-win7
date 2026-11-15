@@ -1,0 +1,25 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-15",
+  "unit": "C6-A-NamedCatalog",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "state": "targeted-passed",
+  "paired": ".goose/out/rc022-named-catalog-paired-final-20261115-01/comparison/report.json",
+  "observations": 64,
+  "native": {
+    "run": "rc022-named-catalog-native-final-20261115-01",
+    "passed": 6,
+    "failed": 0
+  },
+  "source": {
+    "run": "rc022-named-catalog-source-20261115-01",
+    "passed": 29,
+    "failed": 0
+  },
+  "verification_scope_reason": "Unchanged names/catalog Source modules pair all name boundaries, exact-parent pending pools, committed collisions, automatic ordinals, repeated/stale releases, complete ancestor paths and historical identity fallback. Catalog v0-v3 accepted modes and malformed facts pair, including safe integers, unknown fields, inherited-event skip, detached restore and unchanged identity. A 190-row fold verifies 64-entry structural sharing and strict checkpoints; actual Source/native local/external helpers record identical payloads. Native real v4 SessionProjectionRegistry uses an awaited stateVersion-6 registration beside old unnamed and new named facts; legacy catalog consumers pass.",
+  "implementation": "New final named-domain modules names.py and catalog.py; old active catalog_current retains its explicit old composition contract until C6 consumers/C9 switch. Python uses exact object identity with strong parent ownership during pending reservations. Catalog chunks reuse the existing persistent-list primitive.",
+  "fixture_failures": "Source-paired observations initially contradicted the hand-written expected ordinal when an old release touches a reused slot in the same pending pool; corrected the expectation to the actual fixed behavior and separately added a replaced-pool stale-release case. The real registry test initially called a nonexistent viewOf and then omitted snapshot.values; fixed to public snapshot and awaited handle.stateOf. Original logs/XML retained.",
+  "activation_boundary": "Foundation only; provider startup, catalog reads across the full tree, addressing/delivery/interrupt permissions, Team, SDK/PTC/Remote and fork-seed consumers remain C6 work. No active profile, production pin or full parity claim.",
+  "cleanup": ".goose/out/rc022-named-catalog-source-20261115-01/cleanup.json",
+  "retained_assets": "All actual comparisons, commands, logs/XML and failed fixture diagnostics retained; owned synthetic workspaces removed. Shared Source/toolchain retained through C9."
+}

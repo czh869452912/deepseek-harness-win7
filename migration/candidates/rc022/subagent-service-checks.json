@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-15",
+  "unit": "C6-J-SubagentService",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "state": "targeted-passed",
+  "paired": ".goose/out/rc022-subagent-service-paired-final-20261115-01/comparison/report.json",
+  "observations": 15,
+  "native": {
+    "run": "rc022-subagent-service-native-final-20261115-01",
+    "failed": 0,
+    "passed": 34
+  },
+  "source": {
+    "run": "rc022-subagent-service-source-20261115-01",
+    "failed": 0,
+    "passed": 62
+  },
+  "verification_scope_reason": "Async real projection registration and service publication; provider added-listener rollback, scoped removal, exact provider replacement, capability/depth/schema/live-parent admission. Native public spawn/fork providers run through actual v4 factory, persistence, cold target resume and lifecycle publication; controlled workingDirectory remains explicitly outside qualification. Related manager/archive and legacy service regressions included.",
+  "activation_boundary": "Candidate public service and local providers. Remote handlers, Team/SDK/PTC consumers and production composition pending; production pin unchanged.",
+  "cleanup": ".goose/out/rc022-subagent-service-source-20261115-01/cleanup.json",
+  "retained_assets": "Raw initial schema mismatch and test assertion failure retained; synthetic workspaces removed (1748194 bytes). Shared Source/toolchain retained through C9."
+}

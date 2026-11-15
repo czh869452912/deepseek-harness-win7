@@ -104,6 +104,23 @@ async def open_native_text_file(path, signal, internals=None):
     await open_native_path(path, signal, internals, text_editor=True)
 
 
+async def open_native_associated_path(path, signal, internals=None):
+    """Use the OS file association for an explicit desktop open gesture."""
+    signal.throwIfAborted()
+    target, env, run, options = facts(internals)
+    if target == 'darwin':
+        await run('open', [path], signal)
+    elif target == 'win32':
+        await windows_path(path, signal, run)
+    elif target == 'linux':
+        if is_wsl(env, options):
+            await windows_path(await translate(path, signal, run), signal, run)
+        else:
+            await run('xdg-open', [path], signal)
+    else:
+        raise RuntimeError('native path opener is unsupported on ' + target)
+
+
 def windows_file_uri(path):
     """Windows pathToFileURL: preserve URL-path punctuation, IDNA UNC authority."""
     normalized = ntpath.abspath(path).replace('\\', '/')

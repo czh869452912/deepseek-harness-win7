@@ -19,8 +19,9 @@ from dsh.api.session_resource import register_session_resource
 from dsh.api.session_catalogs_current import SessionFileReferences, CurrentSessionSkillCatalog
 from dsh.api.session_media_current import CurrentSessionMediaReferences
 from dsh.cordis.schema import Schema
-from dsh.host.native_command_current import can_open_native_path, open_native_path, reveal_native_path
+from dsh.host.native_command_current import can_open_native_path, open_native_associated_path, reveal_native_path
 from dsh.llm.error import error_chain
+from dsh.host.file_applications import native_file_applications, open_native_file_application
 
 
 class ProjectionSessionControl(CurrentSessionControl):
@@ -49,7 +50,9 @@ class AuthorizedSessionController(CurrentSessionController):
         TypertRemoteService.__init__(self, ctx, 'sessionController', dict(namespace='session'))
         config, internals = self.Config(config or {}), internals or {}
         self.list_work_slice_ms = config['listWorkSliceMs']
-        self.open_path, self.reveal_path = internals.get('openPath', open_native_path), internals.get('revealPath', reveal_native_path)
+        self.open_path, self.reveal_path = internals.get('openPath', open_native_associated_path), internals.get('revealPath', reveal_native_path)
+        self.file_applications = internals.get('fileApplications', native_file_applications)
+        self.open_file_application = internals.get('openFileApplication', open_native_file_application)
         self.can_open = internals.get('canOpenPath', lambda: config['nativeOpen'] if 'nativeOpen' in config else 'openPath' in internals or can_open_native_path())
 
     async def init(self):
@@ -93,6 +96,50 @@ class AuthorizedSessionController(CurrentSessionController):
     def event(self, session, event):
         if event['type'] == 'user/message' and event['data']['source']['kind'] == 'user':
             self.ctx.emit('api-session/activity', session.id, event['time'])
+
+    async def verifyDesktopPath(self, path, signal):
+        if not path:
+            raise RemoteError('gateway/bad-request', 'A non-empty file path is required', {})
+        signal.throwIfAborted()
+        host_path = os.path.abspath(path)
+        fs = self.ctx.get('fs')
+        mapped = fs.processPathFromHostPath(host_path)
+        if mapped is None or fs.processPath(await fs.resolve(mapped, dict(signal=signal))) != host_path:
+            raise RemoteError('gateway/bad-request', 'Path has no verified Host path', {})
+        signal.throwIfAborted()
+        return host_path
+
+    @Remote
+    async def openWorkspacePath(self, request, signal):
+        try:
+            path = await self.verifyDesktopPath(request['path'], signal)
+            if request.get('action') == 'reveal':
+                await self.reveal_path(path, signal)
+            elif 'application' in request:
+                await self.open_file_application(path, request['application'], signal)
+            else:
+                await self.open_path(path, signal)
+            return dict(opened=True)
+        except Exception as error:
+            if signal.aborted:
+                raise RemoteError('gateway/cancelled', 'path open was aborted', {}) from None
+            if isinstance(error, RemoteError):
+                raise
+            raise RemoteError('gateway/internal', 'path open failed', {}, cause=error) from None
+
+    @Remote
+    async def workspacePathApplications(self, request, signal):
+        if not self.can_open():
+            return []
+        try:
+            path = await self.verifyDesktopPath(request['path'], signal)
+            return await self.file_applications(path, signal)
+        except Exception as error:
+            if signal.aborted:
+                raise RemoteError('gateway/cancelled', 'application query was aborted', {}) from None
+            if isinstance(error, RemoteError):
+                raise
+            raise RemoteError('gateway/internal', 'file application query failed', {}, cause=error) from None
 
     @Remote
     async def prompt(self, request, signal):

@@ -1,0 +1,37 @@
+
+ObjC.import('AppKit');
+function run(argv) {
+  var workspace = $.NSWorkspace.sharedWorkspace;
+  var file = $.NSURL.fileURLWithPath(argv[0]);
+  var preferred = workspace.URLForApplicationToOpenURL(file);
+  var preferredPath = preferred.isNil() ? null : ObjC.unwrap(preferred.path);
+  var urls = workspace.URLsForApplicationsToOpenURL(file);
+  var apps = [];
+  for (var i = 0; i < urls.count; i++) {
+    var url = urls.objectAtIndex(i);
+    var path = ObjC.unwrap(url.path);
+    var image = null;
+    if (argv[1] === 'icons') {
+      var icon = workspace.iconForFile(path);
+      var thumbnail = $.NSImage.alloc.initWithSize($.NSMakeSize(32, 32));
+      thumbnail.lockFocus;
+      icon.drawInRectFromRectOperationFraction($.NSMakeRect(0, 0, 32, 32), $.NSZeroRect, $.NSCompositingOperationSourceOver, 1);
+      thumbnail.unlockFocus;
+      var bitmap = $.NSBitmapImageRep.imageRepWithData(thumbnail.TIFFRepresentation);
+      var png = bitmap.representationUsingTypeProperties($.NSBitmapImageFileTypePNG, $({}));
+      image = png.isNil() ? null : 'data:image/png;base64,' + ObjC.unwrap(png.base64EncodedStringWithOptions(0));
+    }
+    var bundle = $.NSBundle.bundleWithURL(url);
+    var bundleId = bundle.isNil() || bundle.bundleIdentifier.isNil() ? null : ObjC.unwrap(bundle.bundleIdentifier);
+    var version = bundle.isNil() ? null : bundle.objectForInfoDictionaryKey('CFBundleShortVersionString');
+    apps.push({
+      id: path,
+      name: ObjC.unwrap($.NSFileManager.defaultManager.displayNameAtPath(path)),
+      default: path === preferredPath,
+      icon: image,
+      bundle: bundleId,
+      version: version === null || version.isNil() ? null : String(ObjC.unwrap(version))
+    });
+  }
+  return JSON.stringify(apps);
+}

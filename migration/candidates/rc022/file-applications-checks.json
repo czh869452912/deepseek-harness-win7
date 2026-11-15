@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-16",
+  "unit": "C7-AG-VerifiedDesktopFileApplications",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "state": "targeted-passed",
+  "paired": ".goose/out/rc022-file-applications-paired-receipt-20261116-01/comparison/report.json",
+  "observations": 31,
+  "native": {"run": "rc022-file-applications-native-final-20261116-01", "passed": 92, "failed": 0},
+  "source": {"run": "rc022-file-applications-source-2-20261116-01", "passed": 39, "failed": 0},
+  "verification_scope_reason": "Paired controlled command adapters exercise Windows encoded private scripts, long paths, WSL, cancellation/failure cleanup, macOS display deduplication and raw launch validation, Linux XDG nested ids/locale/hidden entries/icons/GIO launch, association-based HTML opening, and actual local-FS/controller path verification and errors. Native additionally uses an actual private Windows extension/executable to query and invoke the Shell, verifies the serializer fallback and unknown-handler refusal, checks metadata rejection and actual Gateway admission/failure propagation. Existing native opener/child ownership and full controller consumers pass. Source file association suites include their actual Windows handler test and the complete desktop-path controller suite.",
+  "implementation": "The candidate controller verifies Host/process path round trips through the composed FS before opening or querying. It supports explicit registered applications and uses OS associations for default desktop gestures. Native providers retain the Source C# Shell adapter and JXA application query, use disposable UTF-8 BOM script files, validate metadata/icons, collapse macOS display copies, and resolve Linux XDG catalogs without interpreting Exec text. A JavaScriptSerializer fallback covers hosts whose PowerShell lacks ConvertTo-Json.",
+  "observer_boundary": "Paired native OS commands are controlled; the native and Source Windows handler tests separately exercise actual Shell registration and launch. Windows test keys are private UUID identities and were removed; child handles exited, scripts and owned fixtures were removed. The fallback branch ran on the present Windows host, not an actual Windows 7/PowerShell 2 qualification. Linux/macOS actual desktops and final portable qualification remain separate. Initial native collection had an invalid trailing raw-string backslash in a test registry path, fixed with diagnostics retained. Targeted results are not full regression or release acceptance.",
+  "activation_boundary": "Candidate desktop surfaces only; production pin and accepted_upstream unchanged pending C9.",
+  "cleanup": ".goose/out/rc022-file-applications-source-2-20261116-01/cleanup.json",
+  "retained_assets": "Owned test executable, synthetic inputs, pytest workspaces, tmp/home and private association keys removed after teardown; no task workers remain. Commands, observations and diagnostics retained; shared Source/toolchain retained through C9."
+}

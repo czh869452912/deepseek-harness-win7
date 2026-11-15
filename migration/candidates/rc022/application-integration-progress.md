@@ -19,5 +19,6 @@
 | C8-M | 指令发现、限额流读取、内容去重、作用域探测与文件系统 BOM 解码 | [指令文件读取](instruction-files-checks.json) |
 | C8-N | 会话可见指令、候选去重/提升、元数据快路径与失败组回滚 | [指令状态协调](instruction-state-checks.json) |
 | C8-O | 指令运行时、嵌套工具/步骤提交边界、串行投影及真实 Agent 请求 | [指令运行时](instruction-runtime-checks.json) |
+| C8-P | 终端流字节背压、窗口独立保留、活动观察与失败清理重试 | [终端流与保留](terminal-flow-checks.json) |
 
 后续继续设置及完整应用组合；最终资格使用 C9 冻结候选的完整门禁。

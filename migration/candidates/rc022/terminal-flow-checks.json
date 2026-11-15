@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-16",
+  "unit": "C8-P-TerminalFlowRetention",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "state": "targeted-passed",
+  "paired": ".goose/out/rc022-terminal-flow-paired-final-20261116-01/comparison/report.json",
+  "observations": 26,
+  "native": {"run": "rc022-terminal-flow-native-20261116-01", "passed": 6, "failed": 0},
+  "source": {"run": "rc022-terminal-flow-source-20261116-01", "passed": 22, "failed": 0},
+  "verification_scope_reason": "Actual follower and retention classes compare exact UTF-8 encoded frame limits, overflow, pre-abort, waiting-reader wakeup, graceful drain, idle deadlines, independent window holds, busy/unknown protection, revision invalidation, closed identity on failed cleanup, retry and a 3000000000ms retry across bounded native timers. Native adds in-flight observation invalidation/no overlap, disposal waiting despite cleanup failure, cleanup identity/join, cancelled awaiter isolation, failed activity reset and consumer return. Complete Source stream and retention test files pass.",
+  "implementation": "Candidate follower bounds each Remote generation without owning the process. Retention uses monotonic observations, full idle grace, epoch invalidation, independent holds, one observation at a time and retryable cleanup. Disposal waits for both cleanup and an outstanding observation. Python cleanup awaiters share one non-cancellable owner operation, matching Promise ownership.",
+  "observer_boundary": "Deterministic timers replace elapsed real time in both observers. No PTY launch, emulator, controller or Remote transport acceptance; these providers follow separately.",
+  "activation_boundary": "Candidate helpers; production mapping, pin and accepted_upstream unchanged pending composition and C9. Targeted checks do not establish release acceptance.",
+  "cleanup": ".goose/out/rc022-terminal-flow-source-20261116-01/cleanup.json",
+  "external_cleanup": ".goose/out/rc022-terminal-flow-source-20261116-01/external-cleanup.json",
+  "retained_assets": "Removed 322648 bytes of owned tmp/home. Empty external Source fixture root removed; no task workers remain. Commands and observations retained; shared fixed Source/toolchain retained through C9."
+}

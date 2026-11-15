@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-15",
+  "unit": "C6-W-SdkProcessProvider",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "state": "targeted-passed",
+  "paired": ".goose/out/rc022-sdk-process-paired-2-20261115-01/comparison/report.json",
+  "observations": 19,
+  "native": {
+    "run": "rc022-sdk-process-native-final-20261115-01",
+    "passed": 9,
+    "failed": 0
+  },
+  "source": {
+    "run": "rc022-sdk-process-source-20261115-01",
+    "passed": 55,
+    "failed": 0
+  },
+  "verification_scope_reason": "Actual fixed Source scripted runtime over real pipes for handshake, directory, prompt/wait, terminal/output folds, malformed replies/events, transport death, environment scrub, shared shutdown and confirmed process/pipes closure. Native independent Python peer tests add handshake and prompt cancellation, repeated timeout abandonment, subscription isolation/tree scope, initialization retry, forced termination, actual manager/provider activation, route handshake, validation and unloading.",
+  "activation_boundary": "Candidate external subagent SDK consumer. Native launcher resolves the colocated same-package Python CLI, replacing upstream Node manifest resolution. Canonical SDK profile/server composition, general high-level SDK run API and final product assembly remain separate work.",
+  "cleanup": ".goose/out/rc022-sdk-process-source-20261115-01/cleanup.json",
+  "retained_assets": "Commands/logs/XML and wire observations retained; owned synthetic payloads removed. No matching owned runtime process remained. Shared Source/toolchain retained through C9."
+}

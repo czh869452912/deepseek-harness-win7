@@ -1,5 +1,6 @@
 """SDK methods and service-owned lifecycle notifications."""
 import asyncio
+import contextvars
 import os
 
 from dsh.attachment.admission import admit_encoded_images
@@ -10,6 +11,8 @@ from dsh.llm.message import create_user_message
 from dsh.core.abort import AbortController
 from dsh.session.storage_contract import field
 from dsh.sdk.user_questions import SdkUserQuestionBridge, joined_signals
+from dsh.sdk.query_input import query_command, query_content, query_command_images, js_trim
+from dsh.sdk.query_activity import QueryActivity
 
 
 class HarnessSdkJsonRpcServer:
@@ -24,6 +27,15 @@ class HarnessSdkJsonRpcServer:
         self.lifetime = AbortController()
         self.initialization = asyncio.get_event_loop().create_future()
         self.approval_requests = False
+        self.command_tasks, self.query_activities = set(), set()
+        self.query_invocation = contextvars.ContextVar('sdk.query.activity', default=None)
+        self.query_disabled = False
+        def goal_watch(scope):
+            def unavailable():
+                for activity in list(self.query_activities):
+                    activity.goalUnavailable()
+            scope.effect(lambda: unavailable)
+        self.goal_lifetime = ctx.inject(['goals'], goal_watch)
         self.user_questions = SdkUserQuestionBridge(ctx, transport,
             lambda agent: self.sessions.get(agent.session.id) is not None and self.sessions[agent.session.id].agent is agent)
         self.shutdown_task = None
@@ -175,6 +187,51 @@ class HarnessSdkJsonRpcServer:
         task = self.creations.get(session_id) or self.open_session(session_id, False)
         return await asyncio.shield(task)
 
+    async def query(self, params):
+        if not self.initialized:
+            raise RuntimeError('SDK server is not initialized')
+        if self.shutting_down:
+            raise RuntimeError('SDK server is shutting down')
+        text = next((block for block in params['contentBlocks'] if block['type'] == 'text'), None)
+        if text is not None and js_trim(text['text']).startswith('/'):
+            commands = self.ctx.get('commands')
+            if commands is not None:
+                handle = await self.get_or_create(params['sessionId'])
+                self.lifetime.signal.throwIfAborted()
+                self.assert_live(handle, params['sessionId'])
+                line = query_command(text['text'], commands.list(handle.agent))
+                if line is not None:
+                    images = query_command_images(params['contentBlocks'], text)
+                    activity = QueryActivity(self.ctx, handle.agent, self.transport,
+                        lambda: not self.query_disabled and self.query_invocation.get() is activity,
+                        self.lifetime.signal, self.query_activities.discard)
+                    self.query_activities.add(activity)
+                    try:
+                        token = self.query_invocation.set(activity)
+                        try:
+                            task = asyncio.create_task(commands.execute(handle.agent, line,
+                                [dict(type='image', data=image['data'], mediaType=image['mimeType'],
+                                      **({} if 'name' not in image else dict(name=image['name']))) for image in images], self.lifetime.signal))
+                        finally:
+                            self.query_invocation.reset(token)
+                        self.command_tasks.add(task)
+                        def settled(done):
+                            self.command_tasks.discard(done)
+                            if not done.cancelled():
+                                done.exception()
+                        task.add_done_callback(settled)
+                        execution = await asyncio.shield(task)
+                        if execution is None:
+                            raise RuntimeError('The selected command is unavailable in this SDK profile')
+                        dto = dict(commandId=field(execution, 'commandId'), result=field(execution, 'result'))
+                        activity.accept(dto)
+                        return dict(kind='command', execution=dto)
+                    except BaseException:
+                        activity.close()
+                        raise
+        receipt = await self.prompt(dict(sessionId=params['sessionId'], contentBlocks=params['contentBlocks']))
+        return dict(kind='prompt', **receipt)
+
     def open_session(self, session_id, resume):
         task = asyncio.create_task(self.create_session(session_id, resume))
         self.creations[session_id] = task
@@ -290,6 +347,8 @@ class HarnessSdkJsonRpcServer:
         if not self.initialization.done():
             self.initialization.set_result(None)
         await await_callback_result(asyncio.gather(*list(self.creations.values()), return_exceptions=True))
+        await asyncio.gather(*list(self.command_tasks), return_exceptions=True)
+        self.query_disabled = True
         self.creations.clear()
         self.scheduled_sessions.clear()
         handles, self.sessions = list(self.sessions.values()), {}
@@ -309,7 +368,7 @@ class HarnessSdkJsonRpcServer:
                 await subagents.drainDescendants([handle.agent for handle in handles if hasattr(handle, 'agent')])
             except Exception as error:
                 failures.append(error)
-        results = await asyncio.gather(*(handle.dispose() for handle in handles), return_exceptions=True)
+        results = await asyncio.gather(self.goal_lifetime.dispose(), *(handle.dispose() for handle in handles), return_exceptions=True)
         failures.extend(result for result in results if isinstance(result, Exception))
         if len(failures) == 1:
             raise failures[0]
@@ -322,6 +381,12 @@ class HarnessSdkJsonRpcServer:
             return await self.initialize(params or {})
         if method == 'session/prompt':
             return await self.prompt(params or {})
+        if method == 'session/query':
+            value = params or {}
+            if (not isinstance(value, dict) or not isinstance(value.get('sessionId'), str)
+                    or not value['sessionId'] or set(value) - {'sessionId', 'contentBlocks'}):
+                raise TypeError('session/query requires only a non-empty sessionId and contentBlocks')
+            return await self.query(dict(sessionId=value['sessionId'], contentBlocks=query_content(value.get('contentBlocks'))))
         if method == 'session/resume':
             value = params or {}
             if not isinstance(value, dict) or not isinstance(value.get('sessionId'), str) or not value['sessionId']:

@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-16",
+  "unit": "C8-AD-SdkQueryActivity",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "state": "targeted-passed",
+  "paired": ".goose/out/rc022-sdk-query-paired-activity-20261116-01/comparison/report.json",
+  "observations": 13,
+  "native": {"run": "rc022-sdk-query-native-regressions-20261116-01", "passed": 23, "failed": 0},
+  "source": {"run": "rc022-sdk-query-source-20261116-01", "passed": 93, "failed": 0},
+  "prior_failure": "One new test assumed user/message data.message instead of the v4 data payload. Corrected assertion; all six query tests and their direct SDK session, interaction and input consumers pass. Raw failure diagnostics retained.",
+  "verification_scope_reason": "Actual Source/native QueryActivity traces cover invocation ownership, nested command identity, admitted input idle barrier, last response and finish reason, first terminal goal outcome, clear/disarm, provider unload, disposal, unrelated sessions and shutdown. Native integration uses actual v4 Agents, current commands/goals, SDK session/query dispatch and a child stdio SDK process; tests validate acknowledgments, completion notification, Chinese aliases, exact-name shadow fallback, input validation and retained command ownership after caller cancellation. Direct SDK session, question/approval and query-input consumers are included.",
+  "observer_boundary": "Paired traces use controlled event/status/idle timing around the actual observers. Source command/query-activity tests and native real Agent/stdio integration are separate evidence; this is not a complete cross-process Source/native SDK equivalence claim. Client convenience query and high-level run composition remain later work.",
+  "activation_boundary": "SDK session/query is enabled with ContextVar invocation ownership and command lifetime tracking. No production pin or accepted_upstream promotion, full regression, release or Win7 qualification is established.",
+  "cleanup": ".goose/out/rc022-sdk-query-native-regressions-20261116-01/cleanup.json",
+  "cleanup_bytes": 196208,
+  "retained_assets": "Owned synthetic fixtures/homes removed after all consumers; empty external Source root removed. Commands, logs, XML, raw paired observations and prior failure diagnostics retained. No owned SDK/runner remains. Shared Source/toolchain retained through C9."
+}

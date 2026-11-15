@@ -14,6 +14,7 @@ from dsh.core.model_selection import AgentModel
 from dsh.core.runtime_context_current import RuntimeContextProjection, SystemPromptProjection
 from dsh.core.scope import create_scope
 from dsh.core.session.current_request_header import canonicalHeader, headerEquals
+from dsh.core.session.repair import ToolCallRecovery
 from dsh.core.session.json import UNDEFINED, FrozenDict, FrozenList, deep_freeze
 from dsh.core.system_prompt import render_prompt, render_context_sections, join_context_sections
 from dsh.core.tool_calls import execute_tool_calls
@@ -270,11 +271,29 @@ class ReactLoopAgent:
                     signal.throwIfAborted()
                     self.session.append('step/start', dict(turn=turn, step=step))
                     phase['step'] = step
+                    recovery = ToolCallRecovery() if decision.get('toolSet') is not None else None
+                    def observe(subject, event):
+                        if subject is self.session:
+                            recovery.observe(event)
+                    stop_recovery = self.ctx.on('session/event', observe) if recovery is not None else lambda: None
                     try:
                         step_end = await await_callback_result(self._step(decision))
                         if ending is None or ending['kind'] != 'max-tokens':
                             ending = step_end
+                    except BaseException as error:
+                        if recovery is not None:
+                            try:
+                                for event in recovery.results():
+                                    self.session.append('tool/result', event['data'], opts=dict(
+                                        surfaceOp='append', **({'sourceEventSeqs': event['sourceEventSeqs']}
+                                                              if 'sourceEventSeqs' in event else {})))
+                            except BaseException as recovery_error:
+                                failure = AggregateError([error, recovery_error], 'Step failed and its pending tool results could not be recorded')
+                                failure.cause = error
+                                raise failure
+                        raise
                     finally:
+                        stop_recovery()
                         self.session.append('step/end', dict(turn=turn, step=step))
                 finally:
                     if decision.get('toolSet') is not None:

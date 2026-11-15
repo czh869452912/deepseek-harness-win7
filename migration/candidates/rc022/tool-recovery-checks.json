@@ -1,0 +1,19 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-15",
+  "unit": "C5-F-LiveAndColdToolRecovery",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "state": "targeted-passed",
+  "paired": ".goose/out/rc022-tool-recovery-paired-fixed-20261115-01/comparison/report.json",
+  "observations": 19,
+  "native_initial": {"run": "rc022-tool-recovery-native-20261115-01", "passed": 307, "failed": 3},
+  "native_repaired_fixtures": {"run": "rc022-tool-recovery-native-fixed-20261115-01", "passed": 3, "failed": 0},
+  "native_direct_consumers": {"run": "rc022-tool-recovery-native-consumers-20261115-01", "passed": 141, "failed": 0},
+  "source": {"run": "rc022-tool-recovery-source-20261115-01", "passed": 173, "failed": 0},
+  "verification_scope_reason": "ToolCallRecovery tracks pending identities, exact append turn/step matching and started-call coordinates without retaining history; repeated proposals do not mutate state. V4 interrupted/forked closers preserve deterministic ids, retry guidance and tool-role messages while closing only open lifecycle boundaries. Actual Agent steps observe their Session until completion, synthesize conservative pending results after failure, and aggregate original/recovery errors if repair itself fails. Executor unload and real result write failures are paired through real drivers. Actual JSONL and Zstandard cold read/resume consume V4 repair; legacy repair, query, identity commands and observation consumers pass separately.",
+  "initial_fixture_errors": "The initial write-failure fixture intercepted append without forwarding positional surface arguments, failing before tool dispatch; corrected forwarding. The initial persisted assistant seed omitted required stream settlement data; corrected to include an empty stream. Production code was unchanged by these fixture repairs. Original logs/XML remain preserved.",
+  "activation_boundary": "Live recovery is selected by the current Tools composition. V4 cold consumers select by mounted Session format/header. Fork seed construction and other provider/consumer migration remain subsequent C6 work; pure forked closers alone do not qualify actual fork lineage. This is targeted verification, not a combined full gate or release acceptance. Production pin and accepted_upstream remain unchanged.",
+  "cleanup": ".goose/out/rc022-tool-recovery-native-consumers-20261115-01/cleanup.json",
+  "cleanup_bytes": 1581232,
+  "retained_assets": "Commands, JSON observations, XML and logs retained. No task test process remains; shared fixed Source/toolchain retained through C9."
+}

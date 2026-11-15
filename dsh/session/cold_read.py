@@ -17,4 +17,4 @@ async def readColdSessionLog(persistence, session_id, signal=None):
     events = read['events']
     return dict(eventState=read['eventState'],header=handle.header,
                 inheritedEventCount=handle.inheritedEventCount,
-                events=list(events)+interruptedTurnClosers(events))
+                events=list(events)+interruptedTurnClosers(events,format_version=handle.header['version']))

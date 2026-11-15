@@ -195,7 +195,7 @@ class CurrentAgentLifecycleService(AgentLoopService):
             handle=await tx.race(lambda:persistence.open(sid,'write',dict(signal=tx.controller.signal)),lambda late:late.close())
             tx.stored=dict(handle=handle,storedCount=0)
             read=await tx.race(lambda:handle.read(options=dict(signal=tx.controller.signal)))
-            persisted=read['events'];closers=interruptedTurnClosers(persisted)
+            persisted=read['events'];closers=interruptedTurnClosers(persisted,format_version=getattr(self.ctx.get('sessions'),'format_version',3))
             if closers:await handle.append(closers)
             preparation=SessionPreparation.create(self.ctx.get('sessions').prepare(sid,
                 seed=list(persisted)+closers,meta=copy.deepcopy(handle.header),inheritedEventCount=handle.inheritedEventCount,

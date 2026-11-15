@@ -25,6 +25,9 @@ from dsh.core.session.repair import (
     TOOL_OUTCOME_UNKNOWN,
     interrupted_turn_closers,
     interruptedTurnClosers,
+    ToolCallRecovery,
+    open_turn_closers,
+    openTurnClosers,
 )
 from dsh.core.session.request_header import (
     canonical_header,
@@ -131,6 +134,9 @@ __all__ = [
     "snapshotJsonValue",
     "interrupted_turn_closers",
     "interruptedTurnClosers",
+    "ToolCallRecovery",
+    "open_turn_closers",
+    "openTurnClosers",
     "TOOL_NOT_STARTED",
     "TOOL_OUTCOME_UNKNOWN",
     "canonical_header",

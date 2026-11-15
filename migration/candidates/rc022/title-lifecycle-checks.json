@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-15",
+  "unit": "C4-L-TitleCancellationAndUnload",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "state": "targeted-passed",
+  "paired": ".goose/out/rc022-title-lifecycle-paired-retry-20261115-01/comparison/report.json",
+  "observations": 6,
+  "native": {"run": "rc022-title-lifecycle-native-20261115-01", "passed": 125, "failed": 0},
+  "source_tests": "title-input-checks.json: 49 targeted Source tests on the unchanged fixed Source; no duplicate Source suite was necessary for this verification-only extension.",
+  "verification_scope_reason": "Actual Source/native services match newest-overlapping-refresh acceptance, caller cancellation with exact reason identity, Session detach cancellation, service unload waiting for a provider that ignores abort, queued fallback cancellation during unload, and provider input with no currentTitle when a one-byte cap cannot derive a fallback. Every journey confirms both title registrations cease to be readable after owner disposal and preserves accepted log events. Python's start_coroutine enters public async calls at the corresponding Source call boundary.",
+  "observer_retry": "The first Source observer called has(), a native convenience absent from the upstream registry. The corrected observer uses the actual shared stateOf contract and compares undefined after release. No production fix was required in this batch.",
+  "activation_boundary": "This extends C4-K lifecycle evidence for explicit V4 compositions. Mandatory dependency admission, warning text/failure diagnostics, and ambient-loop-free V4 Session notification settlement remain distinct from these six qualified journeys. Production pins and release acceptance are unchanged.",
+  "cleanup": ".goose/out/rc022-title-lifecycle-native-20261115-01/cleanup.json",
+  "remaining": "Remaining Agent initiation/archive/admission contracts, tools/context consumers, title dependency/diagnostic boundaries and coordinated activation/release qualification."
+}

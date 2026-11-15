@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-15",
+  "unit": "C7-Q-ApplicationEventCarrierComposition",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "state": "targeted-passed",
+  "paired": ".goose/out/rc022-event-composition-paired-2-20261115-01/comparison/report.json",
+  "observations": 9,
+  "native": {"run": "rc022-event-composition-native-20261115-01", "passed": 68, "failed": 0},
+  "source": {"run": "rc022-event-composition-source-20261115-01", "passed": 12, "failed": 0},
+  "verification_scope_reason": "Compare actual Source application's 31 event declarations, all 29 broadcast payloads delivered through two real authorized WebSockets, and five session-resource notifications admitted through the actual Gateway for a non-owner. Real Connection token exchanges create distinct API Peers; HTTP result POSTs reject a foreign Peer, settle scoped Cordis approval waterfall and cancel the other delivery. Both owner Clients must answer next before the actual host questions continuation runs. Application plugin unload rejects its pending host waterfall and ends both WS streams; reload creates a fresh Client generation and forwards the new plugin-manager event. Native regressions include Source-paired event ownership, normal Remote carrier and existing event lifetimes, plus invalid session resource identities.",
+  "native_adaptation": "Candidate application source extends the already-ported scoped Cordis waterfall bridge with the exact upstream declaration order and notification resource readers. Host waterfall fixture uses a scoped Agent-shaped subject as Source event-source tests do; this does not certify real Agent-loop question UI integration. No frontend or Source code changes.",
+  "activation_boundary": "Actual candidate application event source plus Connection/Gateway HTTP and WS composition, without browser frontend activation. Homepage Peer snapshot, application Remote declarations and production profile/pin switch remain follow-up.",
+  "cleanup": ".goose/out/rc022-event-composition-source-20261115-01/cleanup.json",
+  "retained_assets": "Commands, paired raw data and reports retained. Initial observer used an unsupported action wildcard and hit its Source deadline; corrected fixture lists exact actions and the original timeout log remains. All owned temporary home/tmp payloads removed, socket/source/Peer/Context lifetimes closed in finally; no owned workers remain. Shared Source/toolchain retained through C9."
+}

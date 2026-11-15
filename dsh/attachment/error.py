@@ -4,6 +4,7 @@ Aligned 1:1 with `@deepseek-ai/dsh-attachment/error`.
 """
 
 from typing import Any, Optional, Set, Tuple
+from dsh.llm.error import HarnessError
 
 IMAGE_ADMISSION_ERROR_CODES: Tuple[str, ...] = (
     "TOO_MANY_IMAGES",
@@ -20,14 +21,14 @@ IMAGE_ADMISSION_ERROR_CODES: Tuple[str, ...] = (
 IMAGE_ADMISSION_ERROR_CODE_SET: Set[str] = set(IMAGE_ADMISSION_ERROR_CODES)
 
 
-class AttachmentError(Exception):
+class AttachmentError(HarnessError):
     """
     Stable failures suitable for host RPC error mapping.
     Re-implements HarnessError shape with 'code' attribute.
     """
 
     def __init__(self, message: str, code: str, cause: Optional[Exception] = None) -> None:
-        super().__init__(message)
+        super().__init__(message, code, cause=cause)
         self.name = "AttachmentError"
         self.message = message
         self.code = code

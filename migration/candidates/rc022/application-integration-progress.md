@@ -86,4 +86,6 @@
 
 | C8-AZ | 权限目录 Remote、当前选择投影与 Auto 生命周期/恢复准入 | [权限目录](permission-catalog-checks.json) |
 
+| C8-BA | 当前图片工具、异步附件存储、格式/模型准入与错误码保留 | [图片工具消费者](image-tool-checks.json) |
+
 后续继续设置及完整应用组合；最终资格使用 C9 冻结候选的完整门禁。

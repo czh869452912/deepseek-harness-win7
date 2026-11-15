@@ -19,7 +19,7 @@ class CurrentPatchToolFs(CurrentToolFs):
     def apply(self, ctx):
         from .tool_read_render import _integer
         from .tool_read import apply_read_tool
-        from .tool_read_image import apply_read_image_tool
+        from .read_image_current import apply_read_image_tool
         from .tool_fs_mutation import apply_mutation_tool
         from .sandbox_tool_current import CurrentFsSandboxController
         from .apply_patch_tool import apply_patch_tool
@@ -31,7 +31,7 @@ class CurrentPatchToolFs(CurrentToolFs):
             apply_read_tool(ctx, dict(limit=self.read_limit, maxLineLength=self.read_max_line_length,
                 maxBytes=self.read_max_bytes, streamMinSize=self.read_stream_min_size), current=True, directory_aware=True, latest=True)
         if config.get('readImage', True):
-            ctx.inject(['attachments'], lambda inner: apply_read_image_tool(inner, current=True, directory_aware=True))
+            ctx.inject(['attachments'], apply_read_image_tool)
         if config.get('write', True) or config.get('edit', True) or config.get('applyPatch', False):
             sandbox = CurrentFsSandboxController(ctx)
             for name in ('write', 'edit'):

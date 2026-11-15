@@ -1,0 +1,27 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-16",
+  "unit": "C8-BA-ImageTool",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "state": "targeted-passed",
+  "paired": ".goose/out/rc022-image-tool-paired2-20261116-01/comparison/report.json",
+  "observations": 35,
+  "native": {
+    "run": "rc022-image-tool-native4-20261116-01",
+    "passed": 105,
+    "failed": 0
+  },
+  "source": {
+    "run": "rc022-image-tool-source-20261116-01",
+    "passed": 62,
+    "failed": 0
+  },
+  "verification_scope_reason": "Actual read_image schema/callbacks compare ordered route/deployment/extension/signature preconditions, routed model precedence, current-directory/byte cap, async attachment publication before authoritative observation, canonical execution path and durable content/meta, downscaled dimensions and all declared attachment failure codes with exact name/cause/identity. Real Agent/current attachment store test proves image is committed before returned reference, malformed PNG retains typed INVALID_IMAGE through tool runtime, attachment provider unload removes read_image. AttachmentError now derives HarnessError so existing name/code/message/cause reach the canonical typed error envelope; legacy __str__ remains. Current attachment image/file and text/patch tools regressions selected; original Source read-image suite passes. Initial native actual Agent options used mapping-only access; corrected to field helper and reran paired/native. Two subsequent teardown fixture failures used set_service(None) instead of disposing a provider; corrected to awaited real provider owner disposal, original diagnostics retained.",
+  "activation_boundary": "CurrentPatchToolFs image injection and shared typed AttachmentError ancestry; production composition/browser acceptance remains pending. Image codecs and limits are inherited from prior qualified attachment provider rather than newly claimed as codec parity here.",
+  "cleanup": {
+    "removed_bytes": 13554901,
+    "external_empty_root_removed": true,
+    "owned_processes_remaining": 0,
+    "retained": "Compact logs, commands, XML/JSON observations and receipts including resolved failures; shared pinned Source/toolchains through C9."
+  }
+}

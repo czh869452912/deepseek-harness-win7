@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-16",
+  "unit": "C8-L-InstructionChainBudgets",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "state": "targeted-passed",
+  "paired": ".goose/out/rc022-instruction-render-paired-20261116-01/comparison/report.json",
+  "observations": 264,
+  "native": {"run": "rc022-instruction-render-native-20261116-01", "passed": 56, "failed": 0},
+  "source": {"run": "rc022-instruction-render-source-20261116-01", "passed": 45, "failed": 0, "excluded": 161},
+  "verification_scope_reason": "Actual Source/native rendering compares exact baseline and change-batch text, omitted/truncated records, represented original files and retained changes. Eight layouts cover empty sources, each chain alone, both global roots with project files, interleaved order, Unicode/unpaired surrogates and frame-delimiter paths/content; eleven budgets cover disabled, fractional, notice-only, heading-only, compact/truncated/full frames and replacement baselines. Native additionally asserts per-chain bounds and both-chain content retention, source identity, notice-only non-commit and disabled non-finite budgets. Existing instruction consumers pass. Source selection is its complete workspace context rendering group; discovery/runtime cases are excluded.",
+  "implementation": "Candidate renderer budgets user-global and project chains independently, merges surviving sections and diagnostics in source order, retains exact source records only for semantically represented content, and falls back to the single-budget rendering if framing would exceed the combined bound. User-global applicability stays model-facing prose; logical internal scope names are not leaked in that sentence. Frame delimiters are escaped in paths/content and UTF-8 cuts preserve code points.",
+  "observer_boundary": "Pure rendering; no filesystem discovery or runtime reconciliation acceptance. Source/native observations and input SHA remain; the 408408-byte generated input matrix was verified against its receipt and removed, reconstructible through cases().",
+  "activation_boundary": "Candidate helpers only; production pin and accepted_upstream unchanged pending C9. Targeted checks do not establish release acceptance.",
+  "cleanup": ".goose/out/rc022-instruction-render-source-20261116-01/cleanup.json",
+  "matrix_cleanup": ".goose/out/rc022-instruction-render-paired-20261116-01/matrix-cleanup.json",
+  "retained_assets": "Removed 452984 bytes of owned synthetic inputs, pytest workspaces and tmp/home. No task workers remain. Commands and observations retained; shared fixed Source/toolchain retained through C9."
+}

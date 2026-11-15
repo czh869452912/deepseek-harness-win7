@@ -68,8 +68,28 @@ def edit_patch_document(before, identity, name, next_config, inherited):
         output = [changed.get(index, row) for index, row in enumerate(rows)]
         return before[:nodes.start_mark.index] + dump([row for row in output if row is not None])
     edits = []
+    def last_value_end(node):
+        if isinstance(node, yaml.MappingNode) and not node.flow_style and node.value:
+            return last_value_end(node.value[-1][1])
+        if isinstance(node, yaml.SequenceNode) and not node.flow_style and node.value:
+            return last_value_end(node.value[-1])
+        return node.end_mark.index
     for index, replacement in changed.items():
         node = nodes.value[index]
+        if replacement is not None and not node.flow_style and next_config != inherited:
+            value_node = next((value for key, value in node.value if key.value == 'config'), None)
+            # Replace only the Config value; surrounding row comments, name and
+            # other metadata still belong to the user's document.
+            value = yaml.dump(next_config, Dumper=PatchDumper, sort_keys=False,
+                allow_unicode=True, default_flow_style=True, width=1000000).rstrip()
+            if value_node is not None:
+                edits.append((value_node.start_mark.index, last_value_end(value_node), value))
+            else:
+                end = last_value_end(node)
+                line_end = before.find('\n', end)
+                line_end = len(before) if line_end < 0 else line_end
+                edits.append((line_end, line_end, '\n  config: ' + value))
+            continue
         start = before.rfind('\n', 0, node.start_mark.index) + 1
         end = node.end_mark.index
         # End marks can include the next row's indentation; retain that prefix.

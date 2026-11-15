@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-15",
+  "unit": "C8-F-SettingsHmrAndLegacyImport",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "state": "targeted-passed",
+  "paired": ".goose/out/rc022-settings-lifecycle-paired-20261115-01/comparison/report.json",
+  "observations": 13,
+  "native": {"run": "rc022-settings-lifecycle-native-20261115-01", "passed": 14, "failed": 0},
+  "source": {"run": "rc022-settings-lifecycle-source-20261115-01", "passed": 34, "failed": 0},
+  "verification_scope_reason": "Actual profile ConfigEditor/Settings/HMR/Timer/Loader composition serializes simultaneous count and secret edits, preserves profile/identity/module/configuration/tail comments, restores file/runtime on rejected remount, refuses invalid/higher-overlay values and survives fresh boot. Another actual boot imports legacy settings after renaming, commits the valid section, rejects a missing entry and preserves both original sections in settings.yaml.imported. Native adds flow/block Config values and insertion with same-row metadata/comments plus earlier editor/forms consumers. Source configuration/inheritance/editor-failure suites pass.",
+  "observer_boundary": "Exact YAML output style is not compared. Config value replacement now retains its row's keys/comments and untouched rows, superseding the C8-E changed-whole-row limitation for the exercised block rows. Sequence-flow document comments, YAML aliases/anchors and every comment-placement variant are not claimed. Legacy section aliases for developer-tools/onboarding/shell are implemented but this probe exercises ordinary entry-name mapping.",
+  "implementation": "ConfigEditor replaces the Config value span within block rows and inserts absent Config keys without rewriting other metadata. Actual HMR runExclusive encloses the existing writer lock and reconciliation transaction; existing SettingsForms import now has integrated evidence for valid and rejected sections.",
+  "activation_boundary": "Candidate settings/editor providers qualified in real profile fixtures; production capability mapping and pin remain unchanged. Full application/client and C9 acceptance remain pending.",
+  "cleanup": ".goose/out/rc022-settings-lifecycle-source-20261115-01/cleanup.json",
+  "retained_assets": "691596 bytes of owned profiles, journals, pytest workspaces and tmp/home removed after teardown. Commands, observations, XML/JSON/logs retained; no task workers remain. Shared Source/toolchain retained through C9."
+}

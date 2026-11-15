@@ -1,7 +1,13 @@
 """rc.3 Agent registry: explicit lineage and identity-scoped notifications."""
+import asyncio
+import contextvars
+import inspect
+
 from dsh.core.agent import AgentRegistry, AgentPlugin
 from dsh.core.agent_dispatch_current import agent_events, emit_agent_event
 from dsh.cordis.utils import _js_call_callback
+from dsh.cordis.awaiting import start_coroutine
+from dsh.cordis.fiber import FiberState
 
 
 class CurrentAgentRegistry(AgentRegistry):
@@ -9,6 +15,123 @@ class CurrentAgentRegistry(AgentRegistry):
         self.format_version = format_version
         self._turn_boundary_handle = None
         super().__init__(ctx)
+        if format_version == 4:
+            self._initiator_runtime = dict(
+                ctx=ctx, value=contextvars.ContextVar('agent-initiator', default=None),
+                runs=contextvars.ContextVar('agent-initiator-run', default=None), disposal=None)
+            def unloading(fiber, *_args):
+                if getattr(fiber, 'state', None) == FiberState.UNLOADING and self._has_lifecycle_ancestor(fiber):
+                    self.close_initiators()
+            ctx.on('internal/status', unloading)
+            def lifecycle():
+                yield self.dispose_initiators
+                yield self.close_initiators
+            ctx.effect(lifecycle, 'agents.initiatorLifecycle()')
+
+    def _has_lifecycle_ancestor(self, candidate):
+        fiber = self._initiator_runtime['ctx'].fiber
+        while True:
+            if fiber is candidate:return True
+            parent = fiber.parent.fiber
+            if parent is fiber:return False
+            fiber = parent
+
+    def current_initiator(self):
+        if self.format_version != 4:return super().current_initiator()
+        if self._initiator_state == 'disposed':raise RuntimeError('agent initiator scope is disposed')
+        return self._initiator_runtime['value'].get()
+
+    currentInitiator = current_initiator
+
+    def require_initiator(self):
+        if self.format_version != 4:return super().require_initiator()
+        agent = self.current_initiator()
+        if agent is None:raise RuntimeError('no initiating agent is active')
+        return agent
+
+    requireInitiator = require_initiator
+
+    def _release_initiator_run(self, run):
+        if not run['active']:return
+        run['active'] = False
+        self._active_initiator_runs -= 1
+        if self._active_initiator_runs == 0 and self._initiator_drain is not None:
+            self._initiator_drain.set()
+            self._initiator_drain = None
+
+    def _run_with_initiator(self, agent, operation, *args, **kwargs):
+        if self._initiator_state != 'active':raise RuntimeError('agent initiator scope is disposed')
+        runtime = self._initiator_runtime
+        run = dict(active=True, parent=runtime['runs'].get())
+        self._active_initiator_runs += 1
+        run_token = runtime['runs'].set(run);agent_token = runtime['value'].set(agent)
+        try:
+            try:
+                result = operation(*args, **kwargs)
+                if inspect.iscoroutine(result):
+                    # A Python async call becomes the framework's Promise analogue
+                    # here, with its prefix and tail inside the inherited boundary.
+                    result = contextvars.copy_context().run(start_coroutine, result)
+            except BaseException:
+                self._release_initiator_run(run)
+                raise
+        finally:
+            runtime['value'].reset(agent_token);runtime['runs'].reset(run_token)
+        future_type = (asyncio.Future, asyncio.futures._PyFuture)
+        if isinstance(result, future_type):
+            observer = asyncio.Future if isinstance(result, asyncio.Future) else asyncio.futures._PyFuture
+            def settled(future):
+                try:
+                    if not observer.cancelled(future):observer.exception(future)
+                finally:self._release_initiator_run(run)
+            try:
+                # Preserve the exact Future and avoid its overridable observer API.
+                observer.add_done_callback(result, settled)
+            except Exception:
+                self._release_initiator_run(run)
+        else:
+            self._release_initiator_run(run)
+        return result
+
+    def with_initiator(self, agent, operation, *args, **kwargs):
+        if self.format_version != 4:return super().with_initiator(agent, operation, *args, **kwargs)
+        return self._run_with_initiator(agent, operation, *args, **kwargs)
+
+    withInitiator = with_initiator
+
+    async def with_initiator_async(self, agent, coroutine):
+        if self.format_version != 4:return await super().with_initiator_async(agent, coroutine)
+        return await self._run_with_initiator(agent, lambda:coroutine)
+
+    def without_initiator(self, operation, *args, **kwargs):
+        if self.format_version != 4:return super().without_initiator(operation, *args, **kwargs)
+        return self._run_with_initiator(None, operation, *args, **kwargs)
+
+    withoutInitiator = without_initiator
+
+    def close_initiators(self):
+        if self.format_version != 4:return super().close_initiators()
+        if self._initiator_state == 'active':self._initiator_state = 'closing'
+
+    closeInitiators = close_initiators
+
+    def dispose_initiators(self):
+        if self.format_version != 4:return super().dispose_initiators()
+        runtime = self._initiator_runtime
+        if runtime['disposal'] is None:
+            self.close_initiators()
+            run = runtime['runs'].get()
+            while run is not None:
+                self._release_initiator_run(run);run = run['parent']
+            async def finish():
+                if self._active_initiator_runs != 0:
+                    if self._initiator_drain is None:self._initiator_drain = asyncio.Event()
+                    await self._initiator_drain.wait()
+                self._initiator_state = 'disposed'
+            runtime['disposal'] = start_coroutine(finish())
+        return runtime['disposal']
+
+    disposeInitiators = dispose_initiators
 
     async def initialize(self):
         if self.format_version == 4:

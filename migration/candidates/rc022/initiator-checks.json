@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-15",
+  "unit": "C4-M-AgentInitiatorLifetimes",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "state": "targeted-passed",
+  "paired": ".goose/out/rc022-initiators-paired-final-20261115-01/comparison/report.json",
+  "observations": 11,
+  "native_initial": {"run": "rc022-initiators-native-20261115-01", "passed": 101, "failed": 6},
+  "native_retry": {"run": "rc022-initiators-retry-20261115-01", "passed": 13, "failed": 0},
+  "source": {"run": "rc022-initiators-source-20261115-01", "failed": 0},
+  "verification_scope_reason": "V4 Agent registries retain separate initiator and nesting-chain context variables. Real synchronous values and existing Futures preserve identity; coroutine operations enter their prefix immediately and retain the context in a framework Task. Source/native journeys pair nested/cleared and overlapping boundaries, cross-registry isolation, synchronous/rejected failures, closing admission, disposal reads, service/ancestor self-disposal and exclusion of only the shutdown initiator lineage while unrelated work drains. Five native adaptations qualify C/Python Futures, overridden observer/exception APIs, rejection, cancellation and failed observer setup. Existing V3 initiation/Agent/machine/lifecycle consumers pass.",
+  "retry_reason": "The new native internal/status listener initially omitted Python's unused old-state argument; this prevented V4 Agent mounting in six consumers. The listener now accepts the extra event arguments, and all affected consumers plus the Future adaptation tests pass. Initial failure diagnostics remain preserved.",
+  "activation_boundary": "Only explicit V4 registries use these lifetimes. Source JavaScript VM realms and Promise species have no literal Python equivalent: the native tests exercise its concrete Future classes and observer failure boundary, rather than claiming a JavaScript engine implementation. Agent archive admission, Typert resource metadata and dependency admission remain separate contracts.",
+  "cleanup": ".goose/out/rc022-initiators-retry-20261115-01/cleanup.json",
+  "remaining": "Agent archive/resource and factory contracts, tools/context consumers, coordinated production activation and release qualification."
+}

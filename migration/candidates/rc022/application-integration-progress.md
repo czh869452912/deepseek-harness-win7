@@ -88,4 +88,6 @@
 
 | C8-BA | 当前图片工具、异步附件存储、格式/模型准入与错误码保留 | [图片工具消费者](image-tool-checks.json) |
 
+| C8-BB | Auto 审核封闭决策协议、流结束/关闭与拒绝显示文本 | [Auto 审核协议](auto-review-decision-checks.json) |
+
 后续继续设置及完整应用组合；最终资格使用 C9 冻结候选的完整门禁。

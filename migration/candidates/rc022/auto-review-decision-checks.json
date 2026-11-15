@@ -1,0 +1,31 @@
+{
+  "part": "C8-BB",
+  "upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "paired": {
+    "run": "rc022-auto-review-decision-paired2-20261116-01",
+    "cases": 126,
+    "passed": true
+  },
+  "native": {
+    "run": "rc022-auto-review-decision-native2-20261116-01",
+    "passed": 12,
+    "failed": 0
+  },
+  "source": {
+    "run": "rc022-auto-review-decision-source-20261116-01",
+    "passed": 3,
+    "failed": 0,
+    "unselected": 37
+  },
+  "verification_scope_reason": "Instrument actual pinned private parseDecision/readDecision/denied/askUser/failed functions with the real Source BlockAssembler and locale module. Compare closed risk/decision combinations, duplicate raw/escaped members, unsupported extra fields and non-string reasons, authoritative block-end/late-delta behavior, required single final text after reasoning, all terminal reasons, extra data, provider failure identity, producer closure, and eight-language raw reasons. Existing assembler and mock LLM ownership regressions included. Source tests selected by protocol acceptance/failure/non-Error reviewer behavior.",
+  "activation_boundary": "Pure protocol and presentation helpers only; Auto plugin snapshot/gate and current application composition are not yet enabled or qualified.",
+  "adaptations": [
+    "Malformed JSON is rejected in both runtimes; V8 JSON.parse and Python JSON decoder syntax diagnostic wording is runtime-specific and is not claimed identical. Semantic protocol diagnostics are compared exactly. Python explicitly closes its asynchronous iterator on early loop failure, preserving the original exception as JavaScript for-await does."
+  ],
+  "cleanup": {
+    "removed_bytes": 695868,
+    "external_empty_root_removed": true,
+    "owned_processes_remaining": 0,
+    "retained": "Compact commands, logs, original observations, XML/JSON and receipts; shared pinned Source/toolchains retained through C9."
+  }
+}

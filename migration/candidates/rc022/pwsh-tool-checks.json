@@ -1,0 +1,24 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-16",
+  "unit": "C8-AP-CurrentToolPwsh",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "state": "targeted-passed",
+  "paired": ".goose/out/rc022-pwsh-tool-paired3-20261116-01/comparison/report.json",
+  "observations": 12,
+  "native": {
+    "run": "rc022-pwsh-tool-native-20261116-01",
+    "passed": 9,
+    "failed": 0
+  },
+  "source": {
+    "run": "rc022-pwsh-tool-source-20261116-01",
+    "passed": 83,
+    "failed": 0
+  },
+  "verification_scope_reason": "Six metadata/schema variants extracted from actual fixed Source registrations; actual tool pipeline, Agent/Session and registry compare foreground completion/removal, dynamic service reload, consuming promotion cursor versus UI read, background cancellation, preparation deadline and admission fallback. Additional actual PowerShell/Windows Job + current job tools tests prove head-before-promotion/tail-only continuation, repeated empty read, background kill and caller abort joining processes. Existing executor tests cover deadline, failed spawn and reload ownership.",
+  "activation_boundary": "Explicit current provider, no production profile activation. Confined executor and full application composition remain separate. Controlled shell in paired probe; real native process tests do not claim Win7 VM/x86 qualification.",
+  "cleanup": ".goose/out/rc022-pwsh-tool-source-20261116-01/cleanup.json",
+  "cleanup_bytes": 5508774,
+  "retained_assets": "Owned disposable workspaces, homes, collectors and empty external Source root removed. No owned process remains. Commands/logs/XML, failed diagnostics and final raw observations retained; shared Source/toolchain retained through C9."
+}

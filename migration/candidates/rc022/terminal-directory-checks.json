@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-16",
+  "unit": "C8-I-TerminalLaunchDirectory",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "state": "targeted-passed",
+  "paired": ".goose/out/rc022-terminal-directory-paired-20261116-01/comparison/report.json",
+  "observations": 8,
+  "native": {"run": "rc022-terminal-directory-native-2-20261116-01", "passed": 14, "failed": 0},
+  "source": {"run": "rc022-terminal-directory-source-20261116-01", "passed": 72, "failed": 0},
+  "verification_scope_reason": "Actual Session/WorkingDirectory and terminal registry cover local backend startup defaults, changed directory, explicit override, persistent tool creation/reuse/unload/recreation. An actual WinPTY/PowerShell test verifies exact cwd inside the shell, preserved environment across Session directory changes, fresh cwd/environment after reset, and process cleanup. Existing native terminal ownership, send/recovery/session and persistent tool tests pass. Complete Source persistent tool/backend/registry suites pass.",
+  "implementation": "Candidate local backend and persistent tool require workingDirectory; only newly created shells resolve current Session cwd. Existing shells retain their own cwd and environment. Explicit backend cwd bypasses default resolution. Legacy providers retain their defaults.",
+  "observer_boundary": "Paired native launch is deliberately stopped after capturing its spawn spec; paired persistent output is a controlled nonce transcript over the actual registry. First actual-console assertion printed a path wider than 160 columns and observed a line wrap; corrected test compares the complete path inside PowerShell and emits CWD=True. Original diagnostic retained. This qualifies launch-directory integration, not the complete newer persistent polling/cancellation/retention protocol or browser terminal controller. Native host test does not establish actual Windows 7 qualification.",
+  "activation_boundary": "Candidate composition only; production pin and accepted_upstream unchanged pending C9. Targeted checks do not establish release acceptance.",
+  "cleanup": ".goose/out/rc022-terminal-directory-source-20261116-01/cleanup.json",
+  "retained_assets": "Removed 1955073 bytes of owned synthetic inputs, pytest workspaces and tmp/home. No task workers remain. Commands, observations and diagnostics retained; shared fixed Source/toolchain retained through C9."
+}

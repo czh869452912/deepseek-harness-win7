@@ -95,7 +95,9 @@ class PersistentPwshPlugin(Plugin):
         if identity is not None:
             return identity
         request = dict(type=self.config['backendType'])
-        if owner.session.header.cwd is not None:
+        if getattr(self, 'directory_aware', False):
+            request['cwd'] = await self.ctx.get('workingDirectory').ensure(owner, signal)
+        elif owner.session.header.cwd is not None:
             request['cwd'] = owner.session.header.cwd
         spawned = await self.ctx.get('terminals').spawn(owner, request, signal)
         identity = self.live[owner] = spawned['sessionId']

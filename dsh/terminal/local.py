@@ -60,8 +60,11 @@ class LocalTerminalBackend:
             argv = sandbox.confine(argv, policy)['argv']
         env = dict(TERM='dumb', PAGER='cat', GIT_PAGER='cat', DSH_SHELL='1',
                    DSH_SESSION_ID=str(spec['owner'].id), DSH_PTY_SESSION_ID=spec['sessionId'], NO_COLOR='1')
+        cwd = spec.get('cwd', policy['workspaceRoot'])
+        if getattr(self, 'directory_aware', False) and spec.get('cwd') is None:
+            cwd = await self.ctx.get('workingDirectory').ensure(spec['owner'], spec.get('signal'))
         terminal = await self.ctx.get('subprocess').spawn_terminal(SubprocessTerminalSpawnSpec(
-            argv, spec.get('cwd', policy['workspaceRoot']), config['rows'], config['cols'], config['disposeGraceMs'], env, spec.get('signal')))
+            argv, cwd, config['rows'], config['cols'], config['disposeGraceMs'], env, spec.get('signal')))
         session = LocalTerminalSession(terminal, config)
         try:
             # Silence is not proof of initialization: require a fresh nonce on
@@ -109,4 +112,6 @@ class LocalTerminalPlugin(Plugin):
             config['shellPath'] = os.path.join(os.environ.get('SystemRoot', r'C:\Windows'), 'System32', 'WindowsPowerShell', 'v1.0', 'powershell.exe') if dialect == 'pwsh' else shutil.which('bash') or '/bin/bash'
         if not config.get('shellArgs'):
             config['shellArgs'] = ['-NoLogo', '-NoProfile'] if dialect == 'pwsh' else ['--noprofile', '--norc', '-i']
-        ctx.get('terminals').registerBackend(LocalTerminalBackend(ctx, config))
+        backend = LocalTerminalBackend(ctx, config)
+        backend.directory_aware = getattr(self, 'directory_aware', False)
+        ctx.get('terminals').registerBackend(backend)

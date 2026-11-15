@@ -1,0 +1,25 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-16",
+  "unit": "C8-AR-CurrentSandboxPolicy",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "state": "targeted-passed",
+  "paired": ".goose/out/rc022-sandbox-policy-paired5-20261116-01/comparison/report.json",
+  "observations": 15,
+  "native": {
+    "run": "rc022-sandbox-policy-native-20261116-01",
+    "passed": 12,
+    "failed": 0
+  },
+  "source": {
+    "run": "rc022-sandbox-policy-source-20261116-01",
+    "passed": 29,
+    "failed": 0,
+    "skipped": 1
+  },
+  "verification_scope_reason": "Actual v4 Session/projection/system prompt compares untouched execution-world spelling, configured root deduplication and frozen snapshots, exact live Session grants, duplicate independent effect ownership, child plugin cleanup, durable sandbox mode/approved precedence, resume retaining durable mode without runtime grants, invalid relative header versus typed NUL execution root failure, grant validation and service/context unload. Current PowerShell tool plus confined executor test proves next-operation policy resolution and old snapshot stability. Source policy suite includes one existing Windows symlink skip.",
+  "activation_boundary": "Explicit current policy provider; enforcing file root derivation and extra-root validation remain next contract. Windows process confinement intentionally ignores extra roots as Source documents. Historical policy/profile not switched; no release acceptance.",
+  "cleanup": ".goose/out/rc022-sandbox-policy-source-20261116-01/cleanup.json",
+  "cleanup_bytes": 2246505,
+  "retained_assets": "Owned test workspaces, homes and empty external root removed; no owned worker remains. Commands, XML, raw failed/final observations retained. Shared Source/toolchain retained through C9."
+}

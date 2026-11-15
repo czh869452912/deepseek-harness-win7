@@ -68,4 +68,6 @@
 
 | C8-AQ | 当前受限 PowerShell、每进程沙箱事实与真实 ACL 拒绝映射 | [受限 Shell 执行](sandbox-shell-checks.json) |
 
+| C8-AR | 当前共享沙箱策略、执行环境路径与会话级可写目录授权 | [共享沙箱策略](sandbox-policy-checks.json) |
+
 后续继续设置及完整应用组合；最终资格使用 C9 冻结候选的完整门禁。

@@ -1,0 +1,24 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-15",
+  "unit": "C7-M-DuplexWebSocketMux",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "state": "targeted-passed",
+  "paired": ".goose/out/rc022-duplex-mux-paired-final-2-20261115-01/comparison/report.json",
+  "observations": 15,
+  "native": {
+    "run": "rc022-duplex-mux-native-20261115-01",
+    "passed": 12,
+    "failed": 0
+  },
+  "source": {
+    "run": "rc022-duplex-mux-source-20261115-01",
+    "passed": 53,
+    "failed": 0
+  },
+  "verification_scope_reason": "Actual upstream RemoteStreamMuxServer and candidate wsproto server over real WebSockets: duplex items including absent value; queued uplink before opener resolves; exact UTF-8 frame overhead for Unicode stream id; overflow/half-close Remote failures; silent cancellation and unknown frame drops; duplicate/malformed/binary physical closes; Peer-scope close; ordinary/cyclic downlink failures; compression negotiation and actual RSV1 frame flags above threshold, no compression without negotiation; two missed-Pong heartbeat probes then abnormal closure. Native tests cover queued writes refusing closed codec mutation, negotiated-only compression activity, undeliverable terminal closing generation, inbox and existing mux lifetime consumers.",
+  "native_adaptation": "wsproto provides Python 3.8 WebSocket framing; negotiated threshold deflate uses zlib level 1 and source-compatible context takeover. Compressed completion counts as activity even though native deflate runs synchronously. No claim for arbitrary fragmentation ABI, exact compression bytes across zlib versions, all congestion timing or every heartbeat scheduling interleaving.",
+  "activation_boundary": "Candidate native mux with real sockets and controlled opener. Admission integration and actual Gateway/Remote method duplex composition remain next; no production mapping promotion.",
+  "cleanup": ".goose/out/rc022-duplex-mux-source-20261115-01/cleanup.json",
+  "retained_assets": "Commands/results and repaired observer enum-projection failure retained. Owned temporary payloads removed; socket, mux heartbeat, listener and Peer closed in finally. Shared Source/toolchain retained through C9."
+}

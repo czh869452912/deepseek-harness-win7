@@ -27,4 +27,6 @@
 
 | C7-U | 具体 IP 绑定、IPv6、TLS 证书加载、独立握手与卸载收敛 | [监听与 TLS](web-tls-checks.json) |
 
-后续：应用 Remote 资源声明、生成物和原版客户端整体接入。最终资格使用 C9 冻结候选的完整门禁；当前生产 pin 与 `accepted_upstream` 不提升。
+| C7-V | 会话资源默认识别、预设选择和目标子代理控制的实际 Gateway 授权 | [应用资源声明](application-resource-checks.json) |
+
+后续：Session 非所有者过滤、生成物和原版客户端整体接入。最终资格使用 C9 冻结候选的完整门禁；当前生产 pin 与 `accepted_upstream` 不提升。

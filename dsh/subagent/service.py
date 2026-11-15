@@ -2,7 +2,8 @@
 from dsh.cordis.plugin import Plugin
 from dsh.cordis.schema import Schema
 from dsh.cordis.volatile import is_volatile
-from dsh.typert.remote import TypertRemoteService
+from dsh.typert.remote import TypertRemoteService, Remote
+from dsh.typert.stores import field
 from dsh.core.session.json import UNDEFINED
 from dsh.core.json_schema import assert_object_json_schema
 from dsh.subagent.catalog import CATALOG
@@ -144,12 +145,12 @@ class SubagentRuntime(TypertRemoteService):
     async def listDescendants(self, identity, signal=None):
         return await list_descendants(self.ctx,identity,signal)
 
-    # Candidate local facade. Remote resource declarations are activated with
-    # the coordinated Gateway authorization migration, before production use.
+    @Remote(dict(name='prompt', resources=dict(session=lambda request, *_: field(request, 'childSessionId', UNDEFINED))))
     async def prompt(self, request, signal):
         from dsh.subagent.control import prompt
         return await prompt(self,request,signal)
 
+    @Remote(dict(name='interruptByUser', resources=dict(session=lambda childSessionId, *_: childSessionId)))
     def interruptByUser(self, childSessionId):
         from dsh.subagent.control import interrupt_by_user
         return interrupt_by_user(self,childSessionId)

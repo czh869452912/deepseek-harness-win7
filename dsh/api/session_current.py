@@ -15,6 +15,7 @@ from dsh.cordis.utils import js_to_string
 from dsh.host.native_command_current import can_open_native_path, native_file_manager, open_native_path, reveal_native_path
 from dsh.llm.error import error_chain
 from dsh.typert.remote import Remote, RemoteError, TypertRemoteService
+from dsh.api.session_resource import register_session_resource
 
 
 async def build_model_catalog(ctx, default_selection=None):
@@ -46,6 +47,7 @@ class CurrentSessionController(TypertRemoteService):
     def __init__(self, ctx, config=None, internals=None):
         super().__init__(ctx, 'sessionController', dict(namespace='session'))
         config, internals = config or {}, internals or {}
+        register_session_resource(ctx)
         install_model_selection_projection(ctx)
         self.agents, self.promotions = CurrentSessionAgents(ctx), set()
         self.commands = CurrentSessionCommands(ctx, self.agents, os.getcwd())

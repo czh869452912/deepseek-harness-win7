@@ -14,7 +14,7 @@ from dsh.core.session.current_session import CurrentSession, CurrentSessionPlugi
 from dsh.core.session.types import validate_session_header
 from dsh.session.projections import SessionProjectionsPlugin
 from dsh.session.session_query import SessionQueryError
-from dsh.typert.registry import TypertRegistry
+from dsh.typert.current import CurrentTypertRegistry as TypertRegistry
 from dsh.typert.remote import RemoteError
 
 

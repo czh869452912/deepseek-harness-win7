@@ -354,7 +354,7 @@ class CurrentAgentPresetRegistry(TypertRemoteService):
             self.owner.logger.warn('Preset tools observer: %s', error)
         return preset
 
-    # Remote declaration waits for the C7 resource authorization migration.
+    @Remote('select')
     async def select(self, agent, agentPreset):
         previous = self.switches.get(agent.id)
         async def switch():

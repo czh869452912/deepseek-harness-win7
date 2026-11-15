@@ -1,0 +1,25 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-15",
+  "unit": "C7-V-ApplicationResourceDeclarations",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "state": "targeted-passed",
+  "paired": ".goose/out/rc022-application-resources-paired-3-20261115-01/comparison/report.json",
+  "observations": 27,
+  "native": {
+    "run": "rc022-application-resources-native-20261115-01",
+    "passed": 46,
+    "failed": 0
+  },
+  "source": {
+    "run": "rc022-application-resources-source-20261115-01",
+    "passed": 66,
+    "failed": 0
+  },
+  "verification_scope_reason": "Session default resource reader: top-level identity including renamed wire, first object only, session versus child history address, absent/null/invalid IDs and ambiguous address rejection. Actual class instances carry preset select and two subagent target-resource markers. Actual Gateway, Agent factory, Loader/preset revision and spawn provider verify parent permission cannot control a child, allowed target message records principal, denied preset selection performs zero lookup, allowed selection resolves once, target interruption and denied-call side-effect counts. Existing actual preset/control journeys and entire current Session facade are direct native consumers.",
+  "registration_seam": "Source SessionController Service.init stops at a controlled ApiSessionAgentController.initialize boundary immediately after real resource registration; native constructor stops at its projection collaborator after the same real registration. This seam qualifies the registered callback, not a complete Source/native SessionController boot. Remaining actual calls mount the real preset/subagent services without those stops.",
+  "native_adaptation": "Native Session facade test collaborator now mounts CurrentTypertRegistry because current application registration requires its resource API. No Source files or client bundle changed. Runtime SRC Gateway invocation is covered here; strict generated artifacts remain separate.",
+  "activation_boundary": "Candidate declarations and actual preset/subagent Gateway calls. Session list/search/control item filtering and original-client composition are not yet qualified by this unit; production pin/accepted_upstream remain unchanged.",
+  "cleanup": ".goose/out/rc022-application-resources-source-20261115-01/cleanup.json",
+  "retained_assets": "7626475 bytes of owned journals, synthetic workspaces and tmp/home assets removed after Context/provider teardown. Commands, raw observations, XML/JSON/logs and initial observer fixture failures retained. No task workers remain. Shared Source/toolchain retained through C9."
+}

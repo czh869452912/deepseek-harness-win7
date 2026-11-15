@@ -1,0 +1,26 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-15",
+  "unit": "C6-T-TargetControls",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "state": "targeted-passed",
+  "paired": ".goose/out/rc022-subagent-control-paired-verified-20261115-01/comparison/report.json",
+  "observations": 40,
+  "native": {
+    "run": "rc022-subagent-control-native-verified-20261115-01",
+    "passed": 55,
+    "failed": 0
+  },
+  "source": {
+    "runs": [
+      "rc022-subagent-control-source-20261115-01",
+      "rc022-subagent-control-source-protocol-20261115-01"
+    ],
+    "passed": 38,
+    "failed": 0
+  },
+  "verification_scope_reason": "Exact target-only control validation and failure details/cause; actual Queue/Steer/cold managed delivery retains request/time-zone/non-owner principal. Capacity refusal maps actionable code. Root-owned invocation accessor, derived-context shadowing and existing Typert dispatch/registry consumers included.",
+  "activation_boundary": "Candidate local prompt/interrupt facade only: intentionally no Remote markers until C7 resource authorization is implemented and qualified. Principal extraction is not Gateway authentication evidence. Actual attachment-provider and production/browser composition qualification pending.",
+  "cleanup": ".goose/out/rc022-subagent-control-source-protocol-20261115-01/cleanup.json",
+  "retained_assets": "Commands/logs/XML and observations retained; synthetic payloads removed. Shared Source/toolchain retained through C9."
+}

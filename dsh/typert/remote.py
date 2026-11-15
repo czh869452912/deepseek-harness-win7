@@ -42,6 +42,10 @@ def bind_typert_remote(service, service_key, options=None):
     namespace = (options or {}).get("namespace", service_key)
     wire_name("service key", service_key)
     wire_name("namespace", namespace)
+    from dsh.cordis.context import Context
+    ctx = getattr(service, 'ctx', None)
+    if isinstance(ctx, Context) and 'invocation' not in ctx.root.reflect.props:
+        ctx.root.reflect.accessor('invocation', dict(get=lambda *_:None))
     return MappingProxyType({"service": service, "serviceKey": service_key, "namespace": namespace})
 
 

@@ -5,6 +5,7 @@
 | 单元 | 已验证边界 | 记录 |
 | --- | --- | --- |
 | C6-A | 名称、兄弟预留、路径回退、目录 v0–v3/stateVersion 6 | [名称与目录](named-catalog-checks.json) |
+| C6-T | 目标会话续聊/中断、真实队列/Steer/冷恢复、调用者归属 | [目标控制](target-control-checks.json) |
 | C6-S | 委派工具、真实 spawn/fork、深度/路由预检、Provider 替换和共享提示 | [委派工具](delegation-tool-checks.json) |
 | C6-R | 模型发现、父路由回退、授权清单过滤与工具注册生命周期 | [模型发现](model-discovery-checks.json) |
 | C6-Q | 创建时模型授权采样、父策略继承、历史恢复和可逆卸载 | [授权设置](selection-settings-checks.json) |

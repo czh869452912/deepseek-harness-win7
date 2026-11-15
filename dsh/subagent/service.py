@@ -144,6 +144,16 @@ class SubagentRuntime(TypertRemoteService):
     async def listDescendants(self, identity, signal=None):
         return await list_descendants(self.ctx,identity,signal)
 
+    # Candidate local facade. Remote resource declarations are activated with
+    # the coordinated Gateway authorization migration, before production use.
+    async def prompt(self, request, signal):
+        from dsh.subagent.control import prompt
+        return await prompt(self,request,signal)
+
+    def interruptByUser(self, childSessionId):
+        from dsh.subagent.control import interrupt_by_user
+        return interrupt_by_user(self,childSessionId)
+
 
 class SubagentPlugin(Plugin):
     id = 'subagent'

@@ -2719,7 +2719,7 @@ class Loader(EntryTree, Service):
             return resolved
 
         plugin = getattr(fiber, "plugin", None) or getattr(getattr(fiber, "runtime", None), "callback", None)
-        if getattr(plugin, EntryGroup.key, False):
+        if getattr(plugin, EntryGroup.key, False) or getattr(plugin, '_cordis_entry_group', False):
             return resolved
 
         eval_ctx = fiber.ctx

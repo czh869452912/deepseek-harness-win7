@@ -5,6 +5,7 @@
 | 单元 | 已验证边界 | 记录 |
 | --- | --- | --- |
 | C6-A | 名称、兄弟预留、路径回退、目录 v0–v3/stateVersion 6 | [名称与目录](named-catalog-checks.json) |
+| C6-Y | 声明式预设、保留修订、租约、子代理实际工具集与选择投影 | [预设注册](preset-registry-checks.json) |
 | C6-X | ACP 捕获目录、权限与安全诊断、实际进程/取消/回收、Provider 集成 | [ACP 后端](acp-provider-checks.json) |
 | C6-W | 实际 SDK stdio 子进程、取消/回收、路由握手、Provider 注册与卸载 | [SDK 进程](sdk-process-checks.json) |
 | C6-V | SDK 握手后发布、终止原因、安全错误、部分输出、取消和共享关闭 | [SDK 协调](sdk-run-checks.json) |

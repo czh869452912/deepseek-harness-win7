@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-15",
+  "unit": "C6-Y-AgentPresetRegistry",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "state": "targeted-passed",
+  "paired": ".goose/out/rc022-preset-registry-paired-final-4-20261115-01/comparison/report.json",
+  "observations": 21,
+  "native": {
+    "run": "rc022-preset-registry-native-final-20261115-01",
+    "passed": 10,
+    "failed": 0
+  },
+  "source": {
+    "run": "rc022-preset-registry-source-20261115-01",
+    "passed": 50,
+    "failed": 0
+  },
+  "verification_scope_reason": "Actual Loader-backed eager registration and diagnostics, retained generations and leases, inherited versus selected child composition, actual delegated model tools, blank-session selection/projection/lock, declarative carrier preserving child expressions and eager unregister, pinned ICU roster ordering. Native direct regressions cover declaring-base relative Python default exports, document roundtrip, dependency re-audit and unisolated service rejection plus Loader lifecycle/module/move/transaction consumers.",
+  "activation_boundary": "Candidate preset registry and declarative plugin; shared Loader recognizes its tree-carrier marker. Production composition/pin unchanged. Settings.configure and resource-authorized select Remote remain coordinated C8/C7 work. The split loader_entry.py module is not the actual Loader used by these journeys and was left unchanged.",
+  "cleanup": ".goose/out/rc022-preset-registry-source-20261115-01/cleanup.json",
+  "retained_assets": "Commands/logs/XML/JSON and failed comparisons retained; owned synthetic workspaces removed (19992837 bytes). Shared Source/toolchain retained through C9."
+}

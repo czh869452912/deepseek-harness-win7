@@ -44,4 +44,6 @@
 
 | C8-AE | SDK 高层 run、持久回执区间、命令生命周期及会话恢复消费者 | [SDK 客户端运行](sdk-client-run-checks.json) |
 
+| C8-AF | SDK 传输首次失败、EOF 最后一帧顺序与错误封装 | [SDK 传输关闭](sdk-closure-checks.json) |
+
 后续继续设置及完整应用组合；最终资格使用 C9 冻结候选的完整门禁。

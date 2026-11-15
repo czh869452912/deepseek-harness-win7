@@ -7,6 +7,8 @@ import uuid
 
 from dsh.core.cancellation import aborted, subscribe_abort
 from dsh.cordis.utils import js_to_string
+from dsh.cordis.awaiting import start_coroutine
+from dsh.core.session.json import UNDEFINED
 
 
 def abort_error(signal):
@@ -15,7 +17,7 @@ def abort_error(signal):
 
 
 class JsonRpcResponseError(RuntimeError):
-    def __init__(self, code, message, data=None):
+    def __init__(self, code, message, data=UNDEFINED):
         super().__init__(message)
         self.code, self.data = code, data
 
@@ -26,6 +28,7 @@ class JsonRpcLineTransport:
         self.decoder = codecs.getincrementaldecoder('utf-8')(errors='replace')
         self.buffer = ''
         self.started = False
+        self.failure = None
         self.request_handler = self.notification_handler = None
         self.pending, self.tasks = {}, set()
 
@@ -63,6 +66,8 @@ class JsonRpcLineTransport:
             await result
 
     async def request(self, method, params, signal=None):
+        if self.failure is not None:
+            raise self.failure
         if aborted(signal):
             raise abort_error(signal)
         identity = 'req_' + uuid.uuid4().hex
@@ -88,7 +93,9 @@ class JsonRpcLineTransport:
         while '\n' in self.buffer:
             line, self.buffer = self.buffer.split('\n', 1)
             if line.strip():
-                task = asyncio.create_task(self.handle_line(line.strip()))
+                # JavaScript runs async handlers synchronously until their first
+                # await. In particular, a final response must settle before EOF.
+                task = start_coroutine(self.handle_line(line.strip()))
                 self.tasks.add(task)
                 task.add_done_callback(self.retire)
 
@@ -100,6 +107,8 @@ class JsonRpcLineTransport:
                 self.fail_pending(error)
 
     def fail_pending(self, error):
+        if self.failure is None:
+            self.failure = error
         pending, self.pending = self.pending, {}
         for future in pending.values():
             if not future.done():
@@ -115,7 +124,9 @@ class JsonRpcLineTransport:
 
     async def handle_line(self, line):
         try:
-            frame = json.loads(line)
+            def invalid_constant(value):
+                raise ValueError('invalid JSON constant: ' + value)
+            frame = json.loads(line, parse_constant=invalid_constant)
         except ValueError:
             return
         if not isinstance(frame, dict):
@@ -139,10 +150,14 @@ class JsonRpcLineTransport:
             if future is None or future.done():
                 return
             error = frame.get('error')
-            if isinstance(error, dict):
-                future.set_exception(JsonRpcResponseError(error.get('code'), error.get('message', 'JSON-RPC error'), error.get('data')))
+            if isinstance(error, (dict, list)):
+                fields = error if isinstance(error, dict) else {}
+                code = fields.get('code', UNDEFINED)
+                message = fields.get('message')
+                future.set_exception(JsonRpcResponseError(code if type(code) in (int, float) else UNDEFINED,
+                    message if isinstance(message, str) else 'JSON-RPC error', fields.get('data', UNDEFINED)))
             else:
-                future.set_result(frame.get('result'))
+                future.set_result(frame.get('result', UNDEFINED))
         elif isinstance(method, str) and self.notification_handler is not None:
             self.notification_handler(method, params)
 

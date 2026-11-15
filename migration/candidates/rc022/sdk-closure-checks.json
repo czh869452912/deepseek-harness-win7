@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-16",
+  "unit": "C8-AF-SdkTransportClosure",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "state": "targeted-passed",
+  "paired": ".goose/out/rc022-sdk-closure-paired-20261116-01/comparison/report.json",
+  "observations": 11,
+  "native": {"run": "rc022-sdk-closure-native-20261116-01", "passed": 38, "failed": 0},
+  "source": {"run": "rc022-sdk-closure-source-20261116-01", "passed": 19, "failed": 0},
+  "verification_scope_reason": "Actual Source/native line transports retain the first permanent closure/error and reject later requests with that cause before checking an abort signal. A final response settles synchronously before immediately following EOF. Probes also compare close-before-start, pre-abort, recoverable write errors, malformed response errors, absent results, invalid JSON constants and byte-split UTF8. Native real OS pipe validates final Unicode response then EOF; caller cancellation/late response, SDK interaction/run and process consumers pass.",
+  "observer_boundary": "Python output uses synchronous write/flush plus support for an awaitable flush; Source asynchronous Writable callback barrier is separately exercised by original tests and is not claimed as a Python callback-stream API. Notification callback exception behavior remains a host-specific failure boundary.",
+  "activation_boundary": "Shared SDK transport now uses eager coroutine dispatch, matching existing client ordering. No production pin/accepted_upstream promotion, complete regression or release qualification.",
+  "cleanup": ".goose/out/rc022-sdk-closure-source-20261116-01/cleanup.json",
+  "cleanup_bytes": 35030,
+  "retained_assets": "Owned synthetic workspaces/homes and empty external Source root removed. Commands/logs/XML/paired observations retained. No owned runner, SDK client fixture or runtime remains; shared Source/toolchain retained through C9."
+}

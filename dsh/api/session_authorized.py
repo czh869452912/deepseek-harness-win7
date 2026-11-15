@@ -9,6 +9,7 @@ from dsh.api.session_commands_current import has_prompt_content
 from dsh.util_time import canonical_client_time_zone
 from dsh.api.session_agents_authorized import AuthorizedSessionAgents
 from dsh.api.session_history_authorized import SessionHistoryController
+from dsh.api.session_web_authorized import SessionWebController
 
 
 class ProjectionSessionControl(CurrentSessionControl):
@@ -34,6 +35,7 @@ class AuthorizedSessionController(CurrentSessionController):
 
     async def init(self):
         self.history_reads = SessionHistoryController(self.ctx)
+        self.web_controller = SessionWebController(self.ctx, self.history_reads, self.promote)
         await self.commands.initialize()
 
     def event(self, session, event):
@@ -78,6 +80,10 @@ class AuthorizedSessionController(CurrentSessionController):
     @Remote(dict(mode='stream'))
     def observeProjections(self, request, signal):
         return self.history_reads.observeProjections(request, signal)
+
+    @Remote(dict(mode='stream'))
+    def follow(self, request, signal):
+        return self.web_controller.follow(request, signal)
 
     @Remote
     async def list(self, _request, signal):

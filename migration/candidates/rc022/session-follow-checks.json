@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-16",
+  "unit": "C7-AC-SessionWebFollow",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "state": "targeted-passed",
+  "paired": ".goose/out/rc022-session-follow-paired-2-20261115-01/comparison/report.json",
+  "observations": 7,
+  "native": {"run": "rc022-session-follow-native-20261115-01", "passed": 17, "failed": 0},
+  "source": {"run": "rc022-session-follow-source-20261115-01", "passed": 46, "failed": 0},
+  "verification_scope_reason": "Paired actual Session/JSONL/query/history/listener and ordinary activation providers exercise arrivals during opening, exact history cuts, Assistant baseline ordinal suppression, passive cold reads, explicit promotion before delivery, consumer closure, missing addresses and cancellation. Native tests additionally cover missing projections, promotion failure, retained lease ownership and the passive/Assistant direct consumers. Corresponding Source history, controller and journal suites pass.",
+  "implementation": "SessionWebController installs listeners before acquiring an exact projected observation, releases opening ownership before delivery, and merges uncovered durable and Assistant frames. Explicit activation transfers a retained cold ordinary-session lease to promotion independently of the follower lifetime.",
+  "observer_boundary": "Trusted Assistant frames are controlled notifications. The initial fixture used arbitrary append options that did not persist the Source ignorable marker; both observers now use the actual plugin-record append helper. Original diagnostics retained. Full SessionController initialization and state/wait/list remain separate. Targeted results are not full regression or release acceptance.",
+  "activation_boundary": "Candidate providers only; production pin and accepted_upstream unchanged pending C9.",
+  "cleanup": ".goose/out/rc022-session-follow-source-20261115-01/cleanup.json",
+  "retained_assets": "Owned fixture journals, pytest workspaces and tmp/home removed after teardown; no task workers remain. Commands, observations and diagnostics retained; shared Source/toolchain retained through C9."
+}

@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-15",
+  "unit": "C5-T-ConfinedPythonPtcProviderAndConsumers",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "state": "targeted-passed",
+  "paired": ".goose/out/rc022-ptc-confinement-paired-final-20261115-01/comparison/report.json",
+  "observations": 10,
+  "native": {"run": "rc022-ptc-confinement-native-final-20261115-01", "passed": 88, "failed": 0},
+  "source": {"run": "rc022-ptc-confinement-source-20261115-01", "passed": 124, "failed": 0},
+  "verification_scope_reason": "Actual fixed Node and Python restricted processes pair defaults/null deadline, read-only/workspace/outside/full-access policy, partial enforcement/denial facts, empty environment, timeout, committed Session invalidation under one-shot escalation, caller-owned nested work and provider disposal. Native additionally tests unavailable backend without allocation, runner fatal exit and executable attribution, selected denial dialect only, deadline/abort during async confinement, unresolved authority rejection, unload during admission, cleanup failure cannot publish success, and actual selected run_code plus v4 Session dispatch events. One-shot approved retry changes only that execution: a following call still receives the standing read-only denial. Existing Windows runner, generic shell, legacy/current process, control, traffic, queue and executor consumers pass.",
+  "implementation": "Explicit ConfinedPythonPtcRuntime service consumes ctx.sandbox/ctx.sandboxPolicy, snapshots execution policy, owns admitted calls with PolicyProcesses and observes complete nested cleanup. Local native sandbox uses the reviewed process-resource overlay; arbitrary providers retain confine(argv,policy). Actual stderr tail/exit/spawn facts classify infrastructure failures without unconfined fallback. Deadlines include asynchronous confinement. Process cleanup failures preserve captured logs and replace successful values with worker-exit.",
+  "initial_failure": "The selected-executor test fixture initially omitted the required canonical output schema/render contract; fixed the fixture and retained its original log/XML. Actual runtime confinement and ownership cases already passed in that run.",
+  "activation_boundary": "Candidate provider and real consumers only. No production profile/pin/reference activation, retained Python evaluation-mode implementation, Win7 guest or release qualification is claimed. Remaining C5 model/configuration integration and C6-C9 remain pending.",
+  "cleanup": ".goose/out/rc022-ptc-confinement-paired-final-20261115-01/cleanup.json",
+  "retained_assets": "Commands, logs/XML, original failure and actual Source/native observations retained. Owned synthetic workspaces removed; no owned runner/worker remained. Shared Source/toolchain retained through C9."
+}

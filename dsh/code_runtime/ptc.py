@@ -72,12 +72,15 @@ class PythonPtcRuntime(PythonProcessRuntime):
             raise RuntimeError('ptc-runtime-python: run after disposal')
         if 'sandboxPolicy' in spec:
             raise ValueError('ptc-runtime-python: sandboxPolicy is unsupported without confinement')
+        self._validate_spec(spec)
+        return await super().run(spec)
+
+    def _validate_spec(self, spec):
         cwd, timeout = spec.get('cwd'), spec.get('timeoutMs')
         if (not isinstance(cwd, str) or not os.path.isabs(cwd) or 'timeoutMs' not in spec
                 or (timeout is not None and (type(timeout) not in (int, float)
                     or not math.isfinite(timeout) or timeout <= 0 or timeout > self.ptc_config['maxTimeoutMs']))):
             raise ValueError('ptc-runtime-python: run requires resolved cwd and timeout')
-        return await super().run(spec)
 
     async def release(self, owner):
         # Stateless providers deliberately ignore exact-object stateOwner.

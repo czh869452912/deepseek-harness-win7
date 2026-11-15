@@ -80,13 +80,13 @@ class ProcessOwner:
     def close(self):
         if self.closed:
             return
-        self.closed = True
         if self.job:
             self.api.CloseHandle(self.job)
             self.job = None
         if self.process is None:
             if self.control is not None:
                 self.control.close()
+            self.closed = True
             return
         if self.process.poll() is None:
             if os.name == 'nt':
@@ -99,6 +99,7 @@ class ProcessOwner:
         self.process.wait(timeout=5)
         if self.control is not None:
             self.control.close()
+        self.closed = True
 
 
 class PythonProcessRuntime(Service):
@@ -146,6 +147,21 @@ class PythonProcessRuntime(Service):
             self.runs.discard(task)
 
     async def _execute(self, request, bindings):
+        launch = {}
+        return self._cleanup_result(await self._execute_process(request, bindings, launch), launch)
+
+    def _cleanup_result(self, result, launch):
+        if launch.get('cleanupFailure') is None:
+            return result
+        ledger = OutputLedger(int(self.config['maxOutputBytes']))
+        for text in result.get('logs', []):
+            if not ledger.admit(text):
+                return ledger.limit()
+        return ledger.result(error=dict(kind='worker-exit',
+            message='managed process cleanup failed: '+launch['cleanupFailure']))
+
+    async def _execute_process(self, request, bindings, launch=None):
+        launch = {} if launch is None else launch
         limits = self._run_limits(request)
         protocol = self._protocol_limits()
         outgoing = QueuedBytes(protocol['maxMessageBytes']) if protocol else None
@@ -158,6 +174,7 @@ class PythonProcessRuntime(Service):
         owner, reader = None, None
         output_readers = []
         outputs_done = [0]
+        stderr_tail = bytearray()
         messages = queue.Queue(maxsize=128)
         stopped = threading.Event()
         writes = asyncio.Lock()
@@ -167,9 +184,17 @@ class PythonProcessRuntime(Service):
         last_call_id = 0
         active = [True]
         wire_failure = [None]
+        def close_owner():
+            try:
+                owner.close()
+            except Exception as error:
+                if not protocol:
+                    raise
+                launch['cleanupFailure'] = str(error)
         try:
             owner = ProcessOwner(limits['maxOldGenerationSizeMb'] * 1024 * 1024,
-                                 self._process_cwd(request), private_control=bool(protocol))
+                                 self._process_cwd(request), private_control=bool(protocol),
+                                 argv=launch.get('argv'), windows_breakaway=launch.get('windowsJobBreakaway', False))
             process = owner.process
             loop = asyncio.get_running_loop()
 
@@ -225,6 +250,10 @@ class PythonProcessRuntime(Service):
                             chunk = stream.read1(min(4096, int(protocol['maxMessageBytes'])))
                             if not chunk:
                                 break
+                            if name == 'stderr':
+                                stderr_tail.extend(chunk)
+                                if len(stderr_tail) > int(limits['maxOutputBytes']):
+                                    del stderr_tail[:-int(limits['maxOutputBytes'])]
                             text = decoder.decode(chunk)
                             if text:
                                 put(dict(type='raw-output', text=text, stream=name), len(chunk))
@@ -312,7 +341,7 @@ class PythonProcessRuntime(Service):
                 if kind == 'protocol-error' and protocol:
                     return failure('protocol', message['message'])
                 if kind == 'ready' and baseline is None:
-                    baseline = owner.cpu_ms()
+                    baseline = owner.cpu_ms() if limits['computeMs'] is not None else 0
                     await send(dict(type='start'))
                     continue
                 if kind == 'worker-exit':
@@ -356,7 +385,7 @@ class PythonProcessRuntime(Service):
                         # Completion on control can precede final inherited output.
                         # Reap the process, then drain the separately owned readers.
                         active[0] = False
-                        owner.close()
+                        close_owner()
                         drain_start = time.monotonic()
                         while outputs_done[0] != 2 and time.monotonic()-drain_start < 3:
                             if aborted(request.get('signal')):
@@ -395,12 +424,14 @@ class PythonProcessRuntime(Service):
         except ProtocolError as error:
             return failure('protocol', str(error))
         except (OSError, ValueError, RuntimeError) as error:
+            if owner is None and isinstance(error, OSError):
+                launch['spawnError'] = error
             return failure('worker-exit', str(error))
         finally:
             active[0] = False
             stopped.set()
             if owner is not None:
-                owner.close()
+                close_owner()
                 if reader is not None:
                     reader.join(timeout=2)
                 for thread in output_readers:
@@ -409,6 +440,8 @@ class PythonProcessRuntime(Service):
                 owner.process.stdout.close()
                 if owner.process.stderr is not None:
                     owner.process.stderr.close()
+                launch['exitCode'] = owner.process.returncode
+            launch['stderr'] = stderr_tail.decode('utf-8', errors='replace')
             if boot_task is not None:
                 await asyncio.gather(boot_task, return_exceptions=True)
             # Binding calls are caller-owned and must not be cancelled when

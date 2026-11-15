@@ -315,15 +315,30 @@ class ReactLoopAgent:
         first_attempt = True
         while True:
             config, prepared = await await_callback_result(self._prepare_request(turn, step, signal, decision.get('selection')))
+            current_context = None
+            if decision.get('toolSet') is not None:
+                refreshed = self.loop_ctx.get('systemPrompt').refreshContext(assembly, dict(
+                    assemble_context_for(self, signal), modelSelection=decision['selection']))
+                sections = render_context_sections(refreshed)
+                current_context = self.runtime_context.project(join_context_sections(sections), sections)
+                signal.throwIfAborted()
             starts_series = first_attempt and decision.get('startsRequestSeries') is True
             commits = self.system_prompt.project(rendered_prompt, dict(
                 inHistory=prepared is not None and prepared.get('systemPromptUpdate') == 'in-history',
                 startsSeries=starts_series or self.request_surface_generation != self.session.surface.replaceGeneration or self._tools_changed(assembly['tools'])))
             for commit in commits:
                 self.session.append('system/message', dict(turn=turn, step=step, message=commit['message']), opts=commit['intent'])
+            context_admitted = False
             if first_attempt:
                 for message in decision['messages']:
-                    self.session.append('user/message', message, 'append')
+                    if decision.get('toolSet') is not None and message['source']['kind'] == 'runtime-context':
+                        if current_context is not None and not context_admitted:
+                            self.session.append('user/message', current_context, 'append')
+                            context_admitted = True
+                    else:
+                        self.session.append('user/message', message, 'append')
+            if current_context is not None and not context_admitted:
+                self.session.append('user/message', current_context, 'append')
             first_attempt = False
             request = self._build_request(config, prepared, assembly['tools'], starts_series, signal)
             self.attempt_counter += 1

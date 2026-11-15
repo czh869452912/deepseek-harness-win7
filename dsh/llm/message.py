@@ -33,7 +33,10 @@ def create_user_message(input_data: Dict[str, Any]) -> Dict[str, Any]:
 createUserMessage = create_user_message
 
 
-def create_system_message(text: str, plugin: str) -> Dict[str, Any]:
+def create_system_message(text: str, plugin: str, format_version: int = 3) -> Dict[str, Any]:
+    if format_version == 4:
+        return create_message(dict(role='system', source=dict(kind='system-prompt'),
+                                   content=[dict(type='text', text=text)] if text else []))
     return create_message(dict(role='system', source=dict(kind='plugin', plugin=plugin),
                                content=[dict(type='text', text=text)] if text else []))
 

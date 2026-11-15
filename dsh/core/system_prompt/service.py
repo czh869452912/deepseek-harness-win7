@@ -108,7 +108,8 @@ class SystemPrompt(Service):
             sec_order = section.get("order", 0)
             sec_text = section.get("text", "")
             sec_complete = section.get("complete", False)
-            sec_obj = PromptSection(name=sec_name, order=sec_order, text=sec_text, complete=sec_complete)
+            sec_obj = PromptSection(name=sec_name, order=sec_order, text=sec_text, complete=sec_complete,
+                                    interpolate=section.get("interpolate"))
         else:
             sec_name = section.name
             sec_order = section.order
@@ -131,7 +132,8 @@ class SystemPrompt(Service):
             ctx_name = context.get("name", "")
             ctx_order = context.get("order", 0)
             ctx_text = context.get("text", "")
-            ctx_obj = PromptContext(name=ctx_name, order=ctx_order, text=ctx_text)
+            ctx_obj = PromptContext(name=ctx_name, order=ctx_order, text=ctx_text,
+                                   required=context.get("required") is True, interpolate=context.get("interpolate"))
         else:
             ctx_name = context.name
             ctx_order = context.order
@@ -268,22 +270,30 @@ class SystemPrompt(Service):
             sec_text = sec.get("text", "") if isinstance(sec, dict) else getattr(sec, "text", "")
             resolved_text = sec_text(ctx_param) if callable(sec_text) else sec_text
             assembled = {"name": sec_name, "text": resolved_text}
+            interpolation = getattr(sec, 'interpolate', None)
+            if interpolation is not None:
+                assembled['interpolate'] = interpolation
             is_comp = sec.get("complete", False) if isinstance(sec, dict) else getattr(sec, "complete", False)
             if is_comp:
                 complete_section = dict(assembled)
             sections.append(assembled)
 
         contexts: List[Dict[str, Any]] = []
-        if not runtime_context_suppressed:
+        if context_by_name:
             ctx_sorted = sorted(
                 context_by_name.values(),
                 key=lambda x: x.get("order", 0) if isinstance(x, dict) else getattr(x, "order", 0),
             )
             for c in ctx_sorted:
+                if runtime_context_suppressed and getattr(c, 'required', False) is not True:
+                    continue
                 c_name = c.get("name", "") if isinstance(c, dict) else getattr(c, "name", "")
                 c_text = c.get("text", "") if isinstance(c, dict) else getattr(c, "text", "")
                 resolved_text = c_text(ctx_param) if callable(c_text) else c_text
-                contexts.append({"name": c_name, "text": resolved_text})
+                resolved = {"name": c_name, "text": resolved_text}
+                if getattr(c, 'interpolate', None) is not None:
+                    resolved['interpolate'] = c.interpolate
+                contexts.append(resolved)
 
         assembly = PromptAssembly(
             sections=sections,
@@ -293,6 +303,10 @@ class SystemPrompt(Service):
         )
 
         carrier = scope_target(self, scope)
+        authoritative_tools = getattr(self, '_authoritative_tools', False)
+        accepted_tools = assembly['tools']
+        if authoritative_tools:
+            del assembly['tools']
         transformed = await self.ctx.waterfall(
             carrier,
             "system-prompt/assemble",
@@ -300,6 +314,8 @@ class SystemPrompt(Service):
             ctx_param,
             lambda: assembly,
         )
+        if authoritative_tools:
+            transformed = dict(transformed, tools=accepted_tools)
 
         if complete_section is None and not runtime_context_suppressed:
             return transformed if isinstance(transformed, PromptAssembly) else PromptAssembly(transformed)
@@ -308,5 +324,6 @@ class SystemPrompt(Service):
         if complete_section is not None:
             res["sections"] = [AssembledItem(complete_section)]
         if runtime_context_suppressed:
-            res["contexts"] = []
+            required_names = {entry.name for entry in context_by_name.values() if getattr(entry, 'required', False) is True}
+            res["contexts"] = [entry for entry in res["contexts"] if entry['name'] in required_names]
         return res

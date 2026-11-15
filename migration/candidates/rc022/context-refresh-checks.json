@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-15",
+  "unit": "C5-E-RequestRuntimeContextRefresh",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "state": "targeted-passed",
+  "paired": ".goose/out/rc022-context-refresh-paired-json-20261115-01/comparison/report.json",
+  "observations": 13,
+  "native": {"run": "rc022-context-refresh-native-20261115-01", "passed": 307, "failed": 0},
+  "source": {"run": "rc022-context-refresh-source-20261115-01", "passed": 112, "failed": 0},
+  "verification_scope_reason": "Prompt refresh preserves accepted sections/tools/variables by identity, rerenders current registered facts, retains expert additions, restores missing required facts in registry order and suppresses optional providers without evaluating them. Required/interpolate metadata now survives registration and assembly. Candidate prompt tools remain provider-owned even when the presentation waterfall injects forged declarations. V4 runtime projections use attributed runtime-context snapshots, compare section identity/content, escape closing reminder tags, emit supersession/clear framing and restore committed state. V4 system messages use the system-prompt source and preserve an unchanged capable request prefix. Actual Agent request and retry journeys replace the pending runtime snapshot with refreshed facts while resolving tools/assembly only once; late suppression retains required facts. Existing prompt, runtime, lifecycle, model, scheduler and storage consumers are included.",
+  "observer_materialization": "The initial Source/native JSON records were equal, but direct in-memory comparison rejected native immutable dict/list subclasses. The observer now materializes its already-recorded identity checks and observations as ordinary JSON values before strict comparison. Production code was unchanged by this observer repair; initial records remain preserved.",
+  "activation_boundary": "Current Tools selects request refresh; legacy Tools consumers retain their old request path. This qualifies thirteen focused provider/projection/driver journeys, not all prompt schema flags, tool-update envelopes, pending-call recovery, PTC or release acceptance. Production pin and accepted_upstream remain unchanged.",
+  "cleanup": ".goose/out/rc022-context-refresh-paired-json-20261115-01/cleanup.json",
+  "cleanup_bytes": 1571383,
+  "retained_assets": "Commands, JSON observations, XML and logs retained. No task test process remains; shared fixed Source/toolchain retained through C9."
+}

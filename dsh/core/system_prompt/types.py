@@ -72,11 +72,13 @@ class PromptSection:
         order: float,
         text: Union[str, Callable[[Dict[str, Any]], str]],
         complete: bool = False,
+        interpolate: Optional[bool] = None,
     ):
         self.name = name
         self.order = order
         self.text = text
         self.complete = complete
+        self.interpolate = interpolate
 
     def to_dict(self) -> Dict[str, Any]:
         return {
@@ -98,10 +100,14 @@ class PromptContext:
         name: str,
         order: float,
         text: Union[str, Callable[[Dict[str, Any]], str]],
+        required: bool = False,
+        interpolate: Optional[bool] = None,
     ):
         self.name = name
         self.order = order
         self.text = text
+        self.required = required
+        self.interpolate = interpolate
 
     def to_dict(self) -> Dict[str, Any]:
         return {
@@ -351,6 +357,9 @@ def interpolate_text(
     text = input_item.get("text", "") if isinstance(input_item, dict) else getattr(input_item, "text", "")
     if not isinstance(text, str):
         text = str(text) if text is not None else ""
+    interpolation = input_item.get('interpolate') if isinstance(input_item, dict) else getattr(input_item, 'interpolate', None)
+    if interpolation is False:
+        return text
 
     result = ""
     last = 0

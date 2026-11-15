@@ -1,0 +1,26 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-16",
+  "unit": "C8-AS-PhysicalWritableRoots",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "state": "targeted-passed",
+  "paired": ".goose/out/rc022-writable-roots-paired-20261116-01/comparison/report.json",
+  "observations": 11,
+  "native": {
+    "run": "rc022-writable-roots-native-20261116-01",
+    "passed": 13,
+    "failed": 0
+  },
+  "source": {
+    "run": "rc022-writable-roots-source2-20261116-01",
+    "passed": 10,
+    "failed": 0,
+    "skipped": 1
+  },
+  "source_environment_limit": "Initial Source suite: 10 passed, one EPERM creating directory symlink. Final selection excludes only the exact test workspace-write deduplicates physical extra directories and rejects symlink aliases. Original symlink fixture remains unqualified; paired actual Windows junction/deduplication behavior separately passed.",
+  "verification_scope_reason": "Actual Source/native helpers compare physical directory deduplication, workspace identity, Windows case/separator aliases, missing/file/junction rejection, repeated validation after removal, conservative unresolved workspace spelling and read-only/full early return. Native junction replacement proves a formerly valid grant cannot follow a replacement alias. Additional root platform-specific OS diagnostic bodies are explicitly normalized in comparison; full originals remain in stderr.",
+  "activation_boundary": "Current helper foundation only; historical root helper is retained. Full current filesystem provider and mutation consumers are the next batch, not yet activated. No Win7 VM/release acceptance.",
+  "cleanup": ".goose/out/rc022-writable-roots-source2-20261116-01/cleanup.json",
+  "cleanup_bytes": 349204,
+  "retained_assets": "Owned workspaces, junction fixtures, homes and external Source roots removed, no owned process remains. Full error observations, XML, commands and Source EPERM failure retained; shared Source/toolchain through C9."
+}

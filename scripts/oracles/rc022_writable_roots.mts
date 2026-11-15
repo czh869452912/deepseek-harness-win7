@@ -1,0 +1,13 @@
+import {readFileSync,mkdirSync,writeFileSync,symlinkSync,rmdirSync} from 'node:fs'
+import {join} from 'node:path'
+import {load} from './rc022_subagent_fixture.mts'
+const {canonicalPath,workspaceWritableRoots,writableRoots}=await load('packages/sandbox/sandbox/src/roots.ts'),base=join(readFileSync(process.argv[3]!,'utf8'),'source'),workspace=join(base,'workspace'),extra=join(base,'Memory'),file=join(base,'file'),alias=join(base,'alias'),rows:any[]=[]
+mkdirSync(workspace,{recursive:true});mkdirSync(extra);writeFileSync(file,'data','utf8');symlinkSync(extra,alias,'junction')
+try{
+ rows.push({name:'canonical',existing:canonicalPath(workspace),alias:canonicalPath(alias),missing:canonicalPath(join(base,'missing'))})
+ for(const [name,policy] of [
+  ['workspace',{mode:'workspace-write',workspaceRoot:workspace}],['extras',{mode:'workspace-write',workspaceRoot:workspace,additionalWritableRoots:[extra,extra]}],['case-and-separator',{mode:'workspace-write',workspaceRoot:workspace,additionalWritableRoots:[extra.toLowerCase().replaceAll('\\','/'),extra]}],['workspace-duplicate',{mode:'workspace-write',workspaceRoot:workspace,additionalWritableRoots:[workspace]}],['missing',{mode:'workspace-write',workspaceRoot:workspace,additionalWritableRoots:[join(base,'missing')]}],['file',{mode:'workspace-write',workspaceRoot:workspace,additionalWritableRoots:[file]}],['junction',{mode:'workspace-write',workspaceRoot:workspace,additionalWritableRoots:[alias]}],['readonly-invalid',{mode:'read-only',workspaceRoot:workspace,additionalWritableRoots:[join(base,'missing')]}],['full-invalid',{mode:'danger-full-access',workspaceRoot:workspace,additionalWritableRoots:[alias]}],
+ ] as any)try{rows.push({name,workspace:workspaceWritableRoots(policy),all:writableRoots(policy)})}catch(error:any){console.error(JSON.stringify({name,code:error.code,message:error.message}));rows.push({name,error:{code:error.code,message:error.message.replace(/cannot read the directory: .*/,'cannot read the directory: <platform diagnostic>')}})}
+ rmdirSync(extra);try{workspaceWritableRoots({mode:'workspace-write',workspaceRoot:workspace,additionalWritableRoots:[extra]})}catch(error:any){rows.push({name:'revalidate',code:error.code})}
+ function normalize(value:any):any{if(typeof value==='string')return value.split(JSON.stringify(base).slice(1,-1)).join('<root>').split(base).join('<root>');if(Array.isArray(value))return value.map(normalize);if(value&&typeof value==='object')return Object.fromEntries(Object.entries(value).map(([key,item])=>[key,normalize(item)]));return value}console.log(JSON.stringify(normalize(rows)))
+}finally{rmdirSync(alias)}

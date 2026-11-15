@@ -41,7 +41,8 @@ class ReactLoopAgent:
         self.scope = create_scope(loop_ctx, self)
         self.ctx = self.scope.ctx
         self.inbox = ReactLoopInbox(self.ctx.get('sessionProjections'), session, self.dispatch)
-        boundary = loop_ctx.get('sessionProjections').stateOf(session, 'turnBoundary')
+        boundary = (loop_ctx.get('agents').turnBoundaryOf(session) if getattr(session,'format_version',3) == 4
+                    else loop_ctx.get('sessionProjections').stateOf(session, 'turnBoundary'))
         self.phase = dict(kind='idle', lastTurn=boundary['lastTurn'] if boundary else 0)
         self.activity_done = asyncio.get_running_loop().create_future()
         self.activity_done.set_result(None)

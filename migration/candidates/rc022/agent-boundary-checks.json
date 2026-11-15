@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-15",
+  "unit": "C4-H-AgentBoundaryOwnership",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "state": "targeted-passed",
+  "paired": ".goose/out/rc022-agent-boundary-paired-20261115-01/report.json",
+  "observations": 4,
+  "native": {"run": "rc022-agent-boundary-native-20261115-01", "passed": 285, "failed": 0},
+  "source": {"run": "rc022-agent-boundary-source-20261115-01", "passed": 16, "failed": 0},
+  "verification_scope_reason": "An explicit V4 Agent registry awaits and owns the turnBoundary registration and exposes turnBoundaryOf independently of a loop. Detached/live Session reads, owner release, released checkpoint preservation, retained reads and registry replacement match Source. Delayed registration holds Agent initialization. The V4 loop skips duplicate boundary registration and reads through the Agent service; existing V3 Agent factory/lifecycle/driver/projection/statistics consumers pass.",
+  "activation_boundary": "CurrentAgentPlugin selects the explicit V4 contract when mounted beside the V4 projection registry. Existing default V3 compositions remain available until coordinated activation. Required dependency admission, archive admission and initiator lifecycle changes are separate remaining contracts; passing Source agent.spec.ts does not establish native parity for those unpaired cases.",
+  "cleanup": ".goose/out/rc022-agent-boundary-native-20261115-01/cleanup.json",
+  "cleanup_bytes": 12367,
+  "remaining": "Other turn-boundary consumers, async Inbox/loop ownership, Agent dependency/archive/initiator lifecycle, and production/release activation."
+}

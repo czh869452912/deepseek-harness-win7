@@ -396,8 +396,9 @@ class AgentLoopService:
         self._configured = ConfiguredStartup(self)
         self._default_agent: Optional[Agent] = None
         self._request_header_logged: Dict[str, bool] = {}
-        from dsh.core.turn_boundary import TURN_BOUNDARY_DEFINITION
-        ctx.get('sessionProjections').register(TURN_BOUNDARY_DEFINITION)
+        if getattr(ctx.get('agents'),'format_version',3) != 4:
+            from dsh.core.turn_boundary import TURN_BOUNDARY_DEFINITION
+            ctx.get('sessionProjections').register(TURN_BOUNDARY_DEFINITION)
 
     @property
     def config(self) -> Dict[str, Any]:
@@ -405,7 +406,8 @@ class AgentLoopService:
 
     def _get_turn_number(self, agent: Agent) -> int:
         session = agent.session
-        boundary = self.ctx.get('sessionProjections').stateOf(session, 'turnBoundary')
+        boundary = (self.ctx.get('agents').turnBoundaryOf(session) if getattr(session,'format_version',3) == 4
+                    else self.ctx.get('sessionProjections').stateOf(session, 'turnBoundary'))
         return boundary['lastTurn'] + 1
 
     async def _publish_preparation(self, tx, preparation, options, setup, source):

@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-15",
+  "unit": "C7-C-RemoteAccessService",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "state": "targeted-passed",
+  "paired": ".goose/out/rc022-remote-access-paired-final-20261115-01/comparison/report.json",
+  "observations": 22,
+  "native": {
+    "run": "rc022-remote-access-native-20261115-01",
+    "passed": 10,
+    "failed": 0
+  },
+  "source": {
+    "run": "rc022-remote-access-source-20261115-01",
+    "passed": 21,
+    "failed": 0
+  },
+  "verification_scope_reason": "Resource-specific decisions, one bindings read per decision, independent global resources, every-resource requirement, condition/explain precedence and failure containment, invocation-bound item filtering, sorted/grouped grants excluding event actions, actual follow baseline/upsert/remove/principal invalidation/cancellation/unload. Native checks add caller-owned policy removal, coalescing, early stream close, immutable grant actions and failure log suppression/reset.",
+  "activation_boundary": "New candidate access service, standalone actual service and snapshot stream. Gateway dispatch authorization, peer admission/lifetime, authenticated event transport and actual web index injection remain coordinated C7 work; no production composition promotion.",
+  "cleanup": ".goose/out/rc022-remote-access-source-20261115-01/cleanup.json",
+  "retained_assets": "Commands/results retained; synthetic pytest workspace and temporary directories removed. Shared Source/toolchain retained through C9."
+}

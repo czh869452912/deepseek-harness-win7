@@ -8,13 +8,13 @@ from scripts import rc022_events_probe as probe
 
 
 class Client:
-    async def connect(self,port,compression=False,auto_pong=True):
+    async def connect(self,port,compression=False,auto_pong=True,cookie=None):
         from wsproto import WSConnection,ConnectionType
         from wsproto.events import Request,AcceptConnection
         from wsproto.extensions import PerMessageDeflate
         self.reader,self.writer=await asyncio.open_connection('127.0.0.1',port)
         self.codec,self.events,self.auto_pong,self.pings=WSConnection(ConnectionType.CLIENT),[],auto_pong,0
-        self.writer.write(self.codec.send(Request(host='127.0.0.1:'+str(port),target='/api/remote.mux',extensions=[PerMessageDeflate()] if compression else [])))
+        self.writer.write(self.codec.send(Request(host='127.0.0.1:'+str(port),target='/api/remote.mux',extensions=[PerMessageDeflate()] if compression else [],extra_headers=[(b'cookie',cookie.encode())] if cookie else [])))
         await self.writer.drain();accepted=await self.event();assert isinstance(accepted,AcceptConnection)
         self.compressed=bool(accepted.extensions)
         self.wire,self.flags=b'',[]

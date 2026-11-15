@@ -46,11 +46,11 @@ class DuplexStreamMux:
         self.heartbeat_ms, self.inbox_bytes, self.compression = heartbeat_ms, inbox_bytes, compression
         self.connections, self.heartbeat, self.closed = {}, None, False
 
-    async def upgrade(self, request, writer, peer):
+    async def upgrade(self, request, writer, peer, on_close=None):
         if self.closed:
             writer.close()
             return
-        connection = DuplexConnection(self, request, writer, peer)
+        connection = DuplexConnection(self, request, writer, peer, on_close)
         task = asyncio.create_task(connection.run())
         self.connections[connection] = task
         try:
@@ -93,12 +93,13 @@ class DuplexStreamMux:
 
 
 class DuplexConnection:
-    def __init__(self, owner, request, writer, peer):
+    def __init__(self, owner, request, writer, peer, on_close=None):
         self.owner, self.request, self.writer, self.peer = owner, request, writer, peer
         self.codec, self.lock, self.streams = WSConnection(ConnectionType.SERVER), asyncio.Lock(), {}
         self.closed, self.missed = False, 0
         self.deflate = None
         self.peer_closes = set()
+        self.on_close = on_close
 
     def alive(self):
         self.missed = 0
@@ -259,6 +260,8 @@ class DuplexConnection:
             pass
         finally:
             self.closed = True
+            if self.on_close is not None:
+                self.on_close()
             active = list(self.streams.values())
             for stream in active:
                 self.stop(stream, RuntimeError('Remote stream socket closed'))

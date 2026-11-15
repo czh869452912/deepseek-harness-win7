@@ -15,9 +15,9 @@ class AuthorizedGatewayCore(Service):
         super().__init__(ctx, 'typertGateway')
         self.resolver = AuthorizedCallResolver(ctx)
 
-    async def prepare(self, request):
+    async def prepare(self, request, control=None):
         prepared = await self.resolver.resolve(request)
-        invocation = create_invocation(request, prepared.descriptor, AbortController())
+        invocation = create_invocation(request, prepared.descriptor, control if control is not None else AbortController())
         try:
             method, args = self.resolver.bind(prepared, invocation)
         except BaseException:
@@ -58,7 +58,10 @@ class AuthorizedGatewayCore(Service):
             return rpc_failure(error)
 
     async def stream(self, request):
-        prepared = await self.prepare(request)
+        return await self.open_stream(request, AbortController())
+
+    async def open_stream(self, request, control):
+        prepared = await self.prepare(request, control)
         if prepared.descriptor.get('mode') != 'stream':
             await prepared.invocation.close()
             raise TypertGatewayError('signature-invalid', prepared.endpoint, 'unary Remote methods cannot be opened through the stream carrier')

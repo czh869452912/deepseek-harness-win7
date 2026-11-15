@@ -1,0 +1,24 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-15",
+  "unit": "C7-N-GatewayTransportComposition",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "state": "targeted-passed",
+  "paired": ".goose/out/rc022-gateway-transport-paired-2-20261115-01/comparison/report.json",
+  "observations": 8,
+  "native": {
+    "run": "rc022-gateway-transport-native-final-20261115-01",
+    "passed": 18,
+    "failed": 0
+  },
+  "source": {
+    "run": "rc022-gateway-transport-source-20261115-01",
+    "passed": 8,
+    "failed": 0
+  },
+  "verification_scope_reason": "Actual Typert registry, RemoteAccess, Gateway, Connection, signing credential provider and WebServer composition. Compare real HTTP binary RPC and real WS strict uplink Remote calls, actual invocation signal/window, appReady upgrade gating, unauthenticated/untrusted upgrades, one API socket with concurrent HTTP, strict invalid input failure, synchronous physical-close credential revocation while generator finalization is deliberately held, and carrier unload. Native tests protect delayed readiness callback after unload plus direct invocation, result encoding, mux and plugin consumers.",
+  "native_adaptation": "Unclaimed upgrade route is observed as closed before an HTTP response: Node ECONNRESET and native EOF/reset normalize to the same physical outcome. Core accepts the transport-owned AbortController so decoded uplink failures and carrier cancellation share the actual logical stream controller. Upgrade callback revokes the API credential before waiting for iterator cleanup.",
+  "activation_boundary": "Authorized normal Remote HTTP/mux candidate composition. Forwarded event endpoints and access-aware event filtering remain C7 follow-up; production profile/pin not promoted.",
+  "cleanup": ".goose/out/rc022-gateway-transport-source-20261115-01/cleanup.json",
+  "retained_assets": "Commands/results and repaired observer/test-expectation failures retained; owned temporary payloads removed, real sockets/listeners closed in finally. Shared Source/toolchain retained through C9."
+}

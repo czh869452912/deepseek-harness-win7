@@ -1,0 +1,24 @@
+# C7 Connection、Gateway 与授权进度
+
+固定目标：`38a6a5c965aa99ab525161efb7cc5cf1fe62fced`。本页索引定向合同检查，不表示生产基线切换或完整发行资格。
+
+| 单元 | 已验证边界 | 记录 |
+| --- | --- | --- |
+| C7-A | 调用与事件资源解析、优先级、Context/lookup 资源 | [资源解析](access-resource-checks.json) |
+| C7-B | Remote 标记与资源读取器元数据 | [Remote 标记](remote-marker-checks.json) |
+| C7-C | RemoteAccess 决策、快照、过滤与增量流 | [访问控制](remote-access-checks.json) |
+| C7-D | 解析前授权、可信 Peer 与调用者上下文 | [调用授权](authorized-call-checks.json) |
+| C7-E | 调用信号、严格 uplink、消费与取消 | [调用生命周期](gateway-invocation-checks.json) |
+| C7-F | RPC 结果物化与二进制附件 | [结果编码](rpc-result-checks.json) |
+| C7-G | HTTP RPC multipart 与可信 Peer 传递 | [HTTP RPC](rpc-http-checks.json) |
+| C7-H | Host、Origin、监听地址与端口信任 | [请求信任](connection-trust-checks.json) |
+| C7-I | 浏览器/API 分离认证与签名 Cookie | [认证](connection-auth-checks.json) |
+| C7-J | Peer 准入、单 API 连接与路由卸载 | [Peer 准入](connection-peer-checks.json) |
+| C7-K | Connection 插件、迟挂载与真实 HTTP | [插件组合](connection-plugin-checks.json) |
+| C7-L | 帧语法、单消费者与 uplink 字节预算 | [帧与队列](uplink-inbox-checks.json) |
+| C7-M | 实际双向 WebSocket、心跳、压缩与关闭 | [双向载体](duplex-mux-checks.json) |
+| C7-N | 实际 Gateway HTTP/WS、严格调用和物理关闭撤权 | [Gateway 组合](gateway-transport-checks.json) |
+| C7-O | 客户端帧负零拒绝与 IEEE754 整数解析，修正 C7-L | [数值边界](frame-number-checks.json) |
+| C7-P | 事件授权、同 Peer 答复、重连补投与取消/卸载 | [事件转发](authorized-events-checks.json) |
+
+后续：真实 socket 事件与应用事件源组合、携带 Peer 的首页访问快照、应用 Remote 资源声明、生成物和原版客户端整体接入。最终资格使用 C9 冻结候选的完整门禁；当前生产 pin 与 `accepted_upstream` 不提升。

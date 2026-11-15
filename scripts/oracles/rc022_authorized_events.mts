@@ -1,0 +1,47 @@
+import {readFileSync} from 'node:fs'
+import {getEventListeners} from 'node:events'
+import {load} from './rc022_subagent_fixture.mts'
+const {Context}=await load('vendor/cordis/src/index.ts'),Registry=(await load('packages/typert/registry/src/index.ts')).default,Access=(await load('packages/api/remote-access/src/index.ts')).default,Gateway=(await load('packages/api/gateway/src/index.ts')).default,{Peer}=await load('packages/client/connection/src/peer.ts'),{parseRemoteEventResult}=await load('packages/api/gateway/src/stream-protocol.ts')
+const rows:any[]=[],cases=JSON.parse(readFileSync(process.argv[3]!,'utf8'))
+function errorValue(error:any){return {name:error.name,message:error.message,...error.code===undefined?{}:{code:error.code},...error.details===undefined?{}:{details:error.details}}}
+for(const [index,value]of cases.entries()){let result;try{result={value:parseRemoteEventResult(value)}}catch(error){result={error:errorValue(error)}}rows.push({name:'protocol-'+index,...result})}
+const ctx=new Context();await ctx.plugin(Registry);await ctx.plugin(Access);await ctx.plugin(Gateway);const gateway=ctx.typertGateway,peers:any[]=[],streams:any[]=[],controls:AbortController[]=[]
+class PushSource{
+ queue:any[]=[];wake:(()=>void)|undefined;closed=false
+ stream=(signal:AbortSignal)=>{const self=this;return (async function*(){const abort=()=>self.wake?.();signal.addEventListener('abort',abort,{once:true});try{while(!signal.aborted){if(!self.queue.length){await new Promise<void>(resolve=>{self.wake=resolve});self.wake=undefined;continue}const [frame,accepted]=self.queue.shift();yield frame;accepted()}}finally{signal.removeEventListener('abort',abort);self.closed=true}})()}
+ async push(frame:any){await new Promise<void>(resolve=>{this.queue.push([frame,resolve]);this.wake?.()})}
+}
+const source=new PushSource();let unregister:any
+function peer(kind='owner',interactions='answer'){const value=new Peer(ctx,{principal:{kind},interactions});peers.push(value);return value}
+const owner=peer(),other=peer(),guest=peer('guest'),guest2=peer('guest'),passive=peer('owner','none');let reads=0
+const resources=(value:any)=>{reads++;return value}
+ctx.remoteAccess.registerPolicy('guest',{bindings:()=>[{resource:{kind:'session',id:'a'},role:{actions:['event:notice']}}]})
+async function openEvents(who:any,payload:any={args:{}}){const control=new AbortController();controls.push(control);const uplink={returned:false,[Symbol.asyncIterator](){return this},async next(){throw Error('event stream consumed uplink')},async return(){this.returned=true;return {done:true}}};const stream=(await gateway.wireStream.open('$events',payload,uplink,who,control.signal))[Symbol.asyncIterator]();streams.push(stream);const ready=(await stream.next()).value;await Promise.resolve();return [stream,ready,uplink.returned]as const}
+async function nextValue(stream:any){const value=await stream.next();return value.done?{done:true}:{done:false,value:value.value}}
+async function answer(who:any,clientId:string,eventId:string,outcome:any,payload?:any){const value=await gateway.dispatchRpc('$events/result',payload??{args:{clientId,eventId,outcome}},new AbortController().signal,who);return Object.fromEntries(Object.entries(value).filter(([,value])=>value!==undefined))}
+async function invoke(signal?:AbortSignal,context?:any,request?:any){const settled:any[]=[],subject={},child=context??ctx.extend({}),req:any={agent:subject,question:'q',...signal===undefined?{}:{signal},...request};await source.push({event:'ask',request:req,context:{value:child,subject,agentId:'agent-a'},resolve(value:any){settled.push(Object.fromEntries(Object.entries(value).filter(([,value])=>value!==undefined)))},reject(error:any){settled.push({error:errorValue(error)})}});return settled}
+try{
+ for(const [name,who,payload]of [['passive',passive,{}],['missing-source',owner,{args:{}}]]){try{await openEvents(who,payload)}catch(error){rows.push({name,error:errorValue(error)})}}
+ unregister=gateway.registerRemoteEvents(source.stream,{home:'/fixture',ignored:true});try{gateway.registerRemoteEvents(source.stream,{home:'/other'})}catch(error){rows.push({name:'duplicate-source',error:errorValue(error)})}
+ for(const [name,payload]of [['missing-args',{}],['extra-payload',{args:{},extra:true}],['nonempty-args',{args:{x:1}}]]){try{await openEvents(owner,payload)}catch(error){rows.push({name,error:errorValue(error)})}}
+ const [gs,gr,released]=await openEvents(guest),[gs2,gr2]=await openEvents(guest2);rows.push({name:'guest-ready',host:gr.host,type:gr.type,live:gateway.hasLiveClient(),released})
+ const [os,ready]=await openEvents(owner);rows.push({name:'owner-ready',host:ready.host,live:gateway.hasLiveClient()})
+ for(const [args,readers]of [[['global',{private:'whole'}],undefined],[['b'],{session:resources}],[[null],{session:resources}],[['a',{private:'whole'}],{session:resources}]])await source.push({event:'notice',args,...readers===undefined?{}:{resources:readers}})
+ rows.push({name:'broadcasts',owner:[(await nextValue(os)).value,(await nextValue(os)).value,(await nextValue(os)).value,(await nextValue(os)).value],guests:[(await nextValue(gs)).value,(await nextValue(gs2)).value],readerCalls:reads})
+ rows.push({name:'result-authorization',passive:await answer(passive,'x','y',{kind:'next'}),guest:await answer(guest,gr.clientId,'y',{kind:'next'}),inactive:await answer(owner,'x','y',{kind:'next'})})
+ let settled=await invoke(),frame=(await nextValue(os)).value;const snapshot=gateway.getPendingRemoteEvents();snapshot[0].event='tampered';rows.push({name:'owner-waterfall',frame:Object.fromEntries(Object.entries(frame).filter(([key])=>key!=='eventId')),pending:gateway.getPendingRemoteEvents(),settled:!!settled.length})
+ rows.push({name:'foreign-result',result:await answer(other,ready.clientId,frame.eventId,{kind:'result',value:'foreign'})})
+ const [os2,ready2]=await openEvents(other);let redelivery=(await nextValue(os2)).value;const first=await answer(owner,ready.clientId,frame.eventId,{kind:'next'});rows.push({name:'next-waits',first,settled:!!settled.length,sameEvent:redelivery.eventId===frame.eventId})
+ const last=await answer(other,ready2.clientId,frame.eventId,{kind:'next'});rows.push({name:'last-next',last,settled:[...settled],pending:gateway.getPendingRemoteEvents(),duplicate:await answer(owner,ready.clientId,frame.eventId,{kind:'result',value:'late'})})
+ settled=await invoke();frame=(await nextValue(os)).value;await nextValue(os2);let result=await answer(owner,ready.clientId,frame.eventId,{kind:'result'}),cancellation=(await nextValue(os2)).value;rows.push({name:'result-cancels-others',result,settled:[...settled],cancellation:cancellation.type,sameEvent:cancellation.eventId===frame.eventId})
+ settled=await invoke();frame=(await nextValue(os)).value;await nextValue(os2);result=await answer(other,ready2.clientId,frame.eventId,{kind:'rejected',error:{name:'Refusal',message:'no',code:'E_DENIED',details:{reason:'fixture'}}});cancellation=(await nextValue(os)).value;rows.push({name:'rejection',result,settled:[...settled],cancellation:cancellation.type})
+ await os2.return();settled=await invoke();frame=(await nextValue(os)).value;await os.return();const [replacement,replacementReady]=await openEvents(owner);redelivery=(await nextValue(replacement)).value;const old=await answer(owner,ready.clientId,frame.eventId,{kind:'result',value:1});await answer(owner,replacementReady.clientId,frame.eventId,{kind:'result',value:{answer:7}});rows.push({name:'generation-reconnect',sameEvent:redelivery.eventId===frame.eventId,old,settled:[...settled]})
+ let control=new AbortController();control.abort('preabort');settled=await invoke(control.signal);rows.push({name:'preaborted',settled:[...settled],listeners:getEventListeners(control.signal,'abort').length,pending:gateway.getPendingRemoteEvents()})
+ control=new AbortController();settled=await invoke(control.signal);frame=(await nextValue(replacement)).value;control.abort(Error('host cancelled'));cancellation=(await nextValue(replacement)).value;rows.push({name:'cancelled',settled:[...settled],listeners:getEventListeners(control.signal,'abort').length,sameEvent:cancellation.eventId===frame.eventId})
+ const scope=await ctx.plugin(()=>{});settled=await invoke(undefined,scope.ctx);await nextValue(replacement);await scope.dispose();cancellation=(await nextValue(replacement)).value;rows.push({name:'context-disposal',settled:[...settled],cancellation:cancellation.type})
+ await source.push({event:'notice',args:['a'],resources:{session:resources}});await guest.dispose();rows.push({name:'peer-revocation',revoked:await nextValue(gs),survivor:(await nextValue(gs2)).value});await nextValue(replacement)
+ settled=await invoke();await nextValue(replacement);await unregister();unregister=undefined;rows.push({name:'source-withdrawal',settled:[...settled],owner:await nextValue(replacement),guest:await nextValue(gs2),sourceClosed:source.closed,pending:gateway.getPendingRemoteEvents(),live:gateway.hasLiveClient()})
+ try{await openEvents(owner)}catch(error){rows.push({name:'withdrawn-source',error:errorValue(error)})}
+ const disposed=peer();await disposed.dispose();try{await openEvents(disposed,{})}catch(error:any){rows.push({name:'disposed-first',code:error.code})}
+}finally{if(unregister)await unregister();for(const control of controls)control.abort();for(const stream of streams)await stream.return?.();for(const value of peers)await value.dispose();await ctx.fiber.dispose()}
+process.stdout.write(JSON.stringify(rows))

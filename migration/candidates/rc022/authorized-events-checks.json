@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-15",
+  "unit": "C7-P-AuthorizedForwardedEvents",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "state": "targeted-passed",
+  "paired": ".goose/out/rc022-authorized-events-paired-final-20261115-01/comparison/report.json",
+  "observations": 55,
+  "native": {"run": "rc022-authorized-events-native-last-20261115-01", "passed": 87, "failed": 0},
+  "source": {"run": "rc022-authorized-events-source-20261115-01", "passed": 121, "failed": 0},
+  "verification_scope_reason": "Actual Source Gateway registration and public wire stream with actual owner/guest/passive Peers; actual RPC dispatch binds answers to the same Peer. Exact event result grammar, owner-only waterfall delivery/live status, guest resource filtering once per notification with whole payload preservation, multi-owner next/result/rejection settlement, stale delivery idempotence, reconnect replay, preaborted/request/context/Peer/source lifetimes and detached pending snapshots. Native consumer checks include normal Gateway transport, RemoteAccess, Connection admission and existing dispatcher regressions; Source covers event protocol, Gateway streams and access.",
+  "native_adaptation": "Python explicitly closes the inner async generator to release its strong abort subscription, where Source yield-star owns iterator return and AbortSignal.any uses weak joins. Registration's returned disposer eagerly revokes its generation before awaiting source retirement. The application registering the source owns that disposer, as in Source. Unused uplink return runs asynchronously and swallows acquisition/return failures without replacing admission errors. Three-argument JavaScript resource readers may ignore extra arguments; native fixtures explicitly accept them. No Source edits or generic stack/error filtering.",
+  "activation_boundary": "Candidate reserved event endpoints are composed with authorized HTTP/mux transport. This unit pairs in-process Source wire streams and RPC dispatch; real socket event composition and application event source/profile integration remain follow-up. Production profile, pinned upstream and release acceptance remain unchanged.",
+  "cleanup": [".goose/out/rc022-authorized-events-source-20261115-01/cleanup.json", ".goose/out/rc022-authorized-events-paired-final-20261115-01/cleanup.json"],
+  "retained_assets": "Commands/results, raw paired observations and repaired fixture/exception-name diagnostics retained. Owned tmp/home payloads removed; observers close source, streams, Peers and Context in finally. Shared Source/toolchain retained through C9."
+}

@@ -18,6 +18,7 @@ class TypertGatewayError(RemoteError):
         if field is not None:
             details['field'] = field
         super().__init__('gateway/' + code, "typert gateway: " + endpoint + ": " + message, details)
+        self.name = 'TypertGatewayError'
         self.endpoint, self.field = endpoint, field
 
 

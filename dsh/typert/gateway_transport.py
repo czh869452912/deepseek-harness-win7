@@ -23,7 +23,7 @@ class AuthorizedGatewayTransport(AuthorizedGatewayCore):
         config = config or {}
         self.wireStream = SimpleNamespace(open=self.open_wire, failure=lambda error: rpc_failure(error)['error'])
         def rpc(child):
-            child.get('connection').rpc.intercept('/api', self.resolver.claims_endpoint, self.invoke_rpc)
+            child.get('connection').rpc.intercept('/api', self.claims_endpoint, self.dispatch_rpc)
         ctx.inject(['connection'], rpc)
         def web(child):
             def listen():
@@ -74,6 +74,12 @@ class AuthorizedGatewayTransport(AuthorizedGatewayCore):
                     return close
                 child.effect(setup_ready, 'api-gateway: application readiness')
         ctx.inject(['connection', 'webServer'], web)
+
+    def claims_endpoint(self, endpoint):
+        return self.resolver.claims_endpoint(endpoint)
+
+    async def dispatch_rpc(self, endpoint, payload, signal, peer):
+        return await self.invoke_rpc(endpoint, payload, signal, peer)
 
     async def open_wire(self, endpoint, payload, uplink, peer, signal):
         request = dict(remote_request(endpoint, payload, signal), peer=peer, uplink=uplink)

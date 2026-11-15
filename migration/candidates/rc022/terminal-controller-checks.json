@@ -1,0 +1,27 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-16",
+  "unit": "C8-U-SessionTerminalController",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "state": "targeted-passed",
+  "paired": ".goose/out/rc022-terminal-controller-paired-20261116-01/comparison/report.json",
+  "observations": 21,
+  "native": {
+    "run": "rc022-terminal-controller-native-20261116-01",
+    "passed": 24,
+    "failed": 0
+  },
+  "source": {
+    "run": "rc022-terminal-controller-source-20261116-01",
+    "passed": 117,
+    "failed": 0,
+    "skipped": 2
+  },
+  "verification_scope_reason": "Source/native controller observations compare environment, idempotency, directory capture, capacity, title/identity/dimensions admission, concurrent create-close exclusion, cancelled allocation rollback, failed cleanup retention/retry, sandbox argv and confined history deletion. Native regressions additionally exercise original xterm worker creation cancellation/unload rollback, real Agent plugin fiber ownership, independent roster cancellation and coalescing, failed Session cleanup retry, duplicate caller cancellation, pending reservations, and screen release during read. Direct BrowserTerminal/retention consumers and complete Source controller/terminal tests pass; two Source real POSIX-shell tests are existing Windows skips.",
+  "implementation": "Canonical terminal Remote methods, per-Session pending/committed/failed allocation ownership, closed identity exclusion, user and sandboxed Agent launch, isolated roster/retain streams, execution-provider lookup from Agent context, and reversible Host/Session teardown. Native asynchronous original screen allocation is inside the process rollback contract. Pending allocation and cleanup tasks have independent non-cancelling Python awaiters.",
+  "observer_boundary": "Controlled canonical subprocess and sandbox providers, actual native xterm/QuickJS worker and real Cordis plugin fibers. Terminal UUIDs are not normalized: paired fixed-id launch checks compare history identity; Agent handle observations select stable public fields. This is not actual WinPTY capability, generated Gateway descriptor, browser, Win7 VM or x86 acceptance.",
+  "activation_boundary": "Candidate only; terminalScreens is an additional native implementation dependency. Production composition, pin and accepted_upstream unchanged pending C9.",
+  "cleanup": ".goose/out/rc022-terminal-controller-source-20261116-01/cleanup.json",
+  "external_cleanup": ".goose/out/rc022-terminal-controller-source-20261116-01/external-cleanup.json",
+  "retained_assets": "Removed 298138 bytes of temporary homes/workspaces and empty external Source root. No task runner or JS worker remains. Commands, raw paired observations, Source report and pytest XML retained; shared fixed Source/toolchain retained through C9."
+}

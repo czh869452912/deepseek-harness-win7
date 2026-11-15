@@ -24,5 +24,6 @@
 | C8-R | 屏幕逻辑行投影、最新相对分页与 Unicode 16 字素安全截断 | [终端屏幕投影](terminal-screen-checks.json) |
 | C8-S | 原版 xterm 在既有 Win7 JS 引擎运行、屏幕序列化/标记与工作进程生命周期 | [原版终端屏幕引擎](terminal-engine-checks.json) |
 | C8-T | BrowserTerminal 有序输入/输出、控制权、重连、尾部排空和关闭重试 | [终端进程所有者](browser-terminal-checks.json) |
+| C8-U | 会话终端分配去重、关闭排他、失败保留、沙箱启动和所有者卸载 | [终端控制器](terminal-controller-checks.json) |
 
 后续继续设置及完整应用组合；最终资格使用 C9 冻结候选的完整门禁。

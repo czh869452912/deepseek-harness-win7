@@ -1,9 +1,11 @@
 """Executable identity and timing projection contracts for durable child logs."""
+import math
 from dsh.subagent.descriptor import parse_descriptor
 
 
 def integer(value):
-    if type(value) not in (int, float) or value < 0 or value != int(value):
+    if (type(value) not in (int, float) or not math.isfinite(value)
+            or value < 0 or value > 9007199254740991 or value != int(value)):
         raise ValueError('expected non-negative integer')
     return value
 
@@ -71,6 +73,8 @@ def fold_timing(state, event):
         return dict(descriptorSeen=True, settledMs=0, **({'active': dict(since=since, through=stamp)} if since is not None else {}))
     if kind == 'turn/end':
         if not state['descriptorSeen']:
+            if 'pendingTurnStart' not in state:
+                return state
             return {key: value for key, value in state.items() if key != 'pendingTurnStart'}
         if 'active' not in state:
             return state
@@ -80,6 +84,31 @@ def fold_timing(state, event):
     if 'active' not in state:
         return state
     return dict(state, active=dict(state['active'], through=stamp))
+
+
+def timing4(value, state=False):
+    if not isinstance(value, dict):
+        raise ValueError('invalid subagent timing')
+    if 'lastTurnCompleted' in value and type(value['lastTurnCompleted']) is not bool:
+        raise ValueError('invalid lastTurnCompleted')
+    timing({key:item for key,item in value.items() if key != 'lastTurnCompleted'}, state)
+    return value
+
+
+def fold_timing4(state, event):
+    # New turns and descriptors clear the previous completion marker.
+    if event['type'] == 'turn/start':
+        return fold_timing({key:value for key,value in state.items() if key != 'lastTurnCompleted'}, event)
+    result = fold_timing(state, event)
+    if event['type'] == 'turn/end' and state['descriptorSeen'] and 'active' in state:
+        return dict(result, lastTurnCompleted=event['data']['reason']['kind'] == 'completed')
+    return result
+
+
+TIMING4 = dict(key='subagentTiming', stateVersion=3, stateSchema=lambda value: timing4(value, True),
+              init=lambda _, cut: dict(descriptorSeen=False, settledMs=0), apply=fold_timing4,
+              wire=dict(viewSchema=timing4, view=lambda state: {key:value for key,value in state.items()
+                        if key in ('settledMs', 'active', 'lastTurnCompleted')}))
 
 
 IDENTITY = dict(key='subagent', stateVersion=2, stateSchema=identity_state, init=lambda _, cut: {},

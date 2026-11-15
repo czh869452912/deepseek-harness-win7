@@ -1,0 +1,24 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-15",
+  "unit": "C6-C-SubagentTimingFork",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "state": "targeted-passed",
+  "paired": ".goose/out/rc022-subagent-timing-paired-20261115-01/comparison/report.json",
+  "observations": 26,
+  "native": {
+    "run": "rc022-subagent-timing-native-consumers-20261115-01",
+    "passed": 11,
+    "failed": 0
+  },
+  "source": {
+    "run": "rc022-subagent-timing-source-20261115-01",
+    "passed": 17,
+    "failed": 0
+  },
+  "verification_scope_reason": "Fixed timing/identity definitions paired per-event including object identity, completion/cancellation, backwards timestamps, descriptor resets, malformed/unknown identities and safe integer schemas. Actual fork provider captures the completed prefix once. Actual native v4 factory replays seed, inserts end-seed marker, preserves exact inherited cut and changes own identity/timing only after the child descriptor. Existing catalog and Remote consumers pass.",
+  "initial_diagnostics": "Two native fixture assertions incorrectly omitted the required end-seed marker and treated Python append return event as a sequence; fixtures corrected without changing production factory contracts. Original failed logs/XML retained.",
+  "activation_boundary": "TIMING4 stateVersion 3 available for the C6/C9 candidate consumers; legacy TIMING stateVersion 2 and current production pin unchanged. Full runtime/tree/Team integration remains pending.",
+  "cleanup": ".goose/out/rc022-subagent-timing-source-20261115-01/cleanup.json",
+  "retained_assets": "Commands, logs, XML and actual paired JSON retained; owned synthetic tmp/home/workspaces removed. Shared Source/toolchain retained through C9."
+}

@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-15",
+  "unit": "C6-X-AcpProvider",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "state": "targeted-passed",
+  "paired": ".goose/out/rc022-acp-provider-paired-final-20261115-01/comparison/report.json",
+  "observations": 19,
+  "native": {
+    "run": "rc022-acp-provider-native-final-20261115-01",
+    "passed": 30,
+    "failed": 0
+  },
+  "source": {
+    "run": "rc022-acp-provider-source-20261115-01",
+    "passed": 67,
+    "failed": 0
+  },
+  "verification_scope_reason": "Actual ACP subprocess and native candidate provider versus fixed Source run/subprocess seam: captured child cwd, startup/session/prompt wire, text-only input/output, known and future stop reasons, permission selection and safe facts, crash and protocol startup failures, local noncooperative cancellation, exact shared disposal and quiescence. Native tests add actual manager activation/unload and cancelled unpublished startup cleanup. Teardown observer counterexamples remain distinct from actual failure-injection proof.",
+  "activation_boundary": "Candidate ACP provider only; old production provider remains untouched until coordinated composition. Uses existing ACP RPC and managed process ownership; does not establish new failure-injected descendant cleanup evidence.",
+  "cleanup": ".goose/out/rc022-acp-provider-source-20261115-01/cleanup.json",
+  "retained_assets": "Commands/logs/XML and actual wire observations retained; synthetic payloads removed. No matching owned runtime process remained. Shared Source/toolchain retained through C9."
+}

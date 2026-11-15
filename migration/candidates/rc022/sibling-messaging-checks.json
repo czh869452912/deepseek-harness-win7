@@ -1,0 +1,15 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-15",
+  "unit": "C6-K-SiblingMessaging",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "state": "targeted-passed",
+  "paired": ".goose/out/rc022-subagent-siblings-paired-20261115-01/comparison/report.json",
+  "observations": 9,
+  "native": {"run": "rc022-subagent-siblings-native-20261115-01", "passed": 32, "failed": 0},
+  "source": {"run": "rc022-subagent-siblings-source-20261115-01", "passed": 184, "failed": 0},
+  "verification_scope_reason": "Actual public runtime, factory, persistence and query paired for live cross-branch/root delivery, target-only cold restore while creator remains offline, provider removal, sender/root identity changes during discovery, unreadable target history, volatile capacity and direct-parent closing-text suppression. All journeys drain exact owned activations and release reservations/capacity. Controlled workingDirectory explicitly remains outside qualification.",
+  "activation_boundary": "These nine runtime journeys do not qualify every concurrency race, Team/SDK/PTC/Remote or production composition. Production pin unchanged.",
+  "cleanup": ".goose/out/rc022-subagent-siblings-source-20261115-01/cleanup.json",
+  "retained_assets": "Commands/logs/XML and paired observations retained; 2017243 bytes of synthetic payload removed. Shared Source/toolchain retained through C9."
+}

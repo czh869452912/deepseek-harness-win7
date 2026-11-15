@@ -21,6 +21,7 @@ class CurrentSession(Session):
                  ctx=None, inherited_event_count=UNDEFINED, format_version=3, projections=()):
         self.ctx = ctx
         self.format_version = format_version
+        self._batch_publication = UNDEFINED
         restored_header = None if mode == 'snapshot' else validate_session_header(session_id, header, expected_version=format_version)
         self._log = []
         self.log = self._log
@@ -86,7 +87,22 @@ class CurrentSession(Session):
         pass
 
     def _validate_append_candidate(self, event):
+        if self.format_version == 4:
+            from .current_append import publication_entry
+            publication_entry(self)
         validateSessionEventData(event, 'session event "%s" at seq %s' % (event['type'],event['seq']), self.format_version)
+
+    @property
+    def currentBatchPublication(self):
+        return self._batch_publication
+
+    def append(self, event_type, data=UNDEFINED, surface_op=None, source_event_seqs=None, **kwargs):
+        if self.format_version == 4:
+            from .current_append import publication_entry, append_events
+            if not isinstance(event_type, str):
+                return append_events(self, event_type)
+            publication_entry(self)
+        return super().append(event_type, data, surface_op, source_event_seqs, **kwargs)
 
     def derive_event_message(self, event):
         return self.surface.deriveEventMessage(event)
@@ -169,8 +185,11 @@ class CurrentSessionStore(SessionStore):
             raise ValueError('session "%s" already exists' % sid)
         state = opts.get('eventState', UNDEFINED)
         if state in ('detached', 'shared-frozen'):
-            return CurrentSession.from_restore(sid, opts['seed'], opts['meta'], opts['inheritedEventCount'], state, self.ctx,
-                                               self.format_version, self._message_projections)
+            session = CurrentSession.from_restore(sid, opts['seed'], opts['meta'], opts['inheritedEventCount'], state, self.ctx,
+                                                 self.format_version, self._message_projections)
+            if self.format_version == 4:
+                session._store_owned = True
+            return session
         if state is not UNDEFINED:
             raise ValueError('SessionStore.prepare event state: ' + display(state))
         meta = opts.get('meta') or {}
@@ -179,8 +198,24 @@ class CurrentSessionStore(SessionStore):
         for key in ('cwd','parentSession','origin','delegationDepth','agentPreset'):
             if key in meta and meta[key] is not UNDEFINED:
                 header[key] = meta[key]
-        return CurrentSession.create(sid, opts.get('seed'), header, opts.get('inheritedEventCount', UNDEFINED), self.ctx,
-                                     self.format_version, self._message_projections)
+        session = CurrentSession.create(sid, opts.get('seed'), header, opts.get('inheritedEventCount', UNDEFINED), self.ctx,
+                                        self.format_version, self._message_projections)
+        if self.format_version == 4:
+            session._store_owned = True
+        return session
+
+    def enter(self, session):
+        dispose = super().enter(session)
+        if self.format_version == 4:
+            session._store_owned = True
+        return dispose
+
+    def announce(self, session):
+        if self.format_version != 4:
+            return super().announce(session)
+        entry = self._live_entry_for(session)
+        super().announce(session)
+        entry.announcement_complete = True
 
     def _fork_seed(self, session, requested_boundary):
         events=session.snapshotEvents()

@@ -64,16 +64,17 @@ class CurrentSurface:
         self.format_version, self.projections = format_version, projections
         self.contentGeneration, self.projectedMessages, self.used_projections = 0, {}, []
 
-    def plan(self, event, expected):
+    def plan(self, event, expected, candidates=()):
         if type(event['seq']) not in (int, float) or event['seq'] != expected:
             raise ValueError('session event seq %s is not contiguous; expected %s' % (event['seq'], expected))
         operation = validateSurfaceMetadata(event, self.format_version)
         if self.format_version == 4:
-            self._developer_header(event)
+            self._developer_header(event, candidates)
             projection = next((item for item in self.projections if item['type'] == event['type']), None)
             if projection is not None:
                 from types import SimpleNamespace
-                messages = projection['project'](event, SimpleNamespace(nodes=self.nodes, events=self.events,
+                events = self.events if not candidates else [*self.events, *candidates]
+                messages = projection['project'](event, SimpleNamespace(nodes=self.nodes, events=events,
                     baseSeq=self.base_seq, messages=self.projectedMessages))
                 return dict(kind='project', projection=projection, messages=messages)
             if event['type'] in MESSAGE_PROJECTION_EVENT_TYPES:
@@ -91,10 +92,10 @@ class CurrentSurface:
         shadowed = self.nodes[first:last+1]
         provenance(event, shadowed)
         if self.format_version == 4:
-            self._tool_rewrite(event, shadowed)
+            self._tool_rewrite(event, shadowed, candidates)
         else:
             _assert_tool_result_rewrite(event, shadowed, self.events, self.base_seq)
-        if first == 0 and self.events[int(self.nodes[0]-self.base_seq)]['type'] == 'system/message' and (event['type'] != 'system/message' or len(shadowed) != 1):
+        if first == 0 and self._read(self.nodes[0], candidates)['type'] == 'system/message' and (event['type'] != 'system/message' or len(shadowed) != 1):
             raise ValueError('surface replace: node 0 holds the system prompt and may be rewritten only by a system/message over exactly that node')
         return first, last
 
@@ -112,15 +113,23 @@ class CurrentSurface:
             self.replaceGeneration += 1
             self.contentGeneration += 1
 
-    def _developer_header(self, event):
+    def _read(self, seq, candidates=()):
+        index = seq-self.base_seq
+        if index < 0:
+            return None
+        if index < len(self.events):
+            return self.events[int(index)]
+        index -= len(self.events)
+        return candidates[int(index)] if index < len(candidates) else None
+
+    def _developer_header(self, event, candidates=()):
         if event['type'] != 'developer/message':
             return
         validateSessionEventData(event, 'developer/message at seq %s' % event['seq'], 4)
         seq = event['data'].get('headerSeq', UNDEFINED)
         if seq is UNDEFINED:
             return
-        index = seq-self.base_seq
-        header = self.events[int(index)] if 0 <= index < len(self.events) else None
+        header = self._read(seq, candidates)
         if seq >= event['seq'] or header is None or header['type'] != 'request/header':
             raise ValueError('developer/message headerSeq must reference an earlier request/header')
         for block in event['data']['message']['content']:
@@ -135,12 +144,12 @@ class CurrentSurface:
             if 'deferLoading' in definition and definition['deferLoading'] is not True:
                 raise ValueError('developer/message referenced tool deferLoading must be true when present')
 
-    def _tool_rewrite(self, event, shadowed):
+    def _tool_rewrite(self, event, shadowed, candidates=()):
         if event['type'] != 'tool/result':
             return
         if len(shadowed) != 1:
             raise ValueError('tool/result surface replacement must rewrite exactly one current node')
-        original = self.events[int(shadowed[0]-self.base_seq)]
+        original = self._read(shadowed[0], candidates)
         if original['type'] != 'tool/result':
             raise ValueError('tool/result surface replacement must target a current tool/result')
         from dsh.session.format_v0_to_v1.payload import equal_json
@@ -179,6 +188,31 @@ class CurrentSurfaceManager:
         self.pending = (event, expected, self.fold.plan(event, expected))
 
     validateNext = validate_next
+
+    def prepareBatch(self, events):
+        self._sync()
+        start = self.base_seq+len(self.log)
+        simple = all(event.get('surfaceOp', UNDEFINED) in (UNDEFINED, 'append')
+                     and not any(item['type'] == event['type'] for item in self.fold.projections) for event in events)
+        if simple:
+            plans = [self.fold.plan(event, start+index, events) for index, event in enumerate(events)]
+        else:
+            temporary = CurrentSurface(self.log, self.base_seq, self.fold.format_version, self.fold.projections)
+            temporary.nodes = list(self.fold.nodes)
+            temporary.replaceGeneration, temporary.contentGeneration = self.fold.replaceGeneration, self.fold.contentGeneration
+            temporary.projectedMessages = dict(self.fold.projectedMessages)
+            temporary.used_projections = list(self.fold.used_projections)
+            plans = []
+            for index, event in enumerate(events):
+                plan = temporary.plan(event, start+index, events)
+                temporary.apply(event, plan)
+                plans.append(plan)
+        def accept():
+            for event, plan in zip(events, plans):
+                self.fold.apply(event, plan)
+            self.last = start+len(events)-1
+            self.pending = None
+        return accept
 
     def _sync(self):
         self._assert_projections()

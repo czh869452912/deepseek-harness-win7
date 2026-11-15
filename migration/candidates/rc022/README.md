@@ -127,3 +127,5 @@
 2026-11-15：C4-A [显式 v4 Session 准入](session-admission-checks.json)在同一 CurrentSession 中增加候选 v4 边界，166 组原版/Python 构造与重放、175 项原版和 1839 项 Python 定向检查通过。developer/header 引用、扁平 tool 角色与重写保护、system-prompt 来源、继承 marker、firstLifecycleSeq、消息解释器身份和内容代际缓存覆盖。原有 v3 默认保留；数组发布、Store 注册、内建 image 解释器及生产 v4 尚未认证。初次 JSON 容器比较与六个浮点 cut 索引失败修正，诊断保留；全部自有合成夹具清理。
 
 2026-11-15：C4-B [Store 消息解释器所有权](session-projection-store-checks.json)完成 4 组真实 Context/Fiber 配对与 1158 项 Python 定向检查。registerMessageProjection 随调用插件 effect 所有，重复类型拒绝；显式释放/插件卸载撤销同一 borrowed 列表，live/pending/fork/shared-frozen restore 的已用解释器均拒绝继续解释。无关注册撤销不影响存活会话，旧派生快照可读。全部自有合成工作区清理；继续原子批量 append 和 Store 发布准入。
+
+2026-11-15：C4-C [Session 原子批量发布](session-append-checks.json)完成 16 组真实 Context/Store 配对、36 项原版和 1094 项 Python 定向检查。数组 append 在全部数据、surface 和 dispatch 准入后一次入日志，观察者读取最终整批状态，重写/消息投影失败不部分提交；callback 快照、currentBatchPublication、重入拒绝和延迟 detach 覆盖。显式 v4 准备/公告中/公告失败/已移除及旧同名实例拒绝空/普通写入。全部自有合成夹具清理，继续 plugin records 与内建解释器等合同。

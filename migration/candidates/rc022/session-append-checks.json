@@ -1,0 +1,25 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-15",
+  "unit": "C4-C-AtomicSessionAppend",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "state": "targeted-passed",
+  "paired": ".goose/out/rc022-session-append-paired-20261115-01/report.json",
+  "observations": 16,
+  "native": {
+    "run": "rc022-session-append-native-20261115-01",
+    "passed": 1094,
+    "failed": 0
+  },
+  "source": {
+    "run": "rc022-session-append-source-20261115-01",
+    "passed": 36,
+    "failed": 0
+  },
+  "verification_scope_reason": "Actual V4 Context/store journeys cover same-batch replacement, developer header reference, projection success/rejection, missing member/marker, final dispatch veto, whole-log observer visibility, callback snapshot, reentry and deferred removal. Prepared, announcement-dispatching, failed announcement, removed and stale same-id instances reject even empty writes. Existing runtime/Agent creation and pure projection consumers checked.",
+  "scope": "Batch payloads and dispatches validate before any log push; surface state commits atomically and each event gets currentBatchPublication. Fast append-only planning avoids cloning prior surface state. Explicit V4 store owns write admission; V3 production remains unchanged. Plugin records are not yet migrated.",
+  "cleanup": ".goose/out/rc022-session-append-native-20261115-01/cleanup.json",
+  "cleanup_bytes": 7065,
+  "cleanup_links": 0,
+  "remaining": "Plugin records, built-in image offload interpreter, V4 catalog/backend and asynchronous projection consumers."
+}

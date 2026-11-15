@@ -1,7 +1,6 @@
 """rc.3 process-local continuable residency and child-first release."""
 import asyncio
 import weakref
-from contextlib import asynccontextmanager
 from types import SimpleNamespace
 
 from dsh.cordis.errors import AggregateError
@@ -13,28 +12,13 @@ from dsh.subagent.composition_current import apply_child_composition
 from dsh.subagent.inbox_current import SubagentInbox
 from dsh.subagent.continuation_messages_current import createSettlementMessage
 from dsh.subagent.errors import SubagentError
+from dsh.subagent.activation import ChildLock
 
 
 def failure(message,cause=None):
     error=SubagentError(message,'ACTIVATION_TEARDOWN_FAILED')
     if cause is not None:error.cause=cause
     return error
-
-
-class ChildLock:
-    def __init__(self):self.entries={}
-
-    @asynccontextmanager
-    async def hold(self,sid):
-        lock,count=self.entries.get(sid,(asyncio.Lock(),0));self.entries[sid]=(lock,count+1)
-        try:
-            # Source promise tails always schedule the critical section after admission.
-            await asyncio.sleep(0)
-            async with lock:yield
-        finally:
-            _,count=self.entries[sid]
-            if count==1:self.entries.pop(sid)
-            else:self.entries[sid]=(lock,count-1)
 
 
 class ContinuableActivationRegistry:

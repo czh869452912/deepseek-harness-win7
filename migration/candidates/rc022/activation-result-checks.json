@@ -1,0 +1,24 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-15",
+  "unit": "C6-E-ActivationResults",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "state": "targeted-passed",
+  "paired": ".goose/out/rc022-activation-result-paired-fixed-20261115-01/comparison/report.json",
+  "observations": 59,
+  "native": {
+    "run": "rc022-activation-result-native-fixed-20261115-01",
+    "passed": 91,
+    "failed": 0
+  },
+  "source": {
+    "run": "rc022-activation-result-source-20261115-01",
+    "passed": 15,
+    "failed": 0
+  },
+  "verification_scope_reason": "Fixed ActivationPool, ChildLock and captureLocalResult plus continuation message constructors paired. Repeated and stale capacity releases do not release newer slots, child lock failures do not poison followers and different children progress independently. Epoch capture excludes inherited output, skips empty messages, maps all endings conservatively, retains explicit structured null and reports missing structured success as error. Named notices filter nontext blocks, disclose external follow-up limits, carry stopReason and bound Unicode summaries. Existing continuation/runtime/units/Remote consumers verify shared lock extraction.",
+  "initial_diagnostics": "Observer attempted to remove frozen message ids on both hosts; fixed observer by copying and excluding generated ids. No production behavior changed for this fixture issue.",
+  "activation_boundary": "Final-domain activation/messages support; full candidate execution manager and service integration remain pending. Production pin unchanged.",
+  "cleanup": ".goose/out/rc022-activation-result-source-20261115-01/cleanup.json",
+  "retained_assets": "Commands/logs/XML and actual paired observations retained; synthetic workspaces removed, shared Source/toolchain retained through C9."
+}

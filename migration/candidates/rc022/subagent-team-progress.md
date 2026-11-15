@@ -5,6 +5,7 @@
 | 单元 | 已验证边界 | 记录 |
 | --- | --- | --- |
 | C6-A | 名称、兄弟预留、路径回退、目录 v0–v3/stateVersion 6 | [名称与目录](named-catalog-checks.json) |
+| C6-E | 容量身份、子代理串行锁、执行结果与命名通知 | [执行结果](activation-result-checks.json) |
 | C6-D | 精确树成员、创建边验证、冷祖先观察和名称寻址 | [树成员](tree-membership-checks.json) |
 | C6-C | 完成状态、身份重置、fork 一次性种子与实际工厂消费者 | [计时与 fork](subagent-timing-checks.json) |
 | C6-B | 目录预序遍历、分支诊断、取消、名称路径解析 | [目录读取](catalog-walk-checks.json) |

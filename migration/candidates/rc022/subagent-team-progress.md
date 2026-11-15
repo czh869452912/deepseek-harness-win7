@@ -5,6 +5,7 @@
 | 单元 | 已验证边界 | 记录 |
 | --- | --- | --- |
 | C6-A | 名称、兄弟预留、路径回退、目录 v0–v3/stateVersion 6 | [名称与目录](named-catalog-checks.json) |
+| C6-H | 统一管理器、实际工厂/存储/查询创建与目标冷恢复 | [统一管理器](subagent-manager-checks.json) |
 | C6-G | 子代理 preset 组合、权限快照、结构化输入关闭 | [子代理组合](child-composition-checks.json) |
 | C6-F | 中断、共享关闭、驻留释放、待办输入和树关闭等待 | [执行生命周期](subagent-lifetime-checks.json) |
 | C6-E | 容量身份、子代理串行锁、执行结果与命名通知 | [执行结果](activation-result-checks.json) |

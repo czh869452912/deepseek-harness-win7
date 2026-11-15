@@ -1,0 +1,26 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-15",
+  "unit": "C6-H-UnifiedManager",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "state": "targeted-passed",
+  "paired": ".goose/out/rc022-subagent-manager-paired-injected-20261115-01/comparison/report.json",
+  "observations": 8,
+  "native": {
+    "run": "rc022-subagent-manager-native-consumers-20261115-01",
+    "passed": 35,
+    "skipped": 1,
+    "failed": 0
+  },
+  "source": {
+    "run": "rc022-subagent-manager-source-20261115-01",
+    "passed": 200,
+    "failed": 0
+  },
+  "verification_scope_reason": "Actual fixed manager with actual Agent factory, v4 Session projections, JSONL persistence and point SessionQuery paired against the Python unified manager. Fresh and fork creation publish identity before lifecycle start, initial inbox acceptance commits named catalog, exact inherited prefix persists, natural disposal frees all names/slots/handles, cold delivery resumes only target without duplicate descriptor. Preparation/directory/catalog-commit failures and capacity exhaustion roll back; external parent-delivered run records external catalog and settles. Native additionally verifies actual sandboxPolicy overrideOf alias and its existing provider/invariant regressions; one existing platform case skips.",
+  "initial_diagnostics": "Source fixture first constructed manager outside the agents-injected Context required by upstream; corrected fixture to use actual ctx.inject. Original failed observations and stacks retained.",
+  "implementation": "Final-domain SubagentManager composes tree/lifetime support; uses ctx services for directory, persistence, projections and factory. Adds canonical overrideOf alias to sandbox policy for the real delegation consumer.",
+  "activation_boundary": "Manager direct integration only; directory collaborator is explicitly the same controlled kind used by Source orchestration tests. Archive admission, broader sibling/concurrency journeys, runtime service, Team/SDK/PTC/Remote and production composition remain pending. No pin or acceptance switch.",
+  "cleanup": ".goose/out/rc022-subagent-manager-source-20261115-01/cleanup.json",
+  "retained_assets": "Commands/logs/XML, paired observations and original diagnostics retained; completed synthetic JSONL/workspaces removed. Shared Source/toolchain retained through C9."
+}

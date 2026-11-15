@@ -210,3 +210,5 @@ class SandboxPolicyService(Service):
         @returns: the last logged mode, or None without one.
         """
         return effective_sandbox_mode(getattr(session, "events", None))
+
+    overrideOf = override_of

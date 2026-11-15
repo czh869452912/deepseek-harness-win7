@@ -27,7 +27,9 @@ async def core(tmp_path=None, llm=None):
 
 async def settled(predicate):
     async def poll():
-        while not predicate(): await asyncio.sleep(0)
+        # Recovery reads run in the executor. A continuously ready poll can
+        # starve its Windows I/O thread while competing for the GIL.
+        while not predicate(): await asyncio.sleep(.001)
     await asyncio.wait_for(poll(),2)
 
 async def seed(ctx, sid='saved'):

@@ -32,5 +32,11 @@
     "observed": "Original mixed scope had two failures (overlap resume and deferred provider); isolation reproduced overlap, deferred resume passed. Tracing shows the old factory becomes inactive during resume without reporting a start failure. These legacy cases use AgentLoopPlugin, not CurrentConfiguredStartup. Their diagnostics/workspaces are retained for immediate investigation; no full regression pass is claimed."
   },
   "cleanup": ".goose/out/rc022-configured-model-source-20261115-01/cleanup.json",
-  "activation_boundary": "Candidate path only; C4 cleanup/legacy failure follow-up and C6-C9 remain. Production pin and accepted_upstream unchanged. Shared Source/toolchain held through C9."
+  "activation_boundary": "Candidate path only; C4 cleanup/legacy failure follow-up and C6-C9 remain. Production pin and accepted_upstream unchanged. Shared Source/toolchain held through C9.",
+  "followup_resolution": {
+    "record": "factory-cleanup-checks.json",
+    "native_passed": 23,
+    "diagnosis": "Executor GIL starvation from sleep(0) predicate polling, confirmed by coroutine-chain diagnostics. Original two-second deadline retained; one-millisecond poll passes. Final factory cleanup scope reruns all legacy consumers.",
+    "cleanup": ".goose/out/rc022-configured-model-native-poll-20261115-01/cleanup.json"
+  }
 }

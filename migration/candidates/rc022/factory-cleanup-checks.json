@@ -1,0 +1,28 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-15",
+  "unit": "C4-K-FactoryCleanup",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "state": "targeted-passed",
+  "native": {
+    "run": "rc022-factory-cleanup-native-final-20261115-01",
+    "passed": 55,
+    "failed": 0
+  },
+  "source": {
+    "run": "rc022-factory-cleanup-source-20261115-01",
+    "passed": 46,
+    "failed": 0
+  },
+  "verification_scope_reason": "V4 real Agent/Session/JSONL lifetime with simultaneous idle, scope, checkpoint and close faults: every stage runs once, optional owned continuation is cancelled/joined, registries remain until close settles, both racing disposers receive the same aggregate and no writer remains. Existing scope/durability failure, factory publication, configured identity and model consumers pass; actual fixed Source resource/scope lifecycle tests pass.",
+  "source_contract": "packages/core/agent-loop/src/index.ts teardown independently catches machine.whenIdle, machine.scope.dispose and stored.handle.close. Python checkpoint draining is an additional owned asynchronous continuation and cannot skip handle closure.",
+  "implementation": "Split transaction quiescence, driver drain, scope disposal, projection-cache drain and stored-handle close into independent error collection phases before registry detach.",
+  "initial_fixture_failure": "V4 idle machine does not create the legacy tx.driver; the test first assumed it existed. Added an explicitly owned pending continuation to exercise that optional Python branch, preserving the failed test log/XML.",
+  "legacy_resolution": "The old configured-agent failures were polling starvation, not a factory becoming inactive before its deadline. The recorded teardown ran after the test timeout in its finally block. Coroutine-chain diagnostics show stable-file reads waiting in JsonlStore._run executor while the predicate spins on sleep(0). Polling at 1 ms preserves the existing 2-second deadline and all 23 original selected tests pass. The 55-case final scope includes these consumers again.",
+  "cleanup": [
+    ".goose/out/rc022-configured-model-native-poll-20261115-01/cleanup.json",
+    ".goose/out/rc022-factory-cleanup-source-20261115-01/cleanup.json"
+  ],
+  "retained_assets": "Raw failed/successful logs, XML and coroutine diagnostics retained. Resolved legacy failure and all owned synthetic workspaces removed. No worker/runner remains. Shared Source/toolchain held through C9.",
+  "activation_boundary": "Targeted C4/C5 closure only, no full regression/release acceptance or production promotion. Continue C6-C9."
+}

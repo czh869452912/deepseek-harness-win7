@@ -73,10 +73,14 @@ class CurrentFactoryTransaction(FactoryTransaction):
                         except BaseException as error:failures.append(error)
                     else:self.agent.cancel(dict(kind='disposed'))
                     await self.agent.when_idle()
+            except BaseException as error:failures.append(error)
+            try:
                 if self.driver is not None:
                     self.driver.cancel()
                     await asyncio.gather(self.driver,return_exceptions=True)
                     if self.driver in self.factory._active_tasks:self.factory._active_tasks.remove(self.driver)
+            except BaseException as error:failures.append(error)
+            try:
                 if self.scope is not None:await self.scope.dispose()
             except BaseException as error:failures.append(error)
             try:
@@ -86,6 +90,8 @@ class CurrentFactoryTransaction(FactoryTransaction):
                 cache = self.factory.ctx.get('sessionProjectionCache')
                 if cache is not None and self.agent is not None:
                     await cache.drain(self.agent.session)
+            except BaseException as error:failures.append(error)
+            try:
                 if self.stored is not None:await self.stored['handle'].close()
             except BaseException as error:failures.append(error)
             for detach in (self.detach_agent,self.detach_session):

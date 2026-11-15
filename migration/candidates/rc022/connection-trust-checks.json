@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-15",
+  "unit": "C7-H-ConnectionTrust",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "state": "targeted-passed",
+  "paired": ".goose/out/rc022-connection-trust-paired-20261115-01/comparison/report.json",
+  "observations": 174,
+  "native": {
+    "run": "rc022-connection-trust-native-20261115-01",
+    "passed": 8,
+    "failed": 0
+  },
+  "source": {
+    "run": "rc022-connection-trust-source-20261115-01",
+    "passed": 13,
+    "failed": 0
+  },
+  "verification_scope_reason": "Pair actual upstream authority fence across numeric IPv4, compressed/mapped IPv6, IDN, literal bind addresses and zones, trusted explicit versus omitted ports, independent listener and Origin protocols, non-HTTP origins, missing/non-string Host and cross-site markers. Reuse the existing tested transport-free URL parser without importing another plugin service.",
+  "activation_boundary": "Candidate pure admission predicate; Connection service integration and signed browser/API authentication follow separately.",
+  "cleanup": ".goose/out/rc022-connection-trust-source-20261115-01/cleanup.json",
+  "retained_assets": "Commands/results retained; owned temporary payloads removed. Shared Source/toolchain retained through C9."
+}

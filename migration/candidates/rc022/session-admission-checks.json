@@ -1,0 +1,30 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-15",
+  "unit": "C4-A-SessionV4Admission",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "state": "targeted-passed",
+  "paired": ".goose/out/rc022-session-admission-paired-20261115-04/report.json",
+  "observations": 166,
+  "native": {
+    "run": "rc022-session-admission-native-20261115-02",
+    "passed": 1839,
+    "failed": 0
+  },
+  "source": {
+    "run": "rc022-session-admission-source-20261115-01",
+    "passed": 175,
+    "failed": 0
+  },
+  "verification_scope_reason": "Actual Source Session constructors and pure surface replay compared across role/content/source mutations, developer header references, tool content-only replacement, seeded markers and exact interpreter removal/replacement identity. Native consumers include V3 Session runtime, format catalog, Agent projections, compaction, projection service seam and plaintext/zstd generation verification.",
+  "scope": "Same CurrentSession implementation accepts explicitly selected V4 while production defaults remain V3. Adds V4 data/message validation, content-generation cache invalidation, required/borrowed pure message interpreters and firstLifecycleSeq/cut markers. No array append, effect-owned store registration, built-in image interpreter, asynchronous projection handles or production V4 claim.",
+  "diagnostics": "Initial in-memory comparison rejected Python JSON container/number brands despite identical serialized values; observer now materializes the transport. Existing generation tests exposed six floating-number cut indexing failures; integer indexing fixed, dedicated regression added. Initial observations/failures retained separately.",
+  "vocabulary": {
+    "count": 63,
+    "source_declaration_difference": []
+  },
+  "cleanup": ".goose/out/rc022-session-admission-native-20261115-02/cleanup.json",
+  "cleanup_bytes": 325755,
+  "cleanup_links": 0,
+  "remaining": "Store-owned interpreter registration, atomic batch publication, image offload, installed V4 catalog/persistence and subsequent C4 consumers; production reference unchanged."
+}

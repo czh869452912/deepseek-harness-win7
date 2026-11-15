@@ -1,8 +1,8 @@
 """Canonical v3 surface transitions and protected system-head ownership."""
 from dsh.core.session.json import UNDEFINED
 from dsh.core.surface import _assert_tool_result_rewrite
-from .current import safe, SURFACE_EVENT_TYPES
-from .current_vocabulary import KNOWN_SESSION_EVENT_TYPES
+from .current import safe, SURFACE_EVENT_TYPES, V4_SURFACE_EVENT_TYPES, validateSessionEventData
+from .current_vocabulary import KNOWN_SESSION_EVENT_TYPES, V4_SESSION_EVENT_TYPES, MESSAGE_PROJECTION_EVENT_TYPES
 
 
 def provenance(event, shadowed):
@@ -31,10 +31,12 @@ def provenance(event, shadowed):
         raise ValueError('surface replace: sourceEventSeqs must include every shadowed surface node; missing ' + ', '.join(str(seq) for seq in missing))
 
 
-def validateSurfaceMetadata(event):
+def validateSurfaceMetadata(event, format_version=3):
     kind = event['type']
-    if kind not in SURFACE_EVENT_TYPES:
-        if kind not in KNOWN_SESSION_EVENT_TYPES and event.get('ignorable') is True:
+    eligible = V4_SURFACE_EVENT_TYPES if format_version == 4 else SURFACE_EVENT_TYPES
+    known = V4_SESSION_EVENT_TYPES if format_version == 4 else KNOWN_SESSION_EVENT_TYPES
+    if kind not in eligible:
+        if kind not in known and event.get('ignorable') is True:
             return None
         for key in ('surfaceOp', 'sourceEventSeqs'):
             if event.get(key, UNDEFINED) is not UNDEFINED:
@@ -56,14 +58,26 @@ def validateSurfaceMetadata(event):
 
 
 class CurrentSurface:
-    def __init__(self, events, base_seq=0):
+    def __init__(self, events, base_seq=0, format_version=3, projections=()):
         self.events, self.base_seq = events, base_seq
         self.nodes, self.replaceGeneration = [], 0
+        self.format_version, self.projections = format_version, projections
+        self.contentGeneration, self.projectedMessages, self.used_projections = 0, {}, []
 
     def plan(self, event, expected):
         if type(event['seq']) not in (int, float) or event['seq'] != expected:
             raise ValueError('session event seq %s is not contiguous; expected %s' % (event['seq'], expected))
-        operation = validateSurfaceMetadata(event)
+        operation = validateSurfaceMetadata(event, self.format_version)
+        if self.format_version == 4:
+            self._developer_header(event)
+            projection = next((item for item in self.projections if item['type'] == event['type']), None)
+            if projection is not None:
+                from types import SimpleNamespace
+                messages = projection['project'](event, SimpleNamespace(nodes=self.nodes, events=self.events,
+                    baseSeq=self.base_seq, messages=self.projectedMessages))
+                return dict(kind='project', projection=projection, messages=messages)
+            if event['type'] in MESSAGE_PROJECTION_EVENT_TYPES:
+                raise ValueError('session event "%s" requires a message projection; load its owning plugin or supply its projection definition' % event['type'])
         if operation is None or operation == 'append':
             return operation
         start, end = operation['startSeq'], operation['endSeq']
@@ -76,7 +90,10 @@ class CurrentSurface:
             raise ValueError('surface replace: start seq %s (index %s) is after end seq %s (index %s)' % (start, first, end, last))
         shadowed = self.nodes[first:last+1]
         provenance(event, shadowed)
-        _assert_tool_result_rewrite(event, shadowed, self.events, self.base_seq)
+        if self.format_version == 4:
+            self._tool_rewrite(event, shadowed)
+        else:
+            _assert_tool_result_rewrite(event, shadowed, self.events, self.base_seq)
         if first == 0 and self.events[int(self.nodes[0]-self.base_seq)]['type'] == 'system/message' and (event['type'] != 'system/message' or len(shadowed) != 1):
             raise ValueError('surface replace: node 0 holds the system prompt and may be rewritten only by a system/message over exactly that node')
         return first, last
@@ -84,17 +101,63 @@ class CurrentSurface:
     def apply(self, event, plan):
         if plan == 'append':
             self.nodes.append(event['seq'])
+        elif isinstance(plan, dict) and plan.get('kind') == 'project':
+            self.projectedMessages.update(plan['messages'])
+            if not any(item is plan['projection'] for item in self.used_projections):
+                self.used_projections.append(plan['projection'])
+            self.contentGeneration += 1
         elif plan is not None:
             first, last = plan
             self.nodes[first:last+1] = [event['seq']]
             self.replaceGeneration += 1
+            self.contentGeneration += 1
+
+    def _developer_header(self, event):
+        if event['type'] != 'developer/message':
+            return
+        validateSessionEventData(event, 'developer/message at seq %s' % event['seq'], 4)
+        seq = event['data'].get('headerSeq', UNDEFINED)
+        if seq is UNDEFINED:
+            return
+        index = seq-self.base_seq
+        header = self.events[int(index)] if 0 <= index < len(self.events) else None
+        if seq >= event['seq'] or header is None or header['type'] != 'request/header':
+            raise ValueError('developer/message headerSeq must reference an earlier request/header')
+        for block in event['data']['message']['content']:
+            if not isinstance(block, dict) or block.get('type') != 'tool-addition':
+                continue
+            definitions = [tool for tool in header['data']['header'].get('tools', []) if tool.get('name') == block['toolName']]
+            if len(definitions) != 1:
+                raise ValueError('developer/message tool-addition "%s" must name exactly one tool in headerSeq %s' % (block['toolName'], seq))
+            definition = definitions[0]
+            if not isinstance(definition.get('description'), str) or not isinstance(definition.get('parameters'), dict):
+                raise ValueError('developer/message tool-addition "%s" requires a complete tool definition in headerSeq %s' % (block['toolName'], seq))
+            if 'deferLoading' in definition and definition['deferLoading'] is not True:
+                raise ValueError('developer/message referenced tool deferLoading must be true when present')
+
+    def _tool_rewrite(self, event, shadowed):
+        if event['type'] != 'tool/result':
+            return
+        if len(shadowed) != 1:
+            raise ValueError('tool/result surface replacement must rewrite exactly one current node')
+        original = self.events[int(shadowed[0]-self.base_seq)]
+        if original['type'] != 'tool/result':
+            raise ValueError('tool/result surface replacement must target a current tool/result')
+        from dsh.session.format_v0_to_v1.payload import equal_json
+        before, after = dict(original['data']), dict(event['data'])
+        before['message'] = dict(before['message'], content=None)
+        after['message'] = dict(after['message'], content=None)
+        if not equal_json(before, after):
+            raise ValueError('tool/result surface replacement may change only content')
 
 
-def deriveEventMessage(event):
+def deriveEventMessage(event, projected_messages=None, format_version=3):
+    if projected_messages is not None and event['seq'] in projected_messages:
+        return projected_messages[event['seq']]
     kind, data = event['type'], event['data']
     if kind == 'user/message':
         return data
-    if kind in ('system/message', 'assistant/message'):
+    if kind in ('system/message', 'assistant/message') or format_version == 4 and kind == 'developer/message':
         return data['message'] if data['message']['content'] else None
     if kind == 'tool/result':
         return data['message']
@@ -103,13 +166,14 @@ def deriveEventMessage(event):
 
 class CurrentSurfaceManager:
     """Incremental acceptance, retaining only the next exact candidate plan."""
-    def __init__(self, log, base_seq=0):
+    def __init__(self, log, base_seq=0, format_version=3, projections=()):
         self.log, self.base_seq = log, base_seq
-        self.fold = CurrentSurface(log, base_seq)
+        self.fold = CurrentSurface(log, base_seq, format_version, projections)
         self.last = base_seq-1
         self.pending = None
 
     def validate_next(self, event):
+        self._assert_projections()
         self._sync()
         expected = self.base_seq+len(self.log)
         self.pending = (event, expected, self.fold.plan(event, expected))
@@ -117,6 +181,7 @@ class CurrentSurfaceManager:
     validateNext = validate_next
 
     def _sync(self):
+        self._assert_projections()
         for seq in range(self.last+1, self.base_seq+len(self.log)):
             event = self.log[seq-self.base_seq]
             pending = self.pending
@@ -125,6 +190,26 @@ class CurrentSurfaceManager:
             if pending is not None and pending[1] <= seq:
                 self.pending = None
             self.last = seq
+
+    def _assert_projections(self):
+        required = list(self.fold.used_projections)
+        pending = self.pending
+        if (pending is not None and pending[1]-self.base_seq < len(self.log)
+                and self.log[pending[1]-self.base_seq] is pending[0]
+                and isinstance(pending[2], dict) and pending[2].get('kind') == 'project'):
+            required.append(pending[2]['projection'])
+        for projection in required:
+            if not any(item is projection for item in self.fold.projections):
+                raise ValueError('session message projection "%s" was removed or replaced; restore the session with its owning plugin' % projection['type'])
+
+    @property
+    def contentGeneration(self):
+        self._sync()
+        return self.fold.contentGeneration
+
+    def deriveEventMessage(self, event):
+        self._sync()
+        return deriveEventMessage(event, self.fold.projectedMessages, self.fold.format_version)
 
     @property
     def nodes(self):
@@ -141,14 +226,17 @@ class CurrentSurfaceManager:
         return self.replaceGeneration
 
 
-def foldSurface(events):
-    surface = CurrentSurface(events)
+def foldSurface(events, projections=(), format_version=3):
+    surface = CurrentSurface(events, format_version=format_version, projections=projections)
     replacements = []
     for index, event in enumerate(events):
         plan = surface.plan(event, index)
-        if plan is not None and plan != 'append':
+        if plan is not None and plan != 'append' and not isinstance(plan, dict):
             first, last = plan
             replacements.append(dict(seq=event['seq'], start=event['surfaceOp']['startSeq'],
                 end=event['surfaceOp']['endSeq'], shadowedSeqs=list(surface.nodes[first:last+1])))
         surface.apply(event, plan)
-    return dict(nodes=list(surface.nodes), replacements=replacements)
+    result = dict(nodes=list(surface.nodes), replacements=replacements)
+    if format_version == 4:
+        result['projectedMessages'] = dict(surface.projectedMessages)
+    return result

@@ -1,4 +1,4 @@
-"""Candidate v3 Session runtime, sharing store-owned publication with Session.
+"""Installed V3 Session with explicit V4 migration admission on the same runtime.
 
 This explicit type lets persistence and Agent consumers migrate as one batch;
 the active profile is switched only after its writer and consumers are ready.
@@ -6,8 +6,8 @@ the active profile is switched only after its writer and consumers are ready.
 import time
 
 from dsh.core.session.session import Session, SessionStore
-from dsh.core.session.current import assertSessionEventEnvelope, validateSessionEventData, SURFACE_EVENT_TYPES, safe
-from dsh.core.session.current_surface import CurrentSurfaceManager, deriveEventMessage
+from dsh.core.session.current import assertSessionEventEnvelope, validateSessionEventData, SURFACE_EVENT_TYPES, V4_SURFACE_EVENT_TYPES, safe
+from dsh.core.session.current_surface import CurrentSurfaceManager
 from dsh.core.session.current_request_header import foldRequestHeader
 from dsh.core.session.json import UNDEFINED, walk_json_value, deep_freeze
 from dsh.core.session.types import validate_session_header, SessionLogOffset, SessionId, SessionForkError
@@ -18,19 +18,20 @@ from dsh.session.format_v2_to_v3.payload import display
 
 class CurrentSession(Session):
     def __init__(self, session_id, seed=None, header=UNDEFINED, mode='snapshot',
-                 ctx=None, inherited_event_count=UNDEFINED):
+                 ctx=None, inherited_event_count=UNDEFINED, format_version=3, projections=()):
         self.ctx = ctx
-        restored_header = None if mode == 'snapshot' else validate_session_header(session_id, header, expected_version=3)
+        self.format_version = format_version
+        restored_header = None if mode == 'snapshot' else validate_session_header(session_id, header, expected_version=format_version)
         self._log = []
         self.log = self._log
-        self._surface_manager = CurrentSurfaceManager(self._log)
+        self._surface_manager = CurrentSurfaceManager(self._log, format_version=format_version, projections=projections)
         self._events_snapshot = None
         if seed is not None:
             for index, source in enumerate(seed):
                 snapshot = walk_json_value(source, detach=True, undefined_sentinel=UNDEFINED) if mode == 'snapshot' else source
                 if snapshot is UNDEFINED:
                     raise ValueError('seed event at index %s is not losslessly JSON-serializable' % index)
-                assertSessionEventEnvelope(snapshot, index)
+                assertSessionEventEnvelope(snapshot, index, format_version)
                 if snapshot['seq'] != index:
                     raise ValueError('seed event at index %s has seq %s (expected %s); seed must be contiguous from 0' % (index,display(snapshot['seq']),index))
                 try:
@@ -43,39 +44,52 @@ class CurrentSession(Session):
         if restored_header is not None:
             self.header = restored_header
         else:
-            source = dict(version=3,id=session_id,createdAt=self._event_time(),isSeeded=False) if header is UNDEFINED else header
+            source = dict(version=format_version,id=session_id,createdAt=self._event_time(),isSeeded=False) if header is UNDEFINED else header
             if hasattr(source, 'to_dict'):
                 source = source.to_dict()
             snapshot = walk_json_value(source, detach=True, undefined_sentinel=UNDEFINED)
             if snapshot is UNDEFINED:
                 raise ValueError('session header is not losslessly JSON-serializable')
-            self.header = validate_session_header(session_id, snapshot, expected_version=3)
+            self.header = validate_session_header(session_id, snapshot, expected_version=format_version)
         self._inherited_event_count = inherited_cut(self.header, seed is not None, len(self._log), inherited_event_count)
-        if mode == 'snapshot' and self.header.isSeeded and self._inherited_event_count != len(self._log):
-            raise ValueError('seeded session constructor seed must equal its inherited prefix')
-        if seed is not None and mode == 'snapshot' and self.header.isSeeded:
+        cut = self._inherited_event_count
+        marker = (cut < len(self._log) and self._log[int(cut)]['type'] == 'session/end-seed'
+                  and isinstance(self._log[int(cut)]['data'], dict) and self._log[int(cut)]['data'].get('inherited') is True)
+        if mode == 'snapshot' and self.header.isSeeded and cut != len(self._log) and not (format_version == 4 and marker):
+            raise ValueError('seeded session constructor seed must equal its inherited prefix' + (' or mark its inherited cut' if format_version == 4 else ''))
+        if format_version == 4 and marker and any(event['type'] == 'session/end-seed'
+                and isinstance(event['data'], dict) and event['data'].get('inherited') is True for event in self._log[int(cut)+1:]):
+            raise ValueError('session inherited event count must identify the final inherited marker')
+        self.firstLifecycleSeq = cut if mode == 'snapshot' and self.header.isSeeded else self._first_live_seq
+        if seed is not None and mode == 'snapshot' and self.header.isSeeded and not (format_version == 4 and marker):
             self.append('session/end-seed', dict(inherited=True))
-        elif seed is not None and (not self._log or self._log[-1]['type'] != 'session/end-seed'):
+        elif seed is not None and not (format_version == 4 and mode == 'snapshot' and self.header.isSeeded) and (not self._log or self._log[-1]['type'] != 'session/end-seed'):
             self.append('session/end-seed', {})
         self._derived, self._derived_nodes, self._derived_generation = [], 0, 0
         self._header_fold, self._header_fold_seq = None, 0
         self._context_fold, self._context_fold_seq = None, 0
 
     @classmethod
-    def from_restore(cls, session_id, seed, header, inherited_event_count, event_state='detached', ctx=None):
+    def from_restore(cls, session_id, seed, header, inherited_event_count, event_state='detached', ctx=None,
+                     format_version=3, projections=()):
         # Explicit detached/shared-frozen ownership is a caller promise, not a clone.
-        return cls(session_id, seed, header, event_state, ctx, inherited_event_count)
+        return cls(session_id, seed, header, event_state, ctx, inherited_event_count, format_version, projections)
 
     fromRestore = from_restore
+
+    @classmethod
+    def create(cls, session_id, seed=None, header=UNDEFINED, inherited_event_count=UNDEFINED, ctx=None,
+               format_version=3, projections=()):
+        return cls(session_id, seed, header, 'snapshot', ctx, inherited_event_count, format_version, projections)
 
     def _validate_append_data(self, event_type, data):
         pass
 
     def _validate_append_candidate(self, event):
-        validateSessionEventData(event, 'session event "%s" at seq %s' % (event['type'],event['seq']))
+        validateSessionEventData(event, 'session event "%s" at seq %s' % (event['type'],event['seq']), self.format_version)
 
     def derive_event_message(self, event):
-        return deriveEventMessage(event)
+        return self.surface.deriveEventMessage(event)
 
     deriveEventMessage = derive_event_message
 
@@ -93,7 +107,8 @@ class CurrentSession(Session):
     requestHeader = request_header
 
     def append_event(self, event_type, data):
-        return self.append(event_type,data,surface_op='append' if event_type in SURFACE_EVENT_TYPES else None)
+        eligible = V4_SURFACE_EVENT_TYPES if self.format_version == 4 else SURFACE_EVENT_TYPES
+        return self.append(event_type,data,surface_op='append' if event_type in eligible else None)
 
     def append_assistant_message(self, *args, **kwargs):
         kwargs.setdefault('stream',[])
@@ -106,11 +121,12 @@ class CurrentSession(Session):
             raise ValueError('fork boundary %s out of bounds (0..%s)' % (cut,self.seq))
         values = dict(meta or {})
         values.setdefault('createdAt',self._event_time())
-        values.update(version=3,id=child_session_id)
+        values.update(version=self.format_version,id=child_session_id)
         values.update(parentSession=self.id,isSeeded=True,delegationDepth=(self.header.delegation_depth or 0)+1)
         if self.header.cwd is not None:
             values.setdefault('cwd',self.header.cwd)
-        return type(self).create(child_session_id,self.snapshotEvents(0,cut),values,cut,self.ctx)
+        return type(self).create(child_session_id,self.snapshotEvents(0,cut),values,cut,self.ctx,
+                                 self.format_version, self.surface.fold.projections)
 
 
 class CurrentSessionStore(SessionStore):

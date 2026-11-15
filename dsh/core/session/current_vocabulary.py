@@ -58,3 +58,10 @@ KNOWN_SESSION_EVENT_TYPES = frozenset([
     'user/message',
     'web/deepseek-search-llm-request',
 ])
+
+# Fixed rc022 declaration inventory; selected explicitly until coordinated boot.
+V4_SESSION_EVENT_TYPES = KNOWN_SESSION_EVENT_TYPES | frozenset((
+    'developer/message', 'image/offload', 'job/registered', 'job/settled',
+    'team/mode', 'working-directory/change', 'workspace/changes',
+))
+MESSAGE_PROJECTION_EVENT_TYPES = frozenset(('image/offload',))

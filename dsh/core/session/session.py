@@ -594,7 +594,7 @@ class Session:
         """
         surface = self.surface
         nodes = surface.nodes
-        generation = surface.replace_generation
+        generation = getattr(surface, 'contentGeneration', surface.replace_generation)
 
         if generation != self._derived_generation:
             self._derived = []

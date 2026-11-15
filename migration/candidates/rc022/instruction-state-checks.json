@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-16",
+  "unit": "C8-N-InstructionReconciliation",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "state": "targeted-passed",
+  "paired": ".goose/out/rc022-instruction-state-paired-4-20261116-01/comparison/report.json",
+  "observations": 16,
+  "native": {"run": "rc022-instruction-state-native-20261116-01", "passed": 51, "failed": 0},
+  "source": {"run": "rc022-instruction-state-source-20261116-01", "passed": 33, "failed": 0, "excluded": 173},
+  "verification_scope_reason": "Actual Session surface and FsLocal compare initial/changed/removed instructions, duplicate demotion and promotion, zero-read warm/hidden fast paths, same-content metadata refresh, whole-group rollback for oversized/unavailable siblings, independent global progress, baseline exclusion, claimed authority, pending hints, tiny rendering budgets and retry. Native additionally checks authority validation, exact retained updates, session cache isolation and original cancellation identity. Source selects reconciliation, candidate groups, baseline scope, duplicate and metadata cases; symlink names excluded on this Windows host.",
+  "implementation": "Candidate state derives durable effective changes from visible Session nodes then claimed authority, groups ordered candidates, caches only metadata and trimmed digests, and defers visible transitions until retained by rendering. A failed group restores its prior metadata and withholds aliased paths; independent groups can still progress. Baseline files without provider versions do not fabricate a cache version.",
+  "observer_boundary": "Message IDs omitted, physical-file versions projected to opaque tokens. Exact content/source, cache digests and read counts compared. Fixture API and observer normalization corrections retained as diagnostics. The first runner invocation accidentally repeated the previous unit's probe and is not acceptance evidence.",
+  "activation_boundary": "Candidate helpers only; runtime event projection follows separately. Production pin and accepted_upstream unchanged pending C9; this is not release acceptance.",
+  "cleanup": ".goose/out/rc022-instruction-state-source-20261116-01/cleanup.json",
+  "external_cleanup": ".goose/out/rc022-instruction-state-source-20261116-01/external-cleanup.json",
+  "retained_assets": "Removed 6124247 bytes of owned fixture trees and workspaces plus the empty external Source fixture root. No task workers remain. Commands, observations and diagnostics retained; shared fixed Source/toolchain retained through C9."
+}

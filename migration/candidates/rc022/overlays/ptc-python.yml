@@ -1,0 +1,8 @@
+# Candidate Win7/Python adaptation of the upstream base PTC provider.
+# Native remains the deployment default. Enable PTC separately with the
+# unchanged upstream apps/cli/config/examples/ptc.yml executor overlay.
+- id: ptc-runtime
+  disabled: true
+- insert:
+    - id: ptc-runtime-python
+      name: '@deepseek-ai/dsh-ptc-runtime-python'

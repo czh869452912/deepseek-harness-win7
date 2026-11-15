@@ -7,6 +7,7 @@ import math
 from typing import Any, Callable, Dict, List, Optional, Union
 
 from dsh.cordis.plugin import Plugin
+from dsh.cordis.schema import Schema
 from dsh.cordis.errors import ThrownValueError
 from dsh.cordis.utils import Tracker
 from dsh.llm.error import HarnessError, stringify_value
@@ -622,7 +623,7 @@ class ToolsService:
         config = config or {}
         if contract_version == 4:
             for removed in ("mode", "maxParallelSubCalls"):
-                if removed in config:
+                if config.get(removed) is not None:
                     raise ValueError('tools.%s has been removed; mount a tool executor instead' % removed)
         self.mode = config.get("mode") or "native"
         if self.mode == "ptc":
@@ -1867,6 +1868,15 @@ class ToolsPlugin(Plugin):
 
 
 class CurrentToolsPlugin(ToolsPlugin):
+    # Validate before activation, including Loader/schema consumers.  The
+    # constructor check also protects direct ToolsService callers.
+    Config = Schema.object({
+        "mode": Schema.never().description(
+            "Removed. Mount a native or PTC tool executor instead."),
+        "maxParallelSubCalls": Schema.never().description(
+            "Moved to the PTC tool executor configuration."),
+    })
+
     def apply(self, ctx: Any) -> None:
         ctx.provide("tools", ToolsService(ctx, config=self.config, contract_version=4))
 

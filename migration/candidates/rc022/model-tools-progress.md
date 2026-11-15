@@ -28,5 +28,6 @@
 | C5-R | 控制与输出分离、进程树收尾 | [独立通道](ptc-control-checks.json) |
 | C5-S | 无嵌套 Job 的 Windows 资源适配 | [Windows 所有权](ptc-windows-checks.json) |
 | C5-T | 真实策略隔离、提权和 Session 消费者 | [受限提供端](ptc-confinement-checks.json) |
+| C5-U | 默认/可选执行器的真实 Loader 装配、旧配置退役 | [执行器装配](executor-composition-checks.json) |
 
-后续继续闭合 C5 模型/配置集成，包括旧 `tools.mode` 和环境开关退役、官方默认及可选执行器的候选装配，再推进 C6–C9。生产 pin、原样前端和注册表仍在 C9 协调切换；`accepted_upstream` 不随上述定向结果变化。共享 Source/工具链保留到 C9；各运行的可重建工作区已按记录清理，真实观察、原始失败和检查回执保留。
+后续继续闭合 C5 启动时模型恢复的消费者集成，再推进 C6–C9。生产 pin、原样前端和注册表仍在 C9 协调切换；`accepted_upstream` 不随上述定向结果变化。共享 Source/工具链保留到 C9；各运行的可重建工作区已按记录清理，真实观察、原始失败和检查回执保留。

@@ -1,0 +1,28 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-15",
+  "unit": "C5-U-ExecutorComposition",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "state": "targeted-passed",
+  "paired": ".goose/out/rc022-executor-composition-paired-overlay-20261115-01/comparison/report.json",
+  "observations": 9,
+  "native": {
+    "run": "rc022-executor-composition-native-overlay-20261115-01",
+    "passed": 64,
+    "failed": 0
+  },
+  "source": {
+    "run": "rc022-executor-composition-source-20261115-01",
+    "passed": 324,
+    "failed": 0
+  },
+  "verification_scope_reason": "Fixed base rows and original PTC executor overlay are composed and activated through actual Loader and real providers. Native default and PTC optional selection ignore contradictory DSH_TOOLS_MODE; missing executor fails; conflicting providers reject duplicate activation. Removed non-null mode and maxParallelSubCalls reject before activation; Source nullish mode is accepted as absent. Direct tool admission, executor lifetime, selected PTC and legacy tools consumers pass.",
+  "implementation": "CurrentToolsPlugin exposes the fixed never schemas; direct constructor follows the same nullish allowance. Candidate Python overlay disables the upstream Node provider and inserts a separately named confined Python provider. Native default is unchanged. The runtime overlay is exercised through real composition and Loader with explicit candidate class resolution; production mapping remains for C9.",
+  "initial_failures": [
+    "Initial Source fixture omitted fs/subprocess/session-projection dependencies, leaving its provider pending; added the actual Source services. Pairing also exposed Source null allowance and corrected the native direct guard.",
+    "Initial Python overlay tried to change a row name. Cordis treats patch name as a guard, so the assertion rejected it. Replaced with disable plus insert and retained all failures."
+  ],
+  "activation_boundary": "No production pin/reference/registry promotion or full release qualification. Candidate provider is Python/process/stateless; it does not claim Node ABI or optional retained evaluator parity. Remaining C5 startup/model consumer integration and C6-C9 continue.",
+  "cleanup": ".goose/out/rc022-executor-composition-source-20261115-01/cleanup.json",
+  "retained_assets": "Commands, logs/XML and failed/successful paired observations retained. Owned tmp/home/test workspaces removed; shared Source/toolchain held through C9."
+}

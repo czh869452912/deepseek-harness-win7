@@ -6,6 +6,7 @@ from types import SimpleNamespace as NS
 import pytest
 
 from dsh.sandbox.sandbox_policy import SandboxPolicyService
+from dsh.core.abort import AbortController
 from dsh.subprocess.local import LocalSubprocessRuntime
 from dsh.terminal.authorized import AuthorizedLocalTerminalPlugin, AuthorizedPersistentPwshPlugin
 from dsh.terminal.service import TerminalSessionService
@@ -59,6 +60,18 @@ async def test_actual_winpty_keeps_directory_and_reset_starts_at_latest_session_
         await fiber.plugin.reset(agent, 'directory-test reset')
         await assert_directory(tmp_path)
         assert await run("Write-Output ('STATE=' + $directoryState)") == 'STATE='
+        fiber.plugin.config['timeoutMs'] = 700
+        timed = await run("Write-Output ('partial' + '-output'); Start-Sleep -Seconds 30")
+        assert 'timed out after 1 seconds' in timed and 'partial-output' in timed and 'shell was reset' in timed
+        assert not runtime.terminals and not ctx.terminals.list(agent)
+        fiber.plugin.config['timeoutMs'] = 10000
+        await assert_directory(tmp_path)
+        controller = AbortController()
+        pending = asyncio.create_task(ctx.tools.get('pwsh').execute(dict(command='Start-Sleep -Seconds 30'),
+                                      NS(agent=agent, signal=controller.signal)))
+        await asyncio.sleep(.2);controller.abort(RuntimeError('actual caller cancel'))
+        assert await asyncio.wait_for(pending, 5) == ''
+        assert not runtime.terminals and not ctx.terminals.list(agent)
         await handle.dispose()
         assert not runtime.terminals and not ctx.terminals.list(agent)
     finally:

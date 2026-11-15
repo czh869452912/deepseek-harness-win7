@@ -35,7 +35,7 @@ async def observe(workspace=None):
             def __init__(self,cwd):self.cwd,self.closed,self.text=cwd,False,''
             def status(self):return dict(kind='exited' if self.closed else 'running')
             def startSend(self,request):
-                start=re.search(r'__DSH_START_[^_]+__',request['text'])[0];end=re.search(r'__DSH_END_[^:]+:',request['text'])[0]
+                start=re.search(r'__DSH_PERSISTENT_PWSH_START_[^_]+__',request['text'])[0];end=re.search(r'__DSH_PERSISTENT_PWSH_END_[^:]+:',request['text'])[0]
                 self.text=start+'\n'+self.cwd+'\n'+end+'0\n'
                 done=asyncio.get_running_loop().create_future();done.set_result(dict(viewport=self.text,waitReason='stdin_read',sessionStatus=self.status(),truncated=False))
                 return NS(done=done,readOutput=lambda:dict(delta=self.text,truncated=False),cancel=lambda:False)

@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-16",
+  "unit": "C8-J-PersistentPowerShellProtocol",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "state": "targeted-passed",
+  "paired": ".goose/out/rc022-persistent-protocol-paired-2-20261116-01/comparison/report.json",
+  "observations": 24,
+  "native": {"run": "rc022-persistent-protocol-native-2-20261116-01", "passed": 18, "failed": 0},
+  "source": {"run": "rc022-persistent-protocol-source-20261116-01", "passed": 72, "failed": 0},
+  "verification_scope_reason": "Actual candidate tool and terminal registry with nonce-dependent controlled PTY transcripts cover padding/torn status, prompt partials, incremental/empty/paged retained output, Unicode clipping, echo exclusion, exit status and between-send races, timeout/caller cancellation, initialization/send failure retry and cleanup. Native additionally checks concurrent creation coalescing, unload cancellation with awaited rollback, cancelled queued call suppression and actual WinPTY/PowerShell directory/state/reset, timeout partial output and caller cancellation with no surviving terminal. Existing native terminal and legacy persistent consumers pass; complete Source tool/backend/registry suites pass. The prior eight launch-directory observations also pass with this provider.",
+  "implementation": "The candidate persistent provider now owns pending creation per Agent, creation lifetime cancellation, a successful shell cache, exact-owner serialization, canonical retained-output extraction and markers, short status padding, surrogate-safe UTF-16 clipping, pre-send exit observation, prompt-only partial returns and deadline/caller cancellation reset. Initialization and send failures retain their original error and permit a fresh retry. Production legacy provider is preserved.",
+  "observer_boundary": "Paired PTY transcripts are controlled. Native actual-console tests use present-host WinPTY/PowerShell and do not establish actual Windows 7 qualification. The command wrapper intentionally retains the Python port's PowerShell 2 compatible ESC expression rather than modern PowerShell backtick-e. Initial Source observer omitted its required persistence workspace; fixed before acceptance and diagnostic retained. Browser terminal controller and other application providers remain separate integration work.",
+  "activation_boundary": "Candidate composition only; production pin and accepted_upstream unchanged pending C9. Targeted checks do not establish release acceptance.",
+  "cleanup": ".goose/out/rc022-persistent-protocol-source-20261116-01/cleanup.json",
+  "directory_recheck_cleanup": ".goose/out/rc022-terminal-directory-paired-2-20261116-01/cleanup.json",
+  "retained_assets": "Removed 5407933 bytes of owned synthetic inputs, pytest workspaces and tmp/home across this unit and the launch-directory recheck. No task workers remain. Commands, observations and diagnostics retained; shared fixed Source/toolchain retained through C9."
+}

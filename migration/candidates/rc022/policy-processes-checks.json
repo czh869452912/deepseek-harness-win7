@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-15",
+  "unit": "C5-P-PolicyOwnedProcessCleanup",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "state": "targeted-passed",
+  "paired": ".goose/out/rc022-policy-processes-paired-retry-20261115-01/comparison/report.json",
+  "observations": 9,
+  "native": {"run": "rc022-policy-processes-native-retry-20261115-01", "passed": 29, "failed": 0},
+  "source": {"run": "rc022-policy-processes-source-20261115-01", "passed": 5, "failed": 0},
+  "verification_scope_reason": "Actual fixed PolicyProcesses lifecycle paired for immediate invalidation, standing policy under one-shot escalation, unpublished Session/no store, unscoped and detached resources, shared cleanup, all-settled failure and retry, owner disposal. Native additionally checks cancelled admission cannot cancel owned cleanup and synchronous callback failure is retryable. Existing actual process/PTC executor/queue/call ownership consumers passed.",
+  "initial_failure": "Native assertion caught a fanout fixture which emitted the peer's current standing mode, leaving it valid. Corrected both controlled fixtures to commit a different mode and reran pairing and selected native checks. Initial commands/logs and observations retained.",
+  "activation_boundary": "Runtime ownership helper for the upcoming confining provider; does not promote profiles, production pin or C5-C9 acceptance.",
+  "cleanup": ".goose/out/rc022-policy-processes-native-retry-20261115-01/cleanup.json",
+  "retained_assets": "Commands, logs/XML, fixed Source/native observations and original failure retained. Owned synthetic workspaces removed; no owned worker process remained. Shared Source/toolchain retained through C9."
+}

@@ -1,0 +1,24 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-15",
+  "unit": "C6-B-CatalogWalk",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "state": "targeted-passed",
+  "paired": ".goose/out/rc022-catalog-walk-paired-20261115-01/comparison/report.json",
+  "observations": 17,
+  "native": {
+    "run": "rc022-catalog-walk-native-20261115-01",
+    "passed": 64,
+    "failed": 0
+  },
+  "source": {
+    "run": "rc022-catalog-walk-source-20261115-01",
+    "passed": 26,
+    "failed": 0
+  },
+  "verification_scope_reason": "Actual fixed list-children module paired against Python catalog discovery and selective path resolution. Stable preorder, first-visit duplicate/cycle suppression, unknown entries with deeper children, unnamed ancestry path omission, external leaves with no Session read, live activity, direct-row identity and one-at-a-time observation disposal pass. Root read failures propagate, child corruption/unavailability become diagnostics, domain dependency errors remain fatal, cancellation overrides branch failure and every admitted observation is disposed. Native additionally runs actual v4 SessionQuery/ProjectionRegistry and proves parentSession metadata or ordinary forks alone create no catalog edge. Current query admission/cache regressions pass.",
+  "implementation": "New final-domain list_children module consumes ctx.sessionQuery and ctx.sessions, not registry-wide scans or provider internals. Each observation is synchronously released before the next branch. Path lookup reads only its ancestor catalogs; historical id fallback belongs to the runtime address resolver, not this name helper.",
+  "activation_boundary": "Direct library and actual query consumers only. Full subagent runtime/manager/continuation and Team/SDK/PTC/Remote integration remain C6; no active profile or production pin switch.",
+  "cleanup": ".goose/out/rc022-catalog-walk-source-20261115-01/cleanup.json",
+  "retained_assets": "Commands, XML/logs and actual paired observations retained; all owned synthetic workspaces removed; shared Source/toolchain retained through C9."
+}

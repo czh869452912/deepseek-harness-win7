@@ -54,7 +54,11 @@ def create_assistant_message(input_data: Dict[str, Any]) -> Dict[str, Any]:
 createAssistantMessage = create_assistant_message
 
 
-def create_tool_result_message(input_data: Dict[str, Any]) -> Dict[str, Any]:
+def create_tool_result_message(input_data: Dict[str, Any], format_version: int = 3) -> Dict[str, Any]:
+    if format_version == 4:
+        return create_message(dict(role='tool', source=dict(kind='tool', callId=input_data['callId']),
+                                   toolCallId=input_data['callId'], content=input_data['content'],
+                                   isError=input_data['isError']))
     source = {'kind': 'tool'}
     block = {'type': 'tool-result'}
     if 'callId' in input_data:

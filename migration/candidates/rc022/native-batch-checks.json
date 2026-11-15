@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-15",
+  "unit": "C5-C-NativeBatchProvider",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "state": "targeted-passed",
+  "paired": ".goose/out/rc022-native-batch-paired-verified-20261115-01/comparison/report.json",
+  "observations": 10,
+  "native_initial": {"run": "rc022-native-batch-native-20261115-01", "passed": 178, "failed": 1},
+  "native": {"run": "rc022-native-batch-native-verified-20261115-01", "passed": 180, "failed": 0},
+  "source": {"run": "rc022-native-batch-source-20261115-01", "passed": 221, "failed": 0},
+  "verification_scope_reason": "Actual mounted native executor delegates to shared scheduling rather than another scheduler copy. Batches retain the provider's pipeline, support absent Agent and optional log, carry resolved admission, commit results/context in model order, aggregate successful turn conclusion, use exclusive barriers or bounded parallel pools, and honor a batch override over provider limit=1. Invalid overrides reject before batch dispatch. Cancellation distinguishes invoked/skipped calls. Actual V4 Session writes use tool-role messages; a real result append failure returns ToolBatchExecutionError with exact cause and only the successfully committed prefix. Existing scheduling failure consumers exercise started-call drainage and first-failure preservation on the same shared implementation.",
+  "initial_findings": "The first observer assumed a nested result callId rather than toolCallId. It also prepared a Source Session without entering/announcing it, which correctly rejected writes. Corrected those fixtures and added the required V4 tool-message provider/consumer adaptation; legacy V3 creation stays unchanged. Initial logs remain preserved.",
+  "activation_boundary": "Native batch provider and V4 durable result consumer qualified for these journeys. Agent loop still needs admission ownership, context refresh, current executor dispatch and partial-failure recovery. PTC bindings, model adapters and coordinated composition are not certified here. Production pin and accepted_upstream remain unchanged.",
+  "cleanup": ".goose/out/rc022-native-batch-native-verified-20261115-01/cleanup.json",
+  "cleanup_bytes": 1751380,
+  "retained_assets": "Commands, logs, XML and JSON observations retained. No task test process remains; shared fixed Source and toolchain retained through C9."
+}

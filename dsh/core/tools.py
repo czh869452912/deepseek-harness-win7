@@ -62,6 +62,14 @@ class ToolExecutorUnavailableError(HarnessError):
                          "TOOL_EXECUTOR_UNAVAILABLE")
 
 
+class ToolBatchExecutionError(RuntimeError):
+    def __init__(self, cause: BaseException, partial: Dict[str, Any]):
+        super().__init__('Tool batch execution failed')
+        self.cause = cause
+        self.__cause__ = cause
+        self.partial = partial
+
+
 class ResolvedToolSet:
     """A step's admission, retaining registration identity and exact scope."""
 
@@ -1822,6 +1830,7 @@ __all__ = [
     "ToolExecutionResult", "ToolNotFoundError", "ToolOutputError", "ToolRegistry",
     "ToolActivationError", "ResolvedToolSet",
     "ToolExecutorUnavailableError", "CurrentToolsPlugin",
+    "ToolBatchExecutionError",
     "ToolRunContext", "ToolsPlugin", "ToolsService",
 ]
 

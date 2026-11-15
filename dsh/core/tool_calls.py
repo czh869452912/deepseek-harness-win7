@@ -15,6 +15,7 @@ from dsh.core.tools import (
     TOOL_ABORTED_BEFORE_DISPATCH,
     ToolExecutionInput,
     ToolExecutionResult,
+    ToolBatchExecutionError,
 )
 
 
@@ -38,6 +39,52 @@ class GroupOutcome:
         self.concluded = concluded
 
 
+class _BatchSettlement:
+    def __init__(self, input: Dict[str, Any]):
+        self.input = input
+        self.results = []
+        self.contexts = []
+
+    def start(self, block: Dict[str, Any]) -> Any:
+        log = self.input.get('log')
+        if log is None:
+            return None
+        return append_tool_call(self.input['agent'].session, log['turn'], log['step'], block)
+
+    def commit(self, block: Dict[str, Any], result: ToolExecutionResult, call_seq: Any) -> None:
+        log = self.input.get('log')
+        if log is not None:
+            append_tool_result(self.input['agent'].session, log['turn'], log['step'], block, result, call_seq)
+        self.results.append(dict(callId=block['id'], result=result))
+        self.contexts.extend(result.additional_contexts)
+
+    def skip(self, block: Dict[str, Any]) -> None:
+        from dsh.core.tools import ToolsService
+        self.commit(block, ToolsService._aborted_before_result(), self.start(block))
+
+    def result(self) -> Dict[str, Any]:
+        return dict(results=self.results, additionalContexts=self.contexts,
+                    concluded=any(item['result'].concludes_turn for item in self.results))
+
+
+async def execute_tool_batch(ctx: Any, input: Dict[str, Any], pipeline: Any,
+                             max_parallel: Callable[[], int]) -> Dict[str, Any]:
+    override = input.get('maxParallelToolCalls')
+    if override is not None:
+        override = resolve_max_parallel_tool_calls(override)
+    settlement = _BatchSettlement(input)
+    try:
+        log = input.get('log') or {}
+        await execute_tool_calls(ctx, input.get('agent'), log.get('turn'), log.get('step'),
+                                 input['calls'], input['signal'],
+                                 max_parallel=override if override is not None else max_parallel,
+                                 _settlement=settlement, _pipeline=pipeline,
+                                 tool_set=input.get('toolSet'))
+        return settlement.result()
+    except Exception as error:
+        raise ToolBatchExecutionError(error, settlement.result())
+
+
 def parse_arguments(raw: Any) -> Any:
     if isinstance(raw, dict):
         return raw
@@ -58,9 +105,12 @@ async def execute_tool_calls(
     signal: Optional[asyncio.Event] = None,
     accept_context: Optional[Callable[[Any], None]] = None,
     max_parallel: Optional[Union[int, Callable[[], int]]] = None,
+    _settlement: Optional[Any] = None,
+    _pipeline: Optional[Any] = None,
+    tool_set: Optional[Any] = None,
 ) -> Dict[str, bool]:
-    session = agent.session
-    tools_service = ctx.get("tools")
+    session = getattr(agent, 'session', None)
+    tools_service = _pipeline if _pipeline is not None else ctx.get("tools")
 
     planned: List[PlannedCall] = []
     for block in tool_calls:
@@ -76,6 +126,7 @@ async def execute_tool_calls(
             arguments=args,
             agent=agent,
             signal=signal,
+            toolSet=tool_set,
         )
         planned.append(PlannedCall(block=block, exec_input=exec_input))
 
@@ -103,6 +154,8 @@ async def execute_tool_calls(
             signal=signal,
             accept_context=accept_context,
             max_parallel=resolve_max_parallel_tool_calls(cap),
+            settlement=_settlement,
+            pipeline=tools_service,
         )
 
         next_idx += outcome.consumed
@@ -110,7 +163,10 @@ async def execute_tool_calls(
 
         if outcome.aborted:
             for call in planned[next_idx:]:
-                append_skipped_tool_call(session, turn, step, call.block)
+                if _settlement is not None:
+                    _settlement.skip(call.block)
+                else:
+                    append_skipped_tool_call(session, turn, step, call.block)
             return {"concluded": concluded}
 
     return {"concluded": concluded}
@@ -126,9 +182,11 @@ async def run_group(
     signal: Optional[asyncio.Event],
     accept_context: Optional[Callable[[Any], None]],
     max_parallel: int,
+    settlement: Optional[Any] = None,
+    pipeline: Optional[Any] = None,
 ) -> GroupOutcome:
-    session = agent.session
-    tools_service = ctx.get("tools")
+    session = getattr(agent, 'session', None)
+    tools_service = pipeline if pipeline is not None else ctx.get("tools")
     slots: List[Optional[Slot]] = [None] * len(group)
     call_seqs: List[int] = [-1] * len(group)
 
@@ -153,7 +211,10 @@ async def run_group(
                 else:
                     result = tools_service.finish(slot.exec, slot.result)
 
-            append_tool_result(session, turn, step, call.block, result, call_seqs[committed])
+            if settlement is not None:
+                settlement.commit(call.block, result, call_seqs[committed])
+            else:
+                append_tool_result(session, turn, step, call.block, result, call_seqs[committed])
             if accept_context and result.additional_contexts:
                 for ctx_item in result.additional_contexts:
                     accept_context(json.loads(json.dumps(ctx_item, ensure_ascii=False)))
@@ -166,7 +227,8 @@ async def run_group(
     async def start_call(index: int) -> None:
         nonlocal started, scheduler_failure, aborted
         call = group[index]
-        call_seqs[index] = append_tool_call(session, turn, step, call.block)
+        call_seqs[index] = (settlement.start(call.block) if settlement is not None else
+                            append_tool_call(session, turn, step, call.block))
         started += 1
 
         if not tools_service:
@@ -267,7 +329,10 @@ async def run_group(
 
     if aborted:
         for call in group[started:]:
-            append_skipped_tool_call(session, turn, step, call.block)
+            if settlement is not None:
+                settlement.skip(call.block)
+            else:
+                append_skipped_tool_call(session, turn, step, call.block)
         return GroupOutcome(consumed=len(group), aborted=True, concluded=concluded)
 
     return GroupOutcome(consumed=started, aborted=False, concluded=concluded)
@@ -319,7 +384,7 @@ def append_tool_result(
         "callId": call_id,
         "content": result.content,
         "isError": result.is_error,
-    })
+    }, format_version=getattr(session, 'format_version', 3))
 
     payload: Dict[str, Any] = {
         "turn": turn,

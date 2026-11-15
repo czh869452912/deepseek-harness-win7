@@ -332,6 +332,9 @@ class JsonlGenerationRuntime:
             raise
         if artifact['header']['version'] != target_version:
             raise ValueError('format migration returned v%s, expected v%s' % (artifact['header']['version'], target_version))
+        validate_related = options.get('validateRelatedSources')
+        if validate_related is not None:
+            await resolved(validate_related())
         return PreparedJsonlMigration(self, options, adapter, artifact, snapshot['identity'])
 
 
@@ -424,6 +427,9 @@ class PreparedJsonlMigration:
             if verified['bytes'] != staged['bytes'] or verified['digest'] != staged['digest']:
                 raise ValueError('staged session generation changed during verification')
             await resolved(runtime.barrier('before-source-check',1))
+            validate_related = options.get('validateRelatedSources')
+            if validate_related is not None:
+                await resolved(validate_related())
             before = await runtime.io('stat', source)
             if identity(before) != identity(self.sourceIdentity):
                 raise JsonlGenerationSourceChangedError(source)

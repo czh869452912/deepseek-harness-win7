@@ -121,3 +121,5 @@
 2026-11-15：C1-AV [HMR ignore 语法](hmr-glob-checks.json)完成 101952 个固定 picomatch/Python 精确匹配值与原有 580 值、真实根监听复验，24 项 Python 定向检查通过。覆盖嵌套 extglob、brace、范围、POSIX 类、重复否定、dot/trailing slash 和原生分隔符，保留原依赖的非直觉语义；未声称任意 JavaScript 正则完全等价。初次解析/语义差异保留，全部自有合成输入/工作区和链接已清理。继续写入稳定性选项及后续迁移。
 
 2026-11-15：C1-AW [HMR 写入稳定性与原子替换](hmr-writes-checks.json)完成 9 组固定原版真实文件旅程与 15 项 Python 定向检查。支持 awaitWriteFinish 默认/自定义稳定窗口、未完成新增的 change 抑制、卸载取消、atomic 布尔/数值窗口和编辑器临时文件过滤；轮询观察与通知 debounce 分离。保留便携轮询的扫描间盲区，未认证全部 Chokidar 调度选项。全部自有合成文件和工作区已清理，后续合同继续推进，生产 pin 不变。
+
+2026-11-15：C3-B [关联子代际发布检查](related-publication-checks.json)补齐迁移准备返回前和父代际发布前的 validateRelatedSources 异步检查。18 组明文/zstd 真实文件旅程、8 项原版和 174 项 Python 检查通过，子文件变化/删除拒绝且保留父源，失败暂存清理、并发发布和失败身份覆盖。首轮观察器漏传必需子证据，两端均提前拒绝；语义断言发现并修正，原始结果不作发布通过证据。全部自有合成夹具及时清理；实际安装 v4 Session、成员重收集和生产存储仍待接入。

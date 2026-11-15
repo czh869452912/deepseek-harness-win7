@@ -1,0 +1,27 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-15",
+  "unit": "C3-B-RelatedSourcePublication",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "state": "targeted-passed",
+  "paired": ".goose/out/rc022-related-publication-paired-20261115-02/report.json",
+  "observations": 18,
+  "native": {
+    "run": "rc022-related-publication-native-20261115-02",
+    "passed": 174,
+    "failed": 0
+  },
+  "source": {
+    "run": "rc022-related-publication-source-20261115-01",
+    "passed": 8,
+    "failed": 0,
+    "not_selected": 79
+  },
+  "verification_scope_reason": "Actual plaintext/zstd V3-to-V4 preparation and exclusive publication use independently captured child file revisions; mutation before preparation, after preparation, during verification, at source check and deletion reject without a target. Concurrent publication, cancellation after preparation and failed-promise identity covered. Existing generation filesystem/verifier and prerequisite consumers checked.",
+  "scope": "Call optional validateRelatedSources after decode and before returning preparation, and again after stage verification immediately before parent source identity check. Candidate format adapter and byte verifier are explicit probe seams; installed V4 Session validation and production V4 activation are not established.",
+  "diagnostics": "Initial observer omitted required child evidence and both sides refused before reaching publication. Native semantic assertions caught this; original paired output and failing test are preserved, not passing publication evidence. Corrected observers supply actual collected child facts to the original child-aware catalog and the Python adjacent chain.",
+  "cleanup": ".goose/out/rc022-related-publication-native-20261115-02/cleanup.json",
+  "cleanup_bytes": 96136,
+  "cleanup_links": 0,
+  "remaining": "Parent child-membership recollection, installed V4 Session and backend integration; production reference unchanged."
+}

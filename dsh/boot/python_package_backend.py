@@ -12,7 +12,7 @@ from dsh.boot.plugin_package_operations import active_recorded_run
 from dsh.boot.plugin_install_spec import parse_install_spec
 from dsh.boot.profile import read_profile_manifest, compose_entries, bundle_patch_paths
 from dsh.boot.python_package_cli import package_command
-from dsh.boot.python_package_prepare import prepared_registry_package, prepared_local_package, prepared_git_package
+from dsh.boot.python_package_prepare import prepared_registry_package, prepared_local_package, prepared_git_package, prepared_url_package
 from dsh.boot.python_plugin_snapshot import retained_installed_package
 from dsh.boot.runtime_resolution import _field
 from dsh.cordis.plugin import Plugin
@@ -195,6 +195,7 @@ class PythonPackageBackend(Plugin):
             local = parsed['kind'] in ('path', 'tarball') and 'path' in parsed
             preparation = (prepared_local_package(self.directory, parsed['path'], prepare_options) if local
                 else prepared_git_package(self.directory,args[1],prepare_options) if parsed['kind']=='git'
+                else prepared_url_package(self.directory,args[1],prepare_options) if parsed['kind']=='tarball'
                 else prepared_registry_package(self.directory, args[1], prepare_options))
             async with preparation as prepared:
                 result = prepared.result

@@ -158,4 +158,6 @@
 
 | C8-CP | 停止状态的 canonical CLI 注册表/Git 安装升级、联网前拒绝与离线来源回滚 | [原生包 CLI](python-native-cli-checks.json) |
 
+| C8-CQ | 直接远程 tarball、独立来源/字节身份、真实安装/取消及显式 CLI 离线回滚 | [远程 tarball 获取](python-package-url-checks.json) |
+
 后续继续设置及完整应用组合；最终资格使用 C9 冻结候选的完整门禁。

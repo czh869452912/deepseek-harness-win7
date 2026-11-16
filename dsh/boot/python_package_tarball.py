@@ -46,13 +46,13 @@ def integrity_options(integrity):
 
 
 @contextmanager
-def downloaded_tarball(url,integrity,max_bytes=MAX_BYTES,timeout_seconds=90):
-    artifact_url(url);algorithm,choices=integrity_options(integrity)
+def _download_archive(url,max_bytes,timeout_seconds):
+    artifact_url(url)
     if type(max_bytes) is not int or max_bytes<1 or not isinstance(timeout_seconds,(float,int)) or not 0<timeout_seconds<float('inf'):
         raise ValueError('package tarball limits must be positive and finite')
     request=Request(url,headers={'Accept-Encoding':'identity','User-Agent':'dsh-python-package/1'})
     with tempfile.TemporaryDirectory(prefix='dsh-native-package-') as temporary:
-        path=os.path.join(temporary,'package.tgz');digest=hashlib.new(algorithm);sha256=hashlib.sha256();size=0;deadline=time.monotonic()+timeout_seconds
+        path=os.path.join(temporary,'package.tgz');sha256=hashlib.sha256();size=0;deadline=time.monotonic()+timeout_seconds
         try:
             with build_opener(RegistryRedirects()).open(request,timeout=min(15,timeout_seconds)) as response:
                 artifact_url(response.geturl())
@@ -67,13 +67,29 @@ def downloaded_tarball(url,integrity,max_bytes=MAX_BYTES,timeout_seconds=90):
                         if not chunk:break
                         size+=len(chunk)
                         if size>max_bytes:raise ValueError('package tarball exceeds byte limit')
-                        stream.write(chunk);digest.update(chunk);sha256.update(chunk)
+                        stream.write(chunk);sha256.update(chunk)
                 if length is not None and size!=int(length):raise ValueError('package tarball download is incomplete')
         except HTTPError as error:raise ValueError('package tarball download failed with status '+str(error.code)) from None
         except (URLError,OSError,HTTPException) as error:raise ValueError('package tarball download failed: '+type(error).__name__) from None
+        yield path,dict(url=artifact_url(url,public=True),sha256=sha256.hexdigest(),bytes=size)
+
+
+@contextmanager
+def downloaded_tarball(url,integrity,max_bytes=MAX_BYTES,timeout_seconds=90):
+    algorithm,choices=integrity_options(integrity)
+    with _download_archive(url,max_bytes,timeout_seconds) as (path,record):
+        digest=hashlib.new(algorithm)
+        with open(path,'rb') as stream:
+            for chunk in iter(lambda:stream.read(65536),b''):digest.update(chunk)
         matched=next((token for expected,token in choices if expected==digest.digest()),None)
         if matched is None:raise ValueError('package tarball integrity mismatch')
-        yield path,dict(kind='registry-tgz',url=artifact_url(url,public=True),integrity=matched,sha256=sha256.hexdigest(),bytes=size)
+        yield path,dict(record,kind='registry-tgz',integrity=matched)
+
+
+@contextmanager
+def downloaded_url_tarball(url,max_bytes=MAX_BYTES,timeout_seconds=90):
+    with _download_archive(url,max_bytes,timeout_seconds) as (path,record):
+        yield path,dict(record,kind='url-tgz')
 
 
 def unpack_tarball(source,target,max_bytes=MAX_BYTES,max_files=MAX_FILES):

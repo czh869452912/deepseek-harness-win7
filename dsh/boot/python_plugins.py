@@ -285,6 +285,11 @@ def transact(directory, before, after, name, token, operation):
 
 def dependency_reference(name,record):
     acquisition=record.get('acquisition')
+    if isinstance(acquisition,dict) and acquisition.get('kind')=='url-tgz':
+        from dsh.boot.python_package_tarball import artifact_url
+        if artifact_url(acquisition.get('url'),public=True)!=acquisition['url']:
+            raise ValueError('remote acquisition requires a public URL')
+        return acquisition['url']
     if isinstance(acquisition,dict) and acquisition.get('kind')=='git-tgz':
         from dsh.boot.python_plugin_git_origin import git_dependency
         return git_dependency(acquisition)

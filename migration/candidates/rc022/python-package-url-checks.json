@@ -1,0 +1,24 @@
+{
+  "part": "C8-CQ",
+  "upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "native": [
+    {
+      "run": "rc022-python-package-url-native-20261116-01",
+      "passed": 12
+    },
+    {
+      "run": "rc022-python-package-url-native-consumers-20261116-01",
+      "passed": 38,
+      "skipped": 1,
+      "deselected": 3,
+      "skip_reason": "existing optional pinned-pnpm pack interoperability environment is not selected"
+    }
+  ],
+  "verification_scope_reason": "Actual TLS direct tarball passes captured child acquisition, parent source/manifest/archive validation, live manager activation/tool/removal and canonical CLI upgrade/offline rollback. url-tgz provenance records received archive SHA-256/size and public URL, without claiming registry SRI or metadata. Wrong archive, manifest, URL, source-kind and invented integrity fields refuse; native ABI, compatibility and invalid archive fail before mutation. Cancelling a real paused response drains the child and removes partial preparation. Shared transfer refactor retains registry strongest-SRI checking, byte/time/response limits and all selected unpack guards. Source manager still refuses automatic version updates of a direct URL.",
+  "activation_boundary": "Explicit remote HTTP(S) tarball acquisition available in the mounted native backend and stopped-profile CLI. Default mounted runtime bindings, broader Git selectors, actual mux/browser and C9 qualification remain pending. No full regression or release acceptance.",
+  "cleanup": {
+    "owned_processes_remaining": 0,
+    "retained": "Commands/XML and raw captured package logs retained; synthetic profiles, archive copies, pytest workspaces and temporary home directories removed. Shared Source/toolchains retained until C9.",
+    "removed_bytes": 155391
+  }
+}

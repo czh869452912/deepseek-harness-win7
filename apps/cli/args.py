@@ -34,6 +34,7 @@ Examples:
   dsh plugin --profile tui add <package>     install a plugin into the tui profile
   dsh plugin --profile web add <package>@<version> --registry <https-url> install a native registry release
   dsh plugin --profile web add git+https://host/owner/repo.git#<commit> install a native Git release (Git required)
+  dsh plugin --profile web add https://host/plugin.tgz install a native release from a direct tarball URL
   dsh plugin --profile web add ./plugin.zip  install a Python plugin without Node/pnpm (stop the profile first)
   dsh plugin --profile web upgrade ./v2.zip replace a managed Python plugin (stop the profile first)
   dsh plugin --profile web versions <name>  list current and retained Python source versions as JSON

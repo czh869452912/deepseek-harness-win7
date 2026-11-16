@@ -6,7 +6,7 @@ import sys
 from dsh.boot.plugin_install_spec import parse_install_spec
 from dsh.boot.profile import DEFAULT_PROFILE_BUNDLES, PROFILE_TEMPLATES, init_profile
 from dsh.boot.profile_lease import ProfileLease
-from dsh.boot.python_package_prepare import prepared_registry_package, prepared_git_package
+from dsh.boot.python_package_prepare import prepared_registry_package, prepared_git_package, prepared_url_package
 from dsh.boot.python_plugins import install
 from dsh.boot.python_plugin_versions import upgrade
 
@@ -26,7 +26,7 @@ def native_package_command(profile, directory, args, installation_anchor):
     if raw.lower().startswith(('https:', 'http:')) and raw.split('#', 1)[0].split('?', 1)[0].lower().endswith('.zip'):
         return None
     parsed = parse_install_spec(raw)
-    if parsed['kind'] not in ('registry', 'git'):
+    if parsed['kind'] not in ('registry', 'git', 'tarball') or 'path' in parsed:
         return None
     registry, index = None, 2
     while index < len(args):
@@ -47,6 +47,7 @@ def native_package_command(profile, directory, args, installation_anchor):
 
     async def perform(lease):
         preparation = (prepared_git_package(directory, raw) if parsed['kind'] == 'git'
+            else prepared_url_package(directory, raw) if parsed['kind'] == 'tarball'
             else prepared_registry_package(directory, raw, dict(registry=registry)))
         async with preparation as prepared:
             if prepared.candidate is None:

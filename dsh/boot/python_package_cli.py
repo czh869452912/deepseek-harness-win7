@@ -69,6 +69,17 @@ def _prepare_git(argv,directory):
     print('Prepared '+manifest['name']+'@'+manifest['version'],flush=True)
 
 
+def _prepare_url(argv,directory):
+    from dsh.boot.python_package_url import publish_url
+    from dsh.boot.python_plugins import reparse
+    if len(argv)!=3:raise PackageQueryError('ERR_DSH_PACKAGE_ARGUMENT','prepare-url requires a URL and owned output directory')
+    spec,target=argv[1:]
+    if not os.path.isdir(target) or reparse(target) or os.listdir(target):raise PackageQueryError('ERR_DSH_PACKAGE_ARGUMENT','package preparation output must be an empty owned directory')
+    print('Fetching remote native tarball',flush=True)
+    manifest=publish_url(directory,spec,target)
+    print('Prepared '+manifest['name']+'@'+manifest['version'],flush=True)
+
+
 def main(argv=None):
     argv=list(sys.argv[1:] if argv is None else argv)
     for stream in (sys.stdout,sys.stderr):
@@ -83,6 +94,7 @@ def main(argv=None):
         if argv and argv[0]=='prepare':_prepare(argv,os.getcwd());return 0
         if argv and argv[0]=='prepare-local':_prepare_local(argv,os.getcwd());return 0
         if argv and argv[0]=='prepare-git':_prepare_git(argv,os.getcwd());return 0
+        if argv and argv[0]=='prepare-url':_prepare_url(argv,os.getcwd());return 0
         raise PackageQueryError('ERR_DSH_PYTHON_PACKAGE_OPERATION_UNAVAILABLE','native package mutation is not available in this query adapter')
     except PackageQueryError as error:
         details=dict(code=error.code,message=error.message)

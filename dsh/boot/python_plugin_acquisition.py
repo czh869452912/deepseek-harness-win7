@@ -118,9 +118,10 @@ def verified_record(source, record):
                 or archive_record(source) != {key: record[key] for key in ('sha256', 'bytes')}):
             raise ValueError('Git acquisition differs from its source archive')
         return dict(record)
-    tarball=isinstance(record,dict) and record.get('kind')=='registry-tgz'
-    keys={'kind','url','sha256','bytes'} | ({'integrity'} if tarball else set())
-    origin=tarball and any(key in record for key in ('name','version','registry'))
+    registry=isinstance(record,dict) and record.get('kind')=='registry-tgz'
+    tarball=registry or isinstance(record,dict) and record.get('kind')=='url-tgz'
+    keys={'kind','url','sha256','bytes'} | ({'integrity'} if registry else set())
+    origin=registry and any(key in record for key in ('name','version','registry'))
     if origin:
         from dsh.boot.python_package import package_name
         from dsh.boot.semver import is_exact_version
@@ -133,10 +134,10 @@ def verified_record(source, record):
     if tarball:
         from dsh.boot.python_package_tarball import artifact_url,integrity_options
         safe_url=artifact_url(record.get('url'),public=True)
-        algorithm,choices=integrity_options(record.get('integrity'));integrity_digest=hashlib.new(algorithm)
+        if registry:algorithm,choices=integrity_options(record.get('integrity'));integrity_digest=hashlib.new(algorithm)
     else:safe_url=public_url(record.get('url')) if isinstance(record,dict) else None
     if (not isinstance(record, dict) or set(record) != keys
-            or record['kind'] not in ('https-zip','registry-tgz') or safe_url != record['url']
+            or record['kind'] not in ('https-zip','registry-tgz','url-tgz') or safe_url != record['url']
             or type(record['bytes']) is not int or not 0 < record['bytes'] <= MAX_BYTES):
         raise ValueError('invalid plugin acquisition record')
     expected = checked_digest(record['sha256'])
@@ -150,8 +151,8 @@ def verified_record(source, record):
             if size > MAX_BYTES:
                 raise ValueError('plugin download exceeds byte limit')
             digest.update(chunk)
-            if tarball:integrity_digest.update(chunk)
+            if registry:integrity_digest.update(chunk)
     if size != record['bytes'] or digest.hexdigest() != expected:
         raise ValueError('plugin acquisition record differs from its source archive')
-    if tarball and not any(value==integrity_digest.digest() for value,token in choices):raise ValueError('plugin acquisition integrity differs from its source archive')
+    if registry and not any(value==integrity_digest.digest() for value,token in choices):raise ValueError('plugin acquisition integrity differs from its source archive')
     return dict(record, sha256=expected)

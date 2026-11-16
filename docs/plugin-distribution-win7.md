@@ -84,7 +84,7 @@ dsh.bat --profile web
 
 Build is only needed for exported Client source. It packages supported plain JS with the original evaluator and Remote bridge; it is not a TS/JSX compiler and does not ensure a selected Slot exists in the installed UI. Choose the appropriate persistent Slot when delivering a dynamic Run-card experiment, then check the browser. Rebuild after Client source changes. Host-only handwritten examples go directly to pack/add.
 
-Stop the target profile before add/upgrade/rollback/remove; closing the browser alone is insufficient. Installation copies source into a managed snapshot; later development edits do not change the installed package. Add accepts a directory, ZIP, local npm-style `.tgz`/`.tar.gz`, HTTPS ZIP with an explicit --sha256 digest, npm-compatible registry spec, or Git spec. Registry and Git commands prepare in an owned Python child and revalidate the publication before committing. Every format must contain the native `dsh.python` descriptor and its declared release files. Use install validation followed by actual tool/RPC/browser execution after cold start, including Chinese and space-containing paths.
+Stop the target profile before add/upgrade/rollback/remove; closing the browser alone is insufficient. Installation copies source into a managed snapshot; later development edits do not change the installed package. Add accepts a directory, ZIP, local npm-style `.tgz`/`.tar.gz`, HTTPS ZIP with an explicit --sha256 digest, npm-compatible registry spec, Git spec, or direct HTTP(S) `.tgz`/`.tar.gz` URL. Remote commands prepare in an owned Python child and revalidate the publication before committing. Every format must contain the native `dsh.python` descriptor and its declared release files. Use install validation followed by actual tool/RPC/browser execution after cold start, including Chinese and space-containing paths.
 
 Registry commands support `add/upgrade <name>@<version> [--registry <https-url>]`
 without Node/pnpm. Metadata selects the release; its strongest supported SRI
@@ -95,6 +95,14 @@ release; the installed dependency records the resolved full commit and package
 directory. Registry and Git acquisition failures never fall back to pnpm. Use
 the same `upgrade` command to retain the previous verified source generation;
 `rollback` restores it offline, including its original acquisition identity.
+
+A direct tarball command such as `add https://host/releases/plugin-1.0.0.tgz`
+records the downloaded archive's SHA-256 and byte count with its public URL.
+This identifies the bytes received; it does not provide the external SRI pin
+supplied by registry metadata. The plugin manager can install/remove this source;
+its automatic version update flow accepts registry or fixed Git sources. Use
+the stopped-profile `upgrade <tarball-url>` and offline `rollback` commands for
+explicit direct URL replacements.
 
 ## Upgrade, rollback and removal
 

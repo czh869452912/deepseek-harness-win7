@@ -145,8 +145,8 @@ def _branch(value):
     return result
 
 
-def satisfies(version, requirement):
-    """Return false for malformed/empty ranges; prereleases always participate."""
+def satisfies(version, requirement, include_prerelease=True):
+    """Check a range; host compatibility includes prereleases by default."""
     if not isinstance(requirement, str) or not requirement.strip():
         return False
     try:
@@ -162,6 +162,10 @@ def satisfies(version, requirement):
             if op == '<':
                 return candidate < bound
             return candidate <= bound
-        return any(all(matches(op, bound) for op, bound in branch) for branch in branches)
+        def accepts(branch):
+            if not all(matches(op,bound) for op,bound in branch):return False
+            if include_prerelease or candidate.pre is None:return True
+            return any(bound.pre is not None and bound.core==candidate.core for op,bound in branch)
+        return any(accepts(branch) for branch in branches)
     except (ValueError, TypeError, OverflowError):
         return False

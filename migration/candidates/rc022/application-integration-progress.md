@@ -124,4 +124,6 @@
 
 | C8-BY | 真实 Git 提交与连通检查、503 保留旧包、403/缺少 Git 交由安装器及原提交恢复 | [Git 更新链](manager-git-update-checks.json) |
 
+| C8-BZ | 无 Node 注册表元数据、真实 pnpm 版本选择、配置/认证路由与有界读取 | [Python 包元数据](python-package-query-checks.json) |
+
 后续继续设置及完整应用组合；最终资格使用 C9 冻结候选的完整门禁。

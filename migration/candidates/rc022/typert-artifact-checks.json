@@ -1,0 +1,24 @@
+{
+  "part": "C8-CR",
+  "upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "paired": {
+    "run": "rc022-typert-artifact-paired-20261116-01",
+    "source_artifacts": 40,
+    "qualified_readers": 38,
+    "codec_rows": 814,
+    "validation_cases": 14652,
+    "differences": 0,
+    "source_observation_sha256": "4502fdffb005967c6240c0a540057724b4e45fd95a6b46b934cedb5e875aed8e"
+  },
+  "native": {
+    "run": "rc022-typert-artifact-native-20261116-01",
+    "passed": 63
+  },
+  "verification_scope_reason": "Unmodified current generated host artifacts are imported with actual upstream Zod and read through the Python restricted grammar. Ordinary/strict parameter codecs and results agree on 18 samples each, including undefined, JSON containers, strip/strict objects and recursive trees; generated JSON Schema/type/error metadata agrees. Schema factories retain cached identity; declared lazy references resolve without evaluation. Existing legacy artifacts, Loader registration and dispatch consumers pass. Executable extensions, arbitrary getters/functions, mismatched caches, unbound factories and unsupported exports refuse. No JavaScript is evaluated by the Python reader.",
+  "activation_boundary": "The 38 qualified declarative host artifacts can feed actual Remote registration. workspace-files and office-kit artifacts still explicitly refuse their binary encoder program syntax; this is not a claim of all-artifact readiness. Full RemoteInfo named-input/direct invocation helper capabilities, binary generated adaptation, actual manager mux/browser and C9 default promotion remain pending. Source schema sample equivalence is bounded, not arbitrary-Zod equivalence or release acceptance.",
+  "cleanup": {
+    "owned_processes_remaining": 0,
+    "retained": "Commands/XML, input artifact hashes, compressed exact upstream observations, paired summary and schema program retained. Redundant uncompressed successful observations were removed by the probe; synthetic Loader/test workspaces removed. Shared Source/toolchains retained until C9.",
+    "removed_bytes": 3422
+  }
+}

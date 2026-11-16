@@ -227,4 +227,8 @@ class ArtifactParser:
 
 def read_generated_artifact(path):
     with open(path, "r", encoding="utf-8") as stream:
-        return ArtifactParser(stream.read()).parse()
+        source=stream.read()
+    if 'createTypertRemoteInfo' in source:
+        from dsh.typert.artifact_current import CurrentArtifactParser
+        return CurrentArtifactParser(source).parse()
+    return ArtifactParser(source).parse()

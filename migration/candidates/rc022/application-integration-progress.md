@@ -308,4 +308,6 @@
 
 | C8-FM | 账户受限地址／请求头、真实 HTTP 响应约束、取消收尾与安全诊断 | [账户请求协议](account-protocol-checks.json) |
 
+| C8-FN | 通知数据与登录响应校验、旧 token 退出重试及取消清理 | [通知与退出](account-notification-checks.json) |
+
 后续继续完整应用组合；最终资格使用 C9 冻结候选的完整门禁。

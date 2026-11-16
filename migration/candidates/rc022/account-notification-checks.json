@@ -1,0 +1,12 @@
+{
+  "batch": "C8-FN",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "scope": "Notification queries, login payload validation and captured-token logout retry.",
+  "paired": {"observations": 235, "differences": 0, "report": ".goose/out/rc022-account-notification-paired1-20261116-01/report.json"},
+  "logout_http": {"observations": 17, "differences": 0, "report": ".goose/out/rc022-account-notification-logout2-20261116-01/report.json"},
+  "native": {"passed": 11, "report": ".goose/out/rc022-account-notification-native-20261116-01/command.json"},
+  "source": {"passed": 97, "report": ".goose/out/rc022-account-notification-source-20261116-01/command.json"},
+  "coverage": ["Actual Source notification query functions and exported initialization/exchange Zod schemas", "ISO calendar/leap-year, required seconds, fractional precision and offset boundaries", "Unsupported notification entries skipped in order; invalid envelopes and content identity mismatch reject", "Action target allowlist, stripped unknown fields, detached arbitrary JSON data and safe validation diagnostics", "Exact poll delay upper bound and boolean event acknowledgement", "ASCII exchange tokens, positive initialization TTL, URL validation and unknown-field stripping", "Real independent HTTP logout servers: captured old token, retry exhaustion, disabled retry, success, lifetime abort and per-request timeout", "Exponential delay sequence, cancellation during delay, timer/listener cleanup and worker teardown"],
+  "limits": ["Account state-machine and Web/remote composition remain pending", "First logout probe used a 10ms deadline that could expire before a local connection reached the server; final 100ms fixture observes all attempts without changing production behavior", "Targeted results do not establish release acceptance"],
+  "cleanup": {"removed_bytes": 251071, "removed": ["Owned pytest workspaces", "Owned tmp and home directories"], "retained": "Commands, inputs, paired results, compact observations and first-run diagnostics; no remaining task-owned process"}
+}

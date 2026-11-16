@@ -258,4 +258,6 @@
 
 | C8-EN | 工作区 Git 快照：私有 index/对象库、改动/重命名/忽略、blob 与子进程期限/取消清理 | [Git 快照](change-git-checks.json) |
 
+| C8-EO | 工作区文本差异：原版行匹配/三行 hunk、计数与超时整段替换及 1109 组对照 | [文本差异](change-compare-checks.json) |
+
 后续继续完整应用组合；最终资格使用 C9 冻结候选的完整门禁。

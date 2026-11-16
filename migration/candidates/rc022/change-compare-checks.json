@@ -1,0 +1,26 @@
+{
+  "part": "C8-EO",
+  "upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "paired": {
+    "run": "rc022-change-compare-paired-20261116-01",
+    "observations": 1109,
+    "differences": 0
+  },
+  "native": {
+    "run": "rc022-change-compare-native-20261116-01",
+    "passed": 1
+  },
+  "source": {
+    "run": "rc022-change-compare-source-20261116-01",
+    "passed": 3,
+    "failed": 0
+  },
+  "verification_scope_reason": "Actual original compareText against native port of pinned jsdiff 9.0.0 line edit-path and hunk construction. Exhaustive binary-alphabet lines through length four, seeded longer edits, repeated ambiguous lines, near/far change merging, CRLF, Unicode/NUL, null/empty sides, ignored final newline and deterministic forced coarse fallback compare all hunk coordinates, prefixes and counts. Native semantic verification reconstructs every resulting file from its hunks and checks old-side content/counts independently.",
+  "activation_boundary": "Text comparison prerequisite only; recorder/service integration pending. Original jsdiff BSD-3-Clause attribution/license is retained beside the port and included by the existing dsh Portable copy rule.",
+  "limits": "Normal comparisons use a generous budget; forced expiry verifies coarse fallback without claiming equivalent wall-clock scheduling at submillisecond boundaries. No per-turn recorder or browser diff acceptance.",
+  "cleanup": {
+    "removed_bytes": 307144,
+    "owned_processes_remaining": 0,
+    "retained": "Exact paired corpus/results/hash report, native reconstruction observation, test command/log/XML and Source result retained. Owned pytest workspace/tmp/home removed; shared Source/toolchains retained until C9."
+  }
+}

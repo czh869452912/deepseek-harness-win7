@@ -131,7 +131,11 @@ def copy_source(source, target):
             shutil.copyfile(path, destination)
         return target
     if not zipfile.is_zipfile(source):
-        raise ValueError("Python plugin source must be a directory or ZIP")
+        with open(source,'rb') as stream:magic=stream.read(2)
+        if magic==b'\x1f\x8b':
+            from dsh.boot.python_package_tarball import unpack_tarball
+            return unpack_tarball(source,target)
+        raise ValueError("Python plugin source must be a directory, ZIP or npm tarball")
     with zipfile.ZipFile(source) as archive:
         seen, total = set(), 0
         entries = archive.infolist()

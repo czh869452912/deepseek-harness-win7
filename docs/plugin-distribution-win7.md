@@ -84,7 +84,7 @@ dsh.bat --profile web
 
 Build is only needed for exported Client source. It packages supported plain JS with the original evaluator and Remote bridge; it is not a TS/JSX compiler and does not ensure a selected Slot exists in the installed UI. Choose the appropriate persistent Slot when delivering a dynamic Run-card experiment, then check the browser. Rebuild after Client source changes. Host-only handwritten examples go directly to pack/add.
 
-Stop the target profile before add/upgrade/rollback/remove; closing the browser alone is insufficient. Installation copies source into a managed snapshot; later development edits do not change the installed package. Add accepts a directory, ZIP, or HTTPS ZIP with an explicit --sha256 digest. Use install validation followed by actual tool/RPC/browser execution after cold start, including Chinese and space-containing paths.
+Stop the target profile before add/upgrade/rollback/remove; closing the browser alone is insufficient. Installation copies source into a managed snapshot; later development edits do not change the installed package. Add accepts a directory, ZIP, local npm-style `.tgz`/`.tar.gz`, or HTTPS ZIP with an explicit --sha256 digest. Every format must contain the native `dsh.python` descriptor and its declared release files. Use install validation followed by actual tool/RPC/browser execution after cold start, including Chinese and space-containing paths.
 
 ## Upgrade, rollback and removal
 

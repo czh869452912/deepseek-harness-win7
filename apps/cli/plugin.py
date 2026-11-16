@@ -84,7 +84,7 @@ def run_plugin(profile, args):
         sys.stdout.write('dsh: {} Python plugin {} into {}\n'.format('installed' if args[0] == 'add' else 'upgraded', name, profile))
         return 0
     if len(args) == 2 and args[0] in ("add", "upgrade") and (
-        os.path.exists(args[1]) or args[1].lower().endswith(".zip") or args[1].startswith(("./", "../", ".\\", "..\\"))
+        os.path.exists(args[1]) or args[1].lower().endswith((".zip", ".tgz", ".tar.gz")) or args[1].startswith(("./", "../", ".\\", "..\\"))
     ):
         if args[0] == 'upgrade' and not os.path.isfile(os.path.join(directory, 'package.json')):
             raise ValueError('upgrade requires an existing profile and managed Python plugin')

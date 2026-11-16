@@ -1,0 +1,9 @@
+{
+  "part": "C8-DJ",
+  "upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "native": {"run": "rc022-shell-job-bindings-consumers3-20261116-01", "passed": 32},
+  "verification_scope_reason": "Three deterministic owned-operation cases verify successful and failed public completion joins native handle cleanup once the process range is gone, while direct parent completion remains available with live detached descendants. Actual Windows spawn/Job ownership, cancellation, failed admission, handle inheritance and PowerShell promotion/output consumers pass, together with direct shell-job/controller/model tools.",
+  "diagnostics": "First consumer run observed a completed PowerShell job while runtime.live still held its cleanup owner. An initial unconditional cleanup join incorrectly delayed direct-parent completion until its detached descendant exited; the existing 60-second descendant regression detected this. Conditional range-exit join preserves the separate done versus waitForExit contract. Both failed logs/XML retained; final selected collection passes in 7.24 seconds.",
+  "activation_boundary": "Native Windows ownership fix; it adds no process termination or system API. Source behavior comparison and control-fd support retain their prior boundaries. Candidate shell binding integration has its separate receipt.",
+  "cleanup": {"owned_processes_remaining": 0, "removed_bytes_shared_batch": 104113, "retained": "Commands, all failed/passing logs/XML and real wire observations retained. Ten run workspaces/homes/tmp directories removed after subprocess and fixture consumers finished. Shared pinned Source/toolchains retained until C9."}
+}

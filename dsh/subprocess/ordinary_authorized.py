@@ -36,7 +36,14 @@ class OrdinaryHandle:
         self.stdout,self.stderr=raw.stdout,raw.stderr
         self.control=None
         self.collected={name:OutputReader(getattr(raw.collected,name)) for name in ('stdout','stderr') if getattr(raw.collected,name) is not None}
-        async def outcome():return (await asyncio.shield(raw.done)).to_dict()
+        self.release=None
+        async def outcome():
+            try:return (await asyncio.shield(raw.done)).to_dict()
+            finally:
+                # Direct process completion may leave detached descendants in
+                # its Job. Preserve that result; when the range has exited,
+                # join cleanup so ordinary completed jobs expose no stale owner.
+                if self.release is not None and not raw._tree_alive():await asyncio.shield(self.release)
         self.done=CleanupPromise(outcome())
         self.detach=subscribe_abort(signal,lambda _:raw.terminate())
         self.writer=None
@@ -77,6 +84,7 @@ def spawn(runtime,spec):
         if process is not None:process.close_handles()
         runtime.live.discard(handle)
     task=asyncio.create_task(release())
+    handle.release=task
     runtime.ordinary_cleanups.add(task)
     def settled(done):
         if not done.cancelled() and done.exception() is None:

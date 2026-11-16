@@ -244,4 +244,6 @@
 
 | C8-EG | MCP 生产监督器：代次/状态、凭据刷新、期限与发布资格、关闭失败替换阻断及实际 Fiber 重载 | [MCP 连接监督器](mcp-supervision-checks.json) |
 
+| C8-EH | MCP 管理条目：易变配置、写入校验顺序/跨传输字段、模板与客户端配置隔离转换 | [MCP 管理条目](mcp-manager-entries-checks.json) |
+
 后续继续完整应用组合；最终资格使用 C9 冻结候选的完整门禁。

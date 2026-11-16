@@ -1,0 +1,9 @@
+{
+  "part": "C8-EH",
+  "upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "paired": {"run": "rc022-mcp-manager-entries-paired-20261116-01", "observations": 56, "differences": 0},
+  "targeted": {"run": "rc022-mcp-manager-entries-consumers-20261116-01", "passed": 26},
+  "verification_scope_reason": "Actual Source manager private ServerEntrySchema, validateEntries and toClientConfig observe both transports, disabled entries, defaults, budgets, cross-transport fields, template grammar, reconnect bounds and server-name edge cases with exact error order/messages. Both conversions verify collection identity separation. Native volatile snapshot test verifies detached raw input, immutable stored collections and independently mutable client collections. Direct consumers cover volatile semantics, credentials and actual managed-client resource configuration behavior.",
+  "activation_boundary": "Entry schema, volatile manager config, write-time validation and client conversion helpers are ready. No manager fleet, registration lifetime, reconciliation, watch stream or Remote route is activated in this batch. Those remain the next integration work. No overall MCP/Web/release acceptance.",
+  "cleanup": {"owned_processes_remaining": 0, "removed_bytes": 26209, "retained": "Paired inputs/hashes/observations, native real-process and Loader observations, commands/log/XML. Owned workspace/home/tmp removed; private Source export seam removed in finally and verified absent. Shared fixed Source/toolchains retained until C9."}
+}

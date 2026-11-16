@@ -14,7 +14,7 @@ from test_rc022_manager_wire import SOURCE
 async def test_all_literal_empty_source_hosts_and_configuration_hosts_mount_through_loader(tmp_path):
     manifest = json.loads((Path(__file__).resolve().parents[1]/'dsh/client/pure_hosts_current.json').read_text(encoding='utf-8'))
     assert capture(SOURCE) == manifest
-    specifications = [('client-'+row['name'].split('/dsh-client-', 1)[1], {}) for row in manifest['rows']]
+    specifications = [(row['name'].split('/dsh-', 1)[1], {}) for row in manifest['rows']]
     specifications += [('client-shortcuts', dict(stopSequenceMs=700)), ('client-ui-sidebar-documentpreview', dict(office=dict(maxPending=3), excel=dict(maxCells=1200)))]
     ctx = await setup(tmp_path, extra=specifications)
     try:

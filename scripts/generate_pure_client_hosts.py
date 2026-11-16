@@ -14,7 +14,7 @@ def capture(source):
     if revision != TARGET:
         raise RuntimeError('unexpected Source revision')
     rows = []
-    for entry in sorted((source/'packages/client').glob('*/src/index.ts')):
+    for entry in sorted((source/'packages').glob('*/*/src/index.ts')):
         text = entry.read_text(encoding='utf-8')
         # A full match deliberately excludes imports, Config, declarations with
         # initializers and every other top-level executable statement.
@@ -24,7 +24,9 @@ def capture(source):
         manifest = entry.parent.parent/'package.json'
         package = json.loads(manifest.read_text(encoding='utf-8'))
         if not package.get('dsh', {}).get('client'):
-            raise RuntimeError('empty client entry lacks client declaration: '+str(entry))
+            continue
+        if not package['name'].startswith('@deepseek-ai/dsh-'):
+            raise RuntimeError('unexpected client package name: '+package['name'])
         rows.append(dict(name=package['name'], source=entry.relative_to(source).as_posix(),
             source_sha256=hashlib.sha256(entry.read_bytes()).hexdigest(),
             manifest_sha256=hashlib.sha256(manifest.read_bytes()).hexdigest()))

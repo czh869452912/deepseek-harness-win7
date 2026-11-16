@@ -5,7 +5,8 @@ from dsh.client.surfaces import _empty_host_half
 
 PURE_HOST_HALVES = {}
 for _row in json.loads(Path(__file__).with_name('pure_hosts_current.json').read_text(encoding='utf-8'))['rows']:
-    _slug = _row['name'][len('@deepseek-ai/dsh-client-'):]
+    _prefix = '@deepseek-ai/dsh-client-' if _row['name'].startswith('@deepseek-ai/dsh-client-') else '@deepseek-ai/dsh-'
+    _slug = _row['name'][len(_prefix):]
     _name = ''.join(word.capitalize() for word in _slug.split('-')) + 'Host'
     PURE_HOST_HALVES[_row['name']] = _name
     globals()[_name] = _empty_host_half(

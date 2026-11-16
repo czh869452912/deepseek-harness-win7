@@ -1,0 +1,10 @@
+{
+  "part": "C8-DS",
+  "upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "native": {"run": "rc022-file-reference-bindings-native2-20261116-01", "passed": 57},
+  "source": {"run": "rc022-file-reference-bindings-source-20261116-01", "passed": 1, "pending": 0, "failed": 0},
+  "verification_scope_reason": "Expand the literal-empty Host generator over all Source package groups, still requiring an actual client declaration and an exact empty complete entrypoint. This captures message-quotes, experimental and extension browser Hosts from their real source rather than guesses about their location. Actual Loader mounts all 57 captured entries plus the two configuration Hosts. A reproducible callback capture provides the exact original file-reference prompt; its independent plugin owns the shared system-prompt effect. Current UI native-open routes no longer mount historical backtick guidance or depend on systemPrompt. Prompt ownership/lifecycle and all existing current present-open cases pass; original shared prompt suite passes.",
+  "diagnostics": "The first ownership check exposed the already-outstanding old Web profile input composition: Current Tools has no selected executor and current gateway/subagent dependencies remain pending. This prompt unit now explicitly mounts the native executor before assembling; raw failure and warnings retained. It does not certify that profile. UI unload leaves the separately mounted guidance active; guidance unload removes it.",
+  "activation_boundary": "Client Host discovery and shared prompt ownership only. Current deliverables changes-summary/diff/open routes and workspaceChanges dependency, full Web input composition and browser/release acceptance remain outstanding. The old full-profile incompleteness is explicitly preserved.",
+  "cleanup": {"owned_processes_remaining": 0, "removed_bytes": 36632, "retained": "Commands, failed/passing XML/logs, Source results, candidate input rows and client Host/page-global observations retained. Owned test workspaces/homes/tmp directories removed. Shared fixed Source/toolchains remain owned until C9."}
+}

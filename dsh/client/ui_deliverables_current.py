@@ -4,7 +4,7 @@ import json
 import re
 from urllib.parse import parse_qs, urlsplit
 
-from dsh.client.ui_deliverables import ClientUiDeliverablesPlugin
+from dsh.cordis.plugin import Plugin
 from dsh.core.abort import AbortController
 from dsh.core.cancellation import subscribe_abort
 from dsh.host.connection.rpc_host import response as connection_response
@@ -114,9 +114,9 @@ def register_present_open(ctx):
     ctx.get('connection').fetch.register(dict(path=PRESENT_OPEN_PATH, methods=['POST'], requestBody='buffered', fetch=fetch))
 
 
-class CurrentClientUiDeliverables(ClientUiDeliverablesPlugin):
-    inject = ['systemPrompt', 'connection', 'sessionQuery', 'sessionController', 'workspaceFiles', 'fs', 'sandboxPolicy']
+class CurrentClientUiDeliverables(Plugin):
+    id = name = '@deepseek-ai/dsh-client-ui-deliverables'
+    inject = ['connection', 'sessionQuery', 'sessionController', 'workspaceFiles', 'fs', 'sandboxPolicy']
 
     def apply(self, ctx):
         register_present_open(ctx)
-        super().apply(ctx)

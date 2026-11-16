@@ -282,6 +282,66 @@
       "source": "packages/client/ui-workspace/src/index.ts",
       "source_sha256": "7a4f9356cd158169c0e87d92eee6871ca6b1527851fb905a9c5ab8d9e87cd864",
       "manifest_sha256": "b88cc4ae3351ce0f0f1978c4c807c2e5604b5dc70c75d7b9a1a8000aafbeac11"
+    },
+    {
+      "name": "@deepseek-ai/dsh-client-ui-action-cards",
+      "source": "packages/experimental/client-ui-action-cards/src/index.ts",
+      "source_sha256": "b6f502fa3110bb88bd34c74331b674c18b11515871e05bd9c5234d2d107a6e05",
+      "manifest_sha256": "a6a8f0751d26ac49744c04c7705a1889714f5b8e4fe38eb00795dddcdabc36e7"
+    },
+    {
+      "name": "@deepseek-ai/dsh-experimental-client-ui-claude-code-mods",
+      "source": "packages/experimental/client-ui-claude-code-mods/src/index.ts",
+      "source_sha256": "dc1801ae5e8893b140d965d69912368fce54dbb1a75a01df91c38a2129294d79",
+      "manifest_sha256": "572d1b63ee14c674fdc1672657e41c8f9772f9a47d3016ec11a4a37ac0de08ec"
+    },
+    {
+      "name": "@deepseek-ai/dsh-client-ui-creation-recommendations",
+      "source": "packages/experimental/client-ui-creation-recommendations/src/index.ts",
+      "source_sha256": "b6f502fa3110bb88bd34c74331b674c18b11515871e05bd9c5234d2d107a6e05",
+      "manifest_sha256": "4a6187e00e06d43980375e180d332b9e134a091c6762d93fdecd8fc3c512e09f"
+    },
+    {
+      "name": "@deepseek-ai/dsh-client-ui-plugin-recommendations",
+      "source": "packages/experimental/client-ui-plugin-recommendations/src/index.ts",
+      "source_sha256": "b6f502fa3110bb88bd34c74331b674c18b11515871e05bd9c5234d2d107a6e05",
+      "manifest_sha256": "9981bda600c02775196110086b8ba321f8c688a4407917571d3f4f4c66da34d5"
+    },
+    {
+      "name": "@deepseek-ai/dsh-experimental-client-ui-stats",
+      "source": "packages/experimental/client-ui-stats/src/index.ts",
+      "source_sha256": "54efd2855aba81c2d182a963e626ad8667e94ee4d510dc136410cd2e4f8320f2",
+      "manifest_sha256": "af05c3ac2426f5922f1e1e4f5fde7aba56f10c63f64b19ad6edd727f55f38252"
+    },
+    {
+      "name": "@deepseek-ai/dsh-experimental-client-ui-voice-input",
+      "source": "packages/experimental/client-ui-voice-input/src/index.ts",
+      "source_sha256": "64b3fedbf40bf8c58da7017cd92e5e6a5bcb9acf0f91ea351a7085423a1e79a1",
+      "manifest_sha256": "d0a4076662f2e37acbd93f56f7ddb77f131b1df8a8efbf0792189e7bb459a80a"
+    },
+    {
+      "name": "@deepseek-ai/dsh-experimental-session-inspector",
+      "source": "packages/experimental/session-inspector/src/index.ts",
+      "source_sha256": "3f5e7c3d96242fb1c92db64f53b3a3a8d17efdd8a872b9dba52213da9311560c",
+      "manifest_sha256": "eac0cbf2b73c583efabedef281421df7de67ffab1fccf5df951051d74239f764"
+    },
+    {
+      "name": "@deepseek-ai/dsh-cordis-client-runner",
+      "source": "packages/extensions/cordis-client-runner/src/index.ts",
+      "source_sha256": "6e1450909e2f6f301261c05988b7df8118e7c88f99a2a15b665708da88df7260",
+      "manifest_sha256": "e5497220249a50301ef523bab55e64764441305e06c4db315e726b63e1aaac98"
+    },
+    {
+      "name": "@deepseek-ai/dsh-client-ui-cordis",
+      "source": "packages/extensions/ui-cordis/src/index.ts",
+      "source_sha256": "8a8c10f282a7692a969cdaad73df279886b8e54c04b06daa044c08f90e59ead4",
+      "manifest_sha256": "ee9d254cfde2213aa64fef5488f5251e7b929a22ee3358120b5950c6aab93bde"
+    },
+    {
+      "name": "@deepseek-ai/dsh-message-quotes",
+      "source": "packages/session/message-quotes/src/index.ts",
+      "source_sha256": "8389066f0935cf0c63bd0ea29e96a32d1d24bda61e9f5003925523dbec399185",
+      "manifest_sha256": "fd1da8c920d578e65c98d4b3e2566a009e88a28b015114e57c71c37e9931f80f"
     }
   ]
 }

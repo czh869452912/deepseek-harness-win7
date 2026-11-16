@@ -15,6 +15,7 @@ FIXTURE=None
 FIELDS=['name','version','description','dsh','engines','peerDependencies']
 CASES=[dict(name='latest',spec='fresh'),dict(name='tag',spec='fresh@next'),dict(name='exact',spec='fresh@1.0.0'),dict(name='v-prefix',spec='fresh@v1.0.0'),dict(name='range',spec='fresh@^1.0.0'),dict(name='star',spec='fresh@*'),dict(name='prerelease-range',spec='fresh@>=2.0.0-beta.1 <2.0.0'),dict(name='listing',spec='fresh',fields=['versions','time','dist-tags']),dict(name='missing-field',spec='fresh',fields=['unknown']),dict(name='scoped',spec='@scope/pkg@1.0.0'),dict(name='missing',spec='fresh@8.0.0')]
 CASES += [dict(name='nested-field',spec='fresh',fields=['dsh.bundle.patch']),dict(name='alias',spec='alias@npm:@scope/pkg@^1.0.0'),dict(name='complete-time',spec='timed',fields=['versions','time','dist-tags']),dict(name='deprecated-latest',spec='deprecated@*'),dict(name='deprecated-range',spec='deprecated@^1.0.0'),dict(name='deprecated-exact',spec='deprecated@1.2.0'),dict(name='empty',spec='empty')]
+CASES += [dict(name='root-name-authority',spec='root-name')]
 
 
 class RegistryFixture:
@@ -31,6 +32,8 @@ class RegistryFixture:
                 if name=='timed':document['time']={version:'2026-01-01T00:00:00.000Z' for version in versions}
                 if name=='deprecated':versions['1.2.0']['deprecated']='retired'
                 if name=='empty':document['versions']={}
+                if name=='root-name':
+                    for manifest in versions.values():manifest['name']='unexpected-nested-name'
                 payload=json.dumps(document).encode('utf-8');self.send_response(200);self.send_header('Content-Type','application/json');self.send_header('Content-Length',str(len(payload)));self.end_headers();self.wfile.write(payload)
             def log_message(self,*args):pass
         self.server=ThreadingHTTPServer(('127.0.0.1',0),Handler);self.thread=threading.Thread(target=self.server.serve_forever,daemon=True);self.thread.start();self.url='http://127.0.0.1:'+str(self.server.server_port)+'/'

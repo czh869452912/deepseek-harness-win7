@@ -16,7 +16,7 @@ from scripts.rc022_python_package_query_probe import observe
 @pytest.mark.asyncio
 async def test_real_registry_selection_tags_ranges_aliases_deprecation_and_fields(tmp_path):
     rows={row['name']:row['result'] for row in await observe(tmp_path)}
-    assert len(rows)==18
+    assert len(rows)==19
     assert rows['latest']['version']==rows['range']['version']==rows['star']['version']=='1.2.0'
     assert rows['tag']['version']==rows['prerelease-range']['version']=='2.0.0-beta.2'
     assert rows['exact']['version']=='1.0.0'
@@ -29,6 +29,7 @@ async def test_real_registry_selection_tags_ranges_aliases_deprecation_and_field
     assert rows['deprecated-range']['version']=='1.0.0'
     assert rows['deprecated-exact']['version']=='1.2.0'
     assert rows['empty']==dict(error='ERR_PNPM_NO_VERSIONS')
+    assert rows['root-name-authority']['name']=='root-name'
 
 
 @contextmanager
@@ -104,3 +105,11 @@ def test_redirect_rejects_non_http_or_https_downgrade():
     redirects=RegistryRedirects();request=Request('https://example.invalid/metadata')
     for destination in ['file:///secret','http://example.invalid/metadata','https://user:secret@example.invalid/metadata']:
         with pytest.raises(PackageQueryError):redirects.redirect_request(request,None,302,'moved',{},destination)
+
+
+def test_a_late_completed_metadata_read_cannot_succeed(monkeypatch):
+    from types import SimpleNamespace
+    from dsh.boot import python_package_query as query
+    ticks=iter([0,0,2]);monkeypatch.setattr(query,'time',SimpleNamespace(monotonic=lambda:next(ticks)))
+    with registry(lambda path:(200,{},b'{}')) as (url,requests):
+        with pytest.raises(PackageQueryError,match='ETIMEDOUT'):read_packument('fresh',url,timeout_ms=1000)

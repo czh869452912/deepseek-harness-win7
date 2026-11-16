@@ -130,4 +130,6 @@
 
 | C8-CB | SRI 固定 tarball、解压前限额与路径/类型校验、真实 pnpm 归档和 Native 存储/启动 | [Python 包 tarball](python-package-tarball-checks.json) |
 
+| C8-CC | 注册表身份/版本与原始归档绑定、Python ABI/兼容性双重检查及真实 TLS 安装 | [Python 注册表获取](python-package-acquire-checks.json) |
+
 后续继续设置及完整应用组合；最终资格使用 C9 冻结候选的完整门禁。

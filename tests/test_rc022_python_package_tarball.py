@@ -113,6 +113,14 @@ def test_native_cli_accepts_local_tarball_and_never_falls_back_for_missing_tarba
     with pytest.raises(FileNotFoundError):cli.run_plugin('python-test',['add',str(tmp_path/'missing.tgz')])
 
 
+def test_a_late_completed_tarball_read_cannot_succeed(monkeypatch,release_server):
+    from types import SimpleNamespace
+    from dsh.boot import python_package_tarball as tarball
+    ticks=iter([0,0,2]);monkeypatch.setattr(tarball,'time',SimpleNamespace(monotonic=lambda:next(ticks)))
+    with pytest.raises(ValueError,match='exceeded time limit'):
+        with downloaded_tarball(release_server['url']+'/asset.zip',sri(release_server['payload']),timeout_seconds=1):pytest.fail('late download accepted')
+
+
 @pytest.mark.skipif(not os.environ.get('DSH_TEST_PNPM_NODE'),reason='optional pinned Source pnpm pack interoperability')
 def test_real_pinned_pnpm_archive_installs_without_node_in_native_store(profile,tmp_path):
     home,directory=profile;source=tmp_path/'author';shutil.copytree(str(EXAMPLE),str(source));manifest=source/'package.json'

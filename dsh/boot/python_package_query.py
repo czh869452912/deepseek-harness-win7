@@ -110,6 +110,7 @@ def read_packument(name,registry,configuration=None,timeout_ms=15000,max_bytes=M
             while True:
                 if time.monotonic()>=deadline:raise PackageQueryError('ERR_PNPM_META_FETCH_FAIL','GET '+public+': ETIMEDOUT')
                 chunk=response.read1(min(65536,max_bytes-size+1))
+                if time.monotonic()>=deadline:raise PackageQueryError('ERR_PNPM_META_FETCH_FAIL','GET '+public+': ETIMEDOUT')
                 if not chunk:break
                 chunks.append(chunk);size+=len(chunk)
                 if size>max_bytes:raise PackageQueryError('ERR_PNPM_META_FETCH_FAIL','GET '+public+': metadata exceeds byte limit')
@@ -158,6 +159,7 @@ def query_metadata(directory,spec,fields,registry=None,env=None,**limits):
             chosen=stable[-1:] or chosen[-1:]
     if not chosen:raise PackageQueryError('ERR_PNPM_PACKAGE_NOT_FOUND','No matching version for '+name+'@'+wanted)
     info=dict(chosen[-1],versions=list(versions),**{'dist-tags':tags})
+    if document.get('name'):info['name']=document['name']
     times=document.get('time')
     if isinstance(times,dict) and all(times.get(version) for version in versions):info['time']=times
     def field(path):

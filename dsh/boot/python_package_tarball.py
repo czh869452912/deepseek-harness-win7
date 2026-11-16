@@ -63,6 +63,7 @@ def downloaded_tarball(url,integrity,max_bytes=MAX_BYTES,timeout_seconds=90):
                     while True:
                         if time.monotonic()>=deadline:raise ValueError('package tarball download exceeded time limit')
                         chunk=response.read1(min(65536,max_bytes-size+1))
+                        if time.monotonic()>=deadline:raise ValueError('package tarball download exceeded time limit')
                         if not chunk:break
                         size+=len(chunk)
                         if size>max_bytes:raise ValueError('package tarball exceeds byte limit')

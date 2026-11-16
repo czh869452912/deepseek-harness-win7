@@ -1,0 +1,29 @@
+{
+  "part": "C8-CC",
+  "upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "paired": {
+    "run": "rc022-python-package-acquire-paired-20261116-01",
+    "cases": 19,
+    "passed": true,
+    "scope": "Actual pinned pnpm metadata selection including registry root-name authority; native acquisition has a distinct Python ABI adaptation."
+  },
+  "native": {
+    "run": "rc022-python-package-acquire-native-20261116-01",
+    "passed": 35,
+    "failed": 0
+  },
+  "deadline_regression": {
+    "run": "rc022-python-package-acquire-native-deadline-20261116-01",
+    "passed": 2,
+    "failed": 0,
+    "unselected": 52
+  },
+  "verification_scope_reason": "A real TLS registry serves metadata and an SRI-pinned tarball. Bind requested own-name identity and exact version, require the native Python ABI before acquisition, independently validate the downloaded package descriptor/release source and host compatibility, then feed the same original verified archive to the native store and execute its tool through canonical boot. Incorrect metadata identity/version/ABI/engines refuses before archive transfer; invalid integrity, archive name/version/engines/syntax and undeclared files refuse before profile mutation. Exact-version exemptions apply independently to metadata and actual archive. Signed queries are excluded from acquisition receipts. The original pnpm root-name authority is verified by an added real comparison. Final-byte reads now recheck the total deadline; two focused real HTTP cases prevent late-completed metadata/archive reads from succeeding.",
+  "legal_adaptation": "Native registry installation deliberately refuses npm aliases and packages without the supported Python ABI before code import; read-only alias metadata remains supported. Metadata visibility is not executable compatibility. Artifact archives are temporary and removed at context exit, while original archive size/digest/integrity provenance remains tied to installation records.",
+  "activation_boundary": "Registry acquisition validation is complete; a stopped-profile native store/boot journey is verified. Running-host transaction coordination, registry acquisition command composition, production promotion and final browser/release qualification remain pending.",
+  "cleanup": {
+    "owned_processes_remaining": 0,
+    "retained": "Compact commands, paired observations and test reports; task-owned profiles/downloads/archives removed, shared Source/toolchains owned through C9.",
+    "removed_bytes": 3485995
+  }
+}

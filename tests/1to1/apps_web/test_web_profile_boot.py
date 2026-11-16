@@ -1,5 +1,6 @@
 """Formal Web startup and teardown with all shipped business providers mounted."""
 import asyncio
+import json
 import pytest
 from dsh.boot.profile_boot import run_profile
 
@@ -37,6 +38,9 @@ async def test_formal_web_profile_starts_and_closes(tmp_path, monkeypatch, capsy
         response = await reader.read()
         writer.close()
         await writer.wait_closed()
+        if b'200 OK' not in response or b'__DSH_BOOT__' not in response:
+            (tmp_path/'profile-warning-observations.json').write_text(json.dumps([
+                repr(message.args) for message in ctx.logger.buffer if message.type in ('warn','error')]),encoding='utf-8')
         assert b'200 OK' in response and b'__DSH_BOOT__' in response
     finally:
         result['shutdown'].shutdown(0)

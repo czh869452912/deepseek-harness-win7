@@ -1,0 +1,41 @@
+{
+  "part": "C8-GL",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "scope": "Replace the active feedback-authorized Session backend's historical Python SDK carrier with ctx.otel",
+  "inputs": "otel-backend-inputs.json",
+  "paired": {
+    "run": "rc022-otel-backend-paired2-20261116-01",
+    "observations": 42,
+    "differences": 0,
+    "comparison": "Actual Source and Native backend constructors over recording otel ports: mode/URL/batch/deadline admission and error precedence, forwarded reporter scope/resource/options, direct-record refusal, canonical feedback prefix authorization, inherited consent refusal and source-envelope/redaction behavior.",
+    "peer_regression": "rc022-client-peer-paired-20261116-01: 11 actual Source/Native shortcuts/document-preview Host configuration and peer-bearing index-injection cases, zero differences."
+  },
+  "verification": {
+    "native": "Initial selected run: 90 passed and 2 Web HTML checks failed. After fixing the discovered injection callback arity, the two Web cases and actual Loader Host binding regression all passed (3 passed). No full collection/release claim is made by combining these runs.",
+    "source": "87 passed across the pinned session-telemetry and session-telemetry-otel packages, plus the paired backend/Host observations above.",
+    "scope_reason": "Covers backend-owned policy/options/deadline, actual JSON collector output from live/forked/cold feedback, direct otel/channel consumers, CLI profile startup and actual Web provider startup/HTML/teardown."
+  },
+  "behavior": [
+    "The installation registry now resolves the active backend to telemetry_otel_current.CurrentOpenTelemetrySessionBackend with required sessions and otel services. The old SDK backend and historical coordinator fixtures remain separate historical helpers.",
+    "Canonical event envelopes excluding data are copied before redaction. Accepted bodies become the event data in complete Session-log content; removing sourceEvent withholds the record. Direct emit calls cannot authorize upload.",
+    "The new coordinator uses the Source message-level tool-result isError flag. Cold feedback restoration includes registered message projections. Reporter resource/scope identity uses the pinned 0.2.2-rc.3 package contract.",
+    "The backend's outer deadline calls stopPending and rejects while an unsettled transport remains owned by the reporter. It does not cancel or release that transport slot.",
+    "The base bundle now mounts otel and uses the exact Source otel/session-backend block, including the new collector endpoint and request byte ceiling. Required package dependencies and backend manifest are updated in the same contract change.",
+    "The actual Web resource passes a peer to index-injection listeners. Existing shortcuts/document-preview callbacks now accept this extra argument, matching JavaScript callback behavior. Failure diagnostics were added to the Web integration test."
+  ],
+  "diagnostics": [
+    "An initial observer provenance collector tried to hash a prepared directory. The observer argument was changed to the identity file; the complete final comparison passed.",
+    "Two initial Web HTML failures were caused directly by single-argument injection lambdas receiving the peer argument. Raw profile warnings and failed-run logs are preserved. The same logs also expose pre-existing mixed profile stateVersion 3/2 modelSelection registrations and a missing old subagent row; those composition gaps remain for the coordinated bundle/profile migration."
+  ],
+  "limitations": [
+    "The new paired backend cases use controlled reporter ports; actual Native JSON collector and profile cases cover composition, while existing service/channel pairs qualify their respective Source transports. These are distinct observations, not a new full acceptance receipt.",
+    "Historical live coordinator fixtures remain attached to their old contract. General v4 projection/loopless session ownership gaps and remaining bundle/profile/client promotion are separate pending work.",
+    "Existing TLS/Agent/SDK adaptation limits remain. Full migration/release, Portable/browser and Windows 7 qualification remain pending."
+  ],
+  "cleanup": {
+    "bytes_removed": 115862,
+    "receipt": "rc022-otel-backend-native4-20261116-01/cleanup.json",
+    "removed": "Owned source-home identity fixtures, pytest workspaces and isolated tmp/home trees across successful/failed runs. Completed collectors and test processes have exited.",
+    "retained": "Commands, logs/XML/Vitest JSON, paired observations and hashes, and raw profile warning observations for the remaining composition gaps. Shared Source/toolchains remain needed for product-event consumer migration and C9."
+  }
+}

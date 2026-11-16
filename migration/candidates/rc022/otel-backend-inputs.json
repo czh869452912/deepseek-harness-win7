@@ -1,0 +1,21 @@
+{
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "native": {
+    "dsh/session/telemetry_otel_current.py": "934482fb220f82dd4231862c2b75576c717e20040f2bb130c2d0c08e7193da49",
+    "dsh/boot/plugin_registry_current.py": "ebd368f72513d761788d53b663c3146d70730721a27762b69c6263d62c79ab1a",
+    "packages/bundle/base/cordis.patch.yml": "5eb6a01a632dd2486d92c006d75b50b1c11302703d041656e347830e1074ee0f",
+    "packages/bundle/base/package.json": "47675f639c27b3783c7a7bd9e3586082f5e96a4cf45e608bec7426cf7fe7ab1f",
+    "packages/session/session-telemetry-otel/package.json": "fda4d68de2e74e626d6c7aaae7a9b9e336a24f3851cf6fae7658ceece8e7483b",
+    "dsh/client/configuration_current.py": "669744e24cf6a231fce14363b0f912a828379d8862ba58de4c2b6e498f64ba19",
+    "tests/test_session_telemetry_current.py": "89c536e9406deb3f98e8220e3fea47d9d244bc3c3d6c63cc0b141efedfecde87",
+    "tests/test_rc022_otel_backend.py": "e6786cc2314ed8bd0770b74cbacb51429d79fcb2c6d58e252dc26be4c61661a6",
+    "scripts/rc022_otel_backend_probe.py": "867c41e39617738e6521d0061c0ecf36e0f09472cecefe4d52b65e0a3c1a765f",
+    "scripts/oracles/rc022_otel_backend.mts": "8a1df6fe8f0c4efe6e04246f0126a1b72f16ca47062430878184a88f15cdf264",
+    "scripts/rc022_client_configuration_probe.py": "f2a3f355c46150091546b882601be29076da94b214e32c0a588668087db3594e",
+    "scripts/oracles/rc022_client_configuration.mts": "da925da905f0c282977a9fad0e96524267f3efc8df94f772dab6e9bf4cdcb288"
+  },
+  "byte_preserved_source_paths": [
+    "packages/session/session-telemetry-otel/package.json"
+  ],
+  "source_otel_bundle_block_sha256": "b35d57442a16672f66c93a5f6eadeabb85de40aa9d47519092c1ff8f495a653c"
+}

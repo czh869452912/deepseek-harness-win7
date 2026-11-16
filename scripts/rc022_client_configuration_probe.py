@@ -18,8 +18,8 @@ async def observe():
                 try:parsed=plugin.Config(config)
                 except Exception:
                     rows.append(dict(slug=slug,config=config,accepted=False));continue
-                fiber=await ctx.plugin(plugin,parsed);before=[];ctx.emit('webserver/index-inject',before)
-                await fiber.dispose();after=[];ctx.emit('webserver/index-inject',after)
+                fiber=await ctx.plugin(plugin,parsed);before=[];ctx.emit('webserver/index-inject',before,dict(principal=dict(kind='owner')))
+                await fiber.dispose();after=[];ctx.emit('webserver/index-inject',after,dict(principal=dict(kind='owner')))
                 rows.append(dict(slug=slug,config=config,accepted=True,before=before,after=after))
             finally:await ctx.fiber.dispose()
     return rows

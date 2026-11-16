@@ -59,7 +59,7 @@ CURRENT_HARNESS_PLUGIN_CLASSES = {
     '@deepseek-ai/dsh-session-projection-cache': 'dsh.session.projection_cache_current:CurrentSessionProjectionCachePlugin',
     '@deepseek-ai/dsh-session-query-sqlite': 'dsh.session.query_current:CurrentSqliteSessionQueryPlugin',
     '@deepseek-ai/dsh-session-stats': 'dsh.session.stats_current:CurrentSessionStatsPlugin',
-    '@deepseek-ai/dsh-session-telemetry-otel': 'dsh.session.telemetry_current:CurrentOpenTelemetrySessionBackend',
+    '@deepseek-ai/dsh-session-telemetry-otel': 'dsh.session.telemetry_otel_current:CurrentOpenTelemetrySessionBackend',
     '@deepseek-ai/dsh-session-log-deepseek': 'dsh.session.session_log_deepseek_current:CurrentSessionLogDeepSeekPlugin',
     '@deepseek-ai/dsh-workspace': 'dsh.workspace.current:CurrentWorkspacePlugin',
     '@deepseek-ai/dsh-goal': 'dsh.goal.current:CurrentGoalService',

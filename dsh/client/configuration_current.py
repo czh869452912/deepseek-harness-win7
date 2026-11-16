@@ -7,7 +7,7 @@ class CurrentShortcutsHost(Plugin):
     Config = z.object(dict(stopSequenceMs=z.natural().min(1).max(2147483646).default(500)))
 
     def apply(self, ctx):
-        ctx.on('webserver/index-inject', lambda table: table.append(dict(kind='global', name='__DSH_SHORTCUTS_CONFIG__', value=self.config)))
+        ctx.on('webserver/index-inject', lambda table, *args: table.append(dict(kind='global', name='__DSH_SHORTCUTS_CONFIG__', value=self.config)))
 
 
 class CurrentDocumentPreviewHost(Plugin):
@@ -23,4 +23,4 @@ class CurrentDocumentPreviewHost(Plugin):
             timeoutMs=z.natural().min(1).max(2147483647).default(15000)))))
 
     def apply(self, ctx):
-        ctx.on('webserver/index-inject', lambda table: table.append(dict(kind='global', name='__DSH_DOCUMENT_PREVIEW_CONFIG__', value=self.config)))
+        ctx.on('webserver/index-inject', lambda table, *args: table.append(dict(kind='global', name='__DSH_DOCUMENT_PREVIEW_CONFIG__', value=self.config)))

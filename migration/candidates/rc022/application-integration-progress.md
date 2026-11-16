@@ -357,3 +357,5 @@
 | C8-GJ | Staged ordinary-event count batching, timeout progression and shutdown signals | [OTel event channel](otel-event-channel-checks.json) |
 
 | C8-GK | Registered Cordis otel service and actual independent HTTP channel composition | [OTel service](otel-service-checks.json) |
+
+| C8-GL | Active feedback-only backend over ctx.otel, source-envelope redaction and canonical provider composition | [OTel backend](otel-backend-checks.json) |

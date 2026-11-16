@@ -20,7 +20,7 @@ async def test_all_literal_empty_source_hosts_and_configuration_hosts_mount_thro
     try:
         entries = {entry.options['id']:entry for entry in ctx.loader.entries()}
         assert all(entries[name].fiber.state == FiberState.ACTIVE for name, _ in specifications)
-        table = []; ctx.emit('webserver/index-inject', table)
+        table = []; ctx.emit('webserver/index-inject', table, dict(principal=dict(kind='owner')))
         assert {row['name'] for row in table} == {'__DSH_SHORTCUTS_CONFIG__', '__DSH_DOCUMENT_PREVIEW_CONFIG__'}
         assert next(row for row in table if row['name'] == '__DSH_SHORTCUTS_CONFIG__')['value'] == dict(stopSequenceMs=700)
         preview = next(row['value'] for row in table if row['name'] == '__DSH_DOCUMENT_PREVIEW_CONFIG__')

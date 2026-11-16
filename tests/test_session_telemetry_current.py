@@ -1,4 +1,4 @@
-"""Real SDK collector plus current feedback ownership and cold storage."""
+"""Real JSON collector plus feedback ownership and cold storage."""
 import asyncio
 import copy
 import json
@@ -10,7 +10,8 @@ import pytest
 
 from dsh.cordis.context import Context
 from dsh.core.session.current_session import CurrentSessionPlugin, CurrentSession
-from dsh.session.telemetry_current import CurrentOpenTelemetrySessionBackend
+from dsh.session.telemetry_otel_current import CurrentOpenTelemetrySessionBackend
+from dsh.session.otel_service_current import CurrentOTel
 from scripts.oracles.telemetry_current_python import execute
 from tests.test_feedback_current import cold_fixture
 
@@ -28,9 +29,8 @@ def collector():
     received = []
     class Handler(BaseHTTPRequestHandler):
         def do_POST(self):
-            from opentelemetry.proto.collector.logs.v1.logs_service_pb2 import ExportLogsServiceRequest
-            request = ExportLogsServiceRequest.FromString(self.rfile.read(int(self.headers['Content-Length'])))
-            received.extend(request.resource_logs)
+            request = json.loads(self.rfile.read(int(self.headers['Content-Length'])))
+            received.extend(request['resourceLogs'])
             self.send_response(200)
             self.send_header('Content-Length', '0')
             self.end_headers()
@@ -42,10 +42,10 @@ def collector():
         config = dict(exporter=dict(url='http://127.0.0.1:%s/v1/logs' % server.server_port), processor=dict(scheduledDelayMillis=60000))
         async def flush(self, backend):
             if backend.provider is not None:
-                assert await asyncio.get_running_loop().run_in_executor(None, backend.provider.force_flush)
+                await backend.provider.forceFlush()
         def types(self):
-            return [attribute.value.string_value for resource in received for scope in resource.scope_logs
-                    for record in scope.log_records for attribute in record.attributes if attribute.key == 'event.type']
+            return [attribute['value']['stringValue'] for resource in received for scope in resource['scopeLogs']
+                    for record in scope['logRecords'] for attribute in record['attributes'] if attribute['key'] == 'event.type']
     item = Collector()
     item.resources = received
     try:
@@ -60,6 +60,7 @@ async def test_actual_otel_authorizes_only_canonical_own_feedback(tmp_path, monk
     monkeypatch.setenv('DSH_HOME', str(tmp_path))
     ctx = Context()
     await ctx.plugin(CurrentSessionPlugin)
+    await ctx.plugin(CurrentOTel)
     config = dict(collector.config, mode=mode)
     config['processor'] = dict(config['processor'], maxExportBatchSize=1.0)
     await ctx.plugin(CurrentOpenTelemetrySessionBackend, config)
@@ -87,8 +88,8 @@ async def test_actual_otel_authorizes_only_canonical_own_feedback(tmp_path, monk
             expected += ['turn/end', 'feedback/message-delete']
         assert collector.types() == expected
         for resource in collector.resources:
-            assert next(a.value.string_value for a in resource.resource.attributes if a.key == 'service.version') == '0.1.5-rc.3'
-            assert all(scope.scope.version == '0.1.5-rc.3' and not scope.scope.name.endswith('/ops') for scope in resource.scope_logs)
+            assert next(a['value']['stringValue'] for a in resource['resource']['attributes'] if a['key'] == 'service.version') == '0.2.2-rc.3'
+            assert all(scope['scope']['version'] == '0.2.2-rc.3' and not scope['scope']['name'].endswith('/ops') for scope in resource['scopeLogs'])
     finally:
         await ctx.fiber.dispose()
 
@@ -107,6 +108,7 @@ async def test_seeded_feedback_is_not_consent_until_child_submits_new_feedback(t
     monkeypatch.setenv('DSH_HOME', str(tmp_path))
     ctx = Context()
     await ctx.plugin(CurrentSessionPlugin)
+    await ctx.plugin(CurrentOTel)
     parent = ctx.get('sessions').create('parent')
     parent.append('feedback/record', dict(text='parent-consent'))
     child = ctx.get('sessions').fork(parent, child_session_id='child')
@@ -119,8 +121,8 @@ async def test_seeded_feedback_is_not_consent_until_child_submits_new_feedback(t
         child.append('feedback/record', dict(text='child-consent'))
         await collector.flush(backend)
         assert collector.types() == ['feedback/record', 'session/end-seed', 'feedback/record']
-        records = [record for resource in collector.resources for scope in resource.scope_logs for record in scope.log_records]
-        assert all(next(a.value.string_value for a in record.attributes if a.key == 'session.id') == 'child' for record in records)
+        records = [record for resource in collector.resources for scope in resource['scopeLogs'] for record in scope['logRecords']]
+        assert all(next(a['value']['stringValue'] for a in record['attributes'] if a['key'] == 'session.id') == 'child' for record in records)
     finally:
         await ctx.fiber.dispose()
 
@@ -129,6 +131,7 @@ async def test_seeded_feedback_is_not_consent_until_child_submits_new_feedback(t
 async def test_actual_cold_feedback_submission_exports_stored_history_and_exact_prefix(tmp_path, monkeypatch, collector):
     monkeypatch.setenv('DSH_HOME', str(tmp_path / 'home'))
     ctx, _ = await cold_fixture(tmp_path / 'sessions')
+    await ctx.plugin(CurrentOTel)
     await ctx.plugin(CurrentOpenTelemetrySessionBackend, collector.config)
     backend = ctx.get('sessionTelemetry')
     try:

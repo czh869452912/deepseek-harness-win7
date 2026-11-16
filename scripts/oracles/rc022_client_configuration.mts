@@ -5,7 +5,7 @@ for(const [slug,configs] of Object.entries({shortcuts:[{}, {stopSequenceMs:700},
  const module=await load('packages/client/'+slug+'/src/index.ts')
  for(const config of configs){const ctx=new Context();let result:any
   try{let parsed:any;try{parsed=module.Config(config)}catch{rows.push({slug,config,accepted:false});continue}
-   const fiber=await ctx.plugin(module,parsed),before:any[]=[];ctx.emit('webserver/index-inject',before);await fiber.dispose();const after:any[]=[];ctx.emit('webserver/index-inject',after)
+   const fiber=await ctx.plugin(module,parsed),before:any[]=[];ctx.emit('webserver/index-inject',before,{principal:{kind:'owner'}});await fiber.dispose();const after:any[]=[];ctx.emit('webserver/index-inject',after,{principal:{kind:'owner'}})
    result={slug,config,accepted:true,before,after}
   }finally{await ctx.fiber.dispose()}
   rows.push(result)

@@ -1,0 +1,38 @@
+{
+  "part": "C8-GF",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "scope": "Staged OTLP JSON serialization and exact uncompressed byte measurement",
+  "paired": {
+    "run": "rc022-otel-wire-paired2-20261116-01",
+    "observations": 44,
+    "differences": 0,
+    "comparison": "Actual pinned Session/Event reporters send to owned local HTTP collectors. Compare their complete decoded request documents and exact UTF-8 byte sizes against Native pure serialization; Native HTTP/queue behavior is not exercised here."
+  },
+  "verification": {
+    "native": "5 passed: wire corpus, timestamp conversion/invalid attribute graphs and direct record-factory regressions.",
+    "source": "The unchanged OTel package passed 34 tests in C8-GE. This batch additionally captures 44 actual Source channel HTTP cases; no duplicate package run.",
+    "scope_reason": "Covers wire encoding across both channel record factories, Source SDK attribute admission/count ceilings and resource/scope envelopes."
+  },
+  "behavior": [
+    "OTLP scalar/array/map/byte values retain type tags, with ECMAScript object-key ordering and numeric JSON representation.",
+    "Resource null values disappear, while log null attributes encode as empty OTLP values. Ordinary logs drop attributes after 128; Session logs retain unlimited admitted attributes.",
+    "Complete canonical event content and Unicode are never truncated by this serializer. Exact bytes include resource/scope envelopes and escaped nested content.",
+    "Timestamp conversion preserves nanosecond strings from epoch milliseconds or explicit high-resolution pairs; a caller-supplied origin supports relative-time conversion."
+  ],
+  "diagnostics": [
+    "The initial Source-only run intentionally lacked a Native observer and remains labelled a baseline, not parity evidence.",
+    "Initial wire comparison found that ResourceImpl discards null attributes before transformation; the separate resource admission now matches."
+  ],
+  "limitations": [
+    "This pure serializer is staged; channel queues, byte/count batching, transport headers/retries/cancellation and consumer integration remain subsequent work.",
+    "Source paired timestamp observations use absolute business event times; relative-origin and hrtime conversion have Native focused checks, not cross-process clock identity claims.",
+    "Implicit SDK tracing context, exception enrichment and arbitrary foreign SDK instrumentation are outside this currently exercised business-record boundary.",
+    "No complete migration, Portable/browser or Windows 7 release qualification is claimed."
+  ],
+  "cleanup": {
+    "bytes_removed": 191928,
+    "receipt": "rc022-otel-wire-native-20261116-01/cleanup.json",
+    "removed": "Owned short pytest workspace and isolated temporary/home trees; loopback collectors closed after each Source case.",
+    "retained": "Source/Native requests and measurements, commands/logs/XML, necessary baseline/failure diagnostics and shared Source/toolchains for transport/C9."
+  }
+}

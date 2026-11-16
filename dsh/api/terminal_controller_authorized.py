@@ -136,7 +136,7 @@ class AuthorizedTerminalController(TypertRemoteService):
 
     @Remote(dict(mode='stream'))
     def attach(self,agent,identity,signal):
-        invocation=self.ctx.get('invocation')
+        invocation=getattr(self.ctx,'invocation',None)
         if invocation is None:raise RuntimeError('Terminal attachment requires a Remote invocation')
         return self.terminal(agent,identity).attach(invocation.uplink(),self.config,signal,invocation.uplinkWindow)
 

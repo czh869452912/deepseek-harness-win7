@@ -1,0 +1,11 @@
+{
+  "part": "C8-DN",
+  "upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "native": {"run": "rc022-terminal-bindings-native6-20261116-01", "passed": 2},
+  "consumers": {"run": "rc022-terminal-bindings-consumers-20261116-01", "passed": 31},
+  "source": {"run": "rc022-terminal-bindings-source-20261116-01", "passed": 38, "pending": 0, "failed": 0},
+  "verification_scope_reason": "Actual Loader composes v4 Agent/session, current Windows subprocess and terminal bindings. Unchanged generated terminal Remote serves real authenticated HTTP create/environment/rename/list/close plus actual remote.mux attachment, ordered uplink write, ack, original xterm snapshot/output and screen text over real WinPTY cmd.exe. Disabling the controller unloads its private screen/JS carrier and drains all processes/workers. A second actual graph executes the persistent PowerShell tool through the native tool runtime, retains state across calls and releases its terminal on Loader disable. Direct controller, browser terminal, screen engine, persistent protocol and working-directory consumers and original terminal controller tests pass.",
+  "diagnostics": "The real wire found that ctx.get('invocation') reads the default accessor instead of the invocation's own context property; terminal attach now reads that property as Source does. Initial fixtures also used identity/title assumptions before following the generated id/title wire fields and awaited a synchronous screen read; failed logs/XML retained.",
+  "activation_boundary": "Candidate Windows terminal bindings and actual protocol/process journeys only. Source browser mounting, production promotion and complete release acceptance remain separate. POSIX terminal and Win7 machine qualification are not newly established here.",
+  "cleanup": {"owned_processes_remaining": 0, "removed_bytes": 67215, "retained": "All commands, failed/passing XML/logs, Source results, candidate rows and decoded terminal/persistent-shell observations. Eight run workspaces/homes/tmp sets removed. Actual test assertions confirm no process, screen or JS worker survives teardown. Shared pinned Source/toolchains remain owned until C9."}
+}

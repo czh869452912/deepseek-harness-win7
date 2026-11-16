@@ -204,4 +204,6 @@
 
 | C8-DM | ConfigEditor/表单绑定、原版设置 Remote 的脱敏/冲突/落盘/冷启动及文档打开取消 | [候选设置绑定](settings-bindings-checks.json) |
 
+| C8-DN | 浏览器终端 Loader 绑定、真实 WinPTY 双向 Remote/xterm 及持久 PowerShell 状态/卸载 | [候选终端绑定](terminal-bindings-checks.json) |
+
 后续继续完整应用组合；最终资格使用 C9 冻结候选的完整门禁。

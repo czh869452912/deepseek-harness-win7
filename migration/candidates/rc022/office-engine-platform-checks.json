@@ -1,0 +1,21 @@
+{
+  "part": "C8-DF",
+  "upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "scope": "Static inspection of the pinned native engine; no execution or Windows 7 guest acceptance.",
+  "package": "@deepseek-ai/libreoffice-kit-win32-x64@0.2.3",
+  "member": "bin/dsoffice.exe",
+  "size": 185899008,
+  "sha256": "c9597966fe8db459e2d1cc0fefe5c070f10957349c4dd3daab211219eb75f933",
+  "manifest_sha256_matches": true,
+  "machine": "AMD64",
+  "pe_os_version": "6.1",
+  "pe_subsystem_version": "6.1",
+  "ordinary_imports": [
+    {"dll": "USER32.dll", "symbol": "SetThreadDpiAwarenessContext", "minimum_client": "Windows 10 version 1607", "reference": "https://learn.microsoft.com/windows/win32/api/winuser/nf-winuser-setthreaddpiawarenesscontext"},
+    {"dll": "KERNEL32.dll", "symbol": "GetSystemTimePreciseAsFileTime", "minimum_client": "Windows 8", "reference": "https://learn.microsoft.com/windows/win32/api/sysinfoapi/nf-sysinfoapi-getsystemtimepreciseasfiletime"}
+  ],
+  "conclusion": "The PE 6.1 header is insufficient: ordinary imports require system exports absent on stock Windows 7. Shipping this exact binary would violate the Win7 target. Native package Node >=22.19 metadata is a separate glue-runtime constraint. No binary patch, OS API shim, system soffice or npx fallback was introduced.",
+  "remaining": "A compatible engine carrier/rebuild and its real conversion/rendering acceptance are still required. The controlled Engine collaborator used by C8-DC/DE establishes provider/tool contracts only. Full Office feature acceptance remains open.",
+  "evidence": "rc022-office-engine-control-20261116-01/pe.py and pe.json retain the bounded-header parser and full ordinary import observations; package bytes stay in the shared pinned dependency tree through C9.",
+  "verification_scope_reason": "Direct PE section/RVA import parsing and manifest member SHA comparison identify a deterministic loader incompatibility before introducing a runtime dependency. Two actual imports were independently checked against Microsoft API requirements. No temporary executable copy or process was created; there are no disposable test assets to remove."
+}

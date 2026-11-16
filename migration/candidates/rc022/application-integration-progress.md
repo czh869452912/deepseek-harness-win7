@@ -188,4 +188,6 @@
 
 | C8-DE | Office 技能准入、逐调用读取授权、模型图片能力与真实附件/会话临时输出链路 | [Office 工具接入](office-tools-checks.json) |
 
+| C8-DF | 固定 Office 原生引擎的 Win7 普通导入阻碍（功能验收仍待兼容载体） | [引擎平台审计](office-engine-platform-checks.json) |
+
 后续继续设置及完整应用组合；最终资格使用 C9 冻结候选的完整门禁。

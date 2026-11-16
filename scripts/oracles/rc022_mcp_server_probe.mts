@@ -18,9 +18,9 @@ for(const [index,row] of input.cases.entries()){
  try{
   const pending=(async()=>{
    if(!row.aggregate)return await probeServer(ctx,config,{...row.options,signal:controller.signal})
-   const client=new Client({name:'dsh-mcp-probe',version:'0.0.1'},{capabilities:{},versionNegotiation:{mode:'auto'}})
+   const client=new Client({name:'dsh-mcp-probe',version:'0.0.1'},{...row.clientOptions,capabilities:{},versionNegotiation:{mode:'auto'}})
    const transport=new StreamableHTTPClientTransport(new URL(config.url))
-   try{await client.connect(transport);return {listing:await client.listTools(row.cursor?{cursor:'next'}:undefined)}}
+   try{await client.connect(transport);return {listing:row.direct?await client.request({method:'tools/list'},row.requestOptions):await client.listTools(row.cursor?{cursor:'next'}:undefined)}}
    finally{await client.close();await transport.close()}
   })()
   if(row.abort){

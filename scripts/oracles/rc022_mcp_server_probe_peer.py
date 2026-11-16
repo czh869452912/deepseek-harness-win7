@@ -42,6 +42,21 @@ def main():
                 if mode in ('loop','modern-loop'):result['nextCursor']='again'
                 elif cursor is None:result['nextCursor']='next'
                 if modern:result.update(resultType='complete',ttlMs=0,cacheScope='private')
+                if mode=='modern-input-state':result=dict(resultType='input_required',requestState='opaque')
+                elif mode=='modern-input-empty':result=dict(resultType='input_required')
+                elif mode=='modern-unknown-result':result=dict(resultType='future')
+                elif mode=='modern-invalid-tools':result=dict(resultType='complete',tools='invalid',ttlMs=0,cacheScope='private')
+                elif mode=='modern-missing-result-type':result=dict(tools=[])
+                elif mode in ('modern-state-once', 'modern-state-empty'):
+                    state = '' if mode=='modern-state-empty' else 'opaque\x00state'
+                    result = (dict(resultType='complete',tools=[],ttlMs=0,cacheScope='private')
+                        if packet.get('params',{}).get('requestState')==state else dict(resultType='input_required',requestState=state))
+                elif mode.startswith('modern-input-entry-'):
+                    label=mode[len('modern-input-entry-'):]
+                    entry={'malformed':'bad','nonstring':dict(method=3),'unknown':dict(method='future/request'),
+                        'roots':dict(method='roots/list'),'sampling':dict(method='sampling/createMessage'),
+                        'elicitation':dict(method='elicitation/create')}[label]
+                    result=dict(resultType='input_required',inputRequests=dict(query=entry))
             else:
                 self.answer(dict(jsonrpc='2.0',id=packet.get('id'),error=dict(code=-32601,message='unknown')));return
             self.answer(dict(jsonrpc='2.0',id=packet['id'],result=result))

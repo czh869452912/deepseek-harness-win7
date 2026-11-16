@@ -167,6 +167,9 @@ class McpClientProtocol:
         return signal is not None and (getattr(signal, 'aborted', False) or
                hasattr(signal, 'is_set') and signal.is_set())
 
+    def _validate_result(self, method, result):
+        return parse('ListToolsResultSchema', result) if method == 'tools/list' else result
+
     async def request(self, packet, signal=None, timeout=60000):
         if not self._connected():
             raise RuntimeError('Not connected')
@@ -203,9 +206,7 @@ class McpClientProtocol:
                 raise asyncio.CancelledError()
             if future in done:
                 result = future.result()
-                if packet['method'] == 'tools/list':
-                    result = parse('ListToolsResultSchema', result)
-                return result
+                return self._validate_result(packet['method'], result)
             await self._cancel_request({'requestId': identity, 'reason': 'McpError: MCP error -32001: Request timed out'})
             raise McpError(-32001, 'Request timed out', {'timeout': timeout})
         except asyncio.CancelledError as error:

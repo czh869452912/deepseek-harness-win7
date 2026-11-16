@@ -6,18 +6,20 @@ from dsh.mcp.schemas import parse
 
 
 class CurrentSdkClient:
-    def __init__(self, name='dsh-mcp-client'):
+    def __init__(self, name='dsh-mcp-client', input_required=None):
         self.client_info = dict(name=name, version='0.0.1')
         self.transport = None
         self._wire = None
         self.onclose = None
         self.on_notification = None
+        self.input_required = dict(input_required or {})
 
     async def connect(self, transport, options=None):
         if self._wire is not None:
             raise McpLocalError('MCP client can only be connected once')
         self._wire = self.transport = transport
         transport.client_info = self.client_info
+        transport.input_required = self.input_required
         previous = transport.on_close
 
         def closed():
@@ -54,8 +56,12 @@ class CurrentSdkClient:
         if self.transport is None:
             raise McpLocalError('Not connected')
         options = options or {}
+        from dsh.mcp.negotiated_protocol_current import NegotiatedProtocol
+        extra = dict(request_options=options) if isinstance(self.transport, NegotiatedProtocol) else {}
         value = await await_callback_result(self.transport.request(packet,
-            signal=options.get('signal', signal), timeout=options.get('timeout', timeout)))
+            signal=options.get('signal', signal), timeout=options.get('timeout', timeout), **extra))
+        if options.get('allowInputRequired') and value.get('resultType') == 'input_required':
+            return value
         # Modern dispatch has already validated its revision-specific result.
         # Legacy resources use the pinned SDK schemas as well.
         if packet['method'].startswith('resources/'):

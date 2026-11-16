@@ -250,4 +250,6 @@
 
 | C8-EJ | Canonical Web 组合：新启动值、安装依赖/原版 Remote 元数据、MCP 与工作目录服务及零未激活条目 | [Web 组合](web-composition-checks.json) |
 
+| C8-EK | MCP 现代响应分派：避免旧 schema 遮蔽、默认续请求/轮数限制、手动返回及无处理器诊断 | [MCP 现代响应](mcp-dispatch-checks.json) |
+
 后续继续完整应用组合；最终资格使用 C9 冻结候选的完整门禁。

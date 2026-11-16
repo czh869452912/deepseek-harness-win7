@@ -1,0 +1,21 @@
+{
+  "part": "C8-EK",
+  "upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "paired": {
+    "run": "rc022-mcp-dispatch-paired3-20261116-01",
+    "observations": 29,
+    "differences": 0
+  },
+  "consumers": {
+    "run": "rc022-mcp-dispatch-consumers-20261116-01",
+    "passed": 97
+  },
+  "verification_scope_reason": "Actual original SDK and native HTTP requests compare default input-required continuation, exact opaque/empty requestState echoes, ten-round exhaustion and a two-round override, manual result return, disabled auto-fulfilment, missing/unsupported/malformed modern results, invalid embedded requests and missing handlers for all three supported input families. Full request packets, typed errors and independent probe cleanup results compare. Native cancellation tests prove the owned pacing timer is cancelled and its abort listener withdrawn for both caller Task cancellation and signal abort. Consumers cover production supervision/manager/resources, legacy and modern HTTP/stdio transports and existing current MCP tests.",
+  "diagnostics": "Before-fix comparison reproduced legacy list validation masking modern results. Expanded comparison found the SDK diagnostic names the 2026-07-28 revision; corrected exact text. First native timer assertions assumed AbortSignal stores a mapping; its actual listener list was already empty and owned timers cancelled. Failure/pass receipts remain separate.",
+  "limits": "The production client advertises no embedded input capabilities or handlers; this driver reproduces their default missing-handler failures, not registered elicitation/sampling/root handler execution. Per-leg/total SDK timeout, arbitrary abort-reason mapping, serving ProtocolError conversion, tool-definition/result cache validation and cache policy remain pending. Complete pure result projection continues to expose the existing explicit non-auto-fulfilment contract; transport dispatch now follows actual SDK defaults. No full browser or release qualification.",
+  "cleanup": {
+    "removed_bytes": 536123,
+    "owned_processes_remaining": 0,
+    "retained": "Before/after paired reports and raw HTTP packets, input/implementation hashes, real observations, failure/pass logs/XML. Owned workspaces/tmp/home removed and controlled HTTP peers exited; pacing timers/listeners released. Shared Source/toolchains retained until C9."
+  }
+}

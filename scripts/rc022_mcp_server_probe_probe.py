@@ -38,9 +38,11 @@ async def observe():
         try:
             async def run():
                 if not row.get('aggregate'):return await probe_server(ctx,config,options)
-                client=CurrentSdkClient('dsh-mcp-probe');generation=McpGeneration(client,500,str)
+                client=CurrentSdkClient('dsh-mcp-probe',input_required=row.get('clientOptions',{}).get('inputRequired'));generation=McpGeneration(client,500,str)
                 try:
                     await generation.connect(config)
+                    if row.get('direct'):
+                        return dict(listing=await client.request(dict(method='tools/list'), row.get('requestOptions')))
                     return dict(listing=await client.listTools(dict(cursor='next') if row['cursor'] else None))
                 finally:await generation.close()
             task=asyncio.create_task(run())

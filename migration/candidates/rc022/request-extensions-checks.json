@@ -1,0 +1,12 @@
+{
+  "part": "C8-FD",
+  "upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "paired": {"run": "rc022-request-extensions-paired5-20261116-01", "observations": 48, "differences": 0},
+  "native": {"run": "rc022-request-extensions-native-20261116-01", "passed": 17, "failed": 0},
+  "source": {"run": "rc022-request-extensions-source-20261116-01", "passed": 17, "failed": 0},
+  "verification_scope_reason": "Request extension helper retains base identity/request facts, rejects own-field collisions, preserves JS integer-key serialization, wraps preparation cause chains, falls back to the base payload only when merged serialization fails, and reports acceptance errors without failing a request unless its reporter itself throws. Serializer fault injection follows the fixed Source tests. Paired actual registries prove detached fields, warning once across failure/recovery/unregister, idempotent acceptance and all-settled aggregate error chains. Native tests additionally verify independent cancellation of shared acceptance waits, eventual settlement of ignored cancellation without warnings/late commit, uncloneable/cyclic contribution omission and JS trim. Canonical headless real HTTP retry and historical registry consumers pass.",
+  "activation_boundary": "Canonical registry binding uses the current per-field omission behavior. Request transport helper awaits split Messages adapter activation. Existing historical registry class remains available for frozen contract consumers.",
+  "limits": "Extension values use the declared plain JSON domain. Python clone-refusal diagnostics are native messages; arbitrary JavaScript prototype/toJSON/BigInt/function-source formatting is not qualified. No authenticated split Messages transport or full release acceptance is claimed.",
+  "resolved_failures": ["First probe instrumentation used Python insertion order instead of JS Object.keys for integer keys; corrected observer while payload already matched.", "Registry probe used await on a synchronous native disposer; corrected through the established await_callback_result adapter. Final paired5 includes the aggregate acceptance consumer."],
+  "cleanup": {"removed_bytes": 226680, "owned_processes_remaining": 0, "retained": "All paired reports/inputs/hashes including resolved observer failures, Source JSON, native commands/logs/XML and compact observations. Owned external/mapped pytest fixtures and tmp/home removed; shared Source/toolchains retained until C9."}
+}

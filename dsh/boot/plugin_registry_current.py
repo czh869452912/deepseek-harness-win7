@@ -1,6 +1,7 @@
 """rc.3 bindings staged for coordinated bundle, protocol and pin promotion."""
 
 CURRENT_HARNESS_PLUGIN_CLASSES = {
+    '@deepseek-ai/dsh-deepseek-llm-api-extensions': 'dsh.llm.deepseek_api_extensions_current:CurrentDeepSeekLlmApiExtensions',
     '@deepseek-ai/dsh-plugin-manager/tools': 'dsh.boot.plugin_manager_tools:CurrentPluginManagerTools',
     '@deepseek-ai/dsh-workspace-changes': 'dsh.deliverables.workspace_changes:CurrentWorkspaceChanges',
     '@deepseek-ai/dsh-compaction-image-offload': 'dsh.compaction.image_offload_plugin:CurrentImageOffload',

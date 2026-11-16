@@ -288,4 +288,6 @@
 
 | C8-FC | 请求级 Files 截止时间、过期映射单次恢复、Unicode 边界与实际图片位置诊断 | [请求 Files 策略](request-files-checks.json) |
 
+| C8-FD | 扩展字段序列化与 HTTP 接受事务；当前 registry 按字段省略失败、一次警告及共享提交 | [请求扩展事务](request-extensions-checks.json) |
+
 后续继续完整应用组合；最终资格使用 C9 冻结候选的完整门禁。

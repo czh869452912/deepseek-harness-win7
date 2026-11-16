@@ -1,0 +1,10 @@
+{
+  "part": "C8-DG",
+  "upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "native": {"run": "rc022-web-bindings-native3-20261116-01", "passed": 1},
+  "verification_scope_reason": "Actual boot/Loader resolves candidate authenticated Connection, Gateway, application forwarded events and RemoteAccess by installation package names, with actual file-backed credentials and WebServer providers. The unchanged original remote-access generated artifact provides the stream signature. A real HTTP request refuses unauthenticated access, token exchange issues an owner cookie, actual remote.mux emits owner baseline, cancellation releases the provider lifetime subscription, and root teardown closes the real listen socket.",
+  "diagnostics": "Two fixture assumptions corrected: Loader has no startup_errors property (boot already awaits/reports startup failure), and client cancel retires a mux stream without an end acknowledgment. Initial logs retained.",
+  "activation_boundary": "Candidate registry bindings only, selected explicitly during actual Loader boot. The production pin, default installation table and complete profile remain unchanged pending C9. No new behavior comparison or full release acceptance is claimed.",
+  "migration_index": "scripts/migration.py check and ready succeeded; checkout/index validity only, external artifact bytes not verified.",
+  "cleanup": {"owned_processes_remaining": 0, "retained": "Commands, XML/logs and decoded wire observations retained. All three owned pytest workspaces and temporary homes removed. Real ephemeral server socket verified closed before cleanup. Shared pinned Source/toolchains retained until C9."}
+}

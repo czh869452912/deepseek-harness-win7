@@ -190,4 +190,6 @@
 
 | C8-DF | 固定 Office 原生引擎的 Win7 普通导入阻碍（功能验收仍待兼容载体） | [引擎平台审计](office-engine-platform-checks.json) |
 
+| C8-DG | Loader 按包名启动鉴权 Web 绑定、真实文件凭据及 mux 取消释放 | [候选 Web 绑定](web-bindings-checks.json) |
+
 后续继续设置及完整应用组合；最终资格使用 C9 冻结候选的完整门禁。

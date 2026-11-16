@@ -1,0 +1,10 @@
+{
+  "part": "C8-DL",
+  "upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "native": {"run": "rc022-permission-bindings-native4-20261116-01", "passed": 1},
+  "consumers": {"run": "rc022-permission-bindings-consumers-20261116-01", "passed": 17},
+  "verification_scope_reason": "Actual Loader composes v4 sessions/agents, the current sandbox executor/policy, approval, permission presets and Auto review with authenticated Web. Unchanged Source permission/command artifacts serve a real HTTP catalog and command request, change persisted session permission knobs, and drive actual tool-executor Auto allow/deny calls. Loader disabling Auto migrates active session permission and removes its catalog entry. Selected permission, sandbox policy and Auto gate regressions cover the mapped providers and their direct consumers.",
+  "diagnostics": "Three initial integration fixtures omitted the required submittedAttachments array, asserted the command result without its commandId envelope, and used a local entry id instead of the Loader include-qualified identity. Corrected the fixture using the unchanged Source contract; failed logs/XML retained.",
+  "activation_boundary": "Candidate bindings and actual permission/review wire integration only. This check does not execute a confined process or requalify Windows confinement, production promotion, Office engine compatibility or complete release acceptance.",
+  "cleanup": {"owned_processes_remaining": 0, "removed_bytes": 38410, "retained": "All commands, failed/passing XML/logs, candidate input rows and decoded permission wire observations. Five owned pytest workspaces/homes/tmp directories removed. Shared pinned Source/toolchains remain owned until C9."}
+}

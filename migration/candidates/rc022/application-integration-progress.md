@@ -200,4 +200,6 @@
 
 | C8-DK | Loader 原生 shell/作业绑定、原版 Job Remote 输出/终止与独立模型游标 | [候选 shell 作业绑定](shell-job-bindings-checks.json) |
 
+| C8-DL | Loader 权限预设/沙箱策略/Auto 绑定、原版目录与命令请求及停用状态迁移 | [候选权限绑定](permission-bindings-checks.json) |
+
 后续继续设置及完整应用组合；最终资格使用 C9 冻结候选的完整门禁。

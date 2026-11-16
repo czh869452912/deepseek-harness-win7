@@ -8,7 +8,7 @@ from dsh.cordis.context import Context
 from dsh.core.abort import AbortController
 from dsh.credentials.account_state import AccountState, KEY
 from dsh.credentials.authorization_current import CurrentAuthorizationService
-from dsh.credentials.credentials_local import CredentialsLocalPlugin
+from dsh.credentials.local_current import CurrentCredentialsLocalPlugin as CredentialsLocalPlugin
 from dsh.credentials import account_state as module
 from dsh.llm.llm_service import LlmError
 from scripts import rc022_account_state_probe as corpus
@@ -21,13 +21,13 @@ async def fixture(tmp_path):
     ctx = Context()
     await ctx.plugin(CredentialsLocalPlugin, dict(path=str(tmp_path/'credentials.yml'), watch=False))
     await ctx.plugin(CurrentAuthorizationService)
-    ctx.credentials.modifyRecord(KEY, lambda *_: dict(kind='grant', payload=dict(version=1, token='old', issuer='https://platform.deepseek.com')))
+    await ctx.credentials.modifyRecord(KEY, lambda *_: dict(kind='grant', payload=dict(version=1, token='old', issuer='https://platform.deepseek.com')))
     await ctx.plugin(AccountState, dict(desktopPlatform=None))
     return ctx, ctx.deepseekAccount
 
 
-def replace(ctx, token):
-    ctx.credentials.modifyRecord(KEY, lambda *_: dict(kind='grant', payload=dict(version=1, token=token, issuer='https://platform.deepseek.com')))
+async def replace(ctx, token):
+    await ctx.credentials.modifyRecord(KEY, lambda *_: dict(kind='grant', payload=dict(version=1, token=token, issuer='https://platform.deepseek.com')))
 
 
 @pytest.mark.asyncio
@@ -55,7 +55,7 @@ async def test_stale_query_is_discarded_after_credential_generation_changes(tmp_
     monkeypatch.setattr(module, 'readNotifications' if field == 'notifications' else 'readAccountDetail', held)
     try:
         task = asyncio.create_task(getattr(account, dict(profile='getProfile', balance='getBalance', notifications='getNotifications')[field])(CLIENT))
-        await entered.wait(); replace(ctx, 'new'); assert captured[0].aborted
+        await entered.wait(); await replace(ctx, 'new'); assert captured[0].aborted
         gate.set_result(None); assert await task is None
         assert (await account.getPlatformSession())['token'] == 'new'
         assert (await account.getPlatformSession())['userId'] is None
@@ -78,7 +78,9 @@ async def test_identity_opt_in_credential_priority_and_expiry_stream_cleanup(tmp
         account.cacheProfile('old', dict(status='ready', value=dict(id='id')))
         assert (await identity_next)['type'] == 'snapshot'
         assert not plain_next.done()
-        account.changed('snapshot'); replace(ctx, 'new'); account.changed('snapshot')
+        # Priority is defined within a single notification burst. A durable
+        # credential edit now crosses asynchronous lock/write boundaries.
+        account.changed('snapshot'); account.changed('credentials-changed'); account.changed('snapshot')
         assert (await plain_next)['type'] == 'credentials-changed'
         expired = asyncio.create_task(expiry.__anext__()); await asyncio.sleep(0)
         ctx.emit('deepseek-account/session-expired'); assert await expired == 'session-expired'

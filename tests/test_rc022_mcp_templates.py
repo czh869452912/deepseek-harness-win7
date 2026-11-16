@@ -5,7 +5,7 @@ import pytest
 
 from dsh.cordis import Context
 from dsh.core.abort import AbortController
-from dsh.credentials.credentials_local import CredentialsLocalPlugin
+from dsh.credentials.local_current import CurrentCredentialsLocalPlugin as CredentialsLocalPlugin
 from dsh.mcp.credentials_current import McpTemplateBinding
 from dsh.mcp.diagnostic_current import McpLocalError
 from scripts.rc022_mcp_templates_probe import observe
@@ -26,11 +26,11 @@ async def test_real_local_credentials_provider_rotates_without_expanding_stored_
     ctx=Context()
     try:
         fiber=await ctx.plugin(CredentialsLocalPlugin(dict(path=str(tmp_path/'credentials.yaml'))))
-        provider=ctx.credentials;provider.set('RC022_MCP_SYNTHETIC','first/token')
+        provider=ctx.credentials;await provider.set('RC022_MCP_SYNTHETIC','first/token')
         config=dict(transport='streamable-http',serverName='local',url='http://fixture',headers={'Authorization':'Bearer ${credential:RC022_MCP_SYNTHETIC}'},expandTemplates=True)
         raw=copy.deepcopy(config);binding=McpTemplateBinding(ctx,config);signal=AbortController().signal
         assert (await binding.resolve(signal))['headers']['Authorization']=='Bearer first/token'
-        provider.set('RC022_MCP_SYNTHETIC','next/token')
+        await provider.set('RC022_MCP_SYNTHETIC','next/token')
         assert (await binding.resolve(signal))['headers']['Authorization']=='Bearer next/token'
         assert config==raw
         assert binding.redact('first/token first%2Ftoken next/token next%2Ftoken')=='[redacted] [redacted] [redacted] [redacted]'

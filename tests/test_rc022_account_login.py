@@ -7,7 +7,7 @@ import pytest
 from dsh.cordis.context import Context
 from dsh.core.abort import AbortController
 from dsh.credentials.authorization_current import CurrentAuthorizationService
-from dsh.credentials.credentials_local import CredentialsLocalPlugin
+from dsh.credentials.local_current import CurrentCredentialsLocalPlugin as CredentialsLocalPlugin
 from dsh.credentials.deepseek_account_current import CurrentDeepSeekAccount, _completion
 from dsh.typert.remote import remote_methods
 from scripts import rc022_account_login_probe as corpus

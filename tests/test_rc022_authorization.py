@@ -6,7 +6,7 @@ import pytest
 from dsh.cordis.context import Context
 from dsh.core.abort import AbortController
 from dsh.credentials.authorization_current import CurrentAuthorizationService
-from dsh.credentials.credentials_local import CredentialsLocalPlugin
+from dsh.credentials.local_current import CurrentCredentialsLocalPlugin as CredentialsLocalPlugin
 from scripts import rc022_authorization_probe as corpus
 
 

@@ -339,3 +339,5 @@
 | C8-GA | Credential collection/merge admission and original-text flat upgrade | [Credential collections](credential-collection-checks.json) |
 
 | C8-GB | Round-trip credential edits, annotations and x86/x64 packaging dependencies | [Credential editor](credential-editor-checks.json) |
+
+| C8-GC | Current credential storage, durable queue, live reload and canonical Connection activation | [Credential storage](credential-storage-checks.json) |

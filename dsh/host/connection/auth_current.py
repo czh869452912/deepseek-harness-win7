@@ -64,6 +64,24 @@ def write_response(response, status, headers=None, body=None):
 
 
 class CurrentBrowserAuth(BrowserAuth):
+    @classmethod
+    async def create(cls, process_owner, credentials, max_age_days):
+        import secrets
+        from dsh.cordis.awaiting import await_callback_result
+        from dsh.host.connection.browser_auth import (AUTH_RECORD_KEY, STORED_SECRET_VERSION,
+            SECRET_BYTES, stored_secret)
+        generated = dict(version=STORED_SECRET_VERSION, secret=encode_base64url(secrets.token_bytes(SECRET_BYTES)))
+        def mutate(current):
+            if current is not None:
+                stored_secret(current)
+                return None
+            return dict(kind='grant', payload=generated)
+        record = await await_callback_result(credentials.modifyRecord(AUTH_RECORD_KEY, mutate))
+        secret = stored_secret(record)
+        if secret is None:
+            raise ValueError('client-connection: browser-session credential record was not created')
+        return cls(process_owner, secret, max_age_days)
+
     def authenticated_url(self, base_url):
         parsed = urlsplit(base_url)
         pairs = parse_qsl(parsed.query, keep_blank_values=True)

@@ -38,7 +38,7 @@ async def test_real_connection_authentication_version_redirect_change_and_unload
         value = mutate(records.get(key))
         if value is not None: records[key] = value
         return records.get(key)
-    ctx.set_service('credentials', NS(modify_record=modify))
+    ctx.set_service('credentials', NS(modifyRecord=modify))
     server = WebServerService(ctx,host='127.0.0.1',port=0)
     try:
         default = tmp_path/'default'; default.mkdir()

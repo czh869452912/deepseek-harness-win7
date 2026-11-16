@@ -63,7 +63,7 @@ async def setup_wire(home,state):
             if value is not None:records[key]=value
             return records.get(key)
         assert ctx.get('credentials') is None
-        ctx.set_service('credentials',SimpleNamespace(modify_record=modify))
+        ctx.set_service('credentials',SimpleNamespace(modifyRecord=modify))
         await ctx.plugin(AuthorizedConnectionPlugin)
         gateway=await ctx.plugin(AuthorizedGatewayService,dict(websocketCompression='none'))
         await ctx.plugin(AuthorizedApiRemotes)

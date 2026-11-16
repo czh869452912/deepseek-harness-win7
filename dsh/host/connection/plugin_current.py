@@ -20,7 +20,7 @@ class AuthorizedConnectionPlugin(Plugin):
         cookieMaxAgeDays=z.natural().min(1).default(30),
         maxRequestBodyBytes=z.natural().min(1).default(DEFAULT_MAX_REQUEST_BODY_BYTES)))
 
-    def apply(self, ctx):
+    async def apply(self, ctx):
         config = self.config
         recovery = resolve_connection_config(config.get('recovery', _UNDEFINED))
         trusted = config.get('trustedHosts', [])
@@ -38,7 +38,8 @@ class AuthorizedConnectionPlugin(Plugin):
             if limit < required:
                 raise ValueError('client-connection maxRequestBodyBytes ({}) must be at least {} for the configured aggregate image limit'.format(limit, required))
         capacity(ctx)
-        connection = AuthorizedHostConnection(ctx, trusted, CurrentBrowserAuth.create(ctx.root, ctx.get('credentials'), days))
+        browser_auth = await CurrentBrowserAuth.create(ctx.root, ctx.get('credentials'), days)
+        connection = AuthorizedHostConnection(ctx, trusted, browser_auth)
         def web(child):
             capacity(child)
             child.on('webserver/index-inject', lambda table, *args: table.append(dict(kind='global', name='__DSH_CONNECTION_RECOVERY__', value=recovery)))

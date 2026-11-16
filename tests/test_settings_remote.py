@@ -52,7 +52,7 @@ async def test_formal_web_settings_over_authenticated_http(tmp_path):
                    if isinstance(namespace.get('schema'), dict) and 'refs' in namespace['schema']
                    for key in namespace['schema']['refs'])
         rows = {row['ns']: row for row in directory['namespaces']}
-        assert {'agent-presets', 'llm-deepseek', 'llm-pi-ai', 'shell', 'subagent-model-selection'} <= rows.keys()
+        assert {'agent-presets', 'agent-default-model', 'llm-pi-ai', 'agent-loop'} <= rows.keys()
         from dsh.cordis.schema import Schema
         schema = Schema(rows['agent-presets']['schema'])
         assert schema({'default': 'minimal'}) == {'default': 'minimal'}

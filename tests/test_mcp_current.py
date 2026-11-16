@@ -29,20 +29,21 @@ def test_cycle_and_duplicate_failures_preserve_callable_registry_names():
 
 
 @pytest.mark.asyncio
-async def test_current_plugin_notification_cycle_preserves_then_successfully_replaces_generation(monkeypatch):
+async def test_current_plugin_nonterminating_listing_preserves_then_successfully_replaces_generation(monkeypatch):
     class Peer:
-        def __init__(self):self.on_close=None;self.on_notification=None;self.mode='first';self.requests=[];self.close_calls=0
-        async def connect(self):return self
+        def __init__(self):self.on_close=None;self.on_notification=None;self.mode='first';self.requests=[];self.close_calls=0;self.server_capabilities=dict(tools={})
+        async def start(self):pass
+        async def connect(self):await self.start();return self
         async def request(self,value,**kwargs):
             self.requests.append(value)
             if value['method']=='tools/call':return dict(content=[dict(type='text',text='retained '+value['params']['name'])])
-            if self.mode=='cycle':return dict(tools=[],nextCursor='cycle')
+            if self.mode=='cycle':return dict(tools=[dict(name='changing'+str(len(self.requests)),inputSchema=dict(type='object'))],nextCursor='cycle')
             return dict(tools=[dict(name=self.mode,inputSchema=dict(type='object'))])
         async def close(self):
             self.close_calls+=1
             if self.on_close:self.on_close()
     peer=Peer();monkeypatch.setattr('dsh.mcp.current.CurrentMcpConnection._create_transport',lambda _:peer)
-    ctx=Context();ctx.set_service('tools',ToolsService(ctx));plugin=CurrentMcpClient(dict(serverName='current',command='fixture-peer',reconnect=dict(enabled=False)))
+    ctx=Context();ctx.set_service('tools',ToolsService(ctx));plugin=CurrentMcpClient(dict(transport='stdio',serverName='current',command='fixture-peer',reconnect=dict(enabled=False)))
     try:
         fiber=await ctx.plugin(plugin)
         assert plugin.connection._opts['currentContract'] is True
@@ -51,7 +52,7 @@ async def test_current_plugin_notification_cycle_preserves_then_successfully_rep
         await asyncio.wait_for(peer.on_notification(dict(method='notifications/tools/list_changed')),2)
         assert 'retained first' in await ctx.get('tools').execute_tool('mcp__current__first',{})
         calls=[call for call in peer.requests if call['method']=='tools/list']
-        assert calls[-2:]==[dict(method='tools/list'),dict(method='tools/list',params=dict(cursor='cycle'))]
+        assert len(calls)==65 and all(call==dict(method='tools/list',params=dict(cursor='cycle')) for call in calls[2:])
         peer.mode='next'
         await peer.on_notification(dict(method='notifications/tools/list_changed'))
         assert not ctx.get('tools').has_tool('mcp__current__first')
@@ -62,7 +63,7 @@ async def test_current_plugin_notification_cycle_preserves_then_successfully_rep
 
 
 @pytest.mark.asyncio
-async def test_real_stdio_repeated_cursor_rejects_startup_without_loop_or_surviving_child(tmp_path):
+async def test_real_stdio_unchanged_repeated_cursor_converges_and_reaps_child(tmp_path):
     server=tmp_path/'repeating.py';record=tmp_path/'requests.jsonl'
     server.write_text('''import json,sys
 from pathlib import Path
@@ -78,11 +79,11 @@ for line in sys.stdin:
  print(json.dumps(dict(jsonrpc='2.0',id=packet['id'],result=result)),flush=True)
 ''',encoding='utf-8')
     ctx=Context();ctx.set_service('tools',ToolsService(ctx))
-    plugin=CurrentMcpClient(dict(serverName='real',command=sys.executable,args=[str(server),str(record)],reconnect=dict(enabled=False)))
+    plugin=CurrentMcpClient(dict(transport='stdio',serverName='real',command=sys.executable,args=[str(server),str(record)],reconnect=dict(enabled=False)))
     try:
         await asyncio.wait_for(ctx.plugin(plugin).await_settled(),5)
         outcome=await plugin.connection.ready
-        assert 'repeated a tools/list continuation cursor' in str(outcome['error'])
+        assert outcome=={}
         assert not ctx.get('tools').list_tools()
         rows=[json.loads(line) for line in record.read_text(encoding='utf-8').splitlines()]
         assert len(rows)==2 and rows[0].get('params',{})=={} and rows[1]['params']==dict(cursor='repeat')

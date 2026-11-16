@@ -242,4 +242,6 @@
 
 | C8-EF | MCP 一次性服务器探测、客户端代次接口/分页、探测专用握手身份与有界取消清理 | [MCP 服务器探测](mcp-server-probe-checks.json) |
 
+| C8-EG | MCP 生产监督器：代次/状态、凭据刷新、期限与发布资格、关闭失败替换阻断及实际 Fiber 重载 | [MCP 连接监督器](mcp-supervision-checks.json) |
+
 后续继续完整应用组合；最终资格使用 C9 冻结候选的完整门禁。

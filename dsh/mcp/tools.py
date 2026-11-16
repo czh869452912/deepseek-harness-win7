@@ -195,6 +195,8 @@ async def sync_tools(
             "finalizeContent": finalize,
         }
 
+    if not opts.get('eligible', lambda: True)():
+        return previous
     for disp in previous.values():
         disp()
 
@@ -213,6 +215,9 @@ async def sync_tools(
                 logger.error('mcp-client(%s): tool registration failed, no tools registered: %s' %
                     (server_name, error_string(error)))
             if registration_failure == "throw":
+                factory = opts.get('registrationErrorFactory')
+                if factory is not None:
+                    raise factory(error) from error
                 raise
             return {}
     return disposers

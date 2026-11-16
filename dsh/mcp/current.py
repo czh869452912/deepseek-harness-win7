@@ -1,107 +1,80 @@
-"""Current resource/instruction consumers over the legacy transport supervisor."""
-import asyncio
+"""Current MCP plugin with stable status and generation replacement ownership."""
 import json
 from pathlib import Path
-from types import SimpleNamespace
 
 from dsh.cordis.schema import Schema
-from dsh.cordis.json_text import stringify_json
-from dsh.host.http_proxy_policy import JS_SPACE
-from dsh.mcp.client import McpClientPlugin
-from dsh.mcp.connection import McpConnection
+from dsh.cordis.awaiting import start_coroutine
+from dsh.core.scope import scope_of
+from dsh.mcp.client import McpClientPlugin, _active_server_names
+from dsh.mcp.connection import RECONNECT_ABSENT, resolve_reconnect_policy
+from dsh.mcp.connection_current import SupervisedMcpConnection
+from dsh.mcp.status_current import register_status_cell
+from dsh.mcp.generation_current import _SharedCleanup
 from dsh.mcp.config import CONFIG as PREVIOUS_CONFIG
 from dsh.mcp.tools import sync_tools as previous_sync
-from dsh.mcp.schemas import parse
 
 RESOURCE_SCHEMAS=json.loads(Path(__file__).with_name('resource_schemas_current.json').read_text(encoding='utf-8'))
 
-RESOURCE_CONFIG=Schema.union([Schema.object(dict(branch.dict,
-    maxInstructionBytes=Schema.number().step(1).min(1).default(32768))) for branch in PREVIOUS_CONFIG.list])
+RESOURCE_CONFIG=Schema.union([Schema.object(dict(
+    {key:value for key,value in branch.dict.items() if key not in ('failOnStartupError','reconnect')},
+    startupTimeoutMs=Schema.number().min(1).max(2147483647),
+    closeTimeoutMs=Schema.number().min(1).max(2147483647).default(5000),
+    expandTemplates=Schema.boolean().default(False),
+    failOnStartupError=branch.dict['failOnStartupError'],
+    maxInstructionBytes=Schema.number().step(1).min(1).default(32768),
+    reconnect=branch.dict['reconnect'])) for branch in PREVIOUS_CONFIG.list])
 
 
 async def sync_tools(client, ctx, opts, previous):
     return await previous_sync(client, ctx, dict(opts, currentContract=True), previous)
 
 
-class CurrentMcpConnection(McpConnection):
-    current_contract = True
-
-    def _create_transport(self):
-        from dsh.mcp.transport_current import create_current_transport
-        return create_current_transport(self.config)
-
-    def __init__(self,ctx,config,policy):
-        self._instructions=''
-        self._resource_operations=set()
-        super().__init__(ctx,config,policy)
-        self.resources=SimpleNamespace(request=self.request_resource)
-
-    def instructions(self):return self._instructions
-
-    def _instruction_text(self,generation):
-        text=(getattr(generation,'server_instructions',None) or '').rstrip(JS_SPACE)
-        instructions='### MCP server: '+self.config['serverName']+'\n\n'+text if text else ''
-        maximum=self.config.get('maxInstructionBytes',32768)
-        encoded=instructions.encode('utf-16-le','surrogatepass').decode('utf-16-le','replace').encode('utf-8')
-        if len(encoded)>maximum:
-            raise ValueError(self._label+': server instructions exceed maxInstructionBytes ('+str(maximum)+')')
-        return instructions
-
-    def _enqueue_sync(self,generation,startup=False):
-        self._instruction_text(generation)
-        return super()._enqueue_sync(generation,startup)
-
-    async def _connect_generation(self,startup):
-        await super()._connect_generation(startup)
-        if self.client is not None and self._connected_at is not None:
-            self._instructions=self._instruction_text(self.client)
-
-    def _down(self,generation):
-        if self._current(generation):self._instructions=''
-        super()._down(generation)
-
-    async def request_resource(self,request,execution):
-        generation=self.client
-        if generation is None or self._connected_at is None or self.disposed:
-            raise RuntimeError(self._label+': server is disconnected')
-        method=request['method']
-        if method in ('resources/list','resources/templates/list'):
-            if 'resources' not in (getattr(generation,'server_capabilities',None) or {}):
-                return {'resources' if method=='resources/list' else 'resourceTemplates':[]}
-            params=dict(cursor=request['cursor']) if 'cursor' in request else None
-        elif method=='resources/read':params=dict(uri=request['uri'])
-        else:raise ValueError('unsupported MCP resource method: '+method)
-        packet=dict(method=method)
-        if params is not None:packet['params']=params
-        async def operation():
-            schema={'resources/list':'ListResourcesResultSchema','resources/templates/list':'ListResourceTemplatesResultSchema','resources/read':'ReadResourceResultSchema'}[method]
-            async def page(payload):
-                return parse(schema,await generation.request(payload,signal=execution.signal,timeout=self.config.get('toolCallTimeoutMs',60000)),RESOURCE_SCHEMAS)
-            result=await page(packet)
-            if method=='resources/read' or 'cursor' in request:return result
-            key='resources' if method=='resources/list' else 'resourceTemplates'
-            cursor=result.get('nextCursor');previous=result;pages=1
-            while cursor is not None:
-                if pages>=64:raise RuntimeError(method+': exceeded listMaxPages (64); server pagination did not terminate')
-                following=await page(dict(method=method,params=dict(cursor=cursor)))
-                if following.get('nextCursor')==cursor and stringify_json(following[key])==stringify_json(previous[key]):break
-                result[key].extend(following[key]);previous=following;cursor=following.get('nextCursor');pages+=1
-            result.pop('nextCursor',None)
-            return result
-        task=asyncio.create_task(operation())
-        self._resource_operations.add(task)
-        try:return await task
-        finally:self._resource_operations.discard(task)
-
-    async def _dispose(self):
-        self._instructions=''
-        await super()._dispose()
-        await asyncio.gather(*list(self._resource_operations),return_exceptions=True)
+class CurrentMcpConnection(SupervisedMcpConnection):
+    pass
 
 
 class CurrentMcpClient(McpClientPlugin):
     connection_class = CurrentMcpConnection
     Config=RESOURCE_CONFIG
+
+    async def apply(self, ctx):
+        server_name=self.config['serverName']
+        policy=resolve_reconnect_policy(self.config.get('reconnect',RECONNECT_ABSENT),path='mcp-client('+server_name+'): reconnect')
+        owner=scope_of(ctx)
+        if owner is None:owner=ctx.root
+        owner_id=id(owner)
+        def warn(message,error):
+            ctx.logger.warn('mcp-client('+server_name+'): '+message)
+            if not self.config.get('expandTemplates'):ctx.logger.warn(error)
+        def reserve():
+            entry=_active_server_names.setdefault(owner_id,(owner,set()))
+            names=entry[1]
+            if server_name in names:
+                raise ValueError('mcp-client: serverName "'+server_name+'" is already in use by another mcp-client instance — pick a unique serverName in cordis.yml')
+            names.add(server_name)
+            self.status=register_status_cell(ctx.fiber,warn)
+            def release():
+                if ctx.fiber.uid is None:self.status.detach()
+                names.discard(server_name)
+                if not names and _active_server_names.get(owner_id) is entry:_active_server_names.pop(owner_id,None)
+            return release
+        ctx.effect(reserve,label='mcp-client.serverName')
+        closure=self.status.closure()
+        if not closure['closeConfirmed'] or 'cleanupError' in closure:
+            raise RuntimeError('mcp-client('+server_name+'): previous connection cleanup is incomplete; restart the Host')
+        connection=self.connection=self.connection_class(ctx,self.config,policy,self.status)
+        stopping=[None]
+        def dispose():
+            if stopping[0] is None:stopping[0]=_SharedCleanup(start_coroutine(connection.dispose()))
+            return stopping[0]
+        def unloading(fiber):
+            if fiber is ctx.fiber and fiber.uid is None:return dispose()
+        ctx.on('internal/plugin',unloading,global_listener=True)
+        ctx.effect(lambda: dispose,label='mcp-client.connection')
+        self.register_context(ctx,server_name,connection)
+        outcome=await connection.ready
+        if outcome.get('error') is not None and self.config.get('failOnStartupError'):
+            raise RuntimeError('mcp-client('+server_name+'): initial connection or tool synchronization failed') from outcome['error']
 
     def register_context(self,ctx,server_name,connection):
         ctx.inject(['mcpResources'],lambda child:child.mcpResources.register(server_name,connection.resources))

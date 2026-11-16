@@ -60,6 +60,7 @@ def _integer(loader, node):
     value = loader.construct_scalar(node)
     prefix = value.lstrip('+-').lower()[:2]
     number = loader.construct_yaml_int(node) if loader.legacy else int(value, 0 if prefix in ('0o', '0x') else 10)
+    if getattr(loader, 'keep_int', False): return number
     if abs(number) <= 2**53: return number
     try: return float(number)
     except OverflowError: return math.inf if number > 0 else -math.inf
@@ -194,8 +195,9 @@ def _to_values(loader, root):
     return None if root is None else convert(root)
 
 
-def load_document(text, filename):
+def load_document(text, filename, keep_int=False):
     loader = DocumentLoader(text)
+    loader.keep_int = keep_int
     try:
         root = loader.get_single_node()
         if root is not None: _validate_keys(loader, root)

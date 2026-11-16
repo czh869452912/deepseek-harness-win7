@@ -1,4 +1,6 @@
 PyYAML==6.0.3
+ruamel.yaml==0.18.16
+ruamel.yaml.clib==0.2.8
 Brotli==1.2.1
 zstandard==0.23.0
 requests==2.32.4

@@ -274,4 +274,6 @@
 
 | C8-EV | 模型列表解码与真实 HTTP：能力/版本/Unicode 标签、凭证来源、重定向拒绝、完整正文截止及压缩响应 | [列表解码与 HTTP](model-listing-checks.json) |
 
+| C8-EW | 分离后的 Messages 配置与目录决策：新内置模型、能力分层、版本拒绝、覆盖校验和重试配置 | [配置与目录](listed-catalog-checks.json) |
+
 后续继续完整应用组合；最终资格使用 C9 冻结候选的完整门禁。

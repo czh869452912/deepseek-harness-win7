@@ -1,0 +1,12 @@
+{
+  "part": "C8-EW",
+  "upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "paired": {"run": "rc022-listed-catalog-paired2-20261116-01", "observations": 1530, "differences": 0},
+  "native": {"run": "rc022-listed-catalog-native-20261116-01", "passed": 19, "failed": 0},
+  "source": {"run": "rc022-listed-catalog-source-20261116-01", "passed": 40, "failed": 0},
+  "verification_scope_reason": "Shared credential-free Messages settings and current built-in models exported from unchanged Source; endpoint precedence and rejection, integer/timer/file-budget bounds, image limits, model catalog validation, detached defaults and retry policy including inactive always-mode fields. Listed catalog matrix covers known/unknown models, missing/invalid/minimum client requirements including prereleases, listed capability layering and output cap, configured overrides and rejected-override fallback, absent supported request resolution, badges and refusal facts before network I/O. Native consumers include decoder, actual listing HTTP and cache; Source selected catalog/built-in/dynamic-config suites.",
+  "diagnostics": "Initial corpus exposed the distinct empty-input-modalities diagnostic; corrected that validation before override fallback, resolving all 137 affected observations. Initial Source/native results retained.",
+  "activation_boundary": "New shared protocol/config/catalog utilities; historical combined adapter is unchanged until split provider activation. Two built-in models now use Source's 1048576 context, flash toolUpdate addition-only, and 2097152 imageMaxBytes default. Valid configured imagePixelBudget low remains symbolic. Refusal observers verify the actual running installation version before replacing it with an explicit marker; product pin is not promoted.",
+  "limits": "No live provider request or complete release acceptance. Full credential/config/Loader provider lifecycle and Messages transport integration follow separately.",
+  "cleanup": {"removed_bytes": 1992994, "owned_processes_remaining": 0, "retained": "Paired corpus/results/hash reports, Source default export, test command/log/XML/JSON and minimal native observations, initial difference diagnostics. Owned external/mapped fixtures and tmp/home removed; shared Source/toolchains retained until C9."}
+}

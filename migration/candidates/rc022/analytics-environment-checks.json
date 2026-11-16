@@ -1,0 +1,33 @@
+{
+  "part": "C8-GN",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "scope": "Staged static product analytics metadata collector over explicit OS/query ports",
+  "paired": {
+    "run": "rc022-analytics-environment-paired2-20261116-01",
+    "observations": 136,
+    "differences": 0,
+    "comparison": "Actual Source collectEnvironment and its queryEnvironment wrapper with controlled Node OS/execFile sources versus Native collector with controlled OS/query ports. Compare selected fields, fixed missing reasons and exact executable/argv, including UTF-16LE encoded fixed PowerShell scripts."
+  },
+  "verification": {
+    "native": "2 passed: full 136-row corpus and independently gated concurrent version/CPU queries with localized timeout failure and raw-output refusal.",
+    "source": "39 passed in the pinned environment.host.spec.ts, in addition to the 136 paired observations.",
+    "scope_reason": "Targets metadata parsing and collection orchestration. Real child execution, OS sampling and owning product-analytics service are explicitly separate follow-up work."
+  },
+  "behavior": [
+    "Collects the selected OS/application architecture, release, first processor model, logical count and memory fields; unavailable sources do not invalidate independently collected fields.",
+    "Windows version/CIM processor JSON is validated with the Source integer/null/string rules. Unsupported/missing architecture and physical-core metadata receive fixed reasons. Registry version components and CPU socket counts are not inferred from logical count.",
+    "macOS version/build and sysctl output follow the Source line parsing, suffix consistency and safe integer rules. Other platforms expose the four unsupported metadata reasons.",
+    "Version and processor queries start concurrently. Missing SystemRoot issues no Windows query; malformed JSON, absent/null fields, query failures, timeouts and output limits affect only their dependent fields.",
+    "Product metadata contains selected values and fixed reasons; raw command output and errors remain outside the emitted field object."
+  ],
+  "limitations": [
+    "This collector requires explicit OS/query ports and is not activated by the product-analytics service yet. No real subprocess, Windows 7 metadata sampling or cancellation qualification is claimed in this batch.",
+    "The exact Source PowerShell commands may be unavailable on older PowerShell installations; the eventual executor must report the fixed query failure without requiring an OS patch. Full migration/release, Portable/browser and Windows 7 qualification remain pending."
+  ],
+  "cleanup": {
+    "bytes_removed": 712487,
+    "receipts": ["rc022-analytics-environment-source-20261116-01/cleanup.json", "rc022-analytics-environment-paired-20261116-01/duplicate-observations.json"],
+    "removed": "Owned pytest fixtures and isolated tmp/home trees; obsolete preliminary Source/Native JSON observations were byte/SHA-identical to the retained final copies and were replaced with compact copy references. No matching processes remain.",
+    "retained": "Final paired raw observations, commands, input hashes, logs/XML/Vitest JSON and duplicate identities. Shared Source/toolchains remain needed for the real bounded query executor and C9."
+  }
+}

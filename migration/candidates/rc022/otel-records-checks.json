@@ -1,0 +1,40 @@
+{
+  "part": "C8-GE",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "scope": "Staged ordinary-event/session-log emission envelopes and session queue option admission",
+  "paired": {
+    "run": "rc022-otel-records-paired2-20261116-01",
+    "observations": 185,
+    "differences": 0,
+    "comparison": "Actual pinned Reporter constructors plus intercepted logger.emit calls; Native pure factories. Includes exact Source session content JSON, enum lookup/defaults, reserved metadata and independent queue/byte settings."
+  },
+  "verification": {
+    "native": "3 passed: corpus, frozen canonical content/reserved fields and arbitrary Python integer rejection.",
+    "source": {
+      "passed": 34,
+      "skipped": 0,
+      "run": "rc022-otel-records-source-20261116-01"
+    },
+    "scope_reason": "Pure record construction/admission only. Pinned OTel package tests supply current reference diagnostics; their HTTP/queue results are not Native parity evidence."
+  },
+  "behavior": [
+    "Session content captures the complete canonical event as ECMAScript JSON text, including numeric-key ordering and Unicode; sessionId/content attributes belong to the reporter.",
+    "Session occurrence and observation times both retain the canonical event time; ordinary-event observation time is assigned at emission.",
+    "Severity defaults to INFO and follows the pinned enum property lookup, including numeric-name reverse entries at the observed boundary.",
+    "Session maxRequestBytes is bounded by 4000000; positive signed-31-bit processor fields and batch <= queue are admitted before a pipeline can be built."
+  ],
+  "diagnostics": [
+    "The initial comparison exposed TypeScript numeric-enum reverse lookup for a string INFO severity. Native now matches the actual emission boundary; downstream SDK type admission is separate."
+  ],
+  "limitations": [
+    "These factories are staged and do not replace the legacy Python SDK backend yet.",
+    "HTTP OTLP JSON serialization, batching, retries/cancellation, reporter shutdown and the actual otel service remain follow-up integration work.",
+    "No full migration, Portable/browser or Windows 7 release qualification is claimed."
+  ],
+  "cleanup": {
+    "bytes_removed": 28224,
+    "receipt": "rc022-otel-records-source-20261116-01/cleanup.json",
+    "removed": "Owned pytest workspaces and isolated temporary/home trees.",
+    "retained": "Commands/logs/XML, paired JSON and input hashes, failure diagnostics and Source/toolchains for subsequent transport/C9 work."
+  }
+}

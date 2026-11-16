@@ -343,3 +343,5 @@
 | C8-GC | Current credential storage, durable queue, live reload and canonical Connection activation | [Credential storage](credential-storage-checks.json) |
 
 | C8-GD | Account settings/onboarding and notification public Host configuration | [Account surfaces](account-surfaces-checks.json) |
+
+| C8-GE | Staged OTel emitted records and session channel option admission | [OTel records](otel-records-checks.json) |

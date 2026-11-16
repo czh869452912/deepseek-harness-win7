@@ -1,0 +1,11 @@
+{
+  "batch": "C8-FJ",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "scope": "Current shared Host wiring and split API-key provider; coordinated profile activation follows with the account provider.",
+  "paired": {"observations": 20, "differences": 0, "report": ".goose/out/rc022-api-key-provider-paired3-20261116-01/report.json"},
+  "native": {"passed": 27, "report": ".goose/out/rc022-api-key-provider-native-20261116-01/command.json"},
+  "source": {"passed": 25, "report": ".goose/out/rc022-api-key-provider-source-20261116-01/command.json"},
+  "coverage": ["Actual Source/native plugin apply over actual LLM services; configured/public discovery, listing fallback and malformed credentials", "Per-operation credential resolution, volatile credential-reference updates and live credential removal", "Provider/directory metadata and full reversible registration", "Native class/schema mount, late settings presentation and its disposer", "Current invalid configuration raises instead of reusing a previous successful snapshot", "Underlying listing-cache, credential and Messages HTTP adapter regressions"],
+  "limits": ["Paired discovery controls listing transport; actual listing HTTP and Messages transport have separate receipts", "Default profile remains on its historical entry until the split provider composition is promoted", "Application version/pin promotion and complete release acceptance remain C9 work"],
+  "cleanup": {"removed_bytes": 455747, "removed": ["Owned pytest workspace", "Owned tmp and home directories"], "retained": "Commands, observations and Source import/injection fixture failure diagnostics; no remaining task-owned process"}
+}

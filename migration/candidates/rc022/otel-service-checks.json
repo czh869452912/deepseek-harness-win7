@@ -1,0 +1,32 @@
+{
+  "part": "C8-GK",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "scope": "Register the canonical Cordis otel factory service",
+  "paired": {
+    "run": "rc022-otel-service-paired-20261116-01",
+    "observations": 5,
+    "differences": 0,
+    "comparison": "Actual mounted Source and Native Cordis services. Native uses both actual channel factories and actual HTTP exporters. Compare independent event-a/event-b/session-a/session-b payloads and exact byte counts, isolated channel shutdown, continued consumer ownership after provider removal, and creation error precedence."
+  },
+  "verification": {
+    "native": "23 passed: service/end-to-end corpus, actual canonical boot mount/disposal with network forbidden during mounting, pinned manifest bytes, direct event/Session channel/record/wire regressions and installation registry/Loader proxy consumers.",
+    "source": "5 actual mounted Source service scenarios; unchanged pinned OTel package 34 tests already passed C8-GE.",
+    "scope_reason": "Adds the missing factory provider to the installation resolution table and exercises both real exporter paths through it, including canonical boot and reversible service registration."
+  },
+  "behavior": [
+    "@deepseek-ai/dsh-otel resolves to CurrentOTel and provides ctx.otel through Cordis Service ownership. Mounting allocates no reporter queue or collector request.",
+    "createEventReporter and createSessionLogReporter return independent caller-owned channels. Disposing the provider removes ctx.otel while accepted channel work remains owned by consumers.",
+    "Both channels now have qualified end-to-end HTTP composition through the factory. The service does not supply business identity, authorization, redaction or collector defaults.",
+    "The package manifest is copied byte-for-byte from the pinned Source. Bundle/profile composition and production consumer migration are separate follow-up changes."
+  ],
+  "limitations": [
+    "The existing session backend still uses the historical Python SDK transport until its next consumer migration. Production bundle/profile promotion has not been claimed by this provider commit.",
+    "Existing transport/channel adaptation limits remain. Full migration/release, Portable/browser and Windows 7 qualification remain pending."
+  ],
+  "cleanup": {
+    "bytes_removed": 317658,
+    "receipt": "rc022-otel-service-native-20261116-01/cleanup.json",
+    "removed": "Owned pytest fixtures, isolated temporary/home trees and completed loopback collector processes/threads. No matching test processes remain.",
+    "retained": "Commands, logs/XML and paired payloads/input hashes; shared Source/toolchains remain needed for production consumer migration and C9."
+  }
+}

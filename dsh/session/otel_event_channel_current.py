@@ -22,14 +22,14 @@ class EventLogReporter:
     def __init__(self, options, exporter=None, clock=None):
         self.options=dict(options,scope=dict(options['scope']),resourceAttributes=dict(options['resourceAttributes']))
         self.clock=clock or (lambda:time.time()*1000)
+        self.cancellation=AbortController()
+        self.exporter=exporter if exporter is not None else EventHttpExporter(options['exporter'],self.cancellation.signal)
         supplied=options.get('processor') or {}
         self.config={key:supplied.get(key) if supplied.get(key) is not None else default
             for key,default in [('maxQueueSize',2048),('maxExportBatchSize',512),
                 ('scheduledDelayMillis',1000),('exportTimeoutMillis',30000)]}
         if self.config['maxExportBatchSize']>self.config['maxQueueSize']:
             self.config['maxExportBatchSize']=self.config['maxQueueSize']
-        self.cancellation=AbortController()
-        self.exporter=exporter if exporter is not None else EventHttpExporter(options['exporter'],self.cancellation.signal)
         self.queue=[];self.timer=None;self.current=None;self.flushing=False;self.closed=False
         self._provider_shutdown=None;self._export_shutdown=None
 

@@ -1,0 +1,688 @@
+{
+  "wheels": [
+    {
+      "filename": "brotli-1.2.1-cp38-cp38-win32.whl",
+      "url": "https://files.pythonhosted.org/packages/f9/f7/8fa5b6d5f478784e25df161afac737e415a2691313a6dced2a9aa5bcb232/brotli-1.2.1-cp38-cp38-win32.whl",
+      "sha256": "cd678af3f73bcacd0391897a8697e19ba4bd1445b35ba6d776342e64f8c98f29",
+      "size": 332985,
+      "requires_python": null
+    },
+    {
+      "filename": "brotli-1.2.1-cp38-cp38-win_amd64.whl",
+      "url": "https://files.pythonhosted.org/packages/c2/10/81afa1711e342e3d57d604613768ad415e2a3cdc9eeca559b98b88a18a50/brotli-1.2.1-cp38-cp38-win_amd64.whl",
+      "sha256": "c4c82b91f512942db9bfb4f33ab6b8e17e49cba0e9e98ed34c0cf7c33a48a458",
+      "size": 370872,
+      "requires_python": null
+    },
+    {
+      "filename": "zstandard-0.23.0-cp38-cp38-win32.whl",
+      "url": "https://files.pythonhosted.org/packages/fc/a6/239f43f2e3ea0360c5641c075bd587c7f2a32b29d9ba53a538435621bcbb/zstandard-0.23.0-cp38-cp38-win32.whl",
+      "sha256": "b8c0bd73aeac689beacd4e7667d48c299f61b959475cdbb91e7d3d88d27c56b9",
+      "size": 430654,
+      "requires_python": ">=3.8"
+    },
+    {
+      "filename": "zstandard-0.23.0-cp38-cp38-win_amd64.whl",
+      "url": "https://files.pythonhosted.org/packages/d5/b6/16e737301831c9c62379ed466c3d916c56b8a9a95fbce9bf1d7fea318945/zstandard-0.23.0-cp38-cp38-win_amd64.whl",
+      "sha256": "a05e6d6218461eb1b4771d973728f0133b2a4613a6779995df557f70794fd60f",
+      "size": 495519,
+      "requires_python": ">=3.8"
+    }
+  ],
+  "pe_images": [
+    {
+      "path": "audit-brotli-1.2.1-cp38-cp38-win32\\_brotli.cp38-win32.pyd",
+      "bytes": 746496,
+      "sha256": "50919697589bb9eccb39e65fc34fe6246562a9b9f6efb66768bbcf412b509c1d",
+      "machine": "0x14c",
+      "os": [
+        6,
+        0
+      ],
+      "subsystem": [
+        6,
+        0
+      ],
+      "imports": {
+        "python38.dll": [
+          "PyModule_AddStringConstant",
+          "_Py_FalseStruct",
+          "PyModule_AddObject",
+          "PyErr_SetString",
+          "PyModule_AddIntConstant",
+          "_PyArg_ParseTuple_SizeT",
+          "PyObject_GetBuffer",
+          "PyType_Ready",
+          "PyObject_GetAttrString",
+          "PyErr_Clear",
+          "PyErr_NewExceptionWithDoc",
+          "PyModuleDef_Init",
+          "PyBytes_FromStringAndSize",
+          "PyType_FromSpec",
+          "PyExc_TypeError",
+          "_Py_TrueStruct",
+          "PyBuffer_Release",
+          "PyEval_RestoreThread",
+          "_Py_Dealloc",
+          "PyObject_SetAttrString",
+          "_PyArg_ParseTupleAndKeywords_SizeT",
+          "PyExc_MemoryError",
+          "PyEval_SaveThread",
+          "PyErr_Occurred"
+        ],
+        "KERNEL32.dll": [
+          "GetCurrentProcessId",
+          "GetCurrentThreadId",
+          "GetSystemTimeAsFileTime",
+          "DisableThreadLibraryCalls",
+          "InitializeSListHead",
+          "IsProcessorFeaturePresent",
+          "QueryPerformanceCounter"
+        ],
+        "VCRUNTIME140.dll": [
+          "memset",
+          "_except_handler4_common",
+          "memmove",
+          "memcpy",
+          "__std_type_info_destroy_list"
+        ],
+        "api-ms-win-crt-stdio-l1-1-0.dll": [
+          "__stdio_common_vsprintf"
+        ],
+        "api-ms-win-crt-heap-l1-1-0.dll": [
+          "free",
+          "malloc"
+        ],
+        "api-ms-win-crt-math-l1-1-0.dll": [
+          "log2"
+        ],
+        "api-ms-win-crt-runtime-l1-1-0.dll": [
+          "_cexit",
+          "_execute_onexit_table",
+          "_initialize_onexit_table",
+          "_initialize_narrow_environment",
+          "_configure_narrow_argv",
+          "_seh_filter_dll",
+          "_initterm_e",
+          "_initterm",
+          "exit"
+        ]
+      }
+    },
+    {
+      "path": "audit-brotli-1.2.1-cp38-cp38-win_amd64\\_brotli.cp38-win_amd64.pyd",
+      "bytes": 872448,
+      "sha256": "01987107d238a4cb6b6a20eec40e0a46c42c47ad5cfc8092769b617bf887f615",
+      "machine": "0x8664",
+      "os": [
+        6,
+        0
+      ],
+      "subsystem": [
+        6,
+        0
+      ],
+      "imports": {
+        "python38.dll": [
+          "_Py_FalseStruct",
+          "_Py_Dealloc",
+          "_PyArg_ParseTuple_SizeT",
+          "_PyArg_ParseTupleAndKeywords_SizeT",
+          "PyEval_RestoreThread",
+          "PyObject_GetBuffer",
+          "PyType_Ready",
+          "PyObject_GetAttrString",
+          "PyErr_Clear",
+          "PyErr_NewExceptionWithDoc",
+          "PyModuleDef_Init",
+          "PyBytes_FromStringAndSize",
+          "PyType_FromSpec",
+          "PyExc_TypeError",
+          "_Py_TrueStruct",
+          "PyBuffer_Release",
+          "PyErr_Occurred",
+          "PyModule_AddObject",
+          "PyErr_SetString",
+          "PyModule_AddStringConstant",
+          "PyExc_MemoryError",
+          "PyObject_SetAttrString",
+          "PyEval_SaveThread",
+          "PyModule_AddIntConstant"
+        ],
+        "KERNEL32.dll": [
+          "GetCurrentProcessId",
+          "GetCurrentThreadId",
+          "GetSystemTimeAsFileTime",
+          "DisableThreadLibraryCalls",
+          "InitializeSListHead",
+          "QueryPerformanceCounter"
+        ],
+        "VCRUNTIME140.dll": [
+          "memset",
+          "__C_specific_handler",
+          "memmove",
+          "memcpy",
+          "__std_type_info_destroy_list"
+        ],
+        "api-ms-win-crt-stdio-l1-1-0.dll": [
+          "__stdio_common_vsprintf"
+        ],
+        "api-ms-win-crt-heap-l1-1-0.dll": [
+          "free",
+          "malloc"
+        ],
+        "api-ms-win-crt-runtime-l1-1-0.dll": [
+          "exit",
+          "_cexit",
+          "_execute_onexit_table",
+          "_initialize_onexit_table",
+          "_initialize_narrow_environment",
+          "_configure_narrow_argv",
+          "_seh_filter_dll",
+          "_initterm_e",
+          "_initterm"
+        ],
+        "api-ms-win-crt-math-l1-1-0.dll": [
+          "log2"
+        ]
+      }
+    },
+    {
+      "path": "audit-zstandard-0.23.0-cp38-cp38-win32\\zstandard\\backend_c.cp38-win32.pyd",
+      "bytes": 431616,
+      "sha256": "76b71128d1ce17672fd4e63bcc2e3b1884297edda26d7b118ef29d4c25930eb4",
+      "machine": "0x14c",
+      "os": [
+        6,
+        0
+      ],
+      "subsystem": [
+        6,
+        0
+      ],
+      "imports": {
+        "python38.dll": [
+          "PyTuple_Pack",
+          "PyMem_Malloc",
+          "PyExc_IndexError",
+          "PyExc_ImportError",
+          "_PyObject_CallMethod_SizeT",
+          "PyDict_DelItemString",
+          "PyUnicode_FromString",
+          "PyLong_FromSize_t",
+          "PyBuffer_Release",
+          "PyEval_RestoreThread",
+          "PyErr_NewException",
+          "PyObject_GetAttrString",
+          "PyType_Ready",
+          "PyModule_Create2",
+          "PyList_New",
+          "PySet_New",
+          "PyObject_GetBuffer",
+          "_PyBytes_Resize",
+          "_PyArg_ParseTuple_SizeT",
+          "PyModule_AddObject",
+          "PyObject_Free",
+          "_Py_Dealloc",
+          "PyType_IsSubtype",
+          "_Py_FalseStruct",
+          "PyObject_IsTrue",
+          "_PyArg_ParseTupleAndKeywords_SizeT",
+          "PyLong_FromUnsignedLong",
+          "PyExc_ValueError",
+          "PyErr_SetString",
+          "PyList_Size",
+          "PySet_Add",
+          "PyBuffer_FillInfo",
+          "PyDict_SetItemString",
+          "PyTuple_New",
+          "_Py_NoneStruct",
+          "PyBytes_AsStringAndSize",
+          "PyBytes_FromString",
+          "PyLong_AsUnsignedLongLong",
+          "PyLong_FromUnsignedLongLong",
+          "PyErr_SetNone",
+          "PyLong_FromLong",
+          "PyObject_SetAttrString",
+          "PyEval_SaveThread",
+          "PyLong_FromSsize_t",
+          "PyErr_Occurred",
+          "PyMem_Realloc",
+          "PyExc_TypeError",
+          "_PyObject_New",
+          "PyExc_NotImplementedError",
+          "PyBytes_AsString",
+          "PyType_FromSpec",
+          "PyBytes_FromStringAndSize",
+          "PyObject_HasAttrString",
+          "PyImport_ImportModule",
+          "PyLong_AsSsize_t",
+          "PyObject_CallObject",
+          "PyExc_OSError",
+          "PyDict_GetItemString",
+          "PyErr_NoMemory",
+          "PyList_Type",
+          "PyTuple_SetItem",
+          "PyExc_StopIteration",
+          "PyMem_Free",
+          "PyObject_IsInstance",
+          "PyList_GetItem",
+          "PyDict_New",
+          "PyBytes_Size",
+          "PyType_GenericNew",
+          "PyTuple_Size",
+          "PyList_Append",
+          "PyErr_Format",
+          "PyErr_Clear",
+          "PyModule_AddIntConstant",
+          "_Py_TrueStruct",
+          "PyExc_BufferError"
+        ],
+        "KERNEL32.dll": [
+          "GetCurrentThreadId",
+          "WaitForSingleObject",
+          "SleepConditionVariableCS",
+          "EnterCriticalSection",
+          "WakeAllConditionVariable",
+          "WakeConditionVariable",
+          "LeaveCriticalSection",
+          "InitializeCriticalSection",
+          "GetLastError",
+          "CloseHandle",
+          "GetSystemInfo",
+          "DeleteCriticalSection",
+          "UnhandledExceptionFilter",
+          "SetUnhandledExceptionFilter",
+          "IsDebuggerPresent",
+          "InitializeSListHead",
+          "DisableThreadLibraryCalls",
+          "GetSystemTimeAsFileTime",
+          "GetCurrentProcess",
+          "GetCurrentProcessId",
+          "QueryPerformanceCounter",
+          "IsProcessorFeaturePresent",
+          "TerminateProcess",
+          "InitializeConditionVariable"
+        ],
+        "VCRUNTIME140.dll": [
+          "__std_type_info_destroy_list",
+          "memset",
+          "_except_handler4_common",
+          "memcpy",
+          "memmove"
+        ],
+        "api-ms-win-crt-heap-l1-1-0.dll": [
+          "realloc",
+          "free",
+          "malloc",
+          "calloc"
+        ],
+        "api-ms-win-crt-time-l1-1-0.dll": [
+          "clock"
+        ],
+        "api-ms-win-crt-stdio-l1-1-0.dll": [
+          "fflush",
+          "__stdio_common_vfprintf",
+          "__acrt_iob_func"
+        ],
+        "api-ms-win-crt-runtime-l1-1-0.dll": [
+          "_configure_narrow_argv",
+          "_beginthreadex",
+          "_errno",
+          "_cexit",
+          "_execute_onexit_table",
+          "_initialize_onexit_table",
+          "_initialize_narrow_environment",
+          "_initterm_e",
+          "_seh_filter_dll",
+          "_initterm"
+        ]
+      }
+    },
+    {
+      "path": "audit-zstandard-0.23.0-cp38-cp38-win32\\zstandard\\_cffi.cp38-win32.pyd",
+      "bytes": 517120,
+      "sha256": "ebec2c6c427631e8cac6a48c09fa48198c1f58ebe6262ae3c739ecbe4f082d17",
+      "machine": "0x14c",
+      "os": [
+        6,
+        0
+      ],
+      "subsystem": [
+        6,
+        0
+      ],
+      "imports": {
+        "python3.dll": [
+          "_Py_Dealloc",
+          "PyLong_FromUnsignedLong",
+          "PyObject_CallMethod",
+          "PyLong_FromVoidPtr",
+          "PyArg_UnpackTuple",
+          "PyEval_RestoreThread",
+          "PyLong_FromLong",
+          "PyObject_Malloc",
+          "PyLong_FromUnsignedLongLong",
+          "_Py_NoneStruct",
+          "PyObject_Free",
+          "PyEval_SaveThread",
+          "PyErr_Occurred",
+          "PyImport_ImportModule"
+        ],
+        "KERNEL32.dll": [
+          "IsDebuggerPresent",
+          "InitializeSListHead",
+          "DisableThreadLibraryCalls",
+          "GetSystemTimeAsFileTime",
+          "GetCurrentThreadId",
+          "GetCurrentProcessId",
+          "QueryPerformanceCounter",
+          "IsProcessorFeaturePresent",
+          "TerminateProcess",
+          "GetCurrentProcess",
+          "SetUnhandledExceptionFilter",
+          "UnhandledExceptionFilter",
+          "DeleteCriticalSection",
+          "CloseHandle",
+          "SleepConditionVariableCS",
+          "EnterCriticalSection",
+          "WakeAllConditionVariable",
+          "WakeConditionVariable",
+          "LeaveCriticalSection",
+          "InitializeCriticalSection",
+          "InitializeConditionVariable",
+          "WaitForSingleObject",
+          "GetLastError"
+        ],
+        "VCRUNTIME140.dll": [
+          "memset",
+          "_except_handler4_common",
+          "memmove",
+          "__std_type_info_destroy_list",
+          "memcpy"
+        ],
+        "api-ms-win-crt-heap-l1-1-0.dll": [
+          "malloc",
+          "free",
+          "calloc"
+        ],
+        "api-ms-win-crt-time-l1-1-0.dll": [
+          "clock"
+        ],
+        "api-ms-win-crt-stdio-l1-1-0.dll": [
+          "fflush",
+          "__stdio_common_vfprintf",
+          "__acrt_iob_func"
+        ],
+        "api-ms-win-crt-runtime-l1-1-0.dll": [
+          "_seh_filter_dll",
+          "_cexit",
+          "_execute_onexit_table",
+          "_initialize_onexit_table",
+          "_initialize_narrow_environment",
+          "_configure_narrow_argv",
+          "_initterm_e",
+          "_beginthreadex",
+          "_initterm",
+          "_errno"
+        ],
+        "api-ms-win-crt-utility-l1-1-0.dll": [
+          "qsort"
+        ]
+      }
+    },
+    {
+      "path": "audit-zstandard-0.23.0-cp38-cp38-win_amd64\\zstandard\\backend_c.cp38-win_amd64.pyd",
+      "bytes": 520192,
+      "sha256": "be8580a74db88e06d866e5644f365f7f90fa1e2017deeae90692910ee9e451a7",
+      "machine": "0x8664",
+      "os": [
+        6,
+        0
+      ],
+      "subsystem": [
+        6,
+        0
+      ],
+      "imports": {
+        "python38.dll": [
+          "PyExc_IndexError",
+          "PyExc_ImportError",
+          "_Py_TrueStruct",
+          "PyModule_Create2",
+          "PyUnicode_FromString",
+          "PyLong_FromSize_t",
+          "PyBuffer_Release",
+          "PyEval_RestoreThread",
+          "PyList_New",
+          "PySet_New",
+          "PyObject_GetBuffer",
+          "_PyBytes_Resize",
+          "_PyArg_ParseTuple_SizeT",
+          "PyModule_AddObject",
+          "PyObject_Free",
+          "_Py_Dealloc",
+          "PyType_IsSubtype",
+          "_Py_FalseStruct",
+          "PyErr_Format",
+          "_PyArg_ParseTupleAndKeywords_SizeT",
+          "PyLong_FromUnsignedLong",
+          "PyMem_Malloc",
+          "PyErr_SetString",
+          "PyList_Size",
+          "PySet_Add",
+          "PyBuffer_FillInfo",
+          "PyDict_SetItemString",
+          "PyTuple_New",
+          "_Py_NoneStruct",
+          "PyBytes_AsStringAndSize",
+          "PyBytes_FromString",
+          "PyLong_AsUnsignedLongLong",
+          "PyLong_FromUnsignedLongLong",
+          "PyErr_SetNone",
+          "PyLong_FromLong",
+          "PyObject_SetAttrString",
+          "PyEval_SaveThread",
+          "PyLong_FromSsize_t",
+          "PyErr_Occurred",
+          "PyBytes_AsString",
+          "PyImport_ImportModule",
+          "PyLong_AsSsize_t",
+          "PyType_GenericNew",
+          "PyModule_AddIntConstant",
+          "PyTuple_Pack",
+          "PyObject_IsTrue",
+          "PyMem_Realloc",
+          "PyExc_TypeError",
+          "_PyObject_New",
+          "PyExc_NotImplementedError",
+          "PyType_FromSpec",
+          "PyBytes_FromStringAndSize",
+          "PyObject_HasAttrString",
+          "PyObject_CallObject",
+          "PyExc_OSError",
+          "PyDict_GetItemString",
+          "PyErr_NoMemory",
+          "PyList_Type",
+          "PyTuple_SetItem",
+          "PyExc_StopIteration",
+          "PyMem_Free",
+          "PyObject_IsInstance",
+          "PyList_GetItem",
+          "PyDict_New",
+          "PyBytes_Size",
+          "PyTuple_Size",
+          "PyList_Append",
+          "PyErr_Clear",
+          "_PyObject_CallMethod_SizeT",
+          "PyErr_NewException",
+          "PyObject_GetAttrString",
+          "PyExc_ValueError",
+          "PyType_Ready",
+          "PyDict_DelItemString",
+          "PyExc_BufferError"
+        ],
+        "KERNEL32.dll": [
+          "GetCurrentProcess",
+          "EnterCriticalSection",
+          "WakeAllConditionVariable",
+          "WakeConditionVariable",
+          "LeaveCriticalSection",
+          "InitializeCriticalSection",
+          "InitializeConditionVariable",
+          "IsDebuggerPresent",
+          "InitializeSListHead",
+          "DisableThreadLibraryCalls",
+          "GetSystemTimeAsFileTime",
+          "GetCurrentThreadId",
+          "GetCurrentProcessId",
+          "QueryPerformanceCounter",
+          "IsProcessorFeaturePresent",
+          "TerminateProcess",
+          "SleepConditionVariableCS",
+          "SetUnhandledExceptionFilter",
+          "UnhandledExceptionFilter",
+          "RtlVirtualUnwind",
+          "RtlLookupFunctionEntry",
+          "RtlCaptureContext",
+          "DeleteCriticalSection",
+          "GetSystemInfo",
+          "CloseHandle",
+          "GetLastError",
+          "WaitForSingleObject"
+        ],
+        "VCRUNTIME140.dll": [
+          "__std_type_info_destroy_list",
+          "memset",
+          "memmove",
+          "__C_specific_handler",
+          "memcpy"
+        ],
+        "api-ms-win-crt-heap-l1-1-0.dll": [
+          "calloc",
+          "free",
+          "malloc",
+          "realloc"
+        ],
+        "api-ms-win-crt-time-l1-1-0.dll": [
+          "clock"
+        ],
+        "api-ms-win-crt-stdio-l1-1-0.dll": [
+          "__acrt_iob_func",
+          "fflush",
+          "__stdio_common_vfprintf"
+        ],
+        "api-ms-win-crt-runtime-l1-1-0.dll": [
+          "_execute_onexit_table",
+          "_initialize_narrow_environment",
+          "_configure_narrow_argv",
+          "_seh_filter_dll",
+          "_initterm_e",
+          "_initterm",
+          "_cexit",
+          "_beginthreadex",
+          "_errno",
+          "_initialize_onexit_table"
+        ]
+      }
+    },
+    {
+      "path": "audit-zstandard-0.23.0-cp38-cp38-win_amd64\\zstandard\\_cffi.cp38-win_amd64.pyd",
+      "bytes": 650752,
+      "sha256": "efae4603479b15dbc187624c712460c8da98b1b399032da2e1ac096b42c4ff87",
+      "machine": "0x8664",
+      "os": [
+        6,
+        0
+      ],
+      "subsystem": [
+        6,
+        0
+      ],
+      "imports": {
+        "python3.dll": [
+          "_Py_NoneStruct",
+          "PyLong_FromUnsignedLongLong",
+          "_Py_Dealloc",
+          "PyObject_Free",
+          "PyObject_CallMethod",
+          "PyLong_FromVoidPtr",
+          "PyArg_UnpackTuple",
+          "PyEval_RestoreThread",
+          "PyLong_FromLong",
+          "PyEval_SaveThread",
+          "PyObject_Malloc",
+          "PyLong_FromUnsignedLong",
+          "PyErr_Occurred",
+          "PyImport_ImportModule"
+        ],
+        "KERNEL32.dll": [
+          "IsDebuggerPresent",
+          "GetCurrentProcessId",
+          "QueryPerformanceCounter",
+          "IsProcessorFeaturePresent",
+          "TerminateProcess",
+          "GetCurrentProcess",
+          "SetUnhandledExceptionFilter",
+          "UnhandledExceptionFilter",
+          "RtlVirtualUnwind",
+          "RtlLookupFunctionEntry",
+          "InitializeSListHead",
+          "DisableThreadLibraryCalls",
+          "GetSystemTimeAsFileTime",
+          "SleepConditionVariableCS",
+          "EnterCriticalSection",
+          "WakeAllConditionVariable",
+          "WakeConditionVariable",
+          "LeaveCriticalSection",
+          "InitializeCriticalSection",
+          "InitializeConditionVariable",
+          "WaitForSingleObject",
+          "GetLastError",
+          "CloseHandle",
+          "DeleteCriticalSection",
+          "RtlCaptureContext",
+          "GetCurrentThreadId"
+        ],
+        "VCRUNTIME140.dll": [
+          "__C_specific_handler",
+          "__std_type_info_destroy_list",
+          "memset",
+          "memcmp",
+          "memcpy",
+          "memmove"
+        ],
+        "api-ms-win-crt-heap-l1-1-0.dll": [
+          "calloc",
+          "free",
+          "malloc"
+        ],
+        "api-ms-win-crt-time-l1-1-0.dll": [
+          "clock"
+        ],
+        "api-ms-win-crt-stdio-l1-1-0.dll": [
+          "__stdio_common_vfprintf",
+          "fflush",
+          "__acrt_iob_func"
+        ],
+        "api-ms-win-crt-runtime-l1-1-0.dll": [
+          "_execute_onexit_table",
+          "_cexit",
+          "_initialize_narrow_environment",
+          "_configure_narrow_argv",
+          "_seh_filter_dll",
+          "_initterm_e",
+          "_initterm",
+          "_initialize_onexit_table",
+          "_beginthreadex",
+          "_errno"
+        ],
+        "api-ms-win-crt-utility-l1-1-0.dll": [
+          "qsort"
+        ]
+      }
+    }
+  ],
+  "qualification": "Byte identity and static imports; actual x86/x64 Python 3.8 decoder corpus on the current Windows host. Win7 runtime acceptance remains C9.",
+  "x86_runtime": "Audited wheels loaded from owned temporary paths; the shared uv-managed interpreter was not modified. Prepare the separate release dependency payload at C9."
+}

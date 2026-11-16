@@ -2,7 +2,7 @@
 from contextlib import asynccontextmanager
 import urllib.request
 
-from dsh.host.http_decode import decompressChunks
+from dsh.host.http_decode import contentCodings, decodeContentChunks
 from dsh.llm.http_stream import open_stream
 from dsh.llm.stream_bridge import OwnedStream, iter_chunks
 from dsh.host.url_current import _url
@@ -15,7 +15,7 @@ async def request(url, method, headers, body, signal, redirect_policy='error'):
         for key, value in headers.items():
             key, value = key.lower(), value.strip(' \t\r\n')
             normalized[key] = normalized[key]+', '+value if key in normalized else value
-        normalized.setdefault('accept-encoding', 'gzip, deflate')
+        normalized.setdefault('accept-encoding', 'br, gzip, deflate, zstd' if _url(url)['protocol'] == 'https:' else 'gzip, deflate')
         data = body.encode('utf-8') if body is not None else None
         if data is not None:
             normalized.setdefault('content-type', 'text/plain;charset=UTF-8')
@@ -26,11 +26,10 @@ async def request(url, method, headers, body, signal, redirect_policy='error'):
             for key, value in response.headers.items():
                 key = key.lower()
                 received[key] = received[key]+', '+value if key in received else value
-            yield dict(status=response.status, hasBody=response.status not in (204, 205, 304), headers=received)
-            for encoding in reversed(received.get('content-encoding', '').split(',')):
-                encoding = encoding.strip().lower()
-                if encoding in ('gzip', 'deflate'):
-                    chunks = decompressChunks(chunks, encoding)
+            hasBody = response.status not in (204, 205, 304)
+            codings = contentCodings(received.get('content-encoding')) if hasBody else []
+            yield dict(status=response.status, hasBody=hasBody, headers=received)
+            chunks = decodeContentChunks(chunks, codings)
             yield from chunks
             if response.length is not None and response.length > 0:
                 raise RuntimeError('HTTP response ended before its declared Content-Length')

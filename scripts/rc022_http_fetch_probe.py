@@ -47,14 +47,18 @@ def prepare(output):
     path = output/'inputs.json'; path.write_text(json.dumps(cases()), encoding='utf-8'); return [path]
 
 
-async def observe():
+async def observe(inputs=None):
     from dsh.core.abort import AbortController
     from dsh.web.http_fetch_current import HttpFetchProvider, DEFAULTS, validateLimits
-    inputs = cases(); hits = []; entered = threading.Event(); rows = []
+    inputs = cases() if inputs is None else inputs
+    hits = []; entered = threading.Event(); rows = []
     class Handler(BaseHTTPRequestHandler):
         protocol_version = 'HTTP/1.1'
         def log_message(self, *_): pass
         def do_GET(self):
+            try: self.respond()
+            except (BrokenPipeError, ConnectionResetError, ConnectionAbortedError): self.close_connection = True
+        def respond(self):
             parts = self.path.split('/'); index = int(parts[1]) if parts[1].isdigit() else 0
             entry = inputs[index]; mode = entry['mode']; redirected = len(parts) > 2 and parts[2].startswith('next')
             hits.append(dict(path=self.path, headers={key:self.headers[key] for key in ('user-agent','accept','authorization','cookie') if key in self.headers}))
@@ -69,9 +73,11 @@ async def observe():
             encoding = entry.get('encoding')
             if encoding == 'gzip': data = gzip.compress(data)
             if encoding == 'deflate': data = zlib.compress(data)
+            if 'wireSuffixByte' in entry: data += bytes([entry['wireSuffixByte']])*entry['wireSuffixCount']
             self.send_response(status)
             if entry.get('contentType', 'text/plain') is not None: self.send_header('content-type', entry.get('contentType', 'text/plain'))
-            if encoding: self.send_header('content-encoding', encoding)
+            wireEncoding = entry.get('wireEncoding', encoding)
+            if wireEncoding is not None: self.send_header('content-encoding', wireEncoding)
             if mode.startswith('body-') or mode == 'dropped-body': self.send_header('content-length', '100')
             elif entry.get('declared', False): self.send_header('content-length',str(len(data)))
             else: self.send_header('transfer-encoding','chunked')
@@ -93,6 +99,7 @@ async def observe():
             except (OSError, socket.timeout): pass
             self.close_connection = True
     server = ThreadingHTTPServer(('127.0.0.1',0), Handler)
+    server.daemon_threads = False
     thread = threading.Thread(target=lambda:server.serve_forever(poll_interval=.01)); thread.start()
     origin = 'http://127.0.0.1:'+str(server.server_port)
     try:

@@ -19,9 +19,10 @@ const server=http.createServer((req,res)=>{
  if(mode==='redirect'){data=Buffer.from('final body');status=200}
  if(entry.encoding==='gzip')data=zlib.gzipSync(data)
  if(entry.encoding==='deflate')data=zlib.deflateSync(data)
+ if(entry.wireSuffixByte!==undefined)data=Buffer.concat([data,Buffer.alloc(entry.wireSuffixCount,entry.wireSuffixByte)])
  res.statusCode=status
  if(entry.contentType!==null)res.setHeader('content-type',entry.contentType??'text/plain')
- if(entry.encoding)res.setHeader('content-encoding',entry.encoding)
+ if((entry.wireEncoding??entry.encoding)!==undefined)res.setHeader('content-encoding',entry.wireEncoding??entry.encoding)
  if(mode.startsWith('body-')||mode==='dropped-body')res.setHeader('content-length','100')
  else if(entry.declared)res.setHeader('content-length',data.length)
  else res.setHeader('transfer-encoding','chunked')

@@ -326,4 +326,6 @@
 
 | C8-FV | 有界匿名 HTTP provider、重定向/截断/取消、代理与规范 Web 注册 | [匿名抓取](http-fetch-checks.json) |
 
-后续补齐共享传输压缩编码并继续完整应用组合；最终资格使用 C9 冻结候选的完整门禁。
+| C8-FW | 共享 HTTP 压缩编码、HTTPS 协商、x86/x64 解码与打包依赖 | [压缩传输](content-coding-checks.json) |
+
+后续继续完整应用组合；最终资格使用 C9 冻结候选的完整门禁。

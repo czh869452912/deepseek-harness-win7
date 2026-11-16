@@ -102,4 +102,6 @@
 
 | C8-BH | 插件启停补丁、冗余覆盖移除、注释/锚点/别名与原子保存 | [持久化插件启停](plugin-switch-checks.json) |
 
+| C8-BI | 管理器插件 Remote、可编辑性、操作锁、变更事实与 HMR 结果 | [插件管理核心](plugin-manager-core-checks.json) |
+
 后续继续设置及完整应用组合；最终资格使用 C9 冻结候选的完整门禁。

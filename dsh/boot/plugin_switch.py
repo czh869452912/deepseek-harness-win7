@@ -148,7 +148,7 @@ def edit_enabled_document(text, identity, name, enabled, bundle_patches):
 async def write_plugin_enabled(profile, identity, name, enabled):
     filename = _field(profile, 'patchPath')
     try:
-        with open(filename, 'r', encoding='utf-8') as stream:
+        with open(filename, 'r', encoding='utf-8', errors='replace', newline='') as stream:
             text = stream.read()
     except FileNotFoundError:
         text = '[]\n'

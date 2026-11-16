@@ -256,4 +256,6 @@
 
 | C8-EM | 工作区改动输入：numstat/重命名、路径与显示排序、有限字节捕获/内容去重及取消所有权 | [改动输入](change-inputs-checks.json) |
 
+| C8-EN | 工作区 Git 快照：私有 index/对象库、改动/重命名/忽略、blob 与子进程期限/取消清理 | [Git 快照](change-git-checks.json) |
+
 后续继续完整应用组合；最终资格使用 C9 冻结候选的完整门禁。

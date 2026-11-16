@@ -1,0 +1,39 @@
+{
+  "part": "C8-EN",
+  "upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "paired": {
+    "run": "rc022-change-git-paired-20261116-01",
+    "observations": 1,
+    "differences": 0,
+    "scope": "Complete real repository journey including before/after tree hashes, all changed files and eight before/after blob identities/contents."
+  },
+  "native": {
+    "run": "rc022-change-git-native-20261116-01",
+    "passed": 7
+  },
+  "consumers": {
+    "run": "rc022-change-git-consumers-20261116-01",
+    "passed": 23
+  },
+  "source": {
+    "run": "rc022-change-git-source-20261116-01",
+    "passed": 8,
+    "failed": 2,
+    "followup": {
+      "run": "rc022-change-git-source2-20261116-01",
+      "scope": "Previously failed no-repository/failure-reporting test with GIT_CEILING_DIRECTORIES at owned tmp root",
+      "passed": 1,
+      "failed": 0
+    }
+  },
+  "verification_scope_reason": "Actual original/native subprocess providers execute Git with private index and object stores. Exact trees, blobs, line counts, rename detection, unstaged and untracked contents, ignored and literal glob paths, cap rejection and no changes to repository index/objects/refs compare. Native tests also cover fresh repository without index, unmerged index preservation and timeout/abort/Task cancellation with actual processes fully settled and signal listeners removed; consumers include ordinary process ownership/cleanup.",
+  "diagnostics": "Original first suite has two failures: on Windows the 1ms timeout can abort during spawn and expose the raw timeout message before GitRunner wraps it; a temporary non-repository nested under the checkout resolves its enclosing repository. The latter passes with an explicit ceiling at the owned temp root. The 1ms upstream timing failure remains an observation, not a claimed pass or reason to alter pinned original code. Initial cleanup encountered read-only Git objects; retry verified each affected file is owned, under objects and has one hard link before changing its read-only attribute and removing it. Cleanup finished.",
+  "activation_boundary": "Git runner, private snapshots, blob reads, tree diffs and ignore/gitlink lookup prerequisites only. Per-turn recorder and workspaceChanges service remain pending.",
+  "limits": "No full original Git suite pass claimed. Native exact pre-spawn timeout/abort diagnostics, other platform provider behavior, per-turn interleavings and final baseline qualification remain pending.",
+  "cleanup": {
+    "removed_bytes": 901454,
+    "earlier_partial_removal_bytes": "not counted",
+    "owned_processes_remaining": 0,
+    "retained": "Paired raw tree/blob observations/hashes, native real observations, failure/pass commands/logs/XML and Source failure/follow-up reports retained. Owned fixture repositories/private stores/index copies/workspaces/tmp/home removed. Shared Source/toolchains retained until C9."
+  }
+}

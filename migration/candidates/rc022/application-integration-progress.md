@@ -142,4 +142,6 @@
 
 | C8-CH | 原生后端动态服务、真实 TLS 安装/热启用/调用/卸载、提交取消与服务收尾 | [运行中 Python 包后端](python-package-backend-checks.json) |
 
+| C8-CI | 按次保留已验证安装文件、来源记录原样恢复、过期与篡改拒绝、离线启动 | [安装文件恢复快照](python-plugin-snapshot-checks.json) |
+
 后续继续设置及完整应用组合；最终资格使用 C9 冻结候选的完整门禁。

@@ -292,13 +292,20 @@ def dependency_reference(name,record):
     return 'file:node_modules/'+name
 
 
-def install(directory, source, installation_anchor, acquisition=None,lease=None,enabled=True):
+def install(directory, source, installation_anchor, acquisition=None,lease=None,enabled=True,_snapshot=None):
     from dsh.boot.app_boot import load_overlay_patches
     from dsh.boot.python_plugin_acquisition import verified_record
 
     with package_write_lease(directory,lease):
         recover(directory)
-        acquisition = verified_record(source, acquisition)
+        restoration = None
+        if _snapshot is not None:
+            from dsh.boot.python_plugin_snapshot import InstalledPackageSnapshot
+            if type(_snapshot) is not InstalledPackageSnapshot or acquisition is not None:
+                raise RuntimeError('restoration requires its owned installed snapshot')
+            restoration = _snapshot.record_for(directory, source)
+        else:
+            acquisition = verified_record(source, acquisition)
         staging = os.path.join(directory, STAGING)
         os.makedirs(staging, exist_ok=True)
         if reparse(staging):
@@ -324,11 +331,14 @@ def install(directory, source, installation_anchor, acquisition=None,lease=None,
             from dsh.boot.python_plugin_dependencies import profile_libraries
             profile_libraries(directory, stage)
             hashes = file_hashes(stage)
+            if restoration is not None and (hashes != restoration['files'] or manifest['version'] != restoration['version']):
+                raise ValueError('restored package differs from the retained installed-file record')
             after = copy.deepcopy(before)
             dsh = after.setdefault("dsh", {})
             selected=dsh.setdefault("profile", {}).setdefault("bundles", [])
             if enabled is not False:selected.append(name)
-            dsh.setdefault("pythonPlugins", {})[name] = {"version": manifest["version"], "files": hashes}
+            dsh.setdefault("pythonPlugins", {})[name] = (copy.deepcopy(restoration) if restoration is not None
+                else {"version": manifest["version"], "files": hashes})
             if acquisition is not None:
                 dsh['pythonPlugins'][name]['acquisition'] = acquisition
             after.setdefault('dependencies',{})[name]=dependency_reference(name,dsh['pythonPlugins'][name])

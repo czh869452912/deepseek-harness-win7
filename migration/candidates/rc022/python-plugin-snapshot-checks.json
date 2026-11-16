@@ -1,0 +1,9 @@
+{
+  "part": "C8-CI",
+  "upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "native": {"run": "rc022-python-plugin-snapshot-native-20261116-01", "passed": 52, "failed": 0},
+  "verification_scope_reason": "Retain a verified installed native package in a short-lived owned scope before removal, restore its exact full file record and registry acquisition identity without any registry request, then boot and execute the restored tool. Changed installed files cannot establish provenance; changed snapshot code/descriptor, foreign source/profile, expired capability and duck-typed bypasses reject before publishing profile bytes. Existing source generations, upgrade/rollback, compatibility, registry identities and disabled-generation consumers are included because the common install transaction now accepts the internal restoration capability.",
+  "legal_adaptation": "This is recovery from the original verified installed-file record, like native source-generation rollback. It does not assert possession or re-verification of the original registry archive. Every restored file and native descriptor is checked again in the final store staging directory. Normal add still verifies the actual archive and SRI; the private snapshot capability cannot be combined with a supplied acquisition receipt.",
+  "activation_boundary": "Owned installed-file snapshot and transactional restoration primitive complete. Manager update scope composition, retained failed-recovery policy, local/Git acquisition and C9 qualification remain pending.",
+  "cleanup": {"removed_bytes": 723339, "owned_processes_remaining": 0, "retained": "Commands/XML only; snapshot scopes, synthetic profiles, archives and temporary workspaces removed. Shared Source/toolchains retained until C9."}
+}

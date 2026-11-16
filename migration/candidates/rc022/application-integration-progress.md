@@ -324,4 +324,6 @@
 
 | C8-FU | 匿名抓取 URL/MIME/字符集策略、固定 Node 解码映射与流式错误恢复 | [抓取策略](fetch-policy-checks.json) |
 
-后续继续完整应用组合；最终资格使用 C9 冻结候选的完整门禁。
+| C8-FV | 有界匿名 HTTP provider、重定向/截断/取消、代理与规范 Web 注册 | [匿名抓取](http-fetch-checks.json) |
+
+后续补齐共享传输压缩编码并继续完整应用组合；最终资格使用 C9 冻结候选的完整门禁。

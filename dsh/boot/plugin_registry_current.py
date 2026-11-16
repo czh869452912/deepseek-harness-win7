@@ -2,6 +2,7 @@
 
 CURRENT_HARNESS_PLUGIN_CLASSES = {
     '@deepseek-ai/dsh-web': 'dsh.web.web_service_current:CurrentWebService',
+    '@deepseek-ai/dsh-web-fetch-http': 'dsh.web.http_fetch_current:CurrentWebFetchHttp',
     '@deepseek-ai/dsh-web-deepseek-api': 'dsh.web.web_deepseek_api_current:CurrentWebDeepSeekApi',
     '@deepseek-ai/dsh-deepseek-account': 'dsh.credentials.deepseek_account_current:CurrentDeepSeekAccount',
     '@deepseek-ai/dsh-authorization': 'dsh.credentials.authorization_current:CurrentAuthorizationService',

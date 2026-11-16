@@ -101,7 +101,7 @@ async def observe():
                         if mode == 'invalid-init': payload['expires_in'] = 'private-secret'
                         verification.append(dict(method=body['code_challenge_method'], locale=body['locale'], source=body['login_source'],
                                                  stateLength=len(body['state']), challengeLength=len(body['code_challenge']),
-                                                 callbackMatches=body['redirect_uri'] == ctx.webServer.getOrigin()+'/oauth/callback'))
+                                                 callbackMatches=body['redirect_uri'] == callback_origin+'/oauth/callback'))
                     elif self.path.endswith('auth_exchange'):
                         exchange_entered.set()
                         if mode in ('duplicate-callback', 'cancel-exchanging'): exchange_gate.wait(5)
@@ -123,6 +123,8 @@ async def observe():
                     try: self.wfile.write(wire)
                     except (BrokenPipeError, ConnectionResetError, ConnectionAbortedError): pass
             server = ThreadingHTTPServer(('127.0.0.1', 0), Handler)
+            # Join owned request handlers after releasing their fixture gates.
+            server.daemon_threads = False
             thread = threading.Thread(target=lambda: server.serve_forever(poll_interval=.01), name='account-login-probe'); thread.start()
             origin = 'http://127.0.0.1:'+str(server.server_port)
             def log(label, value): logs.append(dict(label=label, **value))
@@ -135,6 +137,7 @@ async def observe():
                     desktopPlatform=None, requestHeaders={'cookie': 'gate=fixture'}, requestTimeoutMs=100 if mode == 'init-timeout' else 3000,
                     attemptTimeoutMs=300 if mode == 'expire-waiting' else 3000))
                 account = ctx.deepseekAccount
+                callback_origin = ctx.webServer.getOrigin()
                 client = dict(version='fixture/1', locale='zh' if mode == 'exchange-failure-zh' else 'en', timezoneOffsetSeconds=28800)
                 start = await account.startSignIn(client, ctx.webServer.getOrigin(), 'desktop' if mode == 'exchange-failure-desktop' else 'web')
                 for _ in range(1000):
@@ -154,10 +157,12 @@ async def observe():
                     elif mode != 'expire-waiting':
                         pending = asyncio.create_task(http(ctx.webServer.getOrigin(), target))
                         if mode in ('duplicate-callback', 'cancel-exchanging'):
-                            for _ in range(1000):
-                                if exchange_entered.is_set(): break
-                                await asyncio.sleep(.002)
-                            assert exchange_entered.is_set()
+                            # Python 3.8's Windows loop can service 2ms sleeps early
+                            # within its clock resolution; count a real Event wait,
+                            # rather than spending a fixed number of fast iterations.
+                            reached = await asyncio.wait_for(asyncio.get_running_loop().run_in_executor(
+                                None, exchange_entered.wait, 2), 2.5)
+                            assert reached, dict(mode=mode, state=await account.getState())
                             if mode == 'duplicate-callback': invalid.append((await http(ctx.webServer.getOrigin(), target))['status'])
                             else: await account.cancelSignIn(state['attempt']['id'])
                             exchange_gate.set()

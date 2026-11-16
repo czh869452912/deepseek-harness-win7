@@ -9,7 +9,7 @@ from dsh.host.url_current import _url
 
 
 @asynccontextmanager
-async def request(url, method, headers, body, signal):
+async def request(url, method, headers, body, signal, redirect_policy='error'):
     def read(cancellation):
         normalized = {}
         for key, value in headers.items():
@@ -21,12 +21,12 @@ async def request(url, method, headers, body, signal):
             normalized.setdefault('content-type', 'text/plain;charset=UTF-8')
         message = urllib.request.Request(_url(url)['href'], data=data, headers=normalized, method=method)
         with open_stream(message, cancellation, idle_timeout_ms=2147483647,
-                         redirect_policy='error', raise_http_errors=False) as (response, chunks):
+                         redirect_policy=redirect_policy, raise_http_errors=False) as (response, chunks):
             received = {}
             for key, value in response.headers.items():
                 key = key.lower()
                 received[key] = received[key]+', '+value if key in received else value
-            yield dict(status=response.status, hasBody=response.status not in (204, 205))
+            yield dict(status=response.status, hasBody=response.status not in (204, 205, 304), headers=received)
             for encoding in reversed(received.get('content-encoding', '').split(',')):
                 encoding = encoding.strip().lower()
                 if encoding in ('gzip', 'deflate'):

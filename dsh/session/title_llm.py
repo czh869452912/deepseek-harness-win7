@@ -42,7 +42,9 @@ class FirstPromptTitlePlugin(Plugin):
                 "Use the language of the messages.",
                 "Aim for about {} words in non-CJK languages or {} CJK characters.".format(config["targetWords"], config["targetCjkCharacters"]),
             ])
-            messages = [create_user_message({"content": [{"type": "text", "text": framed}], "source": {"kind": "plugin", "plugin": "dsh-session-title-llm"}})]
+            source = ({"kind": "dsh-session-title-llm"} if getattr(request['session'], 'format_version', 3) == 4
+                      else {"kind": "plugin", "plugin": "dsh-session-title-llm"})
+            messages = [create_user_message({"content": [{"type": "text", "text": framed}], "source": source})]
             controller, timed_out = AbortController(), [False]
             undo = request["signal"].add_listener("abort", lambda *_: controller.abort("title cancelled"))
             def timeout():

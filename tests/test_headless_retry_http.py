@@ -55,11 +55,12 @@ def test_default_headless_http_retry_policy(tmp_path, statuses, retry_after, exp
             '--profile', 'headless', '--patch', str(patch), 'Reply to the request'], cwd=str(tmp_path),
             env=env, capture_output=True, encoding='utf-8', timeout=25)
         assert result.returncode == (0 if success else 1), result.stdout + result.stderr
+        assert 'did not activate' not in result.stderr
         assert len(calls) == len(statuses)
-        logs = list((tmp_path / 'home/sessions').rglob('session.v3.jsonl.zstd'))
+        logs = list((tmp_path / 'home/sessions').rglob('session.v4.jsonl.zstd'))
         assert len(logs) == 1
         events = [json.loads(line) for line in read_jsonl_text(logs[0]).splitlines()]
-        assert events[0]['type'] == 'session' and events[0]['version'] == 3
+        assert events[0]['type'] == 'session' and events[0]['version'] == 4
         assert not any(event['type'] == 'assistant/chunk' for event in events)
         retries = [event['data'] for event in events if event['type'] == 'llm/retry']
         assert [retry['retry'] for retry in retries] == list(range(1, expected_retries + 1))

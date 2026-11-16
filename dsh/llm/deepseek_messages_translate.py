@@ -66,6 +66,17 @@ def _delta(block, raw):
 
 
 async def translate(events, model):
+    iterator = events.__aiter__()
+    generating = _translate(iterator,model)
+    try:
+        async for chunk in generating: yield chunk
+    finally:
+        await generating.aclose()
+        close = getattr(iterator,'aclose',None)
+        if close is not None: await close()
+
+
+async def _translate(events, model):
     blocks,usage,started,reason = {},dict(inputTokens=0,outputTokens=0),False,None
     async for event in events:
         kind = event.get('type')

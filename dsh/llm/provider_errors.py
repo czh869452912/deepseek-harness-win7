@@ -1,9 +1,16 @@
 """Provider error facts shared by HTTP and in-band stream failures."""
 import re
+from dsh.host.http_proxy_policy import JS_SPACE
+
+
+def _search(pattern, detail):
+    # JS /i uses ASCII word boundaries and its own whitespace set.
+    pattern = pattern.replace(r'[\s_-]','['+JS_SPACE+'_-]').replace(r'\s','['+JS_SPACE+']')
+    return re.search(pattern,detail,re.I | re.ASCII)
 
 
 def is_context_window_exceeded(detail):
-    return any(re.search(pattern, detail, re.I) for pattern in (
+    return any(_search(pattern, detail) for pattern in (
         r"(?:^|[^a-z0-9])context[\s_-](?:length|window)[\s_-](?:exceed(?:ed|s)?|overflow(?:ed)?|limit[\s_-]exceeded)(?:$|[^a-z0-9])",
         r"\b(?:maximum|max)(?:\s+(?:allowed|supported))?\s+context\s+(?:length|window)\b",
         r"\b(?:request|prompt|input|messages?)\s+(?:is\s+|are\s+)?too\s+(?:large|long)\s+for\s+(?:(?:this|the)\s+)?(?:model(?:'s)?\s+)?context(?:\s+window)?\b",
@@ -13,7 +20,7 @@ def is_context_window_exceeded(detail):
 
 
 def is_quota_exceeded(detail):
-    return any(re.search(pattern, detail, re.I) for pattern in (
+    return any(_search(pattern, detail) for pattern in (
         r"\binsufficient[\s_-]+(?:quota|balance|credits?)\b",
         r"\b(?:quota|usage[\s_-]+limit)[\s_-]+(?:exceeded|exhausted|reached)\b",
         r"\bexceed(?:ed|s)?[\s_-]+(?:(?:your|the)[\s_-]+)?(?:current[\s_-]+)?quota\b",

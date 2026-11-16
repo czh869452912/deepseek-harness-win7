@@ -1,0 +1,10 @@
+{
+  "part": "C8-BO",
+  "upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "paired": {"run": "rc022-plugin-detail-paired3-20261116-01", "cases": 102, "passed": true},
+  "native": {"run": "rc022-plugin-detail-native3-20261116-01", "passed": 2, "failed": 0},
+  "source": {"run": "rc022-plugin-detail-source2-20261116-01", "passed": 5, "failed": 0},
+  "verification_scope_reason": "Actual Source plugin-detail primitives paired for language prefix/English fallback, locale file case ordering, explicit/null/invalid detail metadata, missing named Markdown, README case ranking, limits and read trace. Front matter/BOM decoding, strict percent/UTF-8 image destination validation, path traversal rejection, MIME mapping including SVG, npm source preference/path encoding and image response status/cache/security headers compared. Real local package files qualify missing/directory/outside reads, byte bounds and README choice. Native real junction test verifies a linked outside file stays absent and replacement bytes are read without caching. Initial observer imported non-public detailPath from index and runner selected nonexistent renamed test path; corrected actual source import/configuration. Pairing identified trailing-slash image paths and Python regex accepting a final newline in Markdown extension; corrected and retained diagnostics.",
+  "activation_boundary": "Shared document/local-file/image primitives only. HTTP file reads, manager detail Remote/HTTP route and full production activation continue separately; no remote fetching or release acceptance claimed.",
+  "cleanup": {"removed_bytes": 93879, "external_empty_roots_removed": 2, "owned_processes_remaining": 0, "retained": "Compact commands, logs, XML/JSON and paired observations including resolved failures; shared Source/toolchains through C9."}
+}

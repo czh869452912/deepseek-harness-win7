@@ -230,4 +230,6 @@
 
 | C8-DZ | MCP 原始探测窗口、消息守卫/回调移交、重试、关闭守卫与版本纠正状态机 | [MCP 探测](mcp-probe-checks.json) |
 
+| C8-EA | MCP stdio 一次性探测进程/回收隔离、现代握手与结果解码及实际 Loader 接线 | [MCP stdio 协商](mcp-stdio-negotiation-checks.json) |
+
 后续继续完整应用组合；最终资格使用 C9 冻结候选的完整门禁。

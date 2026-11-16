@@ -158,12 +158,15 @@ class McpConnection:
         except asyncio.TimeoutError:
             return False
 
+    def _create_transport(self):
+        return create_transport(self.config)
+
     async def _connect_generation(self, startup):
         if self.disposed:
             return
         generation = None
         try:
-            generation = create_transport(self.config)
+            generation = self._create_transport()
         except Exception as error:
             if self._first_error is None:
                 self._first_error = error

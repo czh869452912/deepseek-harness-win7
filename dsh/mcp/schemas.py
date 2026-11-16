@@ -50,6 +50,8 @@ def _parse(schema, value, path=()):
     if kind == 'catch':
         parsed, issues = _parse(schema['inner'], value, path)
         return ((copy.deepcopy(schema['fallback']) if 'fallback' in schema else ABSENT), []) if issues else (parsed, [])
+    if kind == 'default':
+        return (copy.deepcopy(schema['value']), []) if value is ABSENT else _parse(schema['inner'], value, path)
     if kind == 'json-value':
         if isinstance(value, (dict, list)):
             result, errors = ({} if isinstance(value, dict) else []), []
@@ -96,9 +98,11 @@ def _parse(schema, value, path=()):
             too_big=kind_check=='less_than' and (value>limit if inclusive else value>=limit)
             if too_small or too_big:
                 comparison=('>=' if inclusive else '>') if too_small else ('<=' if inclusive else '<')
-                issue=dict(origin='number',code='too_small' if too_small else 'too_big',inclusive=inclusive,path=list(path),
+                issue=dict(origin='number',code='too_small' if too_small else 'too_big')
+                issue['minimum' if too_small else 'maximum']=limit
+                issue.update(inclusive=inclusive,path=list(path),
                     message='Too '+('small' if too_small else 'big')+': expected number to be '+comparison+str(limit))
-                issue['minimum' if too_small else 'maximum']=limit;errors.append((issue,False))
+                errors.append((issue,False))
         return value, errors
     if kind in ('literal', 'enum'):
         if any(type(value) is type(option) and value == option for option in schema['values']):

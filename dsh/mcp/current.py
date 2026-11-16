@@ -26,6 +26,13 @@ async def sync_tools(client, ctx, opts, previous):
 class CurrentMcpConnection(McpConnection):
     current_contract = True
 
+    def _create_transport(self):
+        if self.config.get('transport','stdio')!='stdio':
+            return super()._create_transport()
+        from dsh.mcp.stdio_current import CurrentStdioMcpTransport
+        return CurrentStdioMcpTransport(self.config.get('command','echo'),self.config.get('args',[]),
+            self.config.get('env',{}),self.config.get('cwd',''))
+
     def __init__(self,ctx,config,policy):
         self._instructions=''
         self._resource_operations=set()

@@ -17,7 +17,7 @@ for(const node of ast.statements){
 }
 if(!declaration)throw Error('SDK schema import not found')
 const file=path.resolve(path.dirname(entry),declaration.moduleSpecifier.text)
-// Export the unchanged private 2025 codec schema factory in a temporary sibling
+// Export unchanged private wire/dispatch schema factories in a temporary sibling
 // module so all its original imports resolve in the exact SDK installation.
 const temporary=path.join(path.dirname(file),'.rc022-resource-schemas-'+process.pid+'.mjs')
 const original=fs.readFileSync(file,'utf8');let source,created=false
@@ -25,7 +25,12 @@ try{
  fs.writeFileSync(temporary,original+'\nexport {buildSchemas2025 as rc022Schemas,buildSchemas2026 as rc022ModernSchemas,JSONRPCResultResponseSchema as rc022ResultEnvelope,JSONRPCErrorResponseSchema as rc022ErrorEnvelope};\n',{flag:'wx'})
  created=true
  const module=await import(pathToFileURL(temporary).href)
- source={...module.rc022Schemas(),ModernDiscoverResultSchema:module.rc022ModernSchemas().dispatchResultSchemas['server/discover'],ProbeResultEnvelope:module.rc022ResultEnvelope,ProbeErrorEnvelope:module.rc022ErrorEnvelope}
+ const modern=module.rc022ModernSchemas()
+ source={...module.rc022Schemas(),ModernDiscoverResultSchema:modern.dispatchResultSchemas['server/discover'],ProbeResultEnvelope:module.rc022ResultEnvelope,ProbeErrorEnvelope:module.rc022ErrorEnvelope,ModernResultMeta:modern.ResultMetaSchema}
+ for(const [method,name] of Object.entries({'tools/list':'ListToolsResultSchema','tools/call':'CallToolResultSchema','resources/list':'ListResourcesResultSchema','resources/templates/list':'ListResourceTemplatesResultSchema','resources/read':'ReadResourceResultSchema'})){
+  source['ModernWire:'+method]=modern[name]
+  source['ModernDispatch:'+method]=modern.dispatchResultSchemas[method]
+ }
 }finally{if(created)fs.unlinkSync(temporary)}
 const kinds=new Set()
 function capture(schema){
@@ -36,6 +41,7 @@ function capture(schema){
   case 'object':node.shape=Object.fromEntries(Object.entries(def.shape).map(([key,value])=>[key,capture(value)]));if(def.catchall)node.catchall=capture(def.catchall);break
   case 'optional':case 'nullable':node.inner=capture(def.innerType);break
   case 'catch':node.inner=capture(def.innerType);node.fallback=def.catchValue({issues:[],value:undefined});if(![undefined,0,'private'].includes(node.fallback))throw Error('Unreviewed catch fallback: '+JSON.stringify(node.fallback));break
+  case 'default':node.inner=capture(def.innerType);node.value=def.defaultValue;if(node.value!=='complete')throw Error('Unreviewed default: '+JSON.stringify(node.value));break
   case 'array':node.element=capture(def.element);break
   case 'record':node.key=capture(def.keyType);node.value=capture(def.valueType);break
   case 'union':node.options=def.options.map(capture);break
@@ -53,6 +59,6 @@ function capture(schema){
  }
  return node
 }
-const names=['ListResourcesResultSchema','ListResourceTemplatesResultSchema','ReadResourceResultSchema','ModernDiscoverResultSchema','ProbeResultEnvelope','ProbeErrorEnvelope']
+const names=['ListResourcesResultSchema','ListResourceTemplatesResultSchema','ReadResourceResultSchema','ModernDiscoverResultSchema','ProbeResultEnvelope','ProbeErrorEnvelope','ModernResultMeta',...Object.keys(source).filter(name=>name.startsWith('ModernWire:')||name.startsWith('ModernDispatch:'))]
 const schemas=Object.fromEntries(names.map(name=>[name,capture(source[name])]))
-fs.writeFileSync(process.argv[3],JSON.stringify({upstream:'38a6a5c965aa99ab525161efb7cc5cf1fe62fced',sdkVersion:'2.2.0',wireEras:{resources:'2025-11-25',discover:'2026-07-28'},schemaSourceSha256:createHash('sha256').update(fs.readFileSync(file)).digest('hex'),kinds:[...kinds].sort(),schemas},null,2)+'\n')
+fs.writeFileSync(process.argv[3],JSON.stringify({upstream:'38a6a5c965aa99ab525161efb7cc5cf1fe62fced',sdkVersion:'2.2.0',wireEras:{legacyResources:'2025-11-25',modern:'2026-07-28',envelopes:'JSON-RPC 2.0'},schemaSourceSha256:createHash('sha256').update(fs.readFileSync(file)).digest('hex'),kinds:[...kinds].sort(),schemas},null,2)+'\n')

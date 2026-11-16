@@ -41,7 +41,7 @@ async def test_current_plugin_notification_cycle_preserves_then_successfully_rep
         async def close(self):
             self.close_calls+=1
             if self.on_close:self.on_close()
-    peer=Peer();monkeypatch.setattr('dsh.mcp.connection.create_transport',lambda _:peer)
+    peer=Peer();monkeypatch.setattr('dsh.mcp.current.CurrentMcpConnection._create_transport',lambda _:peer)
     ctx=Context();ctx.set_service('tools',ToolsService(ctx));plugin=CurrentMcpClient(dict(serverName='current',command='fixture-peer',reconnect=dict(enabled=False)))
     try:
         fiber=await ctx.plugin(plugin)

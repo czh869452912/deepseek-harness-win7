@@ -1,0 +1,13 @@
+{
+  "part": "C8-ED",
+  "upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "paired": {"run": "rc022-mcp-generation-paired-20261116-02", "observations": 8, "differences": 0},
+  "deadline_status_paired": {"run": "rc022-mcp-generation-status-20261116-01", "differences": 0},
+  "native": {"run": "rc022-mcp-generation-native-20261116-01", "passed": 5},
+  "consumers": {"run": "rc022-mcp-generation-consumers-20261116-01", "passed": 139},
+  "source": {"run": "rc022-mcp-generation-source-20261116-01", "passed": 6, "failed": 0},
+  "verification_scope_reason": "Actual original McpGeneration and native generation use their real raw HTTP start/close with controlled client/work lifetimes. Paired outcomes cover normal close, absent close event, close error before/after confirmation, local work outliving cleanup, operation/connect deadline, invalid transport construction, shared close/result identity and late work settlement without rewriting a cached failure. Native task-cancellation tests protect shared cleanup and retain actual operations/late failures after caller cancellation. Raw stdio start is split from handshake for both historical/current consumers, with a real process no-handshake/reaping test. Legacy/current HTTP/stdIO, status, schema, supervisor and resource direct consumers pass.",
+  "diagnostics": "The first paired run exposed Python Windows event-loop timers firing a short deadline before its real budget elapsed. with_deadline now checks perf_counter before rejecting and reschedules an early timer. A controlled coarse-clock regression verifies fast work completes before its actual deadline. Source deadline/status behavior still pairs exactly. Failed raw generation observations are retained.",
+  "activation_boundary": "Raw transport start and common current transport factory are integrated; generation ownership is not yet used by the application supervisor. The complete Source generation suite includes integration contracts that still require the new native supervisor/probe wiring. Status publication/reload replacement fences, startup/close configuration and credential-aware waiting remain pending. No full MCP or release acceptance claimed.",
+  "cleanup": {"owned_processes_remaining": 0, "removed_bytes": 2358607, "retained": "Paired observations/hashes, failed timing diagnostics, raw process logs, commands/XML and Source report retained. Owned workspaces/home/tmp removed. All controlled pending work was released and cleanup tasks settled; shared fixed Source/toolchains retained until C9."}
+}

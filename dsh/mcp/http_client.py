@@ -85,11 +85,16 @@ class StreamableHttpMcpClient(McpClientProtocol):
     def _connected(self):
         return self._started and not self._closed
 
-    async def connect(self):
+    async def start(self):
         if self._started or self._closed or self._closing is not None:
             raise RuntimeError('MCP transport can only be started once')
         self._started = True
+
+    async def connect(self):
+        if self._started or self._closed or self._closing is not None:
+            raise RuntimeError('MCP transport can only be started once')
         try:
+            await self.start()
             return await self._initialize()
         except BaseException:
             await self.close()

@@ -20,21 +20,26 @@ class StdioMcpClient(McpClientProtocol):
     def _connected(self):
         return self.proc is not None and not self._closed
 
-    async def connect(self):
+    async def start(self):
         if self._spawn_task is not None or self._closed or self._closing is not None:
             raise RuntimeError('MCP transport can only be started once')
         environment = scrubbed_parent_env()
         environment.update(self.env)
+        options = {'creationflags': 0x08000000} if sys.platform == 'win32' else {}
+        self._spawn_task = asyncio.create_task(asyncio.create_subprocess_exec(self.command, *self.args,
+            stdin=asyncio.subprocess.PIPE, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE,
+            cwd=self.cwd or None, env=environment, **options))
+        self.proc = await asyncio.shield(self._spawn_task)
+        self._start_io()
+        if self._closing is not None:
+            await self.close()
+            raise McpError(-32000, 'Connection closed')
+
+    async def connect(self):
+        if self._spawn_task is not None or self._closed or self._closing is not None:
+            raise RuntimeError('MCP transport can only be started once')
         try:
-            options = {'creationflags': 0x08000000} if sys.platform == 'win32' else {}
-            self._spawn_task = asyncio.create_task(asyncio.create_subprocess_exec(self.command, *self.args,
-                stdin=asyncio.subprocess.PIPE, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE,
-                cwd=self.cwd or None, env=environment, **options))
-            self.proc = await asyncio.shield(self._spawn_task)
-            self._start_io()
-            if self._closing is not None:
-                await self.close()
-                raise McpError(-32000, 'Connection closed')
+            await self.start()
             return await self._initialize()
         except OSError as error:
             await self.close()

@@ -1,38 +1,11 @@
 """Demand-driven Messages HTTP bytes with owned socket and reader teardown."""
 from contextlib import asynccontextmanager
 import urllib.request
-import zlib
 
 from dsh.llm.http_stream import open_stream
 from dsh.llm.llm_service import LlmError
 from dsh.llm.stream_bridge import OwnedStream, iter_chunks
-
-
-def _inflate(chunks, encoding):
-    decoder = None; prefix = b''
-    for chunk in chunks:
-        if decoder is None:
-            prefix += chunk
-            if len(prefix) < 2: continue
-            chunk, prefix = prefix, b''
-            window = 16+zlib.MAX_WBITS if encoding == 'gzip' else zlib.MAX_WBITS if chunk[0]&15 == 8 else -zlib.MAX_WBITS
-            decoder = zlib.decompressobj(window)
-        while chunk:
-            value = decoder.decompress(chunk)
-            if value: yield value
-            chunk = decoder.unused_data
-            if decoder.eof and encoding == 'gzip':
-                decoder = zlib.decompressobj(16+zlib.MAX_WBITS)
-                if chunk.startswith(b'\0'): return
-            elif chunk: break
-    if decoder is not None:
-        value = decoder.flush()
-        if value: yield value
-    elif prefix:
-        # Match zlib's normal incomplete-input behavior at fetch EOF.
-        decoder = zlib.decompressobj(16+zlib.MAX_WBITS if encoding == 'gzip' else zlib.MAX_WBITS)
-        value = decoder.decompress(prefix)+decoder.flush()
-        if value: yield value
+from dsh.host.http_decode import decompressChunks as _inflate
 
 
 @asynccontextmanager

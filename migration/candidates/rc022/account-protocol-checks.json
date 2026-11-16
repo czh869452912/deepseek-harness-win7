@@ -1,0 +1,12 @@
+{
+  "batch": "C8-FM",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "scope": "Restricted account destinations, deployment headers and bounded owned Platform HTTP.",
+  "paired": {"observations": 567, "differences": 0, "report": ".goose/out/rc022-account-protocol-paired3-20261116-01/report.json"},
+  "messages_consumer": {"observations": 33, "differences": 0, "report": ".goose/out/rc022-account-protocol-messages-20261116-01/report.json"},
+  "native": {"passed": 13, "report": ".goose/out/rc022-account-protocol-native-20261116-01/command.json"},
+  "source": {"passed": 84, "report": ".goose/out/rc022-account-protocol-source-20261116-01/command.json"},
+  "coverage": ["Actual Source URL/header functions and independent real loopback HTTP servers", "Special HTTP URL normalization, default ports, numeric loopback aliases, dot segments, explicit login ports and fixed browser destinations", "Reserved and duplicate headers, ByteString values and HTTP whitespace", "Authenticated HTTP 401 and business 40003 precedence; unauthenticated failures remain protocol errors", "Required envelope fields, integer bounds, JSON UTF-8 and BOM behavior, redirects, absent bodies and truncated/broken framing", "Decoded 65536-byte limit including compressed expansion; gzip/deflate emit bounded chunks shared with Messages", "Caller cancellation is silent, TimeoutError remains diagnostic, readers and cancellation threads settle", "Profile/balance validation diagnostics contain paths and codes only; query failures remain failed outcomes", "Notification endpoint request forms and logout void return convention"],
+  "limits": ["URL qualification covers the restricted HTTP account domain and tested invalid inputs, not a general-purpose full WHATWG URL implementation", "Initialization/exchange payload schemas, notification projection and account state-machine composition remain subsequent work", "Targeted checks do not establish C9 release acceptance"],
+  "cleanup": {"removed_bytes": 247223, "removed": ["Owned pytest workspaces", "Owned tmp and home directories", "Owned Messages consumer index files"], "retained": "Commands, inputs, paired reports, compact observations and first-run mismatch diagnostics; no remaining task-owned process"}
+}

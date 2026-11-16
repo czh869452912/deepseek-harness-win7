@@ -1,0 +1,14 @@
+{
+  "part": "C8-BG",
+  "upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "paired": {"run": "rc022-registry-probe-paired-20261116-01", "cases": 11, "passed": true},
+  "native": {"run": "rc022-registry-probe-native2-20261116-01", "passed": 9, "failed": 0},
+  "source": {"run": "rc022-registry-probe-source-20261116-01", "passed": 12, "failed": 0},
+  "verification_scope_reason": "Actual Source registry probe mounted on Cordis compared with Native Remote: two public endpoints, redirect refusal, completion-order winner, HTTP failures ignored, shared requests, positive/null cache, exact expiry boundary and zero TTL, timeout/disposal, body cleanup awaited and rejected cleanup swallowed. Native alone verifies cancellation of one Python waiter preserves the shared request. Real local HTTP sockets verify headers without consuming large bodies, unsuccessful HTTP headers, redirects rejected, signal and Task cancellation join request owners and close sockets. Native subscriptions released and Remote marker mounted. Source original full registry-probe suite passes. Initial Native marker assertion incorrectly passed a class rather than a service instance; corrected fixture, no runtime change.",
+  "adaptations": [
+    "Source Fetch is adapted through the existing Python owned HTTP transport and process proxy routing. Response cancellation closes the owned socket without downloading its body. Python getaddrinfo cannot be cancelled; the existing bounded DNS daemon owns no sockets.",
+    "Python awaiter cancellation is shielded from the shared probe; Source Promises do not expose equivalent waiter cancellation. No live public-network availability or latency claim."
+  ],
+  "activation_boundary": "Explicit current Host registry probe. Production package composition and complete plugin install/update/browser journeys remain pending.",
+  "cleanup": {"removed_bytes": 200608, "external_empty_roots_removed": 1, "owned_processes_remaining": 0, "retained": "Compact commands, logs, XML/JSON and paired observations; resolved fixture diagnostics and shared Source/toolchains through C9."}
+}

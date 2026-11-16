@@ -98,4 +98,6 @@
 
 | C8-BF | 真实 Loader 插件清单、失败恢复、禁用条目元数据与预设组合 | [Host 插件清单](plugin-inventory-checks.json) |
 
+| C8-BG | 插件安装 Registry 并行探测、共享缓存、超时与 HTTP 清理 | [Registry 探测](registry-probe-checks.json) |
+
 后续继续设置及完整应用组合；最终资格使用 C9 冻结候选的完整门禁。

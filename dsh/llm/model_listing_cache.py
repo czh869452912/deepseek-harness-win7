@@ -17,9 +17,9 @@ DEFAULT_MODELS_MAX_AGE_MS = 600000
 def resolveListingTiming(options, owner):
     timeout = options.get('modelsTimeoutMs', DEFAULT_MODELS_TIMEOUT_MS)
     age = options.get('modelsMaxAgeMs', DEFAULT_MODELS_MAX_AGE_MS)
-    if type(timeout) not in (int, float) or not math.isfinite(timeout) or timeout <= 0 or timeout > MAX_TIMER_DELAY_MS:
+    if type(timeout) not in (int, float) or not 0 < timeout <= MAX_TIMER_DELAY_MS or not math.isfinite(timeout):
         raise ValueError(owner+': modelsTimeoutMs must be a positive finite number no greater than '+str(MAX_TIMER_DELAY_MS))
-    if type(age) not in (int, float) or not math.isfinite(age) or age < 0 or age > 9007199254740991 or int(age) != age:
+    if type(age) not in (int, float) or not 0 <= age <= 9007199254740991 or not math.isfinite(age) or int(age) != age:
         raise ValueError(owner+': modelsMaxAgeMs must be a non-negative safe integer')
     return dict(timeoutMs=timeout, maxAgeMs=age)
 

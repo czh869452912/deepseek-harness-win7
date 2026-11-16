@@ -5,6 +5,7 @@ Python 3.8.10 compatible.
 """
 
 import re
+from dsh.cordis.utils import js_to_string
 from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
 from dsh.cordis.service import Service
@@ -23,7 +24,7 @@ def is_credential_ref_name(value: str) -> bool:
     """Whether a raw string could name a reference at all."""
     if not isinstance(value, str):
         return False
-    return bool(REF_PATTERN.match(value))
+    return bool(REF_PATTERN.fullmatch(value))
 
 
 def isCredentialRefName(value: str) -> bool:
@@ -33,7 +34,7 @@ def isCredentialRefName(value: str) -> bool:
 def credential_ref(value: str) -> str:
     """Brand a raw string as a CredentialRef (POSIX identifier)."""
     if not is_credential_ref_name(value):
-        raise TypeError(f'credential ref "{value}" must match {REF_PATTERN.pattern}')
+        raise TypeError(f'credential ref "{js_to_string(value)}" must match /{REF_PATTERN.pattern}/')
     return value
 
 

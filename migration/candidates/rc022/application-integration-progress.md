@@ -276,4 +276,6 @@
 
 | C8-EW | 分离后的 Messages 配置与目录决策：新内置模型、能力分层、版本拒绝、覆盖校验和重试配置 | [配置与目录](listed-catalog-checks.json) |
 
+| C8-EX | API Key / 账户路由配置与共享凭证：原版 Schema、权威来源、JS 归一化、目录跟随条件和账户覆盖 | [路由与凭证](deepseek-credentials-checks.json) |
+
 后续继续完整应用组合；最终资格使用 C9 冻结候选的完整门禁。

@@ -61,11 +61,12 @@ LEGAL_API_KEY_PATTERN = r"^[\x21-\x7E]+$"
 def normalize_api_key(raw: str) -> Dict[str, Any]:
     if not isinstance(raw, str):
         return {"ok": False, "reason": "empty"}
-    value = raw.strip()
+    from dsh.host.http_proxy_policy import JS_SPACE
+    value = raw.strip(JS_SPACE)
     if len(value) == 0:
         return {"ok": False, "reason": "empty"}
     import re
-    if not re.match(LEGAL_API_KEY_PATTERN, value):
+    if not re.fullmatch(LEGAL_API_KEY_PATTERN, value):
         return {"ok": False, "reason": "illegalCharacters"}
     return {"ok": True, "value": value}
 

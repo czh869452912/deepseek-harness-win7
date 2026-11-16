@@ -7,6 +7,8 @@ import re
 from urllib.parse import urlsplit
 
 from dsh.host.http_proxy_policy import parse_url
+from dsh.cordis.volatile import is_volatile
+from dsh.cordis.utils import _UNDEFINED
 from dsh.llm.deepseek_config import DeepSeekConfigError
 from dsh.llm.model_listing import InvalidListingURL
 from dsh.llm.retry_config_current import ABSENT, resolveRetryPolicy
@@ -15,6 +17,18 @@ from dsh.typert.stores import field
 
 _DEFAULTS = json.loads((Path(__file__).resolve().parents[1]/'resources/deepseek_defaults_022.json').read_text(encoding='utf-8'))
 PUBLIC_BASE_URL = _DEFAULTS['baseURL']
+
+
+def plainOptions(config):
+    # Python resolver inputs represent a JS undefined property by absence;
+    # explicit null remains present. Schema snapshots can contain that sentinel
+    # recursively, including optional fields of each catalog model.
+    def plain(value):
+        if isinstance(value,dict): return {key:plain(item) for key,item in value.items() if item is not _UNDEFINED}
+        if isinstance(value,(list,tuple)): return [None if item is _UNDEFINED else plain(item) for item in value]
+        return copy.deepcopy(value)
+    values = {key:value.get() if is_volatile(value) else value for key,value in config.items()}
+    return plain(values)
 
 
 def _fail(message):

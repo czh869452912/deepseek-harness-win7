@@ -112,5 +112,6 @@
 | C8-BO | 插件详情文档选择、语言回退、本地文件边界与图片响应 | [详情读取基础](plugin-detail-checks.json) |
 | C8-BP | 详情 HTTP/CDN 实读、重定向边界、超时取消与正文完整性 | [详情网络读取](detail-http-checks.json) |
 | C8-BQ | Bundle 详情 Remote、官方待安装包与可逆 Connection 图片路由 | [管理器详情集成](manager-detail-checks.json) |
+| C8-BR | 包元数据查询进程、参数与环境边界、超时取消及回收 | [包查询进程](package-view-checks.json) |
 
 后续继续设置及完整应用组合；最终资格使用 C9 冻结候选的完整门禁。

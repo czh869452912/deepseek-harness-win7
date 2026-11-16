@@ -1,0 +1,11 @@
+{
+  "part": "C8-BN",
+  "upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "paired": {"run": "rc022-build-approval-paired3-20261116-01", "cases": 42, "passed": true},
+  "native": {"run": "rc022-build-approval-native3-20261116-01", "passed": 5, "failed": 0},
+  "source": {"run": "rc022-build-approval-source-20261116-01", "passed": 29, "failed": 0},
+  "verification_scope_reason": "Actual Source build-approval helper paired on real YAML files with Native source-preserving helper. Ignored-build and Git-prepare reports retain exact version/file/subdirectory keys and report order; wildcard and credential-bearing HTTP/SSH keys are excluded. Block/flow mappings preserve comments, unrelated anchors and existing decisions; approval aliases/anchors, malformed documents, duplicate keys and stale approvals reject atomically. Null allowBuilds matches Source's read-empty but non-extensible behavior. CRLF Git output and duplicate report names are compared. Native regression includes independent plugin-switch source preservation consumers. Initial observer failed on Windows wildcard directory names and Python 3.8 Path.write_text newline argument; corrected fixtures, retaining raw diagnostics. Comparison then identified null-policy behavior; corrected. Parser-specific error codes are normalized to error presence; stale-approval remains exact.",
+  "legal_adaptation": "PyYAML event spans replace Node YAML document nodes. Unchanged syntax is retained; changed flow formatting is not serializer byte parity. Policy operations only record/approve names and never run dependency scripts.",
+  "activation_boundary": "Install transaction will consume these explicit persistent policy operations. No install runner or production promotion is certified by this targeted batch.",
+  "cleanup": {"removed_bytes": 112161, "external_empty_roots_removed": 1, "owned_processes_remaining": 0, "retained": "Compact commands, logs, XML/JSON and paired observations including resolved failures; shared Source/toolchains through C9."}
+}

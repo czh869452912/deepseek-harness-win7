@@ -108,5 +108,6 @@
 | C8-BK | Bundle 清单、官方目录、来源与更新资格、平台兼容性及真实 HMR 启停 | [Bundle 管理](bundle-inventory-checks.json) |
 | C8-BL | 精确版本豁免 Remote、风险确认、实时重新准入与撤销及诊断身份 | [管理器版本豁免](manager-exemptions-checks.json) |
 | C8-BM | 注册源规范化、私有源隔离与重试归因、已发布版本排序和元数据 | [注册源与版本规则](registry-policy-checks.json) |
+| C8-BN | 构建脚本待批准策略、精确许可、凭据过滤与 YAML 原子编辑 | [构建批准](build-approval-checks.json) |
 
 后续继续设置及完整应用组合；最终资格使用 C9 冻结候选的完整门禁。

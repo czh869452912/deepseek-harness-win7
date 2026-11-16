@@ -100,4 +100,6 @@
 
 | C8-BG | 插件安装 Registry 并行探测、共享缓存、超时与 HTTP 清理 | [Registry 探测](registry-probe-checks.json) |
 
+| C8-BH | 插件启停补丁、冗余覆盖移除、注释/锚点/别名与原子保存 | [持久化插件启停](plugin-switch-checks.json) |
+
 后续继续设置及完整应用组合；最终资格使用 C9 冻结候选的完整门禁。

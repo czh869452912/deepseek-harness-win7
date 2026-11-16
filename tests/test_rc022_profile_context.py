@@ -50,35 +50,31 @@ def test_composed_profile_keeps_overlay_input_and_captures_privacy_switch(tmp_pa
 @pytest.mark.asyncio
 async def test_launcher_live_reader_uses_explicit_home_and_current_bundle_files(tmp_path, monkeypatch):
     import dsh.boot.profile_boot as launcher
-    from dsh.boot.app_boot import boot
     context, _ = probe.stage(tmp_path / 'owned', 'current')
     active = Path(context['dir']); canonical = active / 'cordis.patch.yml'
     canonical.write_text('[]', encoding='utf-8')
     monkeypatch.setattr(launcher, 'INSTALL_ANCHOR', context['installAnchor'])
     monkeypatch.setenv('DSH_TELEMETRY_DISABLED', '1')
     monkeypatch.setenv('DSH_HOME', str(tmp_path / 'other-home'))
-    captured = []
-    async def watch(ctx, options): captured.append(options)
-    async def wrapped(name, root_config, patches, setup):
-        def host(ctx):
-            setup(ctx); ctx.provide('hmr', object())
-        return await boot(name, root_config, patches, host)
-    monkeypatch.setattr(launcher, 'watch_user_patches', watch)
-    monkeypatch.setattr(launcher, 'boot', wrapped)
     result = await launcher.run_profile(dict(profile='active', dsh_home=context['home'], wait_for_exit=False))
     try:
         ctx = result['ctx']
-        assert [row['filename'] for row in captured] == [str(canonical), str(Path(context['home']) / 'cordis.patch.yml')]
+        profile = ctx.get('profileContext')
+        assert profile['patchPath'] == str(canonical)
+        assert profile['home'] == context['home']
         bundle = active / 'node_modules/selected/patch.yml'
         bundle.write_text(json.dumps([dict(insert=[dict(id='new', name='cordis:unused')])]), encoding='utf-8')
         monkeypatch.delenv('DSH_TELEMETRY_DISABLED')
-        patches = captured[0]['compose']()
+        patches = read_profile_patches('dsh', profile)
         assert patches[0]['insert'][0]['id'] == 'new'
         # The explicit home layer still contains one disable; no second
         # hard-disable is generated when the current bundle has no such row.
         assert len([row for row in patches if row.get('id') == 'session-telemetry-otel']) == 1
         assert ctx.get('profileContext')['home'] == context['home']
         assert ctx.get('profileContext')['telemetryDisabledEnv'] == '1'
+        canonical.write_text('[{id: new, disabled: true}]', encoding='utf-8')
+        patches = read_profile_patches('dsh', profile)
+        assert any(row.get('id') == 'new' and row.get('disabled') is True for row in patches)
     finally:
         result['shutdown'].shutdown(0)
         await result['shutdown'].wait()

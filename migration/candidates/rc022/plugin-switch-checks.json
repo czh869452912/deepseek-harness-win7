@@ -1,0 +1,11 @@
+{
+  "part": "C8-BH",
+  "upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "paired": {"run": "rc022-plugin-switch-paired2-20261116-01", "cases": 32, "passed": true},
+  "native": {"run": "rc022-plugin-switch-native3-20261116-01", "passed": 11, "failed": 0},
+  "source": {"run": "rc022-plugin-switch-source-20261116-01", "passed": 15, "failed": 0},
+  "verification_scope_reason": "Actual Source writePluginEnabled reads real selected bundle/profile files; compare parsed persisted patches, changed/idempotence, comments and expression retention across last/named/mismatched overrides, insertion and group inheritance, redundant literal switch removal, null/default/conditional disabled values, flow documents, anchored mapping/key/value, aliases including shared values, malformed/mapping/duplicate refusal without writes. Home and launch overrides are present and must not affect pruning. Native verifies exact untouched syntax and scalar-only changes, directory refusal, and existing atomic-write/config-editor/current-profile consumers. A stale launcher test still monkeypatched retired watch_user_patches; updated to verify current launcher-owned ProfileContext and fresh reads of changed bundle/user files. Existing diagnostics retained. Original Source patch suite passes in full.",
+  "adaptations": ["Python uses source-preserving PyYAML event/token edits instead of Node YAML mutable document nodes. Parsed values, retained comments/tags, anchors/aliases and persisted decisions are qualified; whitespace normalization of changed flow collections is not byte-parity qualified."],
+  "activation_boundary": "Persistent switch helper only; complete PluginManager Remote ownership, operation reporting, HMR reload and package transactions remain pending.",
+  "cleanup": {"removed_bytes": 1201001, "external_empty_roots_removed": 1, "owned_processes_remaining": 0, "retained": "Compact commands, logs, XML/JSON and raw paired observations, resolved stale-test failure and shared Source/toolchains through C9."}
+}

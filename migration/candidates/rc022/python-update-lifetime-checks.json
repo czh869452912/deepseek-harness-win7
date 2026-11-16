@@ -1,0 +1,8 @@
+{
+  "part": "C8-CM",
+  "upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "native": {"run": "rc022-python-update-lifetime-native-20261116-01", "passed": 3, "failed": 0},
+  "verification_scope_reason": "Three actual native manager updates pause a real TLS archive response after the old package was removed and its recovery snapshot acquired. Disposing only the backend drains the full update and its child; the held backend remains authoritative after service removal, so aborted restoration cannot fall through to pnpm. Disposing the canonical host drains the operation and releases its real profile lease. Both cases retain the exact old package record/source and successfully consume it with the actual stopped-profile recovery CLI. Cancelling only a Python waiting task leaves the owned update running; releasing the response completes installation and normal removal. No package run record/preparation tree, backend operation or update scope remains.",
+  "activation_boundary": "Native registry update owner/host disposal and abandoned waiter boundaries complete. Git/direct remote acquisition, stopped-profile registry CLI, actual mux/browser/default bindings and C9 qualification remain pending. This extends the mounted service evidence without claiming full regression or release acceptance.",
+  "cleanup": {"removed_bytes": 11557, "owned_processes_remaining": 0, "retained": "Commands/XML and raw package process logs. Both shutdown recovery copies were consumed before removing synthetic profiles/workspaces; shared Source/toolchains retained until C9."}
+}

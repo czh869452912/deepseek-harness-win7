@@ -150,4 +150,6 @@
 
 | C8-CL | 本地目录/ZIP/tgz 子进程准备、逐文件复验、真实热启用与中文 PAX 路径 | [本地原生包准备](python-package-local-checks.json) |
 
+| C8-CM | 更新中后端卸载/宿主退出、完整排空、恢复副本与等待者取消独立性 | [更新生命周期](python-update-lifetime-checks.json) |
+
 后续继续设置及完整应用组合；最终资格使用 C9 冻结候选的完整门禁。

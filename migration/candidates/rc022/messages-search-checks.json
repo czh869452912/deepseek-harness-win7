@@ -1,0 +1,59 @@
+{
+  "part": "C8-FX",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "scope": "Current Messages search provider, canonical registration, account-aware readiness and live configuration",
+  "paired": [
+    {
+      "run": "rc022-messages-search-paired2-20261116-01",
+      "observations": 72,
+      "differences": 0
+    },
+    {
+      "run": "rc022-messages-search-plugin-paired-20261116-01",
+      "observations": 190,
+      "differences": 0
+    }
+  ],
+  "verification": {
+    "native": "36 direct-consumer tests passed in initial run; the new record assertion was corrected from record.thinking to record.body.thinking and all 3 new tests passed in the focused retry",
+    "source": "96 fixed Source tests passed across settings, redirect, egress and provider suites",
+    "scope_reason": "The new provider corpus exercises real independent HTTP servers and account/API credential ownership, error bodies, cancellation, recording and snapshot timing. Plugin composition covers route-specific readiness, environment separation, credential metadata-only reads, all live Config fields and owned disposal. Shared coding, anonymous fetch, Web API and account protocol consumers cover the carrier option change."
+  },
+  "behavior": [
+    "Account-route search resolves its account token before API key fallback; a failed account read stops fallback. Account auth sends only the account header; 401 rejects exactly the captured token and gives sign-in guidance.",
+    "Readiness uses the explicit model route, while dispatch uses the current initiator route; metadata readiness does not resolve a stored secret or contact an endpoint.",
+    "All provider fields are volatile; subsequent requests see updated config without replacing the registered provider. Search-specific environment endpoint is separate from the model endpoint.",
+    "Native Messages requests disable thinking, preserve actual Source request recording, and retain cancellation and endpoint guidance behavior.",
+    "Correction to C8-FW negotiation scope: Node 24.9.0 built-in fetch advertises br, gzip, deflate over HTTPS; the anonymous provider explicitly imports Undici 8.11.2 and also advertises zstd. Shared decoding remains capable of zstd. The carrier now selects advertisement per caller, verified by the actual HTTPS test for both values."
+  ],
+  "diagnostics": [
+    "paired1 exposed an observer timer race: a generic abort substring matched the reject-abort case and cancelled before Native had read its body. Both observers now manually cancel only explicit header/body-abort cases; paired2 passed.",
+    "The first Native run exposed only the new test assertion referring to the recording wrapper instead of its body. Its original log/XML are retained."
+  ],
+  "limits": [
+    "Targeted results do not establish full migration or Portable/browser/Win7 release acceptance. Historical settings tests explicitly exercise the retired provider and are not current parity evidence.",
+    "Invalid JSON parser wording is runtime-specific and normalized between the stable Source diagnostic prefix and endpoint guidance; broader malformed mapping inputs and URL conformance are outside this corpus."
+  ],
+  "cleanup": {
+    "removed": [
+      ".goose\\out\\rc022-messages-search-native-20261116-01\\pytest-workspace",
+      ".goose\\out\\rc022-messages-search-native-20261116-01\\tmp",
+      ".goose\\out\\rc022-messages-search-native-20261116-01\\home",
+      ".goose\\out\\rc022-messages-search-source-20261116-01\\pytest-workspace",
+      ".goose\\out\\rc022-messages-search-source-20261116-01\\tmp",
+      ".goose\\out\\rc022-messages-search-source-20261116-01\\home",
+      ".goose\\out\\rc022-messages-search-native2-20261116-01\\pytest-workspace",
+      ".goose\\out\\rc022-messages-search-native2-20261116-01\\tmp",
+      ".goose\\out\\rc022-messages-search-native2-20261116-01\\home"
+    ],
+    "bytes": 3459993,
+    "links": 0
+  },
+  "retained": "Commands, logs, XML/JSON and necessary raw paired observations. Source checkout/builds and shared toolchains are retained for C9; the current x64 runtime decoder dependencies remain required.",
+  "inputs": {
+    "dsh\\web\\messages_search_current.py": "009473f6141d224e013183b8d460ca24e9b932d90565b2701def0c3b53753a85",
+    "dsh\\host\\http_request.py": "2661ccdc361ce84c553d6a03619aacef82474c4a044927b2c751218dc2055ba2",
+    "dsh\\web\\http_fetch_current.py": "2ed404f406d12f6db0dc83602147b94302f49b0c78a09413f9aecc4bc0fca0af",
+    "dsh\\resources\\messages_search_description_022.json": "124d6234a4948ec34471cd07e9d9b14f5121832d7f3011c81e2fe73d732e18eb"
+  }
+}

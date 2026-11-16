@@ -43,10 +43,11 @@ def test_expansion_and_literal_blocks_stay_bounded_and_preserve_first_frame():
 async def test_https_installed_proxy_negotiates_all_qualified_codings(network):
     dispose=await install_proxy_from_environment(Lookup({'HTTP_PROXY':'http://localhost:'+str(network['proxy'].server_port)}),lambda _:None)
     try:
-        async with request('https://origin.test/codings','GET',{},None,None) as (metadata,chunks):
-            assert metadata['status']==200
-            assert b''.join([chunk async for chunk in chunks])==b'ORIGIN'
-        assert network['origins'][0]['headers']['Accept-Encoding']=='br, gzip, deflate, zstd'
+        for advertise in (False,True):
+            async with request('https://origin.test/codings','GET',{},None,None,advertise_zstd=advertise) as (metadata,chunks):
+                assert metadata['status']==200
+                assert b''.join([chunk async for chunk in chunks])==b'ORIGIN'
+        assert [row['headers']['Accept-Encoding'] for row in network['origins']]==['br, gzip, deflate','br, gzip, deflate, zstd']
     finally: await dispose()
 
 

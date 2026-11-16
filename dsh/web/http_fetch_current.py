@@ -77,7 +77,7 @@ class HttpFetchProvider:
         while True:
             headers = {'user-agent': self.limits['userAgent'],
                        'accept': 'text/html,application/xhtml+xml,text/*;q=0.9,application/json;q=0.8'}
-            manager = requestHttp(current['href'], 'GET', headers, None, signal, redirect_policy='manual')
+            manager = requestHttp(current['href'], 'GET', headers, None, signal, redirect_policy='manual', advertise_zstd=True)
             try: response, stream = await manager.__aenter__()
             except Exception as error: raise translateAbortOrNetwork(error, signal, 'request')
             try:

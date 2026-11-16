@@ -9,13 +9,14 @@ from dsh.host.url_current import _url
 
 
 @asynccontextmanager
-async def request(url, method, headers, body, signal, redirect_policy='error'):
+async def request(url, method, headers, body, signal, redirect_policy='error', advertise_zstd=False):
     def read(cancellation):
         normalized = {}
         for key, value in headers.items():
             key, value = key.lower(), value.strip(' \t\r\n')
             normalized[key] = normalized[key]+', '+value if key in normalized else value
-        normalized.setdefault('accept-encoding', 'br, gzip, deflate, zstd' if _url(url)['protocol'] == 'https:' else 'gzip, deflate')
+        secureEncoding = 'br, gzip, deflate, zstd' if advertise_zstd else 'br, gzip, deflate'
+        normalized.setdefault('accept-encoding', secureEncoding if _url(url)['protocol'] == 'https:' else 'gzip, deflate')
         data = body.encode('utf-8') if body is not None else None
         if data is not None:
             normalized.setdefault('content-type', 'text/plain;charset=UTF-8')

@@ -179,7 +179,7 @@ async def test_credentials_snapshot_abort_and_late_rejection_observed(messages_s
 
 
 @pytest.mark.asyncio
-async def test_settings_live_redaction_detach_and_missing_credentials(monkeypatch, messages_server):
+async def test_historical_settings_live_redaction_detach_and_missing_credentials(monkeypatch, messages_server):
     ctx = Context()
     ctx.set_service('launchEnvironment', LaunchEnvironmentSnapshot([dict(source='process', values={
         'DEEPSEEK_API_KEY': 'ambient-key', 'DEEPSEEK_BASE_URL': 'http://chat-must-not-be-used.test',
@@ -187,7 +187,9 @@ async def test_settings_live_redaction_detach_and_missing_credentials(monkeypatc
     try:
         await ctx.plugin(WebService)
         settings_owner = await ctx.plugin(MemorySettings)
-        plugin_owner = await ctx.plugin(resolve_harness_plugin('@deepseek-ai/dsh-web-search-deepseek'))
+        # Historical settings ownership is not current canonical Web acceptance.
+        from dsh.web.web_search_deepseek import WebSearchDeepSeekPlugin
+        plugin_owner = await ctx.plugin(WebSearchDeepSeekPlugin)
         web = ctx.get('web')
         registered = web.search_providers['deepseek-official']
         assert await web.search(dict(query='first')) == EXPECTED

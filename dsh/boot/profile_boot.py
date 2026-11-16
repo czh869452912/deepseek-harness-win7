@@ -407,6 +407,8 @@ async def _run_profile(options: Dict[str, Any]) -> Dict[str, Any]:
         lease = options.get("_python_profile_lease")
         if lease is not None:
             dependencies = options.get('_python_dependency_lease')
+            host_ctx.provide('pythonProfileLease', lease)
+            host_ctx.provide('pythonDependencies', dependencies)
             def close_leases():
                 try:
                     if dependencies is not None:

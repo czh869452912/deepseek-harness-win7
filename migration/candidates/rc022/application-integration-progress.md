@@ -138,4 +138,6 @@
 
 | C8-CF | 独立 Python 子进程准备、父进程复验、提交前零写入与下载取消收尾 | [Python 包准备所有者](python-package-prepare-checks.json) |
 
+| C8-CG | 宿主租约服务、提交前依赖图准备、共享导入状态与卸载后复制清理 | [动态 Python 依赖所有权](python-dependency-changes-checks.json) |
+
 后续继续设置及完整应用组合；最终资格使用 C9 冻结候选的完整门禁。

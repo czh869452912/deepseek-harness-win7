@@ -185,10 +185,11 @@ def import_identity(directory, rows, namespace=None):
 
 class PythonDependencyLease:
     """Compatible profiles share immutable temporary code, never mutable installs."""
-    def __init__(self, directory):
+    def __init__(self, directory, _graph=None):
+        self.directory = os.path.normcase(os.path.realpath(directory))
         self.names, self.packages, self.closed = [], [], False
         with _LOCK:
-            graph, packages = profile_libraries(directory)
+            graph, packages = profile_libraries(directory) if _graph is None else _graph
             for row in graph.values():
                 previous = _POOL.get(row['name'])
                 if previous is not None and previous['fingerprint'] != row['fingerprint']:
@@ -230,6 +231,40 @@ class PythonDependencyLease:
             except BaseException:
                 self.close()
                 raise
+
+    def prepare_change(self, candidate=None, removing=None):
+        """Retain the next immutable graph before committing profile bytes.
+
+        The caller must unload a removed package before committing this change.
+        In-place changes to a live package's library graph remain forbidden;
+        manager updates remove/unload the previous package first.
+        """
+        from dsh.boot.python_package import read_descriptor, inside
+        from dsh.boot.python_plugins import package_name
+        with _LOCK:
+            if self.closed:
+                raise RuntimeError('Python dependency lease is closed')
+            if removing is not None:
+                package_name(removing)
+            graph, packages = profile_libraries(self.directory, candidate, removing)
+            if candidate is not None:
+                name = read_descriptor(candidate)[0]['name']
+                package_name(name)
+                source = os.path.normcase(os.path.realpath(candidate))
+                target = os.path.normcase(os.path.realpath(inside(self.directory, 'node_modules/' + name)))
+                if source in packages:
+                    packages[target] = packages.pop(source)
+            return PythonDependencyLease(self.directory, _graph=(graph, packages))
+
+    def commit_change(self, prepared):
+        """Transfer a prepared graph after the synchronous package transaction."""
+        with _LOCK:
+            if (self.closed or not isinstance(prepared, PythonDependencyLease)
+                    or prepared is self or prepared.closed or prepared.directory != self.directory):
+                raise RuntimeError('expected an open prepared dependency lease for this profile')
+            self.close()
+            self.names, self.packages, self.closed = prepared.names, prepared.packages, False
+            prepared.names, prepared.packages, prepared.closed = [], [], True
 
     def close(self):
         with _LOCK:

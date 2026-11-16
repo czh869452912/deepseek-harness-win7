@@ -174,4 +174,6 @@
 
 | C8-CX | 工作区名称/路径搜索、独立限额、取消/超时与 Unicode 16 大小写和 UTF-16 排序 | [工作区搜索](workspace-search-checks.json) |
 
+| C8-CY | 目标 watcher 订阅、当前元数据重读、取消/卸载等待及真实 mux 退订释放 | [工作区变更订阅](workspace-changes-checks.json) |
+
 后续继续设置及完整应用组合；最终资格使用 C9 冻结候选的完整门禁。

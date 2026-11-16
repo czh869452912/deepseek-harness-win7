@@ -1,4 +1,4 @@
-"""Current baseline workspace previews, staged until search/watch are ready."""
+"""Current baseline workspace previews, bounded search and target watches."""
 import ntpath
 import posixpath
 import re
@@ -8,6 +8,7 @@ from dsh.api.workspace_files_current import CurrentWorkspaceFiles,DEFAULTS
 from dsh.cordis.schema import Schema as z
 from dsh.cordis.text import trim_js
 from dsh.api.workspace_search import search_workspace,DEFAULTS as SEARCH_DEFAULTS
+from dsh.api.workspace_changes_022 import WorkspaceChangeFeed
 from dsh.typert.remote import Remote,RemoteError,TypertRemoteService
 from dsh.typert.stores import field
 
@@ -27,6 +28,7 @@ class CurrentWorkspaceFiles022(TypertRemoteService):
         super().__init__(ctx,'workspaceFiles')
         self.caps=dict(DEFAULTS,**(config or {}))
         self.search_caps=dict(SEARCH_DEFAULTS,**self.caps.get('search',{}))
+        self.feed=WorkspaceChangeFeed(ctx)
         def lookup(scope):
             async def resolve(sid):
                 session=scope.get('sessions').get(sid)
@@ -48,6 +50,10 @@ class CurrentWorkspaceFiles022(TypertRemoteService):
     stat_of=CurrentWorkspaceFiles.stat_of
     read=CurrentWorkspaceFiles.read
     stat=CurrentWorkspaceFiles.stat
+
+    @Remote(dict(mode='stream'))
+    def changes(self,workspaceFileScope,path,signal):
+        return self.feed.follow(field(workspaceFileScope,'workspaceRoot'),path,signal)
 
     async def relative_path(self,scope,base_file,path,signal):
         relative=path.replace('\\','/')

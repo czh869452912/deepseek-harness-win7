@@ -1,0 +1,11 @@
+{
+  "part": "C8-CY",
+  "upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "paired": {"run": "rc022-workspace-changes-paired-20261116-01", "cases": 24, "differences": 0},
+  "native": [{"run": "rc022-workspace-changes-native-20261116-01", "passed": 148}, {"run": "rc022-workspace-changes-native-wire-20261116-01", "passed": 1, "deselected": 148}],
+  "source": {"run": "rc022-workspace-changes-source-20261116-01", "passed": 59, "failed": 0},
+  "verification_scope_reason": "Actual original changes.ts and native feed match target-only invalidation, current metadata/absence, outside-directory rechecks, readiness, preabort, callback/init failures, queued cancellation, paused disposal, failed asynchronous close and cancellation settling by return/rejection during root/target/stat/watch setup. Native regressions cover prior previews/search and shared FS watcher consumers. Original Host and unchanged Client change-feed tests pass. Real native polling observes uninstrumented creation/deletion; original generated artifact over authenticated real WebSocket mux delivers ready/change, rejects invalid path/missing scope, and releases the watcher on stream cancel and socket close without an Agent.",
+  "activation_boundary": "CurrentWorkspaceFiles022 replaces the older workspaceFiles entry in the staged current-baseline registry. Production pin, frontend and overall provider promotion remain coordinated C9 work. Historical workspace helper remains separate for historical tests.",
+  "platform_adaptation": "Uses the C8-AV qualified portable polling filesystem watch backend, not a claim of Chokidar notification latency or coalescing parity. Generation cleanup is a stable owned CleanupPromise, so a cancelled Python waiter does not cancel the watcher close.",
+  "cleanup": {"owned_processes_remaining": 0, "retained": "Commands, XML, Source results, paired observations and actual preview/watch wire frames retained. Owned synthetic fixtures, temporary homes and directories removed. Shared Source/toolchains retained until C9."}
+}

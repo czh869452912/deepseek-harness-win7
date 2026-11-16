@@ -34,7 +34,7 @@ CURRENT_HARNESS_PLUGIN_CLASSES = {
     '@deepseek-ai/dsh-client-connection': 'dsh.host.connection.current:CurrentConnectionPlugin',
     '@deepseek-ai/dsh-client-file-upload': 'dsh.host.file_upload_current:CurrentFileUploads',
     '@deepseek-ai/dsh-api-session-controller': 'dsh.api.session_current:CurrentSessionController',
-    '@deepseek-ai/dsh-api-workspace-files': 'dsh.api.workspace_files_current:CurrentWorkspaceFiles',
+    '@deepseek-ai/dsh-api-workspace-files': 'dsh.api.workspace_files_022:CurrentWorkspaceFiles022',
     '@deepseek-ai/dsh-api-session-media-references': 'dsh.api.session_media_current:CurrentSessionMediaReferences',
     '@deepseek-ai/dsh-message-feedback': 'dsh.feedback.message_current:CurrentMessageFeedback',
     '@deepseek-ai/dsh-command-feedback': 'dsh.feedback.session_current:CurrentCommandFeedback',

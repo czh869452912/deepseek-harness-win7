@@ -294,4 +294,6 @@
 
 | C8-FF | 上传索引批量精确失效、磁盘字节、并发胜出与 Windows 原子替换重试 | [上传索引](upload-index-checks.json) |
 
+| C8-FG | 当前 Files 共享上传、独立取消、跨页配额回收及精确失效消费链 | [文件复用服务](file-store-checks.json) |
+
 后续继续完整应用组合；最终资格使用 C9 冻结候选的完整门禁。

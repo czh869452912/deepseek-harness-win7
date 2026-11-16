@@ -1,0 +1,11 @@
+{
+  "batch": "C8-FG",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "scope": "Current Messages file store and shared-upload lifecycle; canonical adapter integration follows.",
+  "paired": {"observations": 29, "differences": 0, "report": ".goose/out/rc022-file-store-paired4-20261116-01/report.json"},
+  "native": {"passed": 41, "report": ".goose/out/rc022-file-store-native2-20261116-01/command.json"},
+  "source": {"passed": 36, "report": ".goose/out/rc022-file-store-source-20261116-01/command.json"},
+  "coverage": ["Actual Source/native store methods with controlled index and Files-client boundaries", "Header-order-independent scoped hashes using actual default ICU collation", "Cache reuse, 32 MiB image limit, uploaded byte-length validation and seconds-to-milliseconds conversion", "One quota recovery attempt, oldest owned candidates across all pages, repeated cursor termination and stable tie order", "Commit-loser cleanup and contained cleanup failure, exact invalidation, release and releaseAll", "One/all waiter cancellation, normalized primitive causes and actual abort-listener removal", "Native old-generation completion guard, immediate pre-abort and plugin teardown joining owned work"],
+  "limits": ["Transport and disk contracts were separately qualified in C8-FE and C8-FF; this paired fixture controls those boundaries", "Native Future cancellation and store.close provide Python resource ownership beyond the upstream Promise interface", "Canonical Messages adapter activation and complete release acceptance remain pending"],
+  "cleanup": {"removed_bytes": 4334391, "removed": ["Owned pytest workspaces", "Owned tmp and home directories"], "retained": "Commands, paired observations and native observation receipts; no remaining task-owned process"}
+}

@@ -1,0 +1,10 @@
+{
+  "part": "C8-DH",
+  "upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "native": {"run": "rc022-runtime-bindings-native2-20261116-01", "passed": 1},
+  "consumers": {"run": "rc022-runtime-bindings-consumers-20261116-01", "passed": 24},
+  "verification_scope_reason": "Actual boot/Loader resolves v4 Session/projection/Agent roots, current Tools/native executor/FS/policy/working-directory/file tools and current LLM/driver/persistence by installation package name. Agent is listed before its required projection provider, exercising dependency activation. A scripted actual model stream requests a relative read, a real native tool returns file bytes, the driver makes its second model request and commits a v4 result/request header/turn projection. Direct projection-handle, native scheduling, executor selection, patch/read-image and Office consumers pass independently.",
+  "diagnostics": "Candidate registry previously selected compatibility mounts whose default Session/projection format remained v3. New explicit v4 installation roots preserve historical isolated defaults. Agent v4 mount injects sessionProjections as fixed Source AgentRegistry does. First integration run completed its turn but its final fixture assertion used nonexistent agent.signal; switched to explicit caller signal.",
+  "activation_boundary": "Selected candidate binding integration only; production default registry, upstream pin, complete profiles and release qualification are not promoted. Model stream is controlled; actual tools, driver, session and filesystem providers are exercised.",
+  "cleanup": {"owned_processes_remaining": 0, "retained": "Commands, XML/logs and real event/header observations retained. Both integration workspaces and direct-consumer workspace, homes and temporary directories removed. Owned attachment objects were regular, no reparse point and link count one before clearing read-only for deletion. Shared pinned Source/toolchains retained until C9."}
+}

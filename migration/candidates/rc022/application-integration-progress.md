@@ -192,4 +192,6 @@
 
 | C8-DG | Loader 按包名启动鉴权 Web 绑定、真实文件凭据及 mux 取消释放 | [候选 Web 绑定](web-bindings-checks.json) |
 
+| C8-DH | 显式 v4 Session/投影根与 Loader Agent、原生执行器和工作目录文件读取 | [候选运行时绑定](runtime-bindings-checks.json) |
+
 后续继续设置及完整应用组合；最终资格使用 C9 冻结候选的完整门禁。

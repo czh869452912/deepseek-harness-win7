@@ -52,6 +52,12 @@ def configured_registry(configuration):
     return normalize_registry(configuration.get('registry',OFFICIAL_NPM_REGISTRY))
 
 
+def package_registry(configuration,name,requested=None):
+    selected=requested or configured_registry(configuration)
+    if name.startswith('@'):selected=configuration.get(name.split('/',1)[0]+':registry',selected)
+    return normalize_registry(selected)
+
+
 def _public(url):
     fields=urlsplit(url);host=fields.netloc.rsplit('@',1)[-1]
     return urlunsplit((fields.scheme,host,fields.path,'',''))
@@ -132,8 +138,7 @@ def query_metadata(directory,spec,fields,registry=None,env=None,**limits):
     if parsed.get('range','').startswith('npm:'):
         parsed=parse_install_spec(parsed['range'][4:])
         if parsed['kind']!='registry':raise PackageQueryError('ERR_PNPM_SPEC_NOT_SUPPORTED_BY_ANY_RESOLVER','metadata alias requires a registry package')
-    configuration=npm_configuration(directory,env);name=parsed['name'];selected=registry or configured_registry(configuration)
-    if name.startswith('@'):selected=configuration.get(name.split('/',1)[0]+':registry',selected)
+    configuration=npm_configuration(directory,env);name=parsed['name'];selected=package_registry(configuration,name,registry)
     document=read_packument(name,selected,configuration,**limits)
     versions=document.get('versions') or {};tags=document.get('dist-tags') or {}
     if not versions:raise PackageQueryError('ERR_PNPM_NO_VERSIONS','No versions available for '+name)

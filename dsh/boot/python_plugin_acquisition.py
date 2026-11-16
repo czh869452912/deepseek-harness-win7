@@ -110,6 +110,16 @@ def verified_record(source, record):
         return None
     tarball=isinstance(record,dict) and record.get('kind')=='registry-tgz'
     keys={'kind','url','sha256','bytes'} | ({'integrity'} if tarball else set())
+    origin=tarball and any(key in record for key in ('name','version','registry'))
+    if origin:
+        from dsh.boot.python_package import package_name
+        from dsh.boot.semver import is_exact_version
+        from dsh.boot.plugin_registry_policy import normalize_registry
+        from dsh.boot.python_package_query import _public
+        keys.update(('name','version','registry'))
+        package_name(record.get('name'))
+        if not is_exact_version(record.get('version')) or _public(normalize_registry(record.get('registry')))!=record['registry']:
+            raise ValueError('invalid registry acquisition identity')
     if tarball:
         from dsh.boot.python_package_tarball import artifact_url,integrity_options
         safe_url=artifact_url(record.get('url'),public=True)

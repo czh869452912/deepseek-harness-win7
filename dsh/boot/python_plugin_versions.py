@@ -7,7 +7,7 @@ import uuid
 
 from dsh.boot import python_plugins as store
 from dsh.boot.profile import package_dir_from_anchor, read_profile_manifest
-from dsh.boot.profile_lease import ProfileLease
+from dsh.boot.profile_lease import ProfileLease,package_write_lease
 from dsh.boot.python_package import inside, package_name
 
 HISTORY = '.dsh-python-history'
@@ -53,7 +53,7 @@ def managed(directory, name, manifest):
     descriptor = store.validate_package(target)
     if descriptor['name'] != name or descriptor['version'] != record['version']:
         raise ValueError('installed plugin identity differs from its profile record')
-    if manifest.get('dependencies', {}).get(name) != 'file:node_modules/' + name or name not in manifest.get('dsh', {}).get('profile', {}).get('bundles', []):
+    if manifest.get('dependencies', {}).get(name) != store.dependency_reference(name,record):
         raise ValueError('managed Python plugin profile references changed')
     return target, record
 
@@ -170,13 +170,14 @@ def replace_candidate(directory, before_bytes, before, token, stage, expected_na
     history.append(old)
     after = copy.deepcopy(before)
     after['dsh']['pythonPlugins'][name] = dict(new, history=history)
+    after['dependencies'][name]=store.dependency_reference(name,new)
     publish_replace(directory, before_bytes, after, name, token, old, new)
     return name
 
 
-def upgrade(directory, source, installation_anchor, acquisition=None):
+def upgrade(directory, source, installation_anchor, acquisition=None,lease=None):
     from dsh.boot.python_plugin_acquisition import verified_record
-    with ProfileLease(directory, exclusive=True):
+    with package_write_lease(directory,lease):
         store.recover(directory)
         acquisition = verified_record(source, acquisition)
         token, stage = stage_source(directory, source)
@@ -192,8 +193,8 @@ def upgrade(directory, source, installation_anchor, acquisition=None):
                 shutil.rmtree(stage)
 
 
-def rollback(directory, name, version=None):
-    with ProfileLease(directory, exclusive=True):
+def rollback(directory, name, version=None,lease=None):
+    with package_write_lease(directory,lease):
         store.recover(directory)
         before_bytes, before = profile_bytes(directory)
         _, record = managed(directory, name, before)

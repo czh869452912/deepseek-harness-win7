@@ -134,4 +134,6 @@
 
 | C8-CD | 单宿主租约升级、准入间隙排他、其他宿主拒绝与原锁恢复、事务借用能力 | [运行中事务租约](profile-mutation-lease-checks.json) |
 
+| C8-CE | Native 注册表来源/精确依赖、禁用包版本历史、离线回滚和真实管理器库存 | [Python 注册表代际](python-registry-generations-checks.json) |
+
 后续继续设置及完整应用组合；最终资格使用 C9 冻结候选的完整门禁。

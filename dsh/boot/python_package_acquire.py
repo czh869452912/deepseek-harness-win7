@@ -6,7 +6,7 @@ from types import SimpleNamespace
 from dsh.boot.plugin_compatibility import evaluate_plugin_compatibility,plugin_compatibility_warning
 from dsh.boot.plugin_install_spec import parse_install_spec
 from dsh.boot.python_package import package_name
-from dsh.boot.python_package_query import PackageQueryError,query_metadata
+from dsh.boot.python_package_query import PackageQueryError,query_metadata,npm_configuration,package_registry,_public
 from dsh.boot.python_package_tarball import downloaded_tarball,unpack_tarball
 from dsh.boot.python_plugins import validate_package
 from dsh.boot.semver import is_exact_version
@@ -44,6 +44,7 @@ def acquired_registry_package(directory,spec,registry=None,env=None,exemptions=N
     distribution=metadata.get('dist')
     if not isinstance(distribution,dict):raise NativePackageRefused('ERR_DSH_PACKAGE_ARTIFACT','registry package has no pinned archive')
     with downloaded_tarball(distribution.get('tarball'),distribution.get('integrity')) as (archive,record):
+        record.update(name=name,version=version,registry=_public(package_registry(npm_configuration(directory,env),name,registry)))
         with tempfile.TemporaryDirectory(prefix='dsh-native-unpack-') as stage:
             unpack_tarball(archive,stage)
             try:manifest=validate_package(stage)

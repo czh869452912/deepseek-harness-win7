@@ -283,7 +283,16 @@ def transact(directory, before, after, name, token, operation):
         recover(directory)
 
 
-def install(directory, source, installation_anchor, acquisition=None,lease=None):
+def dependency_reference(name,record):
+    acquisition=record.get('acquisition')
+    if isinstance(acquisition,dict) and acquisition.get('kind')=='registry-tgz' and 'name' in acquisition:
+        if acquisition['name']!=name or acquisition['version']!=record['version']:
+            raise ValueError('registry acquisition identity differs from its native package')
+        return record['version']
+    return 'file:node_modules/'+name
+
+
+def install(directory, source, installation_anchor, acquisition=None,lease=None,enabled=True):
     from dsh.boot.app_boot import load_overlay_patches
     from dsh.boot.python_plugin_acquisition import verified_record
 
@@ -316,12 +325,13 @@ def install(directory, source, installation_anchor, acquisition=None,lease=None)
             profile_libraries(directory, stage)
             hashes = file_hashes(stage)
             after = copy.deepcopy(before)
-            after.setdefault("dependencies", {})[name] = "file:node_modules/" + name
             dsh = after.setdefault("dsh", {})
-            dsh.setdefault("profile", {}).setdefault("bundles", []).append(name)
+            selected=dsh.setdefault("profile", {}).setdefault("bundles", [])
+            if enabled is not False:selected.append(name)
             dsh.setdefault("pythonPlugins", {})[name] = {"version": manifest["version"], "files": hashes}
             if acquisition is not None:
                 dsh['pythonPlugins'][name]['acquisition'] = acquisition
+            after.setdefault('dependencies',{})[name]=dependency_reference(name,dsh['pythonPlugins'][name])
             transact(directory, before_bytes, after, name, token, "add")
             return name
         finally:
@@ -339,6 +349,8 @@ def uninstall(directory, name,lease=None):
         records = before.get("dsh", {}).get("pythonPlugins", {})
         if name not in records:
             raise ValueError("package is not managed by the Python installer")
+        if before.get('dependencies',{}).get(name)!=dependency_reference(name,records[name]):
+            raise ValueError('managed Python plugin profile references changed')
         target = destination(directory, name)
         if file_hashes(target) != records[name]["files"]:
             raise ValueError("installed plugin files changed; preserve or restore them before uninstalling")

@@ -268,4 +268,6 @@
 
 | C8-ES | 变更接口真实 Peer 载体：非 owner 五路由拒绝、认证 TCP、默认文本响应头及生命周期回归 | [Peer 接口](change-route-peers-checks.json) |
 
+| C8-ET | 插件管理工具：八种操作、逐次审批、分页/提示、注册回收与规范基础行及管理服务 | [管理工具](plugin-manager-tools-checks.json) |
+
 后续继续完整应用组合；最终资格使用 C9 冻结候选的完整门禁。

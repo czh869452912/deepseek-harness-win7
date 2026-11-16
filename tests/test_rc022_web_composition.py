@@ -16,7 +16,7 @@ async def test_canonical_web_composes_current_providers_and_separates_public_url
               '--trusted-host', 'gateway.example'], waitForExit=False))
     ctx = running['ctx']
     try:
-        services = ['webApp', 'remoteAccess', 'workingDirectory', 'fileUploads', 'mcpManager', 'mcpResources', 'workspaceChanges']
+        services = ['webApp', 'remoteAccess', 'workingDirectory', 'fileUploads', 'mcpManager', 'mcpResources', 'workspaceChanges', 'pluginManager']
         assert [name for name in services if ctx.get(name) is None] == []
         assert await inactive_entries(ctx) == []
         assert ctx.get('webRuntime') is None
@@ -27,6 +27,8 @@ async def test_canonical_web_composes_current_providers_and_separates_public_url
         entries = list(ctx.loader.entries())
         row = next(item for item in entries if item.options.get('id') == 'mcp-manager')
         assert row.fiber is not None
+        management_tool = next(item for item in entries if item.options.get('id') == 'tool-plugin-manager')
+        assert management_tool.options.get('disabled') is True
         assert any(item.options.get('id') == 'harness-dev-context' and item.fiber is not None for item in entries)
         with pytest.raises(RuntimeError, match='unknown server') as rejected:
             await RemoteDispatcher(ctx).invoke(dict(namespace='mcpManager', method='restart', args=dict(name='missing')))

@@ -216,4 +216,6 @@
 
 | C8-DS | 跨源码目录的空浏览器 Host 绑定、独立交付文件引用提示词与 UI 原生动作生命周期拆分 | [交付引用绑定](file-reference-bindings-checks.json) |
 
+| C8-DT | 稳定开发提示词、v4 历史段落保留、当前路径/Web URL 上下文及卸载 | [开发上下文绑定](harness-dev-context-checks.json) |
+
 后续继续完整应用组合；最终资格使用 C9 冻结候选的完整门禁。

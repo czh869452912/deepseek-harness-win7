@@ -1,0 +1,11 @@
+{
+  "part": "C8-DT",
+  "upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "paired": {"run": "rc022-harness-dev-paired-20261116-01", "observations": 12, "differences": 0},
+  "native": {"run": "rc022-harness-dev-native2-20261116-01", "passed": 1},
+  "source": {"run": "rc022-harness-dev-source-20261116-01", "passed": 7, "failed": 0, "pending": 0},
+  "verification_scope_reason": "Actual original Host projection/callbacks paired against Python, exact generated Source prompt constants, actual Loader/v4 session/systemPrompt integration. Covers retained admitted legacy paragraphs, ignored empty/multiblock/nontext versions, malformed/newline paragraphs, clearing, changed live URL, stable prompt versus runtime context, and reversible unloading. Only implementation-root runtime paths are normalized in pairing.",
+  "diagnostics": "Initial native fixture omitted mandatory v4 system/message turn and step; corrected the fixture and retained failure diagnostics. No production validator relaxation.",
+  "activation_boundary": "Harness dev context provider only; native integration supplies a controlled webApp URL provider. Full current Web runtime composition and release acceptance remain outstanding.",
+  "cleanup": {"owned_processes_remaining": 0, "removed_bytes": 21993, "retained": "Commands, failed/passing logs/XML, Source results, paired corpus/observations and candidate inputs preserved. Owned pytest workspaces/home/tmp removed. Shared fixed Source/toolchains retained until C9."}
+}

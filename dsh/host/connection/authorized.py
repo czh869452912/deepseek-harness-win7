@@ -129,13 +129,13 @@ class AuthorizedHostConnection(CurrentHostConnection):
             route = self.fetch_routes.get(request['path'])
             if route is not None and request['method'] in route['methods']:
                 if peer.principal['kind'] != 'owner':
-                    return response(403, 'forbidden')
+                    return response(403, 'forbidden', {'content-type': 'text/plain;charset=UTF-8'})
                 value = route['fetch'](request)
                 return await value if inspect.isawaitable(value) else value
             endpoint = endpoint_from_path(channel, request['path'])
             interceptor = self.interceptors.get(channel)
             if endpoint is None or interceptor is None or not interceptor['matches'](endpoint):
-                return response(404, 'not found')
+                return response(404, 'not found', {'content-type': 'text/plain;charset=UTF-8'})
             return await interceptor['fetch'](request, peer)
         return SimpleNamespace(requestBodyMode=modes.requestBodyMode, fetch=fetch)
 

@@ -35,6 +35,8 @@ def cases():
             ('applications-failure', dict(failure='applications')), ('bad-action', dict(suffix='&action=delete')),
             ('abort-stat', dict(abortDuring=True)), ('pending-disposal', dict(pending=True))]:
         rows.append(dict(name=name, path='/api/changes.diff' if name == 'pending-disposal' else '/api/changes.open', **options))
+    for route in ('changes.summary', 'changes.diff', 'changes.open', 'present.open', 'present.host'):
+        rows.append(dict(name='non-owner-'+route, path='/api/'+route, nonOwner=True))
     return rows
 
 
@@ -49,7 +51,7 @@ async def run(test):
     from dsh.cordis.context import Context
     from dsh.core.abort import AbortController
     from dsh.fs.fs_local import FsError
-    from dsh.host.connection.current import CurrentHostConnection
+    from dsh.host.connection.authorized import AuthorizedHostConnection
     from dsh.typert.remote import RemoteError
     ctx, controller, calls = Context(), AbortController(), []
     pending_started = asyncio.Event()
@@ -94,7 +96,8 @@ async def run(test):
             processPath=lambda target: '/host/wrong' if test.get('wrongMapping') else '/host/current.txt'))
         ctx.set_service('sessionController', NS(workspaceDesktop=lambda: dict(name='host', available=not test.get('unavailable'), fileManager='explorer'),
             openWorkspacePath=open_path, workspacePathApplications=applications))
-        connection = CurrentHostConnection(ctx, [], NS(isAuthenticated=lambda _: True))
+        connection = AuthorizedHostConnection(ctx, [], NS(is_authenticated=lambda *_: True))
+        peer = connection.createPeer(dict(principal=dict(kind='external'))) if test.get('nonOwner') else connection.browserPeer
         fiber = await ctx.plugin(CurrentClientUiDeliverables022)
         if test.get('aborted'): controller.abort(ValueError('cancelled'))
         path = test['path']
@@ -102,7 +105,7 @@ async def run(test):
         async def fetch():
             try:
                 result = await connection.createSharedFetchHandler('/api').fetch(dict(url='http://localhost'+path+query,
-                    path=path, method=test.get('method', 'GET'), headers={}, signal=controller.signal))
+                    path=path, method=test.get('method', 'GET'), headers={}, signal=controller.signal), peer)
                 body = result['body']
                 if result['headers'].get('content-type', '').startswith('application/json'):
                     body = json.loads(body)

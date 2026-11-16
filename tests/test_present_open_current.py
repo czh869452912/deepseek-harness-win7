@@ -26,7 +26,7 @@ def test_actual_source_declared_native_action(case):
     assert json_equal(execute(case),case['expected'])
 
 
-async def fixture(tmp_path):
+async def fixture(tmp_path, connection_class=CurrentHostConnection):
     parent_dir,child_dir=tmp_path/'parent',tmp_path/'child';parent_dir.mkdir();child_dir.mkdir()
     (parent_dir/'output.docx').write_bytes(b'parent');(child_dir/'output.docx').write_bytes(b'child')
     ctx,unused=await api_harness(tmp_path)
@@ -44,7 +44,7 @@ async def fixture(tmp_path):
     async def opener(request,signal):calls.append((request,signal))
     ctx.set_service('sessionController',SimpleNamespace(workspaceDesktop=lambda:dict(name='serving host',available=True,fileManager='explorer'),openWorkspacePath=opener))
     authenticated=[True]
-    connection=CurrentHostConnection(ctx,[],SimpleNamespace(is_authenticated=lambda _:authenticated[0]))
+    connection=connection_class(ctx,[],SimpleNamespace(is_authenticated=lambda *_:authenticated[0],authenticate_api=lambda *_:None))
     fiber=await ctx.plugin(CurrentClientUiDeliverables)
     return ctx,fiber,connection,calls,authenticated,child_dir,delivery['seq']
 

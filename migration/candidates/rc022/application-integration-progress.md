@@ -266,4 +266,6 @@
 
 | C8-ER | 变更浏览器接口：摘要/差异/打开、原生应用查询、文件映射验证、认证 TCP 与取消释放 | [变更接口](change-routes-checks.json) |
 
+| C8-ES | 变更接口真实 Peer 载体：非 owner 五路由拒绝、认证 TCP、默认文本响应头及生命周期回归 | [Peer 接口](change-route-peers-checks.json) |
+
 后续继续完整应用组合；最终资格使用 C9 冻结候选的完整门禁。

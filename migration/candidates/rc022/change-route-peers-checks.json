@@ -1,0 +1,11 @@
+{
+  "part": "C8-ES",
+  "upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "paired": {"run": "rc022-change-route-peers-paired2-20261116-01", "observations": 56, "differences": 0},
+  "native": {"run": "rc022-change-route-peers-consumers-20261116-01", "passed": 69, "failed": 0},
+  "verification_scope_reason": "The deliverables probe now instantiates the same AuthorizedHostConnection selected by canonical Web, passes explicit browser/foreign Peers, and compares all five exact-route refusals before any handler call. This found missing default Response text headers on 403 and unmatched 404; those headers now match Source. Real TCP opens use peer_bridge_handler and admission before request body. Peer claims/revocation/ownership, plugin reload, trust/authentication, historical presented opens and canonical Web consumers pass.",
+  "diagnostics": "Initial paired probe identified five missing 403 content-type headers. Initial actual-TCP fixture attempted to replace an already provided Connection; the shared fixture now accepts a constructor so each test mounts exactly one lifetime owner. Both failed observations retained.",
+  "activation_boundary": "The rc.3 authorized Peer implementation already existed and was selected by Web; this batch qualifies deliverables on that current carrier and fixes its text response headers. C8-ER's historical-carrier probe limitation is superseded only for this tested scope, without relabelling its receipt.",
+  "limits": "This verifies current exact-route Peer ownership and the existing admission tests. Broader Gateway/mux and arbitrary cross-peer concurrency remain separately scoped; no browser rendering, Portable or complete release qualification.",
+  "cleanup": {"removed_bytes": 91609, "owned_processes_remaining": 0, "retained": "56 paired route results/hash reports, failed diagnostics, test commands/logs/XML and route observations. Owned mapped/external pytest workspaces and tmp/home removed. Shared Source/toolchains retained until C9."}
+}

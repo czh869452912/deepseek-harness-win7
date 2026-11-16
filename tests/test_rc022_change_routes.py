@@ -12,7 +12,7 @@ from scripts import rc022_change_routes_probe as corpus
 async def test_authenticated_change_and_native_open_route_contracts(tmp_path):
     rows = await corpus.observe()
     (tmp_path/'change-route-observations.json').write_text(json.dumps(rows, indent=2), encoding='utf-8')
-    assert len(rows) == 51
+    assert len(rows) == 56
     assert all(row['withdrawn'] and row['listeners'] == 0 for row in rows)
     by_name = {row['name']: row for row in rows}
     assert set(by_name['summary']['response']['body']) == {'turn', 'files', 'total', 'added', 'deleted'}
@@ -24,15 +24,17 @@ async def test_authenticated_change_and_native_open_route_contracts(tmp_path):
     assert by_name['unmapped']['response']['status'] == 422
     assert by_name['open-unexpected']['response']['body'] == 'Changed file unavailable.'
     assert by_name['pending-disposal']['response'] == dict(error='This operation was aborted')
+    for row in rows[-5:]:
+        assert row['response']['status'] == 403 and row['calls'] == []
 
 
 @pytest.mark.asyncio
 async def test_actual_tcp_routes_authenticate_and_verify_viewed_cold_session_file(tmp_path):
     from dsh.client.ui_deliverables_022 import CurrentClientUiDeliverables022
-    from dsh.host.connection.http_current import current_bridge_handler
+    from dsh.host.connection.authorized import AuthorizedHostConnection, peer_bridge_handler
     from dsh.host.webserver.webserver import WebServerService
     from tests.test_present_open_current import fixture
-    ctx, old_fiber, connection, calls, authenticated, directory, seq = await fixture(tmp_path)
+    ctx, old_fiber, connection, calls, authenticated, directory, seq = await fixture(tmp_path, AuthorizedHostConnection)
     await old_fiber.dispose()
     summary = dict(turn=1, cwd=str(directory), files=[dict(path='output.docx', display='output.docx', added=1, deleted=0)],
                    total=1, added=1, deleted=0, snapshot=dict(before='private', after='private'))
@@ -41,7 +43,7 @@ async def test_actual_tcp_routes_authenticate_and_verify_viewed_cold_session_fil
     ctx.set_service('workspaceChanges', SimpleNamespace(summary=lambda sid, seq: summary, diff=diff))
     fiber = await ctx.plugin(CurrentClientUiDeliverables022)
     server = WebServerService(ctx, host='127.0.0.1', port=0)
-    server.register('prefix', '/api', current_bridge_handler(connection, connection.createSharedFetchHandler('/api')))
+    server.register('prefix', '/api', peer_bridge_handler(connection, connection.createSharedFetchHandler('/api')))
     await server.start()
     async def fetch(path, method='GET'):
         reader, writer = await asyncio.open_connection('127.0.0.1', server.listened_port)

@@ -94,4 +94,6 @@
 
 | C8-BD | Auto 审核工具钩子、当前审批服务与卸载/关闭语义 | [Auto 审核接入](auto-review-gate-checks.json) |
 
+| C8-BE | 后台任务 Remote、非消费观察、输出续传与人工停止 | [后台任务 Remote](job-controller-checks.json) |
+
 后续继续设置及完整应用组合；最终资格使用 C9 冻结候选的完整门禁。

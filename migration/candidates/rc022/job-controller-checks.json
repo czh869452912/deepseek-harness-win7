@@ -1,0 +1,30 @@
+{
+  "part": "C8-BE",
+  "upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "paired": {
+    "run": "rc022-job-controller-paired3-20261116-01",
+    "cases": 27,
+    "passed": true
+  },
+  "native": {
+    "run": "rc022-job-controller-native4-20261116-01",
+    "passed": 14,
+    "failed": 0
+  },
+  "source": {
+    "run": "rc022-job-controller-source-20261116-01",
+    "passed": 24,
+    "failed": 0
+  },
+  "verification_scope_reason": "Invoke actual Source JobController and observe/rows helpers over the same controlled registry and actual already-qualified OutputRing implementations. Compare subscription-before-read, anchor and absolute-byte resume, retention loss including empty chunks/empty loss-only frames, soft frame budget and whole oversized chunks, live output/terminal drain, removal without reread, own/unowned visibility, ignored foreign/output roster events, pre-aborted and active stream cancellation, synchronous fenced human kill, missing/foreign lookup Remote errors, primitive/ordinary/typed lookup error conversion and original producer-cancel failure identity. Actual Agent/current registry and Typert-marker integration proves browser observation leaves modelCursor/resultDelivered untouched, subsequent model read delivers full output/result once, human kill retains reason and does not claim result. Existing registry/job tools selected; additional waiter test preserves second wake before continuation and releases cancelled wait/sleep subscriptions. Initial test count was incorrect and a retention fixture expected no chunk where actual Source retains one empty tail chunk; corrected fixture assertions and added explicit empty-loss frame. Source Error string conversion differences were fixed at Remote boundary; diagnostics retained.",
+  "activation_boundary": "Explicit current job Remote provider with generated namespace markers. Production loader registry, real mux/browser subscriptions and final C9 acceptance remain pending.",
+  "adaptations": [
+    "Native bare RuntimeError represents Source bare Error at this Remote conversion boundary; typed HarnessError uses its original name/message without Python display code prefix. Other Python exception classes retain their runtime names."
+  ],
+  "cleanup": {
+    "removed_bytes": 695933,
+    "external_empty_root_removed": true,
+    "owned_processes_remaining": 0,
+    "retained": "Compact commands, logs, XML/JSON and raw observations including resolved failures; shared pinned Source/toolchains through C9."
+  }
+}

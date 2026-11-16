@@ -331,3 +331,5 @@
 后续继续完整应用组合；最终资格使用 C9 冻结候选的完整门禁。
 
 | C8-FX | Messages search account/readiness/live Config and per-carrier HTTPS coding negotiation | [Messages search](messages-search-checks.json) |
+
+| C8-FY | Managed credential precedence, masked previews and initial-load notifications | [Credential references](local-credential-reference-checks.json) |

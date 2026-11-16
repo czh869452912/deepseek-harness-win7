@@ -33,11 +33,11 @@ def test_canonical_snapshot_owns_reference_precedence_and_writes(tmp_path, monke
     ]))
     monkeypatch.delenv(ref)
     assert credentials.resolve(ref).value == 'inherited-at-launch'
-    assert credentials.describe(ref) == dict(configured=True, source='env', writable=False)
-    with pytest.raises(ValueError, match='supplied read-only'):
-        credentials.set(ref, 'refused')
-    with pytest.raises(ValueError, match='supplied read-only'):
-        credentials.unset(ref)
+    assert credentials.describe(ref) == dict(configured=True, source='env', writable=True)
+    credentials.set(ref, 'saved')
+    assert credentials.resolve(ref).value == 'saved'
+    credentials.unset(ref)
+    assert credentials.resolve(ref).value == 'inherited-at-launch'
 
 
 @pytest.mark.asyncio
@@ -66,13 +66,12 @@ async def test_web_credentials_remote_uses_launch_layers_and_preserves_them_on_r
         ctx = first['ctx']
         info = await call(ctx, 'describe', refs=[inherited, fallback])
         assert info == {
-            inherited: dict(configured=True, source='env', writable=False),
+            inherited: dict(configured=True, source='env', writable=True),
             fallback: dict(configured=True, source='project-env', writable=True),
         }
         assert ctx.get('credentials').resolve(inherited).value == 'inherited-fixture'
-        with pytest.raises(RemoteError) as rejected:
-            await call(ctx, 'set', ref=inherited, value='refused')
-        assert rejected.value.code == 'credential/rejected'
+        await call(ctx, 'set', ref=inherited, value='saved-over-environment')
+        assert ctx.get('credentials').resolve(inherited).value == 'saved-over-environment'
         await call(ctx, 'set', ref=fallback, value='stored-fixture')
         assert ctx.get('credentials').resolve(fallback).value == 'stored-fixture'
     finally:
@@ -82,6 +81,9 @@ async def test_web_credentials_remote_uses_launch_layers_and_preserves_them_on_r
     restarted = await boot()
     try:
         ctx = restarted['ctx']
+        assert ctx.get('credentials').resolve(inherited).value == 'saved-over-environment'
+        await call(ctx, 'unset', ref=inherited)
+        assert ctx.get('credentials').resolve(inherited).value == 'inherited-fixture'
         assert ctx.get('credentials').resolve(fallback).value == 'stored-fixture'
         await call(ctx, 'unset', ref=fallback)
         assert ctx.get('credentials').resolve(fallback).value == 'project-fixture'

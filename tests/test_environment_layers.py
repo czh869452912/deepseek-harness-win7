@@ -141,17 +141,17 @@ def test_credentials_precedence_and_shadowing(monkeypatch):
         assert desc["source"] == "file"
         assert desc["writable"] is True
 
-        # 2. Inherited process environment overrides file (Wins)
+        # 2. A saved key wins over the inherited process fallback.
         monkeypatch.setenv("DEEPSEEK_API_KEY", "sk-launch-env-key")
-        assert creds.resolve("DEEPSEEK_API_KEY") == "sk-launch-env-key"
+        assert creds.resolve("DEEPSEEK_API_KEY") == "sk-file-key"
         desc = creds.describe("DEEPSEEK_API_KEY")
-        assert desc["source"] == "env"
-        assert desc["writable"] is False
+        assert desc["source"] == "file"
+        assert desc["writable"] is True
 
-        # Setting shadowed credential throws ValueError
-        with pytest.raises(ValueError) as exc:
-            creds.set_credential("DEEPSEEK_API_KEY", "sk-new-key")
-        assert "supplied read-only by the launching environment" in str(exc.value)
+        creds.set_credential("DEEPSEEK_API_KEY", "sk-new-key")
+        assert creds.resolve("DEEPSEEK_API_KEY") == "sk-new-key"
+        creds.unset("DEEPSEEK_API_KEY")
+        assert creds.resolve("DEEPSEEK_API_KEY") == "sk-launch-env-key"
 
 
 def test_full_llm_config_precedence(monkeypatch):

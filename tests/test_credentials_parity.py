@@ -150,26 +150,22 @@ def test_local_credential_provider_resolved_credential(monkeypatch):
         assert info.source == "file"
         assert info.writable is True
 
-        # Inherited env shadowing check
+        # A saved credential wins over the environment until it is unset.
         monkeypatch.setenv("DEEPSEEK_API_KEY", "sk-env-override")
         res_env = creds.resolve("DEEPSEEK_API_KEY")
-        assert res_env.value == "sk-env-override"
-        assert res_env.source == "env"
+        assert res_env.value == "sk-file-123"
+        assert res_env.source == "file"
 
         info_env = creds.describe("DEEPSEEK_API_KEY")
         assert info_env.configured is True
-        assert info_env.source == "env"
-        assert info_env.writable is False
+        assert info_env.source == "file"
+        assert info_env.writable is True
 
-        # Attempt to set shadowed credential raises error
-        with pytest.raises(ValueError) as exc:
-            creds.set("DEEPSEEK_API_KEY", "sk-new-val")
-        assert "supplied read-only by the launching environment" in str(exc.value)
-
-        # Attempt to unset shadowed credential raises error
-        with pytest.raises(ValueError) as exc:
-            creds.unset("DEEPSEEK_API_KEY")
-        assert "supplied read-only by the launching environment" in str(exc.value)
+        creds.set("DEEPSEEK_API_KEY", "sk-new-val")
+        assert creds.resolve("DEEPSEEK_API_KEY").value == "sk-new-val"
+        creds.unset("DEEPSEEK_API_KEY")
+        assert creds.resolve("DEEPSEEK_API_KEY").value == "sk-env-override"
+        assert creds.describe("DEEPSEEK_API_KEY").writable is True
 
 
 def test_record_management_parity():

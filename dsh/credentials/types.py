@@ -27,14 +27,17 @@ class ResolvedCredential(dict):
 class CredentialInfo(dict):
     """Source and writability facts for one reference, safe for configuration UIs — never the value."""
 
-    def __init__(self, configured: bool, writable: bool, source: Optional[str] = None):
+    def __init__(self, configured: bool, writable: bool, source: Optional[str] = None, masked: Optional[str] = None):
         d = {"configured": configured, "writable": writable}
         if source is not None:
             d["source"] = source
+        if masked is not None:
+            d["masked"] = masked
         super().__init__(d)
         self.configured = configured
         self.writable = writable
         self.source = source
+        self.masked = masked
 
 
 class CredentialRecordInfo(dict):

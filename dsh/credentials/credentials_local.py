@@ -280,6 +280,16 @@ def ensure_cold_start(dsh_home: Optional[str] = None) -> Tuple[str, str]:
     return settings_yaml, creds_json
 
 
+def mask_credential(value: str) -> str:
+    """Preview by code point, retaining at least eight hidden key characters."""
+    chars = list(value)
+    provider_end = next((index + 1 for index, char in enumerate(chars) if char in ('-', '_')), 0)
+    hidden = len(chars) - provider_end - 9
+    if hidden < 8:
+        return '\u2022' * len(chars)
+    return ''.join(chars[:provider_end + 5]) + '\u2022' * hidden + ''.join(chars[-4:])
+
+
 class CredentialsService(CredentialProvider):
     """
     File-backed credentials provider implementation (`ctx.credentials`).
@@ -342,13 +352,6 @@ class CredentialsService(CredentialProvider):
         """Check project and user .env fallbacks."""
         return self._environment_entry(ref, ["project-env", "user-env"])
 
-    def _assert_unshadowed(self, ref_name: str, verb: str) -> None:
-        if self._inherited(ref_name) is not None:
-            raise ValueError(
-                f'credentials-local: "{ref_name}" is supplied read-only by the launching environment, so {verb} would be'
-                " shadowed; unset it in the shell you start dsh from instead"
-            )
-
     def load(self) -> None:
         """Load and parse document from disk."""
         with self._lock:
@@ -358,14 +361,14 @@ class CredentialsService(CredentialProvider):
             lock = FileLock(self.lock_path, timeout=5)
             try:
                 with lock:
-                    self.reconcile_from_disk()
+                    self.reconcile_from_disk(notify=False)
             except Exception as e:
                 ctx = getattr(self, "ctx", None)
                 logger = getattr(ctx, "logger", None) if ctx else None
                 if logger:
                     logger.warn("Failed to load credentials from %s: %s", self.filepath, e)
 
-    def reconcile_from_disk(self) -> None:
+    def reconcile_from_disk(self, notify: bool = True) -> None:
         """Compare disk content against memory and emit updates."""
         assert_owner_only(self.filepath)
         if not os.path.exists(self.filepath):
@@ -396,6 +399,9 @@ class CredentialsService(CredentialProvider):
         self._text = text
         self._credentials = next_refs
         self._records = next_records
+
+        if not notify:
+            return
 
         # Detect changes and fire notifications
         all_refs = set(prev_refs.keys()) | set(next_refs.keys())
@@ -440,12 +446,12 @@ class CredentialsService(CredentialProvider):
 
     def resolve(self, ref: str) -> Optional[ResolvedCredential]:
         credential_ref(ref)
-        inherited = self._inherited(ref)
-        if inherited is not None:
-            return ResolvedCredential(inherited, "env")
         stored = self._credentials.get(ref)
         if stored is not None and len(stored) > 0:
             return ResolvedCredential(stored, "file")
+        inherited = self._inherited(ref)
+        if inherited is not None:
+            return ResolvedCredential(inherited, "env")
         fallback = self._dotenv_fallback(ref)
         if fallback is not None:
             return ResolvedCredential(fallback.value, fallback.source)
@@ -453,11 +459,11 @@ class CredentialsService(CredentialProvider):
 
     def describe(self, ref: str) -> CredentialInfo:
         credential_ref(ref)
-        if self._inherited(ref) is not None:
-            return CredentialInfo(configured=True, writable=False, source="env")
         stored = self._credentials.get(ref)
         if stored is not None and len(stored) > 0:
-            return CredentialInfo(configured=True, writable=True, source="file")
+            return CredentialInfo(configured=True, writable=True, source="file", masked=mask_credential(stored))
+        if self._inherited(ref) is not None:
+            return CredentialInfo(configured=True, writable=True, source="env")
         fallback = self._dotenv_fallback(ref)
         if fallback is not None:
             return CredentialInfo(configured=True, writable=True, source=fallback.source)
@@ -467,7 +473,6 @@ class CredentialsService(CredentialProvider):
         credential_ref(ref)
         if not isinstance(value, str) or len(value) == 0:
             raise ValueError(f'credentials-local: an empty value cannot be stored for "{ref}"; use unset')
-        self._assert_unshadowed(ref, "set")
         with self._lock:
             lock = FileLock(self.lock_path, timeout=5)
             with lock:
@@ -478,7 +483,6 @@ class CredentialsService(CredentialProvider):
 
     def unset(self, ref: str) -> None:
         credential_ref(ref)
-        self._assert_unshadowed(ref, "unset")
         with self._lock:
             lock = FileLock(self.lock_path, timeout=5)
             with lock:
@@ -494,7 +498,6 @@ class CredentialsService(CredentialProvider):
             self.set(ref_name, value)
         else:
             credential_ref(ref_name)
-            self._assert_unshadowed(ref_name, "set")
             self._credentials[ref_name] = value
 
     # ---- Record Seam Methods (<scope>/<id>) ----

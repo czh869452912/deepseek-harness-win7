@@ -1,0 +1,48 @@
+{
+  "part": "C8-EJ",
+  "upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "native": {
+    "run": "rc022-web-composition-native5-20261116-01",
+    "passed": 4
+  },
+  "consumers": {
+    "run": "rc022-web-composition-consumers-20261116-01",
+    "passed": 36
+  },
+  "configuration_comparison": {
+    "run": "rc022-web-composition-control-20261116-01",
+    "entries": 9,
+    "manifests": 6,
+    "differences": 0
+  },
+  "original_generated_inputs": [
+    {
+      "path": "packages/api/remote-access/lib/client.js",
+      "sha256": "9b5f0f744f6a3f71d75526e6c1712fee571a3f90f9f5d37c0864010c413adcb6",
+      "bytes": 15721
+    },
+    {
+      "path": "packages/api/remote-access/lib/client.js.map",
+      "sha256": "b27588b573002d0b5f453476def5a47f1a069d49eb5cb9ebf159c14a0a763e8f",
+      "bytes": 48079
+    },
+    {
+      "path": "packages/api/remote-access/lib/typert.host.js",
+      "sha256": "d2c4f59a9bf6b22eb0579d0e0ee974a633a322622e460836fb0008cb01b07c49",
+      "bytes": 17622
+    },
+    {
+      "path": "packages/mcp/mcp-manager/lib/typert.host.js",
+      "sha256": "bb1549b9619a64a0d887e3935d6cc843a01a1112aed9ef45f501177905a9ad25",
+      "bytes": 27424
+    }
+  ],
+  "verification_scope_reason": "Actual canonical Web profile composes the current connection/runtime, Remote access, working-directory, uploads and MCP manager/resources. All Loader entries activate; advertised public URL stays independent of listener protocol and trusted authorities. Actual Remote restart reaches the manager, unknown-name diagnostics survive, and shutdown withdraws services. Consumers cover real TLS, current runtime/startup, authenticated Connection, actual credentials restart and MCP manager/resources.",
+  "diagnostics": "Earlier native runs exposed omitted installation declarations, the original remote-access client bundle and generated Remote artifacts. Failure/pass logs remain separate; final consumers require zero inactive entries. The older credential-only pass was insufficient proof of complete composition.",
+  "limits": "Only nine selected bundle entries and six added manifests are compared with the fixed original. The remaining baseline bundle changes, full original frontend/runtime asset promotion, browser validation and C9 qualification remain pending. Production pin and historical acceptance are unchanged.",
+  "cleanup": {
+    "removed_bytes": 89402,
+    "owned_processes_remaining": 0,
+    "retained": "Commands, logs/XML, composition comparison, original asset hashes and compact real observations. Owned test workspaces/tmp/home removed; shared Source/toolchains retained until C9."
+  }
+}

@@ -248,4 +248,6 @@
 
 | C8-EI | MCP 管理服务：实例协调/注册寿命、重启、观察/Remote 探测及清理失败保留与替换阻断 | [MCP 管理服务](mcp-manager-checks.json) |
 
+| C8-EJ | Canonical Web 组合：新启动值、安装依赖/原版 Remote 元数据、MCP 与工作目录服务及零未激活条目 | [Web 组合](web-composition-checks.json) |
+
 后续继续完整应用组合；最终资格使用 C9 冻结候选的完整门禁。

@@ -8,8 +8,9 @@
 # The web-startup plugin injects `cmdlineArgs` and provides `webStartup` as an
 # ordinary Cordis service. Rows configured from flags inject that service, so
 # Loader resolves their expressions only after it exists. The web runtime then
-# provides bind-dependent `webRuntime` values to the trust fence.
-# `dsh --profile web --help` provides neither service, so no server binds.
+# validates the advertised public URL; Connection reads invocation authorities
+# directly from `webStartup`.
+# `dsh --profile web --help` provides no `webStartup`, so no server binds.
 
 # ── surface-specific values the base deliberately omits ─────────────────────
 
@@ -115,6 +116,10 @@
     - id: settings-controller
       name: '@deepseek-ai/dsh-api-settings-controller'
 
+    - id: mcp-manager
+      name: '@deepseek-ai/dsh-mcp-manager'
+      inject: [credentials]
+
     # Workspace commands and reconnect-safe projection over Typert Remote.
     - id: workspace-controller
       name: '@deepseek-ai/dsh-api-workspace-controller'
@@ -138,19 +143,17 @@
       config:
         host: !!js ctx.webStartup.host ?? '127.0.0.1'
         port: !!js ctx.webStartup.port ?? 3080
+        tls: !!js ctx.webStartup.tls
         compression: gzip
         compressionLevel: 1
         compressionThresholdBytes: 1024
 
     # Web glue owned by this bundle: resolves the built frontend dist (an
     # assembly fact of dsh-web-app, never user config), mounts the
-    # frontend-static fallback owner, registers the web-surface prompt
-    # section and the bash runtime variable, prints the URL line, and opens the
-    # canonical local URL after the full tree settles. The webStartup provider
-    # supplies invocation-only values; after the server binds, this row samples
-    # LAN trust once and provides `webRuntime`. A complete agent-preset persona
-    # suppresses the prompt section for that agent while retaining the host-owned
-    # shell variable.
+    # frontend-static fallback owner, registers the shell runtime variable,
+    # prints the URL line, and opens the canonical URL after the full Loader
+    # tree settles and the required-entry audit passes. Invocation-only values
+    # come from webStartup; publicUrl otherwise defaults to the bind address.
     - id: web-runtime
       name: '@deepseek-ai/dsh-web-app'
       inject: [webStartup]
@@ -158,7 +161,10 @@
         openBrowser: !!js ctx.webStartup.openBrowser
         printUrl: true
         surfaceContext: true
-        trustedHosts: !!js ctx.webStartup.trustedHosts
+        publicUrl: !!js ctx.webStartup.publicUrl
+
+    - id: harness-dev-context
+      name: '@deepseek-ai/dsh-harness-dev-context'
 
     # The client-plugin reload chain, always mounted: it is idle until a
     # rebuild watcher (pnpm run dev:web) actually rewrites client bundles. It
@@ -180,12 +186,11 @@
     # webserver under /api; browser half is the fetch/SSE client.
     - id: connection
       name: '@deepseek-ai/dsh-client-connection'
-      inject: [webRuntime]
+      inject: [webStartup]
       config:
-        # LAN literals derived from the active bind plus --trusted-host extras.
-        # A deployment adding authorities keeps this expression and concatenates
-        # its literals, for example: ['app.internal', ...ctx.webRuntime.trustedHosts].
-        trustedHosts: !!js ctx.webRuntime.trustedHosts
+        # Invocation authorities are independent of the advertised public URL.
+        # The listener's bind IP is accepted separately from this list.
+        trustedHosts: !!js ctx.webStartup.trustedHosts
 
     # Raw Blob and ReadableStream uploads run independently of Connection's
     # RPC and generation service.

@@ -333,3 +333,5 @@
 | C8-FX | Messages search account/readiness/live Config and per-carrier HTTPS coding negotiation | [Messages search](messages-search-checks.json) |
 
 | C8-FY | Managed credential precedence, masked previews and initial-load notifications | [Credential references](local-credential-reference-checks.json) |
+
+| C8-FZ | Staged credential document admission, alias budget and safe diagnostics | [Credential document](credential-document-checks.json) |

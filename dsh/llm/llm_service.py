@@ -10,9 +10,12 @@ from dsh.cordis.environment import LaunchEnvironmentSnapshot
 from dsh.typert.remote import Remote, bind_typert_remote, TypertRemoteFailure
 from dsh.llm.error import HarnessError
 
+_OFFLOAD_OMITTED = object()
+
 
 class LlmError(HarnessError, RuntimeError):
-    def __init__(self, message, code, status=None, providerRetryAfterMs=None, requestId=None):
+    def __init__(self, message, code, status=None, providerRetryAfterMs=None, requestId=None,
+                 offloadImages=_OFFLOAD_OMITTED):
         if not isinstance(message, str) or not message:
             raise ValueError("LlmError message must be a non-empty string")
         if not isinstance(code, str) or not code:
@@ -43,6 +46,13 @@ class LlmError(HarnessError, RuntimeError):
             self.failure["providerRetryAfterMs"] = providerRetryAfterMs
         if requestId is not None:
             self.failure["requestId"] = requestId
+        if offloadImages is not _OFFLOAD_OMITTED:
+            self.failure['offloadImages'] = offloadImages
+
+    @classmethod
+    def fromFailure(cls, failure):
+        return cls(failure['message'], failure['code'], **{key: failure[key]
+            for key in ('status', 'providerRetryAfterMs', 'requestId', 'offloadImages') if key in failure})
 
 
 LEGAL_API_KEY_PATTERN = r"^[\x21-\x7E]+$"

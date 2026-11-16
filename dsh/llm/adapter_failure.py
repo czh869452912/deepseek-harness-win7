@@ -28,9 +28,13 @@ def normalize_llm_failure(error):
             valid = valid and ('status' not in carried or type(status) in (int, float) and math.isfinite(status) and status == math.floor(status) and 100 <= status <= 599)
             valid = valid and ('providerRetryAfterMs' not in carried or type(delay) in (int, float) and math.isfinite(delay) and delay > 0)
             valid = valid and ('requestId' not in carried or isinstance(request_id, str) and bool(request_id))
+            offload = carried.get('offloadImages')
+            valid = valid and ('offloadImages' not in carried or type(offload) in (int, float)
+                and math.isfinite(offload) and 0 < offload <= 9007199254740991 and offload == math.floor(offload))
             if valid and code == own_code:
                 return dict(message=message, code=code, **{key: value for key, value in (
-                    ('status', status), ('providerRetryAfterMs', delay), ('requestId', request_id)) if value is not None})
+                    ('status', status), ('providerRetryAfterMs', delay), ('requestId', request_id),
+                    ('offloadImages', offload)) if value is not None})
     except Exception:
         pass
     try:

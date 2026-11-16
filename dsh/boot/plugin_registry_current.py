@@ -1,6 +1,7 @@
 """rc.3 bindings staged for coordinated bundle, protocol and pin promotion."""
 
 CURRENT_HARNESS_PLUGIN_CLASSES = {
+    '@deepseek-ai/dsh-compaction-image-offload': 'dsh.compaction.image_offload_plugin:CurrentImageOffload',
     '@deepseek-ai/dsh-mcp-manager': 'dsh.mcp.manager_current:CurrentMcpManager',
     '@deepseek-ai/dsh-mcp-resources': 'dsh.mcp.resources_current:CurrentMcpResources',
     '@deepseek-ai/dsh-web-app/startup': 'dsh.bundle.web_app.startup_current:CurrentWebStartup',

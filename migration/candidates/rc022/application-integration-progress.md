@@ -252,4 +252,6 @@
 
 | C8-EK | MCP 现代响应分派：避免旧 schema 遮蔽、默认续请求/轮数限制、手动返回及无处理器诊断 | [MCP 现代响应](mcp-dispatch-checks.json) |
 
+| C8-EL | 图片卸载恢复：Agent/摘要失败接缝、持久化图片选择与失败信息、重新派生计价及 V4 检查点 | [图片恢复](image-offload-checks.json) |
+
 后续继续完整应用组合；最终资格使用 C9 冻结候选的完整门禁。

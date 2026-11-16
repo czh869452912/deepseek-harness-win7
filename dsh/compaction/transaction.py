@@ -92,9 +92,26 @@ async def compact(engine, session, start, end, agent=None, signal=None,
             raise SurfaceChangedError("compaction: stale token measurement")
         priced = [node for node in measured if node["seq"] in selected]
         shadow_tokens = sum(node["heuristicTokens"] for node in priced)
-        summary = await engine.summarize(engine.summarization_input(session, selected), agent, signal)
+        while True:
+            try:
+                summary = await engine.summarize(engine.summarization_input(session, selected), agent, signal)
+                break
+            except Exception as error:
+                recover = getattr(engine, 'recover_summary', None)
+                if aborted(signal) or recover is None:
+                    raise
+                if select(session, start, end) != selected or meter.measure(session)['nodes'] != measured:
+                    raise SurfaceChangedError('compaction: selected surface changed during summarization') from error
+                if not await recover(error, agent, selected, signal):
+                    raise
+                selected = select(session, start, end)
+                measured = meter.measure(session)['nodes']
+                priced = [node for node in measured if node['seq'] in selected]
+                shadow_tokens = sum(node['heuristicTokens'] for node in priced)
         checkpoint = frame_summary(summary["summary"])
-        checkpoint_message = create_user_message(dict(content=checkpoint, source=dict(identity, kind="plugin", plugin="compact")))
+        source = (dict(identity, kind='compact-checkpoint') if getattr(session, 'format_version', 3) == 4
+            else dict(identity, kind='plugin', plugin='compact'))
+        checkpoint_message = create_user_message(dict(content=checkpoint, source=source))
         if meter.estimate_message(checkpoint_message) >= sum(n["tokens"] for n in priced):
             raise ValueError("summary is not smaller than the shadowed content")
         if manual:

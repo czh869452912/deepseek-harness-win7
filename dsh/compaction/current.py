@@ -44,6 +44,10 @@ class CurrentCompactionEngine(CompactionEngine):
     def replacement_surface(self, start, end):
         return dict(op='replace', startSeq=start, endSeq=end)
 
+    async def recover_summary(self, error, agent, source_event_seqs, signal):
+        return await self.ctx.waterfall('compaction/summary-error', dict(session=agent.session,
+            sourceEventSeqs=source_event_seqs, error=error, signal=signal), lambda: False)
+
 
 class CurrentCompactionBasic(Plugin):
     id = 'compaction-basic'

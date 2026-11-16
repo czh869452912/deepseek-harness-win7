@@ -66,8 +66,9 @@ async def summarize(engine, input, agent, signal):
     if not target.get("provider") or not target.get("model"):
         raise ValueError("no provider/model available for summarization")
     messages = list(input["messages"])
-    messages.append(create_user_message({"content": [{"type": "text", "text": INSTRUCTION}],
-                                         "source": {"kind": "plugin", "plugin": "dsh-compaction-basic"}}))
+    instruction = dict(role='user', content=[dict(type='text', text=INSTRUCTION)])
+    messages.append(instruction if getattr(session, 'format_version', 3) == 4 else create_user_message(dict(
+        instruction, source=dict(kind='plugin', plugin='dsh-compaction-basic'))))
     request = dict(provider=target["provider"], model=target["model"], messages=messages,
                    maxTokens=cfg["maxTokens"], sessionId=session.id, purpose="compaction", signal=signal)
     for key in getattr(engine, 'summarization_fields', ("system", "tools")):
@@ -83,6 +84,10 @@ async def summarize(engine, input, agent, signal):
     finish = assembler.finish
     if finish["kind"] in ("error", "aborted"):
         failure = finish.get("failure") or {}
+        if getattr(engine, 'recover_summary', None) is not None:
+            raise LlmError.fromFailure(dict(message=failure.get('message', 'summarization did not complete'),
+                code=failure.get('code', 'UNKNOWN'), **{key: failure[key]
+                    for key in ('status', 'providerRetryAfterMs', 'requestId', 'offloadImages') if key in failure}))
         error = RuntimeError(failure.get("message", "summarization did not complete"))
         error.name = 'Error'
         error.message = str(error)

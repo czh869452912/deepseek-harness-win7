@@ -55,3 +55,29 @@ def _project(event, context):
 
 
 imageOffloadProjection = dict(type='image/offload', project=_project)
+
+
+def offloadOldestImages(session, sourceEventSeqs, count):
+    targets = []
+    for seq in sourceEventSeqs:
+        if count == 0:
+            break
+        event = session.eventAt(seq)
+        if event['type'] not in ('user/message', 'tool/result'):
+            continue
+        message = session.deriveEventMessage(event)
+        indexes, image_index = [], 0
+        for block in message['content']:
+            if count == 0:
+                break
+            if block['type'] == 'image':
+                if block.get('offloaded') is not True:
+                    indexes.append(image_index)
+                    count -= 1
+                image_index += 1
+        if indexes:
+            targets.append(dict(seq=seq, imageIndexes=indexes))
+    if not targets:
+        return False
+    session.append('image/offload', dict(targets=targets))
+    return True

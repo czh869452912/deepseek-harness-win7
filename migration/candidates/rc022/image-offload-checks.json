@@ -1,0 +1,31 @@
+{
+  "part": "C8-EL",
+  "upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "paired": {
+    "run": "rc022-image-offload-paired4-20261116-01",
+    "observations": 33,
+    "differences": 0
+  },
+  "native": {
+    "run": "rc022-image-offload-native2-20261116-01",
+    "passed": 5
+  },
+  "consumers": {
+    "run": "rc022-image-offload-consumers-20261116-01",
+    "passed": 856
+  },
+  "source": {
+    "run": "rc022-image-offload-source-20261116-01",
+    "passed": 17,
+    "failed": 0
+  },
+  "verification_scope_reason": "Actual original/native V4 Session and plugin listeners compare ordered selection of oldest retained image occurrences, already-offloaded occurrences, reverse order, empty/exhausted choices, durable decisions and replay, aborted/foreign failures, plugin disposal and failure-snapshot validation. Native real Agent/LLM and persistence integration retries after durable image repair without llm/retry events; real summary calls rederive selected messages and reprice after repair, preserve omission on later outage, stop after selected images exhaust, leave outside nodes intact and persist a V4 producer-owned compact-checkpoint. Consumers include historical/current compaction transactions, Agent compaction, image catalog/replay, token meter and canonical Web zero-inactive-entry boot.",
+  "diagnostics": "Original observer initially read the session surface after unloading its owning projection and imported normalization from the public entry rather than its actual internal module; corrected observer lifecycle/import. Native paired values were equal after serialization but included FrozenDict snapshots; serialize observations at the same JSON boundary. First real persistence test identified the V4 checkpoint still used retired plugin source; fixed to original compact-checkpoint and use a source-free auxiliary instruction. Earlier raw diagnostics remain.",
+  "activation_boundary": "Current image-offload provider and exact original manifest are mounted in canonical base composition. Carried offloadImages now survives LlmError and validated normalization. Current compaction exposes summary-error recovery, rederives/reprices after a durable repair and writes V4 checkpoint sources. Historical v3 checkpoint and summary error contracts remain for historical consumers.",
+  "limits": "Source 17 passing tests are reference evidence and do not establish all native interleavings, custom summarizer behavior, live cloud image-budget behavior or full baseline/release acceptance. Remaining model listing/auth provider split, full compaction region invariants/admission interactions and final qualification are still pending.",
+  "cleanup": {
+    "removed_bytes": 117172,
+    "owned_processes_remaining": 0,
+    "retained": "Paired raw observations/hash reports, real Agent/summary/persistence observations, failure/pass commands/logs/XML, exact manifest hash and Source report retained. Owned pytest workspaces/tmp/home removed; shared Source/toolchains retained until C9."
+  }
+}

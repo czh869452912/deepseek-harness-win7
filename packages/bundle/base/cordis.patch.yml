@@ -409,6 +409,9 @@
         headChars: 4096
         tailChars: 1024
 
+    - id: image-offload
+      name: '@deepseek-ai/dsh-compaction-image-offload'
+
     - id: tool-todo
       name: '@deepseek-ai/dsh-tool-todo'
       config:

@@ -1,0 +1,12 @@
+{
+  "batch": "C8-FU",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "scope": "Pure anonymous-fetch URL, MIME and charset policy; HTTP provider activation follows separately.",
+  "paired": {"observations": 2641, "differences": 0, "report": ".goose/out/rc022-fetch-policy-paired6-20261116-01/report.json", "canonical_source_sha256": "cd2fc2841abfdc871a60605876592340edf1cec7a852bbe33cbccaa08fe9a0aa"},
+  "native": {"passed": 9, "report": ".goose/out/rc022-fetch-policy-native-20261116-01/command.json"},
+  "source": {"passed": 80, "report": ".goose/out/rc022-fetch-policy-source-20261116-01/command.json"},
+  "coverage": ["Actual Source fetch policy and pinned Node v24.9.0 TextDecoder", "UTF-16 URL length, scheme, credentials, malformed file authorities, MIME classification and charset parsing", "220 accepted aliases, every byte of 27 single-byte encodings, seeded multibyte and incremental decoding corpus", "UTF-8 invalid-prefix recovery, BOM and fatal decoder reset, GB18030 four-byte boundaries, ISO-2022-JP escape/state/chunk recovery including pinned ICU output overflow", "Reproducible runtime-independent static maps from the pinned Node/ICU: all DBCS pairs, EUC-JP triples and 1587600 GB18030 four-byte pointers", "Shared URL changes checked against account protocol and Web API transport direct consumers"],
+  "decoder_resource": {"bytes": 2760599, "sha256": "7dd8efa14000991e76afaefccaa7d47e63194634cbfc391e234f62853aea657b", "regenerated_identically": true},
+  "limits": ["Recorded URL corpus does not establish general WHATWG conformance", "Static tables reproduce the qualified Node/ICU rather than assuming Python codecs have identical mappings", "Anonymous HTTP carrier and plugin remain subsequent work; targeted checks do not establish release acceptance"],
+  "cleanup": {"removed_bytes": 9901728, "removed": ["Owned pytest/tmp/home assets", "Obsolete and duplicate generated decoder tables and initial extractor/builtin copies after hash recording"], "retained": "Commands, paired observations including initial failures, source/native logs and table hashes; no remaining task-owned process."}
+}

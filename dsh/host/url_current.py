@@ -28,6 +28,13 @@ def _url(value):
     scheme = match.group(1).lower()
     if scheme not in ('http', 'https', 'ftp', 'ws', 'wss', 'file'):
         return dict(protocol=scheme+':', origin='null', pathname='', search='', hash='', credentials=False, href=text, hostname='')
+    if scheme == 'file':
+        try:
+            file_url = urlsplit(text.replace('\\', '/'))
+            if file_url.username is not None or file_url.password is not None or file_url.port is not None:
+                raise ValueError('invalid file authority')
+        except ValueError:
+            raise InvalidUrlError()
     parsed_host = parse_url(text)
     if parsed_host is None:
         if scheme == 'file':

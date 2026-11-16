@@ -10,6 +10,7 @@ import threading
 import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
+from types import SimpleNamespace
 
 ROOT=Path(__file__).resolve().parents[1]
 sys.path.insert(0,str(ROOT))
@@ -50,13 +51,13 @@ def prepare(output):
     return [path]
 
 
-async def observe():
+async def observe(entries=None, exporter_factory=None):
     from dsh.session.otel_session_channel_current import SessionLogReporter
     from dsh.session.otel_http_current import SessionHttpExporter,log_transport_options,resolve_headers
     from dsh.cordis.json_text import stringify_json
     from scripts.rc022_otel_wire_probe import cases as wire_cases
     record=wire_cases()[0]['records'][0];rows=[]
-    for entry in cases():
+    for entry in cases() if entries is None else entries:
         if entry['mode']=='config':
             try:
                 config=log_transport_options(entry['options'],entry['env'])
@@ -64,7 +65,7 @@ async def observe():
                 rows.append(dict(value=json.loads(stringify_json(config))))
             except Exception as failure:rows.append(dict(error=str(failure)))
             continue
-        hits=[];warnings=[];calls=[0];agent_calls=[]
+        hits=[];warnings=[];calls=[0];agent_calls=[];destroyed=[]
         class Handler(BaseHTTPRequestHandler):
             protocol_version='HTTP/1.1'
             def log_message(self,*args):pass
@@ -74,16 +75,29 @@ async def observe():
                 selected=dict(contentType=self.headers.get('content-type'),authorization=self.headers.get('authorization'),
                     tenant=self.headers.get('x-tenant'),agent=self.headers.get('user-agent'),compression=self.headers.get('content-encoding'))
                 hits.append(dict(document=json.loads(body),headers=selected))
+                if entry.get('event'):selected['acceptEncoding']=self.headers.get('accept-encoding')
                 mode=entry['mode'];attempt=len(hits)
                 if mode=='reset-once' and attempt==1:
                     self.connection.shutdown(socket.SHUT_RDWR);self.connection.close();return
                 status=201 if mode=='created' else 302 if mode=='redirect' else 400 if mode=='bad-request' else 500 if mode=='server-error' else 503 if mode in ('retry-exhausted','retry-deadline') or mode=='retry-once' and attempt==1 else 200
                 data=b'bad-json' if mode=='bad-json' else b'x'*4194305 if mode=='oversized' else b'{}'
+                coding=entry.get('responseEncoding')
+                if coding=='gzip':data=gzip.compress(data,mtime=0)
+                if coding=='deflate':
+                    import zlib
+                    data=zlib.compress(data)
+                if coding=='br':
+                    import brotli
+                    data=brotli.compress(data)
+                if coding=='zstd':
+                    import zstandard
+                    data=zstandard.ZstdCompressor().compress(data)
                 if mode=='timeout':time.sleep(.2)
                 try:
                     self.send_response(status)
+                    if coding:self.send_header('Content-Encoding',coding)
                     if status==302:self.send_header('Location','/redirected')
-                    if status==503:self.send_header('Retry-After','20' if mode=='retry-deadline' else '0')
+                    if status==503:self.send_header('Retry-After',entry.get('retryAfter','20' if mode=='retry-deadline' else '0'))
                     self.send_header('Content-Length','10' if mode=='truncated' else str(len(data)))
                     self.send_header('Content-Type','application/json');self.end_headers();self.wfile.write(data)
                     if mode=='truncated':self.close_connection=True
@@ -103,7 +117,8 @@ async def observe():
             def factory(protocol):
                 agent_calls.append(protocol)
                 if agent=='factory-error':raise ConnectionResetError('synthetic callback failure')
-                return ssl.create_default_context(cafile=str(cert)) if protocol=='https:' else None
+                return SimpleNamespace(ssl_context=ssl.create_default_context(cafile=str(cert)) if protocol=='https:' else None,
+                    destroy=lambda:destroyed.append(True))
             options['httpAgentOptions']=factory
         if agent=='headers-error':
             def failed_headers():raise ConnectionResetError('synthetic callback failure')
@@ -118,17 +133,24 @@ async def observe():
         environment.update(entry['env'])
         previous={key:os.environ.get(key) for key in entry['env']}
         os.environ.update(entry['env'])
-        exporter=SessionHttpExporter(options,environment=environment)
+        extra={};timer=None
+        if entry.get('event'):
+            from dsh.core.abort import AbortController
+            controller=AbortController();extra['signal']=controller.signal
+            if entry.get('abort')=='before':controller.abort()
+            if entry.get('abort')=='delay':timer=asyncio.get_running_loop().call_later(.03,controller.abort)
+        exporter=(exporter_factory or SessionHttpExporter)(options,environment=environment,**extra)
         reporter=SessionLogReporter(dict(scope=dict(name='fixture',version='1'),resourceAttributes={},
             onFailure=lambda message,error=None:warnings.append(dict(message=message,error=None if error is None else str(error)))),exporter)
         try:reporter.reportSessionLog(record);await reporter.shutdown()
         finally:
             await exporter.shutdown()
+            if timer is not None:timer.cancel()
             await asyncio.get_running_loop().run_in_executor(None,server.shutdown);server.server_close();thread.join()
             for key,value in previous.items():
                 if value is None:os.environ.pop(key,None)
                 else:os.environ[key]=value
-        rows.append(dict(hits=hits,warnings=warnings,headerCalls=calls[0],agentCalls=agent_calls))
+        rows.append(dict(hits=hits,warnings=warnings,headerCalls=calls[0],agentCalls=agent_calls,agentDestroyed=len(destroyed)))
     return rows
 
 

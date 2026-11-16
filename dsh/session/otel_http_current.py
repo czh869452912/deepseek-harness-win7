@@ -102,6 +102,7 @@ class SessionHttpExporter:
         self.config = log_transport_options(options, environment)
         self.tls_context = tls_context
         self._agent_ready = False
+        self._selected_agent = None
         self.pending = set()
         self.closed = False
         self._shutdown = None
@@ -112,6 +113,7 @@ class SessionHttpExporter:
         selected = self.options.get('httpAgentOptions')
         if callable(selected):
             agent = await await_callback_result(selected(protocol))
+            self._selected_agent = agent
             context = agent if isinstance(agent, ssl.SSLContext) else getattr(agent, 'ssl_context', None)
             if context is not None: self.tls_context = context
         elif protocol == 'https:' and selected:

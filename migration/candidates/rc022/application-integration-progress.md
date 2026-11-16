@@ -351,3 +351,5 @@
 | C8-GG | Staged byte/count Session-log queue, exporter settlement and shutdown ownership | [OTel Session channel](otel-session-channel-checks.json) |
 
 | C8-GH | Staged actual Session HTTP/TLS exporter, retry and explicit identity isolation | [OTel HTTP](otel-http-checks.json) |
+
+| C8-GI | Staged cancellable ordinary-event HTTP transport and decoded response bounds | [OTel event HTTP](otel-event-http-checks.json) |

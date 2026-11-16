@@ -1,0 +1,35 @@
+{
+  "part": "C8-GI",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "scope": "Staged ordinary-event cancellable HTTP exporter",
+  "paired": {
+    "run": "rc022-otel-event-http-paired6-20261116-01",
+    "observations": 43,
+    "differences": 0,
+    "comparison": "Actual Source createEventLogExporter and Native EventHttpExporter against owned HTTP/HTTPS collectors. Both are injected into a fixed-record Session channel harness to isolate transport behavior. Compare documents, selected headers, attempts, cancellation/failure results and agent creation/destruction. This does not establish ordinary-event batching parity."
+  },
+  "verification": {
+    "native": "31 passed: event transport corpus, pre-aborted custom reason identity, shutdown ownership/agent destruction, Session HTTP/channel/wire/record regressions and shared proxy/TLS/cancellation consumers.",
+    "source": "43 event transport observations; 97 Session observations rerun successfully in rc022-otel-http-paired5-20261116-01 after extending the shared collector harness and preserving the selected agent reference.",
+    "scope_reason": "Covers the separate ordinary-event HTTP path and both consumers of the changed shared transport/harness code."
+  },
+  "behavior": [
+    "Ordinary events use Got-compatible selected User-Agent/Accept-Encoding behavior, gzip requests and a single per-send header snapshot across HTTP retries. Network failures are not retried; only the selected HTTP statuses receive up to five retries.",
+    "Channel abort and total HTTP timeout interrupt active reads and retry waits; pre-aborted custom exception reasons retain identity. Callback failures bypass retries.",
+    "Redirect, HTTP failure, remote disconnect, truncated body and cancellation outcomes match the observed Source cases. Successful compressed collector responses are decoded; the four MiB limit applies after gzip/deflate/Brotli/Zstd decoding.",
+    "Owned shutdown waits for admitted requests and destroys a selected factory agent once; cancelling an awaiter does not cancel shared cleanup."
+  ],
+  "diagnostics": [
+    "Early comparisons exposed redirect/truncation/network error differences and timeout-versus-explicit-abort precedence. These were corrected; failed comparison directories retain their raw Source/Native observations."
+  ],
+  "limitations": [
+    "The native HTTP implementation does not reproduce arbitrary Got hooks, Node Agent pooling/options or all platform-specific socket/TLS diagnostic strings. Existing Session HTTP TLS adaptation limits still apply.",
+    "Ordinary-event SDK batching, otel service activation and production consumer replacement remain follow-up work. Full migration/release, Portable/browser and Windows 7 qualification remain pending."
+  ],
+  "cleanup": {
+    "bytes_removed": 386990,
+    "receipts": ["rc022-otel-event-http-native-20261116-01/cleanup.json", "rc022-otel-event-http-control-20261116-01/certificate-cleanup.json"],
+    "removed": "Owned pytest fixtures, isolated tmp/home trees, completed collector certificate copies (including the preceding Session collector copies), and collector threads/sockets. No matching test processes remain.",
+    "retained": "Commands, logs/XML, paired input/observation hashes and failure diagnostics. Tracked certificate fixtures and required shared Source/toolchains remain available; reconstructed copies were removed."
+  }
+}

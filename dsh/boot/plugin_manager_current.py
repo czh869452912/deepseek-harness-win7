@@ -6,12 +6,14 @@ import os
 import sys
 import uuid
 from pathlib import Path
+from urllib.parse import urlsplit, parse_qs
 
 from dsh.boot.bundle_platform import UnsupportedBundlePlatformError
 from dsh.boot.plugin_switch import flatten, write_plugin_enabled
 from dsh.boot.plugin_bundle_metadata import (OFFICIAL_DATA, OFFICIAL_CATALOG, OPTIONAL_BUNDLES,
     bundle_directory, bundle_manifest, bundle_selection, official_bundle_install_target, update_refusal)
 from dsh.boot.plugin_install_spec import dependency_spec, parse_install_spec, InvalidInstallSpecError
+from dsh.boot.plugin_bundle_detail import read_bundle_document, read_bundle_image
 from dsh.boot.plugin_compatibility import evaluate_plugin_compatibility, get_dsh_runtime_version
 from dsh.boot.package_meta import read_plugin_meta
 from dsh.boot.plugin_packages import ResolutionRestartRequired
@@ -28,8 +30,9 @@ from dsh.cordis.schema import Schema
 from dsh.cordis.utils import js_to_string, _js_own_enumerable_keys
 from dsh.core.abort import AbortController
 from dsh.host.plugin_inventory.current import read_plugin_inventory
-from dsh.typert.remote import Remote, TypertRemoteService
+from dsh.typert.remote import Remote, TypertRemoteService, RemoteError, remote_error_of
 from dsh.util.atomic_write import write_file_atomic
+from dsh.util.plugin_detail import NPM_FILE_SOURCES, detail_image_response
 
 
 PROTECTED_PLUGINS = frozenset(OFFICIAL_DATA['protectedPlugins'])
@@ -68,7 +71,11 @@ def diagnostic_version(value):
 
 class CurrentPluginManager(TypertRemoteService):
     inject = ['loader', 'profileContext']
-    Config = Schema.object(dict(lockWaitMs=Schema.number().step(1).min(0).default(120000)))
+    Config = Schema.object(dict(lockWaitMs=Schema.number().step(1).min(0).default(120000),
+        detailMaxBytes=Schema.natural().min(1).default(1024*1024),
+        detailImageMaxBytes=Schema.natural().min(1).default(5*1024*1024),
+        detailFetchTimeoutMs=Schema.natural().min(1).max(2147483647).default(15000),
+        detailNpmFileSources=Schema.array(Schema.union(NPM_FILE_SOURCES)).min(1).default(list(NPM_FILE_SOURCES))))
 
     def __init__(self, ctx, config=None):
         super().__init__(ctx, 'pluginManager')
@@ -80,6 +87,12 @@ class CurrentPluginManager(TypertRemoteService):
             self._protects_manager(name)
         self.lock_wait_ms = (config or {}).get('lockWaitMs', 120000)
         self.abort = AbortController()
+        values = dict(detailMaxBytes=1024*1024, detailImageMaxBytes=5*1024*1024,
+            detailFetchTimeoutMs=15000, detailNpmFileSources=list(NPM_FILE_SOURCES))
+        values.update(config or {})
+        self.detail = dict(profile=self.profile, maxDocumentBytes=values['detailMaxBytes'],
+            maxImageBytes=values['detailImageMaxBytes'], npmFileSources=values['detailNpmFileSources'],
+            timeoutMs=values['detailFetchTimeoutMs'], lifetime=self.abort.signal)
         self.package_operations = set()
         self.diagnostics = set()
         def close():
@@ -88,6 +101,36 @@ class CurrentPluginManager(TypertRemoteService):
                 await asyncio.gather(*list(self.package_operations), return_exceptions=True)
             return drain()
         ctx.effect(lambda: close)
+        def register(scope):
+            scope.effect(lambda: scope.get('connection').fetch.register(dict(
+                path='/api/plugin-manager/detail-file', methods=['GET'], requestBody='buffered',
+                fetch=self._serve_detail_file)), 'plugin-manager: detail-file')
+        ctx.inject(['connection'], register)
+
+    async def _listed_bundle(self, name):
+        bundle = next((row for row in await self.listBundles() if row['name'] == name), None)
+        if bundle is None:raise RemoteError('plugin-manager/unknown-bundle', 'No such bundle: '+name, dict(name=name))
+        return bundle
+
+    @Remote('readBundleDetail')
+    async def readBundleDetail(self, name, language, options=None):
+        return await read_bundle_document(await self._listed_bundle(name), language, (options or {}).get('npmFileSources') or [], self.detail)
+
+    async def _serve_detail_file(self, request):
+        params = parse_qs(urlsplit(_field(request, 'url')).query, keep_blank_values=True)
+        if any(key not in params for key in ('bundle', 'document', 'path')):
+            return detail_image_response('invalid', 'no-store')
+        bundle, document, path = [params[key][0] for key in ('bundle', 'document', 'path')]
+        sources = params.get('sources', [''])[0].split(',')
+        try:
+            image = await read_bundle_image(await self._listed_bundle(bundle), document, path, sources, self.detail)
+            return detail_image_response(image, 'no-store')
+        except Exception as error:
+            failure = remote_error_of(error)
+            if failure is not None:
+                if failure['code'] == 'plugin-manager/unknown-bundle':return detail_image_response(None, 'no-store')
+                if failure['code'] == 'plugin-manager/detail-unavailable':return detail_image_response(failure['details']['reason'], 'no-store')
+            raise
 
     @Remote('listPlugins')
     async def listPlugins(self):

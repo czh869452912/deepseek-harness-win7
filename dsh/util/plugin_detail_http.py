@@ -91,9 +91,9 @@ async def fetch_body(url, max_bytes, signal=NEVER_ABORTED, options=None):
 
 
 class NpmFiles:
-    def __init__(self, name, version, sources, options, fetch=fetch_body):
+    def __init__(self, name, version, sources, options, fetch=None):
         self.name, self.version, self.sources = name, version, sources
-        self.options, self.fetch = options, fetch
+        self.options, self.fetch = options, fetch_body if fetch is None else fetch
         self.key = 'npm:'+name+'@'+version
 
     async def read(self, path, max_bytes, signal=NEVER_ABORTED):

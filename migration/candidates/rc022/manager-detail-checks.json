@@ -1,0 +1,10 @@
+{
+  "part": "C8-BQ",
+  "upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "paired": {"run": "rc022-manager-detail-paired2-20261116-01", "cases": 18, "passed": true},
+  "native": {"run": "rc022-manager-detail-native-20261116-01", "passed": 12, "failed": 0},
+  "source": {"run": "rc022-manager-detail-source-20261116-01", "passed": 7, "failed": 0},
+  "verification_scope_reason": "Actual manager services boot profile Include/Loader and an injected Connection Fetch registry. Compare localized/readme/no-document results, invalid language/detail and unknown bundle typed Remote failures; official offered detail files use preferred configured CDN through actual shared document readers with controlled HTTP answers. Exact GET route, malformed/unknown/traversal responses, safe image headers and no-store, newly replaced image bytes, image/document size failures and route disappearance on manager Fiber disposal are paired. Direct core, bundle inventory/HMR and version exemption consumers pass. Full original Source bundle-detail suite passes. Initial oracle used an incorrect Typert source path; corrected to packages/typert/protocol before pairing, retaining raw failure.",
+  "activation_boundary": "Current manager adds readBundleDetail Remote plus reversible Connection /api/plugin-manager/detail-file route and detail Config defaults. Production composition, package installation/update/removal/inspection remain pending. Transport was independently qualified in C8-BP; this batch is not a full browser/release acceptance.",
+  "cleanup": {"removed_bytes": 1664752, "external_empty_roots_removed": 1, "owned_processes_remaining": 0, "retained": "Compact commands, logs, XML/JSON and paired observations including resolved observer failure; shared Source/toolchains through C9."}
+}

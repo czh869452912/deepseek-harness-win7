@@ -282,4 +282,6 @@
 
 | C8-EZ | Messages SSE 字节边界、错误分类与上游清理；修复 headless 执行器组合及 v4 标题生产者交接 | [帧与集成消费链](messages-framing-checks.json) |
 
+| C8-FA | V4.1 图片网格与目标宽高、逐次计价、持久化 offload 准入及 Files 位置 | [图片请求规则](messages-images-checks.json) |
+
 后续继续完整应用组合；最终资格使用 C9 冻结候选的完整门禁。

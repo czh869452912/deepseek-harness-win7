@@ -1,0 +1,12 @@
+{
+  "part": "C8-FA",
+  "upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "paired": {"run": "rc022-messages-images-paired-20261116-01", "observations": 1179, "differences": 0},
+  "native": {"run": "rc022-messages-images-native2-20261116-01", "passed": 46, "failed": 0},
+  "source": {"run": "rc022-messages-images-source-20261116-01", "passed": 40, "failed": 0},
+  "verification_scope_reason": "Fixed Source V4.1 1024-token grid and no aspect clamp, request dimensions with no enlargement, explicit/low pixel budgets and 4096-side cap; per-occurrence pricing uses durable offload marks and current access paths. Raw/base64 represented-byte and count quanta are paired. Image preparation covers missing capability/service, invalid roles, duplicate attachment version preparation versus every Files occurrence location, offloaded-only histories, non-mutating inline rejection and exact cancellation reason propagation. Native wire, durable offload, historical pricing and actual attachment encoding consumers pass.",
+  "activation_boundary": "Reusable image request and pricing helpers for the split Messages adapter. Historical combined provider remains selected; concrete attachment width/height target encoding and complete authenticated HTTP/Files recovery are subsequent batches.",
+  "limits": "Paired preparation uses controlled version bytes and attachment/files capabilities; no codec-byte equivalence, actual upload or full release acceptance is claimed. Pillow retains its distinct encoder identity.",
+  "resolved_failures": ["First native run had one invalid test configuration: raw byte quantum exceeded the intentionally tiny request budget. Fixture quantum corrected; final native2 passes."],
+  "cleanup": {"removed_bytes": 841337, "owned_processes_remaining": 0, "retained": "Paired inputs/results/hash report, Source JSON, native commands/logs/XML and compact observations. Owned mapped/external workspaces and tmp/home removed; shared Source/toolchains retained until C9."}
+}

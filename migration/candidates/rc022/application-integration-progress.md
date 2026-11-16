@@ -110,5 +110,6 @@
 | C8-BM | 注册源规范化、私有源隔离与重试归因、已发布版本排序和元数据 | [注册源与版本规则](registry-policy-checks.json) |
 | C8-BN | 构建脚本待批准策略、精确许可、凭据过滤与 YAML 原子编辑 | [构建批准](build-approval-checks.json) |
 | C8-BO | 插件详情文档选择、语言回退、本地文件边界与图片响应 | [详情读取基础](plugin-detail-checks.json) |
+| C8-BP | 详情 HTTP/CDN 实读、重定向边界、超时取消与正文完整性 | [详情网络读取](detail-http-checks.json) |
 
 后续继续设置及完整应用组合；最终资格使用 C9 冻结候选的完整门禁。

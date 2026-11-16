@@ -67,12 +67,20 @@ class _RejectRedirectHandler(urllib.request.HTTPRedirectHandler):
     http_error_301 = http_error_303 = http_error_307 = http_error_308 = http_error_302
 
 
+class _ManualRedirectHandler(urllib.request.HTTPRedirectHandler):
+    def http_error_302(self, request, response, code, message, headers):
+        # Let HTTPErrorProcessor expose the original response to its owner.
+        return None
+
+    http_error_301 = http_error_303 = http_error_307 = http_error_308 = http_error_302
+
+
 @contextlib.contextmanager
 def open_stream(request, signal=None, idle_timeout_ms=300000, on_activity=None, read_error_body=True,
                 redirect_policy='follow', raise_http_errors=True):
     from dsh.llm.llm_service import LlmError
-    if redirect_policy not in ('follow', 'error'):
-        raise ValueError('HTTP redirect policy must be follow or error')
+    if redirect_policy not in ('follow', 'error', 'manual'):
+        raise ValueError('HTTP redirect policy must be follow, error or manual')
     request = urllib.request.Request(request) if isinstance(request, str) else copy.copy(request)
     request.headers = {name: value for name, value in request.headers.items() if name.lower() != 'host'}
     request.unredirected_hdrs = {name: value for name, value in request.unredirected_hdrs.items() if name.lower() != 'host'}
@@ -348,7 +356,7 @@ def open_stream(request, signal=None, idle_timeout_ms=300000, on_activity=None, 
     try:
         state.update(reading=True, since=time.monotonic())
         try:
-            redirect = _FetchRedirectHandler() if redirect_policy == 'follow' else _RejectRedirectHandler()
+            redirect = {'follow':_FetchRedirectHandler, 'error':_RejectRedirectHandler, 'manual':_ManualRedirectHandler}[redirect_policy]()
             from dsh.host.http_proxy import proxy_handler
             response = urllib.request.build_opener(proxy_handler(), Http(), Https(), redirect).open(request, timeout=idle_timeout_ms / 1000)
         except urllib.error.HTTPError as error:

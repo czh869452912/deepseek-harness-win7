@@ -1,0 +1,12 @@
+{
+  "part": "C8-BP",
+  "upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "paired": {"run": "rc022-detail-http-paired2-20261116-01", "cases": 23, "passed": true},
+  "native": {"run": "rc022-detail-http-native2-20261116-01", "passed": 13, "failed": 0},
+  "native_transport_consumers": {"run": "rc022-detail-http-native-consumers-20261116-01", "passed": 122, "failed": 0},
+  "source": {"run": "rc022-detail-http-source-20261116-01", "selected_passed": 7, "unselected": 1, "failed": 0},
+  "verification_scope_reason": "Actual loopback HTTP compared with Source Fetch: successful/empty/non-2xx bodies, declared and streamed bounds, same-origin redirects, cross-origin refusal and hop limit, header timeout, original caller/disposal cancellation, cancellation during body reads, gzip decoding and compressed oversize. CDN file helper compares retryable status/network failures, authoritative 404, other failure propagation, cancellation and README probing. First pairing exposed urllib read1 accepting a truncated content-length body; new detail reader detects remaining bytes and rejects as network. New manual redirect option retains existing follow/error defaults; real LLM cancellation, web-search redirect refusal and proxy HTTP/TLS/process consumers all pass. Original Source file suite selects 7 network/helper tests; its file-symlink local test is explicitly unselected because Windows privileges are unavailable, and Native junction/local-file observations were qualified in C8-BO. Tests additionally verify Task cancellation joins the owned HTTP worker.",
+  "legal_adaptation": "Python 3.8 uses an owned executor worker over the existing proxy-aware cancellable socket transport, with a total deadline, caller/disposal subscriptions, response/socket cleanup and worker join. Bounded DNS workers remain subject to the existing non-cancellable platform getaddrinfo adaptation. Requests advertise supported gzip/deflate encodings.",
+  "activation_boundary": "Shared HTTP/CDN detail providers; manager Remote/route integration follows. No arbitrary network endpoint or complete release qualification claimed.",
+  "cleanup": {"removed_bytes": 348440, "external_empty_roots_removed": 1, "owned_processes_remaining": 0, "retained": "Compact commands, logs, XML/JSON and paired observations including resolved failures; shared Source/toolchains through C9."}
+}

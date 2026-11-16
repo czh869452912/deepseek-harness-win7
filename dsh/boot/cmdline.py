@@ -254,6 +254,7 @@ class Command:
         # (`--trusted-host` -> `trustedHost`), and the negation prefix removed.
         opt_name = camel_case(flag_name[3:] if negate else flag_name)
         self._options.append({
+            "flags": flags,
             "name": opt_name,
             "long": long_name,
             "short": short_name,
@@ -308,18 +309,21 @@ class Command:
             for argument in self._arguments:
                 lines.append(f"  {argument['name']:<12} {argument['description']}".rstrip())
         lines.append("\nOptions:")
-        lines.append(f"  {self._help_flags}  {self._help_description}")
-        for opt in self._options:
-            flag_str = f"--{opt['long']}" if opt["long"] else f"-{opt['short']}"
-            if opt["takes_arg"]:
-                flag_str += f" <{opt['name']}>"
-            lines.append(f"  {flag_str:<12} {opt['description']}")
+        import textwrap
+        help_rows = [(opt['flags'], opt['description']) for opt in self._options]
+        help_rows.append((self._help_flags, self._help_description))
+        width = max(len(flags) for flags, _ in help_rows) + 4
+        for flags, description in help_rows:
+            prefix = ('  '+flags).ljust(width)
+            lines.append(textwrap.fill(description, width=80, initial_indent=prefix,
+                subsequent_indent=' '*width, break_long_words=False, break_on_hyphens=False)
+                if description else prefix.rstrip())
         if self._commands:
             lines.append("\nCommands:")
             for cmd in self._commands:
                 lines.append(f"  {cmd._name}")
         if self._help_text_after:
-            lines.append(self._help_text_after.rstrip("\n"))
+            lines.append(self._help_text_after)
         text = "\n".join(lines) + "\n"
         self._write_out(text)
 
@@ -360,13 +364,13 @@ class Command:
                         values = [key_val[1]]
                     else:
                         values = []
-                        while idx + 1 < len(argv) and not argv[idx + 1].startswith("-"):
+                        while idx + 1 < len(argv) and (not values or not argv[idx + 1].startswith("-")):
                             idx += 1
                             values.append(argv[idx])
                             if not matching.get("variadic"):
                                 break
                     if not values:
-                        self.error(f"error: option '{arg}' argument missing")
+                        self.error("error: option '%s' argument missing" % matching['flags'])
                     if matching.get("variadic"):
                         parsed[matching["name"]] = list(parsed.get(matching["name"], [])) + values
                     else:
@@ -379,11 +383,11 @@ class Command:
                 if not matching:
                     self.error(f"error: unknown option '{arg}'")
                 if matching["takes_arg"]:
-                    if idx + 1 < len(argv) and not argv[idx + 1].startswith("-"):
+                    if idx + 1 < len(argv):
                         idx += 1
                         val = argv[idx]
                     else:
-                        self.error(f"error: option '{arg}' argument missing")
+                        self.error("error: option '%s' argument missing" % matching['flags'])
                     parsed[matching["name"]] = val
                 else:
                     parsed[matching["name"]] = not matching.get("negate", False)

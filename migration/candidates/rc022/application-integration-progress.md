@@ -220,4 +220,6 @@
 
 | C8-DU | 当前 Web 运行时/服务绑定、公告 URL 与代理前缀、认证页面及 Loader 就绪/SSH 行为 | [Web 运行时](web-runtime-checks.json) |
 
+| C8-DV | Web 启动 TLS/公告 URL、参数拒绝与帮助、共享解析器及惰性配置消费者 | [Web 启动](web-startup-checks.json) |
+
 后续继续完整应用组合；最终资格使用 C9 冻结候选的完整门禁。

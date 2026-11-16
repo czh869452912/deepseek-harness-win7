@@ -1,0 +1,12 @@
+{
+  "part": "C8-DV",
+  "upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "paired": {"run": "rc022-web-startup-paired3-20261116-01", "observations": 20, "differences": 0},
+  "native": {"run": "rc022-web-startup-native-20261116-01", "passed": 2},
+  "consumers": {"run": "rc022-web-startup-consumers-20261116-01", "passed": 38},
+  "source": {"run": "rc022-web-startup-source-20261116-01", "passed": 10, "failed": 0, "pending": 0},
+  "verification_scope_reason": "Actual original/current CLI provider paired including absent/present service fields, TLS pair, public URL rejection precedence, wildcard addresses, negative/missing/unknown arguments and complete help text. Actual Loader releases a consumer reading lazy startup expressions, including TLS/public URL. Shared Commander-compatible parser now retains full option declarations for help/errors and consumes required negative values; direct cmdline, Headless startup, startup audit and current Web runtime consumers pass.",
+  "diagnostics": "Initial Source probe path corrected from util/cmdline to boot/cmdline. Pairing exposed existing shared required-argument and help output discrepancies; corrected the shared provider rather than weakening comparisons. Initial raw diagnostics retained.",
+  "activation_boundary": "Current startup and runtime classes are bound, but new Source bundle/profile manifest inputs and complete Web composition are not yet promoted. Config owns concrete address/port-range validation; startup correctly preserves values for that later validation. No full regression or release acceptance is claimed.",
+  "cleanup": {"owned_processes_remaining": 0, "removed_bytes": 42756, "retained": "Commands/logs/XML, Source suite report, all paired observations and Loader configuration observations retained. Owned workspaces/home/tmp removed; shared Source/toolchains retained until C9."}
+}

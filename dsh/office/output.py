@@ -40,6 +40,9 @@ def _metadata(stream):return os.fstat(stream.fileno())
 
 
 def _read_output(path,limit,signal):
+    if os.name=='nt':
+        from dsh.fs.fs_local import _native_path
+        path=_native_path(str(path))
     signal.throwIfAborted();entry=os.lstat(path)
     if not stat.S_ISREG(entry.st_mode) or getattr(entry,'st_reparse_tag',0) in (0xA0000003,0xA000000C):raise invalid_file()
     with _open_output(path) as stream:

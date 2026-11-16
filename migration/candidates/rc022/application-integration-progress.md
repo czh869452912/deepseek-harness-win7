@@ -180,4 +180,6 @@
 
 | C8-DA | Office 元数据准入、前后台容量、同源/内容共享、LRU 与取消后的实际工作所有权 | [Office 共享队列](office-queue-checks.json) |
 
+| C8-DB | Office 会话输出存储、串行容量、删除失败重试、限时回收及真实 junction 排除 | [Office 输出存储](office-outputs-checks.json) |
+
 后续继续设置及完整应用组合；最终资格使用 C9 冻结候选的完整门禁。

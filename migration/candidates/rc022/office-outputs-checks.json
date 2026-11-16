@@ -1,0 +1,12 @@
+{
+  "part": "C8-DB",
+  "upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "paired": {"run": "rc022-office-outputs-paired-20261116-01", "cases": 8, "differences": 0},
+  "native": {"run": "rc022-office-outputs-native3-20261116-01", "passed": 26},
+  "source": {"run": "rc022-office-outputs-source-20261116-01", "passed": 17, "failed": 0},
+  "verification_scope_reason": "Actual original outputs.ts and native store agree on generated owner/output names, exact data, serial saves, oldest eviction, oversize refusal, owner release, expired output removal, disposal and generated-only startup sweep. Native tests additionally exercise failed-delete accounting/retry, shared concurrent release/eviction, awaited blocked disposal, failed writes and one missing-parent retry, real Windows junction exclusion, long namespaced paths and cancelled waiters. Existing output-reader tests pass with long-path integration.",
+  "diagnostics": "Initial native run reached its explicit 120-second timeout in failed-delete retry: immediate rejection could finish before entry.removal assignment, leaving a stale removal marker. A framework await boundary now guarantees marker assignment before cleanup. The next run had only an undersized long-path fixture budget; corrected final run passed. Original raw timeout/failure diagnostics retained; no full acceptance claimed.",
+  "platform_adaptation": "POSIX directories/files use 0700/0600 at creation. Windows uses the OS user's inherited ACL, matching this milestone's native Source behavior; no claim of separately hardened Windows owner-only ACL. Existing Win7 namespaced paths support long output filenames. Startup sweep excludes links/junctions; arbitrary hostile ancestor replacement races are not qualified.",
+  "activation_boundary": "Office persistent output-store primitive ready. Engine adapter, render/convert/recalculate provider and actual Office Remote remain pending.",
+  "cleanup": {"owned_processes_remaining": 0, "retained": "Commands, Source results, paired observations and raw timeout/failure logs retained. Owned temporary fixtures, Source directories and paired payloads removed. Shared Source/toolchains retained until C9."}
+}

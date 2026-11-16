@@ -320,4 +320,6 @@
 
 | C8-FS | 直接 Search/Fetch provider、结果映射、调用快照与含边界限速 | [Web API 组件](web-api-provider-checks.json) |
 
+| C8-FT | 按当前模型路由与计费选凭据、Web 列表 Remote、动态选择和基础组合 | [Web API 组合](web-api-selection-checks.json) |
+
 后续继续完整应用组合；最终资格使用 C9 冻结候选的完整门禁。

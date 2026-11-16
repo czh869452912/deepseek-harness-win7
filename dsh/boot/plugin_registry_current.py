@@ -1,6 +1,8 @@
 """rc.3 bindings staged for coordinated bundle, protocol and pin promotion."""
 
 CURRENT_HARNESS_PLUGIN_CLASSES = {
+    '@deepseek-ai/dsh-web': 'dsh.web.web_service_current:CurrentWebService',
+    '@deepseek-ai/dsh-web-deepseek-api': 'dsh.web.web_deepseek_api_current:CurrentWebDeepSeekApi',
     '@deepseek-ai/dsh-deepseek-account': 'dsh.credentials.deepseek_account_current:CurrentDeepSeekAccount',
     '@deepseek-ai/dsh-authorization': 'dsh.credentials.authorization_current:CurrentAuthorizationService',
     '@deepseek-ai/dsh-llm-deepseek-api-key': 'dsh.llm.deepseek_provider_current:CurrentDeepSeekApiKeyProvider',

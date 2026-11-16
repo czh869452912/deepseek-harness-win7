@@ -1,0 +1,8 @@
+{
+  "part": "C8-DI",
+  "upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "native": {"run": "rc022-subagent-bindings-native-20261116-01", "passed": 2},
+  "verification_scope_reason": "Actual Loader boot selects qualified provider-owned subagent service, named delegation/control tools and in-process spawn/fork providers by installation package name over the v4 runtime. Both journeys call the actual subagent tool, wait for child completion, list an inactive named child, send a continuation to that name and observe the same persisted child session with exactly one descriptor and multiple completed turns. Root ownership and configured interruption-tool exclusion are checked. Actual FS working-directory, session query and JSONL persistence participate; LLM streams are controlled.",
+  "activation_boundary": "Candidate mapping replaces earlier compatibility runtime/tool/provider bindings only. Production table and upstream pin remain unchanged. Optional external providers, Remote control and full application/release acceptance retain their separate boundaries.",
+  "cleanup": {"owned_processes_remaining": 0, "retained": "Command, XML/log, both spawn/fork event/listing/cold-resume observations retained. Owned synthetic sessions, profile roots, pytest workspace, home and temporary directory removed after root teardown. Shared pinned Source/toolchains retained until C9."}
+}

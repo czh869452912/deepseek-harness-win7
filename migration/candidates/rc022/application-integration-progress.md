@@ -194,4 +194,6 @@
 
 | C8-DH | 显式 v4 Session/投影根与 Loader Agent、原生执行器和工作目录文件读取 | [候选运行时绑定](runtime-bindings-checks.json) |
 
+| C8-DI | Loader 子代理提供方、命名委派/发现、spawn/fork 完成及同会话冷恢复 | [候选子代理绑定](subagent-bindings-checks.json) |
+
 后续继续设置及完整应用组合；最终资格使用 C9 冻结候选的完整门禁。

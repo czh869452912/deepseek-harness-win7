@@ -1,0 +1,11 @@
+{
+  "batch": "C8-FE",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "scope": "Current Messages Files HTTP client and metadata validation; canonical adapter activation follows with the file-store integration.",
+  "paired": {"observations": 66, "differences": 0, "report": ".goose/out/rc022-files-http-paired3-20261116-01/report.json"},
+  "native": {"passed": 81, "report": ".goose/out/rc022-files-http-native-20261116-01/command.json"},
+  "source": {"passed": 70, "report": ".goose/out/rc022-files-http-source-20261116-01/command.json"},
+  "coverage": ["Real loopback HTTP paths, case-insensitive header replacement, fixed version/beta and multipart fields", "Messages metadata including safe integer bytes, V8 date parsing, null/empty cursors and requested upload expiry", "Deletion markers, invalid JSON, gzip, status classification and forbidden redirect without a target request", "Pre-aborted reason identity; task cancellation joins the owned reader and detaches signal listeners"],
+  "limits": ["Local server origins are verified structurally and normalized in transport error messages", "Codec-independent gzip is covered; Brotli and arbitrary malformed request-header diagnostics are not qualified", "Body transport exception classes remain those of the native HTTP runtime", "Targeted completion does not establish full application or release acceptance"],
+  "cleanup": {"removed_bytes": 1994055, "removed": ["Owned pytest fixtures", "Short temporary workspace", "Owned tmp and home directories"], "retained": "Commands, reports, failure observations from paired1/2 and final observations; no remaining task-owned process"}
+}

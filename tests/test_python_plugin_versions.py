@@ -124,13 +124,21 @@ async def test_upgrade_restart_named_rollback_and_newer_rollback_without_node(pr
 
 
 @pytest.mark.asyncio
-async def test_failed_release_import_can_be_rolled_back_and_booted(profile, tmp_path):
+async def test_failed_release_import_can_be_rolled_back_and_booted(profile, tmp_path, capsys):
     home, directory = profile
     plugin_cli.run_plugin('python-test', ['add', str(EXAMPLE)])
     source = source_version(tmp_path, broken=True)
     assert plugin_cli.run_plugin('python-test', ['upgrade', str(source)]) == 0
-    with pytest.raises(Exception, match='bad release import'):
-        await boot(home)
+    # Current Source warns for an inactive optional entry and keeps the profile
+    # running. Required-entry failures remain a separate startup contract.
+    failed = await boot(home)
+    try:
+        for _ in range(10):await asyncio.sleep(0)
+        entry = next(row for row in failed['ctx'].loader.entries() if row.options.get('id') == 'example-python-echo')
+        assert entry.fiber is None
+        assert 'bad release import' in capsys.readouterr().err
+    finally:
+        await close(failed)
     assert plugin_cli.run_plugin('python-test', ['rollback', PACKAGE]) == 0
     result = await boot(home)
     try:

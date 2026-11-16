@@ -12,7 +12,7 @@ import uuid
 import zipfile
 
 from dsh.boot.profile import package_dir_from_anchor, read_profile_manifest
-from dsh.boot.profile_lease import ProfileLease
+from dsh.boot.profile_lease import ProfileLease,package_write_lease
 from dsh.boot.python_directory_mutation import replace_directory, remove_directory
 from dsh.boot.python_package import inside, package_name, relative_parts, validate_sources
 
@@ -283,11 +283,11 @@ def transact(directory, before, after, name, token, operation):
         recover(directory)
 
 
-def install(directory, source, installation_anchor, acquisition=None):
+def install(directory, source, installation_anchor, acquisition=None,lease=None):
     from dsh.boot.app_boot import load_overlay_patches
     from dsh.boot.python_plugin_acquisition import verified_record
 
-    with ProfileLease(directory, exclusive=True):
+    with package_write_lease(directory,lease):
         recover(directory)
         acquisition = verified_record(source, acquisition)
         staging = os.path.join(directory, STAGING)
@@ -329,9 +329,9 @@ def install(directory, source, installation_anchor, acquisition=None):
                 remove_directory(stage)
 
 
-def uninstall(directory, name):
+def uninstall(directory, name,lease=None):
     package_name(name)
-    with ProfileLease(directory, exclusive=True):
+    with package_write_lease(directory,lease):
         recover(directory)
         with open(os.path.join(directory, "package.json"), "rb") as stream:
             before_bytes = stream.read()

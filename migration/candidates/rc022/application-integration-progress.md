@@ -132,4 +132,6 @@
 
 | C8-CC | 注册表身份/版本与原始归档绑定、Python ABI/兼容性双重检查及真实 TLS 安装 | [Python 注册表获取](python-package-acquire-checks.json) |
 
+| C8-CD | 单宿主租约升级、准入间隙排他、其他宿主拒绝与原锁恢复、事务借用能力 | [运行中事务租约](profile-mutation-lease-checks.json) |
+
 后续继续设置及完整应用组合；最终资格使用 C9 冻结候选的完整门禁。

@@ -1,0 +1,33 @@
+{
+  "part": "C8-GJ",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "scope": "Staged independent ordinary-event count batching",
+  "paired": {
+    "run": "rc022-otel-event-channel-paired-20261116-01",
+    "observations": 39,
+    "differences": 0,
+    "comparison": "Actual Source EventLogReporter with SDK processor and HTTP collector versus actual Native EventLogReporter over a controlled exporter port. Compare complete batch documents/bytes, overflow and zero-queue behavior, batch-size clamping, timer, processor timeout progression, failure warnings and emission after shutdown."
+  },
+  "verification": {
+    "native": "12 passed: ordinary-event batching corpus, independent shutdown signal subscriptions/waiter cancellation, emitted attribute ownership and observation time, plus direct Session channel/record/wire regressions.",
+    "source": "39 actual ordinary-event SDK channel/HTTP cases; unchanged pinned OTel package 34 tests already passed C8-GE.",
+    "scope_reason": "Covers the new count channel and its providers, with timeout overlap and shutdown ownership cases that differ from the Session channel."
+  },
+  "behavior": [
+    "Queue overflow silently discards records; an oversized configured batch count is clamped to queue capacity. Full batches start immediately and partial batches use the configured timer.",
+    "Processor timeout permits subsequent batches while the transport remains owned by the exporter. Timeout itself does not invoke the business onFailure callback; a later failed export still does.",
+    "Emission captures observation time and caller attributes. Queued ordinary events use the already qualified default SDK attribute admission and OTLP serialization.",
+    "Shutdown closes admission, snapshots accepted records for sequential flushing, drains the exporter and releases per-call cancellation subscriptions. Cancelling a Python waiter leaves the shared cleanup running; each shutdown caller can still provide its own abort signal."
+  ],
+  "limitations": [
+    "Paired channel observations use a controlled Native exporter port; end-to-end service/production consumer composition remains follow-up work.",
+    "SDK diagnostics, self-observability metrics and pathological invalid processor values outside typed consumer options are not fully reproduced. No implicit span-context or exception enrichment parity claim is established here.",
+    "Full migration/release, Portable/browser and Windows 7 qualification remain pending."
+  ],
+  "cleanup": {
+    "bytes_removed": 308980,
+    "receipt": "rc022-otel-event-channel-native-20261116-01/cleanup.json",
+    "removed": "Owned pytest fixtures, temporary/home trees and completed Source loopback collectors; no matching processes remain.",
+    "retained": "Commands, logs/XML, paired documents/bytes and hashes; shared Source/toolchains remain needed for service integration and C9."
+  }
+}

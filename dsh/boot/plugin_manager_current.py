@@ -17,7 +17,8 @@ from dsh.boot.package_meta import read_plugin_meta
 from dsh.boot.plugin_packages import ResolutionRestartRequired
 from dsh.boot.profile import compose_entries, read_profile_manifest, bundle_patch_paths
 from dsh.boot.app_boot import load_overlay_patches
-from dsh.boot.profile_compatibility import PROFILE_COMPATIBILITY_FILENAME, read_profile_version_exemptions
+from dsh.boot.profile_compatibility import (PROFILE_COMPATIBILITY_FILENAME, read_profile_version_exemptions,
+    read_profile_compatibility, set_profile_version_exemption, validate_plugin_version_exemption)
 from dsh.boot.profile_context import read_profile_patches
 from dsh.boot.runtime_resolution import _field
 from dsh.cordis.awaiting import await_callback_result
@@ -331,6 +332,29 @@ class CurrentPluginManager(TypertRemoteService):
             return await await_callback_result(operation())
         hmr = self.owner_context.get('hmr')
         return await apply() if hmr is None else await hmr.runExclusive(apply)
+
+    @Remote('listVersionExemptions')
+    def listVersionExemptions(self):
+        record = read_profile_compatibility(_field(self.profile, 'dir'))
+        return dict(exemptions=record['exemptions'], warnings=record['warnings'])
+
+    @Remote('setVersionExemption')
+    async def setVersionExemption(self, package_version, runtime_version, enabled, acceptRisk=None):
+        identity = dict(target=None)
+        try:
+            validate_plugin_version_exemption(package_version, runtime_version)
+        except (ValueError, TypeError):
+            pass
+        else:
+            name, _, version = package_version.rpartition('@')
+            identity = dict(target=self._operation_target('install', name), version=diagnostic_version(version))
+        async def operation(result):
+            async def apply():
+                await set_profile_version_exemption(_field(self.profile, 'dir'), package_version,
+                    runtime_version, enabled, acceptRisk is True)
+                result.update(await self._reload())
+            await self._configure(apply)
+        return await self._change(operation, dict(stage='enable', target=package_version, enabled=enabled), 'bundle', identity)
 
     async def _reload(self, required_ids=()):
         hmr = self.owner_context.get('hmr')

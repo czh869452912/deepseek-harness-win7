@@ -1,0 +1,10 @@
+{
+  "part": "C8-BL",
+  "upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "paired": {"run": "rc022-manager-exemptions-paired-20261116-01", "cases": 12, "passed": true},
+  "native": {"run": "rc022-manager-exemptions-native-20261116-01", "passed": 51, "failed": 0},
+  "source": {"run": "rc022-manager-exemptions-source-20261116-01", "selected_passed": 8, "unselected": 165, "failed": 0},
+  "verification_scope_reason": "Actual Source/Native manager services boot real profile Include/Loader/HMR trees with an incompatible selected bundle. Paired grant/refusal/repeated grant/revocation checks automatic live row admission/removal, startup-only restart and unchanged selection. Exact literal risk acknowledgement, corrupt compatibility file refusal, persistence retained when reload fails, package/range/whitespace/alias/invalid runtime validation, old runtime revocation, independent scoped package/version facts and omission of raw credential-bearing invalid request identities are qualified. Diagnostic presence and warning count normalized; other result, persistence and runtime state compared. Direct profile compatibility helpers and core manager consumers included in targeted Python regression.",
+  "activation_boundary": "Adds listVersionExemptions/setVersionExemption Remote methods to the explicit current provider. Production activation and remaining package management interfaces continue separately. No full migration/release acceptance claimed.",
+  "cleanup": {"removed_bytes": 917839, "external_empty_roots_removed": 1, "owned_processes_remaining": 0, "retained": "Compact commands, logs, XML/JSON and paired observations; shared Source/toolchains through C9."}
+}

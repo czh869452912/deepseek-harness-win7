@@ -106,5 +106,6 @@
 
 | C8-BJ | 安装来源解析、固定 Git 身份、凭据脱敏与失败分类 | [插件安装身份](install-spec-checks.json) |
 | C8-BK | Bundle 清单、官方目录、来源与更新资格、平台兼容性及真实 HMR 启停 | [Bundle 管理](bundle-inventory-checks.json) |
+| C8-BL | 精确版本豁免 Remote、风险确认、实时重新准入与撤销及诊断身份 | [管理器版本豁免](manager-exemptions-checks.json) |
 
 后续继续设置及完整应用组合；最终资格使用 C9 冻结候选的完整门禁。

@@ -1,0 +1,11 @@
+{
+  "part": "C8-CZ",
+  "upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "paired": {"run": "rc022-office-output-paired-20261116-01", "cases": 15, "differences": 0},
+  "native": {"run": "rc022-office-output-native-20261116-01", "passed": 16},
+  "source": {"run": "rc022-office-output-source-20261116-01", "passed": 3, "failed": 0},
+  "verification_scope_reason": "Actual original output.ts and native readers agree for bounded regular/empty/opaque/hardlinked outputs, missing/directory paths, preabort, PDF header/trailer/Node ASCII high-bit behavior and exact PNG signatures. Native and original fault-injection tests independently verify opened metadata and growth/shrink refusal. Native checks exercise real Windows handles, mid-read signal cancellation and independently cancelled Python waiters, with handles closed before completion.",
+  "platform_adaptation": "Native reads use bounded executor operations and a stable owned promise. Win7 CreateFileW opens the final entry with OPEN_REPARSE_POINT, checks handle attributes and shares replacement/deletion; reparse/directory outputs are refused. This strengthens final-entry link-race refusal without modern Windows APIs. Arbitrary ancestor replacement races and non-link reparse file providers are not qualified here.",
+  "activation_boundary": "Office output primitives only. Shared conversion admission/cache, engine adapter, output store and Office Remote/provider composition remain pending.",
+  "cleanup": {"owned_processes_remaining": 0, "retained": "Commands, XML, Source results and paired raw byte/error observations retained. Owned test workspaces, temporary homes, Source scratch and paired payloads removed. Shared Source/toolchains retained until C9."}
+}

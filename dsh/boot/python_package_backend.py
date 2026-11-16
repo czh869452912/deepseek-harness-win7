@@ -12,7 +12,7 @@ from dsh.boot.plugin_package_operations import active_recorded_run
 from dsh.boot.plugin_install_spec import parse_install_spec
 from dsh.boot.profile import read_profile_manifest, compose_entries, bundle_patch_paths
 from dsh.boot.python_package_cli import package_command
-from dsh.boot.python_package_prepare import prepared_registry_package
+from dsh.boot.python_package_prepare import prepared_registry_package, prepared_local_package
 from dsh.boot.python_plugin_snapshot import retained_installed_package
 from dsh.boot.runtime_resolution import _field
 from dsh.cordis.plugin import Plugin
@@ -185,7 +185,10 @@ class PythonPackageBackend(Plugin):
                 result = self._result()
                 return await self._install(snapshot, result, options, snapshot)
             prepare_options = dict(options, registry=registry)
-            async with prepared_registry_package(self.directory, args[1], prepare_options) as prepared:
+            local = parsed['kind'] in ('path', 'tarball') and 'path' in parsed
+            preparation = (prepared_local_package(self.directory, parsed['path'], prepare_options) if local
+                else prepared_registry_package(self.directory, args[1], prepare_options))
+            async with preparation as prepared:
                 result = prepared.result
                 if prepared.candidate is None:
                     for line in result['output'].splitlines():

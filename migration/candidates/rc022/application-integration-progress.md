@@ -148,4 +148,6 @@
 
 | C8-CK | canonical CLI 恢复命令、禁用恢复、运行中拒绝与带空格路径的错误操作提示 | [恢复入口与用户操作](python-recovery-cli-checks.json) |
 
+| C8-CL | 本地目录/ZIP/tgz 子进程准备、逐文件复验、真实热启用与中文 PAX 路径 | [本地原生包准备](python-package-local-checks.json) |
+
 后续继续设置及完整应用组合；最终资格使用 C9 冻结候选的完整门禁。

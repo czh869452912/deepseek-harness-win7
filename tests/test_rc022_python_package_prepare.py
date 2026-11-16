@@ -73,7 +73,7 @@ async def test_cancelled_real_download_child_is_drained_and_its_partial_workspac
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize('tamper',['archive','receipt','identity','large-receipt'])
+@pytest.mark.parametrize('tamper',['archive','receipt','identity','large-receipt','no-acquisition'])
 async def test_parent_independently_rejects_modified_child_publication(profile,registry_package,tamper):
     home,directory=profile;state=registry_package;before=(directory/'package.json').read_bytes()
     async with prepared_registry_package(str(directory),PACKAGE,options(state)) as prepared:
@@ -83,5 +83,7 @@ async def test_parent_independently_rejects_modified_child_publication(profile,r
         if tamper=='identity':
             value=json.loads(receipt.read_text(encoding='utf-8'));value['manifest']['version']='9.0.0';receipt.write_text(json.dumps(value),encoding='utf-8')
         if tamper=='large-receipt':receipt.write_bytes(b'x'*(1024*1024+1))
+        if tamper=='no-acquisition':
+            value=json.loads(receipt.read_text(encoding='utf-8'));value['acquisition']=None;receipt.write_text(json.dumps(value),encoding='utf-8')
         with pytest.raises(ValueError):read_prepared(str(output))
     assert (directory/'package.json').read_bytes()==before and not (directory/'.dsh-python-downloads').exists()

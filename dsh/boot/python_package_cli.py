@@ -48,6 +48,17 @@ def _prepare(argv,directory):
         print('Prepared '+candidate.manifest['name']+'@'+candidate.manifest['version'],flush=True)
 
 
+def _prepare_local(argv,directory):
+    from dsh.boot.python_package_local import publish_local
+    from dsh.boot.python_plugins import reparse
+    if len(argv)!=3 or not os.path.isabs(argv[1]):raise PackageQueryError('ERR_DSH_PACKAGE_ARGUMENT','prepare-local requires an absolute local source and owned output directory')
+    source,target=argv[1:]
+    if not os.path.isdir(target) or reparse(target) or os.listdir(target):raise PackageQueryError('ERR_DSH_PACKAGE_ARGUMENT','package preparation output must be an empty owned directory')
+    print('Preparing local native package',flush=True)
+    manifest=publish_local(directory,source,target)
+    print('Prepared '+manifest['name']+'@'+manifest['version'],flush=True)
+
+
 def main(argv=None):
     argv=list(sys.argv[1:] if argv is None else argv)
     for stream in (sys.stdout,sys.stderr):
@@ -60,6 +71,7 @@ def main(argv=None):
             if value is not UNSPECIFIED:print(json.dumps(value,ensure_ascii=False,separators=(',',':')))
             return 0
         if argv and argv[0]=='prepare':_prepare(argv,os.getcwd());return 0
+        if argv and argv[0]=='prepare-local':_prepare_local(argv,os.getcwd());return 0
         raise PackageQueryError('ERR_DSH_PYTHON_PACKAGE_OPERATION_UNAVAILABLE','native package mutation is not available in this query adapter')
     except PackageQueryError as error:
         details=dict(code=error.code,message=error.message)

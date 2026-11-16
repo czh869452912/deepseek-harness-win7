@@ -1,6 +1,9 @@
 """rc.3 bindings staged for coordinated bundle, protocol and pin promotion."""
 
 CURRENT_HARNESS_PLUGIN_CLASSES = {
+    '@deepseek-ai/dsh-workflow-ptc': 'dsh.workflow.plugin_current:CurrentWorkflowPtcPlugin',
+    '@deepseek-ai/dsh-ptc-runtime-python': 'dsh.code_runtime.confined_ptc:ConfinedPythonPtcRuntime',
+    '@deepseek-ai/dsh-tool-executor-ptc': 'dsh.core.tool_executor_ptc:PtcToolExecutorPlugin',
     '@deepseek-ai/dsh-plugin-manager': 'dsh.boot.plugin_manager_current:CurrentPluginManager',
     '@deepseek-ai/dsh-agent-preset-registry': 'dsh.presets.registry_current:CurrentAgentPresetRegistry',
     '@deepseek-ai/dsh-agent-preset': 'dsh.presets.registry_current:CurrentAgentPreset',

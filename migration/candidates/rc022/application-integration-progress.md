@@ -212,4 +212,6 @@
 
 | C8-DQ | 新安装清单下规范 run_profile 的管理器绑定、真实 HTTP Python 包安装/停启/移除 | [候选管理器绑定](manager-bindings-checks.json) |
 
+| C8-DR | Workflow/显式 Python PTC Loader 绑定、真实 Guest→v4 子代理及进程工具回调 | [候选 Workflow/PTC 绑定](workflow-bindings-checks.json) |
+
 后续继续完整应用组合；最终资格使用 C9 冻结候选的完整门禁。

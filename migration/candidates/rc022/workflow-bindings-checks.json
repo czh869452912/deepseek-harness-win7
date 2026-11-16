@@ -1,0 +1,11 @@
+{
+  "part": "C8-DR",
+  "upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "native": {"run": "rc022-workflow-bindings-native3-20261116-01", "passed": 2},
+  "consumers": {"run": "rc022-workflow-bindings-consumers-20261116-01", "passed": 10},
+  "verification_scope_reason": "Actual Loader mounts the current Workflow wrapper, native executor/tool and real subagent spawn provider. The unchanged original Guest runs on the private Win7 JS process, calls a real v4 child Agent through the host, returns the child's actual model output, persists/query-validates the v4 child and working directory, and releases the worker. A separate explicit Python PTC graph omits the native executor and mounts the policy-owned Python runtime plus current PTC executor; real process execution dispatches a registered tool and persists exactly one matching dispatch-start/result pair. Relevant engine/Guest/PTC consumer regressions pass. No engine/provider implementation changed.",
+  "diagnostics": "Initial Workflow assertions used a generic subagent event instead of the actual tool-workflow recorder event, and assumed a header response field instead of readSession.session. Corrected fixtures; failed logs/XML retained.",
+  "legal_adaptation": "Workflow owns a private Win7 JS carrier if none is already mounted. The explicit @deepseek-ai/dsh-ptc-runtime-python binding corresponds to the existing candidate ptc-python overlay and advertises Python. It does not bind or claim the original TypeScript Node PTC implementation.",
+  "activation_boundary": "Selected Workflow and explicit Python PTC candidate bindings only. Original Node PTC evaluation modes, new installation manifest entries for the native overlay, complete application composition, production input promotion and complete release acceptance remain outstanding.",
+  "cleanup": {"owned_processes_remaining": 0, "retained": "Commands, failed/passing XML/logs, candidate rows and complete Workflow/PTC observations retained. All four owned pytest workspaces/homes/tmp sets removed; exact byte count in consumers cleanup.json. Actual test assertions confirm no PTC or JS workers remain. Shared fixed Source/toolchains remain owned until C9."}
+}

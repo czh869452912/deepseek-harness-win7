@@ -240,4 +240,6 @@
 
 | C8-EE | MCP 凭据模板语法、逐次连接解析/引用复用、动态提供者与实例历次值脱敏（Web 配置组合回归缺口保留） | [MCP 凭据模板](mcp-template-binding-checks.json) |
 
+| C8-EF | MCP 一次性服务器探测、客户端代次接口/分页、探测专用握手身份与有界取消清理 | [MCP 服务器探测](mcp-server-probe-checks.json) |
+
 后续继续完整应用组合；最终资格使用 C9 冻结候选的完整门禁。

@@ -1,0 +1,13 @@
+{
+  "part": "C8-EF",
+  "upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "paired": {"run": "rc022-mcp-server-probe-paired-20261116-03", "observations": 50, "differences": 0},
+  "native": {"run": "rc022-mcp-server-probe-native2-20261116-01", "passed": 6},
+  "consumers": {"run": "rc022-mcp-server-probe-consumers-20261116-01", "passed": 148},
+  "source": {"run": "rc022-mcp-server-probe-source-20261116-01", "passed": 16, "failed": 0},
+  "verification_scope_reason": "Actual Source probeServer and SDK versus native generation-owned loopback HTTP I/O: identity projection, paged listing and limits, cursor loops truncated at the probe cap, absent tools capability, template credentials, whole-probe timeout, abort and invalid options. Actual SDK listTools aggregation and explicit-cursor behavior pair separately. Native cancellation verifies all real I/O and generation cleanup settle; actual stdio verifies probe identity in both discovery and business/initialize packets, disposable sibling isolation and process reaping. Shared wire identity/deadline changes are covered by legacy/current HTTP/stdIO, generation, negotiation, tools/resources and supervisor consumers.",
+  "diagnostics": "First paired run exposed Node setTimeout overflow clamping; native deadlines now clamp overlarge/nonfinite timer delays to 1 ms and truncate fractions. Source credential fixture was corrected to its asynchronous provider contract. The first native failure was an invalid test config missing transport, corrected without changing production behavior. Failure logs retained.",
+  "paired_limits": "Elapsed durations are checked for presence/type, excluded from equality. Cancellation notifications and packet count/order under submillisecond/overflow budgets depend on scheduling and remain in raw logs, excluded from fixed wire equality. No arbitrary scheduling or complete SDK feature parity is claimed.",
+  "activation_boundary": "The generation-facing native client and one-shot probe helper are available. No manager route, tool registry entry or server namespace is registered by probing. Production supervised connections still await complete new generation/status/credential integration; SDK caching/optional workflows beyond the observed default surface remain separate. No overall MCP, Web or release acceptance.",
+  "cleanup": {"owned_processes_remaining": 0, "removed_bytes": 2690330, "retained": "Paired inputs/hashes/observations and raw loopback/stdio logs, failure/pass commands, logs/XML and Source report. Owned workspaces/home/tmp removed. Captured generation work settled and owned peer processes exited. Shared fixed Source/toolchains remain until C9."}
+}

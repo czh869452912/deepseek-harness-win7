@@ -1,5 +1,6 @@
 """A caller deadline never cancels the generation's actual operation."""
 import asyncio
+import math
 import time
 
 from dsh.cordis.errors import ThrownValueError
@@ -11,7 +12,10 @@ async def with_deadline(operation, remaining_ms, timeout_message):
     task = asyncio.ensure_future(operation)
     loop = asyncio.get_running_loop()
     result = loop.create_future()
-    expires = time.perf_counter() + max(1,remaining_ms)/1000
+    # Node timers clamp overflow/NaN to 1 ms and truncate fractional delays.
+    delay = max(1, remaining_ms)
+    delay = int(delay) if math.isfinite(delay) and delay <= 2147483647 else 1
+    expires = time.perf_counter() + delay/1000
     timer = [None]
 
     def timeout():

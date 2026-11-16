@@ -19,7 +19,7 @@ class NegotiatedProtocol:
             params = dict(packet.get('params') or {})
             meta = dict(params.get('_meta') or {})
             meta.update({'io.modelcontextprotocol/protocolVersion': self.protocol_version,
-                'io.modelcontextprotocol/clientInfo': {'name': 'dsh-mcp-client', 'version': '0.0.1'},
+                'io.modelcontextprotocol/clientInfo': getattr(self, 'client_info', {'name': 'dsh-mcp-client', 'version': '0.0.1'}),
                 'io.modelcontextprotocol/clientCapabilities': {}})
             params['_meta'] = meta
             packet = dict(packet, params=params)

@@ -46,7 +46,7 @@ class CurrentStreamableHttpMcpTransport(NegotiatedProtocol, StreamableHttpMcpCli
         channel = self._probe_channel = _HttpProbeChannel(self)
         self._probing = True
         try:
-            self.negotiated = await negotiate_era(self.negotiation, channel, transport_kind='http')
+            self.negotiated = await negotiate_era(self.negotiation, channel, transport_kind='http', client_info=getattr(self, 'client_info', None))
         finally:
             self._probing = False
             disarm_spent_close_guard(channel)

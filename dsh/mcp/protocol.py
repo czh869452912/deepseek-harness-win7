@@ -46,7 +46,7 @@ class McpClientProtocol:
     async def _initialize(self):
         result = await self.request({'method': 'initialize', 'params': {
             'protocolVersion': PROTOCOL_VERSIONS[0], 'capabilities': {},
-            'clientInfo': {'name': 'dsh-mcp-client', 'version': '0.0.1'}}})
+            'clientInfo': getattr(self, 'client_info', {'name': 'dsh-mcp-client', 'version': '0.0.1'})}})
         result = parse('InitializeResultSchema', result)
         version = result.get('protocolVersion')
         if version not in PROTOCOL_VERSIONS:

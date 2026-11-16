@@ -27,10 +27,11 @@ class _DisposableProbe(StdioMcpClient):
         super().__init__(owner.command, owner.args, owner.env, owner.cwd)
         self.channel = _ProbeChannel(self)
         self.negotiation = owner.negotiation
+        self.client_info = getattr(owner, 'client_info', None)
         self.on_error = lambda error: self.channel.onerror(error) if self.channel.onerror is not None else None
 
     async def _initialize(self):
-        return await negotiate_era(self.negotiation, self.channel, transport_kind='stdio', disposable_probe=True)
+        return await negotiate_era(self.negotiation, self.channel, transport_kind='stdio', disposable_probe=True, client_info=self.client_info)
 
     async def _receive(self, packet):
         if self.channel.onmessage is not None:

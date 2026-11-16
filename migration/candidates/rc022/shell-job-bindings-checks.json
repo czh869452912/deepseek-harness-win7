@@ -1,0 +1,11 @@
+{
+  "part": "C8-DK",
+  "upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "native": {"run": "rc022-shell-job-bindings-native6-20261116-01", "passed": 1},
+  "consumers": {"run": "rc022-shell-job-bindings-consumers3-20261116-01", "passed": 32},
+  "source": {"run": "rc022-shell-job-bindings-source-20261116-01", "passed": 13, "pending": 0, "failed": 0},
+  "verification_scope_reason": "Actual Loader boots the candidate v4 runtime plus Windows subprocess, PowerShell executor, shell environment, job registry/tools/controller and authenticated Web graph. A real PowerShell background job emits output; the unchanged original job-controller artifact admits actual remote.mux follow frames. HTTP RPC refuses a foreign session kill, accepts the owner kill, returns a killed status and drains the real Job/process owner. Remote observation leaves the model cursor/result-delivery state untouched; the model then consumes the original output. Direct process/shell/job consumers and original Source shell-env tests pass independently.",
+  "diagnostics": "The old ShellEnv plugin automatically registered a JSONL-location contributor, which fails for current no-cwd Session metadata. Fixed Source shell-env apply only mounts the registry: a candidate plugin now does the same and its empty contributor catalog is checked during the actual journey. Final assertion originally accessed a disposed Context service; the actual process owner is captured before teardown. Raw failed diagnostics retained.",
+  "activation_boundary": "Selected candidate bindings and authenticated actual job wire only. Sandbox PowerShell is mapped to the previously qualified current provider but confined execution is not newly qualified by this local-executor journey. Persistent terminal, production table/pin and complete release acceptance remain separate.",
+  "cleanup": {"owned_processes_remaining": 0, "removed_bytes_shared_batch": 104113, "retained": "All commands, failed/passing XML/logs, Source results, candidate input rows and decoded actual job wire observations retained. Ten owned run workspaces/homes/tmp directories removed. No background PowerShell or owned subprocess remains. Shared pinned Source/toolchains retained until C9."}
+}

@@ -198,4 +198,6 @@
 
 | C8-DJ | 进程范围退出后的完成/句柄释放屏障及直接父进程完成边界 | [普通进程清理](ordinary-cleanup-checks.json) |
 
+| C8-DK | Loader 原生 shell/作业绑定、原版 Job Remote 输出/终止与独立模型游标 | [候选 shell 作业绑定](shell-job-bindings-checks.json) |
+
 后续继续设置及完整应用组合；最终资格使用 C9 冻结候选的完整门禁。

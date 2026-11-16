@@ -64,7 +64,13 @@ async def _map_concurrent(items, limit, operation):
 class PluginInspection:
     def _package_options(self):
         configured = _field(self.profile, 'packageManager')
-        return dict(command=self.pnpm_command) if configured is None else dict(configured)
+        if configured is not None:
+            return dict(configured)
+        context = getattr(self, 'owner_context', None)
+        backend = None if context is None else context.get('profilePackages')
+        if backend is not None:
+            return backend.package_options()
+        return dict(command=self.pnpm_command)
 
     @Remote('registries')
     async def registries(self):

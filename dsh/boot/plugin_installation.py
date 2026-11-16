@@ -61,7 +61,7 @@ class PluginInstallation:
         task.add_done_callback(settled)
         return await asyncio.shield(task)
 
-    async def _run_pnpm(self,args,signal=None,request_id=None,expected=None):
+    async def _run_pnpm(self,args,signal=None,request_id=None,expected=None,on_commit=None):
         argv=['pnpm']+list(args);job_id=str(uuid.uuid4());cwd=_field(self.profile,'dir')
         identity={} if request_id is None else dict(requestId=request_id)
         def emit(stream,text,**extra):self.owner_context.emit('plugin-manager/install-log',dict(identity,jobId=job_id,argv=argv,cwd=cwd,stream=stream,text=text,**extra))
@@ -70,9 +70,12 @@ class PluginInstallation:
             activateNewBundles=False,idleTimeoutMs=self.idle_timeout_ms,lookupTimeoutMs=self.inspect_timeout_ms,
             onOutput=lambda text,stream:emit(stream,text))
         if expected is not None:options['expected']=expected
+        if on_commit is not None:options['onCommit']=on_commit
         context={key:_field(self.profile,key) for key in ('dir','cwd','home','installAnchor')};context['profile']=_field(self.profile,'name')
         try:
-            result=await self._owned_package_operation(run_profile_pnpm(context,args,options))
+            backend=self.owner_context.get('profilePackages') if _field(self.profile,'packageManager') is None else None
+            operation=run_profile_pnpm(context,args,options) if backend is None else backend.run(context,args,options)
+            result=await self._owned_package_operation(operation)
             emit('stdout','',exitCode=None if signal is not None and signal.aborted else result['exitCode'])
             if result['exitCode']==0 and not result.get('timedOut'):return result
             return dict(result,kind=classify_install_failure(dict(log=result['output'],timedOut=result.get('timedOut'))))
@@ -136,9 +139,11 @@ class PluginInstallation:
                     if stopped():raise _cancelled()
                     result['registries'].append(registry);used=registry
                     announce('installing',dict(registry=registry,index=index+1,total=len(plan)))
-                    run=await self._run_pnpm(['add',install_spec]+(['--save-exact'] if options.get('saveExact') is True else [])+registry_arguments(registry),control.abort.signal,request_id,options.get('expected'))
+                    def committing():
+                        control.phase='applying';announce('applying')
+                    run=await self._run_pnpm(['add',install_spec]+(['--save-exact'] if options.get('saveExact') is True else [])+registry_arguments(registry),control.abort.signal,request_id,options.get('expected'),committing)
                     result['packageResult']=run
-                    if stopped():raise _cancelled()
+                    if stopped() and not run.get('nativeCommitted'):raise _cancelled()
                     if 'incompatible' in run:raise _failure('incompatible-version',run['incompatible'])
                     if 'unmet' in run:raise _failure(run['unmet'])
                     if run['exitCode']==0 and run.get('timedOut') is not True:break
@@ -170,7 +175,8 @@ class PluginInstallation:
                 await self._restore_files(files)
                 raise
             finally:detach()
-            control.phase='applying';announce('applying')
+            if control.phase!='applying':
+                control.phase='applying';announce('applying')
             result.update(bundle=name,target=name,stage='enable')
             if 'version' in manifest:result['version']=manifest['version']
             async def apply():

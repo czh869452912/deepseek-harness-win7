@@ -140,4 +140,6 @@
 
 | C8-CG | 宿主租约服务、提交前依赖图准备、共享导入状态与卸载后复制清理 | [动态 Python 依赖所有权](python-dependency-changes-checks.json) |
 
+| C8-CH | 原生后端动态服务、真实 TLS 安装/热启用/调用/卸载、提交取消与服务收尾 | [运行中 Python 包后端](python-package-backend-checks.json) |
+
 后续继续设置及完整应用组合；最终资格使用 C9 冻结候选的完整门禁。

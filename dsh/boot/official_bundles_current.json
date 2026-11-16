@@ -1,0 +1,100 @@
+{
+  "upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "inputs": {
+    "packages/util/official-bundles/src/index.ts": "fe3c6ee65859c831246d4d1e2d40ad222ee63d5d0d120ec71af2fcdf30bed7c4",
+    "packages/util/official-bundles/src/bundles.ts": "dc9f06ad9541a39284a28f509d8877413e2506037476d7c1e7b056f58e04f826",
+    "packages/util/official-bundles/src/plugin-manager.ts": "bd27c11e85b15a1b2c415b395436cd55ce0433a3ed92ae6130df860edd828782",
+    "packages/util/official-bundles/src/catalog.generated.ts": "dff4aed1c7b1819395b45a2bc3ab86e8b6b398c49a8955f0771c83230e235fd4"
+  },
+  "optionalBundles": [
+    "@deepseek-ai/dsh-personalized-recommendations",
+    "@deepseek-ai/dsh-cua-bundle",
+    "@deepseek-ai/dsh-experimental-session-search",
+    "@deepseek-ai/dsh-experimental-ralph-bundle",
+    "@deepseek-ai/dsh-experimental-terminal-bundle",
+    "@deepseek-ai/dsh-experimental-badge-skill-bundle",
+    "@deepseek-ai/dsh-experimental-session-titles-bundle",
+    "@deepseek-ai/dsh-experimental-voice-input-bundle",
+    "@deepseek-ai/dsh-experimental-cot-translation-bundle",
+    "@deepseek-ai/dsh-experimental-auto-review",
+    "@deepseek-ai/dsh-experimental-inspector-profile",
+    "@deepseek-ai/dsh-experimental-liveshare",
+    "@deepseek-ai/dsh-experimental-plugin-market-bundle",
+    "@deepseek-ai/dsh-experimental-tool-worktree",
+    "@deepseek-ai/dsh-experimental-forge-bundle",
+    "@deepseek-ai/dsh-deepseek-chat-import"
+  ],
+  "protectedPlugins": [
+    "@deepseek-ai/dsh-plugin-manager",
+    "@deepseek-ai/cordis-plugin-loader",
+    "@deepseek-ai/cordis-plugin-include",
+    "@deepseek-ai/dsh-api-gateway",
+    "@deepseek-ai/dsh-host-webserver",
+    "@deepseek-ai/dsh-client-modules",
+    "@deepseek-ai/dsh-client-ui-settings-plugin-inventory",
+    "@deepseek-ai/dsh-client-ui-plugin-manager",
+    "@deepseek-ai/dsh-host-plugin-inventory",
+    "@deepseek-ai/dsh-typert-registry",
+    "@deepseek-ai/dsh-api-remotes",
+    "@deepseek-ai/dsh-api-remote-access",
+    "@deepseek-ai/cordis-plugin-timer",
+    "@deepseek-ai/dsh-client-connection",
+    "@deepseek-ai/dsh-host-frontend-static",
+    "@deepseek-ai/dsh-tools",
+    "@deepseek-ai/dsh-hmr"
+  ],
+  "catalog": [
+    {
+      "packageName": "@deepseek-ai/dsh-subagent-claude-code",
+      "meta": {
+        "title": {
+          "de": "Claude Code-Subagent",
+          "en": "Claude Code subagent",
+          "es": "Subagente Claude Code",
+          "fr": "Sous-agent Claude Code",
+          "ja": "Claude Code サブエージェント",
+          "pt": "Claude Code subagente",
+          "ru": "Субагент Claude Code",
+          "zh": "Claude Code 子智能体"
+        },
+        "description": {
+          "de": "Delegieren Sie eine Aufgabe an Claude Code, indem Sie dessen native Authentifizierung und Einstellungen verwenden.",
+          "en": "Delegate one task to Claude Code using its native authentication and settings.",
+          "es": "Delegue una tarea a Claude Code utilizando su autenticación y configuración nativas.",
+          "fr": "Déléguez une tâche à Claude Code à l’aide de son authentification et de ses paramètres natifs.",
+          "ja": "Claude Code のネイティブの認証と設定を使用して、単独のタスクを委派します。",
+          "pt": "Delegue uma tarefa a Claude Code usando sua autenticação e configurações nativas.",
+          "ru": "Делегируйте одну задачу Claude Code, используя его встроенную аутентификацию и настройки.",
+          "zh": "使用 Claude Code 原生认证和设置委派单个任务。"
+        },
+        "icon": "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzYiIGhlaWdodD0iMzYiIHZpZXdCb3g9IjAgMCAzNiAzNiIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB4PSIxNC45ODkzIiB5PSIxNS4xODc3IiB3aWR0aD0iMTIuMjM2NSIgaGVpZ2h0PSIxMi4yMzY1IiByeD0iMiIgZmlsbD0idXJsKCNkc2hfcGx1Z2luX2FydF9SMGEpIiBmaWxsLW9wYWNpdHk9IjAuOCI+PC9yZWN0PjxyZWN0IHg9IjguODcxMDkiIHk9IjkuMDY5NyIgd2lkdGg9IjEyLjIzNjUiIGhlaWdodD0iMTIuMjM2NSIgcng9IjIiIGZpbGw9InVybCgjZHNoX3BsdWdpbl9hcnRfUjBiKSIgZmlsbC1vcGFjaXR5PSIwLjgiPjwvcmVjdD48ZGVmcz48bGluZWFyR3JhZGllbnQgaWQ9ImRzaF9wbHVnaW5fYXJ0X1IwYSIgeDE9IjIxLjEwNzUiIHkxPSIxNS4xODc3IiB4Mj0iMjEuMTA3NSIgeTI9IjI3LjQyNDMiIGdyYWRpZW50VW5pdHM9InVzZXJTcGFjZU9uVXNlIj48c3RvcCBzdG9wLWNvbG9yPSIjNDVFN0E0Ij48L3N0b3A+PHN0b3Agb2Zmc2V0PSIxIiBzdG9wLWNvbG9yPSIjMDU5MDlEIj48L3N0b3A+PC9saW5lYXJHcmFkaWVudD48bGluZWFyR3JhZGllbnQgaWQ9ImRzaF9wbHVnaW5fYXJ0X1IwYiIgeDE9IjE0Ljk4OTQiIHkxPSI5LjA2OTciIHgyPSIxNC45ODk0IiB5Mj0iMjEuMzA2MyIgZ3JhZGllbnRVbml0cz0idXNlclNwYWNlT25Vc2UiPjxzdG9wIHN0b3AtY29sb3I9IiM2OUI5RkYiPjwvc3RvcD48c3RvcCBvZmZzZXQ9IjEiIHN0b3AtY29sb3I9IiMzMjRERTIiPjwvc3RvcD48L2xpbmVhckdyYWRpZW50PjwvZGVmcz48L3N2Zz4K"
+      }
+    },
+    {
+      "packageName": "@deepseek-ai/dsh-subagent-codex",
+      "meta": {
+        "title": {
+          "de": "Codex-Subagent",
+          "en": "Codex subagent",
+          "es": "Subagente Codex",
+          "fr": "Sous-agent Codex",
+          "ja": "Codex サブエージェント",
+          "pt": "Codex subagente",
+          "ru": "Субагент Codex",
+          "zh": "Codex 子智能体"
+        },
+        "description": {
+          "de": "Delegieren Sie eine Aufgabe an Codex, indem Sie dessen native Authentifizierung und Einstellungen verwenden.",
+          "en": "Delegate one task to Codex using its native authentication and settings.",
+          "es": "Delegue una tarea a Codex utilizando su autenticación y configuración nativas.",
+          "fr": "Déléguez une tâche à Codex à l’aide de son authentification et de ses paramètres natifs.",
+          "ja": "Codex のネイティブの認証と設定を使用して、単独のタスクを委派します。",
+          "pt": "Delegue uma tarefa a Codex usando sua autenticação e configurações nativas.",
+          "ru": "Делегируйте одну задачу Codex, используя его встроенную аутентификацию и настройки.",
+          "zh": "使用 Codex 原生认证和设置委派单个任务。"
+        },
+        "icon": "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzYiIGhlaWdodD0iMzYiIHZpZXdCb3g9IjAgMCAzNiAzNiIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB4PSIxNC45ODkzIiB5PSIxNS4xODc3IiB3aWR0aD0iMTIuMjM2NSIgaGVpZ2h0PSIxMi4yMzY1IiByeD0iMiIgZmlsbD0idXJsKCNkc2hfcGx1Z2luX2FydF9SMGEpIiBmaWxsLW9wYWNpdHk9IjAuOCI+PC9yZWN0PjxyZWN0IHg9IjguODcxMDkiIHk9IjkuMDY5NyIgd2lkdGg9IjEyLjIzNjUiIGhlaWdodD0iMTIuMjM2NSIgcng9IjIiIGZpbGw9InVybCgjZHNoX3BsdWdpbl9hcnRfUjBiKSIgZmlsbC1vcGFjaXR5PSIwLjgiPjwvcmVjdD48ZGVmcz48bGluZWFyR3JhZGllbnQgaWQ9ImRzaF9wbHVnaW5fYXJ0X1IwYSIgeDE9IjIxLjEwNzUiIHkxPSIxNS4xODc3IiB4Mj0iMjEuMTA3NSIgeTI9IjI3LjQyNDMiIGdyYWRpZW50VW5pdHM9InVzZXJTcGFjZU9uVXNlIj48c3RvcCBzdG9wLWNvbG9yPSIjNDVFN0E0Ij48L3N0b3A+PHN0b3Agb2Zmc2V0PSIxIiBzdG9wLWNvbG9yPSIjMDU5MDlEIj48L3N0b3A+PC9saW5lYXJHcmFkaWVudD48bGluZWFyR3JhZGllbnQgaWQ9ImRzaF9wbHVnaW5fYXJ0X1IwYiIgeDE9IjE0Ljk4OTQiIHkxPSI5LjA2OTciIHgyPSIxNC45ODk0IiB5Mj0iMjEuMzA2MyIgZ3JhZGllbnRVbml0cz0idXNlclNwYWNlT25Vc2UiPjxzdG9wIHN0b3AtY29sb3I9IiM2OUI5RkYiPjwvc3RvcD48c3RvcCBvZmZzZXQ9IjEiIHN0b3AtY29sb3I9IiMzMjRERTIiPjwvc3RvcD48L2xpbmVhckdyYWRpZW50PjwvZGVmcz48L3N2Zz4K"
+      }
+    }
+  ]
+}

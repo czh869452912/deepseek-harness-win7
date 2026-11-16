@@ -1,35 +1,37 @@
 """Current profile management Remote, extended in verified contract batches."""
 import asyncio
 import datetime
+import json
 import os
 import sys
 import uuid
+from pathlib import Path
 
 from dsh.boot.bundle_platform import UnsupportedBundlePlatformError
 from dsh.boot.plugin_switch import flatten, write_plugin_enabled
-from dsh.boot.profile import compose_entries
-from dsh.boot.profile_compatibility import PROFILE_COMPATIBILITY_FILENAME
+from dsh.boot.plugin_bundle_metadata import (OFFICIAL_DATA, OFFICIAL_CATALOG, OPTIONAL_BUNDLES,
+    bundle_directory, bundle_manifest, bundle_selection, official_bundle_install_target, update_refusal)
+from dsh.boot.plugin_install_spec import dependency_spec, parse_install_spec, InvalidInstallSpecError
+from dsh.boot.plugin_compatibility import evaluate_plugin_compatibility, get_dsh_runtime_version
+from dsh.boot.package_meta import read_plugin_meta
+from dsh.boot.plugin_packages import ResolutionRestartRequired
+from dsh.boot.profile import compose_entries, read_profile_manifest, bundle_patch_paths
+from dsh.boot.app_boot import load_overlay_patches
+from dsh.boot.profile_compatibility import PROFILE_COMPATIBILITY_FILENAME, read_profile_version_exemptions
 from dsh.boot.profile_context import read_profile_patches
 from dsh.boot.runtime_resolution import _field
 from dsh.cordis.awaiting import await_callback_result
 from dsh.cordis.errors import ThrownValueError
 from dsh.cordis.file_lock import with_file_lock
 from dsh.cordis.schema import Schema
-from dsh.cordis.utils import js_to_string
+from dsh.cordis.utils import js_to_string, _js_own_enumerable_keys
 from dsh.core.abort import AbortController
 from dsh.host.plugin_inventory.current import read_plugin_inventory
 from dsh.typert.remote import Remote, TypertRemoteService
+from dsh.util.atomic_write import write_file_atomic
 
 
-PROTECTED_PLUGINS = frozenset((
-    '@deepseek-ai/dsh-plugin-manager', '@deepseek-ai/cordis-plugin-loader',
-    '@deepseek-ai/cordis-plugin-include', '@deepseek-ai/dsh-api-gateway',
-    '@deepseek-ai/dsh-host-webserver', '@deepseek-ai/dsh-client-modules',
-    '@deepseek-ai/dsh-client-ui-settings-plugin-inventory', '@deepseek-ai/dsh-client-ui-plugin-manager',
-    '@deepseek-ai/dsh-host-plugin-inventory', '@deepseek-ai/dsh-typert-registry',
-    '@deepseek-ai/dsh-api-remotes', '@deepseek-ai/dsh-api-remote-access',
-    '@deepseek-ai/cordis-plugin-timer', '@deepseek-ai/dsh-client-connection',
-    '@deepseek-ai/dsh-host-frontend-static', '@deepseek-ai/dsh-tools', '@deepseek-ai/dsh-hmr'))
+PROTECTED_PLUGINS = frozenset(OFFICIAL_DATA['protectedPlugins'])
 
 
 class ManagementFailure(RuntimeError):
@@ -72,6 +74,9 @@ class CurrentPluginManager(TypertRemoteService):
         self.profile = ctx.profileContext
         self.owner_context = ctx
         self.owner_entry_id = _field(getattr(ctx.fiber, 'entry', None), 'id')
+        self.management_bundles = set()
+        for name in _field(self.profile, 'startedBundles', []):
+            self._protects_manager(name)
         self.lock_wait_ms = (config or {}).get('lockWaitMs', 120000)
         self.abort = AbortController()
         self.package_operations = set()
@@ -101,6 +106,224 @@ class CurrentPluginManager(TypertRemoteService):
                 row['patchId'] = candidates[0]['id']
             result.append(row)
         return result
+
+    def _bundle_directory(self, name):
+        return bundle_directory(name, _field(self.profile, 'dir'), _field(self.profile, 'installAnchor'))
+
+    def _bundle_manifest(self, name):
+        return bundle_manifest(name, _field(self.profile, 'dir'), _field(self.profile, 'installAnchor'))
+
+    def _bundle_patches(self, name, manifest):
+        result = []
+        for filename in bundle_patch_paths(self._bundle_directory(name), manifest['dsh']['bundle']):
+            result.extend(load_overlay_patches('dsh', filename))
+        return result
+
+    def _bundle_rows(self, name):
+        manifest = self._bundle_manifest(name)
+        return [] if manifest is None else flatten(compose_entries([self._bundle_patches(name, manifest)]))
+
+    def _protects_manager(self, name):
+        if name in self.management_bundles:
+            return True
+        try:
+            rows = self._bundle_rows(name)
+        except Exception:
+            return False
+        protected = any(row.get('name') in PROTECTED_PLUGINS or 'include:'+str(row.get('id')) == self.owner_entry_id for row in rows)
+        if protected:
+            self.management_bundles.add(name)
+        return protected
+
+    @staticmethod
+    def _assert_platform(bundle):
+        from dsh.boot.bundle_platform import assert_bundle_platform
+        if isinstance(bundle, dict) and 'platforms' in bundle:
+            assert_bundle_platform(bundle['platforms'])
+
+    def _assert_compatibility(self, manifest, exemptions):
+        issue = evaluate_plugin_compatibility(manifest, exemptions)
+        if issue is not None and not issue['exempted']:
+            raise ManagementFailure('incompatible-version', [{key:issue[key] for key in ('name', 'version', 'runtimeVersion', 'requirements')}])
+
+    def _declared_rows(self, name, manifest):
+        patches = self._bundle_patches(name, manifest)
+        directory = self._bundle_directory(name)
+        live = {entry.options['id']:entry for entry in self.ctx.loader.entries() if isinstance(entry.options.get('id'), str)}
+        rows = []
+        packages = self.ctx.get('pluginPackages')
+        for row in flatten(compose_entries([[patch for patch in patches if 'insert' in patch]])):
+            if not isinstance(row.get('id'), str) or not isinstance(row.get('name'), str) or row.get('group') is True:
+                continue
+            active = live.get(row['id'])
+            base = _field(active.parent.tree.ctx, 'baseUrl') if active is not None else None
+            if base is None:
+                base = Path(directory, 'package.json').as_uri()
+            meta = None if packages is None else packages.metaOf(row['name'], base)
+            item = dict(rowId=row['id'], moduleName=row['name'])
+            if active is not None:
+                item['entryId'] = active.id
+            if meta is not None:
+                item['meta'] = meta
+            rows.append(item)
+        declared = {row['rowId'] for row in rows}
+        overrides = list(dict.fromkeys(patch['id'] for patch in patches
+            if 'insert' not in patch and isinstance(patch.get('id'), str) and patch['id'] not in declared))
+        return dict(rows=rows, overrides=overrides)
+
+    def _read_bundles(self):
+        manifest = read_profile_manifest('dsh', _field(self.profile, 'dir'))
+        exemptions = read_profile_version_exemptions(_field(self.profile, 'dir'))
+        selected, recorded = bundle_selection(manifest), manifest.get('dependencies') or {}
+        dependencies = _js_own_enumerable_keys(recorded)
+        with open(_field(self.profile, 'installAnchor'), 'r', encoding='utf-8', errors='replace') as stream:
+            installation = json.load(stream)
+        catalog = {entry['packageName']:entry for entry in OFFICIAL_CATALOG}
+        shipped_names = _js_own_enumerable_keys(installation.get('dependencies') or {})
+        names = list(dict.fromkeys([*selected, *dependencies, *shipped_names, *catalog]))
+        bundles = []
+        runtime = get_dsh_runtime_version()
+        for name in names:
+            installed, enabled, shipped = name in dependencies, name in selected, name in shipped_names
+            optional, offered = name in OPTIONAL_BUNDLES, catalog.get(name)
+            official = optional or offered is not None
+            target, target_error = {}, None
+            if offered is not None:
+                try:
+                    target['installTarget'] = official_bundle_install_target(name, _field(self.profile, 'installAnchor'), runtime)
+                except Exception as error:
+                    target_error = management_error(error)
+            catalog_meta = {} if offered is None else dict(meta=offered['meta'])
+            if offered is not None and not installed and not shipped:
+                platform_error = None
+                try:
+                    self._assert_platform(offered)
+                except Exception as error:
+                    platform_error = management_error(error)
+                error = platform_error or target_error or (dict(code='not-bundle') if enabled else None)
+                item = dict(name=name, official=official, availability='missing', enabled=enabled,
+                            installed=installed, optional=optional, removable=enabled, rows=[], overrides=[], **catalog_meta, **target)
+                if platform_error is not None and platform_error['code'] == 'unsupported-platform':
+                    item['listedByDefault'] = False
+                if error is not None:
+                    item['error'] = error
+                bundles.append(item)
+                continue
+            owned = installed and not shipped
+            removable = owned or (enabled and not installed and not shipped)
+            def source_of(package_name=None):
+                return dict(source=dependency_spec(name, recorded[name], _field(self.profile, 'dir'), package_name)) if owned else {}
+            read_only = 'management-required' if self._protects_manager(name) else None
+            availability, version, version_present, listing = 'missing', None, False, {}
+            def basic():
+                item = dict(name=name, official=official, availability=availability, enabled=enabled,
+                            installed=installed, optional=optional, removable=removable and read_only is None,
+                            **catalog_meta, **target, **listing)
+                if read_only is not None:
+                    item['readOnlyReason'] = read_only
+                if version_present:
+                    item['version'] = version
+                return item
+            try:
+                info = self._bundle_manifest(name)
+                availability = 'installation' if shipped else 'profile'
+                if info is None:
+                    if enabled or offered is not None:
+                        bundles.append(dict(basic(), **source_of(), error=target_error or dict(code='not-bundle'), rows=[], overrides=[]))
+                    continue
+                version = info.get('version')
+                version_present = 'version' in info
+                bundle = info['dsh']['bundle']
+                listed = bundle.get('listedByDefault')
+                listing_diagnostic = None if 'listedByDefault' not in bundle or type(listed) is bool else 'dsh.bundle.listedByDefault must be a boolean'
+                if type(listed) is bool:
+                    listing['listedByDefault'] = listed
+                self._assert_compatibility(info, exemptions)
+                directory = self._bundle_directory(name)
+                meta = offered['meta'] if offered is not None else read_plugin_meta(info.get('name') if info.get('name') is not None else name, Path(directory, 'package.json').as_uri())
+                if listing_diagnostic is not None:
+                    meta = dict(meta or {})
+                    meta['error'] = listing_diagnostic if 'error' not in meta else meta['error']+'; '+listing_diagnostic
+                platform_error = None
+                try:
+                    self._assert_platform(bundle)
+                except Exception as error:
+                    platform_error = management_error(error)
+                if platform_error is not None and platform_error['code'] == 'unsupported-platform':
+                    listing['listedByDefault'] = False
+                error = platform_error or target_error
+                item = dict(basic(), **source_of(info.get('name')), **self._declared_rows(name, info))
+                if 'description' in info and info['description'] != '':
+                    item['description'] = info['description']
+                if meta is not None:
+                    item['meta'] = meta
+                else:
+                    item.pop('meta', None)
+                if error is not None:
+                    item['error'] = error
+                bundles.append(item)
+            except Exception as error:
+                if enabled or installed or optional or offered is not None:
+                    bundles.append(dict(basic(), **source_of(), error=target_error or management_error(error), rows=[], overrides=[]))
+        return bundles
+
+    @Remote('listBundles')
+    async def listBundles(self):
+        bundles = self._read_bundles()
+        for bundle in bundles:
+            target = update_refusal(bundle, bundle['name'])
+            if not isinstance(target, str):
+                bundle['update'] = target['kind']
+        return bundles
+
+    async def _select_bundle(self, name, enabled):
+        import json
+        manifest = read_profile_manifest('dsh', _field(self.profile, 'dir'))
+        previous = bundle_selection(manifest)
+        if enabled or name not in previous:
+            metadata = self._bundle_manifest(name)
+            if metadata is None:
+                raise ManagementFailure('not-bundle')
+            if enabled:
+                self._assert_platform(metadata['dsh']['bundle'])
+                self._assert_compatibility(metadata, read_profile_version_exemptions(_field(self.profile, 'dir')))
+                self._bundle_rows(name)
+        if not enabled and name in previous and self._protects_manager(name):
+            raise ManagementFailure('management-required')
+        selected = previous + ([] if name in previous else [name]) if enabled else [item for item in previous if item != name]
+        if previous == selected:
+            return
+        dsh = dict(manifest.get('dsh') or {})
+        dsh['profile'] = dict(dsh.get('profile') or {}, bundles=selected)
+        manifest['dsh'] = dsh
+        await write_file_atomic(os.path.join(_field(self.profile, 'dir'), 'package.json'), json.dumps(manifest, ensure_ascii=False, indent=2)+'\n', mode=0o600)
+        if enabled:
+            self._protects_manager(name)
+
+    async def _refresh_packages(self):
+        selected = bundle_selection(read_profile_manifest('dsh', _field(self.profile, 'dir')))
+        if any(name not in selected for name in _field(self.profile, 'startedBundles', [])):
+            return
+        packages = self.owner_context.get('pluginPackages')
+        if packages is not None and _field(packages, 'resolution') is not None:
+            try:
+                await await_callback_result(packages.refresh())
+            except ResolutionRestartRequired:
+                pass
+
+    async def _publish_and_reload(self, required_ids=()):
+        if self.owner_context.get('hmr') is None:
+            await self._refresh_packages()
+        return await self._reload(required_ids)
+
+    @Remote('setBundleEnabled')
+    async def setBundleEnabled(self, name, enabled):
+        async def operation(result):
+            async def apply():
+                await self._select_bundle(name, enabled)
+                result.update(await self._publish_and_reload([row['id'] for row in self._bundle_rows(name)]) if enabled else await self._reload())
+            await self._configure(apply)
+        return await self._change(operation, dict(stage='enable', target=name, enabled=enabled), 'bundle')
 
     async def _configure(self, operation):
         async def apply():
@@ -140,13 +363,19 @@ class CurrentPluginManager(TypertRemoteService):
     def _operation_target(self, reason, target):
         if reason == 'plugin':
             return target if _bounded(target, 256) and any(entry.id == target for entry in self.ctx.loader.entries()) else None
-        # Package operations supply their canonical package identity explicitly.
-        return None
+        try:
+            parsed = parse_install_spec(target)
+        except InvalidInstallSpecError:
+            return None
+        name = parsed['name'] if parsed['kind'] == 'registry' else None
+        return name if reason == 'install' or name == target else None
 
     def _operation_version(self, reason, target):
         if reason == 'install' or target is None:
             return None
         try:
+            if reason != 'plugin':
+                return diagnostic_version(_field(self._bundle_manifest(target), 'version'))
             entry = next((row for row in self.ctx.loader.entries() if row.id == target), None)
             base = _field(entry.parent.tree.ctx, 'baseUrl') if entry is not None else None
             packages = self.owner_context.get('pluginPackages')

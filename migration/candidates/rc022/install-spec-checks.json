@@ -1,0 +1,10 @@
+{
+  "part": "C8-BJ",
+  "upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "paired": {"run": "rc022-install-spec-paired3-20261116-01", "cases": 197, "passed": true},
+  "native": {"run": "rc022-install-spec-native3-20261116-01", "passed": 5, "failed": 0},
+  "source": {"run": "rc022-install-spec-source-20261116-01", "passed": 10, "failed": 0},
+  "verification_scope_reason": "Actual install-spec and install-failure modules compare npm/scoped names, range boundaries, exact JS whitespace, Win32 absolute/relative/file/link paths, local/HTTP tarballs, hosted and shorthand Git, normalized URL hosts/ports, invalid bracketed IPv6/ports, full SHA origins, transport/user stripping, subdirectory and repeated-fragment rejection. Saved dependency specs preserve query strings while removing HTTP credentials and anchor local paths including home, aliases and JS whitespace in scp forms. Error kinds compare timeout/spawn precedence, specific package codes before network, Git HTTP authentication/not-found staying unknown, ASCII word boundaries and mixed causes. Original Source tests pass in full. First pairing exposed Python 3.8 bracketed non-IPv6 acceptance, JS line-separator regex behavior and an erroneously literal regex delimiter in scp recognition; fixed and raw differences retained. Opaque-scheme host spelling and numeric port normalization additionally paired. No actual downloads, dependency installation or arbitrary plugin execution certified.",
+  "activation_boundary": "Shared management helper; install/update transaction and bundle Remote consumers continue next.",
+  "cleanup": {"removed_bytes": 49464, "external_empty_roots_removed": 1, "owned_processes_remaining": 0, "retained": "Compact commands, logs, XML/JSON and raw paired observations including resolved differences; shared Source/toolchains through C9."}
+}

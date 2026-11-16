@@ -104,4 +104,6 @@
 
 | C8-BI | 管理器插件 Remote、可编辑性、操作锁、变更事实与 HMR 结果 | [插件管理核心](plugin-manager-core-checks.json) |
 
+| C8-BJ | 安装来源解析、固定 Git 身份、凭据脱敏与失败分类 | [插件安装身份](install-spec-checks.json) |
+
 后续继续设置及完整应用组合；最终资格使用 C9 冻结候选的完整门禁。

@@ -206,4 +206,6 @@
 
 | C8-DN | 浏览器终端 Loader 绑定、真实 WinPTY 双向 Remote/xterm 及持久 PowerShell 状态/卸载 | [候选终端绑定](terminal-bindings-checks.json) |
 
+| C8-DO | 固定 Source 空 Client Host 的可复现绑定及快捷键/文档预览页面配置注入 | [候选浏览器 Host 绑定](client-bindings-checks.json) |
+
 后续继续完整应用组合；最终资格使用 C9 冻结候选的完整门禁。

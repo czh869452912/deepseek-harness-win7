@@ -1,6 +1,8 @@
 """rc.3 bindings staged for coordinated bundle, protocol and pin promotion."""
 
 CURRENT_HARNESS_PLUGIN_CLASSES = {
+    '@deepseek-ai/dsh-client-shortcuts': 'dsh.client.configuration_current:CurrentShortcutsHost',
+    '@deepseek-ai/dsh-client-ui-sidebar-documentpreview': 'dsh.client.configuration_current:CurrentDocumentPreviewHost',
     '@deepseek-ai/dsh-config-editor': 'dsh.boot.config_editor:ConfigEditor',
     '@deepseek-ai/dsh-settings': 'dsh.settings.forms:SettingsForms',
     '@deepseek-ai/dsh-api-settings-controller': 'dsh.api.settings_current:CurrentSettingsController',
@@ -79,7 +81,6 @@ CURRENT_HARNESS_PLUGIN_CLASSES = {
     '@deepseek-ai/dsh-headless': 'dsh.bundle.headless.current:CurrentHeadlessRunner',
 }
 
-for _slug in ('resources', 'ui-sidebar-right', 'ui-sidebar-documentpreview',
-              'ui-sidebar-files', 'ui-open-in-app'):
-    CURRENT_HARNESS_PLUGIN_CLASSES['@deepseek-ai/dsh-client-' + _slug] = (
-        'dsh.client.surfaces_current:' + ''.join(word.capitalize() for word in _slug.split('-')) + 'Host')
+from dsh.client.surfaces_current import PURE_HOST_HALVES
+for _package, _class_name in PURE_HOST_HALVES.items():
+    CURRENT_HARNESS_PLUGIN_CLASSES[_package] = 'dsh.client.surfaces_current:' + _class_name

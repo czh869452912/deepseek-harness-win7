@@ -1,9 +1,12 @@
-"""Pure host halves of the five rc.3 browser-only packages."""
+"""Source-verified literal empty Host halves for browser client discovery."""
+import json
+from pathlib import Path
 from dsh.client.surfaces import _empty_host_half
 
-for _slug in ('resources', 'ui-sidebar-right', 'ui-sidebar-documentpreview',
-              'ui-sidebar-files', 'ui-open-in-app'):
+PURE_HOST_HALVES = {}
+for _row in json.loads(Path(__file__).with_name('pure_hosts_current.json').read_text(encoding='utf-8'))['rows']:
+    _slug = _row['name'][len('@deepseek-ai/dsh-client-'):]
     _name = ''.join(word.capitalize() for word in _slug.split('-')) + 'Host'
+    PURE_HOST_HALVES[_row['name']] = _name
     globals()[_name] = _empty_host_half(
-        _name, '@deepseek-ai/dsh-client-' + _slug,
-        'packages/client/' + _slug + '/src/index.ts')
+        _name, _row['name'], _row['source'])

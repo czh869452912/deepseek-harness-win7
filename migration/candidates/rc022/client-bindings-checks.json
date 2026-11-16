@@ -1,0 +1,12 @@
+{
+  "part": "C8-DO",
+  "upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "native": {"run": "rc022-client-bindings-native-20261116-01", "passed": 1, "literal_empty_source_packages": 47, "configuration_packages": 2},
+  "consumers": {"run": "rc022-client-bindings-consumers-20261116-01", "passed": 35},
+  "source": {"run": "rc022-client-bindings-source-20261116-01", "passed": 3, "pending": 0, "failed": 0},
+  "paired": {"run": "rc022-client-configuration-paired-20261116-01", "observations": 11, "differences": 0},
+  "verification_scope_reason": "Generate bindings only when the original complete Host entrypoint, after comments, is literally an empty exported apply function, and its real package declares a Client. Generated records retain entrypoint and package manifest SHA-256. Re-capture from the fixed Source verifies those inputs before actual Loader mounts all such packages. Source documentpreview is not empty: it and shortcuts now supply validated page globals with exact defaults and bounds. Original Host callbacks and Python pair on accepted/refused configurations, injected values and disposer behavior; Loader disable removes the actual handlers. Existing empty client Host consumers and original two configuration Host suites pass.",
+  "diagnostics": "The previous five-name candidate table incorrectly treated documentpreview as empty. Replaced the fixed table with a reproducible Source-derived list and implemented documentpreview's real page configuration behavior separately. The generated package count describes this exact Source input, not a fixed browser composition or parity acceptance criterion.",
+  "activation_boundary": "Host entrypoint and configuration injection contract only. Browser bundle execution, interactive document rendering, plugin-manager Client Host behavior and complete application/release acceptance remain separate.",
+  "cleanup": {"owned_processes_remaining": 0, "removed_bytes": 13036, "retained": "Commands, XML/logs, original Source results, paired observations/hashes, candidate rows and Loader/page-global observations retained. Owned test workspaces/homes/tmp directories removed. Shared pinned Source/toolchains remain owned until C9."}
+}

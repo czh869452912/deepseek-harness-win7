@@ -1,0 +1,10 @@
+{
+  "part": "C8-DZ",
+  "upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "paired": {"run": "rc022-mcp-probe-paired-20261116-03", "observations": 161, "differences": 0},
+  "consumers": {"run": "rc022-mcp-probe-consumers-20261116-01", "passed": 36},
+  "verification_scope_reason": "Actual pinned SDK negotiateEra and ProbeWindow run against identical raw-channel fixtures: exact discovery envelopes/string ids, valid response guards, malformed/unrelated packet drop, preattached observer restoration, spent-close guard/disarm, single-use start handover, timeout retries, one corrective exchange, pin/no-fallback errors and failed start. Native cancellation verifies callback restoration and that a pending raw send remains channel-owned and is observed on completion. Shared schema and actual current resource consumers cover the added SDK envelope snapshots.",
+  "diagnostics": "Initial observation serializer omitted nested Error fields in Source cause; it now records the same recursive Error shape as Python without filtering decisions. Original failure and corrected raw runs retained. Timeout settles the exchange rather than cancelling the raw send, matching SDK ownership.",
+  "activation_boundary": "Probe state machine is not yet connected to application transports. Real disposable stdio process reaping, in-place HTTP integration, modern codecs and supervisor cleanup/startup budgets remain pending. These targeted results do not certify full MCP or release acceptance.",
+  "cleanup": {"owned_processes_remaining": 0, "sdk_temporary_modules_remaining": 0, "retained": "Commands/XML, raw paired observations/corpus/hashes and compact actual resource peer logs retained; owned pytest workspace/home/tmp removed. Shared Source/toolchains retained until C9."}
+}

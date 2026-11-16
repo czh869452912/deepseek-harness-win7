@@ -228,4 +228,6 @@
 
 | C8-DY | MCP SDK 2 发现响应分发 schema、版本纠正/回退及 HTTP/网络错误决策 | [MCP 协商决策](mcp-negotiation-checks.json) |
 
+| C8-DZ | MCP 原始探测窗口、消息守卫/回调移交、重试、关闭守卫与版本纠正状态机 | [MCP 探测](mcp-probe-checks.json) |
+
 后续继续完整应用组合；最终资格使用 C9 冻结候选的完整门禁。

@@ -12,6 +12,8 @@
     "catch",
     "enum",
     "lazy",
+    "literal",
+    "never",
     "number",
     "object",
     "optional",
@@ -761,6 +763,193 @@
       },
       "catchall": {
         "type": "unknown"
+      }
+    },
+    "ProbeResultEnvelope": {
+      "type": "object",
+      "shape": {
+        "jsonrpc": {
+          "type": "literal",
+          "values": [
+            "2.0"
+          ]
+        },
+        "id": {
+          "type": "union",
+          "options": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "number",
+              "checks": [
+                {
+                  "type": "number",
+                  "check": "number_format",
+                  "abort": false,
+                  "format": "safeint"
+                }
+              ]
+            }
+          ]
+        },
+        "result": {
+          "type": "object",
+          "shape": {
+            "_meta": {
+              "type": "optional",
+              "inner": {
+                "type": "object",
+                "shape": {
+                  "io.modelcontextprotocol/serverInfo": {
+                    "type": "catch",
+                    "inner": {
+                      "type": "optional",
+                      "inner": {
+                        "type": "object",
+                        "shape": {
+                          "name": {
+                            "type": "string"
+                          },
+                          "title": {
+                            "type": "optional",
+                            "inner": {
+                              "type": "string"
+                            }
+                          },
+                          "icons": {
+                            "type": "optional",
+                            "inner": {
+                              "type": "array",
+                              "element": {
+                                "type": "object",
+                                "shape": {
+                                  "src": {
+                                    "type": "string"
+                                  },
+                                  "mimeType": {
+                                    "type": "optional",
+                                    "inner": {
+                                      "type": "string"
+                                    }
+                                  },
+                                  "sizes": {
+                                    "type": "optional",
+                                    "inner": {
+                                      "type": "array",
+                                      "element": {
+                                        "type": "string"
+                                      }
+                                    }
+                                  },
+                                  "theme": {
+                                    "type": "optional",
+                                    "inner": {
+                                      "type": "enum",
+                                      "values": [
+                                        "light",
+                                        "dark"
+                                      ]
+                                    }
+                                  }
+                                }
+                              }
+                            }
+                          },
+                          "version": {
+                            "type": "string"
+                          },
+                          "websiteUrl": {
+                            "type": "optional",
+                            "inner": {
+                              "type": "string"
+                            }
+                          },
+                          "description": {
+                            "type": "optional",
+                            "inner": {
+                              "type": "string"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                "catchall": {
+                  "type": "unknown"
+                }
+              }
+            }
+          },
+          "catchall": {
+            "type": "unknown"
+          }
+        }
+      },
+      "catchall": {
+        "type": "never"
+      }
+    },
+    "ProbeErrorEnvelope": {
+      "type": "object",
+      "shape": {
+        "jsonrpc": {
+          "type": "literal",
+          "values": [
+            "2.0"
+          ]
+        },
+        "id": {
+          "type": "optional",
+          "inner": {
+            "type": "union",
+            "options": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "number",
+                "checks": [
+                  {
+                    "type": "number",
+                    "check": "number_format",
+                    "abort": false,
+                    "format": "safeint"
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        "error": {
+          "type": "object",
+          "shape": {
+            "code": {
+              "type": "number",
+              "checks": [
+                {
+                  "type": "number",
+                  "check": "number_format",
+                  "abort": false,
+                  "format": "safeint"
+                }
+              ]
+            },
+            "message": {
+              "type": "string"
+            },
+            "data": {
+              "type": "optional",
+              "inner": {
+                "type": "unknown"
+              }
+            }
+          }
+        }
+      },
+      "catchall": {
+        "type": "never"
       }
     }
   }

@@ -22,10 +22,10 @@ const file=path.resolve(path.dirname(entry),declaration.moduleSpecifier.text)
 const temporary=path.join(path.dirname(file),'.rc022-resource-schemas-'+process.pid+'.mjs')
 const original=fs.readFileSync(file,'utf8');let source,created=false
 try{
- fs.writeFileSync(temporary,original+'\nexport {buildSchemas2025 as rc022Schemas,buildSchemas2026 as rc022ModernSchemas};\n',{flag:'wx'})
+ fs.writeFileSync(temporary,original+'\nexport {buildSchemas2025 as rc022Schemas,buildSchemas2026 as rc022ModernSchemas,JSONRPCResultResponseSchema as rc022ResultEnvelope,JSONRPCErrorResponseSchema as rc022ErrorEnvelope};\n',{flag:'wx'})
  created=true
  const module=await import(pathToFileURL(temporary).href)
- source={...module.rc022Schemas(),ModernDiscoverResultSchema:module.rc022ModernSchemas().dispatchResultSchemas['server/discover']}
+ source={...module.rc022Schemas(),ModernDiscoverResultSchema:module.rc022ModernSchemas().dispatchResultSchemas['server/discover'],ProbeResultEnvelope:module.rc022ResultEnvelope,ProbeErrorEnvelope:module.rc022ErrorEnvelope}
 }finally{if(created)fs.unlinkSync(temporary)}
 const kinds=new Set()
 function capture(schema){
@@ -53,6 +53,6 @@ function capture(schema){
  }
  return node
 }
-const names=['ListResourcesResultSchema','ListResourceTemplatesResultSchema','ReadResourceResultSchema','ModernDiscoverResultSchema']
+const names=['ListResourcesResultSchema','ListResourceTemplatesResultSchema','ReadResourceResultSchema','ModernDiscoverResultSchema','ProbeResultEnvelope','ProbeErrorEnvelope']
 const schemas=Object.fromEntries(names.map(name=>[name,capture(source[name])]))
 fs.writeFileSync(process.argv[3],JSON.stringify({upstream:'38a6a5c965aa99ab525161efb7cc5cf1fe62fced',sdkVersion:'2.2.0',wireEras:{resources:'2025-11-25',discover:'2026-07-28'},schemaSourceSha256:createHash('sha256').update(fs.readFileSync(file)).digest('hex'),kinds:[...kinds].sort(),schemas},null,2)+'\n')

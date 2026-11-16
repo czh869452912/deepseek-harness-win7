@@ -1,0 +1,12 @@
+{
+  "batch": "C8-FK",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "scope": "Current account provider plus coordinated split-provider activation in the canonical base profile.",
+  "paired": {"observations": 14, "differences": 0, "report": ".goose/out/rc022-account-provider-paired1-20261116-01/report.json"},
+  "native": {"passed": 17, "report": ".goose/out/rc022-account-provider-native-20261116-01/command.json"},
+  "boot": {"passed": 12, "report": ".goose/out/rc022-account-provider-boot-20261116-01/command.json"},
+  "source": {"passed": 27, "report": ".goose/out/rc022-account-provider-source-20261116-01/command.json"},
+  "coverage": ["Actual account plugin/service mounting, account absence and resolution failures", "Account-authenticated listing, fallback, per-model overrides and provider-directory error diagnostics", "Account quota mapping, exact rejected-token invalidation on HTTP 401, preserved cause/retry/request facts and contained account storage failure", "API-key and account routes coexist and unload independently", "Canonical base now mounts the API-key provider under the existing llm-deepseek entry and adds llm-deepseek-account", "Required installation-owned provider package manifests preserve the exact Source bytes", "Actual headless run_profile uses /v1/messages and x-api-key; AgentLoop retries and terminal failures persist through current session format"],
+  "limits": ["Account provider behavior is qualified against a controlled deepseekAccount service; the account sign-in service and Web UI remain separate migration work", "Other package/frontend/version promotion and C9 full release acceptance remain pending", "The native and boot runs overlap and are separate verification scopes, not a combined unique test count"],
+  "cleanup": {"removed_bytes": 539364, "removed": ["Owned pytest and profile workspaces", "Owned tmp and home directories"], "retained": "Commands, observations and compact reports; no remaining task-owned process"}
+}

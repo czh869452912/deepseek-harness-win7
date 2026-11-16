@@ -302,4 +302,6 @@
 
 | C8-FJ | 独立 API-key provider、当前 Host 接线、活凭据与目录注册生命周期 | [API-key provider](api-key-provider-checks.json) |
 
+| C8-FK | Account provider 与基础 profile 切换；真实 headless Messages 重试链路 | [账户 provider 与组合](account-provider-checks.json) |
+
 后续继续完整应用组合；最终资格使用 C9 冻结候选的完整门禁。

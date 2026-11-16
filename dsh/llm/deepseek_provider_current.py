@@ -6,11 +6,11 @@ from dsh import __version__
 from dsh.cordis.environment import launch_environment_of
 from dsh.cordis.plugin import Plugin
 from dsh.identity.anonymous_user_id import get_or_create_anonymous_user_id
-from dsh.llm.deepseek_config_current import plainOptions
-from dsh.llm.deepseek_credentials import resolveDeepSeekApiKey
+from dsh.llm.deepseek_config_current import plainOptions, resolveAdapterOptions
+from dsh.llm.deepseek_credentials import resolveDeepSeekApiKey, resolveDeepSeekAccountToken, rejectDeepSeekAccountToken
 from dsh.llm.deepseek_messages_adapter import DeepSeekMessagesAdapter
 from dsh.llm.deepseek_model_info_current import catalogModelInfo
-from dsh.llm.deepseek_route_config import resolveApiKeyOptions, routeSchema
+from dsh.llm.deepseek_route_config import resolveApiKeyOptions, resolveAccountOptions, routeSchema
 from dsh.llm.listed_catalog import resolveListedCatalog, refuseListedModel
 from dsh.llm.llm_service import LlmError
 from dsh.llm.model_listing import requestModelListing
@@ -147,3 +147,61 @@ class CurrentDeepSeekApiKeyProvider(Plugin):
             if next_following != following[0]: listings.invalidate()
             following[0] = next_following
         ctx.on('loader/volatile-update', changed)
+
+
+class CurrentDeepSeekAccountProvider(Plugin):
+    id = 'llm-deepseek-account'
+    inject = ['llm']
+    Config = routeSchema('account')
+
+    def apply(self, ctx):
+        provider = 'deepseek-account'; environment = launch_environment_of(ctx)
+        def settings(): return resolveAccountOptions(plainOptions(self.config), environment)
+        settings(); supported = resolveAdapterOptions({})['models']
+        async def auth(connection):
+            token = await resolveDeepSeekAccountToken(ctx, connection['baseURL'])
+            if token is None:
+                raise LlmError('Sign in to DeepSeek to use the account provider. The request destination must allow account authentication.', 'ACCOUNT_SIGN_IN_REQUIRED')
+            async def on_error(error):
+                if not isinstance(error, LlmError): return error
+                if error.code == 'QUOTA':
+                    mapped = LlmError.fromFailure(dict(error.failure, code='ACCOUNT_QUOTA')); mapped.cause = error
+                    return mapped
+                if error.failure.get('status') != 401: return error
+                mapped = LlmError.fromFailure(dict(error.failure, code='ACCOUNT_TOKEN_INVALID')); mapped.cause = error
+                await rejectDeepSeekAccountToken(ctx, token)
+                return mapped
+            return dict(headers={'x-dsh-auth-token': token}, onRequestError=on_error)
+        async def credential(url): return await resolveDeepSeekAccountToken(ctx, url)
+        catalog = createModelListingCache(ctx, self.id, provider, dict(settings=lambda: settings()['catalog'], credential=credential,
+            load=lambda url, token, signal: requestModelListing(url, {'x-dsh-auth-token': token}, signal)))
+        logged = [None]
+        def connection_of(view):
+            resolved = settings(); listing = view.get('listing')
+            result = resolveListedCatalog(dict(listing=listing['entries'] if listing is not None else None,
+                supported=supported, overrides=resolved['modelOverrides'], routeMaxTokens=resolved['protocol']['maxTokens'], clientVersion=__version__))
+            if listing is not logged[0]:
+                logged[0] = listing
+                for problem in result['problems']: print('[llm-deepseek-account]', problem, file=sys.stderr)
+            return dict(resolved['protocol'], models=result['resolution'], catalog=result)
+        owner_entry = getattr(ctx.fiber, 'entry', None)
+        namespace = field(field(owner_entry, 'options'), 'id') if owner_entry is not None else None
+        entry = dict(provider=provider, displayName='DeepSeek Account', settingsNs=namespace if namespace is not None else self.id, settingsPath=[])
+        directory = ctx.llm.register_configurable_providers([entry]); ctx.effect(lambda: directory)
+        reported = [None]
+        def discovered(view):
+            connection = connection_of(view)
+            errors = connection['catalog']['overrideErrors']; error = '; '.join(errors) if errors else None
+            if error != reported[0]:
+                reported[0] = error
+                directory.replace([entry if error is None else dict(entry, error=error)])
+            return connection
+        async def connect(signal=None): return connection_of(await catalog.view(settings()['catalog'], signal))
+        async def discover(route):
+            view = await catalog.view(settings()['catalog'])
+            if not view['authenticated']: return []
+            result = discovered(view)['catalog']
+            return [catalogModelInfo(route, model, result['badges'].get(model['id'])) for model in result['offered']]
+        self.adapter = registerDeepSeekProvider(ctx, provider, dict(providerName='DeepSeek Account',
+            options=lambda: connection_of(catalog.current()), connect=connect, resolveAuth=auth,
+            admit=lambda connection, model: refuseListedModel(model, connection['catalog']['refusals'].get(model)), discoverModels=discover))

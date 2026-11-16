@@ -25,6 +25,8 @@ def test_default_headless_http_retry_policy(tmp_path, statuses, retry_after, exp
             pass
 
         def do_POST(self):
+            assert self.path == '/v1/messages'
+            assert self.headers.get('x-api-key') == 'fixture'
             request = json.loads(self.rfile.read(int(self.headers['Content-Length'])))
             main = bool(request.get('tools'))
             if main:
@@ -33,7 +35,14 @@ def test_default_headless_http_retry_policy(tmp_path, statuses, retry_after, exp
             if status != 200:
                 raw = json.dumps({'error': {'message': 'fixture failure'}}).encode('utf-8')
             else:
-                raw = b'data: {"choices":[{"delta":{"content":"Recovered successfully"},"finish_reason":"stop"}]}\n\ndata: [DONE]\n\n'
+                events = [
+                    dict(type='message_start', message=dict(usage=dict(input_tokens=1, output_tokens=0))),
+                    dict(type='content_block_start', index=0, content_block=dict(type='text', text='Recovered successfully')),
+                    dict(type='content_block_stop', index=0),
+                    dict(type='message_delta', delta=dict(stop_reason='end_turn'), usage=dict(output_tokens=1)),
+                    dict(type='message_stop'),
+                ]
+                raw = ''.join('event: '+event['type']+'\ndata: '+json.dumps(event)+'\n\n' for event in events).encode('utf-8')
             self.send_response(status)
             self.send_header('Content-Type', 'text/event-stream' if status == 200 else 'application/json')
             self.send_header('Content-Length', str(len(raw)))

@@ -1,0 +1,31 @@
+{
+  "part": "C8-CN",
+  "upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "native": [
+    {
+      "run": "rc022-python-package-git-native-20261116-01",
+      "passed": 3,
+      "failed": 10,
+      "reason": "Windows long Git paths, transient config/pack lock disappearance, absent repository cleanup and synthetic readonly hardlink teardown"
+    },
+    {
+      "run": "rc022-python-package-git-native2-20261116-01",
+      "passed": 12,
+      "failed": 1,
+      "reason": "archive byte limit was masked by an inherited pipe drain diagnostic"
+    },
+    {
+      "run": "rc022-python-package-git-native-fix-20261116-01",
+      "passed": 2,
+      "deselected": 11,
+      "failed": 0
+    }
+  ],
+  "verification_scope_reason": "Actual local Git transport runs inside the captured Python child: exact SHA, tag, branch and HEAD resolve to the same commit/subdirectory; independently unpacked archive and all file hashes agree; author code is never imported and the profile is unchanged. Real missing commit/directory/Git, invalid ABI, repository/archive byte limits and cancellation cover failures. Parent drains the owned process tree before cleanup. Cleanup rejects shared object files and only clears readonly attributes on owned single-link objects. The original failed readonly synthetic duplicate link was removed without changing shared attributes before qualified cleanup consumed its single-link original.",
+  "activation_boundary": "Standalone Git publication only. Native parent receipt binding, persisted origins and actual manager Git installation/update remain next; semver Git selectors and hosted tree URL normalization are not claimed. No default activation, full regression or release acceptance.",
+  "cleanup": {
+    "owned_processes_remaining": 0,
+    "retained": "Commands/XML, captured raw package logs, Git seed commit observations and resolved-hardlink fixture observation; synthetic profiles, object stores and temporary workspaces removed. Shared Source/toolchains retained until C9.",
+    "removed_bytes": 1131606
+  }
+}

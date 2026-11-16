@@ -152,4 +152,6 @@
 
 | C8-CM | 更新中后端卸载/宿主退出、完整排空、恢复副本与等待者取消独立性 | [更新生命周期](python-update-lifetime-checks.json) |
 
+| C8-CN | 真实 Git 提交/标签/分支/子目录归档、限额、取消排空及单链接对象清理 | [Git 原生获取](python-package-git-checks.json) |
+
 后续继续设置及完整应用组合；最终资格使用 C9 冻结候选的完整门禁。

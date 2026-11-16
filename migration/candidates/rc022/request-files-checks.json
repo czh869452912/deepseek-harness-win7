@@ -1,0 +1,11 @@
+{
+  "part": "C8-FC",
+  "upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "paired": {"run": "rc022-request-files-paired-20261116-01", "observations": 2821, "differences": 0},
+  "native": {"run": "rc022-request-files-native-20261116-01", "passed": 63, "failed": 0},
+  "source": {"run": "rc022-request-files-source-20261116-01", "passed": 13, "failed": 0},
+  "verification_scope_reason": "RequestFiles resolves under per-upload deadlines, records successful occurrences, pulses activity, invalidates exact named stale mappings or all unique candidates, and grants one request retry. A second stale response still invalidates but cannot retry; beginAttempt resets occurrences only. Normalized-image diagnostics select exact file ids or deduplicated candidate locations. Paired input spans Unicode 16 letter/number range edges, Source UTF-16 neighbor indexing, Unicode ASCII case folds and four JS dot line terminators. Native tests verify timeout wrapping versus caller abort identity, invalidation failure preserving retry allowance and activity errors outside upload wrapping. Existing Files store/API and timeout consumers pass.",
+  "activation_boundary": "Request-owned policy helper ready for split Messages adapter. The historical combined Files store/transport remains independently selected until its header-auth and Messages endpoint migration. The Unicode 16 table carries Source file hash, Node version and generator provenance.",
+  "limits": "Paired policy uses controlled Files capabilities without network. Actual split Files HTTP/upload-index integration and full release acceptance remain subsequent work.",
+  "cleanup": {"removed_bytes": 2214402, "owned_processes_remaining": 0, "retained": "Paired inputs/results/hash report, Source JSON, native commands/logs/XML and compact diagnostics. Owned external/mapped pytest fixtures and tmp/home removed; shared Source/toolchains retained until C9."}
+}

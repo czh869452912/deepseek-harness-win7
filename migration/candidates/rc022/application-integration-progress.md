@@ -286,4 +286,6 @@
 
 | C8-FB | 实际附件目标宽高编码与缓存：短边取整、独立 Pillow 身份、并发复用和原图保留 | [图片目标编码](image-targets-checks.json) |
 
+| C8-FC | 请求级 Files 截止时间、过期映射单次恢复、Unicode 边界与实际图片位置诊断 | [请求 Files 策略](request-files-checks.json) |
+
 后续继续完整应用组合；最终资格使用 C9 冻结候选的完整门禁。

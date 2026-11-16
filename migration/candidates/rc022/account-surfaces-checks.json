@@ -1,0 +1,40 @@
+{
+  "part": "C8-GD",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "scope": "Account settings and account notification Host halves plus unchanged package/locale identities",
+  "paired": {
+    "run": "rc022-account-surfaces-paired4-20261116-01",
+    "observations": 315,
+    "differences": 0,
+    "comparison": "Actual Source/Native plugin activation for public URL/source, volatile onboarding choices, notification interval boundaries and defaults; effective Config JSON, Peer-bearing index injection, initial/late/absent Settings presentation and effect disposal."
+  },
+  "verification": {
+    "native": "11 passed: new Host corpus, actual SettingsForms live edit/presentation ownership and direct schema/forms regressions.",
+    "source": {
+      "run": "rc022-account-surfaces-source-20261116-01",
+      "passed": 4,
+      "skipped": 0
+    },
+    "scope_reason": "Provider/schema contracts and their direct SettingsForms/index-injection consumers. Browser feature behavior and compiled bundle integration remain C9."
+  },
+  "behavior": [
+    "Public bootstrap contains contactFormUrl/contactSource only; onboarding choices remain volatile device-local settings, with automatic generated forms disabled reversibly.",
+    "Notification bootstrap publishes its validated positive 31-bit millisecond interval, default 600000.",
+    "The existing settings provider is optional; mounting it later establishes the same presentation policy. Unload removes policy and index handlers."
+  ],
+  "metadata": "account-surfaces-inputs.json",
+  "diagnostics": [
+    "Initial successful observers read raw fiber.config, so defaults were not included. Final observers read effectiveConfig in both runtimes and apply JSON undefined-member omission to Native volatile optional values.",
+    "New tests initially confused raw string configuration with effective Volatile cells; actual SettingsForms updates and ownership now pass."
+  ],
+  "limitations": [
+    "Original client package metadata and eight locales per package were copied byte-for-byte; compiled frontend promotion and account UI browser acceptance remain C9.",
+    "No complete migration/release or Windows 7 qualification is claimed by this focused Host change."
+  ],
+  "cleanup": {
+    "bytes_removed": 68020,
+    "receipt": "rc022-account-surfaces-source-20261116-01/cleanup.json",
+    "removed": "Owned synthetic pytest workspaces, isolated homes and temporary trees.",
+    "retained": "Commands/logs/XML, Source and Native observations, hashes and necessary failing diagnostics; shared Source/toolchains retained for C9."
+  }
+}

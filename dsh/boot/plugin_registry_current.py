@@ -1,6 +1,8 @@
 """rc.3 bindings staged for coordinated bundle, protocol and pin promotion."""
 
 CURRENT_HARNESS_PLUGIN_CLASSES = {
+    '@deepseek-ai/dsh-client-ui-settings-account': 'dsh.client.account_surfaces_current:CurrentUiSettingsAccount',
+    '@deepseek-ai/dsh-client-ui-account-notifications': 'dsh.client.account_surfaces_current:CurrentUiAccountNotifications',
     '@deepseek-ai/dsh-credentials-local': 'dsh.credentials.local_current:CurrentCredentialsLocalPlugin',
     '@deepseek-ai/dsh-web': 'dsh.web.web_service_current:CurrentWebService',
     '@deepseek-ai/dsh-web-fetch-http': 'dsh.web.http_fetch_current:CurrentWebFetchHttp',

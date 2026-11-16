@@ -341,3 +341,5 @@
 | C8-GB | Round-trip credential edits, annotations and x86/x64 packaging dependencies | [Credential editor](credential-editor-checks.json) |
 
 | C8-GC | Current credential storage, durable queue, live reload and canonical Connection activation | [Credential storage](credential-storage-checks.json) |
+
+| C8-GD | Account settings/onboarding and notification public Host configuration | [Account surfaces](account-surfaces-checks.json) |

@@ -1,0 +1,78 @@
+{
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "scope": "Unchanged package metadata and locales; compiled client promotion remains C9.",
+  "files": [
+    {
+      "path": "packages/client/ui-settings-account/package.json",
+      "sha256": "c23eae4aaa35aedb3cefac8e287dace5a7487dc3872fa5428b37f96570ac5524"
+    },
+    {
+      "path": "packages/client/ui-settings-account/locale/de.json",
+      "sha256": "d4f7f5b608ec9196bca82eb3895fbae295e830167db525fbb951a1878d7b51b6"
+    },
+    {
+      "path": "packages/client/ui-settings-account/locale/en.json",
+      "sha256": "99b2fcadb79cc1f8268bf2d2539b78264ca6006a272e869eba4449b4a1138059"
+    },
+    {
+      "path": "packages/client/ui-settings-account/locale/es.json",
+      "sha256": "32262a7536ed92a4e0faab15317f23bccfb365eb3ef83777468dc20299c8a058"
+    },
+    {
+      "path": "packages/client/ui-settings-account/locale/fr.json",
+      "sha256": "9efb98c2c648b61159e8993548b01a874298c1f2bc7184722d6ec3fff7a4f45e"
+    },
+    {
+      "path": "packages/client/ui-settings-account/locale/ja.json",
+      "sha256": "d73bb99923f580293664c4ce0e1eb780ee8bfa357246bb1cca451593e33a6b87"
+    },
+    {
+      "path": "packages/client/ui-settings-account/locale/pt.json",
+      "sha256": "8f87875fa5ca43f017aa88e98346f32757b293a7756daabfe3aedab4da81fcb1"
+    },
+    {
+      "path": "packages/client/ui-settings-account/locale/ru.json",
+      "sha256": "5f47619db09751d643d7b48a17e7bb30547ba1d7f47d5c8773c488c17bf15127"
+    },
+    {
+      "path": "packages/client/ui-settings-account/locale/zh.json",
+      "sha256": "9c205fe8c5c9b59d38900a61e325d1f813d2634fe11976c4c41400a2425daa5f"
+    },
+    {
+      "path": "packages/client/ui-account-notifications/package.json",
+      "sha256": "bc97055e9be8138270cf60ce0fe1e2d43e8447a28987c489793886b56c00e242"
+    },
+    {
+      "path": "packages/client/ui-account-notifications/locale/de.json",
+      "sha256": "10605e3392c111525ad78a3954c582beec87475bec37c5a8594c5fbd2d508675"
+    },
+    {
+      "path": "packages/client/ui-account-notifications/locale/en.json",
+      "sha256": "68ecba46b80624f794e0cc0f19534b851b54a0d2a87cb2029231d503c7eadb84"
+    },
+    {
+      "path": "packages/client/ui-account-notifications/locale/es.json",
+      "sha256": "034ad7e4ec0e63cbf3bad0e668fb42e11af51b3a0dbb951f01e89b063cbd4b2b"
+    },
+    {
+      "path": "packages/client/ui-account-notifications/locale/fr.json",
+      "sha256": "19fc4b0741f13759a5349d680b93005a2d7b830521a088248379c095b32e37c3"
+    },
+    {
+      "path": "packages/client/ui-account-notifications/locale/ja.json",
+      "sha256": "ce6bca87424110b43f57ad50561298cf9ffadeaa0dd77541c466a7fdd2e74040"
+    },
+    {
+      "path": "packages/client/ui-account-notifications/locale/pt.json",
+      "sha256": "076db89e793bd226da2d0e52f01055606cef54d71855f35c3a33bfc201677bfd"
+    },
+    {
+      "path": "packages/client/ui-account-notifications/locale/ru.json",
+      "sha256": "16786d652bf4eb060bfc831587f001e8a654c32b3ebacf8fce2e76278cef8e2d"
+    },
+    {
+      "path": "packages/client/ui-account-notifications/locale/zh.json",
+      "sha256": "35c23acd4b28ca46fb45b80967fccfd76478c4f1ccb2a4217702a69bee099e91"
+    }
+  ]
+}

@@ -1,0 +1,36 @@
+{
+  "part": "C8-GM",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "scope": "Register the application-selected product event policy adapter over ctx.otel",
+  "paired": {
+    "run": "rc022-product-telemetry-paired2-20261116-01",
+    "observations": 119,
+    "differences": 0,
+    "comparison": "Actual mounted Source and Native ProductTelemetry services over recording ordinary-event reporter ports. Compare schema admission/defaults, constructor endpoint/channel/batch checks, selected resource/routing/processor options, event forwarding, disposal cancellation and service removal."
+  },
+  "verification": {
+    "native": "12 passed: 119-row policy corpus; actual registered service plus otel/event channel/HTTP exports with gzip, none, null and omitted compression; explicit identity/header isolation; stalled actual response cancellation on fiber deadline; direct event channel and otel service regressions.",
+    "source": "27 passed across the pinned product-telemetry-otel package, in addition to 119 paired policy observations.",
+    "scope_reason": "Covers policy/provider ownership and actual Native exporter composition, with the null compression edge and deadline cancellation verified through both the port contract and real HTTP consumer."
+  },
+  "behavior": [
+    "@deepseek-ai/dsh-host-product-telemetry-otel resolves to a Cordis service requiring otel. Endpoint, x-channel header and count limits are checked before service publication; serviceName/serviceVersion are explicit required composition values.",
+    "The adapter supplies only selected application resource identity, routing header and queue/HTTP settings. It adds no device/account/session identity and mounting alone emits no event.",
+    "Explicit compression null maps to none, matching the Source conditional; omission leaves shared exporter environment defaults in control. Actual requests ignore ambient collector credential headers.",
+    "The owning fiber drains the reporter on unload. Its deadline warns and aborts pending ordinary-event exports, including an active stalled response body.",
+    "The package manifest is copied byte-for-byte from Source (SHA-256 cc58e639b4b3a5551b6e110d00bab5edfcb61dd799f184b6f7b474da1f6ba326)."
+  ],
+  "diagnostics": [
+    "The first paired comparison exposed null compression being treated as omission; its mapping was corrected and the final 119 observations matched."
+  ],
+  "limitations": [
+    "The service is registered; coordinated desktop/web-app bundle activation and browser product-event producers remain follow-up work. This provider commit does not claim those business flows.",
+    "Node constructor cause objects, arbitrary SDK/Agent options and the previously recorded transport adaptations are not full ABI parity claims. Full migration/release, Portable/browser and Windows 7 qualification remain pending."
+  ],
+  "cleanup": {
+    "bytes_removed": 92385,
+    "receipt": "rc022-product-telemetry-source-20261116-01/cleanup.json",
+    "removed": "Owned pytest workspaces, temporary/home trees and completed HTTP collector threads/sockets. No matching test processes remain.",
+    "retained": "Commands, logs/XML/Vitest JSON and paired policy/transport observations. Shared Source/toolchains remain needed for bundle/client migration and C9."
+  }
+}

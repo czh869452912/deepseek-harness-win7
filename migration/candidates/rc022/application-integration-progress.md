@@ -359,3 +359,5 @@
 | C8-GK | Registered Cordis otel service and actual independent HTTP channel composition | [OTel service](otel-service-checks.json) |
 
 | C8-GL | Active feedback-only backend over ctx.otel, source-envelope redaction and canonical provider composition | [OTel backend](otel-backend-checks.json) |
+
+| C8-GM | Registered product event policy, explicit application identity and cancellable fiber drain | [Product telemetry](product-telemetry-checks.json) |

@@ -1,0 +1,12 @@
+{
+  "part": "C8-EP",
+  "upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "paired": {"run": "rc022-change-recorder-paired3-20261116-01", "observations": 12, "differences": 0},
+  "native": {"run": "rc022-change-recorder-consumers-20261116-01", "passed": 10},
+  "source": {"run": "rc022-change-recorder-source3-20261116-01", "passed": 16, "failed": 0},
+  "verification_scope_reason": "Actual per-turn Source/native recorders over identical mutation sequences, including first capture retention, result gating, empty supersession, per-turn isolation, binary/byte/list caps, outside temporary exclusions, real Git snapshots and ignored file captures, lazy oversized refusal, rename, untouched repository objects/index/refs and scratch removal. Direct capture/path/Git/compare consumers also pass.",
+  "diagnostics": "Initial test fixtures used long Windows paths and failed to await the turn baseline before direct writes. Shortened fixture names and made the observer obey pre-tool settlement. Initial Source suite had two default 5s timeouts and one non-repository fixture discovering the enclosing checkout; unchanged Source passes with 15s per-test budget and an explicit Git ceiling at the owned temp root. An initial nonexistent recorder.spec.ts selection collected no tests; corrected to actual plugin.spec.ts. Failed run logs/observations retained.",
+  "activation_boundary": "Recorder implementation only. Plugin registration, filesystem/tool/session hooks and workspaceChanges service composition are the next contract batch.",
+  "limits": "No browser diff acceptance, Native plugin integration or complete release acceptance. Non-Windows scheduling and repeated Python Task cancellation are not qualified by this corpus.",
+  "cleanup": {"removed_bytes": 4177741, "owned_processes_remaining": 0, "retained": "Compact paired inputs/results/hash reports, successful and failed test diagnostics, native file observations; owned repositories, scratch, pytest workspaces, tmp/home removed. Shared Source/toolchains retained until C9."}
+}

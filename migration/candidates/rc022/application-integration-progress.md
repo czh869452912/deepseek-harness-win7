@@ -126,4 +126,6 @@
 
 | C8-BZ | 无 Node 注册表元数据、真实 pnpm 版本选择、配置/认证路由与有界读取 | [Python 包元数据](python-package-query-checks.json) |
 
+| C8-CA | Python 查询执行器接入真实管理器，空 PATH 下检查与列版本及请求取消 | [Python 包查询执行器](python-package-command-checks.json) |
+
 后续继续设置及完整应用组合；最终资格使用 C9 冻结候选的完整门禁。

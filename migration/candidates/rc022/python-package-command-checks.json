@@ -1,0 +1,9 @@
+{
+  "part": "C8-CA",
+  "upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "paired": {"run": "rc022-python-package-command-paired-20261116-01", "cases": 7, "passed": true},
+  "native": {"run": "rc022-python-package-command-native-20261116-01", "passed": 5, "failed": 1, "failure": "Test assertion incorrectly expected a latest boolean; actual qualified wire result carries tags: [latest]. Assertion corrected without production change.", "targeted_rerun": {"run": "rc022-python-package-command-native-failed-20261116-01", "passed": 1, "failed": 0, "unselected": 5}},
+  "verification_scope_reason": "Real Source/current managers invoke the Python executable adapter, with explicitly empty child PATH, for registries, bundle inspect, scoped and alias metadata, known/missing package refusals and version listings. Both use a real task-owned loopback registry; neither query command requires Node/pnpm. The Source observer itself runs on its pinned Node toolchain. Native also checks actual single-field/nested-field output, absent-field empty stdout, structured failure stdout/stderr, refusal of unsupported options/mutations without touching package.json, and aborting the actual Python child while its HTTP request is waiting. Process ownership comes from the already-qualified canonical subprocess adapter.",
+  "activation_boundary": "Private Python query executable and application-owned options constructor only. It is ready to compose into a complete backend; unsupported mutations explicitly fail and cannot claim installation. The default production manager has not been switched. Native acquisition, transaction ownership, production/browser promotion and final acceptance remain pending.",
+  "cleanup": {"removed_bytes": 817096, "owned_processes_remaining": 0, "retained": "Compact commands, paired observations, XML/logs and resolved assertion failure; shared pinned Source/toolchains owned through C9."}
+}

@@ -234,4 +234,6 @@
 
 | C8-EB | MCP HTTP 原连接探测、JSON/SSE、业务请求头/会话 ID 及取消清理与实际接线 | [MCP HTTP 协商](mcp-http-negotiation-checks.json) |
 
+| C8-EC | MCP 稳定状态单元/观察者、UTF-16 脱敏与原因链及不取消后台工作的期限 | [MCP 状态基础](mcp-status-primitives-checks.json) |
+
 后续继续完整应用组合；最终资格使用 C9 冻结候选的完整门禁。

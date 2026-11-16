@@ -1,0 +1,12 @@
+{
+  "part": "C8-EC",
+  "upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "paired": {"run": "rc022-mcp-status-paired-20261116-01", "differences": 0},
+  "negotiation_consumer_paired": {"run": "rc022-mcp-status-negotiation-20261116-01", "observations": 648, "differences": 0},
+  "consumers": {"run": "rc022-mcp-status-consumers-20261116-01", "passed": 35},
+  "source": {"run": "rc022-mcp-status-source-20261116-01", "passed": 20, "failed": 0},
+  "verification_scope_reason": "Original McpStatusCell, real Fiber lookup, diagnostic helpers and withDeadline pair native observer snapshot ordering, synchronous async-listener entry, synchronous/asynchronous failure containment, warning sink replacement, status/closure reference identity, explicit detach and post-disposal readability. Cause chains/cycles and longest-first UTF-16 secret replacement match, including half-surrogate and empty-secret inputs. Deadlines leave late work alive and wrap non-Error rejection; native caller-cancellation and garbage-collection tests cover Python lifetime adaptations. SDK negotiation failures now expose their original cause property for diagnostics, with 648 decision observations unchanged. Existing current resource/schema consumers pass.",
+  "python_adaptation": "The stable cell is stored on its owning Fiber, avoiding a global WeakKeyDictionary value-to-warning-sink-to-Fiber retention cycle. A collected owner and cell are both reclaimed; a live disposed Fiber keeps its readable cell. Async observers use the existing framework eager coroutine entry helper to preserve Source call ordering.",
+  "activation_boundary": "These helpers are prerequisites for replacing the legacy current supervisor. Current connection status publication, reload cleanup fences, bounded generation ownership and credential-aware diagnostics have not yet been integrated. Original Source status tests alone are not native supervisor acceptance. No full MCP or release acceptance claimed.",
+  "cleanup": {"owned_processes_remaining": 0, "removed_bytes": 2194789, "retained": "Paired raw observations/corpus/hashes, commands/XML, Source report and compact actual resource peer observations retained. Owned test workspaces/home/tmp removed; shared fixed Source/toolchains retained until C9."}
+}

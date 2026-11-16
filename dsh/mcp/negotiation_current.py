@@ -4,11 +4,14 @@ import json
 from dsh.mcp.current import RESOURCE_SCHEMAS
 from dsh.mcp.schemas import parse,SchemaError
 
+_ABSENT=object()
+
 
 class SdkError(RuntimeError):
     name='SdkError'
-    def __init__(self,code,message,data=None):
+    def __init__(self,code,message,data=None,cause=_ABSENT):
         self.code=code;self.message=message;self.data=data
+        if cause is not _ABSENT:self.cause=cause
         super().__init__(message)
 
 
@@ -39,7 +42,7 @@ def _rpc(outcome,context):
 def _network(error,context):
     if context['environment']=='browser' and (isinstance(error,TypeError) or getattr(error,'name',None)=='TypeError'):
         return dict(kind='legacy')
-    return dict(kind='error',error=SdkError('ERA_NEGOTIATION_FAILED','Version negotiation probe failed: '+str(error),dict(cause=error)))
+    return dict(kind='error',error=SdkError('ERA_NEGOTIATION_FAILED','Version negotiation probe failed: '+str(error),dict(cause=error),cause=error))
 
 
 def classify_probe_outcome(outcome,context):

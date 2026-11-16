@@ -15,6 +15,7 @@ from dsh.boot.plugin_bundle_metadata import (OFFICIAL_DATA, OFFICIAL_CATALOG, OP
 from dsh.boot.plugin_install_spec import dependency_spec, parse_install_spec, InvalidInstallSpecError
 from dsh.boot.plugin_bundle_detail import read_bundle_document, read_bundle_image
 from dsh.boot.plugin_inspection import PluginInspection
+from dsh.boot.plugin_installation import PluginInstallation
 from dsh.boot.plugin_registry_policy import normalize_registry, NPMMIRROR_REGISTRY
 from dsh.boot.plugin_compatibility import evaluate_plugin_compatibility, get_dsh_runtime_version
 from dsh.boot.package_meta import read_plugin_meta
@@ -71,10 +72,14 @@ def diagnostic_version(value):
     return value if _bounded(value, 128) else None
 
 
-class CurrentPluginManager(PluginInspection, TypertRemoteService):
+class CurrentPluginManager(PluginInstallation, PluginInspection, TypertRemoteService):
     inject = ['loader', 'profileContext']
     Config = Schema.object(dict(lockWaitMs=Schema.number().step(1).min(0).default(120000),
         pnpmCommand=Schema.string().default('pnpm'),
+        outputBytes=Schema.number().step(1).min(1).default(16384),
+        githubConnectionTimeoutMs=Schema.number().step(1).min(1000).default(5000),
+        gitTransportTimeoutMs=Schema.number().step(1).min(1000).default(5000),
+        idleTimeoutMs=Schema.number().step(1).min(1000).default(600000),
         inspectTimeoutMs=Schema.number().step(1).min(1000).default(20000),
         registry=Schema.string().pattern(r'^https?://\S+$'),
         fallbackRegistries=Schema.array(Schema.string().pattern(r'^https?://\S+$')).default([NPMMIRROR_REGISTRY]),
@@ -102,6 +107,11 @@ class CurrentPluginManager(PluginInspection, TypertRemoteService):
         self.version_list_limit = config.get('versionListLimit', 20)
         self.version_lookup_concurrency = config.get('versionLookupConcurrency', 4)
         self.installed_from = {}
+        self.installs = {}
+        self.output_bytes = config.get('outputBytes', 16384)
+        self.github_connection_timeout_ms = config.get('githubConnectionTimeoutMs', 5000)
+        self.git_transport_timeout_ms = config.get('gitTransportTimeoutMs', 5000)
+        self.idle_timeout_ms = config.get('idleTimeoutMs', 600000)
         self.abort = AbortController()
         values = dict(detailMaxBytes=1024*1024, detailImageMaxBytes=5*1024*1024,
             detailFetchTimeoutMs=15000, detailNpmFileSources=list(NPM_FILE_SOURCES))
@@ -528,11 +538,13 @@ class CurrentPluginManager(PluginInspection, TypertRemoteService):
             report('unknown')
             raise
         extra = {key:settled[key] for key in ('stage', 'application', 'changed')}
+        if 'bundle' in settled:extra['target'] = self._operation_target('install', settled['bundle'])
         if settled.get('error') is not None:
             extra['errorCode'] = settled['error']['code']
         if 'restartReason' in settled:
             extra['restartReason'] = settled['restartReason']
-        if diagnostic_version(settled.get('version')) is not None:
-            extra['version'] = settled['version']
+        refused_version = next((row.get('version') for row in _field(settled.get('error'), 'incompatible', []) if row['name'] == facts['target']), None) if reason == 'install' else None
+        observed_version = settled.get('version') if settled.get('version') is not None else refused_version
+        if diagnostic_version(observed_version) is not None:extra['version'] = observed_version
         report('settled', **extra)
         return settled

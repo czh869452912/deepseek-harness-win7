@@ -118,4 +118,6 @@
 | C8-BU | 安装服务进程的完整日志、字节尾部、静默期限、运行记录与回收 | [安装进程执行层](package-run-checks.json) |
 | C8-BV | 安装前后兼容性与目标校验、配置恢复修复、Bundle 选择及遗留运行准入 | [安装服务事务](package-operations-checks.json) |
 
+| C8-BW | 管理器安装、移除、等待与取消，进度流、构建批准及热启停 | [安装管理接口](manager-installation-checks.json) |
+
 后续继续设置及完整应用组合；最终资格使用 C9 冻结候选的完整门禁。

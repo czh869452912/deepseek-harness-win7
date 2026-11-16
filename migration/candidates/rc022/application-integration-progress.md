@@ -114,5 +114,6 @@
 | C8-BQ | Bundle 详情 Remote、官方待安装包与可逆 Connection 图片路由 | [管理器详情集成](manager-detail-checks.json) |
 | C8-BR | 包元数据查询进程、参数与环境边界、超时取消及回收 | [包查询进程](package-view-checks.json) |
 | C8-BS | 仓库配置、安装前检查、版本列表 Remote、兼容性及取消重试边界 | [管理器包查询](manager-inspection-checks.json) |
+| C8-BT | Git 连接预检、HTTPS/SSH 选择、完整日志与取消后进程树回收 | [Git 预检](git-connection-checks.json) |
 
 后续继续设置及完整应用组合；最终资格使用 C9 冻结候选的完整门禁。

@@ -16,7 +16,7 @@ async def test_canonical_web_composes_current_providers_and_separates_public_url
               '--trusted-host', 'gateway.example'], waitForExit=False))
     ctx = running['ctx']
     try:
-        services = ['webApp', 'remoteAccess', 'workingDirectory', 'fileUploads', 'mcpManager', 'mcpResources']
+        services = ['webApp', 'remoteAccess', 'workingDirectory', 'fileUploads', 'mcpManager', 'mcpResources', 'workspaceChanges']
         assert [name for name in services if ctx.get(name) is None] == []
         assert await inactive_entries(ctx) == []
         assert ctx.get('webRuntime') is None

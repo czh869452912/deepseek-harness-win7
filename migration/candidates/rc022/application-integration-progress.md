@@ -262,4 +262,6 @@
 
 | C8-EP | 工作区每轮记录器：快照与首个编辑捕获、事件覆盖、延迟差异、仓库状态不变及释放清理 | [每轮记录器](change-recorder-checks.json) |
 
+| C8-EQ | 工作区变更服务：真实 Agent/文件策略调用链、会话寿命、Git 降级、Web 装配及可逆挂载 | [变更服务](workspace-recorder-service-checks.json) |
+
 后续继续完整应用组合；最终资格使用 C9 冻结候选的完整门禁。

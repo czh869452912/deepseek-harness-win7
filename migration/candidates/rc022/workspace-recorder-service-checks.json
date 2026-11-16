@@ -1,0 +1,11 @@
+{
+  "part": "C8-EQ",
+  "upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "native": {"run": "rc022-workspace-recorder-service-consumers3-20261116-01", "passed": 44, "failed": 0},
+  "composition": {"run": "rc022-workspace-recorder-service-control-20261116-01/composition-observations.json", "source_selected_rows": 1, "byte_identical_manifests": 1},
+  "verification_scope_reason": "Real V4 Agent through native tool executor, filesystem intent waterfall and observation policy writes and edits files. Both real Git and unavailable-Git paths publish one in-turn announcement, preserve user edits and original repository index/objects/refs, serve captured and lazy snapshot differences, retire session state, withdraw hooks and remove scratch. Five invalid-bound checks, ineligible session/unload checks and canonical Web service activation pass. Direct file/directory consumers, existing workspace watch-feed regressions, recorder and credentials/startup are included.",
+  "diagnostics": "Initial test message omitted its required source. Initial consumer output path exceeded Git's Windows file path limit; final run uses the existing external short pytest workspace mapping and retain_regression_workspace helper. Existing workspace_changes watch-feed tests are retained separately from new workspace_recorder_service tests. Failed diagnostics retained.",
+  "activation_boundary": "Current registry, exact package manifest and Source-selected Web row mount workspaceChanges. Browser host changes.summary/diff/open routes remain next; the existing delivered-file routes have not yet been promoted to the new Source contract.",
+  "limits": "Windows host integration only; macOS Xcode-stub handling, browser rendering and complete release/Portable qualification are not claimed.",
+  "cleanup": {"removed_bytes": 1161214, "owned_processes_remaining": 0, "retained": "Commands/logs/XML, mapped workspace receipts, actual Agent/session/service observations, candidate inputs and exact composition/manifest identity. All owned pytest workspaces, tmp/home, Git fixtures and recorder scratch removed, including both external execution workspaces after retention. Shared Source/toolchains retained until C9."}
+}

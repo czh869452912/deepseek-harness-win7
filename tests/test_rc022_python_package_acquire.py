@@ -28,7 +28,11 @@ def registry_package(tmp_path,monkeypatch):
             else:
                 version=state.get('index_version',original['version']);metadata=dict(state['metadata'],dist=dict(tarball=state['url']+'/archive.tgz?token=fixture-secret',integrity=state.get('integrity',sri(state['payload']))))
                 payload=json.dumps(dict(name=state.get('root_name',PACKAGE),versions={version:metadata},**{'dist-tags':{'latest':version}})).encode('utf-8')
-            self.send_response(200);self.send_header('Content-Length',str(len(payload)));self.end_headers();self.wfile.write(payload)
+            self.send_response(200);self.send_header('Content-Length',str(len(payload)));self.end_headers()
+            if path=='/archive.tgz' and 'pause' in state:
+                state['entered'].set();state['pause'].wait(5)
+            try:self.wfile.write(payload)
+            except OSError:pass
         def log_message(self,*args):pass
     server=ThreadingHTTPServer(('127.0.0.1',0),Handler);server.socket=context.wrap_socket(server.socket,server_side=True);worker=threading.Thread(target=server.serve_forever,daemon=True);worker.start();state['url']='https://localhost:'+str(server.server_port)
     def pack(manifest=None):

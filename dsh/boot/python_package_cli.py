@@ -3,6 +3,7 @@ import json
 import os
 from pathlib import Path
 import sys
+import shutil
 
 # Executed by absolute filename from a profile, including embedded Python.
 if __package__ in (None,''):sys.path.insert(0,str(Path(__file__).resolve().parents[2]))
@@ -30,6 +31,23 @@ def _view(argv,directory):
     return query_metadata(directory,spec,fields,registry)
 
 
+def _prepare(argv,directory):
+    from dsh.boot.python_package_acquire import acquired_registry_package
+    from dsh.boot.profile_compatibility import read_profile_version_exemptions
+    from dsh.boot.python_plugins import reparse,atomic_bytes,json_bytes
+    if len(argv)<3:raise PackageQueryError('ERR_DSH_PACKAGE_ARGUMENT','prepare requires a spec and owned output directory')
+    spec,target=argv[1:3];registry=None
+    for argument in argv[3:]:
+        if argument.startswith('--registry='):registry=argument[len('--registry='):]
+        else:raise PackageQueryError('ERR_DSH_PACKAGE_ARGUMENT','unsupported package preparation option')
+    if not os.path.isdir(target) or reparse(target) or os.listdir(target):raise PackageQueryError('ERR_DSH_PACKAGE_ARGUMENT','package preparation output must be an empty owned directory')
+    print('Fetching '+spec,flush=True)
+    with acquired_registry_package(directory,spec,registry,exemptions=read_profile_version_exemptions(directory)) as candidate:
+        shutil.copyfile(candidate.source,os.path.join(target,'package.tgz'))
+        atomic_bytes(os.path.join(target,'prepared.json'),json_bytes(dict(formatVersion=1,manifest=candidate.manifest,acquisition=candidate.acquisition)))
+        print('Prepared '+candidate.manifest['name']+'@'+candidate.manifest['version'],flush=True)
+
+
 def main(argv=None):
     argv=list(sys.argv[1:] if argv is None else argv)
     for stream in (sys.stdout,sys.stderr):
@@ -41,9 +59,12 @@ def main(argv=None):
             value=_view(argv,os.getcwd())
             if value is not UNSPECIFIED:print(json.dumps(value,ensure_ascii=False,separators=(',',':')))
             return 0
+        if argv and argv[0]=='prepare':_prepare(argv,os.getcwd());return 0
         raise PackageQueryError('ERR_DSH_PYTHON_PACKAGE_OPERATION_UNAVAILABLE','native package mutation is not available in this query adapter')
     except PackageQueryError as error:
-        print(json.dumps(dict(error=dict(code=error.code,message=error.message)),ensure_ascii=False))
+        details=dict(code=error.code,message=error.message)
+        if getattr(error,'incompatible',None) is not None:details['incompatible']=error.incompatible
+        print(json.dumps(dict(error=details),ensure_ascii=False))
         print(str(error),file=sys.stderr);return 1
     except Exception as error:
         # Never print an exception body containing configured URLs or secrets.

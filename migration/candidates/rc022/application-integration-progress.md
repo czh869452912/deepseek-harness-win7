@@ -136,4 +136,6 @@
 
 | C8-CE | Native 注册表来源/精确依赖、禁用包版本历史、离线回滚和真实管理器库存 | [Python 注册表代际](python-registry-generations-checks.json) |
 
+| C8-CF | 独立 Python 子进程准备、父进程复验、提交前零写入与下载取消收尾 | [Python 包准备所有者](python-package-prepare-checks.json) |
+
 后续继续设置及完整应用组合；最终资格使用 C9 冻结候选的完整门禁。

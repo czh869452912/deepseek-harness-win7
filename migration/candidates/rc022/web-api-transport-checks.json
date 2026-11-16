@@ -1,0 +1,11 @@
+{
+  "batch": "C8-FR",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "scope": "Direct Search/Fetch transport component with ordered account/API-key credentials; provider registration follows separately.",
+  "paired": {"observations": 52, "differences": 0, "report": ".goose/out/rc022-web-api-transport-paired4-20261116-01/report.json"},
+  "native": {"passed": 13, "report": ".goose/out/rc022-web-api-transport-native-20261116-01/command.json"},
+  "source": {"passed": 77, "report": ".goose/out/rc022-web-api-transport-source-20261116-01/command.json"},
+  "coverage": ["Independent real HTTP servers for Source and Native, operation-specific credential order and no fallback after a failed read", "Presence-only API-key readiness, account endpoint-bound token resolution and misconfiguration barriers", "One POST, exact endpoint-bound auth headers, dispatch callbacks and redirect rejection", "HTTP errors and endpoint recovery guidance; exact rejected account-token invalidation even when reading its 401 body is cancelled", "Header/body abort, pre-abort, pending credential cancellation and observed late failure without cancelling the resolver owner", "Shared owned HTTP carrier and URL normalizer extracted from the account implementation; account protocol/login/notification direct-consumer regressions passed"],
+  "limits": ["JSON parser-specific diagnostic text for a malformed successful body is normalized; error code, stable prefix and recovery guidance are compared", "Listener counts are observed after caller-scope disposal: Node fetch retains an internal listener until abort, while Native releases its carrier listener on completion", "The first two Source observer attempts timed out while developing the held credential fixture; the corrected fixture and expanded observation passed", "Search/Fetch provider registration and original frontend integration remain subsequent work; targeted checks do not establish release acceptance"],
+  "cleanup": {"removed_bytes": 220913, "removed": ["Owned pytest fixture workspaces, tmp and home directories"], "retained": "Commands, reports, compact observations and initial diagnostics; no remaining task-owned process."}
+}

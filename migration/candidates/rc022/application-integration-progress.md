@@ -316,4 +316,6 @@
 
 | C8-FQ | 账户浏览器登录、PKCE 回调与失败页面、基础 profile 和生成 Remote 协议接线 | [登录与启动](account-login-checks.json) |
 
+| C8-FR | Search/Fetch 按序凭据与真实 HTTP、401 精确失效、共享传输与取消清理 | [Web API 传输](web-api-transport-checks.json) |
+
 后续继续完整应用组合；最终资格使用 C9 冻结候选的完整门禁。

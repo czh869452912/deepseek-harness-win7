@@ -1,0 +1,10 @@
+{
+  "batch": "C8-FH",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "scope": "Pinned idleWatchdog demand deadline race, a prerequisite for Messages transport activation.",
+  "native": {"passed": 63, "report": ".goose/out/rc022-watchdog-race-native-20261116-01/command.json"},
+  "source": {"passed": 27, "report": ".goose/out/rc022-watchdog-race-source-20261116-01/command.json"},
+  "coverage": ["Deadline settles a next demand whose iterator never settles; underlying demand is not cancelled", "Stable timeout reason, pulse rearming and no consumer-pause charge", "Own timeout settles demand even when upstream abort already won the fused signal", "Disposal, concurrent-next rejection, native iterators, later demand failures and waiter cancellation", "Request Files deadlines and actual historical image/extension HTTP journeys remain valid"],
+  "limits": ["This batch runs the actual upstream timeout suite and targeted native contracts; it does not add a paired oracle or establish Messages activation", "Transport ownership must still close or observe the demand after the race settles"],
+  "cleanup": {"removed_bytes": 1977089, "removed": ["Owned pytest workspace", "Owned tmp and home directories"], "retained": "Commands, XML, logs and Source test report; no remaining task-owned process"}
+}

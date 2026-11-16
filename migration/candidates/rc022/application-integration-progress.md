@@ -296,4 +296,6 @@
 
 | C8-FG | 当前 Files 共享上传、独立取消、跨页配额回收及精确失效消费链 | [文件复用服务](file-store-checks.json) |
 
+| C8-FH | 空闲超时直接竞争挂起 demand，并观察延迟失败 | [watchdog 竞争](watchdog-race-checks.json) |
+
 后续继续完整应用组合；最终资格使用 C9 冻结候选的完整门禁。

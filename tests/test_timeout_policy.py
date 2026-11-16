@@ -236,6 +236,35 @@ async def test_watchdog_upstream_abort_and_waiter_cancellation(clock):
         assert watchdog._timer is None and not watchdog._outstanding
 
 
+@pytest.mark.asyncio
+async def test_watchdog_deadline_wins_over_a_permanently_pending_demand(clock):
+    pending = asyncio.get_running_loop().create_future()
+    with timeout.idle_watchdog(None, 100, 'IDLE') as watchdog:
+        task = asyncio.create_task(watchdog.next(SimpleNamespace(next=lambda: pending)))
+        await asyncio.sleep(0); clock.advance(100)
+        with pytest.raises(timeout.TimeoutReason) as caught:
+            await asyncio.wait_for(task, .2)
+        assert caught.value is watchdog.signal.reason
+        assert not pending.done()
+        assert watchdog._race is None and not watchdog._outstanding
+        pending.set_exception(RuntimeError('late reader failure'))
+        await asyncio.sleep(0)
+        assert pending.exception().args == ('late reader failure',)
+
+
+@pytest.mark.asyncio
+async def test_watchdog_own_deadline_settles_even_when_upstream_already_aborted(clock):
+    controller = AbortController(); reason = RuntimeError('caller'); controller.abort(reason)
+    pending = asyncio.get_running_loop().create_future()
+    with timeout.idle_watchdog(controller.signal, 100, 'IDLE') as watchdog:
+        task = asyncio.create_task(watchdog.next(SimpleNamespace(next=lambda: pending)))
+        await asyncio.sleep(0); clock.advance(100)
+        with pytest.raises(timeout.TimeoutReason): await asyncio.wait_for(task, .2)
+        assert watchdog.signal.reason is reason
+        assert timeout.timeout_of(watchdog.signal) is None
+        pending.set_result(None); await asyncio.sleep(0)
+
+
 async def setup_tool(handler, budget=100):
     ctx = Context()
     await ctx.plugin(SourceToolsPrompt)

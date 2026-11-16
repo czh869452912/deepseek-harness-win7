@@ -1,6 +1,7 @@
-"""Signal-only timing and classification from the pinned dsh-timeout package."""
+"""Scoped deadlines and demand races from the pinned dsh-timeout package."""
 
 import asyncio
+from asyncio import get_running_loop as _running_loop, ensure_future as _ensure_future, shield as _shield
 import math
 import weakref
 from decimal import Decimal
@@ -132,6 +133,9 @@ class IdleWatchdog:
         self._timer = None
         self._outstanding = False
         self._disposed = False
+        self._reason = TimeoutReason(code, timeout_ms)
+        self._timed_out = False
+        self._race = None
 
     def _clear(self):
         if self._timer is not None:
@@ -140,9 +144,13 @@ class IdleWatchdog:
 
     def _arm(self):
         self._clear()
-        self._timer = asyncio.get_running_loop().call_later(
-            self._timeout_ms / 1000.0, self.signal._abort,
-            TimeoutReason(self._code, self._timeout_ms))
+        self._timer = asyncio.get_running_loop().call_later(self._timeout_ms / 1000.0, self._expire)
+
+    def _expire(self):
+        if self._timed_out: return
+        self._timed_out = True
+        self.signal._abort(self._reason)
+        if self._race is not None and not self._race.done(): self._race.set_exception(self._reason)
 
     async def next(self, iterator):
         if self._disposed:
@@ -150,13 +158,28 @@ class IdleWatchdog:
         if self._outstanding:
             raise RuntimeError("idleWatchdog next is already outstanding")
         self._outstanding = True
+        race = _running_loop().create_future()
+        self._race = race
         self._arm()
         try:
             advance = getattr(iterator, "__anext__", None) or iterator.next
-            return await advance()
+            demand = _ensure_future(advance())
+            def completed(future):
+                # A timed-out demand remains owned by its transport. Observe its
+                # eventual failure without retaining values in the watchdog.
+                if future.cancelled():
+                    if not race.done(): race.cancel()
+                    return
+                error = future.exception()
+                if race.done(): return
+                if error is not None: race.set_exception(error)
+                else: race.set_result(future.result())
+            demand.add_done_callback(completed)
+            return await _shield(race)
         finally:
             self._clear()
             self._outstanding = False
+            self._race = None
 
     def pulse(self):
         if not self._disposed and self._outstanding:

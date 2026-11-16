@@ -246,4 +246,6 @@
 
 | C8-EH | MCP 管理条目：易变配置、写入校验顺序/跨传输字段、模板与客户端配置隔离转换 | [MCP 管理条目](mcp-manager-entries-checks.json) |
 
+| C8-EI | MCP 管理服务：实例协调/注册寿命、重启、观察/Remote 探测及清理失败保留与替换阻断 | [MCP 管理服务](mcp-manager-checks.json) |
+
 后续继续完整应用组合；最终资格使用 C9 冻结候选的完整门禁。

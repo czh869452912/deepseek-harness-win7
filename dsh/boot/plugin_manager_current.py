@@ -16,6 +16,7 @@ from dsh.boot.plugin_install_spec import dependency_spec, parse_install_spec, In
 from dsh.boot.plugin_bundle_detail import read_bundle_document, read_bundle_image
 from dsh.boot.plugin_inspection import PluginInspection
 from dsh.boot.plugin_installation import PluginInstallation
+from dsh.boot.plugin_update import PluginUpdate
 from dsh.boot.plugin_registry_policy import normalize_registry, NPMMIRROR_REGISTRY
 from dsh.boot.plugin_compatibility import evaluate_plugin_compatibility, get_dsh_runtime_version
 from dsh.boot.package_meta import read_plugin_meta
@@ -72,7 +73,7 @@ def diagnostic_version(value):
     return value if _bounded(value, 128) else None
 
 
-class CurrentPluginManager(PluginInstallation, PluginInspection, TypertRemoteService):
+class CurrentPluginManager(PluginUpdate, PluginInstallation, PluginInspection, TypertRemoteService):
     inject = ['loader', 'profileContext']
     Config = Schema.object(dict(lockWaitMs=Schema.number().step(1).min(0).default(120000),
         pnpmCommand=Schema.string().default('pnpm'),

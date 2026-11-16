@@ -1,0 +1,11 @@
+{
+  "part": "C8-BX",
+  "upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "paired": {"run": "rc022-manager-update-paired-20261116-01", "cases": 24, "passed": true},
+  "native": {"run": "rc022-manager-update-native-20261116-01", "passed": 2, "failed": 0},
+  "source": {"run": "rc022-manager-update-source-20261116-01", "passed": 20, "failed": 0, "unselected": 154},
+  "verification_scope_reason": "Real Source/current Include/Loader/HMR manager updates call the same app-owned executable against independent profiles. Compare exact version postconditions, remove/add order and flags, disabled selection, startup replacement without removal, preflight failures without mutation, wrong package/version/extra dependency/plain/incompatible post-install refusals, actual activation failure, failed removal, failed target and failed restoration, cancellation followed by uncancellable old-version restoration, progress streams, operation facts, dependency manifests and CRLF locks. Git missing/unpinned/different-origin plans are refused before touching the profile. Normalization is limited to profile/log paths, UUIDs and presence of language-specific activation diagnostic text. Native additionally forces a rejected removal to verify update step/error folding; original Source update/restoration cases pass.",
+  "legal_adaptation": "An owned CleanupPromise keeps the entire update/restoration alive across Python waiter cancellation. Restoration has no request id. This composes the already-qualified captured package service and Windows process ownership; controlled repair still does not establish real package-byte restoration.",
+  "activation_boundary": "Current candidate manager registry update and Git plan refusals only. Actual Git update execution, built-in zero-Node Python package backend composition, production promotion and browser/release acceptance remain pending.",
+  "cleanup": {"removed_bytes": 1151543, "external_roots_removed": 1, "owned_processes_remaining": 0, "retained": "Compact commands, observations and test reports; shared pinned Source/toolchains owned until C9."}
+}

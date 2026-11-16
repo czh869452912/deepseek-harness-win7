@@ -304,4 +304,6 @@
 
 | C8-FK | Account provider 与基础 profile 切换；真实 headless Messages 重试链路 | [账户 provider 与组合](account-provider-checks.json) |
 
+| C8-FL | 账户客户端身份、Cookie 合并、脱敏资料与精确十进制钱包投影 | [账户资料投影](account-projection-checks.json) |
+
 后续继续完整应用组合；最终资格使用 C9 冻结候选的完整门禁。

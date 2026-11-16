@@ -1,0 +1,11 @@
+{
+  "batch": "C8-FL",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "scope": "Platform client metadata, Cookie merging, profile and decimal wallet projections.",
+  "paired": {"observations": 437, "differences": 0, "report": ".goose/out/rc022-account-projection-paired1-20261116-01/report.json"},
+  "native": {"passed": 3, "report": ".goose/out/rc022-account-projection-native-20261116-01/command.json"},
+  "source": {"report": ".goose/out/rc022-account-projection-source-20261116-01/command.json"},
+  "coverage": ["Actual Source metadata and profile exports; Source balance parser reached through readAccountDetail and the actual protocol envelope", "Case-sensitive Cookie overwrite order and ECMAScript trim boundaries", "Web and desktop identity, primary language normalization and JavaScript number spelling", "Required and nullable user fields, contact precedence and discarded credentials", "Decimal exponents, omitted integer/fraction, Unicode digit and newline rejection, preserved precision", "Detached projections and failed balances distinct from empty balances"],
+  "limits": ["HTTP transport, account state machine and account Web integration remain subsequent batches", "Targeted domain qualification does not establish release acceptance"],
+  "cleanup": {"removed_bytes": 49521, "removed": ["Owned pytest workspaces", "Owned tmp and home directories"], "retained": "Commands, paired inputs/results and compact observations; no remaining task-owned process"}
+}

@@ -1,0 +1,15 @@
+{
+  "part": "C8-BF",
+  "upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "paired": {"run": "rc022-plugin-inventory-paired-20261116-01", "cases": 10, "passed": true},
+  "native": {"run": "rc022-plugin-inventory-native2-20261116-01", "passed": 14, "failed": 0},
+  "source": {"run": "rc022-plugin-inventory-source2-20261116-01", "passed": 9, "failed": 0},
+  "verification_scope_reason": "Actual Source Host inventory and Native plugin mounted on real Cordis contexts compare all six Fiber phases, non-group Loader ordering, per-tree metadata resolution including disabled entries, optional preset composition rows and root-base metadata, conditional enabled values, manager availability, awaited ordinary/raw startup failures, original optional-provider failures, fresh reads and withdrawal. Native actual Loader adds pending/active/disabled entries, failed startup and recovery, disable/reenable transitions, plus real PluginPackages reads disabled exported locale metadata without executing module code. Direct Loader and package resolution consumers selected. Original Source inventory suite passes in full. Initial native fixture failed to catch update's propagated startup error; corrected expectation. Initial Source runner used invalid copied selectors and ran no tests; corrected selectors and independently reran. Raw diagnostics retained.",
+  "activation_boundary": "Explicit current provider and direct Remote list marker only. Production composition, plugin manager transactions and browser refresh are pending; this does not establish management journey or release acceptance.",
+  "cleanup": {
+    "removed_bytes": 694684,
+    "external_empty_roots_removed": 2,
+    "owned_processes_remaining": 0,
+    "retained": "Compact commands, logs, XML/JSON and raw paired observations including resolved fixture failures; shared Source/toolchains retained through C9."
+  }
+}

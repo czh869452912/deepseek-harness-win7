@@ -96,4 +96,6 @@
 
 | C8-BE | 后台任务 Remote、非消费观察、输出续传与人工停止 | [后台任务 Remote](job-controller-checks.json) |
 
+| C8-BF | 真实 Loader 插件清单、失败恢复、禁用条目元数据与预设组合 | [Host 插件清单](plugin-inventory-checks.json) |
+
 后续继续设置及完整应用组合；最终资格使用 C9 冻结候选的完整门禁。

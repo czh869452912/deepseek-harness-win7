@@ -338,6 +338,16 @@ def commit_prepared_image_file(root: str, prepared: Dict[str, Any]) -> Dict[str,
 
 def request_image_variant_id(ref: Dict[str, Any], policy: Dict[str, Any]) -> str:
     """Compute deterministic variant ID for model request."""
+    if 'width' in policy or 'height' in policy:
+        descriptor = {
+            'transformVersion': 'request-image-pillow-10.4-v2-target',
+            'attachmentId': ref.get('attachmentId'),
+            'targetWidth': policy.get('width'), 'targetHeight': policy.get('height'),
+            'encodedByteBudget': policy.get('maxBytes'),
+            'encoding': {'qualities': [85, 75, 60], 'webpEffort': 0, 'colourspace': 'srgb'},
+        }
+        desc = json.dumps(descriptor, sort_keys=True)
+        return ImageVariantId('sha256:' + hashlib.sha256(desc.encode('utf-8')).hexdigest())
     desc = json.dumps({
         "transformVersion": "request-image-pillow-10.4-v1",
         "encoding": {"qualities": [85, 75, 60], "webpEffort": 0, "colourspace": "srgb"},

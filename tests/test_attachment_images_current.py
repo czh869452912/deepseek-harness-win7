@@ -55,7 +55,9 @@ async def test_async_request_derives_and_repairs_cache_with_separate_codec_ident
     ref = await store.saveImage(image_input(alpha))
     path = Path(store.imageHostPath(ref))
     assert not path.stat().st_mode & 0o200
-    policy = dict(maxPixels=1000, maxBytes=10000)
+    from dsh.attachment.image_codec import dimensions
+    width, height = dimensions(ref['width'], ref['height'], 1000)
+    policy = dict(width=width, height=height, maxBytes=10000)
     projected = await store.readImageRequest(ref, policy)
     assert projected['attachment'] is ref
     assert projected['width'] * projected['height'] <= 1000

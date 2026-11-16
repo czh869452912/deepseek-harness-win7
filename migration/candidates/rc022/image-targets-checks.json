@@ -1,0 +1,11 @@
+{
+  "part": "C8-FB",
+  "upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "paired": {"run": "rc022-image-targets-paired-20261116-01", "observations": 23, "differences": 0},
+  "native": {"run": "rc022-image-targets-native-20261116-01", "passed": 53, "failed": 0},
+  "source": {"run": "rc022-image-targets-source-20261116-01", "passed": 17, "failed": 0},
+  "verification_scope_reason": "Actual fixed Source Sharp and native Pillow encode controlled PNG fixtures at exact long-edge request targets, including the 1224x1429 to 1187x1386 rounded edge, thin/wide/tall shapes, no enlargement, alpha and unreachable byte targets. Metadata, original-byte reuse, cache repair, cancellation identity and target-complete digest relationships are compared. Byte values/digests are compared only within the owning codec. Native current-provider concurrent requests prove same-target sharing, distinct-target generations and durable-source preservation. Canonical Messages pricing/serialization, current attachment and historical combined HTTP upload consumers pass.",
+  "activation_boundary": "The mounted current attachment provider now accepts width/height/maxBytes targets. New Pillow target variants use request-image-pillow-10.4-v2-target; width, height and byte budget all enter the key. Sharp identities remain separate. The previous maxPixels capability remains explicitly compatible for frozen historical consumers during composition migration; the legacy adapter dispatch helper converts its pixel policy to a target for current async providers.",
+  "limits": "Metadata/behavior equivalence does not establish encoded-byte equality between Sharp and Pillow. The split authenticated Messages/Files transport remains subsequent work. No full regression or release acceptance is claimed.",
+  "cleanup": {"removed_bytes": 849721, "owned_processes_remaining": 0, "retained": "Paired inputs/results/hash report, Source JSON and native command/log/XML/compact observations. Controlled source images and all generated codec caches plus mapped/external pytest fixtures and tmp/home removed; shared Source/toolchains retained until C9."}
+}

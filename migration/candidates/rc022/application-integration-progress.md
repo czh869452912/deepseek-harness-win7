@@ -284,4 +284,6 @@
 
 | C8-FA | V4.1 图片网格与目标宽高、逐次计价、持久化 offload 准入及 Files 位置 | [图片请求规则](messages-images-checks.json) |
 
+| C8-FB | 实际附件目标宽高编码与缓存：短边取整、独立 Pillow 身份、并发复用和原图保留 | [图片目标编码](image-targets-checks.json) |
+
 后续继续完整应用组合；最终资格使用 C9 冻结候选的完整门禁。

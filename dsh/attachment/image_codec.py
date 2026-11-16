@@ -13,6 +13,14 @@ from dsh.attachment.error import AttachmentError
 QUALITIES = (85, 75, 60)
 
 
+def long_edge_dimensions(width, height, long_edge):
+    if long_edge >= max(width, height):
+        return dict(width=width, height=height)
+    if width >= height:
+        return dict(width=long_edge, height=max(1, math.floor(long_edge*height/width+0.5)))
+    return dict(width=max(1, math.floor(long_edge*width/height+0.5)), height=long_edge)
+
+
 def dimensions(width, height, max_pixels):
     scale = min(1, math.sqrt(max_pixels / (width * height)))
     if scale == 1:
@@ -51,7 +59,7 @@ def metadata(data, header):
     return result
 
 
-def encode(data, width, height, max_bytes):
+def encode(data, width, height, max_bytes, exact_size=False):
     image = ImageOps.exif_transpose(decode(data))
     alpha = "A" in image.getbands() or "transparency" in image.info
     profile = image.info.get("icc_profile")
@@ -67,7 +75,10 @@ def encode(data, width, height, max_bytes):
         image = image.point(lambda pixel: pixel / 257).convert("L").convert("RGB")
     else:
         image = image.convert("RGBA" if alpha else "RGB")
-    image.thumbnail((width, height), Image.Resampling.LANCZOS)
+    if exact_size:
+        image = image.resize((width, height), Image.Resampling.LANCZOS)
+    else:
+        image.thumbnail((width, height), Image.Resampling.LANCZOS)
     image.info.clear()
     smallest = None
     for quality in QUALITIES:

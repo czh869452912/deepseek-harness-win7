@@ -2,7 +2,7 @@
 import math
 from types import SimpleNamespace
 
-from dsh.attachment.image_codec import dimensions
+from dsh.attachment.image_codec import dimensions, long_edge_dimensions as longEdgeDimensions
 from dsh.llm.image_content_current import offloadedImageText, requestImageHandleText
 
 
@@ -47,14 +47,6 @@ def deepSeekImageTokens(width, height):
             return result[-1]
         result = following
     raise ValueError('deepseek image tokens: resize did not converge for %sx%s' % (width, height))
-
-
-def longEdgeDimensions(width, height, long_edge):
-    if long_edge >= max(width, height):
-        return dict(width=width, height=height)
-    if width >= height:
-        return dict(width=long_edge, height=max(1, math.floor(long_edge*height/width+0.5)))
-    return dict(width=max(1, math.floor(long_edge*width/height+0.5)), height=long_edge)
 
 
 def deepSeekRequestImageDimensions(width, height):

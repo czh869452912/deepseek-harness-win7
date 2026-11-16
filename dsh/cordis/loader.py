@@ -327,6 +327,9 @@ class SafeASTEvaluator(ast.NodeVisitor):
             return None
         if attr == "length" and hasattr(val, "__len__"):
             return len(val)
+        if attr == "includes" and isinstance(val, (list, tuple)):
+            from .utils import _js_same_value_zero
+            return lambda item: any(_js_same_value_zero(item, entry) for entry in val)
         if isinstance(val, dict):
             return val.get(attr)
         return getattr(val, attr, None)
@@ -522,7 +525,7 @@ class _JsExpressionParser:
     def parse_postfix(self) -> str:
         value = self.parse_primary()
         while True:
-            if self.accept("."):
+            if self.accept(".") or self.accept("?."):
                 kind, name = self.next()
                 if kind != "name":
                     raise _JsParseError("expected a property name after '.'")
@@ -610,7 +613,7 @@ class _JsExpressionParser:
                 return f"env.get({key})"
             return "env"
         if name == "platform":
-            return "sys.platform"
+            return "process.platform"
         if name == "cwd":
             self.expect("(")
             self.expect(")")

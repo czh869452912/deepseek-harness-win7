@@ -1,0 +1,13 @@
+{
+  "batch": "C8-FQ",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "scope": "Activate the account and asynchronous authorization providers in the base profile, including PKCE browser sign-in and generated Remote contracts.",
+  "paired": {"observations": 17, "differences": 0, "report": ".goose/out/rc022-account-login-paired3-20261116-01/report.json"},
+  "native": {"passed": 18, "report": ".goose/out/rc022-account-login-native-20261116-01/command.json"},
+  "source": {"passed": 200, "report": ".goose/out/rc022-account-login-source-20261116-01/command.json"},
+  "composition": {"passed": 12, "report": ".goose/out/rc022-account-login-boot2-20261116-01/command.json"},
+  "expression_and_consumers": {"passed": 24, "report": ".goose/out/rc022-account-login-loader-20261116-01/command.json"},
+  "coverage": ["Real independent Platform HTTP servers and canonical callback servers for Source and Native", "PKCE verifier/challenge, constant-time state comparison, callback method/path and duplicate rejection", "Browser origin restrictions, initialization/exchange schema validation, credential/device commit and one-use profile cache", "Cancellation while waiting or exchanging, expiry and per-request timeout, committing attempts settle before cancellation returns", "Exact completion query rewriting and localized nonce/CSP failure documents", "Callback route, request reader, authorization slot and provider disposal", "Twelve account Remote exports, Host credentials excluded from Remote, byte-preserved generated Typert artifacts", "Canonical base profile activation and actual headless request regression", "Pinned desktopPlatform expression on desktop/web/missing profile across Windows/macOS/Linux"],
+  "limits": ["Source account UI tests provide reference evidence; actual original frontend account settings and notification integration remains subsequent work", "First paired observer used the wrong private route-map name; corrected observer and expanded corpus passed", "Initial composition failed for the missing generated artifact and unsupported optional-member/includes expression; both fixed and relevant regressions passed", "Targeted results do not establish full migration or release acceptance"],
+  "cleanup": {"removed_bytes": 539434, "removed": ["Owned pytest/credential workspaces, tmp and home directories", "Unneeded copied compiled account runtime and types"], "retained": "Commands, reports, observations and first-run diagnostics; Source checkout/toolchains remain shared through C9. No remaining task-owned process."}
+}

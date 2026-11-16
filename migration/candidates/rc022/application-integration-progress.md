@@ -314,4 +314,6 @@
 
 | C8-FP | 账户凭据与查询生命周期、身份缓存、状态流和任务取消接线 | [账户状态组件](account-state-checks.json) |
 
+| C8-FQ | 账户浏览器登录、PKCE 回调与失败页面、基础 profile 和生成 Remote 协议接线 | [登录与启动](account-login-checks.json) |
+
 后续继续完整应用组合；最终资格使用 C9 冻结候选的完整门禁。

@@ -39,6 +39,20 @@ def test_safe_ast_evaluator_env_and_platform():
     assert evaluate_expr(ctx, "process.platform == 'win32' || process.platform == 'linux'") in (True, False)
 
 
+@pytest.mark.parametrize('host_platform,profile,expected', [
+    ('win32', 'desktop', 'win32'), ('darwin', 'desktop', 'darwin'),
+    ('linux', 'desktop', None), ('win32', 'web', None), ('win32', None, None),
+])
+def test_account_profile_desktop_expression(monkeypatch, host_platform, profile, expected):
+    ctx = Context()
+    if profile is not None:
+        ctx.set_service('profileContext', {'name': profile})
+    monkeypatch.setattr(sys, 'platform', host_platform)
+    expression = "ctx.get('profileContext')?.name === 'desktop' && ['darwin', 'win32'].includes(process.platform) ? process.platform : null"
+    assert evaluate_expr(ctx, expression) == expected
+    assert evaluate_expr(ctx, '[true].includes(1)') is False
+
+
 def test_safe_ast_evaluator_forbidden_injection():
     """Ensure dunder attributes and dangerous operations are blocked."""
     ctx = Context()

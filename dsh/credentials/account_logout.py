@@ -31,7 +31,7 @@ async def _delay(milliseconds, signal):
 
 
 async def revokeAccount(origin, token, policy, signal, headers):
-    for attempt in range(policy['maxRetries']+1):
+    for attempt in range(int(policy['maxRetries'])+1):
         if aborted(signal):
             return
         if attempt:

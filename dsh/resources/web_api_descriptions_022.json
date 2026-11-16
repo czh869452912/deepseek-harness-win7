@@ -1,0 +1,22 @@
+{
+  "search": {
+    "en": "Incurs charges, paid by the account or API key chosen under Billing.",
+    "zh": "会产生费用，由「计费方式」选定的账号或 API Key 支付。",
+    "ja": "料金が発生し、「課金方法」で選んだアカウントまたは API キーに請求されます。",
+    "es": "Genera cargos, que paga la cuenta o la clave de API elegida en Facturación.",
+    "fr": "Entraîne des frais, payés par le compte ou la clé API choisi dans Facturation.",
+    "de": "Verursacht Kosten, die das unter Abrechnung gewählte Konto oder der API-Schlüssel trägt.",
+    "ru": "Услуга платная: оплата идёт с аккаунта или ключа API, выбранного в разделе «Оплата».",
+    "pt": "Gera cobranças, pagas pela conta ou chave de API escolhida em Cobrança."
+  },
+  "fetch": {
+    "en": "Can't reach intranet or local addresses. Incurs charges, paid by the account or API key chosen under Billing.",
+    "zh": "无法访问内网和本机。会产生费用，由「计费方式」选定的账号或 API Key 支付。",
+    "ja": "イントラネットやローカルのアドレスにはアクセスできません。料金が発生し、「課金方法」で選んだアカウントまたは API キーに請求されます。",
+    "es": "No puede acceder a direcciones de la intranet ni locales. Genera cargos, que paga la cuenta o la clave de API elegida en Facturación.",
+    "fr": "N'accède pas aux adresses intranet ou locales. Entraîne des frais, payés par le compte ou la clé API choisi dans Facturation.",
+    "de": "Erreicht keine Intranet- oder lokalen Adressen. Verursacht Kosten, die das unter Abrechnung gewählte Konto oder der API-Schlüssel trägt.",
+    "ru": "Адреса интрасети и локальные адреса недоступны. Услуга платная: оплата идёт с аккаунта или ключа API, выбранного в разделе «Оплата».",
+    "pt": "Não acessa endereços da intranet nem locais. Gera cobranças, pagas pela conta ou chave de API escolhida em Cobrança."
+  }
+}

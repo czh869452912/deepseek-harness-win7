@@ -318,4 +318,6 @@
 
 | C8-FR | Search/Fetch 按序凭据与真实 HTTP、401 精确失效、共享传输与取消清理 | [Web API 传输](web-api-transport-checks.json) |
 
+| C8-FS | 直接 Search/Fetch provider、结果映射、调用快照与含边界限速 | [Web API 组件](web-api-provider-checks.json) |
+
 后续继续完整应用组合；最终资格使用 C9 冻结候选的完整门禁。

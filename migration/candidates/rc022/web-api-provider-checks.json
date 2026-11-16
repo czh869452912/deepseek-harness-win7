@@ -1,0 +1,11 @@
+{
+  "batch": "C8-FS",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "scope": "Direct Search/Fetch provider components; live route-based credential selection and registration follow separately.",
+  "paired": {"observations": 293, "differences": 0, "report": ".goose/out/rc022-web-api-provider-paired3-20261116-01/report.json"},
+  "native": {"passed": 16, "report": ".goose/out/rc022-web-api-provider-native-20261116-01/command.json"},
+  "source": {"passed": 59, "report": ".goose/out/rc022-web-api-provider-source-20261116-01/command.json"},
+  "coverage": ["Actual Source provider classes, response decoder and controlled fetch carrier; Native uses its actual credential/dispatch/decoder stack over a controlled byte carrier", "Required nullable dates, optional summaries, preserved ordering and duplicate search results, omitted empty metadata", "Exact Search and Fetch request payloads; whitespace collapse and 128 Unicode code-point original-question bound including surrogate pairs and lone surrogates", "One options read per operation and immediate request snapshot, with async Search versus synchronous Fetch option-resolution failure behavior", "Credential presence, endpoint parseability and positive integer availability corpus", "Inclusive one-second admission boundary and abort while waiting; independent Native real HTTP confirms payloads, request results and a cancelled waiter not consuming admission", "Exact eight-language provider descriptions extracted from the pinned Source", "Existing Web service direct-consumer and transport regressions"],
+  "limits": ["Endpoint parseability coverage is the recorded corpus, not a general WHATWG URL conformance certification", "Initial observer bypassed Native transport error wrapping; corrected observer exercises the real dispatch stack", "Controlled clocks avoid seconds-to-milliseconds floating-point representation noise", "Live credential selection, package activation and browser integration remain subsequent work; targeted checks do not establish release acceptance"],
+  "cleanup": {"removed_bytes": 0, "removed": ["Empty owned pytest workspaces, tmp and home directories"], "retained": "Commands, reports, compact observations and initial diagnostics; no remaining task-owned process."}
+}

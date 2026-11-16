@@ -1,0 +1,10 @@
+{
+  "part": "C8-DP",
+  "upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "native": {"run": "rc022-preset-bindings-native-20261116-01", "passed": 1},
+  "consumers": {"run": "rc022-preset-bindings-consumers-20261116-01", "passed": 20},
+  "verification_scope_reason": "Actual Loader composes v4 sessions/agents and package-name current registry, declarative preset carriers, working-directory tool and registry-probe Host. Unchanged generated preset/probe artifacts serve real authenticated HTTP list/read/select and disabled-probe requests. A real Agent mounts the coding preset, executes its working-directory tool through the native runtime, changes to the review preset with tool removal and persisted projection update, then returns to coding with fresh tool visibility. Existing retained-generation/preset/declarative-carrier, registry-probe HTTP cleanup/race and directory consumer tests cover the mapped providers. No provider implementation changed in this batch.",
+  "changes": "Candidate fixture accepts an optional explicit row id so two package-identical declarative carriers are represented as actual Loader rows, as in original preset composition.",
+  "activation_boundary": "Candidate preset and registry-probe binding integration only. The actual integration probe is configured disabled; real HTTP probe race/cleanup is covered by its selected existing consumer suite. Complete original preset roster, plugin installation browser journey, production input promotion and complete release acceptance remain separate.",
+  "cleanup": {"owned_processes_remaining": 0, "retained": "Commands, XML/logs, candidate rows and decoded preset/registry wire observations retained; both owned pytest workspaces/homes/tmp directories removed. Exact removed byte count is recorded in the owned consumers run cleanup.json. Shared pinned Source/toolchains remain owned until C9."}
+}

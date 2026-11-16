@@ -208,4 +208,6 @@
 
 | C8-DO | 固定 Source 空 Client Host 的可复现绑定及快捷键/文档预览页面配置注入 | [候选浏览器 Host 绑定](client-bindings-checks.json) |
 
+| C8-DP | 声明式预设/工作目录工具/registry 探针绑定、原版目录/文档/切换 Remote 与工具可见性 | [候选预设绑定](preset-bindings-checks.json) |
+
 后续继续完整应用组合；最终资格使用 C9 冻结候选的完整门禁。

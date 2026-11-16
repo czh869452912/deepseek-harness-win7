@@ -1,6 +1,10 @@
 """rc.3 bindings staged for coordinated bundle, protocol and pin promotion."""
 
 CURRENT_HARNESS_PLUGIN_CLASSES = {
+    '@deepseek-ai/dsh-agent-preset-registry': 'dsh.presets.registry_current:CurrentAgentPresetRegistry',
+    '@deepseek-ai/dsh-agent-preset': 'dsh.presets.registry_current:CurrentAgentPreset',
+    '@deepseek-ai/dsh-tool-working-directory': 'dsh.session.tool_working_directory:ToolWorkingDirectory',
+    '@deepseek-ai/dsh-client-ui-plugin-manager': 'dsh.client.plugin_registry_probe:CurrentPluginRegistryProbe',
     '@deepseek-ai/dsh-client-shortcuts': 'dsh.client.configuration_current:CurrentShortcutsHost',
     '@deepseek-ai/dsh-client-ui-sidebar-documentpreview': 'dsh.client.configuration_current:CurrentDocumentPreviewHost',
     '@deepseek-ai/dsh-config-editor': 'dsh.boot.config_editor:ConfigEditor',

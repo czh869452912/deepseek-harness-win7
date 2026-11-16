@@ -1,0 +1,15 @@
+{
+  "part": "C8-EV",
+  "upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "paired": [
+    {"run": "rc022-model-listing-paired3-20261116-01", "observations": 1431, "differences": 0},
+    {"run": "rc022-listing-http-paired6-20261116-01", "observations": 15, "differences": 0}
+  ],
+  "native": {"run": "rc022-model-listing-native-gzip-20261116-01", "passed": 15, "failed": 0},
+  "source": {"run": "rc022-model-listing-source-20261116-01", "passed": 84, "failed": 0},
+  "verification_scope_reason": "Listing entry decoding, malformed and duplicate rows, optional client requirements, modality ordering, capacity bounds, update declarations and localized badges. Badge property ranges are frozen from the pinned Node 24 Unicode 16 runtime, with generator/source identity; paired cases exercise every property range edge and Unicode 16 grapheme conformance strings. Actual original/native loopback requests cover credential headers/default and case-sensitive object spread followed by case-insensitive Headers append, attribution, HTTP status facts, invalid bodies, redirect refusal, whole-body deadlines, pre/caller abort, gzip and both deflate formats. Python Task cancellation joins its worker and detaches upstream listeners.",
+  "diagnostics": "Corrected invalid-URL error code. Source observer initially used the wrong timeout module path and called .dispose instead of Symbol.dispose; retained logs. HTTP status is observed through LlmError.failure.status on both sides. Paired compressed exchange exposed Source's Z_SYNC_FLUSH tolerance for a missing gzip trailer; native decoding now follows it rather than requiring that trailer. All identified differences resolved.",
+  "activation_boundary": "Decoder and owned listing HTTP prerequisite; provider/catalog activation remains separate. Listing URLs retain only the source URL's origin, including canonical host/default-port normalization. Observers verify each installation's actual runtime attribution before marking it; product pin remains unchanged.",
+  "limits": "Unicode binary properties and grapheme segmentation use Unicode 16. No Brotli, arbitrary non-HTTP Messages origin, browser rendering, live credential request or full release acceptance claimed.",
+  "cleanup": {"removed_bytes": 1650634, "owned_processes_remaining": 0, "retained": "Paired inputs/results/hash reports, Unicode property provenance, Source test JSON, native command/log/XML and minimal observations, and resolved failure diagnostics. Owned external/mapped pytest fixtures and tmp/home removed. Shared Source/toolchains retained until C9."}
+}

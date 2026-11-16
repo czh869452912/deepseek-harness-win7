@@ -272,4 +272,6 @@
 
 | C8-EU | DeepSeek 模型缓存：凭证隔离、首次共享加载、自动刷新、迟到结果隔离与卸载等待 | [模型缓存](listing-cache-checks.json) |
 
+| C8-EV | 模型列表解码与真实 HTTP：能力/版本/Unicode 标签、凭证来源、重定向拒绝、完整正文截止及压缩响应 | [列表解码与 HTTP](model-listing-checks.json) |
+
 后续继续完整应用组合；最终资格使用 C9 冻结候选的完整门禁。

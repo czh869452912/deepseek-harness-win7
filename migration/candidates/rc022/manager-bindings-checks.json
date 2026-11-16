@@ -1,0 +1,10 @@
+{
+  "part": "C8-DQ",
+  "upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "native": {"run": "rc022-manager-bindings-native2-20261116-01", "passed": 1},
+  "consumers": {"run": "rc022-manager-bindings-consumers-20261116-01", "passed": 11},
+  "verification_scope_reason": "Canonical run_profile creates the profile lease/dependency lifetime and actual Loader mounts the manager, HMR, real credential provider and authenticated Web rows from a profile patch. The fixed clean Source CLI installation anchor supplies the actual new package manifests/exports/dependency closure; no name-resolution bypass is used. A controlled local HTTPS package registry supplies the real Python package archive. The unchanged original manager artifact admits real HTTP install/list/disable/enable/remove requests; installation executes the actual installed Python tool and all removal/lease invariants hold. Direct package/bundle inventory and lifecycle consumers pass. No provider implementation changed.",
+  "diagnostics": "The first attempt used the old installation anchor, whose real dependency closure has no new manager/remote-access packages, and correctly failed package resolution. The succeeding isolated candidate uses the new fixed Source installation anchor. Raw initial failure retained; no resolver fallback or production input promotion was introduced. The explicitly mounted native Python package backend remains a separate host adaptation provider.",
+  "activation_boundary": "Candidate canonical profile and new installation-manifest admission only. Browser install/cancel/update journeys, automatic native backend composition, default bundles and coordinated runtime/frontend/pin promotion remain outstanding; this is not complete release acceptance.",
+  "cleanup": {"owned_processes_remaining": 0, "retained": "Commands, failed/passing XML/logs, candidate rows and decoded installation wire observations retained. Owned profile/package/test homes, pytest workspaces and temporary directories removed; exact byte count in the owned consumers run cleanup.json. Shared fixed Source/toolchains remain owned until C9."}
+}

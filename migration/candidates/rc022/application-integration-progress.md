@@ -210,4 +210,6 @@
 
 | C8-DP | 声明式预设/工作目录工具/registry 探针绑定、原版目录/文档/切换 Remote 与工具可见性 | [候选预设绑定](preset-bindings-checks.json) |
 
+| C8-DQ | 新安装清单下规范 run_profile 的管理器绑定、真实 HTTP Python 包安装/停启/移除 | [候选管理器绑定](manager-bindings-checks.json) |
+
 后续继续完整应用组合；最终资格使用 C9 冻结候选的完整门禁。

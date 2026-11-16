@@ -6,6 +6,8 @@ from urllib.parse import unquote,urlsplit
 
 from dsh.api.workspace_files_current import CurrentWorkspaceFiles,DEFAULTS
 from dsh.cordis.schema import Schema as z
+from dsh.cordis.text import trim_js
+from dsh.api.workspace_search import search_workspace,DEFAULTS as SEARCH_DEFAULTS
 from dsh.typert.remote import Remote,RemoteError,TypertRemoteService
 from dsh.typert.stores import field
 
@@ -16,11 +18,15 @@ class CurrentWorkspaceFiles022(TypertRemoteService):
         maxBytes=z.natural().min(1).default(DEFAULTS['maxBytes']),
         maxFileBytes=z.natural().min(1).max(9007199254740990).default(DEFAULTS['maxFileBytes']),
         maxLines=z.natural().min(1).default(DEFAULTS['maxLines']),
-        maxEntries=z.natural().min(1).default(DEFAULTS['maxEntries'])))
+        maxEntries=z.natural().min(1).default(DEFAULTS['maxEntries']),
+        search=z.object(dict(maxResults=z.natural().min(1).default(512),maxEntries=z.natural().min(1).default(100000),
+            graceMs=z.natural().min(1).max(2147483647).default(3000),timeoutMs=z.natural().min(1).max(2147483647).default(30000),
+            stderrMaxBytes=z.natural().min(1).default(65536))).default({})))
 
     def __init__(self,ctx,config=None):
         super().__init__(ctx,'workspaceFiles')
         self.caps=dict(DEFAULTS,**(config or {}))
+        self.search_caps=dict(SEARCH_DEFAULTS,**self.caps.get('search',{}))
         def lookup(scope):
             async def resolve(sid):
                 session=scope.get('sessions').get(sid)
@@ -94,3 +100,17 @@ class CurrentWorkspaceFiles022(TypertRemoteService):
             if field(child,'size') is not None:value['size']=field(child,'size')
             entries.append(value)
         return dict(path=workspace_path,entries=entries,truncated=len(children)>self.caps['maxEntries'])
+
+    @Remote
+    async def search(self,workspaceFileScope,request,signal):
+        query=trim_js(request['query'])
+        if not query:raise RemoteError('gateway/bad-request','query must not be blank',{})
+        signal.throwIfAborted();workspace_root=field(workspaceFileScope,'workspaceRoot');fs=self.ctx.get('fs')
+        root=await fs.resolve(workspace_root,dict(signal=signal));info=await fs.stat(root,signal)
+        if info is None:raise RemoteError('workspace-file/not-found','no entry at "{}"'.format(workspace_root),dict(path=workspace_root))
+        kind=field(info,'type')
+        if kind!='directory':raise RemoteError('workspace-file/not-directory','"{}" is a {}'.format(workspace_root,kind),dict(path=workspace_root,kind=kind))
+        subprocess=self.ctx.get('subprocess')
+        if subprocess is None:raise RemoteError('workspace-file/search-failed','Workspace file search requires a subprocess provider',{})
+        return await search_workspace(subprocess,dict(self.search_caps,cwd=fs.processPath(root),query=query,
+            excludedPaths=request['excludedPaths'],includeHidden=request['includeHidden'],respectGitignore=request['respectGitignore']),signal)

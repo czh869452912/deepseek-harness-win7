@@ -1,0 +1,12 @@
+{
+  "part": "C8-CX",
+  "upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "paired": {"run": "rc022-workspace-search-paired-20261116-01", "cases": 19, "differences": 0},
+  "native": {"run": "rc022-workspace-search-native-20261116-01", "passed": 38},
+  "source": {"run": "rc022-workspace-search-source-20261116-01", "passed": 41, "pending": 3, "failed": 0},
+  "verification_scope_reason": "Actual Source search.ts and native search agree on matching, inferred directories, path queries, Unicode casing, UTF-16 sorting, independent result and scan caps, exit 1/2/invalid/missing/bool statuses, diagnostics, launch/stream failure, exact caller cancellation and timeout with process-range cleanup. Both implementations independently exercise packaged rg; native regression also includes preview multipart RPC and ripgrep process ownership. Source pending cases remain pending, not acceptance.",
+  "unicode": {"version": "16.0", "scalar_lower_sha256": "6e90d2addcfec071f041b333c2f8a9abe4f1e569f638fd9e51b0530a30d6e6a8", "scope": "Concatenated valid Unicode scalars and nine independent contextual Sigma/new-letter samples match Source Node 24.9 toLowerCase. Table generator requires Unicode 16.0. Lone-surrogate/explicit UTF-16 surrogate-pair Python strings are not independently qualified."},
+  "packaging": "Existing Portable copytree includes the dsh JSON table; no Portable rebuild or release acceptance in this targeted milestone.",
+  "activation_boundary": "Search is implemented on staged CurrentWorkspaceFiles022. Changes stream and coordinated current-profile binding remain pending.",
+  "cleanup": {"owned_processes_remaining": 0, "retained": "Commands, XML, original Source results, paired observations and preview wire observations preserved. Owned pytest fixtures, homes, temporary directories and external Source rg workspace removed. Shared Source/toolchains retained until C9."}
+}

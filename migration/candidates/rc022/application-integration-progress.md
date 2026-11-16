@@ -172,4 +172,6 @@
 
 | C8-CW | 固定 ripgrep 解析、增量 UTF-8/记录、提前终止后排空及进程范围退出屏障 | [ripgrep 流读取](ripgrep-checks.json) |
 
+| C8-CX | 工作区名称/路径搜索、独立限额、取消/超时与 Unicode 16 大小写和 UTF-16 排序 | [工作区搜索](workspace-search-checks.json) |
+
 后续继续设置及完整应用组合；最终资格使用 C9 冻结候选的完整门禁。

@@ -116,5 +116,6 @@
 | C8-BS | 仓库配置、安装前检查、版本列表 Remote、兼容性及取消重试边界 | [管理器包查询](manager-inspection-checks.json) |
 | C8-BT | Git 连接预检、HTTPS/SSH 选择、完整日志与取消后进程树回收 | [Git 预检](git-connection-checks.json) |
 | C8-BU | 安装服务进程的完整日志、字节尾部、静默期限、运行记录与回收 | [安装进程执行层](package-run-checks.json) |
+| C8-BV | 安装前后兼容性与目标校验、配置恢复修复、Bundle 选择及遗留运行准入 | [安装服务事务](package-operations-checks.json) |
 
 后续继续设置及完整应用组合；最终资格使用 C9 冻结候选的完整门禁。

@@ -84,7 +84,17 @@ dsh.bat --profile web
 
 Build is only needed for exported Client source. It packages supported plain JS with the original evaluator and Remote bridge; it is not a TS/JSX compiler and does not ensure a selected Slot exists in the installed UI. Choose the appropriate persistent Slot when delivering a dynamic Run-card experiment, then check the browser. Rebuild after Client source changes. Host-only handwritten examples go directly to pack/add.
 
-Stop the target profile before add/upgrade/rollback/remove; closing the browser alone is insufficient. Installation copies source into a managed snapshot; later development edits do not change the installed package. Add accepts a directory, ZIP, local npm-style `.tgz`/`.tar.gz`, or HTTPS ZIP with an explicit --sha256 digest. Every format must contain the native `dsh.python` descriptor and its declared release files. Use install validation followed by actual tool/RPC/browser execution after cold start, including Chinese and space-containing paths.
+Stop the target profile before add/upgrade/rollback/remove; closing the browser alone is insufficient. Installation copies source into a managed snapshot; later development edits do not change the installed package. Add accepts a directory, ZIP, local npm-style `.tgz`/`.tar.gz`, HTTPS ZIP with an explicit --sha256 digest, npm-compatible registry spec, or Git spec. Registry and Git commands prepare in an owned Python child and revalidate the publication before committing. Every format must contain the native `dsh.python` descriptor and its declared release files. Use install validation followed by actual tool/RPC/browser execution after cold start, including Chinese and space-containing paths.
+
+Registry commands support `add/upgrade <name>@<version> [--registry <https-url>]`
+without Node/pnpm. Metadata selects the release; its strongest supported SRI
+digest binds the downloaded archive. Git commands require an available Git
+executable, for example `add git+https://host/owner/repo.git#<full-commit>&path:plugins/echo`
+(quote the complete spec in the shell). A branch/tag/HEAD can select an initial
+release; the installed dependency records the resolved full commit and package
+directory. Registry and Git acquisition failures never fall back to pnpm. Use
+the same `upgrade` command to retain the previous verified source generation;
+`rollback` restores it offline, including its original acquisition identity.
 
 ## Upgrade, rollback and removal
 

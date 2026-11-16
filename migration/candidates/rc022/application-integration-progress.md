@@ -156,4 +156,6 @@
 
 | C8-CO | Git 父进程复验/固定来源、真实管理器更新、离线来源恢复与深路径隔离 | [Git 原生管理器](python-git-backend-checks.json) |
 
+| C8-CP | 停止状态的 canonical CLI 注册表/Git 安装升级、联网前拒绝与离线来源回滚 | [原生包 CLI](python-native-cli-checks.json) |
+
 后续继续设置及完整应用组合；最终资格使用 C9 冻结候选的完整门禁。

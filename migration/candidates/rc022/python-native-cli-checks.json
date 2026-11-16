@@ -1,0 +1,23 @@
+{
+  "part": "C8-CP",
+  "upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "native": [
+    {
+      "run": "rc022-python-native-cli-native-20261116-01",
+      "passed": 11
+    },
+    {
+      "run": "rc022-python-native-cli-native-consumers-20261116-01",
+      "passed": 19,
+      "deselected": 24
+    }
+  ],
+  "verification_scope_reason": "Actual canonical launcher invokes stopped-profile registry/Git add and upgrade without Node/pnpm, with strict optional registry argument handling. Real TLS registry acquisition and actual Git commits persist exact origins; offline rollback restores them and the registry package cold-start tool executes. New profile manifest is initialized only after verified transfer. An existing host lease refuses before any network request. Invalid flags and acquisition failures do not fall back to pnpm. Existing pinned ZIP acquisition, recovery CLI and launcher argument/shutdown consumers remain covered.",
+  "activation_boundary": "Canonical native CLI registry/Git commands available alongside existing local and explicit-digest ZIP commands. Default mounted backend/current manager runtime bindings, direct remote tarballs, broader Git selectors, mux/browser and C9 qualification remain pending. This is targeted verification, not full regression or release acceptance.",
+  "cleanup": {
+    "owned_processes_remaining": 0,
+    "external_git_workspaces_remaining": 0,
+    "retained": "Commands/XML and raw package logs/Git seed observations retained; finished synthetic profile copies, retained test generations and workspaces removed. Shared Source/toolchains retained until C9.",
+    "removed_bytes": 126873
+  }
+}

@@ -64,6 +64,10 @@ def run_plugin(profile, args):
         sys.stdout.write('dsh: archive SHA-256 {}\n'.format(digest.hexdigest()))
         return 0
     directory = resolve_profile_dir(profile)
+    from dsh.boot.python_package_management import native_package_command
+    native = native_package_command(profile, directory, args, INSTALL_ANCHOR)
+    if native is not None:
+        return native
     from dsh.boot.python_plugins import install, uninstall
     from dsh.boot.python_plugin_versions import upgrade, rollback, versions
     from dsh.boot.profile_lease import ProfileLease

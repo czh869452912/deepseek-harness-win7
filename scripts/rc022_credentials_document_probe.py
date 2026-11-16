@@ -61,6 +61,28 @@ def cases():
     for tag in ['!!int', '!!float', '!!bool', '!!null', '!!timestamp', '!!binary', '!custom']:
         for value in ['secret-text', '123', '2026-11-17']:
             rows.append('version: 1\nrecords: {owner/a: {kind: grant, payload: '+tag+' '+value+'}}')
+    for value in ['!!set {}', '!!set {KEY: null}', '!!set {KEY: secret}', '!!set []',
+                  '!!omap []', '!!omap [{KEY: secret}]', '!!omap [{KEY: secret}, {KEY: second}]',
+                  '!!omap [{KEY: secret, SECOND: second}]', '!!omap {}',
+                  '!!pairs []', '!!pairs [KEY]', '!!pairs [{}]', '!!pairs [{KEY: secret}]',
+                  '!!pairs [{KEY: secret, SECOND: second}]', '!!pairs {}',
+                  '!!timestamp 2026-11-17', '!!binary c2VjcmV0']:
+        rows += [value, 'version: 1\nrefs: '+value, 'version: 1\nrecords: '+value,
+                 'version: 1\nrecords: {owner/a: '+value+'}',
+                 'version: 1\nrecords: {owner/a: {kind: grant, payload: '+value+'}}',
+                 'version: '+value, 'version: 1\nrecords: {owner/a: {kind: '+value+'}}']
+    for version in ('1.1', '1.2'):
+        prefix = '%YAML '+version+'\n---\nversion: 1\nforeign: &a {KEY: original}\n'
+        rows += [prefix+'refs: {<<: *a, SECOND: second}', prefix+'refs: {<<: *a, KEY: replaced}',
+                 prefix+'refs: {KEY: replaced, <<: *a}', prefix+'refs: {<<: [*a, {KEY: later, SECOND: second}]}',
+                 prefix+'refs: {<<: secret}', prefix+'refs: {<<: *missing}']
+    rows += ['KEY: secret\n', '# first\nKEY: secret # key annotation\n\nSECOND: on',
+             'KEY: yes\n', 'KEY: off\n', 'KEY: 2026-11-17\n', 'KEY: 123\n', 'KEY: "123"\n',
+             'KEY: secret\r\nSECOND: second\r\n', 'KEY: &key secret\nSECOND: *key\n',
+             '&name KEY: secret\n', '{KEY: secret, SECOND: second}', 'KEY: !custom secret',
+             '%YAML 1.1\n---\nKEY: secret\n', '---\nKEY: secret\n', 'KEY: secret\n...\n',
+             'version: secret\n', 'bad-name: secret\n', 'KEY: ""\n', 'KEY: secret\nKEY: second\n',
+             'KEY: null\n', 'KEY: [secret]\n', 'KEY: {value: secret}\n']
     return rows
 
 
@@ -71,16 +93,18 @@ def prepare(output):
 
 
 async def observe(diagnostics=None):
-    from dsh.credentials.document_current import parse_credentials_document
+    from dsh.credentials.document_current import parse_credentials_document, render_flat_layout_migration
     rows = []; raw = []
     for index, text in enumerate(cases()):
-        try: rows.append(dict(value=parse_credentials_document(text, '<document>')))
+        try: row = dict(value=parse_credentials_document(text, '<document>'))
         except Exception as error:
             message = str(error)
             if message.startswith('credentials-local: invalid document at <document>: '):
                 raw.append(dict(index=index, error=message))
                 message = 'credentials-local: invalid document at <document>: <runtime YAML diagnostic>'
-            rows.append(dict(error=message))
+            row = dict(error=message)
+        row['migration'] = render_flat_layout_migration(text)
+        rows.append(row)
     path = diagnostics if diagnostics is not None else DIAGNOSTICS
     if path is not None: path.write_text(json.dumps(raw), encoding='utf-8')
     return rows

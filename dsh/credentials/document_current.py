@@ -2,12 +2,13 @@
 import math
 import re
 import base64
+import datetime
 
 import yaml
 
 from dsh.cordis.json_text import stringify_json
 from dsh.cordis.utils import _js_own_enumerable_keys, js_to_string
-from dsh.credentials.credentials import credential_ref, parse_credential_key
+from dsh.credentials.credentials import credential_ref, parse_credential_key, is_credential_ref_name
 from dsh.credentials.credentials_local import assert_json_value
 
 
@@ -21,6 +22,13 @@ class _Alias(yaml.Node):
     def __init__(self, event, source):
         super().__init__('alias', source, event.start_mark, event.end_mark)
         self.source_name = event.anchor
+
+
+class _Collection:
+    """YAML's JS Map/Set values have no enumerable own string properties."""
+    def __init__(self, kind):
+        self.kind = kind
+        self.items = []
 
 
 class DocumentLoader(yaml.SafeLoader):
@@ -92,6 +100,21 @@ def _scalar(loader, node):
 
 def _validate_keys(loader, node):
     if isinstance(node, _Alias): return
+    if node.tag == 'tag:yaml.org,2002:set' and isinstance(node, yaml.MappingNode):
+        if any(not isinstance(value, yaml.ScalarNode) or _scalar(loader, value) is not None for key, value in node.value):
+            raise _DocumentFailure('TAG_RESOLVE_FAILED', node.start_mark)
+    if node.tag in ('tag:yaml.org,2002:omap', 'tag:yaml.org,2002:pairs') and isinstance(node, yaml.SequenceNode):
+        keys = set()
+        for item in node.value:
+            if isinstance(item, yaml.MappingNode):
+                if len(item.value) > 1: raise _DocumentFailure('TAG_RESOLVE_FAILED', item.start_mark)
+                key = item.value[0][0] if item.value else None
+            else: key = item
+            if node.tag.endswith(':omap') and (key is None or isinstance(key, yaml.ScalarNode)):
+                value = None if key is None else _scalar(loader, key)
+                identity = (type(value), value)
+                if identity in keys: raise _DocumentFailure('TAG_RESOLVE_FAILED', item.start_mark)
+                keys.add(identity)
     if isinstance(node, yaml.SequenceNode):
         for child in node.value: _validate_keys(loader, child)
     if isinstance(node, yaml.MappingNode):
@@ -131,19 +154,43 @@ def _to_values(loader, root):
         if isinstance(node, yaml.ScalarNode):
             result = _scalar(loader, node); cache[identity] = result; return result
         if isinstance(node, yaml.SequenceNode):
+            if node.tag in ('tag:yaml.org,2002:omap', 'tag:yaml.org,2002:pairs'):
+                result = _Collection('map') if node.tag.endswith(':omap') else []
+                cache[identity] = result
+                for item in node.value:
+                    if isinstance(item, yaml.MappingNode):
+                        if item.value: key, value = item.value[0]; key_value, value_value = convert(key), convert(value)
+                        else: key = None; key_value = value_value = None
+                    else: key = item; key_value = convert(item); value_value = None
+                    if isinstance(result, _Collection): result.items.append((key_value, value_value))
+                    else: result.append({name(key, key_value): value_value})
+                return result
             result = []; cache[identity] = result
             result.extend(convert(item) for item in node.value)
             return result
-        result = {}; cache[identity] = result
+        result = _Collection('set') if node.tag == 'tag:yaml.org,2002:set' else {}
+        cache[identity] = result
         for key_node, value_node in node.value:
+            if key_node.tag == 'tag:yaml.org,2002:merge':
+                source = value_node.value if isinstance(value_node, _Alias) else value_node
+                sources = source.value if isinstance(source, yaml.SequenceNode) else [source]
+                for item in sources:
+                    target = item.value if isinstance(item, _Alias) else item
+                    if not isinstance(target, yaml.MappingNode): raise ValueError('Merge sources must be maps or map aliases')
+                    merged = convert(target)
+                    for key, value in merged.items():
+                        if key not in result: result[key] = value
+                continue
             key = convert(key_node)
-            if key is None: name = ''
-            elif isinstance(key, str): name = key
-            elif isinstance(key, bool): name = 'true' if key else 'false'
-            elif isinstance(key, (int, float)): name = js_to_string(key)
-            else: name = _flow_key(key_node)
-            result[name] = convert(value_node)
+            if isinstance(result, _Collection): result.items.append(key)
+            else: result[name(key_node, key)] = convert(value_node)
         return result
+    def name(node, key):
+        if key is None: return ''
+        if isinstance(key, str): return key
+        if isinstance(key, bool): return 'true' if key else 'false'
+        if isinstance(key, (int, float)): return js_to_string(key)
+        return _flow_key(node)
     return None if root is None else convert(root)
 
 
@@ -161,11 +208,53 @@ def load_document(text, filename):
     finally: loader.dispose()
 
 
+def render_flat_layout_migration(text):
+    """Upgrade only the recognized flat layout, retaining its original text body."""
+    loader = DocumentLoader(text)
+    try:
+        root = loader.get_single_node()
+        if not isinstance(root, yaml.MappingNode) or not root.value: return None
+        _validate_keys(loader, root)
+        if any(re.match(r'^(%|---|\.\.\.)', line) for line in text.split('\n')): return None
+        for key, value in root.value:
+            if not isinstance(key, yaml.ScalarNode) or not isinstance(value, yaml.ScalarNode): return None
+            name = _scalar(loader, key)
+            if not isinstance(name, str) or name == 'version' or not is_credential_ref_name(name): return None
+            entry = _scalar(loader, value)
+            if not isinstance(entry, str) or len(entry) == 0: return None
+        body = '\n'.join('  '+line if line else line for line in text.split('\n'))
+        return 'version: 1\nrefs:\n'+body+('' if text.endswith('\n') else '\n')
+    except (_DocumentFailure, yaml.YAMLError, ValueError, TypeError): return None
+    finally: loader.dispose()
+
+
+def _object_fields(value):
+    if isinstance(value, dict): return value
+    if isinstance(value, bytes): return {str(index): item for index, item in enumerate(value)}
+    if isinstance(value, (datetime.date, _Collection)): return {}
+    return None
+
+
+def _diagnostic_json(value):
+    def plain(item):
+        if isinstance(item, datetime.date):
+            stamp = item if isinstance(item, datetime.datetime) else datetime.datetime.combine(item, datetime.time())
+            if stamp.tzinfo is None: stamp = stamp.replace(tzinfo=datetime.timezone.utc)
+            return stamp.astimezone(datetime.timezone.utc).isoformat(timespec='milliseconds').replace('+00:00', 'Z')
+        if isinstance(item, _Collection): return {}
+        if isinstance(item, bytes): return dict(type='Buffer', data=list(item))
+        if isinstance(item, list): return [plain(child) for child in item]
+        if isinstance(item, dict): return {key: plain(child) for key, child in item.items()}
+        return item
+    return stringify_json(plain(value))
+
+
 def _section(value, name, filename):
     if value is None: return {}
-    if not isinstance(value, dict):
+    fields = _object_fields(value)
+    if fields is None:
         raise TypeError('credentials-local: "'+name+'" in '+filename+' must be a mapping')
-    return value
+    return fields
 
 
 def _fields(key, fields, allowed, filename):
@@ -175,7 +264,8 @@ def _fields(key, fields, allowed, filename):
 
 
 def parse_record(key, value, filename):
-    if not isinstance(value, dict):
+    value = _object_fields(value)
+    if value is None:
         raise TypeError('credentials-local: record "'+key+'" in '+filename+' must be a mapping')
     kind = value.get('kind')
     if kind == 'api-key':
@@ -188,7 +278,8 @@ def parse_record(key, value, filename):
             result['key'] = raw
         if 'env' in value:
             raw = value['env']
-            if not isinstance(raw, dict):
+            raw = _object_fields(raw)
+            if raw is None:
                 raise TypeError('credentials-local: record "'+key+'" in '+filename+' has a non-mapping env')
             env = {}
             for name in _js_own_enumerable_keys(raw):
@@ -206,13 +297,14 @@ def parse_record(key, value, filename):
         return dict(kind='grant', payload=value['payload'])
     if 'kind' not in value:
         raise ValueError('credentials-local: record "'+key+'" in '+filename+' has no kind')
-    raise ValueError('credentials-local: record "'+key+'" in '+filename+' has unknown kind '+stringify_json(kind))
+    raise ValueError('credentials-local: record "'+key+'" in '+filename+' has unknown kind '+_diagnostic_json(kind))
 
 
 def parse_credentials_document(text, filename):
     root = load_document(text, filename)
     if root is None: root = {}
-    if not isinstance(root, dict):
+    root = _object_fields(root)
+    if root is None:
         raise TypeError('credentials-local: '+filename+' must be a mapping')
     keys = _js_own_enumerable_keys(root)
     if not keys: return dict(refs={}, records={}, ignoredKeys=[])
@@ -222,7 +314,7 @@ def parse_credentials_document(text, filename):
                          +' and nest the existing '+count+' under `refs:`. No values need to change.')
     version = root['version']
     if not isinstance(version, (int, float)) or isinstance(version, bool) or version != 1:
-        raise ValueError('credentials-local: '+filename+' declares version '+stringify_json(version)+'; this build reads version 1')
+        raise ValueError('credentials-local: '+filename+' declares version '+_diagnostic_json(version)+'; this build reads version 1')
     refs = {}
     section = _section(root.get('refs'), 'refs', filename)
     for key in _js_own_enumerable_keys(section):

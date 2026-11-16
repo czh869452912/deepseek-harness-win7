@@ -335,3 +335,5 @@
 | C8-FY | Managed credential precedence, masked previews and initial-load notifications | [Credential references](local-credential-reference-checks.json) |
 
 | C8-FZ | Staged credential document admission, alias budget and safe diagnostics | [Credential document](credential-document-checks.json) |
+
+| C8-GA | Credential collection/merge admission and original-text flat upgrade | [Credential collections](credential-collection-checks.json) |

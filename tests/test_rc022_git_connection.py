@@ -35,12 +35,21 @@ async def test_actual_git_preflight_transports_logs_and_deadlines(tmp_path):
 
 @pytest.mark.asyncio
 async def test_streaming_stderr_retains_bytes_beyond_returned_output_bound(tmp_path):
-    script=tmp_path/'writer.py';script.write_text('import sys\nsys.stderr.buffer.write(b"x"*200000+b"0123456789")\nsys.exit(7)\n',encoding='utf-8')
+    script=tmp_path/'writer.py';script.write_text('import sys\nsys.stdout.buffer.write(b"ignored"*200000)\nsys.stdout.flush()\nsys.stderr.buffer.write(b"x"*200000+b"0123456789")\nsys.exit(7)\n',encoding='utf-8')
     path=tmp_path/'git.log'
     with path.open('wb') as stream:
         result=await _execute_package_query(str(tmp_path),[sys.executable,str(script)],dict(timeoutMs=5000,_stderrFile=stream))
     assert result['exitCode']==7
     assert path.read_bytes()==b'x'*200000+b'0123456789'
+    assert result['stdout']==result['stderr']==''
+
+
+@pytest.mark.asyncio
+async def test_discarded_streams_drain_beyond_pipe_capacity(tmp_path):
+    script=tmp_path/'discard.py'
+    script.write_text('import sys\nsys.stdout.buffer.write(b"x"*2000000)\nsys.stdout.flush()\nsys.stderr.buffer.write(b"y"*2000000)\nsys.stderr.flush()\n',encoding='utf-8')
+    result=await _execute_package_query(str(tmp_path),[sys.executable,str(script)],dict(timeoutMs=5000,_discardOutput=True))
+    assert result['exitCode']==0 and not result['timedOut']
     assert result['stdout']==result['stderr']==''
 
 

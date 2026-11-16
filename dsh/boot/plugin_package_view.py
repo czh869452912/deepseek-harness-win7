@@ -57,15 +57,16 @@ async def _execute_package_query(directory, argv, options):
                 # CreateProcess searches the parent's PATH, not the supplied
                 # child environment. Resolve through the owned runtime first.
                 argv = [await runtime.resolve_executable(argv[0], options.get('env'), signal)]+argv[1:]
-            stderr_mode = 'pipe' if sink is not None else dict(maxBytes=100000000)
-            stdout_mode = 'ignore' if options.get('_discardOutput') or sink is not None else dict(maxBytes=100000000)
+            discard = options.get('_discardOutput')
+            stderr_mode = dict(maxBytes=0) if discard else 'pipe' if sink is not None else dict(maxBytes=100000000)
+            stdout_mode = dict(maxBytes=0 if discard or sink is not None else 100000000)
             if os.name == 'nt':
                 handle = runtime.spawn(dict(argv=argv, cwd=directory, graceMs=1000, env=options.get('env'),
-                    stdio=dict(stdin='ignore', stdout=stdout_mode, stderr='ignore' if options.get('_discardOutput') else stderr_mode)))
+                    stdio=dict(stdin='ignore', stdout=stdout_mode, stderr=stderr_mode)))
             else:
                 handle = runtime.spawn(SubprocessSpawnSpec(argv, directory,
-                    SubprocessStdio('ignore', 'ignore' if stdout_mode == 'ignore' else SubprocessCollect(100000000),
-                        'ignore' if options.get('_discardOutput') else 'pipe' if sink is not None else SubprocessCollect(100000000)), 1000, env=options.get('env')))
+                    SubprocessStdio('ignore', SubprocessCollect(stdout_mode['maxBytes']),
+                        'pipe' if stderr_mode == 'pipe' else SubprocessCollect(stderr_mode['maxBytes'])), 1000, env=options.get('env')))
         except Exception as error:
             source = getattr(error, 'cause', None) or error
             code = getattr(source, 'code', None)
@@ -120,4 +121,6 @@ async def _execute_package_query(directory, argv, options):
             except Exception:pass
             await handle.wait_for_exit()
         await ctx.fiber.dispose()
-        if pump is not None:await asyncio.shield(pump)
+        if pump is not None:
+            await asyncio.shield(pump)
+            handle.stderr.close()

@@ -1,0 +1,11 @@
+{
+  "part": "C8-DD",
+  "upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "paired": {"run": "rc022-office-formats-paired2-20261116-01", "cases": 307, "differences": 0},
+  "native": {"run": "rc022-office-formats-native-20261116-01", "passed": 2},
+  "source": {"run": "rc022-office-formats-source-20261116-01", "passed": 105, "pending": 1, "failed": 0},
+  "verification_scope_reason": "Actual Source formats.ts/content.ts and native helpers agree across file-family/extension rules, per-tool parameter ownership, page/sheet/range/dpi validation, family output formats, whitespace, diagnostics and text/image model content. Native tests separately check current encoded attachment fields and independent dimension metadata. Original tool/activation consumers run independently; they do not establish native tool registration or actual engine acceptance.",
+  "diagnostics": "First paired run found twelve null-format diagnostic mismatches (Python None versus ECMAScript null). Diagnostic interpolation now uses the existing JS string conversion; original mismatch observations retained.",
+  "activation_boundary": "Office tool admission/content helpers only. Native activation, prepared read authority, output-owner tree resolution and attachment-backed execution remain pending.",
+  "cleanup": {"owned_processes_remaining": 0, "retained": "Both paired observations, commands, XML and Source results retained. Owned Source temporary workspaces and native temporary homes removed; no paired binary payloads created. Shared Source/toolchains retained until C9."}
+}

@@ -184,4 +184,6 @@
 
 | C8-DC | Office 四类操作组合、授权版本重查、受控引擎错误/清理及真实二进制 Remote | [Office 提供方](office-provider-checks.json) |
 
+| C8-DD | Office 工具输入族、各操作参数约束、格式诊断与附件/临时文件模型内容 | [Office 工具格式](office-formats-checks.json) |
+
 后续继续设置及完整应用组合；最终资格使用 C9 冻结候选的完整门禁。

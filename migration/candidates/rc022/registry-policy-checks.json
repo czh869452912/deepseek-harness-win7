@@ -1,0 +1,10 @@
+{
+  "part": "C8-BM",
+  "upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "paired": {"run": "rc022-registry-policy-paired-20261116-01", "cases": 257, "passed": true},
+  "native": {"run": "rc022-registry-policy-native-20261116-01", "passed": 60, "failed": 0},
+  "source": {"run": "rc022-registry-policy-source-20261116-01", "passed": 16, "failed": 0},
+  "verification_scope_reason": "Actual Source registry/versions modules paired with Python helpers. Qualifies URL host/port/path/query/fragment comparison including IPv4/IPv6/IDNA and dot segments; private or unknown pnpm registry isolation, explicit requests, public fallback selection and equivalent URL deduplication. Failure attribution reads spec hosts only from error lines for eligible retry kinds, retaining JS ASCII word boundaries. Version candidates filter/order exact semver with prereleases/builds and preserve publication identity, tags and timestamp types; manifest facts retain explicit null compatibility fields. Direct install-spec/compatibility consumers tested. Both original Source suites pass in full. No network/package execution is claimed.",
+  "activation_boundary": "Pure policies for remaining inspection/install/update consumers; production manager composition remains pending.",
+  "cleanup": {"removed_bytes": 22428, "external_empty_roots_removed": 1, "owned_processes_remaining": 0, "retained": "Compact commands, logs, XML/JSON and paired observations; shared Source/toolchains through C9."}
+}

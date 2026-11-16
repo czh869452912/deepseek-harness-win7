@@ -166,4 +166,6 @@
 
 | C8-CT | 全部 40 份原样 Typert 生成物、声明字节附件程序、快照及 RPC 编码适配 | [Typert 字节结果](typert-binary-checks.json) |
 
+| C8-CU | 226 个原版 Remote 命名方法、独立输入/投影缓存及保持参数和结果身份的直接调用 | [RemoteInfo 方法能力](remote-info-checks.json) |
+
 后续继续设置及完整应用组合；最终资格使用 C9 冻结候选的完整门禁。

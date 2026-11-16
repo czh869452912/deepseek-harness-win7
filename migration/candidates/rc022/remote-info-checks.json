@@ -1,0 +1,10 @@
+{
+  "part": "C8-CU",
+  "upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "paired": {"run": "rc022-remote-info-paired-20261116-01", "actual_generated_artifacts": 40, "methods": 226, "direct_helpers": 226, "named_input_validation_cases": 4972, "differences": 0},
+  "native": {"run": "rc022-remote-info-native-20261116-01", "passed": 84},
+  "source": {"run": "rc022-remote-info-source-20261116-01", "passed": 8, "failed": 0},
+  "verification_scope_reason": "Every actual current generated direct descriptor exposes input/invoke capabilities and remains the same object in its RemoteInfo method index. Native named input independently caches ordinary/strict schema and projection views. Optional JSON fields, required lookup aliases, explicit undefined, strict outer objects, unavailable projections, descriptions and invalid factory retry are covered. Source/native compare both views on eleven samples per method, schema projections/caches, positional omissions, signal presence, current namespace/method access and exact returned identity. Native regressions cover strict nested codecs, original codec identity, streamed handles/current mount lookup, required unknown and method capability narrowing. Original upstream remote-info tests pass independently.",
+  "activation_boundary": "Generated declarations now retain named method helpers through local registration. The restricted artifact reader still accepts only declared schema factories and data; arbitrary authored JS/getters and full generic Source factory laziness are not certified. Application tool consumers, whole-profile binding/browser and C9 acceptance remain pending.",
+  "cleanup": {"owned_processes_remaining": 0, "removed_bytes": 2644, "retained": "Commands, XML, Source vitest result and exact paired observations retained. Synthetic Native test workspaces and temporary Source/Native home directories removed. Shared Source/toolchains retained until C9."}
+}

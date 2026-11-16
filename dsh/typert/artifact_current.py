@@ -10,6 +10,7 @@ import re
 
 from dsh.typert.artifact import ArtifactParser, Schema, TOKEN, UNDEFINED
 from dsh.typert.artifact_binary import remove_program, is_bytes, encode_selected_data
+from dsh.typert.remote_info import attach_direct_method
 
 CURRENT_TOKEN = re.compile(TOKEN.pattern.replace('|=>|', '|\\?\\?=|=>|'))
 
@@ -65,7 +66,7 @@ class RemoteInfo:
     def __init__(self, spec):
         if not isinstance(spec, dict) or set(spec)!={'package','methods'} or not isinstance(spec['methods'],dict):
             raise ValueError('typert: invalid generated Remote definition')
-        self.descriptors = []
+        self.package,self.descriptors,self.methods = spec['package'],[],{}
         def codecs(value):
             if isinstance(value,list):return [codecs(item) for item in value]
             if not isinstance(value,dict):return value
@@ -86,6 +87,7 @@ class RemoteInfo:
                 result['schema'].projection=copy.deepcopy(result['jsonSchema'])
             row.update(id=spec['package']+'#'+endpoint,namespace=namespace,method=method)
             row['parameters']=[dict(parameter,wire=parameter.get('wire',parameter['name'])) for parameter in row['parameters']]
+            if row['invocation']['kind']=='direct':self.methods[endpoint]=attach_direct_method(row)
             self.descriptors.append(row)
 
 

@@ -1,0 +1,11 @@
+{
+  "part": "C8-CW",
+  "upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "paired": {"run": "rc022-ripgrep-paired-20261116-01", "cases": 9, "differences": 0},
+  "native": [{"run": "rc022-ripgrep-native-20261116-01", "passed": 29}, {"run": "rc022-ripgrep-native-cleanup-20261116-01", "passed": 2, "deselected": 28}],
+  "source": {"run": "rc022-ripgrep-source-20261116-01", "passed": 14, "failed": 0},
+  "verification_scope_reason": "Incremental Source/native observations agree for UTF-8 boundary splits, replacement decoding, NUL/newline records, empty streams, early/final stop, missing stdout and callback/stream/provider failures, including termination count and range cleanup. Native tests exercise a real packaged rg under canonical Windows Job process ownership, frozen sidecar/packaged-only resolution policy, sticky resolution failure, no-config forwarding, raw Python binary streams, range-exit barrier and cancelled waiter independence. Pipe closure also runs when provider range cleanup rejects. Original stream/path tests independently pass.",
+  "platform_adaptation": "Native utility resolves the already-qualified Win7 packaged x86/x64 rg asset or an existing frozen executable sidecar. It does not use DSH_RG_PATH, ambient PATH, remote installation, Node package resolution or Electron ASAR paths. Python binary pipes are read in a bounded executor operation; the existing canonical Windows process owner retains descendants. These are explicit native platform adaptations, not certification of Node/Electron packaging behavior.",
+  "activation_boundary": "Utility ready for current workspace-search consumer. Existing model tool-search remains on its separate implementation until its own alignment. No workspace search, browser or C9 acceptance yet.",
+  "cleanup": {"owned_processes_remaining": 0, "removed_bytes": 9, "retained": "Commands, XML, original Source results and paired observations retained; owned test workspace, temporary home and Source temporary directories removed. Shared Source/toolchains retained until C9."}
+}

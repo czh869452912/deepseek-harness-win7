@@ -170,4 +170,6 @@
 
 | C8-CV | 新版工作区统一字节读取、真实 multipart/lookup、完整文件限额与 junction 目录边界 | [工作区文件预览](workspace-preview-checks.json) |
 
+| C8-CW | 固定 ripgrep 解析、增量 UTF-8/记录、提前终止后排空及进程范围退出屏障 | [ripgrep 流读取](ripgrep-checks.json) |
+
 后续继续设置及完整应用组合；最终资格使用 C9 冻结候选的完整门禁。

@@ -1,0 +1,12 @@
+{
+  "part": "C8-ER",
+  "upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "paired": {"run": "rc022-change-routes-paired3-20261116-01", "observations": 51, "differences": 0},
+  "native": {"run": "rc022-change-routes-consumers-20261116-01", "passed": 223, "failed": 0},
+  "source": {"run": "rc022-change-routes-source-20261116-01", "passed": 45, "failed": 1, "failure": "Windows EPERM creating the file symlink fixture; no assertion about symlink refusal was reached."},
+  "verification_scope_reason": "Actual current original/native Connection route registration, coordinate/error cases, summary projection excluding cwd/snapshot, text/binary/oversized response transport, lazy diff lookup, GET applications, POST default/reveal/selected application, filesystem mapping checks, sanitized failures, signal ownership and unload waiting on pending read. Source requests explicitly use its browser owner Peer. Actual TCP authentication rejects unauthenticated requests before native open; viewed cold child Session files resolve through the real filesystem and missing files cannot launch. Historical presented/native app consumers and canonical current Web composition remain covered.",
+  "diagnostics": "Initial Source observer omitted the now-required Peer argument and failed before entering a route; corrected to connection.browserPeer. Native subscription count is observed directly; Node AbortSignal.any has weak internal subscriptions, so no unsupported claim about a Node listener inventory is made. Raw failed Source diagnostics and symlink fixture failure retained.",
+  "activation_boundary": "Current registry mounts the rc.3 deliverables host with workspaceChanges injection and summary/diff/open plus presented-file GET/POST routes. Historical 0.1.5 host remains an isolated regression subject. New browser bundle/manifest promotion remains coordinated with the complete frontend composition.",
+  "limits": "Owner browser routes and existing HTTP authentication only. The broader Connection explicit non-owner Peer contract remains separate work. Source's Windows symlink fixture could not run; no browser rendering, Portable or full release qualification claimed.",
+  "cleanup": {"removed_bytes": 152340, "owned_processes_remaining": 0, "retained": "51 paired request cases/results/hash report; actual TCP and service observations, all Source/native test commands/logs/XML/JSON and failure diagnostics. Owned pytest/short external execution workspaces, tmp/home removed. Shared Source/toolchains retained until C9."}
+}

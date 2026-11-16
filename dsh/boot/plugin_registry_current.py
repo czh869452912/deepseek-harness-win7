@@ -91,7 +91,7 @@ CURRENT_HARNESS_PLUGIN_CLASSES = {
     '@deepseek-ai/dsh-api-job-controller': 'dsh.jobs.controller_current:CurrentJobController',
     '@deepseek-ai/dsh-tool-fs-search': 'dsh.fs.tools_current:CurrentToolFsSearch',
     '@deepseek-ai/dsh-tool-present': 'dsh.fs.tool_present_current:CurrentToolPresent',
-    '@deepseek-ai/dsh-client-ui-deliverables': 'dsh.client.ui_deliverables_current:CurrentClientUiDeliverables',
+    '@deepseek-ai/dsh-client-ui-deliverables': 'dsh.client.ui_deliverables_022:CurrentClientUiDeliverables022',
     '@deepseek-ai/dsh-host-open-in-app': 'dsh.host.open_in_app_current:CurrentOpenInApp',
     '@deepseek-ai/dsh-mcp-client': 'dsh.mcp.current:CurrentMcpClient',
     '@deepseek-ai/dsh-attachment': 'dsh.attachment.store_current:CurrentAttachmentStore',

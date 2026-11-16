@@ -264,4 +264,6 @@
 
 | C8-EQ | 工作区变更服务：真实 Agent/文件策略调用链、会话寿命、Git 降级、Web 装配及可逆挂载 | [变更服务](workspace-recorder-service-checks.json) |
 
+| C8-ER | 变更浏览器接口：摘要/差异/打开、原生应用查询、文件映射验证、认证 TCP 与取消释放 | [变更接口](change-routes-checks.json) |
+
 后续继续完整应用组合；最终资格使用 C9 冻结候选的完整门禁。

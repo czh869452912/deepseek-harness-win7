@@ -1,0 +1,11 @@
+{
+  "part": "C8-DW",
+  "upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "paired": {"run": "rc022-mcp-resources-paired8-20261116-01", "observations": 11, "differences": 0},
+  "native": {"run": "rc022-mcp-resources-consumers-20261116-01", "passed": 104},
+  "source": {"run": "rc022-mcp-resources-source-20261116-01", "passed": 18, "failed": 0, "pending": 0},
+  "verification_scope_reason": "Actual original/Python scoped services, shared tool declarations, prompts, inheritance/overrides, duplicate/unavailable diagnostics, independent provider lifetime and lossless raw values versus binary history projection paired. Actual candidate Loader/v4 Agents invoke all three resource tools, preserve empty cursors and exact requests, hide scoped tools from unrelated Agents and retain shared tools after one owner unloads. Parallel requests settle independently and unload awaits scoped async teardown. Current MCP and systemPrompt direct consumers pass; added missing current section positions required by the new provider.",
+  "diagnostics": "Probe fixtures initially lacked native executor/injection ownership; corrected them. Native registration now converts Source-authored compact parameter/JSON-output specifications to their actual canonical JSON schemas. Pairing caught the erroneous additionalProperties restriction; removed it. Prompt integration exposed absent MCP_SERVERS section allocation; added the current positions. Raw failed probes retained.",
+  "activation_boundary": "Resource provider/runtime tools only. Current MCP client connection-generation registration, manager and transport integration remain outstanding; passing historical client cases is not evidence for those missing contracts. Explicit Python PTC resource dispatch is not newly qualified here.",
+  "cleanup": {"owned_processes_remaining": 0, "removed_bytes": 23393, "retained": "Commands/logs/XML, Source suite results, all paired observations and actual resource tool values/content retained. Owned workspaces/home/tmp removed; shared fixed Source/toolchains retained until C9."}
+}

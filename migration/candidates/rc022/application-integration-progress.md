@@ -222,4 +222,6 @@
 
 | C8-DV | Web 启动 TLS/公告 URL、参数拒绝与帮助、共享解析器及惰性配置消费者 | [Web 启动](web-startup-checks.json) |
 
+| C8-DW | MCP 资源作用域/共享工具、继承覆盖、原始二进制值与模型投影及异步卸载 | [MCP 资源](mcp-resources-checks.json) |
+
 后续继续完整应用组合；最终资格使用 C9 冻结候选的完整门禁。

@@ -1,6 +1,7 @@
 """rc.3 bindings staged for coordinated bundle, protocol and pin promotion."""
 
 CURRENT_HARNESS_PLUGIN_CLASSES = {
+    '@deepseek-ai/dsh-mcp-resources': 'dsh.mcp.resources_current:CurrentMcpResources',
     '@deepseek-ai/dsh-web-app/startup': 'dsh.bundle.web_app.startup_current:CurrentWebStartup',
     '@deepseek-ai/dsh-host-webserver': 'dsh.host.webserver.current:CurrentWebServerPlugin',
     '@deepseek-ai/dsh-web-app': 'dsh.bundle.web_app.current:CurrentWebRuntime',

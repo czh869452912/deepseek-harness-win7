@@ -6,7 +6,8 @@ from .types import FIRST_PARTY_SECTION_ORDER as _previous, _FirstPartySectionOrd
 FIRST_PARTY_SECTION_ORDER = _FirstPartySectionOrder(
     (key, value) for key, value in _previous.items() if key != 'DEPLOYMENT_PERSONA')
 FIRST_PARTY_SECTION_ORDER.update(DEPLOYMENT_PERSONA_PREFIX=0, HARNESS_SOURCE=10000,
-                                WEB_SURFACE=10100, DEPLOYMENT_PERSONA_SUFFIX=10200, TOOL_APPLY_PATCH=1350)
+                                WEB_SURFACE=10100, DEPLOYMENT_PERSONA_SUFFIX=10200, TOOL_APPLY_PATCH=1350,
+                                TOOL_PTY_PANEL=1710, TOOL_SCHEDULE=2500, TOOL_COMPUTER_USE=3000, MCP_SERVERS=3100)
 PERSONA_PREFIX_SECTION = 'deployment:persona-prefix'
 PERSONA_SUFFIX_SECTION = 'deployment:persona-suffix'
 

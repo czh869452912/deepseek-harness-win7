@@ -162,4 +162,6 @@
 
 | C8-CR | 原样 Typert 延迟 schema 工厂/Remote 声明读取、严格输入与原版 Zod 逐值对照 | [新版 Typert 生成物](typert-artifact-checks.json) |
 
+| C8-CS | 原版管理器生成物、真实 HTTP RPC/mux 安装事件、鉴权/输入拒绝及定义退役 | [管理器实际传输](manager-wire-checks.json) |
+
 后续继续设置及完整应用组合；最终资格使用 C9 冻结候选的完整门禁。

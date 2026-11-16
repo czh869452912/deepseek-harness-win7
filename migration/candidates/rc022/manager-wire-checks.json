@@ -1,0 +1,16 @@
+{
+  "part": "C8-CS",
+  "upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "native": [
+    {"run": "rc022-manager-wire-native2-20261116-01", "passed": 1},
+    {"run": "rc022-manager-wire-admission-20261116-01", "passed": 1, "deselected": 1}
+  ],
+  "initial_failure": "rc022-manager-wire-native-20261116-01: fixture omitted interactions=answer, correctly refused by authenticated event admission. Explicit API operator declaration and failed-setup socket cleanup repaired; actual install-state field is phase.",
+  "verification_scope_reason": "Actual pinned unmodified manager typert.host.js is registered in CurrentTypertRegistry. Canonical profile plus real native backend, HMR, AuthorizedConnection, Gateway and application Remote controller serve loopback HTTP and WebSocket. Authenticated HTTP RPC installs a real TLS registry Python package, runs its tool, disables/re-enables it and removes it. Concurrent remote.mux forwards actual install-log, install-state and changed events. Unauthenticated HTTP, interactions=none event subscription and invalid generated inputs refuse before package acquisition. Missing request wait/cancel preserve declared results. Withdrawing the generated definition forbids SRC fallback despite a still-active manager service. Credential persistence is a memory fixture; Remote transport and authorization are real.",
+  "activation_boundary": "Targeted actual native wire qualification, not a new Source behavior comparison, full regression, browser acceptance or C9 default binding promotion. Real request cancellation/update and browser journeys retain their separate qualification boundaries.",
+  "cleanup": {
+    "owned_processes_remaining": 0,
+    "removed_bytes": 68469,
+    "retained": "Commands, XML, initial refusal diagnostics, captured package logs and decoded actual wire observations retained. Synthetic profiles, package copies, pytest workspaces and temporary home directories removed. Shared Source/toolchains retained until C9. Authentication cookies are excluded from observations."
+  }
+}

@@ -1,0 +1,36 @@
+{
+  "part": "C8-GG",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "scope": "Staged independent Session-log queue and exporter ownership",
+  "paired": {
+    "run": "rc022-otel-session-channel-paired2-20261116-01",
+    "observations": 37,
+    "differences": 0,
+    "comparison": "Actual Source SessionLogReporter and local HTTP collector versus actual Native SessionLogReporter with a controlled exporter port. Compare complete batch payloads/bytes, queue rejection warnings, single-record size refusal, watchdog/stopPending and admission after shutdown."
+  },
+  "verification": {
+    "native": "9 passed: channel corpus, shared flush/shutdown cancellation isolation, failure recovery/independent channels, option/record ownership and direct record/wire regressions.",
+    "source": "37 actual channel HTTP cases in this batch; unchanged pinned OTel package 34 tests already passed C8-GE.",
+    "scope_reason": "Covers the changed channel plus its record/wire providers and meaningful lifetime interleavings without claiming a Native HTTP implementation."
+  },
+  "behavior": [
+    "Queued byte costs include the complete single-record envelope; both count and byte limits trigger draining. Multi-record request selection sums admitted costs without truncating content.",
+    "At most one exporter operation runs at once. A processor exportTimeoutMillis warning keeps waiting for settlement before admitting the next request. Failed exports settle and later batches continue.",
+    "stopPending discards queued work and its timer while the executing export settles. Shutdown closes emission immediately, drains accepted work and shuts down the exporter once.",
+    "Flush/shutdown share stable owned CleanupPromise operations; cancelling a Python waiter does not cancel the owned export. Separate channel instances have independent queues and lifetimes.",
+    "Resource/scope and processor options are captured at construction; canonical event content and log attributes are captured at emission."
+  ],
+  "diagnostics": [
+    "Initial new tests selected a zero-record fixture as their sample record; fixture selection was corrected before lifecycle assertions."
+  ],
+  "limitations": [
+    "The exporter is an explicit internal port; Native HTTP transport, ordinary-event SDK batching, otel service activation and session backend integration remain follow-up work.",
+    "Full migration/release, actual Portable/browser and Windows 7 qualification remain pending."
+  ],
+  "cleanup": {
+    "bytes_removed": 524051,
+    "receipt": "rc022-otel-session-channel-native2-20261116-01/cleanup.json",
+    "removed": "Owned pytest workspaces, isolated temporary/home trees and completed Source loopback collectors.",
+    "retained": "Commands/logs/XML, paired batches/warnings/input hashes, necessary failure diagnostics, and shared Source/toolchains for transport/C9."
+  }
+}

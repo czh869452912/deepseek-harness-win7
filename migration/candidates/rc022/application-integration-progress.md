@@ -186,4 +186,6 @@
 
 | C8-DD | Office 工具输入族、各操作参数约束、格式诊断与附件/临时文件模型内容 | [Office 工具格式](office-formats-checks.json) |
 
+| C8-DE | Office 技能准入、逐调用读取授权、模型图片能力与真实附件/会话临时输出链路 | [Office 工具接入](office-tools-checks.json) |
+
 后续继续设置及完整应用组合；最终资格使用 C9 冻结候选的完整门禁。

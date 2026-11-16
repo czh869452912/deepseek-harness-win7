@@ -1,0 +1,12 @@
+{
+  "part": "C8-DE",
+  "upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "paired": {"run": "rc022-office-tools-paired2-20261116-01", "cases": 30, "differences": 0},
+  "native": {"run": "rc022-office-tools-native5-20261116-01", "passed": 6},
+  "source": {"run": "rc022-office-tools-source-20261116-01", "passed": 105, "pending": 1, "failed": 0},
+  "definitions": {"generator": "scripts/generate_office_tools.mjs", "sha256": "bf7a033d50f1022f865c7d8d2f29698a1d920eb3a765957800432d5aac1b67bc"},
+  "verification_scope_reason": "Actual original src/index.ts callbacks and native registrations agree on step admission, successful skill/result and live session identity, persisted request-header declarations, one-byte read before conversion, versioned deferred bounded reads, current model route and attachment limits, normalized image references, output-owner fallback, remote-host refusal, presentation and error messages. Native integration additionally uses real current Agent/Tools/FS/attachment/output providers for rendering, conversion, recalculation, unload and session output retirement.",
+  "diagnostics": "Initial native failures were fixture assumptions: tool visibility versus executable admission, extended-path spelling in controlled engine output, actual session publication and the separate page-label content block. First paired run imported compiled error classes alongside source-resolved package classes; observer now imports the actual Source consistently. Raw failed observations retained.",
+  "activation_boundary": "Candidate mapping only; engine is an explicitly controlled test collaborator. Real LibreOffice engine, Windows 7 and complete profile/release qualification remain pending.",
+  "cleanup": {"owned_processes_remaining": 0, "removed_bytes_final_pass": 7732, "retained": "Commands, failed/passing XML/logs, both paired observations and definition hash check. All six run temporary homes and pytest workspaces removed. Eight owned immutable attachment objects were checked as regular files with link count one before clearing their read-only bit for deletion. Initial cleanup stopped at a read-only object and then completed. Shared Source/toolchains retained until C9."}
+}

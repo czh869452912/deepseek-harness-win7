@@ -1,0 +1,33 @@
+{
+  "part": "C8-GH",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "scope": "Staged Session-log HTTP exporter over the qualified Session channel",
+  "paired": {
+    "run": "rc022-otel-http-paired4-20261116-01",
+    "observations": 97,
+    "differences": 0,
+    "comparison": "Actual Source SessionLogReporter and Native SessionLogReporter/SessionHttpExporter against owned HTTP/HTTPS collectors, plus shared transport option admission. Compare request documents, selected headers, attempt counts, failure messages and factory calls."
+  },
+  "verification": {
+    "native": "28 passed: 97-row actual collector/configuration corpus, exporter concurrency and shutdown waiter isolation, callback failures, oversized integer rejection, Session channel/record/wire regressions, and shared HTTP proxy/TLS routing plus CONNECT timeout/cancellation consumers.",
+    "source": "97 actual Source observations; unchanged pinned OTel package 34 tests already passed C8-GE.",
+    "scope_reason": "Targets the new transport and its direct consumers, and the existing proxy consumers affected by additive shared stream options."
+  },
+  "behavior": [
+    "Explicit collector URL/headers/CA identity do not inherit ambient collector endpoints, credentials, certificates or HTTP proxy settings. Only supported timeout/compression environment defaults are merged.",
+    "Session SDK User-Agent, gzip payloads, per-attempt async headers, retryable HTTP/network failures, Retry-After/deadline behavior, response size refusal and malformed/truncated successful responses match observed Source cases.",
+    "HTTPS supports explicit CA, rejectUnauthorized, client PEM certificate/key, ciphers and TLS version bounds. A protocol-selected Python agent factory supplies an SSLContext or an object exposing ssl_context; PEM identity loader files are removed immediately after loading.",
+    "Agent/header callback exceptions bypass network retry even when carrying a retryable OS error. Export admission is bounded; owned shutdown drains in-flight work independently of Python waiter cancellation."
+  ],
+  "limitations": [
+    "Python transport does not reproduce Node Agent socket pooling or its arbitrary options/Agent ABI. PFX and custom Node checkServerIdentity callbacks are not implemented. Wire framing, connection reuse and platform-specific TLS error text are not parity claims.",
+    "Ordinary-event cancellable HTTP/batching, otel service activation and session backend integration remain follow-up work; the historical production backend is not yet replaced.",
+    "Full migration/release, actual Portable/browser and Windows 7 qualification remain pending."
+  ],
+  "cleanup": {
+    "bytes_removed": 310032,
+    "receipt": "rc022-otel-http-native-20261116-01/cleanup.json",
+    "removed": "Owned pytest fixtures, isolated temporary/home directories, collector threads and sockets; no matching test processes remain.",
+    "retained": "Commands, logs/XML, paired observations/input hashes, minimal certificate fixtures and shared Source/toolchains needed by remaining transport/C9 work."
+  }
+}

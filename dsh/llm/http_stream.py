@@ -77,10 +77,12 @@ class _ManualRedirectHandler(urllib.request.HTTPRedirectHandler):
 
 @contextlib.contextmanager
 def open_stream(request, signal=None, idle_timeout_ms=300000, on_activity=None, read_error_body=True,
-                redirect_policy='follow', raise_http_errors=True):
+                redirect_policy='follow', raise_http_errors=True, tls_context=None, proxy_policy='runtime'):
     from dsh.llm.llm_service import LlmError
     if redirect_policy not in ('follow', 'error', 'manual'):
         raise ValueError('HTTP redirect policy must be follow, error or manual')
+    if proxy_policy not in ('runtime', 'direct'):
+        raise ValueError('HTTP proxy policy must be runtime or direct')
     request = urllib.request.Request(request) if isinstance(request, str) else copy.copy(request)
     request.headers = {name: value for name, value in request.headers.items() if name.lower() != 'host'}
     request.unredirected_hdrs = {name: value for name, value in request.unredirected_hdrs.items() if name.lower() != 'host'}
@@ -288,13 +290,13 @@ def open_stream(request, signal=None, idle_timeout_ms=300000, on_activity=None, 
     class Http(urllib.request.HTTPHandler):
         def http_open(self, req):
             from dsh.host.http_proxy import proxy_route_for
-            route = proxy_route_for(req.full_url)
+            route = {'proxied': False} if proxy_policy == 'direct' else proxy_route_for(req.full_url)
             return self.do_open(factory(http.client.HTTPConnection, route.get('proxy')), req)
 
     class Https(urllib.request.HTTPSHandler):
         def https_open(self, req):
             from dsh.host.http_proxy import proxy_route_for
-            route = proxy_route_for(req.full_url)
+            route = {'proxied': False} if proxy_policy == 'direct' else proxy_route_for(req.full_url)
             return self.do_open(factory(http.client.HTTPSConnection, route.get('proxy')), req,
                                 context=self._context, check_hostname=self._check_hostname)
 
@@ -358,7 +360,8 @@ def open_stream(request, signal=None, idle_timeout_ms=300000, on_activity=None, 
         try:
             redirect = {'follow':_FetchRedirectHandler, 'error':_RejectRedirectHandler, 'manual':_ManualRedirectHandler}[redirect_policy]()
             from dsh.host.http_proxy import proxy_handler
-            response = urllib.request.build_opener(proxy_handler(), Http(), Https(), redirect).open(request, timeout=idle_timeout_ms / 1000)
+            proxy = urllib.request.ProxyHandler({}) if proxy_policy == 'direct' else proxy_handler()
+            response = urllib.request.build_opener(proxy, Http(), Https(context=tls_context), redirect).open(request, timeout=idle_timeout_ms / 1000)
         except urllib.error.HTTPError as error:
             response = state["response"] = error
             if raise_http_errors:

@@ -349,3 +349,5 @@
 | C8-GF | Staged OTLP JSON request serialization and exact byte measurement | [OTel wire](otel-wire-checks.json) |
 
 | C8-GG | Staged byte/count Session-log queue, exporter settlement and shutdown ownership | [OTel Session channel](otel-session-channel-checks.json) |
+
+| C8-GH | Staged actual Session HTTP/TLS exporter, retry and explicit identity isolation | [OTel HTTP](otel-http-checks.json) |

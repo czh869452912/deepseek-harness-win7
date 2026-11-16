@@ -1,0 +1,15 @@
+{
+  "part": "C8-CV",
+  "upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "paired": {"run": "rc022-workspace-preview-paired4-20261116-01", "cases": 26, "differences": 0, "filesystem": "actual Source LocalFileSystem and native CurrentFileSystem on identical files and real Windows junctions"},
+  "native": {"run": "rc022-workspace-preview-native-consumers-20261116-01", "passed": 236, "skipped": 4, "skip_reason": "three existing privileged file-symlink cases and one POSIX mode assertion unavailable on Windows"},
+  "source": {"run": "rc022-workspace-preview-source-supported-20261116-01", "passed": 95, "excluded": 5, "exclusion_reason": "actual initial source run had five EPERM file-symlink creation failures; exact named cases excluded on rerun, diagnostics retained. Real directory junctions independently paired."},
+  "initial_observations": [
+    "Native first run 117 passed/one fixture failure: authenticated cookie omitted actual port; corrected wire fixture passes and final consumer batch includes it.",
+    "Paired setup first failed due Python range variable shadowing, then used a reserved NUL filename; corrected to nul.bin before qualification. Preserve raw original inputs and Source observation identities.",
+    "Paired3 reported junction kind directory versus Source symlink; CurrentFileSystem now recognizes Win7/Python3.8 mount-point and symlink reparse tags before following. Paired4 agrees."
+  ],
+  "verification_scope_reason": "Staged new WorkspaceFiles provider exposes unified readBytes(options) returning native bytes, bounded complete reads, byte ranges, base-file relative paths and session resource lookup; old readAll/readRelated Remote methods are absent. Actual generated artifact, session lookup, authorized Gateway and loopback HTTP return multipart bytes including non-UTF8 and empty windows; invalid inputs/missing sessions/retired definitions refuse. Native backend rechecks growing files. Directory links resolve before containment; final links remain refused for file reads. Changed reparse classification is covered by actual junctions plus filesystem mutation/watch/atomic/sandbox consumers. Historic provider tests remain separate and unchanged.",
+  "activation_boundary": "New provider is deliberately staged separately from the old production provider. Search/watch must be migrated before its candidate binding replaces CurrentWorkspaceFiles. No whole-browser/profile or C9 acceptance.",
+  "cleanup": {"owned_processes_remaining": 0, "removed_bytes": 1060280, "removed_links_without_following": 8, "retained": "Commands/XML, Source EPERM diagnostics, all paired identities/results and decoded wire observations retained; synthetic profiles/files/workspaces removed, owned junctions unlinked without following destinations. Shared Source/toolchains retained until C9."}
+}

@@ -168,4 +168,6 @@
 
 | C8-CU | 226 个原版 Remote 命名方法、独立输入/投影缓存及保持参数和结果身份的直接调用 | [RemoteInfo 方法能力](remote-info-checks.json) |
 
+| C8-CV | 新版工作区统一字节读取、真实 multipart/lookup、完整文件限额与 junction 目录边界 | [工作区文件预览](workspace-preview-checks.json) |
+
 后续继续设置及完整应用组合；最终资格使用 C9 冻结候选的完整门禁。

@@ -18,6 +18,15 @@ class CurrentFileSystem(FsService):
     def __init__(self,*args,**kwargs):
         super().__init__(*args,**kwargs);self.watchers=set()
 
+    @staticmethod
+    def _probe(path,follow=True):
+        probed=FsService._probe(path,follow)
+        if probed is not None and not follow and getattr(probed[0],'st_reparse_tag',0) in (0xA0000003,0xA000000C):
+            # Python 3.8 reports junction mode as directory; Node lstat treats
+            # the mount-point reparse tag as a symbolic link, before following.
+            return probed[0],'symlink'
+        return probed
+
     async def watch(self,target,changed,signal):
         from .watch_current import watch
         return await watch(self,target,changed,signal)

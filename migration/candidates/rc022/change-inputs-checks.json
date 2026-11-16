@@ -1,0 +1,22 @@
+{
+  "part": "C8-EM",
+  "upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "paired": {
+    "run": "rc022-change-inputs-paired3-20261116-01",
+    "observations": 44,
+    "differences": 0
+  },
+  "native": {
+    "run": "rc022-change-inputs-native2-20261116-01",
+    "passed": 2
+  },
+  "verification_scope_reason": "Actual original modules and native input helpers compare NUL-terminated numstat and rename records including tabs/newlines and malformed truncation, binary counts and JavaScript numeric conversion; Windows path/root/display/durable semantics, code-unit ordering, canonical missing descendants and deduplicated temporary roots; real absent/empty/oversized/text/binary captures, exact byte caps, 8000-byte binary probe, SHA-1 identities and deduplication. Native blocked actual file I/O test proves a cancelled capture retains ownership until its worker read/write completes.",
+  "diagnostics": "First paired runs exposed using a code-point set as str.strip characters and a fixture path unnormalized compared with Node path.join; corrected both. Raw before/pass observations retained. Non-finite numstat values cross the JSON observation boundary as null, matching original JSON.stringify.",
+  "activation_boundary": "Prerequisite helpers only. No workspaceChanges service, Git snapshot runner, per-turn recorder or diff routes are claimed by this batch.",
+  "limits": "Windows host path behavior is compared on the actual Windows host; other platforms and unusual non-regular or permission-denied file opens need their own observations. Full snapshot/recorder/service integration and final baseline acceptance remain pending.",
+  "cleanup": {
+    "removed_bytes": 236329,
+    "owned_processes_remaining": 0,
+    "retained": "Commands, failure/pass reports, hashes, original/native observations and test XML retained. All owned synthetic input/capture copies, pytest workspaces/tmp/home removed after last consumer; shared Source/toolchains retained until C9."
+  }
+}

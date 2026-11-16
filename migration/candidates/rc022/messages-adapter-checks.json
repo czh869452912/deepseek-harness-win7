@@ -1,0 +1,11 @@
+{
+  "batch": "C8-FI",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "scope": "Current Messages adapter, owned HTTP byte transport and complete request transactions; provider/profile activation follows.",
+  "paired": {"observations": 33, "differences": 0, "report": ".goose/out/rc022-messages-adapter-paired5-20261116-01/report.json"},
+  "native": {"passed": 59, "report": ".goose/out/rc022-messages-adapter-native3-20261116-01/command.json"},
+  "source": {"passed": 48, "report": ".goose/out/rc022-messages-adapter-source-20261116-01/command.json"},
+  "coverage": ["Actual Source/native adapters over real independent loopback servers; exact request JSON, headers, extension events and translated chunks", "Real Files multipart upload, disk-index reuse across repeated occurrences, stale-id invalidation and re-upload", "Controlled Files failure fallback, extension preparation/acceptance errors and credential error mapping", "Gzip and concatenated gzip, malformed SSE, in-band errors, 204/205 empty bodies and redirect rejection", "HTTP status errors with retry hints/request IDs and duplicate response headers", "Broken chunk framing and truncated Content-Length surface as Messages transport failures", "Tool-change beta and combined Files/tool-change beta, session/anonymous/compaction headers", "Header/body timeout, caller abort, early consumer close, slow consumer pause and no remaining native reader threads", "Prepared connection snapshot and native cancellation of a hanging extension demand"],
+  "limits": ["Dynamic localhost namespace digests are independently verified before normalization for comparison", "Native HTTP supports gzip/deflate; Brotli is not qualified", "Python cancellation joins its owned request demand; upstream detaches its Promise drain", "This receipt does not establish canonical provider/profile activation or C9 release acceptance"],
+  "cleanup": {"removed_bytes": 1229797, "removed": ["Owned loopback upload indexes", "Owned pytest fixtures, tmp and home directories"], "retained": "Commands, paired observations, native observations and corrected test-fixture failure diagnostics; no remaining task-owned process"}
+}

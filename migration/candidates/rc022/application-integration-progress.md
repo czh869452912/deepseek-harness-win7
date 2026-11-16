@@ -298,4 +298,6 @@
 
 | C8-FH | 空闲超时直接竞争挂起 demand，并观察延迟失败 | [watchdog 竞争](watchdog-race-checks.json) |
 
+| C8-FI | Messages 适配器真实 HTTP 全链路：Files/索引、扩展、SSE、超时与关闭 | [适配器消费链](messages-adapter-checks.json) |
+
 后续继续完整应用组合；最终资格使用 C9 冻结候选的完整门禁。

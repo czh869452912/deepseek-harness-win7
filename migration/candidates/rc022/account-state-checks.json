@@ -1,0 +1,11 @@
+{
+  "batch": "C8-FP",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "scope": "Account credential, detail-query and ordered state-stream component; browser runner is the next provider component.",
+  "paired": {"observations": 18, "differences": 0, "report": ".goose/out/rc022-account-state-paired2-20261116-01/report.json"},
+  "native": {"passed": 15, "report": ".goose/out/rc022-account-state-native2-20261116-01/command.json"},
+  "source": {"passed": 173, "report": ".goose/out/rc022-account-state-source-20261116-01/command.json"},
+  "coverage": ["Actual Source account constructor, service init and query/removal methods with controlled credentials and response carriers", "Stored grant validation, issuer cleanup, inference-origin restriction, mock-token and loopback-production exclusion", "Account-only deployment header overrides and Cookie merge; notification origin remains independent", "Same-token profile cache, changed identity notification, precise wallet failures and Host-only session/device identity", "Exact rejected-token removal, expiry/signed-out events and background captured-token sign-out", "Native stale profile/balance/notification queries discarded after credential replacement and associated signals aborted", "Native identity opt-in, credential-update coalescing priority, expiry streams and subscription teardown", "Late optional agents binding, latest request-route selection and keepInbox cancellation"],
+  "limits": ["The component is not yet selected by the package resolver: the browser sign-in runner must be completed before provider activation", "Source suites include browser flows and provide reference evidence only; the Native batch qualifies the listed query/storage component", "The first Native run found a nonexistent test-only ctx.flush call; the corrected test waits for observable asynchronous binding", "Targeted checks do not establish release acceptance"],
+  "cleanup": {"removed_bytes": 257897, "removed": ["Owned pytest and credential fixture workspaces", "Owned tmp and home directories"], "retained": "Commands, paired reports, compact observations and first-run diagnostics; no remaining task-owned process"}
+}

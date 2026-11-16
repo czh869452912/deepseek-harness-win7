@@ -292,4 +292,6 @@
 
 | C8-FE | Messages Files 真实 HTTP、请求头认证、日期元数据、multipart 与取消回收 | [Files HTTP](files-http-checks.json) |
 
+| C8-FF | 上传索引批量精确失效、磁盘字节、并发胜出与 Windows 原子替换重试 | [上传索引](upload-index-checks.json) |
+
 后续继续完整应用组合；最终资格使用 C9 冻结候选的完整门禁。

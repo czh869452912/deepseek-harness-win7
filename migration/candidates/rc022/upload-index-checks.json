@@ -1,0 +1,11 @@
+{
+  "batch": "C8-FF",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "scope": "Current Messages durable upload index; store integration follows.",
+  "paired": {"observations": 46, "disk_scenarios": 28, "transitions_per_scenario": 9, "differences": 0, "report": ".goose/out/rc022-upload-index-paired4-20261116-01/report.json"},
+  "native": {"passed": 23, "report": ".goose/out/rc022-upload-index-native3-20261116-01/command.json"},
+  "source": {"passed": 27, "report": ".goose/out/rc022-upload-index-source-20261116-01/command.json"},
+  "coverage": ["Actual disk load/rewrite, corrupt JSON, duplicates, format and record validation, integral Number values", "Exact generation-set invalidation preserves concurrent successors and uses one rewrite", "Cross-scope expiry pruning, winner reuse and strict refresh boundary", "Canonical UTF-8 pretty JSON bytes and namespace digests including surrogate replacement", "Shared-path writer contention and filesystem-error propagation", "Observed Windows transient rename failure repaired using the existing bounded atomic-write helper; retry stays under the same writer lock"],
+  "limits": ["Commit candidates use the upstream typed record contract", "This targeted receipt does not establish canonical provider activation or release acceptance"],
+  "cleanup": {"removed_bytes": 6416602, "removed": ["Owned Source/native index fixtures", "Owned pytest workspaces, temporary and home directories"], "retained": "Commands, reports, native observation receipts and paired failure diagnostics; source checkout and toolchains remain owned by C9 qualification"}
+}

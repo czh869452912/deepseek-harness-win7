@@ -11,6 +11,7 @@ from types import SimpleNamespace
 
 from dsh.cordis import Context
 from dsh.core.abort import NEVER_ABORTED
+from dsh.host.http_proxy_policy import JS_SPACE
 from dsh.subprocess.local import LocalSubprocessRuntime
 from dsh.subprocess.local_authorized import AuthorizedLocalSubprocessRuntime
 from dsh.subprocess.types import SubprocessSpawnSpec, SubprocessStdio, SubprocessCollect
@@ -25,6 +26,17 @@ def _strip_final_newline(text):return re.sub(r'\r?\n\Z', '', text)
 async def view_profile_package(directory, spec, options):
     argv = [options.get('command', 'pnpm')]+list(options.get('args') or [])+[
         'view', spec]+list(options['fields'])+['--json']+registry_arguments(options.get('registry'))+['--config.fetch-retries=0']
+    return await _execute_package_query(directory, argv, options)
+
+
+async def read_profile_registry(directory, options):
+    argv = [options.get('command', 'pnpm')]+list(options.get('args') or [])+['config', 'get', 'registry']
+    result = await _execute_package_query(directory, argv, options)
+    answer = result['stdout'].strip(JS_SPACE).rsplit('\n', 1)[-1].strip(JS_SPACE) if result['exitCode'] == 0 else ''
+    return answer if re.fullmatch(r'https?://[^'+re.escape(JS_SPACE)+r']+', answer) else None
+
+
+async def _execute_package_query(directory, argv, options):
     signal = options.get('signal') or NEVER_ABORTED
     timeout = options['timeoutMs']
     ctx = Context()

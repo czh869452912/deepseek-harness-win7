@@ -1,0 +1,11 @@
+{
+  "part": "C8-BS",
+  "upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "paired": {"run": "rc022-manager-inspection-paired3-20261116-01", "cases": 44, "passed": true},
+  "native": {"run": "rc022-manager-inspection-native2-20261116-01", "passed": 9, "failed": 0},
+  "source": {"run": "rc022-manager-inspection-source-20261116-01", "selected_passed": 40, "unselected": 216, "failed": 0},
+  "verification_scope_reason": "Actual PluginManager Remote reads run over real profile Include/Loader inventories and the same controlled Python executable as Source. Checks registry config last-line parsing, local/git/tarball/registry inspection, installed identities, array and absent bundle metadata, empty/scalar/invalid JSON, ANSI/BOM, private registry isolation, mirror retry classification, pre/caller cancellation and deadline, version fields/order/tags/omission, compatibility and exact exemptions, origin registry memory, non-updatable sources and failed per-version reads. Native deterministic concurrency test confirms index order, completion of already-started work and no unstarted lookup after refusal. Package-view, core management and detail direct consumers pass. The first paired difference was only language-specific sorting of null registry in observer query inventories; corrected to the same empty-string sort key. Returned attempts preserve exact order. Strict JSON and JS whitespace handling were then covered by a new paired run.",
+  "legal_adaptation": "Python JSON parser and OS file-reader error text are normalized to diagnostic presence only; refusal classes and shapes, registry attempts and all other results compare exactly. The external executable adapter remains optional and application-owned; this batch does not compose the built-in zero-Node Python package acquisition/install backend.",
+  "activation_boundary": "Current partial manager registries/inspect/listVersions only. Actual installation/update/removal, Git preflight, operation streams and production provider promotion continue. Targeted evidence is not release acceptance.",
+  "cleanup": {"removed_bytes": 2998623, "external_empty_roots_removed": 1, "owned_processes_remaining": 0, "retained": "Compact commands, logs, XML/JSON and paired observations; shared Source/toolchains through C9."}
+}

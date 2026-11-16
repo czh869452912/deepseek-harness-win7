@@ -14,6 +14,8 @@ from dsh.boot.plugin_bundle_metadata import (OFFICIAL_DATA, OFFICIAL_CATALOG, OP
     bundle_directory, bundle_manifest, bundle_selection, official_bundle_install_target, update_refusal)
 from dsh.boot.plugin_install_spec import dependency_spec, parse_install_spec, InvalidInstallSpecError
 from dsh.boot.plugin_bundle_detail import read_bundle_document, read_bundle_image
+from dsh.boot.plugin_inspection import PluginInspection
+from dsh.boot.plugin_registry_policy import normalize_registry, NPMMIRROR_REGISTRY
 from dsh.boot.plugin_compatibility import evaluate_plugin_compatibility, get_dsh_runtime_version
 from dsh.boot.package_meta import read_plugin_meta
 from dsh.boot.plugin_packages import ResolutionRestartRequired
@@ -69,9 +71,15 @@ def diagnostic_version(value):
     return value if _bounded(value, 128) else None
 
 
-class CurrentPluginManager(TypertRemoteService):
+class CurrentPluginManager(PluginInspection, TypertRemoteService):
     inject = ['loader', 'profileContext']
     Config = Schema.object(dict(lockWaitMs=Schema.number().step(1).min(0).default(120000),
+        pnpmCommand=Schema.string().default('pnpm'),
+        inspectTimeoutMs=Schema.number().step(1).min(1000).default(20000),
+        registry=Schema.string().pattern(r'^https?://\S+$'),
+        fallbackRegistries=Schema.array(Schema.string().pattern(r'^https?://\S+$')).default([NPMMIRROR_REGISTRY]),
+        versionListLimit=Schema.number().step(1).min(1).default(20),
+        versionLookupConcurrency=Schema.number().step(1).min(1).default(4),
         detailMaxBytes=Schema.natural().min(1).default(1024*1024),
         detailImageMaxBytes=Schema.natural().min(1).default(5*1024*1024),
         detailFetchTimeoutMs=Schema.natural().min(1).max(2147483647).default(15000),
@@ -86,6 +94,14 @@ class CurrentPluginManager(TypertRemoteService):
         for name in _field(self.profile, 'startedBundles', []):
             self._protects_manager(name)
         self.lock_wait_ms = (config or {}).get('lockWaitMs', 120000)
+        config = config or {}
+        self.pnpm_command = config.get('pnpmCommand', 'pnpm')
+        self.inspect_timeout_ms = config.get('inspectTimeoutMs', 20000)
+        self.registry = normalize_registry(config['registry']) if 'registry' in config else None
+        self.fallback_registries = [normalize_registry(url) for url in config.get('fallbackRegistries', [NPMMIRROR_REGISTRY])]
+        self.version_list_limit = config.get('versionListLimit', 20)
+        self.version_lookup_concurrency = config.get('versionLookupConcurrency', 4)
+        self.installed_from = {}
         self.abort = AbortController()
         values = dict(detailMaxBytes=1024*1024, detailImageMaxBytes=5*1024*1024,
             detailFetchTimeoutMs=15000, detailNpmFileSources=list(NPM_FILE_SOURCES))

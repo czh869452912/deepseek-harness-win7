@@ -310,4 +310,6 @@
 
 | C8-FN | 通知数据与登录响应校验、旧 token 退出重试及取消清理 | [通知与退出](account-notification-checks.json) |
 
+| C8-FO | 异步授权服务、提交准入后的取消语义与终态通知隔离 | [授权服务](authorization-checks.json) |
+
 后续继续完整应用组合；最终资格使用 C9 冻结候选的完整门禁。

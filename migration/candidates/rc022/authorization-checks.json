@@ -1,0 +1,12 @@
+{
+  "batch": "C8-FO",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "scope": "Current asynchronous authorization provider required by account login.",
+  "paired": {"observations": 26, "differences": 0, "report": ".goose/out/rc022-authorization-paired1-20261116-01/report.json"},
+  "native": {"passed": 13, "report": ".goose/out/rc022-authorization-native-20261116-01/command.json"},
+  "source": {"passed": 28, "report": ".goose/out/rc022-authorization-source-20261116-01/command.json"},
+  "coverage": ["Actual mounted authorization services with controlled credential providers", "Eager slot admission, validation before pre-abort, duplicate methods/flows and in-flight refusal", "Prompt declines including wrapped decline, flow/storage failures and contained notice failures", "Observed writes must occur during the attempt and remain configured", "Admitted commit survives explicit cancellation, caller withdrawal and flow unload", "Unresponsive flow releases its key on withdrawal; late failures observed and late session.commit rejected", "Settled hooks run after slot release; sync and async failures contained without skipping later listeners", "Canonical native local credential provider commits to disk through the current session.commit contract", "Current package resolver binding selects the new async provider while historical class tests remain separate"],
+  "adaptations": ["Python commit passes a synchronous record selector consumable by both native synchronous and asynchronous credential providers; provider completion is always awaited", "Native-owned relay and credential subscriptions are detached at attempt settlement"],
+  "limits": ["Current account service and canonical profile composition remain subsequent work", "Targeted checks do not establish release acceptance"],
+  "cleanup": {"removed_bytes": 24437, "removed": ["Owned pytest workspaces", "Owned tmp and home directories"], "retained": "Commands, inputs, paired results and compact observations; no remaining task-owned process"}
+}

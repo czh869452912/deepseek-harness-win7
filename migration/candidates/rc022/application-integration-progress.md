@@ -218,4 +218,6 @@
 
 | C8-DT | 稳定开发提示词、v4 历史段落保留、当前路径/Web URL 上下文及卸载 | [开发上下文绑定](harness-dev-context-checks.json) |
 
+| C8-DU | 当前 Web 运行时/服务绑定、公告 URL 与代理前缀、认证页面及 Loader 就绪/SSH 行为 | [Web 运行时](web-runtime-checks.json) |
+
 后续继续完整应用组合；最终资格使用 C9 冻结候选的完整门禁。

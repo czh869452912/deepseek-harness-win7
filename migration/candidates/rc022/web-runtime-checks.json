@@ -1,0 +1,12 @@
+{
+  "part": "C8-DU",
+  "upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "paired": {"run": "rc022-web-runtime-paired2-20261116-01", "observations": 36, "differences": 0},
+  "native": {"run": "rc022-web-runtime-native3-20261116-01", "passed": 5},
+  "consumers": {"run": "rc022-web-runtime-consumers-20261116-01", "passed": 25},
+  "source": {"run": "rc022-web-runtime-source-20261116-01", "result": "passed; exact counts in retained vitest.json"},
+  "verification_scope_reason": "Bind actual current WebServer/FrontendStatic providers and the current Web runtime. Actual Loader tests cover advertised origin/proxy prefix, authenticated peer-aware page/base href, independent prompt context, shell variable, unload and readiness gated by Loader/audit including failure and SSH handoff suppression. Direct WebServer TLS/resource, static authorization and context consumers pass. Original runtime/public URL/browser opener suites pass; original URL parser paired over valid/rejection precedence, Unicode, numeric addresses and path encoding.",
+  "diagnostics": "First actual graph exposed the missing current WebServer binding; added it instead of fabricating protocol/origin on the old service. Pairing exposed caret and lone-surrogate path normalization, corrected. Raw initial failures retained.",
+  "activation_boundary": "Native browser handoff continues the Win7 os.startfile helper using a scrubbed environment. New full Web startup CLI flags, complete application composition, physical browser handoff and C9 release qualification remain outstanding.",
+  "cleanup": {"owned_processes_remaining": 0, "retained": "Commands, failure/pass logs/XML, Source results, URL corpus and paired observations retained. Owned workspaces/home/tmp removed; byte count in rc022-web-runtime-consumers-20261116-01/cleanup.json. Shared fixed Source/toolchains remain until C9."}
+}

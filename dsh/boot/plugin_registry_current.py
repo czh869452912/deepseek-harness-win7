@@ -1,6 +1,9 @@
 """rc.3 bindings staged for coordinated bundle, protocol and pin promotion."""
 
 CURRENT_HARNESS_PLUGIN_CLASSES = {
+    '@deepseek-ai/dsh-host-webserver': 'dsh.host.webserver.current:CurrentWebServerPlugin',
+    '@deepseek-ai/dsh-web-app': 'dsh.bundle.web_app.current:CurrentWebRuntime',
+    '@deepseek-ai/dsh-host-frontend-static': 'dsh.host.frontend_static.current:CurrentFrontendStatic',
     '@deepseek-ai/dsh-harness-dev-context': 'dsh.context.harness_dev_current:CurrentHarnessDevContext',
     '@deepseek-ai/dsh-deliverable-file-references': 'dsh.client.file_references_current:CurrentDeliverableFileReferences',
     '@deepseek-ai/dsh-workflow-ptc': 'dsh.workflow.plugin_current:CurrentWorkflowPtcPlugin',

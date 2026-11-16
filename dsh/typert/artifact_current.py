@@ -9,6 +9,7 @@ import math
 import re
 
 from dsh.typert.artifact import ArtifactParser, Schema, TOKEN, UNDEFINED
+from dsh.typert.artifact_binary import remove_program, is_bytes, encode_selected_data
 
 CURRENT_TOKEN = re.compile(TOKEN.pattern.replace('|=>|', '|\\?\\?=|=>|'))
 
@@ -29,6 +30,9 @@ def json_value(value, active=None):
 
 class CurrentSchema(Schema):
     def parse(self, value):
+        if self.kind == 'bytes':
+            if not is_bytes(value):raise ValueError('typert: value is not Uint8Array')
+            return value
         if self.kind == 'describe':return self.args[0].parse(value)
         if self.kind == 'json':return json_value(value)
         if self.kind == 'strictObject':
@@ -87,6 +91,7 @@ class RemoteInfo:
 
 class CurrentArtifactParser(ArtifactParser):
     def __init__(self, source):
+        source,self.byte_program=remove_program(source)
         self.tokens,self.position,self.bindings,self.caches,self.references=[],0,{},set(),set()
         cursor=0
         for match in CURRENT_TOKEN.finditer(source):
@@ -138,6 +143,16 @@ class CurrentArtifactParser(ArtifactParser):
 
     def expression(self):
         token=self.peek()
+        if token=='value' and self.tokens[self.position+1:self.position+2]==['=>']:
+            self.take('value');self.take('=>');factory=self.bindings.get(self.take())
+            for part in ('(',')','.','parse','(','value',')'):self.take(part)
+            if not self.byte_program or not isinstance(factory,SchemaFactory):
+                raise ValueError('typert: unsupported generated result decoder')
+            return factory().parse
+        if token=='(':
+            for part in ('(','value',',','writeBytes',')','=>','$encode0','(','value',',','writeBytes',',','[',']',',','new','Map','(',')',')'):self.take(part)
+            if not self.byte_program:raise ValueError('typert: generated encoder has no qualified program')
+            return encode_selected_data
         if token=='createTypertRemoteInfo':
             self.take();self.take('(');spec=self.expression();self.take(',');self.take('z');self.take(')')
             return RemoteInfo(spec)
@@ -162,13 +177,16 @@ class CurrentArtifactParser(ArtifactParser):
             self.take('}');return value
         if token=='z':
             self.take();self.take('.');kind=self.take();self.take('(')
-            if kind=='lazy':
+            if kind=='instanceof':
+                self.take('Uint8Array');args=[];kind='bytes'
+                if not self.byte_program:raise ValueError('typert: byte schema has no qualified program')
+            elif kind=='lazy':
                 for part in ('(',')','=>'):self.take(part)
                 args=[self.expression()];kind='current-lazy'
             else:args=self.sequence(')')
             self.take(')')
             if kind not in {'unknown','undefined','void','string','number','boolean','literal','object','strictObject',
-                    'array','record','union','intersection','json','never','current-lazy'}:
+                    'array','record','union','intersection','json','never','current-lazy','bytes'}:
                 raise ValueError('typert: unsupported current schema constructor: '+kind)
             value=CurrentSchema(kind,args,self.bindings)
         elif token is not None and re.fullmatch(r'[A-Za-z_$][\w$]*\$schema\d*',token) and self.tokens[self.position+1:self.position+2]==['(']:

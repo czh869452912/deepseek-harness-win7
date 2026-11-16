@@ -1,6 +1,9 @@
 """rc.3 bindings staged for coordinated bundle, protocol and pin promotion."""
 
 CURRENT_HARNESS_PLUGIN_CLASSES = {
+    '@deepseek-ai/dsh-config-editor': 'dsh.boot.config_editor:ConfigEditor',
+    '@deepseek-ai/dsh-settings': 'dsh.settings.forms:SettingsForms',
+    '@deepseek-ai/dsh-api-settings-controller': 'dsh.api.settings_current:CurrentSettingsController',
     '@deepseek-ai/dsh-session-reference': 'dsh.context.session_reference_current:CurrentSessionReferenceResolver',
     '@deepseek-ai/dsh-agent-instructions': 'dsh.context.instructions_current:CurrentAgentInstructionsPlugin',
     '@deepseek-ai/dsh-session-log-export': 'dsh.session.log_export_current:CurrentSessionLogExportPlugin',

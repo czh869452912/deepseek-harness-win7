@@ -202,4 +202,6 @@
 
 | C8-DL | Loader 权限预设/沙箱策略/Auto 绑定、原版目录与命令请求及停用状态迁移 | [候选权限绑定](permission-bindings-checks.json) |
 
-后续继续设置及完整应用组合；最终资格使用 C9 冻结候选的完整门禁。
+| C8-DM | ConfigEditor/表单绑定、原版设置 Remote 的脱敏/冲突/落盘/冷启动及文档打开取消 | [候选设置绑定](settings-bindings-checks.json) |
+
+后续继续完整应用组合；最终资格使用 C9 冻结候选的完整门禁。

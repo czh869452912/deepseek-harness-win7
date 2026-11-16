@@ -1,0 +1,12 @@
+{
+  "part": "C8-DM",
+  "upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "native": {"run": "rc022-settings-bindings-native3-20261116-01", "passed": 2},
+  "consumers": {"run": "rc022-settings-bindings-consumers-20261116-01", "passed": 14},
+  "source": {"run": "rc022-settings-bindings-source-20261116-01", "passed": 18, "pending": 0, "failed": 0},
+  "paired": {"run": "rc022-settings-controller-paired-20261116-01", "observations": 13, "differences": 0},
+  "verification_scope_reason": "Current ConfigEditor, SettingsForms and a dedicated current settings controller are selected through actual candidate package bindings. A real profile and unchanged generated settings Remote artifact serve authenticated HTTP describe/update/mutate requests, preserve autoGenerate/redaction, refuse stale and non-volatile writes, persist the user patch, restore it after actual cold boot, and reset to inherited values. Targeted existing form/editor lifecycle tests cover the direct consumers. Original controller/credential tests and a direct original-class paired observer independently verify descriptor projection, non-kebab entry identity, structural conflict, precise errors and document preparation/opening cancellation.",
+  "changes": "Historical settings controllers still target their original providers. The current controller exposes exactly the five Source settings methods, retains autoGenerate, uses prepareDocument and the always-present Config document contract, accepts any non-empty entry identity and classifies structural SETTINGS_CONFLICT errors.",
+  "activation_boundary": "Candidate profile/settings integration only; production table/pin, full built browser settings journey, complex YAML comments/anchors and complete release acceptance remain separate.",
+  "cleanup": {"owned_processes_remaining": 0, "removed_bytes": 29824, "retained": "Commands, XML/logs, original Source results, complete paired observations/input hashes and decoded HTTP observations remain. All owned run pytest workspaces/homes/tmp directories were removed. Shared pinned Source/toolchains remain owned until C9."}
+}

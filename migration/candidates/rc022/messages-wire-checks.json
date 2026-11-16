@@ -1,0 +1,11 @@
+{
+  "part": "C8-EY",
+  "upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "paired": {"run": "rc022-messages-wire-paired2-20261116-01", "observations": 407, "differences": 0},
+  "native": {"run": "rc022-messages-wire-native-20261116-01", "passed": 174, "failed": 0},
+  "source": {"run": "rc022-messages-wire-source-20261116-01", "passed": 135, "failed": 0},
+  "verification_scope_reason": "Messages request serialization: empty blocks/turns, tool input repair and immediate call/result matching, developer/tool-change blocks, leading and in-history system updates, native thinking replay signatures/degradation, inline/file image handles, reasoning/config/tool options and unchanged durable history. Event state machine covers first-seen block order, initial and delta text/thinking/tool input, signatures, usage safe-integer bounds, duplicate/out-of-order events, malformed/truncated tool input, stop/finish rules and incomplete streams. Paired observations include each side's actual BlockAssembler output and replay state. Current model metadata and API root policy are also paired; native assembler/assistant-stream/credential consumers pass.",
+  "activation_boundary": "Reusable Messages request/event/model helpers; historical combined adapter remains selected until full split transport/provider composition. Stream translation retains provider-neutral blocks and minimal native metadata separately. Total usage follows JavaScript number arithmetic at large validated counts.",
+  "limits": "Decoded event and image-version inputs are controlled. No SSE byte framing, authenticated Messages HTTP, image upload/recovery, provider activation or complete release acceptance claimed by this batch.",
+  "cleanup": {"removed_bytes": 492906, "owned_processes_remaining": 0, "retained": "Paired inputs/results/hash reports, Source test JSON, native command/log/XML and minimal wire/assembly observations. Owned external/mapped pytest fixtures and tmp/home removed; shared Source/toolchains retained until C9."}
+}

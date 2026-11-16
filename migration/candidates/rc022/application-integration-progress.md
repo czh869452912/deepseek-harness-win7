@@ -278,4 +278,6 @@
 
 | C8-EX | API Key / 账户路由配置与共享凭证：原版 Schema、权威来源、JS 归一化、目录跟随条件和账户覆盖 | [路由与凭证](deepseek-credentials-checks.json) |
 
+| C8-EY | Messages 请求与事件状态机：原生思考签名、工具变更、历史系统更新、图片引用及真实块组装对照 | [Messages 核心](messages-wire-checks.json) |
+
 后续继续完整应用组合；最终资格使用 C9 冻结候选的完整门禁。

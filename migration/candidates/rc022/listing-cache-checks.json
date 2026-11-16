@@ -1,0 +1,12 @@
+{
+  "part": "C8-EU",
+  "upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "paired": {"run": "rc022-listing-cache-paired-20261116-01", "observations": 16, "differences": 0},
+  "native": {"run": "rc022-listing-cache-native-fix-20261116-01", "passed": 12, "failed": 0},
+  "source": {"run": "rc022-listing-cache-source-20261116-01", "passed": 23, "failed": 0},
+  "verification_scope_reason": "Credential-scoped cache prerequisite for split DeepSeek providers: shared first load, caller-only abort, stale/background retry and last-good retention, warning streaks, badge-sensitive notifications, credential/invalidation generations, disabled listing and disposal awaiting late loads. Native real timers verify credential rotation, sign-out, latest disabled settings, pending automatic credential lookup on disposal, actual deadline and Python Task cancellation isolation. Timing validation covers safe integer and timer bounds.",
+  "diagnostics": "Initial deadline test cancelled before credential lookup had admitted a load; it now waits on the loader's admission event. Initial failure log/XML retained. No production workaround.",
+  "activation_boundary": "Reusable cache only; production provider/catalog integration follows separately. Absent optional listing is explicit null at the paired observation boundary.",
+  "limits": "Controlled listing loaders; actual listing decoder, authenticated HTTP and provider activation are not claimed by this batch. No full release acceptance.",
+  "cleanup": {"removed_bytes": 115470, "owned_processes_remaining": 0, "retained": "Paired inputs/results/hash report, test command/log/XML, Source JSON, minimal cache observations and initial failure diagnostics. Owned external/mapped pytest fixtures and tmp/home removed. Shared Source/toolchains retained until C9."}
+}

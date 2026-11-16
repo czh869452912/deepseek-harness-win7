@@ -22,9 +22,10 @@ const file=path.resolve(path.dirname(entry),declaration.moduleSpecifier.text)
 const temporary=path.join(path.dirname(file),'.rc022-resource-schemas-'+process.pid+'.mjs')
 const original=fs.readFileSync(file,'utf8');let source,created=false
 try{
- fs.writeFileSync(temporary,original+'\nexport {buildSchemas2025 as rc022Schemas};\n',{flag:'wx'})
+ fs.writeFileSync(temporary,original+'\nexport {buildSchemas2025 as rc022Schemas,buildSchemas2026 as rc022ModernSchemas};\n',{flag:'wx'})
  created=true
- source=(await import(pathToFileURL(temporary).href)).rc022Schemas()
+ const module=await import(pathToFileURL(temporary).href)
+ source={...module.rc022Schemas(),ModernDiscoverResultSchema:module.rc022ModernSchemas().dispatchResultSchemas['server/discover']}
 }finally{if(created)fs.unlinkSync(temporary)}
 const kinds=new Set()
 function capture(schema){
@@ -34,6 +35,7 @@ function capture(schema){
  switch(def.type){
   case 'object':node.shape=Object.fromEntries(Object.entries(def.shape).map(([key,value])=>[key,capture(value)]));if(def.catchall)node.catchall=capture(def.catchall);break
   case 'optional':case 'nullable':node.inner=capture(def.innerType);break
+  case 'catch':node.inner=capture(def.innerType);node.fallback=def.catchValue({issues:[],value:undefined});if(![undefined,0,'private'].includes(node.fallback))throw Error('Unreviewed catch fallback: '+JSON.stringify(node.fallback));break
   case 'array':node.element=capture(def.element);break
   case 'record':node.key=capture(def.keyType);node.value=capture(def.valueType);break
   case 'union':node.options=def.options.map(capture);break
@@ -41,11 +43,16 @@ function capture(schema){
   case 'literal':node.values=def.values;break
   case 'enum':node.values=Object.values(def.entries);break
   case 'number':if(def.format)node.format=def.format;node.checks=(def.checks??[]).map(check=>check._zod.def);break
+  case 'lazy':{
+   const expected='()=>z.union([z.string(),z.number(),z.boolean(),z.null(),z.record(z.string(),JSONValueSchema$1),z.array(JSONValueSchema$1)])'
+   if(String(def.getter).replace(/\s/g,'')!==expected)throw Error('Unreviewed lazy schema')
+   node.type='json-value';break
+  }
   case 'unknown':case 'string':case 'boolean':case 'never':break
   default:throw Error('Unreviewed schema kind: '+def.type)
  }
  return node
 }
-const names=['ListResourcesResultSchema','ListResourceTemplatesResultSchema','ReadResourceResultSchema']
+const names=['ListResourcesResultSchema','ListResourceTemplatesResultSchema','ReadResourceResultSchema','ModernDiscoverResultSchema']
 const schemas=Object.fromEntries(names.map(name=>[name,capture(source[name])]))
-fs.writeFileSync(process.argv[3],JSON.stringify({upstream:'38a6a5c965aa99ab525161efb7cc5cf1fe62fced',sdkVersion:'2.2.0',wireEra:'2025-11-25',schemaSourceSha256:createHash('sha256').update(fs.readFileSync(file)).digest('hex'),kinds:[...kinds].sort(),schemas},null,2)+'\n')
+fs.writeFileSync(process.argv[3],JSON.stringify({upstream:'38a6a5c965aa99ab525161efb7cc5cf1fe62fced',sdkVersion:'2.2.0',wireEras:{resources:'2025-11-25',discover:'2026-07-28'},schemaSourceSha256:createHash('sha256').update(fs.readFileSync(file)).digest('hex'),kinds:[...kinds].sort(),schemas},null,2)+'\n')

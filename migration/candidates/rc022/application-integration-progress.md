@@ -226,4 +226,6 @@
 
 | C8-DX | 实际 MCP stdio 资源/说明接线、SDK 资源投影分页、取消及重连代次 | [MCP 资源连接](mcp-resource-connection-checks.json) |
 
+| C8-DY | MCP SDK 2 发现响应分发 schema、版本纠正/回退及 HTTP/网络错误决策 | [MCP 协商决策](mcp-negotiation-checks.json) |
+
 后续继续完整应用组合；最终资格使用 C9 冻结候选的完整门禁。

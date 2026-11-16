@@ -47,6 +47,23 @@ def _keys(value):
 
 def _parse(schema, value, path=()):
     kind = schema['type']
+    if kind == 'catch':
+        parsed, issues = _parse(schema['inner'], value, path)
+        return ((copy.deepcopy(schema['fallback']) if 'fallback' in schema else ABSENT), []) if issues else (parsed, [])
+    if kind == 'json-value':
+        if isinstance(value, (dict, list)):
+            result, errors = ({} if isinstance(value, dict) else []), []
+            pairs = ((key, value[key]) for key in _keys(value) if key != '__proto__') if isinstance(value, dict) else enumerate(value)
+            for key, item in pairs:
+                parsed, issues = _parse(schema, item, path + (key,))
+                errors.extend(issues)
+                if isinstance(result, dict):
+                    result[key] = parsed
+                else:
+                    result.append(parsed)
+            return result, errors
+        if value is None or type(value) in (str,bool) or type(value) in (int,float) and math.isfinite(value):return value, []
+        return value, _invalid(path,'json',value)
     if kind == 'optional':
         return (ABSENT, []) if value is ABSENT else _parse(schema['inner'], value, path)
     if kind == 'unknown':
@@ -72,7 +89,17 @@ def _parse(schema, value, path=()):
             issue.update(origin='int', inclusive=True, path=list(path), message='Too %s: expected int to be %s%s' % (
                 'big' if positive else 'small', '<=' if positive else '>=', issue['maximum' if positive else 'minimum']))
             return value, [(issue, False)]
-        return value, []
+        errors=[]
+        for check in schema.get('checks',[]):
+            kind_check=check.get('check');limit=check.get('value');inclusive=check.get('inclusive',True)
+            too_small=kind_check=='greater_than' and (value<limit if inclusive else value<=limit)
+            too_big=kind_check=='less_than' and (value>limit if inclusive else value>=limit)
+            if too_small or too_big:
+                comparison=('>=' if inclusive else '>') if too_small else ('<=' if inclusive else '<')
+                issue=dict(origin='number',code='too_small' if too_small else 'too_big',inclusive=inclusive,path=list(path),
+                    message='Too '+('small' if too_small else 'big')+': expected number to be '+comparison+str(limit))
+                issue['minimum' if too_small else 'maximum']=limit;errors.append((issue,False))
+        return value, errors
     if kind in ('literal', 'enum'):
         if any(type(value) is type(option) and value == option for option in schema['values']):
             return value, []

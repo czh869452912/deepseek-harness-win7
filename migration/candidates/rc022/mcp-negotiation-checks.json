@@ -1,0 +1,11 @@
+{
+  "part": "C8-DY",
+  "upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "paired": {"run": "rc022-mcp-negotiation-paired-20261116-03", "observations": 648, "differences": 0},
+  "consumers": {"run": "rc022-mcp-negotiation-consumers2-20261116-01", "passed": 34},
+  "source": {"run": "rc022-mcp-negotiation-source-20261116-01", "passed": 5, "failed": 0},
+  "verification_scope_reason": "Actual pinned SDK 2.2.0 private classifier paired without behavior edits against Python across discover DTO defaults/catches/extensions, corrective supported versions, fallback eligibility, HTTP statuses and RPC bodies, browser/node error classification, authorization identity, timeout and transport close. Changed shared schema interpreter is covered by MCP schemas and actual current/resource provider consumers. Original negotiation lifecycle suite identifies the next transport acceptance contract; passing that Source suite alone does not establish native lifecycle parity.",
+  "diagnostics": "Initial paired run exposed a public versus dispatch discover-schema difference. The generator now captures dispatchResultSchemas['server/discover'], preserving extension resultType instead of adding the public schema's default. Initial native assertions were corrected to the observed dispatch schema; failure diagnostics retained. SDK files remain unchanged; exclusive temporary sibling export seams were removed in finally blocks.",
+  "activation_boundary": "Decision implementation is a prerequisite, not yet invoked by the transport. Disposable stdio probing, in-place HTTP probing, modern handshake/codec integration, supervisor budgets and cleanup fences remain outstanding. No full MCP, Web, Portable or release acceptance claimed.",
+  "cleanup": {"owned_processes_remaining": 0, "sdk_temporary_modules_remaining": 0, "removed_bytes": 4383586, "retained": "Paired raw outcomes/corpus/input hashes, failed and successful native diagnostics, compact actual peer observations, commands/XML and Source report retained. Owned pytest workspaces/home/tmp removed. Shared fixed Source/toolchains retained until C9."}
+}

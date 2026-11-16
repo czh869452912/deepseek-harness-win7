@@ -224,4 +224,6 @@
 
 | C8-DW | MCP 资源作用域/共享工具、继承覆盖、原始二进制值与模型投影及异步卸载 | [MCP 资源](mcp-resources-checks.json) |
 
+| C8-DX | 实际 MCP stdio 资源/说明接线、SDK 资源投影分页、取消及重连代次 | [MCP 资源连接](mcp-resource-connection-checks.json) |
+
 后续继续完整应用组合；最终资格使用 C9 冻结候选的完整门禁。

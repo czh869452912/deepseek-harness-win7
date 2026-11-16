@@ -133,8 +133,8 @@ def _parse(schema, value, path=()):
     raise RuntimeError('Unsupported pinned MCP schema kind: ' + kind)
 
 
-def parse(name, value):
-    parsed, errors = _parse(DEFINITIONS['schemas'][name], value)
+def parse(name, value, definitions=None):
+    parsed, errors = _parse((DEFINITIONS if definitions is None else definitions)['schemas'][name], value)
     if errors:
         raise SchemaError([issue for issue, aborted in errors])
     return parsed

@@ -44,9 +44,13 @@ class McpClientPlugin(Plugin):
         connection = self.connection_class(ctx, self.config, policy)
         self.connection = connection
         ctx.effect(lambda: connection.dispose)
+        self.register_context(ctx, server_name, connection)
         outcome = await connection.ready
         if outcome.get('error') is not None and self.config.get('failOnStartupError'):
             raise RuntimeError('mcp-client(%s): initial connection or tool synchronization failed' % server_name) from outcome['error']
 
     async def apply_async(self, ctx: Any) -> None:
         await self.apply(ctx)
+
+    def register_context(self, ctx, server_name, connection):
+        pass

@@ -26,6 +26,7 @@ class McpClientProtocol:
     def __init__(self):
         self.server_capabilities = None
         self.server_info = None
+        self.server_instructions = None
         self.protocol_version = None
         self.on_notification = None
         self.on_close = None
@@ -52,6 +53,7 @@ class McpClientProtocol:
             raise ValueError("Server's protocol version is not supported: " + str(version))
         self.protocol_version = version
         self.server_capabilities, self.server_info = result['capabilities'], result['serverInfo']
+        self.server_instructions = result.get('instructions')
         await self.notify('notifications/initialized')
         return self
 

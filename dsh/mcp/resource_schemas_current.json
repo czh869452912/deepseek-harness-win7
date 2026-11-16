@@ -1,0 +1,512 @@
+{
+  "upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "sdkVersion": "2.2.0",
+  "wireEra": "2025-11-25",
+  "schemaSourceSha256": "7603c5bdea8f0c80c98d563d8cbb1fb175abffa8f1f169b1ce3417e3679306b2",
+  "kinds": [
+    "array",
+    "enum",
+    "number",
+    "object",
+    "optional",
+    "record",
+    "string",
+    "union",
+    "unknown"
+  ],
+  "schemas": {
+    "ListResourcesResultSchema": {
+      "type": "object",
+      "shape": {
+        "_meta": {
+          "type": "optional",
+          "inner": {
+            "type": "object",
+            "shape": {
+              "progressToken": {
+                "type": "optional",
+                "inner": {
+                  "type": "union",
+                  "options": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "number",
+                      "checks": [
+                        {
+                          "type": "number",
+                          "check": "number_format",
+                          "abort": false,
+                          "format": "safeint"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              },
+              "io.modelcontextprotocol/related-task": {
+                "type": "optional",
+                "inner": {
+                  "type": "object",
+                  "shape": {
+                    "taskId": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            },
+            "catchall": {
+              "type": "unknown"
+            }
+          }
+        },
+        "nextCursor": {
+          "type": "optional",
+          "inner": {
+            "type": "string"
+          }
+        },
+        "resources": {
+          "type": "array",
+          "element": {
+            "type": "object",
+            "shape": {
+              "name": {
+                "type": "string"
+              },
+              "title": {
+                "type": "optional",
+                "inner": {
+                  "type": "string"
+                }
+              },
+              "icons": {
+                "type": "optional",
+                "inner": {
+                  "type": "array",
+                  "element": {
+                    "type": "object",
+                    "shape": {
+                      "src": {
+                        "type": "string"
+                      },
+                      "mimeType": {
+                        "type": "optional",
+                        "inner": {
+                          "type": "string"
+                        }
+                      },
+                      "sizes": {
+                        "type": "optional",
+                        "inner": {
+                          "type": "array",
+                          "element": {
+                            "type": "string"
+                          }
+                        }
+                      },
+                      "theme": {
+                        "type": "optional",
+                        "inner": {
+                          "type": "enum",
+                          "values": [
+                            "light",
+                            "dark"
+                          ]
+                        }
+                      }
+                    }
+                  }
+                }
+              },
+              "uri": {
+                "type": "string"
+              },
+              "description": {
+                "type": "optional",
+                "inner": {
+                  "type": "string"
+                }
+              },
+              "mimeType": {
+                "type": "optional",
+                "inner": {
+                  "type": "string"
+                }
+              },
+              "size": {
+                "type": "optional",
+                "inner": {
+                  "type": "number",
+                  "checks": []
+                }
+              },
+              "annotations": {
+                "type": "optional",
+                "inner": {
+                  "type": "object",
+                  "shape": {
+                    "audience": {
+                      "type": "optional",
+                      "inner": {
+                        "type": "array",
+                        "element": {
+                          "type": "enum",
+                          "values": [
+                            "user",
+                            "assistant"
+                          ]
+                        }
+                      }
+                    },
+                    "priority": {
+                      "type": "optional",
+                      "inner": {
+                        "type": "number",
+                        "checks": [
+                          {
+                            "check": "greater_than",
+                            "value": 0,
+                            "inclusive": true
+                          },
+                          {
+                            "check": "less_than",
+                            "value": 1,
+                            "inclusive": true
+                          }
+                        ]
+                      }
+                    },
+                    "lastModified": {
+                      "type": "optional",
+                      "inner": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
+              },
+              "_meta": {
+                "type": "optional",
+                "inner": {
+                  "type": "object",
+                  "shape": {},
+                  "catchall": {
+                    "type": "unknown"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "catchall": {
+        "type": "unknown"
+      }
+    },
+    "ListResourceTemplatesResultSchema": {
+      "type": "object",
+      "shape": {
+        "_meta": {
+          "type": "optional",
+          "inner": {
+            "type": "object",
+            "shape": {
+              "progressToken": {
+                "type": "optional",
+                "inner": {
+                  "type": "union",
+                  "options": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "number",
+                      "checks": [
+                        {
+                          "type": "number",
+                          "check": "number_format",
+                          "abort": false,
+                          "format": "safeint"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              },
+              "io.modelcontextprotocol/related-task": {
+                "type": "optional",
+                "inner": {
+                  "type": "object",
+                  "shape": {
+                    "taskId": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            },
+            "catchall": {
+              "type": "unknown"
+            }
+          }
+        },
+        "nextCursor": {
+          "type": "optional",
+          "inner": {
+            "type": "string"
+          }
+        },
+        "resourceTemplates": {
+          "type": "array",
+          "element": {
+            "type": "object",
+            "shape": {
+              "name": {
+                "type": "string"
+              },
+              "title": {
+                "type": "optional",
+                "inner": {
+                  "type": "string"
+                }
+              },
+              "icons": {
+                "type": "optional",
+                "inner": {
+                  "type": "array",
+                  "element": {
+                    "type": "object",
+                    "shape": {
+                      "src": {
+                        "type": "string"
+                      },
+                      "mimeType": {
+                        "type": "optional",
+                        "inner": {
+                          "type": "string"
+                        }
+                      },
+                      "sizes": {
+                        "type": "optional",
+                        "inner": {
+                          "type": "array",
+                          "element": {
+                            "type": "string"
+                          }
+                        }
+                      },
+                      "theme": {
+                        "type": "optional",
+                        "inner": {
+                          "type": "enum",
+                          "values": [
+                            "light",
+                            "dark"
+                          ]
+                        }
+                      }
+                    }
+                  }
+                }
+              },
+              "uriTemplate": {
+                "type": "string"
+              },
+              "description": {
+                "type": "optional",
+                "inner": {
+                  "type": "string"
+                }
+              },
+              "mimeType": {
+                "type": "optional",
+                "inner": {
+                  "type": "string"
+                }
+              },
+              "annotations": {
+                "type": "optional",
+                "inner": {
+                  "type": "object",
+                  "shape": {
+                    "audience": {
+                      "type": "optional",
+                      "inner": {
+                        "type": "array",
+                        "element": {
+                          "type": "enum",
+                          "values": [
+                            "user",
+                            "assistant"
+                          ]
+                        }
+                      }
+                    },
+                    "priority": {
+                      "type": "optional",
+                      "inner": {
+                        "type": "number",
+                        "checks": [
+                          {
+                            "check": "greater_than",
+                            "value": 0,
+                            "inclusive": true
+                          },
+                          {
+                            "check": "less_than",
+                            "value": 1,
+                            "inclusive": true
+                          }
+                        ]
+                      }
+                    },
+                    "lastModified": {
+                      "type": "optional",
+                      "inner": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
+              },
+              "_meta": {
+                "type": "optional",
+                "inner": {
+                  "type": "object",
+                  "shape": {},
+                  "catchall": {
+                    "type": "unknown"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "catchall": {
+        "type": "unknown"
+      }
+    },
+    "ReadResourceResultSchema": {
+      "type": "object",
+      "shape": {
+        "_meta": {
+          "type": "optional",
+          "inner": {
+            "type": "object",
+            "shape": {
+              "progressToken": {
+                "type": "optional",
+                "inner": {
+                  "type": "union",
+                  "options": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "number",
+                      "checks": [
+                        {
+                          "type": "number",
+                          "check": "number_format",
+                          "abort": false,
+                          "format": "safeint"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              },
+              "io.modelcontextprotocol/related-task": {
+                "type": "optional",
+                "inner": {
+                  "type": "object",
+                  "shape": {
+                    "taskId": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            },
+            "catchall": {
+              "type": "unknown"
+            }
+          }
+        },
+        "contents": {
+          "type": "array",
+          "element": {
+            "type": "union",
+            "options": [
+              {
+                "type": "object",
+                "shape": {
+                  "uri": {
+                    "type": "string"
+                  },
+                  "mimeType": {
+                    "type": "optional",
+                    "inner": {
+                      "type": "string"
+                    }
+                  },
+                  "_meta": {
+                    "type": "optional",
+                    "inner": {
+                      "type": "record",
+                      "key": {
+                        "type": "string"
+                      },
+                      "value": {
+                        "type": "unknown"
+                      }
+                    }
+                  },
+                  "text": {
+                    "type": "string"
+                  }
+                }
+              },
+              {
+                "type": "object",
+                "shape": {
+                  "uri": {
+                    "type": "string"
+                  },
+                  "mimeType": {
+                    "type": "optional",
+                    "inner": {
+                      "type": "string"
+                    }
+                  },
+                  "_meta": {
+                    "type": "optional",
+                    "inner": {
+                      "type": "record",
+                      "key": {
+                        "type": "string"
+                      },
+                      "value": {
+                        "type": "unknown"
+                      }
+                    }
+                  },
+                  "blob": {
+                    "type": "string"
+                  }
+                }
+              }
+            ]
+          }
+        }
+      },
+      "catchall": {
+        "type": "unknown"
+      }
+    }
+  }
+}

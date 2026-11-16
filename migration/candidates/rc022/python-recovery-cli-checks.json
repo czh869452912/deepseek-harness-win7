@@ -1,0 +1,9 @@
+{
+  "part": "C8-CK",
+  "upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "native": {"run": "rc022-python-recovery-cli-native-20261116-01", "passed": 10, "failed": 0},
+  "verification_scope_reason": "Actual canonical CLI parses plugin --profile NAME recover DIRECTORY, restores a verified retained native snapshot without pnpm/network access, leaves the package disabled and removes the consumed recovery copy. Invalid arity refuses before fallback. A running canonical host blocks recovery and retains its only copy; retry after shutdown succeeds. A real backend-owned update scope with an injected failed restoration emits an actionable, correctly quoted command from a profile home containing spaces; the actual launcher executes that same argv after shutdown. Existing launcher-prefix/app-argument and shutdown consumers are included because help and command dispatch changed.",
+  "legal_adaptation": "The native-only recovery command consumes the existing installed-file recovery provider. It does not execute the recovered package or reconstruct an original registry archive. The manager error gives the user a stop/recover action while the original browser code remains unchanged.",
+  "activation_boundary": "Native recovery is actionable through the canonical CLI. Local/Git acquisition, default native manager bindings, update-disposal/mux/browser qualification and final C9 release gates remain pending.",
+  "cleanup": {"removed_bytes": 5312, "owned_processes_remaining": 0, "retained": "Commands/XML only. All test recovery copies were consumed, then synthetic profiles and workspaces removed; shared Source/toolchains retained until C9."}
+}

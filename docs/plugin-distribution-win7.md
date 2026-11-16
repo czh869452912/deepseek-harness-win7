@@ -97,6 +97,14 @@ dsh.bat plugin --profile web remove @author/my-plugin
 
 Restart after selecting a version. Release labels are immutable identities, not version-range resolution. Activation failure does not imply automatic rollback: stop the profile and explicitly restore a retained version. Changed managed files block destructive replacement. Keep business data outside installed source; source rollback cannot undo a data migration. For session placement retain/repair user-preset references when removing a package; do not leave a reference and claim the preset will still start normally.
 
+If a native update cannot restore the previous package, its error includes a
+`dsh plugin --profile <profile> recover <directory>` command. Stop that profile
+before running it. Recovery verifies the retained files and profile ownership,
+restores the original package record without network access, and removes the
+recovery copy only after success. The recovered package starts disabled; review
+it and enable it in the plugin manager. Keep a rejected recovery directory until
+its reported problem is resolved.
+
 ## Win7 checklist
 
 - Python 3.8.10 syntax/standard library only: typing.List/Dict rather than builtin generics, no match or removeprefix/removesuffix, no newer OS APIs without a supported fallback.

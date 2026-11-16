@@ -146,4 +146,6 @@
 
 | C8-CJ | 更新作用域、真实目标移除/装载、旧依赖图恢复、失败恢复副本与原失败输入复验 | [原生更新与离线恢复](python-package-update-checks.json) |
 
+| C8-CK | canonical CLI 恢复命令、禁用恢复、运行中拒绝与带空格路径的错误操作提示 | [恢复入口与用户操作](python-recovery-cli-checks.json) |
+
 后续继续设置及完整应用组合；最终资格使用 C9 冻结候选的完整门禁。

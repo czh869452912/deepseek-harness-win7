@@ -67,6 +67,13 @@ def run_plugin(profile, args):
     from dsh.boot.python_plugins import install, uninstall
     from dsh.boot.python_plugin_versions import upgrade, rollback, versions
     from dsh.boot.profile_lease import ProfileLease
+    if args and args[0] == 'recover':
+        if len(args) != 2:
+            raise ValueError('use recover <retained update directory>')
+        from dsh.boot.python_plugin_snapshot import restore_retained_package
+        name = restore_retained_package(directory, args[1], INSTALL_ANCHOR)
+        sys.stdout.write('dsh: recovered Python plugin {} into {} (disabled; enable after reviewing)\n'.format(name, profile))
+        return 0
     if args and args[0] in ('add', 'upgrade') and (
         (len(args) > 1 and args[1].lower().startswith(('https:', 'http:'))) or '--sha256' in args
     ):

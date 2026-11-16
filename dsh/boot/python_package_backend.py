@@ -2,6 +2,7 @@
 import asyncio
 import json
 import os
+import subprocess
 import tempfile
 
 from dsh.boot import python_plugins as store
@@ -62,7 +63,12 @@ class PythonPackageBackend(Plugin):
                 result = await operation()
                 restore = result.get('restore', {})
                 if snapshot is not None and restore.get('application') in ('failed', 'cancelled'):
-                    result['recovery'] = dict(path=snapshot.preserve('update-restoration-failed'), reason='update-restoration-failed')
+                    path = snapshot.preserve('update-restoration-failed')
+                    command = ['dsh', 'plugin', '--profile', _field(self.profile, 'name'), 'recover', path]
+                    result['recovery'] = dict(path=path, reason='update-restoration-failed', command=command)
+                    error = restore.get('error')
+                    if isinstance(error, dict):
+                        error['diagnostic'] = (error.get('diagnostic') or error.get('code') or 'Restoration failed') + '\nPrevious version retained. Stop the profile and run:\n' + subprocess.list2cmdline(command)
                 return result
             except BaseException:
                 if snapshot is not None:

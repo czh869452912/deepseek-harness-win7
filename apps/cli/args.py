@@ -36,6 +36,7 @@ Examples:
   dsh plugin --profile web upgrade ./v2.zip replace a managed Python plugin (stop the profile first)
   dsh plugin --profile web versions <name>  list current and retained Python source versions as JSON
   dsh plugin --profile web rollback <name> [version] restore a retained Python version (stop the profile first)
+  dsh plugin --profile web recover <directory> recover a failed native update (stop the profile first; restored disabled)
   dsh plugin --profile web pack ./project ./plugin.zip pack a reviewed Python project without Node/pnpm
   dsh plugin --profile web build ./project build an exported plain-JS Client for the original browser
   dsh plugin --profile web add <https-url> --sha256 <digest> fetch and install a pinned release ZIP

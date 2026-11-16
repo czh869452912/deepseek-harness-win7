@@ -1,0 +1,12 @@
+{
+  "part": "C8-EB",
+  "upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "paired": {"run": "rc022-mcp-http-negotiation-paired-20261116-02", "observations": 13, "differences": 0},
+  "stdio_shared_consumer_paired": {"run": "rc022-mcp-http-negotiation-stdio-20261116-01", "observations": 5, "differences": 0},
+  "native": {"run": "rc022-mcp-http-negotiation-native-20261116-01", "passed": 5},
+  "consumers": {"run": "rc022-mcp-http-negotiation-consumers-20261116-01", "passed": 129},
+  "verification_scope_reason": "Actual SDK StreamableHTTPClientTransport and native current HTTP provider use the same owned local HTTP/SSE server. Exact POST packets/business headers and result/error objects match across legacy/modern JSON/SSE, corrective 400 RPC response, 401/403/404/503, unexpected content, malformed JSON-RPC result, timeout and caller closure. Session IDs are accepted only from successful initialize handshakes, and stale configured protocol/session headers have the observed precedence. Modern Unicode resource names produce SDK base64 field values. Native Loader/v4 current provider resource calls, instructions and unload pass; cancelling connect drains probe sends and writers. Both current transports now share modern session setup/envelopes; actual stdio paired contract and direct stdio/HTTP/supervisor/resource consumers cover that extraction.",
+  "observation_boundary": "HTTP observation compares decoded POST JSON and business headers (content-type, accept, authorization, mcp-*); raw logs preserve all headers and GET requests. Socket/runtime default headers and asynchronous GET ordering are outside this pairing. Static controlled local authorization is a fixture, not an external credential. No network service is contacted outside loopback.",
+  "activation_boundary": "Current HTTP provider now probes in place with SDK 2 auto negotiation and validates current JSON-RPC envelopes. Full modern caches/optional SDK flows, cancellation/protocol error details, credential templates/redaction, status/probe cells, supervisor startup/close budgets and failed-cleanup replacement fences remain outstanding. Targeted checks do not establish full MCP, Web or release acceptance.",
+  "cleanup": {"owned_processes_remaining": 0, "sdk_temporary_modules_remaining": 0, "removed_bytes": 2432755, "retained": "Raw HTTP/stdIO peer logs and paired outcomes, commands/XML and compact Loader/cancellation observations retained. Owned pytest workspaces/home/tmp removed. Owned HTTP peers stopped and reaped. Shared fixed Source/toolchains retained until C9."}
+}

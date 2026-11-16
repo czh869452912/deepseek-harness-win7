@@ -22,11 +22,11 @@ const file=path.resolve(path.dirname(entry),declaration.moduleSpecifier.text)
 const temporary=path.join(path.dirname(file),'.rc022-resource-schemas-'+process.pid+'.mjs')
 const original=fs.readFileSync(file,'utf8');let source,created=false
 try{
- fs.writeFileSync(temporary,original+'\nexport {buildSchemas2025 as rc022Schemas,buildSchemas2026 as rc022ModernSchemas,JSONRPCResultResponseSchema as rc022ResultEnvelope,JSONRPCErrorResponseSchema as rc022ErrorEnvelope};\n',{flag:'wx'})
+ fs.writeFileSync(temporary,original+'\nexport {buildSchemas2025 as rc022Schemas,buildSchemas2026 as rc022ModernSchemas,JSONRPCResultResponseSchema as rc022ResultEnvelope,JSONRPCErrorResponseSchema as rc022ErrorEnvelope,JSONRPCMessageSchema as rc022MessageEnvelope};\n',{flag:'wx'})
  created=true
  const module=await import(pathToFileURL(temporary).href)
  const modern=module.rc022ModernSchemas()
- source={...module.rc022Schemas(),ModernDiscoverResultSchema:modern.dispatchResultSchemas['server/discover'],ProbeResultEnvelope:module.rc022ResultEnvelope,ProbeErrorEnvelope:module.rc022ErrorEnvelope,ModernResultMeta:modern.ResultMetaSchema}
+ source={...module.rc022Schemas(),ModernDiscoverResultSchema:modern.dispatchResultSchemas['server/discover'],ProbeResultEnvelope:module.rc022ResultEnvelope,ProbeErrorEnvelope:module.rc022ErrorEnvelope,CurrentMessageEnvelope:module.rc022MessageEnvelope,ModernResultMeta:modern.ResultMetaSchema}
  for(const [method,name] of Object.entries({'tools/list':'ListToolsResultSchema','tools/call':'CallToolResultSchema','resources/list':'ListResourcesResultSchema','resources/templates/list':'ListResourceTemplatesResultSchema','resources/read':'ReadResourceResultSchema'})){
   source['ModernWire:'+method]=modern[name]
   source['ModernDispatch:'+method]=modern.dispatchResultSchemas[method]
@@ -59,6 +59,6 @@ function capture(schema){
  }
  return node
 }
-const names=['ListResourcesResultSchema','ListResourceTemplatesResultSchema','ReadResourceResultSchema','ModernDiscoverResultSchema','ProbeResultEnvelope','ProbeErrorEnvelope','ModernResultMeta',...Object.keys(source).filter(name=>name.startsWith('ModernWire:')||name.startsWith('ModernDispatch:'))]
+const names=['ListResourcesResultSchema','ListResourceTemplatesResultSchema','ReadResourceResultSchema','ModernDiscoverResultSchema','ProbeResultEnvelope','ProbeErrorEnvelope','CurrentMessageEnvelope','ModernResultMeta',...Object.keys(source).filter(name=>name.startsWith('ModernWire:')||name.startsWith('ModernDispatch:'))]
 const schemas=Object.fromEntries(names.map(name=>[name,capture(source[name])]))
 fs.writeFileSync(process.argv[3],JSON.stringify({upstream:'38a6a5c965aa99ab525161efb7cc5cf1fe62fced',sdkVersion:'2.2.0',wireEras:{legacyResources:'2025-11-25',modern:'2026-07-28',envelopes:'JSON-RPC 2.0'},schemaSourceSha256:createHash('sha256').update(fs.readFileSync(file)).digest('hex'),kinds:[...kinds].sort(),schemas},null,2)+'\n')

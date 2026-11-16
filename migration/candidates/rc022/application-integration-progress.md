@@ -232,4 +232,6 @@
 
 | C8-EA | MCP stdio 一次性探测进程/回收隔离、现代握手与结果解码及实际 Loader 接线 | [MCP stdio 协商](mcp-stdio-negotiation-checks.json) |
 
+| C8-EB | MCP HTTP 原连接探测、JSON/SSE、业务请求头/会话 ID 及取消清理与实际接线 | [MCP HTTP 协商](mcp-http-negotiation-checks.json) |
+
 后续继续完整应用组合；最终资格使用 C9 冻结候选的完整门禁。

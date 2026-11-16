@@ -4,7 +4,7 @@ import asyncio
 from dsh.mcp.negotiation_current import SdkError
 from dsh.mcp.probe_current import negotiate_era, disarm_spent_close_guard
 from dsh.mcp.stdio_client import StdioMcpClient
-from dsh.mcp.result_current import project_modern_result
+from dsh.mcp.negotiated_protocol_current import NegotiatedProtocol
 
 _AUTO = dict(kind='auto', modernVersions=['2026-07-28'], fallbackAvailable=True, probe={})
 
@@ -57,7 +57,7 @@ class _DisposableProbe(StdioMcpClient):
             disarm_spent_close_guard(self.channel)
 
 
-class CurrentStdioMcpTransport(StdioMcpClient):
+class CurrentStdioMcpTransport(NegotiatedProtocol, StdioMcpClient):
     def __init__(self, command, args=None, env=None, cwd='', negotiation=None):
         super().__init__(command, args, env, cwd)
         self.negotiation = negotiation if negotiation is not None else _AUTO
@@ -98,28 +98,6 @@ class CurrentStdioMcpTransport(StdioMcpClient):
     @property
     def _caller_closed_during_probe(self):
         return self._caller_closed and self.proc is None
-
-    async def _initialize(self):
-        if self.negotiated['era'] == 'legacy':
-            return await super()._initialize()
-        discover = self.negotiated['discover']
-        self.protocol_version = self.negotiated['version']
-        self.server_capabilities = discover['capabilities']
-        self.server_info = discover.get('_meta', {}).get('io.modelcontextprotocol/serverInfo')
-        self.server_instructions = discover.get('instructions')
-        return self
-
-    async def request(self, packet, signal=None, timeout=60000):
-        if self.negotiated is not None and self.negotiated['era'] == 'modern':
-            params = dict(packet.get('params') or {})
-            meta = dict(params.get('_meta') or {})
-            meta.update({'io.modelcontextprotocol/protocolVersion': self.protocol_version,
-                'io.modelcontextprotocol/clientInfo': {'name': 'dsh-mcp-client', 'version': '0.0.1'},
-                'io.modelcontextprotocol/clientCapabilities': {}})
-            params['_meta'] = meta
-            packet = dict(packet, params=params)
-        result = await super().request(packet, signal=signal, timeout=timeout)
-        return project_modern_result(packet['method'], result) if self.negotiated is not None and self.negotiated['era']=='modern' else result
 
     async def close(self):
         self._caller_closed = True

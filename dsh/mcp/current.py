@@ -28,7 +28,8 @@ class CurrentMcpConnection(McpConnection):
 
     def _create_transport(self):
         if self.config.get('transport','stdio')!='stdio':
-            return super()._create_transport()
+            from dsh.mcp.http_current import CurrentStreamableHttpMcpTransport
+            return CurrentStreamableHttpMcpTransport(self.config.get('url','http://localhost:8000'),self.config.get('headers',{}))
         from dsh.mcp.stdio_current import CurrentStdioMcpTransport
         return CurrentStdioMcpTransport(self.config.get('command','echo'),self.config.get('args',[]),
             self.config.get('env',{}),self.config.get('cwd',''))

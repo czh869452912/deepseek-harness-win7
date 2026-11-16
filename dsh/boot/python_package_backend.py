@@ -8,12 +8,14 @@ from dsh.boot import python_plugins as store
 from dsh.boot.app_boot import load_overlay_patches
 from dsh.boot.config_editor import flatten
 from dsh.boot.plugin_package_operations import active_recorded_run
+from dsh.boot.plugin_install_spec import parse_install_spec
 from dsh.boot.profile import read_profile_manifest, compose_entries, bundle_patch_paths
 from dsh.boot.python_package_cli import package_command
 from dsh.boot.python_package_prepare import prepared_registry_package
-from dsh.boot.python_package_tarball import unpack_tarball
+from dsh.boot.python_plugin_snapshot import retained_installed_package
 from dsh.boot.runtime_resolution import _field
 from dsh.cordis.plugin import Plugin
+from dsh.cordis.file_lock import with_file_lock
 from dsh.core.abort import AbortController, NEVER_ABORTED
 from dsh.core.cleanup import CleanupPromise
 
@@ -28,7 +30,7 @@ class PythonPackageBackend(Plugin):
         self.directory = os.path.normcase(os.path.realpath(_field(self.profile, 'dir')))
         self.lease = ctx.get('pythonProfileLease')
         self.dependencies = ctx.get('pythonDependencies')
-        self.abort, self.operations = AbortController(), set()
+        self.abort, self.operations, self.updates = AbortController(), set(), {}
         def close():
             self.abort.abort()
             async def drain():
@@ -39,6 +41,43 @@ class PythonPackageBackend(Plugin):
 
     def package_options(self):
         return package_command(self.config.get('env'))
+
+    def update(self, name, operation, lock_wait_ms):
+        async def owned():
+            task = asyncio.current_task()
+            self.operations.add(task)
+            scope, snapshot = None, None
+            try:
+                self.abort.signal.throwIfAborted()
+                async def capture():
+                    nonlocal scope, snapshot
+                    if name in self.updates:
+                        raise RuntimeError('another native update owns this package')
+                    manifest = read_profile_manifest('dsh', self.directory)
+                    if name in manifest.get('dsh', {}).get('pythonPlugins', {}):
+                        scope = retained_installed_package(self.directory, name)
+                        snapshot = scope.__enter__()
+                        self.updates[name] = snapshot
+                await with_file_lock(os.path.join(self.directory, 'package.json'), capture, waitMs=lock_wait_ms)
+                result = await operation()
+                restore = result.get('restore', {})
+                if snapshot is not None and restore.get('application') in ('failed', 'cancelled'):
+                    result['recovery'] = dict(path=snapshot.preserve('update-restoration-failed'), reason='update-restoration-failed')
+                return result
+            except BaseException:
+                if snapshot is not None:
+                    current = read_profile_manifest('dsh', self.directory).get('dsh', {}).get('pythonPlugins', {}).get(name)
+                    if current is None or current['version'] != snapshot.manifest['version']:
+                        snapshot.preserve('update-interrupted-after-removal')
+                raise
+            finally:
+                try:
+                    if snapshot is not None:
+                        self.updates.pop(name, None)
+                        scope.__exit__(None, None, None)
+                finally:
+                    self.operations.discard(task)
+        return CleanupPromise(owned())
 
     def _result(self):
         root = os.path.join(self.directory, '.plugin-manager', 'logs')
@@ -134,6 +173,11 @@ class PythonPackageBackend(Plugin):
                 result.update(exitCode=0, nativeCommitted=True)
                 self._append(result, 'Removed ' + args[1] + '\n', options, 'stdout')
                 return result
+            parsed = parse_install_spec(args[1])
+            snapshot = self.updates.get(parsed.get('name')) if parsed['kind'] == 'registry' else None
+            if snapshot is not None and parsed.get('range') == snapshot.manifest['version']:
+                result = self._result()
+                return await self._install(snapshot, result, options, snapshot)
             prepare_options = dict(options, registry=registry)
             async with prepared_registry_package(self.directory, args[1], prepare_options) as prepared:
                 result = prepared.result
@@ -146,31 +190,33 @@ class PythonPackageBackend(Plugin):
                         except (ValueError, AttributeError):
                             pass
                     return result
-                candidate = prepared.candidate
-                expected = options.get('expected')
-                if expected is not None and any(candidate.manifest.get(key) != expected[key] for key in ('name', 'version')):
-                    result.update(exitCode=1, unmet='unexpected-package')
-                    self._append(result, 'Prepared package differs from the expected identity\n', options)
-                    return result
-                with tempfile.TemporaryDirectory(prefix='dependencies-', dir=os.path.dirname(candidate.source)) as stage:
-                    unpack_tarball(candidate.source, stage)
-                    retained = self.dependencies.prepare_change(candidate=stage)
-                    try:
-                        def install():
-                            if options.get('onCommit'):
-                                options['onCommit']()
-                            store.install(self.directory, candidate.source, _field(self.profile, 'installAnchor'),
-                                candidate.acquisition, lease=self.lease, enabled=False)
-                            self.dependencies.commit_change(retained)
-                        await self._exclusive(install, signal)
-                        result.update(exitCode=0, nativeCommitted=True)
-                    finally:
-                        retained.close()
-                self._append(result, 'Installed ' + candidate.manifest['name'] + '\n', options, 'stdout')
-                return result
+                return await self._install(prepared.candidate, result, options)
         except Exception as error:
             if result is None:
                 result = self._result()
             result['exitCode'] = 1
             self._append(result, str(error) + '\n', options)
             return result
+
+    async def _install(self, candidate, result, options, snapshot=None):
+        expected = options.get('expected')
+        if expected is not None and any(candidate.manifest.get(key) != expected[key] for key in ('name', 'version')):
+            result.update(exitCode=1, unmet='unexpected-package')
+            self._append(result, 'Prepared package differs from the expected identity\n', options)
+            return result
+        with tempfile.TemporaryDirectory(prefix='dependencies-', dir=os.path.dirname(candidate.source)) as stage:
+            store.copy_source(candidate.source, stage)
+            retained = self.dependencies.prepare_change(candidate=stage)
+            try:
+                def install():
+                    if options.get('onCommit'):
+                        options['onCommit']()
+                    store.install(self.directory, candidate.source, _field(self.profile, 'installAnchor'),
+                        candidate.acquisition if snapshot is None else None, lease=self.lease, enabled=False, _snapshot=snapshot)
+                    self.dependencies.commit_change(retained)
+                await self._exclusive(install, options.get('signal') or NEVER_ABORTED)
+                result.update(exitCode=0, nativeCommitted=True)
+            finally:
+                retained.close()
+        self._append(result, ('Restored ' if snapshot is not None else 'Installed ') + candidate.manifest['name'] + '\n', options, 'stdout')
+        return result

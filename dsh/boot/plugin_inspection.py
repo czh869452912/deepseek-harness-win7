@@ -62,12 +62,22 @@ async def _map_concurrent(items, limit, operation):
 
 
 class PluginInspection:
+    def _package_backend(self):
+        if (_field(self.profile, 'packageManager') is not None
+                or getattr(self, 'pnpm_command', 'pnpm') != 'pnpm'):
+            return None
+        scope = getattr(self, 'package_backend_scope', None)
+        held = None if scope is None else scope.get()
+        if held is not None:
+            return held
+        context = getattr(self, 'owner_context', None)
+        return None if context is None else context.get('profilePackages')
+
     def _package_options(self):
         configured = _field(self.profile, 'packageManager')
         if configured is not None:
             return dict(configured)
-        context = getattr(self, 'owner_context', None)
-        backend = None if context is None else context.get('profilePackages')
+        backend = self._package_backend()
         if backend is not None:
             return backend.package_options()
         return dict(command=self.pnpm_command)

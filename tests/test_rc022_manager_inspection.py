@@ -69,6 +69,26 @@ def test_explicit_package_options_and_registry_origin_do_not_merge_defaults():
     assert manager._package_options()==dict(command='custom')
 
 
+def test_backend_command_override_and_held_update_scope():
+    import contextvars
+    manager=PluginInspection();manager.pnpm_command='pnpm';manager.profile=NS(packageManager=None)
+    backend=NS(package_options=lambda:dict(command='native',args=['private']))
+    values={'profilePackages':backend};manager.owner_context=NS(get=values.get)
+    manager.package_backend_scope=contextvars.ContextVar('test_package_backend',default=None)
+    assert manager._package_options()==dict(command='native',args=['private'])
+    token=manager.package_backend_scope.set(backend)
+    values.clear()
+    try:
+        assert manager._package_backend() is backend
+        manager.pnpm_command='custom'
+        assert manager._package_backend() is None and manager._package_options()==dict(command='custom')
+        manager.profile=NS(packageManager={})
+        assert manager._package_options()=={} and manager._package_backend() is None
+    finally:manager.package_backend_scope.reset(token)
+    manager.pnpm_command='pnpm';manager.profile=NS(packageManager=None)
+    assert manager._package_backend() is None
+
+
 @pytest.mark.asyncio
 async def test_registry_query_uses_exact_command_and_last_line(tmp_path):
     script=tmp_path/'registry.py'

@@ -1,5 +1,6 @@
 """Current profile management Remote, extended in verified contract batches."""
 import asyncio
+import contextvars
 import datetime
 import json
 import os
@@ -121,6 +122,7 @@ class CurrentPluginManager(PluginUpdate, PluginInstallation, PluginInspection, T
             maxImageBytes=values['detailImageMaxBytes'], npmFileSources=values['detailNpmFileSources'],
             timeoutMs=values['detailFetchTimeoutMs'], lifetime=self.abort.signal)
         self.package_operations = set()
+        self.package_backend_scope = contextvars.ContextVar('manager_package_backend', default=None)
         self.diagnostics = set()
         def close():
             self.abort.abort()

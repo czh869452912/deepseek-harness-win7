@@ -8,7 +8,7 @@ from dsh.boot.profile import init_profile
 from dsh.boot.profile_boot import INSTALL_ANCHOR
 from dsh.boot.profile_lease import ProfileLease
 from dsh.boot.python_package_acquire import acquired_registry_package
-from dsh.boot.python_plugin_snapshot import retained_installed_package, InstalledPackageSnapshot
+from dsh.boot.python_plugin_snapshot import retained_installed_package, InstalledPackageSnapshot, restore_retained_package
 from test_python_plugin_distribution import profile, boot, close, echo, EXAMPLE, PACKAGE
 from test_rc022_python_package_acquire import registry_package
 
@@ -91,3 +91,33 @@ def test_changed_installed_package_cannot_establish_recovery_provenance(profile)
             pytest.fail('changed installed bytes became trusted recovery')
     assert (directory / 'package.json').read_bytes() == before
     assert not (directory / '.dsh-python-updates').exists()
+
+
+@pytest.mark.parametrize('damage', [None, 'owner', 'profile', 'unknown', 'files'])
+def test_preserved_recovery_has_owner_receipt_and_cleans_only_after_success(profile, damage):
+    _, directory = profile
+    store.install(str(directory), str(EXAMPLE), INSTALL_ANCHOR)
+    with retained_installed_package(str(directory), PACKAGE) as snapshot:
+        store.uninstall(str(directory), PACKAGE)
+        recovery = Path(snapshot.preserve('injected-restoration-failure'))
+    assert snapshot.closed and recovery.is_dir()
+    receipt = recovery / 'recovery.json'
+    value = json.loads(receipt.read_text(encoding='utf-8'))
+    assert value['owner'] == 'native-package-update' and value['reviewMilestone']
+    if damage is not None:
+        if damage in ('owner', 'profile'):
+            value[damage] = 'foreign'
+        if damage == 'unknown':
+            (recovery / 'user-data').write_text('preserve', encoding='utf-8')
+        if damage == 'files':
+            value['record']['files']['README.md'] = '0' * 64
+        receipt.write_text(json.dumps(value), encoding='utf-8')
+        before = (directory / 'package.json').read_bytes()
+        with pytest.raises(ValueError):
+            restore_retained_package(str(directory), str(recovery), INSTALL_ANCHOR)
+        assert recovery.is_dir() and (directory / 'package.json').read_bytes() == before
+    else:
+        assert restore_retained_package(str(directory), str(recovery), INSTALL_ANCHOR) == PACKAGE
+        assert not recovery.exists() and not (directory / '.dsh-python-updates').exists()
+        assert PACKAGE not in json.loads((directory / 'package.json').read_text(encoding='utf-8'))['dsh']['profile']['bundles']
+        store.uninstall(str(directory), PACKAGE)

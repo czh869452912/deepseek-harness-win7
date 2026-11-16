@@ -73,7 +73,7 @@ class PluginInstallation:
         if on_commit is not None:options['onCommit']=on_commit
         context={key:_field(self.profile,key) for key in ('dir','cwd','home','installAnchor')};context['profile']=_field(self.profile,'name')
         try:
-            backend=self.owner_context.get('profilePackages') if _field(self.profile,'packageManager') is None else None
+            backend=self._package_backend()
             operation=run_profile_pnpm(context,args,options) if backend is None else backend.run(context,args,options)
             result=await self._owned_package_operation(operation)
             emit('stdout','',exitCode=None if signal is not None and signal.aborted else result['exitCode'])

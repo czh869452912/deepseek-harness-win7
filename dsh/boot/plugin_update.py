@@ -75,22 +75,28 @@ class PluginUpdate:
                 if registry is not UNSPECIFIED:install_options['registry']=registry
                 if request_id is not None:install_options['requestId']=request_id
                 return settled('install',spec,self.installBundle(spec,install_options))
-            if self.owner_context.get('hmr') is None:
-                announce('installing');return answer('install',await install_target())
-            unreachable=await self._git_host_unreachable(spec) if target['kind']=='git' else None
-            if unreachable is not None:
-                return answer('check',dict(changed=False,application='failed',stage='install',target=name,failedAt='spec-host',packageResult=unreachable,error=dict(code='operation-error',diagnostic=unreachable['output'])))
-            previous_registry=self.installed_from.get(name,UNSPECIFIED)
-            announce('removing');removal=await settled('remove',name,self.removeBundle(name))
-            if removal['application'] in ('failed','cancelled'):return answer('remove',removal)
-            announce('installing');result=await install_target()
-            if result['application'] not in ('failed','cancelled'):return answer('install',result)
-            announce('restoring')
-            if result['stage']=='enable':await settled('remove',name,self.removeBundle(name))
-            previous=target['source'] if target['kind']=='git' else name+'@'+previous_version
-            restore_options=dict(saveExact=save_exact,enabled=enabled)
-            if previous_registry is not UNSPECIFIED:restore_options['registry']=previous_registry
-            # Restoration is owned by the update, without the cancelled request id.
-            restore=await settled('install',previous,self.installBundle(previous,restore_options))
-            return answer('install',result,restore=restore)
+            async def apply_update():
+                if self.owner_context.get('hmr') is None:
+                    announce('installing');return answer('install',await install_target())
+                unreachable=await self._git_host_unreachable(spec) if target['kind']=='git' else None
+                if unreachable is not None:
+                    return answer('check',dict(changed=False,application='failed',stage='install',target=name,failedAt='spec-host',packageResult=unreachable,error=dict(code='operation-error',diagnostic=unreachable['output'])))
+                previous_registry=self.installed_from.get(name,UNSPECIFIED)
+                announce('removing');removal=await settled('remove',name,self.removeBundle(name))
+                if removal['application'] in ('failed','cancelled'):return answer('remove',removal)
+                announce('installing');result=await install_target()
+                if result['application'] not in ('failed','cancelled'):return answer('install',result)
+                announce('restoring')
+                if result['stage']=='enable':await settled('remove',name,self.removeBundle(name))
+                previous=target['source'] if target['kind']=='git' else name+'@'+previous_version
+                restore_options=dict(saveExact=save_exact,enabled=enabled)
+                if previous_registry is not UNSPECIFIED:restore_options['registry']=previous_registry
+                # Restoration is owned by the update, without the cancelled request id.
+                restore=await settled('install',previous,self.installBundle(previous,restore_options))
+                return answer('install',result,restore=restore)
+            backend=self._package_backend()
+            if backend is None:return await apply_update()
+            token=self.package_backend_scope.set(backend)
+            try:return await self._owned_package_operation(backend.update(name,apply_update,self.lock_wait_ms))
+            finally:self.package_backend_scope.reset(token)
         return CleanupPromise(run())

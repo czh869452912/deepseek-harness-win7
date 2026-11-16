@@ -1,0 +1,11 @@
+{
+  "part": "C8-DC",
+  "upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "paired": {"run": "rc022-office-provider-paired-20261116-01", "cases": 13, "differences": 0},
+  "native": [{"run": "rc022-office-provider-native-20261116-01", "passed": 57}, {"run": "rc022-office-provider-native-wire-20261116-01", "passed": 58}],
+  "source": {"run": "rc022-office-provider-source-20261116-01", "passed": 86, "failed": 0},
+  "verification_scope_reason": "Actual compiled Source provider and native provider agree with a controlled engine seam on PDF/file/image operations, converter options, sorted PNGs, byte caps, invalid outputs, engine error mapping, cancellation and scratch/converter disposal. Existing queue/store/output tests remain covered. Native authorized preview checks perform one-byte access admission, source/version rechecks, bounded FS reads, cached reuse only after current access checks, missing-engine retry and provider disposal. Actual original Office generated artifact over authenticated HTTP returns generation and multipart PDF bytes, refuses invalid priority/missing scope and classifies unsupported format without Agent activation.",
+  "engine_boundary": "The paired Source loadKit seam and native optional officeKitEngine service use controlled converters. This qualifies Host orchestration and actual Remote transport, not a real LibreOffice engine or its installation/loader. Default missing engine registers the service and fails conversion as unavailable. Successful native engine provider, pinned engine assets, actual document conversion and Windows 7 engine qualification remain outstanding. No Node dependency was added to portable Python.",
+  "activation_boundary": "Office provider added to staged current-baseline registry only. Production pin/frontend/bundle promotion remains C9 work.",
+  "cleanup": {"owned_processes_remaining": 0, "retained": "Commands, XML, Source results, paired observations and actual Office multipart observations retained. Owned fixture workspaces, converter scratch, temporary homes and paired payloads removed. Shared Source/toolchains retained until C9."}
+}

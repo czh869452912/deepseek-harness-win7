@@ -182,4 +182,6 @@
 
 | C8-DB | Office 会话输出存储、串行容量、删除失败重试、限时回收及真实 junction 排除 | [Office 输出存储](office-outputs-checks.json) |
 
+| C8-DC | Office 四类操作组合、授权版本重查、受控引擎错误/清理及真实二进制 Remote | [Office 提供方](office-provider-checks.json) |
+
 后续继续设置及完整应用组合；最终资格使用 C9 冻结候选的完整门禁。

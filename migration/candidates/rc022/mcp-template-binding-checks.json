@@ -1,0 +1,12 @@
+{
+  "part": "C8-EE",
+  "upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "paired": {"run": "rc022-mcp-templates-paired-20261116-02", "observations": 25, "differences": 0},
+  "native": {"run": "rc022-mcp-templates-native-20261116-01", "passed": 3},
+  "consumers": {"run": "rc022-mcp-templates-consumers-20261116-01", "passed": 43, "failed": 1},
+  "source": {"run": "rc022-mcp-templates-source-20261116-01", "passed": 6, "failed": 0},
+  "verification_scope_reason": "Actual original templates and binding versus native grammar, static reference order, args-before-command runtime order, once-per-attempt memoization, dynamic provider removal/restoration, missing and empty credentials, cancellation, URI encoding failure and instance-lifetime raw/URL-encoded rotation redaction. Native tests additionally use the real synchronous local credentials provider and cancellation while lookup remains owned. Consumer scope includes credential precedence, remote persistence, schemas and current MCP resources/supervisor.",
+  "diagnostics": "One consumer fails at canonical Web startup because the profile composition has not yet provided webRuntime to connection. This is an outstanding baseline application-composition integration gap, not credential template acceptance; this batch adds no production wiring. Raw failure, command and XML retained. The first paired attempt failed Source fixture registration (set without provide); the corrected fixture uses provide.",
+  "activation_boundary": "Template helpers are not yet used by the production connection supervisor. Configuration, credential refresh, waiting state and generation supervision remain pending. Neither all consumer checks nor overall MCP/Web/release acceptance is claimed.",
+  "cleanup": {"owned_processes_remaining": 0, "removed_bytes": 2197900, "retained": "Paired observations/hashes, failure and pass logs/XML, command receipts and Source report. Owned pytest workspaces/home/tmp removed, including synthetic credential stores. Shared fixed Source/toolchains remain until C9."}
+}

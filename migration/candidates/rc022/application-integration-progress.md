@@ -238,4 +238,6 @@
 
 | C8-ED | MCP 代次任务所有权、共享有界清理/独立关闭确认、原始传输启动与 Windows 短期限复核 | [MCP 代次](mcp-generation-checks.json) |
 
+| C8-EE | MCP 凭据模板语法、逐次连接解析/引用复用、动态提供者与实例历次值脱敏（Web 配置组合回归缺口保留） | [MCP 凭据模板](mcp-template-binding-checks.json) |
+
 后续继续完整应用组合；最终资格使用 C9 冻结候选的完整门禁。

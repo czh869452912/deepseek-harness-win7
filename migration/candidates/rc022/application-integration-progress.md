@@ -178,4 +178,6 @@
 
 | C8-CZ | Office 普通输出限额、打开后元数据、变化拒绝、PDF/PNG 完整性与句柄回收 | [Office 输出读取](office-output-checks.json) |
 
+| C8-DA | Office 元数据准入、前后台容量、同源/内容共享、LRU 与取消后的实际工作所有权 | [Office 共享队列](office-queue-checks.json) |
+
 后续继续设置及完整应用组合；最终资格使用 C9 冻结候选的完整门禁。

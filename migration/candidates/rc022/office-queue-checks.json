@@ -1,0 +1,11 @@
+{
+  "part": "C8-DA",
+  "upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "paired": [{"run": "rc022-office-queue-paired-20261116-01", "cases": 22, "differences": 0}, {"run": "rc022-office-queue-paired2-20261116-01", "cases": 22, "differences": 0}],
+  "native": [{"run": "rc022-office-queue-native-20261116-01", "passed": 16}, {"run": "rc022-office-queue-native-final-20261116-01", "passed": 20}],
+  "source": {"run": "rc022-office-queue-source-20261116-01", "passed": 27, "failed": 0},
+  "verification_scope_reason": "Actual original queue.ts and native queue agree on reads/reservations, operation/generation content hashes, PDF/file/image results, source/digest sharing, independent output copies, alias/LRU limits, failed/oversized/version-changed reads, queue eviction, priority promotion, disabled background work, reader admission, cancellation and disposal. Native regressions additionally verify actual work retains capacity after its last reader leaves, foreground byte blockers, synchronous abort replacement surviving late old completion, and independently cancelled Python waiters.",
+  "diagnostics": "Initial extended checks exposed Python Task conversion of a caller-supplied CancelledError rejection. ReadPromise now carries this rejection through the owned Task and raises the original caller reason in its independent awaiter. The subsequent source-callback assertion also demanded identity across an arbitrary cancelled Python callback Task; that requirement was corrected to type and complete capacity release. Both raw failing runs remain preserved. Identity across arbitrary async Python source callback cancellation is not certified.",
+  "activation_boundary": "Shared Office admission/cache primitive only. No engine execution, persistent output store, Office Remote or profile activation yet.",
+  "cleanup": {"owned_processes_remaining": 0, "retained": "Commands, XML including both initial failure diagnostics, Source results and both paired observations retained. Owned temporary workspaces and homes removed. Shared Source/toolchains retained until C9."}
+}

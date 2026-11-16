@@ -154,4 +154,6 @@
 
 | C8-CN | 真实 Git 提交/标签/分支/子目录归档、限额、取消排空及单链接对象清理 | [Git 原生获取](python-package-git-checks.json) |
 
+| C8-CO | Git 父进程复验/固定来源、真实管理器更新、离线来源恢复与深路径隔离 | [Git 原生管理器](python-git-backend-checks.json) |
+
 后续继续设置及完整应用组合；最终资格使用 C9 冻结候选的完整门禁。

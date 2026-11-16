@@ -1,6 +1,7 @@
 """Private Git source preparation; run inside an owned captured Python child."""
 import json
 import gzip
+import ctypes
 import os
 import re
 import shutil
@@ -71,10 +72,27 @@ def git_source(spec):
 
 
 def create_git_workspace(parent):
+    external = None
+    if os.name == 'nt' and len(os.path.abspath(os.path.join(parent, 'git-workspace'))) > 160:
+        # Keep Git's own discovery/pack paths below its remaining MAX_PATH
+        # boundaries. This separate owned payload is still joined/cleaned by
+        # the parent after the captured process tree has fully drained.
+        base = os.path.join(os.environ.get('LOCALAPPDATA', ''), 'Temp')
+        if not os.path.isabs(base) or not os.path.isdir(base) or store.reparse(base):
+            raise ValueError('a real local temporary directory is required for Git preparation')
+        external = tempfile.mkdtemp(prefix='dsh-native-git-', dir=base)
+        parent = external
     workspace = os.path.join(parent, 'git-workspace')
-    os.mkdir(workspace)
-    store.atomic_bytes(os.path.join(workspace, _MARKER), store.json_bytes(dict(formatVersion=1,
-        owner='native-git-preparation', directory=os.path.normcase(os.path.realpath(workspace)))))
+    try:
+        os.mkdir(workspace)
+        value = dict(formatVersion=1, owner='native-git-preparation', directory=os.path.normcase(os.path.realpath(workspace)))
+        if external is not None:
+            value['externalParent'] = os.path.normcase(os.path.realpath(external))
+        store.atomic_bytes(os.path.join(workspace, _MARKER), store.json_bytes(value))
+    except BaseException:
+        if os.path.isdir(workspace) and not os.listdir(workspace):os.rmdir(workspace)
+        if external is not None and not os.listdir(external):os.rmdir(external)
+        raise
     return workspace
 
 
@@ -86,14 +104,23 @@ def _owned_workspace(workspace):
         raise ValueError('Git workspace marker must not be a link')
     with open(marker, encoding='utf-8') as stream:
         value = json.load(stream)
-    if value != dict(formatVersion=1, owner='native-git-preparation', directory=os.path.normcase(os.path.realpath(workspace))):
+    expected = dict(formatVersion=1, owner='native-git-preparation', directory=os.path.normcase(os.path.realpath(workspace)))
+    if isinstance(value, dict) and 'externalParent' in value:
+        parent = os.path.dirname(os.path.abspath(workspace))
+        if not os.path.basename(parent).startswith('dsh-native-git-') or store.reparse(parent):
+            raise ValueError('Git external workspace owner differs')
+        expected['externalParent'] = os.path.normcase(os.path.realpath(parent))
+    if value != expected:
         raise ValueError('Git workspace owner differs')
+    return value
 
 
 def cleanup_git_workspace(workspace):
     if not os.path.lexists(workspace):
         return
-    _owned_workspace(workspace)
+    owner = _owned_workspace(workspace)
+    if 'externalParent' in owner and os.listdir(owner['externalParent']) != ['git-workspace']:
+        raise ValueError('Git external workspace contains unknown sibling assets')
     repository = os.path.join(workspace, 'repository')
     objects = os.path.join(workspace, 'repository', 'objects')
     for path in (repository, objects):
@@ -114,6 +141,8 @@ def cleanup_git_workspace(workspace):
                     if not info.st_mode & stat.S_IWRITE:
                         os.chmod(path, info.st_mode | stat.S_IWRITE)
     store.remove_directory(workspace)
+    if 'externalParent' in owner:
+        os.rmdir(owner['externalParent'])  # Refuse unknown sibling payloads.
 
 
 def _repository_size(repository):
@@ -143,9 +172,26 @@ def _safe_diagnostic(text, source, workspace):
     return re.sub(r'(?:https?|ssh|git|file)://[^\s\'"<>]+', clean, text)
 
 
+def _git_path(path):
+    if os.name != 'nt':
+        return path
+    # Git's repository discovery/chdir still has MAX_PATH boundaries even
+    # with core.longpaths. Resolve an existing owned path using a Win7 API.
+    kernel = ctypes.WinDLL('kernel32', use_last_error=True, winmode=0)
+    kernel.GetShortPathNameW.argtypes = [ctypes.c_wchar_p, ctypes.c_wchar_p, ctypes.c_ulong]
+    kernel.GetShortPathNameW.restype = ctypes.c_ulong
+    size = kernel.GetShortPathNameW(path, None, 0)
+    if not size:
+        raise ctypes.WinError(ctypes.get_last_error())
+    buffer = ctypes.create_unicode_buffer(size)
+    if not kernel.GetShortPathNameW(path, buffer, size):
+        raise ctypes.WinError(ctypes.get_last_error())
+    return buffer.value
+
+
 def _git(executable, workspace, source, args, archive=None):
     repository = os.path.join(workspace, 'repository')
-    hooks = os.path.join(workspace, 'hooks')
+    hooks = _git_path(os.path.join(workspace, 'hooks'))
     env = dict(os.environ, LC_ALL='C', GIT_TERMINAL_PROMPT='0', GCM_INTERACTIVE='never',
         GIT_ASKPASS='', SSH_ASKPASS='', SSH_ASKPASS_REQUIRE='never')
     for name in ('GIT_DIR', 'GIT_WORK_TREE', 'GIT_INDEX_FILE', 'GIT_OBJECT_DIRECTORY',
@@ -153,8 +199,9 @@ def _git(executable, workspace, source, args, archive=None):
             'GIT_CONFIG_COUNT'):
         env.pop(name, None)
     command = [executable, '-c', 'core.hooksPath=' + hooks, '-c', 'core.askPass=',
-        '-c', 'protocol.file.allow=always', '-c', 'core.autocrlf=false', '-c', 'core.longpaths=true'] + args
-    process = subprocess.Popen(command, stdin=subprocess.DEVNULL, stdout=subprocess.PIPE, stderr=subprocess.PIPE, env=env)
+        '-c', 'protocol.file.allow=always', '-c', 'core.autocrlf=false', '-c', 'core.longpaths=true',
+        '--git-dir=' + _git_path(repository)] + args
+    process = subprocess.Popen(command, cwd=_git_path(workspace), stdin=subprocess.DEVNULL, stdout=subprocess.PIPE, stderr=subprocess.PIPE, env=env)
     output, error, failures = bytearray(), bytearray(), []
     exceeded = threading.Event()
     def stderr():
@@ -236,18 +283,19 @@ def publish_git(directory, spec, output, workspace):
     hooks = os.path.join(workspace, 'hooks')
     os.mkdir(hooks)
     repository = os.path.join(workspace, 'repository')
-    _git(executable, workspace, source, ['init', '--bare', '--template=' + hooks, repository])
-    _git(executable, workspace, source, ['-C', repository, 'remote', 'add', 'origin', source['repository']])
+    os.mkdir(repository)
+    _git(executable, workspace, source, ['init', '--bare', '--template=' + _git_path(hooks)])
+    _git(executable, workspace, source, ['remote', 'add', 'origin', source['repository']])
     print('Fetching Git source', flush=True)
-    _git(executable, workspace, source, ['-C', repository, 'fetch', '--depth=1', '--filter=blob:none',
+    _git(executable, workspace, source, ['fetch', '--depth=1', '--filter=blob:none',
         '--no-tags', '--no-recurse-submodules', '--', 'origin', source['ref']])
-    commit = _git(executable, workspace, source, ['-C', repository, 'rev-parse', '--verify', 'FETCH_HEAD^{commit}'])
+    commit = _git(executable, workspace, source, ['rev-parse', '--verify', 'FETCH_HEAD^{commit}'])
     if not re.fullmatch(r'[0-9a-f]{40}', commit) or re.fullmatch(r'[0-9a-f]{40}', source['ref']) and commit != source['ref']:
         raise PackageQueryError('ERR_DSH_GIT_IDENTITY', 'Git returned a different commit from the requested source')
     print('Archiving Git commit ' + commit, flush=True)
     archive = os.path.join(workspace, 'source.tgz')
     tree = commit + (':' + source['directory'] if source['directory'] else '')
-    _git(executable, workspace, source, ['-C', repository, 'archive', '--format=tar', '--prefix=package/', tree], archive)
+    _git(executable, workspace, source, ['archive', '--format=tar', '--prefix=package/', tree], archive)
     with tempfile.TemporaryDirectory(prefix='source-', dir=workspace) as stage:
         unpack_tarball(archive, stage)
         manifest = publish_local(directory, stage, output)

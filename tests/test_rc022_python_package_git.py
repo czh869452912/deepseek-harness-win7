@@ -175,3 +175,26 @@ def test_owned_git_cleanup_refuses_shared_objects_then_clears_owned_readonly_obj
         original.chmod(stat.S_IREAD)
         cleanup_git_workspace(str(workspace))
     assert not workspace.exists()
+
+
+def test_git_workspace_marker_and_unknown_external_siblings_are_preserved(tmp_path):
+    workspace = Path(create_git_workspace(str(tmp_path)))
+    marker = workspace / '.native-git-owner.json'
+    original = marker.read_bytes()
+    value = json.loads(original)
+    marker.write_text(json.dumps(dict(value, owner='other-owner')), encoding='utf-8')
+    with pytest.raises(ValueError, match='owner differs'):
+        cleanup_git_workspace(str(workspace))
+    assert workspace.exists()
+    marker.write_bytes(original)
+    if 'externalParent' in value:
+        sibling = workspace.parent / 'unknown-asset'
+        sibling.write_bytes(b'preserve until its consumer finishes')
+        with pytest.raises(ValueError, match='unknown sibling'):
+            cleanup_git_workspace(str(workspace))
+        assert marker.exists() and sibling.exists()
+        sibling.unlink()
+    cleanup_git_workspace(str(workspace))
+    assert not workspace.exists()
+    if 'externalParent' in value:
+        assert not workspace.parent.exists()

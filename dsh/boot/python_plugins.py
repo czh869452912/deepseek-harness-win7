@@ -285,6 +285,9 @@ def transact(directory, before, after, name, token, operation):
 
 def dependency_reference(name,record):
     acquisition=record.get('acquisition')
+    if isinstance(acquisition,dict) and acquisition.get('kind')=='git-tgz':
+        from dsh.boot.python_plugin_git_origin import git_dependency
+        return git_dependency(acquisition)
     if isinstance(acquisition,dict) and acquisition.get('kind')=='registry-tgz' and 'name' in acquisition:
         if acquisition['name']!=name or acquisition['version']!=record['version']:
             raise ValueError('registry acquisition identity differs from its native package')

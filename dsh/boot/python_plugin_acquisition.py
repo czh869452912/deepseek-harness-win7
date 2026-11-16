@@ -108,6 +108,16 @@ def verified_record(source, record):
     """Tie persisted acquisition metadata to the actual installation container."""
     if record is None:
         return None
+    if isinstance(record, dict) and record.get('kind') == 'git-tgz':
+        from dsh.boot.python_plugin_git_origin import checked_git_origin
+        from dsh.boot.python_package_local import archive_record
+        checked_git_origin(record)
+        if (set(record) != {'kind', 'repository', 'commit', 'directory', 'sha256', 'bytes'}
+                or type(record['bytes']) is not int or not 0 < record['bytes'] <= MAX_BYTES
+                or record['sha256'] != checked_digest(record['sha256'])
+                or archive_record(source) != {key: record[key] for key in ('sha256', 'bytes')}):
+            raise ValueError('Git acquisition differs from its source archive')
+        return dict(record)
     tarball=isinstance(record,dict) and record.get('kind')=='registry-tgz'
     keys={'kind','url','sha256','bytes'} | ({'integrity'} if tarball else set())
     origin=tarball and any(key in record for key in ('name','version','registry'))

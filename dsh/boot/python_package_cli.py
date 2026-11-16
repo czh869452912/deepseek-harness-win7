@@ -59,6 +59,16 @@ def _prepare_local(argv,directory):
     print('Prepared '+manifest['name']+'@'+manifest['version'],flush=True)
 
 
+def _prepare_git(argv,directory):
+    from dsh.boot.python_package_git import publish_git
+    from dsh.boot.python_plugins import reparse
+    if len(argv)!=4:raise PackageQueryError('ERR_DSH_PACKAGE_ARGUMENT','prepare-git requires a spec, owned output and Git workspace')
+    spec,target,workspace=argv[1:]
+    if not os.path.isdir(target) or reparse(target) or os.listdir(target):raise PackageQueryError('ERR_DSH_PACKAGE_ARGUMENT','package preparation output must be an empty owned directory')
+    manifest=publish_git(directory,spec,target,workspace)
+    print('Prepared '+manifest['name']+'@'+manifest['version'],flush=True)
+
+
 def main(argv=None):
     argv=list(sys.argv[1:] if argv is None else argv)
     for stream in (sys.stdout,sys.stderr):
@@ -72,6 +82,7 @@ def main(argv=None):
             return 0
         if argv and argv[0]=='prepare':_prepare(argv,os.getcwd());return 0
         if argv and argv[0]=='prepare-local':_prepare_local(argv,os.getcwd());return 0
+        if argv and argv[0]=='prepare-git':_prepare_git(argv,os.getcwd());return 0
         raise PackageQueryError('ERR_DSH_PYTHON_PACKAGE_OPERATION_UNAVAILABLE','native package mutation is not available in this query adapter')
     except PackageQueryError as error:
         details=dict(code=error.code,message=error.message)

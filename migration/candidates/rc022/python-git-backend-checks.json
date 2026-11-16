@@ -1,0 +1,55 @@
+{
+  "part": "C8-CO",
+  "upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "native": [
+    {
+      "run": "rc022-python-git-backend-native-20261116-01",
+      "passed": 8,
+      "deselected": 4
+    },
+    {
+      "run": "rc022-python-git-backend-native-manager-20261116-01",
+      "passed": 0,
+      "failed": 2,
+      "reason": "deep profile Git discovery reused an ambient repository"
+    },
+    {
+      "run": "rc022-python-git-backend-native-manager2-20261116-01",
+      "passed": 0,
+      "failed": 2,
+      "reason": "explicit Git directory and Win7 short-name aliases still exceed Git's internal normalized path boundary"
+    },
+    {
+      "run": "rc022-python-git-backend-native-manager3-20261116-01",
+      "passed": 2,
+      "deselected": 10
+    },
+    {
+      "run": "rc022-python-git-backend-native-restore-20261116-01",
+      "passed": 2,
+      "deselected": 10
+    },
+    {
+      "run": "rc022-python-git-backend-native-consumers-20261116-01",
+      "passed": 52,
+      "deselected": 5
+    },
+    {
+      "run": "rc022-python-package-git-native-owned-path-20261116-01",
+      "passed": 13
+    },
+    {
+      "run": "rc022-python-package-git-native-owner-20261116-01",
+      "passed": 1,
+      "deselected": 13
+    }
+  ],
+  "verification_scope_reason": "Parent independently verifies requested repository, exact commit, directory, archive hash/size, native manifest and every file; Git/local publications cannot be accepted as registry receipts. Actual mounted manager installs and updates through real Git transport, persists commit-pinned public dependencies, preserves disabled state, and executes the updated tool. Invalid ABI and actual activation failure restore exact old source/origin records offline. Git-only PATH excludes Node/pnpm in native children; registry fixture receives no request. Direct registry/local/HTTPS acquisition consumers remain covered. Explicit --git-dir prevents ambient discovery; long profiles use a separately marked short local temporary workspace which the captured owner cleans after full tree drain. Marker changes and unknown external siblings refuse cleanup and preserve assets.",
+  "activation_boundary": "Mounted native Git install/update and offline restoration complete for qualified SHA/ref/subdirectory sources. Source manager workflow code is unchanged; earlier paired manager Git observations remain their original evidence. Default bindings, stopped-profile registry/Git commands, direct remote tarballs, semver Git selectors, hosted tree URLs, mux/browser and C9 qualification remain pending. No full regression or release acceptance.",
+  "cleanup": {
+    "owned_processes_remaining": 0,
+    "external_git_workspaces_remaining": 0,
+    "retained": "Commands/XML, package/Git raw logs, seed commits, failure reports and deep-path investigation observations. All finished owned profiles, object stores, short external Git workspaces and debug payloads removed; shared Source/toolchains retained until C9.",
+    "removed_bytes": 1656149
+  }
+}

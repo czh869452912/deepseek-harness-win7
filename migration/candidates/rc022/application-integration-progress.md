@@ -122,4 +122,6 @@
 
 | C8-BX | 更新前校验、移除/安装/恢复、请求取消后旧版本恢复及热启失败 | [更新管理接口](manager-update-checks.json) |
 
+| C8-BY | 真实 Git 提交与连通检查、503 保留旧包、403/缺少 Git 交由安装器及原提交恢复 | [Git 更新链](manager-git-update-checks.json) |
+
 后续继续设置及完整应用组合；最终资格使用 C9 冻结候选的完整门禁。

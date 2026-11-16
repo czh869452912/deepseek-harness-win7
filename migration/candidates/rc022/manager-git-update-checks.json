@@ -1,0 +1,11 @@
+{
+  "part": "C8-BY",
+  "upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "paired": {"run": "rc022-manager-git-update-paired-20261116-01", "cases": 9, "passed": true},
+  "native": {"run": "rc022-manager-git-update-native-20261116-01", "passed": 1, "failed": 0},
+  "registry_regression": {"run": "rc022-manager-git-update-native-registry-20261116-01", "passed": 2, "failed": 0},
+  "source_original": "The unchanged Source update/restoration cases passed in C8-BX (20 selected); no production changes in this batch. Additional actual Source manager journeys run in the 9-case paired observer.",
+  "verification_scope_reason": "Actual Git creates a local repository and two real commits. Source/current managers check it through git ls-remote and update between exact commit specs, preserving disabled selection and omitting registry-only --save-exact. Failed target installation, real activation failure and request cancellation restore the original commit without the cancelled request identity; failed restoration remains visible. Loopback HTTP503 refuses before removing the old package and exposes a plain package failure without command argv. HTTP403 and explicitly missing Git leave the decision to the package command. Compare full management results, streams, operation facts, arguments, profile/lock state and live services; only paths/UUIDs and language-specific activation diagnostic presence are normalized. Existing 24 registry journeys plus rejected-removal checks pass after shared fixture extension.",
+  "activation_boundary": "Actual Git transport checks and manager orchestration are qualified. The package executable deliberately controls mutation; acquiring/checking out real Git plugin bytes and composing the built-in zero-Node Python backend remain pending. Targeted checks do not certify the production profile or release.",
+  "cleanup": {"removed_bytes": 1170709, "owned_processes_remaining": 0, "retained": "Compact Git seed/HTTP observations, paired results and test reports. Removed only owned fixtures; 12 single-link read-only Git loose objects were individually verified and made writable before removal. Shared pinned Source/toolchains owned until C9."}
+}

@@ -7,9 +7,10 @@ from types import SimpleNamespace
 ROOT=Path(__file__).resolve().parents[1];sys.path.insert(0,str(ROOT))
 from scripts import rc022_events_probe as probe
 WORKSPACE=None
+GIT=None
 PROGRAM='''import json,sys,time,shutil
 from pathlib import Path
-mode=json.loads(Path('operation.json').read_text(encoding='utf-8'))['mode'];args=sys.argv[1:]
+data=json.loads(Path('operation.json').read_text(encoding='utf-8'));mode=data.get('behavior',data['mode']);args=sys.argv[1:]
 with Path('runs.jsonl').open('a',encoding='utf-8') as stream:stream.write(json.dumps(args)+'\\n')
 if args[:3]==['config','get','registry']:print('https://registry.npmjs.org/');sys.exit(0)
 if args[0]=='view':
@@ -24,13 +25,13 @@ if args[0]=='remove':
     if mode=='removal-fails':print('cannot remove',file=sys.stderr);sys.exit(1)
     manifest.get('dependencies',{}).pop(args[1],None);Path('package.json').write_text(json.dumps(manifest),encoding='utf-8');shutil.rmtree('node_modules/fresh',ignore_errors=True);print('removed');sys.exit(0)
 if args[0]=='install':sys.exit(0)
-version=args[1].rsplit('@',1)[-1];target=version=='2.0.0'
+version=('2.0.0' if args[1]==data['git']['target'] else '1.0.0') if 'git' in data else args[1].rsplit('@',1)[-1];target=version=='2.0.0'
 if mode in ('target-fails','restore-fails') and (target or mode=='restore-fails'):print('ERR_PNPM_FETCH_404 absent',file=sys.stderr);sys.exit(1)
 if mode=='cancel' and target:print('waiting',flush=True);time.sleep(10)
 names=['other'] if mode=='wrong-name' and target else ['fresh','other'] if mode=='extra-dependency' and target else ['fresh']
 if mode=='wrong-version' and target:version='1.5.0'
 for name in names:
-    manifest.setdefault('dependencies',{})[name]=version
+    manifest.setdefault('dependencies',{})[name]=args[1] if 'git' in data else version
     directory=Path('node_modules')/name;directory.mkdir(parents=True,exist_ok=True)
     package=dict(name=name,version=version,dsh=dict(bundle=dict(patch='patch.yml')))
     if mode=='plain-installed' and target:package.pop('dsh')
@@ -55,19 +56,22 @@ async def observe(workspace=None):
     rows=[];old=dsh.__version__;dsh.__version__='0.2.2-rc.3'
     try:
         for mode in corpus():
+            behavior=mode[4:] if GIT is not None else mode
+            git=GIT[mode] if GIT is not None else None
             home=(workspace or WORKSPACE)/'native'/mode;directory=home/'profile'
             def write(path,value):path.parent.mkdir(parents=True,exist_ok=True);path.write_text(json.dumps(value),encoding='utf-8')
-            source='git+https://example.invalid/repository.git#'+'a'*40 if mode.startswith('git-') else '1.0.0'
-            write(home/'package.json',dict(name='installation'));write(directory/'package.json',dict(name='profile',dependencies=dict(fresh=source),dsh=dict(profile=dict(bundles=['core']+([] if mode=='disabled' else ['fresh'])))))
+            source=git['previous'] if git is not None else 'git+https://example.invalid/repository.git#'+'a'*40 if mode.startswith('git-') else '1.0.0'
+            write(home/'package.json',dict(name='installation'));write(directory/'package.json',dict(name='profile',dependencies=dict(fresh=source),dsh=dict(profile=dict(bundles=['core']+([] if behavior=='disabled' else ['fresh'])))))
             for name in ('core','fresh'):
                 write(directory/('node_modules/'+name+'/package.json'),dict(name=name,version='1.0.0',dsh=dict(bundle=dict(patch='patch.yml'))))
             write(directory/'node_modules/core/patch.yml',[dict(insert=[dict(id='manager',name='cordis:manager',config=dict(lockWaitMs=0))])])
             write(directory/'node_modules/fresh/patch.yml',[dict(insert=[dict(id='fresh-row',name='cordis:active',config=dict(version='1.0.0'))])])
-            write(directory/'cordis.yml',[]);write(directory/'cordis.patch.yml',[]);write(directory/'operation.json',dict(mode=mode))
+            write(directory/'cordis.yml',[]);write(directory/'cordis.patch.yml',[]);write(directory/'operation.json',dict(mode=mode,**({} if git is None else dict(behavior=behavior,git=git))))
             (directory/'pnpm-lock.yaml').write_bytes(b'original\r\n');script=directory/'package.py';script.write_text(PROGRAM,encoding='utf-8')
             profile=dict(name='test',dir=str(directory),patchPath=str(directory/'cordis.patch.yml'),installAnchor=str(home/'package.json'),cwd=str(home),home=str(home),startedBundles=['core'],overlays=[],packageManager=dict(command=str(Path(sys.executable).resolve()),args=[str(script)]))
+            if git is not None:profile['packageManager']['env']=git['env']
             def active(ctx,config):
-                if mode=='activation-error' and config['version']=='2.0.0':raise RuntimeError('cannot start bundle')
+                if behavior=='activation-error' and config['version']=='2.0.0':raise RuntimeError('cannot start bundle')
                 ctx.provide('installedProbe',config['version'])
             def setup(ctx):ctx.provide('profileContext',profile);ctx.loader.builtins.update(manager=CurrentPluginManager,active=active)
             ctx=await boot('test',str(directory/'cordis.yml'),read_profile_patches('test',profile),setup)
@@ -82,12 +86,13 @@ async def observe(workspace=None):
                     await ctx.plugin(TimerService);ctx.provide('appReady',SimpleNamespace(onReady=lambda listener:(listener(),lambda:None)[1]))
                     await ctx.plugin(ConfigWatcherService,dict(root=[],ignored=[],debounce=0));await ctx.hmr.runExclusive(lambda:None)
                 options=dict(requestId=mode)
+                if git is not None:options['spec']=git['target']
                 if mode=='registry-spec':options['spec']='fresh@2.0.0'
                 if mode=='git-branch':options['spec']='git+https://example.invalid/repository.git#main'
                 if mode=='git-other':options['spec']='git+https://example.invalid/other.git#'+'b'*40
                 version='bad' if mode=='invalid-version' else '1.0.0' if mode=='same-version' else '2.0.0'
                 promise=manager.updateBundle('missing' if mode=='unknown' else 'fresh',version,options);cancellation=None
-                if mode=='cancel':await asyncio.wait_for(waiting.wait(),5);cancellation=await manager.cancelInstall(mode)
+                if behavior=='cancel':await asyncio.wait_for(waiting.wait(),5);cancellation=await manager.cancelInstall(mode)
                 result=await promise
                 for _ in range(20):await asyncio.sleep(0)
                 jobs=[]
@@ -98,7 +103,7 @@ async def observe(workspace=None):
                     if 'jobId' in answer:
                         if answer['jobId'] not in jobs:jobs.append(answer['jobId'])
                         answer['jobId']=jobs.index(answer['jobId'])
-                    if mode=='activation-error' and isinstance(answer.get('error'),dict) and 'diagnostic' in answer['error']:answer['error']['diagnostic']=True
+                    if behavior=='activation-error' and isinstance(answer.get('error'),dict) and 'diagnostic' in answer['error']:answer['error']['diagnostic']=True
                     return answer
                 manifest=json.loads((directory/'package.json').read_text(encoding='utf-8'))
                 rows.append(normalize(dict(name=mode,result=result,cancel=cancellation,probe=ctx.get('installedProbe'),selection=manifest['dsh']['profile']['bundles'],dependencies=manifest.get('dependencies',{}),lock=(directory/'pnpm-lock.yaml').read_bytes().decode('utf-8'),logs=logs,states=states,updates=updates,changed=changed,facts=[{key:value for key,value in event.items() if key not in ('id','time')} for event in facts],commands=[json.loads(line) for line in (directory/'runs.jsonl').read_text(encoding='utf-8').splitlines()] if (directory/'runs.jsonl').exists() else [],remote=any(row['method']=='updateBundle' for row in remote_methods(manager)))))
@@ -109,7 +114,7 @@ async def observe(workspace=None):
 
 def prepare(output):
     global WORKSPACE
-    WORKSPACE=output/'files';WORKSPACE.mkdir();path=output/'input.json';path.write_text(json.dumps(dict(workspace=str(WORKSPACE),python=str(Path(sys.executable).resolve()),program=PROGRAM,cases=corpus())),encoding='utf-8');return [path]
+    WORKSPACE=output/'files';WORKSPACE.mkdir();path=output/'input.json';path.write_text(json.dumps(dict(workspace=str(WORKSPACE),python=str(Path(sys.executable).resolve()),program=PROGRAM,cases=corpus(),git=GIT)),encoding='utf-8');return [path]
 
 
 if __name__=='__main__':

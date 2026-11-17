@@ -282,17 +282,19 @@ async def test_already_cancelled_caller_precedes_busy_validation():
 
 
 @pytest.mark.asyncio
-async def test_automatic_compaction_forwards_signal_without_manual_abort_checks():
+async def test_automatic_compaction_checks_abort_before_calling_summarizer():
     ctx, session, engine, agent = setup(good)
     control = AbortController()
     control.abort(RuntimeError('stopped'))
     session.append('turn/start', dict(turn=1))
     async def summarize(input, owner, signal):
-        assert signal is control.signal and signal.aborted
-        return dict(summary=[dict(type='text', text='custom checkpoint')], provider='custom', model='template')
+        pytest.fail('an already aborted attempt must not invoke the summarizer')
     engine.summarize = summarize
-    result = await engine.compactRegion(0, 0, agent, control.signal)
-    assert result['shadowedSeqs'] == [0] and session.surface.replace_generation == 1
+    with pytest.raises(RuntimeError, match='stopped') as error:
+        await engine.compactRegion(0, 0, agent, control.signal)
+    assert error.value is control.signal.reason
+    assert session.surface.replace_generation == 0
+    assert [event['type'] for event in session.events[-2:]] == ['compaction/start', 'compaction/end']
     await ctx.fiber.dispose()
 
 

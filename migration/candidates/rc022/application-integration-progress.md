@@ -497,3 +497,5 @@
 | C9-BH | Pure x-mcp-header declaration reachability, primitive argument paths and exact field-value encoding match 275 Original observations | [MCP parameter header rules](mcp-param-headers-checks.json) |
 
 | C9-BI | Modern HTTP filters invalid declarations, preserves reserved headers and recovers one header mismatch with refreshed schema; actual wire and consumers checked | [MCP header transport](mcp-header-transport-checks.json) |
+
+| C9-BJ | Compaction recovery uses selected-span/whole-surface stability consistently and checks cancellation before retry; actual transactions paired, separate legacy lifecycle/preset integration failures retained | [Compaction recovery](compaction-recovery-checks.json) |

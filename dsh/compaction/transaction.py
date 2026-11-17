@@ -40,12 +40,45 @@ def summarization_input(session, selected):
 
 def select(session, start, end):
     nodes = list(session.surface.nodes)
+    if start not in nodes:
+        raise ValueError('compactRegion: start seq %s not found in surface' % start)
+    if end not in nodes:
+        raise ValueError('compactRegion: end seq %s not found in surface' % end)
     first, last = nodes.index(start), nodes.index(end)
     if first > last:
-        raise ValueError("compaction: reversed surface range")
-    if not tool_pairing_balanced_before(session, start) or not tool_pairing_balanced_after(session, end):
-        raise ValueError("compaction: unbalanced tool-call/result boundary")
+        raise ValueError('compactRegion: start seq %s (position %s) is after end seq %s (position %s) on the surface' % (start, first, end, last))
+    if not tool_pairing_balanced_before(session, start):
+        raise ValueError("compactRegion: start seq %s is not a balanced boundary (would split a step's tool-call/result pair)" % start)
+    if not tool_pairing_balanced_after(session, end):
+        raise ValueError('compactRegion: end seq %s is not a balanced boundary (would split a step, or the step is still open)' % end)
     return nodes[first:last + 1]
+
+
+def prepare(session, meter, start, end, selected):
+    measured = meter.measure(session)['nodes']
+    nodes = list(session.surface.nodes)
+    first, last = nodes.index(start), nodes.index(end)
+    priced = measured[first:last + 1]
+    if [node['seq'] for node in priced] != selected:
+        raise SurfaceChangedError('compaction: selected surface changed before summarization began')
+    return measured, priced, sum(node['heuristicTokens'] for node in priced)
+
+
+def assert_stable(session, meter, start, end, selected, measured, priced, manual):
+    if not manual:
+        if meter.measure(session)['nodes'] != measured:
+            raise SurfaceChangedError('compaction: session surface changed during summarization')
+        return
+    try:
+        current = select(session, start, end)
+    except ValueError as error:
+        raise SurfaceChangedError('compaction: the selected span is no longer a valid replacement target') from error
+    if current != selected:
+        raise SurfaceChangedError('compaction: the selected span changed during summarization')
+    nodes = list(session.surface.nodes)
+    current = meter.measure(session)['nodes'][nodes.index(start):nodes.index(end) + 1]
+    if current != priced:
+        raise SurfaceChangedError('compaction: the selected span was rewritten during summarization')
 
 
 def entry_state(session):
@@ -73,10 +106,12 @@ async def compact(engine, session, start, end, agent=None, signal=None,
         check_cancel(signal)
     selected = select(session, start, end)
     turn, opening = entry_state(session)
-    if opening or (manual and turn is not None):
-        raise ManualCompactionError("busy", "compaction: session already has active work")
+    if opening:
+        raise ManualCompactionError('busy', 'compaction: compaction already in progress; the session compaction lock is already active')
+    if manual and turn is not None:
+        raise ManualCompactionError('busy', 'manual compaction: the session already has an open turn')
     if not manual and turn is None:
-        raise ValueError("automatic compaction requires an open turn")
+        raise ValueError('compactRegion: no open turn — automatic compaction events must be enclosed in a turn')
     identity = {"compactionId": str(uuid.uuid4())}
     if source_command_id is not None:
         identity["sourceCommandId"] = source_command_id
@@ -87,12 +122,9 @@ async def compact(engine, session, start, end, agent=None, signal=None,
     try:
         if meter is None:
             raise RuntimeError("compaction requires token_meter")
-        measured = meter.measure(session)["nodes"]
-        if [node["seq"] for node in measured] != list(session.surface.nodes):
-            raise SurfaceChangedError("compaction: stale token measurement")
-        priced = [node for node in measured if node["seq"] in selected]
-        shadow_tokens = sum(node["heuristicTokens"] for node in priced)
+        measured, priced, shadow_tokens = prepare(session, meter, start, end, selected)
         while True:
+            check_cancel(signal)
             try:
                 summary = await engine.summarize(engine.summarization_input(session, selected), agent, signal)
                 break
@@ -100,30 +132,21 @@ async def compact(engine, session, start, end, agent=None, signal=None,
                 recover = getattr(engine, 'recover_summary', None)
                 if aborted(signal) or recover is None:
                     raise
-                if select(session, start, end) != selected or meter.measure(session)['nodes'] != measured:
-                    raise SurfaceChangedError('compaction: selected surface changed during summarization') from error
+                assert_stable(session, meter, start, end, selected, measured, priced, manual)
                 if not await recover(error, agent, selected, signal):
                     raise
                 selected = select(session, start, end)
-                measured = meter.measure(session)['nodes']
-                priced = [node for node in measured if node['seq'] in selected]
-                shadow_tokens = sum(node['heuristicTokens'] for node in priced)
+                measured, priced, shadow_tokens = prepare(session, meter, start, end, selected)
         checkpoint = frame_summary(summary["summary"])
         source = (dict(identity, kind='compact-checkpoint') if getattr(session, 'format_version', 3) == 4
             else dict(identity, kind='plugin', plugin='compact'))
         checkpoint_message = create_user_message(dict(content=checkpoint, source=source))
-        if meter.estimate_message(checkpoint_message) >= sum(n["tokens"] for n in priced):
-            raise ValueError("summary is not smaller than the shadowed content")
+        estimate, route_tokens = meter.estimate_message(checkpoint_message), sum(n['tokens'] for n in priced)
+        if estimate >= route_tokens:
+            raise ValueError('summary is not smaller than the shadowed content (%s estimated framed tokens >= %s)' % (estimate, route_tokens))
         if manual:
             check_cancel(signal)
-        current = meter.measure(session)["nodes"]
-        try:
-            stable = (select(session, start, end) == selected and
-                      [node for node in current if node["seq"] in selected] == priced) if manual else current == measured
-        except ValueError:
-            stable = False
-        if not stable:
-            raise SurfaceChangedError("compaction: selected surface changed during summarization")
+        assert_stable(session, meter, start, end, selected, measured, priced, manual)
         stage = "commit"
         body = dict(identity, summary=summary["summary"], provider=summary["provider"], model=summary["model"],
                     shadowedRange={"start": start, "end": end}, shadowedSeqs=selected,

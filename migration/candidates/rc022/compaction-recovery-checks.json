@@ -1,0 +1,18 @@
+{
+  "contract": "C9-BJ",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "status": "targeted passed; discovered integration failures retained",
+  "implementation": "Use the same selected-span or whole-surface stability check before recovery and before commit. Manual recovery permits outside appends/replacements while selected replacements/repricing reject. Reprepare the validated selected measurement after recovery, check cancellation before every summary attempt, and preserve exact region/lock/shrink diagnostics.",
+  "verification": {
+    "paired": {"run": "rc022-compaction-recovery-pair3-20261117-01", "cases": 28, "scope": "Actual Source compactSurfaceRegion and Native transaction with format-4 Sessions and controlled summary/pricing collaborators. Retry/success, outside append/valid replacement, selected replacement/repricing, recovery cancellation, flush failure, busy/lock, stale pricing and missing automatic turn. Exact result, error/cause prose, replay input, surface/event provenance and checkpoint content/source compare; UUID correlation is checked without comparing random identities or runtime stacks."},
+    "native": {"run": "rc022-compaction-recovery-native5-20261117-01", "passed": 207, "deselected": 4, "scope": "Compaction providers, transaction, agent loop, image repair, commands, policy, HTTP and invariant cases excluding the four separately identified integration failures."},
+    "source": {"run": "rc022-compaction-recovery-source-20261117-01", "passed": 171, "failed": 0, "scope": "Pinned manual-compaction, compaction-basic, compaction and command-compact suites."}
+  },
+  "diagnostics": [
+    "Before3 reproduced manual outside-append recovery rejection and an extra summarizer invocation after recovery abort. Earlier observer runs retain invalid-header/summary/replacement fixture diagnostics; pair3 supplies valid replacement provenance.",
+    "Initial Native run: 205 passed/6 failed. The new corpus assertion and old automatic-abort expectation were corrected against Source. Legacy invariant companion disposal and standard/ptc/cordis preset duplicate list_agents remain actual integration failures for the next batches; no full acceptance is claimed.",
+    "An attempted invariant waiting/context adjustment did not resolve the lifecycle failure and was reverted completely. Original and subsequent diagnostics are retained."
+  ],
+  "cleanup": {"bytes_removed": 8098549, "scope": "All owned native/native2/native3/native4/native5/source pytest workspaces, home/tmp and passed comparison payloads removed after consumers. Commands, logs, XML, observations, failing diagnostics and comparison reports retained."},
+  "limitations": ["Targeted contract completion only; production pin, full release qualification and real Windows 7 acceptance remain open."]
+}

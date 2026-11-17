@@ -23,3 +23,30 @@
 
 - id: hmr
   disabled: true
+
+# DSH_PRIMARY_RUNTIME names the primary runtime; the packaged launcher fills it
+# from its download cache when unset, and an empty value opts out. Each row can
+# be patched independently. Office skills and the Office tools always load, and
+# the skills use their packaged assets. With a primary runtime the skills select
+# `workspace-dependencies` and use its Python environment; without one they
+# select `user` and direct the model to the user's Python.
+- insert:
+    - id: office-kit
+      name: '@deepseek-ai/dsh-office-kit'
+      config:
+        outputDirectory: !!js dshHomePath('office-kit', 'outputs')
+
+    # The Office tools stay registered without Kit; calls report the service's unavailable error.
+    - id: tool-office
+      name: '@deepseek-ai/dsh-tool-office'
+
+    - id: workspace-dependencies
+      name: '@deepseek-ai/dsh-tool-workspace-dependencies'
+      disabled: !!js "!process.env.DSH_PRIMARY_RUNTIME"
+      config:
+        source: !!js "process.getBuiltinModule('node:path').resolve(process.env.DSH_PRIMARY_RUNTIME ?? '')"
+
+    - id: skill-office
+      name: '@deepseek-ai/dsh-skill-office'
+      config:
+        pythonEnvironment: !!js "process.env.DSH_PRIMARY_RUNTIME ? 'workspace-dependencies' : 'user'"

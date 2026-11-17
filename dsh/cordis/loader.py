@@ -615,6 +615,8 @@ class _JsExpressionParser:
             return "env"
         if name == "platform":
             return "process.platform"
+        if name == "getBuiltinModule":
+            return "process.getBuiltinModule"
         if name == "cwd":
             self.expect("(")
             self.expect(")")
@@ -747,6 +749,18 @@ def evaluate_expr(ctx: Any, expr: str) -> Any:
         platform = "win32" if sys.platform.startswith("win") else sys.platform
         version = "v20.0.0"
         env = process_environment
+
+        @staticmethod
+        def getBuiltinModule(name):
+            if name == 'node:path':
+                class _Path:
+                    @staticmethod
+                    def resolve(*parts):
+                        if any(not isinstance(part, str) for part in parts):
+                            raise TypeError('path arguments must be strings')
+                        return os.path.abspath(os.path.join(*parts) if parts else '.')
+                return _Path
+            raise ValueError('Unsupported expression builtin: ' + str(name))
 
     class _JSON:
         parse = staticmethod(json.loads)

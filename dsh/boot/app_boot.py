@@ -789,7 +789,7 @@ async def boot(
     stage = "host preparation failed"
     try:
         ctx.base_url = path_to_file_url(os.path.dirname(absolute_config_path)) + "/"
-        ctx.provide("dshHomePath", lambda sub="": os.path.join(resolve_dsh_home(), sub) if sub else resolve_dsh_home())
+        ctx.provide("dshHomePath", lambda *parts: os.path.join(resolve_dsh_home(), *parts))
         await ctx.plugin(Loader)
         if os.name == 'nt':
             from dsh.javascript.runtime import JavaScriptRuntime

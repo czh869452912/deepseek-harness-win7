@@ -31,7 +31,7 @@ def sdk_journey(tmp_path, default_profile, notification_first):
     profile = tmp_path / 'home' / 'profiles' / 'sdk-journey'
     init_profile(str(profile), [])
     rows = [dict(id=name, name='@deepseek-ai/dsh-' + name) for name in (
-        'session', 'session-projection', 'tools', 'system-prompt', 'agent', 'agent-loop', 'llm', 'llm-deepseek', 'sdk-app')]
+        'session', 'session-projection', 'tools', 'tool-executor-native', 'system-prompt', 'agent', 'agent-loop', 'llm', 'llm-deepseek', 'sdk-app')]
     rows.extend([
         dict(id='persistence', name='@deepseek-ai/dsh-session-persistence-jsonl', config=dict(root=str(tmp_path / 'sessions'))),
         dict(id='rpc', name='@deepseek-ai/dsh-sdk-jsonrpc-server', inject=['sdkAppStartup', 'loader']),
@@ -105,7 +105,12 @@ def sdk_journey(tmp_path, default_profile, notification_first):
         assert requests[0]['model'] == 'fixture-model'
         if default_profile:
             assert len(requests) == 2
-            assert any(message.get('role') == 'tool' and 'TOOL-RESULT' in str(message) for message in requests[1]['messages'])
+            # Current DeepSeek wire serializes internal tool results as user turns.
+            assert any(message.get('role') == 'user' and 'TOOL-RESULT' in str(message) for message in requests[1]['messages'])
+            assert any(frame.get('params', {}).get('event', {}).get('type') == 'tool/result'
+                and frame['params']['event']['data']['message']['role'] == 'tool'
+                and not frame['params']['event']['data']['message']['isError']
+                and 'TOOL-RESULT' in str(frame['params']['event']['data']['message']['content']) for frame in observed)
         logs = list((tmp_path / ('home/sessions' if default_profile else 'sessions')).rglob('*.jsonl' if default_profile else '*.jsonl.zstd'))
         assert len(logs) == 1
         assert 'SDK journey complete' in read_jsonl_text(logs[0])

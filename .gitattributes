@@ -11,6 +11,7 @@ packages/*/*/lib/client.js.map -text
 packages/**/lib/typert.host.js -text whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol
 packages/**/package.json -text whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol
 packages/**/cordis.patch.yml -text whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol
+packages/skill/skill-office/assets/** -text
 packages/preset/agent-presets/presets/** -text whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol
 dsh/session/bin/icu/** -text
 dsh/session/bin/zstd/** -text

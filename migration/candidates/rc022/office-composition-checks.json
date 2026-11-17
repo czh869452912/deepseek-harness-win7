@@ -1,0 +1,53 @@
+{
+  "part": "C8-GW",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "scope": "Application Office/runtime composition and required standalone SDK consumers",
+  "paired": {
+    "run": "rc022-office-composition-paired-20261117-01",
+    "observations": 16,
+    "expressions_per_observation": 7,
+    "differences": 0,
+    "comparison": "Actual Source Loader evaluate and Native evaluator: optional/empty/relative/absolute runtime paths, Desktop/Web/SDK/absent profile contexts, Python policy and variadic home paths."
+  },
+  "verification": {
+    "native": "native4: 5 passed Desktop Office presence, environment selection and lazy actual install plus expression regressions. native7: 6 passed actual Desktop routes, custom/default Minimal SDK model/tool/persistence journeys and both formal Web startup/teardown cases. native-web independently passed both Web cases.",
+    "scope_reason": "Changed application bundle rows, Host expression providers and direct SDK consumer dependencies; exact Source blocks/manifests/artifact byte checks supplement actual boot tests."
+  },
+  "behavior": [
+    "Copies Source Office Kit, workspace dependencies and skill-office rows into Web/Desktop and SDK applications. Desktop nonempty DSH_PRIMARY_RUNTIME selects lazy installation under home; Web disables runtime tool and selects user Python. SDK selects in-place resolution.",
+    "Adds Source Office Kit Remote metadata and package manifests, variadic dshHomePath and constrained node:path expression builtin support. Skill asset bytes are explicitly exempt from Git text conversion.",
+    "Restores standalone SDK Minimal executor and workingDirectory rows required by already-active providers. Its actual PowerShell tool now executes; the custom SDK test also mounts its required executor. The current DeepSeek wire maps internal tool messages to user turns; regression verifies both wire text and successful internal tool/result."
+  ],
+  "source_inputs": {
+    "packages\\bundle\\web-app\\cordis.patch.yml": "ae84988ff8326314305b5e926c536e7058b80b82d7ae146d5954288406e022f8",
+    "packages\\bundle\\sdk-app\\cordis.patch.yml": "e79b8b88717f90d37cf13304f736481b831f8ba9c299569f9a856518d3b560e7",
+    "packages\\document\\office-kit\\package.json": "aacc8ce427794712c35cc21bfb2afba79c5c4b26e679815ae336242379e3be83",
+    "packages\\document\\tool-office\\package.json": "02ddcd8b37809fa569952641b8cfaa90408382974fc3706cbf7c5b3e284d7553",
+    "packages\\document\\office-kit\\lib\\typert.host.js": "377b57dbc388fb4e7cb4a9e50f2ed24dbabe9b1f234eddc8894054dcfe5b5f32"
+  },
+  "diagnostics": {
+    "excluded": [
+      "native",
+      "native2",
+      "native3",
+      "native5",
+      "native6",
+      "native-sdk",
+      "native-sdk2",
+      "native-sdk3"
+    ],
+    "reason": "Retained failures exposed missing manifests/Remote artifact, expression grammar support, single-argument home helper, custom/standalone SDK missing executor and directory dependencies, and obsolete tool-role assertion. native/native6 outer runners timed out before the original 310-second SDK wait. The long diagnostic run was stopped after persisted events established terminal executor failure; its process identity/EOF failure is retained, not qualification."
+  },
+  "limitations": [
+    "No original Office engine execution/Win7 compatibility claim. The pinned upstream engine still imports APIs absent on stock Win7; tracked engine qualification blocker remains.",
+    "Full SDK Office agent flow, canonical whole-client/bundle/pin promotion and full migration/release acceptance remain pending C9. Selected SDK expressions and package rows do not establish complete SDK parity."
+  ],
+  "cleanup": {
+    "bytes_removed": 229591,
+    "links_removed": 2612,
+    "receipt": "rc022-office-composition-native-sdk3-20261117-01/cleanup.json",
+    "removed": "All owned pytest/tmp/home payloads across 11 runs; moved workspace mappings checked, task-owned stopped SDK process verified and no matching processes remain.",
+    "retained": "Passed and failed commands/logs/XML, raw paired expression results, SDK observations, selected original failed session bytes and hashes, task stack/process diagnostics and Source block hashes. Shared Source/toolchains remain required through C9."
+  },
+  "source_block_boundary": "SDK block retains exact Source content; its final inter-section blank separator is omitted at local end-of-file."
+}

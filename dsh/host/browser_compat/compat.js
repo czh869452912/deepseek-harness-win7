@@ -207,6 +207,7 @@ function installColorMix() {
       let clone = originals.get(original);
       if (!clone) {
         clone = document.createElement('style'); own.add(clone);
+        clone.setAttribute('data-dsh-color-mix-fallback', '');
         originals.set(original, clone); facts.styles++;
       }
       for (const attribute of ['media', 'type', 'title']) {
@@ -344,7 +345,7 @@ function installColorMix() {
     facts.activeStyles = facts.expressions = 0;
   }
   schedule(); watchFrame = requestAnimationFrame(watchDisabled);
-  return {active: true, facts, dispose};
+  return {active: true, facts, dispose, fallbackFor(original) {return originals.get(original);}};
 }
 const key = Symbol.for('deepseek-win7.host.color-mix');
 window[key]?.dispose();

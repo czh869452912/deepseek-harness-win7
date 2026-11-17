@@ -5,14 +5,19 @@ const [source,out]=process.argv.slice(2),root=process.cwd();
 const {chromium}=await import(pathToFileURL(path.join(source,'node_modules/.pnpm/playwright@1.61.1/node_modules/playwright/index.mjs')));
 const config=JSON.parse(await fs.readFile(path.join(out,'browser-config.json'),'utf8'));
 const result={browserPlugin:'absent',fallback:'Browser plugin not available',viewport:{width:1440,height:900},errors:[],responses:[],steps:[],passed:false};
-let browser,page;
+let browser,page,heartbeat;
+let progress=Promise.resolve();
+function event(value){progress=progress.then(()=>fs.appendFile(path.join(out,'browser-progress.jsonl'),JSON.stringify({at:Date.now(),...value})+'\n'));}
 try{
  browser=await chromium.launch({executablePath:path.join(root,'.goose/tools/chromium-1058931/chrome-win/chrome.exe'),headless:true});
  page=await browser.newPage({viewport:result.viewport});result.version=browser.version();
  page.setDefaultTimeout(10000);
- page.on('pageerror',error=>result.errors.push({kind:'pageerror',message:error.message,stack:error.stack}));
- page.on('console',message=>{if(['warning','error'].includes(message.type()))result.errors.push({kind:message.type(),message:message.text()})});
+ page.on('pageerror',error=>{const row={kind:'pageerror',message:error.message,stack:error.stack};result.errors.push(row);event(row)});
+ page.on('console',message=>{if(['warning','error'].includes(message.type())){const row={kind:message.type(),message:message.text()};result.errors.push(row);event(row)}});
  page.on('websocket',socket=>{if(socket.url().includes('/api/remote.mux'))result.remoteMux=true});
+ let requests=0,recent=[];
+ page.on('request',request=>{requests++;recent.push(new URL(request.url()).pathname);recent=recent.slice(-4)});
+ heartbeat=setInterval(()=>page.evaluate(()=>window.__dshAnchorCompatibility).then(anchor=>event({kind:'heartbeat',requests,recent,anchor})).catch(()=>{}),2000);heartbeat.unref();
  page.on('response',response=>{if(response.status()>=400)result.responses.push({url:response.url().replace(/token=[^&]+/g,'token=REDACTED'),status:response.status()})});
  await page.goto(config.url,{waitUntil:'domcontentloaded'});
  await page.getByRole('button',{name:/^(自动化任务|Automation tasks)$/}).waitFor({state:'visible',timeout:20000});
@@ -21,19 +26,24 @@ try{
   const close=dialog.getByRole('button').filter({hasText:/^$/});if(await close.count()===1)await close.click();
  }
  result.home=await page.locator('body').innerText();await page.screenshot({path:path.join(out,'browser-home.png')});
+ event({step:'home-rendered',anchor:await page.evaluate(()=>window.__dshAnchorCompatibility)});
  await page.getByRole('button',{name:/^(自动化任务|Automation tasks)$/}).click();
+ event({step:'catalog-trigger-clicked'});
  await page.getByText('Browser Schedule contract',{exact:true}).waitFor({state:'visible',timeout:20000});
  result.steps.push('original-schedule-catalog-loaded');result.catalog=await page.locator('body').innerText();
  await page.getByText('Browser Schedule contract',{exact:true}).click();
  await page.getByRole('button',{name:/^(暂停任务|Pause)$/}).waitFor({state:'visible',timeout:10000});
  result.steps.push('original-task-details-opened');result.detail=await page.locator('body').innerText();
+ event({step:'details-opened'});
  await page.screenshot({path:path.join(out,'browser-task.png')});
  await page.getByRole('button',{name:/^(暂停任务|Pause)$/}).click();
  await page.getByRole('button',{name:/^(恢复任务|Resume)$/}).waitFor({state:'visible',timeout:10000});
  result.steps.push('original-pause-acknowledged');
+ event({step:'paused'});
  await page.getByRole('button',{name:/^(恢复任务|Resume)$/}).click();
  await page.getByRole('button',{name:/^(暂停任务|Pause)$/}).waitFor({state:'visible',timeout:10000});
  result.steps.push('original-resume-acknowledged');
+ event({step:'resumed'});
  await page.getByRole('textbox',{name:/^(自动化任务名称|Automation task name)$/}).fill('Browser Schedule edited');
  await page.getByRole('textbox',{name:/^(自动化任务内容|Automation task content)$/}).fill('Edited by original browser');
  await page.getByRole('button',{name:/^(保存修改|Save changes)$/}).click();
@@ -46,8 +56,26 @@ try{
  result.steps.push('original-edit-survived-reload');
  await page.getByRole('button',{name:/^(自动化任务操作|Automation task actions)$/}).click();
  const run=page.getByRole('menuitem',{name:/^(立即执行|Run now)$/});await run.waitFor({state:'visible',timeout:10000});
+ async function positioned(){await page.waitForFunction(()=>{
+   const anchor=document.querySelector('[aria-label="自动化任务操作"],[aria-label="Automation task actions"]');
+   const menu=document.querySelector('[role="menu"]');if(!anchor||!menu)return false;
+   const a=anchor.getBoundingClientRect(),m=menu.getBoundingClientRect();
+   return Math.abs(m.right-a.right)<2&&Math.abs(m.top-a.bottom-4)<2;
+ },null,{timeout:15000});}
+ await positioned();
+ // A late compatibility refresh must not move an already positioned menu.
+ await page.waitForTimeout(500);await positioned();
  result.menuGeometry={anchor:await page.getByRole('button',{name:/^(自动化任务操作|Automation task actions)$/}).boundingBox(),menu:await page.getByRole('menu').boundingBox()};
- await page.screenshot({path:path.join(out,'browser-run-menu.png')});await run.click();
+ result.anchorCompatibility=await page.evaluate(()=>window.__dshAnchorCompatibility);
+ await page.screenshot({path:path.join(out,'browser-run-menu.png')});
+ await page.keyboard.press('Escape');await page.getByRole('menu').waitFor({state:'hidden'});
+ await page.getByRole('button',{name:/^(自动化任务操作|Automation task actions)$/}).click();await positioned();
+ result.steps.push('original-menu-reopened-at-anchor');
+ await page.setViewportSize({width:390,height:844});await positioned();
+ result.mobileMenuGeometry={viewport:{width:390,height:844},anchor:await page.getByRole('button',{name:/^(自动化任务操作|Automation task actions)$/}).boundingBox(),menu:await page.getByRole('menu').boundingBox()};
+ await page.screenshot({path:path.join(out,'browser-mobile-menu.png')});
+ result.steps.push('original-menu-follows-mobile-resize');
+ await run.click();
  await page.getByRole('tab',{name:/^(任务运行记录|Records)$/}).click();
  await page.getByRole('region',{name:/^(已保存的任务运行记录|Saved delivery record)$/}).waitFor({state:'visible',timeout:15000});
  result.steps.push('original-run-delivery-history-visible');result.history=await page.locator('body').innerText();
@@ -59,7 +87,7 @@ try{
  result.failure=error.message.replace(/token=[^&\s]+/g,'token=REDACTED');
  if(page){result.body=await page.locator('body').innerText().catch(()=>null);await page.screenshot({path:path.join(out,'browser-failure.png')}).catch(()=>{});}
 }finally{
- if(browser)await browser.close();await fs.writeFile(path.join(out,'browser-observations.json'),JSON.stringify(result,null,2));
+ clearInterval(heartbeat);if(browser)await browser.close();await progress;await fs.writeFile(path.join(out,'browser-observations.json'),JSON.stringify(result,null,2));
  console.log(JSON.stringify({passed:result.passed,steps:result.steps,failure:result.failure,errors:result.errors}));
 }
 if(!result.passed)process.exitCode=1;

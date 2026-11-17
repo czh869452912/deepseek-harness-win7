@@ -47,6 +47,8 @@ scripts/frontend-build-record.json -text
 migration/storage/*.zip -text
 dsh/host/browser_compat/url.js -text
 dsh/host/browser_compat/url.LICENSE.txt -text
+dsh/host/browser_compat/anchor* -text
+dsh/host/browser_compat/anchor.third-party-LICENSE.txt whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol
 apps/desktop/wire.cjs -text
 apps/desktop/locale.cjs -text
 apps/desktop/update-coordinator.cjs -text

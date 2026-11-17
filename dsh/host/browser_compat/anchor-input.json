@@ -1,0 +1,77 @@
+{
+  "schema": 1,
+  "package": "@oddbird/css-anchor-positioning",
+  "version": "0.10.2",
+  "license": "BSD-3-Clause",
+  "source": "https://github.com/oddbird/css-anchor-positioning",
+  "npm": {
+    "integrity": "sha512-sk+1BpF5V+CfFm0CUbyTRxtwsUjcuP6Nz5tOzC6Bh500gBRdJJZJAeQ/3DYKPd9hGge5cqyVfUNl8zpWJVma/Q==",
+    "shasum": "38d2de9810f510959961975eda2e696ede5e8121",
+    "tarball": "https://registry.npmjs.org/@oddbird/css-anchor-positioning/-/css-anchor-positioning-0.10.2.tgz",
+    "fileCount": 50,
+    "unpackedSize": 3214559,
+    "signatures": [
+      {
+        "keyid": "SHA256:DhQ8wR5APBvFHLF/+Tc+AYvPOdTpcIDqOhxsBHRwC7U",
+        "sig": "MEQCID9FVCXrT6epHKZ1Zs4cmttykI+gogFTUCeS7v0C5o6sAiBadMBxKSTF37rDJ19xmAMDatNXdV36/H8x+qYhJ/8H4w=="
+      }
+    ]
+  },
+  "input": {
+    "path": "dist/css-anchor-positioning-fn.js",
+    "bytes": 162818,
+    "sha256": "3d81733ca68ad97aae0395ae4e3010dcf62d99ee828f0085f5cf6e2d70154ea0"
+  },
+  "build": {
+    "esbuild": "0.25.12",
+    "target": "chrome108",
+    "format": "iife",
+    "patches": [
+      "Collect/release autoUpdate observers",
+      "Preserve React stylesheet and inline ownership via generated adjacent rules",
+      "Read unsupported CSSOM anchor properties through custom-property bridge",
+      "Expose reset for dynamic portal discovery"
+    ]
+  },
+  "output": {
+    "path": "anchor.js",
+    "bytes": 120986,
+    "sha256": "9c9997d4f3f901f052238d2a44325ebb0264dc0a1af84998924de142e0825c5b"
+  },
+  "licenseSha256": "e60fc0de71d5f1c0581748da51af72fdb41f62f2bd803faa4ee21f9080d9da0b",
+  "thirdPartyLicenses": [
+    {
+      "package": "@floating-ui/dom",
+      "license": "MIT",
+      "licenseSourceVersion": "1.8.0",
+      "url": "https://registry.npmjs.org/@floating-ui/dom/-/dom-1.8.0.tgz",
+      "integrity": "sha512-yXSrzeHZBTZadLOlfyhCkJHNeLJnHRnRInwdZ40L7ZiaAtrBwoYlsDrX3v5zB1Utk7CLfzcOVnVVWoXEky7Ceg==",
+      "licenseSha256": "0e4c9a9b6c71019cbbea3bdc20b01223110a9035700f9c960c8fcbf78c2325ce"
+    },
+    {
+      "package": "@floating-ui/utils",
+      "license": "MIT",
+      "licenseSourceVersion": "0.2.10",
+      "url": "https://registry.npmjs.org/@floating-ui/utils/-/utils-0.2.10.tgz",
+      "integrity": "sha512-aGTxbpbg8/b5JfU1HXSrbH3wXZuLPJcNEcZQFMxLs3oSzgtVu6nFPkbbGGUvBcUjKV2YyB9Wxxabo+HEH9tcRQ==",
+      "licenseSha256": "0e4c9a9b6c71019cbbea3bdc20b01223110a9035700f9c960c8fcbf78c2325ce"
+    },
+    {
+      "package": "css-tree",
+      "license": "MIT",
+      "licenseSourceVersion": "3.2.1",
+      "url": "https://registry.npmjs.org/css-tree/-/css-tree-3.2.1.tgz",
+      "integrity": "sha512-X7sjQzceUhu1u7Y/ylrRZFU2FS6LRiFVp6rKLPg23y3x3c3DOKAwuXGDp+PAGjh6CSnCjYeAul8pcT8bAl+lSA==",
+      "licenseSha256": "719a251ceca49c057ea90a1152af6546b767ec88e6d573bb6324454267b32c22"
+    },
+    {
+      "package": "nanoid",
+      "license": "MIT",
+      "licenseSourceVersion": "6.0.1",
+      "url": "https://registry.npmjs.org/nanoid/-/nanoid-6.0.1.tgz",
+      "integrity": "sha512-3wVS3i51pE2pi1k5FFL/95BGfVS0kSsvDVuGXHOtxox/TywUmtgq+3qiTOTbs9J7KfHaXPiN171k/A6dBnaXFw==",
+      "licenseSha256": "4383cb2c3608397ce7a4159502614ed66890f8999c2a9c056dd3b1024d6721f0"
+    }
+  ],
+  "thirdPartyLicenseSha256": "972164b668f527a91a9f51f42b1f7a1f87768c260627aeaae784b9e5cd38fcc8"
+}

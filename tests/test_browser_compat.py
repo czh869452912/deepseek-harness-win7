@@ -110,3 +110,17 @@ def test_url_adapter_builder_rejects_wrong_source_version(tmp_path):
                              '--source', str(package), '--esbuild', str(builder)],
                             cwd=str(tmp_path), capture_output=True, encoding='utf-8', timeout=30)
     assert result.returncode != 0 and '0.0.0' in result.stderr
+
+
+def test_anchor_adapter_has_pinned_bytes_and_all_dependency_licenses():
+    directory = ROOT / 'dsh/host/browser_compat'
+    record = json.loads((directory / 'anchor-input.json').read_text(encoding='utf-8'))
+    assert record['package'] == '@oddbird/css-anchor-positioning'
+    assert record['version'] == '0.10.2' and record['license'] == 'BSD-3-Clause'
+    data = (directory / 'anchor.js').read_bytes()
+    assert record['output'] == dict(path='anchor.js', bytes=len(data), sha256=hashlib.sha256(data).hexdigest())
+    assert hashlib.sha256((directory / 'anchor.LICENSE.txt').read_bytes()).hexdigest() == record['licenseSha256']
+    assert hashlib.sha256((directory / 'anchor.third-party-LICENSE.txt').read_bytes()).hexdigest() == record['thirdPartyLicenseSha256']
+    assert {row['package'] for row in record['thirdPartyLicenses']} == {
+        '@floating-ui/dom', '@floating-ui/utils', 'css-tree', 'nanoid'}
+    assert data.decode('utf-8') in SCRIPT

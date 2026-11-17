@@ -17,6 +17,11 @@ def script():
     base = parser.decode('utf-8') + '\n' + (directory / 'compat.js').read_text(encoding='utf-8')
     workers = (directory / 'worker.js').read_text(encoding='utf-8')
     workers = workers.replace('__DSH_REALM_CODE__', json.dumps(base, ensure_ascii=False))
+    anchor_manifest = json.loads((directory / 'anchor-input.json').read_text(encoding='utf-8'))
+    anchors = (directory / 'anchor.js').read_bytes()
+    if (len(anchors) != anchor_manifest['output']['bytes'] or
+            hashlib.sha256(anchors).hexdigest() != anchor_manifest['output']['sha256']):
+        raise RuntimeError('browser anchor compatibility artifact differs from its recorded input')
     return ('(function(){\nconst legacy = typeof Iterator === "undefined" || '
             'typeof Promise.withResolvers !== "function" || typeof AbortSignal.any !== "function" || '
             'typeof Promise.try !== "function" || typeof Math.sumPrecise !== "function" || '
@@ -26,7 +31,9 @@ def script():
             'typeof Map.prototype.getOrInsert !== "function" || typeof ArrayBuffer.prototype.transferToFixedLength !== "function" || '
             'typeof Array.prototype.toSorted !== "function" || '
             '(typeof URL === "function" && new URL("dsh-resource://file/x").hostname !== "file");\n' +
-            base + '\nif (legacy) {\n' + workers + '\n}\n})();')
+            base + '\nif (legacy) {\n' + workers + '\n}\n})();' +
+            '\nif (typeof document !== "undefined" && typeof CSS !== "undefined" && !CSS.supports("anchor-name: --dsh-native")) {\n' +
+            anchors.decode('utf-8') + '\n' + (directory / 'anchor-runtime.js').read_text(encoding='utf-8') + '\n}')
 
 
 SCRIPT = script()

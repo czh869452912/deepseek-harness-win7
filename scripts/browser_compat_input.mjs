@@ -24,5 +24,11 @@ export async function browserCompatibilityInput(directory){
     'typeof Array.prototype.toSorted !== "function" || '+
     '(typeof URL === "function" && new URL("dsh-resource://file/x").hostname !== "file");\n'+
     script+'\nif (legacy) {\n'+workers+'\n}\n})();';
+  script+='\nif (typeof document !== "undefined" && typeof CSS !== "undefined" && !CSS.supports("anchor-name: --dsh-native")) {\n';
+  for(const name of ['anchor.js','anchor-runtime.js']){
+    const path=join(directory,name),bytes=await readFile(path);files.push({path,sha256:hash(bytes)});
+    script+=bytes.toString('utf8').replaceAll('\r\n','\n')+'\n';
+  }
+  script+='}';
   return {files,script,sha256:hash(script)};
 }

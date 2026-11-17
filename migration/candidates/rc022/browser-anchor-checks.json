@@ -1,0 +1,83 @@
+{
+  "part": "C9-AH",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "scope": "Host CSS anchor compatibility for unchanged original React portals on Chromium 108",
+  "implementation": [
+    "Pinned OddBird 0.10.2 BSD-3-Clause adapter rebuilt with esbuild 0.25.12, verified input/output digests and all four bundled dependency licenses; no browser network dependency.",
+    "Dynamic CSSOM anchor-name/position-anchor bridge, generated adjacent rules preserving original styles, legacy absolute self-alignment, portal rediscovery with observer/write ownership and reversible reset.",
+    "Color-mix fallback ownership marker and clone ordering prevent compatibility layers recursively consuming their own generated styles. Native anchor support skips adapter allocation."
+  ],
+  "verification": {
+    "native": {
+      "run": "rc022-anchor-native-20261117-01",
+      "passed": 41,
+      "scope": "Browser injection/unload/CSP and cross-realm semantics, generated provenance, existing color-mix refusal gates and direct WebServer contract consumers"
+    },
+    "browser": {
+      "run": "rc022-anchor-browser3-20261117-01",
+      "passed": true,
+      "observations": 17,
+      "scope": "Real Chromium 108: stable geometry and color-mix paint; anchor move; stylesheet replacement; twelve unmount/remount cycles with fixed generated-rule/root-variable/observer counts; cleanup removes all owned observers/rules/values while retaining a prior important custom property; synthetic native feature guard leaves CSSOM unchanged"
+    },
+    "application": {
+      "run": "rc022-application-candidate38-20261117-01",
+      "passed": true,
+      "viewports": [
+        "1440x900",
+        "390x844"
+      ],
+      "steps": 9,
+      "console_errors": [],
+      "scope": "Unchanged Source index/bundles: catalog/details, pause/resume, edit, reload, stable menu/reopen/mobile resize, manual run and visible history; actual Agent/Session flush/query confirms one durable matching delivery"
+    },
+    "reproducibility": {
+      "run": "rc022-anchor-prep-20261117-01/build-check.json",
+      "exit_code": 0
+    },
+    "browser_path": "Browser plugin not available; existing regular Playwright with Chromium 108.0.5359.0"
+  },
+  "geometry": {
+    "desktop": {
+      "anchor": [
+        1360,
+        7.984375,
+        28,
+        28
+      ],
+      "menu": [
+        1244,
+        39.984375,
+        144,
+        76
+      ]
+    },
+    "mobile": {
+      "anchor": [
+        326,
+        55.984375,
+        28,
+        28
+      ],
+      "menu": [
+        210,
+        87.984375,
+        144,
+        76
+      ]
+    }
+  },
+  "diagnostics": [
+    "candidate30/31 timed out with the first dynamic adapter; tasks/commands and available screenshots/progress preserved.",
+    "candidate32-35 functional journeys could transiently satisfy placement before an ownership feedback refresh; these are not stable visual acceptance. Final candidate38 closes the reproduced issue.",
+    "First isolated browser fixture used unsupported color-mix literals rather than the existing token contract; original failed observation preserved; corrected fixture verifies token paint with actual Chromium."
+  ],
+  "cleanup": {
+    "owned_processes_after": [],
+    "removed": "candidate30-38 disposable homes/workspaces; targeted Native fixtures; extracted/downloaded adapter inputs and obsolete standalone probes",
+    "retained": "Commands/logs/XML, original failures, DOM/screenshots/coordinates/input digests, final durable-delivery observations and minimal input/license records. Shared C1-C9 Source/toolchain retained until migration qualification."
+  },
+  "limitations": [
+    "Finite original menu/portal coverage; no claim of every CSS Anchor Positioning feature, constructed stylesheets, cross-shadow-root positioning or complete mobile parity.",
+    "Cold process restart, remaining migration gaps, production baseline promotion and unified release qualification remain pending."
+  ]
+}

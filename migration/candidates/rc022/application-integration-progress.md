@@ -415,3 +415,5 @@
 | C9-G | Official preset skills path expressions resolve through owning installation package | [Preset expressions](preset-expression-checks.json) |
 
 | C9-T | Current Schedule tools close the Standard Session activation gap; PTC and Creative providers remain pending | [Schedule tools](schedule-tools-checks.json) |
+
+| C9-U | Optional read-only market tool unblocks Creative Session creation; PTC runtime remains pending | [Market tools](market-tools-checks.json) |

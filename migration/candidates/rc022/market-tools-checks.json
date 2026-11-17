@@ -1,0 +1,16 @@
+{
+  "part": "C9-U",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "scope": "Optional read-only plugin_market tool, isolated Creative application binding",
+  "paired": {"run": "rc022-market-tools-paired3-20261117-01", "observations": 27, "differences": 0},
+  "verification": {"native": "5 passed: actual dispatch/withdrawal, UTF-16 clipping and extended Date range, exception/string abort reasons, task cancellation and a surviving shared waiter.", "source": "17 original plugin-market tool tests passed.", "fixture_notes": "Earlier comparisons retained: absent presentation is explicitly normalized from undefined to null; Native observer snapshots are JSON-normalized before strict comparison. Neither changes tool behavior."},
+  "behavior": [
+    "Mounting without pluginMarket remains inert and does not stall a preset. Dynamic service withdrawal removes the registered tool.",
+    "Lists configured sources, search pages or all version pages without mutating indexes. Page defaults, bounds, sort requests and exact install target/registry projection follow fixed Source.",
+    "English fallback and clipping count UTF-16 code units. Absent untranslated fields are omitted; model output preserves the selected default version, compatibility and publication Date including extended years.",
+    "Cancellation releases only the waiting call and its listener; shared reads continue and their later errors remain observed."
+  ],
+  "application": {"run": "rc022-application-candidate10-20261117-01", "exit_code": 1, "result": "Official Web booted; Minimal, Standard and Creative Sessions created. PTC remains waiting for ptcRuntime. The optional market service is absent in this composition; its tool correctly remains unregistered."},
+  "cleanup": {"bytes_removed": 77345, "owned_processes_after": [], "retained": "Paired inputs/results including initial differences, Source results, Native logs/XML and application diagnostics; all owned synthetic workspaces/homes removed."},
+  "limitations": ["Market service is controlled in paired dispatch observations. No claim for its network/cache/index parser or repository detail implementation.", "Production bindings, complete regression, Portable/browser/Win7 qualification and upstream acceptance remain pending."]
+}

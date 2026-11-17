@@ -1,0 +1,64 @@
+{
+  "contract": "C9-CO",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "status": "targeted passed; unified qualification pending",
+  "problem": "Current Source no longer exports SettingsProvider; blindly repinning its old lifecycle observer fails before observation.",
+  "historical_scope": "Original a4c74a91/Node22 permission Source member retained byte-for-byte, including original input manifest. Fresh current checkout execution tests the retained Native legacy domain; all original cases and corruption controls retained. The two Source-specific test labels and mandatory names now explicitly say historical. No current Source parity is inferred from these compatibility checks.",
+  "current_successors": {
+    "permission": "scripts/rc022_permission_catalog_probe.py",
+    "settings": "scripts/rc022_settings_forms_probe.py",
+    "actual_paired": {
+      "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+      "plan_sha256": "5808d2f0cfafb9384dc17c31487481968505daa210a4d2f82f2c443e511c1899",
+      "status": "passed",
+      "lane": "paired",
+      "complete_lane": false,
+      "release_acceptance": false,
+      "rows": [
+        {
+          "script": "scripts/rc022_permission_catalog_probe.py",
+          "receipt": "report.json",
+          "sha256": "273d1b2bbef74cef49436a653a3ebf1d0fb4384f28cb2968943cb847defc9147",
+          "seconds": 1.9540000000270084,
+          "cleanup": {
+            "removed": [],
+            "bytes_removed": 0
+          }
+        },
+        {
+          "script": "scripts/rc022_settings_forms_probe.py",
+          "receipt": "report.json",
+          "sha256": "84be24f921cfd197ec50b72a2c24c18d5a4e3efcee72cdf8994f0ca02378fd2d",
+          "seconds": 1.0630000000237487,
+          "cleanup": {
+            "removed": [],
+            "bytes_removed": 0
+          }
+        }
+      ],
+      "inputs_unchanged": true
+    }
+  },
+  "checks": {
+    "run": "rc022-permission-historical-consumers-20261118-01",
+    "passed": 137,
+    "seconds": 17.58,
+    "by_module": {
+      "tests.test_permission_presets_consumers": 122,
+      "tests.test_rc022_permission_catalog": 6,
+      "tests.test_rc022_settings_forms": 6,
+      "tests.test_rc022_selection_settings": 2,
+      "tests.test_current_release_gate": 1
+    }
+  },
+  "cleanup": {
+    "bytes_removed": 5469,
+    "retained": "Native legacy-domain observations, immutable original Source member, actual current Source/native paired rows, XML/logs and old API failure diagnostics."
+  },
+  "input_sha256": {
+    "tests/historical_domain_fixtures.py": "ae902f936ef4feb1d0f75d0a302be3e44af1d1ac19aa2e312b465ac5adcffdc7",
+    "tests/test_permission_presets_consumers.py": "196001a9f3d05760fa2dedbd5599dde4c431510ea4d10ac0c57bad2d12936e29",
+    "scripts/verify_release.py": "228eed22cc4f5fef91a32eddc371a0bc46eac06653bc381fd051166a4c7db70a"
+  },
+  "limitations": "Neither targeted lane is release acceptance; full current frozen Python/Source/paired/extracted/Desktop qualification remains pending."
+}

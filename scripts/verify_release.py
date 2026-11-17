@@ -387,9 +387,9 @@ REQUIRED_REGRESSION = {
         *{'test_portable_sdk_profile_refuses_partial_receipts[' + side + ']' for side in ('source', 'native')},
     },
     'test_permission_presets_consumers': {
-        *{'test_actual_source_native_permission_presets_complete_observations[' + name + ']' for name in PERMISSION_PRESET_NAMES},
+        *{'test_historical_source_native_permission_presets_complete_observations[' + name + ']' for name in PERMISSION_PRESET_NAMES},
         *{'test_permission_presets_requires_complete_observations_and_owned_runtime[' + damage + ']' for damage in PERMISSION_PRESET_DAMAGES},
-        *{'test_permission_presets_source_requires_pinned_guarded_inputs[' + damage + ']' for damage in PERMISSION_SOURCE_DAMAGES},
+        *{'test_historical_permission_receipt_requires_pinned_guarded_inputs[' + damage + ']' for damage in PERMISSION_SOURCE_DAMAGES},
         'test_permission_presets_extracted_requires_independently_approved_imports',
         *{'test_permission_presets_complete_digest_refuses_missing_group[' + group + ']' for group in ('lifecycle', 'domain')},
         'test_permission_presets_selected_interpreter_must_belong_to_root',

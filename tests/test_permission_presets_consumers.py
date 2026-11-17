@@ -1,14 +1,19 @@
+"""Retained rc.3 permission/settings compatibility, not current Source parity.
+
+SettingsProvider and its detach/default contract were removed upstream. The
+production successors are the current permission catalog and config-editor
+settings forms, exercised by rc022_permission_catalog/settings_forms probes.
+"""
 import copy
-import json
 from pathlib import Path
-import subprocess
 import sys
 
 import pytest
 
 from scripts.canonical_llm_values import observation_digest as value_digest
 from scripts.permission_presets_cases import SOURCE_DAMAGES, VALUE_DAMAGES, damage_runtime, damage_source
-from scripts.permission_presets_oracle import identity, validate_runtime
+from scripts.permission_presets_oracle import validate_runtime
+from historical_domain_fixtures import permission_identity as identity, permission_pair
 from scripts.permission_presets_values import ALL_NAMES, complete_digest, schema_graph
 from scripts.verify_portable import permission_presets_receipts
 
@@ -17,15 +22,9 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 @pytest.fixture(scope='module')
-def actual_pair(tmp_path_factory):
-    output = tmp_path_factory.mktemp('permission-presets-pair') / 'paired.json'
-    completed = subprocess.run([sys.executable, str(ROOT / 'scripts/permission_presets_oracle.py'),
-        '--output', str(output)], cwd=str(ROOT), capture_output=True, timeout=240)
-    (output.parent / 'runner.log').write_bytes(completed.stdout + completed.stderr)
-    assert completed.returncode == 0, (completed.stdout + completed.stderr).decode('utf-8', errors='replace')
-    source = json.loads(output.with_suffix('.source.json').read_text(encoding='utf-8'))
-    native = json.loads(output.with_suffix('.native.json').read_text(encoding='utf-8'))
-    identity(source, ROOT / 'reference')
+def actual_pair():
+    source, native = permission_pair()
+    identity(source)
     validate_runtime(native, ROOT, sys.executable, source, native['modules'])
     return source, native
 
@@ -40,7 +39,7 @@ def selected_row_digest(report, name, side):
 
 
 @pytest.mark.parametrize('name', ALL_NAMES)
-def test_actual_source_native_permission_presets_complete_observations(actual_pair, name):
+def test_historical_source_native_permission_presets_complete_observations(actual_pair, name):
     source, native = actual_pair
     assert selected_row_digest(source, name, 'source') == selected_row_digest(native, name, 'native')
 
@@ -54,10 +53,10 @@ def test_permission_presets_requires_complete_observations_and_owned_runtime(act
 
 
 @pytest.mark.parametrize('damage', SOURCE_DAMAGES)
-def test_permission_presets_source_requires_pinned_guarded_inputs(actual_pair, damage):
+def test_historical_permission_receipt_requires_pinned_guarded_inputs(actual_pair, damage):
     altered = damage_source(actual_pair[0], damage)
     with pytest.raises((ValueError, KeyError)):
-        identity(altered, ROOT / 'reference')
+        identity(altered)
 
 
 def test_permission_presets_extracted_requires_independently_approved_imports(actual_pair):

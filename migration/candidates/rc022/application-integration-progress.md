@@ -2,6 +2,8 @@
 
 固定目标：`38a6a5c965aa99ab525161efb7cc5cf1fe62fced`。本页记录定向检查；生产 pin 已在 C9-CC 协调切换，`accepted_upstream` 仍为 null，完整资格待后续验证。
 
+C9-CO：权限旧 SettingsProvider 合同转为明确的历史兼容回归，原版成员及其输入摘要原样保留、Native 旧域重新执行；所有旧案例及拒绝检查保留，相关 137 项通过。新版权限目录与配置编辑表单分别重新执行当前原版/Python 配对，冻结输入前后不变。没有用旧域观察替代新版资格，临时工作区已清理。[精确记录](permission-contract-transition-checks.json)。
+
 C9-CN：保留回执解析器的 1,527 个单元案例全部覆盖通过（前 865 项、修正清单后的余下 662 项分别记录，最终 5 项复验）。旧版原始成员只支撑显式测试模型，当前 SDK/元数据独立采集；没有跳过案例或将历史观察提升为新版资格。已删除约 13.1 GB 合成回执及失效工作区，并修正临时定向运行器的清理映射。[精确记录](retained-parser-controls-checks.json)。
 
 C9-CM：SQLite 历史读兼容检查移除当前原版已删除、且未参与该检查的五个包路径；实际使用的 Native 编解码器、组件资源、生成器和封存 alpha 帧仍受摘要保护。38 项定向检查通过，包含 826 个完整编解码观察；已清理重建输入和重复 Source 拷贝。[精确记录](historical-sqlite-inputs-checks.json)。

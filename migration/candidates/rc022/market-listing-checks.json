@@ -1,0 +1,47 @@
+{
+  "part": "C9-AN",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "scope": "Candidate market listing/search/entry, live profile annotation and settings integration",
+  "implementation": [
+    "CurrentPluginMarket combines actual HTTP/isolated parsing, shared document ownership and original search selection. Exposes listIndexes/setIndexes/search with Remote markers and internal entry; details and production binding intentionally await remaining contracts.",
+    "Listing computes original five installation statuses, highest-compatible-stable default policy, unmet/exempted compatibility, pinned Git origin updates and install targets from live pluginManager facts after page selection.",
+    "Volatile configuration schema includes original limits/detail options. Settings replacement writes this profile entry; source changes emit changed and reconcile cached facts. Unload revokes the service/events and settles owned fetches.",
+    "Shared SemVer exact parser now trims ECMAScript whitespace: U+0085 remains invalid and trailing BOM is accepted, matching Node semver."
+  ],
+  "verification": {
+    "paired": {
+      "run": "rc022-market-listing-pair5-20261117-01",
+      "observations": 18,
+      "differences": 0,
+      "scope": "Original full listing annotations for 33 plugins plus paging/text/entry/live status/query error ordering/settings/event/cache reuse; controlled validated index fetch"
+    },
+    "native": {
+      "run": "rc022-market-listing-native2-20261117-01",
+      "passed": 147,
+      "scope": "New listing/lifecycle/config/actual HTTP-to-cache-to-search composition plus compatibility/install-spec and market HTTP/body/cache/index x86-x64/tool/worker consumers"
+    },
+    "shared_semver_consumers": {
+      "run": "rc022-market-listing-native4-20261117-01",
+      "passed": 91,
+      "seconds": 193.219,
+      "scope": "Registry package query/acquisition, registry policy, bundle inventory, listed LLM catalog and real native plugin acquisition/boot/upgrade/rollback/TLS/refusals"
+    }
+  },
+  "diagnostics": [
+    "Initial paired fixture preparation failed before product execution due to duplicate Python keyword construction; corrected and retained compact failure record.",
+    "Expanded installed-version corpus found U+0085/BOM whitespace differences. Shared parser fixed; pair4 failure observations retained, pair5 passes.",
+    "First extended consumer run reached the 120-second outer runner budget with no assertion failure reported and no XML completion; original log/timeout receipt retained. Reran the same six test files with verbose progress and 300-second budget: all 91 passed in 193.219 seconds."
+  ],
+  "cleanup": {
+    "removed": "All four Native test synthetic workspaces/home/tmp, completed and failed paired reconstructible fixture input, owned HTTP fixture servers/socket/threads",
+    "bytes": 46980343,
+    "owned_processes_after": [],
+    "retained": "Failed/final Source/Native observations, initial fixture/timeout records and run logs, XML/input hashes; shared Source/toolchain owned until C1-C9 qualification"
+  },
+  "limitations": [
+    "Details readEntryDetail and HTTP detail-image route/repository cache are not implemented by this listing batch, and candidate production bindings are not switched yet.",
+    "Search presently reconstructs the isolated text index per selection rather than retaining the original lazy document-owned engine across pages; performance/lifetime qualification remains pending.",
+    "QuickJS/V8 malformed JSON diagnostic prose, maximum-size index behavior and actual Windows 7 qualification remain pending.",
+    "Remote markers are present but actual generated Gateway/browser market journey remains unqualified. Targeted completion is not unified release acceptance or production promotion."
+  ]
+}

@@ -5,6 +5,7 @@ this module needs no Node runtime or additional Portable dependency.
 """
 import re
 from functools import total_ordering
+from dsh.cordis.text import trim_js
 
 _NUM = r'(?:0|[1-9][0-9]*)'
 _PRE_ID = r'(?:[0-9]*[A-Za-z-][0-9A-Za-z-]*|'+_NUM+r')'
@@ -50,7 +51,7 @@ class Version:
 def parse(value):
     if not isinstance(value, str) or len(value) > 256:
         raise ValueError('Invalid semantic version')
-    match = _FULL.fullmatch(value.strip())
+    match = _FULL.fullmatch(trim_js(value))
     if match is None:
         raise ValueError('Invalid semantic version')
     return Version([int(match[n]) for n in ('major', 'minor', 'patch')], match['pre'], match['build'])

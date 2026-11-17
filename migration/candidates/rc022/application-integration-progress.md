@@ -453,3 +453,5 @@
 | C9-AL | Strict UTF-8/BOM + JS JSON acceptance and abort-safe parser process ownership; exact V8/QuickJS syntax diagnostics explicitly pending | [Market body](market-body-checks.json) |
 
 | C9-AM | Actual bounded market HTTP + isolated parsing: no redirect, decoded size, deadline/lifetime abort, EOF and response cleanup | [Market HTTP](market-http-checks.json) |
+
+| C9-AN | Market listing/search/entry composition, live installation/compatibility/Git updates, Settings/events and SemVer whitespace fix | [Market listing](market-listing-checks.json) |

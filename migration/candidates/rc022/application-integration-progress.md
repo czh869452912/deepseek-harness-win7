@@ -501,3 +501,5 @@
 | C9-BJ | Compaction recovery uses selected-span/whole-surface stability consistently and checks cancellation before retry; actual transactions paired, separate legacy lifecycle/preset integration failures retained | [Compaction recovery](compaction-recovery-checks.json) |
 
 | C9-BK | Shipped presets resolve current Workflow and avoid duplicate controls; Minimal keeps two tools, four presets coexist and real Workflow/compaction/PTC records restore; legacy Loader fixture uses explicit owner joins | [Preset integration](preset-integration-checks.json) |
+
+| C9-BL | Unchanged Office WASM compiles/initializes in Chromium 108 and actually converts DOCX→PDF/TXT and renders PDF→PNG; controlled font and production-carrier limits remain explicit | [Office WASM feasibility](office-wasm-carrier-checks.json) |

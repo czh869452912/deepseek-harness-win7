@@ -1,0 +1,24 @@
+{
+  "contract": "C9-BL",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "status": "actual carrier feasibility passed; production Office engine remains open",
+  "finding": "The unchanged @deepseek-ai/libreoffice-kit-wasm@0.2.3 loader is also usable in a browser worker. Its exact WASM compiles and initializes on Chromium 108.0.5359.0 with shared memory and pthreads, without the incompatible native dsoffice.exe or Node runtime in the engine process.",
+  "verification": {
+    "compile": {"run": "rc022-office-wasm-browser-20261117-01", "wasm_bytes": 127846009, "imports": 126, "isolated": true, "shared_memory": true, "initialized": true},
+    "conversion_render": {"run": "rc022-office-wasm-final-20261117-01", "input": "Pinned packages/bundle/web-app/tests/fixtures/document-conversion.docx", "input_bytes": 869, "input_sha256": "d43fc609d1bec1d4b3b66e3907651550dbe76e516ae77163712ab8d5a643b682", "pdf_bytes": 18639, "text_bytes": 24, "text": "Office preview ready", "png_bytes": 13387, "png_sha256": "d489e272d4ddbb9cc36cf6d234ff5e967d92391f649b6b751f839b9e067dc54b", "pages": 1, "width": 612, "height": 792, "nonwhite_pixels": 594, "cleanup_trace": ["document-destroyed", "office-destroyed", "pthreads-terminated"], "visual_check": "Rendered PNG inspected: readable original text, complete white page, no clipping."}
+  },
+  "engine_assets": {
+    "dsoffice.cjs": "c9248ef54385015475b15ae2baca41d9f7a8bd0b8538904da6a1fcd16c5305a1",
+    "dsoffice.wasm": "bb7d1121c7200020f0b6219e37655719cde0c63f905f9826c43c40bf5a7c17c8",
+    "dsoffice.data": "0bea03629341de18dc90bdfc1e67a2f3b791e31ef9fe22888c288226e8bd5b15",
+    "dsoffice.data.js.metadata": "ffab1d431c3ecdac3f2438f5e229b2e9a83364fed02b1732e5c327ab43d6b04d"
+  },
+  "scope_limits": [
+    "Actual engine, conversion and PDFium raster operations; not a mocked Office converter. Arial-only synchronous font resolver is a controlled collaborator, not a port of Source system font matching, fallback or missing-font accounting.",
+    "Node and Playwright drive the experiment. The production Python carrier must replace that driver and own deadlines, cancellation, browser/worker processes, file access and cleanup.",
+    "No default officeKitEngine service, Portable runtime, complete format/recalculation coverage, actual Windows 7 execution or release qualification is established by this experiment.",
+    "The engine emitted its existing unsupported __syscall_mprotect warning; conversion and painting returned successfully. Native ordinary-import incompatibility remains unchanged."
+  ],
+  "next": "Implement a bounded Python 3.8 carrier using the qualified browser/WASM runtime, reproduce real conversion/render and lifecycle behavior, port the necessary Source font/format logic, then integrate default service and versioned licensed Portable inputs before unified acceptance.",
+  "cleanup": {"removed": "All three owned temporary browser directories were empty after browser teardown and removed. No test engine copies or owned browser process remain.", "bytes_removed": 0, "retained_owner": "rc022 C9 Office carrier", "retained_purpose": "PDF/TXT/PNG and reports are actual engine observations, retained for the carrier comparison at C9-BM. Shared Source/WASM/Chromium inputs remain owned through C9; large original assets were not added to Git."}
+}

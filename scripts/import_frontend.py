@@ -3,6 +3,7 @@ import argparse
 import hashlib
 import json
 import os
+import re
 from pathlib import Path
 import subprocess
 import tempfile
@@ -19,13 +20,19 @@ def digest(path):
 def artifact_paths(root):
     root = Path(root).absolute()
     selected = []
-    for folder, directories, files in os.walk(str(root / 'apps/web/dist'), followlinks=False):
-        for name in directories + files:
-            if getattr(os.lstat(str(Path(folder) / name)), 'st_file_attributes', 0) & 0x400:
-                raise ValueError('frontend artifact reparse point refused')
-        selected.extend(Path(folder) / name for name in files)
+    roots = [root / 'apps/web/dist'] + list((root / 'packages').glob('*/*/lib/assets'))
+    for asset_root in roots:
+        for folder, directories, files in os.walk(str(asset_root), followlinks=False):
+            for name in directories + files:
+                if getattr(os.lstat(str(Path(folder) / name)), 'st_file_attributes', 0) & 0x400:
+                    raise ValueError('frontend artifact reparse point refused')
+            selected.extend(Path(folder) / name for name in files)
     selected.extend((root / 'packages').glob('*/*/lib/client.js'))
     selected.extend((root / 'packages').glob('*/*/lib/client.js.map'))
+    selected.extend((root / 'packages').glob('*/*/lib/client.*.js'))
+    selected.extend((root / 'packages').glob('*/*/lib/client.*.js.map'))
+    # The original build record explicitly excludes Node-only host entries.
+    selected = {path for path in selected if not re.search(r'/lib/client\.node(?:\.|$)', path.relative_to(root).as_posix())}
     for path in selected:
         for component in (path,) + tuple(path.parents):
             if component == root:
@@ -76,7 +83,7 @@ def replace_bytes(path, content):
             os.unlink(temporary)
 
 
-def validate_import(root, manifest):
+def validate_import(root, manifest, staged=None):
     rows = manifest.get('client_files')
     record = manifest.get('build_record')
     if not isinstance(rows, list) or not rows or not isinstance(record, dict):
@@ -93,6 +100,14 @@ def validate_import(root, manifest):
     paths = artifact_paths(root)
     expected = {row['path']:row['sha256'] for row in manifest['files'] + rows}
     actual = {path.relative_to(root).as_posix():digest(path) for path in paths}
+    # During coordinated import, a previous staged provider may already carry
+    # new client entries. Only exact members of the newly verified complete
+    # Source build can supplement the previous manifest; default checks remain
+    # strict, and existing historical members must still match unchanged.
+    approved_extra = {name for name in actual.keys() - expected.keys()
+                      if staged is not None and staged.get(name) == actual[name]}
+    actual = {name: value for name, value in actual.items() if name not in approved_extra}
+    paths = [path for path in paths if path.relative_to(root).as_posix() not in approved_extra]
     if len(expected) != len(manifest['files']) + len(rows) or expected != actual or build_digest(root,paths) != record.get('artifacts'):
         raise ValueError('frontend complete shell/client build bytes differ')
 
@@ -110,10 +125,9 @@ def main():
     record, paths = recorded_inputs(source, target)
     selected = {path.relative_to(source).as_posix(): digest(path) for path in paths}
     old_manifest = json.loads((ROOT / 'scripts/frontend-inputs.json').read_text(encoding='utf-8'))
-    old_shell = {path.relative_to(ROOT).as_posix(): digest(path) for path in (ROOT / 'apps/web/dist').rglob('*') if path.is_file()}
-    if old_shell != {row['path']:row['sha256'] for row in old_manifest['files']}:
-        raise ValueError('existing reviewed frontend bytes differ before import')
-    previous = set(old_shell) | set(selected) | {'scripts/frontend-inputs.json'}
+    validate_import(ROOT, old_manifest, staged=selected)
+    old_artifacts = {row['path']:row['sha256'] for row in old_manifest['files'] + old_manifest['client_files']}
+    previous = set(old_artifacts) | set(selected) | {'scripts/frontend-inputs.json'}
     before = {name:digest(ROOT / name) for name in sorted(previous) if (ROOT / name).is_file()}
     archive = output / 'previous-artifacts.zip'
     with zipfile.ZipFile(str(archive), 'x', compression=zipfile.ZIP_DEFLATED) as bundle:
@@ -128,11 +142,11 @@ def main():
         if hashlib.sha256(content).hexdigest() != value:
             raise ValueError('upstream artifact changed during import')
         replace_bytes(ROOT / name, content)
-    for name in old_shell:
+    for name in old_artifacts:
         if name not in selected:
             path = ROOT / name
-            path.resolve().relative_to((ROOT / 'apps/web/dist').resolve())
-            if digest(path) != old_shell[name]:
+            path.resolve().relative_to(ROOT.resolve())
+            if digest(path) != old_artifacts[name]:
                 raise ValueError('obsolete frontend artifact changed before retirement')
             path.unlink()
     manifest = dict(target_upstream=target, kind='versioned-prebuilt-input',
@@ -141,6 +155,7 @@ def main():
         files=[dict(path=name,sha256=value) for name,value in selected.items() if name.startswith('apps/web/dist/')],
         client_files=[dict(path=name,sha256=value) for name,value in selected.items() if name.startswith('packages/')])
     replace_bytes(ROOT / 'scripts/frontend-inputs.json', (json.dumps(manifest,indent=2)+'\n').encode('utf-8'))
+    validate_import(ROOT, manifest)
     final_record, final_paths = recorded_inputs(source, target)
     if final_record != record or {path.relative_to(source).as_posix():digest(path) for path in final_paths} != selected:
         raise ValueError('upstream build inputs changed during import')

@@ -525,3 +525,5 @@
 | C9-BV | 原版磁盘字体元数据缓存、实体路径互通和原子写入；103 项定向、13 项最终消费者及 8+8 组真实 Worker 对照 | [Office 磁盘缓存](office-metadata-cache-checks.json) |
 
 | C9-BW | 实际 Calc/Impress 重算、格式转换、PDF/图片和错误矩阵；13+13 组公开 SDK 对照及 3 项比较器拒绝回归 | [Office 格式矩阵](office-format-matrix-checks.json) |
+
+| C9-BX | 新版完整前端资源收集、受核验暂存成员与过期客户端回收；17 项定向、3 项最终 CLI/模式检查及实际 371 份 Source 核验 | [完整前端导入](frontend-import-checks.json) |

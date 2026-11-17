@@ -1,0 +1,119 @@
+{
+  "unit": "C9-BX",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "status": "targeted-passed",
+  "scope": [
+    "Exact original artifact patterns include split browser/lazy client JS/maps and recursive assets, excluding original Node-only pattern.",
+    "Import preflight preserves old sealed members, only permits exact added members from verified new Source, backs up previous clients and retires obsolete artifacts. Strict default validation rejects staged extras."
+  ],
+  "verification": {
+    "native_passed": 17,
+    "final_pattern_and_cli_passed": 3,
+    "source_original_artifacts": {
+      "formatVersion": 1,
+      "environment": {
+        "DSH_CLIENT_BUILD_PROFILE": "official",
+        "DSH_CLIENT_COMMIT_HASH": "38a6a5c",
+        "DSH_CLIENT_TITLE": "DeepSeek Harness",
+        "DSH_CLIENT_VERSION": "0.2.2-rc.3"
+      },
+      "artifacts": {
+        "fileCount": 371,
+        "sha256": "7e2ef76a38189a5747eefd00a78bc138d6497e16e6963f6d6980e773126440df"
+      }
+    },
+    "approved_staged": [
+      {
+        "path": "packages/api/remote-access/lib/client.js",
+        "sha256": "9b5f0f744f6a3f71d75526e6c1712fee571a3f90f9f5d37c0864010c413adcb6"
+      },
+      {
+        "path": "packages/api/remote-access/lib/client.js.map",
+        "sha256": "b27588b573002d0b5f453476def5a47f1a069d49eb5cb9ebf159c14a0a763e8f"
+      },
+      {
+        "path": "packages/client/product-analytics/lib/client.js",
+        "sha256": "62e8706437381c745a184d04fbb130c3beac62535b764427bfb5cc8c6d170024"
+      },
+      {
+        "path": "packages/client/product-analytics/lib/client.js.map",
+        "sha256": "b71bcd76c8f04694e793607065af77437dca50094ff938bdfd0f6cec7cb86893"
+      }
+    ],
+    "runs": [
+      ".goose/out/rc022-frontend-import-native-20261118-01",
+      ".goose/out/rc022-frontend-import-native-20261118-02"
+    ],
+    "scope_reason": "Importer contract and actual target complete-build identity. Historical installed-tree strict positive not selected: four staged target entries still supplement old baseline and require coordinated import."
+  },
+  "cleanup": {
+    "owner": "C9-BX",
+    "removed": [
+      {
+        "path": ".goose\\out\\rc022-frontend-import-native-20261118-01\\pytest-workspace",
+        "bytes": 2099
+      },
+      {
+        "path": ".goose\\out\\rc022-frontend-import-native-20261118-01\\tmp",
+        "bytes": 0
+      },
+      {
+        "path": ".goose\\out\\rc022-frontend-import-native-20261118-01\\home",
+        "bytes": 0
+      },
+      {
+        "path": ".goose\\out\\rc022-frontend-import-native-20261118-02\\pytest-workspace",
+        "bytes": 34538
+      },
+      {
+        "path": ".goose\\out\\rc022-frontend-import-native-20261118-02\\tmp",
+        "bytes": 0
+      },
+      {
+        "path": ".goose\\out\\rc022-frontend-import-native-20261118-02\\home",
+        "bytes": 0
+      }
+    ],
+    "removed_bytes_lower_bound": 36637,
+    "readonly_single_link_fixture_files": [
+      ".goose\\out\\rc022-frontend-import-native-20261118-01\\pytest-workspace\\test_cli_import_backs_up_and_r0\\source\\.git\\objects\\11\\dd581e4f5082fc9e2c536a9f78e0786fec13e4",
+      ".goose\\out\\rc022-frontend-import-native-20261118-01\\pytest-workspace\\test_cli_import_backs_up_and_r0\\source\\.git\\objects\\13\\f2bf012bd3ff7d9abda58e1c8f256cf869c251",
+      ".goose\\out\\rc022-frontend-import-native-20261118-01\\pytest-workspace\\test_cli_import_backs_up_and_r0\\source\\.git\\objects\\35\\eb39197f828a183c36ddaf645a228245a9a0fd",
+      ".goose\\out\\rc022-frontend-import-native-20261118-01\\pytest-workspace\\test_cli_import_backs_up_and_r0\\source\\.git\\objects\\3b\\986569713576eeb0244da42232e5231e3a6259",
+      ".goose\\out\\rc022-frontend-import-native-20261118-01\\pytest-workspace\\test_cli_import_backs_up_and_r0\\source\\.git\\objects\\6c\\e90f8507b54449b256c30caa8ca80866bb9714",
+      ".goose\\out\\rc022-frontend-import-native-20261118-01\\pytest-workspace\\test_cli_import_backs_up_and_r0\\source\\.git\\objects\\81\\215fe5ddc36b7738cbb0cf44bec0af11efdb76",
+      ".goose\\out\\rc022-frontend-import-native-20261118-01\\pytest-workspace\\test_cli_import_backs_up_and_r0\\source\\.git\\objects\\96\\448d97c1d331bff386bbc5bff4c224fbdc96f8",
+      ".goose\\out\\rc022-frontend-import-native-20261118-01\\pytest-workspace\\test_cli_import_backs_up_and_r0\\source\\.git\\objects\\9c\\615eeff6267b2160ac29f02a6166248e3b2be3",
+      ".goose\\out\\rc022-frontend-import-native-20261118-01\\pytest-workspace\\test_cli_import_backs_up_and_r0\\source\\.git\\objects\\a2\\58852f38d4536d6350ab3c6857c6f6391ba6e7",
+      ".goose\\out\\rc022-frontend-import-native-20261118-01\\pytest-workspace\\test_cli_import_backs_up_and_r0\\source\\.git\\objects\\ca\\4b1952f23423ffb94168001772d7147c422eb4",
+      ".goose\\out\\rc022-frontend-import-native-20261118-01\\pytest-workspace\\test_cli_import_backs_up_and_r0\\source\\.git\\objects\\d9\\9319cf34e671a54667642177d88c1a0e21dd1b",
+      ".goose\\out\\rc022-frontend-import-native-20261118-01\\pytest-workspace\\test_cli_import_backs_up_and_r0\\source\\.git\\objects\\df\\23500df1d5bb922867cafbdcff543f3f9c7262",
+      ".goose\\out\\rc022-frontend-import-native-20261118-01\\pytest-workspace\\test_cli_import_backs_up_and_r0\\source\\.git\\objects\\e2\\b712d067108ae2de47ff19d31a7c59c2b678d6",
+      ".goose\\out\\rc022-frontend-import-native-20261118-01\\pytest-workspace\\test_cli_import_backs_up_and_r0\\source\\.git\\objects\\e8\\c17b849ac5ef6bdd113ffda36dad9cde4aa35e",
+      ".goose\\out\\rc022-frontend-import-native-20261118-01\\pytest-workspace\\test_cli_import_backs_up_and_r0\\source\\.git\\objects\\ef\\b66af863a21c1968325a94f5a78475a613726d",
+      ".goose\\out\\rc022-frontend-import-native-20261118-01\\pytest-workspace\\test_cli_import_backs_up_and_r0\\source\\.git\\objects\\f8\\a4d67a905237d41ef638c5fc7dd44743b9e8ca",
+      ".goose\\out\\rc022-frontend-import-native-20261118-02\\pytest-workspace\\test_cli_import_backs_up_and_r0\\source\\.git\\objects\\11\\dd581e4f5082fc9e2c536a9f78e0786fec13e4",
+      ".goose\\out\\rc022-frontend-import-native-20261118-02\\pytest-workspace\\test_cli_import_backs_up_and_r0\\source\\.git\\objects\\13\\f2bf012bd3ff7d9abda58e1c8f256cf869c251",
+      ".goose\\out\\rc022-frontend-import-native-20261118-02\\pytest-workspace\\test_cli_import_backs_up_and_r0\\source\\.git\\objects\\35\\eb39197f828a183c36ddaf645a228245a9a0fd",
+      ".goose\\out\\rc022-frontend-import-native-20261118-02\\pytest-workspace\\test_cli_import_backs_up_and_r0\\source\\.git\\objects\\3b\\986569713576eeb0244da42232e5231e3a6259",
+      ".goose\\out\\rc022-frontend-import-native-20261118-02\\pytest-workspace\\test_cli_import_backs_up_and_r0\\source\\.git\\objects\\6c\\e90f8507b54449b256c30caa8ca80866bb9714",
+      ".goose\\out\\rc022-frontend-import-native-20261118-02\\pytest-workspace\\test_cli_import_backs_up_and_r0\\source\\.git\\objects\\81\\215fe5ddc36b7738cbb0cf44bec0af11efdb76",
+      ".goose\\out\\rc022-frontend-import-native-20261118-02\\pytest-workspace\\test_cli_import_backs_up_and_r0\\source\\.git\\objects\\96\\448d97c1d331bff386bbc5bff4c224fbdc96f8",
+      ".goose\\out\\rc022-frontend-import-native-20261118-02\\pytest-workspace\\test_cli_import_backs_up_and_r0\\source\\.git\\objects\\9c\\615eeff6267b2160ac29f02a6166248e3b2be3",
+      ".goose\\out\\rc022-frontend-import-native-20261118-02\\pytest-workspace\\test_cli_import_backs_up_and_r0\\source\\.git\\objects\\a2\\58852f38d4536d6350ab3c6857c6f6391ba6e7",
+      ".goose\\out\\rc022-frontend-import-native-20261118-02\\pytest-workspace\\test_cli_import_backs_up_and_r0\\source\\.git\\objects\\b3\\777231f3c32b43c11adbc4d5f12af841ef87fc",
+      ".goose\\out\\rc022-frontend-import-native-20261118-02\\pytest-workspace\\test_cli_import_backs_up_and_r0\\source\\.git\\objects\\ca\\4b1952f23423ffb94168001772d7147c422eb4",
+      ".goose\\out\\rc022-frontend-import-native-20261118-02\\pytest-workspace\\test_cli_import_backs_up_and_r0\\source\\.git\\objects\\d9\\9319cf34e671a54667642177d88c1a0e21dd1b",
+      ".goose\\out\\rc022-frontend-import-native-20261118-02\\pytest-workspace\\test_cli_import_backs_up_and_r0\\source\\.git\\objects\\df\\23500df1d5bb922867cafbdcff543f3f9c7262",
+      ".goose\\out\\rc022-frontend-import-native-20261118-02\\pytest-workspace\\test_cli_import_backs_up_and_r0\\source\\.git\\objects\\e8\\c17b849ac5ef6bdd113ffda36dad9cde4aa35e",
+      ".goose\\out\\rc022-frontend-import-native-20261118-02\\pytest-workspace\\test_cli_import_backs_up_and_r0\\source\\.git\\objects\\ef\\b66af863a21c1968325a94f5a78475a613726d",
+      ".goose\\out\\rc022-frontend-import-native-20261118-02\\pytest-workspace\\test_cli_import_backs_up_and_r0\\source\\.git\\objects\\f8\\a4d67a905237d41ef638c5fc7dd44743b9e8ca"
+    ],
+    "retained": "Commands/XML/logs and read-only promotion inventory. Synthetic import archives and fresh Git fixtures removed. Actual old/new original bundles and staged members preserved for coordinated import."
+  },
+  "limitations": [
+    "No actual product frontend or pin import in this tooling portion.",
+    "Current strict old-baseline installed-tree mismatch remains visible until coordinated import.",
+    "No full release or actual Win7 acceptance."
+  ]
+}

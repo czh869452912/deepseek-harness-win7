@@ -1,5 +1,8 @@
 import copy
 import json
+import subprocess
+import sys
+import zipfile
 from pathlib import Path
 
 import pytest
@@ -60,3 +63,91 @@ def test_complete_frontend_record_refuses_changed_or_incomplete_inputs(tmp_path,
         manifest['build_record']['environment'][keys[damage]] = ''
     with pytest.raises(ValueError, match='frontend'):
         frontend.validate_import(tmp_path, manifest)
+
+
+def test_original_client_artifact_patterns_include_browser_chunks_and_assets_but_exclude_node(tmp_path):
+    names = ['apps/web/dist/index.html', 'apps/web/dist/client.node.js', 'packages/api/gateway/lib/client.js',
+             'packages/api/gateway/lib/client.browser.js', 'packages/api/gateway/lib/client.browser.js.map',
+             'packages/api/gateway/lib/client.chunk-123.js', 'packages/api/gateway/lib/client.chunk-123.js.map',
+             'packages/api/gateway/lib/assets/nested/module.wasm', 'packages/api/gateway/lib/assets/client.node.js']
+    excluded = ['packages/api/gateway/lib/client.node.js', 'packages/api/gateway/lib/client.node.js.map',
+                'packages/api/gateway/lib/index.js', 'packages/api/gateway/lib/types/private.js']
+    for name in names + excluded:
+        path = tmp_path / name
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_bytes(name.encode('utf-8'))
+    assert {path.relative_to(tmp_path).as_posix() for path in frontend.artifact_paths(tmp_path)} == set(names)
+
+
+def test_import_preflight_only_accepts_new_staged_members_from_verified_target(tmp_path):
+    shell, client = 'apps/web/dist/index.html', 'packages/client/test/lib/client.js'
+    for name in (shell, client):
+        path = tmp_path / name
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_bytes(b'original')
+    pinned = json.loads((ROOT / 'scripts/frontend-inputs.json').read_text(encoding='utf-8'))
+    manifest = copy.deepcopy(pinned)
+    manifest.update(files=[dict(path=shell, sha256=frontend.digest(tmp_path / shell))],
+                    client_files=[dict(path=client, sha256=frontend.digest(tmp_path / client))])
+    manifest['build_record']['artifacts'] = frontend.build_digest(tmp_path, frontend.artifact_paths(tmp_path))
+    extra = tmp_path / 'packages/client/test/lib/client.browser.js'
+    extra.write_bytes(b'new approved Source member')
+    allowed = {extra.relative_to(tmp_path).as_posix(): frontend.digest(extra)}
+    with pytest.raises(ValueError, match='frontend'):
+        frontend.validate_import(tmp_path, manifest)
+    frontend.validate_import(tmp_path, manifest, staged=allowed)
+    extra.write_bytes(b'unknown bytes')
+    with pytest.raises(ValueError, match='frontend'):
+        frontend.validate_import(tmp_path, manifest, staged=allowed)
+    allowed[extra.relative_to(tmp_path).as_posix()] = frontend.digest(extra)
+    (tmp_path / client).write_bytes(b'changed old member')
+    allowed[client] = frontend.digest(tmp_path / client)
+    with pytest.raises(ValueError, match='frontend'):
+        frontend.validate_import(tmp_path, manifest, staged=allowed)
+
+
+def test_cli_import_backs_up_and_retires_obsolete_client_assets(tmp_path, monkeypatch):
+    root, source = tmp_path / 'product', tmp_path / 'source'
+    root.mkdir()
+    source.mkdir()
+    def write(base, name, data):
+        path = base / name
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_bytes(data)
+    write(source, '.gitignore', b'.dsh-build/\n')
+    write(source, 'package.json', b'{"version":"0.0.0-test"}')
+    new = {'apps/web/dist/index.html': b'new shell', 'packages/client/shared/lib/client.js': b'new client',
+           'packages/client/shared/lib/client.browser.js': b'staged browser',
+           'packages/client/shared/lib/assets/module.wasm': b'new asset'}
+    for name, data in new.items():
+        write(source, name, data)
+    for arguments in (['init', '-q'], ['add', '.'], ['-c', 'user.name=Fixture', '-c', 'user.email=fixture@example.invalid', 'commit', '-qm', 'fixture']):
+        subprocess.run(['git', '-C', str(source)] + arguments, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE)
+    pin = subprocess.check_output(['git', '-C', str(source), 'rev-parse', 'HEAD'], text=True).strip()
+    def manifest(base, target):
+        paths = frontend.artifact_paths(base)
+        return dict(target_upstream=target, kind='versioned-prebuilt-input', build_record=dict(formatVersion=1,
+                    environment=dict(DSH_CLIENT_BUILD_PROFILE='official', DSH_CLIENT_COMMIT_HASH=target[:7],
+                                     DSH_CLIENT_TITLE='DeepSeek Harness', DSH_CLIENT_VERSION='0.0.0-test'),
+                    artifacts=frontend.build_digest(base, paths)),
+                    files=[dict(path=p.relative_to(base).as_posix(), sha256=frontend.digest(p)) for p in paths if p.relative_to(base).parts[0]=='apps'],
+                    client_files=[dict(path=p.relative_to(base).as_posix(), sha256=frontend.digest(p)) for p in paths if p.relative_to(base).parts[0]=='packages'])
+    write(source, '.dsh-build/client-build-environment.json', json.dumps(manifest(source, pin)['build_record']).encode('utf-8'))
+    old = {'apps/web/dist/index.html': b'old shell', 'packages/client/shared/lib/client.js': b'old client',
+           'packages/client/obsolete/lib/client.js': b'obsolete client'}
+    for name, data in old.items():
+        write(root, name, data)
+    write(root, 'scripts/frontend-inputs.json', json.dumps(manifest(root, 'a' * 40)).encode('utf-8'))
+    write(root, 'migration/baseline.json', json.dumps(dict(target_upstream=pin)).encode('utf-8'))
+    write(root, 'packages/client/shared/lib/client.browser.js', new['packages/client/shared/lib/client.browser.js'])
+    output = root / '.goose/out/import'
+    monkeypatch.setattr(frontend, 'ROOT', root)
+    monkeypatch.setattr(sys, 'argv', ['import_frontend.py', '--source', str(source), '--output-dir', str(output)])
+    frontend.main()
+    assert not (root / 'packages/client/obsolete/lib/client.js').exists()
+    for name, data in new.items():
+        assert (root / name).read_bytes() == data
+    with zipfile.ZipFile(str(output / 'previous-artifacts.zip')) as zipped:
+        for name, data in old.items():
+            assert zipped.read(name) == data
+    frontend.validate_import(root, json.loads((root / 'scripts/frontend-inputs.json').read_text(encoding='utf-8')))

@@ -1,0 +1,54 @@
+{
+  "part": "C1/C8-HA",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "scope": "Live Loader Config query helper and the package-directory providers its exact entry lookup consumes",
+  "paired": {
+    "run": "rc022-inspect-config-paired4-20261117-01",
+    "observations": 84,
+    "config_queries": 76,
+    "actual_package_lookups": 8,
+    "differences": 0
+  },
+  "verification": {
+    "native": "23 passed: query corpus, actual Loader/PluginPackages composition, live fiber disposal and failed apply, eager directory reads, real graph projection plus runtime-resolution/plugin-package/metadata consumers.",
+    "source": "5 passed in unchanged packages/extensions/tool-cordis/tests/config.spec.ts",
+    "scope_reason": "The Config query reads Loader ownership and package lookup, so use actual composition for those providers rather than treating controlled entry snapshots as lifecycle proof. The directory-anchor fix also requires the direct runtime-resolution/package/metadata consumers."
+  },
+  "behavior": [
+    "Lists current Loader entries with tree-local patch ids and exact plugin names; reports schema/absent/unsupported/tree/inactive from active fibers, and preserves declared Config when apply fails. Runtime-created Agent preset trees are not enumerated.",
+    "Exact-name filtering and bounded numeric pagination follow Source defaults and error order. Entry detail resolves packageDir from its owning tree base URL and returns a self-contained draft-2020-12 document with recursive/loader-expression definitions, omission acceptance and limitations.",
+    "Reads the directory eagerly before returning the Promise analogue, while schema projection owns a shielded operation and its worker cleanup. Does not execute plugin Config validators or transform callbacks during inspection.",
+    "Fixes Python 3.8 Windows URL decoding that erased a trailing directory slash, then retains directory anchoring in native_package_dir. Normalizes scoped package paths like Node path.join; real Source packageOf checks include exports-blocked subpaths and query/hash URL anchors."
+  ],
+  "source_inputs": {
+    "packages/extensions/tool-cordis/src/config.ts": "4ed97648267a067a51aaf63d38117a4b84861defa0729813b212fbc2491316d2",
+    "packages/boot/app-boot/src/profile-resolution/service.ts": "83bb464e19ed9ad798b8c837d22fddb57c86d4b87b6771e0a58a162e91efab39",
+    "packages/boot/app-boot/src/profile-resolution/resolver.ts": "0914b65b5eb239940327c01dfe1547a61b47a87915d27f94b8b2b64602e78b55"
+  },
+  "diagnostics": {
+    "excluded": [
+      "rc022-inspect-config-paired-20261117-01",
+      "rc022-inspect-config-paired3-20261117-01",
+      "rc022-inspect-config-native-20261117-01",
+      "rc022-inspect-config-native2-20261117-01",
+      "rc022-inspect-config-native-diagnostic-20261117-01"
+    ],
+    "reasons": [
+      "The first controlled fixture re-registered the same Cordis service; changed to the same query-context stub boundary as Source.",
+      "Actual Loader packageDir was missing. The retained diagnostic showed correct Loader base URL but packageOf miss; both URL decoding and directory-anchor handling required correction.",
+      "Three actual Source scoped-package results exposed mixed path separators; normalized the shared package-dir provider and reran all affected consumers."
+    ]
+  },
+  "limitations": [
+    "Helper is staged for current inspect providers; production tool-cordis/creative package composition still awaits explicit current-provider registration and C9 promotion.",
+    "Directory-anchor tests cover valid file URLs, file anchors, scopes and query/hash. They do not establish new general Node resolver equivalence for arbitrary malformed URLs or unrelated routing modes.",
+    "No full regression, stock Windows 7 VM or release acceptance in this part. C1-C9 remain unpromoted."
+  ],
+  "cleanup": {
+    "bytes_removed": 1018440,
+    "links_removed": 12,
+    "receipt": "rc022-inspect-config-native4-20261117-01/cleanup.json",
+    "removed": "All owned paired package fixtures and Python/Source tmp/home/workspaces from the resolved diagnostic and verification runs; no matching processes remain.",
+    "retained": "Exact paired observations/input hashes, actual Loader and failed package-lookup observations, failure logs/XML, Source unit JSON, commands and cleanup receipts. Shared Source/toolchains remain migration-owned through C9."
+  }
+}

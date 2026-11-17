@@ -41,6 +41,10 @@ def _parent(url):
         if parsed.scheme != 'file':
             return None
     path = url2pathname(parsed.path)
+    # Python 3.8's Windows URL decoder removes an ending slash; Node's
+    # fileURLToPath retains it and createRequire treats it as a directory.
+    if parsed.path.endswith('/') and not path.endswith(os.sep):
+        path += os.sep
     return ('//' + parsed.netloc + path) if parsed.netloc else path
 
 

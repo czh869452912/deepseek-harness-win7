@@ -32,10 +32,14 @@ def _dependencies(manifest):
 
 def native_package_dir(anchor, name):
     """Probe Node's actual ancestor chain; do not synthesize workspace packages."""
-    directory = os.path.dirname(os.path.abspath(anchor))
+    # Node createRequire uses a synthetic filename for a trailing-separator
+    # directory anchor. abspath alone drops that separator before dirname.
+    separators = (os.sep,) if os.altsep is None else (os.sep, os.altsep)
+    absolute = os.path.abspath(anchor)
+    directory = absolute if anchor.endswith(separators) else os.path.dirname(absolute)
     while True:
         if os.path.basename(directory) != 'node_modules':
-            candidate = os.path.join(directory, 'node_modules', name)
+            candidate = os.path.normpath(os.path.join(directory, 'node_modules', name))
             if os.path.exists(os.path.join(candidate, 'package.json')):
                 return candidate
         parent = os.path.dirname(directory)

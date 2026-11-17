@@ -389,3 +389,5 @@
 | C1/C8-GY | Private upstream Config projector carrier, exact graph semantics and shipped x64/x86 engine checks | [Config projection](config-projection-checks.json) |
 
 | C1/C8-GZ | Live Python Schema identities, sequential lazy-builder RPC and cancellation ownership | [Config graph bridge](config-graph-checks.json) |
+
+| C1/C8-HA | Live Loader Config directory/details and actual package-directory consumer closure | [Config inspection](inspect-config-checks.json) |

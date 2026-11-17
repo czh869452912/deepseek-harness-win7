@@ -409,3 +409,5 @@
 | C9-D | Current on-demand async browser chunks, strict revisions and cache lifetime | [Client chunks](client-chunks-checks.json) |
 
 | C9-E | Export-owned package images, exact cache headers and cancellable streams over all carriers | [Client package assets](client-assets-checks.json) |
+
+| C9-F | Official current Web serves 75 client entries; Session preset record boundary fixed, later activation failures retained | [Current Web resources and Session composition](application-current-resources-checks.json) |

@@ -286,7 +286,8 @@ class CurrentSessionAgents:
 
     async def composeAgent(self, preset_id):
         presets = self.ctx.get('agentPresets')
-        resolved = (await presets.resolve(preset_id)).id if presets is not None else None
+        definition = await presets.resolve(preset_id) if presets is not None else None
+        resolved = (definition['id'] if isinstance(definition, dict) else definition.id) if definition is not None else None
         async def setup(agent_ctx, agent):
             self.selectionFor(agent)
             if presets is not None:

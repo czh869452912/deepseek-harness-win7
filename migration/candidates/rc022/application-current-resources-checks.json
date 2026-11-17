@@ -1,0 +1,36 @@
+{
+  "part": "C9-F",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "scope": "Official current Web client resource binding and Session-to-declarative-preset composition boundary",
+  "result": "Targeted Session composition fix passed; actual application acceptance remains failed.",
+  "verification": {
+    "native": "33 passed: actual current Session/Agent + declarative registry composition, existing Session activation/selection consumers and current preset registry.",
+    "application": "candidate6 booted the actual fixed Source Web composition with current ClientModules. All 3 script batches (75 entries) returned GET/HEAD 200; HEAD was empty. Four preset sessions still failed at subsequent real tool/provider activation.",
+    "migration": "Index/checkout check and ready completed without changing acceptance or verifying external archive bytes."
+  },
+  "behavior": [
+    "Candidate-only binding now uses CurrentClientModules and hashes its actual provider/resource inputs plus fixed Source modules/assets sources. Production pin/manifests remain unchanged.",
+    "Current Session activation now reads the current declarative registry resolution record as a dict while preserving the existing Native object adapter. Actual current Agent/Session/preset integration verifies default and explicit preset activation and matching persisted projection.",
+    "Application probe now captures exact batch byte counts/SHA-256, HEAD observations, entry states and session exception traces; success requires all four actual sessions."
+  ],
+  "open_observations": [
+    "Node PTC remains an explicit missing implementation warning, not silently replaced by Python PTC.",
+    "The first current client boot exposed that all four Session consumers assumed a namespace .id while the actual current preset registry returns a dict. Candidate6 passes that boundary after the targeted fix.",
+    "Further real activation errors remain: schedule_create lacks current output schema/render/presentation metadata; standard/cordis filesystem skill registration reports Object None is not callable; Cordis plugin-market tool is pending. Minimal also encounters the malformed schedule definition during later activation.",
+    "No preset session is claimed passed and no release acceptance follows from successful client batch serving."
+  ],
+  "runs": [
+    "rc022-session-preset-native-20261117-01",
+    "rc022-application-candidate5-20261117-01",
+    "rc022-application-candidate6-20261117-01"
+  ],
+  "cleanup": {
+    "bytes_removed": 50394,
+    "links_removed": 0,
+    "owned_processes_after": [],
+    "retained": "Commands, exact failed candidate observations, script hashes/counts, session traces, Native XML/logs and compact observations; disposable homes and short workspaces removed."
+  },
+  "limitations": [
+    "No new complete regression, browser/Portable/Win7 qualification or upstream promotion. Fixed Source remained tracked-clean."
+  ]
+}

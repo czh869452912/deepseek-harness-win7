@@ -483,3 +483,5 @@
 | C9-BA | Separate Host/browser restores saved Schedule and inactive v4 Session; original mobile/desktop run adds a second receipt while preserving all 22 prior events | [Schedule/Session cold process](schedule-cold-checks.json) |
 
 | C9-BB | SDK memoized handshake/close keep owner alive after independent observer cancellation/timeout; actual wire cleanup/retry, cold resume and forced reaping checked | [SDK operation ownership](sdk-ownership-checks.json) |
+
+| C9-BC | Returned plain/TLS upgrade callbacks transfer socket ownership; later frames, half-open peer, real RST and unload checked against Original | [Upgrade ownership](upgrade-owner-checks.json) |

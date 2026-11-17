@@ -18,7 +18,7 @@ async def observe():
         modifies.append(1);value=mutate(records.get(key))
         if value is not None:records[key]=value
         return records.get(key)
-    ctx.set_service('credentials',SimpleNamespace(modify_record=modify))
+    ctx.set_service('credentials',SimpleNamespace(modifyRecord=modify))
     fiber=await ctx.plugin(AuthorizedConnectionPlugin,dict(maxRequestBodyBytes=1024,recovery=dict(backoffFactor=1)))
     connection=ctx.connection;rows=[dict(name='headless',available=connection is not None,web=ctx.get('webServer') is not None)]
     server=WebServerService(ctx,host='127.0.0.1',port=0);ctx.set_service('webServer',server)

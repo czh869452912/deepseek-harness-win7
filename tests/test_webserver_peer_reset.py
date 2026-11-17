@@ -136,24 +136,28 @@ async def test_real_peer_resets_retire_owned_connections_and_leave_host_healthy(
     await server.start()
     try:
         for index in range(3):
-            reader, writer = await asyncio.open_connection('127.0.0.1', server.port)
+            peer = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            peer.setblocking(False)
+            await loop.sock_connect(peer, ('127.0.0.1', server.port))
             headers = 'Connection: Upgrade\r\nUpgrade: probe\r\n' if upgrade else ''
-            writer.write(('GET /stream HTTP/1.1\r\nHost: local\r\n' + headers + '\r\n').encode('ascii'))
-            await writer.drain()
+            await loop.sock_sendall(peer, ('GET /stream HTTP/1.1\r\nHost: local\r\n' + headers + '\r\n').encode('ascii'))
             owned_writer = await asyncio.wait_for(entered.get(), 5)
             if os.name == 'nt':
                 assert isinstance(owned_writer.transport._sock, OwnedSocket)
-            await asyncio.wait_for(reader.readuntil(b'\r\n\r\n'), 5)
-            client_socket = writer.get_extra_info('socket')
-            client_socket.setsockopt(socket.SOL_SOCKET, socket.SO_LINGER,
+            header = b''
+            while b'\r\n\r\n' not in header:
+                header += await asyncio.wait_for(loop.sock_recv(peer, 4096), 5)
+            peer.setsockopt(socket.SOL_SOCKET, socket.SO_LINGER,
                 struct.pack('HH' if os.name == 'nt' else 'ii', 1, 0))
-            writer.transport.abort()
+            # Proactor transport.abort() calls shutdown before closesocket,
+            # which can send FIN despite SO_LINGER. Close the raw peer so
+            # this is a real RST rather than an allowed upgraded half-close.
+            peer.close()
             assert await asyncio.wait_for(retired.get(), 5) is owned_writer
             try:
                 await asyncio.wait_for(owned_writer.wait_closed(), 5)
             except ConnectionError:
                 pass
-            await writer.wait_closed()
         reader, writer = await asyncio.open_connection('127.0.0.1', server.port)
         writer.write(b'GET /healthy HTTP/1.1\r\nHost: local\r\n\r\n')
         await writer.drain()

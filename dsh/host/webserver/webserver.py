@@ -382,12 +382,16 @@ class WebServerService:
             try:
                 await self._handle_http_connection(reader, writer)
             finally:
-                self._connections.pop(writer, None)
-                writer.close()
                 try:
-                    await writer.wait_closed()
+                    # A returned upgrade callback transferred the socket. Its
+                    # owner and the server's upgraded set retain it until close.
+                    if writer not in self._upgraded_sockets:
+                        writer.close()
+                        await writer.wait_closed()
                 except (ConnectionError, OSError):
                     pass
+                finally:
+                    self._connections.pop(writer, None)
 
         # Bind to port (or find free port if 0). A listen failure rejects
         # activation: the composition reports the failed fiber instead of

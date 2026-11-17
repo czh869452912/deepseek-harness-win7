@@ -1,0 +1,21 @@
+{
+  "contract": "C9-BC",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "status": "targeted passed",
+  "problem": "The HTTP outer callback closed sockets after a successful upgrade callback returned, preventing transferred owners from sending later frames.",
+  "implementation": "Retain transferred sockets in the upgraded ownership set until transport close or service unload; ordinary connection bookkeeping remains until its close waiter settles. Preserve upstream half-open behavior. Correct the reset regression to close a raw SO_LINGER peer without Proactor's preceding shutdown, and update the Connection fixture to the existing atomic modifyRecord interface.",
+  "verification": {
+    "paired": {"run": "rc022-upgrade-owner-pair3-20261117-01", "observations": 3, "scope": "Original and Native plain/TLS returned callbacks answer two later frames; plain peer FIN preserves the owner's write half; unload closes all sockets and settles owner jobs."},
+    "connection_pair": {"run": "rc022-connection-plugin-recheck-pair-20261117-01", "scope": "Original RecordCredentials and Native equivalent: actual HTTP authentication, middleware, RPC, unload/reload, credential persistence and recovery injection."},
+    "native": {"run": "rc022-upgrade-owner-native3-20261117-01", "passed": 34, "scope": "Transferred upgrade, TLS, ordinary/upgrade real peer RST, connection lifetime and WebServer consumers."},
+    "consumers": {"run": "rc022-upgrade-owner-consumers2-20261117-01", "passed": 59, "scope": "Connection plugin/trust, duplex mux, resource HTTP and Gateway write/close consumers."},
+    "source": {"run": "rc022-upgrade-owner-source-20261117-01", "passed": 19, "failed": 0, "scope": "Pinned WebServer suite."}
+  },
+  "diagnostics": [
+    "rc022-upgrade-owner-before-pair-20261117-01: pre-fix Native returned EOF after 101, while Original answered later frames.",
+    "rc022-upgrade-owner-native-20261117-01 and consumers-20261117-01 retain original reset-test and obsolete fixture failures.",
+    "rc022-upgrade-owner-pair2-20261117-01: experimental EOF-close assumption rejected by Original timeout. The production EOF change was removed; final explicit half-open pairing passed."
+  ],
+  "cleanup": {"bytes_removed": 1780, "scope": "All owned initial/final targeted workspaces, homes and temporary directories; logs, XML, Source and paired observations retained.", "owned_processes_after": []},
+  "limitations": ["Targeted ownership verification only; production pin promotion, full release qualification and actual Windows 7 acceptance remain separate."]
+}

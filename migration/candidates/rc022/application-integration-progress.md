@@ -431,3 +431,5 @@
 | C9-AA | Live welcome acknowledgement and resource-aware Session controller candidate binding; Workspace browser gap retained | [General Settings](general-settings-checks.json) |
 
 | C9-AB | Durable Workspace pin/default fields and queued pin/archive activity lifecycle | [Workspace pins](workspace-pins-checks.json) |
+
+| C9-AC | First-use Workspace identity and current create/delete journal rollback with cold recovery | [Workspace default](workspace-default-checks.json) |

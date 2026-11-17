@@ -1,0 +1,10 @@
+{
+  "part": "C9-AC",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "scope": "First-use Workspace identity and current create/delete journal rollback",
+  "paired": {"run": "rc022-workspace-default-paired-20261117-01", "observations": 17, "differences": 0},
+  "verification": {"native": "136 passed: first-use eligibility, directory failures, concurrent/cancelled accepted initialization, real JSON cold recovery, pin/archive, previous Workspace/storage/Remote consumers.", "source": "22 original first-use and journal/rollback tests passed; 62 outside the selected scope, including the symlink test unsupported by this host's permissions."},
+  "behavior": ["Concurrent first-use initialization resolves one directory, creates parents without altering existing contents, and persists a default identity retained after rename, deletion and restart.", "Existing workspaces, archived/live/persisted Sessions make initialization ineligible; history is checked again after directory preparation. Resolver, path and write failures leave retry possible.", "Record/order rollback failures report both causes, preserve recoverable markers when necessary, and recover via actual JSON cold reopen. Delete cleanup failure retains a recoverable marker without reversing committed deletion.", "Accepted initialization survives caller cancellation and stays ordered with later registry operations."],
+  "cleanup": {"bytes_removed": 13807, "owned_processes_after": [], "retained": "Commands, logs/XML, Source report and paired observations; owned JSON media and test workspaces removed."},
+  "limitations": ["Current registry remains candidate-only. Current Workspace Remote feed/authorization, default directory OS policy and remaining membership refresh work follow separately.", "No production promotion or full release/Win7 guest qualification."]
+}

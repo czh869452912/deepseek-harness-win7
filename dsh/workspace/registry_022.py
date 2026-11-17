@@ -1,8 +1,13 @@
 """Current queued Workspace pin/archive admission over durable Domain state."""
 import asyncio
 import logging
+import os
+import uuid
 
-from dsh.workspace.current import CurrentWorkspaceRegistry
+from dsh.cordis.awaiting import await_callback_result
+from dsh.cordis.errors import AggregateError
+from dsh.workspace.current import CurrentWorkspaceRegistry, fully_qualified_workspace_path
+from dsh.workspace.entity import WorkspaceEntity, now_iso
 from dsh.workspace.workspace import WorkspacePlugin
 from dsh.workspace.spec_022 import workspace_domain_spec
 
@@ -53,12 +58,71 @@ class Current022WorkspaceRegistry(CurrentWorkspaceRegistry):
     async def create(self,path,title=None):
         # Path checks occur before entering the registry queue, as in Source.
         canonical=self._normalize_path(path)
-        import os
         if not os.path.isdir(canonical):raise ValueError("cannot create a workspace at '%s': path is not a directory" % canonical)
-        return await self._enqueue(lambda:super(Current022WorkspaceRegistry,self).create(canonical,title))
+        return await self._enqueue(lambda:self._create_canonical(canonical,title))
 
     def delete(self,identity):
-        return self._enqueue(lambda:super(Current022WorkspaceRegistry,self).delete(identity))
+        return self._enqueue(lambda:self._delete_known(identity))
+
+    def initializeDefault(self,resolve_directory):
+        async def initialize():
+            state=self._state
+            if 'defaultWorkspaceId' in state:return self._entities.get(state['defaultWorkspaceId'])
+            sessions=self.ctx.get('sessions')
+            if sessions is None:raise RuntimeError('default Workspace initialization requires the Session store')
+            if state['workspaceIds'] or state['archivedSessionIds'] or sessions.list() or await self._list_stored_headers():return None
+            path=await await_callback_result(resolve_directory())
+            if not fully_qualified_workspace_path(path):raise TypeError("Workspace path is not fully qualified: '%s'" % path)
+            await asyncio.get_running_loop().run_in_executor(None,lambda:os.makedirs(path,exist_ok=True))
+            canonical=self._normalize_path(path)
+            if await self._list_stored_headers() or sessions.list():return None
+            return await self._create_canonical(canonical,self._default_title(path),True)
+        return self._enqueue(initialize)
+
+    async def _create_canonical(self,canonical,title=None,first_use=False):
+        for entity in self._entities.values():
+            if entity.path==canonical:return entity
+        identity=str(uuid.uuid4());now=now_iso();state=self._state
+        record=dict(path=canonical,title=self._default_title(canonical) if title is None else title,sessionIds=[],createdAt=now,updatedAt=now)
+        entity=WorkspaceEntity(self._host,identity,record);self._entities[identity]=entity
+        try:await self._set_state(dict(state,pendingMutation=dict(operation='create',workspaceId=identity)))
+        except BaseException:self._entities.pop(identity,None);raise
+        try:await self._table.put(identity,record)
+        except BaseException as error:
+            self._entities.pop(identity,None)
+            try:await self._set_state(state)
+            except BaseException as rollback:raise AggregateError([error,rollback],"workspace '%s' record write and pending-marker rollback both failed" % identity)
+            raise
+        try:
+            next_state=dict(state,pendingMutation=None,initialized=True,workspaceIds=[identity]+state['workspaceIds'])
+            if first_use:next_state['defaultWorkspaceId']=identity
+            await self._set_state(next_state)
+        except BaseException as error:
+            self._entities.pop(identity,None)
+            try:await self._table.delete(identity)
+            except BaseException as rollback:raise AggregateError([error,rollback],"workspace '%s' order write and record rollback both failed; the pending marker remains recoverable" % identity)
+            try:await self._set_state(state)
+            except BaseException as rollback:raise AggregateError([error,rollback],"workspace '%s' order write and pending-marker rollback both failed" % identity)
+            raise
+        return entity
+
+    async def _delete_known(self,identity):
+        entity=self._entities.get(identity)
+        if entity is None:return False
+        state=self._state;next_state=dict(state,pendingMutation=None,initialized=True,workspaceIds=[key for key in state['workspaceIds'] if key!=identity])
+        await self._set_state(dict(next_state,pendingMutation=dict(operation='delete',workspaceId=identity)))
+        self._entities.pop(identity)
+        try:await self._table.delete(identity)
+        except BaseException as error:
+            self._entities[identity]=entity
+            try:await self._set_state(state)
+            except BaseException as rollback:
+                self._entities.pop(identity,None)
+                raise AggregateError([error,rollback],"workspace '%s' record deletion and registry-order rollback both failed" % identity)
+            raise
+        try:await self._set_state(next_state)
+        except Exception as error:logging.getLogger('workspace').warning("workspace '%s' was deleted but its pending marker could not be cleared: %s",identity,error)
+        return True
 
     def insertBefore(self,identity,before_id=None):
         return self._enqueue(lambda:super(Current022WorkspaceRegistry,self).insertBefore(identity,before_id))

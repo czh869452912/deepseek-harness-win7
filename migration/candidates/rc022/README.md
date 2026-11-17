@@ -1,5 +1,7 @@
 # 0.2.2-rc.3 实施候选区
 
+2026-11-18：生产 pin 已在 C9-CC 切换到 `38a6a5c9`，当前推进 C9 的实际应用与统一资格。C9-CI 的[实际解压与浏览器定向记录](current-extracted-browser-checks.json)覆盖 SDK、Office、现代 Edge 和固定 Chromium108；调试解压目录显式修改过，不能据此签收原 ZIP。继续完成 Schedule/Discover 冷恢复、当前回归消费者及干净候选完整门禁，Win7 真机仍延期。下方旧准备顺序与旧 pin 只保留为历史。
+
 2026-11-17 当前推进 C8 应用提供方与组合接入。产品分析的环境查询、Windows 采样、Host 策略和 Desktop 实际 HTTP/策略流已分批验证；详见 [C8 进度索引](application-integration-progress.md)。C1–C9 尚未整体闭合，官方客户端/组合的统一提升和发行资格仍待完成。用户已授权持续移植、逐批提交并及时清理中间测试资产；下方较早的 S0/C5 顺序按历史保留，不代表当前下一步。
 
 日期：2026-11-14。用户已认可[目标复核](../../../docs/research/2026-11-14-upstream-target-selection-update.md)，授权评估实施路径并准备实施。

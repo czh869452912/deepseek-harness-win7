@@ -18,7 +18,10 @@ exports.apply = async function apply(ctx) {
   }
   const contribution = {package: CONTRACT.package, descriptors: JSON.parse(JSON.stringify(CONTRACT.invocations))};
   for (const invocation of contribution.descriptors) {
-    for (const codec of [...invocation.parameters.map(value => value.codec), invocation.result]) codec.schema = schema(codec.schema);
+    for (const codec of [...invocation.parameters.map(value => value.codec), invocation.result]) {
+      codec.schema = schema(codec.schema);
+      codec.create = () => codec.schema;
+    }
   }
   const unmount = await ctx.remote.$mount(contribution);
   ctx.effect(() => unmount);

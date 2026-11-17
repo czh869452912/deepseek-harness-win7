@@ -14,6 +14,20 @@ pytestmark = pytest.mark.skipif(os.name != "nt", reason="Windows restricted-toke
 RUNNER = Path(__file__).resolve().parents[1] / "dsh" / "sandbox" / "windows_runner.py"
 
 
+def test_isolated_runner_resolves_its_owned_sibling_without_host_import(tmp_path):
+    workspace, temp = tmp_path / 'workspace', tmp_path / 'temporary'
+    workspace.mkdir(); temp.mkdir()
+    # CWD must not supply the helper, even with an isolated interpreter whose
+    # sys.path excludes the trusted script directory (as embedded ._pth does).
+    (workspace / 'windows_acl.py').write_text("raise RuntimeError('foreign helper')\n", encoding='utf-8')
+    result = subprocess.run([sys.executable, '-I', '-B', str(RUNNER), '--workspace', str(workspace),
+        '--temp', str(temp), '--mode', 'workspace-write', '--', sys.executable, '-I', '-c',
+        "import sys; print('ISOLATED_RUNNER_READY'); sys.exit(23)"], cwd=str(workspace),
+        capture_output=True, encoding='utf-8', timeout=20)
+    assert result.returncode == 23 and result.stdout.strip() == 'ISOLATED_RUNNER_READY'
+    assert not result.stderr
+
+
 def run(workspace, temp, code, mode="workspace-write", extra=()):
     return subprocess.run([sys.executable, str(RUNNER), "--workspace", str(workspace),
                            "--temp", str(temp), "--mode", mode] + list(extra) +

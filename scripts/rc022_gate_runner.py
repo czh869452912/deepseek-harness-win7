@@ -92,7 +92,17 @@ def remove_owned(path):
         size = sum(remove_owned(child) for child in path.iterdir())
         path.rmdir()
         return size
-    path.unlink()
+    deadline = time.monotonic() + 5
+    while True:
+        try:
+            path.unlink()
+            break
+        except OSError as error:
+            # Chromium's Windows BITS cleanup can briefly hold a file after
+            # its process job has closed. Never reset attributes or permissions.
+            if getattr(error, 'winerror', None) != 32 or time.monotonic() >= deadline:
+                raise
+            time.sleep(.1)
     return info.st_size
 
 
@@ -129,9 +139,14 @@ def execute(command, cwd, output, name, environment, timeout):
         raise
     finally:
         receipt.update(completed=True, seconds=time.monotonic() - start)
-        if receipt.get('exit_code') == 0:
-            receipt['temporary_bytes_removed'] = remove_owned(workspace)
-        path.write_text(json.dumps(receipt, indent=2), encoding='utf-8')
+        try:
+            if receipt.get('exit_code') == 0:
+                receipt['temporary_bytes_removed'] = remove_owned(workspace)
+        except BaseException as error:
+            receipt['cleanup_error'] = str(error)
+            raise
+        finally:
+            path.write_text(json.dumps(receipt, indent=2), encoding='utf-8')
     return receipt
 
 

@@ -39,7 +39,7 @@ def build_exported_client(project):
     if not source.strip():
         raise ValueError('exported Client source must not be empty')
     runtime_root = os.path.dirname(os.path.dirname(__file__))
-    with open(os.path.join(runtime_root, 'extensions', 'inspect_catalog.json'), encoding='utf-8') as stream:
+    with open(os.path.join(runtime_root, 'extensions', 'inspect_catalog_022.json'), encoding='utf-8') as stream:
         target = json.load(stream)['target_upstream']
     namespace = host_remote_namespace(name)
     contract = dict(package=name, face='host', schemas=[], model=dict(services=[], events=[], objects=[]),

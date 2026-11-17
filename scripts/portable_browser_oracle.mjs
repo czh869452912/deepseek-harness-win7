@@ -9,6 +9,7 @@ import {fileURLToPath} from 'node:url';
 import {createInterface} from 'node:readline';
 import {closeOriginalBrowser, deferProviderOnboarding, isolatedBrowserArguments, navigateOriginalPage} from './browser_onboarding.mjs';
 import {browserCompatibilityInput} from './browser_compat_input.mjs';
+import {deferCurrentProviderOnboarding} from './current_browser_onboarding.mjs';
 
 const options = Object.fromEntries(process.argv.slice(2).reduce((rows, value, i, args) => {
   if (value.startsWith('--')) rows.push([value.slice(2), args[i + 1]]); return rows;
@@ -17,6 +18,9 @@ for (const key of ['python', 'workspace', 'environment', 'browser', 'output']) {
   if (!options[key]) throw new Error('Missing --' + key);
 }
 const report = {passed: false, steps: [], exceptions: [], consoleErrors: [], sockets: [], replies: [], sessionRequests: []};
+report.consoleMessages = [];
+const noticeVersion = options['notice-version'] ?? '2026-08-13.1';
+const noticeTitle = options['notice-title'] ?? 'Internal Testing Notice';
 report.observedSessionWire = [];
 const privateBrowser = await mkdtemp(join(tmpdir(), 'dsh-portable-cdp-'));
 let host, browser, cdp, hostErrors = '';
@@ -70,8 +74,8 @@ try {
   if (options['notice-input']) {
     noticeInput = JSON.parse(await readFile(options['notice-input'], 'utf8'));
     assert.equal(noticeInput.mode, 'persisted-acknowledgement');
-    assert.equal(noticeInput.version, '2026-08-13.1');
-    assert.equal(resolve(noticeInput.settings.path), resolve(options.workspace, 'home/settings.yaml'));
+    assert.equal(noticeInput.version, noticeVersion);
+    assert.equal(resolve(noticeInput.settings.path), resolve(options.workspace, options['notice-relative-path'] ?? 'home/settings.yaml'));
     const settings = await readFile(noticeInput.settings.path);
     assert.equal(settings.toString('utf8'), noticeInput.settings.text);
     assert.equal(sha256(settings), noticeInput.settings.sha256);
@@ -116,6 +120,7 @@ try {
   const replyJobs = new Set();
   cdp.listeners.push(message => {
     if (message.method === 'Runtime.exceptionThrown') report.exceptions.push(message.params.exceptionDetails);
+    if (message.method === 'Runtime.consoleAPICalled') report.consoleMessages.push({type: message.params.type, args: message.params.args.map(row => row.value ?? row.description)});
     if (message.method === 'Runtime.consoleAPICalled' && message.params.type === 'error') report.consoleErrors.push(message.params.args.map(row => row.value ?? row.description));
     if (message.method === 'Network.responseReceived' && new URL(message.params.response.url).pathname.startsWith('/plugins/')) {
       const url = new URL(message.params.response.url); report.moduleResponses.push({path: url.pathname + url.search, status: message.params.response.status});
@@ -147,6 +152,7 @@ try {
     }
     if (message.method === 'Network.webSocketFrameReceived') {
       try {const frame = JSON.parse(message.params.response.payloadData);
+        if (JSON.stringify(frame).includes(boot.session)) report.observedSessionWire.push({received: frame});
         if (frame.type === 'server-response' && requests.has(frame.rpcId)) {
           report.replies.push({request: requests.get(frame.rpcId), response: frame}); requests.delete(frame.rpcId);
         }
@@ -159,13 +165,14 @@ try {
   await until(() => count('[class*="frame"]'), 'original shell');
   report.capabilitiesAfter = await cdp.evaluate(`({abortSignalAny:typeof AbortSignal.any,
     promiseWithResolvers:typeof Promise.withResolvers,abortSignalTimeout:typeof AbortSignal.timeout})`);
-  const notice = '[role="dialog"][aria-label="Internal Testing Notice"]';
+  const notice = '[role="dialog"][aria-label=' + JSON.stringify(noticeTitle) + ']';
   if (!noticeInput) {
     await until(() => count(notice), 'original first-use notice'); await click(notice + ' button');
     await until(async () => !await count(notice), 'notice dismissed');
     report.steps.push('original-shell-and-first-use-notice');
   } else report.steps.push('original-shell-and-persisted-notice-acknowledgement');
-  await deferProviderOnboarding(cdp, until);
+  if (options['current-onboarding'] === 'true') await deferCurrentProviderOnboarding(cdp, until);
+  else await deferProviderOnboarding(cdp, until);
   if (noticeInput) {
     assert.equal(await count(notice), 0, 'acknowledged notice stays absent after onboarding is ready');
     report.welcomeNotice.absentAfterOnboarding = true;
@@ -221,11 +228,19 @@ try {
   report.passed = true;
 } catch (error) {
   report.failure = String(error.stack ?? error);
-  if (cdp && browser && !exited(browser)) {try {report.pageText = await cdp.evaluate('document.body.innerText');
+  if (cdp?.socket.readyState === 1) {try {report.pageText = await cdp.evaluate('document.body.innerText');
+    report.ownedStyles = await cdp.evaluate("Array.from(document.querySelectorAll('style')).filter(e=>e.textContent.includes('data-portable-panel')).map(e=>({html:e.outerHTML.slice(0,500)}))");
     report.treeItems = await cdp.evaluate("Array.from(document.querySelectorAll('[role=treeitem]')).map(e=>({text:e.textContent,expanded:e.getAttribute('aria-expanded'),selected:e.getAttribute('aria-selected')}))");
     report.bundleProbe = await cdp.evaluate(`(async()=>{const r=await fetch(${JSON.stringify(report.installedClientEntry?.url)});const text=await r.text();return {status:r.status,hasPanel:text.includes('data-portable-panel'),head:text.slice(0,200),tail:text.slice(-200),loaderKeys:Object.keys(window.__ModuleLoader__||{})};})()`);
   } catch {}}
 } finally {
+  if (cdp?.socket.readyState === 1) {
+    try {
+      const shot = await cdp.call('Page.captureScreenshot', {format: 'png'});
+      report.screenshot = resolve(options.output).replace(/\.json$/, '.png');
+      await writeFile(report.screenshot, Buffer.from(shot.data, 'base64'));
+    } catch (error) {report.screenshotFailure = String(error);}
+  }
   try {await closeOriginalBrowser(cdp, browser, until);}
   catch (error) {report.passed = false; report.browserTeardownFailure = String(error.stack ?? error);}
   if (host && host.exitCode === null) {

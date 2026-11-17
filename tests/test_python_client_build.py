@@ -64,6 +64,8 @@ async def test_owned_export_native_build_pack_install_unload_restart(tmp_path, m
     assert cli.run_plugin('web', ['build', str(project)]) == 0
     descriptor = validate_sources(str(project))
     origin = json.loads((project / 'dsh-export.json').read_text(encoding='utf-8'))
+    target = json.loads((ROOT / 'migration/baseline.json').read_text(encoding='utf-8'))['target_upstream']
+    assert descriptor['dsh']['webArtifacts']['targetUpstream'] == origin['clientBuild']['targetUpstream'] == target
     assert not origin['requiresClientBuild'] and origin['sourceSha256'] == old_origin['sourceSha256']
     assert origin['packageId'] == source_receipt['packageId']
     assert (project / 'client/source.js').read_bytes() == CLIENT_SOURCE.encode('utf-8')
@@ -129,11 +131,13 @@ async def test_session_build_routes_to_independent_presets_without_promoting_hos
             for sid, available in (('python-session-a', True), ('python-session-plain', False)):
                 assert await RemoteDispatcher(ctx).invoke(dict(namespace=host_remote_namespace(NAME),
                     method='available', args=dict(agentId=sid), signal=NEVER_ABORTED)) is available
-            entry = next(row for row in ctx.loader.entries if row.options.get('name') == NAME)
+            entry = next(row for row in ctx.loader.entries if row.options.get('name') == NAME
+                         and row.options.get('config', {}).get('sessionClientBridge') is True)
             await entry.fiber.dispose()
             await entry.fiber.await_settled()
-            with pytest.raises(TypertGatewayError, match='withdrawn'):
+            with pytest.raises(TypertGatewayError, match='active Service is unavailable') as unavailable:
                 await invoke('python-session-a', 'echo', None)
+            assert unavailable.value.code == 'gateway/service-unavailable'
         finally:
             await close_web_context(ctx)
 

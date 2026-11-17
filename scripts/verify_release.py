@@ -314,7 +314,7 @@ REQUIRED_REGRESSION = {
     },
     'test_python_plugin_export': {
         'test_python_export_is_explicit_agent_owned_extension',
-        'test_canonical_boot_rejects_pending_export_without_evaluating_globals',
+        'test_canonical_boot_warns_pending_optional_export_without_evaluating_globals',
         'test_canonical_export_dependency_epochs_preserve_owned_globals_and_handlers',
         'test_missing_dependency_is_pending_without_false_publication',
         'test_exported_sdk_dependency_loss_revokes_handlers_and_tools',

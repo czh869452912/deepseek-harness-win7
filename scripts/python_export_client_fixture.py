@@ -55,18 +55,25 @@ return {inject: ['slots'], apply(ctx) {
 
 def install_session_presets(home, project):
     root = Path(__file__).resolve().parents[1]
-    text = (root / 'packages/preset/agent-presets/presets/minimal/agent.cordis.yml').read_text(encoding='utf-8')
+    source = root / 'packages/bundle/web-app/presets/minimal.patch.yml'
+    plugins = yaml.safe_load(source.read_text(encoding='utf-8'))[0]['insert'][0]['config']['plugins']
     fragment = json.loads((Path(project) / 'preset.fragment.yml').read_text(encoding='utf-8'))
+    patch = Path(home) / 'profiles/web/cordis.patch.yml'
+    rows = yaml.safe_load(patch.read_text(encoding='utf-8')) or []
     for name in ('exported-a', 'exported-b'):
-        directory = Path(home) / '.agent-presets' / name
-        directory.mkdir(parents=True, exist_ok=True)
-        (directory / 'agent.cordis.yml').write_text(text + '\n' + yaml.safe_dump(fragment, sort_keys=False), encoding='utf-8')
+        rows.append(dict(insert=[dict(id='fixture-' + name, name='@deepseek-ai/dsh-agent-preset',
+            config=dict(id=name, plugins=plugins + fragment))]))
+    patch.write_text(yaml.safe_dump(rows, sort_keys=False), encoding='utf-8')
 
 
 async def create_session_fixture(ctx, workspace):
     for sid, preset in SESSION_PRESETS.items():
-        await ctx.sessionController.create(dict(sessionId=sid, cwd=str(workspace), agentPreset=preset))
-        agent = ctx.agents.get(sid)
+        found = await ctx.sessionController.resolveAgent(sid)
+        if 'error' in found:
+            assert found['error'].code == 'session/not-found'
+            await ctx.sessionController.create(dict(sessionId=sid, cwd=str(workspace), agentPreset=preset))
+            found = await ctx.sessionController.resolveAgent(sid)
+        agent = found['agent']
         if not any(event['type'] == 'user/message' for event in agent.session.events):
             agent.session.append_user_message('Private Session ownership fixture')
             # A valid prepared zero-step turn makes the original list metadata

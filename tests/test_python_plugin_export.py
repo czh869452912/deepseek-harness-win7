@@ -184,15 +184,8 @@ async def test_session_project_installs_without_host_tools_and_uses_independent_
         assert cli.run_plugin('web', ['add', str(project)]) == 0
     finally:
         env.undo()
-    original = Path(__file__).resolve().parents[1] / 'packages/preset/agent-presets/presets/minimal/agent.cordis.yml'
-    # Preserve shipped !!js expressions rather than changing browser or boot.
-    with original.open(encoding='utf-8') as stream:
-        text = stream.read()
-    fragment = json.loads((project / 'preset.fragment.yml').read_text(encoding='utf-8'))
-    for name in ('exported-a', 'exported-b'):
-        preset = home / '.agent-presets' / name
-        preset.mkdir(parents=True)
-        (preset / 'agent.cordis.yml').write_text(text + '\n' + yaml.safe_dump(fragment, sort_keys=False), encoding='utf-8')
+    from scripts.python_export_client_fixture import install_session_presets
+    install_session_presets(home, project)
     for restart in range(2):
         ctx = await web_context(home)
         try:
@@ -208,9 +201,8 @@ async def test_session_project_installs_without_host_tools_and_uses_independent_
             assert await count(ctx, ctx.get('agents').get('shared-a' + str(restart))) == 3
             plain = ctx.get('agents').get('plain' + str(restart))
             assert 'export_counter' not in {tool.name for tool in ctx.get('tools').list_tools(scope=plain.ctx)}
-            from dsh.presets.mount import service_for_agent
-            assert service_for_agent(ctx, a, host_handler_service(NAME)) is not service_for_agent(ctx, b, host_handler_service(NAME))
-            assert service_for_agent(ctx, a, 'exportValue') == service_for_agent(ctx, b, 'exportValue') == 'first'
+            assert ctx.agentPresets.serviceFor(a, host_handler_service(NAME)) is not ctx.agentPresets.serviceFor(b, host_handler_service(NAME))
+            assert ctx.agentPresets.serviceFor(a, 'exportValue') == ctx.agentPresets.serviceFor(b, 'exportValue') == 'first'
             assert ctx.get('exportValue') is None
         finally:
             await close_web_context(ctx)
@@ -359,7 +351,7 @@ async def test_missing_dependency_is_pending_without_false_publication(tmp_path)
 
 
 @pytest.mark.asyncio
-async def test_canonical_boot_rejects_pending_export_without_evaluating_globals(profile, tmp_path):
+async def test_canonical_boot_warns_pending_optional_export_without_evaluating_globals(profile, tmp_path, capsys):
     home, directory = profile
     marker = tmp_path / 'must-not-run'
     source = ("from pathlib import Path\nPath(" + repr(str(marker)) + ").write_text('ran', encoding='utf-8')\n"
@@ -368,8 +360,14 @@ async def test_canonical_boot_rejects_pending_export_without_evaluating_globals(
     write_project(project, project_files(dict(packageId='pkg-pending', name='Pending', purpose='Dependency readiness',
         code=dict(host=source)), 'probe-pending', NAME, '1.0.0', 'host', [], 'UNLICENSED', 'Test source\n'))
     assert cli.run_plugin('python-test', ['add', str(project)]) == 0
-    with pytest.raises(Exception, match='pending.*missingProvider'):
-        await boot(home)
+    app = await boot(home)
+    try:
+        warning = capsys.readouterr().err
+        assert 'pending (waiting for service: missingProvider)' in warning
+        assert app['ctx'].get('neverPublished') is None
+        assert app['ctx'].get(host_handler_service(NAME)) is None
+    finally:
+        await close(app)
     assert not marker.exists()
     assert cli.run_plugin('python-test', ['remove', NAME]) == 0
     assert not (directory / 'node_modules' / NAME).exists()

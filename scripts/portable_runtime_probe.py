@@ -183,6 +183,9 @@ return {inject: ['slots'], apply(ctx) {
             name=WEB_NAME, version='1.0.0', placement='host', isolateServices=[],
             license='UNLICENSED', licenseText='Private release verification fixture.\n'), agent=agent, signal=NEVER_ABORTED))
         require(not exported.is_error, 'creative export: ' + repr(exported.error))
+        # The authoring fixture has served its export consumer. Archive it via
+        # the real application so the browser has one prepared cold Session.
+        await ctx.workspaceController.archiveSession(dict(sessionId=agent.id))
     finally:
         await close(author)
     web_project = workspace / 'web-project'

@@ -8,6 +8,8 @@ import tempfile
 if __package__ in (None, ""):
     # This dedicated native runner needs only stdlib. Import its sibling
     # directly so a base interpreter does not initialize the host service graph.
+    # Embedded Python's isolated ._pth does not add the script directory.
+    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
     from windows_acl import WinApi, assert_temp_outside, capability_sid
 else:
     from dsh.sandbox.windows_acl import WinApi, assert_temp_outside, capability_sid

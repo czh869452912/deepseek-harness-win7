@@ -151,6 +151,11 @@ def product_environment(portable, workspace):
         'PROCESSOR_ARCHITECTURE', 'NUMBER_OF_PROCESSORS')}
     env['PATH'] = str(portable) + os.pathsep + str(Path(os.environ['SystemRoot']) / 'System32')
     env['DSH_HOME'] = str(workspace / 'home')
+    # Preserve the Windows user-directory contract while keeping generated
+    # caches and settings inside this run's owned workspace.
+    env['USERPROFILE'] = str(workspace / 'user')
+    env['APPDATA'] = str(workspace / 'user/AppData/Roaming')
+    env['LOCALAPPDATA'] = str(workspace / 'user/AppData/Local')
     env['DSH_TELEMETRY_MODE'] = 'DISABLED'
     return env
 

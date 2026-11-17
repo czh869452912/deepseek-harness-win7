@@ -102,12 +102,15 @@ def run(side, scenario, options, destination):
         DSH_SDK_SOURCE_ROOT=str(options.source_root), DSH_SDK_RUNTIME_OUTPUT=str(native_receipt),
         DSH_SDK_LIVE_BARRIER=str(phase / 'live-barrier.json'),
         TSX_TSCONFIG_PATH=str(options.source_root / getattr(options, 'tsconfig', 'tsconfig.json')))
+    if side == 'native':
+        environment.update(getattr(options, 'native_environment', {}))
+        environment['DSH_HOME'] = str(home)
     observers = Path(__file__).resolve().parent
     if side == 'source':
         command = [shutil.which('node'), '--import', (options.source_root / 'node_modules/tsx/dist/esm/index.mjs').as_uri(),
             str(observers / 'sdk_profile_source.mts'), '--profile', 'minimal']
     else:
-        command = [str(options.native_python or sys.executable), '-I', str(observers / 'sdk_profile_python.py'), '--profile', 'minimal']
+        command = [str(options.native_python or sys.executable), '-I', '-B', str(observers / 'sdk_profile_python.py'), '--profile', 'minimal']
     process = subprocess.Popen(command, cwd=str(destination), env=environment, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
         stderr=subprocess.PIPE, encoding='utf-8', errors='strict', bufsize=1)
     frames = queue.Queue()

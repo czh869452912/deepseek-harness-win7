@@ -40,7 +40,7 @@ def validate_web_artifacts(directory, manifest):
         raise ValueError('unsupported Web artifact receipt version')
     # This is the actual reference protocol target used by this Host. A hash
     # label is compatibility intent, not a claim of Win7/browser certification.
-    with open(os.path.join(os.path.dirname(__file__), '..', 'extensions', 'inspect_catalog.json'), encoding='utf-8') as stream:
+    with open(os.path.join(os.path.dirname(__file__), '..', 'extensions', 'inspect_catalog_022.json'), encoding='utf-8') as stream:
         current_target = json.load(stream)['target_upstream']
     if receipt['targetUpstream'] != current_target:
         raise ValueError('Web artifact target does not match the pinned Host protocol')

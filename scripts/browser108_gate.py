@@ -23,15 +23,26 @@ def value_digest(value):
         separators=(',', ':')).encode('utf-8')).hexdigest()
 
 
-def validate_notice_input(proof, prior_report, check_files=False):
+def validate_notice_input(proof, prior_report, check_files=False, notice_config=None):
     """Bind a warm browser lane to the preceding successful fresh UI observation."""
     import yaml
 
+    config = notice_config or dict(version=NOTICE_VERSION, namespace='ui-onboarding')
     try:
         settings, prior = proof['settings'], proof['prior']
         raw = settings['text'].encode('utf-8')
-        if (proof['mode'] != 'persisted-acknowledgement' or proof['version'] != NOTICE_VERSION
-                or yaml.safe_load(settings['text']).get('ui-onboarding', {}).get('welcomeNoticeVersion') != NOTICE_VERSION
+        document = yaml.safe_load(settings['text'])
+        if config.get('storage') == 'cordis-patch':
+            if not isinstance(document, list): raise ValueError('current notice patch is not a loader patch array')
+            matches = [row for row in document if isinstance(row, dict) and row.get('id') == config['namespace']]
+            if len(matches) != 1 or matches[0].get('name') != '@deepseek-ai/dsh-client-ui-settings-general':
+                raise ValueError('current notice loader owner is missing or ambiguous')
+            saved = matches[0].get('config', {}).get('welcomeNoticeVersion')
+        else:
+            saved = document.get(config['namespace'], {}).get('welcomeNoticeVersion')
+        if (proof['mode'] != 'persisted-acknowledgement' or proof['version'] != config['version']
+                or proof.get('namespace', 'ui-onboarding') != config['namespace']
+                or saved != config['version']
                 or hashlib.sha256(raw).hexdigest() != settings['sha256']
                 or prior_report.get('passed') is not True or prior_report.get('steps') != PORTABLE_STEPS
                 or prior_report.get('hostExitCode') != 0 or prior_report.get('hostErrors')
@@ -50,13 +61,15 @@ def validate_notice_input(proof, prior_report, check_files=False):
         raise ValueError('persisted notice input is incomplete') from error
 
 
-def prepare_notice_input(workspace, prior_path, prior_report):
-    settings = Path(workspace).resolve() / 'home/settings.yaml'
-    proof = dict(mode='persisted-acknowledgement', version=NOTICE_VERSION,
+def prepare_notice_input(workspace, prior_path, prior_report, notice_config=None):
+    config = notice_config or dict(version=NOTICE_VERSION, namespace='ui-onboarding')
+    settings = Path(workspace).resolve() / config.get('relative_path', 'home/settings.yaml')
+    proof = dict(mode='persisted-acknowledgement', version=config['version'],
         settings=dict(path=str(settings), text=settings.read_bytes().decode('utf-8'), sha256=digest(settings)),
         prior=dict(path=str(Path(prior_path).resolve()), sha256=digest(prior_path),
                    valueSha256=value_digest(prior_report)))
-    validate_notice_input(proof, prior_report, check_files=True)
+    if notice_config: proof['namespace'] = config['namespace']
+    validate_notice_input(proof, prior_report, check_files=True, notice_config=notice_config)
     return proof
 
 
@@ -86,12 +99,12 @@ def validate_input(binary):
                 input_sha256=digest(ROOT / 'scripts/browser108-input.json'))
 
 
-def validate_observation(report, archive, adapter_sha256, expected_notice=None, prior_report=None, prior_path=None):
+def validate_observation(report, archive, adapter_sha256, expected_notice=None, prior_report=None, prior_path=None, notice_config=None):
     pin = pinned_input()
     before, after = report.get('capabilitiesBefore', {}), report.get('capabilitiesAfter', {})
     expected_steps = list(PORTABLE_STEPS)
     if expected_notice is not None:
-        validate_notice_input(expected_notice, prior_report)
+        validate_notice_input(expected_notice, prior_report, notice_config=notice_config)
         if (prior_path is None or Path(expected_notice['prior']['path']) != Path(prior_path).resolve()
                 or not Path(prior_path).is_file() or digest(prior_path) != expected_notice['prior']['sha256']
                 or json.loads(Path(prior_path).read_text(encoding='utf-8')) != prior_report):
@@ -105,7 +118,7 @@ def validate_observation(report, archive, adapter_sha256, expected_notice=None, 
                 or not report.get('identity', {}).get('executable')
                 or report.get('identity') != prior_report.get('identity')
                 or Path(expected_notice['settings']['path']) !=
-                    Path(report['identity']['executable']).parent.parent / 'home/settings.yaml'):
+                    Path(report['identity']['executable']).parent.parent / (notice_config or {}).get('relative_path', 'home/settings.yaml')):
             raise ValueError('ZIP-bound Chromium 108 persisted notice observation is incomplete or changed')
     elif report.get('welcomeNotice') is not None:
         raise ValueError('unexpected persisted notice input')

@@ -33,6 +33,7 @@ exports.apply = async function apply(ctx) {
       } : field.codec.schema.type === 'boolean' ? value => {
         if (typeof value !== 'boolean') throw new Error('Host availability must be a boolean'); return value;
       } : json};
+      field.codec.create = () => field.codec.schema;
     }
   }
   const unmount = await ctx.remote.$mount({package: CONTRACT.package, descriptors});

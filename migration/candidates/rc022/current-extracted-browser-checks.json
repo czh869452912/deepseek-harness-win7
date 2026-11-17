@@ -1,0 +1,119 @@
+{
+  "contract": "C9-CI",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "status": "targeted passed; clean candidate and complete qualification pending",
+  "scope": "Native exported Client codec factory/current build target, reversible current Web browser compatibility ownership, isolated Windows ACL runner and current preset/startup verification consumers.",
+  "product_fixes": [
+    "dsh/extensions/packaged_client.js",
+    "dsh/boot/python_client_build.py",
+    "dsh/boot/python_web_artifacts.py",
+    "dsh/bundle/web_app/current.py",
+    "dsh/sandbox/windows_runner.py"
+  ],
+  "checks": [
+    {
+      "run": "rc022-current-extracted-sdk-20261118-01",
+      "result": "normal/error/cancel exact current Source/extracted SDK pairs"
+    },
+    {
+      "run": "rc022-current-extracted-office-20261118-02",
+      "result": "actual extracted Python 3.8.10 x64 Office conversion and disposal"
+    },
+    {
+      "run": "rc022-current-extracted-browser-20261118-10",
+      "result": "modern Edge and fixed Chromium108 five-step original-browser/installed Python Remote journeys; zero exceptions/console errors"
+    },
+    {
+      "run": "rc022-current-extracted-controls-20261118-01",
+      "passed": 116,
+      "seconds": 10.15
+    },
+    {
+      "run": "rc022-python-web-current-20261118-06",
+      "passed": 2,
+      "seconds": 39.14
+    },
+    {
+      "run": "rc022-python-web-current-20261118-10",
+      "passed": 2,
+      "seconds": 21.39
+    },
+    {
+      "run": "rc022-python-web-current-20261118-11",
+      "passed": 91,
+      "skipped": 1,
+      "deselected": 2,
+      "seconds": 101.47
+    },
+    {
+      "run": "rc022-portable-acl-runner-20261118-01",
+      "passed": 7,
+      "seconds": 6.32
+    },
+    {
+      "run": "rc022-portable-acl-runner-20261118-02",
+      "passed": 1,
+      "seconds": 0.71
+    }
+  ],
+  "verification_reason": "Changed build/validation providers, real install/unload/restart consumers, current preset ownership, missing-dependency admission, original browser round trips and isolated restricted-token runner. Optional development browser pytest cases remain distinct from the actual extracted browser observations.",
+  "control_changes": "Optional third-party pending plugins now assert the current warning policy and no evaluation/publication; required canonical provider failures are not relaxed. Preset tests use current declarative carriers and resolve cold identities rather than the retired filesystem preset convention.",
+  "archive": {
+    "path": ".goose\\out\\rc022-current-portable-build-20261118-02\\build\\dsh-win7-portable-v0.2.2-rc.3-r1.zip",
+    "sha256": "408fa5e696c80acfa74ac4cf51eac2f1f9323b032da5ab3df4fcff730f58fdf6",
+    "qualification": false,
+    "reason": "Non-frozen integration archive; five product files were explicitly patched in the retained extraction during targeted diagnosis. No new archive acceptance is inferred."
+  },
+  "patch_receipt": {
+    "path": ".goose\\out\\rc022-current-portable-control-20261118-01\\debug-product-patches.json",
+    "sha256": "81b87a7537c9dc3be7c35ac89853f266c4b1a8a52bff30ba26140c6a1ee88714"
+  },
+  "cleanup": {
+    "intermediate_receipt": ".goose\\out\\rc022-current-portable-control-20261118-01\\intermediate-cleanup.json",
+    "bytes_removed": 838802747,
+    "note": "Uncompressed integration build, completed SDK synthetic homes, installed dependency cache and resolved command temporaries removed. Raw observations/ZIP, active extraction and x86 input venv retained until fresh qualification; per-test cleanup receipts record additional removals."
+  },
+  "limitations": "No complete current Python/Source/paired or frozen archive qualification. Actual installed Schedule/Discover and desktop acceptance remain pending; Windows7 requalification remains deferred.",
+  "receipts": [
+    {
+      "path": ".goose\\out\\rc022-python-web-current-20261118-06\\command.json",
+      "sha256": "5bbf107a3780932836c03caa04560a005c978899659a1e68ce38b8857950e436"
+    },
+    {
+      "path": ".goose\\out\\rc022-python-web-current-20261118-06\\pytest.xml",
+      "sha256": "49922e966191ad5e557775ea79d77682d714f0c1a1d0ccc489384063ad177681"
+    },
+    {
+      "path": ".goose\\out\\rc022-python-web-current-20261118-10\\command.json",
+      "sha256": "be24de57a51c5f12f2815221b29aea899f37e733b69ef41618bbf360b27bb38b"
+    },
+    {
+      "path": ".goose\\out\\rc022-python-web-current-20261118-10\\pytest.xml",
+      "sha256": "75d7d9a06d433b4a3e19ea341532fe0f99cab9d083c0ecef0922669f8301893a"
+    },
+    {
+      "path": ".goose\\out\\rc022-python-web-current-20261118-11\\command.json",
+      "sha256": "c72cc73e249bf33f96ec047792e7f5f4493609290bd72022f70b2cac7c7207cd"
+    },
+    {
+      "path": ".goose\\out\\rc022-python-web-current-20261118-11\\pytest.xml",
+      "sha256": "a1ea8c47779387f689c5e066e5f57be17b0df887c0c7d899eb636f1af3ea53e5"
+    },
+    {
+      "path": ".goose\\out\\rc022-portable-acl-runner-20261118-01\\command.json",
+      "sha256": "75133ef3260857a5f954829405594e15c377aec61d7798b82688e399d70eb46f"
+    },
+    {
+      "path": ".goose\\out\\rc022-portable-acl-runner-20261118-01\\pytest.xml",
+      "sha256": "41350743d493542f6974878397d7e3922b36931ebe13b86afe3fcbd148b7be74"
+    },
+    {
+      "path": ".goose\\out\\rc022-portable-acl-runner-20261118-02\\command.json",
+      "sha256": "0426671a845cf92344977df031fd211bbbfdb2980cb152c609392c7aa6b190da"
+    },
+    {
+      "path": ".goose\\out\\rc022-portable-acl-runner-20261118-02\\pytest.xml",
+      "sha256": "bb4f0b6a30c1b96b3b32037262c24c451b0994352819ac003b2dfbf0867c90ec"
+    }
+  ]
+}

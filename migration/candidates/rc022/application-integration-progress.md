@@ -545,3 +545,5 @@ C9-CG：显式整理 472 个原版测试文件、399 个当前配对入口，另
 | C9-CD | Node 24.9/pnpm 11.28.5 原版 Source 准备、当前 Typert/Host/Client 构建顺序与五项静态库；实际构建及 6 项冷恢复/拒绝检查通过，371 份前端身份保持 | [Source 准备](source-preparation-checks.json) |
 
 | C9-CE | 默认 SDK/ACP/Headless 实际进程入口、EOF/冷恢复及 Creative 七工具；ACP 准入等待启动提交、当前子代理退场接口和显式 Native 安装依赖，定向消费者通过 | [当前入口](current-entrypoints-checks.json) |
+
+| C9-CI | 实际解压 SDK 三场景、Office 和现代/108 原版浏览器五步定向通过；修复导出 Client 的当前 codec/目标、Web 兼容插件挂载及隔离 ACL runner，清理约 801 MiB 中间资产；干净完整资格和应用冷恢复仍待后续 | [解压与浏览器](current-extracted-browser-checks.json) |

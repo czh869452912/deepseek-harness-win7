@@ -51,3 +51,18 @@ def test_cleanup_only_retires_declared_owned_assets(tmp_path):
     result = gate.retire_success(tmp_path, ['payload'])
     assert result == dict(removed=['payload'], bytes_removed=5)
     assert observation.read_text(encoding='utf-8') == '{}'
+
+
+def test_cleanup_failure_retains_completed_process_receipt(tmp_path, monkeypatch):
+    monkeypatch.setattr(gate, 'run_observer', lambda *args, **kwargs: 0)
+    workspace = tmp_path / 'temporary'; workspace.mkdir()
+    monkeypatch.setattr(gate.tempfile, 'mkdtemp', lambda **kwargs: str(workspace))
+    def locked(path):
+        raise PermissionError('owned file remains locked')
+    monkeypatch.setattr(gate, 'remove_owned', locked)
+    with pytest.raises(PermissionError, match='remains locked'):
+        gate.execute(['fixture'], tmp_path, tmp_path, 'fixture', {}, 1)
+    receipt = json.loads((tmp_path / 'commands/fixture.json').read_text(encoding='utf-8'))
+    assert receipt['completed'] and receipt['exit_code'] == 0
+    assert receipt['workspace'] == str(workspace)
+    assert 'remains locked' in receipt['cleanup_error']

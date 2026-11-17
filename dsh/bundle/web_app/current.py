@@ -14,6 +14,7 @@ from dsh.cordis.json_text import stringify_json
 from dsh.cordis.plugin import Plugin
 from dsh.cordis.schema import Schema as z
 from dsh.host.frontend_static.current import CurrentFrontendStatic
+from dsh.host.browser_compat.plugin import BrowserCompatibilityPlugin
 from dsh.host.webserver.bind import bind_url_host, is_loopback_host
 from dsh.bundle.web_app.runtime import open_browser
 
@@ -75,6 +76,7 @@ class CurrentWebRuntime(Plugin):
             logging.getLogger('web-app').warning('dsh web: listening on %s over plain HTTP; restrict this port to a trusted proxy or network', server.host)
         def advertised(): return public if public is not None else ctx.webServer.getOrigin()
         ctx.set_service('webApp', SimpleNamespace(getAdvertisedUrl=advertised))
+        await ctx.plugin(BrowserCompatibilityPlugin)
         await ctx.plugin(CurrentFrontendStatic, config=dict(distIndex=resolve_dist_index()))
         if config['surfaceContext']:
             def environment(child):

@@ -22,6 +22,7 @@ EXECUTE_PTC=False
 BEFORE_SESSIONS=None
 AFTER_SESSIONS=None
 PREPARE_HOME=None
+SESSION_ID_PREFIX='candidate-'
 BINDINGS={
  '@deepseek-ai/dsh-host-plugin-inventory':'dsh.host.plugin_inventory.current:CurrentPluginInventory',
  '@deepseek-ai/dsh-typert-loader':'dsh.typert.loader_current:CurrentTypertLoader',
@@ -84,7 +85,7 @@ async def observe(source,output):
             if BEFORE_SESSIONS is not None:await BEFORE_SESSIONS(ctx,result,output)
             for identity in ['minimal','standard','ptc','cordis']:
                 try:
-                    await ctx.get('sessionController').create(dict(sessionId='candidate-'+identity,cwd=str(output),agentPreset=identity))
+                    await ctx.get('sessionController').create(dict(sessionId=SESSION_ID_PREFIX+identity,cwd=str(output),agentPreset=identity))
                     result.setdefault('sessions',[]).append(dict(preset=identity,status='created'))
                 except Exception as error:
                     result.setdefault('sessions',[]).append(dict(preset=identity,error=str(error)))

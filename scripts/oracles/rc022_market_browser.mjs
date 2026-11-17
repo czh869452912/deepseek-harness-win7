@@ -24,18 +24,22 @@ try {
  page.on('websocket',socket=>{if(socket.url().includes('/api/remote.mux'))result.remoteMux=true});
  await page.goto(config.url,{waitUntil:'domcontentloaded'});
  await page.getByRole('button',{name:/^(插件|Plugins)$/}).waitFor({state:'visible',timeout:20000});
- const proceed=page.getByRole('button',{name:/^(继续|Continue)$/});await proceed.waitFor({state:'visible'});await proceed.click();await proceed.waitFor({state:'hidden'});
+ const proceed=page.getByRole('button',{name:/^(继续|Continue)$/});
+ if(config.cold){await proceed.waitFor({state:'hidden'});result.steps.push('welcome-acknowledgement-survived-process-restart')}
+ else{await proceed.waitFor({state:'visible'});await proceed.click();await proceed.waitFor({state:'hidden'})}
  const dialog=page.getByRole('dialog');if(await dialog.isVisible()){
   const close=dialog.getByRole('button').filter({hasText:/^$/});if(await close.count()===1)await close.click();
  }
  await page.getByRole('button',{name:/^(插件|Plugins)$/}).click();
  await page.getByText(/^(发现|Discover)$/,{exact:true}).click();result.steps.push('optional-original-discover-opened');
+ if(!config.cold){
  await page.getByRole('button',{name:/^(添加索引源|Add index source)$/}).click({timeout:20000});
  await page.getByRole('textbox',{name:/^(索引 URL|Index URL)$/}).fill(config.index);
  await page.getByRole('button',{name:/^(添加|Add)$/}).click();
  await page.getByRole('dialog').getByRole('button',{name:/^(关闭|Close)$/}).click();
+ }
  await page.getByRole('button',{name:/^(查看 Browser Market Fixture|View Browser Market Fixture)$/}).waitFor({state:'visible',timeout:60000});
- result.steps.push('source-saved-and-listing-loaded');await page.screenshot({path:path.join(out,'browser-market-list.png')});
+ result.steps.push(config.cold?'saved-source-refetched-after-process-restart':'source-saved-and-listing-loaded');await page.screenshot({path:path.join(out,'browser-market-list.png')});
  await page.getByRole('searchbox',{name:/^(搜索插件|Search plugins)$/}).fill('searchable');
  await page.locator('[data-market-entry="browser-market-other"]').waitFor({state:'hidden'});
  result.steps.push('original-search-filtered');

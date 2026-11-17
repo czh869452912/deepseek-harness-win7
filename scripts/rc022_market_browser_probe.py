@@ -1,9 +1,13 @@
 """Unchanged optional Source Discover bundle against the candidate Python host."""
 import asyncio
+import argparse
 import hashlib
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import json
+import os
 from pathlib import Path
+import shutil
+import stat
 import sys
 import threading
 from urllib.parse import parse_qs, quote, urlsplit
@@ -14,6 +18,7 @@ from scripts import rc022_application_probe as application
 from scripts.rc022_schedule_browser_probe import before
 
 FIXTURE = None
+COLD_FROM = None
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -45,7 +50,11 @@ async def after(ctx, result, output):
         ['pluginMarket/listIndexes', 'pluginMarket/search', 'pluginMarket/setIndexes', 'pluginMarket/readEntryDetail']}
     result['marketPreflight'] = await ctx.typertGateway.dispatch_rpc('pluginMarket/listIndexes', dict(args={}), NEVER_ABORTED, ctx.connection.browserPeer)
     config = output/'browser-config.json'
-    config.write_text(json.dumps(dict(url=ctx.connection.authenticatedUrl(ctx.webServer.getOrigin()), index=FIXTURE+'/index.json')), encoding='utf-8')
+    if COLD_FROM is not None:
+        result['coldRestart'] = dict(sourceRun=COLD_FROM.name, processId=os.getpid(),
+            indexesBefore=ctx.pluginMarket.listIndexes())
+        assert result['coldRestart']['indexesBefore'] == [dict(url=FIXTURE+'/index.json')]
+    config.write_text(json.dumps(dict(url=ctx.connection.authenticatedUrl(ctx.webServer.getOrigin()), index=FIXTURE+'/index.json', cold=COLD_FROM is not None)), encoding='utf-8')
     source = ROOT/'.goose/out/rc022-prep-20261114-01/source'
     node = ROOT/'.goose/out/rc022-prep-20261114-01/toolchain/node-v24.9.0-win-x64/node.exe'
     command = [str(node), str(ROOT/'scripts/oracles/rc022_market_browser.mjs'), str(source), str(output)]
@@ -96,7 +105,22 @@ async def after(ctx, result, output):
 
 
 if __name__ == '__main__':
-    server = ThreadingHTTPServer(('127.0.0.1', 0), Handler)
+    parser = argparse.ArgumentParser(add_help=False)
+    parser.add_argument('--cold-from', type=Path)
+    options, remaining = parser.parse_known_args()
+    sys.argv = [sys.argv[0]]+remaining
+    port = 0
+    if options.cold_from is not None:
+        COLD_FROM = options.cold_from.resolve()
+        assert COLD_FROM.parent == ROOT/'.goose/out'
+        assert json.loads((COLD_FROM/'command.json').read_text(encoding='utf-8'))['exit_code'] == 0
+        previous = json.loads((COLD_FROM/'comparison/observations.json').read_text(encoding='utf-8'))
+        assert previous['browser']['passed']
+        index = urlsplit(previous['marketSourcesAfter'][0]['url'])
+        assert index.scheme == 'http' and index.hostname == '127.0.0.1' and index.path == '/index.json'
+        port = index.port
+        application.SESSION_ID_PREFIX = 'cold-'
+    server = ThreadingHTTPServer(('127.0.0.1', port), Handler)
     thread = threading.Thread(target=server.serve_forever, daemon=True); thread.start()
     FIXTURE = 'http://127.0.0.1:'+str(server.server_port)
     from dsh.util.plugin_detail_http import fetch_body
@@ -104,6 +128,13 @@ if __name__ == '__main__':
         return await fetch_body(FIXTURE+'/files?url='+quote(url, safe=''), maximum, signal, options)
     source = ROOT/'.goose/out/rc022-prep-20261114-01/source'
     def prepare(home):
+        if COLD_FROM is not None:
+            seed = COLD_FROM/'comparison/home'
+            assert seed.is_dir()
+            for path in seed.rglob('*'):
+                assert not (getattr(path.lstat(), 'st_file_attributes', 0) & 0x400 or path.is_symlink())
+            shutil.copytree(str(seed), str(home), dirs_exist_ok=True)
+            return
         from dsh.boot.profile import init_profile, PROFILE_TEMPLATES
         init_profile(str(home/'profiles/web'), PROFILE_TEMPLATES['web']['bundles']+['@deepseek-ai/dsh-experimental-plugin-market-bundle'])
     application.PREPARE_HOME = prepare

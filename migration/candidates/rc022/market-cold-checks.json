@@ -1,0 +1,44 @@
+{
+  "part": "C9-AV",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "scope": "Separate Host process and fresh Chromium context restore the persisted optional Market profile",
+  "verification": {
+    "source_run": "rc022-application-candidate50-20261117-01",
+    "cold_run": "rc022-application-candidate51-20261117-01",
+    "process_id": 46944,
+    "seconds": 56.453,
+    "passed": true,
+    "steps": [
+      "welcome-acknowledgement-survived-process-restart",
+      "optional-original-discover-opened",
+      "saved-source-refetched-after-process-restart",
+      "original-search-filtered",
+      "original-detail-and-image-rendered",
+      "saved-source-survived-reload",
+      "mobile-detail-rendered"
+    ],
+    "errors": [],
+    "strict_descriptors": {
+      "pluginMarket/listIndexes": true,
+      "pluginMarket/search": true,
+      "pluginMarket/setIndexes": true,
+      "pluginMarket/readEntryDetail": true
+    },
+    "observations": [
+      "The earlier Host and browser exited before launching a new Python process. The owned persisted home was copied without following links; the new profile keeps the optional bundle and saved index.",
+      "Before opening the browser, listIndexes returns the saved URL without a cached title. After the original Discover view fetches over actual localhost HTTP, title Browser Market returns.",
+      "A new browser context uses the new authenticated URL; no old browser profile/cookies or live Market document cache is reused. Welcome confirmation remains absent throughout the journey.",
+      "Four new sessions use a distinct cold prefix so prior session identities are preserved. This does not independently qualify restored Session execution or Schedule persistence."
+    ]
+  },
+  "cleanup": {
+    "bytes": 66240,
+    "removed": "candidate50 and candidate51 owned homes, short workspaces and tmp; authenticated launch config removed in finally",
+    "owned_processes_after": [],
+    "retained": "Commands/input hashes, observations/screenshots and task traces; prior seed retention milestone is completed."
+  },
+  "limitations": [
+    "Finite General welcome and Market cold scope; Schedule/Session execution after process restart and full release qualification remain separate.",
+    "Controlled localhost fixture rebinds the same index URL after the first process exits; external CDN/Git access is not claimed."
+  ]
+}

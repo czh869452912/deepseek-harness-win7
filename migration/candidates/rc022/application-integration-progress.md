@@ -469,3 +469,5 @@
 | C9-AT | Unchanged optional Discover bundle: strict Market RPCs, saved index, search, detail/image, reload and mobile; measured synchronous metadata cost retained | [Market browser](market-browser-checks.json) |
 
 | C9-AU | Per-read resource resolution facts bound repeated locale/manifest I/O while edits and failure recovery stay fresh; original Discover journey remains passing | [Metadata reads](metadata-read-checks.json) |
+
+| C9-AV | Separate Host process and fresh browser restore welcome confirmation and saved optional Market source, refetch listing and repeat search/detail/image/reload/mobile | [Market cold process](market-cold-checks.json) |

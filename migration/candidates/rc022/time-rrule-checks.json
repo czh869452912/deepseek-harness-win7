@@ -1,0 +1,33 @@
+{
+  "part": "C9-M",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "scope": "Bounded shared RRULE parser and zone-aware latest/next windows",
+  "paired": {
+    "run": "rc022-time-rrule-paired2-20261117-01",
+    "observations": 117,
+    "differences": 0,
+    "method": "Actual fixed util/time RRULE using Temporal/rrule versus Native validation/decision logic and the private pinned UTC enumerator. Exact normalized expressions, canonical zones, reasons/details/contained causes, decisions and error names/messages."
+  },
+  "verification": {
+    "source": "123 original RRULE/recurrence utility tests passed.",
+    "native": "12 passed: bounded RRULE observations, repeatable immutable rule decisions, actual x86 DST/COUNT decision and direct shared Cron/instant regressions."
+  },
+  "behavior": [
+    "Strict DTSTART/RRULE syntax validates numeric lists, weekday ordinals, rule combinations, interval/count bounds, per-period enumeration density and authoring-only ineffective BYSETPOS rejection.",
+    "DTSTART supplies explicit date/time defaults; interval-aligned period anchors retain WKST and first-period truncation. Fixed-size private enumeration pages include lookahead so a future gap cannot terminate the search.",
+    "COUNT counts real distinct instants, UNTIL includes its absolute bound, overlaps resolve earlier, gaps do not consume counts, sparse delivery windows expand around the decision and committed targets remain due after zone/rule shifts.",
+    "Checked cases include all-gap rules bounded by calendar cycles, impossible dates, overlapping set positions, year-100 sparse COUNT rules and four-digit-year exhaustion."
+  ],
+  "diagnostics": [
+    "The first pair exposed Python ValueError causes where Temporal carries RangeError with field-specific bounds. Native now preserves the checked cause names/messages; original failed observations remain retained."
+  ],
+  "cleanup": {
+    "bytes_removed": 75085,
+    "owned_processes_after": [],
+    "retained": "Both paired observations and input hashes, Source results, Native commands/logs/XML and x86 observations; owned short workspaces, homes and temp directories removed."
+  },
+  "limitations": [
+    "Current Schedule RRULE record/edit consumers, Host storage, management, runtime and tools remain pending. The worker boundary has targeted functional checks; application responsiveness and final Portable qualification remain to be measured.",
+    "No full regression, application/session, Portable/browser/Win7 acceptance or upstream promotion."
+  ]
+}

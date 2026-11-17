@@ -18,6 +18,23 @@ async def after(ctx,result,output):
     entry=await ctx.schedule.create(dict(title='Browser Schedule contract',prompt='Perform the browser check',
         timing=dict(kind='after',after_seconds=3600),target=dict(kind='session',sessionId='candidate-minimal')),'candidate-minimal')
     server=ctx.webServer;config=output/'browser-config.json'
+    from dsh.core.abort import NEVER_ABORTED
+    from dsh.typert.dispatch import original_of
+    original=original_of(ctx.schedule);binding=original.typertRemote
+    result['scheduleBinding']=dict(type=type(original).__name__,name=original.name,serviceKey=binding['serviceKey'],namespace=binding['namespace'],same=binding['service'] is original)
+    from dsh.typert.dispatch import binding_of
+    result['bindingDiagnostics']=[]
+    for key,receiver in ctx.typertGateway.resolver._services():
+        if getattr(original_of(receiver),'typertRemote',None) is None:continue
+        try:binding_of(receiver,key,'diagnostic')
+        except Exception as error:result['bindingDiagnostics'].append(dict(key=key,type=type(original_of(receiver)).__name__,error=str(error)))
+    result['scheduleStrict']=ctx.typert.local.get('schedule/catalog') is not None
+    preflight={}
+    for endpoint,payload in [('schedule/catalog',{}),('schedule/deliveryLimits',{}),('schedule/view',dict(request=dict(id=entry['id'])))]:
+        reply=await ctx.typertGateway.dispatch_rpc(endpoint,dict(args=payload),NEVER_ABORTED,ctx.connection.browserPeer)
+        preflight[endpoint]=dict(ok=reply.get('ok'),**(dict(error=reply['error']) if 'error' in reply else {}))
+    result['remotePreflight']=preflight
+    (output/'remote-preflight.json').write_text(json.dumps(dict(binding=result['scheduleBinding'],invalid=result['bindingDiagnostics'],strict=result['scheduleStrict'],calls=preflight),indent=2),encoding='utf-8')
     config.write_text(json.dumps(dict(url=ctx.connection.authenticatedUrl(server.getOrigin()),task=entry['id'])),encoding='utf-8')
     source=ROOT/'.goose/out/rc022-prep-20261114-01/source'
     rendered=server.renderIndex((source/'apps/web/dist/index.html').read_text(encoding='utf-8'),ctx.connection.browserPeer)

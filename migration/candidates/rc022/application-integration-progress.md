@@ -437,3 +437,5 @@
 | C9-AD | Current Workspace commands and resource-filtered committed feed with reconnect and revocation replacement | [Workspace Remote](workspace-remote-checks.json) |
 
 | C9-AE | First-use Documents policy and candidate Workspace binding remove the browser baseline crash; Schedule catalog failure retained | [Workspace directory](workspace-directory-checks.json) |
+
+| C9-AF | Canonical Typert artifact ownership and current Plugin Inventory close the original Schedule catalog/details browser flow | [Typert ownership](typert-owner-checks.json) |

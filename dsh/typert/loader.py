@@ -92,6 +92,9 @@ class TypertLoader(Plugin):
     id = "typert-loader"
     inject = ["typert", "loader"]
 
+    def package_manifest(self,ctx,name,base):
+        return False,None
+
     async def apply(self, ctx):
         configured = self.config.get("packages", [])
         if not isinstance(configured, list) or any(not isinstance(name, str) or not name for name in configured):
@@ -115,9 +118,9 @@ class TypertLoader(Plugin):
         def artifact(name):
             if name in paths:
                 return paths[name]
-            manifest_path = None
+            handled,manifest_path = self.package_manifest(ctx,name,base)
             package, subpath = split_package_specifier(name)
-            if not subpath and not name.startswith((".", "/", "cordis:")):
+            if not handled and not subpath and not name.startswith((".", "/", "cordis:")):
                 for root in module_search_dirs(base, getattr(loader, "installation_module_roots", [])):
                     candidate = os.path.join(root, package, "package.json")
                     if os.path.isfile(candidate):
@@ -137,7 +140,7 @@ class TypertLoader(Plugin):
             # healed development links may point at unbuilt reference sources.
             # Apply the same installation ownership rule as plugin resolution;
             # project-local packages always retain their own artifacts.
-            if name in getattr(loader, "harness_plugins", {}) and is_installation_owned_module(
+            if not handled and name in getattr(loader, "harness_plugins", {}) and is_installation_owned_module(
                     manifest_path, getattr(loader, "installation_module_roots", [])):
                 from dsh.boot.profile import workspace_package_index
                 directory = workspace_package_index(__file__).get(name)

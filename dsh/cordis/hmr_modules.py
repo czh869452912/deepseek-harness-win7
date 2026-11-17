@@ -12,8 +12,47 @@ from pathlib import Path
 import sys
 import types
 import weakref
+from collections import deque
 
 _MODULE_URLS = weakref.WeakKeyDictionary()
+_MODULE_IMPORTS = weakref.WeakKeyDictionary()
+
+
+def _static_imports(module):
+    """Keep compact syntax edges for an evaluated module across HMR owners.
+
+    Resolve targets from sys.modules later: a cached syntax edge must not keep
+    an old imported module alive or hide a replacement. A new ModuleSpec (as
+    created by importlib.reload) invalidates the syntax snapshot.
+    """
+    filename=getattr(module,'__file__','')
+    spec=getattr(module,'__spec__',None)
+    source=getattr(module,'_dsh_hmr_source',None)
+    cached=_MODULE_IMPORTS.get(module)
+    if cached is not None and cached[0]==filename and cached[1]() is spec and cached[2] is source:
+        return cached[3]
+    if source is None and isinstance(filename,str) and filename.endswith(('.py','.pyw')):
+        try:
+            with open(filename,'rb') as stream:source=stream.read()
+        except OSError:pass
+    imports=[]
+    if source is not None:
+        try:work=deque(ast.iter_child_nodes(ast.parse(source,filename=filename)))
+        except (SyntaxError,ValueError):work=deque()
+        while work:
+            node=work.popleft()
+            if isinstance(node,(ast.FunctionDef,ast.AsyncFunctionDef,ast.Lambda)):continue
+            if isinstance(node,ast.Import):
+                for alias in node.names:imports.extend([alias.name,alias.name.split('.')[0]])
+            elif isinstance(node,ast.ImportFrom):
+                absolute=importlib.util.resolve_name('.'*node.level+(node.module or ''),module.__package__) if node.level else node.module or ''
+                imports.append(absolute)
+                imports.extend(absolute+'.'+alias.name for alias in node.names)
+            else:work.extend(ast.iter_child_nodes(node))
+    try:reference=weakref.ref(spec) if spec is not None else lambda:None
+    except TypeError:return imports  # Unusual third-party spec: do not cache.
+    _MODULE_IMPORTS[module]=(filename,reference,getattr(module,'_dsh_hmr_source',None),tuple(imports))
+    return imports
 
 
 def module_url(module):
@@ -134,33 +173,7 @@ class PythonModules:
         # Modules imported before tracing began keep a one-time syntax snapshot;
         # bindings to imported modules/classes/functions supplement those edges.
         if module not in self._snapshots:
-            targets = []
-            source = getattr(module, '_dsh_hmr_source', None)
-            filename = getattr(module, '__file__', '')
-            if source is None and isinstance(filename, str) and filename.endswith(('.py', '.pyw')):
-                try:
-                    with open(filename, 'rb') as stream:
-                        source = stream.read()
-                except OSError:
-                    pass
-            if source is not None:
-                try:
-                    work = list(ast.iter_child_nodes(ast.parse(source, filename=filename)))
-                except (SyntaxError, ValueError):
-                    work = []
-                while work:
-                    node = work.pop(0)
-                    if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.Lambda)):
-                        continue
-                    if isinstance(node, ast.Import):
-                        for alias in node.names:
-                            targets.extend([sys.modules.get(alias.name), sys.modules.get(alias.name.split('.')[0])])
-                    elif isinstance(node, ast.ImportFrom):
-                        absolute = importlib.util.resolve_name('.'*node.level+(node.module or ''), module.__package__) if node.level else node.module or ''
-                        targets.append(sys.modules.get(absolute))
-                        targets.extend(sys.modules.get(absolute+'.'+alias.name) for alias in node.names)
-                    else:
-                        work.extend(ast.iter_child_nodes(node))
+            targets = [sys.modules.get(name) for name in _static_imports(module)]
             for value in list(module.__dict__.values()):
                 if isinstance(value, types.ModuleType):
                     targets.append(value)

@@ -369,3 +369,5 @@
 | C8-GP | Default Windows OS metadata and actual bounded collector integration | [Analytics OS](analytics-os-checks.json) |
 
 | C8-GQ | Product analytics Remote Host, live policy, cached environment, identity and actual ordinary HTTP consumer | [Product analytics](product-analytics-checks.json) |
+
+| C1 follow-up | HMR module import syntax reuse, reload invalidation and weak ownership | [HMR import cache](hmr-import-cache-checks.json) |

@@ -1,0 +1,33 @@
+{
+  "part": "C1-HMR-ImportCache",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "scope": "Avoid repeated syntax parsing of unchanged evaluated modules across HMR owners",
+  "paired": {
+    "run": "rc022-hmr-import-cache-paired-20261116-01",
+    "observations": 12,
+    "differences": 0,
+    "comparison": "Actual Source/Native HMR profile replacement, retained host/unmanaged modules, shared dependency, activation/syntax failure recovery and contained comparison failure."
+  },
+  "verification": {
+    "native": "14 passed in 11.25s: real profile graph/recomposition with unchanged 25s probe budget, graph/cache/namespace consumers, syntax reuse, fresh dependency resolution, reload-spec invalidation and weak ownership.",
+    "scope_reason": "The Desktop integration selected the real HMR regression; it exceeded 25s twice. Profiling isolated repeated ast.parse/compile across owners. Validate both cache lifetime rules and actual replacement behavior."
+  },
+  "diagnosis": {
+    "profile": "rc022-desktop-analytics-hmr-profile-20261116-01/profile.txt",
+    "before": "Two synthetic actual profile modes: 1113 AST parses, 1.641s cumulative AST parse/compile in a 4.406s diagnostic run. Larger pytest module sets repeatedly exceeded the fixed probe deadline.",
+    "after": "The unchanged real 12-observation regression and direct graph consumers now pass within the original budget; no timeout increase."
+  },
+  "behavior": [
+    "Caches compact import-name descriptors under weak evaluated-module identity. ModuleSpec replacement, filename or explicit evaluated source identity invalidates the syntax snapshot.",
+    "Dependency names resolve against current sys.modules for each HMR owner; imported module/class/function bindings are still collected per owner. The cache does not retain dependency module objects.",
+    "Keeps actual traced module links authoritative. Uses breadth-first deque traversal while skipping function bodies as before."
+  ],
+  "limitations": [
+    "Python syntax/binding inference remains an adaptation of the Node evaluated import graph. This optimization does not claim all dynamic/untraced Python import behavior or complete HMR/release acceptance."
+  ],
+  "cleanup": {
+    "bytes_removed": 25072,
+    "receipt": "rc022-hmr-import-cache-native-20261116-01/cleanup.json",
+    "retained": "Paired observations, command/input hashes, XML/logs and focused profiler summary. Shared Source/toolchains remain needed through C9."
+  }
+}

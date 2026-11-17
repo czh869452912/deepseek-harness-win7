@@ -433,3 +433,5 @@
 | C9-AB | Durable Workspace pin/default fields and queued pin/archive activity lifecycle | [Workspace pins](workspace-pins-checks.json) |
 
 | C9-AC | First-use Workspace identity and current create/delete journal rollback with cold recovery | [Workspace default](workspace-default-checks.json) |
+
+| C9-AD | Current Workspace commands and resource-filtered committed feed with reconnect and revocation replacement | [Workspace Remote](workspace-remote-checks.json) |

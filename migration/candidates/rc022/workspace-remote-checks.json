@@ -1,0 +1,10 @@
+{
+  "part": "C9-AD",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "scope": "Current Workspace commands, durable feed and resource filtering",
+  "paired": {"run": "rc022-workspace-remote-paired3-20261117-01", "observations": 26, "differences": 0},
+  "verification": {"native": "27 passed across current Remote queue/filter/disposal, current registry/default/pins, historical Remote, access and authorized-call consumers.", "source": "Original WorkspaceController command and follow tests passed; first-use Remote is outside this batch."},
+  "behavior": ["Complete baselines include pinnedSessionIds; committed upsert/order/archive/pin/remove increments retain Source ordering, with detached per-follower values and reconnect baselines.", "Resource filters apply to Workspace and Session identities. Revoked delivered Workspaces emit replace with complete admitted state; restored Workspaces can reappear through upsert. Deletion only reaches followers that received that Workspace.", "Create/rename/delete serialize accepted work independently of caller cancellation, preserve structural Remote errors and continue after failures. Pin/archive errors map to current stable Remote failures.", "Workspace resource registration is reversible. Disposal wakes active followers and removes its declaration. Real invocation-bound access policy is exercised in Native regression."],
+  "cleanup": {"owned_processes_after": [], "retained": "Paired reports, original failed fixture/import diagnostics, commands/logs/XML and Source reports. All owned media and test workspaces removed."},
+  "limitations": ["Controller is not yet bound to application composition. First-use Remote/default directory OS policy and generated protocol/browser qualification follow next.", "Finite service/Domain scope; no production promotion or release acceptance."]
+}

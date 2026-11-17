@@ -42,6 +42,7 @@ def main():
                 if mode in ('loop','modern-loop'):result['nextCursor']='again'
                 elif cursor is None:result['nextCursor']='next'
                 if modern:result.update(resultType='complete',ttlMs=0,cacheScope='private')
+                if mode=='modern-cache':result['ttlMs']=60000
                 if mode=='modern-input-state':result=dict(resultType='input_required',requestState='opaque')
                 elif mode=='modern-input-empty':result=dict(resultType='input_required')
                 elif mode=='modern-unknown-result':result=dict(resultType='future')

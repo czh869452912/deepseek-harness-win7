@@ -485,3 +485,5 @@
 | C9-BB | SDK memoized handshake/close keep owner alive after independent observer cancellation/timeout; actual wire cleanup/retry, cold resume and forced reaping checked | [SDK operation ownership](sdk-ownership-checks.json) |
 
 | C9-BC | Returned plain/TLS upgrade callbacks transfer socket ownership; later frames, half-open peer, real RST and unload checked against Original | [Upgrade ownership](upgrade-owner-checks.json) |
+
+| C9-BD | MCP default connection cache honours TTL/refresh/bypass, isolates returned values and rejects stale in-flight writes after notifications; actual HTTP and consumers checked | [MCP response cache](mcp-cache-checks.json) |

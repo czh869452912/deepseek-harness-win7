@@ -1,0 +1,17 @@
+{
+  "contract": "C9-BD",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "status": "targeted passed",
+  "implementation": "Connection-owned default response cache stores serialized values, serves only strictly fresh entries, honours server/default TTL with a one-day clamp and refresh/bypass, invalidates list/resource keys before notification consumers, and suppresses stale in-flight writes with generations. List walks retain base params on every page, enforce configurable page budgets, and cache only completed aggregates. Read refresh with stale TTL evicts its held entry. Owned close clears the default cache.",
+  "verification": {
+    "paired": {"run": "rc022-mcp-cache-pair-20261117-01", "observations": 16, "scope": "Actual pinned Client cache/list/read methods and Native methods with identical scripted request collaborators and deterministic cache clock. TTL boundaries, mutation isolation, bypass/refresh, notification keys and mid-flight invalidation, per-page metadata, explicit cursor isolation, failed aggregate and bounded/unlimited pagination. All rows, errors and request packets compare exactly."},
+    "native": {"run": "rc022-mcp-cache-native2-20261117-01", "passed": 104, "scope": "Actual modern localhost HTTP TTL/cache/refresh/bypass/invalidation/close; current HTTP/stdio negotiation, input-required dispatch, supervision, manager, resources/templates and legacy direct consumers."},
+    "source": {"run": "rc022-mcp-cache-source-20261117-01", "passed": 61, "failed": 0, "scope": "Pinned mcp-client, protocol and server-context suites."}
+  },
+  "cleanup": {"bytes_removed": 456753, "scope": "Owned failed-runner and final workspaces, temporary directories, homes and synthetic HTTP peer inputs removed after all consumers; logs/XML, raw HTTP packets and comparison observations retained.", "owned_processes_after": []},
+  "limitations": [
+    "This closes the default connection-owned store used by the application. Caller-supplied shared stores, identity partitions and store-failure recovery are not exposed by the current host API and are not qualified here.",
+    "Tool-definition/output validation, header recovery and multi-leg total timeout remain separate pending SDK contracts.",
+    "This is targeted verification, not production pin promotion or release qualification."
+  ]
+}

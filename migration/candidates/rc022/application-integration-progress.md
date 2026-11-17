@@ -499,3 +499,5 @@
 | C9-BI | Modern HTTP filters invalid declarations, preserves reserved headers and recovers one header mismatch with refreshed schema; actual wire and consumers checked | [MCP header transport](mcp-header-transport-checks.json) |
 
 | C9-BJ | Compaction recovery uses selected-span/whole-surface stability consistently and checks cancellation before retry; actual transactions paired, separate legacy lifecycle/preset integration failures retained | [Compaction recovery](compaction-recovery-checks.json) |
+
+| C9-BK | Shipped presets resolve current Workflow and avoid duplicate controls; Minimal keeps two tools, four presets coexist and real Workflow/compaction/PTC records restore; legacy Loader fixture uses explicit owner joins | [Preset integration](preset-integration-checks.json) |

@@ -1,4 +1,5 @@
 """Compaction relational contracts, shared with the pinned-source observer."""
+import asyncio
 import gc
 import json
 from pathlib import Path
@@ -69,12 +70,16 @@ async def test_loader_resolves_all_four_real_companions_and_reverses_ownership(t
         session = ctx.get('sessions').create()
         with pytest.raises(InvariantError, match='no matching compaction/start'):
             session.append('compaction/end', dict(compactionId='fixture', turn=None, error='failed'))
+        removed = [entry.fiber for entry in loader.root.tree.store.values()]
         await loader.root.update([])
+        # Current Loader removal starts disposal; its update is not a join.
+        await asyncio.gather(*(fiber.await_settled() for fiber in removed))
         assert ctx.get('invariants').registrations == set()
         session.append('compaction/end', dict(compactionId='fixture', turn=None, error='failed'))
         # Replay rejects the malformed log rather than silently activating.
-        with pytest.raises(LoaderUpdateError, match='no matching compaction/start'):
-            await loader.root.update([dict(id='main', name=PACKAGE_NAME + '/invariant')])
+        await loader.root.update([dict(id='main', name=PACKAGE_NAME + '/invariant')])
+        with pytest.raises(InvariantError, match='no matching compaction/start'):
+            await loader.root.tree.store['main'].fiber.await_settled()
         assert PACKAGE_NAME not in ctx.get('invariants').registrations
     finally:
         await ctx.fiber.dispose()

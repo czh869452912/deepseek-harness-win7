@@ -162,9 +162,6 @@
     - id: working-directory
       name: '@deepseek-ai/dsh-working-directory'
 
-    - id: tool-working-directory
-      name: '@deepseek-ai/dsh-tool-working-directory'
-
     # Durable KV storage: the storage hub, the json backend, and the
     # schema-validated domain form over them. Session-layer persistence (the
     # projection cache below; workspace in web layers)

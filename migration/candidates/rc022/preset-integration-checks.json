@@ -1,0 +1,54 @@
+{
+  "contract": "C9-BK",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "status": "targeted passed",
+  "implementation": "Shipped standard/ptc/cordis compositions use the current control plugin once and workflow-ptc. Add the unchanged pinned workflow-ptc manifest/built entry and installation dependency edges so the package router can actually resolve the Native provider. Move working_directory registration from the shared Host into those three scoped presets, preserving the explicit Minimal two-tool overlay and shared directory service.",
+  "test_contract_updates": "Cold compaction and direct PTC fixtures now write producer-owned sources and legal turn/step boundaries required by current V4 cold validation. Legacy invariant fixture explicitly joins removed Fibers and reads activation failure from the failed Fiber. Actual current Loader.remove intentionally starts disposal without joining; no production lifecycle implementation was changed.",
+  "verification": {
+    "focused": {
+      "run": "rc022-preset-integration-focused2-20261117-01",
+      "passed": 7,
+      "scope": "Actual run_profile Web: standard/ptc/cordis /compact and cold restore; real private-JS Workflow child/event cold restore; removed invariant cleanup and failed replay; Minimal/Standard isolation and exact two-tool Minimal; simultaneous four-preset mount, isolated engines, PTC execution and durable nested dispatch reload."
+    },
+    "units": {
+      "run": "rc022-preset-integration-units-20261117-01",
+      "passed": 12,
+      "scope": "Current Workflow admission/held-run cleanup and Workflow/Ralph consumers, preset scope/invariant and current Session preset composition."
+    },
+    "earlier_consumers": {
+      "run": "rc022-preset-integration-native4-20261117-01",
+      "passed": 268,
+      "failed": 3,
+      "scope": "Compaction, Workflow/Ralph and subagent consumers; remaining three cold fixtures had invalid historical lifecycle inputs, corrected and passed in focused2. This partial run is not combined into a complete gate."
+    },
+    "source": {
+      "run": "rc022-preset-integration-source-20261117-01",
+      "passed": 105,
+      "failed": 0,
+      "scope": "Pinned workflow-ptc, tool-workflow and tool-subagent-control suites."
+    }
+  },
+  "diagnostics": [
+    "Initial runner referenced one nonexistent test path; no tests ran. Native2/3/4 failures and cold bytes retained. A 120-second expanded consumer run timed out, with original log and workspace mapping retained; focused cold scope used the observed timing to budget 180 seconds and completed in 99 seconds.",
+    "Original invariant failure was an obsolete synchronous Loader assumption. Initial diagnostic interpretation as missing cleanup was disproved against actual vendor/loader/src/config/group.ts; attempted runtime changes were fully reverted. The fixture now waits for its removed owners without changing Loader semantics."
+  ],
+  "cleanup": {
+    "bytes_removed": 7361593,
+    "retained_failure_session_members": 23,
+    "scope": "All owned initial/intermediate/final pytest workspaces, profile homes, temp directories and diagnostic homes removed after consumers. Commands/logs/XML/comparison observations and 23 byte-preserved failure session members with size/SHA-256 retained outside Git. No owned JS worker remains."
+  },
+  "limitations": [
+    "Workflow continues to use the explicitly qualified Win7 private-JavaScript carrier; the upstream Node TypeScript PTC carrier is not claimed.",
+    "Only these dependency edges and compatibility presets were advanced. Production upstream pin, complete new bundle/preset registry promotion, whole release and actual Windows 7 qualification remain open."
+  ],
+  "pinned_package_bytes": {
+    "packages/workflow/workflow-ptc/package.json": {
+      "size": 2879,
+      "sha256": "bf1002fc299cd0bdef2cad0483d15660d483b6062f21345149bc683dee3a95c2"
+    },
+    "packages/workflow/workflow-ptc/lib/index.js": {
+      "size": 65413,
+      "sha256": "b1562c97eae68d58d42b23d5d047e6db557c768d6248ab651f152f5e421aa19f"
+    }
+  }
+}

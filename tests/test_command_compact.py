@@ -275,11 +275,15 @@ async def test_canonical_web_command_compaction_and_cold_restart(tmp_path, prese
         assert service_for_agent(ctx, agent, 'compaction') is not None
         assert ctx.get('commands').find(agent, 'compact') is not None
         ctx.get('llm').register_adapter(['compact-probe'], Adapter())
+        agent.session.append('turn/start', dict(turn=1))
+        agent.session.append('step/start', dict(turn=1, step=1))
         agent.session.append_request_header(dict(config=dict(provider='compact-probe', model='probe')))
         system = agent.session.append_event('system/message', dict(turn=1, step=1,
             message=dict(id='compact-system', role='system',
-                         source=dict(kind='plugin', plugin='@deepseek-ai/dsh-system-prompt'),
+                         source=dict(kind='system-prompt'),
                          content=[dict(type='text', text='original prefix')])))
+        agent.session.append('step/end', dict(turn=1, step=1))
+        agent.session.append('turn/end', dict(turn=1, stopReason='completed'))
         agent.session.append_user_message('implementation facts ' * 300)
         agent.session.append_user_message('recent question')
         execution = await ctx.get('commands').execute(agent, '/compact', [], AbortController().signal)

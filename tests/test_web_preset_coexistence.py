@@ -33,10 +33,12 @@ async def test_standard_ptc_and_cordis_coexist_and_execute(tmp_path):
         assert 'cordis_define' in [s['name'] for s in tools.schemas(agents['cordis'])]
         fixture = tmp_path / 'ptc-input.txt'
         fixture.write_text('PTC nested dispatch works', encoding='utf-8')
+        agents['ptc'].session.append('turn/start', dict(turn=1))
         result = await tools.execute(ToolExecutionInput('ptc-code', 'run_code',
             dict(code='return await tools.read(%s)' % repr({'file_path': str(fixture)}), description='Verify preset scoped tool dispatch'),
             agent=agents['ptc'], signal=NEVER_ABORTED))
         assert not result.is_error, result.content
+        agents['ptc'].session.append('turn/end', dict(turn=1, stopReason='completed'))
         assert 'result' in result.value
         assert 'PTC nested dispatch works' in json.dumps(result.value)
         assert logged_dispatches == ['read']

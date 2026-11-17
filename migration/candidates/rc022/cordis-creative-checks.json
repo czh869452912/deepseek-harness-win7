@@ -1,0 +1,33 @@
+{
+  "part": "C8-HE",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "scope": "Explicit Native Creative seven-tool composition over current inspect tools, shared Host providers and current Python runner",
+  "verification": {
+    "run": "rc022-cordis-creative-native2-20261117-01",
+    "native": "100 passed: two real independent Agent scopes, complete Native Python define/run/invoke/inspect/stop/undefine workflow, current Host/Config consumers, and shared Native callback/parameter contracts.",
+    "scope_reason": "Verify seven exact tool names without duplicates in both Agent scopes, current Source definitions for the two read-only rows, reversible Builtin leasing, unchanged process Host ownership, and a real Python Host process reached through the tool handlers."
+  },
+  "behavior": [
+    "Current upstream read-only tool-cordis remains the exact two-tool plugin. Native Creative composes those tools with the project's five Python dynamic-development tools to retain the seven-tool workflow explicitly required by AGENTS.md.",
+    "The Native manager never leases Service/Event/Config/Tool. The current process plugin remains their sole owner. Only the additional Python Builtin provider is shared across Native Creative Agent scopes and disappears when the final Native owner unloads.",
+    "Native prompt and pre-step guidance remain an explicit project extension. They are not represented as behavior of current upstream tool-cordis. Python Builtin descriptions and the five development callbacks preserve their existing Native contracts.",
+    "Stopping the first Agent leaves the second Agent's seven tools and Builtin query live; stopping the last Agent removes Native rows while preserving all four current Host providers."
+  ],
+  "diagnostics": {
+    "first_run": "rc022-cordis-creative-native-20261117-01",
+    "result": "100 passed, 4 failed. One new fixture expected raw runner ok on tool stop/undefine; corrected to their established tool receipts and final focused set passed. Three canonical Web tests failed during old preset mounting because list_agents is registered twice.",
+    "unresolved_integration": "Canonical production still uses old physical agent-presets YAML with a separate list-agents row, while current subagent-control already owns list_agents. These real Web failures are retained and must be closed by C9 official preset/composition promotion; the focused 100 passes do not replace them."
+  },
+  "cleanup": {
+    "control": "rc022-cordis-creative-control-20261117-01",
+    "bytes_removed": 137004,
+    "links_removed": 0,
+    "owned_processes_after": [],
+    "retained": "Failed and passing logs/XML/commands, compact scope/workflow observations and cleanup/process receipts. Shared Source and toolchains remain migration-owned through C9."
+  },
+  "limitations": [
+    "Staged Native composition is not yet the production package mapping. Current upstream official presets and bundles still need unified C9 promotion, including retirement of old physical presets.",
+    "The five Native development tools and Builtin provider are intentionally outside the current upstream two-tool surface and are not claimed Source-equivalent.",
+    "No complete regression, actual Portable/browser qualification or new Win7 acceptance is established."
+  ]
+}

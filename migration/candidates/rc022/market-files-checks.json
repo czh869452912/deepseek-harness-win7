@@ -1,0 +1,38 @@
+{
+  "part": "C9-AQ",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "scope": "Repository single-file API and clone-fallback selection",
+  "implementation": [
+    "RepositoryFiles uses the existing shared bounded plugin-detail HTTP reader; GitHub raw URLs and configured GitLab API URLs preserve original path/component escaping, HEAD/pinned ref and self-hosted scheme/port.",
+    "Ambiguous 401/403/404 reads ask the clone cache whether the repository is public. Public misses remain misses; private or non-API hosts delegate to clone reads. README first tries conventional README.md, then other names only after an authoritative public check."
+  ],
+  "verification": {
+    "paired": {
+      "run": "rc022-market-files-pair-20261117-01",
+      "observations": 90,
+      "differences": 0,
+      "scope": "Original repositoryFiles with controlled fetch/clone collaborators: three host classes, public/private/accessibility failure, success/401/403/404/500 and file/README operations; full call order and encoded URLs"
+    },
+    "native": {
+      "run": "rc022-market-files-native-20261117-01",
+      "passed": 18,
+      "scope": "API/fallback corpus, URL origin/encoding, unconditional GitHub/configured GitLab selection and detail/cache/shared HTTP/manager consumers"
+    },
+    "source": {
+      "run": "rc022-market-files-source-20261117-01",
+      "passed": 3,
+      "scope": "Original detail-files suite"
+    }
+  },
+  "cleanup": {
+    "removed": "Native/Source synthetic test workspaces/home/tmp and reconstructible paired fixture inputs",
+    "bytes": 19218,
+    "owned_processes_after": [],
+    "retained": "Source/Native paired observations/input hashes, commands/log/XML and shared C1-C9 Source/toolchain until acceptance"
+  },
+  "limitations": [
+    "Clone cache is a controlled collaborator; actual Git process/cache/credentials/transport/deadline/size/lock/eviction remain pending.",
+    "API routing observations use controlled shared HTTP fetch; this batch adds no live external GitHub/GitLab or Windows 7 environment qualification.",
+    "Full market detail Remote/image route, repeated-search performance, JSON diagnostics/large input and release acceptance remain pending."
+  ]
+}

@@ -46,6 +46,13 @@ class KvUnit:
     async def deleteRecord(self, table: str, key: str) -> None:
         await self.delete_record(table, key)
 
+    async def delete_records(self, table: str, keys: List[str]) -> None:
+        # A loop of independent deletes cannot satisfy this atomic contract.
+        raise NotImplementedError
+
+    async def deleteRecords(self, table: str, keys: List[str]) -> None:
+        await self.delete_records(table, keys)
+
     async def set_global(self, value: Any) -> None:
         raise NotImplementedError
 

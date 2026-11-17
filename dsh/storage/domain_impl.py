@@ -15,6 +15,7 @@ from dsh.storage.backend import KvUnit, StorageBackend
 from dsh.storage.domain_error import DomainError
 from dsh.storage.domain_events import DomainChanged
 from dsh.storage.domain_spec import DomainSpec, descriptor_of
+from dsh.storage.error import StorageError
 
 
 class DomainGlobal:
@@ -58,6 +59,12 @@ class KvTable:
 
     async def delete(self, key: str) -> bool:
         raise NotImplementedError
+
+    async def delete_many(self, keys: List[str]) -> int:
+        raise NotImplementedError
+
+    async def deleteMany(self, keys: List[str]) -> int:
+        return await self.delete_many(keys)
 
     async def update(self, key: str, fn: Callable[[Any], Any]) -> Any:
         raise NotImplementedError
@@ -111,6 +118,21 @@ class KvTableImpl(KvTable):
         await self._host.enqueue(_job)
         return res_box[0]
 
+    async def delete_many(self, keys: List[str]) -> int:
+        async def _job():
+            # Decide existence at the FIFO slot, after all earlier writes.
+            present = [key for key in dict.fromkeys(keys) if key in self._records]
+            if not present:
+                return 0
+            await self._host.unit.delete_records(self._table_name, present)
+            # Every observer sees the complete committed set, never a prefix.
+            for key in present:
+                del self._records[key]
+            for key in present:
+                self._host.emit_changed(DomainChanged(self._host.domain_name, self._table_name, key, "deleted"))
+            return len(present)
+        return await self._host.enqueue(_job)
+
     async def update(self, key: str, fn: Callable[[Any], Any]) -> Any:
         res_box = [None]
 
@@ -155,6 +177,7 @@ class DomainImpl:
         self._disposal: Optional[asyncio.Task] = None
         self._disposing = False
         self._closed = False
+        self._failure = None
 
         for tbl_name, recs in records.items():
             self._tables[tbl_name] = KvTableImpl(self, tbl_name, recs)
@@ -168,6 +191,8 @@ class DomainImpl:
     def assert_readable(self) -> None:
         if self._closed:
             raise DomainError("closed", f"domain '{self.name}' is closed")
+        if self._failure is not None:
+            raise self._failure
 
     def _get_global(self) -> Any:
         self.assert_readable()
@@ -224,10 +249,14 @@ class DomainImpl:
                 except Exception:
                     pass
             try:
+                if self._failure is not None:
+                    raise self._failure
                 res = await job()
                 if not fut.done():
                     fut.set_result(res)
             except Exception as ex:
+                if isinstance(ex, StorageError) and ex.code == "unknown-state":
+                    self._failure = ex
                 if not fut.done():
                     fut.set_exception(ex)
 

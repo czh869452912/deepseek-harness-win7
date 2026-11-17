@@ -1,0 +1,32 @@
+{
+  "part": "C9-Q",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "scope": "Domain atomic deleteMany and unknown-state quarantine required by current Schedule management",
+  "paired": {
+    "run": "rc022-domain-batch-paired2-20261117-01",
+    "observations": 15,
+    "differences": 0,
+    "method": "Actual fixed DomainImpl and Native over controlled backend units; FIFO decisions, backend call counts, listener snapshots/failures, rejection identity, quarantined reads/queued writes and close precedence."
+  },
+  "verification": {
+    "native": "22 passed: domain batch/quarantine, actual JSON one-publication/cold-reopen, current Schedule storage and domain route/lifecycle consumers.",
+    "source": "32 original storage-domain tests passed."
+  },
+  "behavior": [
+    "deleteMany deduplicates and decides presence inside its FIFO slot, invokes one atomic backend batch, updates all in-memory rows before announcing individual changes, and returns the actual count. Empty batches make no backend call.",
+    "Ordinary backend failures preserve the domain view and permit later writes. StorageError unknown-state quarantines the domain with the original error identity, blocking reads and even already-queued writes before their backend calls.",
+    "Close drains the chain and releases once; after completed close the closed error takes precedence over a prior quarantine. Observer failures do not reject committed writes or suppress remaining notifications."
+  ],
+  "diagnostics": [
+    "The first observer fixture used a global schema admitting null, which defineDomain correctly refused. The fixture now uses an integer schema; original failure/report remains retained."
+  ],
+  "cleanup": {
+    "bytes_removed": 60302,
+    "owned_processes_after": [],
+    "retained": "Paired traces/errors, command/input hashes, logs/XML/Source results and compact observations. Owned short synthetic workspaces and isolated homes removed."
+  },
+  "limitations": [
+    "The atomic backend vocabulary has no sequential-delete fallback. Single JSON implements it; per-record JSON and SQLite implementations are separate pending provider work and are not certified here.",
+    "Current Schedule service/runtime/tool/application composition, complete regression, Portable/browser/Win7 acceptance and upstream promotion remain pending."
+  ]
+}

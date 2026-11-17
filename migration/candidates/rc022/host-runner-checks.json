@@ -1,0 +1,38 @@
+{
+  "part": "C8-HD",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "scope": "Current Dynamic Host runner configuration, inspect ownership and model/panel notifications over the Native Python carrier",
+  "paired": {
+    "run": "rc022-host-runner-paired3-20261117-01",
+    "observations": 28,
+    "differences": 0,
+    "contents": "19 actual Source/Native Config outcomes plus 9 actual public runner journeys, including approvals, rejected/failed activation, approved version update, runtime guard/render/handler reports, panel operations and foreign Agent refusal."
+  },
+  "verification": {
+    "native": "18 passed in final rc022-host-runner-native3-20261117-01: current runner journeys, actual owned inspect deadline/disposal, invalid Config retirement, historical Native Host process lifecycle consumers and current inspect regressions.",
+    "source": "43 passed in unchanged runner.spec.ts, versioning.spec.ts and composition.spec.ts under packages/extensions/cordis-host-runner/tests.",
+    "scope_reason": "Exercise changed configuration at its actual Schemastery boundary, then actual runner public methods and owner disposal. Real Source JavaScript and Native Python dynamic handlers carry identical explicit diagnostic stacks; original process-carrier tests cover the inherited native lifecycle."
+  },
+  "behavior": [
+    "Current Config exposes vmTimeoutMs default 5000 and clientInspectTimeoutMs default 10000 with integral [1,2147483647] bounds. The resolved deadline reaches the same current registry exposed on Context, and runner fiber disposal releases its pending queries and native warm process.",
+    "Current run, guard, render and Host handler notices use source kind cordis-host-runner and current panel-based failure guidance. Manual panel notices preserve exact Agent object ownership; stale/foreign objects do not inject context.",
+    "Actual repeated Host handler failures are deduplicated with current Source NUL-delimited report keys, including the observed embedded-NUL collision. The historical tuple-key adaptation remains isolated in the historical runner.",
+    "Host startup registration collisions append current Source replacement guidance. Native process death remains an explicit platform-specific event, retracts registrations and uses the current message source kind."
+  ],
+  "diagnostics": [
+    "First pair differed only because JSON.stringify silently encodes Infinity as null while Python JSON retains Infinity. The independent observations now tag nonfinite numeric values before serialization, preserving the actual valid vmTimeoutMs Infinity outcome on both implementations.",
+    "First Native run had 17 passes and one fixture assertion failure: Cordis exposes a traceable service view, not the raw owned registry. The assertion now checks Symbols.original and retains its context cleanup in finally. The targeted retry passed; the final expanded 18-case run passed."
+  ],
+  "cleanup": {
+    "control": "rc022-host-runner-control-20261117-01",
+    "bytes_removed": 60443,
+    "links_removed": 0,
+    "owned_processes_after": [],
+    "retained": "Commands, complete paired observations, failing and passing logs/XML, compact Native observations, Source report and cleanup/process receipts. Shared Source/toolchains remain migration-owned through C9."
+  },
+  "limitations": [
+    "Current runner is staged; package mapping and official composition promotion remain separate C9 work. Historical runner and historical fixtures are unchanged.",
+    "Native Host bodies remain Python 3.8 code in owned processes, not arbitrary Source VM equivalence. New targeted observations do not establish a complete migration or release qualification.",
+    "Startup-collision suffix and Native process-death notice are implemented; these new exact text paths are not independently Source-paired by this 28-observation set."
+  ]
+}

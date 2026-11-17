@@ -395,3 +395,5 @@
 | C8-HB | Current generated API catalog/type closure and shared Host inspect provider ownership | [Inspect providers](inspect-providers-checks.json) |
 
 | C8-HC | Current inspect deadlines, first valid page/diagnostic and cancellation/disposal ownership | [Inspect registry](inspect-registry-checks.json) |
+
+| C8-HD | Current Dynamic Host runner Config, registry ownership and activation/panel notices | [Host runner](host-runner-checks.json) |

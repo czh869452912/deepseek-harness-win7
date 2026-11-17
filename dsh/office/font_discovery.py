@@ -12,8 +12,8 @@ def system_font_directories(platform=None, home=None, env=None):
     env = os.environ if env is None else env
     if platform == 'win32':
         import ntpath
-        return [ntpath.join(env.get('SystemRoot', 'C:\\Windows'), 'Fonts'),
-                ntpath.join(env.get('LOCALAPPDATA', ntpath.join(home, 'AppData', 'Local')), 'Microsoft', 'Windows', 'Fonts')]
+        return [ntpath.normpath(ntpath.join(env.get('SystemRoot', 'C:\\Windows'), 'Fonts')),
+                ntpath.normpath(ntpath.join(env.get('LOCALAPPDATA', ntpath.join(home, 'AppData', 'Local')), 'Microsoft', 'Windows', 'Fonts'))]
     if platform == 'darwin':
         assets = '/System/Library/AssetsV2'
         import re
@@ -21,9 +21,9 @@ def system_font_directories(platform=None, home=None, env=None):
             mobile = [posixpath.join(assets, name) for name in sorted(os.listdir(assets)) if re.fullmatch(r'com_apple_MobileAsset_Font[0-9]*', name)]
         except (FileNotFoundError, PermissionError, NotADirectoryError):
             mobile = []
-        return ['/System/Library/Fonts', '/Library/Fonts', posixpath.join(home, 'Library/Fonts')] + mobile
+        return ['/System/Library/Fonts', '/Library/Fonts', posixpath.normpath(posixpath.join(home, 'Library/Fonts'))] + mobile
     shared = [entry for entry in env.get('XDG_DATA_DIRS', '/usr/local/share:/usr/share').split(':') if entry]
-    return list(dict.fromkeys([posixpath.join(entry, 'fonts') for entry in shared] +
+    return list(dict.fromkeys(posixpath.normpath(path) for path in [posixpath.join(entry, 'fonts') for entry in shared] +
                              [posixpath.join(home, '.fonts'), posixpath.join(env.get('XDG_DATA_HOME', posixpath.join(home, '.local/share')), 'fonts')]))
 
 

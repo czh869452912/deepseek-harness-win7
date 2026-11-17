@@ -85,3 +85,5 @@ packages/workflow/workflow-ptc/lib/index.js -text whitespace=blank-at-eol,blank-
 dsh/office/browser_runtime/** -text -whitespace
 scripts/native/office-browser/** -text
 scripts/build_office_browser.mjs -text
+dsh/office/contract_runtime/** -text -whitespace
+scripts/build_office_contracts.mjs -text

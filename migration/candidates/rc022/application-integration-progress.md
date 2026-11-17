@@ -513,3 +513,5 @@
 | C9-BP | Office 独占文件事务、限额稳定读取、取消排空；42 项定向检查、12 组实际 SDK 对照与 x86 文件操作 | [文件事务](office-file-transaction-checks.json) |
 
 | C9-BQ | 默认字体实体目录由原版 Office 扫描器筛选与排序；45 项定向、7 组根目录、5+5 组扫描及 16 组实际 SDK 回归 | [默认字体发现](office-font-discovery-checks.json) |
+
+| C9-BR | 原版 SDK 格式/选项/A1/图片准入运行在 Win7 QuickJS；758+758 组实际对照、50 项定向与 9 组系统根目录 | [Office 请求准入](office-contracts-checks.json) |

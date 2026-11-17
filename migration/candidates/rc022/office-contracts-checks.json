@@ -1,0 +1,36 @@
+{
+  "unit": "C9-BR",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "status": "targeted-passed",
+  "scope": "Verbatim SDK resolveOptions, resolveConversion, resolveImageRender and A1 geometry on shipped Win7 QuickJS; Python supplies only prepared filesystem queries.",
+  "verification": {
+    "native_passed": 50,
+    "source_pairs_x64": 758,
+    "source_pairs_x86": 758,
+    "system_root_pairs": 9,
+    "reproduced_resources": 5,
+    "runtime_manifest_sha256": "7f21ab9e2e7d5cbb1ccf8314dbdba9a4f4ba9eebb0cf086023fde12e579f4c42",
+    "runs": [
+      ".goose/out/rc022-office-contracts-native-20261118-01",
+      ".goose/out/rc022-office-contracts-pair2-20261118-01",
+      ".goose/out/rc022-office-contracts-x86-20261118-01"
+    ]
+  },
+  "resolved_failure": "Initial prepared-path table omitted the default cache directory; final exact comparison includes it. Original failed report retained.",
+  "cleanup": {
+    "removed_bytes": 152383,
+    "removed_paths": [
+      ".goose\\out\\rc022-office-contracts-build-20261118-01",
+      ".goose\\out\\rc022-office-contracts-rebuild-20261118-01",
+      ".goose\\out\\rc022-office-contracts-native-20261118-01\\pytest-workspace",
+      ".goose\\out\\rc022-office-contracts-native-20261118-01\\tmp",
+      ".goose\\out\\rc022-office-contracts-native-20261118-01\\home"
+    ],
+    "retained": "Original failure report, exact final x64/x86 comparisons, logs/XML and commands; no temporary workspace or worker retained."
+  },
+  "limitations": [
+    "Closed JSON-compatible SDK request/options carrier; arbitrary Python callback engine resolvers are not a public replacement for JS callbacks.",
+    "Default engine lifecycle, output validation/page tree, cache orchestration, runtime packaging and actual Win7 VM remain later work.",
+    "No production pin or accepted_upstream promotion."
+  ]
+}

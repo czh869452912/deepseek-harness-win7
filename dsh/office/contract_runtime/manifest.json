@@ -1,0 +1,47 @@
+{
+  "format": "dsh-office-contracts@1",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "sdk": "@deepseek-ai/libreoffice-kit@0.2.3",
+  "engine": "shipped Win7 QuickJS",
+  "transformation": "Verbatim pure SDK validation sections; driver supplies only closed host path queries and system roots.",
+  "regions": [
+    {
+      "start": "const CODES =",
+      "end": "//#endregion",
+      "sha256": "051feb263d699bb15a8c7ffcfbd83f651cdc7fde8c2be17283f730b66f4b8411"
+    },
+    {
+      "start": "const MAX_COLUMN =",
+      "end": "function sheetPartInfo(",
+      "sha256": "b2db26fb828c1f0007d46ec395a5a97134fd700df7596aee628318e0ea346853"
+    },
+    {
+      "start": "const IMAGE_FORMATS =",
+      "end": "function selectedPages(",
+      "sha256": "b94f2fd9769e2543c09566f9836871e5d0d3f219177577086ddd7e22b3eba4af"
+    },
+    {
+      "start": "const SANS_CJK_FAMILIES =",
+      "end": "//#endregion",
+      "sha256": "8a273c91592ddb65b0b1d45f74b795c0e0af51e852712a022d742bc11f2734c6"
+    },
+    {
+      "start": "const CONVERSION_FORMATS =",
+      "end": "/**\n* Reject an engine output",
+      "sha256": "940731b8fc7549a7d5370d86344a8ce1a286e274745efbd2c1c1c93aed1f2450"
+    }
+  ],
+  "build_inputs": {
+    ".goose/out/rc022-prep-20261114-01/source/node_modules/.pnpm/@deepseek-ai+libreoffice-kit@0.2.3/node_modules/@deepseek-ai/libreoffice-kit/lib/index.js": "8e8003c76fde812d90f64e486f2e9d7b40370def6c2bcb305996f0e316cec50b",
+    "scripts/native/office-browser/contracts-driver.js": "f3ca91ee2cf85cb1a157303d59e75bc42609b2c1d6ad8266d22b165522ec969c",
+    ".goose/out/rc022-prep-20261114-01/source/node_modules/.pnpm/@deepseek-ai+libreoffice-kit@0.2.3/node_modules/@deepseek-ai/libreoffice-kit/LICENSE": "1f256ecad192880510e84ad60474eab7589218784b9a50bc7ceee34c2b91f1d5",
+    ".goose/out/rc022-prep-20261114-01/source/node_modules/.pnpm/@deepseek-ai+libreoffice-kit@0.2.3/node_modules/@deepseek-ai/libreoffice-kit/NOTICE": "eb5da42167335b1db17b35df23eb6aa1b503d2f9625d7d6cce87151892d4b55e",
+    "scripts/build_office_contracts.mjs": "3074fab26884d25f4404e3a2681e13d2e248255b6883431d0dd855caf113dc53"
+  },
+  "resources": {
+    "contracts.js": "9b67f0fe7ba76db1d7c4c5414cea41f764a1b8bb1f569dd1358298ec247864ab",
+    "driver.js": "f3ca91ee2cf85cb1a157303d59e75bc42609b2c1d6ad8266d22b165522ec969c",
+    "SDK-LICENSE": "1f256ecad192880510e84ad60474eab7589218784b9a50bc7ceee34c2b91f1d5",
+    "SDK-NOTICE": "eb5da42167335b1db17b35df23eb6aa1b503d2f9625d7d6cce87151892d4b55e"
+  }
+}

@@ -375,3 +375,5 @@
 | C8-GR | Desktop product composition, profile/HMR ownership, release stamp and current Peer HTTP/policy stream | [Desktop analytics](desktop-analytics-checks.json) |
 
 | C8-GS | Primary runtime manifest normalization, distribution identity and entry paths | [Workspace manifest](workspace-manifest-checks.json) |
+
+| C8-GT | Primary runtime filesystem validation, transactional install/recovery and linked-directory protection | [Workspace files](workspace-files-checks.json) |

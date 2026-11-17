@@ -1,0 +1,48 @@
+{
+  "part": "C8-GT",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "scope": "Staged primary-runtime filesystem validation and transactional directory installation",
+  "paired": {
+    "run": "rc022-workspace-files-paired3-20261117-01",
+    "observations": 20,
+    "differences": 0,
+    "comparison": "Actual Source/Native filesystem results, installation snapshots, external target preservation and staging cleanup; errno categories and JSON syntax category compared, random staging names normalized."
+  },
+  "verification": {
+    "native": "8 passed: actual 20-scenario corpus, cancelled awaiter ownership, two publication rollback cases, alias validation/copy ports and metadata/path regressions.",
+    "source": "73 passed / 4 skipped original runtime/tool cases; 9 passed original alias-copy cases. Source tool checks do not establish the not-yet-mounted Native provider.",
+    "scope_reason": "Filesystem helpers and direct metadata consumer only; no Portable rebuild or full collection needed."
+  },
+  "behavior": [
+    "Checks host platform/architecture and regular-file/directory entries before publication. Resolves in place without environment mutation.",
+    "Reuses equal canonical manifests including distribution insertion order; digest changes replace the installation, recovery restores .previous before reuse, and failed publication restores the old directory.",
+    "Rejects linked installation/root/metadata paths; dereferences ordinary payload links and recreates only validated relative Python aliases. Work remains owned when a Python awaiter is cancelled."
+  ],
+  "diagnostics": {
+    "excluded": [
+      "rc022-workspace-files-paired-20261117-01",
+      "rc022-workspace-files-paired2-20261117-01",
+      "rc022-workspace-files-source-20261117-01"
+    ],
+    "reason": "Deep checkout fixture directories produced rename access failures in both carriers; short owned workspaces passed. First paired receipt serialization also failed; original observations and exclusions remain retained."
+  },
+  "source_inputs": {
+    "packages/skill/tool-workspace-dependencies/src/index.ts": "835e40ffefd839085d1ccb5612055f874abc6a6c3a26bad856c8f8206a7c4e28",
+    "packages/skill/tool-workspace-dependencies/tests/tool-workspace-dependencies.spec.ts": "442cdd022f0f664afc6a906c937e6ede27e95485c68ddc4c95350c3e3b7180ff",
+    "packages/skill/tool-workspace-dependencies/tests/primary-runtime-copy.spec.ts": "72ddbdf649c88be5f73caecc9d69dc264649be37d7d775378c8b08aabaab880a"
+  },
+  "limitations": [
+    "Native tool registration, shared preparation/disposal and DSH_PRIMARY_RUNTIME composition are next. No actual POSIX filesystem or Win7 payload execution qualification; POSIX alias behavior uses controlled filesystem ports like the Source copy tests.",
+    "No payload integrity verification, interpreter execution, concurrency lock or source sandbox is claimed; these are not supplied by this Source helper contract. OS error message wording is adapted and not compared byte for byte."
+  ],
+  "cleanup": {
+    "bytes_removed_at_least": 247439,
+    "links_removed": 32,
+    "receipts": [
+      "rc022-workspace-files-source-copy-20261117-01/cleanup.json",
+      "rc022-workspace-files-control-20261117-01/cleanup-interruption.json"
+    ],
+    "removed": "All owned payloads, pytest/tmp/home directories and obsolete preliminary fixture trees. No matching processes remain.",
+    "retained": "Raw paired observations, failed-run traces, commands, XML/Source results and input hashes. First cleanup walk encountered moved junctions; no-follow walker fixed it and cleanup completed. Partial earlier removed bytes are not counted. Shared fixed Source/toolchains remain needed through C9."
+  }
+}

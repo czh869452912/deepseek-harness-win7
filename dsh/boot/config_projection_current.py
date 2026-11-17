@@ -13,7 +13,7 @@ from dsh.javascript.runtime import (JavaScriptRuntimeError, encode,
                                     verify_resources, worker_environment)
 
 RESOURCE_ROOT = Path(__file__).with_name('config-projection')
-MANIFEST_SHA256 = '2d1c9a246cc607cc23991b0e662121220b1fc60f40f688f3ba2bd86cc556a220'
+MANIFEST_SHA256 = '029ff3cb5ffbed032261dc1e83d60df070a4a15d71ca63a7c2d6ad362aed3b0f'
 
 
 def projection_bootstrap():
@@ -30,7 +30,7 @@ def projection_bootstrap():
         RESOURCE_ROOT / 'driver.js').read_text(encoding='utf-8')
 
 
-def project_config_graphs(graphs):
+def project_config_graphs(graphs, async_projection=False):
     """Project encoded graphs; each row preserves shared identity across its roots.
 
     Graphs are trusted plugin structure represented by the private tagged transport,
@@ -40,7 +40,7 @@ def project_config_graphs(graphs):
     if type(graphs) is not list:
         raise TypeError('Config projection graphs must be a list')
     request = dict(body='return null', name='cordis-config-projection', timeoutMs=5000,
-                   graphs=graphs, bootstrap=projection_bootstrap())
+                   graphs=graphs, asyncProjection=async_projection, bootstrap=projection_bootstrap())
     # Reject unencoded NaN/Infinity rather than silently changing graph semantics.
     payload = json.dumps(request, ensure_ascii=True, allow_nan=False).encode('utf-8') + b'\n'
     completed = subprocess.run([str(verify_resources())], input=payload + encode(dict(type='go')),

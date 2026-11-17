@@ -4,6 +4,7 @@ import { execFileSync } from 'node:child_process'
 import { createRequire } from 'node:module'
 import { readFileSync, writeFileSync, existsSync, mkdirSync, readdirSync } from 'node:fs'
 import { resolve, relative, dirname, basename } from 'node:path'
+import { asyncProjector } from './native/config-projection/async-projector.mjs'
 const target = '38a6a5c965aa99ab525161efb7cc5cf1fe62fced'
 if (process.argv.length !== 4) throw new Error('usage: node scripts/build_config_projection.mjs <Source> <new-output>')
 const source = resolve(process.argv[2]), output = resolve(process.argv[3]), root = process.cwd()
@@ -19,10 +20,18 @@ const result = await build({
   globalName: '__configProjection', target: 'es2022', write: false, metafile: true, legalComments: 'external',
   outfile: resolve(output, 'projector.js'),
   alias: { '@projection/projector': resolve(source, 'packages/boot/app-boot/src/config-schema/projector.ts') },
+  plugins: [{ name: 'python-lazy-builder-bridge', setup(build) {
+    build.onResolve({ filter: /^@projection\/async-projector$/ }, () => ({ path: 'projector.ts', namespace: 'config-async' }))
+    build.onLoad({ filter: /.*/, namespace: 'config-async' }, () => ({
+      contents: asyncProjector(readFileSync(resolve(source, 'packages/boot/app-boot/src/config-schema/projector.ts'), 'utf8')),
+      loader: 'ts', resolveDir: resolve(source, 'packages/boot/app-boot/src/config-schema'),
+    }))
+  } }],
 })
 const digest = bytes => createHash('sha256').update(bytes).digest('hex')
 const inputs = {}
 for (const path of Object.keys(result.metafile.inputs).sort()) {
+  if (path === 'config-async:projector.ts') continue // transformation and original Source are hashed below
   const absolute = resolve(path)
   if (!absolute.startsWith(source + '\\') && !absolute.startsWith(source + '/')
     && !absolute.startsWith(resolve('scripts/native/config-projection') + '\\')
@@ -40,7 +49,7 @@ for (const [name, path] of [['driver.js', 'scripts/native/config-projection/driv
   inputs[relative(root, resolve(path)).replaceAll('\\', '/')] = digest(bytes)
 }
 const esbuildPath = require.resolve('esbuild/package.json')
-for (const path of [esbuildPath, require.resolve('esbuild'), resolve('scripts/oracles/node_modules/@esbuild/win32-x64/esbuild.exe'), 'scripts/build_config_projection.mjs']) {
+for (const path of [esbuildPath, require.resolve('esbuild'), resolve('scripts/oracles/node_modules/@esbuild/win32-x64/esbuild.exe'), 'scripts/build_config_projection.mjs', 'scripts/native/config-projection/async-projector.mjs']) {
   inputs[relative(root, resolve(path)).replaceAll('\\', '/')] = digest(readFileSync(path))
 }
 const dependencies = new Set()

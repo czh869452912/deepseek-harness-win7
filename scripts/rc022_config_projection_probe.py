@@ -15,10 +15,14 @@ def prepare(output):
 
 
 async def observe():
+    return await observe_mode()
+
+
+async def observe_mode(async_projection=False):
     from dsh.boot.config_projection_current import project_config_graphs
     source = json.loads((_output / 'source.json').read_text(encoding='utf-8'))
     # Only encoded graph inputs cross this boundary; expected projections are not read.
-    values = project_config_graphs([row['wire'] for row in source])
+    values = project_config_graphs([row['wire'] for row in source], async_projection=async_projection)
     return [dict(name=row['name'], wire=row['wire'], observation=value) for row, value in zip(source, values)]
 
 

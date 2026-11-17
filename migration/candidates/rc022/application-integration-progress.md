@@ -387,3 +387,5 @@
 | C8-GX | Staged current read-only Cordis inspection tools and exact generated descriptors | [Cordis inspect tools](cordis-inspect-tools-checks.json) |
 
 | C1/C8-GY | Private upstream Config projector carrier, exact graph semantics and shipped x64/x86 engine checks | [Config projection](config-projection-checks.json) |
+
+| C1/C8-GZ | Live Python Schema identities, sequential lazy-builder RPC and cancellation ownership | [Config graph bridge](config-graph-checks.json) |

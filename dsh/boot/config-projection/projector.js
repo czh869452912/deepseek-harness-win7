@@ -3640,9 +3640,9 @@ var __configProjection = (() => {
         scopeCode() {
           return this._extScope.scopeCode(this._values);
         }
-        _def(varKind, nameOrPrefix, rhs, constant2) {
+        _def(varKind, nameOrPrefix, rhs, constant3) {
           const name = this._scope.toName(nameOrPrefix);
-          if (rhs !== void 0 && constant2)
+          if (rhs !== void 0 && constant3)
             this._constants[name.str] = rhs;
           this._leafNode(new Def(varKind, name, rhs));
           return name;
@@ -10335,7 +10335,9 @@ var __configProjection = (() => {
   var entry_exports = {};
   __export(entry_exports, {
     LOADER_EXPRESSION_SCHEMA: () => LOADER_EXPRESSION_SCHEMA,
+    createAsyncConfigProjector: () => createConfigProjector2,
     createConfigProjector: () => createConfigProjector,
+    createGraphState: () => createGraphState,
     decodeGraph: () => decodeGraph
   });
 
@@ -10808,14 +10810,425 @@ var __configProjection = (() => {
     };
   }
 
+  // config-async:projector.ts
+  function jsonValue2(value, nullifyUndefined = false) {
+    const visit = (item, active) => {
+      if (nullifyUndefined && item === void 0) return;
+      if (item === null || typeof item === "string" || typeof item === "boolean") return;
+      if (typeof item === "number" && Number.isFinite(item)) return;
+      if (typeof item !== "object") throw new Error("schema annotation is not JSON-compatible");
+      if (active.has(item)) throw new Error("schema annotation contains a cycle");
+      if (!Array.isArray(item) && Object.getPrototypeOf(item) !== Object.prototype && Object.getPrototypeOf(item) !== null) {
+        throw new Error("schema annotation contains a non-JSON object");
+      }
+      active.add(item);
+      for (const child of Object.values(item)) visit(child, active);
+      active.delete(item);
+    };
+    visit(value, /* @__PURE__ */ new Set());
+    const result = JSON.parse(JSON.stringify(
+      value,
+      (_key, item) => nullifyUndefined && item === void 0 ? null : item
+    ));
+    return result;
+  }
+  function constant2(value, objectComparison) {
+    if (Array.isArray(value)) {
+      return {
+        type: "array",
+        minItems: value.length,
+        maxItems: value.length,
+        items: false,
+        ...value.length ? { prefixItems: Array.from(value, (item) => constant2(item, objectComparison)) } : {}
+      };
+    }
+    if (value !== null && typeof value === "object") {
+      objectComparison();
+      const properties = Object.fromEntries(Object.entries(value).map(([key, child]) => [key, constant2(child, objectComparison)]));
+      const inherited = Object.getOwnPropertyNames(Object.prototype);
+      const required = Object.keys(properties).filter((key) => !inherited.includes(key) && Reflect.get(value, key) != null);
+      const pattern = inherited.map((key) => key.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|");
+      return {
+        type: "object",
+        properties,
+        additionalProperties: { type: "null" },
+        patternProperties: { [`^(?:${pattern})$`]: {} },
+        ...required.length ? { required } : {}
+      };
+    }
+    return { const: value };
+  }
+  function nullable2(core, accepts) {
+    if (typeof core === "boolean") return accepts ? core || { type: "null" } : core && { not: { type: "null" } };
+    const types = typeof core.type === "string" ? [core.type] : core.type;
+    if (types === void 0) return accepts ? { anyOf: [core, { type: "null" }] } : { ...core, not: { type: "null" } };
+    const [single, ...rest] = accepts ? [.../* @__PURE__ */ new Set([...types, "null"])] : types.filter((type) => type !== "null");
+    if (single === void 0) return false;
+    return { ...core, type: rest.length ? [single, ...rest] : single };
+  }
+  function expressions2(schema, valuePosition = true, enabled = true) {
+    const result = { ...schema };
+    if (schema.properties) {
+      result.properties = Object.fromEntries(Object.entries(schema.properties).map(([key, child]) => [key, expressions2(child, true, enabled)]));
+    }
+    for (const key of ["items", "additionalProperties"]) {
+      if (schema[key] !== void 0) result[key] = schema[key] === false ? false : expressions2(schema[key], true, enabled);
+    }
+    if (schema.propertyNames) result.propertyNames = expressions2(schema.propertyNames, false, false);
+    if (schema.prefixItems) result.prefixItems = schema.prefixItems.map((child) => expressions2(child, true, enabled));
+    if (schema.anyOf) result.anyOf = schema.anyOf.map((child) => expressions2(child, false, enabled));
+    if (schema.not !== void 0) result.not = expressions2(schema.not, false, false);
+    if (!valuePosition || !enabled) return result;
+    const annotations = {};
+    for (const key of ["title", "description", "default", "$comment", "x-cordis"]) {
+      if (Object.hasOwn(result, key)) {
+        annotations[key] = result[key];
+        Reflect.deleteProperty(result, key);
+      }
+    }
+    return { ...annotations, anyOf: [result, { $ref: "#/$defs/loaderExpression" }] };
+  }
+  function validateVolatilePlacement2(node, path, blocked = false, seen = /* @__PURE__ */ new Map()) {
+    const states = seen.get(node) ?? /* @__PURE__ */ new Set();
+    if (states.has(blocked)) return;
+    states.add(blocked);
+    seen.set(node, states);
+    if (node.meta.volatile && blocked) throw new Error(`${path}: volatile fields require a fixed object path without an enclosing volatile field`);
+    const nested = blocked || !!node.meta.volatile;
+    for (const [key, child] of Object.entries(node.dict ?? {})) validateVolatilePlacement2(child, `${path}/${key}`, nested, seen);
+    if (node.sKey) validateVolatilePlacement2(node.sKey, `${path}/keys`, true, seen);
+    if (node.inner && (node.type !== "lazy" || isNativeConfigSchema(node.inner))) {
+      validateVolatilePlacement2(node.inner, `${path}/inner`, true, seen);
+    }
+    for (const [index, child] of (node.list ?? []).entries()) validateVolatilePlacement2(child, `${path}/${index}`, true, seen);
+  }
+  async function createConfigProjector2() {
+    const { Ajv2020 } = await Promise.resolve().then(() => __toESM(require__()));
+    const validator = new Ajv2020({ strict: false, logger: false, validateFormats: false, addUsedSchema: false });
+    const portablePattern = await createPatternCheck();
+    const builderResults = /* @__PURE__ */ new Map();
+    return async (root, prefix) => {
+      validateVolatilePlacement2(root, "config");
+      const completed = /* @__PURE__ */ new Map();
+      const strictNodes = /* @__PURE__ */ new Map();
+      const active = /* @__PURE__ */ new Set();
+      const recursiveNames = /* @__PURE__ */ new Map();
+      const definitions = {};
+      const limitations = [];
+      const metadataEffects = [];
+      const limitation = (path, message) => {
+        const text = `${path}: ${message}`;
+        limitations.push(text);
+        return text;
+      };
+      const visit = async (node, path, strict = false) => {
+        let key = node;
+        if (strict) {
+          key = strictNodes.get(node) ?? { ...node };
+          strictNodes.set(node, key);
+        }
+        const cached = completed.get(key);
+        if (cached) return cached;
+        if (active.has(key)) {
+          let name2 = recursiveNames.get(key);
+          if (name2 === void 0) {
+            name2 = `${prefix}Recursive${recursiveNames.size}`;
+            recursiveNames.set(key, name2);
+          }
+          return {
+            schema: { $ref: `#/$defs/${name2}` },
+            acceptsMissing: node.type !== "lazy" && node.meta.required ? false : "unknown",
+            exact: true,
+            recursive: true,
+            effectful: true,
+            mutating: true
+          };
+        }
+        active.add(key);
+        let projection;
+        if (node.type === "lazy") {
+          let inner = node;
+          let meta = node.meta.volatile ? { ...node.meta, volatile: false } : node.meta;
+          const chain = /* @__PURE__ */ new Set();
+          let looseProjection;
+          while (inner.type === "lazy") {
+            const cachedInner = isNativeConfigSchema(inner.inner);
+            if (meta.loose) {
+              const message = limitation(path, "lazy loose fallback can accept inputs rejected by its inner schema");
+              if (!cachedInner) metadataEffects.push(limitation(path, "unresolved loose lazy metadata propagation may affect shared schemas"));
+              looseProjection = {
+                schema: { "x-cordis": { loose: true, limitations: [message] } },
+                acceptsMissing: true,
+                exact: false,
+                recursive: false,
+                effectful: true,
+                mutating: false
+              };
+              break;
+            }
+            if (chain.has(inner)) throw new Error(`${path}: lazy cycle has no concrete schema`);
+            chain.add(inner);
+            let next = cachedInner ? inner.inner : builderResults.get(inner);
+            if (next === void 0 && typeof inner.builder === "function") {
+              next = await Reflect.apply(inner.builder, inner, []);
+              builderResults.set(inner, next);
+            }
+            if (!isNativeConfigSchema(next)) throw new Error(`${path}: lazy schema has no native builder result or resolved inner schema`);
+            if (!cachedInner && ["required", "default", "min", "max", "step", "pattern", "loose", "volatile"].some((key2) => Object.hasOwn(meta, key2) && !Object.hasOwn(next.meta, key2) && (["required", "loose", "volatile"].includes(key2) ? !!Reflect.get(meta, key2) : Reflect.get(meta, key2) != null))) {
+              metadataEffects.push(limitation(path, "lazy metadata propagation may affect shared schemas; validation requires native execution"));
+            }
+            meta = cachedInner ? next.meta : { ...meta, ...next.meta };
+            validateVolatilePlacement2({ ...next, meta }, `${path}/lazy`, true);
+            inner = next;
+          }
+          projection = looseProjection ?? await visit({ ...inner, meta }, `${path}/lazy`, strict);
+          if (node.meta.volatile) {
+            projection = { ...projection, schema: { ...projection.schema, "x-cordis": { ...projection.schema["x-cordis"], volatile: true } } };
+          }
+        } else {
+          const ownLimitations = [];
+          const inputLimitations = [];
+          let unsupported = false;
+          const inputLimitation = (message) => {
+            inputLimitations.push(message);
+            ownLimitations.push(limitation(path, message));
+          };
+          const annotation = (value, name2) => {
+            try {
+              return { ok: true, value: jsonValue2(value) };
+            } catch (error) {
+              ownLimitations.push(limitation(`${path}/${name2}`, `annotation omitted: ${error instanceof Error ? error.message : String(error)}`));
+              return { ok: false };
+            }
+          };
+          const children = [];
+          const child = async (value, suffix, childStrict = false) => {
+            if (value === void 0) throw new Error(`${path}: ${node.type} schema is missing ${suffix}`);
+            const result2 = await visit(value, `${path}/${suffix}`, childStrict);
+            children.push(result2);
+            return result2;
+          };
+          const meta = { ...node.meta };
+          for (const key2 of ["min", "max", "step"]) {
+            if (meta[key2] === void 0 || Number.isFinite(meta[key2])) continue;
+            const inert = key2 === "max" ? meta.max === Infinity : key2 === "min" && meta.min === -Infinity && !meta.step;
+            if (!inert) inputLimitation(`non-finite ${key2} constraint is omitted; native validation is required`);
+            Reflect.deleteProperty(meta, key2);
+          }
+          let core;
+          let dictionaryValidation;
+          switch (node.type) {
+            case "any":
+              core = true;
+              break;
+            case "never":
+              core = false;
+              break;
+            case "const": {
+              try {
+                core = node.value == null ? false : constant2(jsonValue2(node.value, true), () => {
+                  inputLimitation("object constant inherited-member comparison requires native validation");
+                });
+              } catch (error) {
+                core = true;
+                inputLimitation(`constant constraint requires native validation: ${error instanceof Error ? error.message : String(error)}`);
+              }
+              break;
+            }
+            case "boolean":
+              core = { type: "boolean" };
+              break;
+            case "string": {
+              core = { type: "string" };
+              if (meta.min !== void 0) {
+                if (meta.min <= 1) core.minLength = Math.max(0, Math.ceil(meta.min));
+                else inputLimitation("UTF-16 minimum length requires native validation");
+              }
+              if (meta.max !== void 0) {
+                if (meta.max < 0) core = false;
+                else {
+                  const maximum = Math.floor(meta.max);
+                  core.maxLength = maximum;
+                  if (maximum > 0) inputLimitation("UTF-16 maximum length requires native validation");
+                }
+              }
+              if (meta.pattern && core !== false) {
+                if (portablePattern(meta.pattern.source, meta.pattern.flags)) core.pattern = meta.pattern.source;
+                else inputLimitation("regular-expression syntax or Unicode semantics require native validation");
+              }
+              break;
+            }
+            case "number": {
+              core = { type: "number" };
+              if (meta.min !== void 0) core.minimum = meta.min;
+              if (meta.max !== void 0) core.maximum = meta.max;
+              if (meta.step) {
+                const step = Math.abs(meta.step);
+                const origin = meta.min ?? 0;
+                if (!Number.isInteger(step) || origin % step !== 0) {
+                  inputLimitation("fractional or offset numeric step requires native validation");
+                } else if (step === 1) core.type = "integer";
+                else core.multipleOf = step;
+              }
+              break;
+            }
+            case "object": {
+              const required = [];
+              const properties = {};
+              for (const [key2, field] of Object.entries(node.dict ?? {})) {
+                const value = await child(field, key2);
+                if (value.acceptsMissing === false) required.push(key2);
+                Object.defineProperty(properties, key2, { value: value.schema, enumerable: true, writable: true, configurable: true });
+              }
+              core = { type: "object", properties };
+              if (required.length) core.required = required;
+              break;
+            }
+            case "array": {
+              const item = await child(node.inner, "items");
+              core = { type: "array", items: item.schema };
+              if (meta.min !== void 0 && node.inner?.meta.default == null) core.minItems = Math.max(0, Math.ceil(meta.min));
+              if (meta.max !== void 0) {
+                if (meta.max < 0) core = false;
+                else core.maxItems = Math.floor(meta.max);
+              }
+              break;
+            }
+            case "dict": {
+              const valueSchema = (await child(node.inner, "values")).schema;
+              core = { type: "object", additionalProperties: valueSchema };
+              if (node.sKey) {
+                const key2 = await child(node.sKey, "keys");
+                const totalString = node.sKey.type === "string" && node.sKey.meta.min === void 0 && node.sKey.meta.max === void 0 && node.sKey.meta.pattern === void 0;
+                if (!totalString && (strict || key2.effectful)) {
+                  dictionaryValidation = { keySchema: key2.schema, valueSchema };
+                  core = { type: "object" };
+                  inputLimitation(key2.effectful ? "dictionary key normalization can overwrite unvalidated values; native validation is required" : "strict dictionary filtering and value validation require native validation");
+                } else core.propertyNames = key2.schema;
+              }
+              break;
+            }
+            case "tuple": {
+              if (node.list === void 0) throw new Error(`${path}: tuple schema is missing its list`);
+              const values = [];
+              for (const [index, item] of node.list.entries()) values.push(await child(item, String(index)));
+              core = { type: "array", ...values.length ? { prefixItems: values.map((item) => item.schema) } : {} };
+              const minimum = values.reduce((length, value, index) => value.acceptsMissing === false ? index + 1 : length, 0);
+              if (minimum) core.minItems = minimum;
+              break;
+            }
+            case "union": {
+              if (node.list === void 0) throw new Error(`${path}: union schema is missing its list`);
+              const variants = [];
+              for (const [index, item] of node.list.entries()) variants.push(await child(item, String(index), strict));
+              if (variants.slice(0, -1).some((variant) => variant.mutating)) {
+                core = true;
+                inputLimitation("earlier union branches may alter later validation inputs; native validation is required");
+              } else core = variants.length ? { anyOf: variants.map((variant) => variant.schema) } : false;
+              break;
+            }
+            case "transform":
+              core = (await child(node.inner, "input", true)).schema;
+              inputLimitation("transform callback validation and normalization are not executed or projected");
+              break;
+            default:
+              core = true;
+              unsupported = true;
+              inputLimitation(`native schema type ${node.type} is not statically projected`);
+          }
+          if (meta.loose) {
+            core = true;
+            inputLimitation("loose validation can replace invalid values with defaults");
+          }
+          const recursive = children.some((value) => value.recursive);
+          const container = ["object", "array", "dict", "tuple"].includes(node.type);
+          const mutating = unsupported || children.some((value) => value.mutating || container && value.effectful);
+          const exact = inputLimitations.length === 0 && children.every((value) => value.exact);
+          const fallback = meta.default === void 0 ? void 0 : annotation(meta.default, "default");
+          let acceptsMissing;
+          if (meta.required) acceptsMissing = false;
+          else if (unsupported) acceptsMissing = "unknown";
+          else if (meta.default == null) acceptsMissing = true;
+          else if (!fallback?.ok) acceptsMissing = "unknown";
+          else if (recursive) {
+            acceptsMissing = "unknown";
+            inputLimitation("recursive default validation cannot be decided statically");
+          } else if (!exact) acceptsMissing = "unknown";
+          else acceptsMissing = validator.validate(core, fallback.value);
+          const annotations = {};
+          if (fallback?.ok) annotations.default = fallback.value;
+          const native = {};
+          if (typeof meta.description === "string") annotations.description = meta.description;
+          else if (meta.description) {
+            const descriptions = annotation(meta.description, "description");
+            if (descriptions.ok) {
+              native.descriptions = descriptions.value;
+              const description = meta.description.en ?? meta.description[""] ?? Object.values(meta.description)[0];
+              if (typeof description === "string") annotations.description = description;
+            }
+          }
+          if (dictionaryValidation) native.dictionaryValidation = dictionaryValidation;
+          const copy = (name2, value) => {
+            if (value === void 0) return;
+            const result2 = annotation(value, name2);
+            if (result2.ok) native[name2] = result2.value;
+          };
+          for (const key2 of ["role", "extra", "hidden", "disabled", "collapse", "link", "comment", "badges", "loose", "volatile"]) {
+            copy(key2, meta[key2]);
+          }
+          if (meta.pattern?.flags) copy("patternFlags", meta.pattern.flags);
+          if (node.type === "union") native.branchSelection = "first-success";
+          if (acceptsMissing === "unknown") native.omissionValidation = "runtime";
+          if (ownLimitations.length) {
+            native.type = node.type;
+            for (const key2 of ["min", "max", "step", "pattern"]) copy(key2, meta[key2]);
+            native.limitations = ownLimitations;
+          }
+          if (Object.keys(native).length) annotations["x-cordis"] = native;
+          const input = nullable2(core, acceptsMissing !== false);
+          projection = {
+            schema: { ...typeof input === "boolean" ? input ? {} : { not: {} } : input, ...annotations },
+            acceptsMissing,
+            exact: exact && acceptsMissing !== "unknown",
+            recursive,
+            effectful: unsupported || node.type === "transform" || !!meta.loose || children.some((child2) => child2.effectful),
+            mutating
+          };
+        }
+        active.delete(key);
+        const name = recursiveNames.get(key);
+        if (name !== void 0) {
+          definitions[name] = projection.schema;
+          projection = { ...projection, schema: { $ref: `#/$defs/${name}` } };
+        }
+        completed.set(key, projection);
+        return projection;
+      };
+      const result = await visit(root, "config");
+      const schema = expressions2(result.schema);
+      return {
+        schema: metadataEffects.length ? { anyOf: [schema, {}] } : schema,
+        definitions: Object.fromEntries(Object.entries(definitions).map(([key, value]) => [key, expressions2(value, false)])),
+        acceptsMissing: metadataEffects.length ? "unknown" : result.acceptsMissing,
+        limitations: [...new Set(limitations)]
+      };
+    };
+  }
+
   // scripts/native/config-projection/entry.ts
   function decodeGraph(wire) {
-    const values = wire.heap.map((record) => {
+    return createGraphState().merge(wire);
+  }
+  function createGraphState(onBuilder) {
+    const values = [];
+    const allocate = (record) => {
       switch (record.kind) {
         case "array":
           return [];
         case "object":
           return {};
+        case "opaque":
+          return /* @__PURE__ */ Object.create({ opaque: true });
         case "schema":
           return { [/* @__PURE__ */ Symbol.for("schemastery")]: true };
         case "date":
@@ -10829,7 +11242,7 @@ var __configProjection = (() => {
         default:
           throw new Error("invalid graph record kind");
       }
-    });
+    };
     const decode = (item) => {
       if (item === null || typeof item !== "object") return item;
       if (Object.hasOwn(item, "ref")) {
@@ -10853,23 +11266,35 @@ var __configProjection = (() => {
           throw new Error("invalid graph atom");
       }
     };
-    wire.heap.forEach((record, index) => {
-      const value = values[index];
-      if (record.kind === "array") for (const item of record.items) value.push(decode(item));
-      if (record.kind === "object" || record.kind === "schema") {
-        for (const [key, item] of record.entries) {
-          Object.defineProperty(value, key, { value: decode(item), writable: true, enumerable: true, configurable: true });
+    const merge = (wire) => {
+      while (values.length < wire.heap.length) values.push(allocate(wire.heap[values.length]));
+      wire.heap.forEach((record, index) => {
+        const value = values[index];
+        if (record.kind === "array") {
+          value.length = 0;
+          for (const item of record.items) value.push(decode(item));
         }
-      }
-      if (record.kind === "schema" && record.builder !== void 0) {
-        value.builder = () => {
-          wire.builderCalls.push(index);
-          if (Object.hasOwn(record.builder, "error")) throw new Error(record.builder.error);
-          return decode(record.builder);
-        };
-      }
-    });
-    return wire.roots.map(decode);
+        if (record.kind === "object" || record.kind === "schema") {
+          for (const key of Object.keys(value)) delete value[key];
+          for (const [key, item] of record.entries) {
+            Object.defineProperty(value, key, { value: decode(item), writable: true, enumerable: true, configurable: true });
+          }
+        }
+        if (record.kind === "schema" && record.builder !== void 0) {
+          value.builder = () => {
+            if (record.builder.deferred === true) {
+              if (!onBuilder) throw new Error("live builder bridge unavailable");
+              return onBuilder(index);
+            }
+            wire.builderCalls.push(index);
+            if (Object.hasOwn(record.builder, "error")) throw new Error(record.builder.error);
+            return decode(record.builder);
+          };
+        }
+      });
+      return wire.roots.map(decode);
+    };
+    return { merge, decode };
   }
   return __toCommonJS(entry_exports);
 })();

@@ -1,0 +1,47 @@
+{
+  "part": "C1/C8-GZ",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "scope": "Live Python Schema graph serialization and ordered lazy-builder RPC into the private upstream Config projector",
+  "paired": {
+    "live_run": "rc022-config-bridge-paired-20261117-01",
+    "live_observations": 37,
+    "live_differences": 0,
+    "x86_live_observations": 37,
+    "x86_live_differences": 0,
+    "pure_run": "rc022-config-bridge-pure-20261117-01",
+    "pure_observations": 180,
+    "pure_differences": 0,
+    "async_run": "rc022-config-bridge-async-20261117-01",
+    "async_observations": 180,
+    "async_differences": 0
+  },
+  "verification": {
+    "native": "39 passed: live graph corpus, cancellation during builder RPC, exact builder exception identity, opaque-hook suppression, private carrier checks/x86, and existing JavaScript runtime lifecycle consumers.",
+    "scope_reason": "Verify the new Python graph/provider boundary and the JavaScript runtime it consumes. Compare original synchronous Source with sequential adapted visits so container order, shared identity, metadata replacement and lazy effects remain observable.",
+    "rebuild": "Final rebuild changes only the erased async return annotation. Tested JavaScript/driver/license payloads remained byte-identical; final manifest and resource hashes were explicitly checked."
+  },
+  "behavior": [
+    "Keeps stable graph object identities, aliases and cycles while updating live contents after Python builders. Replacing meta creates a new object; mutating it retains references held by an in-progress visit.",
+    "Trusted synchronous Python lazy builders are invoked only when the original traversal requests them. Cached and loose lazy nodes do not execute builders. A shared lazy builder runs once per projector; exceptions retain the original Python object.",
+    "The mechanically reviewed async adaptation preserves each original visit in order. It changes only suspension points and sequential container loops; it does not pre-resolve builders, replay previous visits or call validators/transforms/toJSON hooks.",
+    "Each operation consumes the mounted jsRuntime service and releases its worker in finally. Awaiter cancellation shields the owned terminal future, disposes the process and leaves no active worker."
+  ],
+  "source_inputs": {
+    "scripts/native/config-projection/async-projector.mjs": "a02b03443287677384fdd9c7360707aabf03cb0c349ef04197c731f20757bde5",
+    "scripts/native/config-projection/entry.ts": "16fbe47772ef0ff20f395a0334ddfcdcf62519528762e3e16c1c7ea1e7de2778",
+    "scripts/native/config-projection/driver.js": "9e416e34b67b76ca793c14b2394a8fed42caf7af11939273541560c91268df5b",
+    "dsh/boot/config_graph_current.py": "9ab157357d321ae8e716fb3c8990d8fc4298715d7ac3b4b318b2a6af9934ca5b"
+  },
+  "limitations": [
+    "Private helper not yet exposed by the live Config inspection provider or CLI dump-schema. Canonical current inspection providers remain subsequent work.",
+    "Python builders use the declared synchronous Callable-to-Schema contract. This part does not qualify arbitrary foreign graph protocols or asynchronous Python builder functions.",
+    "No change to the common worker binaries; actual x64/x86 runs are on this Windows development host, not new stock Win7 VM acceptance. No C1-C9 promotion or full release acceptance."
+  ],
+  "cleanup": {
+    "bytes_removed": 21703611,
+    "receipt": "rc022-config-bridge-native-20261117-01/cleanup.json",
+    "build_receipt": "rc022-config-bridge-control-20261117-01/build-cleanup.json",
+    "removed": "Owned synthetic pytest/tmp/home trees, runtime consumer fixtures and both intermediate build copies; no matching processes remain.",
+    "retained": "Actual Source/Native live and pure/async observations, x86 results, test XML/logs and compact input/hash/cleanup receipts. Shared Source/toolchains remain migration-owned through C9."
+  }
+}

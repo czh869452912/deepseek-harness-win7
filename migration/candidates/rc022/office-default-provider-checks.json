@@ -1,0 +1,35 @@
+{
+  "unit": "C9-BT",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "status": "targeted-passed",
+  "scope": [
+    "Canonical current office-kit binding mounts a default Cordis officeKitEngine owner beside the application Office service.",
+    "Existing injected engine remains its own provider; lazy offline runtime resolution retries missing setup and drains on unload.",
+    "Runtime inventory rejects unapproved identities, changed bytes and escaping resource paths."
+  ],
+  "verification": {
+    "native_passed": 79,
+    "actual_application_queue": "Original DOCX -> default Office engine -> original browser SDK -> retained TXT output; exact bytes match prior actual public Source SDK observation.",
+    "run": ".goose/out/rc022-office-default-native3-20261118-01"
+  },
+  "cleanup": {
+    "removed_bytes": 301935,
+    "removed_paths": [
+      ".goose\\out\\rc022-office-default-native-20261118-01\\pytest-workspace",
+      ".goose\\out\\rc022-office-default-native-20261118-01\\tmp",
+      ".goose\\out\\rc022-office-default-native-20261118-01\\home",
+      ".goose\\out\\rc022-office-default-native2-20261118-01\\pytest-workspace",
+      ".goose\\out\\rc022-office-default-native2-20261118-01\\tmp",
+      ".goose\\out\\rc022-office-default-native2-20261118-01\\home",
+      ".goose\\out\\rc022-office-default-native3-20261118-01\\pytest-workspace",
+      ".goose\\out\\rc022-office-default-native3-20261118-01\\tmp",
+      ".goose\\out\\rc022-office-default-native3-20261118-01\\home"
+    ],
+    "retained": "Commands, logs/XML and Source results. Runtime acquisition/preparation has a separate C9 owner and is still actively consumed for packaging."
+  },
+  "limitations": [
+    "Runtime approval inventory is deliberately empty until independent browser/engine/license inputs are sealed in the next packaging portion. Default missing-runtime errors remain unavailable, with no development-observer or installed-browser fallback.",
+    "Registry mapping is staged current baseline; production pin and accepted_upstream remain unchanged.",
+    "Complete release and actual Win7 guest acceptance remain pending."
+  ]
+}

@@ -44,7 +44,13 @@ async def test_engine_unload_preserves_held_run_and_children():
     ctx.on('workflow/end',lambda info,result:events.append(result))
     run=ctx.workflowEngine.start(dict(script="return await agent('task')",meta=dict(name='held',description='unload'),parent=NS(session=object())))
     try:
-        await asyncio.wait_for(entered.wait(),5);await owner.dispose()
+        await asyncio.wait_for(entered.wait(),5)
+        async def observe_result(): return await run.result
+        observer = asyncio.create_task(observe_result())
+        await asyncio.sleep(0); observer.cancel()
+        with pytest.raises(asyncio.CancelledError): await observer
+        assert not run.result.done() and not run.controller.signal.aborted
+        await owner.dispose()
         assert ctx.get('workflowEngine') is None and not run.result.done()
         release.set();result=await asyncio.wait_for(asyncio.shield(run.result),5);await asyncio.sleep(0)
         assert result==dict(value='held',stopReason='completed',agentsStarted=1)

@@ -7,7 +7,7 @@ from urllib.parse import quote
 
 from dsh.core.abort import AbortController, abort_reason_error
 from dsh.core.cancellation import aborted, subscribe_abort
-from dsh.core.cleanup import CleanupPromise
+from dsh.core.cleanup import CleanupPromise, SharedPromise
 from dsh.core.session.json import snapshot_json_value, UNDEFINED
 from dsh.core.tools import assert_object_json_schema
 from .workflow_service import render_error
@@ -115,7 +115,7 @@ class PtcWorkflowRun:
         else:
             self.detach = subscribe_abort(signal, lambda *_: self.cancel('workflow signal aborted'))
         self.cwd = asyncio.ensure_future(ctx.get('workingDirectory').ensure(parent, self.controller.signal))
-        self.result = asyncio.create_task(self.drive())
+        self.result = SharedPromise(self.drive())
 
     def cancel(self, reason='workflow cancelled'):
         if self.terminal or self.cancel_reason is not None:

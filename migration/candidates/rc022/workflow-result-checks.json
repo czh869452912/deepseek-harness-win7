@@ -1,0 +1,53 @@
+{
+  "contract": "C9-AZ",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "status": "targeted passed; separate production-composition failure retained",
+  "problem": "An actual direct result observer cancellation propagated into PtcWorkflowRun.drive and cancelled the producer. Original Promise consumers have no such ownership.",
+  "implementation": "SharedPromise shields each awaiter while retaining one owner task/value/exception and stable completion callbacks. CleanupPromise retains its existing behavior through the same base. PtcWorkflowRun publishes the shared result; explicit run.cancel/dispose continue to own cancellation and child draining.",
+  "verification": {
+    "paired": {
+      "run": "rc022-workflow-result-pair2-20261117-01",
+      "observations": 6,
+      "scope": "Original Host compared with observer abandonment/timeout, pre-drive observation, held teardown, runtime error and explicit holder cancellation. JS abandonment uses Promise.race; actual external listener removal checked on both sides."
+    },
+    "native": {
+      "run": "rc022-workflow-result-native2-20261117-01",
+      "passed": 131,
+      "deselected": 1,
+      "scope": "Shared result/failure lifetime, actual Guest+child+engine unload and single end event, tools/records, ordinary/Office queue/output/file-watch CleanupPromise consumers"
+    },
+    "source": {
+      "run": "rc022-workflow-result-source-20261117-01",
+      "passed": 28,
+      "failed": 0,
+      "scope": "Original workflow-ptc host.spec.ts"
+    },
+    "first_failure": {
+      "run": "rc022-workflow-result-native-20261117-01",
+      "passed": 130,
+      "failed": 2,
+      "scope": "New test initially expected controller active during terminal child teardown, whereas both original and Native correctly abort at terminal; assertion corrected. Existing real-Web cold test separately fails preset standard with duplicate list_agents under the unpromoted production graph; deliberately unselected in targeted rerun, not claimed fixed."
+    }
+  },
+  "remaining": "Close the existing test_workflow_real_web_profile_records_survive_cold_restart production preset composition failure during coordinated provider/preset promotion, then rerun it before stable qualification.",
+  "cleanup": {
+    "bytes": 75061,
+    "removed": [
+      ".goose\\out\\rc022-workflow-result-native-20261117-01\\pytest-workspace",
+      ".goose\\out\\rc022-workflow-result-native-20261117-01\\tmp",
+      ".goose\\out\\rc022-workflow-result-native-20261117-01\\home",
+      ".goose\\out\\rc022-workflow-result-native2-20261117-01\\pytest-workspace",
+      ".goose\\out\\rc022-workflow-result-native2-20261117-01\\tmp",
+      ".goose\\out\\rc022-workflow-result-native2-20261117-01\\home",
+      ".goose\\out\\rc022-workflow-result-source-20261117-01\\pytest-workspace",
+      ".goose\\out\\rc022-workflow-result-source-20261117-01\\tmp",
+      ".goose\\out\\rc022-workflow-result-source-20261117-01\\home"
+    ],
+    "retained": "Commands/XML/logs/first failure, paired observations, baseline reproduction; disposable synthesized workspaces removed after no consumers remain",
+    "owned_processes_after": []
+  },
+  "limitations": [
+    "Controlled paired runtime is separate from actual Guest/engine consumer tests.",
+    "Targeted completion does not establish full migration or release acceptance."
+  ]
+}

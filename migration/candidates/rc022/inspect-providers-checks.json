@@ -1,0 +1,56 @@
+{
+  "part": "C8-HB",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "scope": "Current generated progressive API catalogs and process-owned Service/Event/Config/Tool Host providers",
+  "paired": {
+    "catalog_run": "rc022-inspect-providers-paired2-20261117-01",
+    "catalog_observations": 207,
+    "catalog_differences": 0,
+    "host_run": "rc022-inspect-providers-host2-20261117-01",
+    "host_observations": 12,
+    "host_differences": 0
+  },
+  "verification": {
+    "native": "9 passed: every catalog query/type closure, actual two-Agent shared Host/scoped Tool lifecycle, current read-only tool relay to actual Loader Config, prior tool/query regressions.",
+    "source": "2 passed in unchanged packages/extensions/tool-cordis/tests/host.spec.ts",
+    "scope_reason": "Pair every generated coding contract and referenced-type closure, then mount real Tools/SystemPrompt/native executor/inspect registry with two separate scopes. Verify Host registration stays while Agent rows unload and disappears only with its Host owner."
+  },
+  "catalog": {
+    "counts": {
+      "SERVICE_API": 109,
+      "EVENT_API": 94,
+      "TYPE_API": 1278,
+      "INHERITED_CTX_API": 9
+    },
+    "host_events": 88,
+    "sha256": "1d5475b6400cf19659e9b5acf5407739c91b3edcc460674e02871fe1384a9255",
+    "source_sha256": "0c35ae766c4ac0108efc22ec0bb1b9e7ccd1b455044b49a28be79db45bc220a0",
+    "comparison": "Full response values are independently canonicalized with UTF-16 key ordering and JSON serialization, then compared by SHA-256 and UTF-8 byte length to bound repeated declaration output. Complete raw catalog bytes are the generated implementation resource, not a test archive."
+  },
+  "behavior": [
+    "Native resource is exported from actual fixed Source api-catalog plus four actual provider manifests. Progressive Service/Event queries keep exact signatures, descriptions and complete transitive referenced type closure.",
+    "Host plugin injects tools and cordisInspect and owns four reversible registrations. Both Agent scopes mount only their two inspection tools, share the Host registry and see their own dynamic tool schemas. Duplicate public provider registration remains strict.",
+    "Service/Event exact lookup and method errors match Source. Config relays the live Loader helper; Tool schemas are read for the exact requesting Agent. Optional Service access contracts remain explicit about absence.",
+    "Compiled type-name regexes are cached by their immutable string input in a bounded cache; generated catalog lookup and output semantics are unchanged."
+  ],
+  "source_inputs": {
+    "packages/extensions/tool-cordis/src/api-catalog.ts": "0c35ae766c4ac0108efc22ec0bb1b9e7ccd1b455044b49a28be79db45bc220a0",
+    "packages/extensions/tool-cordis/src/providers.ts": "30e79537a8e8bbadfd8e0497a4693b13e21fd0c1431f259013fb55efd233e28d",
+    "packages/extensions/tool-cordis/src/host.ts": "ecd2bbd8f73544529d21310f2085f86e3fc3eccbc24fe4aefbbc9e60d44dd844"
+  },
+  "diagnostics": {
+    "excluded": "rc022-inspect-providers-host-20261117-01",
+    "reason": "Fixture tried registering a private Tool through a scope context without declaring inject. Corrected both fixtures to a real tools-injected scoped plugin; product provider code was unchanged."
+  },
+  "limitations": [
+    "Current Host provider and catalog implementation remains staged; production registry/package/profile promotion is still C9 work. The existing Native creative seven-tool manager and Python Builtin help remain separate and unchanged.",
+    "Source catalog data is an optional capability coding contract, not proof every service is installed or every Python Host binding has been qualified. This part qualifies discovery/query and selected real consumers.",
+    "Full current inspect client registry protocol, dynamic Host runner lifecycle and full migration/release acceptance remain separate work."
+  ],
+  "cleanup": {
+    "bytes_removed": 89623,
+    "receipt": "rc022-inspect-providers-native-20261117-01/cleanup.json",
+    "removed": "Owned Source/Python pytest/temp/home fixtures; no matching processes remain.",
+    "retained": "Exact generated resource/export command, bounded Source/Native catalog digests, complete actual Host observations, resolved fixture failure, logs/XML/input hashes and cleanup receipts. Shared Source/toolchains remain migration-owned through C9."
+  }
+}

@@ -66,3 +66,4 @@ dsh/boot/config-projection/** -text
 dsh/boot/config-projection/*LICENSE -whitespace
 scripts/build_config_projection.mjs -text
 scripts/native/config-projection/** -text
+dsh/extensions/inspect_catalog_022.json -text

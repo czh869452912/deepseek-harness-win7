@@ -391,3 +391,5 @@
 | C1/C8-GZ | Live Python Schema identities, sequential lazy-builder RPC and cancellation ownership | [Config graph bridge](config-graph-checks.json) |
 
 | C1/C8-HA | Live Loader Config directory/details and actual package-directory consumer closure | [Config inspection](inspect-config-checks.json) |
+
+| C8-HB | Current generated API catalog/type closure and shared Host inspect provider ownership | [Inspect providers](inspect-providers-checks.json) |

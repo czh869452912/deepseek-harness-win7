@@ -1,0 +1,21 @@
+{
+  "contract": "C9-CM",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "status": "targeted legacy compatibility passed",
+  "scope": "Actual current Native reader codec against byte-preserved alpha SQLite frames. This remains a historical read-compatibility check, not a current Source SQLite persistence provider.",
+  "reason": "Current Source has retired the SQLite persistence package. Five deleted Source paths were stale unused dependencies of a runner that already reads immutable historical Source frames. Native codec/asset/generator/observer and historical-frame hashes remain guarded.",
+  "verification": {
+    "run": "rc022-historical-sqlite-codec-20261118-01",
+    "passed": 38,
+    "seconds": 4.82,
+    "codec_cases": 826,
+    "controls": "Complete generated input inventory, Native asset/module/ABI/value/frame/version and corrupt receipt checks"
+  },
+  "historical_source_sha256": "3378fee1320c2bc3a55ed3f0f2cb6548f6b5f25813dd83a4fd10a83b51b7d61a",
+  "script_sha256": "3215e952e6c230630d8cfd902ec66d58e59f2c92d2164d6b9d091adc08b23210",
+  "cleanup": {
+    "bytes_removed": 34586043,
+    "retained": "Actual Native complete rows and compatibility receipt, command/XML/logs. Source copy byte-verified against immutable tracked original before retiring duplicate; generated inputs reproduce from pinned generator and their saved digest."
+  },
+  "limitations": "No full current qualification, archive/Desktop or Windows7 acceptance inferred."
+}

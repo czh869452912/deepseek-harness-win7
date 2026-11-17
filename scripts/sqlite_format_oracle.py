@@ -25,12 +25,10 @@ INPUTS = MODULES + ['dsh/session/bin/zstd/' + name for name in ASSETS] + [
     'scripts/sqlite_format_oracle.py', 'scripts/build_zstd.py', 'scripts/oracles/sqlite_format_inputs.py',
     'scripts/oracles/sqlite_format_python.py', 'scripts/oracles/sqlite_format.probe.spec.ts',
     'scripts/oracles/vitest.sqlite-format-probe.config.mts', 'scripts/oracles/vitest.sqlite-format-source.config.mts',
-    'reference/packages/session/session-persistence-sqlite/src/codec.ts',
-    'reference/packages/session/session-persistence-sqlite/src/compression.ts',
-    'reference/packages/session/session-persistence-sqlite/resources/zstd-dictionary.bin',
-    'reference/packages/session/session-persistence-sqlite/tests/compression.spec.ts',
-    'reference/packages/session/session-persistence-sqlite/tests/compression-unprofitable.spec.ts',
 ]
+# This is the retained alpha SQLite-reader compatibility contract. The current
+# Source no longer has that persistence package; its deleted paths are not
+# inputs to the Native codec or to the immutable historical frames below.
 
 
 def digest(value):

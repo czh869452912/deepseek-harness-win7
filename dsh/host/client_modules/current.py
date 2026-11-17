@@ -14,6 +14,8 @@ from dsh.host.client_modules.registry import (
     JAVASCRIPT_CONTENT_TYPE,JSON_CONTENT_TYPE,MissingClientBundleError,IMMUTABLE_CACHE,
     validate_source_map)
 from dsh.host.client_modules.resources_current import build_combo,LazyBody,script_body,source_map_body
+from dsh.host.client_modules.assets_current import ASSET_PATH,asset_response
+from dsh.host.webserver.resources import request_target,resource_handler
 
 
 def current_graph_row(package,revision,meta):
@@ -221,7 +223,12 @@ class CurrentClientModuleRegistry(LoaderClientModuleRegistry):
     async def fetchBundle(self,request):
         method=request.get('method')
         if method not in ('GET','HEAD'):return dict(status=405,headers={},body=None)
-        parsed=urlsplit(request['url'] if 'url' in request else self.resource_url(request))
+        parsed=urlsplit(request_target(request['url'] if 'url' in request else self.resource_url(request)))
+        asset=ASSET_PATH.fullmatch(parsed.path)
+        if asset is not None:
+            headers=request.get('headers') or {}
+            tag=next((value for key,value in headers.items() if key.lower()=='if-none-match'),None)
+            return asset_response(method,self._table.get(asset.group(1)),asset.group(2),tag)
         url=parsed.path+('?' + parsed.query if parsed.query else '')
         resource=self._responses.get(url) or self._previous_batch_responses.get(url) or self.chunk_response(parsed)
         if resource is None:return dict(status=404,headers={},body=None)
@@ -229,11 +236,7 @@ class CurrentClientModuleRegistry(LoaderClientModuleRegistry):
             body=None if method=='HEAD' else await resource['body']())
 
     async def handle_plugin_request(self,request,response):
-        resource=await self.fetchBundle(request)
-        response.write_status(resource['status'])
-        for key,value in resource['headers'].items():response.write_header(key,value)
-        if resource['body'] is not None:response.write_body(resource['body'])
-        await response.finish()
+        await resource_handler(lambda request,_peer:self.fetchBundle(request))(request,response)
 
 
 class CurrentClientModulesPlugin(Plugin):
@@ -244,6 +247,7 @@ class CurrentClientModulesPlugin(Plugin):
         self.registry=CurrentClientModuleRegistry(ctx)
         ctx.set_service('client_modules',self.registry);ctx.set_service('clientModules',self.registry)
         def web(child):
-            child.effect(lambda:child.get('webServer').register('prefix','/plugins',self.registry.handle_plugin_request),'Client Modules Web carrier')
+            child.effect(lambda:child.get('webServer').register(dict(kind='prefix',path='/plugins',
+                resource=lambda request,_peer=None:self.registry.fetchBundle(request))),'Client Modules Web carrier')
         ctx.inject(['webServer'],web)
         ctx.on('webserver/index-inject',lambda table,*_:table.extend(self.registry.boot_injections()))

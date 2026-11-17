@@ -1,0 +1,34 @@
+{
+  "part": "C9-E",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "scope": "Current export-owned package asset routes and streaming carriers",
+  "paired": {
+    "run": "rc022-client-assets-paired2-20261117-01",
+    "observations": 24,
+    "differences": 0,
+    "method": "Unmodified Source and Native providers consume identical frozen package files; compare status, exact owned headers, body byte count and SHA-256, including 160 KiB multi-chunk images."
+  },
+  "verification": {
+    "native": "22 passed for assets/current resources/registry, underlying exports resolver, generic resource carriers and historical Loader; final 3 asset tests passed after adding actual HTTP disconnect observation.",
+    "source": "19 original package-assets.client.spec.ts cases passed.",
+    "scope_reason": "Covers exact require-condition self-reference exports, exclusions/absence/inactive rows, encoded paths and malformed percent/UTF-8, typed immutable/SVG headers, exact ETag matching, HEAD/304 without file open, all three carriers, cancellation before first pull and after partial consumption, real 8 MiB HTTP disconnect, and cancellation while an executor read remains in flight."
+  },
+  "behavior": [
+    "Assets resolve from the addressed active package through its exports under Node require conditions; file type follows the resolved target, not the request extension.",
+    "Only supported image extensions are served, with immutable cache, quoted encoded-path ETag, nosniff and SVG script-src none. Only an exact If-None-Match value yields 304.",
+    "Each GET owns an asynchronous file open/read/close sequence. HEAD and 304 create no file body. Closing before first pull still drains and closes the open; in-flight disk reads complete before the descriptor closes.",
+    "Current ClientModules registers the canonical Web resource contract, exposing the same async provider through direct Fetch, readResource and HTTP streaming.",
+    "A Source pair exposed that a literal malformed percent obtained by decoding %25 must not address an existing filesystem name. The Native route now validates the file-URL decoding boundary and the final pair passes."
+  ],
+  "cleanup": {
+    "control": "rc022-client-assets-control-20261117-01",
+    "bytes_removed": 11393481,
+    "links_removed": 0,
+    "owned_processes_after": [],
+    "retained": "Initial mismatch and final paired observations, input hashes, commands, logs/XML, compact observations, selected Source report and cleanup/process receipts."
+  },
+  "limitations": [
+    "Targeted completion, not an exhaustive Node CommonJS package resolver qualification. Existing read-only resolver is reused with explicit require conditions.",
+    "Official current Web candidate binding/retry follows; no full regression, Portable/browser/Win7 acceptance or upstream promotion is established."
+  ]
+}

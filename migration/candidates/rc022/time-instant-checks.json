@@ -1,0 +1,34 @@
+{
+  "part": "C9-H",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "scope": "Shared strict instant/calendar vocabulary required by the current durable Schedule domain",
+  "paired": {
+    "run": "rc022-time-instant-paired3-20261117-01",
+    "observations": 142,
+    "differences": 0,
+    "method": "Actual fixed util/time instant.ts with Temporal/Intl versus Native; exact values, rejection reasons, unsupported-zone cause and invalid-calendar/zone error names."
+  },
+  "verification": {
+    "source": "23 original instant.spec.ts tests passed.",
+    "native": "11 passed: new strict helper observations, never-throw formatting and historical Schedule regressions."
+  },
+  "behavior": [
+    "ASCII strict calendar and RFC3339 parsers distinguish malformed text, nonexistent dates, out-of-range fields and invalid offsets. Canonical UTC requires mandatory milliseconds and an exact four-digit-year round trip.",
+    "Integer Gregorian epoch arithmetic and manual canonical formatting avoid Windows CRT limits and year-padding behavior. Formatting refuses booleans, nonnumbers, fractions, infinity and values outside the four-digit bounds without throwing.",
+    "Zone identity follows the pinned ICU vocabulary. Local resolution rejects forward gaps and chooses the earlier overlap; checked cases include half-hour transitions, a skipped date, historic second offsets and both four-digit edges.",
+    "Extended-year resolution uses proleptic Gregorian arithmetic and a 400-year mapping for ZoneInfo future rules; checked years -1, 0, 10000 and 10004 in UTC, Shanghai and New York. Temporal's absolute epoch bound is enforced."
+  ],
+  "diagnostics": [
+    "The first pairing exposed a mistaken assumption about JavaScript terminal dollar: without multiline mode Source rejects trailing line terminators. Native now uses strict end-of-input; original failed observations remain retained."
+  ],
+  "cleanup": {
+    "bytes_removed": 32093,
+    "links_removed": 0,
+    "owned_processes_after": [],
+    "retained": "Source/Native observations, first failed comparison, commands, logs/XML and input hashes; synthetic short workspaces, homes and temporary directories removed."
+  },
+  "limitations": [
+    "Finite checked contracts do not establish equivalence for every IANA historical/future transition or arbitrary malformed Temporal object coercion.",
+    "Current Schedule persistence, recurrence, runtime and tool integration remain pending. This is targeted dependency verification, not complete regression, Portable/browser/Win7 acceptance or upstream promotion."
+  ]
+}

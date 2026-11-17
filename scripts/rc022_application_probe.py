@@ -22,6 +22,8 @@ EXECUTE_PTC=False
 BEFORE_SESSIONS=None
 AFTER_SESSIONS=None
 BINDINGS={
+ '@deepseek-ai/dsh-client-ui-theme':'dsh.client.appearance_current:CurrentThemeHost',
+ '@deepseek-ai/dsh-client-locale':'dsh.client.appearance_current:CurrentLocaleHost',
  '@deepseek-ai/dsh-agent-default-model':'dsh.core.default_model_current:CurrentAgentDefaultModelConfig',
  '@deepseek-ai/dsh-plugin-market/tools':'dsh.boot.plugin_market_tools:CurrentPluginMarketTools',
  '@deepseek-ai/dsh-tool-schedule':'dsh.schedule.tools_current:CurrentToolSchedule',
@@ -49,7 +51,7 @@ async def observe(source,output):
                 log.write(repr(task)+'\n');task.print_stack(file=log)
         diagnostic=loop.call_later(20,dump)
     diagnostic=loop.call_later(20,dump)
-    with patch.dict(os.environ,dict(DSH_HOME=str(home),DSH_TELEMETRY_MODE='DISABLED')),patch.object(profile_boot,'INSTALL_ANCHOR',str(source/'apps/cli/package.json')),patch.object(dsh,'__version__','0.2.2-rc.3'),patch.dict(HARNESS_PLUGIN_CLASSES,BINDINGS):
+    with patch.dict(os.environ,dict(DSH_HOME=str(home),DSH_TELEMETRY_MODE='DISABLED')),patch.object(profile_boot,'INSTALL_ANCHOR',str(source/'apps/cli/package.json')),patch.object(dsh,'__version__','0.2.2-rc.3'),patch.dict(HARNESS_PLUGIN_CLASSES,BINDINGS),patch('dsh.bundle.web_app.current.resolve_dist_index',return_value=str(source/'apps/web/dist/index.html')):
         try:
             environment=LaunchEnvironmentSnapshot([dict(source='process',values=dict(os.environ))])
             app=await profile_boot.run_profile(dict(profile='web',dshHome=str(home),environment=environment,patchFiles=PLATFORM_PATCHES,
@@ -109,11 +111,11 @@ def main():
     result['target_upstream']=TARGET
     result['candidate_bindings']=BINDINGS
     result['platform_patches']={str(Path(path).relative_to(ROOT)):hashlib.sha256(Path(path).read_bytes()).hexdigest() for path in PLATFORM_PATCHES}
-    inputs=[source/'apps/cli/package.json',source/'packages/bundle/base/cordis.patch.yml',
+    inputs=[source/'apps/cli/package.json',source/'apps/web/dist/index.html',source/'packages/bundle/base/cordis.patch.yml',
         source/'packages/bundle/web-app/package.json',source/'packages/bundle/web-app/cordis.patch.yml',
         source/'packages/client/modules/src/index.ts',source/'packages/client/modules/src/assets.ts',
         Path(__file__).resolve(),Path(sys.argv[0]).resolve(),ROOT/'dsh/boot/plugin_registry_current.py',
-        ROOT/'dsh/cordis/loader.py',ROOT/'dsh/api/session_agents_current.py',ROOT/'dsh/boot/plugin_market_tools.py',ROOT/'dsh/boot/plugin_market_tools.json',
+        ROOT/'dsh/cordis/loader.py',ROOT/'dsh/api/session_agents_current.py',ROOT/'dsh/client/appearance_current.py',ROOT/'dsh/boot/plugin_market_tools.py',ROOT/'dsh/boot/plugin_market_tools.json',
         ROOT/'dsh/core/ptc_dispatches.py',ROOT/'dsh/core/default_model_current.py',ROOT/'dsh/code_runtime/confined_ptc.py',ROOT/'dsh/code_runtime/ptc.py',ROOT/'dsh/code_runtime/process.py',ROOT/'dsh/code_runtime/worker.py',
         ROOT/'dsh/host/client_modules/current.py',ROOT/'dsh/host/client_modules/resources_current.py',ROOT/'dsh/host/client_modules/assets_current.py',
         *[ROOT/'dsh/schedule'/name for name in ['tools_current.py','tools_current.json','service_current.py','runtime_current.py','storage_current.py','domain_current.py','update_current.py']]]

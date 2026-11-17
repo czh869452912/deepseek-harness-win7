@@ -1,0 +1,10 @@
+{
+  "part": "C9-Z",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "scope": "Current live theme/locale Host companions and exact theme bootstrap",
+  "paired": {"run": "rc022-appearance-paired-20261117-01", "observations": 28, "differences": 0},
+  "verification": {"native": "7 targeted appearance/Loader tests passed.", "source": "6 original theme/locale Host tests passed.", "browser": "Candidate21 on Chromium108 fetched the actual current Source index and rendered the original shell over /api/remote.mux. Prior candidate19/20 HTTP400 traced to historical Theme Settings.get; current companion removes that failure. Browser journey remains failed due to preview acknowledgement and Session-list projection contracts, with screenshots/logs retained."},
+  "behavior": ["Theme reads seven volatile fields: preference, three bounded font sizes and three font lists. It prepends exact upstream head CSS/body script rows on every render and removes the listener on unload.", "Font normalization follows JS whitespace/control filtering and quotes non-generic families; exact script bytes match fixed Source. Locale accepts open BCP47-style identifiers through a volatile optional reference.", "Both companions own reversible optional Settings auto:false policies. Candidate bindings preserve historical providers; candidate application probe now serves/hash-records the actual fixed Source index instead of the production index."],
+  "cleanup": {"bytes_removed": 67327, "owned_processes_after": [], "retained": "Pair observations, commands/logs/XML, Source report, application errors and screenshots. Owned application homes, browser contexts and test workspaces removed."},
+  "limitations": ["No browser success or full visual parity is claimed; preview acknowledgement, Session-list wire shape and existing CSS anchor compatibility remain follow-up work.", "Production bindings, pin, Portable, full regression and Win7 guest qualification are not promoted."]
+}

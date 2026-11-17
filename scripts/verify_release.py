@@ -190,7 +190,7 @@ REQUIRED_REGRESSION = {
         *{'test_search_redirect_rejected_before_location_contact[' + str(code) + ']' for code in (301,302,303,307,308)},
         *{'test_abort_mid_body_closes_owned_socket_and_preserves_reason[' + path + ']' for path in ('/slow', '/error/slow')},
         'test_credentials_snapshot_abort_and_late_rejection_observed',
-        'test_settings_live_redaction_detach_and_missing_credentials',
+        'test_historical_settings_live_redaction_detach_and_missing_credentials',
         'test_actual_pinned_source_complete_mapping_availability_and_missing_key',
     },
     'test_app_source_contract': {'test_source_document_projects_into_the_built_document'},
@@ -1951,7 +1951,11 @@ def validate_extracted(path, archive, candidate):
     try:
         if report.get('win32StatSourceSha256') != candidate['win32_stat_source_sha256']:
             raise ValueError('Windows stat Source receipt identity differs')
-        validate_win32_stat(report.get('win32Stat'), Path(report['mcpStdio']['root']),
+        stat_validator = validate_win32_stat
+        from scripts import current_win32_stat_oracle
+        if candidate['win32_stat_source'].get('sourceCommit') == current_win32_stat_oracle.SOURCE_COMMIT:
+            stat_validator = current_win32_stat_oracle.validate_runtime
+        stat_validator(report.get('win32Stat'), Path(report['mcpStdio']['root']),
             Path(report['mcpStdio']['root']) / 'python.exe', candidate['win32_stat_source'],
             candidate['win32_stat_modules'], check_files=False)
     except (ValueError, KeyError, TypeError) as error:
@@ -1959,7 +1963,11 @@ def validate_extracted(path, archive, candidate):
     try:
         if report.get('sdkProfileSourceSha256') != candidate['sdk_profile_source_sha256']:
             raise ValueError('SDK profile Source receipt identity differs')
-        validate_sdk_profile(report.get('sdkProfile'), Path(report['mcpStdio']['root']),
+        sdk_validator = validate_sdk_profile
+        from scripts import current_sdk_profile_oracle
+        if candidate['sdk_profile_source'].get('sourceCommit') == current_sdk_profile_oracle.SOURCE_COMMIT:
+            sdk_validator = current_sdk_profile_oracle.validate_runtime
+        sdk_validator(report.get('sdkProfile'), Path(report['mcpStdio']['root']),
             Path(report['mcpStdio']['root']) / 'python.exe', candidate['sdk_profile_source'],
             candidate['sdk_profile_modules'], check_files=False)
     except (ValueError, KeyError, TypeError) as error:

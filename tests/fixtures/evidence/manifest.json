@@ -64,6 +64,160 @@
       "size": 4675729,
       "sha256": "6cbabcf3c20e40e82a4a7eb31d7d0778a99e4d20770833cd275cbe5cf9d16619",
       "fixture": "6cbabcf3c20e40e82a4a7eb31d7d0778a99e4d20770833cd275cbe5cf9d16619.json.gz"
+    },
+    {
+      "archive": "RC3-QUALIFICATION-20261018-228CFACC.zip",
+      "archive_sha256": "f0f175c64849ce0d22b0790fd2fc591daf41989f58961fb8fc7db7f62458f0f2",
+      "member": "full-gate-root.zip!/permission-presets-paired.source.json",
+      "container": "full-gate-root.zip",
+      "container_sha256": "72b203024ac56295e662764c6b3c6f2deb36153e62e678fd4ec3d1d46e942e3b",
+      "size": 1567036,
+      "sha256": "3b4e73c165cd0614addfe5c722c230547571b1e313eee3b8f020822c0a8f9257",
+      "fixture": "3b4e73c165cd0614addfe5c722c230547571b1e313eee3b8f020822c0a8f9257.json.gz",
+      "scope": "Historical immutable Source facts for legacy receipt-parser unit controls; no current parity or archive qualification"
+    },
+    {
+      "archive": "RC3-QUALIFICATION-20261018-228CFACC.zip",
+      "archive_sha256": "f0f175c64849ce0d22b0790fd2fc591daf41989f58961fb8fc7db7f62458f0f2",
+      "member": "full-gate-root.zip!/tool-errors-paired.source.json",
+      "container": "full-gate-root.zip",
+      "container_sha256": "72b203024ac56295e662764c6b3c6f2deb36153e62e678fd4ec3d1d46e942e3b",
+      "size": 1484367,
+      "sha256": "958965d4665d2b39612d686429a4735b9a7f87a021ba94541d7b6b5537a2ade3",
+      "fixture": "958965d4665d2b39612d686429a4735b9a7f87a021ba94541d7b6b5537a2ade3.json.gz",
+      "scope": "Historical immutable Source facts for legacy receipt-parser unit controls; no current parity or archive qualification"
+    },
+    {
+      "archive": "RC3-QUALIFICATION-20261018-228CFACC.zip",
+      "archive_sha256": "f0f175c64849ce0d22b0790fd2fc591daf41989f58961fb8fc7db7f62458f0f2",
+      "member": "full-gate-root.zip!/javascript-errors-paired.source.json",
+      "container": "full-gate-root.zip",
+      "container_sha256": "72b203024ac56295e662764c6b3c6f2deb36153e62e678fd4ec3d1d46e942e3b",
+      "size": 46457,
+      "sha256": "2cbcf8d8aa27f74a17ebb7a661631ef536810622599deb5388c6301046dd1a59",
+      "fixture": "2cbcf8d8aa27f74a17ebb7a661631ef536810622599deb5388c6301046dd1a59.json.gz",
+      "scope": "Historical immutable Source facts for legacy receipt-parser unit controls; no current parity or archive qualification"
+    },
+    {
+      "archive": "RC3-QUALIFICATION-20261018-228CFACC.zip",
+      "archive_sha256": "f0f175c64849ce0d22b0790fd2fc591daf41989f58961fb8fc7db7f62458f0f2",
+      "member": "full-gate-root.zip!/subagent-model-paired.source.json",
+      "container": "full-gate-root.zip",
+      "container_sha256": "72b203024ac56295e662764c6b3c6f2deb36153e62e678fd4ec3d1d46e942e3b",
+      "size": 1568386,
+      "sha256": "9988c6bbfd6209177c655e3545ba9751db44cf06bcd5f857bb7a2dc1be3755ef",
+      "fixture": "9988c6bbfd6209177c655e3545ba9751db44cf06bcd5f857bb7a2dc1be3755ef.json.gz",
+      "scope": "Historical immutable Source facts for legacy receipt-parser unit controls; no current parity or archive qualification"
+    },
+    {
+      "archive": "RC3-QUALIFICATION-20261018-228CFACC.zip",
+      "archive_sha256": "f0f175c64849ce0d22b0790fd2fc591daf41989f58961fb8fc7db7f62458f0f2",
+      "member": "full-gate-root.zip!/unicode-carrier-paired.source.json",
+      "container": "full-gate-root.zip",
+      "container_sha256": "72b203024ac56295e662764c6b3c6f2deb36153e62e678fd4ec3d1d46e942e3b",
+      "size": 1502688,
+      "sha256": "fd20a1750bbdba97f1376797cdd99ef8ca102b8b736ae67605fbc965eccd1d9e",
+      "fixture": "fd20a1750bbdba97f1376797cdd99ef8ca102b8b736ae67605fbc965eccd1d9e.json.gz",
+      "scope": "Historical immutable Source facts for legacy receipt-parser unit controls; no current parity or archive qualification"
+    },
+    {
+      "archive": "RC3-QUALIFICATION-20261018-228CFACC.zip",
+      "archive_sha256": "f0f175c64849ce0d22b0790fd2fc591daf41989f58961fb8fc7db7f62458f0f2",
+      "member": "full-gate-root.zip!/fs-values-paired.source.json",
+      "container": "full-gate-root.zip",
+      "container_sha256": "72b203024ac56295e662764c6b3c6f2deb36153e62e678fd4ec3d1d46e942e3b",
+      "size": 1910334,
+      "sha256": "5f9714ebecf371c17e58a4827c17738430e8a7ca8f37eb9a625c2669ed81818c",
+      "fixture": "5f9714ebecf371c17e58a4827c17738430e8a7ca8f37eb9a625c2669ed81818c.json.gz",
+      "scope": "Historical immutable Source facts for legacy receipt-parser unit controls; no current parity or archive qualification"
+    },
+    {
+      "archive": "RC3-QUALIFICATION-20261018-228CFACC.zip",
+      "archive_sha256": "f0f175c64849ce0d22b0790fd2fc591daf41989f58961fb8fc7db7f62458f0f2",
+      "member": "full-gate-root.zip!/message-values-paired.source.json",
+      "container": "full-gate-root.zip",
+      "container_sha256": "72b203024ac56295e662764c6b3c6f2deb36153e62e678fd4ec3d1d46e942e3b",
+      "size": 1497889,
+      "sha256": "ddf2591f68501709e89c2b50a8c6ba669e6c0b9289a8703b7a6ac93614dd2cf5",
+      "fixture": "ddf2591f68501709e89c2b50a8c6ba669e6c0b9289a8703b7a6ac93614dd2cf5.json.gz",
+      "scope": "Historical immutable Source facts for legacy receipt-parser unit controls; no current parity or archive qualification"
+    },
+    {
+      "archive": "RC3-QUALIFICATION-20261018-228CFACC.zip",
+      "archive_sha256": "f0f175c64849ce0d22b0790fd2fc591daf41989f58961fb8fc7db7f62458f0f2",
+      "member": "full-gate-root.zip!/ask-user-paired.source.json",
+      "container": "full-gate-root.zip",
+      "container_sha256": "72b203024ac56295e662764c6b3c6f2deb36153e62e678fd4ec3d1d46e942e3b",
+      "size": 1493380,
+      "sha256": "18a3f3b6ab83dbe34794e129edf497138fe5b53205c4e05668b07526e2e55686",
+      "fixture": "18a3f3b6ab83dbe34794e129edf497138fe5b53205c4e05668b07526e2e55686.json.gz",
+      "scope": "Historical immutable Source facts for legacy receipt-parser unit controls; no current parity or archive qualification"
+    },
+    {
+      "archive": "RC3-QUALIFICATION-20261018-228CFACC.zip",
+      "archive_sha256": "f0f175c64849ce0d22b0790fd2fc591daf41989f58961fb8fc7db7f62458f0f2",
+      "member": "full-gate-root.zip!/agent-dependencies-paired.source.json",
+      "container": "full-gate-root.zip",
+      "container_sha256": "72b203024ac56295e662764c6b3c6f2deb36153e62e678fd4ec3d1d46e942e3b",
+      "size": 1492433,
+      "sha256": "bc79e64355c4ce3fe029fb72a64dbf0eb4bfec8c9c8de7b925ed05f7a7737fd2",
+      "fixture": "bc79e64355c4ce3fe029fb72a64dbf0eb4bfec8c9c8de7b925ed05f7a7737fd2.json.gz",
+      "scope": "Historical immutable Source facts for legacy receipt-parser unit controls; no current parity or archive qualification"
+    },
+    {
+      "archive": "RC3-QUALIFICATION-20261018-228CFACC.zip",
+      "archive_sha256": "f0f175c64849ce0d22b0790fd2fc591daf41989f58961fb8fc7db7f62458f0f2",
+      "member": "full-gate-root.zip!/tool-durable-paired.source.json",
+      "container": "full-gate-root.zip",
+      "container_sha256": "72b203024ac56295e662764c6b3c6f2deb36153e62e678fd4ec3d1d46e942e3b",
+      "size": 1540065,
+      "sha256": "4a4895643867c220cac02a2f0bc55fbae2afb25c2caded8cb353844d84db5fcc",
+      "fixture": "4a4895643867c220cac02a2f0bc55fbae2afb25c2caded8cb353844d84db5fcc.json.gz",
+      "scope": "Historical immutable Source facts for legacy receipt-parser unit controls; no current parity or archive qualification"
+    },
+    {
+      "archive": "RC3-QUALIFICATION-20261018-228CFACC.zip",
+      "archive_sha256": "f0f175c64849ce0d22b0790fd2fc591daf41989f58961fb8fc7db7f62458f0f2",
+      "member": "full-gate-root.zip!/deepseek-capture-paired.source.json",
+      "container": "full-gate-root.zip",
+      "container_sha256": "72b203024ac56295e662764c6b3c6f2deb36153e62e678fd4ec3d1d46e942e3b",
+      "size": 90467,
+      "sha256": "97b12c4a00f30cddec88a58d4ea9a2dab6f972f4335693d8e7394f26b03fa277",
+      "fixture": "97b12c4a00f30cddec88a58d4ea9a2dab6f972f4335693d8e7394f26b03fa277.json.gz",
+      "scope": "Historical immutable Source facts for legacy receipt-parser unit controls; no current parity or archive qualification"
+    },
+    {
+      "archive": "RC3-QUALIFICATION-20261018-228CFACC.zip",
+      "archive_sha256": "f0f175c64849ce0d22b0790fd2fc591daf41989f58961fb8fc7db7f62458f0f2",
+      "member": "full-gate-root.zip!/fs-values-paired.native.json",
+      "container": "full-gate-root.zip",
+      "container_sha256": "72b203024ac56295e662764c6b3c6f2deb36153e62e678fd4ec3d1d46e942e3b",
+      "size": 438531,
+      "sha256": "61f8b68a71a3756caefce42ab2c40661a69dfd7cd41a7af7dd9ad2f438585ac3",
+      "fixture": "61f8b68a71a3756caefce42ab2c40661a69dfd7cd41a7af7dd9ad2f438585ac3.json.gz",
+      "scope": "Immutable historical template for synthetic receipt-parser unit model; no current Native execution or parity"
+    },
+    {
+      "archive": "RC3-QUALIFICATION-20261018-228CFACC.zip",
+      "archive_sha256": "f0f175c64849ce0d22b0790fd2fc591daf41989f58961fb8fc7db7f62458f0f2",
+      "member": "full-gate-root.zip!/jsonl-provider-paired.native.json",
+      "container": "full-gate-root.zip",
+      "container_sha256": "72b203024ac56295e662764c6b3c6f2deb36153e62e678fd4ec3d1d46e942e3b",
+      "size": 245526,
+      "sha256": "e2a5f134ac92a92aa122360334813b4fb3e97427f4f9620ac5bb43a226fc7815",
+      "fixture": "e2a5f134ac92a92aa122360334813b4fb3e97427f4f9620ac5bb43a226fc7815.json.gz",
+      "scope": "Historical immutable template for explicit synthetic parser unit model; no current Native execution/parity"
+    },
+    {
+      "archive": "RC3-QUALIFICATION-20261018-228CFACC.zip",
+      "archive_sha256": "f0f175c64849ce0d22b0790fd2fc591daf41989f58961fb8fc7db7f62458f0f2",
+      "member": "rc1-capabilities.zip!/native.json",
+      "container": "rc1-capabilities.zip",
+      "container_sha256": "af419bc13c968a7b15b99093ca18613c780c1da5ae92fdbbd6d803cf2d262b14",
+      "size": 450197,
+      "sha256": "b3eb936b353ced2a18e247aca990aa9bc99b3726451d217dad02b5819d64c171",
+      "fixture": "b3eb936b353ced2a18e247aca990aa9bc99b3726451d217dad02b5819d64c171.json.gz",
+      "scope": "Historical immutable template for explicit synthetic parser unit model; no current Native execution/parity"
     }
   ]
 }

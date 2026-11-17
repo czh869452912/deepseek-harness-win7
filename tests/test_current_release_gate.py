@@ -79,7 +79,7 @@ from scripts.unicode_carrier_oracle import OBSERVER_INPUTS as UNICODE_CARRIER_OB
 from scripts.fs_values_oracle import OBSERVER_INPUTS as FS_VALUES_OBSERVER_INPUTS
 from scripts.fs_values_oracle import SOURCE_REQUIRED as FS_VALUES_SOURCE_REQUIRED
 from scripts.message_values_oracle import OBSERVER_INPUTS as MESSAGE_VALUES_OBSERVER_INPUTS
-from scripts.sdk_profile_oracle import OBSERVER_INPUTS as SDK_OBSERVER_INPUTS
+from scripts.current_sdk_profile_oracle import OBSERVER_INPUTS as SDK_OBSERVER_INPUTS
 from scripts.permission_presets_oracle import OBSERVER_INPUTS as PERMISSION_OBSERVER_INPUTS
 from scripts.exported_host_lifecycle_oracle import observe_native as observe_host_lifecycle
 from scripts.process_artifact_retention import prune_finished_test_folder
@@ -89,6 +89,7 @@ from scripts.canonical_llm_oracle import observation_digest as canonical_llm_obs
 from test_canonical_llm_consumers import damage_observations as damage_canonical_llm_observations
 from scripts.jsonl_sharing_oracle import observation_digest as sharing_observation_digest
 from test_jsonl_sharing_consumers import damage_observations as damage_sharing_observations
+from release_gate_fixtures import historical_source, native_fixture, pair_fixture, synthetic_native_model
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -675,15 +676,7 @@ def test_extracted_redirect_requires_fresh_source_and_owned_runtime(tmp_path, da
 
 @functools.lru_cache(maxsize=1)
 def javascript_runtime_fixture():
-    with tempfile.TemporaryDirectory(prefix='javascript-workflow-receipt-') as folder:
-        output = Path(folder) / 'paired.json'
-        result = subprocess.run([sys.executable, str(ROOT / 'scripts/javascript_workflow_oracle.py'),
-                                 '--output', str(output)], cwd=str(ROOT), capture_output=True, timeout=120)
-        if result.returncode:
-            raise RuntimeError(result.stdout.decode('utf-8', errors='replace') + result.stderr.decode('utf-8', errors='replace'))
-        paired = json.loads(output.read_text(encoding='utf-8'))
-        assert paired['status'] == 'matched'
-        return json.loads(output.with_suffix('.native.json').read_text(encoding='utf-8'))
+    return native_fixture('javascript-workflow', arguments=('--cases', ROOT / 'tests/fixtures/javascript-workflow/cases.json'))
 
 
 @pytest.mark.parametrize('damage', ['missing', 'source-missing', 'source-changed', 'module-missing',
@@ -739,13 +732,7 @@ def test_javascript_runtime_and_source_consumer_lanes_are_mandatory(tmp_path, mo
 
 @functools.lru_cache(maxsize=1)
 def context_runtime_fixture():
-    with tempfile.TemporaryDirectory(prefix='runtime-context-receipt-') as folder:
-        output = Path(folder) / 'paired.json'
-        completed = subprocess.run([sys.executable, str(ROOT / 'scripts/runtime_context_oracle.py'),
-            '--output', str(output)], cwd=str(ROOT), capture_output=True, timeout=60)
-        if completed.returncode:
-            raise RuntimeError(output.read_text(encoding='utf-8'))
-        return json.loads(output.with_suffix('.native.json').read_text(encoding='utf-8'))
+    return native_fixture('runtime-context')
 
 
 @pytest.mark.parametrize('damage', ['missing', 'source-missing', 'source-changed', 'module-missing',
@@ -794,13 +781,7 @@ def test_runtime_context_consumer_lanes_are_mandatory(tmp_path, damage):
 
 @functools.lru_cache(maxsize=1)
 def ready_runtime_fixture():
-    with tempfile.TemporaryDirectory(prefix='javascript-ready-receipt-') as folder:
-        output = Path(folder) / 'paired.json'
-        completed = subprocess.run([sys.executable, str(ROOT / 'scripts/javascript_ready_oracle.py'),
-            '--output', str(output)], cwd=str(ROOT), capture_output=True, timeout=60)
-        if completed.returncode:
-            raise RuntimeError(output.read_text(encoding='utf-8'))
-        return json.loads(output.with_suffix('.native.json').read_text(encoding='utf-8'))
+    return native_fixture('javascript-ready')
 
 
 @pytest.mark.parametrize('damage', ['missing', 'source-missing', 'source-changed', 'module-missing',
@@ -853,13 +834,7 @@ def test_ready_consumer_lanes_are_mandatory(tmp_path, damage):
 
 @functools.lru_cache(maxsize=1)
 def read_runtime_fixture():
-    with tempfile.TemporaryDirectory(prefix='persistence-read-receipt-') as folder:
-        output = Path(folder) / 'paired.json'
-        completed = subprocess.run([sys.executable, str(ROOT / 'scripts/persistence_read_oracle.py'),
-            '--output', str(output)], cwd=str(ROOT), capture_output=True, timeout=90)
-        if completed.returncode:
-            raise RuntimeError(output.read_text(encoding='utf-8'))
-        return json.loads(output.with_suffix('.native.json').read_text(encoding='utf-8'))
+    return native_fixture('persistence-read')
 
 
 @pytest.mark.parametrize('damage', ['missing', 'source-missing', 'source-changed', 'module-missing',
@@ -921,13 +896,7 @@ def test_read_consumer_lanes_are_mandatory(tmp_path, damage):
 
 @functools.lru_cache(maxsize=1)
 def initial_runtime_fixture():
-    with tempfile.TemporaryDirectory(prefix='javascript-initial-receipt-') as folder:
-        output = Path(folder) / 'paired.json'
-        completed = subprocess.run([sys.executable, str(ROOT / 'scripts/javascript_initial_oracle.py'),
-            '--output', str(output)], cwd=str(ROOT), capture_output=True, timeout=60)
-        if completed.returncode:
-            raise RuntimeError(output.read_text(encoding='utf-8'))
-        return json.loads(output.with_suffix('.native.json').read_text(encoding='utf-8'))
+    return native_fixture('javascript-initial')
 
 
 @pytest.mark.parametrize('damage', ['missing', 'source-missing', 'source-changed', 'module-missing',
@@ -985,13 +954,7 @@ def test_initial_consumer_lanes_are_mandatory(tmp_path, damage):
 
 @functools.lru_cache(maxsize=1)
 def number_runtime_fixture():
-    with tempfile.TemporaryDirectory(prefix='session-number-receipt-') as folder:
-        output = Path(folder) / 'paired.json'
-        completed = subprocess.run([sys.executable, str(ROOT / 'scripts/session_number_oracle.py'),
-            '--output', str(output)], cwd=str(ROOT), capture_output=True, timeout=90)
-        if completed.returncode:
-            raise RuntimeError(output.read_text(encoding='utf-8'))
-        return json.loads(output.with_suffix('.native.json').read_text(encoding='utf-8'))
+    return native_fixture('session-number')
 
 
 @pytest.mark.parametrize('damage', ['missing', 'source-missing', 'source-changed', 'module-missing',
@@ -1056,13 +1019,7 @@ def test_number_consumer_lanes_are_mandatory(tmp_path, damage):
 
 @functools.lru_cache(maxsize=1)
 def diagnostic_runtime_fixture():
-    with tempfile.TemporaryDirectory(prefix='session-diagnostic-receipt-') as folder:
-        output = Path(folder) / 'paired.json'
-        completed = subprocess.run([sys.executable, str(ROOT / 'scripts/session_diagnostic_oracle.py'),
-            '--output', str(output)], cwd=str(ROOT), capture_output=True, timeout=90)
-        if completed.returncode:
-            raise RuntimeError(output.read_text(encoding='utf-8'))
-        return json.loads(output.with_suffix('.native.json').read_text(encoding='utf-8'))
+    return native_fixture('session-diagnostic')
 
 
 @pytest.mark.parametrize('damage', ['missing', 'source-missing', 'source-changed', 'module-missing',
@@ -1119,13 +1076,7 @@ def test_diagnostic_consumer_lanes_are_mandatory(tmp_path, damage):
 
 @functools.lru_cache(maxsize=1)
 def restore_sign_runtime_fixture():
-    with tempfile.TemporaryDirectory(prefix='session-restore-sign-receipt-') as folder:
-        output = Path(folder) / 'paired.json'
-        completed = subprocess.run([sys.executable, str(ROOT / 'scripts/session_restore_sign_oracle.py'),
-            '--output', str(output)], cwd=str(ROOT), capture_output=True, timeout=90)
-        if completed.returncode:
-            raise RuntimeError(output.read_text(encoding='utf-8'))
-        return json.loads(output.with_suffix('.native.json').read_text(encoding='utf-8'))
+    return native_fixture('session-restore-sign')
 
 
 @pytest.mark.parametrize('damage', ['missing', 'source-missing', 'source-changed', 'module-missing',
@@ -1178,13 +1129,7 @@ def test_restore_sign_consumer_lanes_are_mandatory(tmp_path, damage):
 
 @functools.lru_cache(maxsize=1)
 def full_request_runtime_fixture():
-    with tempfile.TemporaryDirectory(prefix='runtime-full-request-receipt-') as folder:
-        output = Path(folder) / 'paired.json'
-        completed = subprocess.run([sys.executable, str(ROOT / 'scripts/runtime_full_request_oracle.py'),
-            '--output', str(output)], cwd=str(ROOT), capture_output=True, timeout=90)
-        if completed.returncode:
-            raise RuntimeError(output.read_text(encoding='utf-8'))
-        return json.loads(output.with_suffix('.native.json').read_text(encoding='utf-8'))
+    return native_fixture('runtime-full-request')
 
 
 @pytest.mark.parametrize('damage', ['missing', 'source-missing', 'source-changed', 'module-missing',
@@ -1246,13 +1191,7 @@ def test_full_request_consumer_lanes_are_mandatory(tmp_path, damage):
 
 @functools.lru_cache(maxsize=1)
 def deepseek_error_runtime_fixture():
-    with tempfile.TemporaryDirectory(prefix='deepseek-error-receipt-') as folder:
-        output = Path(folder) / 'paired.json'
-        completed = subprocess.run([sys.executable, str(ROOT / 'scripts/deepseek_error_oracle.py'),
-            '--output', str(output)], cwd=str(ROOT), capture_output=True, timeout=90)
-        if completed.returncode:
-            raise RuntimeError(output.read_text(encoding='utf-8'))
-        return json.loads(output.with_suffix('.native.json').read_text(encoding='utf-8'))
+    return native_fixture('deepseek-error')
 
 
 @pytest.mark.parametrize('damage', ['missing', 'source-missing', 'source-changed', 'module-missing', 'module-changed',
@@ -1296,15 +1235,7 @@ def test_deepseek_error_consumer_lanes_are_mandatory(tmp_path, damage):
 
 @functools.lru_cache(maxsize=1)
 def deepseek_capture_runtime_fixture():
-    with tempfile.TemporaryDirectory(prefix='deepseek-capture-receipt-') as folder:
-        output = Path(folder) / 'paired.json'
-        completed = subprocess.run([sys.executable, str(ROOT / 'scripts/deepseek_capture_oracle.py'),
-            '--output', str(output)], cwd=str(ROOT), capture_output=True, timeout=90)
-        if completed.returncode:
-            diagnostic = ROOT / '.goose/out' / Path(folder).name
-            shutil.copytree(folder, str(diagnostic))
-            raise RuntimeError(output.read_text(encoding='utf-8'))
-        return json.loads(output.with_suffix('.native.json').read_text(encoding='utf-8'))
+    return native_fixture('deepseek-capture', source=historical_source('deepseek-capture'))
 
 
 @pytest.mark.parametrize('damage', ('missing', 'source-missing', 'source-changed', 'module-missing', 'module-changed', 'config-name', 'config-message', 'error-name', 'error-message', 'failure-message', 'error-code', 'file-message', 'file-failure', 'file-quota', 'file-status', 'settings-model', 'settings-provider', 'settings-retry', 'stream', 'serialization', 'usage', 'request-body', 'accepted', 'origin', 'retry-failure', 'retry-delay', 'retry-policy', 'retry-number', 'retry-split', 'retry-shared', 'retry-form', 'tail', 'duplicate', 'root', 'python', 'executable'))
@@ -1347,13 +1278,7 @@ def test_deepseek_capture_consumer_lanes_are_mandatory(tmp_path, damage):
 
 @functools.lru_cache(maxsize=1)
 def sharing_runtime_fixture():
-    with tempfile.TemporaryDirectory(prefix='jsonl-sharing-receipt-') as folder:
-        output = Path(folder) / 'paired.json'
-        completed = subprocess.run([sys.executable, str(ROOT / 'scripts/jsonl_sharing_oracle.py'),
-            '--output', str(output)], cwd=str(ROOT), capture_output=True, timeout=180)
-        if completed.returncode:
-            raise RuntimeError(output.read_text(encoding='utf-8'))
-        return json.loads(output.with_suffix('.native.json').read_text(encoding='utf-8'))
+    return native_fixture('jsonl-sharing')
 
 
 @pytest.mark.parametrize('damage', ('missing', 'source-missing', 'source-changed', 'module-missing',
@@ -1396,13 +1321,7 @@ def test_jsonl_sharing_consumer_lanes_are_mandatory(tmp_path, damage):
 
 @functools.lru_cache(maxsize=1)
 def canonical_llm_runtime_fixture():
-    with tempfile.TemporaryDirectory(prefix='canonical-llm-receipt-') as folder:
-        output = Path(folder) / 'paired.json'
-        completed = subprocess.run([sys.executable, str(ROOT / 'scripts/canonical_llm_oracle.py'),
-            '--output', str(output)], cwd=str(ROOT), capture_output=True, timeout=600)
-        if completed.returncode:
-            raise RuntimeError(output.read_text(encoding='utf-8'))
-        return json.loads(output.with_suffix('.native.json').read_text(encoding='utf-8'))
+    return native_fixture('canonical-llm')
 
 
 @pytest.mark.parametrize('damage', ('missing', 'source-missing', 'source-changed', 'module-changed', 'request', 'event', 'tool-id', 'message-form', 'message-split', 'message-cross-fixture', 'retry-form', 'retry-split', 'retry-cross-fixture', 'tail', 'duplicate', 'order', 'type', 'root', 'python', 'executable', 'module', 'group-missing', 'group-rows', 'group-root', 'group-executable', 'group-module'))
@@ -1454,13 +1373,7 @@ def test_canonical_llm_consumer_lanes_are_mandatory(tmp_path, damage):
 
 @functools.lru_cache(maxsize=1)
 def llm_metadata_runtime_fixture():
-    with tempfile.TemporaryDirectory(prefix='llm-metadata-receipt-') as folder:
-        output = Path(folder) / 'paired.json'
-        completed = subprocess.run([sys.executable, str(ROOT / 'scripts/llm_metadata_oracle.py'),
-            '--output', str(output)], cwd=str(ROOT), capture_output=True, timeout=600)
-        if completed.returncode:
-            raise RuntimeError(output.read_text(encoding='utf-8'))
-        return json.loads(output.with_suffix('.native.json').read_text(encoding='utf-8'))
+    return native_fixture('llm-metadata')
 
 
 @pytest.mark.parametrize('damage', ('missing', 'source-missing', 'source-changed', 'module-changed', 'model', 'context', 'reasoning', 'description', 'max-tokens', 'modalities', 'trace', 'tail', 'duplicate', 'order', 'type', 'root', 'python', 'executable', 'module', 'group-missing', 'group-rows', 'group-root', 'group-executable', 'group-module'))
@@ -1512,13 +1425,7 @@ def test_llm_metadata_consumer_lanes_are_mandatory(tmp_path, damage):
 
 @functools.lru_cache(maxsize=1)
 def llm_prepared_runtime_fixture():
-    with tempfile.TemporaryDirectory(prefix='llm-prepared-receipt-') as folder:
-        output = Path(folder) / 'paired.json'
-        completed = subprocess.run([sys.executable, str(ROOT / 'scripts/llm_prepared_oracle.py'),
-            '--output', str(output)], cwd=str(ROOT), capture_output=True, timeout=600)
-        if completed.returncode:
-            raise RuntimeError(output.read_text(encoding='utf-8'))
-        return json.loads(output.with_suffix('.native.json').read_text(encoding='utf-8'))
+    return native_fixture('llm-prepared')
 
 
 @pytest.mark.parametrize('damage', ('missing', 'source-missing', 'source-changed', 'module-changed', 'config', 'boolean', 'defaults', 'context', 'error', 'dispatch', 'trace', 'replay', 'signal', 'frozen', 'header', 'empty', 'message-form', 'message-split', 'tail', 'duplicate', 'order', 'type', 'root', 'python', 'executable', 'module', 'group-missing', 'group-rows', 'group-root', 'group-executable', 'group-module'))
@@ -1570,13 +1477,7 @@ def test_llm_prepared_consumer_lanes_are_mandatory(tmp_path, damage):
 
 @functools.lru_cache(maxsize=1)
 def llm_config_runtime_fixture():
-    with tempfile.TemporaryDirectory(prefix='llm-config-receipt-') as folder:
-        output = Path(folder) / 'paired.json'
-        completed = subprocess.run([sys.executable, str(ROOT / 'scripts/llm_config_oracle.py'),
-            '--output', str(output)], cwd=str(ROOT), capture_output=True, timeout=600)
-        if completed.returncode:
-            raise RuntimeError(output.read_text(encoding='utf-8'))
-        return json.loads(output.with_suffix('.native.json').read_text(encoding='utf-8'))
+    return native_fixture('llm-config')
 
 
 @pytest.mark.parametrize('damage', ('missing', 'source-missing', 'source-changed', 'module-changed', 'config', 'boolean', 'max-null', 'reason-null', 'same', 'same-stop', 'input', 'after-change', 'error', 'code', 'hook', 'signal', 'trace', 'tail', 'duplicate', 'order', 'type', 'unknown', 'root', 'python', 'executable', 'module', 'group-missing', 'group-rows', 'group-root', 'group-executable', 'group-module'))
@@ -1628,14 +1529,16 @@ def test_llm_config_consumer_lanes_are_mandatory(tmp_path, damage):
 
 @functools.lru_cache(maxsize=1)
 def win32_stat_runtime_fixture():
-    with tempfile.TemporaryDirectory(prefix='win32-stat-receipt-') as folder:
+    with tempfile.TemporaryDirectory(prefix='dsh-current-stat-') as folder:
         output = Path(folder) / 'paired.json'
-        completed = subprocess.run([sys.executable, str(ROOT / 'scripts/win32_stat_oracle.py'),
-            '--output', str(output)], cwd=str(ROOT), capture_output=True, timeout=300)
-        if completed.returncode:
-            raise RuntimeError(output.read_text(encoding='utf-8'))
+        completed = subprocess.run([sys.executable, str(ROOT / 'scripts/current_win32_stat_oracle.py'),
+            '--output', str(output)], cwd=str(ROOT), capture_output=True, timeout=200)
+        assert completed.returncode == 0, completed.stdout + completed.stderr + output.read_bytes()
+        readonly = output.with_suffix('.files') / 'metadata-change.txt'
+        assert readonly.lstat().st_nlink == 1
+        readonly.chmod(0o600)
         return dict(source=json.loads(output.with_suffix('.source.json').read_text(encoding='utf-8')),
-            native=json.loads(output.with_suffix('.native.json').read_text(encoding='utf-8')))
+                    native=json.loads(output.with_suffix('.native.json').read_text(encoding='utf-8')))
 
 
 @pytest.mark.parametrize('damage', ('missing', 'source-missing', 'source-hash', 'source-row', 'source-stamp',
@@ -1679,7 +1582,7 @@ def sdk_profile_runtime_fixture():
     with tempfile.TemporaryDirectory(prefix='dsh-sdk-profile-source-') as folder:
         output = Path(folder) / 'paired.json'
         try:
-            completed = subprocess.run([sys.executable, str(ROOT / 'scripts/sdk_profile_oracle.py'),
+            completed = subprocess.run([sys.executable, str(ROOT / 'scripts/current_sdk_profile_oracle.py'),
                 '--output', str(output)], cwd=str(ROOT), capture_output=True, timeout=600)
             if completed.returncode:
                 raise RuntimeError(output.read_text(encoding='utf-8'))
@@ -1693,26 +1596,12 @@ def sdk_profile_runtime_fixture():
 
 @functools.lru_cache(maxsize=1)
 def permission_presets_runtime_fixture():
-    with tempfile.TemporaryDirectory(prefix='dsh-permission-presets-source-') as folder:
-        output = Path(folder) / 'paired.json'
-        completed = subprocess.run([sys.executable, str(ROOT / 'scripts/permission_presets_oracle.py'),
-            '--output', str(output)], cwd=str(ROOT), capture_output=True, timeout=240)
-        if completed.returncode:
-            raise RuntimeError((completed.stdout + completed.stderr).decode('utf-8', errors='replace'))
-        return dict(source=json.loads(output.with_suffix('.source.json').read_text(encoding='utf-8')),
-            native=json.loads(output.with_suffix('.native.json').read_text(encoding='utf-8')))
+    return pair_fixture('permission-presets')
 
 
 @functools.lru_cache(maxsize=1)
 def tool_errors_runtime_fixture():
-    with tempfile.TemporaryDirectory(prefix='dsh-tool-errors-source-') as folder:
-        output = Path(folder) / 'paired.json'
-        completed = subprocess.run([sys.executable, str(ROOT / 'scripts/tool_errors_oracle.py'),
-            '--output', str(output)], cwd=str(ROOT), capture_output=True, timeout=240)
-        if completed.returncode:
-            raise RuntimeError(output.read_text(encoding='utf-8'))
-        return dict(source=json.loads(output.with_suffix('.source.json').read_text(encoding='utf-8')),
-            native=json.loads(output.with_suffix('.native.json').read_text(encoding='utf-8')))
+    return pair_fixture('tool-errors')
 
 
 @functools.lru_cache(maxsize=1)
@@ -1901,14 +1790,7 @@ def test_plan_contract_lanes_are_mandatory(tmp_path, damage):
 
 @functools.lru_cache(maxsize=1)
 def javascript_errors_runtime_fixture():
-    with tempfile.TemporaryDirectory(prefix='javascript-errors-receipt-') as folder:
-        output = Path(folder) / 'paired.json'
-        completed = subprocess.run([sys.executable, str(ROOT / 'scripts/javascript_errors_oracle.py'),
-            '--output', str(output)], cwd=str(ROOT), capture_output=True, timeout=360)
-        if completed.returncode:
-            raise RuntimeError(output.read_text(encoding='utf-8'))
-        return dict(source=json.loads(output.with_suffix('.source.json').read_text(encoding='utf-8')),
-            native=json.loads(output.with_suffix('.native.json').read_text(encoding='utf-8')))
+    return pair_fixture('javascript-errors')
 
 
 @pytest.mark.parametrize('damage', GATE.JS_ERROR_DAMAGES + ('missing', 'source-missing', 'source-changed', 'source-file'))
@@ -2075,7 +1957,9 @@ def extracted_receipt(tmp_path):
         child['root'], child['executable'] = errors['root'], errors['executable']
     candidate['javascript_errors_source'] = errors_pair['source']
     candidate['javascript_errors_source_sha256'] = hashlib.sha256(json.dumps(errors_pair['source'], sort_keys=True).encode('utf-8')).hexdigest()
-    candidate['javascript_errors_observations_sha256'] = GATE.errors_identity(errors_pair['source'])
+    # historical_source verifies original archive/member bytes. This parser
+    # fixture never claims the old Source tree is the current checkout.
+    candidate['javascript_errors_observations_sha256'] = GATE.errors_identity(errors_pair['source'], check_files=False)
     candidate['javascript_errors_modules'] = copy.deepcopy(errors['modules'])
     candidate['javascript_errors_assets'] = copy.deepcopy(errors['assets'])
     read = copy.deepcopy(read_runtime_fixture())
@@ -2403,16 +2287,9 @@ def test_session_text_lanes_are_mandatory(tmp_path, damage):
 
 @functools.lru_cache(maxsize=1)
 def jsonl_provider_runtime_fixture():
-    directory = Path(tempfile.mkdtemp(prefix='jsonl-provider-validator-', dir=str(ROOT / '.goose/out')))
-    output = directory / 'paired.json'
-    result = subprocess.run([sys.executable, str(ROOT / 'scripts/jsonl_provider_oracle.py'), '--output', str(output)],
-        capture_output=True, timeout=150)
-    (directory / 'stdout.log').write_bytes(result.stdout)
-    (directory / 'stderr.log').write_bytes(result.stderr)
-    assert result.returncode == 0 and not result.stderr, str(output)
-    paired = json.loads(output.read_text(encoding='utf-8'))
-    native = json.loads(output.with_name('paired.native.json').read_text(encoding='utf-8'))
-    return native, paired['generatedInputsSha256']
+    from scripts.jsonl_provider_oracle import MODULES
+    native = synthetic_native_model('full-gate-root.zip!/jsonl-provider-paired.native.json', MODULES, exact=True)
+    return native, native['generatedInputsSha256']
 
 
 @pytest.mark.parametrize('damage', ['omit', 'skip', 'duplicate', 'failure'])
@@ -3061,7 +2938,7 @@ def test_actual_ci_receipt_binding_accepts_empty_json_keys_and_keeps_refusals(tm
     process = subprocess.run([shutil.which('pwsh'), '-NoProfile', '-NonInteractive',
                               '-Command', "$ErrorActionPreference = 'Stop'\n" + script],
                              cwd=str(tmp_path), env=environment, capture_output=True,
-                             encoding='utf-8', timeout=30)
+                             timeout=30)
     if damage == 'none':
         assert process.returncode == 0, process.stderr
         assert output.read_text(encoding='utf-8').strip() == 'archive=' + str(archive)
@@ -3273,14 +3150,7 @@ def test_extracted_session_tracing_requires_exact_observations_and_runtime(tmp_p
 
 @functools.lru_cache(maxsize=1)
 def subagent_model_runtime_fixture():
-    with tempfile.TemporaryDirectory(prefix='dsh-subagent-model-source-') as folder:
-        output = Path(folder) / 'paired.json'
-        completed = subprocess.run([sys.executable, str(ROOT / 'scripts/subagent_model_oracle.py'),
-            '--output', str(output)], cwd=str(ROOT), capture_output=True, timeout=240)
-        if completed.returncode:
-            raise RuntimeError(output.read_text(encoding='utf-8'))
-        return dict(source=json.loads(output.with_suffix('.source.json').read_text(encoding='utf-8')),
-            native=json.loads(output.with_suffix('.native.json').read_text(encoding='utf-8')))
+    return pair_fixture('subagent-model')
 
 
 @pytest.mark.parametrize('damage', GATE.SUBAGENT_MODEL_DAMAGES + ('receipt-missing', 'source-missing', 'source-changed', 'source-file'))
@@ -3324,14 +3194,7 @@ def test_extracted_subagent_model_accepts_complete_qualified_values(tmp_path):
 
 @functools.lru_cache(maxsize=1)
 def unicode_carrier_runtime_fixture():
-    with tempfile.TemporaryDirectory(prefix='dsh-unicode-carrier-source-') as folder:
-        output = Path(folder) / 'paired.json'
-        completed = subprocess.run([sys.executable, str(ROOT / 'scripts/unicode_carrier_oracle.py'),
-            '--output', str(output)], cwd=str(ROOT), capture_output=True, timeout=240)
-        if completed.returncode:
-            raise RuntimeError(output.read_text(encoding='utf-8'))
-        return dict(source=json.loads(output.with_suffix('.source.json').read_text(encoding='utf-8')),
-            native=json.loads(output.with_suffix('.native.json').read_text(encoding='utf-8')))
+    return pair_fixture('unicode-carrier')
 
 
 @pytest.mark.parametrize('damage', GATE.UNICODE_CARRIER_DAMAGES + ('receipt-missing', 'source-missing', 'source-changed', 'source-file'))
@@ -3375,19 +3238,7 @@ def test_extracted_unicode_carrier_accepts_complete_qualified_values(tmp_path):
 
 @functools.lru_cache(maxsize=1)
 def fs_values_runtime_fixture():
-    with tempfile.TemporaryDirectory(prefix='dsh-fs-values-source-') as folder:
-        output = Path(folder) / 'paired.json'
-        completed = subprocess.run([sys.executable, str(ROOT / 'scripts/fs_values_oracle.py'),
-            '--output', str(output)], cwd=str(ROOT), capture_output=True, timeout=240)
-        if completed.returncode:
-            raise RuntimeError(output.read_text(encoding='utf-8'))
-        report = dict(source=json.loads(output.with_suffix('.source.json').read_text(encoding='utf-8')),
-            native=json.loads(output.with_suffix('.native.json').read_text(encoding='utf-8')))
-        # Later extracted-receipt controls consume JSON values only. This is
-        # the final physical consumer, before TemporaryDirectory drops its owner.
-        from scripts.fs_fixture_workspace import cleanup
-        cleanup(output)
-        return report
+    return pair_fixture('fs-values')
 
 
 @pytest.mark.parametrize('damage', GATE.FS_VALUES_DAMAGES + ('receipt-missing', 'source-missing', 'source-changed', 'source-file'))
@@ -3432,14 +3283,7 @@ def test_fs_values_consumer_lanes_are_mandatory(tmp_path, damage):
 
 @functools.lru_cache(maxsize=1)
 def message_values_runtime_fixture():
-    with tempfile.TemporaryDirectory(prefix='dsh-message-values-source-') as folder:
-        output = Path(folder) / 'paired.json'
-        completed = subprocess.run([sys.executable, str(ROOT / 'scripts/message_values_oracle.py'),
-            '--output', str(output)], cwd=str(ROOT), capture_output=True, timeout=240)
-        if completed.returncode:
-            raise RuntimeError(output.read_text(encoding='utf-8'))
-        return dict(source=json.loads(output.with_suffix('.source.json').read_text(encoding='utf-8')),
-            native=json.loads(output.with_suffix('.native.json').read_text(encoding='utf-8')))
+    return pair_fixture('message-values')
 
 
 @pytest.mark.parametrize('damage', GATE.MESSAGE_VALUES_DAMAGES + ('receipt-missing', 'source-missing', 'source-changed', 'source-file'))
@@ -3476,14 +3320,7 @@ def test_message_values_consumer_lanes_are_mandatory(tmp_path, damage):
 
 @functools.lru_cache(maxsize=1)
 def ask_user_runtime_fixture():
-    with tempfile.TemporaryDirectory(prefix='dsh-ask-user-source-') as folder:
-        output = Path(folder) / 'paired.json'
-        completed = subprocess.run([sys.executable, str(ROOT / 'scripts/ask_user_oracle.py'),
-            '--output', str(output)], cwd=str(ROOT), capture_output=True, timeout=240)
-        if completed.returncode:
-            raise RuntimeError(output.read_text(encoding='utf-8'))
-        return dict(source=json.loads(output.with_suffix('.source.json').read_text(encoding='utf-8')),
-            native=json.loads(output.with_suffix('.native.json').read_text(encoding='utf-8')))
+    return pair_fixture('ask-user')
 
 
 @pytest.mark.parametrize('damage', GATE.ASK_USER_DAMAGES + ('receipt-missing', 'source-missing', 'source-changed', 'source-file'))
@@ -3517,14 +3354,7 @@ def test_ask_user_consumer_lanes_are_mandatory(tmp_path, damage):
 
 @functools.lru_cache(maxsize=1)
 def agent_dependencies_runtime_fixture():
-    with tempfile.TemporaryDirectory(prefix='dsh-agent-dependencies-source-') as folder:
-        output = Path(folder) / 'paired.json'
-        completed = subprocess.run([sys.executable, str(ROOT / 'scripts/agent_dependencies_oracle.py'),
-            '--output', str(output)], cwd=str(ROOT), capture_output=True, timeout=240)
-        if completed.returncode:
-            raise RuntimeError(output.read_text(encoding='utf-8'))
-        return dict(source=json.loads(output.with_suffix('.source.json').read_text(encoding='utf-8')),
-            native=json.loads(output.with_suffix('.native.json').read_text(encoding='utf-8')))
+    return pair_fixture('agent-dependencies')
 
 
 @pytest.mark.parametrize('damage', GATE.AGENT_DEPENDENCIES_DAMAGES + ('receipt-missing', 'source-missing', 'source-changed', 'source-file'))
@@ -3558,14 +3388,7 @@ def test_agent_dependencies_consumer_lanes_are_mandatory(tmp_path, damage):
 
 @functools.lru_cache(maxsize=1)
 def tool_durable_runtime_fixture():
-    with tempfile.TemporaryDirectory(prefix='dsh-tool-durable-source-') as folder:
-        output = Path(folder) / 'paired.json'
-        completed = subprocess.run([sys.executable, str(ROOT / 'scripts/tool_durable_oracle.py'),
-            '--output', str(output)], cwd=str(ROOT), capture_output=True, timeout=240)
-        if completed.returncode:
-            raise RuntimeError(output.read_text(encoding='utf-8'))
-        return dict(source=json.loads(output.with_suffix('.source.json').read_text(encoding='utf-8')),
-            native=json.loads(output.with_suffix('.native.json').read_text(encoding='utf-8')))
+    return pair_fixture('tool-durable')
 
 @pytest.mark.parametrize('damage', GATE.TOOL_DURABLE_DAMAGES + ('receipt-missing', 'source-missing', 'source-changed', 'source-file'))
 def test_extracted_tool_durable_requires_complete_values_and_runtime(tmp_path, damage):
@@ -3703,20 +3526,8 @@ def test_extracted_filters_require_exact_observations_and_runtime(tmp_path,damag
 
 @functools.lru_cache(maxsize=1)
 def rc1_runtime_fixture():
-    with tempfile.TemporaryDirectory(prefix='rc1-runtime-fixture-') as private:
-        output = Path(private) / 'pair'
-        try:
-            # Two independently bounded 60s observers plus both Source input
-            # scans must fit inside the caller's deadline.
-            completed = subprocess.run([sys.executable, str(ROOT / 'scripts/rc1_capabilities_oracle.py'),
-                '--output', str(output)], cwd=str(ROOT), capture_output=True, timeout=180)
-            if completed.returncode:
-                raise RuntimeError((output / 'report.json').read_text(encoding='utf-8'))
-        except BaseException:
-            retained = Path(tempfile.mkdtemp(prefix='rc1-gate-fixture-failed-', dir=str(ROOT / '.goose/out')))
-            shutil.copytree(private, str(retained), dirs_exist_ok=True)
-            raise
-        return json.loads((output / 'native.json').read_text(encoding='utf-8'))
+    from scripts.rc1_capabilities_oracle import CURRENT_MODULES
+    return synthetic_native_model('rc1-capabilities.zip!/native.json', CURRENT_MODULES)
 
 
 @pytest.mark.parametrize('damage', ['missing', 'source', 'input', 'root', 'python', 'modules', 'case', 'outcome'])

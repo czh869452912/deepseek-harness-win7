@@ -1,0 +1,48 @@
+{
+  "contract": "C9-CN",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "status": "targeted passed; unified qualification pending",
+  "scope": "All 1,527 retained receipt-parser unit cases covered across targeted runs. No cases skipped or retired. These synthetic archive/candidate models do not establish current Source parity or release acceptance.",
+  "checks": [
+    {
+      "run": "rc022-release-parser-controls-20261118-01",
+      "passed": 865,
+      "exit_code": 1,
+      "seconds": 681.9529999999795
+    },
+    {
+      "run": "rc022-release-parser-remaining-20261118-01",
+      "passed": 662,
+      "exit_code": 0,
+      "seconds": 916.6879999999655
+    },
+    {
+      "run": "rc022-release-parser-final-controls-20261118-01",
+      "passed": 5,
+      "exit_code": 0,
+      "seconds": 8.28100000001723
+    }
+  ],
+  "distinct_cases_passed": 1527,
+  "fixes": [
+    "Current Messages SDK and current file metadata dispatch in retained parser",
+    "Minimal original historical members support explicit parser-only models; historical identities and original bytes unchanged",
+    "Mandatory historical search-settings case name follows its existing renamed definition",
+    "Capture localized PowerShell failure diagnostics as bytes instead of assuming UTF-8"
+  ],
+  "failure_preservation": "Original 865-pass/one-failure run, earlier setup failures, XML/logs and parser fixture observations retained. Remaining 662 and five final controls independently passed. No claim of a single complete qualification.",
+  "cleanup": {
+    "bytes_removed": 13111292934,
+    "directories": 33,
+    "retained": "Commands/logs/XML, current Native parser inputs and model provenance; unresolved current complete-gate and archive acceptance still pending.",
+    "targeted_runner": "Owned short-workspace mapping now written before pytest; TEMP agrees with the mapped external parent so per-case synthetic receipt cleanup can run."
+  },
+  "input_sha256": {
+    "scripts/verify_release.py": "96764f9d8972ebd24922c09ca9b45f043f9525ae0593a9686edd18b55de195ff",
+    "tests/test_current_release_gate.py": "413809e9cf8507e26ce992bf271d04d0899f8cea86fcd0af026d38bbb239f9c5",
+    "tests/release_gate_fixtures.py": "3cd17f4acf5400cc738e8a96e96a33c42b3546a0b62a6eb27b74edd74304ff73",
+    "tests/fixtures/evidence/manifest.json": "eba21cf65189c61d50f0168d3ff3a998326c332fcf7d2735a7c6bfffafc654a6",
+    "tests/fixtures/evidence/README.md": "316ba9c09a86dd852d4139875aeb7726c5e448c25cff1bc9785d8fdd22b05a25"
+  },
+  "limitations": "Actual full current Python/472 Source/399 paired/fresh extracted archives/Desktop acceptance remains pending; Windows7 remains deferred."
+}

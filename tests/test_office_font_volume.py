@@ -2,6 +2,7 @@ import json
 import os
 from pathlib import Path
 import subprocess
+import time
 
 import pytest
 
@@ -70,6 +71,9 @@ def test_source_changes_rejected_before_read_and_before_publish(tmp_path, kind):
     entry = asset(volume)
     if kind == 'changed':
         before = path.stat()
+        # Windows timestamps may share a clock tick. This fixture must create
+        # the identity change its assertion asks the SDK to detect.
+        time.sleep(.02)
         path.write_bytes(b'ABCDEF')
         os.utime(str(path), ns=(before.st_atime_ns, before.st_mtime_ns))
     else:

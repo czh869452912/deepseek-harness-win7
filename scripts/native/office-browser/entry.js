@@ -4,6 +4,7 @@ import {volume,request,received,outputs,resources,hostEnvironment} from './platf
 import {run as scan} from '@office/snapshot';
 import {run as convert} from '@office/worker';
 import {DEFAULT_LIMITS,FONT_FALLBACKS} from '@office/defaults';
+import {validateOutput,pdfPageCount} from '@office/output';
 globalThis.Buffer=Buffer;
 
 async function main() {
@@ -14,14 +15,23 @@ async function main() {
     throw Error('Browser volume requires host-owned metadata cache.');
   if(input.host)hostEnvironment(input.host);
   volume(input.volume, Object.values(input.engine).filter(value=>typeof value==='string'&&value.startsWith('http:')));
-  request({options:input.options,previous:input.previous||[]});await scan();
-  const scanned=received().find(value=>'ok' in value);
+  let scanned;
+  if(input.readySnapshot)scanned={ok:true,snapshot:input.readySnapshot};
+  else {request({options:input.options,previous:input.previous||[]});await scan();scanned=received().find(value=>'ok' in value);}
   if(!scanned?.ok){self.postMessage({...scanned,adapter:resources()});return;}
   if(input.scanOnly){self.postMessage({...scanned,adapter:resources()});return;}
   const bytes=new Uint8Array(await(await fetch(input.inputRoute)).arrayBuffer());
-  request({...input,bytes,fontFaces:scanned.snapshot.faces});
+  request({...input,bytes,fontFaces:scanned.snapshot.faces,
+    fontCache:input.generation===undefined||input.generation===scanned.snapshot.generation?input.fontCache:[]});
   await convert();
   const result=received().find(value=>'ok' in value);
+  if(result?.ok&&result.output){
+    try{validateOutput(result.output,input.operation.format);
+      result.metadata={backend:input.engine.backend,missingFonts:result.missingFonts,
+        ...input.operation.format==='pdf'?{pageCount:pdfPageCount(result.output)}:{}};
+    }catch(error){self.postMessage({ok:false,code:error.code??'failed',error:error.message,
+      fontCache:received().filter(value=>value.kind==='font-cache'),adapter:resources()});return;}
+  }
   self.postMessage({...result,fontCache:received().filter(value=>value.kind==='font-cache'),
     files:outputs(),snapshot:scanned.snapshot,adapter:resources()});
 }

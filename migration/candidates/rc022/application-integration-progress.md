@@ -515,3 +515,5 @@
 | C9-BQ | 默认字体实体目录由原版 Office 扫描器筛选与排序；45 项定向、7 组根目录、5+5 组扫描及 16 组实际 SDK 回归 | [默认字体发现](office-font-discovery-checks.json) |
 
 | C9-BR | 原版 SDK 格式/选项/A1/图片准入运行在 Win7 QuickJS；758+758 组实际对照、50 项定向与 9 组系统根目录 | [Office 请求准入](office-contracts-checks.json) |
+
+| C9-BS | Office 转换器拥有者、排队/超时/取消、共享字体世代与独占输出；70 项定向、6+6 组原版公开转换器及 16 组 SDK Worker 对照 | [Office 浏览器引擎](office-browser-engine-checks.json) |

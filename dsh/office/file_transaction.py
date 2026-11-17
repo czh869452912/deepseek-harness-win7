@@ -68,7 +68,7 @@ class FileExport:
     def open(self):
         self.descriptor = os.open(_native(self.path), os.O_WRONLY | os.O_CREAT | os.O_EXCL | getattr(os, 'O_BINARY', 0), 0o600)
 
-    def write(self, data, signal):
+    def write(self, data, signal, commit=True):
         signal.throwIfAborted()
         view = memoryview(data)
         while view:
@@ -78,7 +78,7 @@ class FileExport:
                 raise OSError('Document output write made no progress.')
             view = view[size:]
         signal.throwIfAborted()
-        self.succeeded = True
+        self.succeeded = commit
 
     def close(self, failure=None):
         if self.descriptor is None:

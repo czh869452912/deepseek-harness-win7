@@ -1,0 +1,205 @@
+{
+  "unit": "C9-BS",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "status": "targeted-passed",
+  "scope": [
+    "BrowserOfficeEngine/converter ownership from SDK validation through joined cleanup.",
+    "Per-converter serialized operations; timeout begins after slot acquisition; raw abort and repeated cancellation drain.",
+    "Refresh shared physical font snapshots, independent scan waiters, bounded per-config LRU and stale-generation rejection.",
+    "Original SDK output validation/PDF page tree; exclusive export and image manifest publication after physical font validation."
+  ],
+  "verification": {
+    "native_passed": 70,
+    "source_public_converter_pairs_x64": 6,
+    "source_public_converter_pairs_x86": 6,
+    "source_worker_pairs": 16,
+    "reproduced_resources": 27,
+    "runtime_manifest_sha256": "633a7c3b6ca0dc495fc43d77e23945d15c32e4abdf90228ddb7acec742398df7",
+    "runtime_worker_sha256": "cbd1b86eff0394b9fad37515c36cebc633d48ca15d162bd63bf2ba944f3c2d43",
+    "runs": [
+      ".goose/out/rc022-office-engine-native3-20261118-01",
+      ".goose/out/rc022-office-engine-pair2-20261118-01",
+      ".goose/out/rc022-office-engine-x86-final-20261118-01",
+      ".goose/out/rc022-office-engine-sdk-final-20261118-01"
+    ]
+  },
+  "resolved_failure": {
+    "test": "font same-size overwrite with restored mtime",
+    "finding": "Two writes can share the Windows ctime tick. Independent Node BigInt stat matched the unchanged before/after identity; metadata-based SDK validation cannot distinguish it. Fixture now waits 20ms to establish the metadata change it asserts.",
+    "observation": ".goose/out/rc022-office-engine-font-clock-20261118-01/report.json"
+  },
+  "cleanup": {
+    "removed_bytes": 4071269,
+    "removed_paths": [
+      ".goose\\out\\rc022-office-engine-build2-20261118-01",
+      ".goose\\out\\rc022-office-engine-build3-20261118-01",
+      ".goose\\out\\rc022-office-engine-rebuild-20261118-01",
+      ".goose\\out\\rc022-office-engine-native-20261118-01\\pytest-workspace",
+      ".goose\\out\\rc022-office-engine-native-20261118-01\\tmp",
+      ".goose\\out\\rc022-office-engine-native-20261118-01\\home",
+      ".goose\\out\\rc022-office-engine-native2-20261118-01\\pytest-workspace",
+      ".goose\\out\\rc022-office-engine-native2-20261118-01\\tmp",
+      ".goose\\out\\rc022-office-engine-native2-20261118-01\\home",
+      ".goose\\out\\rc022-office-engine-native3-20261118-01\\pytest-workspace",
+      ".goose\\out\\rc022-office-engine-native3-20261118-01\\tmp",
+      ".goose\\out\\rc022-office-engine-native3-20261118-01\\home",
+      ".goose\\out\\rc022-office-engine-pair-20261118-01\\tmp",
+      ".goose\\out\\rc022-office-engine-pair-20261118-01\\source-request.json",
+      ".goose\\out\\rc022-office-engine-pair2-20261118-01\\tmp",
+      ".goose\\out\\rc022-office-engine-pair2-20261118-01\\source-request.json",
+      ".goose\\out\\rc022-office-engine-x86-20261118-01\\tmp",
+      ".goose\\out\\rc022-office-engine-x86-20261118-01\\source-request.json",
+      ".goose\\out\\rc022-office-engine-x86-final-20261118-01\\tmp",
+      ".goose\\out\\rc022-office-engine-x86-final-20261118-01\\source-request.json",
+      ".goose\\out\\rc022-office-engine-sdk-20261118-01\\tmp",
+      ".goose\\out\\rc022-office-engine-sdk-20261118-01\\archive-entry-limit\\request.json",
+      ".goose\\out\\rc022-office-engine-sdk-20261118-01\\docx-docx\\request.json",
+      ".goose\\out\\rc022-office-engine-sdk-20261118-01\\docx-images\\request.json",
+      ".goose\\out\\rc022-office-engine-sdk-20261118-01\\docx-odt\\request.json",
+      ".goose\\out\\rc022-office-engine-sdk-20261118-01\\docx-pdf\\request.json",
+      ".goose\\out\\rc022-office-engine-sdk-20261118-01\\docx-txt\\request.json",
+      ".goose\\out\\rc022-office-engine-sdk-20261118-01\\invalid-document\\request.json",
+      ".goose\\out\\rc022-office-engine-sdk-20261118-01\\loaded-font-limit\\request.json",
+      ".goose\\out\\rc022-office-engine-sdk-20261118-01\\missing-font\\request.json",
+      ".goose\\out\\rc022-office-engine-sdk-20261118-01\\no-fonts\\request.json",
+      ".goose\\out\\rc022-office-engine-sdk-20261118-01\\output-limit\\request.json",
+      ".goose\\out\\rc022-office-engine-sdk-20261118-01\\pdf-images\\request.json",
+      ".goose\\out\\rc022-office-engine-sdk-20261118-01\\present-font\\request.json",
+      ".goose\\out\\rc022-office-engine-sdk-20261118-01\\scan-file-limit\\request.json",
+      ".goose\\out\\rc022-office-engine-sdk-20261118-01\\scan-font-byte-limit\\request.json",
+      ".goose\\out\\rc022-office-engine-sdk-20261118-01\\scan-original\\request.json",
+      ".goose\\out\\rc022-office-engine-sdk-20261118-01\\archive-entry-limit\\input.docx",
+      ".goose\\out\\rc022-office-engine-sdk-20261118-01\\docx-docx\\input.docx",
+      ".goose\\out\\rc022-office-engine-sdk-20261118-01\\docx-images\\input.docx",
+      ".goose\\out\\rc022-office-engine-sdk-20261118-01\\docx-odt\\input.docx",
+      ".goose\\out\\rc022-office-engine-sdk-20261118-01\\docx-pdf\\input.docx",
+      ".goose\\out\\rc022-office-engine-sdk-20261118-01\\docx-txt\\input.docx",
+      ".goose\\out\\rc022-office-engine-sdk-20261118-01\\invalid-document\\input.docx",
+      ".goose\\out\\rc022-office-engine-sdk-20261118-01\\loaded-font-limit\\input.docx",
+      ".goose\\out\\rc022-office-engine-sdk-20261118-01\\missing-font\\input.docx",
+      ".goose\\out\\rc022-office-engine-sdk-20261118-01\\no-fonts\\input.docx",
+      ".goose\\out\\rc022-office-engine-sdk-20261118-01\\output-limit\\input.docx",
+      ".goose\\out\\rc022-office-engine-sdk-20261118-01\\pdf-images\\input.pdf",
+      ".goose\\out\\rc022-office-engine-sdk-20261118-01\\present-font\\input.docx",
+      ".goose\\out\\rc022-office-engine-sdk-20261118-01\\scan-file-limit\\input.docx",
+      ".goose\\out\\rc022-office-engine-sdk-20261118-01\\scan-font-byte-limit\\input.docx",
+      ".goose\\out\\rc022-office-engine-sdk-20261118-01\\scan-original\\input.docx",
+      ".goose\\out\\rc022-office-engine-sdk-final-20261118-01\\tmp",
+      ".goose\\out\\rc022-office-engine-sdk-final-20261118-01\\archive-entry-limit\\request.json",
+      ".goose\\out\\rc022-office-engine-sdk-final-20261118-01\\docx-docx\\request.json",
+      ".goose\\out\\rc022-office-engine-sdk-final-20261118-01\\docx-images\\request.json",
+      ".goose\\out\\rc022-office-engine-sdk-final-20261118-01\\docx-odt\\request.json",
+      ".goose\\out\\rc022-office-engine-sdk-final-20261118-01\\docx-pdf\\request.json",
+      ".goose\\out\\rc022-office-engine-sdk-final-20261118-01\\docx-txt\\request.json",
+      ".goose\\out\\rc022-office-engine-sdk-final-20261118-01\\invalid-document\\request.json",
+      ".goose\\out\\rc022-office-engine-sdk-final-20261118-01\\loaded-font-limit\\request.json",
+      ".goose\\out\\rc022-office-engine-sdk-final-20261118-01\\missing-font\\request.json",
+      ".goose\\out\\rc022-office-engine-sdk-final-20261118-01\\no-fonts\\request.json",
+      ".goose\\out\\rc022-office-engine-sdk-final-20261118-01\\output-limit\\request.json",
+      ".goose\\out\\rc022-office-engine-sdk-final-20261118-01\\pdf-images\\request.json",
+      ".goose\\out\\rc022-office-engine-sdk-final-20261118-01\\present-font\\request.json",
+      ".goose\\out\\rc022-office-engine-sdk-final-20261118-01\\scan-file-limit\\request.json",
+      ".goose\\out\\rc022-office-engine-sdk-final-20261118-01\\scan-font-byte-limit\\request.json",
+      ".goose\\out\\rc022-office-engine-sdk-final-20261118-01\\scan-original\\request.json",
+      ".goose\\out\\rc022-office-engine-sdk-final-20261118-01\\archive-entry-limit\\input.docx",
+      ".goose\\out\\rc022-office-engine-sdk-final-20261118-01\\docx-docx\\input.docx",
+      ".goose\\out\\rc022-office-engine-sdk-final-20261118-01\\docx-images\\input.docx",
+      ".goose\\out\\rc022-office-engine-sdk-final-20261118-01\\docx-odt\\input.docx",
+      ".goose\\out\\rc022-office-engine-sdk-final-20261118-01\\docx-pdf\\input.docx",
+      ".goose\\out\\rc022-office-engine-sdk-final-20261118-01\\docx-txt\\input.docx",
+      ".goose\\out\\rc022-office-engine-sdk-final-20261118-01\\invalid-document\\input.docx",
+      ".goose\\out\\rc022-office-engine-sdk-final-20261118-01\\loaded-font-limit\\input.docx",
+      ".goose\\out\\rc022-office-engine-sdk-final-20261118-01\\missing-font\\input.docx",
+      ".goose\\out\\rc022-office-engine-sdk-final-20261118-01\\no-fonts\\input.docx",
+      ".goose\\out\\rc022-office-engine-sdk-final-20261118-01\\output-limit\\input.docx",
+      ".goose\\out\\rc022-office-engine-sdk-final-20261118-01\\pdf-images\\input.pdf",
+      ".goose\\out\\rc022-office-engine-sdk-final-20261118-01\\present-font\\input.docx",
+      ".goose\\out\\rc022-office-engine-sdk-final-20261118-01\\scan-file-limit\\input.docx",
+      ".goose\\out\\rc022-office-engine-sdk-final-20261118-01\\scan-font-byte-limit\\input.docx",
+      ".goose\\out\\rc022-office-engine-sdk-final-20261118-01\\scan-original\\input.docx",
+      ".goose\\out\\rc022-office-engine-control-20261118-01\\output.txt"
+    ],
+    "duplicates": [
+      {
+        "path": ".goose\\out\\rc022-office-engine-pair-20261118-01\\browser-output.txt",
+        "retained": ".goose\\out\\rc022-office-engine-pair2-20261118-01\\source-repeat.txt",
+        "bytes": 24,
+        "sha256": "529cde620df98cd964bbdd3ef16c40e4858c0147287b700be7777768aab00e8d"
+      },
+      {
+        "path": ".goose\\out\\rc022-office-engine-pair-20261118-01\\browser-repeat.txt",
+        "retained": ".goose\\out\\rc022-office-engine-pair2-20261118-01\\source-repeat.txt",
+        "bytes": 24,
+        "sha256": "529cde620df98cd964bbdd3ef16c40e4858c0147287b700be7777768aab00e8d"
+      },
+      {
+        "path": ".goose\\out\\rc022-office-engine-pair-20261118-01\\source-output.txt",
+        "retained": ".goose\\out\\rc022-office-engine-pair2-20261118-01\\source-repeat.txt",
+        "bytes": 24,
+        "sha256": "529cde620df98cd964bbdd3ef16c40e4858c0147287b700be7777768aab00e8d"
+      },
+      {
+        "path": ".goose\\out\\rc022-office-engine-pair-20261118-01\\source-repeat.txt",
+        "retained": ".goose\\out\\rc022-office-engine-pair2-20261118-01\\source-repeat.txt",
+        "bytes": 24,
+        "sha256": "529cde620df98cd964bbdd3ef16c40e4858c0147287b700be7777768aab00e8d"
+      },
+      {
+        "path": ".goose\\out\\rc022-office-engine-pair-20261118-01\\browser-images\\page-0001.png",
+        "retained": ".goose\\out\\rc022-office-engine-pair2-20261118-01\\source-images\\page-0001.png",
+        "bytes": 8183,
+        "sha256": "8a44a5016c04d96946f2093f51a8631dad5c59122e5a4ae2ca31dfc029f6546e"
+      },
+      {
+        "path": ".goose\\out\\rc022-office-engine-pair-20261118-01\\source-images\\page-0001.png",
+        "retained": ".goose\\out\\rc022-office-engine-pair2-20261118-01\\source-images\\page-0001.png",
+        "bytes": 8183,
+        "sha256": "8a44a5016c04d96946f2093f51a8631dad5c59122e5a4ae2ca31dfc029f6546e"
+      },
+      {
+        "path": ".goose\\out\\rc022-office-engine-x86-20261118-01\\browser-output.txt",
+        "retained": ".goose\\out\\rc022-office-engine-pair2-20261118-01\\source-repeat.txt",
+        "bytes": 24,
+        "sha256": "529cde620df98cd964bbdd3ef16c40e4858c0147287b700be7777768aab00e8d"
+      },
+      {
+        "path": ".goose\\out\\rc022-office-engine-x86-20261118-01\\browser-repeat.txt",
+        "retained": ".goose\\out\\rc022-office-engine-pair2-20261118-01\\source-repeat.txt",
+        "bytes": 24,
+        "sha256": "529cde620df98cd964bbdd3ef16c40e4858c0147287b700be7777768aab00e8d"
+      },
+      {
+        "path": ".goose\\out\\rc022-office-engine-x86-20261118-01\\source-output.txt",
+        "retained": ".goose\\out\\rc022-office-engine-pair2-20261118-01\\source-repeat.txt",
+        "bytes": 24,
+        "sha256": "529cde620df98cd964bbdd3ef16c40e4858c0147287b700be7777768aab00e8d"
+      },
+      {
+        "path": ".goose\\out\\rc022-office-engine-x86-20261118-01\\source-repeat.txt",
+        "retained": ".goose\\out\\rc022-office-engine-pair2-20261118-01\\source-repeat.txt",
+        "bytes": 24,
+        "sha256": "529cde620df98cd964bbdd3ef16c40e4858c0147287b700be7777768aab00e8d"
+      },
+      {
+        "path": ".goose\\out\\rc022-office-engine-x86-20261118-01\\browser-images\\page-0001.png",
+        "retained": ".goose\\out\\rc022-office-engine-pair2-20261118-01\\source-images\\page-0001.png",
+        "bytes": 8183,
+        "sha256": "8a44a5016c04d96946f2093f51a8631dad5c59122e5a4ae2ca31dfc029f6546e"
+      },
+      {
+        "path": ".goose\\out\\rc022-office-engine-x86-20261118-01\\source-images\\page-0001.png",
+        "retained": ".goose\\out\\rc022-office-engine-pair2-20261118-01\\source-images\\page-0001.png",
+        "bytes": 8183,
+        "sha256": "8a44a5016c04d96946f2093f51a8631dad5c59122e5a4ae2ca31dfc029f6546e"
+      }
+    ],
+    "reproduced_resources": 27,
+    "retained": "Logs/XML and real Source/comparison results, resolved font-clock failure and independent Node observation. Final exports and distinct dated prior exports retained by C9 through format-matrix integration; synthetic inputs, workspaces and builds removed."
+  },
+  "limitations": [
+    "Engine is now implemented; default Cordis service registration and packaged browser/WASM runtime are not yet wired.",
+    "Derived font metadata currently stays within bounded memory; optional original disk metadata cache persistence remains pending.",
+    "Writer/public raster verified here; Calc/recalculation/Impress and actual Windows 7 guest acceptance remain later work.",
+    "No production pin, accepted_upstream or release promotion."
+  ]
+}

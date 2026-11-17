@@ -88,7 +88,7 @@ async def main():
         if isinstance(value, list):
             return [normalize(item) for item in value]
         if isinstance(value, dict):
-            return {key: normalize(item) for key, item in value.items() if key not in ('stack', 'snapshot', 'fontCache', 'files', 'adapter')}
+            return {key: normalize(item) for key, item in value.items() if key not in ('stack', 'snapshot', 'fontCache', 'files', 'adapter', 'metadata')}
         if isinstance(value, str):
             if value in physical:
                 return '/physical/' + os.path.realpath(value)

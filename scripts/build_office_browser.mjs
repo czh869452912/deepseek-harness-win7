@@ -21,10 +21,15 @@ const result=await build({entryPoints:['scripts/native/office-browser/entry.js']
  format:'iife',target:'chrome108',write:false,metafile:true,legalComments:'external',outfile:resolve(output,'worker.js'),alias,
  define:{'import.meta.url':'location.href'},
  plugins:[{name:'original-office-worker-body',setup(build){
-  build.onResolve({filter:/^@office\/(snapshot|worker|defaults)$/},args=>({path:args.path.endsWith('snapshot')?'font-snapshot-worker.js':args.path.endsWith('defaults')?'index.js':'worker.js',namespace:'office-original'}));
+  build.onResolve({filter:/^@office\/(snapshot|worker|defaults|output)$/},args=>({path:args.path.endsWith('snapshot')?'font-snapshot-worker.js':args.path.endsWith('output')?'index-output.js':args.path.endsWith('defaults')?'index.js':'worker.js',namespace:'office-original'}));
   build.onLoad({filter:/.*/,namespace:'office-original'},args=>{
-   const path=resolve(pkg,'lib',args.path),text=readFileSync(path,'utf8');
-   if(args.path==='index.js'){
+   const path=resolve(pkg,'lib',args.path==='index-output.js'?'index.js':args.path),text=readFileSync(path,'utf8');
+   if(args.path==='index.js'||args.path==='index-output.js'){
+    if(args.path==='index-output.js'){
+     const first=text.indexOf('const CODES ='),last=text.indexOf('//#endregion',first),start=text.indexOf('function validateOutput('),end=text.indexOf('//#region lib/types/runtime.js',start);
+     if(first<0||last<first||start<0||end<start)throw Error('Original output markers differ.');
+     return {contents:"import {Buffer} from 'buffer';\n"+text.slice(first,last)+'\n'+text.slice(start,end)+'\nexport {validateOutput,pdfPageCount};',loader:'js',resolveDir:dirname(path)};
+    }
     const start=text.indexOf('const SANS_CJK_FAMILIES ='),end=text.indexOf('const FONT_COLLECTION_NAMES =');
     if(start<0||end<=start)throw Error('Original defaults markers differ.');
     return {contents:text.slice(start,end)+'\nexport {DEFAULT_LIMITS,FONT_FALLBACKS};',loader:'js',resolveDir:dirname(path)};

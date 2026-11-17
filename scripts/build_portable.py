@@ -233,11 +233,13 @@ def bundle_dependencies(distributions, destination):
             shutil.copy2(str(source), str(target))
 
 
-def assemble_portable(dist_dir, zip_output, runtime_dir=None, ripgrep_source=None, site_packages=None, architecture='x64'):
+def assemble_portable(dist_dir, zip_output, runtime_dir=None, ripgrep_source=None, site_packages=None, architecture='x64', office_runtime=None):
     # Resolve before replacing an existing release so a missing pinned build input fails safely.
     ripgrep_source, metadata = verify_pinned_ripgrep(ROOT_DIR, ripgrep_source, architecture)
     from scripts.ucrt_inputs import verify_pinned_ucrt, bundle_ucrt
     ucrt = verify_pinned_ucrt(ROOT_DIR, architecture)
+    from scripts.office_runtime_inputs import office_runtime_source, bundle_office_runtime
+    office_source = office_runtime_source(ROOT_DIR, office_runtime, architecture)
     runtime_dir = runtime_dir or sys.base_prefix
     if not os.path.isfile(os.path.join(runtime_dir, "python38.dll")):
         raise FileNotFoundError("Python 3.8 Windows runtime is required before staging")
@@ -265,6 +267,7 @@ def assemble_portable(dist_dir, zip_output, runtime_dir=None, ripgrep_source=Non
     provenance = {"python_builder": platform.python_version(), "python_runtime_source": runtime_dir,
                   "python_runtime": runtime,
                   "ucrt_input": ucrt,
+                  "office_runtime_input": json.loads((office_source / 'runtime.json').read_text(encoding='utf-8')),
                   "ripgrep_package": metadata["name"], "ripgrep_version": metadata["version"],
                   "ripgrep_sha256": ripgrep_digest,
                   "ripgrep_input": metadata,
@@ -279,7 +282,13 @@ def assemble_portable(dist_dir, zip_output, runtime_dir=None, ripgrep_source=Non
         json.dump(provenance, stream, indent=2)
 
     # 1. Copy dsh framework and apps application
-    shutil.copytree(os.path.join(ROOT_DIR, "dsh"), os.path.join(dist_dir, "dsh"), ignore=shutil.ignore_patterns("__pycache__"))
+    def ignore_runtime_copies(directory, names):
+        ignored = ['__pycache__'] if '__pycache__' in names else []
+        if os.path.normcase(os.path.abspath(directory)) == os.path.normcase(os.path.join(ROOT_DIR, 'dsh', 'office')) and 'bin' in names:
+            ignored.append('bin')
+        return ignored
+    shutil.copytree(os.path.join(ROOT_DIR, "dsh"), os.path.join(dist_dir, "dsh"), ignore=ignore_runtime_copies)
+    bundle_office_runtime(dist_dir, office_source, architecture)
     bundle_pinned_ripgrep(dist_dir, ROOT_DIR, source=ripgrep_source, architecture=architecture)
     if os.path.exists(os.path.join(ROOT_DIR, "apps", "cli")):
         shutil.copytree(
@@ -365,7 +374,7 @@ def publish_candidate(candidate_dir, candidate_zip, dist_dir, zip_output, backup
         raise
 
 
-def build_portable(runtime_dir=None, ripgrep_source=None, site_packages=None, output_dir=None, architecture='x64'):
+def build_portable(runtime_dir=None, ripgrep_source=None, site_packages=None, output_dir=None, architecture='x64', office_runtime=None):
     ripgrep_identity(architecture)
     if architecture == 'x86' and (output_dir is None or runtime_dir is None or site_packages is None):
         raise ValueError('x86 Portable requires explicit output, Python runtime and compatible site-packages')
@@ -380,6 +389,7 @@ def build_portable(runtime_dir=None, ripgrep_source=None, site_packages=None, ou
         if os.path.normcase(os.path.realpath(path)) != os.path.normcase(os.path.abspath(path)):
             raise ValueError('Portable output must not traverse links or junctions')
     for source in (runtime_dir or sys.base_prefix, site_packages or os.path.join(ROOT_DIR, '.venv/Lib/site-packages'),
+                   office_runtime or os.environ.get('DSH_OFFICE_RUNTIME_INPUT_ROOT') or os.path.join(ROOT_DIR, 'vendor/office-runtime'),
                    *[os.path.join(ROOT_DIR, name) for name in ('dsh', 'apps', 'packages', 'reference', 'scripts')]):
         for target in (dist_dir, zip_output):
             try:
@@ -398,7 +408,9 @@ def build_portable(runtime_dir=None, ripgrep_source=None, site_packages=None, ou
     try:
         candidate_dir = os.path.join(staging, os.path.basename(dist_dir))
         candidate_zip = os.path.join(staging, os.path.basename(zip_output))
-        if architecture == 'x86':
+        if office_runtime is not None:
+            assemble_portable(candidate_dir, candidate_zip, runtime_dir, ripgrep_source, site_packages, architecture, office_runtime)
+        elif architecture == 'x86':
             assemble_portable(candidate_dir, candidate_zip, runtime_dir, ripgrep_source, site_packages, architecture)
         else:
             assemble_portable(candidate_dir, candidate_zip, runtime_dir, ripgrep_source, site_packages)
@@ -421,5 +433,6 @@ if __name__ == "__main__":
     parser.add_argument("--site-packages")
     parser.add_argument('--output-dir', help='Build an isolated candidate under this directory')
     parser.add_argument('--architecture', choices=('x64', 'x86'), default='x64')
+    parser.add_argument('--office-runtime', help='Root of approved offline x64/x86 Office runtime inputs')
     args = parser.parse_args()
-    build_portable(args.python_runtime, args.ripgrep_source, args.site_packages, args.output_dir, args.architecture)
+    build_portable(args.python_runtime, args.ripgrep_source, args.site_packages, args.output_dir, args.architecture, args.office_runtime)

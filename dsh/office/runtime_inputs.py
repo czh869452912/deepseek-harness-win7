@@ -8,7 +8,10 @@ from .errors import OfficeKitError
 
 
 # Filled only after recording independently acquired binary/license identities.
-MANIFESTS = {}
+MANIFESTS = {
+    'x64': '5bee4d6cf0f91c5ee144f1baa48a2802422eed3ce42810838f18366728fa988b',
+    'x86': '43c9b9e30992ab1b828894ae7042ef4ae4c95cdc713be4f920f9b2c9956c3e79',
+}
 
 
 def _plain_file(root, relative):

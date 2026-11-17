@@ -1,0 +1,827 @@
+{
+  "format": "dsh-office-runtime-inputs@1",
+  "architectures": {
+    "x64": {
+      "manifest_sha256": "5bee4d6cf0f91c5ee144f1baa48a2802422eed3ce42810838f18366728fa988b",
+      "manifest": {
+        "format": "dsh-office-runtime@1",
+        "architecture": "x64",
+        "executable": "browser/chrome.exe",
+        "package": "engine",
+        "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+        "sdk": "@deepseek-ai/libreoffice-kit-wasm@0.2.3",
+        "browser": {
+          "version": "108.0.5359.0",
+          "snapshot": 1058931,
+          "source": "https://storage.googleapis.com/chromium-browser-snapshots/Win_x64/1058931/chrome-win.zip",
+          "archive_sha256": "b08b33bc955b486005c8853d83c1beeace0c5ac3c556b2c4762941ce2c5feaef",
+          "observed": {
+            "protocolVersion": "1.3",
+            "product": "Chrome/108.0.5359.0",
+            "revision": "@312e4554e4f5e7b542638dc4e1b776541d588d6e",
+            "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36",
+            "jsVersion": "10.8.168"
+          },
+          "license_sources": [
+            "https://chromium.googlesource.com/chromium/src/+/312e4554e4f5e7b542638dc4e1b776541d588d6e/LICENSE?format=TEXT",
+            "chrome://credits/"
+          ]
+        },
+        "qualification": "Prepared offline product input; current-host Office/browser execution and actual Win7 guest qualification are recorded separately. Historical development-observer receipts are unchanged.",
+        "resources": {
+          "browser/108.0.5359.0.manifest": {
+            "bytes": 224,
+            "sha256": "87c44765264c4dc4196a684d5a4d470e2ad4123fbb5b8d127483fb7857596166"
+          },
+          "browser/chrome.dll": {
+            "bytes": 185276416,
+            "sha256": "d1c9d9e1fdaa4c3a2810da2104e61b5a376f2008a895138ee345b5c7fe850d18"
+          },
+          "browser/chrome.exe": {
+            "bytes": 2416640,
+            "sha256": "dd13b0fec1bbe8cfbdadc3be6588d021aa796b9a3834ff69a4094072f55e6c60"
+          },
+          "browser/chrome_100_percent.pak": {
+            "bytes": 612173,
+            "sha256": "b148ab003b0ba9d4c83d8be8cda3df0f19c29be2ca43394bcefff1c6ef02546d"
+          },
+          "browser/chrome_200_percent.pak": {
+            "bytes": 917216,
+            "sha256": "f003b7736ee8c6f1b67a9e119dedd828fa4e66bd6d72444803ad44d92d66c355"
+          },
+          "browser/chrome_elf.dll": {
+            "bytes": 1231872,
+            "sha256": "0c29993133b1af57d0e8bcc6103c961d34659b739f6faa48c748c7d162bb43d5"
+          },
+          "browser/chrome_proxy.exe": {
+            "bytes": 1013760,
+            "sha256": "47eaaa9d5688e3162d1178eb68d6814aea9c3d922e6fe3c8afc0b593fd3a1656"
+          },
+          "browser/chrome_pwa_launcher.exe": {
+            "bytes": 1375744,
+            "sha256": "e17b2b303c49aa52a2511b9fb4658e5492f873ab4c65408029d8384083f00d47"
+          },
+          "browser/chrome_wer.dll": {
+            "bytes": 113664,
+            "sha256": "727af7896df83fa9395fe93ad816ff08e08f1c1afafa777f65d30aa5d17eb58c"
+          },
+          "browser/CHROMIUM-LICENSE": {
+            "bytes": 1536,
+            "sha256": "368cca1106be99d39ecd32a38d8305585d802a475effb66380b91ffc9bcf709b"
+          },
+          "browser/CHROMIUM-THIRD-PARTY-LICENSES.txt": {
+            "bytes": 6536256,
+            "sha256": "26f33767bfdecc9e751108c7d6116b4a89794d6b9133335c7e23383a28adde48"
+          },
+          "browser/D3DCompiler_47.dll": {
+            "bytes": 4891080,
+            "sha256": "5653bc7b0e2701561464ef36602ff6171c96bffe96e4c3597359cd7addcba88a"
+          },
+          "browser/elevation_service.exe": {
+            "bytes": 1712128,
+            "sha256": "d13d8049fb55f50e362146a0896a209335fa8f9f2dfb1d2c86d2a480064b3c0b"
+          },
+          "browser/eventlog_provider.dll": {
+            "bytes": 6656,
+            "sha256": "db62dc9814a42f2ad56658c2ad9a30c0247639b8ee33c7f4269490330ad29474"
+          },
+          "browser/First Run": {
+            "bytes": 8,
+            "sha256": "839adbaaca1c43dd4575c502ada96ebb4651f1a69b6fc5e42679beb47584181e"
+          },
+          "browser/icudtl.dat": {
+            "bytes": 10463232,
+            "sha256": "762a0ae89a8cbf8b5173cc33e1104c6b9321251588a7baa445156a69ba4f69c9"
+          },
+          "browser/libEGL.dll": {
+            "bytes": 458752,
+            "sha256": "6f5ab6a17de44099856c746cd5424411bdf13a876a2f0a0a4783014b7f94f097"
+          },
+          "browser/libGLESv2.dll": {
+            "bytes": 6607360,
+            "sha256": "1117d50079178be92ed80d3ea4b5b3c5b84fa058d0999d76c27c15532f660fcc"
+          },
+          "browser/locales/af.pak": {
+            "bytes": 387146,
+            "sha256": "94299771d7fdb7891d5a64a9b52fb5c6dc36577c6829bd80f53acdf16929f5e4"
+          },
+          "browser/locales/am.pak": {
+            "bytes": 621781,
+            "sha256": "473d6fcd3cc61149db16b1db5e1fe22015721d9e8d43640d07d05792fa3dcd11"
+          },
+          "browser/locales/ar-XB.pak": {
+            "bytes": 633023,
+            "sha256": "39c28d0c97d102e847f1529edb1769f0c5b3d8550717672870072e7a71ffa3f1"
+          },
+          "browser/locales/ar.pak": {
+            "bytes": 676127,
+            "sha256": "db65388c59e1e9d97798fd0ea910ae226867ce6d4faf4498a13cb55b1ade9c4c"
+          },
+          "browser/locales/bg.pak": {
+            "bytes": 710714,
+            "sha256": "e8837ccb665bf2448d3850bb300b9343df1ef3852d41945ec85953c6b4d8d830"
+          },
+          "browser/locales/bn.pak": {
+            "bytes": 912020,
+            "sha256": "859cb660388646fe58343f943f725fb491f0c5187a604a8c6b9be804bb9b93d3"
+          },
+          "browser/locales/ca.pak": {
+            "bytes": 444304,
+            "sha256": "da548de22d232706a6ecb0d0baadf5aa9f1800cc3ee7750ff66294e55d2dfa9e"
+          },
+          "browser/locales/cs.pak": {
+            "bytes": 447062,
+            "sha256": "d8d79e30872db8ce2dd0ac10202d4c9862c16469b86c2cd728072e32b7b25fd8"
+          },
+          "browser/locales/da.pak": {
+            "bytes": 407350,
+            "sha256": "f43bb377a19034ee5e598dcd828ade9e1598073b48ffcfd2d4d2ba53dc63ecf8"
+          },
+          "browser/locales/de.pak": {
+            "bytes": 441579,
+            "sha256": "d2f8412a868682dd5e7c9253da81b691f5197f7bb149dee95a5bf3643f74159e"
+          },
+          "browser/locales/el.pak": {
+            "bytes": 779468,
+            "sha256": "293a82705768b892629a332db4f7450be8ff309901931612392ae041d133a6b0"
+          },
+          "browser/locales/en-GB.pak": {
+            "bytes": 355174,
+            "sha256": "46ba315a533be4c9e3a5b80ed041b6758b14f0347c8a50e7a791cca9a4fceb17"
+          },
+          "browser/locales/en-US.pak": {
+            "bytes": 358634,
+            "sha256": "aab1a99a69dbd61ab86f58f9afb2bf5ad28f3a10508b5fa9e8e18e2775e24a49"
+          },
+          "browser/locales/en-XA.pak": {
+            "bytes": 794290,
+            "sha256": "4433479f5d256d86f709d3a34cbf5de54562258b6d9ac3fc80684d544b51cee8"
+          },
+          "browser/locales/es-419.pak": {
+            "bytes": 433130,
+            "sha256": "831fce4e8c1ec3f5757ddd6d1c576225f2ad322d9f8c35245210355df2aab6e8"
+          },
+          "browser/locales/es.pak": {
+            "bytes": 432814,
+            "sha256": "5a305af4204c680d0f0ec741dc0185e94ae1c80f577e02c244e6437795bec3e3"
+          },
+          "browser/locales/et.pak": {
+            "bytes": 391939,
+            "sha256": "e9f909a7ba4ef2aefc5f905730e8249611e526e79013802d138415aff2ec5e64"
+          },
+          "browser/locales/fa.pak": {
+            "bytes": 631655,
+            "sha256": "bf626dcbe160727619183953b5a215e81f8735e16fcf0677809350a82f1068fd"
+          },
+          "browser/locales/fi.pak": {
+            "bytes": 400072,
+            "sha256": "ce2540ac1b21225aa1dc10d3b00d70517179c27b086f3878dc3c7bd314f16581"
+          },
+          "browser/locales/fil.pak": {
+            "bytes": 449379,
+            "sha256": "d09f46a421c930a0308a2dff0fb184eb0dc06ac7832e16067322b2a4dfc4dc5b"
+          },
+          "browser/locales/fr.pak": {
+            "bytes": 468639,
+            "sha256": "92c2e49192b00cdd056c22d2c7e24eacb565ca8c1135187ef1d8bd4f70d9fe2e"
+          },
+          "browser/locales/gu.pak": {
+            "bytes": 896811,
+            "sha256": "b7f2f4f8a70e4436495e139005b440c1cdae2e3ce6c9b78503dbd11294b037e9"
+          },
+          "browser/locales/he.pak": {
+            "bytes": 553546,
+            "sha256": "32e039d74c43e34bfbc0291b983f320fe9e0c67864f92678d9a8fce15948edca"
+          },
+          "browser/locales/hi.pak": {
+            "bytes": 938685,
+            "sha256": "46058a539715402e4220907a57ffc9817eb658a8f7a17f9b1ff241366b43cccf"
+          },
+          "browser/locales/hr.pak": {
+            "bytes": 432763,
+            "sha256": "3c0bb7f9a860e1c6515a1174ed0382688cc7414cfd4121e15fc7db5e69d78542"
+          },
+          "browser/locales/hu.pak": {
+            "bytes": 465906,
+            "sha256": "a8a3561979fb716768ef6d3db478624dd7982ef004a69625b53ff8445306bccb"
+          },
+          "browser/locales/id.pak": {
+            "bytes": 383654,
+            "sha256": "7e02e201a059dfda42bd501906715b80ae2e020900ba681cfb2ca5d5abc33325"
+          },
+          "browser/locales/it.pak": {
+            "bytes": 432024,
+            "sha256": "20b64c255aabd17dfb6fb9d26e80fa7b4f0f3fc8a76f814c7df07d05f366bc70"
+          },
+          "browser/locales/ja.pak": {
+            "bytes": 523954,
+            "sha256": "4054df9514d1f02a4d0846d56cbad288a7c4595dea333c76c6adb30f49fe1fd1"
+          },
+          "browser/locales/kn.pak": {
+            "bytes": 1023759,
+            "sha256": "cba3f9311403d54ba45ecdfc6c6fb60543c0186d91b225dc9f2fdc3188a30d51"
+          },
+          "browser/locales/ko.pak": {
+            "bytes": 439571,
+            "sha256": "95563daeda1b6ce5570b756c767e6b5ae93a297f78f5d7df837bcfc5d481ec5c"
+          },
+          "browser/locales/lt.pak": {
+            "bytes": 469866,
+            "sha256": "c67827acc46daa1c56ab20c2fd7ec914cebf2fe9d57576fc9cefc486ec4ff63e"
+          },
+          "browser/locales/lv.pak": {
+            "bytes": 467574,
+            "sha256": "53e6c6bfecd9cb2d356aeefc052d7109650b1a659fec0f37b999d949b746b2af"
+          },
+          "browser/locales/ml.pak": {
+            "bytes": 1063822,
+            "sha256": "7af2ff89d64c326ebc6b2d5e61401ac7bb62f3b1ce555d2728133e5565db88c6"
+          },
+          "browser/locales/mr.pak": {
+            "bytes": 874665,
+            "sha256": "14fa731abc5b153c0c5af2c3ae8aa69db9219f7499b833560f9dc2e3c14ffbf7"
+          },
+          "browser/locales/ms.pak": {
+            "bytes": 400808,
+            "sha256": "2a8193b6d5aac991b7b5a70c701c43bd4c2635b6275f9b330e3b42bdb0059a53"
+          },
+          "browser/locales/nb.pak": {
+            "bytes": 392495,
+            "sha256": "108e57663c1bc16c257d8b4c61cdf7318d43dd60ebe8cd20f6aeb850c43e02f0"
+          },
+          "browser/locales/nl.pak": {
+            "bytes": 405895,
+            "sha256": "dcdcf5dba0d333a6b5e37d808d589b4d6e66965007664ce231c1656ef10a6ec2"
+          },
+          "browser/locales/pl.pak": {
+            "bytes": 451480,
+            "sha256": "b2f0aabb8010b825c7d27d33120a9bb370c6cc81e63db841e044d802061896f2"
+          },
+          "browser/locales/pt-BR.pak": {
+            "bytes": 425502,
+            "sha256": "1ad86904cd8c75844ade765cc7a99531be35b1e42fcd520a2b9e478aa9bbb1f7"
+          },
+          "browser/locales/pt-PT.pak": {
+            "bytes": 429621,
+            "sha256": "5971ad5685ca1f4e4ca49faef5d0b89ac591804a1dc9197a997d2c288def4a76"
+          },
+          "browser/locales/ro.pak": {
+            "bytes": 440327,
+            "sha256": "c9be8f6b253d74cfc9ffdc6d84968739387acb6c983c8bae9cde3bb2cceafb3e"
+          },
+          "browser/locales/ru.pak": {
+            "bytes": 713924,
+            "sha256": "e873bfbfb6068c2149c92b995438b64f4224c949fd01d7d0e62036c3b343e7f3"
+          },
+          "browser/locales/sk.pak": {
+            "bytes": 454276,
+            "sha256": "a954f762cbf5fe8d52e455e5552e4eae94aed179d3a883686109c3e1fd5c6b5f"
+          },
+          "browser/locales/sl.pak": {
+            "bytes": 435075,
+            "sha256": "d6421ad24b881691790a741c5fe830024f3bfdcf938ff58bfbbd12dd815a7eb9"
+          },
+          "browser/locales/sr.pak": {
+            "bytes": 671223,
+            "sha256": "e30a0ff16341a93ba498f89053765a0d68ed14843d4b0b9a86663c6660e4f16a"
+          },
+          "browser/locales/sv.pak": {
+            "bytes": 395980,
+            "sha256": "f7489b7c8d88ea4fd66db6341c079aa121cb3508effb156601fb7b8906bf2c28"
+          },
+          "browser/locales/sw.pak": {
+            "bytes": 415727,
+            "sha256": "9d0406d9c98fa6bbd47299d5cc86091a6fc0506d8a1558ec7a5c85f3e8047d32"
+          },
+          "browser/locales/ta.pak": {
+            "bytes": 1051005,
+            "sha256": "adf957e8f699c646cf07f18120949bee441875178f4e5bc1dc1cd784dbdd253f"
+          },
+          "browser/locales/te.pak": {
+            "bytes": 977393,
+            "sha256": "7730fefeb272f9bde86abd3130e5c131ef17a8a708e5569abf58f94884b63195"
+          },
+          "browser/locales/th.pak": {
+            "bytes": 820803,
+            "sha256": "73a520a3061d6bac9ad54d4518681afa6d4efb20bf28d69d1956f11d991691b3"
+          },
+          "browser/locales/tr.pak": {
+            "bytes": 422708,
+            "sha256": "58b832d74f90a4c3c0049f6c3dac37fc8c18cbd21fa0892d4d42f289e464803f"
+          },
+          "browser/locales/uk.pak": {
+            "bytes": 712712,
+            "sha256": "ec560c1932295f9980bd2d8ab7657c84901d30eb5249e4dd861757277e43eb8d"
+          },
+          "browser/locales/ur.pak": {
+            "bytes": 625084,
+            "sha256": "7772199708dcf04c3b68f80c929ae53f1169a8d13e1fae9517b37d20420a04dc"
+          },
+          "browser/locales/vi.pak": {
+            "bytes": 499611,
+            "sha256": "c4a1b6e8be054cc56ea10329715b6048d1a7dd02514dd6acc05eeaf0dbcc063a"
+          },
+          "browser/locales/zh-CN.pak": {
+            "bytes": 365181,
+            "sha256": "e3d3a59c0c3aeae607fbbcca26d60597702488a6dce296adc221bb284e4a88ae"
+          },
+          "browser/locales/zh-TW.pak": {
+            "bytes": 365151,
+            "sha256": "39b4f52cacb34f09434d1f913c784ecefdad55e6992e06d7c0e0f09abf3224c0"
+          },
+          "browser/MEIPreload/manifest.json": {
+            "bytes": 238,
+            "sha256": "44844cf3dde6e80087ae0e6bf0d9326d7ef7d23326d24ac83af0850be26923d2"
+          },
+          "browser/MEIPreload/preloaded_data.pb": {
+            "bytes": 8254,
+            "sha256": "c6070a157b4e28d16fbccbd233e93846ddb070c85e1a1bc64469b7a5f1424fad"
+          },
+          "browser/mojo_core.dll": {
+            "bytes": 1562112,
+            "sha256": "9338f730e01cc32623d47b7e0fe564665e39cbc0fa5f3fce7375fbe01b106b88"
+          },
+          "browser/nacl_irt_x86_64.nexe": {
+            "bytes": 4392400,
+            "sha256": "fe041ddc9677254b1157cf0309d8ac99002d93c6fda6ee5d8c7a0102a2179e7c"
+          },
+          "browser/notification_helper.exe": {
+            "bytes": 1239552,
+            "sha256": "75ccaf748612b610bf515f0da78a3a076cb32c50f6e6c902086fc1c97a301892"
+          },
+          "browser/resources.pak": {
+            "bytes": 8455318,
+            "sha256": "7e670a74c8558266d571dcff760f30f9f2bfb26630d9c490dcdc974e6fa19741"
+          },
+          "browser/v8_context_snapshot.bin": {
+            "bytes": 483112,
+            "sha256": "ce2b8642f114ef832f2b82cb8213650b4d9c8de556ffa6d4c227dc71bf88aa28"
+          },
+          "browser/vk_swiftshader.dll": {
+            "bytes": 4278272,
+            "sha256": "e2dd8d39322fbd83166853e64a38a62281614eacdc4d25e588407c9220377775"
+          },
+          "browser/vk_swiftshader_icd.json": {
+            "bytes": 106,
+            "sha256": "32d83ff113fef532a9f97e0d2831f8656628ab1c99e9060f0332b1532839afd9"
+          },
+          "browser/vulkan-1.dll": {
+            "bytes": 874496,
+            "sha256": "d877b20b9d1c92b9caa8e10af6dac3148a8191125a40385a3f436c4063ac3f70"
+          },
+          "engine/assets/dsoffice.cjs": {
+            "bytes": 769125,
+            "sha256": "c9248ef54385015475b15ae2baca41d9f7a8bd0b8538904da6a1fcd16c5305a1"
+          },
+          "engine/assets/dsoffice.data": {
+            "bytes": 23024619,
+            "sha256": "0bea03629341de18dc90bdfc1e67a2f3b791e31ef9fe22888c288226e8bd5b15"
+          },
+          "engine/assets/dsoffice.data.js.metadata": {
+            "bytes": 145921,
+            "sha256": "ffab1d431c3ecdac3f2438f5e229b2e9a83364fed02b1732e5c327ab43d6b04d"
+          },
+          "engine/assets/dsoffice.wasm": {
+            "bytes": 127846009,
+            "sha256": "bb7d1121c7200020f0b6219e37655719cde0c63f905f9826c43c40bf5a7c17c8"
+          },
+          "engine/licenses/DeepSeek-Harness-MIT.txt": {
+            "bytes": 2120,
+            "sha256": "637f43ba3b0193253cd80de6ce6ed4ed4d8a34eac84f6aaa7cc14f532e36318f"
+          },
+          "engine/licenses/LICENSE": {
+            "bytes": 300898,
+            "sha256": "31c915ae5b7eafe51f06fc2537d2e7fefdee08e40d6b0d761d03d9f0fd58d660"
+          },
+          "engine/licenses/NOTICE": {
+            "bytes": 1859,
+            "sha256": "8d34210ebbfaee4ba258ef7b30c3044170f356ab82c8259c81b53860bcdeef7b"
+          },
+          "engine/package.json": {
+            "bytes": 760,
+            "sha256": "bbe7556595dc5fc2f9266011a1277630e1b9bb5aceec6aa85a3548b7fe13ad3c"
+          },
+          "engine/prebuilds.json": {
+            "bytes": 9200,
+            "sha256": "de3888ea4f94ef0feb35dce4fb457bc6c837e4d957fd1a1c6f195827c21ffbda"
+          }
+        }
+      }
+    },
+    "x86": {
+      "manifest_sha256": "43c9b9e30992ab1b828894ae7042ef4ae4c95cdc713be4f920f9b2c9956c3e79",
+      "manifest": {
+        "format": "dsh-office-runtime@1",
+        "architecture": "x86",
+        "executable": "browser/chrome.exe",
+        "package": "engine",
+        "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+        "sdk": "@deepseek-ai/libreoffice-kit-wasm@0.2.3",
+        "browser": {
+          "version": "108.0.5359.0",
+          "snapshot": 1058958,
+          "source": "https://storage.googleapis.com/chromium-browser-snapshots/Win/1058958/chrome-win.zip",
+          "archive_sha256": "9051fbff1dc3625b558c158739ca30ee7a302946a2379ba7c24e8674281c863d",
+          "observed": {
+            "protocolVersion": "1.3",
+            "product": "Chrome/108.0.5359.0",
+            "revision": "@79452bfe134a2acdba340f6fb07204af2a991fb7",
+            "userAgent": "Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36",
+            "jsVersion": "10.8.168"
+          },
+          "license_sources": [
+            "https://chromium.googlesource.com/chromium/src/+/79452bfe134a2acdba340f6fb07204af2a991fb7/LICENSE?format=TEXT",
+            "chrome://credits/"
+          ]
+        },
+        "qualification": "Prepared offline product input; current-host Office/browser execution and actual Win7 guest qualification are recorded separately. Historical development-observer receipts are unchanged.",
+        "resources": {
+          "browser/108.0.5359.0.manifest": {
+            "bytes": 224,
+            "sha256": "87c44765264c4dc4196a684d5a4d470e2ad4123fbb5b8d127483fb7857596166"
+          },
+          "browser/chrome.dll": {
+            "bytes": 157498880,
+            "sha256": "03af6bba4fcc9aa875b39cc8b438f9e91ba1f5f9bc218a42a04e838d2f0f8f70"
+          },
+          "browser/chrome.exe": {
+            "bytes": 2010112,
+            "sha256": "ff0536af30dbd33c701375bec25ce53c2d713dbbc42a139eb73d0170d45fdf8e"
+          },
+          "browser/chrome_100_percent.pak": {
+            "bytes": 612173,
+            "sha256": "b148ab003b0ba9d4c83d8be8cda3df0f19c29be2ca43394bcefff1c6ef02546d"
+          },
+          "browser/chrome_200_percent.pak": {
+            "bytes": 917216,
+            "sha256": "f003b7736ee8c6f1b67a9e119dedd828fa4e66bd6d72444803ad44d92d66c355"
+          },
+          "browser/chrome_elf.dll": {
+            "bytes": 975360,
+            "sha256": "5f6eb0aa01801059a04e3f1e39213c492f63c2d48b457cf66cb03362e5c824ff"
+          },
+          "browser/chrome_proxy.exe": {
+            "bytes": 783872,
+            "sha256": "1b220f74d82025be9747275d9b1e3b94bcac469fbfe1e403fc362168f85908cd"
+          },
+          "browser/chrome_pwa_launcher.exe": {
+            "bytes": 1100288,
+            "sha256": "459eb45ec3fa3deb1e6b373bd9bd6d29f4b407eed841fabb72a84aab27c99fbd"
+          },
+          "browser/chrome_wer.dll": {
+            "bytes": 83968,
+            "sha256": "99356e373e9e1e28b15c651ec0fdd56c0501d6443912209bc659321882a0aa77"
+          },
+          "browser/CHROMIUM-LICENSE": {
+            "bytes": 1536,
+            "sha256": "368cca1106be99d39ecd32a38d8305585d802a475effb66380b91ffc9bcf709b"
+          },
+          "browser/CHROMIUM-THIRD-PARTY-LICENSES.txt": {
+            "bytes": 6536256,
+            "sha256": "26f33767bfdecc9e751108c7d6116b4a89794d6b9133335c7e23383a28adde48"
+          },
+          "browser/D3DCompiler_47.dll": {
+            "bytes": 4108752,
+            "sha256": "827d12e4ed62520b663078bbf26f95dfd106526e66048cf75b5c9612b2fb7ce6"
+          },
+          "browser/elevation_service.exe": {
+            "bytes": 1415680,
+            "sha256": "99ecbe60518487a25ff012160a18ae82a93eedd60d14e3951e3cab55c676fa80"
+          },
+          "browser/eventlog_provider.dll": {
+            "bytes": 5120,
+            "sha256": "c1d69243ee93cb1ac7a56130ef2cc709e177ea1a5354740b42224f93248e2b5f"
+          },
+          "browser/First Run": {
+            "bytes": 8,
+            "sha256": "839adbaaca1c43dd4575c502ada96ebb4651f1a69b6fc5e42679beb47584181e"
+          },
+          "browser/icudtl.dat": {
+            "bytes": 10463232,
+            "sha256": "762a0ae89a8cbf8b5173cc33e1104c6b9321251588a7baa445156a69ba4f69c9"
+          },
+          "browser/libEGL.dll": {
+            "bytes": 366592,
+            "sha256": "9e5d59869609cba884f91c2c33e8b1116a92222b5077829a7b0d3ce44f6a6c64"
+          },
+          "browser/libGLESv2.dll": {
+            "bytes": 5724672,
+            "sha256": "9fa438a34f774b3fff46739fe39ace0138f4b403b699c413bf8ff129778646c7"
+          },
+          "browser/locales/af.pak": {
+            "bytes": 387129,
+            "sha256": "0018a5a25525f814d3d96565e36dc0b77951d181581cd62d1fa27d8986af16a2"
+          },
+          "browser/locales/am.pak": {
+            "bytes": 621764,
+            "sha256": "7054e6646e000bec8033bb7ed792b2cbeb50c2653a7ff77140398ec29cbe8903"
+          },
+          "browser/locales/ar-XB.pak": {
+            "bytes": 632982,
+            "sha256": "28b6ba6fcca57b59a75fdb5dc2d4535fc9968ec5132f88cff4dd0a2e36c9cf7c"
+          },
+          "browser/locales/ar.pak": {
+            "bytes": 676110,
+            "sha256": "87e6ab1de0062e5b8f0870ce597841aead1c3a2fd8879255bf1671a98de85187"
+          },
+          "browser/locales/bg.pak": {
+            "bytes": 710697,
+            "sha256": "128d4c7ab9862445613f3fb10366de749c8ab43e385363d0866cf6f088ee56fe"
+          },
+          "browser/locales/bn.pak": {
+            "bytes": 912003,
+            "sha256": "b4d4ff8255f74d46d3e4156718ea5656df88ddc4fea4f0d66df5ad6fd1844743"
+          },
+          "browser/locales/ca.pak": {
+            "bytes": 444287,
+            "sha256": "a5bda8ccdc197e862780172ed008078774021176382ae5ff9b6e0779bedc326b"
+          },
+          "browser/locales/cs.pak": {
+            "bytes": 447045,
+            "sha256": "ca10614a27224b23962be6ca1a4efb3823041bf041f68384e3348fb61bee9b83"
+          },
+          "browser/locales/da.pak": {
+            "bytes": 407333,
+            "sha256": "44a65641487eff18cd0078e1560006f9d7c9f3c6b6eb9e4452fd6e0d2825826c"
+          },
+          "browser/locales/de.pak": {
+            "bytes": 441562,
+            "sha256": "451d93a20e11f69c283aaad05593ff259b68f5450f5f1a8c2ad2eb9f189efe88"
+          },
+          "browser/locales/el.pak": {
+            "bytes": 779451,
+            "sha256": "55a10c301e358895ed0a4d1a4f0c2b55f43dcfbbb5de09695a25a8f77b5dbb56"
+          },
+          "browser/locales/en-GB.pak": {
+            "bytes": 355157,
+            "sha256": "dd8d494e2e90dd4bd8e660fa170cf4d0de247abe89a0a4f722684bc4c2bbd68c"
+          },
+          "browser/locales/en-US.pak": {
+            "bytes": 358617,
+            "sha256": "bc8049a62184fe12cee2ac936ad827d2c00faec1a628705f02d5060f5b9382c8"
+          },
+          "browser/locales/en-XA.pak": {
+            "bytes": 794241,
+            "sha256": "2d2452af3697a87877e91bb320695d815eee5cde8cca41225f96b6b7b5596667"
+          },
+          "browser/locales/es-419.pak": {
+            "bytes": 433113,
+            "sha256": "3813f06841064e04ca90e4fc94b12d77ffe1e234d8b2ee3c311ac27655a687d2"
+          },
+          "browser/locales/es.pak": {
+            "bytes": 432797,
+            "sha256": "647a8b42e98d84e490dc55e8a2fb9dd98fa209cc05d36e35c86374b23a3197dc"
+          },
+          "browser/locales/et.pak": {
+            "bytes": 391922,
+            "sha256": "03366218b6eefee7e4b137bd5c166a123bbb37513c66e23b9cc3785d902d67d8"
+          },
+          "browser/locales/fa.pak": {
+            "bytes": 631638,
+            "sha256": "5ec98cc75feb4c3f5b70710262822245b5799a4e6a8aa6872abd726991d6fa81"
+          },
+          "browser/locales/fi.pak": {
+            "bytes": 400055,
+            "sha256": "f274a579352fef95339bc5fb8294a5c78ca0389b8c0041365bf07ed413edf375"
+          },
+          "browser/locales/fil.pak": {
+            "bytes": 449362,
+            "sha256": "77810a87127bcd133a516da7da53cc52f1a78ff4f645f4a0808baea60f17c9f9"
+          },
+          "browser/locales/fr.pak": {
+            "bytes": 468622,
+            "sha256": "12e65593503f24ab1140d0cd325e78457258dd151081cdb97834a5d1e82cf997"
+          },
+          "browser/locales/gu.pak": {
+            "bytes": 896794,
+            "sha256": "954c6e8bcde427b824054b735498f76559c6eb484258e3dcc95ccac5c2200f89"
+          },
+          "browser/locales/he.pak": {
+            "bytes": 553529,
+            "sha256": "9dc830e072b73e600d5b01b8ab4d1a40095b9a2a372b6e4dcba5978430ace5bf"
+          },
+          "browser/locales/hi.pak": {
+            "bytes": 938668,
+            "sha256": "105e42598f0c4e54303f2e97a19b9f298cb440566f4dac4e12ec758d1c91f9f5"
+          },
+          "browser/locales/hr.pak": {
+            "bytes": 432746,
+            "sha256": "952f7c18327d53f7fa3fc0794bbfa9bf9bd8dc8768bd412b88e0cece15a0a03a"
+          },
+          "browser/locales/hu.pak": {
+            "bytes": 465889,
+            "sha256": "5ddc8500c3c43bb6cb64b0281180d6e7fc2b1ba392e8d68ccffb5505a9e1da3b"
+          },
+          "browser/locales/id.pak": {
+            "bytes": 383637,
+            "sha256": "3ff3c9c12165bc10ebe5a44063ddc2876fd4f66e7337ec28ebe5464fe97a0ff8"
+          },
+          "browser/locales/it.pak": {
+            "bytes": 432007,
+            "sha256": "be9e00c362655261a0e502082b76bc7c0723e73a3dd98878b91943e4c55b847c"
+          },
+          "browser/locales/ja.pak": {
+            "bytes": 523937,
+            "sha256": "8985e092623b4075d03d365ff6da5e7d637218bb18068646a7f13a97fe55ac8a"
+          },
+          "browser/locales/kn.pak": {
+            "bytes": 1023742,
+            "sha256": "09cfdf397c18a40fbd382cb56c792b5ffa4e834e93db732409decfc77a5cdce2"
+          },
+          "browser/locales/ko.pak": {
+            "bytes": 439554,
+            "sha256": "81191014b1f67b698ba04f16e5b3bbf19f9f2b12ac9530a489841bbf7494a1cf"
+          },
+          "browser/locales/lt.pak": {
+            "bytes": 469849,
+            "sha256": "968b78c1c2a2292872229d35f499a51762821610b61640f50a4f81a29b3e5783"
+          },
+          "browser/locales/lv.pak": {
+            "bytes": 467557,
+            "sha256": "053169257f687fc7721b3aef39a1b9db72984115149ea7ad99618303bd30db2a"
+          },
+          "browser/locales/ml.pak": {
+            "bytes": 1063805,
+            "sha256": "c878eafb0214edc6d582db10c8d9d74e1120bf17d6de010f7167751afd6a9e2d"
+          },
+          "browser/locales/mr.pak": {
+            "bytes": 874648,
+            "sha256": "a383820c5a3bcd606b3f18e4d9a82a1db44364c75810ba838d86a3f5fe5ff7b8"
+          },
+          "browser/locales/ms.pak": {
+            "bytes": 400791,
+            "sha256": "58b3243be78f63b2db3d98283365bcaf70e9921a3ae6999c50580153ba1fe09b"
+          },
+          "browser/locales/nb.pak": {
+            "bytes": 392478,
+            "sha256": "3dcf49287e84e77d42a1befa7a35aa245aa9ced5c2bd8f7e2691a2ade8a702eb"
+          },
+          "browser/locales/nl.pak": {
+            "bytes": 405878,
+            "sha256": "c3f63345baeab3808c03fb06809125b6832fed6fa30d09994fffd13878197cfd"
+          },
+          "browser/locales/pl.pak": {
+            "bytes": 451463,
+            "sha256": "0d1fc64047c3cd8dd75840181134c5119e9bd20338cc24569515b2176c77f67a"
+          },
+          "browser/locales/pt-BR.pak": {
+            "bytes": 425485,
+            "sha256": "93f4b26a62939dfaa947ce1ceb4d399f99f33596a7f9036fc371824f82523f7e"
+          },
+          "browser/locales/pt-PT.pak": {
+            "bytes": 429604,
+            "sha256": "1cc0283374d2d44a448b4445e36ae6b16ad252b0dbf78e5ed17e4992c3304b7f"
+          },
+          "browser/locales/ro.pak": {
+            "bytes": 440310,
+            "sha256": "3cf8b2282f68c0b4d69e625b0bb1660e726dda713c3f14882d57507967488020"
+          },
+          "browser/locales/ru.pak": {
+            "bytes": 713907,
+            "sha256": "0bfe77906eca653c7307c3a39ec70aada33bb08c7a412e8214162b872223aba6"
+          },
+          "browser/locales/sk.pak": {
+            "bytes": 454259,
+            "sha256": "d0c10c0f9274b68680e44ff6823302b7702b70cbe7bbff11b4be08cd2f7ad03c"
+          },
+          "browser/locales/sl.pak": {
+            "bytes": 435058,
+            "sha256": "20a7b0b85efefc1854801d3af04ca62caf7ce6b2e2b631cc28889809672a67c9"
+          },
+          "browser/locales/sr.pak": {
+            "bytes": 671206,
+            "sha256": "fad2e3545a0a85689b4865b20dfa6bf0f6f5c37b5caab913a617d1d853c2bbb0"
+          },
+          "browser/locales/sv.pak": {
+            "bytes": 395963,
+            "sha256": "0117969cf655c1b72dd7c9ef8aabee90395c77e5b9289e804be0dda1d118085e"
+          },
+          "browser/locales/sw.pak": {
+            "bytes": 415710,
+            "sha256": "c15751706ddbbf1dce21605ca5b338020cfbad101a52a070d005f34fa481bdc4"
+          },
+          "browser/locales/ta.pak": {
+            "bytes": 1050988,
+            "sha256": "15585832693a05a97987b761f50a8ee97fb46bcb2b3050a37efbe603848d7f7b"
+          },
+          "browser/locales/te.pak": {
+            "bytes": 977376,
+            "sha256": "06235b8cb3af2de178a20748e8ec0d072f51e3985e94e147a428d668e3558564"
+          },
+          "browser/locales/th.pak": {
+            "bytes": 820786,
+            "sha256": "d9bc4bc08c387b8b416b74004a349711aa2ad79621281d2c612c249bdbce87e9"
+          },
+          "browser/locales/tr.pak": {
+            "bytes": 422691,
+            "sha256": "76e746f97ce2af1e19c0613441d1e2f2652f0ca4ac8ebc82e82aea8acd5dc965"
+          },
+          "browser/locales/uk.pak": {
+            "bytes": 712695,
+            "sha256": "fcec1f8c5b7062d3ed8e6bfddf62f24b517c59ae994dccaed624c223552ba10c"
+          },
+          "browser/locales/ur.pak": {
+            "bytes": 625067,
+            "sha256": "0e035860981b8c601e7786520d1c881689d58bc7575828ecfe195fe25e788ff1"
+          },
+          "browser/locales/vi.pak": {
+            "bytes": 499594,
+            "sha256": "709e8fad101786f9b2be04e4002df0ad532874467cc2ebe31892e91423d1de90"
+          },
+          "browser/locales/zh-CN.pak": {
+            "bytes": 365164,
+            "sha256": "4fcb82eda57855f45389784ef46eeff9a4faf5f1f607911886579209447b9b58"
+          },
+          "browser/locales/zh-TW.pak": {
+            "bytes": 365134,
+            "sha256": "502f8bbb071caf9816d3926cbd43d0c5c7586b14354f6fa1a29f27aab60d2581"
+          },
+          "browser/MEIPreload/manifest.json": {
+            "bytes": 238,
+            "sha256": "44844cf3dde6e80087ae0e6bf0d9326d7ef7d23326d24ac83af0850be26923d2"
+          },
+          "browser/MEIPreload/preloaded_data.pb": {
+            "bytes": 8254,
+            "sha256": "c6070a157b4e28d16fbccbd233e93846ddb070c85e1a1bc64469b7a5f1424fad"
+          },
+          "browser/mojo_core.dll": {
+            "bytes": 1283072,
+            "sha256": "a49bff32860d0a9e46bf29d8cc3614559aaf9a3fb60473f6a739412f3a7218ff"
+          },
+          "browser/nacl64.exe": {
+            "bytes": 4116992,
+            "sha256": "d3489f096732bce05ea581c3e0d9d1245ab907e637992691d1f76614eabfb40c"
+          },
+          "browser/nacl_irt_x86_32.nexe": {
+            "bytes": 3802244,
+            "sha256": "7b59961012ae1cc8f2fd1d1358ca1f01840cad7dd53fdfbd14f8daee2b6258d6"
+          },
+          "browser/nacl_irt_x86_64.nexe": {
+            "bytes": 4392400,
+            "sha256": "fe041ddc9677254b1157cf0309d8ac99002d93c6fda6ee5d8c7a0102a2179e7c"
+          },
+          "browser/notification_helper.exe": {
+            "bytes": 982528,
+            "sha256": "18e9ab0790c1522e6f9865587053d6715a8fec7316699fbe2839ce087ef36392"
+          },
+          "browser/resources.pak": {
+            "bytes": 8455547,
+            "sha256": "e2ac9ad03104c6c092ce08e8444d485eae8d12e0ba26251f656c533cdf8108a9"
+          },
+          "browser/v8_context_snapshot.bin": {
+            "bytes": 599772,
+            "sha256": "8349c33726ddc4b15258dad517153b649bf68b0d68095b9d299c5d6910a86b57"
+          },
+          "browser/vk_swiftshader.dll": {
+            "bytes": 3660800,
+            "sha256": "7a263724941a0781dfefa24c0ddd5bab6419d3e2792b0d83c3102983f0716cff"
+          },
+          "browser/vk_swiftshader_icd.json": {
+            "bytes": 106,
+            "sha256": "32d83ff113fef532a9f97e0d2831f8656628ab1c99e9060f0332b1532839afd9"
+          },
+          "browser/vulkan-1.dll": {
+            "bytes": 754688,
+            "sha256": "e3df36c8e3dd7b78c05cfcae298633ebba04ce9d8e44379623c5d1c0e4fe969d"
+          },
+          "engine/assets/dsoffice.cjs": {
+            "bytes": 769125,
+            "sha256": "c9248ef54385015475b15ae2baca41d9f7a8bd0b8538904da6a1fcd16c5305a1"
+          },
+          "engine/assets/dsoffice.data": {
+            "bytes": 23024619,
+            "sha256": "0bea03629341de18dc90bdfc1e67a2f3b791e31ef9fe22888c288226e8bd5b15"
+          },
+          "engine/assets/dsoffice.data.js.metadata": {
+            "bytes": 145921,
+            "sha256": "ffab1d431c3ecdac3f2438f5e229b2e9a83364fed02b1732e5c327ab43d6b04d"
+          },
+          "engine/assets/dsoffice.wasm": {
+            "bytes": 127846009,
+            "sha256": "bb7d1121c7200020f0b6219e37655719cde0c63f905f9826c43c40bf5a7c17c8"
+          },
+          "engine/licenses/DeepSeek-Harness-MIT.txt": {
+            "bytes": 2120,
+            "sha256": "637f43ba3b0193253cd80de6ce6ed4ed4d8a34eac84f6aaa7cc14f532e36318f"
+          },
+          "engine/licenses/LICENSE": {
+            "bytes": 300898,
+            "sha256": "31c915ae5b7eafe51f06fc2537d2e7fefdee08e40d6b0d761d03d9f0fd58d660"
+          },
+          "engine/licenses/NOTICE": {
+            "bytes": 1859,
+            "sha256": "8d34210ebbfaee4ba258ef7b30c3044170f356ab82c8259c81b53860bcdeef7b"
+          },
+          "engine/package.json": {
+            "bytes": 760,
+            "sha256": "bbe7556595dc5fc2f9266011a1277630e1b9bb5aceec6aa85a3548b7fe13ad3c"
+          },
+          "engine/prebuilds.json": {
+            "bytes": 9200,
+            "sha256": "de3888ea4f94ef0feb35dce4fb457bc6c837e4d957fd1a1c6f195827c21ffbda"
+          }
+        }
+      }
+    }
+  }
+}

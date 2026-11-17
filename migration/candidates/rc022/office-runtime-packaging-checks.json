@@ -1,0 +1,91 @@
+{
+  "unit": "C9-BU",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "status": "targeted-passed",
+  "scope": [
+    "Approved architecture-specific original WASM/Chromium/license inventories; no runtime download or installed-user-browser fallback.",
+    "Offline Portable input preflight, exact approved-member copying and previous distribution preservation.",
+    "Isolated default Office service with Python3.8.10 x64/x86 and same-architecture Chromium.",
+    "Windows observer timeout joins its owned Job including venv redirector descendants."
+  ],
+  "inventories": {
+    "x64": {
+      "manifest_sha256": "5bee4d6cf0f91c5ee144f1baa48a2802422eed3ce42810838f18366728fa988b",
+      "members": 94,
+      "bytes": 429043969
+    },
+    "x86": {
+      "manifest_sha256": "43c9b9e30992ab1b828894ae7042ef4ae4c95cdc713be4f920f9b2c9956c3e79",
+      "members": 96,
+      "bytes": 404774949
+    }
+  },
+  "verification": {
+    "native": {
+      "passed": 98,
+      "run": ".goose/out/rc022-office-packaging-native-20261118-04"
+    },
+    "final_packaging_and_timeout": {
+      "passed": 6,
+      "overlap_with_native": 5,
+      "run": ".goose/out/rc022-office-packaging-native-20261118-05"
+    },
+    "isolated_runs": [
+      ".goose/out/rc022-office-runtime-isolated-20261118-04",
+      ".goose/out/rc022-office-runtime-isolated-20261118-05"
+    ],
+    "output_bytes": 24,
+    "output_sha256": "529cde620df98cd964bbdd3ef16c40e4858c0147287b700be7777768aab00e8d",
+    "acquisition_x86": ".goose/out/rc022-office-runtime-reacquire-20261118-01/acquisition.json",
+    "acquisition_x64": ".goose/out/rc022-office-runtime-reacquire-x64-20261118-01/acquisition.json",
+    "true_x86_public_sdk_pairs": ".goose/out/rc022-office-browser-x86-pair-20261118-01/report.json"
+  },
+  "diagnostics": {
+    "initial_fixture_and_inventory_failures": "Preserved; generated debug.log removed from approval and required bundle patches added to isolated fixture.",
+    "host_startup": "Two fresh runs exceeded their original budgets during machine-wide slowdown. Raw logs/commands and independent standard-library startup diagnostics preserved. User confirmed host lag and later reported recovery after disabling Defender realtime protection; no security setting changed by this task.",
+    "index_check": "Interrupted with its exact owned process tree during host slowdown; no index acceptance result claimed."
+  },
+  "cleanup": {
+    "removed_bytes": 4609430001,
+    "acquirer_removed_download_bytes": 388040521,
+    "record": ".goose/out/rc022-office-packaging-control-20261118-01/cleanup-final.json",
+    "retained": "Commands, XML/logs, actual Source results, isolated observed TXT bytes and compact failed-run reports. Exact active x64/x86 runtime input retained under C9 ownership until Office matrix and Portable qualification complete.",
+    "removed_paths": [
+      ".goose\\out\\rc022-office-runtime-reacquire-20261118-01\\x86",
+      ".goose\\out\\rc022-office-runtime-acquire-20261118-01\\chromium-x86.zip",
+      ".goose\\out\\rc022-office-runtime-isolated-20261118-01\\candidate",
+      ".goose\\out\\rc022-office-runtime-isolated-20261118-01\\tmp-x64",
+      ".goose\\out\\rc022-office-packaging-native-20261118-01\\pytest-workspace",
+      ".goose\\out\\rc022-office-packaging-native-20261118-01\\tmp",
+      ".goose\\out\\rc022-office-packaging-native-20261118-01\\home",
+      ".goose\\out\\rc022-office-runtime-isolated-20261118-02\\candidate",
+      ".goose\\out\\rc022-office-runtime-isolated-20261118-02\\tmp-x64",
+      ".goose\\out\\rc022-office-packaging-native-20261118-02\\pytest-workspace",
+      ".goose\\out\\rc022-office-packaging-native-20261118-02\\tmp",
+      ".goose\\out\\rc022-office-packaging-native-20261118-02\\home",
+      ".goose\\out\\rc022-office-runtime-isolated-20261118-03\\candidate",
+      ".goose\\out\\rc022-office-runtime-isolated-20261118-03\\tmp-x64",
+      ".goose\\out\\rc022-office-packaging-native-20261118-03\\pytest-workspace",
+      ".goose\\out\\rc022-office-packaging-native-20261118-03\\tmp",
+      ".goose\\out\\rc022-office-packaging-native-20261118-03\\home",
+      ".goose\\out\\rc022-office-runtime-reacquire-x64-20261118-01\\x64",
+      ".goose\\out\\rc022-office-runtime-isolated-20261118-04\\candidate",
+      ".goose\\out\\rc022-office-runtime-isolated-20261118-04\\tmp-x64",
+      ".goose\\out\\rc022-office-runtime-isolated-20261118-04\\tmp-x86",
+      ".goose\\out\\rc022-office-packaging-native-20261118-04\\pytest-workspace",
+      ".goose\\out\\rc022-office-packaging-native-20261118-04\\tmp",
+      ".goose\\out\\rc022-office-packaging-native-20261118-04\\home",
+      ".goose\\out\\rc022-office-runtime-isolated-20261118-05\\candidate",
+      ".goose\\out\\rc022-office-runtime-isolated-20261118-05\\tmp-x64",
+      ".goose\\out\\rc022-office-runtime-isolated-20261118-05\\tmp-x86",
+      ".goose\\out\\rc022-office-packaging-native-20261118-05\\pytest-workspace",
+      ".goose\\out\\rc022-office-packaging-native-20261118-05\\tmp",
+      ".goose\\out\\rc022-office-packaging-native-20261118-05\\home"
+    ]
+  },
+  "limitations": [
+    "External pinned Python interpreters; isolated dsh/bundle/Office copies are not complete Portable acceptance.",
+    "Actual Win7 guest and unified release gate remain pending.",
+    "Production pin and accepted_upstream unchanged."
+  ]
+}

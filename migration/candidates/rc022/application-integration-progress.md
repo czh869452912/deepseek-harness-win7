@@ -519,3 +519,5 @@
 | C9-BS | Office 转换器拥有者、排队/超时/取消、共享字体世代与独占输出；70 项定向、6+6 组原版公开转换器及 16 组 SDK Worker 对照 | [Office 浏览器引擎](office-browser-engine-checks.json) |
 
 | C9-BT | 当前 office-kit 组合默认 Cordis 引擎、懒加载/重试/卸载及运行时身份检查；79 项定向含实际应用队列转换 | [Office 默认提供方](office-default-provider-checks.json) |
+
+| C9-BU | Office x64/x86 离线输入、完整许可证与精确打包；98 项定向、6 项最终打包/超时回收、双架构隔离默认服务及独立采集 | [Office 运行时打包](office-runtime-packaging-checks.json) |

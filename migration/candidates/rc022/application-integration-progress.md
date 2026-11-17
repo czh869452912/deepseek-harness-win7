@@ -493,3 +493,5 @@
 | C9-BF | MCP multi-round retries account for the first wire leg, shrink total budget and preserve per-leg/retry option ownership; actual HTTP pacing checked | [MCP flow budget](mcp-flow-budget-checks.json) |
 
 | C9-BG | SDK 2 wire timers/progress, raw abort reasons, serving ProtocolError and per-request HTTP cancellation match Original; disconnect and overlapping siblings checked | [MCP wire requests](mcp-request-checks.json) |
+
+| C9-BH | Pure x-mcp-header declaration reachability, primitive argument paths and exact field-value encoding match 275 Original observations | [MCP parameter header rules](mcp-param-headers-checks.json) |

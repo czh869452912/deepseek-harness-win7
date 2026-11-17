@@ -1,0 +1,12 @@
+{
+  "contract": "C9-BH",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "status": "targeted passed",
+  "implementation": "Pure Python port of SDK 2.2.0 x-mcp-header declaration scanning and primitive header construction. Preserve properties-only reachability, all excluded subschema keywords, first-fault diagnostics, case-insensitive name uniqueness, JS property enumeration and value-path semantics, primitive/unsafe-number decisions, UTF-8 surrogate replacement and empty/whitespace/sentinel Base64 encoding.",
+  "verification": {
+    "paired": {"run": "rc022-mcp-param-headers-pair-20261117-01", "observations": 275, "scope": "Execute the pinned SDK's actual scanXMcpHeaderDeclarations and buildMcpParamHeaders exports against the same schemas/arguments. Exact raw declarations, faults and header values compare, including all 18 excluded keywords, malformed nested schemas, numeric keys, array arguments, Unicode and unsafe integers."},
+    "native": {"run": "rc022-mcp-param-headers-native2-20261117-01", "passed": 7, "scope": "Original corpus plus focused empty/Unicode/whitespace/sentinel output and invalid-declaration atomic rejection. Initial test's estimated corpus count corrected from 284 to the actual 275; implementation and successful Source pairing unchanged."}
+  },
+  "cleanup": {"bytes_removed": 606, "scope": "All owned initial/final targeted workspaces/home/tmp removed; paired observations and command/log/XML retained.", "owned_processes_after": []},
+  "limitations": ["This verifies the pure SDK rules. Client list filtering, per-request header integration and mismatch recovery are the next consumer contract.", "No full regression, production pin promotion, release or actual Windows 7 qualification claimed."]
+}

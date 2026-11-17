@@ -461,3 +461,5 @@
 | C9-AP | Unchanged repository/manifest helpers and pinned hosted-git-info on Win7 worker; 822 paired identities + x86/x64 projection | [Market repository](market-repository-checks.json) |
 
 | C9-AQ | Repository API reads and clone fallback: encoded GitHub/GitLab URLs, ambiguous misses, public/private checks and README order | [Market files](market-files-checks.json) |
+
+| C9-AR | Actual Git partial clones, fixed/default commits, exact binary bounds, process-tree cancellation, cross-cache locks and deferred LRU eviction | [Market Git](market-git-checks.json) |

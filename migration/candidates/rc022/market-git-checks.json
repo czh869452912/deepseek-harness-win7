@@ -1,0 +1,45 @@
+{
+  "part": "C9-AR",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "scope": "Actual Git detail repository cache and binary Windows process ownership",
+  "implementation": [
+    "Partial bare clone initialization, fixed-commit refs and cached HEAD TTL, regular-file tree lookup, original README preference, bounded exact binary blob output, Git override scrubbing, safe transports and HTTPS-denied SSH retry.",
+    "Per-repository service queues plus cross-process sibling locks with proven-dead PID takeover. Download growth abort, per-file refusal preserving the clone, and asynchronous LRU/staging eviction avoid mutually-held lock deadlocks.",
+    "Python 3.8 Windows Job process ownership kills and joins actual SSH descendants on timeout, caller/lifetime abort and Task cancellation; forced removal only adjusts owned, nonshared read-only Git pack files."
+  ],
+  "verification": {
+    "paired": {
+      "run": "rc022-market-git-pair3-20261117-01",
+      "observations": 13,
+      "differences": 0,
+      "scope": "Actual local Git file transport, commits/bytes/README/missing/size refusal/cache eviction"
+    },
+    "native": {
+      "run": "rc022-market-git-native3-20261117-01",
+      "passed": 43,
+      "scope": "Actual Git/cache/SSH child timeout and cancellation; cross-cache serialization, HEAD TTL, concurrent eviction, LRU/staging, lock takeover/abort and repository/detail/shared HTTP/manager consumers"
+    },
+    "source": {
+      "runs": [
+        "rc022-market-git-source-20261117-01",
+        "rc022-market-git-source2-20261117-01"
+      ],
+      "first_passed": 16,
+      "first_failed": 2,
+      "retested_passed": 1,
+      "scope": "Original repository-cache tests; completed-fetch 1000-directory fixture exceeded the initial 15-second test budget, passed at 60 seconds; symlink fixture remains blocked by host EPERM, not counted as passed"
+    }
+  },
+  "cleanup": {
+    "removed": "Owned synthetic Native/Source workspaces/home/tmp and paired Git caches/origins/fixture inputs",
+    "bytes": 750381,
+    "owned_processes_after": [],
+    "retained": "Raw paired observations, all original failures/commands/log/XML/Vitest reports and input hashes; shared Source/toolchain until C1-C9 acceptance"
+  },
+  "limitations": [
+    "Git/execa process error diagnostics use explicit Python Host wording; exact OS-specific shortMessage text is not claimed.",
+    "Actual local file transport and controlled visibility provider are covered; live external authenticated hosts, proxies/credential helpers and Win7 VM runtime remain unqualified.",
+    "The original symlink eviction fixture requires privileges unavailable in this environment; retained as an unresolved capability-bound observation.",
+    "Detail Remote/image route/application binding, search reuse performance and release qualification remain pending."
+  ]
+}

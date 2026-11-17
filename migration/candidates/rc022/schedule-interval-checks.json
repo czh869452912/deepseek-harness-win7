@@ -1,0 +1,32 @@
+{
+  "part": "C9-I",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "scope": "Current Host after/at/every rule primitives and delivery framing",
+  "paired": {
+    "run": "rc022-schedule-interval-paired2-20261117-01",
+    "observations": 93,
+    "differences": 0,
+    "method": "Actual fixed Schedule domain.ts versus independent Native primitives, exact record/error/framing values."
+  },
+  "verification": {
+    "source": "91 original domain.spec.ts tests passed (Source coverage is broader than this Native batch).",
+    "native": "13 passed: current interval primitives and immutable/detached records, strict time dependency and historical Schedule regressions."
+  },
+  "behavior": [
+    "Required title validation counts UTF-16 units; creation trims descriptions and stored records require already-normalized exact shapes.",
+    "Explicit-offset and local one-shots retain strict reason-specific diagnostics and future representability. Fixed-rate intervals now admit the current 60-second minimum in this staged domain.",
+    "Fixed-rate dispatch computes the latest due occurrence without enumerating a backlog and omits an unrepresentable successor at exhaustion. Framing uses ECMAScript JSON escaping and ordered batches."
+  ],
+  "diagnostics": [
+    "The first pair contained equal JSON values but the strict comparator refused the Native FrozenDict subclass. The observer now serializes to plain JSON before comparison; production immutability remains and its mutation rejection is tested."
+  ],
+  "cleanup": {
+    "bytes_removed": 43167,
+    "owned_processes_after": [],
+    "retained": "Commands, hashes, both paired observations, logs/XML and Native observations; synthetic workspaces and run homes removed."
+  },
+  "limitations": [
+    "Daily/weekly/Cron/RRULE, Host storage, management, delivery runtime and current tool integration remain pending; production still uses its historical Schedule binding.",
+    "Targeted checks do not establish full regression, application/session, Portable/browser/Win7 acceptance or upstream promotion."
+  ]
+}

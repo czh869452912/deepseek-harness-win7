@@ -23,16 +23,30 @@ const result = await build({ entryPoints: ['scripts/native/market-index/entry.ts
     '@market/index-url': resolve(source, 'packages/boot/plugin-market/src/index-url.ts'),
     '@deepseek-ai/dsh-typert-protocol': resolve(source, 'packages/typert/protocol/src/remote-error.ts'),
     '@deepseek-ai/dsh-util-values': resolve(source, 'packages/util/values/src/index.ts'),
-  } })
+    '@market/posix': resolve('scripts/native/market-index/posix.ts'),
+    'hosted-git-info': resolve(source, 'packages/boot/plugin-market/node_modules/hosted-git-info/lib/index.js'),
+    'url': resolve('scripts/native/market-index/url.ts'),
+  }, plugins: [{ name: 'pure-market-repository-projection', setup(build) {
+    build.onResolve({ filter: /^@market\/repository$/ }, () => ({ path: 'detail.ts', namespace: 'market-repository' }))
+    build.onLoad({ filter: /.*/, namespace: 'market-repository' }, () => {
+      const path = resolve(source, 'packages/boot/plugin-market/src/detail.ts'), text = readFileSync(path, 'utf8')
+      const start = text.indexOf('export function repositoryOf('), end = text.indexOf('/** A read document and the files its images resolve against. */')
+      if (start < 0 || end <= start || !text.slice(start, end).includes('function normalizedDirectory(')) throw Error('repository projection markers differ')
+      return { contents: "import hostedGitInfo from 'hosted-git-info';\nimport { posix } from '@market/posix';\n" + text.slice(start, end),
+        loader: 'ts', resolveDir: dirname(path) }
+    })
+  } }] })
 const digest = bytes => createHash('sha256').update(bytes).digest('hex'), inputs = {}, resources = {}
 const track = path => { inputs[relative(root, resolve(path)).replaceAll('\\', '/')] = digest(readFileSync(path)) }
 for (const path of Object.keys(result.metafile.inputs)) {
+  if (path === 'market-repository:detail.ts') continue
   const absolute = resolve(path)
   if (!absolute.startsWith(source + '\\') && !absolute.startsWith(source + '/')
     && !absolute.startsWith(resolve('scripts/native/market-index') + '\\')
     && !absolute.startsWith(resolve('scripts/native/market-index') + '/')) throw Error('unowned input: ' + path)
   track(path)
 }
+track(resolve(source, 'packages/boot/plugin-market/src/detail.ts'))
 mkdirSync(output, { recursive: true })
 const copy = (name, path) => {
   const bytes = readFileSync(path); writeFileSync(resolve(output, name), bytes)
@@ -49,7 +63,7 @@ const dependencies = new Set()
 for (const path of Object.keys(result.metafile.inputs)) {
   if (!path.includes('node_modules')) continue
   let directory = dirname(resolve(path))
-  while (!existsSync(resolve(directory, 'package.json'))) directory = dirname(directory)
+  while (!existsSync(resolve(directory, 'package.json')) || !JSON.parse(readFileSync(resolve(directory, 'package.json'), 'utf8')).name) directory = dirname(directory)
   dependencies.add(directory)
 }
 for (const directory of dependencies) {
@@ -63,5 +77,6 @@ for (const path of [require.resolve('esbuild/package.json'), require.resolve('es
 writeFileSync(resolve(output, 'manifest.json'), JSON.stringify({ format: 'dsh-market-index@1', target_upstream: target,
   engine: 'shipped Win7 QuickJS', node: process.version, esbuild: require('esbuild').version,
   scheduling: 'MiniSearch chunk timer callbacks queued as microtasks in isolated worker; no external I/O',
+  repository_projection: 'Unchanged repositoryOf, manifestRepository and normalizedDirectory function slice from pinned detail.ts; private path.posix subset and WHATWG URL carrier',
   build_inputs: inputs, resources }, null, 2) + '\n')
 console.log(JSON.stringify({ output, resources }))

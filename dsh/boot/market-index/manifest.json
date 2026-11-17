@@ -5,6 +5,7 @@
   "node": "v22.22.2",
   "esbuild": "0.28.2",
   "scheduling": "MiniSearch chunk timer callbacks queued as microtasks in isolated worker; no external I/O",
+  "repository_projection": "Unchanged repositoryOf, manifestRepository and normalizedDirectory function slice from pinned detail.ts; private path.posix subset and WHATWG URL carrier",
   "build_inputs": {
     ".goose/out/rc022-prep-20261114-01/source/node_modules/.pnpm/semver@7.8.5/node_modules/semver/internal/constants.js": "38a112baf27ceca0260082ff26ac2fd7a9861cab1af12dd65e720277f68e6ce9",
     ".goose/out/rc022-prep-20261114-01/source/node_modules/.pnpm/semver@7.8.5/node_modules/semver/internal/debug.js": "8a9f420572260f3cf944463b5090d62a60f0730589dc23a7ec4ca25e2ee41bb3",
@@ -59,7 +60,15 @@
     ".goose/out/rc022-prep-20261114-01/source/packages/boot/plugin-market/src/search.ts": "d88db9df16dcfe1ebde1c5924ed348ef009376a50a8dec949e11bc4f5a5a985c",
     ".goose/out/rc022-prep-20261114-01/source/packages/typert/protocol/src/remote-error.ts": "bb902ec537e1dfbc74885e77a01192e6532b50a959a5bc4cc55c1fbf52e0a368",
     ".goose/out/rc022-prep-20261114-01/source/packages/boot/plugin-market/src/index-url.ts": "dd174d5e31fead47e5db308b61b8b0a784c60fb6bace9dfd0c602952cad951b7",
-    "scripts/native/market-index/entry.ts": "c33a8e33d35ea89f6e75e72de121e1e80bc3691395fe628a56277f5c80e89d1f",
+    ".goose/out/rc022-prep-20261114-01/source/node_modules/.pnpm/lru-cache@11.5.1/node_modules/lru-cache/dist/commonjs/index.min.js": "bf9d779d61d981043e543a408974b4e6d9192d34f2c7b79a0bc94f7e6f461e30",
+    ".goose/out/rc022-prep-20261114-01/source/node_modules/.pnpm/hosted-git-info@9.0.3/node_modules/hosted-git-info/lib/hosts.js": "b9941c9d4f3d9166a4abfa41899e519b66cc5ae0fbc7360ea3ae81effb62a140",
+    "scripts/native/market-index/url.ts": "8d3b56672e1d84390cf04bed2a0b5eb7a52ceee6387ab4fb17a2fb4fa8b7450f",
+    ".goose/out/rc022-prep-20261114-01/source/node_modules/.pnpm/hosted-git-info@9.0.3/node_modules/hosted-git-info/lib/parse-url.js": "bd9d79dae9d686824db3488bc8f1c7dd387cf43a2888efb83a33620cd25c32a4",
+    ".goose/out/rc022-prep-20261114-01/source/node_modules/.pnpm/hosted-git-info@9.0.3/node_modules/hosted-git-info/lib/from-url.js": "be08a3f35f54a3a9510b0c2ed3e6db03e1427965d5b189eb00bd09659938f52a",
+    ".goose/out/rc022-prep-20261114-01/source/node_modules/.pnpm/hosted-git-info@9.0.3/node_modules/hosted-git-info/lib/index.js": "37f3c1042f5202d6e10ee1b39797a281e8ba1d3620193427a51c89b55101ba77",
+    "scripts/native/market-index/posix.ts": "021ba1e0034d1746ee1243cfcb1fbf1d35046cc26ca2f9548909a618f672dc27",
+    "scripts/native/market-index/entry.ts": "d721d6e7b3edc8fa47ff7d8ae26d955ab5062502a4e8f5606299ffba58397fd4",
+    ".goose/out/rc022-prep-20261114-01/source/packages/boot/plugin-market/src/detail.ts": "d184e6c6eca2c478083db21cc2dd0ab3d748bbc9881537e38968b66e4536ccaf",
     "scripts/native/market-index/driver.js": "d9d03992a563dcc738a06b81307deb55a71426e3ac844b90c92484a850a4f26f",
     ".goose/out/rc022-prep-20261114-01/source/LICENSE": "ebb4f09972aee8608be255debaf78451a68e95c290f55c240dec2ecfa16ea6be",
     "dsh/host/browser_compat/url.js": "d4ee03603a1a56cc92284568fa75f141b59d9edb41775549626bb80c82f64300",
@@ -69,19 +78,25 @@
     ".goose/out/rc022-prep-20261114-01/source/node_modules/.pnpm/semver@7.8.5/node_modules/semver/LICENSE": "4ec3d4c66cd87f5c8d8ad911b10f99bf27cb00cdfcff82621956e379186b016b",
     ".goose/out/rc022-prep-20261114-01/source/node_modules/.pnpm/minisearch@7.2.0/node_modules/minisearch/package.json": "500de8938f1b4652e408895b98001f236d714e3f3a599815a8506ca915a1389b",
     ".goose/out/rc022-prep-20261114-01/source/node_modules/.pnpm/minisearch@7.2.0/node_modules/minisearch/LICENSE.txt": "70d37354d6395629fb99edb28cb37a5d356ffa24a48cd02a5def5b83a300a899",
+    ".goose/out/rc022-prep-20261114-01/source/node_modules/.pnpm/lru-cache@11.5.1/node_modules/lru-cache/package.json": "c9c966e6aefc50793d2164a5ac6788b03598cd358c46c36d178a2a6bdda7e8c9",
+    ".goose/out/rc022-prep-20261114-01/source/node_modules/.pnpm/lru-cache@11.5.1/node_modules/lru-cache/LICENSE.md": "8a1af140fdfbf5afd3df27f7e662f989c5b963a300020dfafce42033cae9e004",
+    ".goose/out/rc022-prep-20261114-01/source/node_modules/.pnpm/hosted-git-info@9.0.3/node_modules/hosted-git-info/package.json": "7c3774e4843581832aec08133a19df318625a91c1ca6c90fef1a328d4e02705e",
+    ".goose/out/rc022-prep-20261114-01/source/node_modules/.pnpm/hosted-git-info@9.0.3/node_modules/hosted-git-info/LICENSE": "c1476ec53119cd4c8370f91f5152ac76312a29b4fae2d49b5e0e0970fe0fa5ee",
     "scripts/oracles/node_modules/esbuild/package.json": "9d0bc453f4e791553c4cc2298ba023b409241fd9801e494741666eb0f6051490",
     "scripts/oracles/node_modules/esbuild/lib/main.js": "61ec0ba144ff93f4bf0e96ad6fab6f430ede0aa13e27ace8063ed63ba416b3cd",
     "scripts/oracles/node_modules/@esbuild/win32-x64/esbuild.exe": "c7bee37877d0aa6a046e52783fa0a2cf1a9ce5579d68bb3083bda99d4bff18ef",
-    "scripts/build_market_index.mjs": "7c3bb8f2eecd5ad27e92932b801697e8e54f68638eae60f812af7aed11e72bc0"
+    "scripts/build_market_index.mjs": "863f2431501ec22dd22c60ca0e2d0377b623833020ad219d50be2181d42f81dd"
   },
   "resources": {
-    "market.js": "45033fb69e673e7e667977e1aa4158cfb928564e3eaaa02d9f69a6a8ec10d362",
+    "market.js": "d1da5d7ba24b96bc914ebe88a548ae61ee21de374d7681fa0b2489a38b3e1cf9",
     "driver.js": "d9d03992a563dcc738a06b81307deb55a71426e3ac844b90c92484a850a4f26f",
     "SOURCE-LICENSE": "ebb4f09972aee8608be255debaf78451a68e95c290f55c240dec2ecfa16ea6be",
     "url.js": "d4ee03603a1a56cc92284568fa75f141b59d9edb41775549626bb80c82f64300",
     "url.LICENSE.txt": "b87653fff2d44426ab5cd4723cee3b1364dc8d35a0acdf098c54689543123bf8",
     "url-input.json": "db5b07bb8f73c075083ef91c1d8974628d69641833d88c66adaa026278b5dbc6",
     "semver-LICENSE": "4ec3d4c66cd87f5c8d8ad911b10f99bf27cb00cdfcff82621956e379186b016b",
-    "minisearch-LICENSE.txt": "70d37354d6395629fb99edb28cb37a5d356ffa24a48cd02a5def5b83a300a899"
+    "minisearch-LICENSE.txt": "70d37354d6395629fb99edb28cb37a5d356ffa24a48cd02a5def5b83a300a899",
+    "lru-cache-LICENSE.md": "8a1af140fdfbf5afd3df27f7e662f989c5b963a300020dfafce42033cae9e004",
+    "hosted-git-info-LICENSE": "c1476ec53119cd4c8370f91f5152ac76312a29b4fae2d49b5e0e0970fe0fa5ee"
   }
 }

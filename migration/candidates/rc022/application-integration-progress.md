@@ -457,3 +457,5 @@
 | C9-AN | Market listing/search/entry composition, live installation/compatibility/Git updates, Settings/events and SemVer whitespace fix | [Market listing](market-listing-checks.json) |
 
 | C9-AO | Market detail package-first selection, shared cache/failures, document-id lifetime and bounded adjacent images over controlled files | [Market detail](market-detail-checks.json) |
+
+| C9-AP | Unchanged repository/manifest helpers and pinned hosted-git-info on Win7 worker; 822 paired identities + x86/x64 projection | [Market repository](market-repository-checks.json) |

@@ -1,0 +1,36 @@
+{
+  "part": "C9-AP",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "scope": "Original repository URL and manifest-directory identity projection",
+  "implementation": [
+    "Extracts unchanged original repositoryOf/manifestRepository/normalizedDirectory function slice with asserted markers and full original input hash. Bundles pinned hosted-git-info 9.0.3 and lru-cache 11.5.1 plus byte-preserved licenses/provenance in shipped x64/x86 QuickJS.",
+    "Finite path.posix normalize/isAbsolute subset and existing WHATWG URL carrier satisfy original pure helper dependencies; no Node runtime/filesystem/network imports. Python repository cache returns detached identity values to prevent caller mutation of private memoized results."
+  ],
+  "verification": {
+    "paired": {
+      "run": "rc022-market-repository-pair-20261117-01",
+      "observations": 822,
+      "differences": 0,
+      "scope": "Original URL/manifest helpers: GitHub/GitLab/Bitbucket/gist/shorthand/SSH/page URLs, protocol/credential/port/IDN admission crossed with POSIX/backslash/drive/root/dot/parent/trailing/surrogate directory normalization"
+    },
+    "native": {
+      "run": "rc022-market-repository-native-20261117-01",
+      "passed": 87,
+      "scope": "Repository corpus/provenance/detached output and full x86-vs-x64 projection, plus detail/listing/body/cache/index/resource integrity/tool/worker consumers"
+    }
+  },
+  "diagnostics": [
+    "First development build had neutral-platform dependency entry resolution refusal for hosted-git-info main. Added explicit pinned package lib/index.js alias; failed build created no output directory or runtime artifact."
+  ],
+  "cleanup": {
+    "removed": "Owned Native synthetic workspace/home/tmp, reconstructible paired operations and byte-verified duplicate repository artifact build",
+    "bytes": 22431733,
+    "owned_processes_after": [],
+    "retained": "Source/Native observations/input hashes, command/log/XML and shared C1-C9 Source/toolchain until acceptance"
+  },
+  "limitations": [
+    "Pure repository identities only; GitHub/GitLab single-file APIs, private repository Git cache and market detail Remote/image route remain pending.",
+    "Previously recorded exact invalid JSON prose, repeated search index builds, large input and actual Win7 qualification remain pending.",
+    "Targeted completion only; no release acceptance or production promotion."
+  ]
+}

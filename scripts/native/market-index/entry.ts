@@ -2,9 +2,12 @@
 import { MarketIndexError, parseMarketIndex, marketInstallTarget } from '@market/index'
 import { MarketSearch } from '@market/search'
 import { normalizeIndexUrl } from '@market/index-url'
+import { repositoryOf, manifestRepository } from '@market/repository'
 
 export async function observe(operation: any): Promise<any> {
   try {
+    if (operation.kind === 'repository') return { ok: true, value: repositoryOf(operation.value) ?? null }
+    if (operation.kind === 'manifest-repository') return { ok: true, value: manifestRepository(operation.value) ?? null }
     if (operation.kind === 'body') {
       let value: unknown
       try { value = JSON.parse(operation.text) }

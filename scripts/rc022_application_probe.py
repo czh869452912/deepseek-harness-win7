@@ -19,7 +19,10 @@ sys.path.insert(0,str(ROOT))
 TARGET='38a6a5c965aa99ab525161efb7cc5cf1fe62fced'
 PLATFORM_PATCHES=[]
 EXECUTE_PTC=False
+BEFORE_SESSIONS=None
+AFTER_SESSIONS=None
 BINDINGS={
+ '@deepseek-ai/dsh-agent-default-model':'dsh.core.default_model_current:CurrentAgentDefaultModelConfig',
  '@deepseek-ai/dsh-plugin-market/tools':'dsh.boot.plugin_market_tools:CurrentPluginMarketTools',
  '@deepseek-ai/dsh-tool-schedule':'dsh.schedule.tools_current:CurrentToolSchedule',
  '@deepseek-ai/dsh-schedule':'dsh.schedule.service_current:CurrentScheduleService',
@@ -66,6 +69,7 @@ async def observe(source,output):
                 body=script['body']
                 result['resourceChecks'].append(dict(phase=batch['phase'],url=batch['url'],headStatus=head['status'],
                     headEmpty=head['body'] is None,status=script['status'],bytes=len(body),sha256=hashlib.sha256(body).hexdigest()))
+            if BEFORE_SESSIONS is not None:await BEFORE_SESSIONS(ctx,result,output)
             for identity in ['minimal','standard','ptc','cordis']:
                 try:
                     await ctx.get('sessionController').create(dict(sessionId='candidate-'+identity,cwd=str(output),agentPreset=identity))
@@ -80,8 +84,10 @@ async def observe(source,output):
                 result['ptcRuntime']=dict(language=runtime.language,isolation=runtime.isolation,programFormat=runtime.programFormat,retainsState=runtime.retainsState)
                 batch=await ctx.tools.execute(dict(agent=agent,signal=AbortController().signal,calls=[dict(type='tool-call',id='candidate-code',name='run_code',arguments=json.dumps(dict(code='return await tools.schedule_list({})',description='Read scheduled tasks through the Python SDK')))]))
                 execution=batch['results'][0]['result'];result['ptcExecution']=dict(isError=execution.is_error,value=execution.value,error=execution.error)
+            if AFTER_SESSIONS is not None:await AFTER_SESSIONS(ctx,result,output)
         except Exception as error:
             result.update(stage='failed',error=str(error))
+            with (output/'application-error.log').open('a',encoding='utf-8') as log:traceback.print_exc(file=log)
             if hasattr(error,'composition'):result['composition']=error.composition
         finally:
             if app is not None:
@@ -106,9 +112,9 @@ def main():
     inputs=[source/'apps/cli/package.json',source/'packages/bundle/base/cordis.patch.yml',
         source/'packages/bundle/web-app/package.json',source/'packages/bundle/web-app/cordis.patch.yml',
         source/'packages/client/modules/src/index.ts',source/'packages/client/modules/src/assets.ts',
-        Path(__file__).resolve(),ROOT/'dsh/boot/plugin_registry_current.py',
+        Path(__file__).resolve(),Path(sys.argv[0]).resolve(),ROOT/'dsh/boot/plugin_registry_current.py',
         ROOT/'dsh/cordis/loader.py',ROOT/'dsh/api/session_agents_current.py',ROOT/'dsh/boot/plugin_market_tools.py',ROOT/'dsh/boot/plugin_market_tools.json',
-        ROOT/'dsh/core/ptc_dispatches.py',ROOT/'dsh/code_runtime/confined_ptc.py',ROOT/'dsh/code_runtime/ptc.py',ROOT/'dsh/code_runtime/process.py',ROOT/'dsh/code_runtime/worker.py',
+        ROOT/'dsh/core/ptc_dispatches.py',ROOT/'dsh/core/default_model_current.py',ROOT/'dsh/code_runtime/confined_ptc.py',ROOT/'dsh/code_runtime/ptc.py',ROOT/'dsh/code_runtime/process.py',ROOT/'dsh/code_runtime/worker.py',
         ROOT/'dsh/host/client_modules/current.py',ROOT/'dsh/host/client_modules/resources_current.py',ROOT/'dsh/host/client_modules/assets_current.py',
         *[ROOT/'dsh/schedule'/name for name in ['tools_current.py','tools_current.json','service_current.py','runtime_current.py','storage_current.py','domain_current.py','update_current.py']]]
     result['input_sha256']={path.relative_to(ROOT).as_posix():hashlib.sha256(path.read_bytes()).hexdigest() for path in inputs}

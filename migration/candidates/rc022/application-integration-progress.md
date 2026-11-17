@@ -423,3 +423,5 @@
 | C9-W | SQLite atomic batch/version migration and backend quarantine close the direct Domain consumer | [SQLite batch](sqlite-batch-checks.json) |
 
 | C9-X | Per-record JSON atomic batch/restore, accepted write draining and empty-tree authority | [Per-record batch](per-record-batch-checks.json) |
+
+| C9-Y | Live default-model Config/save FIFO and actual timed/manual Schedule delivery through Agent and Session persistence | [Default model and delivery](default-model-delivery-checks.json) |

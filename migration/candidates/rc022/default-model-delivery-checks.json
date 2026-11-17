@@ -1,0 +1,14 @@
+{
+  "part": "C9-Y",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "scope": "Current default model Config/save ownership and real candidate Schedule delivery",
+  "paired": {"run": "rc022-default-model-paired2-20261117-01", "observations": 10, "differences": 0},
+  "verification": {"native": "8 targeted default-model, Loader volatile and model-selection regressions passed, including abandoned-caller FIFO saving.", "source": "3 original default-model tests passed.", "application": "rc022-application-candidate18-20261117-01 exited 0: four actual preset Sessions; Python process run_code to Schedule; timed existing-Session and manual new_once/new delivery with persisted source/message ids, idle Agent without turn errors, history reads and repeat-run delivery-floor refusal."},
+  "behavior": [
+    "Reads live volatile Config references and returns detached complete selections. Optional Settings policy disables generated pages and disposes its registration.",
+    "Saves through the owning ConfigEditor entry in submission order; captures caller input, stringifies defined reasoning effort, omits undefined effort and permits later saves after failure. Missing entry/editor performs no write.",
+    "Candidate-only binding replaces the historical provider. Application probe records hook/input hashes and outer failure tracebacks; scripted LLM requires no cloud credentials."
+  ],
+  "cleanup": {"bytes_removed": 94495, "owned_processes_after": [], "retained": "Commands/logs/XML, exact pair observations, Source test report and application observations. Removed failed/successful run homes, test workspaces and temporary payloads after verification."},
+  "limitations": ["Initial observer failure concerned asynchronous optional injection and proxy identity; original diagnostics remain distinct from the corrected successful run.", "Live delivery is Native candidate integration, not a paired browser or cold-recovery qualification. Production pin/bindings, full regression, Portable and Win7 guest qualification remain unchanged."]
+}

@@ -1,0 +1,15 @@
+{
+  "part": "C9-V",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "scope": "Explicit candidate Win7 Python PTC overlay and frozen tool result wire boundary",
+  "application": {"run": "rc022-application-candidate15-20261117-01", "exit_code": 0, "sessions_created": ["minimal", "standard", "ptc", "cordis"], "ptc_execution": "Real Python/process run_code calls the actual Host schedule_list through the selected PTC executor and receives an empty list page; workspace-write reports partial enforcement."},
+  "verification": {"paired": "15 original Source/Native nested dispatch observations agree.", "native": "16 passed: explicit canonical overlay composition, actual numeric and structured nested results through Python processes, mutation isolation, ordered dispatch, confinement/cancellation and cleanup consumers.", "source": "170 original PTC executor tests passed."},
+  "behavior": [
+    "Candidate overlay explicitly disables the original Node row and inserts an anchored Native ConfinedPythonPtcRuntime row. Original Source files and default probe composition are unchanged.",
+    "The provider advertises python/process, function-body and stateless execution. This is the Python 3.8 Win7 adaptation; it does not implement the Node provider's TypeScript or retained evaluation modes.",
+    "Nested tool results are detached from their frozen observer representation before crossing the JSON process binding wire. A real object/array return and worker-side mutation regression protect this boundary."
+  ],
+  "earlier_attempts": "Candidates 11-13 retained failures: patch name was a selector rather than a rename, then bare Python packages were unavailable from the official installation anchor. Candidate 14 created all Sessions but exposed frozen object rejection at the binding wire. Candidate 15 passed after the actual boundary fix.",
+  "cleanup": {"bytes_removed": 106756, "owned_processes_after": [], "retained": "Commands, logs/XML, original failures, paired observations and application results; synthetic homes and short workspaces from candidates 11-15 and targeted tests removed."},
+  "limitations": ["Candidate integration only: pure tool call execution is checked, not actual cloud model turns or browser/Portable/release acceptance.", "Node TypeScript/retained modes remain outside the Python overlay. Production bundle/pin promotion and final unified qualification remain pending.", "Candidate 15 did not hash all runtime implementation inputs; later probe metadata now includes the dispatch/runtime/worker files. It is not a frozen release qualification receipt."]
+}

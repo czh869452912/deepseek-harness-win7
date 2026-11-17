@@ -1,0 +1,9 @@
+# Explicit candidate platform overlay: Python 3.8/process, function-body,
+# stateless per-call execution. The original Node provider has other modes.
+- id: ptc-runtime
+  name: '@deepseek-ai/dsh-ptc-runtime-node'
+  disabled: true
+- insert:
+    - id: win7-ptc-runtime
+      name: '../../../dsh/code_runtime/confined_ptc.py:ConfinedPythonPtcRuntime'
+      config: {}

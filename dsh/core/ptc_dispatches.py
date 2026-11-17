@@ -75,7 +75,9 @@ class PtcDispatches:
             raise RuntimeError(self._over_message(name, 'result discarded'))
         if result.is_error:
             raise RuntimeError(result.error['message'])
-        return result.value
+        # Tool results are frozen for observers. The process binding wire owns
+        # a detached JSON value, just as the Source's JSON serialization does.
+        return _json_snapshot(result.value)
 
     def _drive(self):
         if not self.driving:

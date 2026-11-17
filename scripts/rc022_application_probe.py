@@ -17,6 +17,8 @@ from unittest.mock import patch
 ROOT=Path(__file__).resolve().parents[1]
 sys.path.insert(0,str(ROOT))
 TARGET='38a6a5c965aa99ab525161efb7cc5cf1fe62fced'
+PLATFORM_PATCHES=[]
+EXECUTE_PTC=False
 BINDINGS={
  '@deepseek-ai/dsh-plugin-market/tools':'dsh.boot.plugin_market_tools:CurrentPluginMarketTools',
  '@deepseek-ai/dsh-tool-schedule':'dsh.schedule.tools_current:CurrentToolSchedule',
@@ -47,7 +49,7 @@ async def observe(source,output):
     with patch.dict(os.environ,dict(DSH_HOME=str(home),DSH_TELEMETRY_MODE='DISABLED')),patch.object(profile_boot,'INSTALL_ANCHOR',str(source/'apps/cli/package.json')),patch.object(dsh,'__version__','0.2.2-rc.3'),patch.dict(HARNESS_PLUGIN_CLASSES,BINDINGS):
         try:
             environment=LaunchEnvironmentSnapshot([dict(source='process',values=dict(os.environ))])
-            app=await profile_boot.run_profile(dict(profile='web',dshHome=str(home),environment=environment,
+            app=await profile_boot.run_profile(dict(profile='web',dshHome=str(home),environment=environment,patchFiles=PLATFORM_PATCHES,
                 args=['--host','127.0.0.1','--port','0','--no-open'],waitForExit=False))
             ctx=app['ctx'];result['stage']='booted'
             result['presets']=await ctx.get('agentPresets').remoteExportList()
@@ -72,6 +74,12 @@ async def observe(source,output):
                     result.setdefault('sessions',[]).append(dict(preset=identity,error=str(error)))
                     with (output/'session-errors.log').open('a',encoding='utf-8') as log:
                         log.write(identity+'\n');traceback.print_exc(file=log)
+            if EXECUTE_PTC:
+                from dsh.core.abort import AbortController
+                runtime=ctx.get('ptcRuntime');agent=ctx.get('agents').get('candidate-ptc')
+                result['ptcRuntime']=dict(language=runtime.language,isolation=runtime.isolation,programFormat=runtime.programFormat,retainsState=runtime.retainsState)
+                batch=await ctx.tools.execute(dict(agent=agent,signal=AbortController().signal,calls=[dict(type='tool-call',id='candidate-code',name='run_code',arguments=json.dumps(dict(code='return await tools.schedule_list({})',description='Read scheduled tasks through the Python SDK')))]))
+                execution=batch['results'][0]['result'];result['ptcExecution']=dict(isError=execution.is_error,value=execution.value,error=execution.error)
         except Exception as error:
             result.update(stage='failed',error=str(error))
             if hasattr(error,'composition'):result['composition']=error.composition
@@ -94,18 +102,20 @@ def main():
     result=asyncio.run(observe(source,output))
     result['target_upstream']=TARGET
     result['candidate_bindings']=BINDINGS
+    result['platform_patches']={str(Path(path).relative_to(ROOT)):hashlib.sha256(Path(path).read_bytes()).hexdigest() for path in PLATFORM_PATCHES}
     inputs=[source/'apps/cli/package.json',source/'packages/bundle/base/cordis.patch.yml',
         source/'packages/bundle/web-app/package.json',source/'packages/bundle/web-app/cordis.patch.yml',
         source/'packages/client/modules/src/index.ts',source/'packages/client/modules/src/assets.ts',
         Path(__file__).resolve(),ROOT/'dsh/boot/plugin_registry_current.py',
         ROOT/'dsh/cordis/loader.py',ROOT/'dsh/api/session_agents_current.py',ROOT/'dsh/boot/plugin_market_tools.py',ROOT/'dsh/boot/plugin_market_tools.json',
+        ROOT/'dsh/core/ptc_dispatches.py',ROOT/'dsh/code_runtime/confined_ptc.py',ROOT/'dsh/code_runtime/ptc.py',ROOT/'dsh/code_runtime/process.py',ROOT/'dsh/code_runtime/worker.py',
         ROOT/'dsh/host/client_modules/current.py',ROOT/'dsh/host/client_modules/resources_current.py',ROOT/'dsh/host/client_modules/assets_current.py',
         *[ROOT/'dsh/schedule'/name for name in ['tools_current.py','tools_current.json','service_current.py','runtime_current.py','storage_current.py','domain_current.py','update_current.py']]]
     result['input_sha256']={path.relative_to(ROOT).as_posix():hashlib.sha256(path.read_bytes()).hexdigest() for path in inputs}
     result['source_clean_after']=not subprocess.check_output(['git','-C',str(source),'status','--porcelain','--untracked-files=no'],encoding='utf-8').strip()
     (output/'observations.json').write_text(json.dumps(result,ensure_ascii=True,indent=2),encoding='utf-8')
     print(json.dumps(dict(stage=result['stage'],error=result.get('error'),sessions=result.get('sessions'),seconds=result['seconds'])))
-    return 0 if result['stage']=='booted' and len(result.get('sessions',[]))==4 and all('error' not in row for row in result['sessions']) else 1
+    return 0 if result['stage']=='booted' and len(result.get('sessions',[]))==4 and all('error' not in row for row in result['sessions']) and (not EXECUTE_PTC or result.get('ptcExecution',{}).get('isError') is False) else 1
 
 
 if __name__=='__main__':raise SystemExit(main())

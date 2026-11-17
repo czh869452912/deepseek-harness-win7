@@ -1,0 +1,29 @@
+{
+  "part": "C9-J",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "scope": "Current daily/weekly Host records and latest-only wall-clock recurrence",
+  "paired": {
+    "run": "rc022-schedule-wall-paired-20261117-01",
+    "observations": 87,
+    "differences": 0,
+    "method": "Actual fixed Schedule domain.ts/Temporal versus Native; exact creation, decoding, dispatch and public error values."
+  },
+  "verification": {
+    "source": "165 original daily.spec.ts and weekly.spec.ts tests passed; their broader service coverage is not claimed as Native integration.",
+    "native": "15 passed: current wall/interval/instant contracts and historical Schedule regressions."
+  },
+  "behavior": [
+    "Strict local times normalize to millisecond precision; explicit ISO weekday sets reject duplicates and retain unique ascending immutable values.",
+    "Creation skips nonexistent local dates/times and uses the earlier overlap. Dispatch selects one latest due occurrence and excludes its local date from the future search, while preserving a committed occurrence if current zone data shifts the rule earlier.",
+    "Gregorian day walks and boundary projections handle local year zero/10000 around the four-digit UTC range, so year-end exhaustion remains finite in positive and negative offset zones. Stored records retain their committed target and checked aliases without recalculating a schedule on read."
+  ],
+  "cleanup": {
+    "bytes_removed": 68613,
+    "owned_processes_after": [],
+    "retained": "Commands, input hashes, paired values, Native logs/XML/observations and Source results; owned synthetic short workspaces and homes removed."
+  },
+  "limitations": [
+    "Cron/RRULE, Host storage, management, runtime and current tool integration remain pending. These staged primitives do not change production Schedule bindings.",
+    "No complete regression, application/session, Portable/browser/Win7 acceptance or upstream promotion."
+  ]
+}

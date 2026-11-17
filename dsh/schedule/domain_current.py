@@ -1,10 +1,12 @@
 """Current Host reminder vocabulary; independent of historical Session logs."""
 import math
+import re
 
 from dsh.cordis.text import trim_js
 from dsh.cordis.json_text import stringify_json
-from dsh.core.session.json import FrozenDict
+from dsh.core.session.json import FrozenDict,FrozenList
 from dsh import util_time_instant as instant
+from dsh.util_time_calendar import local_day,day_parts,iso_weekday,calendar_days
 
 MIN_EVERY_INTERVAL_SECONDS=60
 MAX_TITLE_LENGTH=120
@@ -182,3 +184,126 @@ createEveryScheduleRecord=create_every_schedule_record
 resolveEveryOccurrence=resolve_every_occurrence
 renderReminderFraming=render_reminder_framing
 renderRecurringReminderBatchFraming=render_recurring_reminder_batch_framing
+
+
+LOCAL_CLOCK_TIME=re.compile(r'(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d{1,3})?\Z',re.ASCII)
+
+
+def local_clock_time(value,selector):
+    if LOCAL_CLOCK_TIME.fullmatch(value) is None:
+        raise ScheduleInputError('invalid_rule',selector+'.time must use HH:mm:ss with optional 1-3 fractional digits, without leap seconds or 24:00.')
+    clock,_,fraction=value.partition('.')
+    return clock+'.'+fraction.ljust(3,'0')
+
+
+def normalize_weekdays(weekdays):
+    if not isinstance(weekdays,list) or not weekdays:raise ScheduleInputError('invalid_rule','weekly.weekdays must be a non-empty array of ISO weekday numbers.')
+    unique=set()
+    for weekday in weekdays:
+        if not safe_integer(weekday) or not 1<=weekday<=7:raise ScheduleInputError('invalid_rule','Each weekly.weekdays entry must be an integer from 1 (Monday) through 7 (Sunday).')
+        if weekday in unique:raise ScheduleInputError('invalid_rule','weekly.weekdays must not repeat weekday %d.' % weekday)
+        unique.add(weekday)
+    return FrozenList(sorted(unique))
+
+
+def _parse_wall_input(value,selector):
+    weekly=selector=='weekly';keys={'time','time_zone','weekdays'} if weekly else {'time','time_zone'}
+    if not isinstance(value,dict) or set(value)!=keys or not isinstance(value.get('time'),str):
+        fields='time, time_zone, and weekdays' if weekly else 'time and time_zone'
+        raise ScheduleInputError('invalid_rule',selector+' must contain exactly '+fields+', with time HH:mm:ss and optional 1-3 fractional digits.')
+    if not isinstance(value['time_zone'],str):raise ScheduleInputError('invalid_time_zone','time_zone must be a string.')
+    result=dict(time=local_clock_time(value['time'],selector),timeZone=canonicalize_time_zone(value['time_zone']))
+    if weekly:result['weekdays']=normalize_weekdays(value['weekdays'])
+    return result
+
+
+def parse_daily_input(value):return _parse_wall_input(value,'daily')
+def parse_weekly_input(value):return _parse_wall_input(value,'weekly')
+
+
+def next_wall_target(time,time_zone,now,weekdays=None,after_day=None):
+    day=local_day(now,time_zone);last_day=calendar_days(10000,1,1)
+    if after_day is not None and day<=after_day:day=after_day+1
+    while day<=last_day:
+        if weekdays is None or iso_weekday(day) in weekdays:
+            target=instant.resolve_local_instant(day_parts(day,time),time_zone)
+            if target is not None:
+                if target>instant.MAX_FOUR_DIGIT_YEAR_MS:return None
+                if target>=instant.MIN_FOUR_DIGIT_YEAR_MS and target>now:return instant.format_four_digit_year_instant(target)
+        day+=1
+    return None
+
+
+def _create_wall_record(id,prompt,value,now,title,selector):
+    prompt=_prompt(prompt);parsed=_parse_wall_input(value,selector);name=selector.capitalize()
+    if not instant.is_four_digit_year_instant(now):raise ScheduleInputError('time_out_of_range',name+' creation time must be a representable four-digit-year UTC instant.')
+    target=next_wall_target(parsed['time'],parsed['timeZone'],now,parsed.get('weekdays'))
+    if target is None:raise ScheduleInputError('time_out_of_range','No future '+selector+' occurrence is representable as a four-digit-year UTC instant.')
+    return FrozenDict(id=id,kind=selector,title=schedule_title(title),prompt=prompt,scheduledAt=target,**parsed)
+
+
+def create_daily_schedule_record(id,prompt,daily,now,title):return _create_wall_record(id,prompt,daily,now,title,'daily')
+def create_weekly_schedule_record(id,prompt,weekly,now,title):return _create_wall_record(id,prompt,weekly,now,title,'weekly')
+
+
+def accepted_decision(selector,accepted_at):
+    if not instant.is_four_digit_year_instant(accepted_at):raise ScheduleLogError(selector+' acceptedAt must be a representable four-digit-year instant')
+    return accepted_at
+
+
+def _resolve_wall_occurrence(record,accepted_at,selector):
+    decision=accepted_decision(selector,accepted_at);saved=instant.four_digit_year_epoch(record['scheduledAt'])['epoch']
+    if decision<saved:raise ScheduleLogError(selector+' dispatch cannot precede the active scheduledAt')
+    time=local_clock_time(record['time'],selector)
+    weekdays=normalize_weekdays(record['weekdays']) if selector=='weekly' else None
+    day=local_day(decision,'UTC')+1
+    while True:
+        if weekdays is None or iso_weekday(day) in weekdays:
+            candidate=instant.resolve_local_instant(day_parts(day,time),record['timeZone'])
+            if candidate is not None and candidate<=decision:
+                occurrence=max(candidate,saved);break
+        day-=1
+    result=dict(occurrenceAt=instant.format_four_digit_year_instant(occurrence))
+    target=next_wall_target(time,record['timeZone'],decision,weekdays,local_day(occurrence,record['timeZone']))
+    if target is not None:result['nextScheduledAt']=target
+    return FrozenDict(result)
+
+
+def resolve_daily_occurrence(record,accepted_at):return _resolve_wall_occurrence(record,accepted_at,'daily')
+def resolve_weekly_occurrence(record,accepted_at):return _resolve_wall_occurrence(record,accepted_at,'weekly')
+
+
+def decode_wall_record(value):
+    """Validate a committed daily/weekly record without re-arming it."""
+    if not isinstance(value,dict):raise ScheduleLogError('schedule record must be an object')
+    kind=value.get('kind')
+    if kind not in ('daily','weekly'):raise ScheduleLogError('Expected a daily or weekly schedule record')
+    title=decode_stored_title(value.get('title'))
+    keys=['id','kind','title','prompt','time','timeZone']+(['weekdays'] if kind=='weekly' else [])+['scheduledAt']
+    if set(value)!=set(keys):raise ScheduleLogError(kind+' schedule must contain exactly '+', '.join(keys[:-1])+', and scheduledAt')
+    prompt=value['prompt'];time=value['time'];zone=value['timeZone']
+    if not isinstance(prompt,str) or not prompt or trim_js(prompt)!=prompt:raise ScheduleLogError(kind+' prompt must be non-empty and already trimmed')
+    if not isinstance(time,str) or not isinstance(zone,str):raise ScheduleLogError(kind+' time and timeZone must be strings')
+    try:
+        if kind=='weekly':canonicalize_time_zone(zone)
+        normalized=local_clock_time(time,kind)
+        if kind=='daily':canonicalize_time_zone(zone)
+    except ScheduleInputError as error:raise ScheduleLogError(error.name+': '+str(error)) from error
+    if time!=normalized:raise ScheduleLogError(kind+' time must be normalized to HH:mm:ss.SSS')
+    fields={}
+    if kind=='weekly':
+        try:weekdays=normalize_weekdays(value['weekdays'])
+        except ScheduleInputError as error:raise ScheduleLogError(error.name+': '+str(error)) from error
+        if weekdays!=value['weekdays']:raise ScheduleLogError('weekly weekdays must be normalized to unique ascending ISO weekday numbers')
+        fields['weekdays']=weekdays
+    return FrozenDict(id=decode_id(value['id']),kind=kind,title=title,prompt=prompt,time=time,timeZone=zone,scheduledAt=decode_instant(value['scheduledAt']),**fields)
+
+
+normalizeWeekdays=normalize_weekdays
+parseDailyInput=parse_daily_input
+parseWeeklyInput=parse_weekly_input
+createDailyScheduleRecord=create_daily_schedule_record
+createWeeklyScheduleRecord=create_weekly_schedule_record
+acceptedDecision=accepted_decision
+resolveDailyOccurrence=resolve_daily_occurrence
+resolveWeeklyOccurrence=resolve_weekly_occurrence

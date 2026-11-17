@@ -527,3 +527,5 @@
 | C9-BW | 实际 Calc/Impress 重算、格式转换、PDF/图片和错误矩阵；13+13 组公开 SDK 对照及 3 项比较器拒绝回归 | [Office 格式矩阵](office-format-matrix-checks.json) |
 
 | C9-BX | 新版完整前端资源收集、受核验暂存成员与过期客户端回收；17 项定向、3 项最终 CLI/模式检查及实际 371 份 Source 核验 | [完整前端导入](frontend-import-checks.json) |
+
+| C9-BY | 统一门禁冻结 Office 离线输入并核验实际解压资源/来源；16 项定向、双架构输入逐资源检查；旧完整回执探针失败单独保留待修 | [Office 发行输入门禁](office-release-gate-checks.json) |

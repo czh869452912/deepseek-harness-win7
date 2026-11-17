@@ -1,0 +1,24 @@
+{
+  "contract": "C9-BY",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "status": "targeted passed",
+  "verification": {
+    "run": "rc022-office-release-native-20261118-02",
+    "passed": 16,
+    "seconds": 3.35,
+    "scope": "Offline runtime copy, actual extracted-member/provenance rejection, explicit release CLI input and mandatory complete Office receipt. Both retained original architecture inventories separately verified in full."
+  },
+  "earlier_run": {
+    "run": "rc022-office-release-native-20261118-01",
+    "passed": 11,
+    "failed": 6,
+    "failure": "Shared complete-receipt fixture fails in the old JavaScript errors oracle before Office acceptance: actual import closure differs.",
+    "followup": "C9 coordinated gate-consumer review; not claimed as passed or waived."
+  },
+  "cleanup": {
+    "bytes_removed": 111285,
+    "removed": "Both owned pytest workspaces, tmp and home directories.",
+    "retained": "Commands/logs/XML and unresolved failure diagnostic. Shared x64/x86 approved inputs remain C9-owned until coordinated release qualification."
+  },
+  "limitations": "No full Portable build, complete release gate, pin promotion or actual Windows 7 qualification in this batch."
+}

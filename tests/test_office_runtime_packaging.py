@@ -50,6 +50,39 @@ def test_versioned_runtime_identities_match_approved_manifests():
         assert all('debug.log' not in name for name in resources)
 
 
+def test_extracted_gate_checks_actual_office_members_and_provenance(tmp_path, monkeypatch):
+    source = tmp_path / 'candidate/dsh/office/bin/x64'
+    source.mkdir(parents=True)
+    inventory(source, monkeypatch)
+    expected = office_runtime_inputs.verified_manifest(source)
+    assert office_runtime_inputs.validate_bundled_office_runtime(tmp_path / 'candidate', expected) == expected
+    changed = dict(expected, sdk='foreign-sdk')
+    with pytest.raises(ValueError, match='provenance differs'):
+        office_runtime_inputs.validate_bundled_office_runtime(tmp_path / 'candidate', changed)
+    resource = next(name for name in expected['resources'] if name != expected['executable'])
+    (source / resource).write_bytes(b'damaged')
+    with pytest.raises(Exception, match='resource differs'):
+        office_runtime_inputs.validate_bundled_office_runtime(tmp_path / 'candidate', expected)
+
+
+@pytest.mark.parametrize('expected', [None, {}, {'architecture': 'arm64'}])
+def test_extracted_gate_rejects_missing_office_provenance(tmp_path, expected):
+    with pytest.raises(ValueError, match='provenance is missing'):
+        office_runtime_inputs.validate_bundled_office_runtime(tmp_path, expected)
+
+
+def test_release_cli_passes_explicit_office_root(tmp_path, monkeypatch):
+    from scripts import verify_release
+    captured = []
+    def verify(args, output):
+        captured.append(args.office_runtime)
+        return dict(result='development-preview', publishable=False)
+    monkeypatch.setattr(verify_release, 'verify', verify)
+    assert verify_release.main(['--office-runtime', str(tmp_path / 'inputs'),
+                                '--output-dir', str(tmp_path / 'receipt')]) == 0
+    assert captured == [tmp_path / 'inputs']
+
+
 def test_offline_copy_owns_only_approved_members_and_cannot_overwrite(tmp_path, monkeypatch):
     source = tmp_path / 'inputs/x64'
     source.mkdir(parents=True)

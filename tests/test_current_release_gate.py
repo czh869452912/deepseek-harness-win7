@@ -2003,6 +2003,31 @@ def test_extracted_native_search_requires_real_receipt(tmp_path, damage):
         GATE.validate_extracted(path, archive, candidate)
 
 
+@pytest.mark.parametrize('damage', ['missing-candidate', 'missing-observation', 'changed-observation',
+                                    'missing-provenance', 'changed-provenance'])
+def test_extracted_office_runtime_acceptance_is_required(tmp_path, damage):
+    manifest = json.loads((ROOT / 'scripts/office-runtime-inputs.json').read_text(
+        encoding='utf-8'))['architectures']['x64']['manifest']
+    candidate = dict(office_runtime_input=copy.deepcopy(manifest))
+    report = dict(provenance=copy.deepcopy(candidate), officeRuntimeInput=copy.deepcopy(manifest))
+    assert GATE.validate_office_acceptance(report, candidate) == manifest
+    archive = tmp_path / 'unreached.zip'
+    path = tmp_path / 'extracted.json'
+    if damage == 'missing-candidate':
+        candidate.pop('office_runtime_input')
+    elif damage == 'missing-observation':
+        report.pop('officeRuntimeInput')
+    elif damage == 'changed-observation':
+        report['officeRuntimeInput']['architecture'] = 'x86'
+    elif damage == 'missing-provenance':
+        report['provenance'].pop('office_runtime_input')
+    else:
+        report['provenance']['office_runtime_input']['sdk'] = 'foreign-sdk'
+    path.write_text(json.dumps(report), encoding='utf-8')
+    with pytest.raises(RuntimeError, match='offline Office runtime'):
+        GATE.validate_extracted(path, archive, candidate)
+
+
 def extracted_receipt(tmp_path):
     archive = tmp_path / 'portable.zip'
     archive.write_bytes(b'exact candidate archive')
@@ -2010,6 +2035,8 @@ def extracted_receipt(tmp_path):
                  'frontend': json.loads((ROOT / 'scripts/frontend-inputs.json').read_text(encoding='utf-8'))}
     from scripts.ucrt_inputs import verify_pinned_ucrt
     candidate['ucrt_input'] = verify_pinned_ucrt(ROOT)
+    candidate['office_runtime_input'] = json.loads(
+        (ROOT / 'scripts/office-runtime-inputs.json').read_text(encoding='utf-8'))['architectures']['x64']['manifest']
     native_search = copy.deepcopy(native_search_runtime_fixture())
     candidate['native_search_modules'] = native_search['modules'].copy()
     native_search.update(root=str(tmp_path), executable=str(tmp_path / 'python.exe'),
@@ -2227,6 +2254,7 @@ def extracted_receipt(tmp_path):
               'frontendBuildDigest': candidate['frontend']['build_record']['artifacts']['sha256'], 'archive': str(archive),
               'archiveSha256': GATE.digest(archive), 'provenance': dict(candidate), 'toolScheduler': scheduler,
               'ucrtInput': copy.deepcopy(candidate['ucrt_input']),
+              'officeRuntimeInput': copy.deepcopy(candidate['office_runtime_input']),
               'nativeSearch': native_search,
               'httpRedirect': redirect, 'javascriptWorkflow': javascript, 'runtimeContext': context, 'javascriptReady': ready,
               'persistenceRead': read, 'javascriptInitial': initial, 'sessionNumber': number, 'sessionDiagnostic': diagnostic,

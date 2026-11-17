@@ -19,6 +19,23 @@ def office_runtime_source(root, explicit=None, architecture='x64'):
     return source
 
 
+def verified_manifest(source, architecture='x64'):
+    """Freeze the actual approved bytes, including every binary and license."""
+    source = Path(source).absolute()
+    verify_installed_runtime(source, architecture)
+    return json.loads((source / 'runtime.json').read_text(encoding='utf-8'))
+
+
+def validate_bundled_office_runtime(portable, expected):
+    if not isinstance(expected, dict) or expected.get('architecture') not in MANIFESTS:
+        raise ValueError('Portable Office runtime provenance is missing or invalid.')
+    architecture = expected['architecture']
+    actual = verified_manifest(Path(portable) / 'dsh/office/bin' / architecture, architecture)
+    if actual != expected:
+        raise ValueError('Portable Office runtime provenance differs from its approved bytes.')
+    return actual
+
+
 def bundle_office_runtime(destination, source, architecture='x64'):
     """Copy only the approved inventory to a new owned distribution directory."""
     source = Path(source).absolute()

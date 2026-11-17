@@ -133,6 +133,11 @@ OFFICIAL_CONFIGS = ('consumers', 'agent-lifecycle', 'session-recovery', 'session
 OFFICIAL_CONFIGS += ('web-search-deepseek-source',)
 OFFICIAL_CONFIGS += ('plan-source', 'rc1-subagent')
 REQUIRED_REGRESSION = {
+    'test_office_runtime_packaging': {
+        'test_versioned_runtime_identities_match_approved_manifests',
+        'test_extracted_gate_checks_actual_office_members_and_provenance',
+        'test_release_cli_passes_explicit_office_root',
+    },
     'test_ucrt_inputs': {
         'test_actual_sdk_files_keep_exact_identity_and_app_local_layout',
         *{'test_bad_ucrt_input_cannot_replace_previous_release[' + damage + ']'
@@ -1658,8 +1663,17 @@ def validate_paired(path):
     raise RuntimeError('Paired gate has no successful receipt: ' + str(path))
 
 
+def validate_office_acceptance(report, candidate):
+    office = candidate.get('office_runtime_input')
+    if (not isinstance(office, dict) or report.get('provenance', {}).get('office_runtime_input') != office
+            or report.get('officeRuntimeInput') != office):
+        raise RuntimeError('Extracted pinned offline Office runtime acceptance differs')
+    return office
+
+
 def validate_extracted(path, archive, candidate):
     report = json.loads(path.read_text(encoding='utf-8'))
+    validate_office_acceptance(report, candidate)
     ucrt = candidate.get('ucrt_input')
     if (not isinstance(ucrt, dict) or report.get('provenance', {}).get('ucrt_input') != ucrt
             or report.get('ucrtInput') != ucrt):
@@ -2199,6 +2213,9 @@ def verify(args, output):
     candidate['frontend'] = json.loads((ROOT / 'scripts/frontend-inputs.json').read_text(encoding='utf-8'))
     from scripts.ucrt_inputs import verify_pinned_ucrt
     candidate['ucrt_input'] = verify_pinned_ucrt(ROOT)
+    from scripts.office_runtime_inputs import office_runtime_source, verified_manifest
+    office_source = office_runtime_source(ROOT, getattr(args, 'office_runtime', None))
+    candidate['office_runtime_input'] = verified_manifest(office_source)
     from scripts.browser108_gate import validate_input as validate_browser108_input
     browser108 = getattr(args, 'browser108', None) or os.environ.get('DSH_TEST_CHROMIUM108')
     if not browser108:
@@ -2232,7 +2249,7 @@ def verify(args, output):
     inputs = output / 'inputs.json'
     inputs.write_text(json.dumps(before, indent=2) + '\n', encoding='utf-8')
     run([python, 'scripts/migration.py', 'check'], 'migration-records', output, env=environment)
-    run([python, 'scripts/build_portable.py'],
+    run([python, 'scripts/build_portable.py', '--office-runtime', str(office_source.parent)],
         'portable-build', output, env=environment)
     regression = output / 'pytest.xml'
     run_python_regression(python, output, environment, timeout=getattr(args, 'regression_timeout', None))
@@ -2541,6 +2558,8 @@ def verify(args, output):
     # join the existing extracted gate. Individual observer deadlines stay fixed.
     run(command, 'portable-extracted', output, env=environment, timeout=1500)
     validate_extracted(extracted, archive, candidate)
+    if verified_manifest(office_source) != candidate['office_runtime_input']:
+        raise RuntimeError('Pinned offline Office runtime inputs changed during verification')
     receipts['portable-extracted'] = digest(extracted)
     if source_snapshot() != before or git('rev-parse', 'HEAD') != candidate['product_commit']:
         raise RuntimeError('candidate inputs changed during verification')
@@ -2571,6 +2590,8 @@ def main(argv=None):
     parser.add_argument('--prepare', action='store_true', help='Install pinned development dependencies before verification')
     parser.add_argument('--browser', help='Absolute Chromium executable; defaults to DSH_TEST_CHROMIUM')
     parser.add_argument('--browser108', help='Fixed Chromium 108 executable; defaults to DSH_TEST_CHROMIUM108')
+    parser.add_argument('--office-runtime', type=Path,
+                        help='Approved offline Office input root; defaults to DSH_OFFICE_RUNTIME_INPUT_ROOT')
     parser.add_argument('--allow-dirty', action='store_true', help='Verify a non-publishable development preview, never a release')
     parser.add_argument('--regression-timeout', type=positive_seconds, metavar='SECONDS',
                         help='Optional total pytest budget; by default only individual operation deadlines apply')

@@ -1027,6 +1027,9 @@ def main(argv=None):
             portable = extract(archive, workspace)
             provenance = json.loads((portable / 'build-provenance.json').read_text(encoding='utf-8'))
             report['provenance'] = provenance
+            from scripts.office_runtime_inputs import validate_bundled_office_runtime
+            report['officeRuntimeInput'] = validate_bundled_office_runtime(
+                portable, provenance.get('office_runtime_input'))
             from scripts.ucrt_inputs import verify_pinned_ucrt, validate_bundled_ucrt
             ucrt = verify_pinned_ucrt(ROOT)
             if provenance.get('ucrt_input') != ucrt:

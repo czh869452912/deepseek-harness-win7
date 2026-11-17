@@ -105,7 +105,8 @@ class DesktopRuntime:
         if request['method'] not in ('GET', 'HEAD'):
             return result(405)
         if url.path.startswith('/plugins/'):
-            return self.ctx.get('clientModules').fetchBundle(request)
+            from dsh.cordis.awaiting import await_callback_result
+            return await await_callback_result(self.ctx.get('clientModules').fetchBundle(request))
         try:
             path = unquote(url.path, errors='strict')
             target = (self.dist / path.lstrip('/')).resolve()

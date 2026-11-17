@@ -403,3 +403,5 @@
 | C9-A | Actual official Web candidate boot; Node PTC and client resource ownership failures retained | [Application candidate attempt](application-candidate-checks.json) |
 
 | C9-B | Current client graph/stat identities, canonical package ownership and restart metadata | [Client registry graph](client-registry-checks.json) |
+
+| C9-C | Independent lazy immutable script/map bodies, prior batches and async Web/Desktop consumers | [Client resource bodies](client-resources-checks.json) |

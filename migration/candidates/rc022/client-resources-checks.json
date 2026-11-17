@@ -1,0 +1,35 @@
+{
+  "part": "C9-C",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "scope": "Current immutable lazy combo scripts, source maps and asynchronous carriers",
+  "paired": {
+    "run": "rc022-client-resources-paired-20261117-01",
+    "observations": 13,
+    "differences": 0,
+    "method": "Actual unmodified Source and Native providers consume the same fixed entry bytes/stat fixtures; full response status, headers, UTF-8 body and map reader counts are compared. Mutable maps are independently reset for each consumer. Initial fixture bytes are hashed in fixture-inputs.json."
+  },
+  "verification": {
+    "native": "11 passed; current resources/registry, historical Loader carrier and actual canonical Desktop runtime consumers.",
+    "source": "6 selected original node-half.client.spec.ts cases passed; 61 outside this selected scope were not run.",
+    "scope_reason": "Selected cases exercise first map GET, HEAD, malformed map fallback, immutable responses across unrelated graph recomposition, source-map section offsets and actual standard Source Map consumer. Native additionally checks shared concurrent producer rejection/retry and cancellation of one carrier without cancelling another consumer."
+  },
+  "behavior": [
+    "Entry composition reads only the built script. Maps remain unread during startup, script GET and HEAD. Script and map bodies have independent shared lazy producers.",
+    "Successful bodies retain their exact bytes; rejection drops the lazy result for retry. Python cancellation shields the shared producer, an explicit carrier adaptation to Source Promise ownership.",
+    "Responses are retained by advertised URL across graph recomposition; one prior startup batch generation remains addressable. Snapshot bundle bytes are captured by each lazy artifact.",
+    "Map responses use compact Source JSON and sourceMappingURL references resolve against the script directory. Missing, malformed or invalid authored maps retain generated identity sections.",
+    "Current fetchBundle is asynchronous; the optional Web writer awaits it and the Desktop consumer accepts both current async and historical sync providers."
+  ],
+  "cleanup": {
+    "control": "rc022-client-resources-control-20261117-01",
+    "bytes_removed": 13212,
+    "links_removed": 262,
+    "owned_processes_after": [],
+    "retained": "Paired response bodies, fixture hashes, logs, XML, selected Source report, commands and cleanup receipts. Source/toolchains remain migration-owned through C9."
+  },
+  "limitations": [
+    "This is targeted completion only. Split chunks and package assets remain subsequent work; current registry is not yet promoted.",
+    "URL relocation coverage currently includes the selected standard authored/generated cases, not all WHATWG URL edge cases.",
+    "No complete regression, Portable/browser/Win7 acceptance or upstream promotion is established."
+  ]
+}

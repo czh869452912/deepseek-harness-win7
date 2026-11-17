@@ -8,7 +8,7 @@ from urllib.parse import parse_qs, urlsplit
 from dsh.boot.market_document_022 import MarketDocumentCache
 from dsh.boot.market_detail_022 import MarketDetailReader
 from dsh.boot.market_http_022 import MarketHttpReader
-from dsh.boot.market_index_022 import observe_market_operations_async
+from dsh.boot.market_search_022 import MarketSearchWorker
 from dsh.boot.market_listing_022 import listing_of
 from dsh.boot.market_repository_022 import repository_of, manifest_repository
 from dsh.boot.market_repository_cache_022 import RepositoryCache
@@ -57,6 +57,7 @@ class CurrentPluginMarket(TypertRemoteService):
         self.detail_cache_dir = cache_dir
         self.documents = MarketDocumentCache(lambda: self.config['indexes'].get(),
             MarketHttpReader(config['fetchTimeoutMs'], config['maxBytes']), config['cacheTtlMs'])
+        self.searches = MarketSearchWorker(self.documents.lifetime.signal)
         self.repositories = RepositoryCache(dict(dir=cache_dir, maxRepositoryBytes=config['detailRepositoryMaxBytes'],
             maxCacheBytes=config['detailCacheMaxBytes'], timeoutMs=config['detailGitTimeoutMs'], ttlMs=config['cacheTtlMs'],
             transports=['https', 'http', 'ssh'], lifetime=self.documents.lifetime.signal, sizePollMs=200))
@@ -68,11 +69,12 @@ class CurrentPluginMarket(TypertRemoteService):
         ctx.inject(['connection'], register)
         def updated(*_):
             self.documents.volatile_update()
+            self.searches.retain(self.documents.cache)
             ctx.emit('plugin-market/changed')
         ctx.on('loader/volatile-update', updated)
         async def dispose():
             await self.documents.dispose()
-            await asyncio.gather(self.repositories.settled(), *list(self.details.pending.values()), return_exceptions=True)
+            await asyncio.gather(self.searches.dispose(), self.repositories.settled(), *list(self.details.pending.values()), return_exceptions=True)
         ctx.effect(lambda: dispose, 'plugin-market owned reads')
 
     @Remote
@@ -103,10 +105,14 @@ class CurrentPluginMarket(TypertRemoteService):
             raise RemoteError('plugin-market/invalid-query', 'limit must be an integer from 1 to 100', dict(field='limit', reason='range'))
         document = await self.documents.document(url, query.get('refresh') is True, query.get('fetchedAt'))
         index = document['index']
-        row = (await observe_market_operations_async([dict(kind='search', value=index, url=url, selections=[query])], self.documents.lifetime.signal))[0]
-        if not row['ok']:
-            raise ValueError(row['error']['message'])
-        names = row['results'][0]
+        searches = self.searches
+        if searches.closed:
+            await asyncio.shield(searches.dispose())
+            self.documents.lifetime.signal.throwIfAborted()
+            if self.searches is searches:
+                self.searches = MarketSearchWorker(self.documents.lifetime.signal)
+        self.searches.retain(self.documents.cache)
+        names = await self.searches.select(url, document, query)
         page = names[int(offset):int(offset+limit)]
         plugins = {plugin['name']: plugin for plugin in index['plugins']}
         listing = await self.annotator()

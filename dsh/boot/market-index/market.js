@@ -3142,7 +3142,8 @@ var __marketIndex = (() => {
   // scripts/native/market-index/entry.ts
   var entry_exports = {};
   __export(entry_exports, {
-    observe: () => observe
+    observe: () => observe,
+    openSearch: () => openSearch
   });
 
   // .goose/out/rc022-prep-20261114-01/source/packages/util/plugin-market-index/src/index.ts
@@ -6067,6 +6068,10 @@ var __marketIndex = (() => {
   }
 
   // scripts/native/market-index/entry.ts
+  function openSearch(value, url) {
+    const search = new MarketSearch(parseMarketIndex(value, url));
+    return async (selection) => (await search.select(selection)).map((plugin2) => plugin2.name);
+  }
   async function observe(operation) {
     try {
       if (operation.kind === "repository") return { ok: true, value: repositoryOf(operation.value) ?? null };

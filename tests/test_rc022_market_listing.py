@@ -58,6 +58,15 @@ async def test_actual_http_cache_search_and_entry_composition():
         assert await market.entry(url, 'unlisted') is None
         refreshed = await market.search(url, dict(query, refresh=True))
         assert refreshed['fetchedAt'] > first['fetchedAt']
+        # A failed private worker is reaped before a later query reconstructs
+        # its engine from the still-valid document, without refetching HTTP.
+        previous = market.searches
+        previous.worker.process.kill()
+        await previous.worker.closed
+        await previous.dispose()
+        recovered = await market.search(url, query)
+        assert recovered == refreshed and market.searches is not previous
+        assert market.searches.worker.process.returncode is None
     finally:
         await ctx.fiber.dispose(); server.shutdown(); server.server_close(); thread.join(2)
     assert not thread.is_alive()

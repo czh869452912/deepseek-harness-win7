@@ -14,7 +14,7 @@ from dsh.javascript.runtime import (JavaScriptRuntimeError, encode,
                                     verify_resources, worker_environment)
 
 RESOURCE_ROOT = Path(__file__).with_name('market-index')
-MANIFEST_SHA256 = '87763ce516740bd94105b4ed0f32d8b61e6adf94fcf87601f6c58f789916daf9'
+MANIFEST_SHA256 = 'e6b4b97f0e04d842050ba82021822702f9f00ce6fb2c14f7e59ddf8ee5ff99b4'
 
 
 class MarketIndexError(ValueError):

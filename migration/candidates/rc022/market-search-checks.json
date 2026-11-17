@@ -1,0 +1,55 @@
+{
+  "part": "C9-AW",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "scope": "Reuse the pinned lazy MarketSearch per document in one owned Win7 worker",
+  "implementation": [
+    "The private session driver retains an unchanged Source MarketSearch for each live URL/fetchedAt identity. The index is transferred once, text indexing stays lazy, and simultaneous readers share its build. Paging and live manager annotation remain on the Host.",
+    "Current cache identities and active readers retain search instances; refresh/removal drops retired instances. The worker is lazy, caller cancellation leaves accepted work and other readers alive, and service lifetime/deadline cancellation owns spawn through reaping.",
+    "Unexpected process exit or deadline failure closes the old pool. A later query waits for its cleanup and reconstructs the pool from valid cached documents. Resource bundles were rebuilt from unchanged pinned Source with byte/license provenance."
+  ],
+  "verification": {
+    "native": {
+      "run": "rc022-market-search-native4-20261117-01",
+      "passed": 48,
+      "scope": "Persistent multilingual/1101-entry concurrent and repeated queries, refresh/removal, caller cancellation, lifetime abort, deadline, abort during delayed spawn, crash recovery and direct parser/cache/listing/Remote consumers; actual x86 persistent queries match x64 outcomes"
+    },
+    "paired": {
+      "run": "rc022-market-search-pair-20261117-01",
+      "observations": 2,
+      "queries": 30,
+      "differences": 0,
+      "scope": "Unchanged Source MarketSearch with multilingual NFKC/CJK/fuzzy terms, taxonomy, published/custom sort keys, repeated queries and 1001-entry chunking"
+    },
+    "source": {
+      "run": "rc022-market-search-source2-20261117-01",
+      "passed": 71,
+      "failed": 0,
+      "scope": "Unmodified market.spec.ts; the earlier attempted nonexistent search.spec.ts collected zero and is not passing evidence"
+    },
+    "browser": {
+      "run": "rc022-application-candidate52-20261117-01",
+      "passed": true,
+      "seconds": 61.25,
+      "scope": "Original optional Discover save/list/search/detail/image/reload/mobile; subsequent crash-recovery addition verified by Native direct consumers, not a new full browser/release receipt"
+    }
+  },
+  "inputs": {
+    "dsh/boot/market_search_022.py": "3102f46cce967c0f263b30c7541ed70f63471a4bf9261f82095ea02fe535cb04",
+    "dsh/boot/plugin_market_022.py": "94c5f8207bf02a6658488247967d0d96644f1046e7ce759408ed5816b6f09349",
+    "dsh/boot/market_index_022.py": "702501baa9afa7d002290930f88abfb97c6bc2e9f7fa628869910e67ae010547",
+    "dsh/boot/market-index/manifest.json": "e6b4b97f0e04d842050ba82021822702f9f00ce6fb2c14f7e59ddf8ee5ff99b4",
+    "scripts/native/market-index/entry.ts": "9573243bb563693ea376aa2b9a8c7c00acf778c0e1f05debfdf0f790f7b70207",
+    "scripts/native/market-index/search-driver.js": "291511010988d83a64445dd6bb2e3159a9683413001bc9462327f6f59e227b8d"
+  },
+  "cleanup": {
+    "bytes": 5767542,
+    "removed": "Owned native/source short workspaces/home/tmp, copied generated build payloads and candidate52 home; verified generated resource hashes before removing redundant copies",
+    "owned_processes_after": [],
+    "retained": "Commands/logs/XML, Source results, paired input/observations/hashes, compact build receipt and browser screenshots. Shared Source/toolchain remain for C1-C9."
+  },
+  "limitations": [
+    "This is a private Win7 process adaptation with a 30-second operation deadline; it does not certify the 128 MiB maximum input or arbitrary workload performance.",
+    "No new live external index/CDN/Git or actual Win7 OS qualification is claimed.",
+    "Production pin/composition promotion and full release acceptance remain pending."
+  ]
+}

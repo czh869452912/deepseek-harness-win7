@@ -4,6 +4,12 @@ import { MarketSearch } from '@market/search'
 import { normalizeIndexUrl } from '@market/index-url'
 import { repositoryOf, manifestRepository } from '@market/repository'
 
+/** One document owns its unchanged, lazily built Source search engine. */
+export function openSearch(value: unknown, url: string) {
+  const search = new MarketSearch(parseMarketIndex(value, url))
+  return async (selection: any) => (await search.select(selection)).map(plugin => plugin.name)
+}
+
 export async function observe(operation: any): Promise<any> {
   try {
     if (operation.kind === 'repository') return { ok: true, value: repositoryOf(operation.value) ?? null }

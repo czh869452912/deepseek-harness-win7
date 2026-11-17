@@ -405,3 +405,5 @@
 | C9-B | Current client graph/stat identities, canonical package ownership and restart metadata | [Client registry graph](client-registry-checks.json) |
 
 | C9-C | Independent lazy immutable script/map bodies, prior batches and async Web/Desktop consumers | [Client resource bodies](client-resources-checks.json) |
+
+| C9-D | Current on-demand async browser chunks, strict revisions and cache lifetime | [Client chunks](client-chunks-checks.json) |

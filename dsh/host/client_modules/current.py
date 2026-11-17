@@ -1,6 +1,8 @@
 """Current Loader-owned browser graph and immutable lazy resources."""
 import json
 import os
+import asyncio
+import re
 from urllib.parse import urlsplit
 
 from dsh.cordis.json_text import stringify_json
@@ -11,7 +13,7 @@ from dsh.host.client_modules.registry import (
     order_by_module_graph,partition_combo_records,short_hash,PARSER_PRELOAD_IDS,
     JAVASCRIPT_CONTENT_TYPE,JSON_CONTENT_TYPE,MissingClientBundleError,IMMUTABLE_CACHE,
     validate_source_map)
-from dsh.host.client_modules.resources_current import build_combo
+from dsh.host.client_modules.resources_current import build_combo,LazyBody,script_body,source_map_body
 
 
 def current_graph_row(package,revision,meta):
@@ -105,6 +107,8 @@ class CurrentClientModuleRegistry(LoaderClientModuleRegistry):
             artifact=build_combo([record],self.current_source_map,record['entry']['rev'])
             responses.setdefault(artifact['url'],self._responses.get(artifact['url']) or dict(body=artifact['scriptBody'],contentType=JAVASCRIPT_CONTENT_TYPE))
             responses.setdefault(artifact['sourceMapUrl'],self._responses.get(artifact['sourceMapUrl']) or dict(body=artifact['sourceMapBody'],contentType=JSON_CONTENT_TYPE))
+        for url,response in self._responses.items():
+            if self.chunk_request(urlsplit(url)) is not None:responses[url]=response
         self._previous_batch_responses=self._batch_responses;self._batch_responses=batch_responses;self._responses=responses
         self._composed=dict(rev=short_hash(stringify_json(dict(entries=entries,batches=batches)).encode('utf-8')),
             release=dict(self.release),entries=entries,batches=batches)
@@ -178,12 +182,48 @@ class CurrentClientModuleRegistry(LoaderClientModuleRegistry):
         record=self._table.get(package)
         return None if record is None else record['meta']['client_path']
 
+    def chunk_request(self,parsed):
+        url=parsed.path+('?' + parsed.query if parsed.query else '')
+        for record in self._table.values():
+            prefix='/plugins/'+record['id']+'/'
+            if not parsed.path.startswith(prefix):continue
+            requested=parsed.path[len(prefix):];is_map=requested.endswith('.map')
+            filename=requested[:-4] if is_map else requested
+            if re.fullmatch(r'client\.[A-Za-z0-9][A-Za-z0-9._-]*\.js',filename) is None or filename=='client.node.js' or filename.startswith('client.node.'):
+                return None
+            expected=prefix+filename+('.map' if is_map else '')+'?rev='+record['entry']['rev']
+            return dict(record=record,file_name=filename,source_map=is_map,url=url) if url==expected else None
+        return None
+
+    async def read_chunk(self,path):
+        # Python 3.8's executor is the asynchronous native filesystem face.
+        # No package chunk byte read runs synchronously on the event loop.
+        def read():
+            with open(path,'rb') as stream:return stream.read()
+        return await asyncio.get_running_loop().run_in_executor(None,read)
+
+    def chunk_response(self,parsed):
+        request=self.chunk_request(parsed)
+        if request is None:return None
+        record=request['record'];filename=request['file_name']
+        path=os.path.join(os.path.dirname(record['meta']['client_path']),filename)
+        if not os.path.exists(path):return None
+        map_reference=filename+'.map?rev='+record['entry']['rev']
+        async def produce():
+            resource=dict(id=record['id'],rev=record['entry']['rev'],client_path=path,file_name=filename,
+                bundle=await self.read_chunk(path))
+            if request['source_map']:return source_map_body([resource],self.current_source_map,filename)
+            return script_body([resource],map_reference)
+        response=dict(body=LazyBody(produce),contentType=JSON_CONTENT_TYPE if request['source_map'] else JAVASCRIPT_CONTENT_TYPE)
+        self._responses[request['url']]=response
+        return response
+
     async def fetchBundle(self,request):
         method=request.get('method')
         if method not in ('GET','HEAD'):return dict(status=405,headers={},body=None)
         parsed=urlsplit(request['url'] if 'url' in request else self.resource_url(request))
         url=parsed.path+('?' + parsed.query if parsed.query else '')
-        resource=self._responses.get(url) or self._previous_batch_responses.get(url)
+        resource=self._responses.get(url) or self._previous_batch_responses.get(url) or self.chunk_response(parsed)
         if resource is None:return dict(status=404,headers={},body=None)
         return dict(status=200,headers={'content-type':resource['contentType'],'cache-control':IMMUTABLE_CACHE},
             body=None if method=='HEAD' else await resource['body']())

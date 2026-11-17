@@ -1,0 +1,32 @@
+{
+  "part": "C9-D",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "scope": "Current revisioned on-demand package-local browser chunks",
+  "paired": {
+    "run": "rc022-client-chunks-paired-20261117-01",
+    "observations": 18,
+    "differences": 0,
+    "method": "Actual Source and Native providers compare response status/headers/full script and indexed map bytes; shared entry artifacts remain frozen while independent ephemeral chunks change. Includes scoped @fixture/assets and export-generation change."
+  },
+  "verification": {
+    "native": "13 passed; current chunks/resources/registry and historical Loader/Desktop consumers.",
+    "source": "7 selected original node-half cases passed; 60 outside scope.",
+    "scope_reason": "Covers asynchronous script reads and separate map request, first read rejection and retry, concurrent body sharing, HEAD without reads, blocked Node entry/split helpers, strict revision/query/name checks, unchanged body retention and changed generation invalidation."
+  },
+  "behavior": [
+    "Only exact current-revision client.<name>.js[.map] URLs are routed; client.node.js and client.node.* remain unavailable to browsers.",
+    "HEAD verifies the script exists without reading it. GET reads split scripts through a Python 3.8 executor, keeping disk I/O off the event loop. Maps have independent lazy producers and generated file names.",
+    "Success is retained through metadata recomposition; rejection permits retry. A new entry revision or removal drops old chunk responses. Scoped package names ending assets remain normal chunk owners."
+  ],
+  "cleanup": {
+    "control": "rc022-client-chunks-control-20261117-01",
+    "bytes_removed": 17951,
+    "links_removed": 262,
+    "owned_processes_after": [],
+    "retained": "Commands, response pairs, initial fixture hashes, logs/XML, compact observations and cleanup/process receipts."
+  },
+  "limitations": [
+    "Targeted completion; package assets and actual current Web candidate rerun remain next.",
+    "No new complete regression, Portable/browser/Win7 acceptance or production upstream promotion."
+  ]
+}

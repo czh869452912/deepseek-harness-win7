@@ -373,3 +373,5 @@
 | C1 follow-up | HMR module import syntax reuse, reload invalidation and weak ownership | [HMR import cache](hmr-import-cache-checks.json) |
 
 | C8-GR | Desktop product composition, profile/HMR ownership, release stamp and current Peer HTTP/policy stream | [Desktop analytics](desktop-analytics-checks.json) |
+
+| C8-GS | Primary runtime manifest normalization, distribution identity and entry paths | [Workspace manifest](workspace-manifest-checks.json) |

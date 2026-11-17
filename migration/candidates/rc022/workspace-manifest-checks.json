@@ -1,0 +1,39 @@
+{
+  "part": "C8-GS",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "scope": "Staged primary-runtime manifest normalization and dependency entry path derivation",
+  "paired": {
+    "run": "rc022-workspace-manifest-paired2-20261117-01",
+    "observations": 334,
+    "differences": 0,
+    "comparison": "Actual Source parsePrimaryRuntime/workspaceDependencyPaths and Native helpers; all decoded JSON results/errors compared. Paths use the current Windows host join semantics with Windows/macOS/Linux payload layouts."
+  },
+  "verification": {
+    "native": "2 passed: 334-case parser/path corpus and original distribution-map ownership/layout.",
+    "source": "3 passed selected original interpreter/package path cases; unrelated installation/tool tests were not selected.",
+    "scope_reason": "This batch adds pure helpers only. Covers required/optional fields, mixed legacy format, legacy missing map/defaults, normalized distribution collisions/conflicts, version/digest syntax and selected paths."
+  },
+  "behavior": [
+    "Selects canonical metadata and preserves the original distribution map. Legacy components normalize to top-level runtime versions; unknown fields are omitted.",
+    "Rejects malformed metadata, mixed old/new version fields, absent legacy numpy/pandas versions, normalized duplicate distribution names, inconsistent legacy versions and pnpm without Node.",
+    "Derives selected Python/interpreter/site-packages, optional Node/node_modules and pnpm paths; Windows drive-only/UNC/root normalization matches actual Source observations."
+  ],
+  "source_inputs": {
+    "packages/skill/tool-workspace-dependencies/src/index.ts": "835e40ffefd839085d1ccb5612055f874abc6a6c3a26bad856c8f8206a7c4e28",
+    "packages/skill/tool-workspace-dependencies/tests/tool-workspace-dependencies.spec.ts": "442cdd022f0f664afc6a906c937e6ede27e95485c68ddc4c95350c3e3b7180ff"
+  },
+  "limitations": [
+    "Staged helpers only: actual filesystem entry/type checks, compatibility admission, alias copying, atomic install/recovery, tool registration and DSH_PRIMARY_RUNTIME composition are subsequent work.",
+    "Version metadata does not establish interpreter/extension OS compatibility or payload integrity. No new actual Win7, Portable/browser or whole migration acceptance."
+  ],
+  "cleanup": {
+    "bytes_removed": 255317,
+    "receipts": [
+      "rc022-workspace-manifest-source-20261117-01/cleanup.json",
+      "rc022-workspace-manifest-paired-20261117-01/superseded-observations.json",
+      "rc022-workspace-manifest-native-20261117-01/duplicate-observations.json"
+    ],
+    "removed": "Owned pytest/tmp/home trees, unused preliminary 319-row JSON files and duplicate pytest observations. Preliminary bytes reconstruct exactly from the retained final prefix; duplicate observations match the retained Native file by bytes and SHA. No matching processes remain.",
+    "retained": "Final Source/Native raw observations and inputs, command/input hashes, XML/logs/Source report and compact superseded identities. Shared Source/toolchains remain needed for the runtime consumer and C9."
+  }
+}

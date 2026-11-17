@@ -1,0 +1,109 @@
+{
+  "unit": "C9-BW",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "status": "targeted-passed",
+  "scope": "Actual public SDK Calc/Impress matrix; original inputs and unchanged original WASM/worker bodies. Representative successful and failed operation consumers, not every possible legacy format.",
+  "verification": {
+    "source_pairs_x64": 13,
+    "source_pairs_x86": 13,
+    "rejection_tests": 3,
+    "cases": [
+      "calc-recalculate",
+      "calc-csv",
+      "calc-ods",
+      "ods-recalculate",
+      "calc-pdf",
+      "calc-range",
+      "calc-images",
+      "calc-missing-sheet",
+      "impress-pptx",
+      "impress-odp",
+      "impress-pdf",
+      "impress-page-two",
+      "pptx-pdf"
+    ],
+    "fixtures": {
+      "formula.xlsx": {
+        "bytes": 1664,
+        "sha256": "e081c389f4cd328cd40949c241f986d2aeba577ec1a1f3b632ca6977a22197b2"
+      },
+      "slides.odp": {
+        "bytes": 2617,
+        "sha256": "5d6b13b1860d0a6a160f0d8cedfcb01ae42130b2da7f8d9c3cc188c45140eb76"
+      }
+    },
+    "comparison_policy": {
+      "csv_and_png": "Exact bytes and public results.",
+      "packages": "All member content; XML timestamp properties omitted, uniquely named ODF master declarations compared as a mapping, valid RFC4122 v4 slide-number field IDs compared by consistent identity renaming.",
+      "pdf": "Original public metadata/page count and original SDK output validation; raw output digests retained, no PDF byte identity claim.",
+      "errors": "Host language error classes differ; original category and exact message must match."
+    },
+    "runs": [
+      ".goose/out/rc022-office-formats-pair-20261118-03",
+      ".goose/out/rc022-office-formats-pair-x86-20261118-01",
+      ".goose/out/rc022-office-formats-native-20261118-01"
+    ],
+    "original_repeat_observations": ".goose/out/rc022-office-format-order-20261118-01",
+    "recalculated_values": [
+      5,
+      10
+    ],
+    "remaining_processes": 0
+  },
+  "cleanup": {
+    "removed_bytes": 314775,
+    "removed_paths": [
+      ".goose\\out\\rc022-office-formats-pair-20261118-01\\source-calc-recalculate.xlsx",
+      ".goose\\out\\rc022-office-formats-pair-20261118-01\\browser-calc-recalculate.xlsx",
+      ".goose\\out\\rc022-office-formats-pair-20261118-01\\source-calc-csv.csv",
+      ".goose\\out\\rc022-office-formats-pair-20261118-01\\browser-calc-csv.csv",
+      ".goose\\out\\rc022-office-formats-pair-20261118-01\\source-ods-recalculate.xlsx",
+      ".goose\\out\\rc022-office-formats-pair-20261118-01\\source-calc-pdf.pdf",
+      ".goose\\out\\rc022-office-formats-pair-20261118-01\\source-calc-range",
+      ".goose\\out\\rc022-office-formats-pair-20261118-01\\source-calc-images",
+      ".goose\\out\\rc022-office-formats-pair-20261118-01\\source-impress-pptx.pptx",
+      ".goose\\out\\rc022-office-formats-pair-20261118-01\\source-impress-odp.odp",
+      ".goose\\out\\rc022-office-formats-pair-20261118-01\\source-impress-pdf.pdf",
+      ".goose\\out\\rc022-office-formats-pair-20261118-01\\source-impress-page-two",
+      ".goose\\out\\rc022-office-formats-pair-20261118-01\\source-pptx-pdf.pdf",
+      ".goose\\out\\rc022-office-formats-pair-20261118-01\\tmp",
+      ".goose\\out\\rc022-office-formats-pair-20261118-02\\source-calc-recalculate.xlsx",
+      ".goose\\out\\rc022-office-formats-pair-20261118-02\\browser-calc-recalculate.xlsx",
+      ".goose\\out\\rc022-office-formats-pair-20261118-02\\source-calc-csv.csv",
+      ".goose\\out\\rc022-office-formats-pair-20261118-02\\browser-calc-csv.csv",
+      ".goose\\out\\rc022-office-formats-pair-20261118-02\\source-calc-ods.ods",
+      ".goose\\out\\rc022-office-formats-pair-20261118-02\\browser-calc-ods.ods",
+      ".goose\\out\\rc022-office-formats-pair-20261118-02\\source-ods-recalculate.xlsx",
+      ".goose\\out\\rc022-office-formats-pair-20261118-02\\browser-ods-recalculate.xlsx",
+      ".goose\\out\\rc022-office-formats-pair-20261118-02\\source-calc-pdf.pdf",
+      ".goose\\out\\rc022-office-formats-pair-20261118-02\\browser-calc-pdf.pdf",
+      ".goose\\out\\rc022-office-formats-pair-20261118-02\\source-calc-range",
+      ".goose\\out\\rc022-office-formats-pair-20261118-02\\browser-calc-range",
+      ".goose\\out\\rc022-office-formats-pair-20261118-02\\source-calc-images",
+      ".goose\\out\\rc022-office-formats-pair-20261118-02\\browser-calc-images",
+      ".goose\\out\\rc022-office-formats-pair-20261118-02\\source-impress-odp.odp",
+      ".goose\\out\\rc022-office-formats-pair-20261118-02\\browser-impress-odp.odp",
+      ".goose\\out\\rc022-office-formats-pair-20261118-02\\source-impress-pdf.pdf",
+      ".goose\\out\\rc022-office-formats-pair-20261118-02\\browser-impress-pdf.pdf",
+      ".goose\\out\\rc022-office-formats-pair-20261118-02\\source-impress-page-two",
+      ".goose\\out\\rc022-office-formats-pair-20261118-02\\browser-impress-page-two",
+      ".goose\\out\\rc022-office-formats-pair-20261118-02\\source-pptx-pdf.pdf",
+      ".goose\\out\\rc022-office-formats-pair-20261118-02\\browser-pptx-pdf.pdf",
+      ".goose\\out\\rc022-office-formats-pair-20261118-02\\tmp",
+      ".goose\\out\\rc022-office-formats-pair-20261118-03\\tmp",
+      ".goose\\out\\rc022-office-formats-pair-x86-20261118-01\\tmp",
+      ".goose\\out\\rc022-office-formats-native-20261118-01\\pytest-workspace",
+      ".goose\\out\\rc022-office-formats-native-20261118-01\\tmp",
+      ".goose\\out\\rc022-office-formats-native-20261118-01\\home"
+    ],
+    "output_identity_count": 115,
+    "identity_record": ".goose/out/rc022-office-formats-control-20261118-01/cleanup.json",
+    "identity_record_sha256": "899ff8034cf7ec0266ff4787b632e716960d5d1e666cd6e20e953e9e1ed19c89",
+    "retained": "Original failed comparison logs/reports, exact diagnostic ODS/PPTX pairs, original repeat observations, frozen fixtures, and final actual x64/x86 matrix outputs retained through coordinated release qualification; compact receipts and raw Source reports remain. Synthetic pytest workspaces and superseded non-diagnostic exports retired."
+  },
+  "limitations": [
+    "Original ODS repeat order was stable; representation mapping does not claim observed random ODS order.",
+    "PDF raw-byte identity is not claimed. Internal host error class differs from the Node SDK; code and message match.",
+    "No production pin/accepted_upstream promotion, unified Portable/release or actual Win7 guest acceptance."
+  ]
+}

@@ -427,3 +427,5 @@
 | C9-Y | Live default-model Config/save FIFO and actual timed/manual Schedule delivery through Agent and Session persistence | [Default model and delivery](default-model-delivery-checks.json) |
 
 | C9-Z | Current live theme/locale companions close the index HTTP400; preview and Session-list browser failures retained | [Appearance](appearance-checks.json) |
+
+| C9-AA | Live welcome acknowledgement and resource-aware Session controller candidate binding; Workspace browser gap retained | [General Settings](general-settings-checks.json) |

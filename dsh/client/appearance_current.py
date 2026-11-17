@@ -77,3 +77,10 @@ class CurrentLocaleHost(Plugin):
 
     def apply(self, ctx):
         configure_settings(ctx)
+
+
+class CurrentGeneralSettingsHost(Plugin):
+    Config = z.object(dict(welcomeNoticeVersion=z.string().volatile()))
+
+    def apply(self, ctx):
+        configure_settings(ctx)

@@ -22,6 +22,8 @@ EXECUTE_PTC=False
 BEFORE_SESSIONS=None
 AFTER_SESSIONS=None
 BINDINGS={
+ '@deepseek-ai/dsh-api-session-controller':'dsh.api.session_authorized:AuthorizedSessionController',
+ '@deepseek-ai/dsh-client-ui-settings-general':'dsh.client.appearance_current:CurrentGeneralSettingsHost',
  '@deepseek-ai/dsh-client-ui-theme':'dsh.client.appearance_current:CurrentThemeHost',
  '@deepseek-ai/dsh-client-locale':'dsh.client.appearance_current:CurrentLocaleHost',
  '@deepseek-ai/dsh-agent-default-model':'dsh.core.default_model_current:CurrentAgentDefaultModelConfig',

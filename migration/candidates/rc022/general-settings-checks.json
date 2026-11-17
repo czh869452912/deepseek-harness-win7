@@ -1,0 +1,10 @@
+{
+  "part": "C9-AA",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "scope": "Live welcome acknowledgement and candidate resource-aware Session controller composition",
+  "paired": {"run": "rc022-general-settings-paired-20261117-01", "observations": 10, "differences": 0},
+  "verification": {"native": "47 targeted General Settings and Session summary/access/prompt/state tests passed.", "source": "2 original General Settings Host tests passed.", "application": "Candidate22 created all four preset Sessions using AuthorizedSessionController. Original browser Session-list block-kind error disappeared; welcome failure copy disappeared. Full journey still failed on Workspace baseline missing pinnedSessionIds and a preview-dialog observer race. Corrected observer now waits for the actual fresh-home welcome control before acting; this revision still requires rerun."},
+  "behavior": ["Welcome acknowledgement is an optional volatile string with reversible Settings auto:false registration. Null admission follows fixed Source; the initial stricter Native assertion was corrected, with original diagnostics retained.", "Candidate binding uses the already implemented resource-aware Session controller with current sequenced/cached list blocks and projection control frames; the earlier controller remains historical.", "Added reproducible actual Chromium108/unchanged-client browser probe, explicit Source static input, page errors/screenshots and task catalog/detail checks. It records failures and removes its credential-bearing temporary config after browser exit."],
+  "cleanup": {"bytes_removed": 48967, "owned_processes_after": [], "retained": "Necessary logs/observations/screenshots and failed/successful test reports; owned application/test homes and short workspaces removed."},
+  "limitations": ["Browser Schedule journey remains pending; no UI or full-controller parity claimed from finite facade tests. Workspace registry/controller baseline and commands still need migration.", "No production pin promotion, full regression, release/Portable or Win7 guest certification."]
+}

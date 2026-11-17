@@ -1,0 +1,14 @@
+{
+  "part": "C9-W",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "scope": "SQLite KV batch transactions, accepted older versions and rollback quarantine",
+  "paired": {"run": "rc022-sqlite-batch-paired-20261117-01", "observations": 27, "differences": 0},
+  "verification": {"native": "12 passed: actual compatible-version SQLite files/cold reopens, duplicate/missing/empty delete, ABORT/ROLLBACK/stamp failure, failed BEGIN retry, failed rollback for put/global/batch blocks other units and openers, real Domain deleteMany consumer and existing workspace/storage regressions.", "source": "49 original SQLite backend/contract tests passed."},
+  "behavior": [
+    "Uses explicit SQLite autocommit and BEGIN IMMEDIATE for batches and first accepted-version mutations. Data and new version stamp commit together, while reads and missing deletes retain the old stamp.",
+    "Deduplicated batch deletion is atomic. Ordinary transaction errors roll back before propagation; failed rollback preserves both errors and quarantines all backend units and new openers until close/reopen.",
+    "Closed unit errors take precedence over quarantine, and the connection remains closable after rollback failure."
+  ],
+  "cleanup": {"bytes_removed": 957209, "owned_processes_after": [], "retained": "Exact pair results/input hashes, Source JSON, Native command/log/XML and necessary observations. All owned SQLite files and short test workspaces removed."},
+  "limitations": ["This closes the current SQLite batch/version contract, not every backend behavior. Existing non-STRICT table layout remains for the bundled Python SQLite version; no general modern Node SQLite ABI claim.", "Per-record JSON batch implementation remains pending. No full regression or release qualification."]
+}

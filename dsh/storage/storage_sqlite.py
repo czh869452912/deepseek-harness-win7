@@ -6,7 +6,8 @@ Aligned 1:1 with official `@deepseek-ai/dsh-storage-sqlite`.
 import json
 import os
 import sqlite3
-from typing import Any, Callable, Dict, Optional
+from typing import Any, Callable, Dict, List, Optional
+from dsh.cordis.errors import AggregateError
 from dsh.storage.backend import UNIT_NAME_RE, KvFacet, KvUnit, KvUnitDescriptor, StorageBackend
 from dsh.storage.error import StorageError
 
@@ -28,15 +29,42 @@ class SqliteKvUnit(KvUnit):
         db: sqlite3.Connection,
         descriptor: KvUnitDescriptor,
         on_close: Callable[[], None],
+        stored_version=None,
+        backend=None,
     ):
         self.db = db
         self.descriptor = descriptor
         self._on_close = on_close
         self.closed = False
+        self.backend = backend
+        self.needs_version_stamp = stored_version is not None and stored_version != descriptor.version
+
+    def _assert_open(self):
+        if self.closed:raise StorageError('closed', "kv unit '{}' is closed".format(self.descriptor.name))
+        if self.backend is not None:self.backend._assert_usable()
+
+    def _write(self, operation, transactional=False):
+        transaction=self.needs_version_stamp or transactional
+        if transaction:self.db.execute('BEGIN IMMEDIATE')
+        try:
+            changed=operation()>0
+            if self.needs_version_stamp and changed:
+                self.db.execute('UPDATE units SET version = ? WHERE name = ?', (self.descriptor.version,self.descriptor.name))
+            if transaction:self.db.execute('COMMIT')
+            if changed:self.needs_version_stamp=False
+        except BaseException as error:
+            if self.db.in_transaction:
+                try:self.db.execute('ROLLBACK')
+                except BaseException as rollback_error:
+                    cause=AggregateError([error,rollback_error],'write and rollback failed')
+                    cause.cause=error
+                    failure=StorageError('unknown-state',"kv unit '{}' write and rollback failed; the backend is unusable and must be closed and reopened".format(self.descriptor.name),cause=cause)
+                    if self.backend is not None:self.backend.failure=failure
+                    raise failure from error
+            raise
 
     async def load_all(self) -> Dict[str, Any]:
-        if self.closed:
-            raise StorageError("closed", f"kv unit '{self.descriptor.name}' is closed")
+        self._assert_open()
         tables_res: Dict[str, Dict[str, Any]] = {}
         for tbl in self.descriptor.tables:
             phys = record_table_name(self.descriptor.name, tbl)
@@ -70,38 +98,40 @@ class SqliteKvUnit(KvUnit):
         return {"tables": tables_res, "global": global_val}
 
     async def put_record(self, table: str, key: str, value: Any) -> None:
-        if self.closed:
-            raise StorageError("closed", f"kv unit '{self.descriptor.name}' is closed")
+        self._assert_open()
         if table not in self.descriptor.tables:
             raise ValueError(f"kv unit '{self.descriptor.name}' declared no table '{table}'")
         phys = record_table_name(self.descriptor.name, table)
         val_text = json.dumps(value)
-        self.db.execute(
+        self._write(lambda:self.db.execute(
             f'INSERT INTO "{phys}" (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value',
             (key, val_text),
-        )
-        self.db.commit()
+        ).rowcount)
 
     async def delete_record(self, table: str, key: str) -> None:
-        if self.closed:
-            raise StorageError("closed", f"kv unit '{self.descriptor.name}' is closed")
+        self._assert_open()
         if table not in self.descriptor.tables:
             raise ValueError(f"kv unit '{self.descriptor.name}' declared no table '{table}'")
         phys = record_table_name(self.descriptor.name, table)
-        self.db.execute(f'DELETE FROM "{phys}" WHERE key = ?', (key,))
-        self.db.commit()
+        self._write(lambda:self.db.execute(f'DELETE FROM "{phys}" WHERE key = ?', (key,)).rowcount)
+
+    async def delete_records(self, table: str, keys: List[str]) -> None:
+        self._assert_open()
+        if table not in self.descriptor.tables:raise ValueError(f"kv unit '{self.descriptor.name}' declared no table '{table}'")
+        if not keys:return
+        phys=record_table_name(self.descriptor.name,table)
+        def remove():return sum(self.db.execute(f'DELETE FROM "{phys}" WHERE key = ?', (key,)).rowcount for key in dict.fromkeys(keys))
+        self._write(remove,True)
 
     async def set_global(self, value: Any) -> None:
-        if self.closed:
-            raise StorageError("closed", f"kv unit '{self.descriptor.name}' is closed")
+        self._assert_open()
         if not self.descriptor.has_global:
             raise ValueError(f"kv unit '{self.descriptor.name}' declared no global slot")
         val_text = json.dumps(value)
-        self.db.execute(
+        self._write(lambda:self.db.execute(
             "INSERT INTO unit_globals (unit, value) VALUES (?, ?) ON CONFLICT(unit) DO UPDATE SET value = excluded.value",
             (self.descriptor.name, val_text),
-        )
-        self.db.commit()
+        ).rowcount)
 
     async def close(self) -> None:
         if self.closed:
@@ -118,7 +148,7 @@ class SqliteStorageBackend(StorageBackend):
         journal_mode = str(config.get("journal_mode", config.get("journalMode", "wal"))).upper()
         if path != ":memory:":
             os.makedirs(os.path.dirname(os.path.abspath(path)), exist_ok=True)
-        self.db = sqlite3.connect(path, check_same_thread=False)
+        self.db = sqlite3.connect(path, check_same_thread=False, isolation_level=None)
         self.db.execute("PRAGMA foreign_keys = ON")
         if path != ":memory:":
             try:
@@ -141,7 +171,11 @@ class SqliteStorageBackend(StorageBackend):
 
         self._units: Dict[str, SqliteKvUnit] = {}
         self.closed = False
+        self.failure = None
         self.kv = self._KvFacetImpl(self)
+
+    def _assert_usable(self):
+        if self.failure is not None:raise self.failure
 
     class _KvFacetImpl(KvFacet):
         def __init__(self, outer: "SqliteStorageBackend"):
@@ -150,6 +184,7 @@ class SqliteStorageBackend(StorageBackend):
         async def open(self, descriptor: KvUnitDescriptor) -> KvUnit:
             if self.outer.closed:
                 raise StorageError("closed", "sqlite storage backend is closed")
+            self.outer._assert_usable()
             if not UNIT_NAME_RE.match(descriptor.name):
                 raise ValueError(f"kv unit name '{descriptor.name}' violates {UNIT_NAME_RE.pattern}")
             for tbl in descriptor.tables:
@@ -163,7 +198,7 @@ class SqliteStorageBackend(StorageBackend):
             if row is None:
                 self.outer.db.execute("INSERT INTO units (name, version) VALUES (?, ?)", (descriptor.name, descriptor.version))
                 self.outer.db.commit()
-            elif row[0] != descriptor.version:
+            elif row[0] != descriptor.version and row[0] not in descriptor.compatible_versions:
                 raise StorageError(
                     "version-mismatch",
                     f"kv unit '{descriptor.name}' is stamped version {row[0]} on the medium, incompatible with descriptor version {descriptor.version}",
@@ -177,7 +212,7 @@ class SqliteStorageBackend(StorageBackend):
             def on_close():
                 self.outer._units.pop(descriptor.name, None)
 
-            unit = SqliteKvUnit(self.outer.db, descriptor, on_close)
+            unit = SqliteKvUnit(self.outer.db, descriptor, on_close,descriptor.version if row is None else row[0],self.outer)
             self.outer._units[descriptor.name] = unit
             return unit
 

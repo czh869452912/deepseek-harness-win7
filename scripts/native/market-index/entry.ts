@@ -1,10 +1,23 @@
 /** Private carrier: validation and search execute unchanged pinned Source code. */
-import { parseMarketIndex, marketInstallTarget } from '@market/index'
+import { MarketIndexError, parseMarketIndex, marketInstallTarget } from '@market/index'
 import { MarketSearch } from '@market/search'
 import { normalizeIndexUrl } from '@market/index-url'
 
 export async function observe(operation: any): Promise<any> {
   try {
+    if (operation.kind === 'body') {
+      let value: unknown
+      try { value = JSON.parse(operation.text) }
+      catch (error: any) {
+        const reason = `must be JSON: ${error.message}`
+        return { ok: false, path: '$', reason, message: reason }
+      }
+      try { return { ok: true, index: parseMarketIndex(value, operation.url) } }
+      catch (error: any) {
+        if (!(error instanceof MarketIndexError)) throw error
+        return { ok: false, path: error.path, reason: error.reason, message: error.message }
+      }
+    }
     if (operation.kind === 'url') {
       return { ok: true, canonical: URL.canParse(operation.text) ? new URL(operation.text).href : operation.text,
         value: normalizeIndexUrl(operation.text) }

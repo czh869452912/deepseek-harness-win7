@@ -59,7 +59,7 @@
     ".goose/out/rc022-prep-20261114-01/source/packages/boot/plugin-market/src/search.ts": "d88db9df16dcfe1ebde1c5924ed348ef009376a50a8dec949e11bc4f5a5a985c",
     ".goose/out/rc022-prep-20261114-01/source/packages/typert/protocol/src/remote-error.ts": "bb902ec537e1dfbc74885e77a01192e6532b50a959a5bc4cc55c1fbf52e0a368",
     ".goose/out/rc022-prep-20261114-01/source/packages/boot/plugin-market/src/index-url.ts": "dd174d5e31fead47e5db308b61b8b0a784c60fb6bace9dfd0c602952cad951b7",
-    "scripts/native/market-index/entry.ts": "5d5dbf912b46e9407a4e4ec8f60671c8a07a64663521da550b3167dd1c3bdb28",
+    "scripts/native/market-index/entry.ts": "c33a8e33d35ea89f6e75e72de121e1e80bc3691395fe628a56277f5c80e89d1f",
     "scripts/native/market-index/driver.js": "d9d03992a563dcc738a06b81307deb55a71426e3ac844b90c92484a850a4f26f",
     ".goose/out/rc022-prep-20261114-01/source/LICENSE": "ebb4f09972aee8608be255debaf78451a68e95c290f55c240dec2ecfa16ea6be",
     "dsh/host/browser_compat/url.js": "d4ee03603a1a56cc92284568fa75f141b59d9edb41775549626bb80c82f64300",
@@ -75,7 +75,7 @@
     "scripts/build_market_index.mjs": "7c3bb8f2eecd5ad27e92932b801697e8e54f68638eae60f812af7aed11e72bc0"
   },
   "resources": {
-    "market.js": "1928b8dff05290c9bffff6da2cc7add76b62596ef6edb91c7091b1aaa7539084",
+    "market.js": "45033fb69e673e7e667977e1aa4158cfb928564e3eaaa02d9f69a6a8ec10d362",
     "driver.js": "d9d03992a563dcc738a06b81307deb55a71426e3ac844b90c92484a850a4f26f",
     "SOURCE-LICENSE": "ebb4f09972aee8608be255debaf78451a68e95c290f55c240dec2ecfa16ea6be",
     "url.js": "d4ee03603a1a56cc92284568fa75f141b59d9edb41775549626bb80c82f64300",

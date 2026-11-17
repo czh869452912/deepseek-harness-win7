@@ -1,0 +1,39 @@
+{
+  "part": "C9-AL",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "scope": "Strict market body decoding, JS JSON acceptance and asynchronous parser worker lifetime",
+  "implementation": [
+    "Python 3.8 strict utf-8-sig decoding matches fatal TextDecoder UTF-8/BOM admission; JSON.parse and unchanged format validator execute in isolated shipped QuickJS, preserving JavaScript number/duplicate-key/surrogate behavior.",
+    "Asynchronous subprocess ownership covers spawn, communicate, protocol validation and exit. Abort preserves its reason; repeated caller cancellation cannot interrupt child cleanup; malformed result protocols fail closed."
+  ],
+  "verification": {
+    "paired": {
+      "run": "rc022-market-body-pair-20261117-01",
+      "observations": 41,
+      "scope": "UTF-8 invalid/valid scalar boundaries, BOM, JSON acceptance and validation. Valid results and UTF-8/format errors compared exactly; invalid JSON compares $ path, must be JSON prefix and nonempty diagnostic only.",
+      "normalized_differences": 0
+    },
+    "native": {
+      "run": "rc022-market-body-native-20261117-01",
+      "passed": 61,
+      "scope": "Real child termination, repeated cancellation during held spawn, async/sync parity, bytes-only/aborted admission; cache/index x86-x64/integrity/tool/worker direct consumers"
+    },
+    "source": {
+      "run": "rc022-market-body-source-20261117-01",
+      "passed": 14,
+      "scope": "Original parse, parse-thread and parse-worker suites"
+    }
+  },
+  "cleanup": {
+    "removed": "Native/Source owned fixtures/home/tmp, reconstructible encoded body inputs and byte-verified duplicate carrier build",
+    "bytes": 22000810,
+    "owned_processes_after": [],
+    "retained": "Separate complete V8/QuickJS diagnostic observations, normalized comparisons, commands/log/XML, shared C1-C9 Source/toolchain until qualification"
+  },
+  "limitations": [
+    "Exact invalid-JSON diagnostic prose differs between the shipped QuickJS engine and pinned V8; raw errors are preserved separately. No claim of complete diagnostic parity or new acceptance from normalized comparison.",
+    "Actual index HTTP requests, size/deadline/redirect behavior, listing annotation, Remote and details are subsequent layers.",
+    "The private pure index/search worker still has a 10-second execution and 30-second process containment budget; maximum-size 128-MiB market indexes are not qualified here.",
+    "Targeted completion only; unified release qualification and production promotion remain pending."
+  ]
+}

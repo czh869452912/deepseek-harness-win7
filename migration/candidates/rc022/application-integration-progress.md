@@ -449,3 +449,5 @@
 | C9-AJ | Pinned market index validation/install targets and multilingual MiniSearch in shipped x64/x86 Win7 worker; 110 paired observations | [Market index](market-index-checks.json) |
 
 | C9-AK | Market configured-source URL rules and shared document cache: TTL/pins, monotonic identity, removal, cancellation and disposal | [Market cache](market-cache-checks.json) |
+
+| C9-AL | Strict UTF-8/BOM + JS JSON acceptance and abort-safe parser process ownership; exact V8/QuickJS syntax diagnostics explicitly pending | [Market body](market-body-checks.json) |

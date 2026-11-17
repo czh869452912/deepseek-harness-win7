@@ -4903,6 +4903,21 @@ var __marketIndex = (() => {
   // scripts/native/market-index/entry.ts
   async function observe(operation) {
     try {
+      if (operation.kind === "body") {
+        let value;
+        try {
+          value = JSON.parse(operation.text);
+        } catch (error) {
+          const reason = `must be JSON: ${error.message}`;
+          return { ok: false, path: "$", reason, message: reason };
+        }
+        try {
+          return { ok: true, index: parseMarketIndex(value, operation.url) };
+        } catch (error) {
+          if (!(error instanceof MarketIndexError)) throw error;
+          return { ok: false, path: error.path, reason: error.reason, message: error.message };
+        }
+      }
       if (operation.kind === "url") {
         return {
           ok: true,

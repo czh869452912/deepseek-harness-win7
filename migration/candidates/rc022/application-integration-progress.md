@@ -481,3 +481,5 @@
 | C9-AZ | Holder-owned Workflow result survives independent observer cancellation/timeout and drains children; actual Guest/end-event checked, old production preset collision retained for promotion | [Workflow result](workflow-result-checks.json) |
 
 | C9-BA | Separate Host/browser restores saved Schedule and inactive v4 Session; original mobile/desktop run adds a second receipt while preserving all 22 prior events | [Schedule/Session cold process](schedule-cold-checks.json) |
+
+| C9-BB | SDK memoized handshake/close keep owner alive after independent observer cancellation/timeout; actual wire cleanup/retry, cold resume and forced reaping checked | [SDK operation ownership](sdk-ownership-checks.json) |

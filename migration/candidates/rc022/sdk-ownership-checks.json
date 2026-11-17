@@ -1,0 +1,41 @@
+{
+  "contract": "C9-BB",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "status": "targeted passed",
+  "problem": "SDK memoized start and close exposed Python owner Tasks. A direct cancelled waiter could stop the shared handshake or leave a child midway through the shutdown/EOF/termination ladder.",
+  "implementation": "Owner-held SharedPromise for initialization and CleanupPromise for process close preserve synchronous entry, stable identity, independent observers, original failure/cleanup/retry rules and complete stream/process reaping.",
+  "verification": {
+    "paired": {
+      "run": "rc022-sdk-ownership-pair-20261117-01",
+      "observations": 5,
+      "scope": "Actual pinned scripted Node runtime driven through original and Python SDKs. Handshake abandonment/timeout, failed initialization with original ordered cleanup and one retry, close abandonment/timeout, one handshake per successful instance, final exit/pipe/pending-request checks."
+    },
+    "existing_pair": {
+      "run": "rc022-sdk-process-recheck-pair-20261117-01",
+      "observations": 19,
+      "scope": "Existing actual wire/subagent success, malformed/protocol/transport and error-folding observations unchanged"
+    },
+    "native": {
+      "run": "rc022-sdk-ownership-native-20261117-01",
+      "passed": 37,
+      "scope": "Actual Python wire peer for cancellation/timeout/reaping, SDK run, provider activation/unload, stdio cold resume/wait and transport consumers"
+    },
+    "source": {
+      "run": "rc022-sdk-ownership-source-20261117-01",
+      "passed": 124,
+      "failed": 0,
+      "scope": "Original sdk-client, dispose and run suites"
+    }
+  },
+  "baseline": "Controlled pre-fix close owner became cancelled when its direct observer was cancelled; no process created for the baseline reproduction.",
+  "cleanup": {
+    "bytes": 19641,
+    "removed": "Owned synthetic peer/workspace/home/tmp and paired runtime marker files after final consumer",
+    "retained": "Commands, raw Source/native observations, precise SDK Source hashes, XML/logs and baseline; shared Source/toolchains remain needed until C9",
+    "owned_processes_after": []
+  },
+  "limitations": [
+    "Modern Node is used only in the fixed Source comparison environment. Production SDK launches the Python/Win7 runtime.",
+    "This is targeted ownership verification, not coordinated pin promotion or release qualification."
+  ]
+}

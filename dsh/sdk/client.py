@@ -16,6 +16,7 @@ from dsh.cordis.awaiting import start_coroutine
 from dsh.cordis.errors import AggregateError
 from dsh.cordis.json_text import stringify_json
 from dsh.core.abort import AbortController
+from dsh.core.cleanup import CleanupPromise, SharedPromise
 from dsh.core.session.json import UNDEFINED
 from .errors import TransportClosedError, RequestTimeoutError, SdkProtocolError, JsonRpcResponseError
 from .stdio import StdioInput
@@ -389,7 +390,7 @@ class HarnessClient:
 
     def close(self):
         if self.close_task is None:
-            self.close_task = start_coroutine(self._perform_close())
+            self.close_task = CleanupPromise(start_coroutine(self._perform_close()))
         return self.close_task
 
 
@@ -421,7 +422,7 @@ class DeepSeekHarness:
 
     def start(self):
         if self.initialized is None:
-            self.initialized = start_coroutine(self._start())
+            self.initialized = SharedPromise(start_coroutine(self._start()))
         return self.initialized
 
     def session(self, sessionId=None):

@@ -7,7 +7,7 @@ import sys
 
 import pytest
 
-from scripts import win32_stat_oracle as oracle
+from scripts import current_win32_stat_oracle as oracle
 from scripts.verify_portable import win32_stat_receipts
 
 
@@ -22,7 +22,7 @@ HANDLE_DAMAGES = ('probe-count', 'handle-leak', 'failure-missing', 'failure-code
 @pytest.fixture(scope='module')
 def actual_pair(tmp_path_factory):
     output = tmp_path_factory.mktemp('win32-stat-pair') / 'paired.json'
-    completed = subprocess.run([sys.executable, str(ROOT / 'scripts/win32_stat_oracle.py'), '--output', str(output)],
+    completed = subprocess.run([sys.executable, str(ROOT / 'scripts/current_win32_stat_oracle.py'), '--output', str(output)],
         cwd=str(ROOT), capture_output=True, timeout=200)
     assert completed.returncode == 0, completed.stdout + completed.stderr + output.read_bytes()
     summary = json.loads(output.read_text(encoding='utf-8'))

@@ -1,0 +1,41 @@
+{
+  "contract": "C9-CL",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "status": "targeted passed; unified qualification pending",
+  "scope": "Unchanged stat/lstat/raw identity contract rerun against current pinned Source/Node24 and actual Python3.8.10 checkout and extracted product; current qualification now selects the extracted interpreter explicitly.",
+  "checks": [
+    {
+      "run": "rc022-current-stat-consumers-20261118-01",
+      "passed": 38,
+      "seconds": 3.18
+    },
+    {
+      "run": "rc022-current-stat-controls-20261118-01",
+      "passed": 50,
+      "seconds": 4.6
+    }
+  ],
+  "verification_reason": "All original metadata corruption, exact import-byte closure, runtime identity and successful/failed handle ownership controls retained. Direct Portable negative controls and real extracted stat provider cover selected interpreter and cleanup.",
+  "extracted": {
+    "run": "rc022-current-extracted-stat-20261118-02",
+    "report": {
+      "status": "matched",
+      "cases": 7,
+      "observationsSha256": "d9ab8e7c24d04a47dc84118d7dad7f0918231ff3fb6307d0e8c3099acd46291c",
+      "handle_probes": 256,
+      "handle_failure_boundaries": 2,
+      "inputs_unchanged": true,
+      "archive_qualified": false
+    }
+  },
+  "cleanup": {
+    "bytes_removed": 902155,
+    "retained": "Raw reports, Source inputs, exact file metadata and handle observations, logs/XML. Run01 cleanup failure retained: private single-link read-only fixture now explicitly restored after its last consumer and retired."
+  },
+  "input_sha256": {
+    "scripts/current_win32_stat_oracle.py": "f90d05640289a3d46a30746521af0a8377bab3dad1a72afec609a58bcfde5dac",
+    "scripts/current_portable_gate.py": "45a5f6c9b3091f8f12c814d8181f805ba3c54aeda64cd235d6e06c90247c3e9d",
+    "tests/test_win32_stat_consumers.py": "1b6f1f995505921f87fe6149efe2c09af9252dda74a916504d51b725e4c0b3d1"
+  },
+  "limitations": "Debug extraction has seven previously recorded product patches; original ZIP is not qualified. Full current Python/Source/paired/Desktop and Windows7 acceptance are not established."
+}

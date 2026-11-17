@@ -9,6 +9,7 @@ import os
 from pathlib import Path
 import subprocess
 import sys
+import stat
 from types import SimpleNamespace
 import zipfile
 
@@ -92,6 +93,32 @@ def sdk_journey(source, node, portable, output, frozen):
     os.environ['PATH'] = str(node.parent) + os.pathsep + previous
     try: return _sdk_journey(source, node, portable, output, frozen)
     finally: os.environ['PATH'] = previous
+
+
+def metadata_journey(source, node, portable, output, frozen):
+    from scripts import current_win32_stat_oracle as oracle
+    destination = output / 'metadata'; destination.mkdir()
+    result = destination / 'paired.json'
+    environment = dict(os.environ, PATH=str(node.parent) + os.pathsep + os.environ['PATH'])
+    execute([sys.executable, str(ROOT / 'scripts/current_win32_stat_oracle.py'),
+             '--source-root', str(source), '--native-root', str(portable),
+             '--native-python', str(portable / 'python.exe'), '--output', str(result)],
+            ROOT, destination, 'metadata', environment, 200)
+    source_value = json.loads(result.with_suffix('.source.json').read_text(encoding='utf-8'))
+    native = json.loads(result.with_suffix('.native.json').read_text(encoding='utf-8'))
+    oracle.identity(source_value, source)
+    oracle.validate_runtime(native, portable, portable / 'python.exe', source_value,
+                            {name: frozen[name] for name in oracle.REQUIRED_MODULES})
+    # No metadata or process consumer remains after the complete rows/handles
+    # and actual import hashes have been validated and saved.
+    from scripts.rc022_gate_runner import retire_success
+    readonly = destination / 'paired.files/metadata-change.txt'
+    info = readonly.lstat()
+    require(info.st_nlink == 1 and not getattr(info, 'st_file_attributes', 0) & 0x400,
+            'Metadata fixture is shared or linked')
+    readonly.chmod(stat.S_IREAD | stat.S_IWRITE)
+    retire_success(destination, ['paired.files', 'paired-environment'])
+    return json.loads(result.read_text(encoding='utf-8'))
 
 
 def office_journey(portable, workspace, output, env, source, architecture):
@@ -184,6 +211,7 @@ def qualify(args):
             env = product_environment(portable, workspace)
             report['runtime'] = runtime_journey(portable, workspace, output, env, args.architecture)
             report['office'] = office_journey(portable, workspace, output, env, source, args.architecture)
+            report['metadata'] = metadata_journey(source, node, portable, output, frozen['native'])
             if args.architecture == 'x64':
                 report['sdk'] = sdk_journey(source, node, portable, output, frozen['native'])
                 report['browsers'] = browser_journeys(portable, workspace, output, env, node,

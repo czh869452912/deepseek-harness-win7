@@ -2,6 +2,8 @@
 
 固定目标：`38a6a5c965aa99ab525161efb7cc5cf1fe62fced`。本页记录定向检查；生产 pin 已在 C9-CC 协调切换，`accepted_upstream` 仍为 null，完整资格待后续验证。
 
+C9-CL：Windows 元数据消费者使用当前固定原版和 Node24 重新对照；原有 38 项控制保留，最终相关定向检查 50 项通过。实际解压 Python 完成全部 7 类文件和 256 次句柄探测，显式检查所选解释器和导入字节；只读测试文件在最后消费者结束后恢复并清理。完整冻结资格仍待后续。[精确记录](current-metadata-consumers-checks.json)。
+
 C9-CK：SDK 消费者迁移至当前 Messages/v4 协议，保留原有 59 项控制，新增上传区间、会话、事件和时钟破坏性检查；新增检查与解压门禁等共 17 项通过。实际解压三场景完整事实与原版一致，运行末尾因同时更新门禁清单触发输入冻结失败，原失败保留并另行定向复核，未声明完整资格。清理约 18.6 MB 已用完资产。[精确记录](current-sdk-consumers-checks.json)。
 
 C9-CJ：实际解压的隔离 Python 3.8.10 与原版 Chromium108 完成 Schedule/Discover 的首次运行和冷恢复四阶段。修复 Portable 插件列表重复扫描安装图造成的阻塞；每次查询复用解析器，下一次查询重新读取文件。48 项定向控制与固定 Source 清单/选择对照通过，旧失败诊断和会话保留，失效测试资产已清理。此次使用显式修补的调试解压目录，不认证原 ZIP；冻结包统一资格仍待完成。[精确记录](current-application-journeys-checks.json)。

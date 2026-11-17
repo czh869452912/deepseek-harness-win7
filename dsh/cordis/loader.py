@@ -755,11 +755,52 @@ def evaluate_expr(ctx: Any, expr: str) -> Any:
             if name == 'node:path':
                 class _Path:
                     @staticmethod
+                    def join(*parts):
+                        if any(not isinstance(part, str) for part in parts):
+                            raise TypeError('path arguments must be strings')
+                        return os.path.normpath(os.path.join(*parts) if parts else '.')
+
+                    @staticmethod
+                    def dirname(path):
+                        if not isinstance(path, str):
+                            raise TypeError('path arguments must be strings')
+                        return os.path.dirname(path) or '.'
+
+                    @staticmethod
                     def resolve(*parts):
                         if any(not isinstance(part, str) for part in parts):
                             raise TypeError('path arguments must be strings')
                         return os.path.abspath(os.path.join(*parts) if parts else '.')
                 return _Path
+            if name == 'node:module':
+                class _Module:
+                    @staticmethod
+                    def createRequire(base):
+                        from pathlib import Path
+                        from dsh.boot.plugin_packages import _parent, _BUILTINS
+                        from dsh.boot.package_resolution import resolve_plugin_resource, PackageResolutionError
+                        if not isinstance(base, str) or not (base.startswith('file:') or os.path.isabs(base)):
+                            raise TypeError('createRequire requires a file URL or absolute path')
+                        parent = base if base.startswith('file:') else Path(base).as_uri()
+                        if _parent(parent) is None:
+                            raise TypeError('createRequire requires a file URL or absolute path')
+                        class _Require:
+                            @staticmethod
+                            def resolve(specifier):
+                                if not isinstance(specifier, str):
+                                    raise TypeError('module specifier must be a string')
+                                if specifier in _BUILTINS or specifier.startswith('node:'):
+                                    return specifier
+                                packages = context_get('pluginPackages') if callable(context_get) else None
+                                try:
+                                    return resolve_plugin_resource(specifier, parent, packages,
+                                        conditions=frozenset(('node','require','module-sync','node-addons')))
+                                except PackageResolutionError as error:
+                                    if error.code == 'ERR_MODULE_NOT_FOUND':
+                                        error.code = 'MODULE_NOT_FOUND'
+                                    raise
+                        return _Require
+                return _Module
             raise ValueError('Unsupported expression builtin: ' + str(name))
 
     class _JSON:

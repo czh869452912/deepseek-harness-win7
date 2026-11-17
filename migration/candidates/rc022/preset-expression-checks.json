@@ -1,0 +1,38 @@
+{
+  "part": "C9-G",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "scope": "Official preset read-only path and package resolution expressions",
+  "paired": {
+    "run": "rc022-preset-expression-paired-20261117-01",
+    "observations": 8,
+    "differences": 0,
+    "method": "Actual fixed vendor/loader evaluate versus Native evaluate_expr, exact resolved paths/values and error codes."
+  },
+  "verification": {
+    "native": "11 passed: actual installation/profile package routing, new expression journeys, existing expression interpolation and actual Desktop office config consumers.",
+    "application": "candidate7 official Web boot no longer reports filesystem skill activation errors. Current 75-entry client graph still serves its 3 GET/HEAD batches. Later schedule/plugin-market and missing Node PTC remain open."
+  },
+  "behavior": [
+    "Adds node:path.join/dirname and read-only node:module.createRequire(...).resolve(...) to the existing finite expression adapter. Module bodies are not evaluated.",
+    "Require resolution uses the actual profile/installation package router and explicit require conditions; export blocks and missing packages keep their Node-style codes. Current official customSkillDirs expression reaches the owning preset package skills directory.",
+    "Candidate probe records loader and Session composition consumer hashes along with its existing inputs."
+  ],
+  "diagnostics": [
+    "First new fixture used Python reserved import as a dict keyword and failed collection; corrected the fixture and retained the original collection log/XML.",
+    "The earlier Object None is not callable came from path.join missing in the expression scope, before the filesystem provider mounted; it was not a provider-register callback failure."
+  ],
+  "runs": [
+    "rc022-preset-expression-native2-20261117-01",
+    "rc022-application-candidate7-20261117-01"
+  ],
+  "cleanup": {
+    "bytes_removed": 24429,
+    "links_removed": 524,
+    "owned_processes_after": [],
+    "retained": "Paired values/codes, commands, Native logs/XML/observations and actual failed application diagnostics; owned synthetic files, homes and short workspaces removed."
+  },
+  "limitations": [
+    "The expression interpreter remains a documented finite Native adapter; this does not certify arbitrary Node require/module execution or full CommonJS relative/extension lookup behavior.",
+    "No preset-session/application, complete regression, Portable/browser/Win7 acceptance or upstream promotion follows."
+  ]
+}

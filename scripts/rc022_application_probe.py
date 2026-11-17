@@ -95,6 +95,7 @@ def main():
         source/'packages/bundle/web-app/package.json',source/'packages/bundle/web-app/cordis.patch.yml',
         source/'packages/client/modules/src/index.ts',source/'packages/client/modules/src/assets.ts',
         Path(__file__).resolve(),ROOT/'dsh/boot/plugin_registry_current.py',
+        ROOT/'dsh/cordis/loader.py',ROOT/'dsh/api/session_agents_current.py',
         ROOT/'dsh/host/client_modules/current.py',ROOT/'dsh/host/client_modules/resources_current.py',ROOT/'dsh/host/client_modules/assets_current.py']
     result['input_sha256']={path.relative_to(ROOT).as_posix():hashlib.sha256(path.read_bytes()).hexdigest() for path in inputs}
     result['source_clean_after']=not subprocess.check_output(['git','-C',str(source),'status','--porcelain','--untracked-files=no'],encoding='utf-8').strip()

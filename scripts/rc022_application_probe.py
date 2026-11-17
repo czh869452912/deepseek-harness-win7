@@ -18,6 +18,7 @@ ROOT=Path(__file__).resolve().parents[1]
 sys.path.insert(0,str(ROOT))
 TARGET='38a6a5c965aa99ab525161efb7cc5cf1fe62fced'
 BINDINGS={
+ '@deepseek-ai/dsh-schedule':'dsh.schedule.service_current:CurrentScheduleService',
  '@deepseek-ai/dsh-client-modules':'dsh.host.client_modules.current:CurrentClientModulesPlugin',
  '@deepseek-ai/dsh-cordis-host-runner':'dsh.extensions.host_runner_current:CurrentDynamicCordisRunner',
  '@deepseek-ai/dsh-tool-cordis':'dsh.extensions.inspect_tools_current:CurrentCordisInspectTools',

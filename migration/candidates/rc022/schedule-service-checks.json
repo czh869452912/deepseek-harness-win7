@@ -1,0 +1,36 @@
+{
+  "part": "C9-S",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "scope": "Host Schedule management service, explicit Remote methods and candidate application binding",
+  "paired": {
+    "run": "rc022-schedule-service-paired2-20261117-01",
+    "observations": 28,
+    "differences": 0,
+    "method": "Actual Cordis service, routed DomainFacility and single JSON backend in Source and Native. Exact normalized management results/errors, target validation, notices, revision conflicts, batch removal and observer containment; generated identities normalized bijectively."
+  },
+  "verification": {
+    "native": "16 passed: management composition and nine Remote exports, held notice flush/close, abandoned caller vs accepted write, signal cancellation after FIFO wait, repeated destination validation, archive stop after a held create, ordinary/unknown-state batch failure, runtime and batch consumers.",
+    "source": "45 original management, serial-delivery, change-notice and delete-inactive tests passed."
+  },
+  "behavior": [
+    "Installs a Host service with current create/list/catalog/view/history/run/edit/deleteInactive/deliveryLimits Remote exports. Management reads and writes do not activate Sessions; target validation reads only live ownership or persisted headers and is repeated inside the write FIFO.",
+    "Edits atomically revise target, content, timing and status, keep update time monotonic through rollback, detect expectedUpdatedAt conflicts and clear invalidated delivery reservations.",
+    "Notifications are queued after durable commits, skip the actor and inactive Sessions, inject into the next model step and flush idle Agents without holding up management results. Teardown drains accepted mutation and notification queues before domain close.",
+    "Archive admission reads stored active targets and stopping a Session removes them in the same mutation FIFO. Batch rejection announces reread; unknown-state quarantine blocks later operations.",
+    "Only the isolated candidate application's Schedule binding changes. Production package pins and historical Schedule entry remain unchanged pending the rest of current composition."
+  ],
+  "application": {
+    "run": "rc022-application-candidate8-20261117-01",
+    "exit_code": 1,
+    "result": "Fixed official Web composition booted and Minimal Session creation passed. Standard and PTC still refuse the unmapped current Schedule tool provider; Creative additionally lacks plugin-market/tools. Node PTC runtime remains an activation warning. This is partial application progress, not a passing application gate."
+  },
+  "cleanup": {
+    "bytes_removed": 91703,
+    "owned_processes_after": [],
+    "retained": "Pair observations/input hashes, Source results, Native logs/XML and application task/session-error diagnostics. Owned synthetic JSON files, short workspaces, application home and isolated test homes removed."
+  },
+  "limitations": [
+    "Current Schedule tools, full live Agent/Session/Remote browser delivery and remaining application providers still require integration. SQLite/per-record atomic batch providers remain pending.",
+    "No complete regression, Portable/browser/Win7 acceptance or upstream promotion."
+  ]
+}

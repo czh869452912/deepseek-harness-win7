@@ -495,3 +495,5 @@
 | C9-BG | SDK 2 wire timers/progress, raw abort reasons, serving ProtocolError and per-request HTTP cancellation match Original; disconnect and overlapping siblings checked | [MCP wire requests](mcp-request-checks.json) |
 
 | C9-BH | Pure x-mcp-header declaration reachability, primitive argument paths and exact field-value encoding match 275 Original observations | [MCP parameter header rules](mcp-param-headers-checks.json) |
+
+| C9-BI | Modern HTTP filters invalid declarations, preserves reserved headers and recovers one header mismatch with refreshed schema; actual wire and consumers checked | [MCP header transport](mcp-header-transport-checks.json) |

@@ -70,7 +70,7 @@ async def request(owner, packet, signal, timeout, options):
         states = owner._sdk_requests = {}
     state = dict(future=future,started=now_ms(),max_total=options.get('maxTotalTimeout'),
         reset=options.get('resetTimeoutOnProgress',False),onprogress=options.get('onprogress'),
-        delay=delay_seconds(timeout),cancel=None,server_error=False)
+        delay=delay_seconds(timeout),cancel=None,server_error=False,headers=options.get('headers'))
     states[key] = state
     missing = object()
     def fail(error, cancel, raw_reason=missing):

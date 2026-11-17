@@ -59,6 +59,7 @@ class _DisposableProbe(StdioMcpClient):
 
 
 class CurrentStdioMcpTransport(NegotiatedProtocol, StdioMcpClient):
+    transport_kind = 'stdio'
     def __init__(self, command, args=None, env=None, cwd='', negotiation=None):
         super().__init__(command, args, env, cwd)
         self.negotiation = negotiation if negotiation is not None else _AUTO

@@ -13,6 +13,7 @@ class CurrentSdkClient:
         self._wire = None
         self.onclose = None
         self.on_notification = None
+        self.onerror = None
         self.input_required = dict(input_required or {})
         self._cache = CurrentResponseCache()
         self.default_cache_ttl_ms = default_cache_ttl_ms
@@ -110,9 +111,10 @@ class CurrentSdkClient:
             value = parse(schema, value, RESOURCE_SCHEMAS)
         return value
 
-    async def _list(self, method, key, params=None, options=None):
+    async def _list(self, method, key, params=None, options=None, finalize=None):
         if params is not None and 'cursor' in params:
-            return await self.request(dict(method=method, params=params), options)
+            result = await self.request(dict(method=method, params=params), options)
+            return finalize(result) if finalize is not None else result
         hit = self._cached(method, '', options)
         if hit is not None:
             return hit
@@ -134,12 +136,30 @@ class CurrentSdkClient:
             result[key].extend(following[key])
             previous, cursor, pages = following, following.get('nextCursor'), pages+1
         result.pop('nextCursor', None)
+        if finalize is not None:
+            result = finalize(result)
         if (options or {}).get('cacheMode') != 'bypass':
             self._cache.write(method, '', result, generation, self._expires_at(result))
         return result
 
     async def listTools(self, params=None, options=None):
-        return await self._list('tools/list', 'tools', params, options)
+        return await self._list('tools/list', 'tools', params, options, self._filter_tools)
+
+    def _modern(self):
+        return self.transport is not None and (getattr(self.transport,'negotiated',None) or {}).get('era') == 'modern'
+
+    def _filter_tools(self, result):
+        if not self._modern() or getattr(self.transport,'transport_kind',None) == 'stdio':
+            return result
+        import logging
+        from dsh.mcp.param_headers_current import scan_declarations
+        tools = []
+        for tool in result['tools']:
+            scan = scan_declarations(tool.get('inputSchema'))
+            if scan['valid']:tools.append(tool)
+            else:logging.getLogger(__name__).warning("[mcp-sdk] excluding tool '%s' from tools/list: invalid x-mcp-header declaration — %s",tool['name'],scan['reason'])
+        if len(tools) != len(result['tools']):result['tools'] = tools
+        return result
 
     async def listResources(self, params=None, options=None):
         return await self._list('resources/list', 'resources', params, options)
@@ -162,16 +182,19 @@ class CurrentSdkClient:
                 self._cache.evict(method, uri)
         return result
 
-    async def callTool(self, params, options=None):
-        options = options or {}
+    def _definition(self, name, options):
         definition = options.get('toolDefinition')
         if 'toolDefinition' not in options:
             entry = self._cache.entries.get(('tools/list', ''))
             if entry is not None:
                 import json
                 for tool in json.loads(entry['value'])['tools']:
-                    if tool['name'] == params['name']:
+                    if tool['name'] == name:
                         definition = tool
+        return definition
+
+    async def _compile_tool_output(self, name, options):
+        definition = self._definition(name,options)
         from dsh.cordis.utils import _js_truthy as js_truthy
         schema = definition.get('outputSchema') if definition is not None else None
         if js_truthy(schema):
@@ -181,8 +204,35 @@ class CurrentSdkClient:
             compiled = await self._output_validator.observe(dict(schema=schema,compileOnly=True))
             if not compiled['compiled']:
                 message = compiled['message'].encode('utf-16-le','surrogatepass')[:400].decode('utf-16-le','surrogatepass')
-                raise CurrentProtocolError(-32602, "Tool '"+params['name']+"' has an invalid outputSchema: "+message)
-        result = await self.request(dict(method='tools/call', params=params), options)
+                raise CurrentProtocolError(-32602, "Tool '"+name+"' has an invalid outputSchema: "+message)
+        return schema
+
+    def _tool_send_options(self, params, options):
+        if not self._modern():return options
+        from dsh.mcp.param_headers_current import scan_declarations,build_param_headers
+        definition = self._definition(params['name'],options)
+        if definition is None:return options
+        scan = scan_declarations(definition.get('inputSchema'))
+        if not scan['valid']:return options
+        headers = build_param_headers(scan['declarations'],params.get('arguments'))
+        return dict(options,headers=dict(options.get('headers') or {},**headers)) if headers else options
+
+    async def callTool(self, params, options=None):
+        options = options or {}
+        schema = await self._compile_tool_output(params['name'],options)
+        try:
+            result = await self.request(dict(method='tools/call',params=params),self._tool_send_options(params,options))
+        except CurrentProtocolError as error:
+            if not self._modern() or error.code != -32020 or 'toolDefinition' in options:raise
+            self._cache.evict('tools/list')
+            refresh = {key:options[key] for key in ('signal','timeout') if key in options}
+            refresh['cacheMode'] = 'refresh'
+            try:await self.listTools(options=refresh)
+            except Exception as refresh_error:
+                if self.onerror is not None:self.onerror(refresh_error)
+            schema = await self._compile_tool_output(params['name'],options)
+            result = await self.request(dict(method='tools/call',params=params),self._tool_send_options(params,options))
+        from dsh.cordis.utils import _js_truthy as js_truthy
         if js_truthy(schema) and not js_truthy(result.get('isError')):
             if 'structuredContent' not in result:
                 raise CurrentProtocolError(-32600, 'Tool '+params['name']+' has an output schema but did not return structured content')

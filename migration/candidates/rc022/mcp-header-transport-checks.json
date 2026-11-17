@@ -1,0 +1,14 @@
+{
+  "contract": "C9-BI",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "status": "targeted passed",
+  "implementation": "Modern HTTP tools/list filters invalid x-mcp-header declarations before cache publication and on explicit pages; legacy and stdio listings remain intact. callTool mirrors held or caller-supplied definitions, retaining caller header options and primitive encoding. HTTP applies nonreserved per-request headers while keeping credentials/session/protocol/method/name/content-type transport-owned. One modern HEADER_MISMATCH evicts/refetches the tool list, recompiles its new output schema and retries once; caller overrides never enter that recovery. Refresh failures report to onerror and retry with the resulting held definition state.",
+  "verification": {
+    "paired": {"run": "rc022-mcp-header-transport-pair2-20261117-01", "cases": 16, "scope": "Actual original auto-negotiated Client/HTTP and Native with the same localhost server. Exact filtered names, error/result objects, recovered output schemas, request bodies and selected actual headers compare. Unicode/empty/whitespace/sentinel/boolean/number/null/object args, credential preservation, reserved header attempts, caller trace override, extra accept token, refresh failure, repeated mismatch, changed output schema, invalid refreshed schema before RPC, explicit cursor and caller definition escape hatch covered."},
+    "native": {"run": "rc022-mcp-header-transport-native-20261117-01", "passed": 129, "scope": "Full real HTTP header/recovery corpus, scoped stdio/legacy filtering boundary, pure 275-header corpus, wire timing/abort/overlap, cache/output x86/x64, multi-round and HTTP/stdio direct consumers."},
+    "earlier_consumers": {"run": "rc022-mcp-request-native2-20261117-01", "passed": 118, "scope": "Initial header integration before adding new consumer cases."},
+    "source": {"run": "rc022-mcp-header-transport-source-20261117-01", "passed": 106, "failed": 0, "scope": "Pinned mcp-client, protocol, reconnect, negotiation-lifecycle and tool-definition suites."}
+  },
+  "cleanup": {"bytes_removed": 1090959, "scope": "All owned initial/final workspaces/home/tmp removed after consumers. Commands/log/XML, HTTP packets, comparison observations and Source diagnostics retained.", "owned_processes_after": []},
+  "limitations": ["Shared/custom cache stores, caller-supplied validator engines and arbitrary VM regexp syntax-error prose remain outside the qualified default host API.", "OAuth/DPoP authentication providers, custom header callbacks and HTTP resumption are not established by this corpus.", "Targeted verification only, without production pin promotion, full release or actual Windows 7 qualification."]
+}

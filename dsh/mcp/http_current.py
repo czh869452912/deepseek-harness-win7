@@ -1,24 +1,14 @@
 """Current streamable HTTP: in-place era probe and SDK 2 request headers."""
 import asyncio
-import base64
 import json
 
-from dsh.host.http_proxy_policy import JS_SPACE
+from dsh.mcp.param_headers_current import encode_param_value as encode_mcp_param_value
 from dsh.mcp.http_client import StreamableHttpMcpClient
 from dsh.mcp.negotiated_protocol_current import NegotiatedProtocol
 from dsh.mcp.negotiation_current import SdkError, SdkHttpError
 from dsh.mcp.probe_current import negotiate_era, disarm_spent_close_guard
 from dsh.mcp.current import RESOURCE_SCHEMAS
 from dsh.mcp.schemas import parse
-
-
-def encode_mcp_param_value(value):
-    plain = value == value.strip(JS_SPACE) and not (value.startswith('=?base64?') and value.endswith('?='))
-    plain = plain and all(char == '\t' or 32 <= ord(char) <= 126 for char in value)
-    if plain:
-        return value
-    encoded = value.encode('utf-16-le', 'surrogatepass').decode('utf-16-le', 'replace').encode('utf-8')
-    return '=?base64?' + base64.b64encode(encoded).decode('ascii') + '?='
 
 
 class _HttpProbeChannel:
@@ -87,6 +77,12 @@ class CurrentStreamableHttpMcpTransport(NegotiatedProtocol, StreamableHttpMcpCli
                     'tasks/get':'taskId', 'tasks/update':'taskId', 'tasks/cancel':'taskId'}.get(packet['method'])
                 if field is not None and isinstance(params.get(field), str):
                     headers['mcp-name'] = encode_mcp_param_value(params[field])
+            if 'id' in packet:
+                state = getattr(self,'_sdk_requests',{}).get(self._identity(packet['id']))
+                for name,value in ((state or {}).get('headers') or {}).items():
+                    lower = name.lower()
+                    if lower not in ('authorization','dpop','content-type','mcp-protocol-version','mcp-method','mcp-name','mcp-session-id'):
+                        headers[lower] = value
             handshake = packet.get('method') == 'initialize'
             if handshake:
                 headers.pop('mcp-session-id', None)
@@ -137,6 +133,7 @@ class CurrentStreamableHttpMcpTransport(NegotiatedProtocol, StreamableHttpMcpCli
                 await self._release_writer(response.writer)
 
     has_per_request_stream = True
+    transport_kind = 'streamable-http'
 
     async def _write(self, packet):
         # The SDK request transaction owns this particular HTTP stream. Its

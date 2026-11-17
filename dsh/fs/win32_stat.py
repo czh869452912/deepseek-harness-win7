@@ -65,3 +65,17 @@ def node_stat(path, original, follow=True):
         return NodeStat(original, basic, identity)
     finally:
         selected.CloseHandle(handle)
+
+
+def node_fstat(descriptor, original=None):
+    """Query Node-compatible identity/change time on the opened file itself."""
+    import os
+    import msvcrt
+    selected = kernel()
+    handle = msvcrt.get_osfhandle(descriptor)
+    identity, basic = HandleInfo(), BasicInfo()
+    if not selected.GetFileInformationByHandle(handle, ctypes.byref(identity)):
+        raise ctypes.WinError(ctypes.get_last_error())
+    if not selected.GetFileInformationByHandleEx(handle, 0, ctypes.byref(basic), ctypes.sizeof(basic)):
+        raise ctypes.WinError(ctypes.get_last_error())
+    return NodeStat(os.fstat(descriptor) if original is None else original, basic, identity)

@@ -1,0 +1,24 @@
+{
+  "contract": "C9-BO",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "status": "Physical font volume targeted checks passed; default engine orchestration remains open",
+  "implementation": "Enumerate canonical sources with the original extension/file-count rules and UTF-16 directory order. A constant private prefix preserves physical path characters for the SDK's tie ordering; HTTP routes are opaque exact capabilities. Opened font descriptors verify regular-file identity and read bounds, recheck before closing, and validate physical paths before publishing. Windows fstat reads volume/file ID, write time and ChangeTime through existing Win7-compatible handle APIs rather than Python's Windows creation-time st_ctime.",
+  "verification": {
+    "native": {"run": "rc022-office-font-native4-20261117-01", "passed": 71, "seconds": 11.9, "scope": "Physical volume discovery/deduplication/order/capacity, bounded reads and closed descriptors, deleted/replaced/changed/grown/truncated files including restored mtime, abort, unknown snapshot sources, actual HTTP font failure propagation; browser carrier lifecycle regressions; existing strict Win32 metadata consumer checks."},
+    "actual_current_sdk_pairs": {"run": "rc022-office-font-pair2-20261117-01", "passed": 16, "seconds": 37.703, "scope": "Actual pinned original Node/WASM workers vs Python/Chromium over FontAsset streams. Physical dev/ino/size/mtime/ctime and all face properties compare, with explicit path-prefix translation. Present/missing fonts, exports, direct/PDF raster and failure limits still match. Host validates all returned observed source records after each operation."},
+    "x86_sdk": {"run": "rc022-office-sdk-font-x86-20261117-01", "status": "passed", "seconds": 1.812, "scope": "Actual font volume, SDK scan/match, DOCX to TXT and post-operation identity validation over 32-bit Python on this 64-bit host."},
+    "x86_identity": {"run": "rc022-office-font-identity-x86-20261117-01", "files": 4, "scope": "Independent Node 24 BigInt fstat equals 32-bit Python metadata for original Arial/Arial Bold/Courier New/Times New Roman; all bytes read through bounded owned descriptors and final paths revalidated."},
+    "legacy_consumer_scope": "Existing Win32 stat oracle intentionally retains its a4c74a91 Source/Node 22 identity. It is consumer regression evidence, not rc022 parity evidence. Its exact Native closure now includes eight Cordis modules introduced earlier in this migration; tests reject an omitted new module and a foreign module. No historical receipt is relabelled."
+  },
+  "diagnostics": [
+    "First expanded run selected a Node version that the legacy stat oracle rejects. The runner now selects its frozen Node 22 separately from the explicit Node 24 Office reference.",
+    "The second expanded run exposed the stale exact import closure. The explicit eight-module inventory was corrected without replacing strict equality by a subset check; final omission/foreign-member regressions pass.",
+    "Cleanup initially met the original metadata-change test's deliberately read-only synthetic file. After verifying its exact owned path, eight-byte size, completed consumer and single-link identity, only those four fixture attributes were cleared; removal completed."
+  ],
+  "scope_limits": [
+    "Explicit font roots and actual TTFs are qualified here. Default system/Office discovery, metadata caching, full host scheduling/output ownership and default officeKitEngine registration remain subsequent work.",
+    "No 32-bit OS/browser distribution, actual Windows 7 execution, Portable qualification, migration promotion or complete release gate is claimed."
+  ],
+  "cleanup": {"counted_bytes_removed": 1671373, "note": "Additional small files removed before the initial read-only cleanup interruption were not counted. All remaining owned workspaces/tmp/home roots were subsequently removed.", "removed": "Four pytest workspaces and owned roots; consumed matrix inputs/requests and superseded first-matrix payloads; verified byte-identical older SDK PNG/TXT copies. No task-owned browser remains.", "retained": "Compact logs/XML and original failed metadata reports; latest actual Source/browser outputs and distinct date-bearing exports retained for default-engine orchestration at C9-BP. Shared Source/font/browser assets remain unchanged.", "owner": "rc022 C9 Office host integration"},
+  "next": "Connect validated runtime/font ownership to the SDK host operation lifecycle, then mount the default Office engine and finish workbook/presentation and Portable acceptance."
+}

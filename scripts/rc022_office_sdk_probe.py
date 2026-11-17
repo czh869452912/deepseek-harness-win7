@@ -14,6 +14,7 @@ import zipfile
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from dsh.office.browser_carrier import BrowserCarrier
+from dsh.office.font_volume import FontVolume
 
 
 def digest(data):
@@ -48,16 +49,13 @@ async def main():
     for name, file in assets.items():
         assert hashlib.sha256(file.read_bytes()).hexdigest() == engine_manifest['files']['assets/' + name]
     assets['sdk.js'] = runtime / 'worker.js'
-    files, physical, names = {}, [], []
-    for index, name in enumerate(sorted(['arial.ttf', 'arialbd.ttf', 'times.ttf', 'cour.ttf'])):
+    physical = []
+    for name in sorted(['arial.ttf', 'arialbd.ttf', 'times.ttf', 'cour.ttf']):
         path = Path(os.environ['WINDIR']) / 'Fonts' / name
-        stat = path.stat()
-        route = 'font-' + str(index) + '.ttf'
-        assets[route] = path
-        names.append(name)
         physical.append(str(path))
-        files['/fonts/' + name] = dict(route=route, identity=dict(dev=str(stat.st_dev), ino=str(stat.st_ino), size=stat.st_size,
-                                                               mtimeNs=str(stat.st_mtime_ns), ctimeNs=str(stat.st_ctime_ns)))
+    volume = FontVolume(physical)
+    empty_volume = FontVolume([])
+    assets.update(volume.assets)
     fixture = source / 'packages/bundle/web-app/tests/fixtures/document-conversion.docx'
     original = fixture.read_bytes()
     def changed_font(name):
@@ -82,7 +80,7 @@ async def main():
               dict(name='no-fonts', noFonts=True, operation=dict(format='txt', recalculate=False))]
     rows = []
     report = dict(command=[sys.executable] + sys.argv, target_upstream=target, runtime_manifest=digest((runtime / 'manifest.json').read_bytes()), rows=rows,
-                  comparison_scope='Actual physical fonts and unchanged SDK scan/match/export/raster bodies. Font paths translate into a private POSIX volume; physical identity/generation fields are retained but not equated across carriers. Fixed fonts are explicit providers, not default discovery or disk-cache qualification.')
+                  comparison_scope='Actual identity-checked physical font assets and unchanged SDK scan/match/export/raster bodies. Original path characters follow a constant private prefix. Snapshot sources validate before publishing. Explicit roots, not default discovery or disk-cache qualification.')
     carrier = BrowserCarrier(str(args.browser.resolve()), temporary_directory=str(temporary))
     def normalize(value):
         if isinstance(value, bytes):
@@ -93,7 +91,7 @@ async def main():
             return {key: normalize(item) for key, item in value.items() if key not in ('stack', 'snapshot', 'fontCache', 'files', 'adapter')}
         if isinstance(value, str):
             if value in physical:
-                return '/fonts/' + Path(value).name
+                return '/physical/' + os.path.realpath(value)
             return value
         return value
     try:
@@ -107,9 +105,10 @@ async def main():
                 data = (out / 'docx-pdf/browser-output.pdf').read_bytes()
             input_path = run / ('input.' + extension)
             input_path.write_bytes(data)
-            options = dict(fontDirectories=['/fonts'], includeOfficeFonts=False, fontMetadataCacheDirectory=False, **case.get('options', {}))
+            selected_volume = empty_volume if case.get('noFonts') else volume
+            options = dict(fontDirectories=selected_volume.paths, includeOfficeFonts=False, fontMetadataCacheDirectory=False, **case.get('options', {}))
             request = dict(engine=dict(backend='wasm', loader='dsoffice.cjs', data='dsoffice.data', wasm='dsoffice.wasm', metadata='dsoffice.data.js.metadata', programDirectory='/instdir/program'),
-                           options=options, volume=dict(files={} if case.get('noFonts') else files, directories={'/fonts': [] if case.get('noFonts') else names, '/output': []}),
+                           options=options, volume=selected_volume.manifest(),
                            scanOnly=case.get('scanOnly', False), extension=extension, inputRoute='input.' + extension,
                            operation=case.get('operation', dict(format='pdf', recalculate=False)), inputPath=str(input_path), fontPaths=[] if case.get('noFonts') else physical)
             request_path = run / 'request.json'
@@ -121,12 +120,14 @@ async def main():
             local_assets = dict(assets, **{'request.json': request_path, 'input.' + extension: input_path})
             browser = await carrier.run("importScripts('sdk.js')", local_assets, timeout=60)
             assert browser['adapter'] == dict(openDescriptors=0, retainedReadBuffers=0)
+            if 'snapshot' in browser:
+                selected_volume.validate(browser['snapshot']['records'])
             raw_source = json.loads((run / 'source/report.json').read_text(encoding='utf-8'))
             native = normalize(browser)
             expected = normalize(raw_source.get('result', raw_source['snapshot']))
             # Scan identity/generation contain physical carrier paths and stat representations.
             if case.get('scanOnly') and browser.get('ok'):
-                keys = ('path', 'size', 'faceIndex', 'family', 'style', 'aliases', 'weight', 'width', 'fixed', 'italic', 'postscriptName')
+                keys = ('path', 'dev', 'ino', 'size', 'mtimeMs', 'ctimeMs', 'faceIndex', 'family', 'style', 'aliases', 'weight', 'width', 'fixed', 'italic', 'postscriptName')
                 native['faces'] = [{key: normalize(face[key]) for key in keys} for face in browser['snapshot']['faces']]
                 expected['faces'] = [{key: normalize(face[key]) for key in keys} for face in raw_source['snapshot']['snapshot']['faces']]
             if 'output' in browser:

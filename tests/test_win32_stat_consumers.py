@@ -15,7 +15,7 @@ ROOT = Path(__file__).resolve().parents[1]
 pytestmark = pytest.mark.skipif(os.name != 'nt', reason='Windows metadata provider contract')
 VALUE_DAMAGES = ('stat-version', 'lstat-version', 'directory-size', 'change-time', 'file-identity',
     'missing', 'order', 'row', 'unknown', 'size-type')
-RUNTIME_DAMAGES = ('module', 'bytes', 'root', 'python', 'executable', 'workspace')
+RUNTIME_DAMAGES = ('module', 'expanded-module', 'foreign-module', 'bytes', 'root', 'python', 'executable', 'workspace')
 HANDLE_DAMAGES = ('probe-count', 'handle-leak', 'failure-missing', 'failure-code', 'failure-close', 'failure-order', 'failure-type')
 
 
@@ -72,6 +72,10 @@ def damage_runtime(native, damage, root):
         native['rows'][1]['stat']['size'] = False
     elif damage == 'module':
         del native['modules']['dsh/fs/win32_stat.py']
+    elif damage == 'expanded-module':
+        del native['modules']['dsh/cordis/include_journal.py']
+    elif damage == 'foreign-module':
+        native['modules']['dsh/foreign.py'] = '0' * 64
     elif damage == 'root':
         native['root'] = str(root.parent)
     elif damage == 'python':

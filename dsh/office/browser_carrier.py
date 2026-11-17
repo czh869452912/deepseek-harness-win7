@@ -182,7 +182,9 @@ class BrowserCarrier:
                 elif name in assets:
                     try:
                         # Open before responding so missing inputs cannot become a success.
-                        with Path(assets[name]).open('rb') as stream:
+                        asset = assets[name]
+                        opener = getattr(asset, 'open', None)
+                        with (opener('rb') if opener is not None else Path(asset).open('rb')) as stream:
                             self.send_response(200)
                             self.send_header('Content-Type', 'application/wasm' if name.endswith('.wasm') else
                                              'application/javascript' if name.endswith(('.cjs', '.js')) else 'application/octet-stream')
@@ -196,8 +198,12 @@ class BrowserCarrier:
                                 if not chunk:
                                     break
                                 self.wfile.write(chunk)
-                    except OSError:
-                        # Browser/worker error or operation deadline owns failure settlement.
+                    except ConnectionError:
+                        self.close_connection = True
+                    except (OSError, OfficeKitError) as cause:
+                        error = cause if isinstance(cause, OfficeKitError) else OfficeKitError(
+                            'unavailable', 'The Office worker asset could not be read.', cause=cause)
+                        loop.call_soon_threadsafe(settle, None, error)
                         self.close_connection = True
                 else:
                     self.reply(404)

@@ -17,6 +17,9 @@ REQUIRED_MODULES = frozenset(('dsh/__init__.py', 'dsh/fs/fs_local.py', 'dsh/fs/w
     'dsh/cordis/' + name + '.py' for name in ('__init__', 'awaiting', 'context', 'environment', 'errors', 'events',
         'fiber', 'hmr', 'include', 'loader', 'logger', 'plugin', 'profile', 'reflect', 'registry', 'schema',
         'service', 'timer', 'utils')))
+REQUIRED_MODULES = REQUIRED_MODULES | frozenset('dsh/cordis/' + name + '.py' for name in (
+    'hmr_files', 'hmr_modules', 'hmr_paths', 'include_journal', 'include_patch',
+    'include_persistence', 'loader_diff', 'volatile'))
 
 
 def digest(path):

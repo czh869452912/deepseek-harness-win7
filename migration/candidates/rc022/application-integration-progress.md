@@ -507,3 +507,5 @@
 | C9-BM | Python 3.8 stdlib carrier runs actual pinned WASM conversion on x64/x86 Python, preserves bytes and owns worker/browser cancellation and cleanup; 17 actual browser boundaries checked | [Office Python carrier](office-python-carrier-checks.json) |
 
 | C9-BN | Pinned Office SDK scan/match/export/raster bodies run through the browser volume; 16 actual Original/WASM pairs, exact PNGs and reproducible build checked | [Office SDK browser adapter](office-sdk-browser-checks.json) |
+
+| C9-BO | Physical font reads enforce snapshot identity and bounds through opened Windows handles; post-operation validation, 16 actual SDK pairs, 71 checks and x86 identity/conversion verified | [Office physical font volume](office-font-volume-checks.json) |

@@ -111,8 +111,9 @@ class FontVolume:
     so SDK localeCompare tie ordering retains the physical path characters.
     HTTP names are opaque and never grant access to a directory or raw path.
     """
-    def __init__(self, directories, *, max_files=20000, max_file_bytes=268435456, check=None):
+    def __init__(self, directories, *, max_files=20000, max_file_bytes=268435456, check=None, include_directories=False):
         self.assets, self.files, self.sources = {}, {}, {}
+        self.directories = {}
         self.paths = []
         visited = set()
         pending = list(reversed(directories))
@@ -137,6 +138,18 @@ class FontVolume:
                     if error.errno in ABSENT:
                         continue
                     raise
+                if include_directories:
+                    entries = []
+                    for name in names:
+                        try:
+                            child = _lstat(os.path.join(canonical, name))
+                        except OSError as error:
+                            if error.errno in ABSENT:
+                                continue
+                            raise
+                        kind = 'directory' if stat.S_ISDIR(child.st_mode) else 'file' if stat.S_ISREG(child.st_mode) else 'other'
+                        entries.append(dict(name=name, kind=kind))
+                    self.directories['/physical/' + canonical] = entries
                 pending.extend(os.path.join(canonical, name) for name in sorted(
                     names, key=lambda value: value.encode('utf-16-be', 'surrogatepass'), reverse=True))
             elif stat.S_ISREG(info.st_mode) and os.path.splitext(canonical)[1].lower() in EXTENSIONS:
@@ -151,7 +164,7 @@ class FontVolume:
                 self.paths.append(virtual)
 
     def manifest(self):
-        return dict(files=self.files, directories={})
+        return dict(files=self.files, directories=self.directories)
 
     def validate(self, records):
         for record in records:

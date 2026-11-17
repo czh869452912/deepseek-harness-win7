@@ -7,9 +7,9 @@ const engineAssets=path.join(source,'node_modules/.pnpm/@deepseek-ai+libreoffice
 const text=fs.readFileSync(path.join(pkg,'lib/index.js'),'utf8');
 const defaults=vm.runInNewContext(text.slice(text.indexOf('const SANS_CJK_FAMILIES ='),text.indexOf('const FONT_COLLECTION_NAMES ='))+'\n({DEFAULT_LIMITS,FONT_FALLBACKS})');
 const options={...defaults.DEFAULT_LIMITS,initialFontFamilies:[],fontFallbacks:defaults.FONT_FALLBACKS,...request.options,
- fontDirectories:request.fontPaths,includeOfficeFonts:false,fontMetadataCacheDirectory:false};
+ fontDirectories:request.fontPaths,includeOfficeFonts:request.options.includeOfficeFonts??false,fontMetadataCacheDirectory:false};
 async function run(file,data){
- const worker=new Worker(pathToFileURL(path.join(pkg,'lib',file)),{workerData:data}),messages=[];
+ const worker=new Worker(pathToFileURL(path.join(pkg,'lib',file)),{workerData:data,env:{...process.env,...request.host?.env}}),messages=[];
  try{return await new Promise((resolve,reject)=>{
   const timer=setTimeout(()=>reject(Error('Original worker deadline')),60000);
   worker.on('message',value=>{messages.push(value);if('ok' in value){clearTimeout(timer);resolve({value,messages});}});

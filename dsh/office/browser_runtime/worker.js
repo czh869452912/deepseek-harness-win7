@@ -8019,6 +8019,14 @@
   var nextFd = 1;
   var allowedAssets = /* @__PURE__ */ new Set();
   var messages = [];
+  var host = { platform: "linux", home: "/profile", env: {} };
+  function hostEnvironment(value) {
+    host = value;
+    globalThis.process = { platform: host.platform, env: host.env };
+  }
+  function physical(path) {
+    return files.has(path) || directories.has(path) ? path : "/physical/" + path;
+  }
   var workerData;
   var parentPort = { postMessage(value) {
     messages.push(value);
@@ -8068,7 +8076,7 @@
   }
   var constants = { O_RDONLY: 0, O_NONBLOCK: 0, O_NOFOLLOW: 0 };
   function openSync(path) {
-    const file = files.get(path);
+    const file = files.get(physical(path));
     if (!file) throw absent(path);
     const fd2 = nextFd++;
     descriptors.set(fd2, { ...file });
@@ -8095,6 +8103,7 @@
     return encoding ? data.toString(encoding) : data;
   }
   function statSync(path) {
+    path = physical(path);
     if (directories.has(path)) return status({}, true);
     const file = files.get(path);
     if (!file) throw absent(path);
@@ -8102,11 +8111,12 @@
   }
   function realpathSync(path) {
     statSync(path);
-    return path;
+    return physical(path);
   }
-  function readdirSync(path) {
-    if (!directories.has(path)) throw absent(path);
-    return [...directories.get(path)];
+  function readdirSync(path, options) {
+    const entries = directories.get(physical(path));
+    if (!entries) throw absent(path);
+    return entries.map((entry) => options?.withFileTypes ? { name: entry.name, isDirectory: () => entry.kind === "directory", isFile: () => entry.kind === "file" } : typeof entry === "string" ? entry : entry.name);
   }
   function mkdirSync(path) {
     if (directories.has(path)) throw Error("Memory directory already exists.");
@@ -8143,6 +8153,10 @@
     return path.startsWith("/");
   }
   function join(...parts) {
+    if (host.platform === "win32" && (/^[A-Za-z]:[\\/]|^\\\\/.test(parts[0] || "") || parts[0]?.startsWith("/physical/"))) {
+      const text3 = parts.filter(Boolean).join("\\").replaceAll("/", "\\");
+      return (text3.startsWith("\\\\") ? "\\" : "") + text3.replace(/\\+/g, "\\").replace(/^\\physical\\/, "/physical/");
+    }
     const text2 = parts.filter(Boolean).join("/"), absolute = text2.startsWith("/"), stack = [];
     for (const part of text2.split("/")) {
       if (!part || part === ".") continue;
@@ -8152,11 +8166,11 @@
     return (absolute ? "/" : "") + stack.join("/") || ".";
   }
   var posix = { join, isAbsolute, basename, extname };
-  var win32 = { join() {
-    throw Error("Physical Windows discovery requires the host font provider.");
+  var win32 = { join(...parts) {
+    return join(...parts);
   } };
   function homedir() {
-    return "/profile";
+    return host.home;
   }
   function createHash(algorithm) {
     if (algorithm !== "sha256") throw Error("Unsupported Office digest.");
@@ -23301,9 +23315,9 @@
         codePoints: []
       }, new AbortController().signal);
       for (const face of result.fonts) {
-        const physical = `${face.path}#${extname(face.path).toLowerCase() === ".dfont" ? face.faceIndex : ""}`;
-        if (files3.has(physical)) continue;
-        files3.add(physical);
+        const physical2 = `${face.path}#${extname(face.path).toLowerCase() === ".dfont" ? face.faceIndex : ""}`;
+        if (files3.has(physical2)) continue;
+        files3.add(physical2);
         const { bytes: bytes2, format } = fullFontFile(face);
         const id = createHash("sha256").update(bytes2).digest("hex");
         if (assets.has(id)) continue;
@@ -24313,8 +24327,9 @@
     const input = await (await fetch("request.json")).json();
     input.options = { ...DEFAULT_LIMITS, initialFontFamilies: [], fontFallbacks: FONT_FALLBACKS, ...input.options };
     for (const key of ["loader", "data", "wasm", "metadata"]) input.engine[key] = new URL(input.engine[key], location.href).href;
-    if (input.options.includeOfficeFonts || input.options.fontMetadataCacheDirectory !== false)
-      throw Error("Browser volume requires explicit host font roots and no disk metadata cache.");
+    if (input.options.fontMetadataCacheDirectory !== false)
+      throw Error("Browser volume requires host-owned metadata cache.");
+    if (input.host) hostEnvironment(input.host);
     volume(input.volume, Object.values(input.engine).filter((value) => typeof value === "string" && value.startsWith("http:")));
     request({ options: input.options, previous: input.previous || [] });
     await run();

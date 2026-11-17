@@ -68,6 +68,6 @@ for(const directory of dependencies){
 const notices=embeddedNotices.join('\n\n')+'\n';writeFileSync(resolve(output,'upstream-notices.txt'),notices);resources['upstream-notices.txt']=hash(notices);
 for(const path of ['scripts/build_office_browser.mjs',require.resolve('esbuild/package.json'),require.resolve('esbuild'),resolve('scripts/oracles/node_modules/@esbuild/win32-x64/esbuild.exe')])track(path);
 writeFileSync(resolve(output,'manifest.json'),JSON.stringify({format:'dsh-office-browser@1',target_upstream:target,sdk:'@deepseek-ai/libreoffice-kit@0.2.3',
- node:process.version,esbuild:require('esbuild').version,transformation:'Original worker entry bodies wrapped in exported async run; platform imports bind explicit POSIX memory volume. Browser fontkit and synchronous SHA-256. Physical font discovery/cache and public SDK orchestration are host responsibilities.',
+ node:process.version,esbuild:require('esbuild').version,transformation:'Original worker entry bodies wrapped in exported async run; platform imports bind an explicit physical-file memory volume and host directory/Dirent inventory. Original Office font discovery, filtering, locale sorting and deduplication execute unchanged. Browser fontkit and synchronous SHA-256. Physical metadata cache and public SDK orchestration are host responsibilities.',
  metadata_notices:metadataNotices,build_inputs:inputs,resources},null,2)+'\n');
 console.log(JSON.stringify({output,resources,inputs:Object.keys(inputs).length}));

@@ -6,7 +6,7 @@ from dsh.cordis.text import trim_js
 from dsh.cordis.json_text import stringify_json
 from dsh.core.session.json import FrozenDict,FrozenList
 from dsh import util_time_instant as instant
-from dsh.util_time_calendar import local_day,day_parts,iso_weekday,calendar_days
+from dsh.util_time_calendar import local_day,local_epoch,day_parts,iso_weekday,calendar_days,calendar_date
 
 MIN_EVERY_INTERVAL_SECONDS=60
 MAX_TITLE_LENGTH=120
@@ -361,3 +361,90 @@ canonicalizeCronExpression=canonicalize_cron_expression
 parseCronInput=parse_cron_input
 createCronScheduleRecord=create_cron_schedule_record
 resolveCronOccurrence=resolve_cron_occurrence
+
+
+def _first_rrule_record(id,title,prompt,prepared,now):
+    if not instant.is_four_digit_year_instant(now):raise ScheduleInputError('time_out_of_range','The recurrence reference time is outside the supported range.')
+    target=prepared.next(now)
+    if target is None:raise ScheduleInputError('not_future','rrule must contain an occurrence strictly in the future.')
+    return FrozenDict(id=id,kind='rrule',title=title,prompt=prompt,rrule=prepared.expression,scheduledAt=target)
+
+
+def normalize_rrule(value):
+    from dsh.util_time_rrule import RRule
+    return read_recurrence(RRule.parse(value)).expression
+
+
+def create_rrule_schedule_record(id,title,prompt,rrule,now):
+    from dsh.util_time_rrule import RRule
+    title=schedule_title(title);prompt=_prompt(prompt)
+    prepared=read_recurrence(RRule.parse(rrule,dict(rejectIneffectiveSetPositions=True)))
+    return _first_rrule_record(id,title,prompt,prepared,now)
+
+
+def update_rrule_schedule_record(current,change,now,recompute):
+    from dsh.util_time_rrule import RRule
+    title=schedule_title(current['title'] if change.get('title') is None else change['title'])
+    prompt=_prompt(current['prompt'] if change.get('prompt') is None else change['prompt'])
+    prepared=read_recurrence(RRule.parse(change['rrule'],dict(rejectIneffectiveSetPositions=True)) if 'rrule' in change else RRule.parse(current['rrule']))
+    if recompute:return _first_rrule_record(current['id'],title,prompt,prepared,now)
+    return FrozenDict(current,title=title,prompt=prompt,rrule=prepared.expression)
+
+
+def resolve_rrule_occurrence(record,accepted_at):
+    from dsh.util_time_rrule import RRule
+    decision=accepted_decision('rrule',accepted_at)
+    if decision<instant.four_digit_year_epoch(record['scheduledAt'])['epoch']:raise ScheduleLogError('rrule dispatch cannot precede the active scheduledAt')
+    return read_recurrence(RRule.parse(record['rrule'])).resolve(record['scheduledAt'],decision)
+
+
+def decode_rrule_schedule_record(value):
+    if not isinstance(value,dict) or value.get('kind')!='rrule' or set(value)!={'id','kind','title','prompt','rrule','scheduledAt'}:
+        raise ScheduleLogError('rrule schedule must contain exactly id, kind, title, prompt, rrule, and scheduledAt')
+    title=decode_stored_title(value['title']);prompt=value['prompt'];rrule=value['rrule']
+    if not isinstance(prompt,str) or not prompt or trim_js(prompt)!=prompt:raise ScheduleLogError('schedule prompt must be non-empty and already trimmed')
+    if not isinstance(rrule,str):raise ScheduleLogError('schedule rrule must be a string')
+    try:normalized=normalize_rrule(rrule)
+    except ScheduleInputError as error:raise ScheduleLogError('invalid schedule rrule: '+error.name+': '+str(error)) from error
+    if normalized!=rrule:raise ScheduleLogError('schedule rrule must be normalized')
+    return FrozenDict(id=decode_id(value['id']),kind='rrule',title=title,prompt=prompt,rrule=rrule,scheduledAt=decode_instant(value['scheduledAt']))
+
+
+def decode_schedule_record(value):
+    if not isinstance(value,dict):raise ScheduleLogError('schedule record must be an object')
+    kind=value.get('kind')
+    if kind in ('daily','weekly'):return decode_wall_record(value)
+    if kind=='cron':return decode_cron_record(value)
+    if kind=='rrule':return decode_rrule_schedule_record(value)
+    return decode_interval_record(value)
+
+
+def is_recurring_schedule_record(record):return record['kind'] in ('every','daily','weekly','cron','rrule')
+
+
+def resolve_recurring_occurrence(record,accepted_at):
+    return dict(every=resolve_every_occurrence,daily=resolve_daily_occurrence,weekly=resolve_weekly_occurrence,cron=resolve_cron_occurrence,rrule=resolve_rrule_occurrence)[record['kind']](record,accepted_at)
+
+
+def format_schedule_local_time(record,value):
+    from dsh.util_time_rrule import RRule
+    zone=read_recurrence(RRule.parse(record['rrule'])).timeZone if record['kind']=='rrule' else record.get('timeZone','UTC')
+    epoch=instant.parse_offset_instant(value)['epoch'];wall=local_epoch(epoch,zone);year,month,day=calendar_date(wall//86400000)
+    clock=wall%86400000;offset=(wall-epoch)//1000
+    date_year='%04d' % year if 0<=year<=9999 else '%+07d' % year
+    rendered='%s-%02d-%02dT%02d:%02d:%02d' % (date_year,month,day,clock//3600000,clock//60000%60,clock//1000%60)
+    # Temporal prints the actual local second but rounds the offset display to
+    # the nearest minute (halfExpand), including historical second offsets.
+    minutes=(abs(offset)+30)//60;suffix='%02d:%02d' % (minutes//60,minutes%60)
+    return rendered+('+' if offset>=0 else '-')+suffix
+
+
+normalizeRRule=normalize_rrule
+createRRuleScheduleRecord=create_rrule_schedule_record
+updateRRuleScheduleRecord=update_rrule_schedule_record
+resolveRRuleOccurrence=resolve_rrule_occurrence
+decodeRRuleScheduleRecord=decode_rrule_schedule_record
+decodeScheduleRecord=decode_schedule_record
+isRecurringScheduleRecord=is_recurring_schedule_record
+resolveRecurringOccurrence=resolve_recurring_occurrence
+formatScheduleLocalTime=format_schedule_local_time

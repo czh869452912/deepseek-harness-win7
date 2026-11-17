@@ -1,0 +1,32 @@
+{
+  "part": "C9-N",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "scope": "Seven current Schedule record kinds, typed creation/editing and authoritative local display",
+  "paired": {
+    "run": "rc022-schedule-update-paired2-20261117-01",
+    "observations": 87,
+    "differences": 0,
+    "method": "Actual fixed Schedule domain/update functions versus Native; exact values, error names/codes/messages and retained/replaced record identity."
+  },
+  "verification": {
+    "source": "118 original update.spec.ts and rrule.spec.ts tests passed; broader service cases remain Source-only evidence.",
+    "native": "9 passed: new seven-rule/edit/display journeys and interval/wall/Cron direct consumers."
+  },
+  "behavior": [
+    "Completes current RRULE record creation/decoding/updates and dispatch through the shared bounded time engine. All seven authoritative record kinds now have a common decoder and recurring dispatch entry.",
+    "Typed timing requires exactly one matching selector. Equivalent normalized timing retains a committed target; descriptive edits retain nested weekday identity, changed rules re-arm, and expired one-shot resumption requires a new future schedule.",
+    "Record reads produce detached immutable values without recomputing a target. Display uses the authoritative zone, extended local years and Temporal's nearest-minute offset presentation."
+  ],
+  "diagnostics": [
+    "The initial pair exposed that Temporal preserves historic local seconds while rounding the printed offset to the nearest minute. Native now matches both positive historic offsets and the negative half-minute case; original failed values remain retained."
+  ],
+  "cleanup": {
+    "bytes_removed": 116696,
+    "owned_processes_after": [],
+    "retained": "Commands, input hashes, paired values/identity/errors, Source results and Native logs/XML/observations; owned synthetic short workspaces and homes removed."
+  },
+  "limitations": [
+    "Host task persistence/schema evolution, management/runtime and current tools remain pending. Production Schedule bindings remain historical.",
+    "No complete regression, application/session, Portable/browser/Win7 acceptance or upstream promotion."
+  ]
+}

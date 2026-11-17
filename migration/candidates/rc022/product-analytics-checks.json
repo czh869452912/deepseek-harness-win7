@@ -1,0 +1,40 @@
+{
+  "part": "C8-GQ",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "scope": "Current productAnalytics Host, live collection policy, approved environment/identity assembly and ordinary telemetry consumer",
+  "paired": {
+    "run": "rc022-product-analytics-paired2-20261116-01",
+    "observations": 41,
+    "differences": 0,
+    "mounted": 19,
+    "comparison": "Actual Source and Native mounted service with controlled OS, account identity and telemetry ports. Includes actual Source metadata collector and query wrapper, Native collector, schema rejection and reversible settings ownership."
+  },
+  "verification": {
+    "native": "Initial targeted run: 14 passed and 2 test-fixture failures. After fixing double volatile parsing and raw Remote marker inspection, both affected tests passed in native2. Remaining passing cases cover disposal/sampling abort, live policy during identity lookup, cached sample rejection, product telemetry HTTP and query/collector consumers.",
+    "source": "15 passed in collection.host.spec.ts, including actual Source HTTP collector export.",
+    "actual_native_http": "Registry-resolved analytics -> productTelemetry -> otel ordinary reporter -> isolated actual HTTP collector; asserts selected identity/environment/event fields, x-channel and shutdown flush.",
+    "scope_reason": "Owning Host policy, Remote metadata, concurrent cached environment/fresh account identity, disposal, and direct ordinary-channel consumer chain."
+  },
+  "behavior": [
+    "Disabled intake returns before environment and identity lookup. Static environment promise is shared and cached; identity is read afresh for each intake. Policy is checked again after asynchronous lookup.",
+    "Remote enabled/report/watchPolicy are bound on the canonical service. Live loader updates notify subscribers; abort and disposal remove subscription listeners.",
+    "Only selected environment and device/user identity fields are merged with the typed event; fixed missing reasons are sorted into one scalar; appVersion is added when defined. Compaction start emits manual/auto events.",
+    "Disposal closes intake, aborts and awaits environment sampling, and reverses optional settings configuration. Product telemetry retains its independent channel ownership."
+  ],
+  "source_inputs": {
+    "packages/client/product-analytics/src/index.ts": "e81dace0a71d9cb5c0434b78999a57212229f5c33abb7e17173bfa314e14034d",
+    "packages/client/product-analytics/src/environment.ts": "ed262f36c267e6eb28a59d22aa843f3440ba119309e83cd8e3b5ddb7415f3281",
+    "packages/client/product-analytics/tests/collection.host.spec.ts": "59043e698175f0f6bcbc859ff4337ad3c83c1067ba32a9cbac0590e4d4b8dcf6",
+    "packages/client/product-analytics/package.json": "fa030e4f05cc7374a730bc70c21b4b048771569989364df6e266815e90352f5a"
+  },
+  "limitations": [
+    "Source web-app/Desktop composition rows and official client bundle promotion remain pending C9. Ordinary Web does not mount productAnalytics by default.",
+    "The preliminary paired run was excluded because both fixtures rejected duplicated volatile configuration during mount; qualification-exclusion.json records that failure and replacement. Only paired2 establishes mounted Host comparisons.",
+    "No new complete release, Portable/browser or Windows 7 acceptance is claimed. Default macOS sampling remains incomplete as recorded in analytics-os-checks.json."
+  ],
+  "cleanup": {
+    "bytes_removed": 304289,
+    "receipt": "rc022-product-analytics-source-20261116-01/cleanup.json",
+    "retained": "Final raw paired observations, initial fixture failure diagnostics and exclusion, commands/input hashes/XML/logs, compact observations and Source Vitest JSON; shared Source/toolchains retained through C9."
+  }
+}

@@ -367,3 +367,5 @@
 | C8-GO | Actual analytics query process, byte limits, timeout/abort and close ownership | [Analytics query](analytics-query-checks.json) |
 
 | C8-GP | Default Windows OS metadata and actual bounded collector integration | [Analytics OS](analytics-os-checks.json) |
+
+| C8-GQ | Product analytics Remote Host, live policy, cached environment, identity and actual ordinary HTTP consumer | [Product analytics](product-analytics-checks.json) |

@@ -399,3 +399,5 @@
 | C8-HD | Current Dynamic Host runner Config, registry ownership and activation/panel notices | [Host runner](host-runner-checks.json) |
 
 | C8-HE | Explicit Native Creative seven tools beside current inspect/Host ownership | [Native Creative composition](cordis-creative-checks.json) |
+
+| C9-A | Actual official Web candidate boot; Node PTC and client resource ownership failures retained | [Application candidate attempt](application-candidate-checks.json) |

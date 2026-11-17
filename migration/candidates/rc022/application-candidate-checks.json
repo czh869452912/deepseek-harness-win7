@@ -1,0 +1,31 @@
+{
+  "part": "C9-A",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "scope": "First actual canonical run_profile over fixed official Source Web bundle/preset patches and staged current Cordis bindings",
+  "result": "failed; qualification remains open",
+  "run": "rc022-application-candidate4-20261117-01",
+  "observations": [
+    "The probe uses the real fixed Source CLI installation anchor and original package/bundle patch declarations. Only its process-local Native bindings and candidate version are substituted; production manifests, pin and accepted_upstream are unchanged.",
+    "Canonical startup rejected missing @deepseek-ai/dsh-ptc-runtime-node. Existing Python PTC is not silently substituted for a declared Node provider.",
+    "ClientModules rejected two missing account client bundles. The Native registry resolves these rows through its old workspace layout instead of the canonical Source runtime package router. This is a real resource ownership defect, not evidence that the original Source builds failed.",
+    "Current ClientModules Source also rereads manifest/bundle metadata on entry restart and uses stat-derived artifact revisions. Native still caches old metadata and uses opaque startup revisions; this contract is the next implementation part.",
+    "Because startup failed, the four preset-session creation attempts were not reached. No current Web, browser, preset or release acceptance follows from the attempted boot. The earlier old physical-preset duplicate-list_agents failures remain open until current composition is runnable."
+  ],
+  "diagnostics": [
+    "Initial direct probe was stopped on noticing that only the launch option, not the process-level home, had been isolated. Owned PIDs 60536 and 67340 were terminated. Read-only no-follow metadata audit of the default DSH home found zero files modified since that probe began; no user files were removed or rewritten.",
+    "Second probe used an owned home in both locations but supplied a plain environment dict. Actual startup correctly exposed three consumers requiring LaunchEnvironmentSnapshot.get_from. The probe now supplies the real snapshot type; subsequent failed boot reports contain only the Node PTC and ClientModules failures.",
+    "Final receipt captures native/provider/script and Source input SHA-256 values and verifies Source tracked files remain clean after the attempted canonical run. No full release gate was run."
+  ],
+  "verification": {
+    "method": "Actual isolated canonical run_profile, original fixed Source Web/base declarations, real Loader activation audit and awaited shutdown; preserved full startup composition diagnostics.",
+    "exit_code": 1,
+    "new_acceptance": false
+  },
+  "cleanup": {
+    "control": "rc022-application-control-20261117-01",
+    "bytes_removed": 4148,
+    "links_removed": 0,
+    "owned_processes_after": [],
+    "retained": "All attempt commands/status/logs, complete failed startup observations with composition and inputs, initial isolation audit, process/cleanup receipts. Disposable owned homes and short external workspaces were removed. Shared Source/toolchains remain owned through C9."
+  }
+}

@@ -455,3 +455,5 @@
 | C9-AM | Actual bounded market HTTP + isolated parsing: no redirect, decoded size, deadline/lifetime abort, EOF and response cleanup | [Market HTTP](market-http-checks.json) |
 
 | C9-AN | Market listing/search/entry composition, live installation/compatibility/Git updates, Settings/events and SemVer whitespace fix | [Market listing](market-listing-checks.json) |
+
+| C9-AO | Market detail package-first selection, shared cache/failures, document-id lifetime and bounded adjacent images over controlled files | [Market detail](market-detail-checks.json) |

@@ -1,0 +1,42 @@
+{
+  "part": "C9-AO",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "scope": "Market detail package-first selection, shared result cache and document/image ownership",
+  "implementation": [
+    "MarketDetailReader reuses existing shared plugin-detail package Markdown/image readers. It owns shared selection tasks, result/failure TTL, deterministic SHA-256 document ids, image file identity and last-used expiry.",
+    "Cancellation withdraws one waiter without cancelling a shared selection. Lasting too-large/denied/invalid errors cache; transient network/git-unavailable failures retry. Cached reads and image requests keep document ids alive, including the original strict greater-than expiry boundary.",
+    "Repository selection/files remain injected contracts in this layer. Unit fallback check verifies declared/default-branch flow; no real Git/network provider acceptance is implied."
+  ],
+  "verification": {
+    "paired": {
+      "run": "rc022-market-detail-pair-20261117-01",
+      "observations": 36,
+      "differences": 0,
+      "scope": "Actual unchanged Source DetailReader over in-memory DetailFiles: locale-first resolution, deterministic id, cache/refresh, lasting/transient errors, image path/type/size, use and expiry"
+    },
+    "native": {
+      "run": "rc022-market-detail-native2-20261117-01",
+      "passed": 15,
+      "scope": "Detail cache/image corpus, caller cancellation, expiry/refresh errors, controlled manifest repository fallback, malformed manifest/no repository and JS UTF-8 lone-surrogate replacement plus shared plugin-detail/HTTP/manager detail consumers"
+    },
+    "source": {
+      "run": "rc022-market-detail-source-20261117-01",
+      "passed": 7,
+      "scope": "Original detail-reader suite"
+    }
+  },
+  "diagnostics": [
+    "Initial Native 14 passed, one observation-count fixture assertion expected 37 instead of actual paired 36. Corrected count; original XML/log retained."
+  ],
+  "cleanup": {
+    "removed": "Both Native and Source synthetic workspaces/home/tmp; paired observation creates no disposable fixture media",
+    "bytes": 2464,
+    "owned_processes_after": [],
+    "retained": "Paired Source/Native observations/input hashes, original failed/final command/log/XML; shared C1-C9 Source/toolchain until qualification"
+  },
+  "limitations": [
+    "Repository URL/manifest resolution and actual repository file APIs/Git cache remain unimplemented providers here; market Remote readEntryDetail/image route and application journey remain pending.",
+    "This batch does not close previously recorded QuickJS/V8 malformed-JSON prose, large index/performance or Win7 actual environment gaps.",
+    "Targeted completion only; no unified release acceptance or baseline promotion."
+  ]
+}

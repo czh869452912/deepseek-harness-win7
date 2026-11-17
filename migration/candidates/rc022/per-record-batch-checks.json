@@ -1,0 +1,15 @@
+{
+  "part": "C9-X",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "scope": "Per-record JSON batch staging/restoration, quarantine and durable write lifetime",
+  "paired": {"run": "rc022-per-record-batch-paired-20261117-01", "observations": 10, "differences": 0},
+  "verification": {"native": "25 targeted tests passed across per-record batches, Domain FIFO/quarantine, routed providers and credential storage. After adding abandoned put/global/backup close regressions, all 14 per-record tests passed in the narrow follow-up.", "source": "58 original per-record batch and JSON backend tests passed."},
+  "behavior": [
+    "Validates every key before staging and deduplicates the batch. Documents move to unreadable .deleting paths, then the directory syncs on POSIX before best-effort cleanup. Empty/missing batches create no directories.",
+    "Staging or sync failures restore byte-preserved documents and propagate the original error. Failed restoration or restoration sync retains both causes, quarantines later operations and still permits close/reopen.",
+    "Tracks each complete batch, record/global write and backup. Abandoning a caller does not cancel accepted writes; close drains them before releasing the backend's open-name slot.",
+    "An existing declared table directory remains authoritative even when empty, preventing stale legacy bootstrap after deletion and cold reopen. Compatible numeric stamps admit ordinary JSON numbers but reject booleans."
+  ],
+  "cleanup": {"bytes_removed": 124665, "owned_processes_after": [], "retained": "Exact pair/input observations, Source JSON, Native command/log/XML and raw necessary observations; owned files, staged residue and short workspaces removed."},
+  "limitations": ["Finite batch/lifetime/bootstrap contract only; remaining legacy parsing and general filesystem/platform boundaries are not newly certified.", "Directory fsync is unsupported and skipped on Windows as in fixed Source. Win7 guest, full regression and release qualification remain pending."]
+}

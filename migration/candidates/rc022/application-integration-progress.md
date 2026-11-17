@@ -421,3 +421,5 @@
 | C9-V | Explicit Win7 Python PTC overlay creates all four preset Sessions; actual run_code calls Schedule through the process wire | [Runtime overlay](runtime-overlay-checks.json) |
 
 | C9-W | SQLite atomic batch/version migration and backend quarantine close the direct Domain consumer | [SQLite batch](sqlite-batch-checks.json) |
+
+| C9-X | Per-record JSON atomic batch/restore, accepted write draining and empty-tree authority | [Per-record batch](per-record-batch-checks.json) |

@@ -1,0 +1,19 @@
+{
+  "contract": "C9-CB",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "status": "targeted passed",
+  "verification": {
+    "run": "rc022-frontend-record-native-20261118-01",
+    "passed": 18,
+    "deselected": 1,
+    "seconds": 1.67,
+    "scope": "Complete import/rejection and real Git CLI backup/retirement; old-record tampering rejection, exact Source build-record copying and actual cold restore after import.",
+    "deselected_reason": "Old installed-tree strict actual_pinned positive still has four qualified staged current members; run after coordinated production import."
+  },
+  "cleanup": {
+    "removed": "Synthetic Git workspaces and backup ZIPs, pytest workspace, tmp and home.",
+    "record": ".goose/out/rc022-frontend-record-native-20261118-01/cleanup.json",
+    "retained": "Command, XML and log. Only owned regular single-link test files had readonly attributes cleared."
+  },
+  "limitations": "No actual frontend/pin switch or release qualification in this batch."
+}

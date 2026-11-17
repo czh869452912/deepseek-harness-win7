@@ -123,11 +123,17 @@ def main():
     output.mkdir(parents=True, exist_ok=False)
     target = json.loads((ROOT / 'migration/baseline.json').read_text(encoding='utf-8'))['target_upstream']
     record, paths = recorded_inputs(source, target)
+    record_bytes = (source / '.dsh-build/client-build-environment.json').read_bytes()
+    if json.loads(record_bytes) != record:
+        raise ValueError('upstream build record changed during import')
     selected = {path.relative_to(source).as_posix(): digest(path) for path in paths}
     old_manifest = json.loads((ROOT / 'scripts/frontend-inputs.json').read_text(encoding='utf-8'))
     validate_import(ROOT, old_manifest, staged=selected)
+    record_path = ROOT / 'scripts/frontend-build-record.json'
+    if record_path.exists() and json.loads(record_path.read_text(encoding='utf-8')) != old_manifest['build_record']:
+        raise ValueError('previous frontend build record differs')
     old_artifacts = {row['path']:row['sha256'] for row in old_manifest['files'] + old_manifest['client_files']}
-    previous = set(old_artifacts) | set(selected) | {'scripts/frontend-inputs.json'}
+    previous = set(old_artifacts) | set(selected) | {'scripts/frontend-inputs.json', 'scripts/frontend-build-record.json'}
     before = {name:digest(ROOT / name) for name in sorted(previous) if (ROOT / name).is_file()}
     archive = output / 'previous-artifacts.zip'
     with zipfile.ZipFile(str(archive), 'x', compression=zipfile.ZIP_DEFLATED) as bundle:
@@ -155,9 +161,12 @@ def main():
         files=[dict(path=name,sha256=value) for name,value in selected.items() if name.startswith('apps/web/dist/')],
         client_files=[dict(path=name,sha256=value) for name,value in selected.items() if name.startswith('packages/')])
     replace_bytes(ROOT / 'scripts/frontend-inputs.json', (json.dumps(manifest,indent=2)+'\n').encode('utf-8'))
+    replace_bytes(record_path, record_bytes)
     validate_import(ROOT, manifest)
     final_record, final_paths = recorded_inputs(source, target)
-    if final_record != record or {path.relative_to(source).as_posix():digest(path) for path in final_paths} != selected:
+    if (final_record != record or (source / '.dsh-build/client-build-environment.json').read_bytes() != record_bytes
+            or record_path.read_bytes() != record_bytes
+            or {path.relative_to(source).as_posix():digest(path) for path in final_paths} != selected):
         raise ValueError('upstream build inputs changed during import')
     if any(digest(ROOT / name) != value for name,value in selected.items()):
         raise ValueError('imported frontend bytes differ')

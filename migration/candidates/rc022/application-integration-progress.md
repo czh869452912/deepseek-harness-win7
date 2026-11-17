@@ -533,3 +533,5 @@
 | C9-BZ | 既有 JavaScript/LLM 配置门禁预加载闭包；66/60 项消费者、32/26 组原固定 Source 对照；SDK 取消失败留待新版入口协调 | [门禁导入闭包](gate-import-closure-checks.json) |
 
 | C9-CA | 新旧目标切换时保留旧任务原状态且禁止提供当前资格；36 项迁移工作流定向检查 | [未完历史记录](migration-open-history-checks.json) |
+
+| C9-CB | 前端原始构建记录随资源备份、核验和原字节导入，冷恢复不冒用旧归档；18 项导入与恢复定向 | [原始构建记录导入](frontend-build-record-checks.json) |

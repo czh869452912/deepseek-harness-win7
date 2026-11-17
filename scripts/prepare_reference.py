@@ -14,8 +14,6 @@ import sys
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 from scripts import import_frontend, evidence_assets
-ARCHIVE = 'migration/evidence/artifacts/OFFICIAL-FRONTEND-QUALIFICATION-20261007-8D129C7D.zip'
-ARCHIVE_SHA256 = 'b2ef057fe8308932708b76b1ef47576bda9b8ba27c9585a0886b6a1002d75abc'
 STATIC_CLIENT_LIBRARIES = ('web', 'store', 'ui-slots', 'ui-primitives', 'ui-dockkit')
 
 
@@ -26,7 +24,7 @@ def restore_frontend(root, source):
     dirty = subprocess.check_output(['git', '-C', str(source), 'status', '--porcelain'], encoding='utf-8').strip()
     if pin != manifest['target_upstream'] or dirty:
         raise ValueError('Frontend restore requires the unchanged pinned Source')
-    carrier = manifest.get('original_carrier', dict(path=ARCHIVE, sha256=ARCHIVE_SHA256))
+    carrier = manifest.get('original_carrier') or {}
     # The already imported, tracked files are the original carrier members.
     # Verify the complete original build identity without fetching history ZIPs.
     import_frontend.validate_import(root, manifest)
@@ -60,7 +58,7 @@ def restore_frontend(root, source):
     if actual != manifest['build_record'] or {p.relative_to(source).as_posix(): import_frontend.digest(p) for p in paths} != {
             row['path']: row['sha256'] for row in manifest['files'] + manifest['client_files']}:
         raise ValueError('Restored original frontend observations differ')
-    return dict(originalCarrier=carrier['path'], sha256=carrier['sha256'], restored=restored, buildRecord=actual,
+    return dict(originalCarrier=carrier.get('path'), sha256=carrier.get('sha256'), restored=restored, buildRecord=actual,
                 scope='Hash-verified tracked original build members; historical carrier bytes not reverified')
 
 

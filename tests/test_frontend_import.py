@@ -106,7 +106,8 @@ def test_import_preflight_only_accepts_new_staged_members_from_verified_target(t
         frontend.validate_import(tmp_path, manifest, staged=allowed)
 
 
-def test_cli_import_backs_up_and_retires_obsolete_client_assets(tmp_path, monkeypatch):
+@pytest.mark.parametrize('changed_record', [False, True])
+def test_cli_import_backs_up_and_retires_obsolete_client_assets(tmp_path, monkeypatch, changed_record):
     root, source = tmp_path / 'product', tmp_path / 'source'
     root.mkdir()
     source.mkdir()
@@ -138,16 +139,31 @@ def test_cli_import_backs_up_and_retires_obsolete_client_assets(tmp_path, monkey
     for name, data in old.items():
         write(root, name, data)
     write(root, 'scripts/frontend-inputs.json', json.dumps(manifest(root, 'a' * 40)).encode('utf-8'))
+    old_record = json.dumps(manifest(root, 'a' * 40)['build_record']).encode('utf-8')
+    write(root, 'scripts/frontend-build-record.json', b'{}' if changed_record else old_record)
     write(root, 'migration/baseline.json', json.dumps(dict(target_upstream=pin)).encode('utf-8'))
     write(root, 'packages/client/shared/lib/client.browser.js', new['packages/client/shared/lib/client.browser.js'])
     output = root / '.goose/out/import'
     monkeypatch.setattr(frontend, 'ROOT', root)
     monkeypatch.setattr(sys, 'argv', ['import_frontend.py', '--source', str(source), '--output-dir', str(output)])
+    if changed_record:
+        with pytest.raises(ValueError, match='previous frontend build record differs'):
+            frontend.main()
+        assert (root / 'apps/web/dist/index.html').read_bytes() == old['apps/web/dist/index.html']
+        assert (root / 'scripts/frontend-build-record.json').read_bytes() == b'{}'
+        return
     frontend.main()
     assert not (root / 'packages/client/obsolete/lib/client.js').exists()
     for name, data in new.items():
         assert (root / name).read_bytes() == data
     with zipfile.ZipFile(str(output / 'previous-artifacts.zip')) as zipped:
+        assert zipped.read('scripts/frontend-build-record.json') == old_record
         for name, data in old.items():
             assert zipped.read(name) == data
     frontend.validate_import(root, json.loads((root / 'scripts/frontend-inputs.json').read_text(encoding='utf-8')))
+    assert (root / 'scripts/frontend-build-record.json').read_bytes() == (source / '.dsh-build/client-build-environment.json').read_bytes()
+    from scripts.prepare_reference import restore_frontend
+    restored = restore_frontend(root, source)
+    assert restored['restored'] == [] and restored['buildRecord'] == json.loads(
+        (root / 'scripts/frontend-build-record.json').read_text(encoding='utf-8'))
+    assert restored['originalCarrier'] is None and restored['sha256'] is None

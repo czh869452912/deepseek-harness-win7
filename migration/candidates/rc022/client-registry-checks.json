@@ -1,0 +1,39 @@
+{
+  "part": "C9-B",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "scope": "Current client registry graph identity, owning package router and restart reconciliation",
+  "paired": {
+    "run": "rc022-client-registry-paired5-20261117-01",
+    "observations": 10,
+    "differences": 0,
+    "method": "Both actual implementations consume the same immutable built bundle bytes and actual OS stat identity; independent registry instances reread each changed manifest. Full graph revisions, entry/batch URLs, release, notification counts and unchanged graph identity are compared."
+  },
+  "verification": {
+    "native": "7 passed in rc022-client-registry-native3-20261117-01: new current graph/router tests and existing actual Loader ownership consumers.",
+    "source": "10 selected original node-half.client.spec.ts cases passed; 57 cases outside this selected scope were not run.",
+    "scope_reason": "Original Source checks cover one frozen Loader enumeration per dirty batch, shared/duplicate sources, stable metadata revisions and declaration/export refresh. Native integration mounts actual Loader and PluginPackages with separate installation and profile directories, verifies exact client ownership, no bundle reads/publication on unchanged refresh, and effect disposal."
+  },
+  "behavior": [
+    "Current bare package rows read manifests through the canonical PluginPackages runtime router. Installation-owned Python class mappings no longer redirect their browser resources into an unrelated old workspace package.",
+    "Each dirty restart rereads its manifest and export metadata, including prior non-client declarations. Manifest addition/removal, moved client export, external edges and source disable/remove publish the current graph.",
+    "Current stat revisions hash Node-style mtimeMs/ctimeMs/size; Windows ctime uses FILE_BASIC_INFO.ChangeTime through the existing Win7-compatible native stat helper. Bundle bytes are not read for unchanged refresh/rebuilt checks.",
+    "Graph entry/batch references are relative plugins URLs; absent inject stays absent. Ordered entry revisions generate the combo revision. Host version/optional commit is carried in release without changing the graph revision anchor.",
+    "Dirty reconciliation freezes the Loader roster once, skips empty batches, and consumes failed enumeration while retaining the prior graph."
+  ],
+  "diagnostics": [
+    "First Source fixture had no Loader internal resolver and did not export package.json, so the documented require fallback found no row. Added a real createRequire-based v2 resolver to that fixture; Native product behavior was not inferred from an empty Source graph.",
+    "Subsequent pairs exposed current relative URL, absent inject and ordered revision-based batch hashing differences; corrected the staged provider.",
+    "First Native checks assumed different same-size files necessarily have different stat revisions and placed the profile outside the router's profile namespace. Both are false. Fixtures now use distinct bundle sizes and a real profiles/web path; targeted and final checks passed. Original failure observations remain retained."
+  ],
+  "cleanup": {
+    "control": "rc022-client-registry-control-20261117-01",
+    "bytes_removed": 17859,
+    "links_removed": 0,
+    "owned_processes_after": [],
+    "retained": "Commands, paired graph observations, all failure logs/XML, compact Native observations, selected Source report and cleanup/process receipts. Shared Source/toolchains remain migration-owned through C9."
+  },
+  "limitations": [
+    "Staged current class is not yet promoted. Inherited eager combo/map response construction remains temporary: Source lazy bodies, package chunks/assets and exact HTTP carriers are subsequent parts, and these targeted graph checks do not certify them.",
+    "Current startup composition remains blocked by Node PTC and unpromoted ClientModules/resource bindings. No new full regression, Portable/browser/Win7 acceptance or upstream promotion is established."
+  ]
+}

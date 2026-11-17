@@ -1,0 +1,59 @@
+{
+  "unit": "C9-BP",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "status": "targeted-passed",
+  "scope": [
+    "SDK readBounded regular/nonempty/size/stable metadata contracts",
+    "wx output acquisition precedes input read; only owned failures removed",
+    "Repeated Python cancellation drains background disk work",
+    "Exclusive image directory ownership and failure cleanup"
+  ],
+  "verification": {
+    "native_passed": 42,
+    "source_pairs": 12,
+    "source_oracle": "scripts/oracles/rc022_office_files.mjs",
+    "run": {
+      "run": ".goose\\out\\rc022-office-files-native2-20261118-01",
+      "exit_code": 0,
+      "seconds": 8.937000000034459,
+      "source_pairs": 12,
+      "source_sha256": "ae5de23e7cf0b80f3760792acf1986bc45a27de96379adec99efc17dc3e725d3"
+    },
+    "x86": {
+      "status": "passed",
+      "python": "3.8.10 (tags/v3.8.10:3d8993a, May  3 2021, 11:34:34) [MSC v.1928 32 bit (Intel)]",
+      "bits": 32,
+      "checks": [
+        "bounded-read",
+        "exclusive-complete-export",
+        "failed-image-retirement"
+      ],
+      "temporary_assets": 0
+    }
+  },
+  "cleanup": {
+    "rows": [
+      {
+        "run": ".goose\\out\\rc022-office-files-native-20261118-01",
+        "exit_code": 0,
+        "seconds": 9.296999999962281,
+        "source_pairs": 12,
+        "source_sha256": "ae5de23e7cf0b80f3760792acf1986bc45a27de96379adec99efc17dc3e725d3"
+      },
+      {
+        "run": ".goose\\out\\rc022-office-files-native2-20261118-01",
+        "exit_code": 0,
+        "seconds": 8.937000000034459,
+        "source_pairs": 12,
+        "source_sha256": "ae5de23e7cf0b80f3760792acf1986bc45a27de96379adec99efc17dc3e725d3"
+      }
+    ],
+    "removed_bytes": 3668,
+    "retained": "Commands, logs, XML and original Source JSON outcomes; no test workspaces retained."
+  },
+  "limitations": [
+    "File transaction provider; default converter and production engine wiring follow separately.",
+    "Current Windows host observations do not constitute Windows 7 VM or release qualification.",
+    "No production pin or accepted_upstream promotion."
+  ]
+}

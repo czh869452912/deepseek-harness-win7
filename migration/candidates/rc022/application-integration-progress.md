@@ -509,3 +509,5 @@
 | C9-BN | Pinned Office SDK scan/match/export/raster bodies run through the browser volume; 16 actual Original/WASM pairs, exact PNGs and reproducible build checked | [Office SDK browser adapter](office-sdk-browser-checks.json) |
 
 | C9-BO | Physical font reads enforce snapshot identity and bounds through opened Windows handles; post-operation validation, 16 actual SDK pairs, 71 checks and x86 identity/conversion verified | [Office physical font volume](office-font-volume-checks.json) |
+
+| C9-BP | Office 独占文件事务、限额稳定读取、取消排空；42 项定向检查、12 组实际 SDK 对照与 x86 文件操作 | [文件事务](office-file-transaction-checks.json) |

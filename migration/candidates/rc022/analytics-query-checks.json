@@ -1,0 +1,34 @@
+{
+  "part": "C8-GO",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "scope": "Actual bounded and cancellable analytics environment query executor",
+  "paired": {
+    "run": "rc022-analytics-query-paired-20261116-01",
+    "observations": 18,
+    "differences": 0,
+    "comparison": "Actual unchanged Source execFile and Native Popen execute identical Node programs. No mocked child output."
+  },
+  "verification": {
+    "native": "3 passed: actual 18-row corpus, synchronous private spawn exception, caller task cancellation/process exit, signal cancellation and listener/reader cleanup.",
+    "source": "8 passed, 1 platform-skipped in environment-query.host.spec.ts.",
+    "scope_reason": "Covers the newly implemented execution boundary and its ownership. Existing metadata collector was unchanged."
+  },
+  "behavior": [
+    "No shell; stdin closed; Windows child windows hidden using Win7-compatible CREATE_NO_WINDOW.",
+    "Independent per-pipe byte budgets; bounded retained output; UTF-8 replacement decoding on success; all private output discarded on failure.",
+    "Timeout, abort, nonzero exit and spawn failures return fixed reason objects. Completion waits for child exit and both readers/stdio closure. Python awaiter cancellation also drains before propagating cancellation."
+  ],
+  "limitations": [
+    "Trusted fixed metadata queries only; arbitrary descendant process trees or deliberately inherited open pipes are not a supported query contract. This follows Source direct-child ownership rather than claiming process sandboxing.",
+    "OS sampling/default collector wiring and productAnalytics Host remain the next batch. No actual Win7, Portable/browser or complete release acceptance is established."
+  ],
+  "source_inputs": {
+    "packages/client/product-analytics/src/environment-query.ts": "91d4e591fa817ca53e07b2e8a73a7e59fde3e32925fb7021ec2b984e0ab8bb26",
+    "packages/client/product-analytics/tests/environment-query.host.spec.ts": "8a3da44cc5ad371237f922a6e1416cda9be2bcddd465c740b5ab93c8ac3d5b2b"
+  },
+  "cleanup": {
+    "bytes_removed": 1166,
+    "receipt": "rc022-analytics-query-source-20261116-01/cleanup.json",
+    "retained": "Paired raw observations, input hashes, commands, XML/logs and Source Vitest report; shared Source/toolchains retained for subsequent migration and C9."
+  }
+}

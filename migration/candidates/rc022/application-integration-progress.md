@@ -363,3 +363,5 @@
 | C8-GM | Registered product event policy, explicit application identity and cancellable fiber drain | [Product telemetry](product-telemetry-checks.json) |
 
 | C8-GN | Staged analytics environment parsing, fixed query argv and field failure isolation | [Analytics environment](analytics-environment-checks.json) |
+
+| C8-GO | Actual analytics query process, byte limits, timeout/abort and close ownership | [Analytics query](analytics-query-checks.json) |

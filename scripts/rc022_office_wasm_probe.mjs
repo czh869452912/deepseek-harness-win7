@@ -59,7 +59,7 @@ async function workerMain(base){
    const width=612,height=Math.round(width*pageHeight/pageWidth),pixels=instance.ccall('malloc','number',['number'],[width*height*4]);
    let rgba;
    try{
-    if(!instance.ccall('dsh_pdf_paint','number',Array(10).fill('number'),[pdf,pixels,0,width,height,0,0,pageWidth,pageHeight]))throw Error(error());
+    if(!instance.ccall('dsh_pdf_paint','number',Array(9).fill('number'),[pdf,pixels,0,width,height,0,0,pageWidth,pageHeight]))throw Error(error());
     rgba=new Uint8ClampedArray(new Uint8Array(instance.HEAPU32.buffer,pixels,width*height*4));
    }finally{instance.ccall('free',null,['number'],[pixels]);}
    const canvas=new OffscreenCanvas(width,height);canvas.getContext('2d').putImageData(new ImageData(rgba,width,height),0,0);

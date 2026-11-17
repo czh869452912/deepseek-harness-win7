@@ -1,0 +1,26 @@
+{
+  "contract": "C9-BM",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "status": "Python carrier targeted qualification passed; default Office service integration remains open",
+  "implementation": "Python 3.8 standard-library HTTP carrier, exact private asset routes and bounded byte/JSON result transport. Chromium 108 executes the unchanged pinned WASM engine. No Node, Playwright or CDP client participates in the qualified Python conversion runs. Windows processes are created suspended, assigned to an owned non-breakaway Job and then resumed. Success, errors, deadline, AbortSignal, repeated task cancellation and concurrent close all join cleanup.",
+  "verification": {
+    "browser_boundaries": {"run": "rc022-office-carrier-native3-20261117-01", "passed": 17, "seconds": 6.11, "scope": "Actual Chromium: isolated shared-memory worker, byte preservation, exact asset routes, traversal/query rejection, sync/async worker errors, bounded result framing, timeout, exact abort reason, repeated cancellation during profile cleanup, concurrent close and pre-launch guards."},
+    "x64_python": {"run": "rc022-office-carrier-qualified-20261117-01", "status": "passed", "seconds": 2.219, "active_tasks": 0, "remaining_profiles": 0},
+    "x86_python": {"run": "rc022-office-carrier-qualified-x86-20261117-01", "status": "passed", "seconds": 2.328, "active_tasks": 0, "remaining_profiles": 0, "scope": "32-bit Python drives the same qualified browser on this 64-bit Windows host; not proof of a 32-bit OS browser distribution."},
+    "actual_outputs": {"pdf_bytes": 18639, "text_bytes": 24, "text": "Office preview ready", "png_bytes": 13387, "png_sha256": "d489e272d4ddbb9cc36cf6d234ff5e967d92391f649b6b751f839b9e067dc54b", "text_sha256": "529cde620df98cd964bbdd3ef16c40e4858c0147287b700be7777768aab00e8d", "comparison": "Text and PNG bytes match the independent Node/Playwright reference run. PDF timestamps vary; original signature, page dimensions, nonwhite pixels and rendered bytes checked. Engine document/office destruction and pthread termination occur before result publication."},
+    "reference": {"run": "rc022-office-carrier-reference-20261117-01", "status": "passed", "note": "Corrected the probe PDF paint ccall declaration from ten to its actual nine arguments."}
+  },
+  "diagnostics": [
+    "Initial headless launch exited before asynchronous completion. An ephemeral loopback debugger listener keeps this Chromium version alive; the carrier does not use its protocol.",
+    "First Office carrier runs timed out at loading-workers because nested pthread script responses lacked COEP. Responses now carry the required isolation headers.",
+    "A diagnostic trace.push override made the otherwise successful worker result uncloneable. The probe now observes without adding a function property to the result array. Unhandled worker promise rejections also cross the carrier immediately.",
+    "One diagnostic no-sandbox run did not fix that uncloneable result. That flag was removed; the qualified runs retain Chromium's default sandbox.",
+    "The isolated x86 runtime has no pytest installation. Its attempted pytest command failed before collection; the subsequent real x86 Python conversion qualifies only the recorded driver path, not an x86 pytest suite."
+  ],
+  "scope_limits": [
+    "Controlled Arial resolver remains an explicit font collaborator. Source font indexing, glyph/fallback/missing-font rules and complete format/render/recalculation behavior are not established by this portion.",
+    "No default officeKitEngine, licensed Portable runtime composition, Windows 7 execution, migration promotion or complete release qualification is claimed."
+  ],
+  "cleanup": {"removed": "All owned browser profiles were deleted after their process ranges stopped. Test workspaces, temporary roots and empty probe tmp directories were removed. Final process scan found no carrier-owned chrome.exe. No runtime asset copies were created.", "post_run_retained_payload_bytes_removed": 0, "retained_owner": "rc022 C9 Office integration", "retained_purpose": "Compact logs/XML, failed-run reports and actual PDF/TXT/PNG observations are retained for default-engine comparison at C9-BN. Shared Source/toolchain/browser inputs remain owned through C9."},
+  "next": "Adapt the pinned SDK worker and font snapshot/matching logic to the qualified Python/browser carrier, then connect the default service and licensed Portable inputs before stable complete qualification."
+}

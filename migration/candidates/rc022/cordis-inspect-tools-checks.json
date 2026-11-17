@@ -1,0 +1,36 @@
+{
+  "part": "C8-GX",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "scope": "Staged current two-tool read-only Cordis inspection surface",
+  "paired": {
+    "run": "rc022-cordis-inspect-tools-paired2-20261117-01",
+    "observations": 21,
+    "differences": 0
+  },
+  "verification": {
+    "native": "1 passed current mounted 21-case corpus; Source actually mounts the same Tools/SystemPrompt services and tool package.",
+    "scope_reason": "Standalone tool handlers, exact generated descriptors, validation/presentation wrappers and query relay only. Controlled inspect service avoids conflating old Host registry behavior with new tool parity."
+  },
+  "behavior": [
+    "Uses two descriptors extracted from actual Source defineTool; no handwritten schema or description changes.",
+    "Directory queries need no Agent; provider queries require one, retain omitted vs null inputs and forward its exact signal. Results render JSON and unmount removes both registrations."
+  ],
+  "source_inputs": {
+    "packages/extensions/tool-cordis/src/index.ts": "fb2e08f39a9b8b4491edb11c0e6429d74a96cbd71fc425289281751691d41115",
+    "packages/extensions/tool-cordis/src/present.ts": "733d67018d4a24b6a184013990b5d0a919d801313629adf2c72b12aaa37aa670"
+  },
+  "diagnostics": {
+    "excluded": "rc022-cordis-inspect-tools-paired-20261117-01",
+    "reason": "Oracle asked Source concurrency wrapper about empty invalid query arguments while Native fixture used the raw classifier, and serialized missing presentation as null. Both fixtures now compare the same validated argument and absent-property boundary."
+  },
+  "limitations": [
+    "Staged provider only, not yet bound to the production package registry. Current upstream has two inspection tools; user-required Native creative seven-tool lifecycle must remain a separate explicit composition adaptation during C9.",
+    "Current live Config inspect projection/catalog and dynamic Host runner lifecycle/Remote integration remain subsequent work. No new full migration or release acceptance."
+  ],
+  "cleanup": {
+    "bytes_removed": 51754,
+    "receipt": "rc022-cordis-inspect-tools-native2-20261117-01/cleanup.json",
+    "removed": "Owned pytest/tmp/home workspaces; no matching processes remain.",
+    "retained": "Exact generated definitions, Source/Native observations and input hashes, logs/XML and the first resolved fixture failure. Shared Source/toolchains remain required through C9."
+  }
+}

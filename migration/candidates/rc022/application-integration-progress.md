@@ -383,3 +383,5 @@
 | C8-GV | Bundled Office skills, environment guidance, lazy reads/failure recovery and owned disposal | [Office skills](office-skills-checks.json) |
 
 | C8-GW | Application Office/runtime composition, expression carriers and standalone SDK executor/directory closure | [Office composition](office-composition-checks.json) |
+
+| C8-GX | Staged current read-only Cordis inspection tools and exact generated descriptors | [Cordis inspect tools](cordis-inspect-tools-checks.json) |

@@ -161,6 +161,16 @@ def inspect_runtime(runtime_dir, architecture='x64'):
     return observed
 
 
+def bundle_application_metadata(root_dir, destination):
+    """Keep the reviewed Native application closure, including private bundles."""
+    root, target = Path(root_dir), Path(destination)
+    native = root / 'apps/cli/package.json'
+    source = native if native.is_file() else root / 'reference/apps/cli/package.json'
+    (target / 'apps/cli').mkdir(parents=True, exist_ok=True)
+    for path in [target / 'apps/cli/package.json', target / 'package.json']:
+        shutil.copyfile(str(source), str(path))
+
+
 def checked_inputs(root_dir, site_packages, architecture='x64'):
     """Resolve all external inputs before touching the last successful release."""
     root = Path(root_dir)
@@ -273,6 +283,7 @@ def assemble_portable(dist_dir, zip_output, runtime_dir=None, ripgrep_source=Non
                   "ripgrep_input": metadata,
                   "frontend": frontend,
                   "runtime_dependencies": {d.metadata['Name']: d.version for d in dependencies}}
+    provenance['runtime_inputs_sha256'] = hashlib.sha256(Path(ROOT_DIR, 'scripts/runtime-inputs.json').read_bytes()).hexdigest()
     try:
         provenance["product_commit"] = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=ROOT_DIR, encoding="utf-8").strip()
         provenance["worktree_dirty"] = bool(subprocess.check_output(["git", "status", "--porcelain", "--untracked-files=no"], cwd=ROOT_DIR, encoding="utf-8").strip())
@@ -297,10 +308,7 @@ def assemble_portable(dist_dir, zip_output, runtime_dir=None, ripgrep_source=Non
             ignore=shutil.ignore_patterns("__pycache__"),
             dirs_exist_ok=True,
         )
-    ref_cli_pkg = os.path.join(ROOT_DIR, "reference", "apps", "cli", "package.json")
-    if os.path.exists(ref_cli_pkg):
-        shutil.copy(ref_cli_pkg, os.path.join(dist_dir, "apps", "cli", "package.json"))
-        shutil.copy(ref_cli_pkg, os.path.join(dist_dir, "package.json"))
+    bundle_application_metadata(ROOT_DIR, dist_dir)
     if os.path.exists(os.path.join(ROOT_DIR, "apps", "web")):
         shutil.copytree(os.path.join(ROOT_DIR, "apps", "web", "dist"), os.path.join(dist_dir, "apps", "web", "dist"))
     ref_pkgs = os.path.join(ROOT_DIR, "packages")

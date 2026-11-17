@@ -18,6 +18,9 @@ CREATIVE_ADAPTATION = 'Creative development guidance targets Python 3.8.10/Win7;
 
 
 def validate_runtime_inputs(root, manifest, target):
+    if manifest.get('schema_version') == 2:
+        from scripts.runtime_inputs_current import validate
+        return validate(root, manifest, target)
     root = Path(root).resolve()
     if manifest.get('target_upstream') != target or not manifest.get('files'):
         raise ValueError('Runtime input target or roster differs')

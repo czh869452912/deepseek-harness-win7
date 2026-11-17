@@ -1,0 +1,22 @@
+{
+  "contract": "C9-CH",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "status": "targeted passed; actual current Portable qualification pending",
+  "scope": "Current runtime data manifest and preservation of the Native CLI installation closure during packaging. Exact current Source, three declared metadata overlays, retained historical compatibility data and Native product resources have separate identities. Retained data does not establish current upstream parity.",
+  "runtime_manifest": "scripts/runtime-inputs.json",
+  "previous_manifest": "migration/candidates/rc022/previous-runtime-inputs.json",
+  "verification": {
+    "run": "rc022-runtime-inputs-native-20261118-02",
+    "passed": 43,
+    "seconds": 240.36,
+    "selection": ["tests/test_runtime_inputs_current.py", "tests/test_release_preflight.py"],
+    "reason": "Covers runtime roster/content/provenance damage rejection, private Creative dependency preservation, actual locked dependencies and preflight/publication rollback consumers. The first run exposed an obsolete dependency expectation, which now includes the four already locked runtime additions."
+  },
+  "cleanup": {
+    "bytes_removed": 2389323892,
+    "directories_removed": 6,
+    "record": ".goose/out/rc022-source-preparation-control-20261118-01/cleanup-rc022-runtime-inputs-native-20261118-01.json",
+    "retained": "Commands, log/XML and original assertion diagnostics. No synthetic pytest workspaces remain for these two completed runs."
+  },
+  "limitations": "No complete Python/Source/paired acceptance or actual extracted/browser acceptance is established here. The first actual build correctly failed against the obsolete old runtime target; the repaired build and extracted current qualification remain separate. Windows 7 certification remains deferred."
+}

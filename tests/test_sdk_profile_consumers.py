@@ -6,8 +6,8 @@ import sys
 
 import pytest
 
-from scripts import sdk_profile_oracle as oracle
-from scripts import sdk_profile_values as values
+from scripts import current_sdk_profile_oracle as oracle
+from scripts import current_sdk_profile_values as values
 from scripts.sdk_profile_cases import VALUE_DAMAGES, SOURCE_DAMAGES
 from scripts.verify_portable import sdk_profile_receipts
 
@@ -20,7 +20,7 @@ NATIVE_ROOT = ROOT
 @pytest.fixture(scope='module')
 def paired(tmp_path_factory):
     output = tmp_path_factory.mktemp('sdk-profile') / 'paired.json'
-    completed = subprocess.run([sys.executable, str(STAGE / 'scripts/sdk_profile_oracle.py'),
+    completed = subprocess.run([sys.executable, str(STAGE / 'scripts/current_sdk_profile_oracle.py'),
         '--source-root', str(ROOT / 'reference'), '--native-root', str(NATIVE_ROOT), '--output', str(output)],
         capture_output=True, timeout=600)
     assert completed.returncode == 0, completed.stdout + completed.stderr + output.read_bytes()
@@ -37,7 +37,8 @@ def test_actual_original_and_native_sdk_profile_match(paired, scenario):
     assert len(native['captures'][scenario]['frames']) == values.FRAME_COUNTS[scenario]
 
 
-DAMAGES = VALUE_DAMAGES
+CURRENT_UPLOAD_DAMAGES = ('upload-range', 'upload-session', 'upload-event', 'upload-clock')
+DAMAGES = VALUE_DAMAGES + CURRENT_UPLOAD_DAMAGES
 
 
 def damage_runtime(report, damage):
@@ -63,7 +64,8 @@ def damage_runtime(report, damage):
     elif damage == 'request-body':
         normal['requests'][0]['temperature'] = 0.1234
     elif damage == 'tool-schema':
-        normal['requests'][0]['tools'][0]['function']['description'] += 'foreign'
+        tool = normal['requests'][0]['tools'][0]
+        tool.get('function', tool)['description'] += 'foreign'
     elif damage == 'next-model':
         normal['requests'].pop()
     elif damage in ('durable-missing', 'durable-event', 'header'):
@@ -79,7 +81,7 @@ def damage_runtime(report, damage):
     elif damage.startswith('partial-') or damage == 'cancel-reason':
         name, payload = next(iter(cancelled['logs'].items()))
         lines = [json.loads(line) for line in payload.splitlines()]
-        partial = lines[10]
+        partial = next(row for row in lines if row['type'] == 'assistant/message')
         if damage == 'partial-model':
             partial['data']['message']['source']['model'] = 'mock'
         elif damage == 'partial-marker':
@@ -95,6 +97,12 @@ def damage_runtime(report, damage):
         error = next(frame['params']['event']['data']['reason']['error'] for frame in failed['frames']
             if frame.get('method') == 'session.event' and frame['params']['event']['type'] == 'turn/end')
         error['code' if damage == 'error-code' else 'message'] = 'foreign'
+    elif damage in CURRENT_UPLOAD_DAMAGES:
+        delivery = normal['requests'][0]['dsh_session_log']
+        if damage == 'upload-range': delivery['throughSeq'] += 1
+        elif damage == 'upload-session': delivery['session']['version'] = 3
+        elif damage == 'upload-event': delivery['events'][0]['data']['foreign'] = True
+        else: delivery['events'][0]['time'] = normal['endedAt'] + 1
     elif damage == 'clock-window':
         normal['endedAt'] = normal['startedAt'] + 90001
     elif damage == 'clock-type':

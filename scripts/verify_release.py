@@ -381,6 +381,7 @@ REQUIRED_REGRESSION = {
     'test_sdk_profile_consumers': {
         *{'test_actual_original_and_native_sdk_profile_match[' + name + ']' for name in SDK_PROFILE_SCENARIOS},
         *{'test_sdk_profile_requires_complete_values_runtime_and_closures[' + damage + ']' for damage in SDK_PROFILE_DAMAGES},
+        *{'test_sdk_profile_requires_complete_values_runtime_and_closures[' + damage + ']' for damage in ('upload-range', 'upload-session', 'upload-event', 'upload-clock')},
         *{'test_sdk_profile_requires_actual_source_identity[' + damage + ']' for damage in SDK_SOURCE_DAMAGES},
         *{'test_cancelled_sdk_observed_import_variants_preserve_approved_bytes[' + value + ']' for value in ('False', 'True')},
         *{'test_portable_sdk_profile_refuses_partial_receipts[' + side + ']' for side in ('source', 'native')},

@@ -63,21 +63,28 @@ def runtime_journey(portable, workspace, output, env, architecture):
 
 
 def _sdk_journey(source, node, portable, output, frozen):
+    from scripts.current_sdk_profile_values import observations, validate_imports
     options = SimpleNamespace(source_root=source, native_root=portable, native_python=portable / 'python.exe',
                               native_label='extracted', source_patch=SOURCE_PATCH, protocol='messages',
                               tsconfig='tsconfig.base.json', native_environment=product_environment(portable, output))
-    rows = []
+    rows, all_captures, destinations = [], dict(source={}, native={}), {}
     for scenario in ['normal', 'error', 'cancel']:
         folder = output / ('sdk-' + scenario); folder.mkdir()
         captures = {side: sdk.run(side, scenario, options, folder) for side in ['source', 'native']}
         extracted_runtime(captures['native'], portable, frozen)
+        approved = dict(captures['native']['runtime']['modules'])
+        validate_imports(captures['native'], portable, portable / 'python.exe', approved)
+        destinations[scenario] = str(folder)
+        for side in ['source', 'native']: all_captures[side][scenario] = captures[side]
         values = {side: facts(capture, folder) for side, capture in captures.items()}
         for side, value in values.items():
             (folder / (side + '.facts.json')).write_text(json.dumps(value, indent=2), encoding='utf-8')
         equal = json_equal(values['source'], values['native'])
         rows.append(dict(scenario=scenario, equal=equal))
         require(equal, 'Actual extracted SDK facts differ: ' + scenario)
-    return rows
+    strict = {side: observations(all_captures[side], destinations, side)[1] for side in ['source', 'native']}
+    require(strict['source'] == strict['native'], 'Strict extracted SDK protocol/durable/upload intervals differ')
+    return dict(scenarios=rows, strict_observations_sha256=strict['source'])
 
 
 def sdk_journey(source, node, portable, output, frozen):

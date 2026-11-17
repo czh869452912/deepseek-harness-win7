@@ -1,0 +1,63 @@
+{
+  "contract": "C9-CK",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "status": "targeted passed; unified qualification pending",
+  "scope": "Current Messages SDK, v4 durable session, exact incremental dsh_session_log delivery, original Source/editor overlay, normal/error/live cancellation, actual Python 3.8.10 imports. Legacy validators and historical identities remain separate.",
+  "checks": [
+    {
+      "run": "rc022-sdk-current-consumers-20261118-01",
+      "passed": 59,
+      "seconds": 65.01
+    },
+    {
+      "run": "rc022-sdk-current-upload-controls-20261118-01",
+      "passed": 17,
+      "seconds": 41.45,
+      "scope": "Four newly required upload mutations, current Portable negative controls and long session path"
+    }
+  ],
+  "verification_reason": "Preserves every original SDK consumer and corruption control; rejects changed upload range/session/event/clock and missing/extra/import-byte closures. Original three processes compared with Native and with the actual extracted product.",
+  "extracted": {
+    "status": "targeted passed",
+    "strict_observations_sha256": "2b4edf058cddf7a1fb9313cafe7e350171c24c8e31cf7148eca1db5c00d0cdd5",
+    "scenarios": [
+      {
+        "scenario": "normal",
+        "modules": 924
+      },
+      {
+        "scenario": "error",
+        "modules": 923
+      },
+      {
+        "scenario": "cancel",
+        "modules": 923
+      }
+    ],
+    "input_changes": {
+      "source": [],
+      "native": [
+        "scripts/verify_release.py"
+      ],
+      "runtimes": []
+    },
+    "original_invocation": "Failed final all-input freeze after successful SDK comparison: only unrelated scripts/verify_release.py mandatory pytest roster changed concurrently. Raw captures preserved; independently revalidated here against unchanged actual product bytes.",
+    "archive_qualified": false,
+    "source_and_product_unchanged": true
+  },
+  "input_sha256": {
+    "scripts/current_sdk_profile_oracle.py": "e0b6d1478c363e8d1239bbc1bdd1ea07ae7da4f8e2457af06028a6be2d82f615",
+    "scripts/current_sdk_profile_values.py": "0caea5146570494d51afc0e9f953294f1cc7208eb4b9ed7d5c5928bce891ec8b",
+    "scripts/current_sdk_profile_imports.json": "e40347396923afc2ef3e7d0e67ed6a6872bad45a320033e401552fa07df233e4",
+    "scripts/oracles/sdk_profile_driver.py": "78187dcaa621cec0b055344e6136bc38668395d6b30a874a527506d09cf82c57",
+    "scripts/current_portable_gate.py": "612a9024599da2fec56479159dbbc6e148c82d43d74e71b7bd46a407ca963196",
+    "scripts/verify_release.py": "025ae3ed791b6395a9b802ab986ccfc1ebf5c13a755ea419bdb0f95e18412228",
+    "tests/test_sdk_profile_consumers.py": "4d21ceefe89238ed8ad876068e393dea410d1091f0480223877c2f98e02fc424"
+  },
+  "cleanup": {
+    "bytes_removed": 18596576,
+    "directories": 13,
+    "retained": "Commands/XML, complete Source/native/captured receipts, actual extracted captures, module hashes, raw session logs and original failed freeze diagnosis. Integration runtime and locked build inputs still active."
+  },
+  "limitations": "No exact archive qualification: retained integration extraction has seven recorded product patches. Complete Python/Source/paired/Desktop qualification remains pending; real Windows 7 deferred. No historical receipt or accepted_upstream promotion."
+}

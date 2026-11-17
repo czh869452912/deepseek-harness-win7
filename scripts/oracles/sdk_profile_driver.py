@@ -207,11 +207,16 @@ def main():
     parser.add_argument('--native-python', type=Path)
     parser.add_argument('--source-receipt', type=Path)
     parser.add_argument('--native-label', default='native')
+    parser.add_argument('--current-messages', action='store_true')
     parser.add_argument('--output', type=Path, required=True)
     options = parser.parse_args()
     options.source_root = options.source_root.resolve()
     options.native_root = options.native_root.resolve()
     options.output = options.output.resolve()
+    if options.current_messages:
+        sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+        from scripts.rc022_sdk_profile_probe import SOURCE_PATCH
+        options.source_patch, options.protocol, options.tsconfig = SOURCE_PATCH, 'messages', 'tsconfig.base.json'
     if not options.native_label or '/' in options.native_label or '\\' in options.native_label or options.native_label in ('.', '..', 'source'):
         raise ValueError('Fresh native phase label required')
     retained_source = None
@@ -220,7 +225,8 @@ def main():
     else:
         destination = options.output.with_suffix('.files')
         destination.mkdir(parents=True)
-        assert subprocess.check_output(['node', '--version'], encoding='utf-8').strip() == 'v22.22.2'
+        expected_node = 'v24.9.0' if options.current_messages else 'v22.22.2'
+        assert subprocess.check_output(['node', '--version'], encoding='utf-8').strip() == expected_node
     captures = {}
     for scenario in ('normal', 'cancel', 'error'):
         if retained_source is None:

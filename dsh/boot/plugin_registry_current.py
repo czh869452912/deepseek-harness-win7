@@ -142,3 +142,4 @@ COORDINATED_APPLICATION_BINDINGS = {'@deepseek-ai/dsh-agent-default-model': 'dsh
  '@deepseek-ai/dsh-workspace': 'dsh.workspace.registry_022:Current022WorkspacePlugin',
  '@deepseek-win7/dsh-ptc-runtime-python': 'dsh.code_runtime.confined_ptc:ConfinedPythonPtcRuntime'}
 CURRENT_HARNESS_PLUGIN_CLASSES.update(COORDINATED_APPLICATION_BINDINGS)
+CURRENT_HARNESS_PLUGIN_CLASSES['@deepseek-win7/dsh-cordis-manager-python'] = 'dsh.extensions.cordis_manager_current:CurrentNativeCordisManager'

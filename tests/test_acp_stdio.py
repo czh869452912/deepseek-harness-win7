@@ -7,6 +7,7 @@ import pytest
 
 from dsh.acp.rpc import AcpRpc, RequestError
 from dsh.acp.stdio import StdioWriter
+from dsh.acp.stdio import mount_acp_stdio
 from dsh.core.abort import AbortController, AbortError
 from test_acp_session_controls import bridge_fixture, dispose_context
 
@@ -33,6 +34,28 @@ async def until(predicate):
         while not predicate():
             await asyncio.sleep(.001)
     await asyncio.wait_for(wait(), 3)
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize('dispose_before_ready', [False, True])
+async def test_process_input_waits_for_boot_commit_and_unload_revokes_attachment(monkeypatch, dispose_before_ready):
+    from test_sdk_app_startup import Ready
+    from dsh.boot.cmdline import internals
+    ctx, bridge, persistence, factory = bridge_fixture()
+    stdin, ready = Input(), Ready()
+    ctx.provide('acpStdin', stdin)
+    ctx.provide('appReady', ready)
+    monkeypatch.setattr(internals, 'stdout', io.StringIO())
+    connection = mount_acp_stdio(ctx, bridge)
+    assert not stdin.listeners
+    if dispose_before_ready:
+        await dispose_context(ctx)
+    ready.commit()
+    assert bool(stdin.listeners.get('data')) is (not dispose_before_ready)
+    if not dispose_before_ready:
+        await dispose_context(ctx)
+    assert not ready.callbacks and not any(stdin.listeners.values())
+    assert connection.closed
 
 
 @pytest.mark.asyncio

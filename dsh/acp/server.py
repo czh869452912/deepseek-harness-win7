@@ -296,7 +296,7 @@ class AcpPlugin(Plugin):
             if record.agent is not None and callable(record.dispose_fn):
                 subagents = ctx.get('subagents')
                 if subagents is not None:
-                    await attempt(lambda: subagents.drainContinuableDescendants([record.agent]))
+                    await attempt(lambda: subagents.drainDescendants([record.agent]))
                 sessions = ctx.get('sessions')
                 if sessions is not None:
                     await attempt(lambda: sessions.flush(record.agent.session))

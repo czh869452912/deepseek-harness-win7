@@ -3,7 +3,8 @@
     - id: cordis-host-runner
       name: '@deepseek-ai/dsh-cordis-host-runner'
     - id: tool-cordis
-      name: '@deepseek-ai/dsh-cordis-manager'
+      name: '@deepseek-win7/dsh-cordis-manager-python'
+      disabled: false
     - id: cordis-inspect-providers
       name: '@deepseek-ai/dsh-tool-cordis/host'
 

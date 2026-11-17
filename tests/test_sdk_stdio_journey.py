@@ -13,6 +13,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import yaml
 import pytest
 from sdk_stdio_test_support import wait_frame
+from model_http_test_support import model_sse
 
 from dsh.boot.profile import init_profile
 
@@ -43,11 +44,12 @@ def sdk_journey(tmp_path, default_profile, notification_first):
             pass
         def do_POST(self):
             requests.append(json.loads(self.rfile.read(int(self.headers['Content-Length']))))
-            body = b'data: {"choices":[{"delta":{"content":"SDK journey complete"},"finish_reason":"stop"}]}\n\ndata: [DONE]\n\n'
+            delta, finish = dict(content='SDK journey complete'), 'stop'
             if default_profile and len(requests) == 1:
                 chunk = dict(choices=[dict(delta=dict(tool_calls=[dict(index=0, id='shell-call', type='function',
                     function=dict(name='pwsh', arguments=json.dumps(dict(command="Write-Output ('TOOL' + '-RESULT')"))))]), finish_reason='tool_calls')])
-                body = ('data: ' + json.dumps(chunk) + '\n\ndata: [DONE]\n\n').encode('utf-8')
+                delta, finish = chunk['choices'][0]['delta'], 'tool_calls'
+            body = model_sse(self.path, delta, finish)
             self.send_response(200)
             self.send_header('Content-Length', str(len(body)))
             self.end_headers()

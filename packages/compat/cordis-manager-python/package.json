@@ -1,0 +1,7 @@
+{
+  "name": "@deepseek-win7/dsh-cordis-manager-python",
+  "version": "0.2.2-rc.3-r1",
+  "private": true,
+  "description": "Native Python Creative seven-tool manager over the current Host inspect contracts",
+  "license": "MIT"
+}

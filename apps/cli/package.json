@@ -28,6 +28,7 @@
   },
   "license": "MIT",
   "dependencies": {
+    "@deepseek-win7/dsh-creative": "workspace:*",
     "@deepseek-ai/cordis": "workspace:~",
     "@deepseek-ai/dsh-hmr": "workspace:*",
     "@deepseek-ai/cordis-plugin-include": "workspace:~",

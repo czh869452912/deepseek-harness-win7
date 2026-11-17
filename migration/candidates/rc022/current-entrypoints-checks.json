@@ -1,0 +1,30 @@
+{
+  "contract": "C9-CE",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "status": "targeted passed",
+  "changes": [
+    "Process ACP input waits for canonical successful boot before attaching; unload revokes a pending attachment. Injected streams retain their explicit test ownership.",
+    "ACP session shutdown calls the current drainDescendants service contract.",
+    "Creative installation closure explicitly includes a private @deepseek-win7/dsh-cordis-manager-python package; its manager row is enabled and real Headless requests contain all seven tools.",
+    "Actual model fixtures speak Messages or Chat Completions according to the requested endpoint. Held-stream admission reads the newest individual text block after Messages merges adjacent user messages. Custom compositions include their required native executor."
+  ],
+  "verification": [
+    {"run": "rc022-current-sdk-journey-native-20261118-01", "passed": 4, "seconds": 24.87, "scope": "Real launcher/process stdio, default Minimal persistent shell roundtrip, interleaved replies and current durable sessions."},
+    {"run": "rc022-current-acp-boundary-native-20261118-01", "passed": 63, "failed": 1, "seconds": 54.50, "scope": "All ten actual ACP process journeys passed, including cold restore, concurrent independent cancellation and EOF cancellation/continuation. Subsequent custom-composition fixture lacked its executor; corrected and checked below."},
+    {"run": "rc022-current-acp-controls-native-20261118-01", "passed": 61, "seconds": 5.12, "scope": "ACP session controls and stdio consumers, including actual JSONL/zstd fresh-context restoration and corrected subagent teardown provider."},
+    {"run": "rc022-current-entries-final-native-20261118-01", "passed": 19, "failed": 1, "seconds": 31.02, "scope": "ACP boot-commit/unload attachment controls, all five actual Headless journeys and coordinated Web/PTC tests passed. Old exact CLI metadata assertion needed to account for the explicit private Creative dependency."},
+    {"run": "rc022-current-creative-native-20261118-02", "passed": 1, "deselected": 4, "seconds": 4.14, "scope": "Actual Creative process HTTP/tool roundtrip with seven current Cordis tools after installation-closure correction."},
+    {"run": "rc022-current-entries-final-native-20261118-02", "passed": 9, "seconds": 12.37, "scope": "Current CLI identity with exactly one declared product dependency, all profile overlays and actual Web/four presets/Python PTC rechecked."}
+  ],
+  "cleanup": {
+    "removed_directories": 70,
+    "bytes_removed": 160961457,
+    "records": [
+      ".goose/out/rc022-source-preparation-control-20261118-01/cleanup-rc022-source-preparation-native-20261118-01.json",
+      ".goose/out/rc022-source-preparation-control-20261118-01/cleanup-rc022-current-headless-native-20261118-05.json",
+      ".goose/out/rc022-source-preparation-control-20261118-01/cleanup-rc022-source-preparation-control-20261118-01.json"
+    ],
+    "retained": "Commands/logs/XML, original failure and actual session/wire/model observations with size/SHA identities. All completed owned workspace/tmp/home payloads removed; no owned Python process remained. Active Source and approved offline runtime inputs retained until unified qualification."
+  },
+  "limitations": "Current Native application entrypoint checks only. Legacy Source paired gate adapters still require current-contract migration. No unified release or actual Windows 7 acceptance claimed."
+}

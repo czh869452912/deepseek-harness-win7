@@ -88,6 +88,7 @@ def mount_acp_stdio(ctx, bridge):
     writer = None if callable(output) else StdioWriter(output)
     closing = [None]
     detached = [False]
+    attached = [False]
 
     def warning(detail):
         ctx.logger.warn('acp: ' + detail)
@@ -96,6 +97,8 @@ def mount_acp_stdio(ctx, bridge):
         if detached[0]:
             return
         detached[0] = True
+        if not attached[0]:
+            return
         for event, callback in [('data', connection.data), ('end', connection.end), ('error', connection.close)]:
             stdin.off(event, callback)
 
@@ -158,9 +161,21 @@ def mount_acp_stdio(ctx, bridge):
             await cache.drain()
     ctx.on('app/stopping', dispose)
     ctx.effect(lambda: dispose, label='acp.stdio')
-    stdin.on('data', connection.data)
-    stdin.on('end', connection.end)
-    stdin.on('error', connection.close)
-    if getattr(stdin, 'readableEnded', False):
-        connection.end()
+    def attach():
+        if detached[0]:
+            return
+        attached[0] = True
+        stdin.on('data', connection.data)
+        stdin.on('end', connection.end)
+        stdin.on('error', connection.close)
+        if getattr(stdin, 'readableEnded', False):
+            connection.end()
+    ready = ctx.get('appReady') if stream is None else None
+    if ready is None:
+        attach()
+    else:
+        # Native providers may finish asynchronous projection registration
+        # after the transport plugin mounts. Admit process input only after
+        # canonical boot commits, when the Agent factory is available.
+        ctx.effect(lambda: ready.on_ready(attach), label='acp.stdio.ready')
     return connection

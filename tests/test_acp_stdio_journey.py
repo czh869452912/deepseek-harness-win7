@@ -10,6 +10,7 @@ import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 import pytest
+from model_http_test_support import model_sse, model_finish
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -27,6 +28,7 @@ def isolated_environment(home, endpoint=None):
 
 class AcpProcess:
     def __init__(self, directory, home, endpoint):
+        self.diagnostics = directory / ('acp-frames-' + str(time.time_ns()) + '.jsonl')
         self.frames = queue.Queue()
         self.observed, self.stderr = [], []
         self.process = subprocess.Popen([sys.executable, str(ROOT / 'dsh.py'), '--profile', 'acp'],
@@ -60,6 +62,8 @@ class AcpProcess:
                 raise AssertionError('ACP response timed out: ' + ''.join(self.stderr))
             assert 'invalid' not in frame and 'eof' not in frame, (frame, self.stderr)
             self.observed.append(frame)
+            with self.diagnostics.open('a', encoding='utf-8') as log:
+                log.write(json.dumps(frame, ensure_ascii=True) + '\n')
             if predicate(frame):
                 return frame
 
@@ -93,7 +97,7 @@ def local_model():
             requests.append(json.loads(self.rfile.read(int(self.headers['Content-Length']))))
             chunk = {'choices': [{'delta': {'reasoning_content': 'local thought', 'content': 'ACP journey 中文'},
                                   'finish_reason': 'stop'}]}
-            body = ('data: ' + json.dumps(chunk, ensure_ascii=False) + '\n\ndata: [DONE]\n\n').encode('utf-8')
+            body = model_sse(self.path, chunk['choices'][0]['delta'])
             self.send_response(200)
             self.send_header('Content-Type', 'text/event-stream')
             self.send_header('Content-Length', str(len(body)))
@@ -121,7 +125,9 @@ def test_actual_acp_profile_stdio_output_and_new_process_durable_resume(tmp_path
         assert initialized['agentCapabilities']['sessionCapabilities'] == {'close': {}, 'list': {}, 'resume': {}}
         assert initialized['agentCapabilities']['mcpCapabilities'] == {'http': True}
         child.send(2, 'session/new', {'cwd': str(tmp_path), 'mcpServers': []})
-        created = child.reply(2)['result']
+        creation_reply = child.reply(2)
+        assert 'result' in creation_reply, creation_reply
+        created = creation_reply['result']
         session_id = created['sessionId']
         option = created['configOptions'][0]
         child.send(3, 'session/set_config_option', {'sessionId': session_id, 'configId': 'model', 'value': option['currentValue']})
@@ -129,12 +135,13 @@ def test_actual_acp_profile_stdio_output_and_new_process_durable_resume(tmp_path
         child.send(4, 'session/prompt', {'sessionId': session_id, 'prompt': [{'type': 'text', 'text': 'say hello 中文'}]})
         assert child.reply(4)['result'] == {'stopReason': 'end_turn'}
         updates = [frame['params'] for frame in child.observed if frame.get('method') == 'session/update']
-        assert [value['update']['sessionUpdate'] for value in updates] == ['agent_thought_chunk', 'agent_message_chunk']
+        assert [value['update']['sessionUpdate'] for value in updates] == ['agent_thought_chunk', 'agent_message_chunk', 'usage_update']
         assert all(value['sessionId'] == session_id for value in updates)
-        assert updates[-1]['update']['content'] == {'type': 'text', 'text': 'ACP journey 中文'}
+        assert updates[1]['update']['content'] == {'type': 'text', 'text': 'ACP journey 中文'}
         assert child.observed[-1]['id'] == 4
         child.send(5, 'session/close', {'sessionId': session_id})
-        assert child.reply(5)['result'] == {}
+        closed = child.reply(5)
+        assert closed.get('result') == {}, closed
         child.send(6, 'session/list', {})
         assert child.reply(6)['result']['sessions'] == [{'sessionId': session_id, 'cwd': str(tmp_path)}]
         child.finish()
@@ -207,7 +214,7 @@ def test_stdio_schema_and_business_rejections_keep_connection_live_without_model
 
 
 @pytest.fixture
-def held_model():
+def held_model(tmp_path):
     requests, release, admitted = [], threading.Event(), threading.Event()
     class Handler(BaseHTTPRequestHandler):
         def log_message(self, *_):
@@ -215,21 +222,24 @@ def held_model():
         def do_POST(self):
             value = json.loads(self.rfile.read(int(self.headers['Content-Length'])))
             requests.append(value)
-            prompts = [str(message.get('content', '')) for message in value['messages']
-                       if message.get('role') == 'user' and any(text in str(message.get('content', ''))
-                       for text in ('hold first', 'hold on EOF', 'finish second', 'continue second', 'continue after EOF'))]
+            (tmp_path / 'held-model-requests.json').write_text(json.dumps(requests, ensure_ascii=True, indent=2), encoding='utf-8')
+            prompts = [block.get('text', '') for message in value['messages'] if message.get('role') == 'user'
+                       for block in (message['content'] if isinstance(message.get('content'), list)
+                                     else [dict(text=message.get('content', ''))])
+                       if any(text in block.get('text', '') for text in
+                              ('hold first', 'hold on EOF', 'finish second', 'continue second', 'continue after EOF'))]
             held = bool(prompts) and any(text in prompts[-1] for text in ('hold first', 'hold on EOF'))
             self.send_response(200)
             self.send_header('Content-Type', 'text/event-stream')
             self.end_headers()
             chunk = {'choices': [{'delta': {'content': 'admitted'}, 'finish_reason': None}]}
             try:
-                self.wfile.write(('data: ' + json.dumps(chunk) + '\n\n').encode('utf-8'))
+                self.wfile.write(model_sse(self.path, chunk['choices'][0]['delta'], finish=None, complete=False))
                 self.wfile.flush()
                 if held:
                     admitted.set()
                     release.wait(25)
-                self.wfile.write(b'data: {"choices":[{"delta":{},"finish_reason":"stop"}]}\n\ndata: [DONE]\n\n')
+                self.wfile.write(model_finish(self.path))
             except (BrokenPipeError, ConnectionResetError, ConnectionAbortedError):
                 pass
     server = ThreadingHTTPServer(('127.0.0.1', 0), Handler)

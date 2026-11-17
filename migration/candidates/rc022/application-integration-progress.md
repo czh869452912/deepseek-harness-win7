@@ -539,3 +539,5 @@
 | C9-CC | 生产目标、原版元数据/371 份前端、40 份 Typert 声明和当前宿主绑定协调切换；真实 Web 四预设、Python PTC、关停与七配置入口定向通过，完整资格仍待后续 | [协调安装切换](coordinated-installation-checks.json) |
 
 | C9-CD | Node 24.9/pnpm 11.28.5 原版 Source 准备、当前 Typert/Host/Client 构建顺序与五项静态库；实际构建及 6 项冷恢复/拒绝检查通过，371 份前端身份保持 | [Source 准备](source-preparation-checks.json) |
+
+| C9-CE | 默认 SDK/ACP/Headless 实际进程入口、EOF/冷恢复及 Creative 七工具；ACP 准入等待启动提交、当前子代理退场接口和显式 Native 安装依赖，定向消费者通过 | [当前入口](current-entrypoints-checks.json) |

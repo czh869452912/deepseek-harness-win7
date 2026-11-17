@@ -51,3 +51,5 @@ async def test_shipped_profiles_compose_explicit_win7_adaptations(tmp_path):
         else:
             assert rows['ptc-runtime']['disabled']
             assert rows['win7-ptc-runtime']['name'] == '@deepseek-win7/dsh-ptc-runtime-python'
+        if profile == 'creative':
+            assert not rows['tool-cordis'].get('disabled', False)

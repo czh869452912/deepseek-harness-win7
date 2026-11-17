@@ -28,7 +28,7 @@ def test_creative_profile_mounts_its_native_bundle_over_original_composition():
     assert BUILTIN_PROFILES["creative"]["patches"] == []
     assert PROFILE_TEMPLATES['creative']['bundles'] == PROFILE_TEMPLATES['standard']['bundles'] + ['@deepseek-win7/dsh-creative']
     assert [row['name'] for row in BUILTIN_BUNDLES['dsh-creative'][0]['insert']] == [
-        '@deepseek-ai/dsh-cordis-host-runner', '@deepseek-ai/dsh-cordis-manager',
+        '@deepseek-ai/dsh-cordis-host-runner', '@deepseek-win7/dsh-cordis-manager-python',
         '@deepseek-ai/dsh-tool-cordis/host']
 
     preset_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "dsh", "presets", "creative.yaml")
@@ -89,7 +89,10 @@ def test_native_install_anchor_uses_the_shipped_cli_identity():
     from dsh.boot.profile_boot import INSTALL_ANCHOR
     root = Path(__file__).resolve().parents[1]
     assert Path(INSTALL_ANCHOR) == root / 'apps/cli/package.json'
-    assert Path(INSTALL_ANCHOR).read_bytes() == (root / 'reference/apps/cli/package.json').read_bytes()
+    actual = json.loads(Path(INSTALL_ANCHOR).read_text(encoding='utf-8'))
+    original = json.loads((root / 'reference/apps/cli/package.json').read_text(encoding='utf-8'))
+    assert actual['dependencies'].pop('@deepseek-win7/dsh-creative') == 'workspace:*'
+    assert actual == original
     manifests = list((root / 'reference/vendor').glob('*/package.json'))
     assert manifests
     for manifest in manifests:

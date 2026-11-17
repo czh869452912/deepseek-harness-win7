@@ -378,7 +378,7 @@ async def test_close_failure_still_disposes_exact_owner_and_releases_record(tmp_
         async def drain(parents):
             assert parents == [bridge.sessions[created['sessionId']].agent]
             raise failure
-        ctx.provide('subagents', SimpleNamespace(drainContinuableDescendants=drain))
+        ctx.provide('subagents', SimpleNamespace(drainDescendants=drain))
     else:
         factory.failures[stage] = failure
     try:
@@ -416,7 +416,7 @@ async def boot_profile(tmp_path, backend, monkeypatch):
     profile = home / 'profiles' / 'acp-controls'
     init_profile(str(profile), [])
     rows = [{'id': name, 'name': '@deepseek-ai/dsh-' + name} for name in
-            ('session', 'session-projection', 'tools', 'system-prompt', 'llm', 'agent', 'agent-loop', 'acp')]
+            ('session', 'session-projection', 'tools', 'tool-executor-native', 'system-prompt', 'llm', 'agent', 'agent-loop', 'acp')]
     config = {'root': str(tmp_path / 'sessions'), 'packChunks': False,
               'compression': 'none' if backend == 'jsonl' else 'zstd'}
     rows.append({'id': 'persistence', 'name': '@deepseek-ai/dsh-session-persistence-jsonl', 'config': config})

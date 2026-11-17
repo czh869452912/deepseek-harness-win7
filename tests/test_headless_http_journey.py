@@ -9,6 +9,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 import pytest
 import yaml
+from model_http_test_support import model_sse
 
 from dsh.boot.profile import init_profile
 
@@ -19,15 +20,13 @@ def test_headless_runner_http_tool_roundtrip_and_exit(tmp_path, truncated, defau
     profile = tmp_path / "home" / "profiles" / "http-journey"
     init_profile(str(profile), [])
     rows = [{"id": name, "name": "@deepseek-ai/dsh-" + name} for name in (
-        "session", "session-projection", "tools", "system-prompt", "agent", "agent-loop", "llm", "llm-deepseek",
-        "agent-default-model", "fs-local", "tool-str-replace-editor", "cli-visualizer")]
+        "session", "session-projection", "tools", "tool-executor-native", "system-prompt", "agent", "agent-loop", "llm", "llm-deepseek",
+        "agent-default-model", "fs-local", "tool-str-replace-editor")]
     for row in rows:
         if row["id"] == "agent-default-model":
             row["config"] = {"provider": "deepseek-official", "model": "chosen-model"}
         if row["id"] == "system-prompt":
             row["config"] = {"persona": "User selected persona"}
-        if row["id"] == "cli-visualizer":
-            row["config"] = {"verbose": False}
     rows.extend([
         {"id": "persistence", "name": "@deepseek-ai/dsh-session-persistence-jsonl", "config": {"root": str(tmp_path / "sessions")}},
         {"id": "startup", "name": "@deepseek-ai/dsh-headless/startup"},
@@ -53,9 +52,7 @@ def test_headless_runner_http_tool_roundtrip_and_exit(tmp_path, truncated, defau
                 finish = "tool_calls"
             else:
                 delta, finish = {"content": "The file contains unique file evidence."}, "stop"
-            body = ("data: " + json.dumps({"choices": [{"delta": delta, "finish_reason": finish}]}) + "\n\n").encode("utf-8")
-            if not truncated:
-                body += b"data: [DONE]\n\n"
+            body = model_sse(self.path, delta, finish, complete=not truncated)
             self.send_response(200)
             self.send_header("Content-Type", "text/event-stream")
             self.send_header("Content-Length", str(len(body)))
@@ -75,31 +72,35 @@ def test_headless_runner_http_tool_roundtrip_and_exit(tmp_path, truncated, defau
         result = subprocess.run([sys.executable, str(Path(__file__).resolve().parents[1] / "dsh.py"),
                                  "--profile", default_profile or "http-journey", "inspect"],
                                 env=env, cwd=str(tmp_path), capture_output=True, encoding="utf-8", timeout=25)
+        (tmp_path / 'launcher-output.json').write_text(json.dumps(dict(stdout=result.stdout, stderr=result.stderr,
+            exit_code=result.returncode), ensure_ascii=True, indent=2), encoding='utf-8')
         if truncated:
             assert result.returncode == 1, result.stdout + result.stderr
             assert "STREAM_CLOSED" in result.stderr
             assert len(requests) == 1
         else:
             assert result.returncode == 0, result.stdout + result.stderr
+            (tmp_path / 'model-requests.json').write_text(json.dumps(requests, ensure_ascii=True, indent=2), encoding='utf-8')
             assert result.stdout.strip() == "The file contains unique file evidence."
             assert len(requests) == 2
+            tool_names = [tool.get('name', tool.get('function', {}).get('name')) for tool in requests[0]['tools']]
             if default_profile:
-                cordis_tools = [tool['function']['name'] for tool in requests[0]['tools']
-                                if tool['function']['name'].startswith('cordis_')]
+                cordis_tools = [name for name in tool_names if name.startswith('cordis_')]
                 assert cordis_tools == (['cordis_define', 'cordis_inspect_list', 'cordis_inspect_query',
                                         'cordis_inspect_self', 'cordis_run', 'cordis_stop', 'cordis_undefine']
                                        if default_profile == 'creative' else [])
             assert requests[0]["model"] == ("deepseek-flash" if default_profile else "chosen-model")
             if not default_profile:
                 assert "User selected persona" in requests[0]["messages"][0]["content"]
-            assert requests[0]["tools"][0]["type"] == "function"
-            assert tool_name in [tool['function']['name'] for tool in requests[0]['tools']]
-            results = [m for m in requests[1]["messages"] if m["role"] == "tool"]
-            assert results[0]["tool_call_id"] == "call-read"
-            assert "unique file evidence" in results[0]["content"]
+            assert tool_name in tool_names
+            assert any(message['role'] == 'user' and 'unique file evidence' in str(message['content'])
+                       for message in requests[1]['messages'])
             logs = list((tmp_path / ("home/sessions" if default_profile else "sessions")).rglob("*.jsonl.zstd"))
             assert len(logs) == 1
             assert '"tool/result"' in read_jsonl_text(logs[0])
+            results = [json.loads(line) for line in read_jsonl_text(logs[0]).splitlines()
+                       if json.loads(line)['type'] == 'tool/result']
+            assert results[0]['data']['message']['toolCallId'] == 'call-read'
             if default_profile == 'headless':
                 repo = Path(__file__).resolve().parents[1]
                 session_id = json.loads(read_jsonl_text(logs[0]).splitlines()[0])['id']
@@ -109,7 +110,7 @@ def test_headless_runner_http_tool_roundtrip_and_exit(tmp_path, truncated, defau
                 evidence = json.loads(restored.stdout.strip())
                 assert evidence['after'] > evidence['before'] > 0
                 assert len(requests) == 3
-                assert any(message.get('role') == 'tool' and 'unique file evidence' in str(message)
+                assert any(message.get('role') == 'user' and 'unique file evidence' in str(message)
                            for message in requests[2]['messages'])
                 assert any(message.get('role') == 'assistant' and 'The file contains' in str(message)
                            for message in requests[2]['messages'])

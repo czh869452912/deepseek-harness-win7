@@ -9,7 +9,7 @@ from dsh.core.system_prompt.current import CurrentSystemPrompt
 from dsh.core.tools import CurrentToolsPlugin
 from dsh.core.tool_executor_native import NativeToolExecutorPlugin
 from dsh.javascript.runtime import JavaScriptRuntime
-from dsh.extensions.inspect_registry import CordisInspectRegistryService
+from dsh.extensions.inspect_registry_current import CurrentCordisInspectRegistryService
 from dsh.extensions.inspect_providers_current import CurrentCordisInspectProviders
 from dsh.extensions.inspect_tools_current import CurrentCordisInspectTools
 from scripts.rc022_inspect_api_probe import observe as api_observe
@@ -48,7 +48,7 @@ async def test_current_inspect_tool_reaches_actual_live_loader_config(tmp_path):
     ctx=Context();ctx.baseUrl=tmp_path.as_uri()+'/'
     try:
         for plugin in [CurrentSystemPrompt,CurrentToolsPlugin,NativeToolExecutorPlugin,
-            CordisInspectRegistryService,JavaScriptRuntime,Loader,CurrentCordisInspectProviders,CurrentCordisInspectTools]:
+            CurrentCordisInspectRegistryService,JavaScriptRuntime,Loader,CurrentCordisInspectProviders,CurrentCordisInspectTools]:
             await ctx.plugin(plugin)
         def sample(owner,config):pass
         sample.Config=Schema.object({'enabled':Schema.boolean().default(True)})

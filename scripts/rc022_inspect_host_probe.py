@@ -14,14 +14,14 @@ async def observe():
     from dsh.core.system_prompt.current import CurrentSystemPrompt
     from dsh.core.tools import CurrentToolsPlugin
     from dsh.core.tool_executor_native import NativeToolExecutorPlugin
-    from dsh.extensions.inspect_registry import CordisInspectRegistryService
+    from dsh.extensions.inspect_registry_current import CurrentCordisInspectRegistryService
     from dsh.extensions.inspect_providers_current import CurrentCordisInspectProviders,host_inspect_providers
     from dsh.extensions.inspect_tools_current import CurrentCordisInspectTools
     class Agent:pass
     ctx=Context();rows=[];scopes=[]
     try:
         await ctx.plugin(CurrentSystemPrompt);await ctx.plugin(CurrentToolsPlugin);await ctx.plugin(NativeToolExecutorPlugin)
-        await ctx.plugin(CordisInspectRegistryService)
+        await ctx.plugin(CurrentCordisInspectRegistryService)
         host=await ctx.plugin(CurrentCordisInspectProviders)
         rows.append(dict(stage='mounted',providers=[row['id'] for row in ctx.cordisInspect.list()]))
         def definition(name):

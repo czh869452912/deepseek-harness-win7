@@ -393,3 +393,5 @@
 | C1/C8-HA | Live Loader Config directory/details and actual package-directory consumer closure | [Config inspection](inspect-config-checks.json) |
 
 | C8-HB | Current generated API catalog/type closure and shared Host inspect provider ownership | [Inspect providers](inspect-providers-checks.json) |
+
+| C8-HC | Current inspect deadlines, first valid page/diagnostic and cancellation/disposal ownership | [Inspect registry](inspect-registry-checks.json) |

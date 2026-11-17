@@ -1,0 +1,42 @@
+{
+  "part": "C8-HC",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "scope": "Current inspect registry response deadlines, first-page diagnostics and request lifecycle",
+  "paired": {
+    "run": "rc022-inspect-registry-paired3-20261117-01",
+    "observations": 26,
+    "differences": 0,
+    "host_run": "rc022-inspect-registry-host-20261117-01",
+    "host_observations": 12,
+    "host_differences": 0
+  },
+  "verification": {
+    "native": "8 passed: current registry, immediate and entered Python Task cancellation, Host abort identity, current Host providers and inspect tools including actual live Config inspection.",
+    "source": "23 passed in unchanged packages/extensions/cordis-host-runner/tests/inspect-registry.spec.ts; includes actual TypertGateway live/disconnected event streams and runner schema bounds.",
+    "scope_reason": "Controlled clocks compare actual Source and Native pending/request/timer/listener ownership and every completion path. Actual mounted registry fiber disposal and current two-Agent Host composition cover direct owners/consumers; original Source tests independently exercise the real Gateway."
+  },
+  "behavior": [
+    "Default deadline is 10000ms; an available Gateway with no live Harness page rejects before request allocation/publication. Gateway absence preserves the headless/testing contract.",
+    "Only the owning Agent and first schema-valid page response settle a request. Failed or invalid pages retain the first diagnostic without ending the request, allowing a later valid page to win.",
+    "Timeout, abort and registry disposal retire the pending entry before completion notification. Subscriber exceptions are diagnosed without replacing the query result or leaking timers/listeners. Late responses are refused.",
+    "Client manifest replacement affects new queries; already-published requests retain their original method contract. Omitted input and explicit null remain distinct in the wire request.",
+    "Host providers have no Client deadline. Host response snapshots occur after the await boundary, and an abort in that boundary preserves its original Python exception identity.",
+    "Native Coroutine adapter accepts asyncio.create_task and drains the owned query after cancellation, including cancellation before the caller Task's first step. This is an explicit Python Task adaptation; Source Promise multi-await identity is not inferred."
+  ],
+  "diagnostics": {
+    "excluded": "rc022-inspect-registry-paired-20261117-01",
+    "reason": "Initial Source fixture set a service before declaring provide; corrected fixture to normal provide/set ownership. First successful pair was rerun after the Native Task cancellation adapter changed. Original failed stderr is retained."
+  },
+  "cleanup": {
+    "control": "rc022-inspect-registry-control-20261117-01",
+    "bytes_removed": 69480,
+    "links_removed": 0,
+    "retained": "Commands, paired observations, Native observations, logs/XML, Source JSON report, failed Source stderr and cleanup/process receipts. Shared fixed Source and toolchains remain migration-owned through C9.",
+    "owned_processes_after": []
+  },
+  "limitations": [
+    "Current registry remains staged; active historical DynamicCordisRunner still uses its prior registry until the runner/composition migration. Historical evidence and old registry behavior were not relabelled.",
+    "Client deadline configuration bounds are a runner Config responsibility; current runner wiring remains the next part.",
+    "No complete regression, Portable qualification, current Win7 VM observation or upstream acceptance is established by these targeted checks."
+  ]
+}

@@ -445,3 +445,5 @@
 | C9-AH | Host CSS anchor compatibility fixes original menu placement/reopen/mobile resize without changing Source bundles; dynamic/color-mix ownership and cleanup checked | [Browser anchors](browser-anchor-checks.json) |
 
 | C9-AI | Current Workspace missing-directory candidate ownership, attach admission, per-id reindex/replacement and persisted pruning | [Workspace membership](workspace-membership-checks.json) |
+
+| C9-AJ | Pinned market index validation/install targets and multilingual MiniSearch in shipped x64/x86 Win7 worker; 110 paired observations | [Market index](market-index-checks.json) |

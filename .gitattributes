@@ -71,3 +71,8 @@ scripts/native/config-projection/** -text
 dsh/extensions/inspect_catalog_022.json -text
 dsh/javascript/rrule/** -text
 dsh/javascript/rrule/LICENCE -whitespace
+
+dsh/boot/market-index/** -text
+dsh/boot/market-index/*LICENSE* -whitespace
+scripts/build_market_index.mjs -text
+scripts/native/market-index/** -text

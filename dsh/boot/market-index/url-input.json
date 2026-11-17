@@ -1,0 +1,675 @@
+{
+  "schema": 1,
+  "package": "core-js",
+  "version": "3.49.0",
+  "license": "MIT",
+  "source": "https://github.com/zloirock/core-js/tree/v3.49.0",
+  "npm": {
+    "version": "3.49.0",
+    "dist": {
+      "shasum": "8b4d520ac034311fa21aa616f017ada0e0dbbddd",
+      "tarball": "https://registry.npmjs.org/core-js/-/core-js-3.49.0.tgz",
+      "fileCount": 3695,
+      "integrity": "sha512-es1U2+YTtzpwkxVLwAFdSpaIMyQaq0PBgm3YD1W3Qpsn1NAmO3KSgZfu+oGSWVu6NvLHoHCV/aYcsE5wiB7ALg==",
+      "signatures": [
+        {
+          "sig": "MEYCIQC4FxOnc3bNgMEiGTTnjEt8McEoQqiPz0t5IbYdsKoQogIhAOV4laIIKBjmcO7HAK3K2MI6I8A5LTS42CZSM7xk2id+",
+          "keyid": "SHA256:DhQ8wR5APBvFHLF/+Tc+AYvPOdTpcIDqOhxsBHRwC7U"
+        }
+      ],
+      "unpackedSize": 1330856
+    },
+    "sha256": "7cd61d1e6cff32e74861912598b3222cf391ce702521c7fdbfef5335155b9fda"
+  },
+  "build": {
+    "esbuild": "0.25.12",
+    "target": "chrome108",
+    "format": "iife",
+    "minify": true,
+    "override": "internals/url-constructor-detection.js exports false; runtime predicate selects the fallback"
+  },
+  "inputs": [
+    {
+      "path": "internals/a-callable.js",
+      "sha256": "7271ae2895236796ca02aee62f3371cdba088a0b081b56abcbba618ba5c9ae28"
+    },
+    {
+      "path": "internals/a-possible-prototype.js",
+      "sha256": "0c29d95fdb7e521c3979804ea14f236d2da9793bfe9d8916d998ed549acc9ea6"
+    },
+    {
+      "path": "internals/a-set.js",
+      "sha256": "4da1a3eca26173529a97da52cc9ce424f45f63fd463a370af2ce099a88b10b65"
+    },
+    {
+      "path": "internals/a-string.js",
+      "sha256": "768de11f0f3126019da5fc8e39bcb1909bdc41c20cb3317e5234d4df5ebed4d2"
+    },
+    {
+      "path": "internals/add-to-unscopables.js",
+      "sha256": "571a9276ffcf45f862070939fd1dbe946f0b8307281191426a2e213073a444a1"
+    },
+    {
+      "path": "internals/an-instance.js",
+      "sha256": "479735dd6da637e8eb8d7c8d4bd824918171082271e12aff569f1d833c76472d"
+    },
+    {
+      "path": "internals/an-object-or-undefined.js",
+      "sha256": "8251ca46f56adaa5b00b0cef1f9bf4d677ab494bc75a0efb8e25b679ea677483"
+    },
+    {
+      "path": "internals/an-object.js",
+      "sha256": "af8e757769de5cca85d0e753211f60b1b3efe20762bd0dbd9b6ddfe147556858"
+    },
+    {
+      "path": "internals/an-uint8-array.js",
+      "sha256": "376dc665c311ef2daea24adceb6f00129636d6180732e66f4139acfa14634a27"
+    },
+    {
+      "path": "internals/array-buffer-basic-detection.js",
+      "sha256": "fbb9746a3056be622e142bec859a928aa5a96d99b756715eeac977c4d7ee0bc7"
+    },
+    {
+      "path": "internals/array-buffer-byte-length.js",
+      "sha256": "b523ea20c9d95182c92bd9538878af72e59ebd90da5f14974785a445c733f37f"
+    },
+    {
+      "path": "internals/array-buffer-is-detached.js",
+      "sha256": "f09f4bc10c26020c09ff1c1e03fc39540e74602587aba2f7bdcb7a0c0b3f9715"
+    },
+    {
+      "path": "internals/array-buffer-not-detached.js",
+      "sha256": "123d4c774a51e1d79ece3aad39d3c1291814cf34488475177de61bdfce54c2fb"
+    },
+    {
+      "path": "internals/array-buffer-transfer.js",
+      "sha256": "14b411ee021c6e14aec90384a04bf209175127a9df83264322c5548b9477deaf"
+    },
+    {
+      "path": "internals/array-from-constructor-and-list.js",
+      "sha256": "3258ad89906c1a87ef6567cb9e048b8f90b2bf482a31c739d702edc371778d70"
+    },
+    {
+      "path": "internals/array-from.js",
+      "sha256": "af6e51be65c6bfbd9cc0a0e90c53a6ef1db54e89bceb74a12e4d9b5de6c909b1"
+    },
+    {
+      "path": "internals/array-includes.js",
+      "sha256": "36c8508d9c97402ad96ef718734482849d7496bd3c579fc9610766e19cb93baf"
+    },
+    {
+      "path": "internals/array-set-length.js",
+      "sha256": "213909fd9bcd1111594fc69bf9bd0a5455a006f3d1f171f386a82beec83f2d0b"
+    },
+    {
+      "path": "internals/array-slice.js",
+      "sha256": "afe05ba1ab6149f22101c20d917bea11a32c81047dd75250d113592cd6a57f13"
+    },
+    {
+      "path": "internals/array-sort.js",
+      "sha256": "14027c2fb23e88bb363bfc9aac4b199c65efe990d21520d44dd9b1baeebccd28"
+    },
+    {
+      "path": "internals/base64-map.js",
+      "sha256": "32cc306e7cdf931319a66f97935e3d9a1a43d18dd6fbc49dca29f0f54882a75c"
+    },
+    {
+      "path": "internals/call-with-safe-iteration-closing.js",
+      "sha256": "041b9472c7d2d5a8ab8475e12830b5ea28891b59d288607bb7493200930e6945"
+    },
+    {
+      "path": "internals/classof-raw.js",
+      "sha256": "dfd2770b89482e9f0e4fc439a290df157761f0cf8a77ce5399123fc8da3cdbaa"
+    },
+    {
+      "path": "internals/classof.js",
+      "sha256": "b8b699c1420f604314480906d9f71d298c5d2a037fe71f6206f71bece3075d7f"
+    },
+    {
+      "path": "internals/copy-constructor-properties.js",
+      "sha256": "cdc3add20999a7d6fb35c8376bc9b50f2feeaf61796a397fa464f9c90e975c5b"
+    },
+    {
+      "path": "internals/correct-prototype-getter.js",
+      "sha256": "06936abe78c178b1b1a7fc2364fca000112e9a113fd414535e68657ef9874e7d"
+    },
+    {
+      "path": "internals/create-iter-result-object.js",
+      "sha256": "d223065eea43cf3abae6e3691f9fdbf1c25975a1a4a10b2d1fb306df7e21ab01"
+    },
+    {
+      "path": "internals/create-non-enumerable-property.js",
+      "sha256": "bfa936797ed8669560dbe02fa17de9458c9cf0ff6ec96ebbf579250b88299d64"
+    },
+    {
+      "path": "internals/create-property-descriptor.js",
+      "sha256": "9493c088938de273c9749d76d0eed99dead6efa1044613a79871894889435200"
+    },
+    {
+      "path": "internals/create-property.js",
+      "sha256": "2bcd072978c335b9f2f31ec790f53221d48afcac620d0d6e8098f11fae6bf964"
+    },
+    {
+      "path": "internals/define-built-in-accessor.js",
+      "sha256": "8b16b0cf9222d66bc1bd9fae097f8d7beaa0e732ca42a784f8a7f1e1da8ab548"
+    },
+    {
+      "path": "internals/define-built-in.js",
+      "sha256": "7df70928211c33e1c56b7169fcf1c01afa809839fe19e8bf7d4159cc81c03745"
+    },
+    {
+      "path": "internals/define-built-ins.js",
+      "sha256": "629250ebc9a0d29cdb8a5c299a5be958919279531ac1a9aa1d716cf008e24766"
+    },
+    {
+      "path": "internals/define-global-property.js",
+      "sha256": "96a3dbb7a1b8632fc2ce37be5bcd49a604b8a374938313ebaaa2a19c0bd79891"
+    },
+    {
+      "path": "internals/descriptors.js",
+      "sha256": "a9172a2bd245ef9dee088d5215fc21cd826e9a129e86346f6fa146f6e244db58"
+    },
+    {
+      "path": "internals/detach-transferable.js",
+      "sha256": "606c99d56de227758a76d5e338fbd81ded4571e7efab9f351b25013f9e29777d"
+    },
+    {
+      "path": "internals/document-create-element.js",
+      "sha256": "4c5d4bf8bb5b737c64b2a961b1c4ec2e04a386d5cfa76f817e9e1a9567a405a6"
+    },
+    {
+      "path": "internals/enum-bug-keys.js",
+      "sha256": "57c521cd58c0463a4d739cc14f6ea0401b6a8582cd26300fe6d60db94c072680"
+    },
+    {
+      "path": "internals/environment-is-node.js",
+      "sha256": "1d184632589121f1fa2f450363837d1d39027d036ff67181454233408d17b057"
+    },
+    {
+      "path": "internals/environment-user-agent.js",
+      "sha256": "70dcc8e8a9387d2df1fe23d627d235e2fca2ab90f58d4a4df808810e7de2f0bf"
+    },
+    {
+      "path": "internals/environment-v8-version.js",
+      "sha256": "43c4681d2d2557e564c86677f23c02b1157759d503c0531a689615c227f0eb55"
+    },
+    {
+      "path": "internals/environment.js",
+      "sha256": "7db798c40c0b4f79980505e83121cc949d4340d5d4337b2aca5cce4ae402559c"
+    },
+    {
+      "path": "internals/export.js",
+      "sha256": "2fac79d06aaf80b753f304240c9f16a929dcae54ef80c871a3e5ebcc7e683fa9"
+    },
+    {
+      "path": "internals/fails.js",
+      "sha256": "33e4e0204cf4d283f4075c847fc8c6ecad9329a7c320ffec5121741b3bba60b5"
+    },
+    {
+      "path": "internals/function-apply.js",
+      "sha256": "2218bf79182ff1e9a101ca918a3c012b56390793f92cebc9d8a394f9ea8d1a48"
+    },
+    {
+      "path": "internals/function-bind-context.js",
+      "sha256": "111bca956d6604fdebf45aeebced1714a981cab711d1a16d5c2e72091ac49825"
+    },
+    {
+      "path": "internals/function-bind-native.js",
+      "sha256": "9da74872cbd4cf220c610dd74ec5de6580773696af1ad0bddb795c8ec022e7b9"
+    },
+    {
+      "path": "internals/function-call.js",
+      "sha256": "1626b284e74c4bbceea32d1befd00f6e3dd41c829154f7320686ba8af66b31a2"
+    },
+    {
+      "path": "internals/function-name.js",
+      "sha256": "5427ad58144f4db6397e10b683b064c1e05c940deb49416b718129318e0265cf"
+    },
+    {
+      "path": "internals/function-uncurry-this-accessor.js",
+      "sha256": "0596699e04579cae759e4a28b17ef714de24460a98a88a6c5cc62f05a7ce93e3"
+    },
+    {
+      "path": "internals/function-uncurry-this-clause.js",
+      "sha256": "87eb5a294d1cecf8009476525e38bf712c8596203e52a46df8a431ca3458c007"
+    },
+    {
+      "path": "internals/function-uncurry-this.js",
+      "sha256": "7f6a26e6e3fcbe2e0b15eba902735acf5a3f818e1adb7bc7e10a640301c6240a"
+    },
+    {
+      "path": "internals/get-alphabet-option.js",
+      "sha256": "acd11e6d49b22c5d45c0e5f7e6e3bed5bffb898169418584f6e1d1d588e9b63a"
+    },
+    {
+      "path": "internals/get-built-in-node-module.js",
+      "sha256": "9b57f753fb76152ad08ee17f841f08b1bbee88ee0b3ef704286b7ee18a9f8570"
+    },
+    {
+      "path": "internals/get-built-in-prototype-method.js",
+      "sha256": "3d86c47bff87ad0fe9f69bd4bfb9f0026a8cc0f8ade1603b00fad4e0b1521a19"
+    },
+    {
+      "path": "internals/get-built-in.js",
+      "sha256": "45cfa392f287d6424058e3f997a3916098e7fe8f12cfa025d079277f2b64fbee"
+    },
+    {
+      "path": "internals/get-iterator-direct.js",
+      "sha256": "e447fadad7dfc7f1cec1108c555687f21905625068b145e392018c2b826d576c"
+    },
+    {
+      "path": "internals/get-iterator-method.js",
+      "sha256": "0e464a29ed61f33fc3e1fe23eeaac83894cda82509550d19f786c64c02a423b1"
+    },
+    {
+      "path": "internals/get-iterator.js",
+      "sha256": "4719991cc5c0afd8a5ee663a917d6df4a9ecf87072aff2a249e1e8a929bf3807"
+    },
+    {
+      "path": "internals/get-method.js",
+      "sha256": "867e914854ff853099cd6ba95f5eb3fc49a1390cec1c1a6367f4cf965c26f6b2"
+    },
+    {
+      "path": "internals/get-set-record.js",
+      "sha256": "8a57912869757489fa502c1765fb34a6a8c3c54930fea8fa00e625d8d361ef64"
+    },
+    {
+      "path": "internals/global-this.js",
+      "sha256": "48246f2542635417cf3f8c6bcf99d7a991668ea1284d869671fcb5b63a4af8c8"
+    },
+    {
+      "path": "internals/has-own-property.js",
+      "sha256": "58082c7f8750c0a4c74912a54560ea375831a101dc43e05bbe61079503ea689b"
+    },
+    {
+      "path": "internals/hidden-keys.js",
+      "sha256": "322ee46d71101bed25f260f2e78a419b5472e28d1ba02831ced05c73b44e5bb8"
+    },
+    {
+      "path": "internals/html.js",
+      "sha256": "2b9fba4e9c0e5592c49f79a50bb4189f7bf8bd3d077836cb3bfa70e99dd30baa"
+    },
+    {
+      "path": "internals/ie8-dom-define.js",
+      "sha256": "1dc5dfcf67501ede76f99ab12826b99f19f6b94e97734eb58a86631e911442c6"
+    },
+    {
+      "path": "internals/indexed-object.js",
+      "sha256": "8ef9ef6fcba2544f290c3c6a1118d1f4e6beac63cfa583d1cfe2ac88911f4169"
+    },
+    {
+      "path": "internals/inspect-source.js",
+      "sha256": "ef4075497622a3c1475b3041a50fb39f8c4eeddc26c14aea2db66ea03663dec8"
+    },
+    {
+      "path": "internals/internal-state.js",
+      "sha256": "72bd626c79e840676152fbd2652e546ae5605da8542b2df0e28756d9e99fef20"
+    },
+    {
+      "path": "internals/is-array-iterator-method.js",
+      "sha256": "dc34f734af2d68cb164493549f7baa80f21574aec5b71c4e20c027ddcc83a9b3"
+    },
+    {
+      "path": "internals/is-array.js",
+      "sha256": "cc3cf461375e89e11772b49b132a7feb056b8b9d6cd6df72458a4ce8268c23be"
+    },
+    {
+      "path": "internals/is-callable.js",
+      "sha256": "baaf60da97a06f82d3f00c88838b7c3aea33eca7309b65c5f8bf2d8710244529"
+    },
+    {
+      "path": "internals/is-constructor.js",
+      "sha256": "5fe515d8e148dd7caf2a95032137f578c23677994c4422c98aa0fcc2d6883010"
+    },
+    {
+      "path": "internals/is-forced.js",
+      "sha256": "aeee987f667f1f9176dd010576661e4676b767eacda1fb3767b9bd7c72c67bfb"
+    },
+    {
+      "path": "internals/is-null-or-undefined.js",
+      "sha256": "720ca187c6cd75515d7192f35d4b7e05d0ae696464f62a11dcd333d1f0072ca0"
+    },
+    {
+      "path": "internals/is-object.js",
+      "sha256": "44fc02801b6f4daa362322f364a9807c4006f1bd7100dbf1f2d0fe7b752c0e5c"
+    },
+    {
+      "path": "internals/is-possible-prototype.js",
+      "sha256": "d80da5b04807481640f745a6477f000ba46419e383caab5e96bd28329a2f9458"
+    },
+    {
+      "path": "internals/is-pure.js",
+      "sha256": "aaa3a1e7c859215256dd78798126f59a3aa38e4d539187119587000e38ec8936"
+    },
+    {
+      "path": "internals/is-symbol.js",
+      "sha256": "c70f1861bf96f11a7cd8c3fc636f75499802e4cdee4ac803e08922087fce58f2"
+    },
+    {
+      "path": "internals/iterate-simple.js",
+      "sha256": "74606379baf06460f44edb3b4c69879062b1d814611407325af47f1df01a7a33"
+    },
+    {
+      "path": "internals/iterate.js",
+      "sha256": "c28acb23ec21235a487f33cfc4354f86cde4db8f10c0b518a0c74abe2ceb3a3d"
+    },
+    {
+      "path": "internals/iterator-close.js",
+      "sha256": "88ec9fb844024c82568a2b33916cb0f4224b0d8a7816d034d0e4e97f4990ff14"
+    },
+    {
+      "path": "internals/iterator-create-constructor.js",
+      "sha256": "d6917505bd2829e6577baa8d26c91332a5d91372fc320d45ccb0df557a4b92ba"
+    },
+    {
+      "path": "internals/iterator-define.js",
+      "sha256": "f2dc75feb69f7e754ada7eca1337e4c554834dc35cf5b9ee9a5cfe68fd9ee68d"
+    },
+    {
+      "path": "internals/iterators-core.js",
+      "sha256": "4331d17e91aed43b1db1e33baa0866333d93b4e2975944a944cdaed1a2d2cea8"
+    },
+    {
+      "path": "internals/iterators.js",
+      "sha256": "322ee46d71101bed25f260f2e78a419b5472e28d1ba02831ced05c73b44e5bb8"
+    },
+    {
+      "path": "internals/length-of-array-like.js",
+      "sha256": "a258366c44ddd90f808bc00cc593a02b6deca15304fba02cf6c709b14449efb9"
+    },
+    {
+      "path": "internals/make-built-in.js",
+      "sha256": "3f1c4d03781515d2d796f89e3608e2a6bacf0e26859ca57442a662cde680d111"
+    },
+    {
+      "path": "internals/map-helpers.js",
+      "sha256": "4e82a00eb8565b037c69c20540549cddd441a6ab1a1269f0215d62e7bd156b8f"
+    },
+    {
+      "path": "internals/math-trunc.js",
+      "sha256": "8d294fa265f5b7569798c7350104a1d6e6d53154636b316bc85d7cfbd346d230"
+    },
+    {
+      "path": "internals/new-promise-capability.js",
+      "sha256": "dc38f45812497b2a26568a0ba6d751f80d5517f39d5dcbe38418dfe435baa1c3"
+    },
+    {
+      "path": "internals/object-assign.js",
+      "sha256": "07ef745d6d6867d884a3f0f3b4e38c00b1e94a327d3e8abc9aec493fed2b7a9d"
+    },
+    {
+      "path": "internals/object-create.js",
+      "sha256": "d953e1f674fd17fbc5c2f71dd196f12c0d225c583dcfad22ace48b2855509b74"
+    },
+    {
+      "path": "internals/object-define-properties.js",
+      "sha256": "59698fcc506e1712cb91f214df895ae7e3b7d55c977a9e64ff2c5bbcc93dd2d0"
+    },
+    {
+      "path": "internals/object-define-property.js",
+      "sha256": "34d42091801b7405547a5fc8210997eaefea065b2b257b64460b1c0432fe16dc"
+    },
+    {
+      "path": "internals/object-get-own-property-descriptor.js",
+      "sha256": "9af72699268ce4085c52da765612ee2581ed78a54520ec8ba18e5341dbef6971"
+    },
+    {
+      "path": "internals/object-get-own-property-names.js",
+      "sha256": "d3727a7c390fc9afda62b5f71f4ad7259434b2dc1e5a3189713150abe74529aa"
+    },
+    {
+      "path": "internals/object-get-own-property-symbols.js",
+      "sha256": "f0f09a16006e03ef040d0db4a6a4e48fc02b312588f8bbc6c0b9d407c6cf304f"
+    },
+    {
+      "path": "internals/object-get-prototype-of.js",
+      "sha256": "ce20261ef017469886b129ee30349f4e690b45ce100350d971b315c74abe1c77"
+    },
+    {
+      "path": "internals/object-is-prototype-of.js",
+      "sha256": "c13158baae02d5eaa9224c172e6a03622276200eb66b170f8845d8be5ba9f66a"
+    },
+    {
+      "path": "internals/object-keys-internal.js",
+      "sha256": "e4dbacb776a44e2867c757d992158b80db68b8d7c4c48ec02c8dc79dc89c7816"
+    },
+    {
+      "path": "internals/object-keys.js",
+      "sha256": "b3d000df0c0797b0a023c5f75d7949ca4e961cfedcc91167b36a9ec23b609bc2"
+    },
+    {
+      "path": "internals/object-property-is-enumerable.js",
+      "sha256": "731f8738050dbd0f0294b8409982c780d01beb9c6b5f4ad2e1b975c6a8f3b9d4"
+    },
+    {
+      "path": "internals/object-set-prototype-of.js",
+      "sha256": "75743c5fb66e7d7a278425db3161d65680cd64ace9e06c9d1a57c3c072eedef7"
+    },
+    {
+      "path": "internals/ordinary-to-primitive.js",
+      "sha256": "b91df043d15b9eb57fdca07f83704022a601aafb128cfbf33cebd66e1183f3f8"
+    },
+    {
+      "path": "internals/own-keys.js",
+      "sha256": "5e702480f39dc7e967ae1a94a7e6b143af3aa8bd83f6c6f95d42c08d92a61490"
+    },
+    {
+      "path": "internals/perform.js",
+      "sha256": "79bf64f2a09e7885f8236fc83d84a3a56d9800a9c6a86dfac98fb22d1e618020"
+    },
+    {
+      "path": "internals/require-object-coercible.js",
+      "sha256": "9d0e31f19c657e1620b4ca2af22725b53155c6ffd21676b3bd8af9c86d537fb8"
+    },
+    {
+      "path": "internals/safe-get-built-in.js",
+      "sha256": "a72478f4b6d7b1b23250601dfdb623767c62cc091ae908c7e5bfedebb05558f8"
+    },
+    {
+      "path": "internals/set-helpers.js",
+      "sha256": "4486d8e63376fcd578d31df5bc7d7401fb92f857f0d687c02b03ba7ef7827128"
+    },
+    {
+      "path": "internals/set-intersection.js",
+      "sha256": "dd65df7b2bf4b33ca2dc41465ddd79eb6afb51b6a80b3e0807a6caf6917fd8af"
+    },
+    {
+      "path": "internals/set-iterate.js",
+      "sha256": "c961f14eb99540d28c7ef3a96d43e62284405f22bad73fa6c25d891c35928604"
+    },
+    {
+      "path": "internals/set-method-accept-set-like.js",
+      "sha256": "104bf81b9e0900d25aa10aded699f9caa4997675cf37d7f807e03b631a7e228f"
+    },
+    {
+      "path": "internals/set-size.js",
+      "sha256": "b62732df5593984a85aef4e99839fe09a10d64b0f853b68cc22638ca0b99fbb3"
+    },
+    {
+      "path": "internals/set-to-string-tag.js",
+      "sha256": "322114b953cc78c6fa1cc7af308fa4dcc5a044e808fb13646768374b1869127e"
+    },
+    {
+      "path": "internals/shared-key.js",
+      "sha256": "96e28befc4487e8245241a117222d73fda3d56ad898023b35e51201fa10ccac7"
+    },
+    {
+      "path": "internals/shared-store.js",
+      "sha256": "f502fb887b647708f40b41aba63dbfc3582c3cf9da3be6bed08fcc4ae2d061db"
+    },
+    {
+      "path": "internals/shared.js",
+      "sha256": "6f9ec056f182ab1263f7889afe6c56cc73643bdc5e069aca3c13844133475780"
+    },
+    {
+      "path": "internals/string-multibyte.js",
+      "sha256": "6fc291bf2df7ceec24f25f6d9a8a805f7a98211d4bb5dd470ad6e3e761f12be1"
+    },
+    {
+      "path": "internals/string-punycode-to-ascii.js",
+      "sha256": "c5d707e86f1d6a9a9240783e8f4dca1feb1e907e4d1bb52ee7d2c7a6dc7da588"
+    },
+    {
+      "path": "internals/structured-clone-proper-transfer.js",
+      "sha256": "1f2e7d91e3a49a170bdea9d3ae22a6389d890c43a4754923a6c347ceac8a5789"
+    },
+    {
+      "path": "internals/symbol-constructor-detection.js",
+      "sha256": "c501646872abcf61cfeace6bd277959b157722ee19fd1d1a1fd5f210bbf7e0e1"
+    },
+    {
+      "path": "internals/to-absolute-index.js",
+      "sha256": "2f6d7201c1b6296b2fc6e87130e2ca0784639c5f04297bea1e9aaee1329c6ede"
+    },
+    {
+      "path": "internals/to-index.js",
+      "sha256": "91b102efd5650ef2229969fd0a747d75803cd0593509aa5d76e50a3151210294"
+    },
+    {
+      "path": "internals/to-indexed-object.js",
+      "sha256": "4621dcfb3e81880504393fa03dacb730c91319f7d64367264c7a1abbeae87caf"
+    },
+    {
+      "path": "internals/to-integer-or-infinity.js",
+      "sha256": "e8490288942e4f6ae3d5831a027f19415d1e6c100183c1971413f4a61c4041ea"
+    },
+    {
+      "path": "internals/to-length.js",
+      "sha256": "a52f76a5e0157eacf581e4d23b053e354ba4611af8052e0a4fa3ed3904e37f8f"
+    },
+    {
+      "path": "internals/to-object.js",
+      "sha256": "9b40b1b6d56f46ad3f09b6a9fffb4a168ac6dcb2840d9d43f71adaf8ea2b7eb3"
+    },
+    {
+      "path": "internals/to-primitive.js",
+      "sha256": "f4315838edece309fcb9caff7321d2e2eaef8ec9dcd7421b9e642b824a4f92b5"
+    },
+    {
+      "path": "internals/to-property-key.js",
+      "sha256": "3967f43a082a39738c3140744236f7ad54179bf1712f7d14b1601625e68a1624"
+    },
+    {
+      "path": "internals/to-string-tag-support.js",
+      "sha256": "8379ff17582729980d12b878d1c8af12ac98b31c9f292db6dbf532b8b14f1144"
+    },
+    {
+      "path": "internals/to-string.js",
+      "sha256": "5590f18bf545c0150afbd1ffd51de255b5952ada2b216386806ff43ad3d717b6"
+    },
+    {
+      "path": "internals/try-to-string.js",
+      "sha256": "4996594ddd158235f24f1e7d7c8aa2ae243df473feaa2e8718e704ba09aaf095"
+    },
+    {
+      "path": "internals/uid.js",
+      "sha256": "70cc7f00c0b3f45975157f98ff604fc035496ff3a4858effdc6f46d5794b930d"
+    },
+    {
+      "path": "internals/uint8-from-base64.js",
+      "sha256": "993c643f8848a0a2cbfdf87edaf2b9738f52085f8c6e087e165b189dce6c37db"
+    },
+    {
+      "path": "internals/url-constructor-detection.js",
+      "sha256": "b39e3ea5a06c2ec021b43a9335f6a2e9596cd0d19ecdb74a8c7b39b2666f1199"
+    },
+    {
+      "path": "internals/use-symbol-as-uid.js",
+      "sha256": "f4ca88a45a1882eabf48b807f5f660e8fd4d81d4a32c024b247e130afd540006"
+    },
+    {
+      "path": "internals/v8-prototype-define-bug.js",
+      "sha256": "e70645e33e4d09ba21d23ff5fe7bc2a0da1cbb7a23311cb88b59110f43fefdcd"
+    },
+    {
+      "path": "internals/validate-arguments-length.js",
+      "sha256": "350b697ee2bb71b5f2c892ac0499e86295f805c1a138bef4a9cf7e0f24170227"
+    },
+    {
+      "path": "internals/weak-map-basic-detection.js",
+      "sha256": "47c6766c5ac2d5302d41dd52d6a258e6dd2a70402990fea212bbb3859138853e"
+    },
+    {
+      "path": "internals/well-known-symbol.js",
+      "sha256": "828b7ed9bd1f844e653ee97c5cff0158a2bae9ea412a5807b813c37116744971"
+    },
+    {
+      "path": "modules/es.array-buffer.transfer-to-fixed-length.js",
+      "sha256": "b9064ae4bc2ff5ad7abf5e8b0d88ee8ffbd7003c9c2b70e3ab256a04103a5d79"
+    },
+    {
+      "path": "modules/es.array.iterator.js",
+      "sha256": "ef47d2bd86c7f1159dbb6e4a34f414c45d25fa86945f6d72abdb2e28f6eeace7"
+    },
+    {
+      "path": "modules/es.array.to-sorted.js",
+      "sha256": "490b390b7939bca1fb78ad6ac14051e9ee7115f3aa212efae72e4c19fd6e87e0"
+    },
+    {
+      "path": "modules/es.map.get-or-insert-computed.js",
+      "sha256": "f572719140ee992c15f71730a66905bfa976f5b244e39f4b03e51fe3ad092a0b"
+    },
+    {
+      "path": "modules/es.map.get-or-insert.js",
+      "sha256": "cbc8889b83d0df980ff2bd0fe0a676a78f54660595ef7df84021632915a8caab"
+    },
+    {
+      "path": "modules/es.math.sum-precise.js",
+      "sha256": "5456ecfe165a9af65cf07e61a7c552f7406c6f2660909a2f4b0edcd70a4484d6"
+    },
+    {
+      "path": "modules/es.promise.try.js",
+      "sha256": "c4cc3d66ff53d3f360f9af9e37ca6b312f1e69c9df478fcbc3f0aef2d2e22c48"
+    },
+    {
+      "path": "modules/es.set.intersection.v2.js",
+      "sha256": "ba648d656d0c90ab8a6968e9b0d336e9dd40cde8d692f3e5d252d11e86fdc329"
+    },
+    {
+      "path": "modules/es.string.from-code-point.js",
+      "sha256": "99341d1cdad8d8b4da516d74db506a3281293699a1822b9ab119f9ecb1e4eb29"
+    },
+    {
+      "path": "modules/es.string.iterator.js",
+      "sha256": "27f231d2ca4a4f0d55c68344b79f1a9ac0ac2accd6d19a466a1add3c4767de9a"
+    },
+    {
+      "path": "modules/es.uint8-array.from-base64.js",
+      "sha256": "97fb99c021d54fff1cd27a6e5bcd8554f52ca6b21eb5ae593dbb68dc80d776e3"
+    },
+    {
+      "path": "modules/es.uint8-array.to-base64.js",
+      "sha256": "a7dd4c8d0c3ec9427c15897b5a8917907a7599b0f654b247c40d809e9e12d27d"
+    },
+    {
+      "path": "modules/es.uint8-array.to-hex.js",
+      "sha256": "ae5a26a7c06d95137ad462a1ccb9ed2ceecb1cdfe688ac1ec2251e33be6785ea"
+    },
+    {
+      "path": "modules/web.url-search-params.constructor.js",
+      "sha256": "905d4d592a16ad1f38793088746a50bf6f6451415d6ca30ace007b16c66d4970"
+    },
+    {
+      "path": "modules/web.url.can-parse.js",
+      "sha256": "cc1d690b7eb53af73ed303133b0e0b7dff395f05c517af7f8cd84fa23b4a567e"
+    },
+    {
+      "path": "modules/web.url.constructor.js",
+      "sha256": "44cf8bec9938e3e6d857756b4df38ef79ad057a28cee4034b07108af2b763383"
+    },
+    {
+      "path": "modules/web.url.parse.js",
+      "sha256": "3195889debea129611067c3eba8398e80aeb6f0496c93e90415795486425717f"
+    },
+    {
+      "path": "url-entry.cjs",
+      "sha256": "08471aa1d7cafefedd184e31f24fd833417b9ba960cdc026f82e76b86f020df7"
+    }
+  ],
+  "output": {
+    "path": "url.js",
+    "sha256": "d4ee03603a1a56cc92284568fa75f141b59d9edb41775549626bb80c82f64300",
+    "bytes": 60790
+  },
+  "licenseSha256": "b87653fff2d44426ab5cd4723cee3b1364dc8d35a0acdf098c54689543123bf8"
+}

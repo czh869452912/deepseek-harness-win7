@@ -1,0 +1,43 @@
+{
+  "part": "C9-AJ",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "scope": "Pinned format-1 market index validator, install argument construction and multilingual search carrier",
+  "implementation": [
+    "Bundles unchanged upstream parseMarketIndex, marketInstallTarget and MarketSearch with pinned semver and MiniSearch into the existing x64/x86 Win7 QuickJS worker; no machine Node runtime dependency.",
+    "Private core-js 3.49.0 URL resource carries existing verified URL implementation and provenance/license; no cross-plugin runtime import. Resource manifest and all executable/license bytes fail closed on tampering.",
+    "MiniSearch chunk timer callbacks yield via worker microtasks; no I/O occurs in this isolated pure computation."
+  ],
+  "verification": {
+    "paired": {
+      "run": "rc022-market-index-pair-20261117-01",
+      "observations": 110,
+      "differences": 0,
+      "scope": "First-error paths/validation ordering, normalized URL/icon/Git/npm metadata, prototype-shaped declaration ids, SemVer ordering and install arguments, NFKC/CJK/fuzzy/taxonomy/filter/sort selection, 1001-document lazy chunked index"
+    },
+    "native": {
+      "run": "rc022-market-index-native2-20261117-01",
+      "passed": 44,
+      "scope": "New carrier/error/integrity/path/JSON/x86-x64 cases plus existing market-tool and JavaScript-runtime direct consumers"
+    },
+    "source": {
+      "run": "rc022-market-index-source-20261117-01",
+      "passed": 89,
+      "scope": "Original plugin-market-index and market service suites; Source service pass does not establish a Native service implementation"
+    }
+  },
+  "diagnostics": [
+    "Initial Native 42 passed, two test-fixture failures: expected exact-only result despite original fuzzy match, and embedded x86 interpreter import isolation. Fixed test expectation and explicit repository import path; initial failure XML/log preserved."
+  ],
+  "cleanup": {
+    "removed": "Synthetic Native/Source fixtures, test homes/tmp directories and reconstructible paired input",
+    "bytes": 43574470,
+    "owned_processes_after": [],
+    "retained": "Command/log/XML, Source/native observations, input hashes and capability observation; shared C1-C9 Source/toolchain owned until qualification"
+  },
+  "limitations": [
+    "Parsed JSON values only; strict UTF-8 body decoding and Node/V8 JSON diagnostic compatibility are not covered.",
+    "Pure selection accepts trusted validated query shapes; query validation, fetch/cache/concurrency/disposal, settings, details, Remote binding and application/browser market journey remain pending.",
+    "Finite URL and Unicode observations; no universal equivalence claim for all engine Unicode versions/WHATWG edge cases.",
+    "Targeted completion only; production baseline promotion and unified release qualification remain pending."
+  ]
+}

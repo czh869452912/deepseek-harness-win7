@@ -1,0 +1,21 @@
+{
+  "contract": "C9-CG",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "status": "lane infrastructure targeted passed; complete qualification pending",
+  "plan": "migration/candidates/rc022/release-gate-plan.json",
+  "roster": {"current_paired_observers": 399, "original_source_test_files": 472, "separately_accounted_development_carriers": 6},
+  "scope": "Explicit current C1-C9 invocation roster. Historical fixed Node 22/old Source validators and receipts retain their identities. Six candidate or copied-module carriers are accounted separately and require actual installed/extracted application acceptance; they are not silently skipped or marked qualified.",
+  "verification": [
+    {"run": "rc022-current-gate-native-20261118-02", "passed": 14, "seconds": 0.67, "scope": "Actual roster completeness, duplicate/removal/traversal rejection, damaged or empty paired receipts, boolean/number distinction and bounded asset retirement."},
+    {"run": "rc022-current-gate-source-smoke-20261118-01", "passed": 110, "pending": 0, "seconds": 8.844, "source_files": 4, "scope": "Actual current Source SDK run and all Session-log upload/config/feedback composition suites, through the new original Vitest lane."},
+    {"run": "rc022-current-gate-paired-smoke-20261118-01", "observers": 4, "scope": "Actual runner execution and validation for generic Cordis observations, 758 Office SDK contract rows, 12 Session-log ownership/limit rows and generated Typert binary summaries."}
+  ],
+  "input_binding": "Both actual lane smoke runs sealed Source/native/prepared-library/runtime inputs before and after; unchanged=true. Whole-roster execution is still pending. A subset is explicitly complete_lane=false and release_acceptance=false.",
+  "cleanup": {
+    "removed_directories": 6,
+    "bytes_removed": 1244798,
+    "record": ".goose/out/rc022-source-preparation-control-20261118-01/cleanup-rc022-current-gate-native-20261118-01.json",
+    "lane_policy": "Each owned command waits for its Windows Job subtree to finish, records its result and immediately removes its successful short temporary workspace. Successful paired commands retire only declared synthetic roots; failures retain the exact workspace and command mapping. The smoke lanes left no declared unused payload roots. Source, approved offline inputs and compact observations remain needed for unified qualification."
+  },
+  "limitations": "The current complete release orchestrator and actual extracted application/browser lanes still require adaptation. This commit does not run the 472-file Source roster, 399-observer roster or complete Python collection, and establishes no release/Windows 7 acceptance."
+}

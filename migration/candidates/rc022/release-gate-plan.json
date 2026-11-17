@@ -1,0 +1,6504 @@
+{
+  "schema_version": 1,
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "node_version": "v24.9.0",
+  "scope": "Explicit current C1-C9 Source/native contracts and selected original unit tests. A full release also requires one frozen candidate, complete Python collection and actual extracted runtime/browser lanes. This plan does not establish those outcomes or universal upstream parity.",
+  "source_tests": [
+    "apps/cli/tests/profile-hmr.spec.ts",
+    "apps/cli/tests/profile-initialization.spec.ts",
+    "packages/api/gateway/tests/echo-stream.host.spec.ts",
+    "packages/api/gateway/tests/gateway-access.host.spec.ts",
+    "packages/api/gateway/tests/gateway-stream.host.spec.ts",
+    "packages/api/gateway/tests/gateway.host.spec.ts",
+    "packages/api/gateway/tests/operator-connect.host.spec.ts",
+    "packages/api/gateway/tests/remote-event-protocol.host.spec.ts",
+    "packages/api/gateway/tests/stream-protocol.host.spec.ts",
+    "packages/api/job-controller/tests/kill.host.spec.ts",
+    "packages/api/job-controller/tests/observe.host.spec.ts",
+    "packages/api/job-controller/tests/rows.host.spec.ts",
+    "packages/api/remote-access/tests/remote-access.host.spec.ts",
+    "packages/api/remotes/tests/remote-events.host.spec.ts",
+    "packages/api/session-controller/tests/agent.host.spec.ts",
+    "packages/api/session-controller/tests/assistant-stream.host.spec.ts",
+    "packages/api/session-controller/tests/commands-create-fork.host.spec.ts",
+    "packages/api/session-controller/tests/commands-upload-file.host.spec.ts",
+    "packages/api/session-controller/tests/continuation.host.spec.ts",
+    "packages/api/session-controller/tests/controller.host.spec.ts",
+    "packages/api/session-controller/tests/empty-prompt.host.spec.ts",
+    "packages/api/session-controller/tests/history-controller.host.spec.ts",
+    "packages/api/session-controller/tests/list-scheduling.host.spec.ts",
+    "packages/api/session-controller/tests/listeners.host.spec.ts",
+    "packages/api/session-controller/tests/media-references.host.spec.ts",
+    "packages/api/session-controller/tests/remote-access.host.spec.ts",
+    "packages/api/session-controller/tests/session-fork.host.spec.ts",
+    "packages/api/session-controller/tests/session-history-journal.host.spec.ts",
+    "packages/api/session-controller/tests/session-list-blank.host.spec.ts",
+    "packages/api/session-controller/tests/session-models.host.spec.ts",
+    "packages/api/session-controller/tests/session-open-workspace-path.host.spec.ts",
+    "packages/api/session-controller/tests/session-presets.host.spec.ts",
+    "packages/api/session-controller/tests/session-projections.host.spec.ts",
+    "packages/api/session-controller/tests/session-search.host.spec.ts",
+    "packages/api/session-controller/tests/session-skills.host.spec.ts",
+    "packages/api/session-controller/tests/state-controller.host.spec.ts",
+    "packages/api/session-controller/tests/summary-list.host.spec.ts",
+    "packages/api/settings-controller/tests/credentials-controller.host.spec.ts",
+    "packages/api/settings-controller/tests/settings-controller.host.spec.ts",
+    "packages/api/terminal-controller/tests/controller.spec.ts",
+    "packages/api/terminal-controller/tests/retention.spec.ts",
+    "packages/api/terminal-controller/tests/screen.spec.ts",
+    "packages/api/terminal-controller/tests/stream.spec.ts",
+    "packages/api/terminal-controller/tests/terminal.spec.ts",
+    "packages/api/workspace-controller/tests/default-directory.host.spec.ts",
+    "packages/api/workspace-controller/tests/workspace-controller.host.spec.ts",
+    "packages/api/workspace-files/tests/binary-rpc.spec.ts",
+    "packages/api/workspace-files/tests/change-feed.client.spec.ts",
+    "packages/api/workspace-files/tests/changes.spec.ts",
+    "packages/api/workspace-files/tests/list.spec.ts",
+    "packages/api/workspace-files/tests/read-all.spec.ts",
+    "packages/api/workspace-files/tests/read-bytes.spec.ts",
+    "packages/api/workspace-files/tests/read.spec.ts",
+    "packages/api/workspace-files/tests/scope.spec.ts",
+    "packages/api/workspace-files/tests/search-rg.spec.ts",
+    "packages/api/workspace-files/tests/search.spec.ts",
+    "packages/api/workspace-files/tests/stat.spec.ts",
+    "packages/attachment/attachment-local/tests/request-image-verification.spec.ts",
+    "packages/attachment/attachment-local/tests/request-image.spec.ts",
+    "packages/attachment/attachment/tests/admission.spec.ts",
+    "packages/boot/app-boot/tests/app-boot.spec.ts",
+    "packages/boot/app-boot/tests/bundle-platform.spec.ts",
+    "packages/boot/app-boot/tests/compatibility-preflight.spec.ts",
+    "packages/boot/app-boot/tests/config-schema.spec.ts",
+    "packages/boot/app-boot/tests/plugin-compatibility.spec.ts",
+    "packages/boot/app-boot/tests/profile-compatibility.spec.ts",
+    "packages/boot/app-boot/tests/profile-resolution-service.spec.ts",
+    "packages/boot/app-boot/tests/profile-resolution.spec.ts",
+    "packages/boot/app-boot/tests/profile.spec.ts",
+    "packages/boot/app-boot/tests/schemastery-json-schema.spec.ts",
+    "packages/boot/app-boot/tests/user-patches.spec.ts",
+    "packages/boot/hmr/tests/coordination.spec.ts",
+    "packages/boot/hmr/tests/module-files.spec.ts",
+    "packages/boot/hmr/tests/modules.spec.ts",
+    "packages/boot/hmr/tests/package-manifest-dispatch.spec.ts",
+    "packages/boot/hmr/tests/package-reload.spec.ts",
+    "packages/boot/hmr/tests/profile.spec.ts",
+    "packages/boot/hmr/tests/watch-config.spec.ts",
+    "packages/boot/plugin-manager/tests/build-approval.spec.ts",
+    "packages/boot/plugin-manager/tests/bundle-detail.spec.ts",
+    "packages/boot/plugin-manager/tests/git-transport.spec.ts",
+    "packages/boot/plugin-manager/tests/github-connection.spec.ts",
+    "packages/boot/plugin-manager/tests/install-spec.spec.ts",
+    "packages/boot/plugin-manager/tests/manager.spec.ts",
+    "packages/boot/plugin-manager/tests/operation-logs.spec.ts",
+    "packages/boot/plugin-manager/tests/operations-process.spec.ts",
+    "packages/boot/plugin-manager/tests/operations.spec.ts",
+    "packages/boot/plugin-manager/tests/patch.spec.ts",
+    "packages/boot/plugin-manager/tests/registry.spec.ts",
+    "packages/boot/plugin-manager/tests/tools.spec.ts",
+    "packages/boot/plugin-manager/tests/versions.spec.ts",
+    "packages/boot/plugin-market/tests/detail-files.spec.ts",
+    "packages/boot/plugin-market/tests/detail-reader.spec.ts",
+    "packages/boot/plugin-market/tests/detail-remote.spec.ts",
+    "packages/boot/plugin-market/tests/market-parse-failure.spec.ts",
+    "packages/boot/plugin-market/tests/market.spec.ts",
+    "packages/boot/plugin-market/tests/parse-thread.spec.ts",
+    "packages/boot/plugin-market/tests/parse-worker.spec.ts",
+    "packages/boot/plugin-market/tests/parse.spec.ts",
+    "packages/boot/plugin-market/tests/repository-cache.spec.ts",
+    "packages/boot/plugin-market/tests/tools.spec.ts",
+    "packages/bundle/web-app/tests/browser-open.spec.ts",
+    "packages/bundle/web-app/tests/public-url.spec.ts",
+    "packages/bundle/web-app/tests/startup.spec.ts",
+    "packages/bundle/web-app/tests/web-app.spec.ts",
+    "packages/client/connection/tests/api-request-trust.host.spec.ts",
+    "packages/client/connection/tests/binary-rpc.host.spec.ts",
+    "packages/client/connection/tests/browser-auth.host.spec.ts",
+    "packages/client/connection/tests/fetch-routes.host.spec.ts",
+    "packages/client/connection/tests/node-half.host.spec.ts",
+    "packages/client/file-upload/tests/file-upload-http.host.spec.ts",
+    "packages/client/locale/tests/config.host.spec.ts",
+    "packages/client/modules/tests/node-half.client.spec.ts",
+    "packages/client/modules/tests/package-assets.client.spec.ts",
+    "packages/client/product-analytics/tests/collection.client.spec.ts",
+    "packages/client/product-analytics/tests/collection.host.spec.ts",
+    "packages/client/product-analytics/tests/environment-query.host.spec.ts",
+    "packages/client/product-analytics/tests/environment.host.spec.ts",
+    "packages/client/shortcuts/tests/config.host.spec.ts",
+    "packages/client/ui-account-notifications/tests/config.client.spec.ts",
+    "packages/client/ui-plugin-manager/tests/registry-probe.host.spec.ts",
+    "packages/client/ui-settings-account/tests/config.client.spec.ts",
+    "packages/client/ui-settings-general/tests/config.host.spec.ts",
+    "packages/client/ui-sidebar-documentpreview/tests/config.host.spec.ts",
+    "packages/client/ui-theme/tests/config.host.spec.ts",
+    "packages/compaction/command-compact/tests/command-compact.spec.ts",
+    "packages/compaction/compaction-basic/tests/compaction-basic.spec.ts",
+    "packages/compaction/compaction-basic/tests/manual-compaction.spec.ts",
+    "packages/compaction/compaction-image-offload/tests/image-offload.spec.ts",
+    "packages/compaction/compaction-image-offload/tests/projection.spec.ts",
+    "packages/compaction/compaction/tests/compaction.spec.ts",
+    "packages/context/agent-instructions/tests/agent-instructions.spec.ts",
+    "packages/context/file-reference-local/tests/service.spec.ts",
+    "packages/context/harness-dev-context/tests/harness-dev-context.spec.ts",
+    "packages/core/agent-default-model/tests/agent-default-model.spec.ts",
+    "packages/core/agent-loop/tests/agent-initiator.spec.ts",
+    "packages/core/agent-loop/tests/agent.spec.ts",
+    "packages/core/agent-loop/tests/config-session-id.spec.ts",
+    "packages/core/agent-loop/tests/inbox.spec.ts",
+    "packages/core/agent-loop/tests/input-lifecycle.spec.ts",
+    "packages/core/agent-loop/tests/model.spec.ts",
+    "packages/core/agent-loop/tests/request-reconstruction.spec.ts",
+    "packages/core/agent-loop/tests/resource-lifecycle.spec.ts",
+    "packages/core/agent-loop/tests/resume.spec.ts",
+    "packages/core/agent-loop/tests/scope-lifecycle.spec.ts",
+    "packages/core/agent-loop/tests/system-prompt-admission.spec.ts",
+    "packages/core/agent-loop/tests/tool-calls.spec.ts",
+    "packages/core/agent-loop/tests/tool-updates.spec.ts",
+    "packages/core/agent/tests/agent-initiator.spec.ts",
+    "packages/core/agent/tests/agent.spec.ts",
+    "packages/core/agent/tests/archive-admission.spec.ts",
+    "packages/core/agent/tests/model-selection.spec.ts",
+    "packages/core/session/tests/append.spec.ts",
+    "packages/core/session/tests/derived-cache.spec.ts",
+    "packages/core/session/tests/developer-header.spec.ts",
+    "packages/core/session/tests/fork.spec.ts",
+    "packages/core/session/tests/message-projections.spec.ts",
+    "packages/core/session/tests/plugin-records.spec.ts",
+    "packages/core/session/tests/repair.spec.ts",
+    "packages/core/session/tests/session.spec.ts",
+    "packages/core/session/tests/store-membership.spec.ts",
+    "packages/core/session/tests/surface.spec.ts",
+    "packages/core/session/tests/tool-history.spec.ts",
+    "packages/core/system-prompt/tests/scoped.spec.ts",
+    "packages/core/system-prompt/tests/system-prompt.spec.ts",
+    "packages/core/tool-executor-ptc/tests/ptc-calls.spec.ts",
+    "packages/core/tool-executor-ptc/tests/ptc.spec.ts",
+    "packages/core/tool-executor-ptc/tests/py-types.spec.ts",
+    "packages/core/tool-executor-ptc/tests/ts-types.spec.ts",
+    "packages/core/tools/tests/activation.spec.ts",
+    "packages/core/tools/tests/scoped.spec.ts",
+    "packages/core/tools/tests/tools.spec.ts",
+    "packages/credentials/authorization/tests/authorization.spec.ts",
+    "packages/credentials/credentials-local/tests/drain.spec.ts",
+    "packages/credentials/credentials-local/tests/local.spec.ts",
+    "packages/credentials/credentials-local/tests/migration.spec.ts",
+    "packages/credentials/credentials-local/tests/records.spec.ts",
+    "packages/credentials/credentials-local/tests/review-fixes.spec.ts",
+    "packages/credentials/credentials-local/tests/watcher.spec.ts",
+    "packages/credentials/deepseek-account/tests/account-tasks.spec.ts",
+    "packages/credentials/deepseek-account/tests/account.spec.ts",
+    "packages/credentials/deepseek-account/tests/authorization-response.spec.ts",
+    "packages/credentials/deepseek-account/tests/client-headers.spec.ts",
+    "packages/credentials/deepseek-account/tests/details.spec.ts",
+    "packages/credentials/deepseek-account/tests/diagnostics.spec.ts",
+    "packages/credentials/deepseek-account/tests/logout.spec.ts",
+    "packages/credentials/deepseek-account/tests/notifications.spec.ts",
+    "packages/credentials/deepseek-account/tests/origins.spec.ts",
+    "packages/credentials/deepseek-account/tests/remote.spec.ts",
+    "packages/deliverables/deliverable-file-references/tests/prompt.spec.ts",
+    "packages/deliverables/tool-present/tests/present.spec.ts",
+    "packages/deliverables/workspace-changes/tests/compare.spec.ts",
+    "packages/deliverables/workspace-changes/tests/git.spec.ts",
+    "packages/deliverables/workspace-changes/tests/plugin.spec.ts",
+    "packages/document/office-kit/tests/operations.spec.ts",
+    "packages/document/office-kit/tests/output.spec.ts",
+    "packages/document/office-kit/tests/outputs.spec.ts",
+    "packages/document/office-kit/tests/provider.spec.ts",
+    "packages/document/office-kit/tests/queue.spec.ts",
+    "packages/document/office-kit/tests/remote.spec.ts",
+    "packages/document/tool-office/tests/activation.spec.ts",
+    "packages/document/tool-office/tests/tool-office.spec.ts",
+    "packages/experimental/auto-review/tests/auto-review.spec.ts",
+    "packages/extensions/cordis-host-runner/tests/composition.spec.ts",
+    "packages/extensions/cordis-host-runner/tests/inspect-registry.spec.ts",
+    "packages/extensions/cordis-host-runner/tests/runner.spec.ts",
+    "packages/extensions/cordis-host-runner/tests/versioning.spec.ts",
+    "packages/extensions/tool-cordis/tests/config.spec.ts",
+    "packages/extensions/tool-cordis/tests/host.spec.ts",
+    "packages/fs/fs-local/tests/patch-mutations.spec.ts",
+    "packages/fs/fs-local/tests/watch.spec.ts",
+    "packages/fs/fs-patch/tests/apply.spec.ts",
+    "packages/fs/fs-patch/tests/parse.spec.ts",
+    "packages/fs/fs-sandbox/tests/fs-sandbox.spec.ts",
+    "packages/fs/tool-fs-search/tests/integration.spec.ts",
+    "packages/fs/tool-fs-search/tests/load-path.spec.ts",
+    "packages/fs/tool-fs-search/tests/presentation.spec.ts",
+    "packages/fs/tool-fs-search/tests/rg-path.spec.ts",
+    "packages/fs/tool-fs-search/tests/tools.spec.ts",
+    "packages/fs/tool-fs/tests/apply-patch-presentation.spec.ts",
+    "packages/fs/tool-fs/tests/apply-patch.spec.ts",
+    "packages/fs/tool-fs/tests/diff.spec.ts",
+    "packages/fs/tool-fs/tests/error.spec.ts",
+    "packages/fs/tool-fs/tests/integration.spec.ts",
+    "packages/fs/tool-fs/tests/patch/commit.spec.ts",
+    "packages/fs/tool-fs/tests/patch/preflight.spec.ts",
+    "packages/fs/tool-fs/tests/patch/resolution.spec.ts",
+    "packages/fs/tool-fs/tests/patch/success.spec.ts",
+    "packages/fs/tool-fs/tests/read-image.spec.ts",
+    "packages/fs/tool-fs/tests/read-render.spec.ts",
+    "packages/fs/tool-fs/tests/tools.spec.ts",
+    "packages/host/frontend-static/tests/frontend-static.spec.ts",
+    "packages/host/plugin-inventory/tests/inventory.spec.ts",
+    "packages/host/product-telemetry-otel/tests/telemetry.spec.ts",
+    "packages/host/webserver/tests/webserver.spec.ts",
+    "packages/interaction/commands/tests/builtin.spec.ts",
+    "packages/interaction/commands/tests/commands.spec.ts",
+    "packages/interaction/permission-presets/tests/permission-presets.spec.ts",
+    "packages/interaction/user-approval/tests/approval.spec.ts",
+    "packages/interaction/user-approval/tests/projection.spec.ts",
+    "packages/jobs/jobs-local/tests/events.spec.ts",
+    "packages/jobs/jobs-local/tests/jobs.spec.ts",
+    "packages/jobs/jobs-local/tests/pump.spec.ts",
+    "packages/jobs/jobs-local/tests/ring.spec.ts",
+    "packages/jobs/tool-jobs/tests/steer-wait.spec.ts",
+    "packages/jobs/tool-jobs/tests/tool-jobs.spec.ts",
+    "packages/llm/deepseek-llm-api-extensions/tests/registry.spec.ts",
+    "packages/llm/llm-deepseek-account/tests/account-quota.spec.ts",
+    "packages/llm/llm-deepseek-account/tests/config.spec.ts",
+    "packages/llm/llm-deepseek-account/tests/provider.spec.ts",
+    "packages/llm/llm-deepseek-api-key/tests/config.spec.ts",
+    "packages/llm/llm-deepseek-api-key/tests/discovery.spec.ts",
+    "packages/llm/llm-deepseek-api-key/tests/listing.spec.ts",
+    "packages/llm/llm-deepseek/tests/adapter.spec.ts",
+    "packages/llm/llm-deepseek/tests/built-in-catalog.spec.ts",
+    "packages/llm/llm-deepseek/tests/credential.spec.ts",
+    "packages/llm/llm-deepseek/tests/dynamic-config.spec.ts",
+    "packages/llm/llm-deepseek/tests/extensions.spec.ts",
+    "packages/llm/llm-deepseek/tests/file-store.spec.ts",
+    "packages/llm/llm-deepseek/tests/files-api.spec.ts",
+    "packages/llm/llm-deepseek/tests/files.spec.ts",
+    "packages/llm/llm-deepseek/tests/image-tokens.spec.ts",
+    "packages/llm/llm-deepseek/tests/listed-catalog.spec.ts",
+    "packages/llm/llm-deepseek/tests/listing-cache.spec.ts",
+    "packages/llm/llm-deepseek/tests/listing.spec.ts",
+    "packages/llm/llm-deepseek/tests/model-info.spec.ts",
+    "packages/llm/llm-deepseek/tests/request-pricing.spec.ts",
+    "packages/llm/llm-deepseek/tests/serialize.spec.ts",
+    "packages/llm/llm-deepseek/tests/stream.spec.ts",
+    "packages/llm/llm-deepseek/tests/upload-index.spec.ts",
+    "packages/llm/llm/tests/api-key.spec.ts",
+    "packages/llm/llm/tests/content.spec.ts",
+    "packages/llm/llm/tests/service.spec.ts",
+    "packages/mcp/mcp-client/tests/apply.spec.ts",
+    "packages/mcp/mcp-client/tests/credentials.spec.ts",
+    "packages/mcp/mcp-client/tests/generation.spec.ts",
+    "packages/mcp/mcp-client/tests/mcp-client.spec.ts",
+    "packages/mcp/mcp-client/tests/negotiation-lifecycle.spec.ts",
+    "packages/mcp/mcp-client/tests/probe.spec.ts",
+    "packages/mcp/mcp-client/tests/protocol.spec.ts",
+    "packages/mcp/mcp-client/tests/reconnect.spec.ts",
+    "packages/mcp/mcp-client/tests/server-context.spec.ts",
+    "packages/mcp/mcp-client/tests/status.spec.ts",
+    "packages/mcp/mcp-client/tests/tool-definition.spec.ts",
+    "packages/mcp/mcp-manager/tests/manager.spec.ts",
+    "packages/mcp/mcp-resources/tests/resources.spec.ts",
+    "packages/preset/agent-preset-registry/tests/composition-inventory.spec.ts",
+    "packages/preset/agent-preset-registry/tests/display.spec.ts",
+    "packages/preset/agent-preset-registry/tests/mount.spec.ts",
+    "packages/preset/agent-preset-registry/tests/registry.spec.ts",
+    "packages/preset/agent-preset-registry/tests/session.spec.ts",
+    "packages/preset/agent-preset-registry/tests/tool-executors.spec.ts",
+    "packages/ptc-runtime/ptc-runtime-node/tests/bindings.spec.ts",
+    "packages/ptc-runtime/ptc-runtime-node/tests/host-failures.spec.ts",
+    "packages/ptc-runtime/ptc-runtime-node/tests/policy-processes.spec.ts",
+    "packages/ptc-runtime/ptc-runtime-node/tests/rpc.spec.ts",
+    "packages/ptc-runtime/ptc-runtime-node/tests/timeout.spec.ts",
+    "packages/sandbox/sandbox-policy/tests/policy.spec.ts",
+    "packages/sandbox/sandbox/tests/diagnostics.spec.ts",
+    "packages/sandbox/sandbox/tests/escalation.spec.ts",
+    "packages/sandbox/sandbox/tests/roots.spec.ts",
+    "packages/schedule/schedule/tests/change-notice.spec.ts",
+    "packages/schedule/schedule/tests/cron.spec.ts",
+    "packages/schedule/schedule/tests/daily.spec.ts",
+    "packages/schedule/schedule/tests/delete-inactive.spec.ts",
+    "packages/schedule/schedule/tests/delivery-history.spec.ts",
+    "packages/schedule/schedule/tests/domain.spec.ts",
+    "packages/schedule/schedule/tests/malformed-unit.spec.ts",
+    "packages/schedule/schedule/tests/management.spec.ts",
+    "packages/schedule/schedule/tests/recovery.spec.ts",
+    "packages/schedule/schedule/tests/rrule.spec.ts",
+    "packages/schedule/schedule/tests/runtime.spec.ts",
+    "packages/schedule/schedule/tests/serial-delivery.spec.ts",
+    "packages/schedule/schedule/tests/storage-evolution.spec.ts",
+    "packages/schedule/schedule/tests/target-recovery.spec.ts",
+    "packages/schedule/schedule/tests/update.spec.ts",
+    "packages/schedule/schedule/tests/weekly.spec.ts",
+    "packages/schedule/tool-schedule/tests/tool-schedule.spec.ts",
+    "packages/sdk/client/tests/cot-translation-projection.spec.ts",
+    "packages/sdk/client/tests/dispose.spec.ts",
+    "packages/sdk/client/tests/run.spec.ts",
+    "packages/sdk/client/tests/sdk-client.spec.ts",
+    "packages/sdk/protocol/tests/transport.spec.ts",
+    "packages/sdk/server/tests/approval.spec.ts",
+    "packages/sdk/server/tests/commands.spec.ts",
+    "packages/sdk/server/tests/query-activity.spec.ts",
+    "packages/sdk/server/tests/query-input.spec.ts",
+    "packages/sdk/server/tests/resume.spec.ts",
+    "packages/sdk/server/tests/server.spec.ts",
+    "packages/sdk/server/tests/user-questions.spec.ts",
+    "packages/sdk/server/tests/wait.spec.ts",
+    "packages/session/session-format-catalog/tests/catalog.spec.ts",
+    "packages/session/session-format-catalog/tests/children.spec.ts",
+    "packages/session/session-format-catalog/tests/current.spec.ts",
+    "packages/session/session-format-catalog/tests/developer-history.spec.ts",
+    "packages/session/session-format-catalog/tests/preset-migration.spec.ts",
+    "packages/session/session-log-deepseek/tests/config.spec.ts",
+    "packages/session/session-log-deepseek/tests/feedback-composition.spec.ts",
+    "packages/session/session-log-deepseek/tests/upload.spec.ts",
+    "packages/session/session-persistence-jsonl/tests/catalog-migration.spec.ts",
+    "packages/session/session-persistence-jsonl/tests/jsonl.spec.ts",
+    "packages/session/session-persistence-jsonl/tests/load-path.spec.ts",
+    "packages/session/session-persistence-jsonl/tests/multi-edge-publication.spec.ts",
+    "packages/session/session-persistence-jsonl/tests/native-developer-admission.spec.ts",
+    "packages/session/session-persistence-jsonl/tests/native-source-admission.spec.ts",
+    "packages/session/session-projection-cache/tests/cache.spec.ts",
+    "packages/session/session-projection/tests/compatibility.spec.ts",
+    "packages/session/session-projection/tests/registration-reader.spec.ts",
+    "packages/session/session-projection/tests/registry.spec.ts",
+    "packages/session/session-projection/tests/summary.spec.ts",
+    "packages/session/session-stats/tests/projection.spec.ts",
+    "packages/session/session-telemetry-otel/tests/egress.spec.ts",
+    "packages/session/session-telemetry-otel/tests/otel.spec.ts",
+    "packages/session/session-telemetry/tests/redact.spec.ts",
+    "packages/session/session-telemetry/tests/telemetry.spec.ts",
+    "packages/session/session-title/tests/initialization.spec.ts",
+    "packages/session/session-title/tests/provider.spec.ts",
+    "packages/session/session-title/tests/rename.spec.ts",
+    "packages/session/session-title/tests/service-contracts.spec.ts",
+    "packages/session/session-title/tests/session-title.spec.ts",
+    "packages/session/session-turn-outline/tests/projection.spec.ts",
+    "packages/session/working-directory/tests/admission.spec.ts",
+    "packages/session/working-directory/tests/working-directory.spec.ts",
+    "packages/settings/settings/tests/configuration-inheritance.spec.ts",
+    "packages/settings/settings/tests/configuration.spec.ts",
+    "packages/settings/settings/tests/editor-failures.spec.ts",
+    "packages/settings/settings/tests/redact.spec.ts",
+    "packages/settings/settings/tests/schema.spec.ts",
+    "packages/shell/pwsh-local/tests/executor.spec.ts",
+    "packages/shell/pwsh-local/tests/settings.spec.ts",
+    "packages/shell/pwsh-sandbox/tests/foreground-timeout.spec.ts",
+    "packages/shell/pwsh-sandbox/tests/sandbox.spec.ts",
+    "packages/shell/shell-env/tests/shell-env.spec.ts",
+    "packages/shell/tool-pwsh-persistent/tests/loader-composition.spec.ts",
+    "packages/shell/tool-pwsh-persistent/tests/readiness-timeline.spec.ts",
+    "packages/shell/tool-pwsh-persistent/tests/tools.spec.ts",
+    "packages/shell/tool-pwsh/tests/background-start.spec.ts",
+    "packages/shell/tool-pwsh/tests/background.spec.ts",
+    "packages/shell/tool-pwsh/tests/tools.spec.ts",
+    "packages/skill/skill-office/tests/skill-office.spec.ts",
+    "packages/skill/skill/tests/skill.spec.ts",
+    "packages/skill/tool-workspace-dependencies/tests/primary-runtime-copy.spec.ts",
+    "packages/skill/tool-workspace-dependencies/tests/tool-workspace-dependencies.spec.ts",
+    "packages/storage/storage-domain/tests/domain.spec.ts",
+    "packages/storage/storage-json/tests/json-backend.spec.ts",
+    "packages/storage/storage-json/tests/per-record-batch.spec.ts",
+    "packages/storage/storage-sqlite/tests/sqlite-backend.spec.ts",
+    "packages/subagent/subagent-acp/tests/subagent-acp.spec.ts",
+    "packages/subagent/subagent-dsh-sdk/tests/subagent-dsh-sdk.spec.ts",
+    "packages/subagent/subagent-fork-in-process/tests/subagent-fork-in-process.spec.ts",
+    "packages/subagent/subagent/tests/activation-policy.spec.ts",
+    "packages/subagent/subagent/tests/archive-admission.spec.ts",
+    "packages/subagent/subagent/tests/catalog.spec.ts",
+    "packages/subagent/subagent/tests/child-agent.spec.ts",
+    "packages/subagent/subagent/tests/continuation-messages-adapter.spec.ts",
+    "packages/subagent/subagent/tests/continuation-messages.spec.ts",
+    "packages/subagent/subagent/tests/continuation.spec.ts",
+    "packages/subagent/subagent/tests/control.spec.ts",
+    "packages/subagent/subagent/tests/external-activation.spec.ts",
+    "packages/subagent/subagent/tests/external-lifecycle.spec.ts",
+    "packages/subagent/subagent/tests/factory-settlement.spec.ts",
+    "packages/subagent/subagent/tests/list-children.spec.ts",
+    "packages/subagent/subagent/tests/out-of-process.spec.ts",
+    "packages/subagent/subagent/tests/parked-wait.spec.ts",
+    "packages/subagent/subagent/tests/run-settlement.spec.ts",
+    "packages/subagent/subagent/tests/service.spec.ts",
+    "packages/subagent/subagent/tests/sibling-messages.spec.ts",
+    "packages/subagent/subagent/tests/structured.spec.ts",
+    "packages/subagent/subagent/tests/timing-projection.spec.ts",
+    "packages/subagent/tool-subagent-control/tests/list-agents.spec.ts",
+    "packages/subagent/tool-subagent-control/tests/tool-subagent-control.spec.ts",
+    "packages/subagent/tool-subagent-control/tests/wait-agent.spec.ts",
+    "packages/subagent/tool-subagent/tests/depth-context.spec.ts",
+    "packages/subagent/tool-subagent/tests/list-models.spec.ts",
+    "packages/subagent/tool-subagent/tests/model-selection-initialization.spec.ts",
+    "packages/subagent/tool-subagent/tests/model-selection-settings.spec.ts",
+    "packages/subagent/tool-subagent/tests/model-selection.spec.ts",
+    "packages/subagent/tool-subagent/tests/preset-selection.spec.ts",
+    "packages/subagent/tool-subagent/tests/tool-subagent.spec.ts",
+    "packages/subprocess/subprocess-local/tests/spawn.spec.ts",
+    "packages/subprocess/subprocess-local/tests/windows-inspector.spec.ts",
+    "packages/subprocess/subprocess-local/tests/windows-job.spec.ts",
+    "packages/subprocess/subprocess/tests/error.spec.ts",
+    "packages/team/agent-team/tests/persistence.spec.ts",
+    "packages/team/agent-team/tests/projection-events.spec.ts",
+    "packages/team/agent-team/tests/team.spec.ts",
+    "packages/team/tool-agent-team/tests/tool-team.spec.ts",
+    "packages/telemetry/otel/tests/event-log.spec.ts",
+    "packages/telemetry/otel/tests/session-log.spec.ts",
+    "packages/terminal/terminal/tests/service.spec.ts",
+    "packages/typert/loader/tests/lazy-info.spec.ts",
+    "packages/typert/loader/tests/loader.spec.ts",
+    "packages/typert/protocol/tests/protocol.spec.ts",
+    "packages/typert/protocol/tests/remote-access.spec.ts",
+    "packages/typert/protocol/tests/remote-info.spec.ts",
+    "packages/typert/registry/tests/typert.spec.ts",
+    "packages/util/home-paths/tests/home-paths.spec.ts",
+    "packages/util/native-command/tests/file-applications-linux.spec.ts",
+    "packages/util/native-command/tests/file-applications-windows.spec.ts",
+    "packages/util/native-command/tests/file-applications.spec.ts",
+    "packages/util/plugin-detail/tests/document.spec.ts",
+    "packages/util/plugin-detail/tests/files.spec.ts",
+    "packages/util/plugin-market-index/tests/plugin-market-index.spec.ts",
+    "packages/util/ripgrep/tests/path.spec.ts",
+    "packages/util/ripgrep/tests/stream.spec.ts",
+    "packages/util/time/tests/cron.spec.ts",
+    "packages/util/time/tests/instant.spec.ts",
+    "packages/util/time/tests/recurrence.spec.ts",
+    "packages/util/time/tests/rrule.spec.ts",
+    "packages/util/timeout/tests/timeout.spec.ts",
+    "packages/web/web-deepseek-api/tests/composition.spec.ts",
+    "packages/web/web-deepseek-api/tests/credential-resolution.spec.ts",
+    "packages/web/web-deepseek-api/tests/credentials.spec.ts",
+    "packages/web/web-deepseek-api/tests/egress.spec.ts",
+    "packages/web/web-deepseek-api/tests/fetch.spec.ts",
+    "packages/web/web-deepseek-api/tests/redirect.spec.ts",
+    "packages/web/web-deepseek-api/tests/search.spec.ts",
+    "packages/web/web-deepseek-api/tests/transport.spec.ts",
+    "packages/web/web-fetch-http/tests/fetch-http.spec.ts",
+    "packages/web/web-fetch-http/tests/proxy.spec.ts",
+    "packages/web/web-search-deepseek/tests/deepseek.spec.ts",
+    "packages/web/web-search-deepseek/tests/egress.spec.ts",
+    "packages/web/web-search-deepseek/tests/redirect.spec.ts",
+    "packages/web/web-search-deepseek/tests/settings.spec.ts",
+    "packages/web/web/tests/web.spec.ts",
+    "packages/workflow/tool-workflow/tests/tool-workflow.spec.ts",
+    "packages/workflow/workflow-ptc/tests/guest.spec.ts",
+    "packages/workflow/workflow-ptc/tests/host.spec.ts",
+    "packages/workflow/workflow-ptc/tests/meta.spec.ts",
+    "packages/workflow/workflow-ptc/tests/realm.spec.ts",
+    "packages/workflow/workflow-ptc/tests/workflow-ptc.spec.ts",
+    "packages/workspace/workspace/tests/workspace.spec.ts"
+  ],
+  "paired": [
+    {
+      "script": "scripts/rc022_access_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_account_login_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_account_logout_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_account_notification_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_account_projection_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_account_protocol_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_account_provider_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_account_state_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_account_surfaces_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_acp_provider_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_activation_result_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_agent_boundary_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_agent_registration_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_analytics_environment_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_analytics_os_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_analytics_query_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_api_key_provider_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_appearance_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_application_resources_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_archive_admission_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_archive_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_assistant_reconnect_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_associated_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_authorization_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_authorized_calls_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_authorized_events_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_auto_review_decision_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_auto_review_gate_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_auto_review_snapshot_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_browser_terminal_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_build_approval_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_bundle_inventory_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_catalog_facts_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_catalog_walk_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_change_compare_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_change_git_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_change_inputs_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_change_recorder_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_change_routes_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_child_composition_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_client_assets_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_client_chunks_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_client_configuration_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_client_registry_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_client_resources_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_compaction_recovery_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_compatibility_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_config_async_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_config_editor_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_config_graph_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_config_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_config_projection_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_configured_model_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_connection_auth_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_connection_peer_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_connection_plugin_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_connection_trust_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_content_coding_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_context_refresh_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_control_tools_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_cordis_inspect_tools_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_credential_editor_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_credential_storage_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_credentials_document_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_deepseek_credentials_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_default_model_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_delegation_selection_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_delegation_tool_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_detail_http_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_directory_consumers_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_directory_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_domain_batch_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_driver_initiators_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_duplex_mux_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_environment_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_event_composition_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_events_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_executor_composition_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_executor_selection_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_external_settlement_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_factory_publication_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_factory_slot_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_factory_storage_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_fetch_policy_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_file_applications_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_file_consumers_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_file_store_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_files_http_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_format_values_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_frontend_resource_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_fs_mutations_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_fs_patch_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_fs_watch_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_gateway_transport_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_general_settings_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_git_connection_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_harness_dev_context_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_history_reads_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_hmr_cache_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_hmr_changes_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_hmr_consumers_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_hmr_dispatch_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_hmr_exit_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_hmr_files_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_hmr_glob_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_hmr_graph_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_hmr_mapping_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_hmr_namespaces_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_hmr_partial_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_hmr_plan_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_hmr_profile_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_hmr_queue_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_hmr_ready_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_hmr_roots_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_hmr_watch_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_hmr_writes_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_host_runner_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_http_fetch_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_image_catalog_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_image_offload_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_image_targets_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_image_tool_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_inbox_readers_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_include_atomic_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_include_journal_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_include_queue_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_initiators_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_inspect_api_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_inspect_config_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_inspect_host_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_inspect_registry_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_install_spec_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_instruction_config_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_instruction_files_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_instruction_render_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_instruction_runtime_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_instruction_state_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_invocation_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_job_controller_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_job_output_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_job_registry_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_job_tools_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_json_single_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_listed_catalog_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_listing_cache_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_listing_http_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_listing_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_loader_lifecycle_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_loader_move_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_loader_timing_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_loader_volatile_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_local_credentials_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_logger_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_manager_detail_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_manager_exemptions_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_manager_git_update_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_manager_inspection_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_manager_installation_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_manager_update_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_market_body_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_market_boundary_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_market_cache_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_market_detail_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_market_files_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_market_git_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_market_http_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_market_index_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_market_json_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_market_listing_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_market_remote_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_market_repository_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_market_search_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_market_tools_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_mcp_cache_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_mcp_dispatch_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_mcp_flow_budget_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_mcp_generation_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_mcp_header_transport_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_mcp_http_negotiation_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_mcp_manager_entries_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_mcp_manager_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_mcp_negotiation_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_mcp_output_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_mcp_param_headers_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_mcp_probe_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_mcp_request_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_mcp_resource_connection_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_mcp_resources_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_mcp_result_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_mcp_server_probe_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_mcp_status_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_mcp_stdio_negotiation_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_mcp_supervision_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_mcp_templates_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_media_references_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_messages_adapter_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_messages_framing_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_messages_images_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_messages_search_plugin_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_messages_search_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_messages_wire_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_model_discovery_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_model_listing_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_model_selection_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_named_catalog_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_native_batch_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_office_carrier_probe.py",
+      "node": false,
+      "browser": true,
+      "receipt": "report",
+      "timeout_seconds": 900,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_office_composition_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_office_contracts_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "all_equal",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_office_converter_probe.py",
+      "node": true,
+      "browser": true,
+      "receipt": "report",
+      "timeout_seconds": 900,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_office_font_discovery_probe.py",
+      "node": true,
+      "browser": true,
+      "receipt": "report",
+      "timeout_seconds": 900,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_office_format_probe.py",
+      "node": true,
+      "browser": true,
+      "receipt": "report",
+      "timeout_seconds": 900,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_office_formats_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "summary",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_office_metadata_probe.py",
+      "node": true,
+      "browser": true,
+      "receipt": "report",
+      "timeout_seconds": 900,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_office_output_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "summary",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_office_outputs_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "summary",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_office_provider_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "summary",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_office_queue_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "summary",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_office_sdk_probe.py",
+      "node": true,
+      "browser": true,
+      "receipt": "report",
+      "timeout_seconds": 900,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_office_skills_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_office_tools_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_ordinary_spawn_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_otel_backend_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_otel_event_channel_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_otel_event_http_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_otel_http_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_otel_records_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_otel_service_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_otel_session_channel_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_otel_wire_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_package_meta_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_package_operations_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_package_run_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_package_view_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_packages_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_patch_execution_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_patch_tool_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_peer_index_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_per_record_batch_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_permission_catalog_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_persistent_protocol_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_pipeline_source_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_plugin_detail_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_plugin_inventory_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_plugin_manager_core_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_plugin_records_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_plugin_switch_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_plugin_tools_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_policy_processes_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_preflight_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_preset_expression_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_preset_registry_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_product_analytics_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_product_telemetry_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_profile_context_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_profile_hmr_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_profile_layers_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_profile_replace_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_projection_domains_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_projection_handles_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_provisions_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_ptc_calls_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_ptc_confinement_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_ptc_control_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_ptc_dispatches_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_ptc_executor_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_ptc_protocol_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_ptc_runtime_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_ptc_sdk_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_ptc_ts_sdk_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_pwsh_tool_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_python_package_command_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_python_package_query_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_query_activity_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_recompose_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_reconcile_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_registry_policy_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_registry_probe_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_related_publication_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_remote_access_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_remote_info_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "summary",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_remote_markers_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_request_extensions_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_request_files_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_resolution_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_resource_consumers_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_resources_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_ripgrep_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "summary",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_rpc_http_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_rpc_result_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_rrule_enumerator_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_runtime_loader_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_sandbox_escalation_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_sandbox_policy_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_sandbox_shell_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_schedule_cron_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_schedule_interval_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_schedule_runtime_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_schedule_service_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_schedule_storage_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_schedule_tools_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_schedule_update_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_schedule_wall_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_sdk_client_run_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_sdk_closure_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_sdk_directory_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_sdk_input_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_sdk_interaction_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_sdk_lineage_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_sdk_ownership_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_sdk_process_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_sdk_profile_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 600,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_sdk_run_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_sdk_session_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_selection_settings_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_session_access_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_session_activation_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_session_admission_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_session_append_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_session_composition_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_session_follow_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_session_fork_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_session_listeners_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_session_log_upload_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_session_projection_store_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_session_prompt_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_session_state_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_session_summary_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_settings_controller_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_settings_forms_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_settings_lifecycle_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_settings_schema_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_shell_execution_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_shell_job_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_skill_catalog_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_sqlite_batch_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_startup_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_step_admission_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_subagent_control_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_subagent_lifetime_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_subagent_manager_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_subagent_service_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_subagent_siblings_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_subagent_timing_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_subprocess_errors_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_team_projection_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_team_service_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_team_tools_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_terminal_controller_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_terminal_directory_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_terminal_engine_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_terminal_flow_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_terminal_screen_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_terminal_shells_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_time_instant_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_time_rrule_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_title_lifecycle_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_title_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_tool_admission_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_tool_pipeline_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_tool_recovery_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_tool_updates_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_trace_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_tree_membership_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_typert_artifact_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "summary",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_typert_binary_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "summary",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_typert_owner_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_upgrade_owner_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_uplink_inbox_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_upload_index_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_upload_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_v4_backend_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_v4_generation_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_volatile_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_waterfall_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_web_api_provider_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_web_api_selection_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_web_api_transport_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_web_resources_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_web_runtime_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_web_startup_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_web_tls_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_winpty_terminal_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_workflow_engine_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_workflow_guest_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_workflow_host_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_workflow_result_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_workspace_changes_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "summary",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_workspace_default_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_workspace_directory_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_workspace_files_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_workspace_manifest_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_workspace_membership_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_workspace_pins_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_workspace_preview_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "summary",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_workspace_remote_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_workspace_search_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "summary",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_workspace_tool_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_writable_roots_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    }
+  ],
+  "separate": [
+    {
+      "script": "scripts/rc022_application_probe.py",
+      "reason": "Candidate Loader bindings/anchors were a development bridge. Current installed Web/profile consumers must run without those overrides."
+    },
+    {
+      "script": "scripts/rc022_application_python_probe.py",
+      "reason": "Candidate PTC overlay is superseded by the installed explicit private Python provider and actual packaged PTC execution."
+    },
+    {
+      "script": "scripts/rc022_schedule_application_probe.py",
+      "reason": "Candidate composition bridge; current Schedule contracts remain selected and installed browser fresh/cold validation is separate."
+    },
+    {
+      "script": "scripts/rc022_schedule_browser_probe.py",
+      "reason": "Historical candidate-composition browser entry; retain its observations, qualify the actual packaged current composition separately."
+    },
+    {
+      "script": "scripts/rc022_market_browser_probe.py",
+      "reason": "Historical candidate-composition browser entry; current market domain/protocol contracts remain selected and packaged browser validation is separate."
+    },
+    {
+      "script": "scripts/rc022_office_runtime_probe.py",
+      "reason": "Isolated copied-module x86/x64 distribution observer; actual extracted Portable qualification supersedes the copied-module carrier."
+    }
+  ],
+  "historical_gate": {
+    "node": "v22.22.2",
+    "upstream": "a4c74a91e06b00fe0b0937bde982170c526cc842",
+    "policy": "The prior 21 Source configurations, 82 paired validators and receipts retain their original identity. Do not rewrite their fixed pins or reuse their results to certify current Source. Their Python regression consumers remain in the complete collection; this explicit current plan replaces the Source invocation roster, with actual installed/extracted application qualification required separately."
+  },
+  "selection_basis": {
+    "kind": "Development selection provenance only; never reused as current qualification",
+    "runs": 340,
+    "tests": 469,
+    "paired": 399
+  }
+}

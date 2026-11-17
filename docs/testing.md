@@ -34,6 +34,8 @@
 
 启动完整运行前，已知问题应已修复并经过定向验证；固定 Python/Node/原版依赖及实际浏览器应已准备好；写入者应已协调，正式候选应满足干净冻结要求。为该次运行选定新的输出目录，并明确要取得完整回归结果还是正式发行资格。
 
+rc022 协调切换期间，当前 Source/配对清单见 [release-gate-plan.json](../migration/candidates/rc022/release-gate-plan.json)。`scripts/rc022_gate_runner.py` 的 Source/paired 通道支持显式子集，子集回执标为 `complete_lane=false`，所有独立通道均为 `release_acceptance=false`。旧 Node 22、旧 Source 的 21 组配置、82 个配对及其回执保持原身份；不能仅换 pin 后当作当前资格。新完整编排与实际解压/浏览器通道完成前，独立通道通过不构成发行签收，见[当前通道进展](../migration/candidates/rc022/current-gate-lanes-checks.json)。
+
 `scripts/verify_release.py` 本身包括全量 Python 回归、固定原版 Source 配置、配对合同及同包实际解压/浏览器检查。正式统一门禁直接使用该入口，不在前面另外跑一次全量 pytest。单独执行全量 pytest 只证明其实际回归范围。
 
 完整入口在 pytest 收集结束时检查实际参数化实例与必跑清单，缺失、重复或歧义会在测试体执行前拒绝，并写入 `pytest-collection.json`。该报告只证明收集身份；最终仍须用实际执行后的 XML 检查通过、跳过及必跑覆盖，不能以 collect-only 代替回归验收。

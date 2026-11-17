@@ -1,0 +1,31 @@
+{
+  "part": "C9-O",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "scope": "Single JSON backend required by current Schedule v1 read/v2 write evolution",
+  "paired": {
+    "run": "rc022-json-single-paired-20261117-01",
+    "observations": 25,
+    "differences": 0,
+    "method": "Actual fixed Source format/parser and backend versus Native, including persisted documents, no-op reads/deletes, snapshots and concurrent handle exclusion."
+  },
+  "verification": {
+    "native": "27 passed: publication failures/rollback, held writes/close and pending opens, workspace/domain lifecycle and projection persistence consumers.",
+    "source": "33 original single JSON specifics and shared KV backend contract tests passed; 15 per-record tests deselected. Initial filter selected no tests, detected from JSON counts and corrected in a fresh source2 run."
+  },
+  "behavior": [
+    "Accepts explicitly compatible stored versions without modifying bytes on open. The in-memory stamp is current so the next successful atomic publication upgrades the document.",
+    "Rejects boolean/foreign version stamps and explicit null/array table shapes instead of silently discarding records.",
+    "Batch deletion publishes once, deduplicates keys and restores every removed row on failure; missing keys do not cause publication.",
+    "Unit close drains in-flight publications before releasing its slot. Backend close also awaits reserved pending opens and refuses their live results; repeated close calls await completion."
+  ],
+  "cleanup": {
+    "bytes_removed": 18295,
+    "owned_processes_after": [],
+    "retained": "Commands, hashes, exact paired observations, logs/XML/Source counts and cleanup receipt. Synthetic files, short workspaces and isolated homes removed."
+  },
+  "limitations": [
+    "Per-record backend batch/close parity is outside this single-layout change. Required existing per-record projection consumers passed, but their whole Source conformance is not claimed.",
+    "Python coroutine admission requires scheduling, unlike eager JavaScript Promise entry; cancellation and all possible write interleavings are not certified by these finite observations.",
+    "Schedule task schema/runtime/application composition, complete regression, Portable/browser/Win7 acceptance and upstream promotion remain pending."
+  ]
+}

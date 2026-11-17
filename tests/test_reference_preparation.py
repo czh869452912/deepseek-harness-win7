@@ -58,3 +58,27 @@ def test_preparation_refuses_wrong_source_before_package_manager_or_build(tmp_pa
         prepare_reference.main()
     assert all(command[0] == 'git' for command in commands)
     assert list((tmp_path / 'output').iterdir()) == []
+
+
+@pytest.mark.parametrize('node,pnpm,error', [
+    ('v22.22.2', '11.28.5', 'requires Node'),
+    ('v24.9.0', '11.7.0', 'package manager differs'),
+])
+def test_preparation_rejects_stale_toolchains_without_starting_install(tmp_path, monkeypatch, node, pnpm, error):
+    (tmp_path / 'scripts').mkdir()
+    (tmp_path / 'reference').mkdir()
+    (tmp_path / 'scripts/frontend-inputs.json').write_text(json.dumps({'target_upstream': '1' * 40}), encoding='utf-8')
+    (tmp_path / 'reference/package.json').write_text(json.dumps({'packageManager': 'pnpm@11.28.5'}), encoding='utf-8')
+    monkeypatch.setattr(prepare_reference, 'ROOT', tmp_path)
+    monkeypatch.setattr(prepare_reference.sys, 'argv', ['prepare_reference.py', '--output', str(tmp_path / 'output')])
+    def read(command, **kwargs):
+        if command[0] == 'git':
+            return '1' * 40 if command[-1] == 'HEAD' else ''
+        return node if command == ['node', '--version'] else pnpm
+    monkeypatch.setattr(prepare_reference.subprocess, 'check_output', read)
+    def forbidden(*args, **kwargs):
+        pytest.fail('A stale toolchain must not install or build')
+    monkeypatch.setattr(prepare_reference.subprocess, 'run', forbidden)
+    with pytest.raises(ValueError, match=error):
+        prepare_reference.main()
+    assert list((tmp_path / 'output').iterdir()) == []

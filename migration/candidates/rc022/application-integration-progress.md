@@ -1,6 +1,6 @@
 # 应用提供方与组合接入
 
-固定目标：`38a6a5c965aa99ab525161efb7cc5cf1fe62fced`。本页记录定向检查；生产 pin 和 `accepted_upstream` 尚未提升。
+固定目标：`38a6a5c965aa99ab525161efb7cc5cf1fe62fced`。本页记录定向检查；生产 pin 已在 C9-CC 协调切换，`accepted_upstream` 仍为 null，完整资格待后续验证。
 
 | 单元 | 已验证边界 | 记录 |
 | --- | --- | --- |
@@ -537,3 +537,5 @@
 | C9-CB | 前端原始构建记录随资源备份、核验和原字节导入，冷恢复不冒用旧归档；18 项导入与恢复定向 | [原始构建记录导入](frontend-build-record-checks.json) |
 
 | C9-CC | 生产目标、原版元数据/371 份前端、40 份 Typert 声明和当前宿主绑定协调切换；真实 Web 四预设、Python PTC、关停与七配置入口定向通过，完整资格仍待后续 | [协调安装切换](coordinated-installation-checks.json) |
+
+| C9-CD | Node 24.9/pnpm 11.28.5 原版 Source 准备、当前 Typert/Host/Client 构建顺序与五项静态库；实际构建及 6 项冷恢复/拒绝检查通过，371 份前端身份保持 | [Source 准备](source-preparation-checks.json) |

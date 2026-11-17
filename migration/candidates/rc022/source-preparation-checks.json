@@ -1,0 +1,17 @@
+{
+  "contract": "C9-CD",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "status": "targeted passed",
+  "toolchain": {"node": "v24.9.0", "pnpm": "11.28.5", "pnpm_integrity": "sha512-SEVj0wtMKtJ8tIqpT/KzAtvOvI/2vyiBbCWJiG4UbOf3bzVPO8GkOOb16XaMMCqgpvet2CMpA81M+BQmy8FNng=="},
+  "verification": [
+    {"run": "rc022-source-preparation-build-20261118-02", "exit_code": 0, "seconds": 168.062, "scope": "Actual frozen-lockfile installation, native host-addon preparation, original host-libraries Typert/compiler/bundler order, original Client project compilation and five static linked Node libraries. All 371 sealed browser members verified unchanged before/after; tracked Source stayed clean."},
+    {"run": "rc022-source-preparation-native-20261118-02", "passed": 6, "seconds": 12.57, "scope": "Actual sealed shell input coverage and cold restore/idempotence, changed observation rejection, wrong Source rejection, old Node/pnpm rejection before installation."}
+  ],
+  "diagnostics": "First original Host build failed on Windows EPERM renaming the experimental Inspector DevTools directory. Original Source remained unmodified; a second whole preparation passed. First mixed consumer run was interrupted after identifying an obsolete Messages fixture, with command/log and raw Session retained separately; it has no completed-test receipt.",
+  "cleanup": {
+    "record": ".goose/out/rc022-source-preparation-control-20261118-01/cleanup-rc022-source-preparation-native-20261118-01.json",
+    "removed": "Completed preparation test workspaces, tmp and home; cleanup also retired completed SDK/ACP/Headless consumer fixtures while preserving their observations.",
+    "retained": "Actual pinned reference dependencies, Host/Client outputs and original independent Source/toolchain are active C9 verification inputs until unified qualification. Build command receipts/logs remain. No failed DevTools staging directory remains."
+  },
+  "limitations": "Development Source preparation only. Does not add a Node product dependency, qualify an extracted release, or establish actual Windows 7 acceptance. Legacy release/oracle consumers still need current-target adaptation."
+}

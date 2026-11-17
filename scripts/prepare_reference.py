@@ -15,6 +15,22 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 from scripts import import_frontend, evidence_assets
 STATIC_CLIENT_LIBRARIES = ('web', 'store', 'ui-slots', 'ui-primitives', 'ui-dockkit')
+NODE_VERSION = 'v24.9.0'
+PNPM_VERSION = '11.28.5'
+
+
+def preparation_steps():
+    # Source's host-libraries mode owns Typert -> package compiler -> Host
+    # bundler ordering. Compile the Client face separately, then refresh only
+    # the Node libraries embedded by the sealed shell, never plugin artifacts.
+    return [
+        ('install', ['install', '--frozen-lockfile']),
+        ('native-system', ['run', 'build:native-system']),
+        ('host-build', ['exec', 'tsx', 'scripts/compile-referenced-projects.ts', 'host-libraries']),
+        ('client-types', ['exec', 'tsx', 'scripts/compile-referenced-projects.ts', 'client']),
+    ] + [('static-client-' + name,
+          ['exec', 'tsdown', '--config-loader', 'native', '--env.DSH_BUILD_FACE', 'client',
+           '--filter', '@deepseek-ai/dsh-client-' + name]) for name in STATIC_CLIENT_LIBRARIES]
 
 
 def restore_frontend(root, source):
@@ -75,30 +91,29 @@ def main():
     if pin != target or dirty:
         raise ValueError('Preparation requires the unchanged pinned Source before install/build')
     package = json.loads((source / 'package.json').read_text(encoding='utf-8'))
-    pnpm = ROOT / 'scripts/source-runtime/node_modules/pnpm/bin/pnpm.mjs'
+    node_version = subprocess.check_output(['node', '--version'], encoding='utf-8').strip()
+    if node_version != NODE_VERSION:
+        raise ValueError('Pinned Source requires Node ' + NODE_VERSION)
+    pnpm = ROOT / 'scripts/source-runtime/node_modules/pnpm/bin/pnpm.cjs'
     version = subprocess.check_output(['node', str(pnpm), '--version'], encoding='utf-8').strip()
-    if package['packageManager'] != 'pnpm@' + version or version != '11.7.0':
+    if package['packageManager'] != 'pnpm@' + version or version != PNPM_VERSION:
         raise ValueError('Pinned Source package manager differs')
     commands = []
-    for name, args in [
-        ('install', ['install', '--frozen-lockfile']),
-        ('host-build', ['run', 'build:lib:host']),
-        ('client-types', ['exec', 'tsc', '-b', 'tsconfig.client.json']),
-        # These libraries are linked into the sealed shell. Refresh their
-        # ignored Node entries for Source consumers without rebuilding or
-        # replacing any original frontend/browser bundle observation.
-    ] + [('static-client-' + name, ['exec', 'tsdown', '--env.DSH_BUILD_FACE', 'client',
-             '--filter', '@deepseek-ai/dsh-client-' + name])
-         for name in STATIC_CLIENT_LIBRARIES]:
+    frontend_before = restore_frontend(ROOT, source)
+    for name, args in preparation_steps():
         command = ['node', str(pnpm), '--dir', str(source)] + args
         environment = dict(os.environ, CI='true')
         with (output / (name + '.log')).open('xb') as log:
             result = subprocess.run(command, cwd=str(ROOT), env=environment,
                                     stdout=log, stderr=subprocess.STDOUT, timeout=1800)
         commands.append(dict(command=command, exit_code=result.returncode))
+        (output / 'commands.json').write_text(json.dumps(commands, indent=2) + '\n', encoding='utf-8')
         if result.returncode:
             raise RuntimeError('Pinned Source ' + name + ' failed; see ' + str(output / (name + '.log')))
-    result = dict(pnpm=version, commands=commands, frontend=restore_frontend(ROOT, source))
+    if subprocess.check_output(['git', '-C', str(source), 'status', '--porcelain'], encoding='utf-8').strip():
+        raise ValueError('Source build changed tracked inputs')
+    result = dict(node=node_version, pnpm=version, commands=commands,
+                  frontend_before=frontend_before, frontend=restore_frontend(ROOT, source))
     (output / 'receipt.json').write_text(json.dumps(result, indent=2) + '\n', encoding='utf-8')
     print(json.dumps(dict(status='prepared', pnpm=version, restored=len(result['frontend']['restored']))))
     return 0

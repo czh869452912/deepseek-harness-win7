@@ -1,0 +1,25 @@
+{
+  "part": "C9-T",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "scope": "Current scoped Schedule model tools and isolated application binding",
+  "paired": {"run": "rc022-schedule-tools-paired3-20261117-01", "observations": 40, "differences": 0},
+  "verification": {
+    "native": "16 passed: actual tool dispatch and scoped cleanup, late provider teardown, durable management create/update/conflict/list/delete, validation refusal and direct service regressions.",
+    "source": "60 original tool-schedule tests passed.",
+    "earlier_failures": "First paired run used dict mutation on AgentOptions; first Native run used an incorrect service field and an empty update in the backend-error fixture. Diagnostics retained; corrected fixtures passed in fresh runs."
+  },
+  "behavior": [
+    "Registers schedule_create/list/view/edit only while the scoped Host Schedule service exists. Guidance is visible only with a create or edit tool.",
+    "Exact Source-derived normalized parameter/output schemas and descriptions are reproducible from the clean fixed checkout. Four delivery-limit descriptions are paired.",
+    "Refuses absent callers and delegated subagents; only each tool's declared ScheduleInputError codes survive. Unknown service errors are withheld.",
+    "Targets capture the currently composed preset. Open-root unknown parameters do not reach the management selector; edit selectors preserve validation and revision conflicts.",
+    "Seven task variants render local schedule times and withhold internal creation, activity, involved-session and message identities. Actual registry output validation, JSON rendering and generic presentations are paired."
+  ],
+  "application": {
+    "run": "rc022-application-candidate9-20261117-01",
+    "exit_code": 1,
+    "result": "Official Web booted; Minimal and Standard Sessions created. PTC waits for the missing Node runtime; Creative waits for plugin-market/tools. Partial progress only."
+  },
+  "cleanup": {"bytes_removed": 533618, "owned_processes_after": [], "retained": "Exact paired observations and inputs, original failures, Source JSON results, Native logs/XML and application diagnostics. All owned synthetic session files and short workspaces removed."},
+  "limitations": ["Controlled Host collaborator in paired tool observations; actual durable management tested independently and together through Native tool dispatch. No full live/browser delivery acceptance.", "Production bindings and accepted upstream remain unchanged; complete regression and release acceptance pending."]
+}

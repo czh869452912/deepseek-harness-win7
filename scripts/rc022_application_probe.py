@@ -18,6 +18,7 @@ ROOT=Path(__file__).resolve().parents[1]
 sys.path.insert(0,str(ROOT))
 TARGET='38a6a5c965aa99ab525161efb7cc5cf1fe62fced'
 BINDINGS={
+ '@deepseek-ai/dsh-tool-schedule':'dsh.schedule.tools_current:CurrentToolSchedule',
  '@deepseek-ai/dsh-schedule':'dsh.schedule.service_current:CurrentScheduleService',
  '@deepseek-ai/dsh-client-modules':'dsh.host.client_modules.current:CurrentClientModulesPlugin',
  '@deepseek-ai/dsh-cordis-host-runner':'dsh.extensions.host_runner_current:CurrentDynamicCordisRunner',
@@ -97,7 +98,8 @@ def main():
         source/'packages/client/modules/src/index.ts',source/'packages/client/modules/src/assets.ts',
         Path(__file__).resolve(),ROOT/'dsh/boot/plugin_registry_current.py',
         ROOT/'dsh/cordis/loader.py',ROOT/'dsh/api/session_agents_current.py',
-        ROOT/'dsh/host/client_modules/current.py',ROOT/'dsh/host/client_modules/resources_current.py',ROOT/'dsh/host/client_modules/assets_current.py']
+        ROOT/'dsh/host/client_modules/current.py',ROOT/'dsh/host/client_modules/resources_current.py',ROOT/'dsh/host/client_modules/assets_current.py',
+        *[ROOT/'dsh/schedule'/name for name in ['tools_current.py','tools_current.json','service_current.py','runtime_current.py','storage_current.py','domain_current.py','update_current.py']]]
     result['input_sha256']={path.relative_to(ROOT).as_posix():hashlib.sha256(path.read_bytes()).hexdigest() for path in inputs}
     result['source_clean_after']=not subprocess.check_output(['git','-C',str(source),'status','--porcelain','--untracked-files=no'],encoding='utf-8').strip()
     (output/'observations.json').write_text(json.dumps(result,ensure_ascii=True,indent=2),encoding='utf-8')

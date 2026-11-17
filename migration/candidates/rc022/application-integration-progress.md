@@ -413,3 +413,5 @@
 | C9-F | Official current Web serves 75 client entries; Session preset record boundary fixed, later activation failures retained | [Current Web resources and Session composition](application-current-resources-checks.json) |
 
 | C9-G | Official preset skills path expressions resolve through owning installation package | [Preset expressions](preset-expression-checks.json) |
+
+| C9-T | Current Schedule tools close the Standard Session activation gap; PTC and Creative providers remain pending | [Schedule tools](schedule-tools-checks.json) |

@@ -1,0 +1,31 @@
+{
+  "part": "C9-P",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "scope": "Current Host task schema, compatible row normalization and retained delivery history",
+  "paired": {
+    "run": "rc022-schedule-storage-paired-20261117-01",
+    "observations": 89,
+    "differences": 0,
+    "method": "Actual fixed task schema/history and JSON backend: admission, normalized values, sorted error issue paths/codes, seven persisted v1/read-only/v2-write/cold-read journeys, append retention and cursor pages."
+  },
+  "verification": {
+    "native": "22 passed: task/history cases, seven actual DomainFacility-compatible read/refused write/successful upgrade/reopen flows, immutable records and JSON/domain lifecycle consumers.",
+    "source": "47 original storage-evolution, malformed-unit and delivery-history tests passed. Their management/runtime integration portions remain Source-only evidence."
+  },
+  "behavior": [
+    "Explicit targets ignore obsolete Session bindings. Missing destinations reserve deterministic SHA-256 Session identities, including Node-compatible handling of lone UTF-16 surrogates, without allocating or activating a Session.",
+    "Normalizes inactive status, legacy receipts and history metadata while preserving existing committed targets. Missing receipt destinations, duplicate history message identities and mismatched latest receipts are refused.",
+    "Reads are detached, do not write bytes or synthesize creation timestamps. Actual failed Domain writes retain old bytes and memory; subsequent successful writes stamp v2 and remove the old top-level Session binding.",
+    "History pages use exclusive identity cursors and newest-first append order even after clock rollback. Retention appends the sent prompt, applies age/count limits and preserves unavailable/pruned flags; responses copy rows and retention metadata."
+  ],
+  "cleanup": {
+    "bytes_removed": 66645,
+    "owned_processes_after": [],
+    "retained": "Commands, hashes, paired values/issue paths, Source result JSON and Native logs/XML/observations. Owned synthetic files, short workspaces and isolated homes removed."
+  },
+  "limitations": [
+    "Finite JSON-shaped schema admission/normalization and issue paths/codes are compared; complete Zod error messages, regex patterns, issue ordering and arbitrary JavaScript values are not claimed.",
+    "Management/runtime/tool/application composition and Source-equivalent batch domain deletion remain pending; these modules are not yet production Schedule bindings.",
+    "No complete regression, Portable/browser/Win7 acceptance or upstream promotion."
+  ]
+}

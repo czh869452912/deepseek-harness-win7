@@ -1,0 +1,52 @@
+{
+  "part": "C1/C8-GY",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "scope": "Private pure native Config graph projection engine on the shipped Win7-compatible QuickJS worker",
+  "paired": {
+    "run": "rc022-config-projection-paired2-20261117-01",
+    "observations": 180,
+    "differences": 0,
+    "x86_observations": 180,
+    "x86_differences": 0,
+    "x86_receipt": "rc022-config-projection-control-20261117-01/x86-checks.json"
+  },
+  "verification": {
+    "native": "8 passed including actual x86 worker, recursive identity, omission/default validation, volatile errors, opaque annotations, builder cache/cycles and resource tamper rejection",
+    "source": "147 passed in unchanged schemastery-json-schema.spec.ts and config-schema.spec.ts",
+    "rebuild": "All bundle, driver, license and manifest bytes identical in a second independent build",
+    "scope_reason": "The native projector is a pure structure operation, so pair exact output and callback/builder behavior across the carried engine, then run the original Source projection/document tests. Live Loader and Python graph consumers are not included in this part."
+  },
+  "behavior": [
+    "Carries unmodified fixed Source projector/native/pattern and pinned Ajv 8.20.0 plus regexpp 4.12.2, with dependency licenses, complete bundled-input hashes and build-tool hashes. No machine Node runtime dependency.",
+    "Private tagged graph transport preserves aliases, cycles, undefined, non-finite numbers and opaque annotation objects. No plugin validator or transform callback executes.",
+    "Default validation uses the actual upstream Ajv implementation. The private worker normalizes Object.prototype descriptor insertion order to pinned V8 so structured constant pattern text matches exactly; original descriptors and isolated application realm are preserved.",
+    "Synchronous worker call is bounded and waits for its direct process. Resource manifest and every shipped resource are hash-checked before launch."
+  ],
+  "source_inputs": {
+    ".goose/out/rc022-prep-20261114-01/source/packages/boot/app-boot/src/config-schema/native.ts": "74c76cc02dbee5be5bd7f0029e2187728a7c52091392dab0e9156f822609166b",
+    ".goose/out/rc022-prep-20261114-01/source/packages/boot/app-boot/src/config-schema/pattern.ts": "fb94255cfde7c316d058c43a1ea4ed9e88437af05796caf5e40d1373cd7d43dd",
+    ".goose/out/rc022-prep-20261114-01/source/packages/boot/app-boot/src/config-schema/projector.ts": "6958a20b5bce6f730899aef263e594825f127f091c41606c267ed41857d44bba"
+  },
+  "diagnostics": {
+    "excluded": [
+      "rc022-config-projection-paired-20261117-01",
+      "rc022-config-projection-native-20261117-01"
+    ],
+    "reasons": [
+      "Three structured constant cases exposed QuickJS/V8 Object.prototype enumeration order. The isolated carrier shim fixes exact emitted pattern text.",
+      "The x86 embedded Python test initially omitted its explicit repository import path; corrected fixture passed. Neither failure is acceptance evidence."
+    ]
+  },
+  "limitations": [
+    "Private staged carrier only; live Python Schema encoding, trusted lazy builder callback bridge, live Config inspection provider and canonical CLI schema output remain subsequent work.",
+    "The graphs use actual Source Schemastery values, but their transport is an internal graph protocol rather than a user configuration input format.",
+    "x64 and x86 workers were executed on this Windows development host; this part does not establish new stock Windows 7 VM or full release acceptance. C1-C9 and product pin remain unpromoted."
+  ],
+  "cleanup": {
+    "bytes_removed": 2889159,
+    "receipt": "rc022-config-projection-source-20261117-01/cleanup.json",
+    "build_receipt": "rc022-config-projection-control-20261117-01/build-cleanup.json",
+    "removed": "Owned synthetic pytest workspaces, temporary homes/caches and all four obsolete/redundant intermediate bundle build copies. No matching task-owned processes remain.",
+    "retained": "Source/Native paired observations, first mismatch, x86 results, original unit-test JSON, native XML/logs and compact build/hash/cleanup receipts. Shared Source/toolchains retained by migration owner through C9."
+  }
+}

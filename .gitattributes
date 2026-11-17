@@ -62,3 +62,7 @@ dsh/session/bin/zstd/x86/** -whitespace
 dsh/subprocess/bin/winpty/x86/** -whitespace
 dsh/terminal/unicode16/LICENSE.txt -text
 dsh/javascript/terminal-screen/** -text
+dsh/boot/config-projection/** -text
+dsh/boot/config-projection/*LICENSE -whitespace
+scripts/build_config_projection.mjs -text
+scripts/native/config-projection/** -text

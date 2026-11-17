@@ -385,3 +385,5 @@
 | C8-GW | Application Office/runtime composition, expression carriers and standalone SDK executor/directory closure | [Office composition](office-composition-checks.json) |
 
 | C8-GX | Staged current read-only Cordis inspection tools and exact generated descriptors | [Cordis inspect tools](cordis-inspect-tools-checks.json) |
+
+| C1/C8-GY | Private upstream Config projector carrier, exact graph semantics and shipped x64/x86 engine checks | [Config projection](config-projection-checks.json) |

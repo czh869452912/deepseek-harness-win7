@@ -365,3 +365,5 @@
 | C8-GN | Staged analytics environment parsing, fixed query argv and field failure isolation | [Analytics environment](analytics-environment-checks.json) |
 
 | C8-GO | Actual analytics query process, byte limits, timeout/abort and close ownership | [Analytics query](analytics-query-checks.json) |
+
+| C8-GP | Default Windows OS metadata and actual bounded collector integration | [Analytics OS](analytics-os-checks.json) |

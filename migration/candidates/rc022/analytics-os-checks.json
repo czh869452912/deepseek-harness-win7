@@ -1,0 +1,28 @@
+{
+  "part": "C8-GP",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "scope": "Default Windows static OS sources and bounded environment collector wiring",
+  "paired": {
+    "run": "rc022-analytics-os-paired-20261116-01",
+    "differences": 0,
+    "comparison": "Actual pinned Source and Native collectEnvironment on the same current Windows development host; all selected fields and missing reasons compared, including real fixed PowerShell queries."
+  },
+  "verification": {
+    "native": "6 passed: actual Windows sampling, query execution/cancellation and existing 136-row collector contract regression.",
+    "scope_reason": "Default OS providers, collector/executor integration and their direct consumer chain."
+  },
+  "behavior": [
+    "Windows version from RtlGetVersion rather than manifest-sensitive version helpers; memory from GlobalMemoryStatusEx.",
+    "Win7 GetActiveProcessorCount with ALL_PROCESSOR_GROUPS and per-logical-processor registry model names; architecture reflects the application runtime.",
+    "Uses the already qualified fixed PowerShell argv and bounded/cancellable executor. Source/query failures retain only fixed missing reasons."
+  ],
+  "limitations": [
+    "The actual paired observation is this development Windows host, not a Windows 7 installation or portable qualification.",
+    "Linux x86 CPU model sampling is implemented but not qualified in this batch. macOS processor/memory default sampling remains incomplete; explicit injected macOS collector parsing was qualified separately."
+  ],
+  "cleanup": {
+    "bytes_removed": 240955,
+    "receipt": "rc022-analytics-os-native-20261116-01/cleanup.json",
+    "retained": "Actual paired metadata, hashes, commands, logs/XML and compact Native observations; shared Source and toolchains remain needed through C9."
+  }
+}

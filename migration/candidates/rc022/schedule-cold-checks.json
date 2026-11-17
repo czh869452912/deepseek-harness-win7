@@ -1,0 +1,62 @@
+{
+  "contract": "C9-BA",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "status": "targeted passed",
+  "scope": "Separate Python Host process and fresh Chromium 108 context restore a real saved Schedule plus its inactive durable v4 target Session; original interface pause/resume/edit/reload/mobile/run now drives a second actual Agent delivery.",
+  "verification": {
+    "seed": {
+      "run": "rc022-application-candidate53-20261117-01",
+      "exit_code": 0,
+      "processId": 66500
+    },
+    "cold": {
+      "run": "rc022-application-candidate60-20261117-01",
+      "exit_code": 0,
+      "processId": 52320,
+      "seconds": 34.547,
+      "browser_steps": 11,
+      "viewports": [
+        "1440x900",
+        "390x844"
+      ],
+      "console_errors": [],
+      "saved_delivery_records": 2,
+      "original_prefix_events_preserved": 22,
+      "live_agent_before": false,
+      "live_agent_after": true,
+      "final_agent_status": "idle",
+      "turn_errors": []
+    }
+  },
+  "observations": [
+    "Saved task stable fields, title/prompt and original receipt/history recovered; expiring deliveryFloorEndsAt separately checked against actual expiry rather than relabelled as durable state.",
+    "Browser welcome acknowledgement and task edits restored; original task is edited again after restart. New receipt has a distinct message id, both receipt ids occur exactly once, complete prior Session event prefix stays value-equivalent, and actual Agent reaches idle before flush/query.",
+    "Original notification messages also use schedule source kind; probes identify deliveries by committed receipt ids, not source kind alone. No frontend bundle was modified."
+  ],
+  "failed_attempts": {
+    "runs": [
+      "candidate54",
+      "candidate55",
+      "candidate56",
+      "candidate57",
+      "candidate58",
+      "candidate59"
+    ],
+    "reason": "Probe assumptions: notifications were mistaken for delivery messages, read-time floor expiry compared as durable field, unchanged edit left Save disabled, and singular record selector failed on the correct two-record history. Candidate59 browser actually displayed both receipts but failed strict selector; preserved separately, not promoted."
+  },
+  "fixture_model": {
+    "path": "scripts/rc022_schedule_application_probe.py",
+    "sha256": "032fedf8ea70315b477e211cef91e31ed5f7b0d250c6e79e0f46c9dc4ab10fef",
+    "scope": "Explicit local scripted model now declares a finite fixture context capacity so a second restored turn can run compaction admission; no external credentials/API used."
+  },
+  "cleanup": {
+    "bytes": 385975,
+    "removed": "All eight owned synthetic homes/workspaces/tmp, including seed after its final consumer",
+    "retained": "Commands/hash observations, initial failures, raw cold events/task comparison, screenshots, browser logs and exact successful process identities; shared Source/toolchains remain required through C9",
+    "owned_processes_after": []
+  },
+  "limitations": [
+    "Candidate bindings and explicit Win7 Python PTC overlay; production pin/provider/preset promotion and release acceptance remain open.",
+    "This verifies controlled local model delivery, not remote model authentication or an actual Win7 guest."
+  ]
+}

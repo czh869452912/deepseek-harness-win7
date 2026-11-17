@@ -479,3 +479,5 @@
 | C9-AY | Exact pinned V8 JSON syntax prose/UTF-16 locations/context on Win7 worker; 7,849 exact pairs, full x86/x64 corpus and original body/Market consumers | [Market JSON diagnostics](market-json-checks.json) |
 
 | C9-AZ | Holder-owned Workflow result survives independent observer cancellation/timeout and drains children; actual Guest/end-event checked, old production preset collision retained for promotion | [Workflow result](workflow-result-checks.json) |
+
+| C9-BA | Separate Host/browser restores saved Schedule and inactive v4 Session; original mobile/desktop run adds a second receipt while preserving all 22 prior events | [Schedule/Session cold process](schedule-cold-checks.json) |

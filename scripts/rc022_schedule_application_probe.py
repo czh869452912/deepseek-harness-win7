@@ -11,6 +11,10 @@ REQUESTS=[]
 async def before(ctx,result,output):
     from scripts.oracles.agent_machine_current_python import ScriptAdapter
     class Adapter(ScriptAdapter):
+        async def resolve_model(self,provider,model,signal=None):
+            info=await super().resolve_model(provider,model,signal)
+            info['context']=dict(contextWindow=131072)
+            return info
         async def stream(self,request):
             REQUESTS.append(dict(provider=request.get('provider'),model=request.get('model')))
             yield dict(type='block-start',index=0,blockType='text')

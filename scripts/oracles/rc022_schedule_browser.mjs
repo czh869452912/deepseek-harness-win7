@@ -21,7 +21,11 @@ try{
  page.on('response',response=>{if(response.status()>=400)result.responses.push({url:response.url().replace(/token=[^&]+/g,'token=REDACTED'),status:response.status()})});
  await page.goto(config.url,{waitUntil:'domcontentloaded'});
  await page.getByRole('button',{name:/^(自动化任务|Automation tasks)$/}).waitFor({state:'visible',timeout:20000});
- const proceed=page.getByRole('button',{name:/^(继续|Continue)$/});await proceed.waitFor({state:'visible',timeout:10000});await proceed.click();await proceed.waitFor({state:'hidden',timeout:10000});
+ const proceed=page.getByRole('button',{name:/^(继续|Continue)$/});
+ if(config.cold){
+  if(await proceed.isVisible())throw Error('Welcome confirmation was not restored');
+  result.steps.push('cold-process-welcome-restored');
+ }else{await proceed.waitFor({state:'visible',timeout:10000});await proceed.click();await proceed.waitFor({state:'hidden',timeout:10000});}
  const dialog=page.getByRole('dialog');if(await dialog.isVisible()){
   const close=dialog.getByRole('button').filter({hasText:/^$/});if(await close.count()===1)await close.click();
  }
@@ -29,11 +33,19 @@ try{
  event({step:'home-rendered',anchor:await page.evaluate(()=>window.__dshAnchorCompatibility)});
  await page.getByRole('button',{name:/^(自动化任务|Automation tasks)$/}).click();
  event({step:'catalog-trigger-clicked'});
- await page.getByText('Browser Schedule contract',{exact:true}).waitFor({state:'visible',timeout:20000});
+ const originalTitle=config.cold?'Browser Schedule edited':'Browser Schedule contract';
+ const editedTitle=config.cold?'Browser Schedule cold edited':'Browser Schedule edited';
+ const editedPrompt=config.cold?'Edited after cold process restart':'Edited by original browser';
+ await page.getByText(originalTitle,{exact:true}).waitFor({state:'visible',timeout:60000});
  result.steps.push('original-schedule-catalog-loaded');result.catalog=await page.locator('body').innerText();
- await page.getByText('Browser Schedule contract',{exact:true}).click();
+ await page.getByText(originalTitle,{exact:true}).click();
  await page.getByRole('button',{name:/^(暂停任务|Pause)$/}).waitFor({state:'visible',timeout:10000});
  result.steps.push('original-task-details-opened');result.detail=await page.locator('body').innerText();
+ if(config.cold){
+  if(await page.getByRole('textbox',{name:/^(自动化任务名称|Automation task name)$/}).inputValue()!=='Browser Schedule edited'
+   ||await page.getByRole('textbox',{name:/^(自动化任务内容|Automation task content)$/}).inputValue()!=='Edited by original browser')throw Error('Saved task edits were not restored');
+  result.steps.push('cold-process-task-edits-restored');
+ }
  event({step:'details-opened'});
  await page.screenshot({path:path.join(out,'browser-task.png')});
  await page.getByRole('button',{name:/^(暂停任务|Pause)$/}).click();
@@ -44,14 +56,14 @@ try{
  await page.getByRole('button',{name:/^(暂停任务|Pause)$/}).waitFor({state:'visible',timeout:10000});
  result.steps.push('original-resume-acknowledged');
  event({step:'resumed'});
- await page.getByRole('textbox',{name:/^(自动化任务名称|Automation task name)$/}).fill('Browser Schedule edited');
- await page.getByRole('textbox',{name:/^(自动化任务内容|Automation task content)$/}).fill('Edited by original browser');
+ await page.getByRole('textbox',{name:/^(自动化任务名称|Automation task name)$/}).fill(editedTitle);
+ await page.getByRole('textbox',{name:/^(自动化任务内容|Automation task content)$/}).fill(editedPrompt);
  await page.getByRole('button',{name:/^(保存修改|Save changes)$/}).click();
- await page.getByRole('heading',{name:'Browser Schedule edited',exact:true}).waitFor({state:'visible',timeout:10000});
+ await page.getByRole('heading',{name:editedTitle,exact:true}).waitFor({state:'visible',timeout:10000});
  result.steps.push('original-edit-acknowledged');
  await page.reload({waitUntil:'domcontentloaded'});
  await page.getByRole('button',{name:/^(自动化任务|Automation tasks)$/}).click();
- const edited=page.getByText('Browser Schedule edited',{exact:true});await edited.waitFor({state:'visible',timeout:10000});await edited.click();
+ const edited=page.getByText(editedTitle,{exact:true});await edited.waitFor({state:'visible',timeout:10000});await edited.click();
  await page.getByRole('button',{name:/^(暂停任务|Pause)$/}).waitFor({state:'visible',timeout:10000});
  result.steps.push('original-edit-survived-reload');
  await page.getByRole('button',{name:/^(自动化任务操作|Automation task actions)$/}).click();
@@ -77,7 +89,10 @@ try{
  result.steps.push('original-menu-follows-mobile-resize');
  await run.click();
  await page.getByRole('tab',{name:/^(任务运行记录|Records)$/}).click();
- await page.getByRole('region',{name:/^(已保存的任务运行记录|Saved delivery record)$/}).waitFor({state:'visible',timeout:15000});
+ const deliveries=page.getByRole('region',{name:/^(已保存的任务运行记录|Saved delivery record)$/});
+ await deliveries.first().waitFor({state:'visible',timeout:15000});
+ await page.waitForFunction(expected=>document.querySelectorAll('section[aria-label="已保存的任务运行记录"],section[aria-label="Saved delivery record"]').length===expected,config.cold?2:1,{timeout:15000});
+ result.savedDeliveryRecords=await deliveries.count();
  result.steps.push('original-run-delivery-history-visible');result.history=await page.locator('body').innerText();
  await page.screenshot({path:path.join(out,'browser-delivery.png')});
  result.url=page.url().replace(/token=[^&]+/g,'token=REDACTED');result.title=await page.title();

@@ -1,7 +1,7 @@
 """Generation-facing SDK client surface over the native current wire providers."""
 from dsh.cordis.awaiting import await_callback_result
 from dsh.cordis.json_text import stringify_json
-from dsh.mcp.diagnostic_current import McpLocalError
+from dsh.mcp.diagnostic_current import McpLocalError, CurrentProtocolError
 from dsh.mcp.schemas import parse
 from dsh.mcp.response_cache_current import CurrentResponseCache
 
@@ -190,10 +190,3 @@ class CurrentSdkClient:
             if not validation['valid']:
                 raise CurrentProtocolError(-32602, "Structured content does not match the tool's output schema: "+validation['errorMessage'])
         return result
-
-
-class CurrentProtocolError(RuntimeError):
-    name = 'ProtocolError'
-    def __init__(self, code, message):
-        self.code, self.message = code, message
-        super().__init__(message)

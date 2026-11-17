@@ -1,0 +1,19 @@
+{
+  "contract": "C9-BG",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "status": "targeted passed",
+  "implementation": "Current transports use an SDK 2 wire transaction independent of the historical McpClientProtocol request implementation: per-leg timers, progress token/reset and maximum-total reset guard, original arbitrary abort reason for cancellation packets, typed SdkError/serving ProtocolError with absent/null data preserved, and pending/timer/listener ownership. Modern HTTP aborts its individual stream; cancelled legacy streams remain transport-owned until response/close. Overlapping siblings remain live; transport close cancels and drains all owned HTTP send jobs.",
+  "verification": {
+    "paired": {"run": "rc022-mcp-request-pair3-20261117-01", "cases": 50, "scope": "Actual pinned Client and Native against an owned localhost HTTP/SSE peer, legacy and auto-negotiated modern eras. Real wire timers and progress pacing, reset success/failure, max-total progress boundary, single complete leg with smaller max-total hint, serving errors with absent/null/object data, pre/in-flight text/null/object/Error/SdkError/zero/false/array abort reasons, reason identity, disconnect, packets and listener cleanup. A shared deterministic request/progress clock makes timeout data comparable while actual timer and network delays execute."},
+    "native": {"run": "rc022-mcp-request-native-20261117-01", "passed": 118, "scope": "The complete 50-case real HTTP/SSE corpus, overlapping modern request cancellation, Node timer duration boundaries, multi-round/default-cache/output x86/x64 checks and HTTP/stdio negotiation/supervision/manager/resources direct consumers."},
+    "earlier_consumers": {"run": "rc022-mcp-flow-budget-native3-20261117-01", "passed": 110, "scope": "Initial wire-provider integration before the final expanded abort/disconnect corpus."},
+    "source": {"run": "rc022-mcp-request-source-20261117-01", "passed": 102, "failed": 0, "scope": "Pinned mcp-client, protocol, reconnect and negotiation-lifecycle suites."}
+  },
+  "diagnostics": [
+    "rc022-mcp-flow-budget-native2-20261117-01 retained a collection-time circular import introduced while moving ProtocolError; moving the dependency-free diagnostic type resolved it.",
+    "Initial request pairing exposed wrapped rather than original cancellation reason text. It also identified that the Source driver needed the actual application auto-negotiation setting. Both corrected before final comparison; raw failed/pass observations retained.",
+    "The deterministic progress clock advances only for an active correlated request; post-settlement unowned SSE traffic does not advance that request's accounting."
+  ],
+  "cleanup": {"bytes_removed": 974031, "scope": "All initial/final owned workspaces/home/tmp removed; real observations, peer packets, command/log/XML and Source diagnostics retained.", "owned_processes_after": []},
+  "limitations": ["Per-request headers, tool-parameter mirroring and HEADER_MISMATCH recovery remain separate pending SDK contracts.", "Custom shared stores/schema providers and arbitrary VM regexp syntax-error prose remain outside the verified default contract.", "Targeted verification only; no production pin promotion, full release or actual Windows 7 qualification."]
+}

@@ -12,7 +12,18 @@ def now_ms():
 
 class NegotiatedProtocol:
     async def _request_leg(self, packet, signal, timeout, options):
-        return await super().request(packet, signal=signal, timeout=timeout)
+        from dsh.mcp.request_current import request
+        return await request(self,packet,signal,timeout,options)
+
+    async def _receive(self, packet):
+        if packet.get('method') == 'notifications/progress':
+            from dsh.mcp.request_current import progress
+            progress(self,packet)
+            return
+        if 'error' in packet and 'id' in packet:
+            state = getattr(self,'_sdk_requests',{}).get(self._identity(packet['id']))
+            if state is not None:state['server_error'] = True
+        return await super()._receive(packet)
 
     async def _initialize(self):
         if self.negotiated['era'] == 'legacy':
@@ -32,7 +43,7 @@ class NegotiatedProtocol:
     async def request(self, packet, signal=None, timeout=60000, request_options=None):
         modern = self.negotiated is not None and self.negotiated['era'] == 'modern'
         if not modern:
-            return await super().request(packet, signal=signal, timeout=timeout)
+            return await self._request_leg(packet,signal,timeout,request_options or {})
         options = request_options or {}
         flow_started = now_ms()
         leg_options = dict(options)

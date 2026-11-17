@@ -2,6 +2,17 @@
 from dsh.cordis.utils import js_to_string
 
 
+_ABSENT = object()
+
+
+class CurrentProtocolError(RuntimeError):
+    name='ProtocolError'
+    def __init__(self,code,message,data=_ABSENT):
+        self.code,self.message=code,message
+        if data is not _ABSENT:self.data=data
+        super().__init__(message)
+
+
 class McpLocalError(RuntimeError):
     name = 'Error'
 

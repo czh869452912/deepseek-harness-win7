@@ -136,8 +136,19 @@ class CurrentStreamableHttpMcpTransport(NegotiatedProtocol, StreamableHttpMcpCli
             if response is not None:
                 await self._release_writer(response.writer)
 
+    has_per_request_stream = True
+
+    async def _write(self, packet):
+        # The SDK request transaction owns this particular HTTP stream. Its
+        # cancellation must release the stream without stopping sibling calls.
+        await self._send(packet)
+
     async def _close(self):
         self._disconnect()
+        requests = list(getattr(self,'_request_sends',()))
+        for task in requests:
+            if not task.done():task.cancel()
+        await asyncio.gather(*requests,return_exceptions=True)
         tasks = list(getattr(self._probe_channel,'_probe_send_tasks',()))
         for task in tasks:
             if not task.done():

@@ -7,7 +7,7 @@ import os
 from pathlib import Path
 import re
 import stat
-from dsh.boot.package_resolution import resolve_plugin_resource
+from dsh.boot.package_resolution import resolve_plugin_resource, resolution_read_scope
 from dsh.boot.plugin_packages import bare_package_name
 
 _MISSING = object()
@@ -136,6 +136,11 @@ def _icon(specifier, package_name, parent_url, manifest_path, value, packages):
 
 
 def read_plugin_meta(specifier, parent_url, packages=None):
+    with resolution_read_scope():
+        return _read_plugin_meta(specifier, parent_url, packages)
+
+
+def _read_plugin_meta(specifier, parent_url, packages=None):
     package_name = bare_package_name(specifier)
     if package_name is None:
         return None

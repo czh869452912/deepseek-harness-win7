@@ -72,3 +72,42 @@ def test_file_and_builtin_metadata_does_not_call_resolver(monkeypatch):
     monkeypatch.setattr(package_meta,'resolve_plugin_resource',unexpected)
     for request in ('./file.py','../file.py','C:\\plugins\\entry.py','file:///entry.py','node:fs','fs','#alias','cordis:group'):
         assert readPluginMeta(request,'file:///caller.py') is None
+
+
+@pytest.mark.asyncio
+async def test_multilingual_resolution_bounds_manifest_reads_and_keeps_edits_fresh(tmp_path, monkeypatch):
+    from dsh.boot import package_resolution
+    table, parent, library = localized_fixture(tmp_path)
+    for language in ('en', 'zh', 'fr', 'de', 'ja', 'ko', 'es', 'pt'):
+        (library/('locale/'+language+'.json')).write_text(
+            json.dumps(dict(meta=dict(title=language))), encoding='utf-8')
+    (library/'icon.svg').write_text('<svg/>', encoding='utf-8')
+    manifest = library/'package.json'
+    reads = []
+    original = package_resolution._read
+    def reading(filename):
+        reads.append(str(filename))
+        return original(filename)
+    monkeypatch.setattr(package_resolution, '_read', reading)
+    ctx = Context(); service = PluginPackages(ctx, dict(resolution=table))
+    try:
+        first = service.metaOf('lib', parent)
+        assert len(first['title']) == 8 and 'icon' in first
+        assert reads.count(str(manifest)) == 1
+        # The next call must re-resolve exports, not just refresh locale bytes.
+        value = json.loads(manifest.read_text(encoding='utf-8'))
+        value['exports']['./locale/*.json'] = None
+        value['exports']['./icon'] = None
+        manifest.write_text(json.dumps(value), encoding='utf-8')
+        assert service.metaOf('lib', parent)['title'] == 'lib'
+        assert reads.count(str(manifest)) == 2
+        value['exports']['./locale/*.json'] = './locale/*.json'
+        manifest.write_text(json.dumps(value), encoding='utf-8')
+        (library/'locale/en.json').write_text('{', encoding='utf-8')
+        assert 'error' in service.metaOf('lib', parent)
+        (library/'locale/en.json').write_text('{"meta":{"title":"Recovered"}}', encoding='utf-8')
+        assert service.metaOf('lib', parent)['title']['en'] == 'Recovered'
+        # No resolution scope may leak through success or caught diagnostics.
+        assert package_resolution._READS.get() is None
+    finally:
+        await ctx.fiber.dispose()

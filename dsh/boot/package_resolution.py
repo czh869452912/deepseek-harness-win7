@@ -5,6 +5,8 @@ evaluated, and selected targets are checked before resources are handed to a
 consumer. Python package entry execution remains the Loader's responsibility.
 """
 import os
+from contextlib import contextmanager
+from contextvars import ContextVar
 from pathlib import Path
 import re
 from urllib.parse import unquote, urljoin, urlparse
@@ -13,6 +15,36 @@ from dsh.boot.runtime_resolution import _read
 
 _UNDEFINED = object()
 CONDITIONS = frozenset(('node', 'import', 'module-sync', 'node-addons'))
+_READS = ContextVar('plugin-resource-resolution-reads', default=None)
+
+
+@contextmanager
+def resolution_read_scope():
+    """Share resolver facts only during one synchronous metadata read.
+
+    Node's module resolver reuses its package reader. Keep the Python adapter
+    from rereading the same manifests and ancestor paths for every locale,
+    while allowing the next metadata call to observe edits and routing changes.
+    Resource contents, existence and realpath checks are never cached here.
+    """
+    token = _READS.set({})
+    try:
+        yield
+    finally:
+        _READS.reset(token)
+
+
+def _once(key, read):
+    reads = _READS.get()
+    if reads is None:
+        return read()
+    if key not in reads:
+        reads[key] = read()
+    return reads[key]
+
+
+def _manifest(filename):
+    return _once(('manifest', filename), lambda: _read(filename))
 
 
 class PackageResolutionError(ImportError):
@@ -32,12 +64,16 @@ def _error(code, message):
 
 
 def package_scope(parent):
+    return _once(('scope', parent), lambda: _package_scope(parent))
+
+
+def _package_scope(parent):
     directory = os.path.dirname(parent)
     while True:
         manifest = os.path.join(directory, 'package.json')
         if os.path.isfile(manifest):
             try:
-                value = _read(manifest)
+                value = _manifest(manifest)
                 if not isinstance(value, dict):
                     value = {}
             except (ValueError, OSError) as error:
@@ -196,13 +232,13 @@ def resolve_plugin_resource(specifier, parent_url, packages=None, conditions=CON
         return _finalize(package_export(scope[0], scope[1], request, conditions))
     router = getattr(packages, 'router', None) if packages is not None else None
     if router is not None:
-        directory = router.resource_directory(name, parent_url)
+        directory = _once(('directory', id(router), name, parent_url), lambda: router.resource_directory(name, parent_url))
     else:
-        directory = next((os.path.join(search, name) for search in _search_paths(parent) if os.path.isdir(os.path.join(search, name))), None)
+        directory = _once(('directory', None, name, parent_url), lambda: next((os.path.join(search, name) for search in _search_paths(parent) if os.path.isdir(os.path.join(search, name))), None))
     if directory is None:
         _error('ERR_MODULE_NOT_FOUND', 'Cannot find package '+name)
     try:
-        manifest = _read(os.path.join(directory, 'package.json'))
+        manifest = _manifest(os.path.join(directory, 'package.json'))
     except FileNotFoundError:
         manifest = {}
     except (OSError, ValueError) as error:

@@ -1,0 +1,44 @@
+{
+  "part": "C9-AU",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "scope": "Bound repeated resolver I/O during each synchronous plugin metadata read",
+  "implementation": [
+    "One context-owned scope reuses package manifests, ancestor package scope and router directory facts across locale/icon/export resolution. Existence, realpath, resource bytes and metadata results remain fresh.",
+    "Every call starts and resets its own scope, including caught metadata diagnostics. No inventory or cross-call metadata result cache is introduced."
+  ],
+  "verification": {
+    "native": {
+      "run": "rc022-metadata-read-native-20261117-01",
+      "passed": 37,
+      "scope": "Resources/runtime resolution, metadata, live inventory, bundles, Market listing and manager detail consumers; multilingual manifest I/O bounded to one read and exports/locale edits plus error recovery observed next call"
+    },
+    "paired": {
+      "run": "rc022-metadata-read-pair-20261117-01",
+      "observations": 95,
+      "differences": 0,
+      "scope": "Original exported locale/manifest/icon values and icon byte hashes; diagnostic presence compared, exact prose remains separately recorded"
+    },
+    "source": {
+      "run": "rc022-metadata-read-source-20261117-01",
+      "passed": 102,
+      "failed": 2,
+      "skipped": 1,
+      "failure": "Two original file-symlink fixtures fail EPERM on this host; no production assertion failure and these are not counted as passed."
+    },
+    "browser": {
+      "run": "rc022-application-candidate50-20261117-01",
+      "passed": true,
+      "seconds": 63.39,
+      "scope": "All six unchanged Discover desktop/search/detail/image/reload/mobile steps; prior candidate49 82.813s is an uncontrolled observation, not a throughput guarantee."
+    }
+  },
+  "cleanup": {
+    "bytes": 3479337,
+    "removed": "Owned native/source workspaces/home/tmp and paired reconstructible files, including directory links without following targets",
+    "retained": "Logs, paired observations/hash inputs, Source EPERM failures, browser observations/screenshots. candidate50 home is retained for the next cold-process consumer with explicit owner and cleanup milestone in retention.json."
+  },
+  "limitations": [
+    "The optimization does not remove all synchronous metadata/profile parsing work or implement Market search-index reuse.",
+    "The exact Source file-symlink cases require capability-qualified execution. No full release acceptance is claimed."
+  ]
+}

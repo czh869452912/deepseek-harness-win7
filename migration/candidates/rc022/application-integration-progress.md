@@ -467,3 +467,5 @@
 | C9-AS | Market detail Remote composes actual readers/cache, preserves original fallback/errors and owns reversible authenticated image route | [Market Remote](market-remote-checks.json) |
 
 | C9-AT | Unchanged optional Discover bundle: strict Market RPCs, saved index, search, detail/image, reload and mobile; measured synchronous metadata cost retained | [Market browser](market-browser-checks.json) |
+
+| C9-AU | Per-read resource resolution facts bound repeated locale/manifest I/O while edits and failure recovery stay fresh; original Discover journey remains passing | [Metadata reads](metadata-read-checks.json) |

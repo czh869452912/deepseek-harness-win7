@@ -473,3 +473,5 @@
 | C9-AV | Separate Host process and fresh browser restore welcome confirmation and saved optional Market source, refetch listing and repeat search/detail/image/reload/mobile | [Market cold process](market-cold-checks.json) |
 
 | C9-AW | One owned Win7 worker reuses pinned lazy search instances per live document; concurrent/cancel/refresh/retire/crash recovery and original browser journey checked | [Market search reuse](market-search-checks.json) |
+
+| C9-AX | Event-driven owned stream handoff removes fixed per-chunk delay; actual default 128 MiB exact/overflow HTTP and x86/x64 parser boundary matches Source | [Market boundary](market-boundary-checks.json) |

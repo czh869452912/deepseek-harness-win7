@@ -67,13 +67,22 @@ async def iter_chunks(stream, cancel_check=None):
             if close:
                 await close()
         return
-    mailbox, stop, finished = queue.Queue(maxsize=1), threading.Event(), threading.Event()
+    mailbox, stop = queue.Queue(maxsize=1), threading.Event()
+    loop = asyncio.get_running_loop()
+    available, settled = asyncio.Event(), asyncio.Event()
     demand = threading.Semaphore(0)
     sentinel = object()
+    def notify(event):
+        try:
+            loop.call_soon_threadsafe(event.set)
+        except RuntimeError:
+            # An unowned synchronous iterator may finish after its loop exits.
+            pass
     def put(item):
         while not stop.is_set():
             try:
                 mailbox.put(item, timeout=0.02)
+                notify(available)
                 return
             except queue.Full:
                 pass
@@ -98,7 +107,7 @@ async def iter_chunks(stream, cancel_check=None):
                     close()
             finally:
                 put(sentinel)
-                finished.set()
+                notify(settled)
     worker = threading.Thread(target=read, name="dsh-model-reader", daemon=True)
     worker.start()
     try:
@@ -107,11 +116,18 @@ async def iter_chunks(stream, cancel_check=None):
             while True:
                 if cancel_check and cancel_check():
                     raise asyncio.CancelledError("cancelled")
+                available.clear()
                 try:
                     item = mailbox.get_nowait()
                     break
                 except queue.Empty:
-                    await asyncio.sleep(0.01)
+                    if cancel_check:
+                        try:
+                            await asyncio.wait_for(available.wait(), 0.02)
+                        except asyncio.TimeoutError:
+                            pass
+                    else:
+                        await available.wait()
             if item is sentinel:
                 return
             if isinstance(item, Exception):
@@ -124,5 +140,14 @@ async def iter_chunks(stream, cancel_check=None):
         if cancel:
             cancel()
             # Owned transports check cancellation in every I/O phase.
-            while not finished.is_set():
-                await asyncio.sleep(0.01)
+            closing = asyncio.create_task(settled.wait())
+            cancelled = False
+            while not closing.done():
+                try:
+                    await asyncio.shield(closing)
+                except asyncio.CancelledError:
+                    cancelled = True
+            closing.result()
+            worker.join()
+            if cancelled:
+                raise asyncio.CancelledError()

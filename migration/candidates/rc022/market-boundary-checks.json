@@ -1,0 +1,41 @@
+{
+  "part": "C9-AX",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "scope": "Default 128 MiB Market HTTP/parser boundary and event-driven owned stream handoff",
+  "problem": "The one-slot synchronous reader bridge slept 10 ms whenever its mailbox was empty. At 64 KiB per HTTP chunk this imposed enough latency for a local 128 MiB response to exceed the unchanged 15-second fetch timeout. Original Source accepted the exact limit; initial x64/x86 outcomes matched each other but timed out.",
+  "implementation": [
+    "The producer wakes the event loop when data or terminal settlement arrives. The one-slot mailbox and per-chunk demand semaphore preserve backpressure; arbitrary cancel_check callbacks retain a bounded idle check.",
+    "Owned-reader cancellation wakes the producer, shields settlement through repeated cancellation, and joins the completed reader thread before returning.",
+    "The qualifier streams synthetic padding directly from a localhost HTTP server and tests actual parser workers; no 128 MiB fixture file or archive is written."
+  ],
+  "verification": {
+    "paired": {
+      "run": "rc022-market-boundary-pair2-20261117-01",
+      "observations": 4,
+      "seconds": 11.061999999976251,
+      "differences": 0,
+      "scope": "Exact 134217728-byte JSON including padding admitted; declared 134217729 bytes, unlengthened streamed overflow and decoded gzip overflow rejected with original Remote code/message/details. Original fetchIndex/readBody/parser and actual x64/x86 Python transport/worker paths."
+    },
+    "native": {
+      "run": "rc022-stream-wake-native-20261117-01",
+      "passed": 104,
+      "scope": "Demand backpressure, 2048 rapid chunks under operation budget, idle/repeated cancellation, HTTP/LLM/image/account/Market/detail/Fetch/file/MCP direct consumers"
+    },
+    "failed": {
+      "run": "rc022-market-boundary-pair-20261117-01",
+      "status": "retained failure",
+      "scope": "Original Source four outcomes succeeded; x86 and x64 were equal before the expected-success assertion failed. x64 raw file was added for subsequent runs; first-run x64 timeout identity is inferred from the successful equality assertion."
+    }
+  },
+  "cleanup": {
+    "bytes": 344494,
+    "removed": "Owned targeted synthetic workspaces/home/tmp; large data was streamed in memory and all producer/consumer/worker processes exited",
+    "owned_processes_after": [],
+    "retained": "Failed/successful compact paired observations, inputs, source/native stderr, commands/hash reports and native XML/logs; no large boundary payload remains."
+  },
+  "limitations": [
+    "The upper-bound fixture has an empty plugin array and whitespace padding. This verifies byte transport/UTF-8/parser admission, not arbitrary 128 MiB search-index density or throughput.",
+    "The successful boundary run precedes only removal of an unused internal thread flag; final direct-consumer regression covers the final bridge.",
+    "No full release gate or actual Win7 OS acceptance is claimed."
+  ]
+}

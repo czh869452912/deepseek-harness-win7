@@ -1,0 +1,505 @@
+{
+  "unit": "C9-BV",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "status": "targeted-passed",
+  "scope": [
+    "Verbatim original SDK disk-cache validation, digest, read/write and scan bodies.",
+    "Physical cache paths and exact original JSON bytes interoperate across Source and browser adapters.",
+    "Bounded stable file reads, exclusive 0600 temporary output, atomic publish, optional storage failure and raw cancellation cleanup."
+  ],
+  "verification": {
+    "native_passed": 103,
+    "native_run": ".goose/out/rc022-office-metadata-native-20261118-01",
+    "final_provider_and_cache_passed": 13,
+    "final_run": ".goose/out/rc022-office-metadata-native-20261118-02",
+    "source_pairs_x64": 8,
+    "source_pairs_x86": 8,
+    "pair_runs": [
+      ".goose/out/rc022-office-metadata-pair-20261118-02",
+      ".goose/out/rc022-office-metadata-pair-x86-20261118-01"
+    ],
+    "reproduced_resources": 27
+  },
+  "cleanup": {
+    "owner": "C9-BV",
+    "removed": [
+      {
+        "path": ".goose\\out\\rc022-office-metadata-pair-20261118-01\\bad-digest\\browser-cache",
+        "bytes": 2430
+      },
+      {
+        "path": ".goose\\out\\rc022-office-metadata-pair-20261118-01\\bad-digest\\source-cache",
+        "bytes": 2430
+      },
+      {
+        "path": ".goose\\out\\rc022-office-metadata-pair-20261118-01\\cold\\browser-cache",
+        "bytes": 2430
+      },
+      {
+        "path": ".goose\\out\\rc022-office-metadata-pair-20261118-01\\cold\\source-cache",
+        "bytes": 2430
+      },
+      {
+        "path": ".goose\\out\\rc022-office-metadata-pair-20261118-01\\disabled\\browser-cache",
+        "bytes": 0
+      },
+      {
+        "path": ".goose\\out\\rc022-office-metadata-pair-20261118-01\\disabled\\source-cache",
+        "bytes": 0
+      },
+      {
+        "path": ".goose\\out\\rc022-office-metadata-pair-20261118-01\\extra-field\\browser-cache",
+        "bytes": 2430
+      },
+      {
+        "path": ".goose\\out\\rc022-office-metadata-pair-20261118-01\\extra-field\\source-cache",
+        "bytes": 2430
+      },
+      {
+        "path": ".goose\\out\\rc022-office-metadata-pair-20261118-01\\oversized\\browser-cache",
+        "bytes": 2430
+      },
+      {
+        "path": ".goose\\out\\rc022-office-metadata-pair-20261118-01\\oversized\\source-cache",
+        "bytes": 2430
+      },
+      {
+        "path": ".goose\\out\\rc022-office-metadata-pair-20261118-01\\truncated\\browser-cache",
+        "bytes": 2430
+      },
+      {
+        "path": ".goose\\out\\rc022-office-metadata-pair-20261118-01\\truncated\\source-cache",
+        "bytes": 2430
+      },
+      {
+        "path": ".goose\\out\\rc022-office-metadata-pair-20261118-01\\warm-source-cache\\browser-cache",
+        "bytes": 2430
+      },
+      {
+        "path": ".goose\\out\\rc022-office-metadata-pair-20261118-01\\warm-source-cache\\source-cache",
+        "bytes": 2430
+      },
+      {
+        "path": ".goose\\out\\rc022-office-metadata-pair-20261118-01\\tmp",
+        "bytes": 0
+      },
+      {
+        "path": ".goose\\out\\rc022-office-metadata-pair-20261118-02\\bad-digest\\browser-cache",
+        "bytes": 2430
+      },
+      {
+        "path": ".goose\\out\\rc022-office-metadata-pair-20261118-02\\bad-digest\\source-cache",
+        "bytes": 2430
+      },
+      {
+        "path": ".goose\\out\\rc022-office-metadata-pair-20261118-02\\cold\\browser-cache",
+        "bytes": 2430
+      },
+      {
+        "path": ".goose\\out\\rc022-office-metadata-pair-20261118-02\\cold\\source-cache",
+        "bytes": 2430
+      },
+      {
+        "path": ".goose\\out\\rc022-office-metadata-pair-20261118-02\\disabled\\browser-cache",
+        "bytes": 0
+      },
+      {
+        "path": ".goose\\out\\rc022-office-metadata-pair-20261118-02\\disabled\\source-cache",
+        "bytes": 0
+      },
+      {
+        "path": ".goose\\out\\rc022-office-metadata-pair-20261118-02\\extra-field\\browser-cache",
+        "bytes": 2430
+      },
+      {
+        "path": ".goose\\out\\rc022-office-metadata-pair-20261118-02\\extra-field\\source-cache",
+        "bytes": 2430
+      },
+      {
+        "path": ".goose\\out\\rc022-office-metadata-pair-20261118-02\\oversized\\browser-cache",
+        "bytes": 2430
+      },
+      {
+        "path": ".goose\\out\\rc022-office-metadata-pair-20261118-02\\oversized\\source-cache",
+        "bytes": 2430
+      },
+      {
+        "path": ".goose\\out\\rc022-office-metadata-pair-20261118-02\\truncated\\browser-cache",
+        "bytes": 2430
+      },
+      {
+        "path": ".goose\\out\\rc022-office-metadata-pair-20261118-02\\truncated\\source-cache",
+        "bytes": 2430
+      },
+      {
+        "path": ".goose\\out\\rc022-office-metadata-pair-20261118-02\\warm-reused-metadata\\browser-cache",
+        "bytes": 2490
+      },
+      {
+        "path": ".goose\\out\\rc022-office-metadata-pair-20261118-02\\warm-reused-metadata\\source-cache",
+        "bytes": 2490
+      },
+      {
+        "path": ".goose\\out\\rc022-office-metadata-pair-20261118-02\\warm-source-cache\\browser-cache",
+        "bytes": 2430
+      },
+      {
+        "path": ".goose\\out\\rc022-office-metadata-pair-20261118-02\\warm-source-cache\\source-cache",
+        "bytes": 2430
+      },
+      {
+        "path": ".goose\\out\\rc022-office-metadata-pair-20261118-02\\tmp",
+        "bytes": 0
+      },
+      {
+        "path": ".goose\\out\\rc022-office-metadata-pair-x86-20261118-01\\bad-digest\\browser-cache",
+        "bytes": 2430
+      },
+      {
+        "path": ".goose\\out\\rc022-office-metadata-pair-x86-20261118-01\\bad-digest\\source-cache",
+        "bytes": 2430
+      },
+      {
+        "path": ".goose\\out\\rc022-office-metadata-pair-x86-20261118-01\\cold\\browser-cache",
+        "bytes": 2430
+      },
+      {
+        "path": ".goose\\out\\rc022-office-metadata-pair-x86-20261118-01\\cold\\source-cache",
+        "bytes": 2430
+      },
+      {
+        "path": ".goose\\out\\rc022-office-metadata-pair-x86-20261118-01\\disabled\\browser-cache",
+        "bytes": 0
+      },
+      {
+        "path": ".goose\\out\\rc022-office-metadata-pair-x86-20261118-01\\disabled\\source-cache",
+        "bytes": 0
+      },
+      {
+        "path": ".goose\\out\\rc022-office-metadata-pair-x86-20261118-01\\extra-field\\browser-cache",
+        "bytes": 2430
+      },
+      {
+        "path": ".goose\\out\\rc022-office-metadata-pair-x86-20261118-01\\extra-field\\source-cache",
+        "bytes": 2430
+      },
+      {
+        "path": ".goose\\out\\rc022-office-metadata-pair-x86-20261118-01\\oversized\\browser-cache",
+        "bytes": 2430
+      },
+      {
+        "path": ".goose\\out\\rc022-office-metadata-pair-x86-20261118-01\\oversized\\source-cache",
+        "bytes": 2430
+      },
+      {
+        "path": ".goose\\out\\rc022-office-metadata-pair-x86-20261118-01\\truncated\\browser-cache",
+        "bytes": 2430
+      },
+      {
+        "path": ".goose\\out\\rc022-office-metadata-pair-x86-20261118-01\\truncated\\source-cache",
+        "bytes": 2430
+      },
+      {
+        "path": ".goose\\out\\rc022-office-metadata-pair-x86-20261118-01\\warm-reused-metadata\\browser-cache",
+        "bytes": 2490
+      },
+      {
+        "path": ".goose\\out\\rc022-office-metadata-pair-x86-20261118-01\\warm-reused-metadata\\source-cache",
+        "bytes": 2490
+      },
+      {
+        "path": ".goose\\out\\rc022-office-metadata-pair-x86-20261118-01\\warm-source-cache\\browser-cache",
+        "bytes": 2430
+      },
+      {
+        "path": ".goose\\out\\rc022-office-metadata-pair-x86-20261118-01\\warm-source-cache\\source-cache",
+        "bytes": 2430
+      },
+      {
+        "path": ".goose\\out\\rc022-office-metadata-pair-x86-20261118-01\\tmp",
+        "bytes": 0
+      },
+      {
+        "path": ".goose\\out\\rc022-office-metadata-native-20261118-01\\pytest-workspace",
+        "bytes": 1226564
+      },
+      {
+        "path": ".goose\\out\\rc022-office-metadata-native-20261118-01\\tmp",
+        "bytes": 0
+      },
+      {
+        "path": ".goose\\out\\rc022-office-metadata-native-20261118-01\\home",
+        "bytes": 0
+      },
+      {
+        "path": ".goose\\out\\rc022-office-metadata-native-20261118-02\\pytest-workspace",
+        "bytes": 3193
+      },
+      {
+        "path": ".goose\\out\\rc022-office-metadata-native-20261118-02\\tmp",
+        "bytes": 0
+      },
+      {
+        "path": ".goose\\out\\rc022-office-metadata-native-20261118-02\\home",
+        "bytes": 0
+      },
+      {
+        "path": ".goose\\out\\rc022-office-metadata-build-20261118-01",
+        "bytes": 1203446
+      },
+      {
+        "path": ".goose\\out\\rc022-office-metadata-build-20261118-02",
+        "bytes": 1203446
+      }
+    ],
+    "bytes": 3734089,
+    "cache_observations": [
+      {
+        "path": ".goose\\out\\rc022-office-metadata-pair-20261118-01\\bad-digest\\browser-cache\\font-metadata.json",
+        "bytes": 2430,
+        "sha256": "500d03b8f11d36ef887b400dba5cc146078b52766c5d3baef1886d08b1618c43",
+        "retained": ".goose\\out\\rc022-office-metadata-control-20261118-01\\cache-observations\\500d03b8f11d36ef887b400dba5cc146078b52766c5d3baef1886d08b1618c43.json"
+      },
+      {
+        "path": ".goose\\out\\rc022-office-metadata-pair-20261118-01\\bad-digest\\source-cache\\font-metadata.json",
+        "bytes": 2430,
+        "sha256": "500d03b8f11d36ef887b400dba5cc146078b52766c5d3baef1886d08b1618c43",
+        "retained": ".goose\\out\\rc022-office-metadata-control-20261118-01\\cache-observations\\500d03b8f11d36ef887b400dba5cc146078b52766c5d3baef1886d08b1618c43.json"
+      },
+      {
+        "path": ".goose\\out\\rc022-office-metadata-pair-20261118-01\\cold\\browser-cache\\font-metadata.json",
+        "bytes": 2430,
+        "sha256": "500d03b8f11d36ef887b400dba5cc146078b52766c5d3baef1886d08b1618c43",
+        "retained": ".goose\\out\\rc022-office-metadata-control-20261118-01\\cache-observations\\500d03b8f11d36ef887b400dba5cc146078b52766c5d3baef1886d08b1618c43.json"
+      },
+      {
+        "path": ".goose\\out\\rc022-office-metadata-pair-20261118-01\\cold\\source-cache\\font-metadata.json",
+        "bytes": 2430,
+        "sha256": "500d03b8f11d36ef887b400dba5cc146078b52766c5d3baef1886d08b1618c43",
+        "retained": ".goose\\out\\rc022-office-metadata-control-20261118-01\\cache-observations\\500d03b8f11d36ef887b400dba5cc146078b52766c5d3baef1886d08b1618c43.json"
+      },
+      {
+        "path": ".goose\\out\\rc022-office-metadata-pair-20261118-01\\extra-field\\browser-cache\\font-metadata.json",
+        "bytes": 2430,
+        "sha256": "500d03b8f11d36ef887b400dba5cc146078b52766c5d3baef1886d08b1618c43",
+        "retained": ".goose\\out\\rc022-office-metadata-control-20261118-01\\cache-observations\\500d03b8f11d36ef887b400dba5cc146078b52766c5d3baef1886d08b1618c43.json"
+      },
+      {
+        "path": ".goose\\out\\rc022-office-metadata-pair-20261118-01\\extra-field\\source-cache\\font-metadata.json",
+        "bytes": 2430,
+        "sha256": "500d03b8f11d36ef887b400dba5cc146078b52766c5d3baef1886d08b1618c43",
+        "retained": ".goose\\out\\rc022-office-metadata-control-20261118-01\\cache-observations\\500d03b8f11d36ef887b400dba5cc146078b52766c5d3baef1886d08b1618c43.json"
+      },
+      {
+        "path": ".goose\\out\\rc022-office-metadata-pair-20261118-01\\oversized\\browser-cache\\font-metadata.json",
+        "bytes": 2430,
+        "sha256": "500d03b8f11d36ef887b400dba5cc146078b52766c5d3baef1886d08b1618c43",
+        "retained": ".goose\\out\\rc022-office-metadata-control-20261118-01\\cache-observations\\500d03b8f11d36ef887b400dba5cc146078b52766c5d3baef1886d08b1618c43.json"
+      },
+      {
+        "path": ".goose\\out\\rc022-office-metadata-pair-20261118-01\\oversized\\source-cache\\font-metadata.json",
+        "bytes": 2430,
+        "sha256": "500d03b8f11d36ef887b400dba5cc146078b52766c5d3baef1886d08b1618c43",
+        "retained": ".goose\\out\\rc022-office-metadata-control-20261118-01\\cache-observations\\500d03b8f11d36ef887b400dba5cc146078b52766c5d3baef1886d08b1618c43.json"
+      },
+      {
+        "path": ".goose\\out\\rc022-office-metadata-pair-20261118-01\\truncated\\browser-cache\\font-metadata.json",
+        "bytes": 2430,
+        "sha256": "500d03b8f11d36ef887b400dba5cc146078b52766c5d3baef1886d08b1618c43",
+        "retained": ".goose\\out\\rc022-office-metadata-control-20261118-01\\cache-observations\\500d03b8f11d36ef887b400dba5cc146078b52766c5d3baef1886d08b1618c43.json"
+      },
+      {
+        "path": ".goose\\out\\rc022-office-metadata-pair-20261118-01\\truncated\\source-cache\\font-metadata.json",
+        "bytes": 2430,
+        "sha256": "500d03b8f11d36ef887b400dba5cc146078b52766c5d3baef1886d08b1618c43",
+        "retained": ".goose\\out\\rc022-office-metadata-control-20261118-01\\cache-observations\\500d03b8f11d36ef887b400dba5cc146078b52766c5d3baef1886d08b1618c43.json"
+      },
+      {
+        "path": ".goose\\out\\rc022-office-metadata-pair-20261118-01\\warm-source-cache\\browser-cache\\font-metadata.json",
+        "bytes": 2430,
+        "sha256": "500d03b8f11d36ef887b400dba5cc146078b52766c5d3baef1886d08b1618c43",
+        "retained": ".goose\\out\\rc022-office-metadata-control-20261118-01\\cache-observations\\500d03b8f11d36ef887b400dba5cc146078b52766c5d3baef1886d08b1618c43.json"
+      },
+      {
+        "path": ".goose\\out\\rc022-office-metadata-pair-20261118-01\\warm-source-cache\\source-cache\\font-metadata.json",
+        "bytes": 2430,
+        "sha256": "500d03b8f11d36ef887b400dba5cc146078b52766c5d3baef1886d08b1618c43",
+        "retained": ".goose\\out\\rc022-office-metadata-control-20261118-01\\cache-observations\\500d03b8f11d36ef887b400dba5cc146078b52766c5d3baef1886d08b1618c43.json"
+      },
+      {
+        "path": ".goose\\out\\rc022-office-metadata-pair-20261118-02\\bad-digest\\browser-cache\\font-metadata.json",
+        "bytes": 2430,
+        "sha256": "500d03b8f11d36ef887b400dba5cc146078b52766c5d3baef1886d08b1618c43",
+        "retained": ".goose\\out\\rc022-office-metadata-control-20261118-01\\cache-observations\\500d03b8f11d36ef887b400dba5cc146078b52766c5d3baef1886d08b1618c43.json"
+      },
+      {
+        "path": ".goose\\out\\rc022-office-metadata-pair-20261118-02\\bad-digest\\source-cache\\font-metadata.json",
+        "bytes": 2430,
+        "sha256": "500d03b8f11d36ef887b400dba5cc146078b52766c5d3baef1886d08b1618c43",
+        "retained": ".goose\\out\\rc022-office-metadata-control-20261118-01\\cache-observations\\500d03b8f11d36ef887b400dba5cc146078b52766c5d3baef1886d08b1618c43.json"
+      },
+      {
+        "path": ".goose\\out\\rc022-office-metadata-pair-20261118-02\\cold\\browser-cache\\font-metadata.json",
+        "bytes": 2430,
+        "sha256": "500d03b8f11d36ef887b400dba5cc146078b52766c5d3baef1886d08b1618c43",
+        "retained": ".goose\\out\\rc022-office-metadata-control-20261118-01\\cache-observations\\500d03b8f11d36ef887b400dba5cc146078b52766c5d3baef1886d08b1618c43.json"
+      },
+      {
+        "path": ".goose\\out\\rc022-office-metadata-pair-20261118-02\\cold\\source-cache\\font-metadata.json",
+        "bytes": 2430,
+        "sha256": "500d03b8f11d36ef887b400dba5cc146078b52766c5d3baef1886d08b1618c43",
+        "retained": ".goose\\out\\rc022-office-metadata-control-20261118-01\\cache-observations\\500d03b8f11d36ef887b400dba5cc146078b52766c5d3baef1886d08b1618c43.json"
+      },
+      {
+        "path": ".goose\\out\\rc022-office-metadata-pair-20261118-02\\extra-field\\browser-cache\\font-metadata.json",
+        "bytes": 2430,
+        "sha256": "500d03b8f11d36ef887b400dba5cc146078b52766c5d3baef1886d08b1618c43",
+        "retained": ".goose\\out\\rc022-office-metadata-control-20261118-01\\cache-observations\\500d03b8f11d36ef887b400dba5cc146078b52766c5d3baef1886d08b1618c43.json"
+      },
+      {
+        "path": ".goose\\out\\rc022-office-metadata-pair-20261118-02\\extra-field\\source-cache\\font-metadata.json",
+        "bytes": 2430,
+        "sha256": "500d03b8f11d36ef887b400dba5cc146078b52766c5d3baef1886d08b1618c43",
+        "retained": ".goose\\out\\rc022-office-metadata-control-20261118-01\\cache-observations\\500d03b8f11d36ef887b400dba5cc146078b52766c5d3baef1886d08b1618c43.json"
+      },
+      {
+        "path": ".goose\\out\\rc022-office-metadata-pair-20261118-02\\oversized\\browser-cache\\font-metadata.json",
+        "bytes": 2430,
+        "sha256": "500d03b8f11d36ef887b400dba5cc146078b52766c5d3baef1886d08b1618c43",
+        "retained": ".goose\\out\\rc022-office-metadata-control-20261118-01\\cache-observations\\500d03b8f11d36ef887b400dba5cc146078b52766c5d3baef1886d08b1618c43.json"
+      },
+      {
+        "path": ".goose\\out\\rc022-office-metadata-pair-20261118-02\\oversized\\source-cache\\font-metadata.json",
+        "bytes": 2430,
+        "sha256": "500d03b8f11d36ef887b400dba5cc146078b52766c5d3baef1886d08b1618c43",
+        "retained": ".goose\\out\\rc022-office-metadata-control-20261118-01\\cache-observations\\500d03b8f11d36ef887b400dba5cc146078b52766c5d3baef1886d08b1618c43.json"
+      },
+      {
+        "path": ".goose\\out\\rc022-office-metadata-pair-20261118-02\\truncated\\browser-cache\\font-metadata.json",
+        "bytes": 2430,
+        "sha256": "500d03b8f11d36ef887b400dba5cc146078b52766c5d3baef1886d08b1618c43",
+        "retained": ".goose\\out\\rc022-office-metadata-control-20261118-01\\cache-observations\\500d03b8f11d36ef887b400dba5cc146078b52766c5d3baef1886d08b1618c43.json"
+      },
+      {
+        "path": ".goose\\out\\rc022-office-metadata-pair-20261118-02\\truncated\\source-cache\\font-metadata.json",
+        "bytes": 2430,
+        "sha256": "500d03b8f11d36ef887b400dba5cc146078b52766c5d3baef1886d08b1618c43",
+        "retained": ".goose\\out\\rc022-office-metadata-control-20261118-01\\cache-observations\\500d03b8f11d36ef887b400dba5cc146078b52766c5d3baef1886d08b1618c43.json"
+      },
+      {
+        "path": ".goose\\out\\rc022-office-metadata-pair-20261118-02\\warm-reused-metadata\\browser-cache\\font-metadata.json",
+        "bytes": 2490,
+        "sha256": "4aa974fc0d79a59e26acd50f9f1aef4706132d8227ebfa1fbb0ec47740fbd9f8",
+        "retained": ".goose\\out\\rc022-office-metadata-control-20261118-01\\cache-observations\\4aa974fc0d79a59e26acd50f9f1aef4706132d8227ebfa1fbb0ec47740fbd9f8.json"
+      },
+      {
+        "path": ".goose\\out\\rc022-office-metadata-pair-20261118-02\\warm-reused-metadata\\source-cache\\font-metadata.json",
+        "bytes": 2490,
+        "sha256": "4aa974fc0d79a59e26acd50f9f1aef4706132d8227ebfa1fbb0ec47740fbd9f8",
+        "retained": ".goose\\out\\rc022-office-metadata-control-20261118-01\\cache-observations\\4aa974fc0d79a59e26acd50f9f1aef4706132d8227ebfa1fbb0ec47740fbd9f8.json"
+      },
+      {
+        "path": ".goose\\out\\rc022-office-metadata-pair-20261118-02\\warm-source-cache\\browser-cache\\font-metadata.json",
+        "bytes": 2430,
+        "sha256": "500d03b8f11d36ef887b400dba5cc146078b52766c5d3baef1886d08b1618c43",
+        "retained": ".goose\\out\\rc022-office-metadata-control-20261118-01\\cache-observations\\500d03b8f11d36ef887b400dba5cc146078b52766c5d3baef1886d08b1618c43.json"
+      },
+      {
+        "path": ".goose\\out\\rc022-office-metadata-pair-20261118-02\\warm-source-cache\\source-cache\\font-metadata.json",
+        "bytes": 2430,
+        "sha256": "500d03b8f11d36ef887b400dba5cc146078b52766c5d3baef1886d08b1618c43",
+        "retained": ".goose\\out\\rc022-office-metadata-control-20261118-01\\cache-observations\\500d03b8f11d36ef887b400dba5cc146078b52766c5d3baef1886d08b1618c43.json"
+      },
+      {
+        "path": ".goose\\out\\rc022-office-metadata-pair-x86-20261118-01\\bad-digest\\browser-cache\\font-metadata.json",
+        "bytes": 2430,
+        "sha256": "500d03b8f11d36ef887b400dba5cc146078b52766c5d3baef1886d08b1618c43",
+        "retained": ".goose\\out\\rc022-office-metadata-control-20261118-01\\cache-observations\\500d03b8f11d36ef887b400dba5cc146078b52766c5d3baef1886d08b1618c43.json"
+      },
+      {
+        "path": ".goose\\out\\rc022-office-metadata-pair-x86-20261118-01\\bad-digest\\source-cache\\font-metadata.json",
+        "bytes": 2430,
+        "sha256": "500d03b8f11d36ef887b400dba5cc146078b52766c5d3baef1886d08b1618c43",
+        "retained": ".goose\\out\\rc022-office-metadata-control-20261118-01\\cache-observations\\500d03b8f11d36ef887b400dba5cc146078b52766c5d3baef1886d08b1618c43.json"
+      },
+      {
+        "path": ".goose\\out\\rc022-office-metadata-pair-x86-20261118-01\\cold\\browser-cache\\font-metadata.json",
+        "bytes": 2430,
+        "sha256": "500d03b8f11d36ef887b400dba5cc146078b52766c5d3baef1886d08b1618c43",
+        "retained": ".goose\\out\\rc022-office-metadata-control-20261118-01\\cache-observations\\500d03b8f11d36ef887b400dba5cc146078b52766c5d3baef1886d08b1618c43.json"
+      },
+      {
+        "path": ".goose\\out\\rc022-office-metadata-pair-x86-20261118-01\\cold\\source-cache\\font-metadata.json",
+        "bytes": 2430,
+        "sha256": "500d03b8f11d36ef887b400dba5cc146078b52766c5d3baef1886d08b1618c43",
+        "retained": ".goose\\out\\rc022-office-metadata-control-20261118-01\\cache-observations\\500d03b8f11d36ef887b400dba5cc146078b52766c5d3baef1886d08b1618c43.json"
+      },
+      {
+        "path": ".goose\\out\\rc022-office-metadata-pair-x86-20261118-01\\extra-field\\browser-cache\\font-metadata.json",
+        "bytes": 2430,
+        "sha256": "500d03b8f11d36ef887b400dba5cc146078b52766c5d3baef1886d08b1618c43",
+        "retained": ".goose\\out\\rc022-office-metadata-control-20261118-01\\cache-observations\\500d03b8f11d36ef887b400dba5cc146078b52766c5d3baef1886d08b1618c43.json"
+      },
+      {
+        "path": ".goose\\out\\rc022-office-metadata-pair-x86-20261118-01\\extra-field\\source-cache\\font-metadata.json",
+        "bytes": 2430,
+        "sha256": "500d03b8f11d36ef887b400dba5cc146078b52766c5d3baef1886d08b1618c43",
+        "retained": ".goose\\out\\rc022-office-metadata-control-20261118-01\\cache-observations\\500d03b8f11d36ef887b400dba5cc146078b52766c5d3baef1886d08b1618c43.json"
+      },
+      {
+        "path": ".goose\\out\\rc022-office-metadata-pair-x86-20261118-01\\oversized\\browser-cache\\font-metadata.json",
+        "bytes": 2430,
+        "sha256": "500d03b8f11d36ef887b400dba5cc146078b52766c5d3baef1886d08b1618c43",
+        "retained": ".goose\\out\\rc022-office-metadata-control-20261118-01\\cache-observations\\500d03b8f11d36ef887b400dba5cc146078b52766c5d3baef1886d08b1618c43.json"
+      },
+      {
+        "path": ".goose\\out\\rc022-office-metadata-pair-x86-20261118-01\\oversized\\source-cache\\font-metadata.json",
+        "bytes": 2430,
+        "sha256": "500d03b8f11d36ef887b400dba5cc146078b52766c5d3baef1886d08b1618c43",
+        "retained": ".goose\\out\\rc022-office-metadata-control-20261118-01\\cache-observations\\500d03b8f11d36ef887b400dba5cc146078b52766c5d3baef1886d08b1618c43.json"
+      },
+      {
+        "path": ".goose\\out\\rc022-office-metadata-pair-x86-20261118-01\\truncated\\browser-cache\\font-metadata.json",
+        "bytes": 2430,
+        "sha256": "500d03b8f11d36ef887b400dba5cc146078b52766c5d3baef1886d08b1618c43",
+        "retained": ".goose\\out\\rc022-office-metadata-control-20261118-01\\cache-observations\\500d03b8f11d36ef887b400dba5cc146078b52766c5d3baef1886d08b1618c43.json"
+      },
+      {
+        "path": ".goose\\out\\rc022-office-metadata-pair-x86-20261118-01\\truncated\\source-cache\\font-metadata.json",
+        "bytes": 2430,
+        "sha256": "500d03b8f11d36ef887b400dba5cc146078b52766c5d3baef1886d08b1618c43",
+        "retained": ".goose\\out\\rc022-office-metadata-control-20261118-01\\cache-observations\\500d03b8f11d36ef887b400dba5cc146078b52766c5d3baef1886d08b1618c43.json"
+      },
+      {
+        "path": ".goose\\out\\rc022-office-metadata-pair-x86-20261118-01\\warm-reused-metadata\\browser-cache\\font-metadata.json",
+        "bytes": 2490,
+        "sha256": "4aa974fc0d79a59e26acd50f9f1aef4706132d8227ebfa1fbb0ec47740fbd9f8",
+        "retained": ".goose\\out\\rc022-office-metadata-control-20261118-01\\cache-observations\\4aa974fc0d79a59e26acd50f9f1aef4706132d8227ebfa1fbb0ec47740fbd9f8.json"
+      },
+      {
+        "path": ".goose\\out\\rc022-office-metadata-pair-x86-20261118-01\\warm-reused-metadata\\source-cache\\font-metadata.json",
+        "bytes": 2490,
+        "sha256": "4aa974fc0d79a59e26acd50f9f1aef4706132d8227ebfa1fbb0ec47740fbd9f8",
+        "retained": ".goose\\out\\rc022-office-metadata-control-20261118-01\\cache-observations\\4aa974fc0d79a59e26acd50f9f1aef4706132d8227ebfa1fbb0ec47740fbd9f8.json"
+      },
+      {
+        "path": ".goose\\out\\rc022-office-metadata-pair-x86-20261118-01\\warm-source-cache\\browser-cache\\font-metadata.json",
+        "bytes": 2430,
+        "sha256": "500d03b8f11d36ef887b400dba5cc146078b52766c5d3baef1886d08b1618c43",
+        "retained": ".goose\\out\\rc022-office-metadata-control-20261118-01\\cache-observations\\500d03b8f11d36ef887b400dba5cc146078b52766c5d3baef1886d08b1618c43.json"
+      },
+      {
+        "path": ".goose\\out\\rc022-office-metadata-pair-x86-20261118-01\\warm-source-cache\\source-cache\\font-metadata.json",
+        "bytes": 2430,
+        "sha256": "500d03b8f11d36ef887b400dba5cc146078b52766c5d3baef1886d08b1618c43",
+        "retained": ".goose\\out\\rc022-office-metadata-control-20261118-01\\cache-observations\\500d03b8f11d36ef887b400dba5cc146078b52766c5d3baef1886d08b1618c43.json"
+      }
+    ],
+    "reproduced_resources": 27,
+    "retained": "Actual Source snapshots/logs, deduplicated raw cache observations and commands/XML. Unknown preexisting/user profile cache is not removed; final default-provider test isolates LOCALAPPDATA inside its owned fixture."
+  },
+  "limitations": [
+    "No unified Portable/release or actual Win7 guest acceptance.",
+    "Production pin and accepted_upstream unchanged."
+  ]
+}

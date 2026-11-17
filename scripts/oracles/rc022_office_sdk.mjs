@@ -7,7 +7,8 @@ const engineAssets=path.join(source,'node_modules/.pnpm/@deepseek-ai+libreoffice
 const text=fs.readFileSync(path.join(pkg,'lib/index.js'),'utf8');
 const defaults=vm.runInNewContext(text.slice(text.indexOf('const SANS_CJK_FAMILIES ='),text.indexOf('const FONT_COLLECTION_NAMES ='))+'\n({DEFAULT_LIMITS,FONT_FALLBACKS})');
 const options={...defaults.DEFAULT_LIMITS,initialFontFamilies:[],fontFallbacks:defaults.FONT_FALLBACKS,...request.options,
- fontDirectories:request.fontPaths,includeOfficeFonts:request.options.includeOfficeFonts??false,fontMetadataCacheDirectory:false};
+ fontDirectories:request.fontPaths,includeOfficeFonts:request.options.includeOfficeFonts??false,
+ fontMetadataCacheDirectory:request.metadata?request.options.fontMetadataCacheDirectory:false};
 async function run(file,data){
  const worker=new Worker(pathToFileURL(path.join(pkg,'lib',file)),{workerData:data,env:{...process.env,...request.host?.env}}),messages=[];
  try{return await new Promise((resolve,reject)=>{
@@ -24,7 +25,8 @@ function encode(value){
 }
 const result={command:[process.execPath,...process.argv.slice(1)]};
 try{
- const scan=await run('font-snapshot-worker.js',{options,previous:[]});result.snapshot=scan.value;
+ const scan=await run('font-snapshot-worker.js',{options,previous:[],
+  ...request.metadata&&options.fontMetadataCacheDirectory!==false?{temporaryPath:path.join(options.fontMetadataCacheDirectory,'.source-metadata.tmp')}:{}});result.snapshot=scan.value;
  if(!scan.value.ok||request.scanOnly){result.status='passed';}
  else{
   const engine={backend:'wasm',programDirectory:'/instdir/program',...Object.fromEntries(Object.entries({loader:'dsoffice.cjs',data:'dsoffice.data',wasm:'dsoffice.wasm',metadata:'dsoffice.data.js.metadata'}).map(([key,name])=>[key,path.join(engineAssets,name)]))};

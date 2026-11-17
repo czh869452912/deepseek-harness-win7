@@ -1,7 +1,7 @@
 /** Adapt platform calls; preserve pinned SDK scan/match/export/raster bodies. */
 import {Buffer} from 'buffer';
 import {volume,request,received,outputs,resources,hostEnvironment} from './platform.js';
-import {run as scan} from '@office/snapshot';
+import {run as scan,readFontMetadataCache,writeFontMetadataCache} from '@office/snapshot';
 import {run as convert} from '@office/worker';
 import {DEFAULT_LIMITS,FONT_FALLBACKS} from '@office/defaults';
 import {validateOutput,pdfPageCount} from '@office/output';
@@ -17,9 +17,23 @@ async function main() {
   volume(input.volume, Object.values(input.engine).filter(value=>typeof value==='string'&&value.startsWith('http:')));
   let scanned;
   if(input.readySnapshot)scanned={ok:true,snapshot:input.readySnapshot};
-  else {request({options:input.options,previous:input.previous||[]});await scan();scanned=received().find(value=>'ok' in value);}
+  else {
+    const cached=input.metadataCache?readFontMetadataCache({...input.options,fontMetadataCacheDirectory:'/metadata'}):[];
+    const virtual=record=>({...record,path:'/physical/'+record.path,
+      faces:record.faces.map(face=>({...face,path:'/physical/'+face.path}))});
+    request({options:input.options,previous:[...cached.map(virtual),...input.previous||[]]});
+    await scan();scanned=received().find(value=>'ok' in value);
+  }
   if(!scanned?.ok){self.postMessage({...scanned,adapter:resources()});return;}
-  if(input.scanOnly){self.postMessage({...scanned,adapter:resources()});return;}
+  if(input.scanOnly){
+    if(input.metadataCache){
+      const physical=record=>({...record,path:record.path.slice('/physical/'.length),
+        faces:record.faces.map(face=>({...face,path:face.path.slice('/physical/'.length)}))});
+      writeFontMetadataCache({...input.options,fontMetadataCacheDirectory:'/metadata'},
+        scanned.snapshot.records.map(physical),'/metadata/.temporary');
+    }
+    self.postMessage({...scanned,metadataCache:outputs()['/metadata/font-metadata.json'],adapter:resources()});return;
+  }
   const bytes=new Uint8Array(await(await fetch(input.inputRoute)).arrayBuffer());
   request({...input,bytes,fontFaces:scanned.snapshot.faces,
     fontCache:input.generation===undefined||input.generation===scanned.snapshot.generation?input.fontCache:[]});

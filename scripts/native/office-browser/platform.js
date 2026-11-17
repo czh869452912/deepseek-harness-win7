@@ -23,16 +23,25 @@ function fetchBytes(route) {
   return Buffer.from(xhr.response);
 }
 function bytes(file) {return file.bytes ??= fetchBytes(file.route);}
-function status(file, directory = false) {
+function status(file, directory = false, bigint = false) {
   const identity = file.identity || {dev:'0',ino:'0',size:0,mtimeNs:'0',ctimeNs:'0'};
-  return {...identity,dev:BigInt(identity.dev),ino:BigInt(identity.ino),size:BigInt(identity.size),
+  const number=bigint?BigInt:Number;
+  return {...identity,dev:number(identity.dev),ino:number(identity.ino),size:number(identity.size),
     mtimeNs:BigInt(identity.mtimeNs),ctimeNs:BigInt(identity.ctimeNs),
+    mtimeMs:Number(identity.mtimeNs)/1e6,ctimeMs:Number(identity.ctimeNs)/1e6,
     isDirectory:()=>directory,isFile:()=>!directory};
 }
 export const constants = {O_RDONLY:0,O_NONBLOCK:0,O_NOFOLLOW:0};
-export function openSync(path) {const file=files.get(physical(path));if(!file)throw absent(path);const fd=nextFd++;descriptors.set(fd,{...file});return fd;}
+export function openSync(path,flags) {
+  if(flags==='wx'){
+    if(files.has(path))throw Error('Memory file already exists.');
+    files.set(path,{bytes:Buffer.alloc(0),identity:{dev:'0',ino:'0',size:0,mtimeNs:'0',ctimeNs:'0'},output:true});
+  }
+  const file=files.get(physical(path));if(!file)throw absent(path);
+  const fd=nextFd++;descriptors.set(fd,{...file,...flags==='wx'?{target:path}:{}});return fd;
+}
 export function closeSync(fd) {descriptors.delete(fd);}
-export function fstatSync(fd) {const file=descriptors.get(fd);if(!file)throw Error('Closed memory-volume descriptor.');return status(file);}
+export function fstatSync(fd,options) {const file=descriptors.get(fd);if(!file)throw Error('Closed memory-volume descriptor.');return status(file,false,options?.bigint===true);}
 export function readSync(fd, target, offset, length, position) {
   const file=descriptors.get(fd);if(!file)throw Error('Closed memory-volume descriptor.');
   const data=bytes(file).subarray(position,position+length);target.set(data,offset);return data.length;
@@ -47,8 +56,12 @@ export function readdirSync(path,options) {
   const entries=directories.get(physical(path));if(!entries)throw absent(path);
   return entries.map(entry=>options?.withFileTypes?{name:entry.name,isDirectory:()=>entry.kind==='directory',isFile:()=>entry.kind==='file'}:typeof entry==='string'?entry:entry.name);
 }
-export function mkdirSync(path) {if(directories.has(path))throw Error('Memory directory already exists.');directories.set(path,[]);}
+export function mkdirSync(path,options) {if(directories.has(path)){if(options?.recursive)return;throw Error('Memory directory already exists.');}directories.set(path,[]);}
 export function writeFileSync(path, value, options) {
+  if(typeof path==='number'){
+    const descriptor=descriptors.get(path);if(!descriptor?.target)throw Error('Descriptor is not writable.');
+    return writeFileSync(descriptor.target,value,options);
+  }
   if(options?.flag==='wx'&&files.has(path))throw Error('Memory file already exists.');
   const data=Buffer.from(value);files.set(path,{bytes:data,identity:{dev:'0',ino:'0',size:data.length,mtimeNs:'0',ctimeNs:'0'},output:true});
 }
@@ -58,7 +71,7 @@ export function outputs() {return Object.fromEntries([...files].filter(([,file])
 export function resources() {return {openDescriptors:descriptors.size,retainedReadBuffers:[...files.values()].filter(file=>!file.output&&file.bytes).length};}
 export function basename(path) {return path.slice(path.lastIndexOf('/')+1);}
 export function extname(path) {const name=basename(path),dot=name.lastIndexOf('.');return dot<=0?'':name.slice(dot);}
-export function isAbsolute(path) {return path.startsWith('/');}
+export function isAbsolute(path) {return path.startsWith('/')||(host.platform==='win32'&&/^[A-Za-z]:[\\/]|^\\\\/.test(path));}
 export function join(...parts) {
   if(host.platform==='win32'&&(/^[A-Za-z]:[\\/]|^\\\\/.test(parts[0]||'')||parts[0]?.startsWith('/physical/'))){
     const text=parts.filter(Boolean).join('\\').replaceAll('/','\\');

@@ -8061,34 +8061,41 @@
   function bytes(file) {
     return file.bytes ??= fetchBytes(file.route);
   }
-  function status(file, directory2 = false) {
+  function status(file, directory2 = false, bigint = false) {
     const identity = file.identity || { dev: "0", ino: "0", size: 0, mtimeNs: "0", ctimeNs: "0" };
+    const number = bigint ? BigInt : Number;
     return {
       ...identity,
-      dev: BigInt(identity.dev),
-      ino: BigInt(identity.ino),
-      size: BigInt(identity.size),
+      dev: number(identity.dev),
+      ino: number(identity.ino),
+      size: number(identity.size),
       mtimeNs: BigInt(identity.mtimeNs),
       ctimeNs: BigInt(identity.ctimeNs),
+      mtimeMs: Number(identity.mtimeNs) / 1e6,
+      ctimeMs: Number(identity.ctimeNs) / 1e6,
       isDirectory: () => directory2,
       isFile: () => !directory2
     };
   }
   var constants = { O_RDONLY: 0, O_NONBLOCK: 0, O_NOFOLLOW: 0 };
-  function openSync(path) {
+  function openSync(path, flags) {
+    if (flags === "wx") {
+      if (files.has(path)) throw Error("Memory file already exists.");
+      files.set(path, { bytes: import_buffer.Buffer.alloc(0), identity: { dev: "0", ino: "0", size: 0, mtimeNs: "0", ctimeNs: "0" }, output: true });
+    }
     const file = files.get(physical(path));
     if (!file) throw absent(path);
     const fd2 = nextFd++;
-    descriptors.set(fd2, { ...file });
+    descriptors.set(fd2, { ...file, ...flags === "wx" ? { target: path } : {} });
     return fd2;
   }
   function closeSync(fd2) {
     descriptors.delete(fd2);
   }
-  function fstatSync(fd2) {
+  function fstatSync(fd2, options) {
     const file = descriptors.get(fd2);
     if (!file) throw Error("Closed memory-volume descriptor.");
-    return status(file);
+    return status(file, false, options?.bigint === true);
   }
   function readSync(fd2, target, offset, length, position) {
     const file = descriptors.get(fd2);
@@ -8118,11 +8125,19 @@
     if (!entries) throw absent(path);
     return entries.map((entry) => options?.withFileTypes ? { name: entry.name, isDirectory: () => entry.kind === "directory", isFile: () => entry.kind === "file" } : typeof entry === "string" ? entry : entry.name);
   }
-  function mkdirSync(path) {
-    if (directories.has(path)) throw Error("Memory directory already exists.");
+  function mkdirSync(path, options) {
+    if (directories.has(path)) {
+      if (options?.recursive) return;
+      throw Error("Memory directory already exists.");
+    }
     directories.set(path, []);
   }
   function writeFileSync(path, value, options) {
+    if (typeof path === "number") {
+      const descriptor = descriptors.get(path);
+      if (!descriptor?.target) throw Error("Descriptor is not writable.");
+      return writeFileSync(descriptor.target, value, options);
+    }
     if (options?.flag === "wx" && files.has(path)) throw Error("Memory file already exists.");
     const data = import_buffer.Buffer.from(value);
     files.set(path, { bytes: data, identity: { dev: "0", ino: "0", size: data.length, mtimeNs: "0", ctimeNs: "0" }, output: true });
@@ -8150,7 +8165,7 @@
     return dot <= 0 ? "" : name.slice(dot);
   }
   function isAbsolute(path) {
-    return path.startsWith("/");
+    return path.startsWith("/") || host.platform === "win32" && /^[A-Za-z]:[\\/]|^\\\\/.test(path);
   }
   function join(...parts) {
     if (host.platform === "win32" && (/^[A-Za-z]:[\\/]|^\\\\/.test(parts[0] || "") || parts[0]?.startsWith("/physical/"))) {
@@ -24419,7 +24434,13 @@
     let scanned;
     if (input.readySnapshot) scanned = { ok: true, snapshot: input.readySnapshot };
     else {
-      request({ options: input.options, previous: input.previous || [] });
+      const cached = input.metadataCache ? readFontMetadataCache({ ...input.options, fontMetadataCacheDirectory: "/metadata" }) : [];
+      const virtual = (record2) => ({
+        ...record2,
+        path: "/physical/" + record2.path,
+        faces: record2.faces.map((face) => ({ ...face, path: "/physical/" + face.path }))
+      });
+      request({ options: input.options, previous: [...cached.map(virtual), ...input.previous || []] });
       await run();
       scanned = received().find((value) => "ok" in value);
     }
@@ -24428,7 +24449,19 @@
       return;
     }
     if (input.scanOnly) {
-      self.postMessage({ ...scanned, adapter: resources() });
+      if (input.metadataCache) {
+        const physical2 = (record2) => ({
+          ...record2,
+          path: record2.path.slice("/physical/".length),
+          faces: record2.faces.map((face) => ({ ...face, path: face.path.slice("/physical/".length) }))
+        });
+        writeFontMetadataCache(
+          { ...input.options, fontMetadataCacheDirectory: "/metadata" },
+          scanned.snapshot.records.map(physical2),
+          "/metadata/.temporary"
+        );
+      }
+      self.postMessage({ ...scanned, metadataCache: outputs()["/metadata/font-metadata.json"], adapter: resources() });
       return;
     }
     const bytes2 = new Uint8Array(await (await fetch(input.inputRoute)).arrayBuffer());

@@ -16,9 +16,10 @@ from .errors import OfficeKitError
 from .file_transaction import FileExport, ImageExport, disk_call, read_document
 from .font_discovery import host_font_volume
 from .outputs import _remove_tree
+from .metadata_cache import read_cache, publish_cache
 
 RESOURCES = Path(__file__).with_name('browser_runtime')
-MANIFEST_SHA256 = '633a7c3b6ca0dc495fc43d77e23945d15c32e4abdf90228ddb7acec742398df7'
+MANIFEST_SHA256 = '6f26d2a7f785c30fd99bc2c4965b51ee1aac898f752e430c2bcc86c5ba922db1'
 ENGINE_FILES = dict(loader='dsoffice.cjs', wasm='dsoffice.wasm', data='dsoffice.data', metadata='dsoffice.data.js.metadata')
 CODES = frozenset(('input-too-large', 'output-too-large', 'invalid-document', 'unsupported-format', 'invalid-output', 'timeout', 'unavailable', 'failed'))
 ENGINE_SHA256 = {
@@ -103,10 +104,15 @@ class _State:
                             values.pop('fontDirectories')
                         return host_font_volume(values, controller.signal.throwIfAborted)
                     volume, host = await disk_call(discover)
+                    cached = await disk_call(read_cache, self.options['fontMetadataCacheDirectory'],
+                                             self.options['maxFontMetadataCacheBytes'], controller.signal)
                     options = dict(self.options, fontDirectories=volume.paths, fontMetadataCacheDirectory=False)
                     result = _check_result(await self.engine._worker(dict(options=options, host=host, volume=volume.manifest(),
-                        previous=self.previous, scanOnly=True), volume.assets, controller.signal))
+                        previous=self.previous, scanOnly=True, metadataCache=self.options['fontMetadataCacheDirectory'] is not False,
+                        _metadataBytes=cached), volume.assets, controller.signal))
                     snapshot = result['snapshot']
+                    await disk_call(publish_cache, self.options['fontMetadataCacheDirectory'], result.get('metadataCache'),
+                                    self.options['maxFontMetadataCacheBytes'], controller.signal)
                     self.previous = snapshot['records'] if len(_json(snapshot['records']).encode('utf-8')) <= self.options['maxFontMetadataCacheBytes'] else []
                     return volume, host, snapshot
                 finally:
@@ -205,6 +211,14 @@ class BrowserOfficeEngine:
         directory = tempfile.mkdtemp(prefix='dsh-office-request-', dir=self.temporary_directory)
         try:
             request = dict(request, engine=dict(backend='wasm', programDirectory='/instdir/program', **ENGINE_FILES))
+            cached = request.pop('_metadataBytes', None)
+            assets = dict(assets)
+            if cached is not None:
+                cache_path = Path(directory) / 'metadata-cache.json'
+                await disk_call(cache_path.write_bytes, cached)
+                assets['metadata-cache'] = cache_path
+                request['volume']['files']['/metadata/font-metadata.json'] = dict(route='metadata-cache',
+                    identity=dict(dev='0', ino='0', size=len(cached), mtimeNs='0', ctimeNs='0'))
             path = Path(directory) / 'request.json'
             await disk_call(path.write_text, _json(request), 'utf-8')
             selected = dict(self.assets, **assets, **{'request.json': path})

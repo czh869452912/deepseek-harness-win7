@@ -521,3 +521,5 @@
 | C9-BT | 当前 office-kit 组合默认 Cordis 引擎、懒加载/重试/卸载及运行时身份检查；79 项定向含实际应用队列转换 | [Office 默认提供方](office-default-provider-checks.json) |
 
 | C9-BU | Office x64/x86 离线输入、完整许可证与精确打包；98 项定向、6 项最终打包/超时回收、双架构隔离默认服务及独立采集 | [Office 运行时打包](office-runtime-packaging-checks.json) |
+
+| C9-BV | 原版磁盘字体元数据缓存、实体路径互通和原子写入；103 项定向、13 项最终消费者及 8+8 组真实 Worker 对照 | [Office 磁盘缓存](office-metadata-cache-checks.json) |

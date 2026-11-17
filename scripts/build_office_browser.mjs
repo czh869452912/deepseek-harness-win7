@@ -37,7 +37,8 @@ const result=await build({entryPoints:['scripts/native/office-browser/entry.js']
    const marker='//#region lib/types/'+(args.path==='worker.js'?'worker.js':'font-snapshot-worker.js');
    const start=text.indexOf(marker),end=text.lastIndexOf('//#endregion');
    if(start<0||end<start)throw Error('Original worker markers differ.');
-   return {contents:text.slice(0,start)+'\nexport async function run(){\n'+text.slice(start,end)+'\n}\n',loader:'js',resolveDir:dirname(path)};
+   return {contents:text.slice(0,start)+'\nexport async function run(){\n'+text.slice(start,end)+'\n}\n'+
+    (args.path==='font-snapshot-worker.js'?'\nexport {readFontMetadataCache,writeFontMetadataCache};\n':''),loader:'js',resolveDir:dirname(path)};
   });
  }}]});
 const hash=data=>createHash('sha256').update(data).digest('hex'),inputs={},resources={};

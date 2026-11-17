@@ -52,6 +52,7 @@ async def test_default_engine_is_lazy_and_retries_after_missing_runtime(tmp_path
 
 @pytest.mark.asyncio
 async def test_actual_default_provider_converts_through_application_queue(tmp_path, monkeypatch):
+    monkeypatch.setenv('LOCALAPPDATA', str(tmp_path / 'LocalAppData'))
     executable = os.environ.get('DSH_TEST_OFFICE_BROWSER')
     root = Path(__file__).resolve().parents[1]
     original = root / '.goose/out/rc022-prep-20261114-01/source'
@@ -69,6 +70,8 @@ async def test_actual_default_provider_converts_through_application_queue(tmp_pa
         # probe supplies a different export operation and has its own receipt.
         assert Path(result['path']).read_bytes() == b'\xef\xbb\xbfOffice preview ready\r'
         assert result['missingFonts'] == ['Liberation Sans']
+        cached = tmp_path / 'LocalAppData/libreoffice-kit/Cache/font-metadata.json'
+        assert json.loads(cached.read_text(encoding='utf-8'))['format'] == 1
         owner = ctx.get('officeKitEngine')
         engine = owner.engine
         assert len(engine.converters) == 1

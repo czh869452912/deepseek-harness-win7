@@ -24,6 +24,18 @@ GROUP_MODULES = {'session': ['dsh/__init__.py', 'dsh/cordis/__init__.py', 'dsh/c
 SOURCE_INPUTS = {'reference/packages/core/tools/src/json-schema.ts', 'reference/vendor/cordis/src/context.ts', 'reference/vendor/cordis/src/registry.ts', 'reference/vendor/cordis/src/service.ts', 'reference/packages/workflow/workflow-worker-thread/src/runtime.ts', 'reference/packages/workflow/workflow-worker-thread/src/realm.ts', 'reference/vendor/cordis/src/utils.ts', 'reference/vendor/cordis/LICENSE', 'reference/packages/util/values/src/index.ts', 'reference/packages/core/session/src/types.ts', 'reference/vendor/cosmokit/src/array.ts', 'reference/vendor/cordis/src/fiber.ts', 'reference/vendor/cordis/src/reflect.ts', 'reference/LICENSE', 'reference/vendor/cosmokit/src/index.ts', 'reference/packages/workflow/workflow-worker-thread/src/protocol.ts', 'reference/vendor/cosmokit/src/string.ts', 'reference/packages/util/values/src/index.ts', 'reference/vendor/cordis/src/logger.ts', 'reference/packages/workflow/workflow-worker-thread/src/session.ts', 'reference/vendor/cosmokit/src/time.ts', 'reference/packages/workflow/workflow/src/index.ts', 'scripts/oracles/javascript_errors_observer.py', 'scripts/oracles/javascript_errors_errors.probe.spec.ts', 'reference/tsconfig.base.json', 'scripts/oracles/javascript_errors_session_python.py', 'scripts/canonical_llm_values.py', 'scripts/oracles/javascript_errors_errors_python.py', 'scripts/oracles/javascript_errors_python.py', 'reference/vendor/cosmokit/src/misc.ts', 'reference/vendor/cosmokit/src/types.ts', 'scripts/javascript_errors_oracle.py', 'scripts/oracles/javascript_errors_session.probe.spec.ts', 'reference/vendor/cordis/src/events.ts', 'scripts/oracles/vitest.javascript-errors-probe.config.mts', 'reference/vendor/cordis/src/index.ts', 'reference/packages/workflow/workflow/src/types.ts', 'scripts/runtime_context_oracle.py', 'scripts/oracles/js-error-fixtures.json', 'reference/vendor/cosmokit/LICENSE', 'scripts/javascript_workflow_oracle.py', 'reference/packages/llm/llm/src/error.ts'} | {'scripts/import_paths.py'}
 
 
+# These are eager imports of the current Cordis providers, reached respectively
+# through hmr.py, include.py and loader.py. Keep the allowlist explicit: the
+# observer still measures actual imports and rejects additions and omissions.
+CORDIS_PROVIDER_MODULES = (
+    'dsh/cordis/hmr_files.py', 'dsh/cordis/hmr_modules.py', 'dsh/cordis/hmr_paths.py',
+    'dsh/cordis/include_journal.py', 'dsh/cordis/include_patch.py',
+    'dsh/cordis/include_persistence.py', 'dsh/cordis/loader_diff.py', 'dsh/cordis/volatile.py',
+)
+for group in GROUPS:
+    GROUP_MODULES[group] = sorted(GROUP_MODULES[group] + list(CORDIS_PROVIDER_MODULES))
+
+
 def digest(path):
     return hashlib.sha256(Path(path).read_bytes()).hexdigest()
 

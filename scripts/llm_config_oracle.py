@@ -22,6 +22,30 @@ GROUP_MODULES = {'query': ['dsh/__init__.py', 'dsh/cordis/__init__.py', 'dsh/cor
 SOURCE_INPUTS = CANONICAL_SOURCE_INPUTS | {'scripts/oracles/llm_config_python.py', 'scripts/oracles/llm_config_nullable_python.py', 'scripts/oracles/llm-config-fixtures.json', 'scripts/oracles/vitest.llm-config-probe.config.mts', 'scripts/oracles/llm_config_query_python.py', 'reference/packages/llm/llm/src/call-config.ts', 'scripts/oracles/llm_config_nullable.probe.spec.ts', 'scripts/oracles/llm_config_query.probe.spec.ts', 'scripts/llm_config_oracle.py'}
 
 
+# Audited eager imports of current Cordis, LLM stream assembly, and the JSONL
+# migration readers. This remains an exact allowlist, independent of the probe.
+CURRENT_PROVIDER_MODULES = (
+    'dsh/cordis/hmr_files.py', 'dsh/cordis/hmr_modules.py', 'dsh/cordis/hmr_paths.py',
+    'dsh/cordis/include_journal.py', 'dsh/cordis/include_patch.py',
+    'dsh/cordis/include_persistence.py', 'dsh/cordis/loader_diff.py',
+    'dsh/cordis/text.py', 'dsh/cordis/volatile.py',
+    'dsh/llm/assembler.py', 'dsh/llm/assistant_stream.py',
+    'dsh/session/format/__init__.py', 'dsh/session/format/catalog.py',
+    'dsh/session/format/chain.py', 'dsh/session/format/error.py',
+    'dsh/session/format/filename.py', 'dsh/session/format/json.py',
+    'dsh/session/format_v0_to_v1/__init__.py', 'dsh/session/format_v0_to_v1/codec.py',
+    'dsh/session/format_v0_to_v1/migration.py', 'dsh/session/format_v0_to_v1/payload.py',
+    'dsh/session/format_v0_to_v1/relationships.py', 'dsh/session/format_v0_to_v1/validation.py',
+    'dsh/session/format_v1_to_v2/__init__.py', 'dsh/session/format_v1_to_v2/codec.py',
+    'dsh/session/format_v1_to_v2/migration.py', 'dsh/session/format_v1_to_v2/validation.py',
+    'dsh/session/format_v2_to_v3/__init__.py', 'dsh/session/format_v2_to_v3/codec.py',
+    'dsh/session/format_v2_to_v3/migration.py', 'dsh/session/format_v2_to_v3/payload.py',
+    'dsh/session/format_v2_to_v3/references.py', 'dsh/session/format_v2_to_v3/validation.py',
+)
+for group in GROUPS:
+    GROUP_MODULES[group] = sorted(GROUP_MODULES[group] + list(CURRENT_PROVIDER_MODULES))
+
+
 def digest(path):
     return hashlib.sha256(Path(path).read_bytes()).hexdigest()
 

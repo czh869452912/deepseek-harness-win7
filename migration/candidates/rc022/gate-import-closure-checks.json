@@ -1,0 +1,27 @@
+{
+  "contract": "C9-BZ",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "comparison_source": "a4c74a91e06b00fe0b0937bde982170c526cc842",
+  "status": "targeted passed; complete-receipt SDK follow-up open",
+  "verification": {
+    "javascript_errors": {"run": "rc022-js-errors-consumers-20261118-02", "passed": 66, "paired_cases": 32, "scope": "Current eager Cordis imports and unchanged original JavaScript error/session boundaries."},
+    "llm_config": {"run": "rc022-llm-config-consumers-20261118-01", "passed": 60, "paired_cases": 26, "scope": "Current Cordis/LLM/format eager imports and unchanged original nullable/query configuration boundaries."}
+  },
+  "complete_receipt_consumer": {
+    "run": "rc022-release-receipt-consumer-20261118-01",
+    "exit_code": 124,
+    "budget_seconds": 360,
+    "completed_xml": false,
+    "source_sdk_failure": "cancel: TimeoutError, Actual transient chunk did not reach the SDK agent, after 90 seconds",
+    "retained": "Original capture frames, configurations and raw session JSONL. Original/native normal and error scenarios plus Native cancel returned zero, but this is not complete acceptance.",
+    "next_review": "Current SDK contract and coordinated gate-consumer switch; do not reuse as passed or increase the deadline automatically."
+  },
+  "cleanup": {
+    "bytes_removed": 2272801,
+    "owned_links_detached": 831,
+    "owned_directories_removed": 12,
+    "record": ".goose/out/rc022-js-errors-gate-20261118-01/cleanup.json",
+    "retained": "Original paired JSON, failure diagnostics and interrupted raw observations; shared Source/toolchains and approved Office inputs remain C9-owned."
+  },
+  "limitations": "No new baseline Source qualification, production pin promotion, full regression or release acceptance."
+}

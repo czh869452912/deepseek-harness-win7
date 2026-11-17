@@ -1,11 +1,19 @@
 """Shared modern session setup and outbound envelopes for current transports."""
+import time
 from dsh.mcp.result_current import decode_modern_result, project_modern_result
 from dsh.mcp.input_required_current import manual_result, pace_state_only, reject_unhandled_input
 from dsh.mcp.negotiation_current import SdkError
 from dsh.cordis.utils import _js_own_enumerable_keys
 
 
+def now_ms():
+    return int(time.time() * 1000)
+
+
 class NegotiatedProtocol:
+    async def _request_leg(self, packet, signal, timeout, options):
+        return await super().request(packet, signal=signal, timeout=timeout)
+
     async def _initialize(self):
         if self.negotiated['era'] == 'legacy':
             return await super()._initialize()
@@ -26,6 +34,8 @@ class NegotiatedProtocol:
         if not modern:
             return await super().request(packet, signal=signal, timeout=timeout)
         options = request_options or {}
+        flow_started = now_ms()
+        leg_options = dict(options)
         config = getattr(self, 'input_required', {})
         max_rounds = config.get('maxRounds', 10)
         original = packet
@@ -37,7 +47,7 @@ class NegotiatedProtocol:
                 'io.modelcontextprotocol/clientInfo': getattr(self, 'client_info', {'name': 'dsh-mcp-client', 'version': '0.0.1'}),
                 'io.modelcontextprotocol/clientCapabilities': {}})
             params['_meta'] = meta
-            result = await super().request(dict(packet, params=params), signal=signal, timeout=timeout)
+            result = await self._request_leg(dict(packet, params=params), signal, timeout, leg_options)
             decoded = decode_modern_result(packet['method'], result)
             if decoded['kind'] != 'input_required':
                 return project_modern_result(packet['method'], result)
@@ -61,6 +71,15 @@ class NegotiatedProtocol:
                     reject_unhandled_input(key, requests[key])
             else:
                 await pace_state_only(signal)
+            leg_options = {key:options[key] for key in ('signal','onprogress','resetTimeoutOnProgress','headers','timeout') if key in options}
+            leg_options['allowInputRequired'] = True
+            if 'maxTotalTimeout' in options:
+                elapsed = now_ms() - flow_started
+                remaining = options['maxTotalTimeout'] - elapsed
+                if remaining <= 0:
+                    raise SdkError('REQUEST_TIMEOUT', 'Maximum total timeout exceeded',
+                        dict(maxTotalTimeout=options['maxTotalTimeout'],totalElapsed=elapsed))
+                leg_options['maxTotalTimeout'] = remaining
             retry = dict(original.get('params') or {})
             if 'requestState' in decoded:
                 retry['requestState'] = decoded['requestState']

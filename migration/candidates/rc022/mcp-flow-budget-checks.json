@@ -1,0 +1,13 @@
+{
+  "contract": "C9-BF",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "status": "targeted passed",
+  "implementation": "Modern multi-round dispatch starts total-budget accounting before its first wire leg, checks exhaustion after input fulfilment/state pacing and before each retry, and carries the remaining maxTotalTimeout alongside the original per-leg timeout. Retry options retain signal/progress/reset/headers, force the inner manual-result boundary and omit first-leg resumption/related-request options. Round-cap ordering remains unchanged.",
+  "verification": {
+    "paired": {"run": "rc022-mcp-flow-budget-pair-20261117-01", "cases": 13, "scope": "Actual pinned Client multi-round driver with deterministic Date.now and pacing-clock collaborator versus Native dispatch with the same first-leg/leg clock advances. Exact/negative/zero/one-ms budgets, first-leg accounting, shrinking multi-round budgets, round-cap precedence and retry option ownership; results, raw typed errors/data, progress and retry options compare exactly."},
+    "native": {"run": "rc022-mcp-flow-budget-native-20261117-01", "passed": 110, "scope": "Actual localhost HTTP first input-required response plus real 250ms pacing exhausts a 100ms flow budget without sending a second leg; default cache/output x86/x64 workers, modern dispatch/negotiation, manager/supervision/resources and HTTP/stdio consumers."},
+    "source": {"run": "rc022-mcp-flow-budget-source-20261117-01", "passed": 59, "failed": 0, "scope": "Pinned mcp-client and protocol suites."}
+  },
+  "cleanup": {"bytes_removed": 465068, "scope": "All owned test workspaces/home/tmp removed after the final consumer; logs/XML, raw HTTP packets, paired observations and hashes retained.", "owned_processes_after": []},
+  "limitations": ["This closes the multi-round retry budget contract. Per-wire-leg timer reset/progress, arbitrary abort reason wrapping and serving ProtocolError conversion remain separate pending contracts.", "The original checks this budget at retry/progress boundaries; this implementation does not introduce a different hard wall-clock timer.", "Targeted verification only, without production pin promotion or full release qualification."]
+}

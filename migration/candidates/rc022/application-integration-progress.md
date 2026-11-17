@@ -489,3 +489,5 @@
 | C9-BD | MCP default connection cache honours TTL/refresh/bypass, isolates returned values and rejects stale in-flight writes after notifications; actual HTTP and consumers checked | [MCP response cache](mcp-cache-checks.json) |
 
 | C9-BE | Pinned SDK output-schema provider runs in owned Win7 x86/x64 workers; pre-RPC errors, structured results, cached definitions and close/cancel ownership checked | [MCP tool output validation](mcp-output-checks.json) |
+
+| C9-BF | MCP multi-round retries account for the first wire leg, shrink total budget and preserve per-leg/retry option ownership; actual HTTP pacing checked | [MCP flow budget](mcp-flow-budget-checks.json) |

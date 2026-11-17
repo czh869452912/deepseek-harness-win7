@@ -505,3 +505,5 @@
 | C9-BL | Unchanged Office WASM compiles/initializes in Chromium 108 and actually converts DOCX→PDF/TXT and renders PDF→PNG; controlled font and production-carrier limits remain explicit | [Office WASM feasibility](office-wasm-carrier-checks.json) |
 
 | C9-BM | Python 3.8 stdlib carrier runs actual pinned WASM conversion on x64/x86 Python, preserves bytes and owns worker/browser cancellation and cleanup; 17 actual browser boundaries checked | [Office Python carrier](office-python-carrier-checks.json) |
+
+| C9-BN | Pinned Office SDK scan/match/export/raster bodies run through the browser volume; 16 actual Original/WASM pairs, exact PNGs and reproducible build checked | [Office SDK browser adapter](office-sdk-browser-checks.json) |

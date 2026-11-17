@@ -82,3 +82,6 @@ scripts/native/mcp-validator/** -text
 scripts/native/mcp-validator/licenses/*LICENSE -whitespace
 scripts/build_mcp_validator.mjs -text
 packages/workflow/workflow-ptc/lib/index.js -text whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol
+dsh/office/browser_runtime/** -text -whitespace
+scripts/native/office-browser/** -text
+scripts/build_office_browser.mjs -text

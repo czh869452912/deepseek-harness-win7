@@ -1,0 +1,24343 @@
+(() => {
+  var __create = Object.create;
+  var __defProp = Object.defineProperty;
+  var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
+  var __getOwnPropNames = Object.getOwnPropertyNames;
+  var __getProtoOf = Object.getPrototypeOf;
+  var __hasOwnProp = Object.prototype.hasOwnProperty;
+  var __commonJS = (cb, mod) => function __require() {
+    try {
+      return mod || (0, cb[__getOwnPropNames(cb)[0]])((mod = { exports: {} }).exports, mod), mod.exports;
+    } catch (e) {
+      throw mod = 0, e;
+    }
+  };
+  var __copyProps = (to, from, except, desc) => {
+    if (from && typeof from === "object" || typeof from === "function") {
+      for (let key of __getOwnPropNames(from))
+        if (!__hasOwnProp.call(to, key) && key !== except)
+          __defProp(to, key, { get: () => from[key], enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable });
+    }
+    return to;
+  };
+  var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__getProtoOf(mod)) : {}, __copyProps(
+    // If the importer is in node compatibility mode or this is not an ESM
+    // file that has been converted to a CommonJS file using a Babel-
+    // compatible transform (i.e. "__esModule" has not been set), then set
+    // "default" to the CommonJS "module.exports" for node compatibility.
+    isNodeMode || !mod || !mod.__esModule ? __defProp(target, "default", { value: mod, enumerable: true }) : target,
+    mod
+  ));
+
+  // .goose/out/rc022-prep-20261114-01/source/node_modules/.pnpm/base64-js@1.5.1/node_modules/base64-js/index.js
+  var require_base64_js = __commonJS({
+    ".goose/out/rc022-prep-20261114-01/source/node_modules/.pnpm/base64-js@1.5.1/node_modules/base64-js/index.js"(exports) {
+      "use strict";
+      exports.byteLength = byteLength2;
+      exports.toByteArray = toByteArray;
+      exports.fromByteArray = fromByteArray;
+      var lookup = [];
+      var revLookup = [];
+      var Arr = typeof Uint8Array !== "undefined" ? Uint8Array : Array;
+      var code = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+      for (i2 = 0, len = code.length; i2 < len; ++i2) {
+        lookup[i2] = code[i2];
+        revLookup[code.charCodeAt(i2)] = i2;
+      }
+      var i2;
+      var len;
+      revLookup["-".charCodeAt(0)] = 62;
+      revLookup["_".charCodeAt(0)] = 63;
+      function getLens(b64) {
+        var len2 = b64.length;
+        if (len2 % 4 > 0) {
+          throw new Error("Invalid string. Length must be a multiple of 4");
+        }
+        var validLen = b64.indexOf("=");
+        if (validLen === -1) validLen = len2;
+        var placeHoldersLen = validLen === len2 ? 0 : 4 - validLen % 4;
+        return [validLen, placeHoldersLen];
+      }
+      function byteLength2(b64) {
+        var lens = getLens(b64);
+        var validLen = lens[0];
+        var placeHoldersLen = lens[1];
+        return (validLen + placeHoldersLen) * 3 / 4 - placeHoldersLen;
+      }
+      function _byteLength(b64, validLen, placeHoldersLen) {
+        return (validLen + placeHoldersLen) * 3 / 4 - placeHoldersLen;
+      }
+      function toByteArray(b64) {
+        var tmp;
+        var lens = getLens(b64);
+        var validLen = lens[0];
+        var placeHoldersLen = lens[1];
+        var arr = new Arr(_byteLength(b64, validLen, placeHoldersLen));
+        var curByte = 0;
+        var len2 = placeHoldersLen > 0 ? validLen - 4 : validLen;
+        var i3;
+        for (i3 = 0; i3 < len2; i3 += 4) {
+          tmp = revLookup[b64.charCodeAt(i3)] << 18 | revLookup[b64.charCodeAt(i3 + 1)] << 12 | revLookup[b64.charCodeAt(i3 + 2)] << 6 | revLookup[b64.charCodeAt(i3 + 3)];
+          arr[curByte++] = tmp >> 16 & 255;
+          arr[curByte++] = tmp >> 8 & 255;
+          arr[curByte++] = tmp & 255;
+        }
+        if (placeHoldersLen === 2) {
+          tmp = revLookup[b64.charCodeAt(i3)] << 2 | revLookup[b64.charCodeAt(i3 + 1)] >> 4;
+          arr[curByte++] = tmp & 255;
+        }
+        if (placeHoldersLen === 1) {
+          tmp = revLookup[b64.charCodeAt(i3)] << 10 | revLookup[b64.charCodeAt(i3 + 1)] << 4 | revLookup[b64.charCodeAt(i3 + 2)] >> 2;
+          arr[curByte++] = tmp >> 8 & 255;
+          arr[curByte++] = tmp & 255;
+        }
+        return arr;
+      }
+      function tripletToBase64(num) {
+        return lookup[num >> 18 & 63] + lookup[num >> 12 & 63] + lookup[num >> 6 & 63] + lookup[num & 63];
+      }
+      function encodeChunk(uint82, start, end) {
+        var tmp;
+        var output = [];
+        for (var i3 = start; i3 < end; i3 += 3) {
+          tmp = (uint82[i3] << 16 & 16711680) + (uint82[i3 + 1] << 8 & 65280) + (uint82[i3 + 2] & 255);
+          output.push(tripletToBase64(tmp));
+        }
+        return output.join("");
+      }
+      function fromByteArray(uint82) {
+        var tmp;
+        var len2 = uint82.length;
+        var extraBytes = len2 % 3;
+        var parts = [];
+        var maxChunkLength = 16383;
+        for (var i3 = 0, len22 = len2 - extraBytes; i3 < len22; i3 += maxChunkLength) {
+          parts.push(encodeChunk(uint82, i3, i3 + maxChunkLength > len22 ? len22 : i3 + maxChunkLength));
+        }
+        if (extraBytes === 1) {
+          tmp = uint82[len2 - 1];
+          parts.push(
+            lookup[tmp >> 2] + lookup[tmp << 4 & 63] + "=="
+          );
+        } else if (extraBytes === 2) {
+          tmp = (uint82[len2 - 2] << 8) + uint82[len2 - 1];
+          parts.push(
+            lookup[tmp >> 10] + lookup[tmp >> 4 & 63] + lookup[tmp << 2 & 63] + "="
+          );
+        }
+        return parts.join("");
+      }
+    }
+  });
+
+  // .goose/out/rc022-prep-20261114-01/source/node_modules/.pnpm/ieee754@1.2.1/node_modules/ieee754/index.js
+  var require_ieee754 = __commonJS({
+    ".goose/out/rc022-prep-20261114-01/source/node_modules/.pnpm/ieee754@1.2.1/node_modules/ieee754/index.js"(exports) {
+      exports.read = function(buffer, offset, isLE, mLen, nBytes) {
+        var e, m;
+        var eLen = nBytes * 8 - mLen - 1;
+        var eMax = (1 << eLen) - 1;
+        var eBias = eMax >> 1;
+        var nBits = -7;
+        var i2 = isLE ? nBytes - 1 : 0;
+        var d = isLE ? -1 : 1;
+        var s = buffer[offset + i2];
+        i2 += d;
+        e = s & (1 << -nBits) - 1;
+        s >>= -nBits;
+        nBits += eLen;
+        for (; nBits > 0; e = e * 256 + buffer[offset + i2], i2 += d, nBits -= 8) {
+        }
+        m = e & (1 << -nBits) - 1;
+        e >>= -nBits;
+        nBits += mLen;
+        for (; nBits > 0; m = m * 256 + buffer[offset + i2], i2 += d, nBits -= 8) {
+        }
+        if (e === 0) {
+          e = 1 - eBias;
+        } else if (e === eMax) {
+          return m ? NaN : (s ? -1 : 1) * Infinity;
+        } else {
+          m = m + Math.pow(2, mLen);
+          e = e - eBias;
+        }
+        return (s ? -1 : 1) * m * Math.pow(2, e - mLen);
+      };
+      exports.write = function(buffer, value, offset, isLE, mLen, nBytes) {
+        var e, m, c;
+        var eLen = nBytes * 8 - mLen - 1;
+        var eMax = (1 << eLen) - 1;
+        var eBias = eMax >> 1;
+        var rt = mLen === 23 ? Math.pow(2, -24) - Math.pow(2, -77) : 0;
+        var i2 = isLE ? 0 : nBytes - 1;
+        var d = isLE ? 1 : -1;
+        var s = value < 0 || value === 0 && 1 / value < 0 ? 1 : 0;
+        value = Math.abs(value);
+        if (isNaN(value) || value === Infinity) {
+          m = isNaN(value) ? 1 : 0;
+          e = eMax;
+        } else {
+          e = Math.floor(Math.log(value) / Math.LN2);
+          if (value * (c = Math.pow(2, -e)) < 1) {
+            e--;
+            c *= 2;
+          }
+          if (e + eBias >= 1) {
+            value += rt / c;
+          } else {
+            value += rt * Math.pow(2, 1 - eBias);
+          }
+          if (value * c >= 2) {
+            e++;
+            c /= 2;
+          }
+          if (e + eBias >= eMax) {
+            m = 0;
+            e = eMax;
+          } else if (e + eBias >= 1) {
+            m = (value * c - 1) * Math.pow(2, mLen);
+            e = e + eBias;
+          } else {
+            m = value * Math.pow(2, eBias - 1) * Math.pow(2, mLen);
+            e = 0;
+          }
+        }
+        for (; mLen >= 8; buffer[offset + i2] = m & 255, i2 += d, m /= 256, mLen -= 8) {
+        }
+        e = e << mLen | m;
+        eLen += mLen;
+        for (; eLen > 0; buffer[offset + i2] = e & 255, i2 += d, e /= 256, eLen -= 8) {
+        }
+        buffer[offset + i2 - d] |= s * 128;
+      };
+    }
+  });
+
+  // .goose/out/rc022-prep-20261114-01/source/node_modules/.pnpm/buffer@6.0.3/node_modules/buffer/index.js
+  var require_buffer = __commonJS({
+    ".goose/out/rc022-prep-20261114-01/source/node_modules/.pnpm/buffer@6.0.3/node_modules/buffer/index.js"(exports) {
+      "use strict";
+      var base64 = require_base64_js();
+      var ieee754 = require_ieee754();
+      var customInspectSymbol = typeof Symbol === "function" && typeof Symbol["for"] === "function" ? Symbol["for"]("nodejs.util.inspect.custom") : null;
+      exports.Buffer = Buffer4;
+      exports.SlowBuffer = SlowBuffer;
+      exports.INSPECT_MAX_BYTES = 50;
+      var K_MAX_LENGTH = 2147483647;
+      exports.kMaxLength = K_MAX_LENGTH;
+      Buffer4.TYPED_ARRAY_SUPPORT = typedArraySupport();
+      if (!Buffer4.TYPED_ARRAY_SUPPORT && typeof console !== "undefined" && typeof console.error === "function") {
+        console.error(
+          "This browser lacks typed array (Uint8Array) support which is required by `buffer` v5.x. Use `buffer` v4.x if you require old browser support."
+        );
+      }
+      function typedArraySupport() {
+        try {
+          const arr = new Uint8Array(1);
+          const proto = { foo: function() {
+            return 42;
+          } };
+          Object.setPrototypeOf(proto, Uint8Array.prototype);
+          Object.setPrototypeOf(arr, proto);
+          return arr.foo() === 42;
+        } catch (e) {
+          return false;
+        }
+      }
+      Object.defineProperty(Buffer4.prototype, "parent", {
+        enumerable: true,
+        get: function() {
+          if (!Buffer4.isBuffer(this)) return void 0;
+          return this.buffer;
+        }
+      });
+      Object.defineProperty(Buffer4.prototype, "offset", {
+        enumerable: true,
+        get: function() {
+          if (!Buffer4.isBuffer(this)) return void 0;
+          return this.byteOffset;
+        }
+      });
+      function createBuffer(length) {
+        if (length > K_MAX_LENGTH) {
+          throw new RangeError('The value "' + length + '" is invalid for option "size"');
+        }
+        const buf = new Uint8Array(length);
+        Object.setPrototypeOf(buf, Buffer4.prototype);
+        return buf;
+      }
+      function Buffer4(arg, encodingOrOffset, length) {
+        if (typeof arg === "number") {
+          if (typeof encodingOrOffset === "string") {
+            throw new TypeError(
+              'The "string" argument must be of type string. Received type number'
+            );
+          }
+          return allocUnsafe(arg);
+        }
+        return from(arg, encodingOrOffset, length);
+      }
+      Buffer4.poolSize = 8192;
+      function from(value, encodingOrOffset, length) {
+        if (typeof value === "string") {
+          return fromString(value, encodingOrOffset);
+        }
+        if (ArrayBuffer.isView(value)) {
+          return fromArrayView(value);
+        }
+        if (value == null) {
+          throw new TypeError(
+            "The first argument must be one of type string, Buffer, ArrayBuffer, Array, or Array-like Object. Received type " + typeof value
+          );
+        }
+        if (isInstance(value, ArrayBuffer) || value && isInstance(value.buffer, ArrayBuffer)) {
+          return fromArrayBuffer(value, encodingOrOffset, length);
+        }
+        if (typeof SharedArrayBuffer !== "undefined" && (isInstance(value, SharedArrayBuffer) || value && isInstance(value.buffer, SharedArrayBuffer))) {
+          return fromArrayBuffer(value, encodingOrOffset, length);
+        }
+        if (typeof value === "number") {
+          throw new TypeError(
+            'The "value" argument must not be of type number. Received type number'
+          );
+        }
+        const valueOf = value.valueOf && value.valueOf();
+        if (valueOf != null && valueOf !== value) {
+          return Buffer4.from(valueOf, encodingOrOffset, length);
+        }
+        const b = fromObject(value);
+        if (b) return b;
+        if (typeof Symbol !== "undefined" && Symbol.toPrimitive != null && typeof value[Symbol.toPrimitive] === "function") {
+          return Buffer4.from(value[Symbol.toPrimitive]("string"), encodingOrOffset, length);
+        }
+        throw new TypeError(
+          "The first argument must be one of type string, Buffer, ArrayBuffer, Array, or Array-like Object. Received type " + typeof value
+        );
+      }
+      Buffer4.from = function(value, encodingOrOffset, length) {
+        return from(value, encodingOrOffset, length);
+      };
+      Object.setPrototypeOf(Buffer4.prototype, Uint8Array.prototype);
+      Object.setPrototypeOf(Buffer4, Uint8Array);
+      function assertSize(size) {
+        if (typeof size !== "number") {
+          throw new TypeError('"size" argument must be of type number');
+        } else if (size < 0) {
+          throw new RangeError('The value "' + size + '" is invalid for option "size"');
+        }
+      }
+      function alloc(size, fill, encoding) {
+        assertSize(size);
+        if (size <= 0) {
+          return createBuffer(size);
+        }
+        if (fill !== void 0) {
+          return typeof encoding === "string" ? createBuffer(size).fill(fill, encoding) : createBuffer(size).fill(fill);
+        }
+        return createBuffer(size);
+      }
+      Buffer4.alloc = function(size, fill, encoding) {
+        return alloc(size, fill, encoding);
+      };
+      function allocUnsafe(size) {
+        assertSize(size);
+        return createBuffer(size < 0 ? 0 : checked(size) | 0);
+      }
+      Buffer4.allocUnsafe = function(size) {
+        return allocUnsafe(size);
+      };
+      Buffer4.allocUnsafeSlow = function(size) {
+        return allocUnsafe(size);
+      };
+      function fromString(string, encoding) {
+        if (typeof encoding !== "string" || encoding === "") {
+          encoding = "utf8";
+        }
+        if (!Buffer4.isEncoding(encoding)) {
+          throw new TypeError("Unknown encoding: " + encoding);
+        }
+        const length = byteLength2(string, encoding) | 0;
+        let buf = createBuffer(length);
+        const actual = buf.write(string, encoding);
+        if (actual !== length) {
+          buf = buf.slice(0, actual);
+        }
+        return buf;
+      }
+      function fromArrayLike(array) {
+        const length = array.length < 0 ? 0 : checked(array.length) | 0;
+        const buf = createBuffer(length);
+        for (let i2 = 0; i2 < length; i2 += 1) {
+          buf[i2] = array[i2] & 255;
+        }
+        return buf;
+      }
+      function fromArrayView(arrayView) {
+        if (isInstance(arrayView, Uint8Array)) {
+          const copy = new Uint8Array(arrayView);
+          return fromArrayBuffer(copy.buffer, copy.byteOffset, copy.byteLength);
+        }
+        return fromArrayLike(arrayView);
+      }
+      function fromArrayBuffer(array, byteOffset, length) {
+        if (byteOffset < 0 || array.byteLength < byteOffset) {
+          throw new RangeError('"offset" is outside of buffer bounds');
+        }
+        if (array.byteLength < byteOffset + (length || 0)) {
+          throw new RangeError('"length" is outside of buffer bounds');
+        }
+        let buf;
+        if (byteOffset === void 0 && length === void 0) {
+          buf = new Uint8Array(array);
+        } else if (length === void 0) {
+          buf = new Uint8Array(array, byteOffset);
+        } else {
+          buf = new Uint8Array(array, byteOffset, length);
+        }
+        Object.setPrototypeOf(buf, Buffer4.prototype);
+        return buf;
+      }
+      function fromObject(obj) {
+        if (Buffer4.isBuffer(obj)) {
+          const len = checked(obj.length) | 0;
+          const buf = createBuffer(len);
+          if (buf.length === 0) {
+            return buf;
+          }
+          obj.copy(buf, 0, 0, len);
+          return buf;
+        }
+        if (obj.length !== void 0) {
+          if (typeof obj.length !== "number" || numberIsNaN(obj.length)) {
+            return createBuffer(0);
+          }
+          return fromArrayLike(obj);
+        }
+        if (obj.type === "Buffer" && Array.isArray(obj.data)) {
+          return fromArrayLike(obj.data);
+        }
+      }
+      function checked(length) {
+        if (length >= K_MAX_LENGTH) {
+          throw new RangeError("Attempt to allocate Buffer larger than maximum size: 0x" + K_MAX_LENGTH.toString(16) + " bytes");
+        }
+        return length | 0;
+      }
+      function SlowBuffer(length) {
+        if (+length != length) {
+          length = 0;
+        }
+        return Buffer4.alloc(+length);
+      }
+      Buffer4.isBuffer = function isBuffer(b) {
+        return b != null && b._isBuffer === true && b !== Buffer4.prototype;
+      };
+      Buffer4.compare = function compare(a, b) {
+        if (isInstance(a, Uint8Array)) a = Buffer4.from(a, a.offset, a.byteLength);
+        if (isInstance(b, Uint8Array)) b = Buffer4.from(b, b.offset, b.byteLength);
+        if (!Buffer4.isBuffer(a) || !Buffer4.isBuffer(b)) {
+          throw new TypeError(
+            'The "buf1", "buf2" arguments must be one of type Buffer or Uint8Array'
+          );
+        }
+        if (a === b) return 0;
+        let x2 = a.length;
+        let y = b.length;
+        for (let i2 = 0, len = Math.min(x2, y); i2 < len; ++i2) {
+          if (a[i2] !== b[i2]) {
+            x2 = a[i2];
+            y = b[i2];
+            break;
+          }
+        }
+        if (x2 < y) return -1;
+        if (y < x2) return 1;
+        return 0;
+      };
+      Buffer4.isEncoding = function isEncoding(encoding) {
+        switch (String(encoding).toLowerCase()) {
+          case "hex":
+          case "utf8":
+          case "utf-8":
+          case "ascii":
+          case "latin1":
+          case "binary":
+          case "base64":
+          case "ucs2":
+          case "ucs-2":
+          case "utf16le":
+          case "utf-16le":
+            return true;
+          default:
+            return false;
+        }
+      };
+      Buffer4.concat = function concat(list, length) {
+        if (!Array.isArray(list)) {
+          throw new TypeError('"list" argument must be an Array of Buffers');
+        }
+        if (list.length === 0) {
+          return Buffer4.alloc(0);
+        }
+        let i2;
+        if (length === void 0) {
+          length = 0;
+          for (i2 = 0; i2 < list.length; ++i2) {
+            length += list[i2].length;
+          }
+        }
+        const buffer = Buffer4.allocUnsafe(length);
+        let pos = 0;
+        for (i2 = 0; i2 < list.length; ++i2) {
+          let buf = list[i2];
+          if (isInstance(buf, Uint8Array)) {
+            if (pos + buf.length > buffer.length) {
+              if (!Buffer4.isBuffer(buf)) buf = Buffer4.from(buf);
+              buf.copy(buffer, pos);
+            } else {
+              Uint8Array.prototype.set.call(
+                buffer,
+                buf,
+                pos
+              );
+            }
+          } else if (!Buffer4.isBuffer(buf)) {
+            throw new TypeError('"list" argument must be an Array of Buffers');
+          } else {
+            buf.copy(buffer, pos);
+          }
+          pos += buf.length;
+        }
+        return buffer;
+      };
+      function byteLength2(string, encoding) {
+        if (Buffer4.isBuffer(string)) {
+          return string.length;
+        }
+        if (ArrayBuffer.isView(string) || isInstance(string, ArrayBuffer)) {
+          return string.byteLength;
+        }
+        if (typeof string !== "string") {
+          throw new TypeError(
+            'The "string" argument must be one of type string, Buffer, or ArrayBuffer. Received type ' + typeof string
+          );
+        }
+        const len = string.length;
+        const mustMatch = arguments.length > 2 && arguments[2] === true;
+        if (!mustMatch && len === 0) return 0;
+        let loweredCase = false;
+        for (; ; ) {
+          switch (encoding) {
+            case "ascii":
+            case "latin1":
+            case "binary":
+              return len;
+            case "utf8":
+            case "utf-8":
+              return utf8ToBytes2(string).length;
+            case "ucs2":
+            case "ucs-2":
+            case "utf16le":
+            case "utf-16le":
+              return len * 2;
+            case "hex":
+              return len >>> 1;
+            case "base64":
+              return base64ToBytes(string).length;
+            default:
+              if (loweredCase) {
+                return mustMatch ? -1 : utf8ToBytes2(string).length;
+              }
+              encoding = ("" + encoding).toLowerCase();
+              loweredCase = true;
+          }
+        }
+      }
+      Buffer4.byteLength = byteLength2;
+      function slowToString(encoding, start, end) {
+        let loweredCase = false;
+        if (start === void 0 || start < 0) {
+          start = 0;
+        }
+        if (start > this.length) {
+          return "";
+        }
+        if (end === void 0 || end > this.length) {
+          end = this.length;
+        }
+        if (end <= 0) {
+          return "";
+        }
+        end >>>= 0;
+        start >>>= 0;
+        if (end <= start) {
+          return "";
+        }
+        if (!encoding) encoding = "utf8";
+        while (true) {
+          switch (encoding) {
+            case "hex":
+              return hexSlice(this, start, end);
+            case "utf8":
+            case "utf-8":
+              return utf8Slice(this, start, end);
+            case "ascii":
+              return asciiSlice(this, start, end);
+            case "latin1":
+            case "binary":
+              return latin1Slice(this, start, end);
+            case "base64":
+              return base64Slice(this, start, end);
+            case "ucs2":
+            case "ucs-2":
+            case "utf16le":
+            case "utf-16le":
+              return utf16leSlice(this, start, end);
+            default:
+              if (loweredCase) throw new TypeError("Unknown encoding: " + encoding);
+              encoding = (encoding + "").toLowerCase();
+              loweredCase = true;
+          }
+        }
+      }
+      Buffer4.prototype._isBuffer = true;
+      function swap(b, n, m) {
+        const i2 = b[n];
+        b[n] = b[m];
+        b[m] = i2;
+      }
+      Buffer4.prototype.swap16 = function swap16() {
+        const len = this.length;
+        if (len % 2 !== 0) {
+          throw new RangeError("Buffer size must be a multiple of 16-bits");
+        }
+        for (let i2 = 0; i2 < len; i2 += 2) {
+          swap(this, i2, i2 + 1);
+        }
+        return this;
+      };
+      Buffer4.prototype.swap32 = function swap32() {
+        const len = this.length;
+        if (len % 4 !== 0) {
+          throw new RangeError("Buffer size must be a multiple of 32-bits");
+        }
+        for (let i2 = 0; i2 < len; i2 += 4) {
+          swap(this, i2, i2 + 3);
+          swap(this, i2 + 1, i2 + 2);
+        }
+        return this;
+      };
+      Buffer4.prototype.swap64 = function swap64() {
+        const len = this.length;
+        if (len % 8 !== 0) {
+          throw new RangeError("Buffer size must be a multiple of 64-bits");
+        }
+        for (let i2 = 0; i2 < len; i2 += 8) {
+          swap(this, i2, i2 + 7);
+          swap(this, i2 + 1, i2 + 6);
+          swap(this, i2 + 2, i2 + 5);
+          swap(this, i2 + 3, i2 + 4);
+        }
+        return this;
+      };
+      Buffer4.prototype.toString = function toString() {
+        const length = this.length;
+        if (length === 0) return "";
+        if (arguments.length === 0) return utf8Slice(this, 0, length);
+        return slowToString.apply(this, arguments);
+      };
+      Buffer4.prototype.toLocaleString = Buffer4.prototype.toString;
+      Buffer4.prototype.equals = function equals(b) {
+        if (!Buffer4.isBuffer(b)) throw new TypeError("Argument must be a Buffer");
+        if (this === b) return true;
+        return Buffer4.compare(this, b) === 0;
+      };
+      Buffer4.prototype.inspect = function inspect2() {
+        let str = "";
+        const max2 = exports.INSPECT_MAX_BYTES;
+        str = this.toString("hex", 0, max2).replace(/(.{2})/g, "$1 ").trim();
+        if (this.length > max2) str += " ... ";
+        return "<Buffer " + str + ">";
+      };
+      if (customInspectSymbol) {
+        Buffer4.prototype[customInspectSymbol] = Buffer4.prototype.inspect;
+      }
+      Buffer4.prototype.compare = function compare(target, start, end, thisStart, thisEnd) {
+        if (isInstance(target, Uint8Array)) {
+          target = Buffer4.from(target, target.offset, target.byteLength);
+        }
+        if (!Buffer4.isBuffer(target)) {
+          throw new TypeError(
+            'The "target" argument must be one of type Buffer or Uint8Array. Received type ' + typeof target
+          );
+        }
+        if (start === void 0) {
+          start = 0;
+        }
+        if (end === void 0) {
+          end = target ? target.length : 0;
+        }
+        if (thisStart === void 0) {
+          thisStart = 0;
+        }
+        if (thisEnd === void 0) {
+          thisEnd = this.length;
+        }
+        if (start < 0 || end > target.length || thisStart < 0 || thisEnd > this.length) {
+          throw new RangeError("out of range index");
+        }
+        if (thisStart >= thisEnd && start >= end) {
+          return 0;
+        }
+        if (thisStart >= thisEnd) {
+          return -1;
+        }
+        if (start >= end) {
+          return 1;
+        }
+        start >>>= 0;
+        end >>>= 0;
+        thisStart >>>= 0;
+        thisEnd >>>= 0;
+        if (this === target) return 0;
+        let x2 = thisEnd - thisStart;
+        let y = end - start;
+        const len = Math.min(x2, y);
+        const thisCopy = this.slice(thisStart, thisEnd);
+        const targetCopy = target.slice(start, end);
+        for (let i2 = 0; i2 < len; ++i2) {
+          if (thisCopy[i2] !== targetCopy[i2]) {
+            x2 = thisCopy[i2];
+            y = targetCopy[i2];
+            break;
+          }
+        }
+        if (x2 < y) return -1;
+        if (y < x2) return 1;
+        return 0;
+      };
+      function bidirectionalIndexOf(buffer, val, byteOffset, encoding, dir) {
+        if (buffer.length === 0) return -1;
+        if (typeof byteOffset === "string") {
+          encoding = byteOffset;
+          byteOffset = 0;
+        } else if (byteOffset > 2147483647) {
+          byteOffset = 2147483647;
+        } else if (byteOffset < -2147483648) {
+          byteOffset = -2147483648;
+        }
+        byteOffset = +byteOffset;
+        if (numberIsNaN(byteOffset)) {
+          byteOffset = dir ? 0 : buffer.length - 1;
+        }
+        if (byteOffset < 0) byteOffset = buffer.length + byteOffset;
+        if (byteOffset >= buffer.length) {
+          if (dir) return -1;
+          else byteOffset = buffer.length - 1;
+        } else if (byteOffset < 0) {
+          if (dir) byteOffset = 0;
+          else return -1;
+        }
+        if (typeof val === "string") {
+          val = Buffer4.from(val, encoding);
+        }
+        if (Buffer4.isBuffer(val)) {
+          if (val.length === 0) {
+            return -1;
+          }
+          return arrayIndexOf(buffer, val, byteOffset, encoding, dir);
+        } else if (typeof val === "number") {
+          val = val & 255;
+          if (typeof Uint8Array.prototype.indexOf === "function") {
+            if (dir) {
+              return Uint8Array.prototype.indexOf.call(buffer, val, byteOffset);
+            } else {
+              return Uint8Array.prototype.lastIndexOf.call(buffer, val, byteOffset);
+            }
+          }
+          return arrayIndexOf(buffer, [val], byteOffset, encoding, dir);
+        }
+        throw new TypeError("val must be string, number or Buffer");
+      }
+      function arrayIndexOf(arr, val, byteOffset, encoding, dir) {
+        let indexSize = 1;
+        let arrLength = arr.length;
+        let valLength = val.length;
+        if (encoding !== void 0) {
+          encoding = String(encoding).toLowerCase();
+          if (encoding === "ucs2" || encoding === "ucs-2" || encoding === "utf16le" || encoding === "utf-16le") {
+            if (arr.length < 2 || val.length < 2) {
+              return -1;
+            }
+            indexSize = 2;
+            arrLength /= 2;
+            valLength /= 2;
+            byteOffset /= 2;
+          }
+        }
+        function read(buf, i3) {
+          if (indexSize === 1) {
+            return buf[i3];
+          } else {
+            return buf.readUInt16BE(i3 * indexSize);
+          }
+        }
+        let i2;
+        if (dir) {
+          let foundIndex = -1;
+          for (i2 = byteOffset; i2 < arrLength; i2++) {
+            if (read(arr, i2) === read(val, foundIndex === -1 ? 0 : i2 - foundIndex)) {
+              if (foundIndex === -1) foundIndex = i2;
+              if (i2 - foundIndex + 1 === valLength) return foundIndex * indexSize;
+            } else {
+              if (foundIndex !== -1) i2 -= i2 - foundIndex;
+              foundIndex = -1;
+            }
+          }
+        } else {
+          if (byteOffset + valLength > arrLength) byteOffset = arrLength - valLength;
+          for (i2 = byteOffset; i2 >= 0; i2--) {
+            let found = true;
+            for (let j = 0; j < valLength; j++) {
+              if (read(arr, i2 + j) !== read(val, j)) {
+                found = false;
+                break;
+              }
+            }
+            if (found) return i2;
+          }
+        }
+        return -1;
+      }
+      Buffer4.prototype.includes = function includes(val, byteOffset, encoding) {
+        return this.indexOf(val, byteOffset, encoding) !== -1;
+      };
+      Buffer4.prototype.indexOf = function indexOf(val, byteOffset, encoding) {
+        return bidirectionalIndexOf(this, val, byteOffset, encoding, true);
+      };
+      Buffer4.prototype.lastIndexOf = function lastIndexOf(val, byteOffset, encoding) {
+        return bidirectionalIndexOf(this, val, byteOffset, encoding, false);
+      };
+      function hexWrite(buf, string, offset, length) {
+        offset = Number(offset) || 0;
+        const remaining = buf.length - offset;
+        if (!length) {
+          length = remaining;
+        } else {
+          length = Number(length);
+          if (length > remaining) {
+            length = remaining;
+          }
+        }
+        const strLen = string.length;
+        if (length > strLen / 2) {
+          length = strLen / 2;
+        }
+        let i2;
+        for (i2 = 0; i2 < length; ++i2) {
+          const parsed = parseInt(string.substr(i2 * 2, 2), 16);
+          if (numberIsNaN(parsed)) return i2;
+          buf[offset + i2] = parsed;
+        }
+        return i2;
+      }
+      function utf8Write(buf, string, offset, length) {
+        return blitBuffer(utf8ToBytes2(string, buf.length - offset), buf, offset, length);
+      }
+      function asciiWrite(buf, string, offset, length) {
+        return blitBuffer(asciiToBytes(string), buf, offset, length);
+      }
+      function base64Write(buf, string, offset, length) {
+        return blitBuffer(base64ToBytes(string), buf, offset, length);
+      }
+      function ucs2Write(buf, string, offset, length) {
+        return blitBuffer(utf16leToBytes(string, buf.length - offset), buf, offset, length);
+      }
+      Buffer4.prototype.write = function write(string, offset, length, encoding) {
+        if (offset === void 0) {
+          encoding = "utf8";
+          length = this.length;
+          offset = 0;
+        } else if (length === void 0 && typeof offset === "string") {
+          encoding = offset;
+          length = this.length;
+          offset = 0;
+        } else if (isFinite(offset)) {
+          offset = offset >>> 0;
+          if (isFinite(length)) {
+            length = length >>> 0;
+            if (encoding === void 0) encoding = "utf8";
+          } else {
+            encoding = length;
+            length = void 0;
+          }
+        } else {
+          throw new Error(
+            "Buffer.write(string, encoding, offset[, length]) is no longer supported"
+          );
+        }
+        const remaining = this.length - offset;
+        if (length === void 0 || length > remaining) length = remaining;
+        if (string.length > 0 && (length < 0 || offset < 0) || offset > this.length) {
+          throw new RangeError("Attempt to write outside buffer bounds");
+        }
+        if (!encoding) encoding = "utf8";
+        let loweredCase = false;
+        for (; ; ) {
+          switch (encoding) {
+            case "hex":
+              return hexWrite(this, string, offset, length);
+            case "utf8":
+            case "utf-8":
+              return utf8Write(this, string, offset, length);
+            case "ascii":
+            case "latin1":
+            case "binary":
+              return asciiWrite(this, string, offset, length);
+            case "base64":
+              return base64Write(this, string, offset, length);
+            case "ucs2":
+            case "ucs-2":
+            case "utf16le":
+            case "utf-16le":
+              return ucs2Write(this, string, offset, length);
+            default:
+              if (loweredCase) throw new TypeError("Unknown encoding: " + encoding);
+              encoding = ("" + encoding).toLowerCase();
+              loweredCase = true;
+          }
+        }
+      };
+      Buffer4.prototype.toJSON = function toJSON() {
+        return {
+          type: "Buffer",
+          data: Array.prototype.slice.call(this._arr || this, 0)
+        };
+      };
+      function base64Slice(buf, start, end) {
+        if (start === 0 && end === buf.length) {
+          return base64.fromByteArray(buf);
+        } else {
+          return base64.fromByteArray(buf.slice(start, end));
+        }
+      }
+      function utf8Slice(buf, start, end) {
+        end = Math.min(buf.length, end);
+        const res = [];
+        let i2 = start;
+        while (i2 < end) {
+          const firstByte = buf[i2];
+          let codePoint = null;
+          let bytesPerSequence = firstByte > 239 ? 4 : firstByte > 223 ? 3 : firstByte > 191 ? 2 : 1;
+          if (i2 + bytesPerSequence <= end) {
+            let secondByte, thirdByte, fourthByte, tempCodePoint;
+            switch (bytesPerSequence) {
+              case 1:
+                if (firstByte < 128) {
+                  codePoint = firstByte;
+                }
+                break;
+              case 2:
+                secondByte = buf[i2 + 1];
+                if ((secondByte & 192) === 128) {
+                  tempCodePoint = (firstByte & 31) << 6 | secondByte & 63;
+                  if (tempCodePoint > 127) {
+                    codePoint = tempCodePoint;
+                  }
+                }
+                break;
+              case 3:
+                secondByte = buf[i2 + 1];
+                thirdByte = buf[i2 + 2];
+                if ((secondByte & 192) === 128 && (thirdByte & 192) === 128) {
+                  tempCodePoint = (firstByte & 15) << 12 | (secondByte & 63) << 6 | thirdByte & 63;
+                  if (tempCodePoint > 2047 && (tempCodePoint < 55296 || tempCodePoint > 57343)) {
+                    codePoint = tempCodePoint;
+                  }
+                }
+                break;
+              case 4:
+                secondByte = buf[i2 + 1];
+                thirdByte = buf[i2 + 2];
+                fourthByte = buf[i2 + 3];
+                if ((secondByte & 192) === 128 && (thirdByte & 192) === 128 && (fourthByte & 192) === 128) {
+                  tempCodePoint = (firstByte & 15) << 18 | (secondByte & 63) << 12 | (thirdByte & 63) << 6 | fourthByte & 63;
+                  if (tempCodePoint > 65535 && tempCodePoint < 1114112) {
+                    codePoint = tempCodePoint;
+                  }
+                }
+            }
+          }
+          if (codePoint === null) {
+            codePoint = 65533;
+            bytesPerSequence = 1;
+          } else if (codePoint > 65535) {
+            codePoint -= 65536;
+            res.push(codePoint >>> 10 & 1023 | 55296);
+            codePoint = 56320 | codePoint & 1023;
+          }
+          res.push(codePoint);
+          i2 += bytesPerSequence;
+        }
+        return decodeCodePointsArray(res);
+      }
+      var MAX_ARGUMENTS_LENGTH = 4096;
+      function decodeCodePointsArray(codePoints) {
+        const len = codePoints.length;
+        if (len <= MAX_ARGUMENTS_LENGTH) {
+          return String.fromCharCode.apply(String, codePoints);
+        }
+        let res = "";
+        let i2 = 0;
+        while (i2 < len) {
+          res += String.fromCharCode.apply(
+            String,
+            codePoints.slice(i2, i2 += MAX_ARGUMENTS_LENGTH)
+          );
+        }
+        return res;
+      }
+      function asciiSlice(buf, start, end) {
+        let ret = "";
+        end = Math.min(buf.length, end);
+        for (let i2 = start; i2 < end; ++i2) {
+          ret += String.fromCharCode(buf[i2] & 127);
+        }
+        return ret;
+      }
+      function latin1Slice(buf, start, end) {
+        let ret = "";
+        end = Math.min(buf.length, end);
+        for (let i2 = start; i2 < end; ++i2) {
+          ret += String.fromCharCode(buf[i2]);
+        }
+        return ret;
+      }
+      function hexSlice(buf, start, end) {
+        const len = buf.length;
+        if (!start || start < 0) start = 0;
+        if (!end || end < 0 || end > len) end = len;
+        let out = "";
+        for (let i2 = start; i2 < end; ++i2) {
+          out += hexSliceLookupTable[buf[i2]];
+        }
+        return out;
+      }
+      function utf16leSlice(buf, start, end) {
+        const bytes2 = buf.slice(start, end);
+        let res = "";
+        for (let i2 = 0; i2 < bytes2.length - 1; i2 += 2) {
+          res += String.fromCharCode(bytes2[i2] + bytes2[i2 + 1] * 256);
+        }
+        return res;
+      }
+      Buffer4.prototype.slice = function slice(start, end) {
+        const len = this.length;
+        start = ~~start;
+        end = end === void 0 ? len : ~~end;
+        if (start < 0) {
+          start += len;
+          if (start < 0) start = 0;
+        } else if (start > len) {
+          start = len;
+        }
+        if (end < 0) {
+          end += len;
+          if (end < 0) end = 0;
+        } else if (end > len) {
+          end = len;
+        }
+        if (end < start) end = start;
+        const newBuf = this.subarray(start, end);
+        Object.setPrototypeOf(newBuf, Buffer4.prototype);
+        return newBuf;
+      };
+      function checkOffset(offset, ext, length) {
+        if (offset % 1 !== 0 || offset < 0) throw new RangeError("offset is not uint");
+        if (offset + ext > length) throw new RangeError("Trying to access beyond buffer length");
+      }
+      Buffer4.prototype.readUintLE = Buffer4.prototype.readUIntLE = function readUIntLE(offset, byteLength3, noAssert) {
+        offset = offset >>> 0;
+        byteLength3 = byteLength3 >>> 0;
+        if (!noAssert) checkOffset(offset, byteLength3, this.length);
+        let val = this[offset];
+        let mul = 1;
+        let i2 = 0;
+        while (++i2 < byteLength3 && (mul *= 256)) {
+          val += this[offset + i2] * mul;
+        }
+        return val;
+      };
+      Buffer4.prototype.readUintBE = Buffer4.prototype.readUIntBE = function readUIntBE(offset, byteLength3, noAssert) {
+        offset = offset >>> 0;
+        byteLength3 = byteLength3 >>> 0;
+        if (!noAssert) {
+          checkOffset(offset, byteLength3, this.length);
+        }
+        let val = this[offset + --byteLength3];
+        let mul = 1;
+        while (byteLength3 > 0 && (mul *= 256)) {
+          val += this[offset + --byteLength3] * mul;
+        }
+        return val;
+      };
+      Buffer4.prototype.readUint8 = Buffer4.prototype.readUInt8 = function readUInt8(offset, noAssert) {
+        offset = offset >>> 0;
+        if (!noAssert) checkOffset(offset, 1, this.length);
+        return this[offset];
+      };
+      Buffer4.prototype.readUint16LE = Buffer4.prototype.readUInt16LE = function readUInt16LE(offset, noAssert) {
+        offset = offset >>> 0;
+        if (!noAssert) checkOffset(offset, 2, this.length);
+        return this[offset] | this[offset + 1] << 8;
+      };
+      Buffer4.prototype.readUint16BE = Buffer4.prototype.readUInt16BE = function readUInt16BE(offset, noAssert) {
+        offset = offset >>> 0;
+        if (!noAssert) checkOffset(offset, 2, this.length);
+        return this[offset] << 8 | this[offset + 1];
+      };
+      Buffer4.prototype.readUint32LE = Buffer4.prototype.readUInt32LE = function readUInt32LE(offset, noAssert) {
+        offset = offset >>> 0;
+        if (!noAssert) checkOffset(offset, 4, this.length);
+        return (this[offset] | this[offset + 1] << 8 | this[offset + 2] << 16) + this[offset + 3] * 16777216;
+      };
+      Buffer4.prototype.readUint32BE = Buffer4.prototype.readUInt32BE = function readUInt32BE(offset, noAssert) {
+        offset = offset >>> 0;
+        if (!noAssert) checkOffset(offset, 4, this.length);
+        return this[offset] * 16777216 + (this[offset + 1] << 16 | this[offset + 2] << 8 | this[offset + 3]);
+      };
+      Buffer4.prototype.readBigUInt64LE = defineBigIntMethod(function readBigUInt64LE(offset) {
+        offset = offset >>> 0;
+        validateNumber(offset, "offset");
+        const first = this[offset];
+        const last = this[offset + 7];
+        if (first === void 0 || last === void 0) {
+          boundsError(offset, this.length - 8);
+        }
+        const lo = first + this[++offset] * 2 ** 8 + this[++offset] * 2 ** 16 + this[++offset] * 2 ** 24;
+        const hi = this[++offset] + this[++offset] * 2 ** 8 + this[++offset] * 2 ** 16 + last * 2 ** 24;
+        return BigInt(lo) + (BigInt(hi) << BigInt(32));
+      });
+      Buffer4.prototype.readBigUInt64BE = defineBigIntMethod(function readBigUInt64BE(offset) {
+        offset = offset >>> 0;
+        validateNumber(offset, "offset");
+        const first = this[offset];
+        const last = this[offset + 7];
+        if (first === void 0 || last === void 0) {
+          boundsError(offset, this.length - 8);
+        }
+        const hi = first * 2 ** 24 + this[++offset] * 2 ** 16 + this[++offset] * 2 ** 8 + this[++offset];
+        const lo = this[++offset] * 2 ** 24 + this[++offset] * 2 ** 16 + this[++offset] * 2 ** 8 + last;
+        return (BigInt(hi) << BigInt(32)) + BigInt(lo);
+      });
+      Buffer4.prototype.readIntLE = function readIntLE(offset, byteLength3, noAssert) {
+        offset = offset >>> 0;
+        byteLength3 = byteLength3 >>> 0;
+        if (!noAssert) checkOffset(offset, byteLength3, this.length);
+        let val = this[offset];
+        let mul = 1;
+        let i2 = 0;
+        while (++i2 < byteLength3 && (mul *= 256)) {
+          val += this[offset + i2] * mul;
+        }
+        mul *= 128;
+        if (val >= mul) val -= Math.pow(2, 8 * byteLength3);
+        return val;
+      };
+      Buffer4.prototype.readIntBE = function readIntBE(offset, byteLength3, noAssert) {
+        offset = offset >>> 0;
+        byteLength3 = byteLength3 >>> 0;
+        if (!noAssert) checkOffset(offset, byteLength3, this.length);
+        let i2 = byteLength3;
+        let mul = 1;
+        let val = this[offset + --i2];
+        while (i2 > 0 && (mul *= 256)) {
+          val += this[offset + --i2] * mul;
+        }
+        mul *= 128;
+        if (val >= mul) val -= Math.pow(2, 8 * byteLength3);
+        return val;
+      };
+      Buffer4.prototype.readInt8 = function readInt8(offset, noAssert) {
+        offset = offset >>> 0;
+        if (!noAssert) checkOffset(offset, 1, this.length);
+        if (!(this[offset] & 128)) return this[offset];
+        return (255 - this[offset] + 1) * -1;
+      };
+      Buffer4.prototype.readInt16LE = function readInt16LE(offset, noAssert) {
+        offset = offset >>> 0;
+        if (!noAssert) checkOffset(offset, 2, this.length);
+        const val = this[offset] | this[offset + 1] << 8;
+        return val & 32768 ? val | 4294901760 : val;
+      };
+      Buffer4.prototype.readInt16BE = function readInt16BE(offset, noAssert) {
+        offset = offset >>> 0;
+        if (!noAssert) checkOffset(offset, 2, this.length);
+        const val = this[offset + 1] | this[offset] << 8;
+        return val & 32768 ? val | 4294901760 : val;
+      };
+      Buffer4.prototype.readInt32LE = function readInt32LE(offset, noAssert) {
+        offset = offset >>> 0;
+        if (!noAssert) checkOffset(offset, 4, this.length);
+        return this[offset] | this[offset + 1] << 8 | this[offset + 2] << 16 | this[offset + 3] << 24;
+      };
+      Buffer4.prototype.readInt32BE = function readInt32BE(offset, noAssert) {
+        offset = offset >>> 0;
+        if (!noAssert) checkOffset(offset, 4, this.length);
+        return this[offset] << 24 | this[offset + 1] << 16 | this[offset + 2] << 8 | this[offset + 3];
+      };
+      Buffer4.prototype.readBigInt64LE = defineBigIntMethod(function readBigInt64LE(offset) {
+        offset = offset >>> 0;
+        validateNumber(offset, "offset");
+        const first = this[offset];
+        const last = this[offset + 7];
+        if (first === void 0 || last === void 0) {
+          boundsError(offset, this.length - 8);
+        }
+        const val = this[offset + 4] + this[offset + 5] * 2 ** 8 + this[offset + 6] * 2 ** 16 + (last << 24);
+        return (BigInt(val) << BigInt(32)) + BigInt(first + this[++offset] * 2 ** 8 + this[++offset] * 2 ** 16 + this[++offset] * 2 ** 24);
+      });
+      Buffer4.prototype.readBigInt64BE = defineBigIntMethod(function readBigInt64BE(offset) {
+        offset = offset >>> 0;
+        validateNumber(offset, "offset");
+        const first = this[offset];
+        const last = this[offset + 7];
+        if (first === void 0 || last === void 0) {
+          boundsError(offset, this.length - 8);
+        }
+        const val = (first << 24) + // Overflow
+        this[++offset] * 2 ** 16 + this[++offset] * 2 ** 8 + this[++offset];
+        return (BigInt(val) << BigInt(32)) + BigInt(this[++offset] * 2 ** 24 + this[++offset] * 2 ** 16 + this[++offset] * 2 ** 8 + last);
+      });
+      Buffer4.prototype.readFloatLE = function readFloatLE(offset, noAssert) {
+        offset = offset >>> 0;
+        if (!noAssert) checkOffset(offset, 4, this.length);
+        return ieee754.read(this, offset, true, 23, 4);
+      };
+      Buffer4.prototype.readFloatBE = function readFloatBE(offset, noAssert) {
+        offset = offset >>> 0;
+        if (!noAssert) checkOffset(offset, 4, this.length);
+        return ieee754.read(this, offset, false, 23, 4);
+      };
+      Buffer4.prototype.readDoubleLE = function readDoubleLE(offset, noAssert) {
+        offset = offset >>> 0;
+        if (!noAssert) checkOffset(offset, 8, this.length);
+        return ieee754.read(this, offset, true, 52, 8);
+      };
+      Buffer4.prototype.readDoubleBE = function readDoubleBE(offset, noAssert) {
+        offset = offset >>> 0;
+        if (!noAssert) checkOffset(offset, 8, this.length);
+        return ieee754.read(this, offset, false, 52, 8);
+      };
+      function checkInt(buf, value, offset, ext, max2, min) {
+        if (!Buffer4.isBuffer(buf)) throw new TypeError('"buffer" argument must be a Buffer instance');
+        if (value > max2 || value < min) throw new RangeError('"value" argument is out of bounds');
+        if (offset + ext > buf.length) throw new RangeError("Index out of range");
+      }
+      Buffer4.prototype.writeUintLE = Buffer4.prototype.writeUIntLE = function writeUIntLE(value, offset, byteLength3, noAssert) {
+        value = +value;
+        offset = offset >>> 0;
+        byteLength3 = byteLength3 >>> 0;
+        if (!noAssert) {
+          const maxBytes = Math.pow(2, 8 * byteLength3) - 1;
+          checkInt(this, value, offset, byteLength3, maxBytes, 0);
+        }
+        let mul = 1;
+        let i2 = 0;
+        this[offset] = value & 255;
+        while (++i2 < byteLength3 && (mul *= 256)) {
+          this[offset + i2] = value / mul & 255;
+        }
+        return offset + byteLength3;
+      };
+      Buffer4.prototype.writeUintBE = Buffer4.prototype.writeUIntBE = function writeUIntBE(value, offset, byteLength3, noAssert) {
+        value = +value;
+        offset = offset >>> 0;
+        byteLength3 = byteLength3 >>> 0;
+        if (!noAssert) {
+          const maxBytes = Math.pow(2, 8 * byteLength3) - 1;
+          checkInt(this, value, offset, byteLength3, maxBytes, 0);
+        }
+        let i2 = byteLength3 - 1;
+        let mul = 1;
+        this[offset + i2] = value & 255;
+        while (--i2 >= 0 && (mul *= 256)) {
+          this[offset + i2] = value / mul & 255;
+        }
+        return offset + byteLength3;
+      };
+      Buffer4.prototype.writeUint8 = Buffer4.prototype.writeUInt8 = function writeUInt8(value, offset, noAssert) {
+        value = +value;
+        offset = offset >>> 0;
+        if (!noAssert) checkInt(this, value, offset, 1, 255, 0);
+        this[offset] = value & 255;
+        return offset + 1;
+      };
+      Buffer4.prototype.writeUint16LE = Buffer4.prototype.writeUInt16LE = function writeUInt16LE(value, offset, noAssert) {
+        value = +value;
+        offset = offset >>> 0;
+        if (!noAssert) checkInt(this, value, offset, 2, 65535, 0);
+        this[offset] = value & 255;
+        this[offset + 1] = value >>> 8;
+        return offset + 2;
+      };
+      Buffer4.prototype.writeUint16BE = Buffer4.prototype.writeUInt16BE = function writeUInt16BE(value, offset, noAssert) {
+        value = +value;
+        offset = offset >>> 0;
+        if (!noAssert) checkInt(this, value, offset, 2, 65535, 0);
+        this[offset] = value >>> 8;
+        this[offset + 1] = value & 255;
+        return offset + 2;
+      };
+      Buffer4.prototype.writeUint32LE = Buffer4.prototype.writeUInt32LE = function writeUInt32LE(value, offset, noAssert) {
+        value = +value;
+        offset = offset >>> 0;
+        if (!noAssert) checkInt(this, value, offset, 4, 4294967295, 0);
+        this[offset + 3] = value >>> 24;
+        this[offset + 2] = value >>> 16;
+        this[offset + 1] = value >>> 8;
+        this[offset] = value & 255;
+        return offset + 4;
+      };
+      Buffer4.prototype.writeUint32BE = Buffer4.prototype.writeUInt32BE = function writeUInt32BE(value, offset, noAssert) {
+        value = +value;
+        offset = offset >>> 0;
+        if (!noAssert) checkInt(this, value, offset, 4, 4294967295, 0);
+        this[offset] = value >>> 24;
+        this[offset + 1] = value >>> 16;
+        this[offset + 2] = value >>> 8;
+        this[offset + 3] = value & 255;
+        return offset + 4;
+      };
+      function wrtBigUInt64LE(buf, value, offset, min, max2) {
+        checkIntBI(value, min, max2, buf, offset, 7);
+        let lo = Number(value & BigInt(4294967295));
+        buf[offset++] = lo;
+        lo = lo >> 8;
+        buf[offset++] = lo;
+        lo = lo >> 8;
+        buf[offset++] = lo;
+        lo = lo >> 8;
+        buf[offset++] = lo;
+        let hi = Number(value >> BigInt(32) & BigInt(4294967295));
+        buf[offset++] = hi;
+        hi = hi >> 8;
+        buf[offset++] = hi;
+        hi = hi >> 8;
+        buf[offset++] = hi;
+        hi = hi >> 8;
+        buf[offset++] = hi;
+        return offset;
+      }
+      function wrtBigUInt64BE(buf, value, offset, min, max2) {
+        checkIntBI(value, min, max2, buf, offset, 7);
+        let lo = Number(value & BigInt(4294967295));
+        buf[offset + 7] = lo;
+        lo = lo >> 8;
+        buf[offset + 6] = lo;
+        lo = lo >> 8;
+        buf[offset + 5] = lo;
+        lo = lo >> 8;
+        buf[offset + 4] = lo;
+        let hi = Number(value >> BigInt(32) & BigInt(4294967295));
+        buf[offset + 3] = hi;
+        hi = hi >> 8;
+        buf[offset + 2] = hi;
+        hi = hi >> 8;
+        buf[offset + 1] = hi;
+        hi = hi >> 8;
+        buf[offset] = hi;
+        return offset + 8;
+      }
+      Buffer4.prototype.writeBigUInt64LE = defineBigIntMethod(function writeBigUInt64LE(value, offset = 0) {
+        return wrtBigUInt64LE(this, value, offset, BigInt(0), BigInt("0xffffffffffffffff"));
+      });
+      Buffer4.prototype.writeBigUInt64BE = defineBigIntMethod(function writeBigUInt64BE(value, offset = 0) {
+        return wrtBigUInt64BE(this, value, offset, BigInt(0), BigInt("0xffffffffffffffff"));
+      });
+      Buffer4.prototype.writeIntLE = function writeIntLE(value, offset, byteLength3, noAssert) {
+        value = +value;
+        offset = offset >>> 0;
+        if (!noAssert) {
+          const limit = Math.pow(2, 8 * byteLength3 - 1);
+          checkInt(this, value, offset, byteLength3, limit - 1, -limit);
+        }
+        let i2 = 0;
+        let mul = 1;
+        let sub = 0;
+        this[offset] = value & 255;
+        while (++i2 < byteLength3 && (mul *= 256)) {
+          if (value < 0 && sub === 0 && this[offset + i2 - 1] !== 0) {
+            sub = 1;
+          }
+          this[offset + i2] = (value / mul >> 0) - sub & 255;
+        }
+        return offset + byteLength3;
+      };
+      Buffer4.prototype.writeIntBE = function writeIntBE(value, offset, byteLength3, noAssert) {
+        value = +value;
+        offset = offset >>> 0;
+        if (!noAssert) {
+          const limit = Math.pow(2, 8 * byteLength3 - 1);
+          checkInt(this, value, offset, byteLength3, limit - 1, -limit);
+        }
+        let i2 = byteLength3 - 1;
+        let mul = 1;
+        let sub = 0;
+        this[offset + i2] = value & 255;
+        while (--i2 >= 0 && (mul *= 256)) {
+          if (value < 0 && sub === 0 && this[offset + i2 + 1] !== 0) {
+            sub = 1;
+          }
+          this[offset + i2] = (value / mul >> 0) - sub & 255;
+        }
+        return offset + byteLength3;
+      };
+      Buffer4.prototype.writeInt8 = function writeInt8(value, offset, noAssert) {
+        value = +value;
+        offset = offset >>> 0;
+        if (!noAssert) checkInt(this, value, offset, 1, 127, -128);
+        if (value < 0) value = 255 + value + 1;
+        this[offset] = value & 255;
+        return offset + 1;
+      };
+      Buffer4.prototype.writeInt16LE = function writeInt16LE(value, offset, noAssert) {
+        value = +value;
+        offset = offset >>> 0;
+        if (!noAssert) checkInt(this, value, offset, 2, 32767, -32768);
+        this[offset] = value & 255;
+        this[offset + 1] = value >>> 8;
+        return offset + 2;
+      };
+      Buffer4.prototype.writeInt16BE = function writeInt16BE(value, offset, noAssert) {
+        value = +value;
+        offset = offset >>> 0;
+        if (!noAssert) checkInt(this, value, offset, 2, 32767, -32768);
+        this[offset] = value >>> 8;
+        this[offset + 1] = value & 255;
+        return offset + 2;
+      };
+      Buffer4.prototype.writeInt32LE = function writeInt32LE(value, offset, noAssert) {
+        value = +value;
+        offset = offset >>> 0;
+        if (!noAssert) checkInt(this, value, offset, 4, 2147483647, -2147483648);
+        this[offset] = value & 255;
+        this[offset + 1] = value >>> 8;
+        this[offset + 2] = value >>> 16;
+        this[offset + 3] = value >>> 24;
+        return offset + 4;
+      };
+      Buffer4.prototype.writeInt32BE = function writeInt32BE(value, offset, noAssert) {
+        value = +value;
+        offset = offset >>> 0;
+        if (!noAssert) checkInt(this, value, offset, 4, 2147483647, -2147483648);
+        if (value < 0) value = 4294967295 + value + 1;
+        this[offset] = value >>> 24;
+        this[offset + 1] = value >>> 16;
+        this[offset + 2] = value >>> 8;
+        this[offset + 3] = value & 255;
+        return offset + 4;
+      };
+      Buffer4.prototype.writeBigInt64LE = defineBigIntMethod(function writeBigInt64LE(value, offset = 0) {
+        return wrtBigUInt64LE(this, value, offset, -BigInt("0x8000000000000000"), BigInt("0x7fffffffffffffff"));
+      });
+      Buffer4.prototype.writeBigInt64BE = defineBigIntMethod(function writeBigInt64BE(value, offset = 0) {
+        return wrtBigUInt64BE(this, value, offset, -BigInt("0x8000000000000000"), BigInt("0x7fffffffffffffff"));
+      });
+      function checkIEEE754(buf, value, offset, ext, max2, min) {
+        if (offset + ext > buf.length) throw new RangeError("Index out of range");
+        if (offset < 0) throw new RangeError("Index out of range");
+      }
+      function writeFloat(buf, value, offset, littleEndian, noAssert) {
+        value = +value;
+        offset = offset >>> 0;
+        if (!noAssert) {
+          checkIEEE754(buf, value, offset, 4, 34028234663852886e22, -34028234663852886e22);
+        }
+        ieee754.write(buf, value, offset, littleEndian, 23, 4);
+        return offset + 4;
+      }
+      Buffer4.prototype.writeFloatLE = function writeFloatLE(value, offset, noAssert) {
+        return writeFloat(this, value, offset, true, noAssert);
+      };
+      Buffer4.prototype.writeFloatBE = function writeFloatBE(value, offset, noAssert) {
+        return writeFloat(this, value, offset, false, noAssert);
+      };
+      function writeDouble(buf, value, offset, littleEndian, noAssert) {
+        value = +value;
+        offset = offset >>> 0;
+        if (!noAssert) {
+          checkIEEE754(buf, value, offset, 8, 17976931348623157e292, -17976931348623157e292);
+        }
+        ieee754.write(buf, value, offset, littleEndian, 52, 8);
+        return offset + 8;
+      }
+      Buffer4.prototype.writeDoubleLE = function writeDoubleLE(value, offset, noAssert) {
+        return writeDouble(this, value, offset, true, noAssert);
+      };
+      Buffer4.prototype.writeDoubleBE = function writeDoubleBE(value, offset, noAssert) {
+        return writeDouble(this, value, offset, false, noAssert);
+      };
+      Buffer4.prototype.copy = function copy(target, targetStart, start, end) {
+        if (!Buffer4.isBuffer(target)) throw new TypeError("argument should be a Buffer");
+        if (!start) start = 0;
+        if (!end && end !== 0) end = this.length;
+        if (targetStart >= target.length) targetStart = target.length;
+        if (!targetStart) targetStart = 0;
+        if (end > 0 && end < start) end = start;
+        if (end === start) return 0;
+        if (target.length === 0 || this.length === 0) return 0;
+        if (targetStart < 0) {
+          throw new RangeError("targetStart out of bounds");
+        }
+        if (start < 0 || start >= this.length) throw new RangeError("Index out of range");
+        if (end < 0) throw new RangeError("sourceEnd out of bounds");
+        if (end > this.length) end = this.length;
+        if (target.length - targetStart < end - start) {
+          end = target.length - targetStart + start;
+        }
+        const len = end - start;
+        if (this === target && typeof Uint8Array.prototype.copyWithin === "function") {
+          this.copyWithin(targetStart, start, end);
+        } else {
+          Uint8Array.prototype.set.call(
+            target,
+            this.subarray(start, end),
+            targetStart
+          );
+        }
+        return len;
+      };
+      Buffer4.prototype.fill = function fill(val, start, end, encoding) {
+        if (typeof val === "string") {
+          if (typeof start === "string") {
+            encoding = start;
+            start = 0;
+            end = this.length;
+          } else if (typeof end === "string") {
+            encoding = end;
+            end = this.length;
+          }
+          if (encoding !== void 0 && typeof encoding !== "string") {
+            throw new TypeError("encoding must be a string");
+          }
+          if (typeof encoding === "string" && !Buffer4.isEncoding(encoding)) {
+            throw new TypeError("Unknown encoding: " + encoding);
+          }
+          if (val.length === 1) {
+            const code = val.charCodeAt(0);
+            if (encoding === "utf8" && code < 128 || encoding === "latin1") {
+              val = code;
+            }
+          }
+        } else if (typeof val === "number") {
+          val = val & 255;
+        } else if (typeof val === "boolean") {
+          val = Number(val);
+        }
+        if (start < 0 || this.length < start || this.length < end) {
+          throw new RangeError("Out of range index");
+        }
+        if (end <= start) {
+          return this;
+        }
+        start = start >>> 0;
+        end = end === void 0 ? this.length : end >>> 0;
+        if (!val) val = 0;
+        let i2;
+        if (typeof val === "number") {
+          for (i2 = start; i2 < end; ++i2) {
+            this[i2] = val;
+          }
+        } else {
+          const bytes2 = Buffer4.isBuffer(val) ? val : Buffer4.from(val, encoding);
+          const len = bytes2.length;
+          if (len === 0) {
+            throw new TypeError('The value "' + val + '" is invalid for argument "value"');
+          }
+          for (i2 = 0; i2 < end - start; ++i2) {
+            this[i2 + start] = bytes2[i2 % len];
+          }
+        }
+        return this;
+      };
+      var errors = {};
+      function E(sym, getMessage, Base2) {
+        errors[sym] = class NodeError extends Base2 {
+          constructor() {
+            super();
+            Object.defineProperty(this, "message", {
+              value: getMessage.apply(this, arguments),
+              writable: true,
+              configurable: true
+            });
+            this.name = `${this.name} [${sym}]`;
+            this.stack;
+            delete this.name;
+          }
+          get code() {
+            return sym;
+          }
+          set code(value) {
+            Object.defineProperty(this, "code", {
+              configurable: true,
+              enumerable: true,
+              value,
+              writable: true
+            });
+          }
+          toString() {
+            return `${this.name} [${sym}]: ${this.message}`;
+          }
+        };
+      }
+      E(
+        "ERR_BUFFER_OUT_OF_BOUNDS",
+        function(name) {
+          if (name) {
+            return `${name} is outside of buffer bounds`;
+          }
+          return "Attempt to access memory outside buffer bounds";
+        },
+        RangeError
+      );
+      E(
+        "ERR_INVALID_ARG_TYPE",
+        function(name, actual) {
+          return `The "${name}" argument must be of type number. Received type ${typeof actual}`;
+        },
+        TypeError
+      );
+      E(
+        "ERR_OUT_OF_RANGE",
+        function(str, range, input) {
+          let msg = `The value of "${str}" is out of range.`;
+          let received2 = input;
+          if (Number.isInteger(input) && Math.abs(input) > 2 ** 32) {
+            received2 = addNumericalSeparator(String(input));
+          } else if (typeof input === "bigint") {
+            received2 = String(input);
+            if (input > BigInt(2) ** BigInt(32) || input < -(BigInt(2) ** BigInt(32))) {
+              received2 = addNumericalSeparator(received2);
+            }
+            received2 += "n";
+          }
+          msg += ` It must be ${range}. Received ${received2}`;
+          return msg;
+        },
+        RangeError
+      );
+      function addNumericalSeparator(val) {
+        let res = "";
+        let i2 = val.length;
+        const start = val[0] === "-" ? 1 : 0;
+        for (; i2 >= start + 4; i2 -= 3) {
+          res = `_${val.slice(i2 - 3, i2)}${res}`;
+        }
+        return `${val.slice(0, i2)}${res}`;
+      }
+      function checkBounds(buf, offset, byteLength3) {
+        validateNumber(offset, "offset");
+        if (buf[offset] === void 0 || buf[offset + byteLength3] === void 0) {
+          boundsError(offset, buf.length - (byteLength3 + 1));
+        }
+      }
+      function checkIntBI(value, min, max2, buf, offset, byteLength3) {
+        if (value > max2 || value < min) {
+          const n = typeof min === "bigint" ? "n" : "";
+          let range;
+          if (byteLength3 > 3) {
+            if (min === 0 || min === BigInt(0)) {
+              range = `>= 0${n} and < 2${n} ** ${(byteLength3 + 1) * 8}${n}`;
+            } else {
+              range = `>= -(2${n} ** ${(byteLength3 + 1) * 8 - 1}${n}) and < 2 ** ${(byteLength3 + 1) * 8 - 1}${n}`;
+            }
+          } else {
+            range = `>= ${min}${n} and <= ${max2}${n}`;
+          }
+          throw new errors.ERR_OUT_OF_RANGE("value", range, value);
+        }
+        checkBounds(buf, offset, byteLength3);
+      }
+      function validateNumber(value, name) {
+        if (typeof value !== "number") {
+          throw new errors.ERR_INVALID_ARG_TYPE(name, "number", value);
+        }
+      }
+      function boundsError(value, length, type) {
+        if (Math.floor(value) !== value) {
+          validateNumber(value, type);
+          throw new errors.ERR_OUT_OF_RANGE(type || "offset", "an integer", value);
+        }
+        if (length < 0) {
+          throw new errors.ERR_BUFFER_OUT_OF_BOUNDS();
+        }
+        throw new errors.ERR_OUT_OF_RANGE(
+          type || "offset",
+          `>= ${type ? 1 : 0} and <= ${length}`,
+          value
+        );
+      }
+      var INVALID_BASE64_RE = /[^+/0-9A-Za-z-_]/g;
+      function base64clean(str) {
+        str = str.split("=")[0];
+        str = str.trim().replace(INVALID_BASE64_RE, "");
+        if (str.length < 2) return "";
+        while (str.length % 4 !== 0) {
+          str = str + "=";
+        }
+        return str;
+      }
+      function utf8ToBytes2(string, units) {
+        units = units || Infinity;
+        let codePoint;
+        const length = string.length;
+        let leadSurrogate = null;
+        const bytes2 = [];
+        for (let i2 = 0; i2 < length; ++i2) {
+          codePoint = string.charCodeAt(i2);
+          if (codePoint > 55295 && codePoint < 57344) {
+            if (!leadSurrogate) {
+              if (codePoint > 56319) {
+                if ((units -= 3) > -1) bytes2.push(239, 191, 189);
+                continue;
+              } else if (i2 + 1 === length) {
+                if ((units -= 3) > -1) bytes2.push(239, 191, 189);
+                continue;
+              }
+              leadSurrogate = codePoint;
+              continue;
+            }
+            if (codePoint < 56320) {
+              if ((units -= 3) > -1) bytes2.push(239, 191, 189);
+              leadSurrogate = codePoint;
+              continue;
+            }
+            codePoint = (leadSurrogate - 55296 << 10 | codePoint - 56320) + 65536;
+          } else if (leadSurrogate) {
+            if ((units -= 3) > -1) bytes2.push(239, 191, 189);
+          }
+          leadSurrogate = null;
+          if (codePoint < 128) {
+            if ((units -= 1) < 0) break;
+            bytes2.push(codePoint);
+          } else if (codePoint < 2048) {
+            if ((units -= 2) < 0) break;
+            bytes2.push(
+              codePoint >> 6 | 192,
+              codePoint & 63 | 128
+            );
+          } else if (codePoint < 65536) {
+            if ((units -= 3) < 0) break;
+            bytes2.push(
+              codePoint >> 12 | 224,
+              codePoint >> 6 & 63 | 128,
+              codePoint & 63 | 128
+            );
+          } else if (codePoint < 1114112) {
+            if ((units -= 4) < 0) break;
+            bytes2.push(
+              codePoint >> 18 | 240,
+              codePoint >> 12 & 63 | 128,
+              codePoint >> 6 & 63 | 128,
+              codePoint & 63 | 128
+            );
+          } else {
+            throw new Error("Invalid code point");
+          }
+        }
+        return bytes2;
+      }
+      function asciiToBytes(str) {
+        const byteArray = [];
+        for (let i2 = 0; i2 < str.length; ++i2) {
+          byteArray.push(str.charCodeAt(i2) & 255);
+        }
+        return byteArray;
+      }
+      function utf16leToBytes(str, units) {
+        let c, hi, lo;
+        const byteArray = [];
+        for (let i2 = 0; i2 < str.length; ++i2) {
+          if ((units -= 2) < 0) break;
+          c = str.charCodeAt(i2);
+          hi = c >> 8;
+          lo = c % 256;
+          byteArray.push(lo);
+          byteArray.push(hi);
+        }
+        return byteArray;
+      }
+      function base64ToBytes(str) {
+        return base64.toByteArray(base64clean(str));
+      }
+      function blitBuffer(src, dst, offset, length) {
+        let i2;
+        for (i2 = 0; i2 < length; ++i2) {
+          if (i2 + offset >= dst.length || i2 >= src.length) break;
+          dst[i2 + offset] = src[i2];
+        }
+        return i2;
+      }
+      function isInstance(obj, type) {
+        return obj instanceof type || obj != null && obj.constructor != null && obj.constructor.name != null && obj.constructor.name === type.name;
+      }
+      function numberIsNaN(obj) {
+        return obj !== obj;
+      }
+      var hexSliceLookupTable = (function() {
+        const alphabet = "0123456789abcdef";
+        const table = new Array(256);
+        for (let i2 = 0; i2 < 16; ++i2) {
+          const i16 = i2 * 16;
+          for (let j = 0; j < 16; ++j) {
+            table[i16 + j] = alphabet[i2] + alphabet[j];
+          }
+        }
+        return table;
+      })();
+      function defineBigIntMethod(fn) {
+        return typeof BigInt === "undefined" ? BufferBigIntNotDefined : fn;
+      }
+      function BufferBigIntNotDefined() {
+        throw new Error("BigInt not supported");
+      }
+    }
+  });
+
+  // .goose/out/rc022-prep-20261114-01/source/node_modules/.pnpm/fast-deep-equal@3.1.3/node_modules/fast-deep-equal/index.js
+  var require_fast_deep_equal = __commonJS({
+    ".goose/out/rc022-prep-20261114-01/source/node_modules/.pnpm/fast-deep-equal@3.1.3/node_modules/fast-deep-equal/index.js"(exports, module) {
+      "use strict";
+      module.exports = function equal(a, b) {
+        if (a === b) return true;
+        if (a && b && typeof a == "object" && typeof b == "object") {
+          if (a.constructor !== b.constructor) return false;
+          var length, i2, keys;
+          if (Array.isArray(a)) {
+            length = a.length;
+            if (length != b.length) return false;
+            for (i2 = length; i2-- !== 0; )
+              if (!equal(a[i2], b[i2])) return false;
+            return true;
+          }
+          if (a.constructor === RegExp) return a.source === b.source && a.flags === b.flags;
+          if (a.valueOf !== Object.prototype.valueOf) return a.valueOf() === b.valueOf();
+          if (a.toString !== Object.prototype.toString) return a.toString() === b.toString();
+          keys = Object.keys(a);
+          length = keys.length;
+          if (length !== Object.keys(b).length) return false;
+          for (i2 = length; i2-- !== 0; )
+            if (!Object.prototype.hasOwnProperty.call(b, keys[i2])) return false;
+          for (i2 = length; i2-- !== 0; ) {
+            var key = keys[i2];
+            if (!equal(a[key], b[key])) return false;
+          }
+          return true;
+        }
+        return a !== a && b !== b;
+      };
+    }
+  });
+
+  // .goose/out/rc022-prep-20261114-01/source/node_modules/.pnpm/tiny-inflate@1.0.3/node_modules/tiny-inflate/index.js
+  var require_tiny_inflate = __commonJS({
+    ".goose/out/rc022-prep-20261114-01/source/node_modules/.pnpm/tiny-inflate@1.0.3/node_modules/tiny-inflate/index.js"(exports, module) {
+      var TINF_OK = 0;
+      var TINF_DATA_ERROR = -3;
+      function Tree() {
+        this.table = new Uint16Array(16);
+        this.trans = new Uint16Array(288);
+      }
+      function Data(source, dest) {
+        this.source = source;
+        this.sourceIndex = 0;
+        this.tag = 0;
+        this.bitcount = 0;
+        this.dest = dest;
+        this.destLen = 0;
+        this.ltree = new Tree();
+        this.dtree = new Tree();
+      }
+      var sltree = new Tree();
+      var sdtree = new Tree();
+      var length_bits = new Uint8Array(30);
+      var length_base = new Uint16Array(30);
+      var dist_bits = new Uint8Array(30);
+      var dist_base = new Uint16Array(30);
+      var clcidx = new Uint8Array([
+        16,
+        17,
+        18,
+        0,
+        8,
+        7,
+        9,
+        6,
+        10,
+        5,
+        11,
+        4,
+        12,
+        3,
+        13,
+        2,
+        14,
+        1,
+        15
+      ]);
+      var code_tree = new Tree();
+      var lengths = new Uint8Array(288 + 32);
+      function tinf_build_bits_base(bits2, base, delta, first) {
+        var i2, sum;
+        for (i2 = 0; i2 < delta; ++i2) bits2[i2] = 0;
+        for (i2 = 0; i2 < 30 - delta; ++i2) bits2[i2 + delta] = i2 / delta | 0;
+        for (sum = first, i2 = 0; i2 < 30; ++i2) {
+          base[i2] = sum;
+          sum += 1 << bits2[i2];
+        }
+      }
+      function tinf_build_fixed_trees(lt, dt) {
+        var i2;
+        for (i2 = 0; i2 < 7; ++i2) lt.table[i2] = 0;
+        lt.table[7] = 24;
+        lt.table[8] = 152;
+        lt.table[9] = 112;
+        for (i2 = 0; i2 < 24; ++i2) lt.trans[i2] = 256 + i2;
+        for (i2 = 0; i2 < 144; ++i2) lt.trans[24 + i2] = i2;
+        for (i2 = 0; i2 < 8; ++i2) lt.trans[24 + 144 + i2] = 280 + i2;
+        for (i2 = 0; i2 < 112; ++i2) lt.trans[24 + 144 + 8 + i2] = 144 + i2;
+        for (i2 = 0; i2 < 5; ++i2) dt.table[i2] = 0;
+        dt.table[5] = 32;
+        for (i2 = 0; i2 < 32; ++i2) dt.trans[i2] = i2;
+      }
+      var offs = new Uint16Array(16);
+      function tinf_build_tree(t, lengths2, off, num) {
+        var i2, sum;
+        for (i2 = 0; i2 < 16; ++i2) t.table[i2] = 0;
+        for (i2 = 0; i2 < num; ++i2) t.table[lengths2[off + i2]]++;
+        t.table[0] = 0;
+        for (sum = 0, i2 = 0; i2 < 16; ++i2) {
+          offs[i2] = sum;
+          sum += t.table[i2];
+        }
+        for (i2 = 0; i2 < num; ++i2) {
+          if (lengths2[off + i2]) t.trans[offs[lengths2[off + i2]]++] = i2;
+        }
+      }
+      function tinf_getbit(d) {
+        if (!d.bitcount--) {
+          d.tag = d.source[d.sourceIndex++];
+          d.bitcount = 7;
+        }
+        var bit = d.tag & 1;
+        d.tag >>>= 1;
+        return bit;
+      }
+      function tinf_read_bits(d, num, base) {
+        if (!num)
+          return base;
+        while (d.bitcount < 24) {
+          d.tag |= d.source[d.sourceIndex++] << d.bitcount;
+          d.bitcount += 8;
+        }
+        var val = d.tag & 65535 >>> 16 - num;
+        d.tag >>>= num;
+        d.bitcount -= num;
+        return val + base;
+      }
+      function tinf_decode_symbol(d, t) {
+        while (d.bitcount < 24) {
+          d.tag |= d.source[d.sourceIndex++] << d.bitcount;
+          d.bitcount += 8;
+        }
+        var sum = 0, cur = 0, len = 0;
+        var tag = d.tag;
+        do {
+          cur = 2 * cur + (tag & 1);
+          tag >>>= 1;
+          ++len;
+          sum += t.table[len];
+          cur -= t.table[len];
+        } while (cur >= 0);
+        d.tag = tag;
+        d.bitcount -= len;
+        return t.trans[sum + cur];
+      }
+      function tinf_decode_trees(d, lt, dt) {
+        var hlit, hdist, hclen;
+        var i2, num, length;
+        hlit = tinf_read_bits(d, 5, 257);
+        hdist = tinf_read_bits(d, 5, 1);
+        hclen = tinf_read_bits(d, 4, 4);
+        for (i2 = 0; i2 < 19; ++i2) lengths[i2] = 0;
+        for (i2 = 0; i2 < hclen; ++i2) {
+          var clen2 = tinf_read_bits(d, 3, 0);
+          lengths[clcidx[i2]] = clen2;
+        }
+        tinf_build_tree(code_tree, lengths, 0, 19);
+        for (num = 0; num < hlit + hdist; ) {
+          var sym = tinf_decode_symbol(d, code_tree);
+          switch (sym) {
+            case 16:
+              var prev = lengths[num - 1];
+              for (length = tinf_read_bits(d, 2, 3); length; --length) {
+                lengths[num++] = prev;
+              }
+              break;
+            case 17:
+              for (length = tinf_read_bits(d, 3, 3); length; --length) {
+                lengths[num++] = 0;
+              }
+              break;
+            case 18:
+              for (length = tinf_read_bits(d, 7, 11); length; --length) {
+                lengths[num++] = 0;
+              }
+              break;
+            default:
+              lengths[num++] = sym;
+              break;
+          }
+        }
+        tinf_build_tree(lt, lengths, 0, hlit);
+        tinf_build_tree(dt, lengths, hlit, hdist);
+      }
+      function tinf_inflate_block_data(d, lt, dt) {
+        while (1) {
+          var sym = tinf_decode_symbol(d, lt);
+          if (sym === 256) {
+            return TINF_OK;
+          }
+          if (sym < 256) {
+            d.dest[d.destLen++] = sym;
+          } else {
+            var length, dist, offs2;
+            var i2;
+            sym -= 257;
+            length = tinf_read_bits(d, length_bits[sym], length_base[sym]);
+            dist = tinf_decode_symbol(d, dt);
+            offs2 = d.destLen - tinf_read_bits(d, dist_bits[dist], dist_base[dist]);
+            for (i2 = offs2; i2 < offs2 + length; ++i2) {
+              d.dest[d.destLen++] = d.dest[i2];
+            }
+          }
+        }
+      }
+      function tinf_inflate_uncompressed_block(d) {
+        var length, invlength;
+        var i2;
+        while (d.bitcount > 8) {
+          d.sourceIndex--;
+          d.bitcount -= 8;
+        }
+        length = d.source[d.sourceIndex + 1];
+        length = 256 * length + d.source[d.sourceIndex];
+        invlength = d.source[d.sourceIndex + 3];
+        invlength = 256 * invlength + d.source[d.sourceIndex + 2];
+        if (length !== (~invlength & 65535))
+          return TINF_DATA_ERROR;
+        d.sourceIndex += 4;
+        for (i2 = length; i2; --i2)
+          d.dest[d.destLen++] = d.source[d.sourceIndex++];
+        d.bitcount = 0;
+        return TINF_OK;
+      }
+      function tinf_uncompress(source, dest) {
+        var d = new Data(source, dest);
+        var bfinal, btype, res;
+        do {
+          bfinal = tinf_getbit(d);
+          btype = tinf_read_bits(d, 2, 0);
+          switch (btype) {
+            case 0:
+              res = tinf_inflate_uncompressed_block(d);
+              break;
+            case 1:
+              res = tinf_inflate_block_data(d, sltree, sdtree);
+              break;
+            case 2:
+              tinf_decode_trees(d, d.ltree, d.dtree);
+              res = tinf_inflate_block_data(d, d.ltree, d.dtree);
+              break;
+            default:
+              res = TINF_DATA_ERROR;
+          }
+          if (res !== TINF_OK)
+            throw new Error("Data error");
+        } while (!bfinal);
+        if (d.destLen < d.dest.length) {
+          if (typeof d.dest.slice === "function")
+            return d.dest.slice(0, d.destLen);
+          else
+            return d.dest.subarray(0, d.destLen);
+        }
+        return d.dest;
+      }
+      tinf_build_fixed_trees(sltree, sdtree);
+      tinf_build_bits_base(length_bits, length_base, 4, 3);
+      tinf_build_bits_base(dist_bits, dist_base, 2, 1);
+      length_bits[28] = 0;
+      length_base[28] = 258;
+      module.exports = tinf_uncompress;
+    }
+  });
+
+  // .goose/out/rc022-prep-20261114-01/source/node_modules/.pnpm/unicode-trie@2.0.0/node_modules/unicode-trie/swap.js
+  var require_swap = __commonJS({
+    ".goose/out/rc022-prep-20261114-01/source/node_modules/.pnpm/unicode-trie@2.0.0/node_modules/unicode-trie/swap.js"(exports, module) {
+      var isBigEndian2 = new Uint8Array(new Uint32Array([305419896]).buffer)[0] === 18;
+      var swap = (b, n, m) => {
+        let i2 = b[n];
+        b[n] = b[m];
+        b[m] = i2;
+      };
+      var swap32 = (array) => {
+        const len = array.length;
+        for (let i2 = 0; i2 < len; i2 += 4) {
+          swap(array, i2, i2 + 3);
+          swap(array, i2 + 1, i2 + 2);
+        }
+      };
+      var swap32LE = (array) => {
+        if (isBigEndian2) {
+          swap32(array);
+        }
+      };
+      module.exports = {
+        swap32LE
+      };
+    }
+  });
+
+  // .goose/out/rc022-prep-20261114-01/source/node_modules/.pnpm/unicode-trie@2.0.0/node_modules/unicode-trie/index.js
+  var require_unicode_trie = __commonJS({
+    ".goose/out/rc022-prep-20261114-01/source/node_modules/.pnpm/unicode-trie@2.0.0/node_modules/unicode-trie/index.js"(exports, module) {
+      var inflate = require_tiny_inflate();
+      var { swap32LE } = require_swap();
+      var SHIFT_1 = 6 + 5;
+      var SHIFT_2 = 5;
+      var SHIFT_1_2 = SHIFT_1 - SHIFT_2;
+      var OMITTED_BMP_INDEX_1_LENGTH = 65536 >> SHIFT_1;
+      var INDEX_2_BLOCK_LENGTH = 1 << SHIFT_1_2;
+      var INDEX_2_MASK = INDEX_2_BLOCK_LENGTH - 1;
+      var INDEX_SHIFT = 2;
+      var DATA_BLOCK_LENGTH = 1 << SHIFT_2;
+      var DATA_MASK = DATA_BLOCK_LENGTH - 1;
+      var LSCP_INDEX_2_OFFSET = 65536 >> SHIFT_2;
+      var LSCP_INDEX_2_LENGTH = 1024 >> SHIFT_2;
+      var INDEX_2_BMP_LENGTH = LSCP_INDEX_2_OFFSET + LSCP_INDEX_2_LENGTH;
+      var UTF8_2B_INDEX_2_OFFSET = INDEX_2_BMP_LENGTH;
+      var UTF8_2B_INDEX_2_LENGTH = 2048 >> 6;
+      var INDEX_1_OFFSET = UTF8_2B_INDEX_2_OFFSET + UTF8_2B_INDEX_2_LENGTH;
+      var DATA_GRANULARITY = 1 << INDEX_SHIFT;
+      var UnicodeTrie = class {
+        constructor(data) {
+          const isBuffer = typeof data.readUInt32BE === "function" && typeof data.slice === "function";
+          if (isBuffer || data instanceof Uint8Array) {
+            let uncompressedLength;
+            if (isBuffer) {
+              this.highStart = data.readUInt32LE(0);
+              this.errorValue = data.readUInt32LE(4);
+              uncompressedLength = data.readUInt32LE(8);
+              data = data.slice(12);
+            } else {
+              const view = new DataView(data.buffer);
+              this.highStart = view.getUint32(0, true);
+              this.errorValue = view.getUint32(4, true);
+              uncompressedLength = view.getUint32(8, true);
+              data = data.subarray(12);
+            }
+            data = inflate(data, new Uint8Array(uncompressedLength));
+            data = inflate(data, new Uint8Array(uncompressedLength));
+            swap32LE(data);
+            this.data = new Uint32Array(data.buffer);
+          } else {
+            ({ data: this.data, highStart: this.highStart, errorValue: this.errorValue } = data);
+          }
+        }
+        get(codePoint) {
+          let index;
+          if (codePoint < 0 || codePoint > 1114111) {
+            return this.errorValue;
+          }
+          if (codePoint < 55296 || codePoint > 56319 && codePoint <= 65535) {
+            index = (this.data[codePoint >> SHIFT_2] << INDEX_SHIFT) + (codePoint & DATA_MASK);
+            return this.data[index];
+          }
+          if (codePoint <= 65535) {
+            index = (this.data[LSCP_INDEX_2_OFFSET + (codePoint - 55296 >> SHIFT_2)] << INDEX_SHIFT) + (codePoint & DATA_MASK);
+            return this.data[index];
+          }
+          if (codePoint < this.highStart) {
+            index = this.data[INDEX_1_OFFSET - OMITTED_BMP_INDEX_1_LENGTH + (codePoint >> SHIFT_1)];
+            index = this.data[index + (codePoint >> SHIFT_2 & INDEX_2_MASK)];
+            index = (index << INDEX_SHIFT) + (codePoint & DATA_MASK);
+            return this.data[index];
+          }
+          return this.data[this.data.length - DATA_GRANULARITY];
+        }
+      };
+      module.exports = UnicodeTrie;
+    }
+  });
+
+  // .goose/out/rc022-prep-20261114-01/source/node_modules/.pnpm/dfa@1.2.0/node_modules/dfa/index.js
+  var require_dfa = __commonJS({
+    ".goose/out/rc022-prep-20261114-01/source/node_modules/.pnpm/dfa@1.2.0/node_modules/dfa/index.js"(exports, module) {
+      "use strict";
+      var INITIAL_STATE = 1;
+      var FAIL_STATE = 0;
+      var StateMachine = class {
+        constructor(dfa) {
+          this.stateTable = dfa.stateTable;
+          this.accepting = dfa.accepting;
+          this.tags = dfa.tags;
+        }
+        /**
+         * Returns an iterable object that yields pattern matches over the input sequence.
+         * Matches are of the form [startIndex, endIndex, tags].
+         */
+        match(str) {
+          var self2 = this;
+          return {
+            *[Symbol.iterator]() {
+              var state = INITIAL_STATE;
+              var startRun = null;
+              var lastAccepting = null;
+              var lastState = null;
+              for (var p = 0; p < str.length; p++) {
+                var c = str[p];
+                lastState = state;
+                state = self2.stateTable[state][c];
+                if (state === FAIL_STATE) {
+                  if (startRun != null && lastAccepting != null && lastAccepting >= startRun) {
+                    yield [startRun, lastAccepting, self2.tags[lastState]];
+                  }
+                  state = self2.stateTable[INITIAL_STATE][c];
+                  startRun = null;
+                }
+                if (state !== FAIL_STATE && startRun == null) {
+                  startRun = p;
+                }
+                if (self2.accepting[state]) {
+                  lastAccepting = p;
+                }
+                if (state === FAIL_STATE) {
+                  state = INITIAL_STATE;
+                }
+              }
+              if (startRun != null && lastAccepting != null && lastAccepting >= startRun) {
+                yield [startRun, lastAccepting, self2.tags[state]];
+              }
+            }
+          };
+        }
+        /**
+         * For each match over the input sequence, action functions matching
+         * the tag definitions in the input pattern are called with the startIndex,
+         * endIndex, and sub-match sequence.
+         */
+        apply(str, actions) {
+          for (var [start, end, tags] of this.match(str)) {
+            for (var tag of tags) {
+              if (typeof actions[tag] === "function") {
+                actions[tag](start, end, str.slice(start, end + 1));
+              }
+            }
+          }
+        }
+      };
+      module.exports = StateMachine;
+    }
+  });
+
+  // .goose/out/rc022-prep-20261114-01/source/node_modules/.pnpm/clone@2.1.2/node_modules/clone/clone.js
+  var require_clone = __commonJS({
+    ".goose/out/rc022-prep-20261114-01/source/node_modules/.pnpm/clone@2.1.2/node_modules/clone/clone.js"(exports, module) {
+      var clone = (function() {
+        "use strict";
+        function _instanceof(obj, type) {
+          return type != null && obj instanceof type;
+        }
+        var nativeMap;
+        try {
+          nativeMap = Map;
+        } catch (_) {
+          nativeMap = function() {
+          };
+        }
+        var nativeSet;
+        try {
+          nativeSet = Set;
+        } catch (_) {
+          nativeSet = function() {
+          };
+        }
+        var nativePromise;
+        try {
+          nativePromise = Promise;
+        } catch (_) {
+          nativePromise = function() {
+          };
+        }
+        function clone2(parent, circular, depth, prototype, includeNonEnumerable) {
+          if (typeof circular === "object") {
+            depth = circular.depth;
+            prototype = circular.prototype;
+            includeNonEnumerable = circular.includeNonEnumerable;
+            circular = circular.circular;
+          }
+          var allParents = [];
+          var allChildren = [];
+          var useBuffer = typeof Buffer != "undefined";
+          if (typeof circular == "undefined")
+            circular = true;
+          if (typeof depth == "undefined")
+            depth = Infinity;
+          function _clone(parent2, depth2) {
+            if (parent2 === null)
+              return null;
+            if (depth2 === 0)
+              return parent2;
+            var child;
+            var proto;
+            if (typeof parent2 != "object") {
+              return parent2;
+            }
+            if (_instanceof(parent2, nativeMap)) {
+              child = new nativeMap();
+            } else if (_instanceof(parent2, nativeSet)) {
+              child = new nativeSet();
+            } else if (_instanceof(parent2, nativePromise)) {
+              child = new nativePromise(function(resolve, reject) {
+                parent2.then(function(value) {
+                  resolve(_clone(value, depth2 - 1));
+                }, function(err2) {
+                  reject(_clone(err2, depth2 - 1));
+                });
+              });
+            } else if (clone2.__isArray(parent2)) {
+              child = [];
+            } else if (clone2.__isRegExp(parent2)) {
+              child = new RegExp(parent2.source, __getRegExpFlags(parent2));
+              if (parent2.lastIndex) child.lastIndex = parent2.lastIndex;
+            } else if (clone2.__isDate(parent2)) {
+              child = new Date(parent2.getTime());
+            } else if (useBuffer && Buffer.isBuffer(parent2)) {
+              if (Buffer.allocUnsafe) {
+                child = Buffer.allocUnsafe(parent2.length);
+              } else {
+                child = new Buffer(parent2.length);
+              }
+              parent2.copy(child);
+              return child;
+            } else if (_instanceof(parent2, Error)) {
+              child = Object.create(parent2);
+            } else {
+              if (typeof prototype == "undefined") {
+                proto = Object.getPrototypeOf(parent2);
+                child = Object.create(proto);
+              } else {
+                child = Object.create(prototype);
+                proto = prototype;
+              }
+            }
+            if (circular) {
+              var index = allParents.indexOf(parent2);
+              if (index != -1) {
+                return allChildren[index];
+              }
+              allParents.push(parent2);
+              allChildren.push(child);
+            }
+            if (_instanceof(parent2, nativeMap)) {
+              parent2.forEach(function(value, key) {
+                var keyChild = _clone(key, depth2 - 1);
+                var valueChild = _clone(value, depth2 - 1);
+                child.set(keyChild, valueChild);
+              });
+            }
+            if (_instanceof(parent2, nativeSet)) {
+              parent2.forEach(function(value) {
+                var entryChild = _clone(value, depth2 - 1);
+                child.add(entryChild);
+              });
+            }
+            for (var i2 in parent2) {
+              var attrs;
+              if (proto) {
+                attrs = Object.getOwnPropertyDescriptor(proto, i2);
+              }
+              if (attrs && attrs.set == null) {
+                continue;
+              }
+              child[i2] = _clone(parent2[i2], depth2 - 1);
+            }
+            if (Object.getOwnPropertySymbols) {
+              var symbols = Object.getOwnPropertySymbols(parent2);
+              for (var i2 = 0; i2 < symbols.length; i2++) {
+                var symbol = symbols[i2];
+                var descriptor = Object.getOwnPropertyDescriptor(parent2, symbol);
+                if (descriptor && !descriptor.enumerable && !includeNonEnumerable) {
+                  continue;
+                }
+                child[symbol] = _clone(parent2[symbol], depth2 - 1);
+                if (!descriptor.enumerable) {
+                  Object.defineProperty(child, symbol, {
+                    enumerable: false
+                  });
+                }
+              }
+            }
+            if (includeNonEnumerable) {
+              var allPropertyNames = Object.getOwnPropertyNames(parent2);
+              for (var i2 = 0; i2 < allPropertyNames.length; i2++) {
+                var propertyName = allPropertyNames[i2];
+                var descriptor = Object.getOwnPropertyDescriptor(parent2, propertyName);
+                if (descriptor && descriptor.enumerable) {
+                  continue;
+                }
+                child[propertyName] = _clone(parent2[propertyName], depth2 - 1);
+                Object.defineProperty(child, propertyName, {
+                  enumerable: false
+                });
+              }
+            }
+            return child;
+          }
+          return _clone(parent, depth);
+        }
+        clone2.clonePrototype = function clonePrototype(parent) {
+          if (parent === null)
+            return null;
+          var c = function() {
+          };
+          c.prototype = parent;
+          return new c();
+        };
+        function __objToStr(o) {
+          return Object.prototype.toString.call(o);
+        }
+        clone2.__objToStr = __objToStr;
+        function __isDate(o) {
+          return typeof o === "object" && __objToStr(o) === "[object Date]";
+        }
+        clone2.__isDate = __isDate;
+        function __isArray(o) {
+          return typeof o === "object" && __objToStr(o) === "[object Array]";
+        }
+        clone2.__isArray = __isArray;
+        function __isRegExp(o) {
+          return typeof o === "object" && __objToStr(o) === "[object RegExp]";
+        }
+        clone2.__isRegExp = __isRegExp;
+        function __getRegExpFlags(re) {
+          var flags = "";
+          if (re.global) flags += "g";
+          if (re.ignoreCase) flags += "i";
+          if (re.multiline) flags += "m";
+          return flags;
+        }
+        clone2.__getRegExpFlags = __getRegExpFlags;
+        return clone2;
+      })();
+      if (typeof module === "object" && module.exports) {
+        module.exports = clone;
+      }
+    }
+  });
+
+  // .goose/out/rc022-prep-20261114-01/source/node_modules/.pnpm/brotli@1.3.3/node_modules/brotli/dec/streams.js
+  var require_streams = __commonJS({
+    ".goose/out/rc022-prep-20261114-01/source/node_modules/.pnpm/brotli@1.3.3/node_modules/brotli/dec/streams.js"(exports) {
+      function BrotliInput(buffer) {
+        this.buffer = buffer;
+        this.pos = 0;
+      }
+      BrotliInput.prototype.read = function(buf, i2, count) {
+        if (this.pos + count > this.buffer.length) {
+          count = this.buffer.length - this.pos;
+        }
+        for (var p = 0; p < count; p++)
+          buf[i2 + p] = this.buffer[this.pos + p];
+        this.pos += count;
+        return count;
+      };
+      exports.BrotliInput = BrotliInput;
+      function BrotliOutput(buf) {
+        this.buffer = buf;
+        this.pos = 0;
+      }
+      BrotliOutput.prototype.write = function(buf, count) {
+        if (this.pos + count > this.buffer.length)
+          throw new Error("Output buffer is not large enough");
+        this.buffer.set(buf.subarray(0, count), this.pos);
+        this.pos += count;
+        return count;
+      };
+      exports.BrotliOutput = BrotliOutput;
+    }
+  });
+
+  // .goose/out/rc022-prep-20261114-01/source/node_modules/.pnpm/brotli@1.3.3/node_modules/brotli/dec/bit_reader.js
+  var require_bit_reader = __commonJS({
+    ".goose/out/rc022-prep-20261114-01/source/node_modules/.pnpm/brotli@1.3.3/node_modules/brotli/dec/bit_reader.js"(exports, module) {
+      var BROTLI_READ_SIZE = 4096;
+      var BROTLI_IBUF_SIZE = 2 * BROTLI_READ_SIZE + 32;
+      var BROTLI_IBUF_MASK = 2 * BROTLI_READ_SIZE - 1;
+      var kBitMask = new Uint32Array([
+        0,
+        1,
+        3,
+        7,
+        15,
+        31,
+        63,
+        127,
+        255,
+        511,
+        1023,
+        2047,
+        4095,
+        8191,
+        16383,
+        32767,
+        65535,
+        131071,
+        262143,
+        524287,
+        1048575,
+        2097151,
+        4194303,
+        8388607,
+        16777215
+      ]);
+      function BrotliBitReader(input) {
+        this.buf_ = new Uint8Array(BROTLI_IBUF_SIZE);
+        this.input_ = input;
+        this.reset();
+      }
+      BrotliBitReader.READ_SIZE = BROTLI_READ_SIZE;
+      BrotliBitReader.IBUF_MASK = BROTLI_IBUF_MASK;
+      BrotliBitReader.prototype.reset = function() {
+        this.buf_ptr_ = 0;
+        this.val_ = 0;
+        this.pos_ = 0;
+        this.bit_pos_ = 0;
+        this.bit_end_pos_ = 0;
+        this.eos_ = 0;
+        this.readMoreInput();
+        for (var i2 = 0; i2 < 4; i2++) {
+          this.val_ |= this.buf_[this.pos_] << 8 * i2;
+          ++this.pos_;
+        }
+        return this.bit_end_pos_ > 0;
+      };
+      BrotliBitReader.prototype.readMoreInput = function() {
+        if (this.bit_end_pos_ > 256) {
+          return;
+        } else if (this.eos_) {
+          if (this.bit_pos_ > this.bit_end_pos_)
+            throw new Error("Unexpected end of input " + this.bit_pos_ + " " + this.bit_end_pos_);
+        } else {
+          var dst = this.buf_ptr_;
+          var bytes_read = this.input_.read(this.buf_, dst, BROTLI_READ_SIZE);
+          if (bytes_read < 0) {
+            throw new Error("Unexpected end of input");
+          }
+          if (bytes_read < BROTLI_READ_SIZE) {
+            this.eos_ = 1;
+            for (var p = 0; p < 32; p++)
+              this.buf_[dst + bytes_read + p] = 0;
+          }
+          if (dst === 0) {
+            for (var p = 0; p < 32; p++)
+              this.buf_[(BROTLI_READ_SIZE << 1) + p] = this.buf_[p];
+            this.buf_ptr_ = BROTLI_READ_SIZE;
+          } else {
+            this.buf_ptr_ = 0;
+          }
+          this.bit_end_pos_ += bytes_read << 3;
+        }
+      };
+      BrotliBitReader.prototype.fillBitWindow = function() {
+        while (this.bit_pos_ >= 8) {
+          this.val_ >>>= 8;
+          this.val_ |= this.buf_[this.pos_ & BROTLI_IBUF_MASK] << 24;
+          ++this.pos_;
+          this.bit_pos_ = this.bit_pos_ - 8 >>> 0;
+          this.bit_end_pos_ = this.bit_end_pos_ - 8 >>> 0;
+        }
+      };
+      BrotliBitReader.prototype.readBits = function(n_bits) {
+        if (32 - this.bit_pos_ < n_bits) {
+          this.fillBitWindow();
+        }
+        var val = this.val_ >>> this.bit_pos_ & kBitMask[n_bits];
+        this.bit_pos_ += n_bits;
+        return val;
+      };
+      module.exports = BrotliBitReader;
+    }
+  });
+
+  // .goose/out/rc022-prep-20261114-01/source/node_modules/.pnpm/brotli@1.3.3/node_modules/brotli/dec/dictionary.bin.js
+  var require_dictionary_bin = __commonJS({
+    ".goose/out/rc022-prep-20261114-01/source/node_modules/.pnpm/brotli@1.3.3/node_modules/brotli/dec/dictionary.bin.js"(exports, module) {
+      module.exports = "W5/fcQLn5gKf2XUbAiQ1XULX+TZz6ADToDsgqk6qVfeC0e4m6OO2wcQ1J76ZBVRV1fRkEsdu//62zQsFEZWSTCnMhcsQKlS2qOhuVYYMGCkV0fXWEoMFbESXrKEZ9wdUEsyw9g4bJlEt1Y6oVMxMRTEVbCIwZzJzboK5j8m4YH02qgXYhv1V+PM435sLVxyHJihaJREEhZGqL03txGFQLm76caGO/ovxKvzCby/3vMTtX/459f0igi7WutnKiMQ6wODSoRh/8Lx1V3Q99MvKtwB6bHdERYRY0hStJoMjNeTsNX7bn+Y7e4EQ3bf8xBc7L0BsyfFPK43dGSXpL6clYC/I328h54/VYrQ5i0648FgbGtl837svJ35L3Mot/+nPlNpWgKx1gGXQYqX6n+bbZ7wuyCHKcUok12Xjqub7NXZGzqBx0SD+uziNf87t7ve42jxSKQoW3nyxVrWIGlFShhCKxjpZZ5MeGna0+lBkk+kaN8F9qFBAFgEogyMBdcX/T1W/WnMOi/7ycWUQloEBKGeC48MkiwqJkJO+12eQiOFHMmck6q/IjWW3RZlany23TBm+cNr/84/oi5GGmGBZWrZ6j+zykVozz5fT/QH/Da6WTbZYYPynVNO7kxzuNN2kxKKWche5WveitPKAecB8YcAHz/+zXLjcLzkdDSktNIDwZE9J9X+tto43oJy65wApM3mDzYtCwX9lM+N5VR3kXYo0Z3t0TtXfgBFg7gU8oN0Dgl7fZlUbhNll+0uuohRVKjrEd8egrSndy5/Tgd2gqjA4CAVuC7ESUmL3DZoGnfhQV8uwnpi8EGvAVVsowNRxPudck7+oqAUDkwZopWqFnW1riss0t1z6iCISVKreYGNvQcXv+1L9+jbP8cd/dPUiqBso2q+7ZyFBvENCkkVr44iyPbtOoOoCecWsiuqMSML5lv+vN5MzUr+Dnh73G7Q1YnRYJVYXHRJaNAOByiaK6CusgFdBPE40r0rvqXV7tksKO2DrHYXBTv8P5ysqxEx8VDXUDDqkPH6NNOV/a2WH8zlkXRELSa8P+heNyJBBP7PgsG1EtWtNef6/i+lcayzQwQCsduidpbKfhWUDgAEmyhGu/zVTacI6RS0zTABrOYueemnVa19u9fT23N/Ta6RvTpof5DWygqreCqrDAgM4LID1+1T/taU6yTFVLqXOv+/MuQOFnaF8vLMKD7tKWDoBdALgxF33zQccCcdHx8fKIVdW69O7qHtXpeGr9jbbpFA+qRMWr5hp0s67FPc7HAiLV0g0/peZlW7hJPYEhZyhpSwahnf93/tZgfqZWXFdmdXBzqxGHLrQKxoAY6fRoBhgCRPmmGueYZ5JexTVDKUIXzkG/fqp/0U3hAgQdJ9zumutK6nqWbaqvm1pgu03IYR+G+8s0jDBBz8cApZFSBeuWasyqo2OMDKAZCozS+GWSvL/HsE9rHxooe17U3s/lTE+VZAk4j3dp6uIGaC0JMiqR5CUsabPyM0dOYDR7Ea7ip4USZlya38YfPtvrX/tBlhHilj55nZ1nfN24AOAi9BVtz/Mbn8AEDJCqJgsVUa6nQnSxv2Fs7l/NlCzpfYEjmPrNyib/+t0ei2eEMjvNhLkHCZlci4WhBe7ePZTmzYqlY9+1pxtS4GB+5lM1BHT9tS270EWUDYFq1I0yY/fNiAk4bk9yBgmef/f2k6AlYQZHsNFnW8wBQxCd68iWv7/35bXfz3JZmfGligWAKRjIs3IpzxQ27vAglHSiOzCYzJ9L9A1CdiyFvyR66ucA4jKifu5ehwER26yV7HjKqn5Mfozo7Coxxt8LWWPT47BeMxX8p0Pjb7hZn+6bw7z3Lw+7653j5sI8CLu5kThpMlj1m4c2ch3jGcP1FsT13vuK3qjecKTZk2kHcOZY40UX+qdaxstZqsqQqgXz+QGF99ZJLqr3VYu4aecl1Ab5GmqS8k/GV5b95zxQ5d4EfXUJ6kTS/CXF/aiqKDOT1T7Jz5z0PwDUcwr9clLN1OJGCiKfqvah+h3XzrBOiLOW8wvn8gW6qE8vPxi+Efv+UH55T7PQFVMh6cZ1pZQlzJpKZ7P7uWvwPGJ6DTlR6wbyj3Iv2HyefnRo/dv7dNx+qaa0N38iBsR++Uil7Wd4afwDNsrzDAK4fXZwvEY/jdKuIKXlfrQd2C39dW7ntnRbIp9OtGy9pPBn/V2ASoi/2UJZfS+xuGLH8bnLuPlzdTNS6zdyk8Dt/h6sfOW5myxh1f+zf3zZ3MX/mO9cQPp5pOx967ZA6/pqHvclNfnUFF+rq+Vd7alKr6KWPcIDhpn6v2K6NlUu6LrKo8b/pYpU/Gazfvtwhn7tEOUuXht5rUJdSf6sLjYf0VTYDgwJ81yaqKTUYej/tbHckSRb/HZicwGJqh1mAHB/IuNs9dc9yuvF3D5Xocm3elWFdq5oEy70dYFit79yaLiNjPj5UUcVmZUVhQEhW5V2Z6Cm4HVH/R8qlamRYwBileuh07CbEce3TXa2JmXWBf+ozt319psboobeZhVnwhMZzOeQJzhpTDbP71Tv8HuZxxUI/+ma3XW6DFDDs4+qmpERwHGBd2edxwUKlODRdUWZ/g0GOezrbzOZauFMai4QU6GVHV6aPNBiBndHSsV4IzpvUiiYyg6OyyrL4Dj5q/Lw3N5kAwftEVl9rNd7Jk5PDij2hTH6wIXnsyXkKePxbmHYgC8A6an5Fob/KH5GtC0l4eFso+VpxedtJHdHpNm+Bvy4C79yVOkrZsLrQ3OHCeB0Ra+kBIRldUGlDCEmq2RwXnfyh6Dz+alk6eftI2n6sastRrGwbwszBeDRS/Fa/KwRJkCzTsLr/JCs5hOPE/MPLYdZ1F1fv7D+VmysX6NpOC8aU9F4Qs6HvDyUy9PvFGDKZ/P5101TYHFl8pjj6wm/qyS75etZhhfg0UEL4OYmHk6m6dO192AzoIyPSV9QedDA4Ml23rRbqxMPMxf7FJnDc5FTElVS/PyqgePzmwVZ26NWhRDQ+oaT7ly7ell4s3DypS1s0g+tOr7XHrrkZj9+x/mJBttrLx98lFIaRZzHz4aC7r52/JQ4VjHahY2/YVXZn/QC2ztQb/sY3uRlyc5vQS8nLPGT/n27495i8HPA152z7Fh5aFpyn1GPJKHuPL8Iw94DuW3KjkURAWZXn4EQy89xiKEHN1mk/tkM4gYDBxwNoYvRfE6LFqsxWJtPrDGbsnLMap3Ka3MUoytW0cvieozOmdERmhcqzG+3HmZv2yZeiIeQTKGdRT4HHNxekm1tY+/n06rGmFleqLscSERzctTKM6G9P0Pc1RmVvrascIxaO1CQCiYPE15bD7c3xSeW7gXxYjgxcrUlcbIvO0r+Yplhx0kTt3qafDOmFyMjgGxXu73rddMHpV1wMubyAGcf/v5dLr5P72Ta9lBF+fzMJrMycwv+9vnU3ANIl1cH9tfW7af8u0/HG0vV47jNFXzFTtaha1xvze/s8KMtCYucXc1nzfd/MQydUXn/b72RBt5wO/3jRcMH9BdhC/yctKBIveRYPrNpDWqBsO8VMmP+WvRaOcA4zRMR1PvSoO92rS7pYEv+fZfEfTMzEdM+6X5tLlyxExhqLRkms5EuLovLfx66de5fL2/yX02H52FPVwahrPqmN/E0oVXnsCKhbi/yRxX83nRbUKWhzYceXOntfuXn51NszJ6MO73pQf5Pl4in3ec4JU8hF7ppV34+mm9r1LY0ee/i1O1wpd8+zfLztE0cqBxggiBi5Bu95v9l3r9r/U5hweLn+TbfxowrWDqdJauKd8+q/dH8sbPkc9ttuyO94f7/XK/nHX46MPFLEb5qQlNPvhJ50/59t9ft3LXu7uVaWaO2bDrDCnRSzZyWvFKxO1+vT8MwwunR3bX0CkfPjqb4K9O19tn5X50PvmYpEwHtiW9WtzuV/s76B1zvLLNkViNd8ySxIl/3orfqP90TyTGaf7/rx8jQzeHJXdmh/N6YDvbvmTBwCdxfEQ1NcL6wNMdSIXNq7b1EUzRy1/Axsyk5p22GMG1b+GxFgbHErZh92wuvco0AuOLXct9hvw2nw/LqIcDRRmJmmZzcgUa7JpM/WV/S9IUfbF56TL2orzqwebdRD8nIYNJ41D/hz37Fo11p2Y21wzPcn713qVGhqtevStYfGH4n69OEJtPvbbLYWvscDqc3Hgnu166+tAyLnxrX0Y5zoYjV++1sI7t5kMr02KT/+uwtkc+rZLOf/qn/s3nYCf13Dg8/sB2diJgjGqjQ+TLhxbzyue2Ob7X6/9lUwW7a+lbznHzOYy8LKW1C/uRPbQY3KW/0gO9LXunHLvPL97afba9bFtc9hmz7GAttjVYlCvQAiOwAk/gC5+hkLEs6tr3AZKxLJtOEwk2dLxTYWsIB/j/ToWtIWzo906FrSG8iaqqqqqqiIiIiAgzMzMzNz+AyK+01/zi8n8S+Y1MjoRaQ80WU/G8MBlO+53VPXANrWm4wzGUVZUjjBJZVdhpcfkjsmcWaO+UEldXi1e+zq+HOsCpknYshuh8pOLISJun7TN0EIGW2xTnlOImeecnoGW4raxe2G1T3HEvfYUYMhG+gAFOAwh5nK8mZhwJMmN7r224QVsNFvZ87Z0qatvknklyPDK3Hy45PgVKXji52Wen4d4PlFVVYGnNap+fSpFbK90rYnhUc6n91Q3AY9E0tJOFrcfZtm/491XbcG/jsViUPPX76qmeuiz+qY1Hk7/1VPM405zWVuoheLUimpWYdVzCmUdKHebMdzgrYrb8mL2eeLSnRWHdonfZa8RsOU9F37w+591l5FLYHiOqWeHtE/lWrBHcRKp3uhtr8yXm8LU/5ms+NM6ZKsqu90cFZ4o58+k4rdrtB97NADFbwmEG7lXqvirhOTOqU14xuUF2myIjURcPHrPOQ4lmM3PeMg7bUuk0nnZi67bXsU6H8lhqIo8TaOrEafCO1ARK9PjC0QOoq2BxmMdgYB9G/lIb9++fqNJ2s7BHGFyBNmZAR8J3KCo012ikaSP8BCrf6VI0X5xdnbhHIO+B5rbOyB54zXkzfObyJ4ecwxfqBJMLFc7m59rNcw7hoHnFZ0b00zee+gTqvjm61Pb4xn0kcDX4jvHM0rBXZypG3DCKnD/Waa/ZtHmtFPgO5eETx+k7RrVg3aSwm2YoNXnCs3XPQDhNn+Fia6IlOOuIG6VJH7TP6ava26ehKHQa2T4N0tcZ9dPCGo3ZdnNltsHQbeYt5vPnJezV/cAeNypdml1vCHI8M81nSRP5Qi2+mI8v/sxiZru9187nRtp3f/42NemcONa+4eVC3PCZzc88aZh851CqSsshe70uPxeN/dmYwlwb3trwMrN1Gq8jbnApcVDx/yDPeYs5/7r62tsQ6lLg+DiFXTEhzR9dHqv0iT4tgj825W+H3XiRUNUZT2kR9Ri0+lp+UM3iQtS8uOE23Ly4KYtvqH13jghUntJRAewuzNLDXp8RxdcaA3cMY6TO2IeSFRXezeWIjCqyhsUdMYuCgYTZSKpBype1zRfq8FshvfBPc6BAQWl7/QxIDp3VGo1J3vn42OEs3qznws+YLRXbymyB19a9XBx6n/owcyxlEYyFWCi+kG9F+EyD/4yn80+agaZ9P7ay2Dny99aK2o91FkfEOY8hBwyfi5uwx2y5SaHmG+oq/zl1FX/8irOf8Y3vAcX/6uLP6A6nvMO24edSGPjQc827Rw2atX+z2bKq0CmW9mOtYnr5/AfDa1ZfPaXnKtlWborup7QYx+Or2uWb+N3N//2+yDcXMqIJdf55xl7/vsj4WoPPlxLxtVrkJ4w/tTe3mLdATOOYwxcq52w5Wxz5MbPdVs5O8/lhfE7dPj0bIiPQ3QV0iqm4m3YX8hRfc6jQ3fWepevMqUDJd86Z4vwM40CWHnn+WphsGHfieF02D3tmZvpWD+kBpNCFcLnZhcmmrhpGzzbdA+sQ1ar18OJD87IOKOFoRNznaHPNHUfUNhvY1iU+uhvEvpKHaUn3qK3exVVyX4joipp3um7FmYJWmA+WbIDshRpbVRx5/nqstCgy87FGbfVB8yDGCqS+2qCsnRwnSAN6zgzxfdB2nBT/vZ4/6uxb6oH8b4VBRxiIB93wLa47hG3w2SL/2Z27yOXJFwZpSJaBYyvajA7vRRYNKqljXKpt/CFD/tSMr18DKKbwB0xggBePatl1nki0yvqW5zchlyZmJ0OTxJ3D+fsYJs/mxYN5+Le5oagtcl+YsVvy8kSjI2YGvGjvmpkRS9W2dtXqWnVuxUhURm1lKtou/hdEq19VBp9OjGvHEQSmrpuf2R24mXGheil8KeiANY8fW1VERUfBImb64j12caBZmRViZHbeVMjCrPDg9A90IXrtnsYCuZtRQ0PyrKDjBNOsPfKsg1pA02gHlVr0OXiFhtp6nJqXVzcbfM0KnzC3ggOENPE9VBdmHKN6LYaijb4wXxJn5A0FSDF5j+h1ooZx885Jt3ZKzO5n7Z5WfNEOtyyPqQEnn7WLv5Fis3PdgMshjF1FRydbNyeBbyKI1oN1TRVrVK7kgsb/zjX4NDPIRMctVeaxVB38Vh1x5KbeJbU138AM5KzmZu3uny0ErygxiJF7GVXUrPzFxrlx1uFdAaZFDN9cvIb74qD9tzBMo7L7WIEYK+sla1DVMHpF0F7b3+Y6S+zjvLeDMCpapmJo1weBWuxKF3rOocih1gun4BoJh1kWnV/Jmiq6uOhK3VfKxEHEkafjLgK3oujaPzY6SXg8phhL4TNR1xvJd1Wa0aYFfPUMLrNBDCh4AuGRTbtKMc6Z1Udj8evY/ZpCuMAUefdo69DZUngoqE1P9A3PJfOf7WixCEj+Y6t7fYeHbbxUAoFV3M89cCKfma3fc1+jKRe7MFWEbQqEfyzO2x/wrO2VYH7iYdQ9BkPyI8/3kXBpLaCpU7eC0Yv/am/tEDu7HZpqg0EvHo0nf/R/gRzUWy33/HXMJQeu1GylKmOkXzlCfGFruAcPPhaGqZOtu19zsJ1SO2Jz4Ztth5cBX6mRQwWmDwryG9FUMlZzNckMdK+IoMJv1rOWnBamS2w2KHiaPMPLC15hCZm4KTpoZyj4E2TqC/P6r7/EhnDMhKicZZ1ZwxuC7DPzDGs53q8gXaI9kFTK+2LTq7bhwsTbrMV8Rsfua5lMS0FwbTitUVnVa1yTb5IX51mmYnUcP9wPr8Ji1tiYJeJV9GZTrQhF7vvdU2OTU42ogJ9FDwhmycI2LIg++03C6scYhUyUuMV5tkw6kGUoL+mjNC38+wMdWNljn6tGPpRES7veqrSn5TRuv+dh6JVL/iDHU1db4c9WK3++OrH3PqziF916UMUKn8G67nN60GfWiHrXYhUG3yVWmyYak59NHj8t1smG4UDiWz2rPHNrKnN4Zo1LBbr2/eF9YZ0n0blx2nG4X+EKFxvS3W28JESD+FWk61VCD3z/URGHiJl++7TdBwkCj6tGOH3qDb0QqcOF9Kzpj0HUb/KyFW3Yhj2VMKJqGZleFBH7vqvf7WqLC3XMuHV8q8a4sTFuxUtkD/6JIBvKaVjv96ndgruKZ1k/BHzqf2K9fLk7HGXANyLDd1vxkK/i055pnzl+zw6zLnwXlVYVtfmacJgEpRP1hbGgrYPVN6v2lG+idQNGmwcKXu/8xEj/P6qe/sB2WmwNp6pp8jaISMkwdleFXYK55NHWLTTbutSUqjBfDGWo/Yg918qQ+8BRZSAHZbfuNZz2O0sov1Ue4CWlVg3rFhM3Kljj9ksGd/NUhk4nH+a5UN2+1i8+NM3vRNp7uQ6sqexSCukEVlVZriHNqFi5rLm9TMWa4qm3idJqppQACol2l4VSuvWLfta4JcXy3bROPNbXOgdOhG47LC0CwW/dMlSx4Jf17aEU3yA1x9p+Yc0jupXgcMuYNku64iYOkGToVDuJvlbEKlJqsmiHbvNrIVZEH+yFdF8DbleZ6iNiWwMqvtMp/mSpwx5KxRrT9p3MAPTHGtMbfvdFhyj9vhaKcn3At8Lc16Ai+vBcSp1ztXi7rCJZx/ql7TXcclq6Q76UeKWDy9boS0WHIjUuWhPG8LBmW5y2rhuTpM5vsLt+HOLh1Yf0DqXa9tsfC+kaKt2htA0ai/L2i7RKoNjEwztkmRU0GfgW1TxUvPFhg0V7DdfWJk5gfrccpYv+MA9M0dkGTLECeYwUixRzjRFdmjG7zdZIl3XKB9YliNKI31lfa7i2JG5C8Ss+rHe0D7Z696/V3DEAOWHnQ9yNahMUl5kENWS6pHKKp2D1BaSrrHdE1w2qNxIztpXgUIrF0bm15YML4b6V1k+GpNysTahKMVrrS85lTVo9OGJ96I47eAy5rYWpRf/mIzeoYU1DKaQCTUVwrhHeyNoDqHel+lLxr9WKzhSYw7vrR6+V5q0pfi2k3L1zqkubY6rrd9ZLvSuWNf0uqnkY+FpTvFzSW9Fp0b9l8JA7THV9eCi/PY/SCZIUYx3BU2alj7Cm3VV6eYpios4b6WuNOJdYXUK3zTqj5CVG2FqYM4Z7CuIU0qO05XR0d71FHM0YhZmJmTRfLlXEumN82BGtzdX0S19t1e+bUieK8zRmqpa4Qc5TSjifmaQsY2ETLjhI36gMR1+7qpjdXXHiceUekfBaucHShAOiFXmv3sNmGQyU5iVgnoocuonQXEPTFwslHtS8R+A47StI9wj0iSrtbi5rMysczFiImsQ+bdFClnFjjpXXwMy6O7qfjOr8Fb0a7ODItisjnn3EQO16+ypd1cwyaAW5Yzxz5QknfMO7643fXW/I9y3U2xH27Oapqr56Z/tEzglj6IbT6HEHjopiXqeRbe5mQQvxtcbDOVverN0ZgMdzqRYRjaXtMRd56Q4cZSmdPvZJdSrhJ1D9zNXPqAEqPIavPdfubt5oke2kmv0dztIszSv2VYuoyf1UuopbsYb+uX9h6WpwjpgtZ6fNNawNJ4q8O3CFoSbioAaOSZMx2GYaPYB+rEb6qjQiNRFQ76TvwNFVKD+BhH9VhcKGsXzmMI7BptU/CNWolM7YzROvpFAntsiWJp6eR2d3GarcYShVYSUqhmYOWj5E96NK2WvmYNTeY7Zs4RUEdv9h9QT4EseKt6LzLrqEOs3hxAY1MaNWpSa6zZx8F3YOVeCYMS88W+CYHDuWe4yoc6YK+djDuEOrBR5lvh0r+Q9uM88lrjx9x9AtgpQVNE8r+3O6Gvw59D+kBF/UMXyhliYUtPjmvXGY6Dk3x+kEOW+GtdMVC4EZTqoS/jmR0P0LS75DOc/w2vnri97M4SdbZ8qeU7gg8DVbERkU5geaMQO3mYrSYyAngeUQqrN0C0/vsFmcgWNXNeidsTAj7/4MncJR0caaBUpbLK1yBCBNRjEv6KvuVSdpPnEMJdsRRtqJ+U8tN1gXA4ePHc6ZT0eviI73UOJF0fEZ8YaneAQqQdGphNvwM4nIqPnXxV0xA0fnCT+oAhJuyw/q8jO0y8CjSteZExwBpIN6SvNp6A5G/abi6egeND/1GTguhuNjaUbbnSbGd4L8937Ezm34Eyi6n1maeOBxh3PI0jzJDf5mh/BsLD7F2GOKvlA/5gtvxI3/eV4sLfKW5Wy+oio+es/u6T8UU+nsofy57Icb/JlZHPFtCgd/x+bwt3ZT+xXTtTtTrGAb4QehC6X9G+8YT+ozcLxDsdCjsuOqwPFnrdLYaFc92Ui0m4fr39lYmlCaqTit7G6O/3kWDkgtXjNH4BiEm/+jegQnihOtfffn33WxsFjhfMd48HT+f6o6X65j7XR8WLSHMFkxbvOYsrRsF1bowDuSQ18Mkxk4qz2zoGPL5fu9h2Hqmt1asl3Q3Yu3szOc+spiCmX4AETBM3pLoTYSp3sVxahyhL8eC4mPN9k2x3o0xkiixIzM3CZFzf5oR4mecQ5+ax2wCah3/crmnHoqR0+KMaOPxRif1oEFRFOO/kTPPmtww+NfMXxEK6gn6iU32U6fFruIz8Q4WgljtnaCVTBgWx7diUdshC9ZEa5yKpRBBeW12r/iNc/+EgNqmhswNB8SBoihHXeDF7rrWDLcmt3V8GYYN7pXRy4DZjj4DJuUBL5iC3DQAaoo4vkftqVTYRGLS3mHZ7gdmdTTqbgNN/PTdTCOTgXolc88MhXAEUMdX0iy1JMuk5wLsgeu0QUYlz2S4skTWwJz6pOm/8ihrmgGfFgri+ZWUK2gAPHgbWa8jaocdSuM4FJYoKicYX/ZSENkg9Q1ZzJfwScfVnR2DegOGwCvmogaWJCLQepv9WNlU6QgsmOwICquU28Mlk3d9W5E81lU/5Ez0LcX6lwKMWDNluNKfBDUy/phJgBcMnfkh9iRxrdOzgs08JdPB85Lwo+GUSb4t3nC+0byqMZtO2fQJ4U2zGIr49t/28qmmGv2RanDD7a3FEcdtutkW8twwwlUSpb8QalodddbBfNHKDQ828BdE7OBgFdiKYohLawFYqpybQoxATZrheLhdI7+0Zlu9Q1myRcd15r9UIm8K2LGJxqTegntqNVMKnf1a8zQiyUR1rxoqjiFxeHxqFcYUTHfDu7rhbWng6qOxOsI+5A1p9mRyEPdVkTlE24vY54W7bWc6jMgZvNXdfC9/9q7408KDsbdL7Utz7QFSDetz2picArzrdpL8OaCHC9V26RroemtDZ5yNM/KGkWMyTmfnInEvwtSD23UcFcjhaE3VKzkoaEMKGBft4XbIO6forTY1lmGQwVmKicBCiArDzE+1oIxE08fWeviIOD5TznqH+OoHadvoOP20drMPe5Irg3XBQziW2XDuHYzjqQQ4wySssjXUs5H+t3FWYMHppUnBHMx/nYIT5d7OmjDbgD9F6na3m4l7KdkeSO3kTEPXafiWinogag7b52taiZhL1TSvBFmEZafFq2H8khQaZXuitCewT5FBgVtPK0j4xUHPfUz3Q28eac1Z139DAP23dgki94EC8vbDPTQC97HPPSWjUNG5tWKMsaxAEMKC0665Xvo1Ntd07wCLNf8Q56mrEPVpCxlIMVlQlWRxM3oAfpgIc+8KC3rEXUog5g06vt7zgXY8grH7hhwVSaeuvC06YYRAwpbyk/Unzj9hLEZNs2oxPQB9yc+GnL6zTgq7rI++KDJwX2SP8Sd6YzTuw5lV/kU6eQxRD12omfQAW6caTR4LikYkBB1CMOrvgRr/VY75+NSB40Cni6bADAtaK+vyxVWpf9NeKJxN2KYQ8Q2xPB3K1s7fuhvWbr2XpgW044VD6DRs0qXoqKf1NFsaGvKJc47leUV3pppP/5VTKFhaGuol4Esfjf5zyCyUHmHthChcYh4hYLQF+AFWsuq4t0wJyWgdwQVOZiV0efRHPoK5+E1vjz9wTJmVkITC9oEstAsyZSgE/dbicwKr89YUxKZI+owD205Tm5lnnmDRuP/JnzxX3gMtlrcX0UesZdxyQqYQuEW4R51vmQ5xOZteUd8SJruMlTUzhtVw/Nq7eUBcqN2/HVotgfngif60yKEtoUx3WYOZlVJuJOh8u59fzSDPFYtQgqDUAGyGhQOAvKroXMcOYY0qjnStJR/G3aP+Jt1sLVlGV8POwr/6OGsqetnyF3TmTqZjENfnXh51oxe9qVUw2M78EzAJ+IM8lZ1MBPQ9ZWSVc4J3mWSrLKrMHReA5qdGoz0ODRsaA+vwxXA2cAM4qlfzBJA6581m4hzxItQw5dxrrBL3Y6kCbUcFxo1S8jyV44q//+7ASNNudZ6xeaNOSIUffqMn4A9lIjFctYn2gpEPAb3f7p3iIBN8H14FUGQ9ct2hPsL+cEsTgUrR47uJVN4n4wt/wgfwwHuOnLd4yobkofy8JvxSQTA7rMpDIc608SlZFJfZYcmbT0tAHpPE8MrtQ42siTUNWxqvWZOmvu9f0JPoQmg+6l7sZWwyfi6PXkxJnwBraUG0MYG4zYHQz3igy/XsFkx5tNQxw43qvI9dU3f0DdhOUlHKjmi1VAr2Kiy0HZwD8VeEbhh0OiDdMYspolQsYdSwjCcjeowIXNZVUPmL2wwIkYhmXKhGozdCJ4lRKbsf4NBh/XnQoS92NJEWOVOFs2YhN8c5QZFeK0pRdAG40hqvLbmoSA8xQmzOOEc7wLcme9JOsjPCEgpCwUs9E2DohMHRhUeyGIN6TFvrbny8nDuilsDpzrH5mS76APoIEJmItS67sQJ+nfwddzmjPxcBEBBCw0kWDwd0EZCkNeOD7NNQhtBm7KHL9mRxj6U1yWU2puzlIDtpYxdH4ZPeXBJkTGAJfUr/oTCz/iypY6uXaR2V1doPxJYlrw2ghH0D5gbrhFcIxzYwi4a/4hqVdf2DdxBp6vGYDjavxMAAoy+1+3aiO6S3W/QAKNVXagDtvsNtx7Ks+HKgo6U21B+QSZgIogV5Bt+BnXisdVfy9VyXV+2P5fMuvdpAjM1o/K9Z+XnE4EOCrue+kcdYHqAQ0/Y/OmNlQ6OI33jH/uD1RalPaHpJAm2av0/xtpqdXVKNDrc9F2izo23Wu7firgbURFDNX9eGGeYBhiypyXZft2j3hTvzE6PMWKsod//rEILDkzBXfi7xh0eFkfb3/1zzPK/PI5Nk3FbZyTl4mq5BfBoVoqiPHO4Q4QKZAlrQ3MdNfi3oxIjvsM3kAFv3fdufurqYR3PSwX/mpGy/GFI/B2MNPiNdOppWVbs/gjF3YH+QA9jMhlAbhvasAHstB0IJew09iAkmXHl1/TEj+jvHOpOGrPRQXbPADM+Ig2/OEcUcpgPTItMtW4DdqgfYVI/+4hAFWYjUGpOP/UwNuB7+BbKOcALbjobdgzeBQfjgNSp2GOpxzGLj70Vvq5cw2AoYENwKLUtJUX8sGRox4dVa/TN4xKwaKcl9XawQR/uNus700Hf17pyNnezrUgaY9e4MADhEDBpsJT6y1gDJs1q6wlwGhuUzGR7C8kgpjPyHWwsvrf3yn1zJEIRa5eSxoLAZOCR9xbuztxFRJW9ZmMYfCFJ0evm9F2fVnuje92Rc4Pl6A8bluN8MZyyJGZ0+sNSb//DvAFxC2BqlEsFwccWeAl6CyBcQV1bx4mQMBP1Jxqk1EUADNLeieS2dUFbQ/c/kvwItbZ7tx0st16viqd53WsRmPTKv2AD8CUnhtPWg5aUegNpsYgasaw2+EVooeNKmrW3MFtj76bYHJm5K9gpAXZXsE5U8DM8XmVOSJ1F1WnLy6nQup+jx52bAb+rCq6y9WXl2B2oZDhfDkW7H3oYfT/4xx5VncBuxMXP2lNfhUVQjSSzSRbuZFE4vFawlzveXxaYKVs8LpvAb8IRYF3ZHiRnm0ADeNPWocwxSzNseG7NrSEVZoHdKWqaGEBz1N8Pt7kFbqh3LYmAbm9i1IChIpLpM5AS6mr6OAPHMwwznVy61YpBYX8xZDN/a+lt7n+x5j4bNOVteZ8lj3hpAHSx1VR8vZHec4AHO9XFCdjZ9eRkSV65ljMmZVzaej2qFn/qt1lvWzNZEfHxK3qOJrHL6crr0CRzMox5f2e8ALBB4UGFZKA3tN6F6IXd32GTJXGQ7DTi9j/dNcLF9jCbDcWGKxoKTYblIwbLDReL00LRcDPMcQuXLMh5YzgtfjkFK1DP1iDzzYYVZz5M/kWYRlRpig1htVRjVCknm+h1M5LiEDXOyHREhvzCGpFZjHS0RsK27o2avgdilrJkalWqPW3D9gmwV37HKmfM3F8YZj2ar+vHFvf3B8CRoH4kDHIK9mrAg+owiEwNjjd9V+FsQKYR8czJrUkf7Qoi2YaW6EVDZp5zYlqiYtuXOTHk4fAcZ7qBbdLDiJq0WNV1l2+Hntk1mMWvxrYmc8kIx8G3rW36J6Ra4lLrTOCgiOihmow+YnzUT19jbV2B3RWqSHyxkhmgsBqMYWvOcUom1jDQ436+fcbu3xf2bbeqU/ca+C4DOKE+e3qvmeMqW3AxejfzBRFVcwVYPq4L0APSWWoJu+5UYX4qg5U6YTioqQGPG9XrnuZ/BkxuYpe6Li87+18EskyQW/uA+uk2rpHpr6hut2TlVbKgWkFpx+AZffweiw2+VittkEyf/ifinS/0ItRL2Jq3tQOcxPaWO2xrG68GdFoUpZgFXaP2wYVtRc6xYCfI1CaBqyWpg4bx8OHBQwsV4XWMibZZ0LYjWEy2IxQ1mZrf1/UNbYCJplWu3nZ4WpodIGVA05d+RWSS+ET9tH3RfGGmNI1cIY7evZZq7o+a0bjjygpmR3mVfalkT/SZGT27Q8QGalwGlDOS9VHCyFAIL0a1Q7JiW3saz9gqY8lqKynFrPCzxkU4SIfLc9VfCI5edgRhDXs0edO992nhTKHriREP1NJC6SROMgQ0xO5kNNZOhMOIT99AUElbxqeZF8A3xrfDJsWtDnUenAHdYWSwAbYjFqQZ+D5gi3hNK8CSxU9i6f6ClL9IGlj1OPMQAsr84YG6ijsJpCaGWj75c3yOZKBB9mNpQNPUKkK0D6wgLH8MGoyRxTX6Y05Q4AnYNXMZwXM4eij/9WpsM/9CoRnFQXGR6MEaY+FXvXEO3RO0JaStk6OXuHVATHJE+1W+TU3bSZ2ksMtqjO0zfSJCdBv7y2d8DMx6TfVme3q0ZpTKMMu4YL/t7ciTNtdDkwPogh3Cnjx7qk08SHwf+dksZ7M2vCOlfsF0hQ6J4ehPCaHTNrM/zBSOqD83dBEBCW/F/LEmeh0nOHd7oVl3/Qo/9GUDkkbj7yz+9cvvu+dDAtx8NzCDTP4iKdZvk9MWiizvtILLepysflSvTLFBZ37RLwiriqyRxYv/zrgFd/9XVHh/OmzBvDX4mitMR/lUavs2Vx6cR94lzAkplm3IRNy4TFfu47tuYs9EQPIPVta4P64tV+sZ7n3ued3cgEx2YK+QL5+xms6osk8qQbTyuKVGdaX9FQqk6qfDnT5ykxk0VK7KZ62b6DNDUfQlqGHxSMKv1P0XN5BqMeKG1P4Wp5QfZDUCEldppoX0U6ss2jIko2XpURKCIhfaOqLPfShdtS37ZrT+jFRSH2xYVV1rmT/MBtRQhxiO4MQ3iAGlaZi+9PWBEIXOVnu9jN1f921lWLZky9bqbM3J2MAAI9jmuAx3gyoEUa6P2ivs0EeNv/OR+AX6q5SW6l5HaoFuS6jr6yg9limu+P0KYKzfMXWcQSfTXzpOzKEKpwI3YGXZpSSy2LTlMgfmFA3CF6R5c9xWEtRuCg2ZPUQ2Nb6dRFTNd4TfGHrnEWSKHPuRyiJSDAZ+KX0VxmSHjGPbQTLVpqixia2uyhQ394gBMt7C3ZAmxn/DJS+l1fBsAo2Eir/C0jG9csd4+/tp12pPc/BVJGaK9mfvr7M/CeztrmCO5qY06Edi4xAGtiEhnWAbzLy2VEyazE1J5nPmgU4RpW4Sa0TnOT6w5lgt3/tMpROigHHmexBGAMY0mdcDbDxWIz41NgdD6oxgHsJRgr5RnT6wZAkTOcStU4NMOQNemSO7gxGahdEsC+NRVGxMUhQmmM0llWRbbmFGHzEqLM4Iw0H7577Kyo+Zf+2cUFIOw93gEY171vQaM0HLwpjpdRR6Jz7V0ckE7XzYJ0TmY9znLdzkva0vNrAGGT5SUZ5uaHDkcGvI0ySpwkasEgZPMseYcu85w8HPdSNi+4T6A83iAwDbxgeFcB1ZM2iGXzFcEOUlYVrEckaOyodfvaYSQ7GuB4ISE0nYJc15X/1ciDTPbPCgYJK55VkEor4LvzL9S2WDy4xj+6FOqVyTAC2ZNowheeeSI5hA/02l8UYkv4nk9iaVn+kCVEUstgk5Hyq+gJm6R9vG3rhuM904he/hFmNQaUIATB1y3vw+OmxP4X5Yi6A5I5jJufHCjF9+AGNwnEllZjUco6XhsO5T5+R3yxz5yLVOnAn0zuS+6zdj0nTJbEZCbXJdtpfYZfCeCOqJHoE2vPPFS6eRLjIJlG69X93nfR0mxSFXzp1Zc0lt/VafDaImhUMtbnqWVb9M4nGNQLN68BHP7AR8Il9dkcxzmBv8PCZlw9guY0lurbBsmNYlwJZsA/B15/HfkbjbwPddaVecls/elmDHNW2r4crAx43feNkfRwsaNq/yyJ0d/p5hZ6AZajz7DBfUok0ZU62gCzz7x8eVfJTKA8IWn45vINLSM1q+HF9CV9qF3zP6Ml21kPPL3CXzkuYUlnSqT+Ij4tI/od5KwIs+tDajDs64owN7tOAd6eucGz+KfO26iNcBFpbWA5732bBNWO4kHNpr9D955L61bvHCF/mwSrz6eQaDjfDEANqGMkFc+NGxpKZzCD2sj/JrHd+zlPQ8Iz7Q+2JVIiVCuCKoK/hlAEHzvk/Piq3mRL1rT/fEh9hoT5GJmeYswg1otiKydizJ/fS2SeKHVu6Z3JEHjiW8NaTQgP5xdBli8nC57XiN9hrquBu99hn9zqwo92+PM2JXtpeVZS0PdqR5mDyDreMMtEws+CpwaRyyzoYtfcvt9PJIW0fJVNNi/FFyRsea7peLvJrL+5b4GOXJ8tAr+ATk9f8KmiIsRhqRy0vFzwRV3Z5dZ3QqIU8JQ/uQpkJbjMUMFj2F9sCFeaBjI4+fL/oN3+LQgjI4zuAfQ+3IPIPFQBccf0clJpsfpnBxD84atwtupkGqKvrH7cGNl/QcWcSi6wcVDML6ljOgYbo+2BOAWNNjlUBPiyitUAwbnhFvLbnqw42kR3Yp2kv2dMeDdcGOX5kT4S6M44KHEB/SpCfl7xgsUvs+JNY9G3O2X/6FEt9FyAn57lrbiu+tl83sCymSvq9eZbe9mchL7MTf/Ta78e80zSf0hYY5eUU7+ff14jv7Xy8qjzfzzzvaJnrIdvFb5BLWKcWGy5/w7+vV2cvIfwHqdTB+RuJK5oj9mbt0Hy94AmjMjjwYNZlNS6uiyxNnwNyt3gdreLb64p/3+08nXkb92LTkkRgFOwk1oGEVllcOj5lv1hfAZywDows0944U8vUFw+A/nuVq/UCygsrmWIBnHyU01d0XJPwriEOvx/ISK6Pk4y2w0gmojZs7lU8TtakBAdne4v/aNxmMpK4VcGMp7si0yqsiolXRuOi1Z1P7SqD3Zmp0CWcyK4Ubmp2SXiXuI5nGLCieFHKHNRIlcY3Pys2dwMTYCaqlyWSITwr2oGXvyU3h1Pf8eQ3w1bnD7ilocVjYDkcXR3Oo1BXgMLTUjNw2xMVwjtp99NhSVc5aIWrDQT5DHPKtCtheBP4zHcw4dz2eRdTMamhlHhtfgqJJHI7NGDUw1XL8vsSeSHyKqDtqoAmrQqsYwvwi7HW3ojWyhIa5oz5xJTaq14NAzFLjVLR12rRNUQ6xohDnrWFb5bG9yf8aCD8d5phoackcNJp+Dw3Due3RM+5Rid7EuIgsnwgpX0rUWh/nqPtByMhMZZ69NpgvRTKZ62ViZ+Q7Dp5r4K0d7EfJuiy06KuIYauRh5Ecrhdt2QpTS1k1AscEHvapNbU3HL1F2TFyR33Wxb5MvH5iZsrn3SDcsxlnnshO8PLwmdGN+paWnQuORtZGX37uhFT64SeuPsx8UOokY6ON85WdQ1dki5zErsJGazcBOddWJEKqNPiJpsMD1GrVLrVY+AOdPWQneTyyP1hRX/lMM4ZogGGOhYuAdr7F/DOiAoc++cn5vlf0zkMUJ40Z1rlgv9BelPqVOpxKeOpzKdF8maK+1Vv23MO9k/8+qpLoxrIGH2EDQlnGmH8CD31G8QqlyQIcpmR5bwmSVw9/Ns6IHgulCRehvZ/+VrM60Cu/r3AontFfrljew74skYe2uyn7JKQtFQBQRJ9ryGic/zQOsbS4scUBctA8cPToQ3x6ZBQu6DPu5m1bnCtP8TllLYA0UTQNVqza5nfew3Mopy1GPUwG5jsl0OVXniPmAcmLqO5HG8Hv3nSLecE9oOjPDXcsTxoCBxYyzBdj4wmnyEV4kvFDunipS8SSkvdaMnTBN9brHUR8xdmmEAp/Pdqk9uextp1t+JrtXwpN/MG2w/qhRMpSNxQ1uhg/kKO30eQ/FyHUDkWHT8V6gGRU4DhDMxZu7xXij9Ui6jlpWmQCqJg3FkOTq3WKneCRYZxBXMNAVLQgHXSCGSqNdjebY94oyIpVjMYehAiFx/tqzBXFHZaL5PeeD74rW5OysFoUXY8sebUZleFTUa/+zBKVTFDopTReXNuZq47QjkWnxjirCommO4L/GrFtVV21EpMyw8wyThL5Y59d88xtlx1g1ttSICDwnof6lt/6zliPzgVUL8jWBjC0o2D6Kg+jNuThkAlaDJsq/AG2aKA//A76avw2KNqtv223P+Wq3StRDDNKFFgtsFukYt1GFDWooFVXitaNhb3RCyJi4cMeNjROiPEDb4k+G3+hD8tsg+5hhmSc/8t2JTSwYoCzAI75doq8QTHe+E/Tw0RQSUDlU+6uBeNN3h6jJGX/mH8oj0i3caCNsjvTnoh73BtyZpsflHLq6AfwJNCDX4S98h4+pCOhGKDhV3rtkKHMa3EG4J9y8zFWI4UsfNzC/Rl5midNn7gwoN9j23HGCQQ+OAZpTTPMdiVow740gIyuEtd0qVxMyNXhHcnuXRKdw5wDUSL358ktjMXmAkvIB73BLa1vfF9BAUZInPYJiwxqFWQQBVk7gQH4ojfUQ/KEjn+A/WR6EEe4CtbpoLe1mzHkajgTIoE0SLDHVauKhrq12zrAXBGbPPWKCt4DGedq3JyGRbmPFW32bE7T20+73BatV/qQhhBWfWBFHfhYWXjALts38FemnoT+9bn1jDBMcUMmYgSc0e7GQjv2MUBwLU8ionCpgV+Qrhg7iUIfUY6JFxR0Y+ZTCPM+rVuq0GNLyJXX6nrUTt8HzFBRY1E/FIm2EeVA9NcXrj7S6YYIChVQCWr/m2fYUjC4j0XLkzZ8GCSLfmkW3PB/xq+nlXsKVBOj7vTvqKCOMq7Ztqr3cQ+N8gBnPaAps+oGwWOkbuxnRYj/x/WjiDclVrs22xMK4qArE1Ztk1456kiJriw6abkNeRHogaPRBgbgF9Z8i/tbzWELN4CvbqtrqV9TtGSnmPS2F9kqOIBaazHYaJ9bi3AoDBvlZasMluxt0BDXfhp02Jn411aVt6S4TUB8ZgFDkI6TP6gwPY85w+oUQSsjIeXVminrwIdK2ZAawb8Se6XOJbOaliQxHSrnAeONDLuCnFejIbp4YDtBcQCwMsYiRZfHefuEJqJcwKTTJ8sx5hjHmJI1sPFHOr6W9AhZ2NAod38mnLQk1gOz2LCAohoQbgMbUK9RMEA3LkiF7Sr9tLZp6lkciIGhE2V546w3Mam53VtVkGbB9w0Yk2XiRnCmbpxmHr2k4eSC0RuNbjNsUfDIfc8DZvRvgUDe1IlKdZTzcT4ZGEb53dp8VtsoZlyXzLHOdAbsp1LPTVaHvLA0GYDFMbAW/WUBfUAdHwqLFAV+3uHvYWrCfhUOR2i89qvCBoOb48usAGdcF2M4aKn79k/43WzBZ+xR1L0uZfia70XP9soQReeuhZiUnXFDG1T8/OXNmssTSnYO+3kVLAgeiY719uDwL9FQycgLPessNihMZbAKG7qwPZyG11G1+ZA3jAX2yddpYfmaKBlmfcK/V0mwIRUDC0nJSOPUl2KB8h13F4dlVZiRhdGY5farwN+f9hEb1cRi41ZcGDn6Xe9MMSTOY81ULJyXIHSWFIQHstVYLiJEiUjktlHiGjntN5/btB8Fu+vp28zl2fZXN+dJDyN6EXhS+0yzqpl/LSJNEUVxmu7BsNdjAY0jVsAhkNuuY0E1G48ej25mSt+00yPbQ4SRCVkIwb6ISvYtmJRPz9Zt5dk76blf+lJwAPH5KDF+vHAmACLoCdG2Adii6dOHnNJnTmZtoOGO8Q1jy1veMw6gbLFToQmfJa7nT7Al89mRbRkZZQxJTKgK5Kc9INzmTJFp0tpAPzNmyL/F08bX3nhCumM/cR/2RPn9emZ3VljokttZD1zVWXlUIqEU7SLk5I0lFRU0AcENXBYazNaVzsVHA/sD3o9hm42wbHIRb/BBQTKzAi8s3+bMtpOOZgLdQzCYPfX3UUxKd1WYVkGH7lh/RBBgMZZwXzU9+GYxdBqlGs0LP+DZ5g2BWNh6FAcR944B+K/JTWI3t9YyVyRhlP4CCoUk/mmF7+r2pilVBjxXBHFaBfBtr9hbVn2zDuI0kEOG3kBx8CGdPOjX1ph1POOZJUO1JEGG0jzUy2tK4X0CgVNYhmkqqQysRNtKuPdCJqK3WW57kaV17vXgiyPrl4KEEWgiGF1euI4QkSFHFf0TDroQiLNKJiLbdhH0YBhriRNCHPxSqJmNNoketaioohqMglh6wLtEGWSM1EZbQg72h0UJAIPVFCAJOThpQGGdKfFovcwEeiBuZHN2Ob4uVM7+gwZLz1D9E7ta4RmMZ24OBBAg7Eh6dLXGofZ4U2TFOCQMKjwhVckjrydRS+YaqCw1kYt6UexuzbNEDyYLTZnrY1PzsHZJT4U+awO2xlqTSYu6n/U29O2wPXgGOEKDMSq+zTUtyc8+6iLp0ivav4FKx+xxVy4FxhIF/pucVDqpsVe2jFOfdZhTzLz2QjtzvsTCvDPU7bzDH2eXVKUV9TZ+qFtaSSxnYgYdXKwVreIgvWhT9eGDB2OvnWyPLfIIIfNnfIxU8nW7MbcH05nhlsYtaW9EZRsxWcKdEqInq1DiZPKCz7iGmAU9/ccnnQud2pNgIGFYOTAWjhIrd63aPDgfj8/sdlD4l+UTlcxTI9jbaMqqN0gQxSHs60IAcW3cH4p3V1aSciTKB29L1tz2eUQhRiTgTvmqc+sGtBNh4ky0mQJGsdycBREP+fAaSs1EREDVo5gvgi5+aCN7NECw30owbCc1mSpjiahyNVwJd1jiGgzSwfTpzf2c5XJvG/g1n0fH88KHNnf+u7ZiRMlXueSIsloJBUtW9ezvsx9grfsX/FNxnbxU1Lvg0hLxixypHKGFAaPu0xCD8oDTeFSyfRT6s8109GMUZL8m2xXp8X2dpPCWWdX84iga4BrTlOfqox4shqEgh/Ht4qRst52cA1xOIUuOxgfUivp6v5f8IVyaryEdpVk72ERAwdT4aoY1usBgmP+0m06Q216H/nubtNYxHaOIYjcach3A8Ez/zc0KcShhel0HCYjFsA0FjYqyJ5ZUH1aZw3+zWC0hLpM6GDfcAdn9fq2orPmZbW6XXrf+Krc9RtvII5jeD3dFoT1KwZJwxfUMvc5KLfn8rROW23Jw89sJ2a5dpB3qWDUBWF2iX8OCuKprHosJ2mflBR+Wqs86VvgI/XMnsqb97+VlKdPVysczPj8Jhzf+WCvGBHijAqYlavbF60soMWlHbvKT+ScvhprgeTln51xX0sF+Eadc/l2s2a5BgkVbHYyz0E85p0LstqH+gEGiR84nBRRFIn8hLSZrGwqjZ3E29cuGi+5Z5bp7EM8MWFa9ssS/vy4VrDfECSv7DSU84DaP0sXI3Ap4lWznQ65nQoTKRWU30gd7Nn8ZowUvGIx4aqyXGwmA/PB4qN8msJUODezUHEl0VP9uo+cZ8vPFodSIB4C7lQYjEFj8yu49C2KIV3qxMFYTevG8KqAr0TPlkbzHHnTpDpvpzziAiNFh8xiT7C/TiyH0EguUw4vxAgpnE27WIypV+uFN2zW7xniF/n75trs9IJ5amB1zXXZ1LFkJ6GbS/dFokzl4cc2mamVwhL4XU0Av5gDWAl+aEWhAP7t2VIwU+EpvfOPDcLASX7H7lZpXA2XQfbSlD4qU18NffNPoAKMNSccBfO9YVVgmlW4RydBqfHAV7+hrZ84WJGho6bNT0YMhxxLdOx/dwGj0oyak9aAkNJ8lRJzUuA8sR+fPyiyTgUHio5+Pp+YaKlHrhR41jY5NESPS3x+zTMe0S2HnLOKCOQPpdxKyviBvdHrCDRqO+l96HhhNBLXWv4yEMuEUYo8kXnYJM8oIgVM4XJ+xXOev4YbWeqsvgq0lmw4/PiYr9sYLt+W5EAuYSFnJEan8CwJwbtASBfLBBpJZiRPor/aCJBZsM+MhvS7ZepyHvU8m5WSmaZnxuLts8ojl6KkS8oSAHkq5GWlCB/NgJ5W3rO2Cj1MK7ahxsCrbTT3a0V/QQH+sErxV4XUWDHx0kkFy25bPmBMBQ6BU3HoHhhYcJB9JhP6NXUWKxnE0raXHB6U9KHpWdQCQI72qevp5fMzcm+AvC85rsynVQhruDA9fp9COe7N56cg1UKGSas89vrN+WlGLYTwi5W+0xYdKEGtGCeNJwXKDU0XqU5uQYnWsMwTENLGtbQMvoGjIFIEMzCRal4rnBAg7D/CSn8MsCvS+FDJJAzoiioJEhZJgAp9n2+1Yznr7H+6eT4YkJ9Mpj60ImcW4i4iHDLn9RydB8dx3QYm3rsX6n4VRrZDsYK6DCGwkwd5n3/INFEpk16fYpP6JtMQpqEMzcOfQGAHXBTEGzuLJ03GYQL9bmV2/7ExDlRf+Uvf1sM2frRtCWmal12pMgtonvSCtR4n1CLUZRdTHDHP1Otwqd+rcdlavnKjUB/OYXQHUJzpNyFoKpQK+2OgrEKpGyIgIBgn2y9QHnTJihZOpEvOKIoHAMGAXHmj21Lym39Mbiow4IF+77xNuewziNVBxr6KD5e+9HzZSBIlUa/AmsDFJFXeyrQakR3FwowTGcADJHcEfhGkXYNGSYo4dh4bxwLM+28xjiqkdn0/3R4UEkvcBrBfn/SzBc1XhKM2VPlJgKSorjDac96V2UnQYXl1/yZPT4DVelgO+soMjexXwYO58VLl5xInQUZI8jc3H2CPnCNb9X05nOxIy4MlecasTqGK6s2az4RjpF2cQP2G28R+7wDPsZDZC/kWtjdoHC7SpdPmqQrUAhMwKVuxCmYTiD9q/O7GHtZvPSN0CAUQN/rymXZNniYLlJDE70bsk6Xxsh4kDOdxe7A2wo7P9F5YvqqRDI6brf79yPCSp4I0jVoO4YnLYtX5nzspR5WB4AKOYtR1ujXbOQpPyYDvfRE3FN5zw0i7reehdi7yV0YDRKRllGCGRk5Yz+Uv1fYl2ZwrnGsqsjgAVo0xEUba8ohjaNMJNwTwZA/wBDWFSCpg1eUH8MYL2zdioxRTqgGQrDZxQyNzyBJPXZF0+oxITJAbj7oNC5JwgDMUJaM5GqlGCWc//KCIrI+aclEe4IA0uzv7cuj6GCdaJONpi13O544vbtIHBF+A+JeDFUQNy61Gki3rtyQ4aUywn6ru314/dkGiP8Iwjo0J/2Txs49ZkwEl4mx+iYUUO55I6pJzU4P+7RRs+DXZkyKUYZqVWrPF4I94m4Wx1tXeE74o9GuX977yvJ/jkdak8+AmoHVjI15V+WwBdARFV2IPirJgVMdsg1Pez2VNHqa7EHWdTkl3XTcyjG9BiueWFvQfXI8aWSkuuRmqi/HUuzqyvLJfNfs0txMqldYYflWB1BS31WkuPJGGwXUCpjiQSktkuBMWwHjSkQxeehqw1Kgz0Trzm7QbtgxiEPDVmWCNCAeCfROTphd1ZNOhzLy6XfJyG6Xgd5MCAZw4xie0Sj5AnY1/akDgNS9YFl3Y06vd6FAsg2gVQJtzG7LVq1OH2frbXNHWH/NY89NNZ4QUSJqL2yEcGADbT38X0bGdukqYlSoliKOcsSTuqhcaemUeYLLoI8+MZor2RxXTRThF1LrHfqf/5LcLAjdl4EERgUysYS2geE+yFdasU91UgUDsc2cSQ1ZoT9+uLOwdgAmifwQqF028INc2IQEDfTmUw3eZxvz7Ud1z3xc1PQfeCvfKsB9jOhRj7rFyb9XcDWLcYj0bByosychMezMLVkFiYcdBBQtvI6K0KRuOZQH2kBsYHJaXTkup8F0eIhO1/GcIwWKpr2mouB7g5TUDJNvORXPXa/mU8bh27TAZYBe2sKx4NSv5OjnHIWD2RuysCzBlUfeNXhDd2jxnHoUlheJ3jBApzURy0fwm2FwwsSU0caQGl0Kv8hopRQE211NnvtLRsmCNrhhpEDoNiZEzD2QdJWKbRRWnaFedXHAELSN0t0bfsCsMf0ktfBoXBoNA+nZN9+pSlmuzspFevmsqqcMllzzvkyXrzoA+Ryo1ePXpdGOoJvhyru+EBRsmOp7MXZ0vNUMUqHLUoKglg1p73sWeZmPc+KAw0pE2zIsFFE5H4192KwDvDxdxEYoDBDNZjbg2bmADTeUKK57IPD4fTYF4c6EnXx/teYMORBDtIhPJneiZny7Nv/zG+YmekIKCoxr6kauE2bZtBLufetNG0BtBY7f+/ImUypMBvdWu/Q7vTMRzw5aQGZWuc1V0HEsItFYMIBnoKGZ0xcarba/TYZq50kCaflFysYjA4EDKHqGdpYWdKYmm+a7TADmW35yfnOYpZYrkpVEtiqF0EujI00aeplNs2k+qyFZNeE3CDPL9P6b4PQ/kataHkVpLSEVGK7EX6rAa7IVNrvZtFvOA6okKvBgMtFDAGZOx88MeBcJ8AR3AgUUeIznAN6tjCUipGDZONm1FjWJp4A3QIzSaIOmZ7DvF/ysYYbM/fFDOV0jntAjRdapxJxL0eThpEhKOjCDDq2ks+3GrwxqIFKLe1WdOzII8XIOPGnwy6LKXVfpSDOTEfaRsGujhpS4hBIsMOqHbl16PJxc4EkaVu9wpEYlF/84NSv5Zum4drMfp9yXbzzAOJqqS4YkI4cBrFrC7bMPiCfgI3nNZAqkk3QOZqR+yyqx+nDQKBBBZ7QKrfGMCL+XpqFaBJU0wpkBdAhbR4hJsmT5aynlvkouoxm/NjD5oe6BzVIO9uktM+/5dEC5P7vZvarmuO/lKXz4sBabVPIATuKTrwbJP8XUkdM6uEctHKXICUJGjaZIWRbZp8czquQYfY6ynBUCfIU+gG6wqSIBmYIm9pZpXdaL121V7q0VjDjmQnXvMe7ysoEZnZL15B0SpxS1jjd83uNIOKZwu5MPzg2NhOx3xMOPYwEn2CUzbSrwAs5OAtrz3GAaUkJOU74XwjaYUmGJdZBS1NJVkGYrToINLKDjxcuIlyfVsKQSG/G4DyiO2SlQvJ0d0Ot1uOG5IFSAkq+PRVMgVMDvOIJMdqjeCFKUGRWBW9wigYvcbU7CQL/7meF2KZAaWl+4y9uhowAX7elogAvItAAxo2+SFxGRsHGEW9BnhlTuWigYxRcnVUBRQHV41LV+Fr5CJYV7sHfeywswx4XMtUx6EkBhR+q8AXXUA8uPJ73Pb49i9KG9fOljvXeyFj9ixgbo6CcbAJ7WHWqKHy/h+YjBwp6VcN7M89FGzQ04qbrQtgrOFybg3gQRTYG5xn73ArkfQWjCJROwy3J38Dx/D7jOa6BBNsitEw1wGq780EEioOeD+ZGp2J66ADiVGMayiHYucMk8nTK2zzT9CnEraAk95kQjy4k0GRElLL5YAKLQErJ5rp1eay9O4Fb6yJGm9U4FaMwPGxtKD6odIIHKoWnhKo1U8KIpFC+MVn59ZXmc7ZTBZfsg6FQ8W10YfTr4u0nYrpHZbZ1jXiLmooF0cOm0+mPnJBXQtepc7n0BqOipNCqI6yyloTeRShNKH04FIo0gcMk0H/xThyN4pPAWjDDkEp3lNNPRNVfpMI44CWRlRgViP64eK0JSRp0WUvCWYumlW/c58Vcz/yMwVcW5oYb9+26TEhwvbxiNg48hl1VI1UXTU//Eta+BMKnGUivctfL5wINDD0giQL1ipt6U7C9cd4+lgqY2lMUZ02Uv6Prs+ZEZer7ZfWBXVghlfOOrClwsoOFKzWEfz6RZu1eCs+K8fLvkts5+BX0gyrFYve0C3qHrn5U/Oh6D/CihmWIrY7HUZRhJaxde+tldu6adYJ+LeXupQw0XExC36RETdNFxcq9glMu4cNQSX9cqR/GQYp+IxUkIcNGWVU7ZtGa6P3XAyodRt0XeS3Tp01AnCh0ZbUh4VrSZeV9RWfSoWyxnY3hzcZ30G/InDq4wxRrEejreBxnhIQbkxenxkaxl+k7eLUQkUR6vKJ2iDFNGX3WmVA1yaOH+mvhBd+sE6vacQzFobwY5BqEAFmejwW5ne7HtVNolOUgJc8CsUxmc/LBi8N5mu9VsIA5HyErnS6zeCz7VLI9+n/hbT6hTokMXTVyXJRKSG2hd2labXTbtmK4fNH3IZBPreSA4FMeVouVN3zG5x9CiGpLw/3pceo4qGqp+rVp+z+7yQ98oEf+nyH4F3+J9IheDBa94Wi63zJbLBCIZm7P0asHGpIJt3PzE3m0S4YIWyXBCVXGikj8MudDPB/6Nm2v4IxJ5gU0ii0guy5SUHqGUYzTP0jIJU5E82RHUXtX4lDdrihBLdP1YaG1AGUC12rQKuIaGvCpMjZC9bWSCYnjDlvpWbkdXMTNeBHLKiuoozMGIvkczmP0aRJSJ8PYnLCVNhKHXBNckH79e8Z8Kc2wUej4sQZoH8qDRGkg86maW/ZQWGNnLcXmq3FlXM6ssR/3P6E/bHMvm6HLrv1yRixit25JsH3/IOr2UV4BWJhxXW5BJ6Xdr07n9kF3ZNAk6/Xpc5MSFmYJ2R7bdL8Kk7q1OU9Elg/tCxJ8giT27wSTySF0GOxg4PbYJdi/Nyia9Nn89CGDulfJemm1aiEr/eleGSN+5MRrVJ4K6lgyTTIW3i9cQ0dAi6FHt0YMbH3wDSAtGLSAccezzxHitt1QdhW36CQgPcA8vIIBh3/JNjf/Obmc2yzpk8edSlS4lVdwgW5vzbYEyFoF4GCBBby1keVNueHAH+evi+H7oOVfS3XuPQSNTXOONAbzJeSb5stwdQHl1ZjrGoE49I8+A9j3t+ahhQj74FCSWpZrj7wRSFJJnnwi1T9HL5qrCFW/JZq6P62XkMWTb+u4lGpKfmmwiJWx178GOG7KbrZGqyWwmuyKWPkNswkZ1q8uptUlviIi+AXh2bOOTOLsrtNkfqbQJeh24reebkINLkjut5r4d9GR/r8CBa9SU0UQhsnZp5cP+RqWCixRm7i4YRFbtZ4EAkhtNa6jHb6gPYQv7MKqkPLRmX3dFsK8XsRLVZ6IEVrCbmNDc8o5mqsogjAQfoC9Bc7R6gfw03m+lQpv6kTfhxscDIX6s0w+fBxtkhjXAXr10UouWCx3C/p/FYwJRS/AXRKkjOb5CLmK4XRe0+xeDDwVkJPZau52bzLEDHCqV0f44pPgKOkYKgTZJ33fmk3Tu8SdxJ02SHM8Fem5SMsWqRyi2F1ynfRJszcFKykdWlNqgDA/L9lKYBmc7Zu/q9ii1FPF47VJkqhirUob53zoiJtVVRVwMR34gV9iqcBaHbRu9kkvqk3yMpfRFG49pKKjIiq7h/VpRwPGTHoY4cg05X5028iHsLvUW/uz+kjPyIEhhcKUwCkJAwbR9pIEGOn8z6svAO8i89sJ3dL5qDWFYbS+HGPRMxYwJItFQN86YESeJQhn2urGiLRffQeLptDl8dAgb+Tp47UQPxWOw17OeChLN1WnzlkPL1T5O+O3Menpn4C3IY5LEepHpnPeZHbvuWfeVtPlkH4LZjPbBrkJT3NoRJzBt86CO0Xq59oQ+8dsm0ymRcmQyn8w71mhmcuEI5byuF+C88VPYly2sEzjlzAQ3vdn/1+Hzguw6qFNNbqenhZGbdiG6RwZaTG7jTA2X9RdXjDN9yj1uQpyO4Lx8KRAcZcbZMafp4wPOd5MdXoFY52V1A8M9hi3sso93+uprE0qYNMjkE22CvK4HuUxqN7oIz5pWuETq1lQAjqlSlqdD2Rnr/ggp/TVkQYjn9lMfYelk2sH5HPdopYo7MHwlV1or9Bxf+QCyLzm92vzG2wjiIjC/ZHEJzeroJl6bdFPTpZho5MV2U86fLQqxNlGIMqCGy+9WYhJ8ob1r0+Whxde9L2PdysETv97O+xVw+VNN1TZSQN5I6l9m5Ip6pLIqLm4a1B1ffH6gHyqT9p82NOjntRWGIofO3bJz5GhkvSWbsXueTAMaJDou99kGLqDlhwBZNEQ4mKPuDvVwSK4WmLluHyhA97pZiVe8g+JxmnJF8IkV/tCs4Jq/HgOoAEGR9tCDsDbDmi3OviUQpG5D8XmKcSAUaFLRXb2lmJTNYdhtYyfjBYZQmN5qT5CNuaD3BVnlkCk7bsMW3AtXkNMMTuW4HjUERSJnVQ0vsBGa1wo3Qh7115XGeTF3NTz8w0440AgU7c3bSXO/KMINaIWXd0oLpoq/0/QJxCQSJ9XnYy1W7TYLBJpHsVWD1ahsA7FjNvRd6mxCiHsm8g6Z0pnzqIpF1dHUtP2ITU5Z1hZHbu+L3BEEStBbL9XYvGfEakv1bmf+bOZGnoiuHEdlBnaChxYKNzB23b8sw8YyT7Ajxfk49eJIAvdbVkdFCe2J0gMefhQ0bIZxhx3fzMIysQNiN8PgOUKxOMur10LduigREDRMZyP4oGWrP1GFY4t6groASsZ421os48wAdnrbovNhLt7ScNULkwZ5AIZJTrbaKYTLjA1oJ3sIuN/aYocm/9uoQHEIlacF1s/TM1fLcPTL38O9fOsjMEIwoPKfvt7opuI9G2Hf/PR4aCLDQ7wNmIdEuXJ/QNL72k5q4NejAldPfe3UVVqzkys8YZ/jYOGOp6c+YzRCrCuq0M11y7TiN6qk7YXRMn/gukxrEimbMQjr3jwRM6dKVZ4RUfWQr8noPXLJq6yh5R3EH1IVOHESst/LItbG2D2vRsZRkAObzvQAAD3mb3/G4NzopI0FAiHfbpq0X72adg6SRj+8OHMShtFxxLZlf/nLgRLbClwl5WmaYSs+yEjkq48tY7Z2bE0N91mJwt+ua0NlRJIDh0HikF4UvSVorFj2YVu9YeS5tfvlVjPSoNu/Zu6dEUfBOT555hahBdN3Sa5Xuj2Rvau1lQNIaC944y0RWj9UiNDskAK1WoL+EfXcC6IbBXFRyVfX/WKXxPAwUyIAGW8ggZ08hcijKTt1YKnUO6QPvcrmDVAb0FCLIXn5id4fD/Jx4tw/gbXs7WF9b2RgXtPhLBG9vF5FEkdHAKrQHZAJC/HWvk7nvzzDzIXZlfFTJoC3JpGgLPBY7SQTjGlUvG577yNutZ1hTfs9/1nkSXK9zzKLRZ3VODeKUovJe0WCq1zVMYxCJMenmNzPIU2S8TA4E7wWmbNkxq9rI2dd6v0VpcAPVMxnDsvWTWFayyqvKZO7Z08a62i/oH2/jxf8rpmfO64in3FLiL1GX8IGtVE9M23yGsIqJbxDTy+LtaMWDaPqkymb5VrQdzOvqldeU0SUi6IirG8UZ3jcpRbwHa1C0Dww9G/SFX3gPvTJQE+kyz+g1BeMILKKO+olcHzctOWgzxYHnOD7dpCRtuZEXACjgqesZMasoPgnuDC4nUviAAxDc5pngjoAITIkvhKwg5d608pdrZcA+qn5TMT6Uo/QzBaOxBCLTJX3Mgk85rMfsnWx86oLxf7p2PX5ONqieTa/qM3tPw4ZXvlAp83NSD8F7+ZgctK1TpoYwtiU2h02HCGioH5tkVCqNVTMH5p00sRy2JU1qyDBP2CII/Dg4WDsIl+zgeX7589srx6YORRQMBfKbodbB743Tl4WLKOEnwWUVBsm94SOlCracU72MSyj068wdpYjyz1FwC2bjQnxnB6Mp/pZ+yyZXtguEaYB+kqhjQ6UUmwSFazOb+rhYjLaoiM+aN9/8KKn0zaCTFpN9eKwWy7/u4EHzO46TdFSNjMfn2iPSJwDPCFHc0I1+vjdAZw5ZjqR/uzi9Zn20oAa5JnLEk/EA3VRWE7J/XrupfFJPtCUuqHPpnlL7ISJtRpSVcB8qsZCm2QEkWoROtCKKxUh3yEcMbWYJwk6DlEBG0bZP6eg06FL3v6RPb7odGuwm7FN8fG4woqtB8e7M5klPpo97GoObNwt+ludTAmxyC5hmcFx+dIvEZKI6igFKHqLH01iY1o7903VzG9QGetyVx5RNmBYUU+zIuSva/yIcECUi4pRmE3VkF2avqulQEUY4yZ/wmNboBzPmAPey3+dSYtBZUjeWWT0pPwCz4Vozxp9xeClIU60qvEFMQCaPvPaA70WlOP9f/ey39macvpGCVa+zfa8gO44wbxpJUlC8GN/pRMTQtzY8Z8/hiNrU+Zq64ZfFGIkdj7m7abcK1EBtws1X4J/hnqvasPvvDSDYWN+QcQVGMqXalkDtTad5rYY0TIR1Eqox3czwPMjKPvF5sFv17Thujr1IZ1Ytl4VX1J0vjXKmLY4lmXipRAro0qVGEcXxEVMMEl54jQMd4J7RjgomU0j1ptjyxY+cLiSyXPfiEcIS2lWDK3ISAy6UZ3Hb5vnPncA94411jcy75ay6B6DSTzK6UTCZR9uDANtPBrvIDgjsfarMiwoax2OlLxaSoYn4iRgkpEGqEkwox5tyI8aKkLlfZ12lO11TxsqRMY89j5JaO55XfPJPDL1LGSnC88Re9Ai+Nu5bZjtwRrvFITUFHPR4ZmxGslQMecgbZO7nHk32qHxYkdvWpup07ojcMCaVrpFAyFZJJbNvBpZfdf39Hdo2kPtT7v0/f8R/B5Nz4f1t9/3zNM/7n6SUHfcWk5dfQFJvcJMgPolGCpOFb/WC0FGWU2asuQyT+rm88ZKZ78Cei/CAh939CH0JYbpZIPtxc2ufXqjS3pHH9lnWK4iJ7OjR/EESpCo2R3MYKyE7rHfhTvWho4cL1QdN4jFTyR6syMwFm124TVDDRXMNveI1Dp/ntwdz8k8kxw7iFSx6+Yx6O+1LzMVrN0BBzziZi9kneZSzgollBnVwBh6oSOPHXrglrOj+QmR/AESrhDpKrWT+8/AiMDxS/5wwRNuGQPLlJ9ovomhJWn8sMLVItQ8N/7IXvtD8kdOoHaw+vBSbFImQsv/OCAIui99E+YSIOMlMvBXkAt+NAZK8wB9Jf8CPtB+TOUOR+z71d/AFXpPBT6+A5FLjxMjLIEoJzrQfquvxEIi+WoUzGR1IzQFNvbYOnxb2PyQ0kGdyXKzW2axQL8lNAXPk6NEjqrRD1oZtKLlFoofrXw0dCNWASHzy+7PSzOUJ3XtaPZsxLDjr+o41fKuKWNmjiZtfkOzItvlV2MDGSheGF0ma04qE3TUEfqJMrXFm7DpK+27DSvCUVf7rbNoljPhha5W7KBqVq0ShUSTbRmuqPtQreVWH4JET5yMhuqMoSd4r/N8sDmeQiQQvi1tcZv7Moc7dT5X5AtCD6kNEGZOzVcNYlpX4AbTsLgSYYliiPyVoniuYYySxsBy5cgb3pD+EK0Gpb0wJg031dPgaL8JZt6sIvzNPEHfVPOjXmaXj4bd4voXzpZ5GApMhILgMbCEWZ2zwgdeQgjNHLbPIt+KqxRwWPLTN6HwZ0Ouijj4UF+Sg0Au8XuIKW0WxlexdrFrDcZJ8Shauat3X0XmHygqgL1nAu2hrJFb4wZXkcS+i36KMyU1yFvYv23bQUJi/3yQpqr/naUOoiEWOxckyq/gq43dFou1DVDaYMZK9tho7+IXXokBCs5GRfOcBK7g3A+jXQ39K4YA8PBRW4m5+yR0ZAxWJncjRVbITvIAPHYRt1EJ3YLiUbqIvoKHtzHKtUy1ddRUQ0AUO41vonZDUOW+mrszw+SW/6Q/IUgNpcXFjkM7F4CSSQ2ExZg85otsMs7kqsQD4OxYeBNDcSpifjMoLb7GEbGWTwasVObmB/bfPcUlq0wYhXCYEDWRW02TP5bBrYsKTGWjnWDDJ1F7zWai0zW/2XsCuvBQjPFcTYaQX3tSXRSm8hsAoDdjArK/OFp6vcWYOE7lizP0Yc+8p16i7/NiXIiiQTp7c7Xus925VEtlKAjUdFhyaiLT7VxDagprMFwix4wZ05u0qj7cDWFd0W9OYHIu3JbJKMXRJ1aYNovugg+QqRN7fNHSi26VSgBpn+JfMuPo3aeqPWik/wI5Rz3BWarPQX4i5+dM0npwVOsX+KsOhC7vDg+OJsz4Q5zlnIeflUWL6QYMbf9WDfLmosLF4Qev3mJiOuHjoor/dMeBpA9iKDkMjYBNbRo414HCxjsHrB4EXNbHzNMDHCLuNBG6Sf+J4MZ/ElVsDSLxjIiGsTPhw8BPjxbfQtskj+dyNMKOOcUYIRBEIqbazz3lmjlRQhplxq673VklMMY6597vu+d89ec/zq7Mi4gQvh87ehYbpOuZEXj5g/Q7S7BFDAAB9DzG35SC853xtWVcnZQoH54jeOqYLR9NDuwxsVthTV7V99n/B7HSbAytbEyVTz/5NhJ8gGIjG0E5j3griULUd5Rg7tQR+90hJgNQKQH2btbSfPcaTOfIexc1db1BxUOhM1vWCpLaYuKr3FdNTt/T3PWCpEUWDKEtzYrjpzlL/wri3MITKsFvtF8QVV/NhVo97aKIBgdliNc10dWdXVDpVtsNn+2UIolrgqdWA4EY8so0YvB4a+aLzMXiMAuOHQrXY0tr+CL10JbvZzgjJJuB1cRkdT7DUqTvnswVUp5kkUSFVtIIFYK05+tQxT6992HHNWVhWxUsD1PkceIrlXuUVRogwmfdhyrf6zzaL8+c0L7GXMZOteAhAVQVwdJh+7nrX7x4LaIIfz2F2v7Dg/uDfz2Fa+4gFm2zHAor8UqimJG3VTJtZEoFXhnDYXvxMJFc6ku2bhbCxzij2z5UNuK0jmp1mnvkVNUfR+SEmj1Lr94Lym75PO7Fs0MIr3GdsWXRXSfgLTVY0FLqba97u1In8NAcY7IC6TjWLigwKEIm43NxTdaVTv9mcKkzuzBkKd8x/xt1p/9BbP7Wyb4bpo1K1gnOpbLvKz58pWl3B55RJ/Z5mRDLPtNQg14jdOEs9+h/V5UVpwrAI8kGbX8KPVPDIMfIqKDjJD9UyDOPhjZ3vFAyecwyq4akUE9mDOtJEK1hpDyi6Ae87sWAClXGTiwPwN7PXWwjxaR79ArHRIPeYKTunVW24sPr/3HPz2IwH8oKH4OlWEmt4BLM6W5g4kMcYbLwj2usodD1088stZA7VOsUSpEVl4w7NMb1EUHMRxAxLF0CIV+0L3iZb+ekB1vSDSFjAZ3hfLJf7gFaXrOKn+mhR+rWw/eTXIcAgl4HvFuBg1LOmOAwJH3eoVEjjwheKA4icbrQCmvAtpQ0mXG0agYp5mj4Rb6mdQ+RV4QBPbxMqh9C7o8nP0Wko2ocnCHeRGhN1XVyT2b9ACsL+6ylUy+yC3QEnaKRIJK91YtaoSrcWZMMwxuM0E9J68Z+YyjA0g8p1PfHAAIROy6Sa04VXOuT6A351FOWhKfTGsFJ3RTJGWYPoLk5FVK4OaYR9hkJvezwF9vQN1126r6isMGXWTqFW+3HL3I/jurlIdDWIVvYY+s6yq7lrFSPAGRdnU7PVwY/SvWbZGpXzy3BQ2LmAJlrONUsZs4oGkly0V267xbD5KMY8woNNsmWG1VVgLCra8aQBBcI4DP2BlNwxhiCtHlaz6OWFoCW0vMR3ErrG7JyMjTSCnvRcsEHgmPnwA6iNpJ2DrFb4gLlhKJyZGaWkA97H6FFdwEcLT6DRQQL++fOkVC4cYGW1TG/3iK5dShRSuiBulmihqgjR45Vi03o2RbQbP3sxt90VxQ6vzdlGfkXmmKmjOi080JSHkLntjvsBJnv7gKscOaTOkEaRQqAnCA4HWtB4XnMtOhpRmH2FH8tTXrIjAGNWEmudQLCkcVlGTQ965Kh0H6ixXbgImQP6b42B49sO5C8pc7iRlgyvSYvcnH9FgQ3azLbQG2cUW96SDojTQStxkOJyOuDGTHAnnWkz29aEwN9FT8EJ4yhXOg+jLTrCPKeEoJ9a7lDXOjEr8AgX4BmnMQ668oW0zYPyQiVMPxKRHtpfnEEyaKhdzNVThlxxDQNdrHeZiUFb6NoY2KwvSb7BnRcpJy+/g/zAYx3fYSN5QEaVD2Y1VsNWxB0BSO12MRsRY8JLfAezRMz5lURuLUnG1ToKk6Q30FughqWN6gBNcFxP/nY/iv+iaUQOa+2Nuym46wtI/DvSfzSp1jEi4SdYBE7YhTiVV5cX9gwboVDMVgZp5YBQlHOQvaDNfcCoCJuYhf5kz5kwiIKPjzgpcRJHPbOhJajeoeRL53cuMahhV8Z7IRr6M4hW0JzT7mzaMUzQpm866zwM7Cs07fJYXuWvjAMkbe5O6V4bu71sOG6JQ4oL8zIeXHheFVavzxmlIyBkgc9IZlEDplMPr8xlcyss4pVUdwK1e7CK2kTsSdq7g5SHRAl3pYUB9Ko4fsh4qleOyJv1z3KFSTSvwEcRO/Ew8ozEDYZSqpfoVW9uhJfYrNAXR0Z3VmeoAD+rVWtwP/13sE/3ICX3HhDG3CMc476dEEC0K3umSAD4j+ZQLVdFOsWL2C1TH5+4KiSWH+lMibo+B55hR3Gq40G1n25sGcN0mEcoU2wN9FCVyQLBhYOu9aHVLWjEKx2JIUZi5ySoHUAI9b8hGzaLMxCZDMLhv8MkcpTqEwz9KFDpCpqQhVmsGQN8m24wyB82FAKNmjgfKRsXRmsSESovAwXjBIoMKSG51p6Um8b3i7GISs7kjTq/PZoioCfJzfKdJTN0Q45kQEQuh9H88M3yEs3DbtRTKALraM0YC8laiMiOOe6ADmTcCiREeAWZelBaEXRaSuj2lx0xHaRYqF65O0Lo5OCFU18A8cMDE4MLYm9w2QSr9NgQAIcRxZsNpA7UJR0e71JL+VU+ISWFk5I97lra8uGg7GlQYhGd4Gc6rxsLFRiIeGO4abP4S4ekQ1fiqDCy87GZHd52fn5aaDGuvOmIofrzpVwMvtbreZ/855OaXTRcNiNE0wzGZSxbjg26v8ko8L537v/XCCWP2MFaArJpvnkep0pA+O86MWjRAZPQRfznZiSIaTppy6m3p6HrNSsY7fDtz7Cl4V/DJAjQDoyiL2uwf1UHVd2AIrzBUSlJaTj4k6NL97a/GqhWKU9RUmjnYKpm2r+JYUcrkCuZKvcYvrg8pDoUKQywY9GDWg03DUFSirlUXBS5SWn/KAntnf0IdHGL/7mwXqDG+LZYjbEdQmqUqq4y54TNmWUP7IgcAw5816YBzwiNIJiE9M4lPCzeI/FGBeYy3p6IAmH4AjXXmvQ4Iy0Y82NTobcAggT2Cdqz6Mx4TdGoq9fn2etrWKUNFyatAHydQTVUQ2S5OWVUlugcNvoUrlA8cJJz9MqOa/W3iVno4zDHfE7zhoY5f5lRTVZDhrQbR8LS4eRLz8iPMyBL6o4PiLlp89FjdokQLaSBmKHUwWp0na5fE3v9zny2YcDXG/jfI9sctulHRbdkI5a4GOPJx4oAJQzVZ/yYAado8KNZUdEFs9ZPiBsausotXMNebEgr0dyopuqfScFJ3ODNPHgclACPdccwv0YJGQdsN2lhoV4HVGBxcEUeUX/alr4nqpcc1CCR3vR7g40zteQg/JvWmFlUE4mAiTpHlYGrB7w+U2KdSwQz2QJKBe/5eiixWipmfP15AFWrK8Sh1GBBYLgzki1wTMhGQmagXqJ2+FuqJ8f0XzXCVJFHQdMAw8xco11HhM347alrAu+wmX3pDFABOvkC+WPX0Uhg1Z5MVHKNROxaR84YV3s12UcM+70cJ460SzEaKLyh472vOMD3XnaK7zxZcXlWqenEvcjmgGNR2OKbI1s8U+iwiW+HotHalp3e1MGDy6BMVIvajnAzkFHbeVsgjmJUkrP9OAwnEHYXVBqYx3q7LvXjoVR0mY8h+ZaOnh053pdsGkmbqhyryN01eVHySr+CkDYkSMeZ1xjPNVM+gVLTDKu2VGsMUJqWO4TwPDP0VOg2/8ITbAUaMGb4LjL7L+Pi11lEVMXTYIlAZ/QHmTENjyx3kDkBdfcvvQt6tKk6jYFM4EG5UXDTaF5+1ZjRz6W7MdJPC+wTkbDUim4p5QQH3b9kGk2Bkilyeur8Bc20wm5uJSBO95GfYDI1EZipoRaH7uVveneqz43tlTZGRQ4a7CNmMHgXyOQQOL6WQkgMUTQDT8vh21aSdz7ERiZT1jK9F+v6wgFvuEmGngSvIUR2CJkc5tx1QygfZnAruONobB1idCLB1FCfO7N1ZdRocT8/Wye+EnDiO9pzqIpnLDl4bkaRKW+ekBVwHn46Shw1X0tclt/0ROijuUB4kIInrVJU4buWf4YITJtjOJ6iKdr1u+flgQeFH70GxKjhdgt/MrwfB4K/sXczQ+9zYcrD4dhY6qZhZ010rrxggWA8JaZyg2pYij8ieYEg1aZJkZK9O1Re7sB0iouf60rK0Gd+AYlp7soqCBCDGwfKeUQhCBn0E0o0GS6PdmjLi0TtCYZeqazqwN+yNINIA8Lk3iPDnWUiIPLGNcHmZDxfeK0iAdxm/T7LnN+gemRL61hHIc0NCAZaiYJR+OHnLWSe8sLrK905B5eEJHNlWq4RmEXIaFTmo49f8w61+NwfEUyuJAwVqZCLFcyHBKAcIVj3sNzfEOXzVKIndxHw+AR93owhbCxUZf6Gs8cz6/1VdrFEPrv330+9s6BtMVPJ3zl/Uf9rUi0Z/opexfdL3ykF76e999GPfVv8fJv/Y/+/5hEMon1tqNFyVRevV9y9/uIvsG3dbB8GRRrgaEXfhx+2xeOFt+cEn3RZanNxdEe2+B6MHpNbrRE53PlDifPvFcp4kO78ILR0T4xyW/WGPyBsqGdoA7zJJCu1TKbGfhnqgnRbxbB2B3UZoeQ2bz2sTVnUwokTcTU21RxN1PYPS3Sar7T0eRIsyCNowr9amwoMU/od9s2APtiKNL6ENOlyKADstAEWKA+sdKDhrJ6BOhRJmZ+QJbAaZ3/5Fq0/lumCgEzGEbu3yi0Y4I4EgVAjqxh4HbuQn0GrRhOWyAfsglQJAVL1y/6yezS2k8RE2MstJLh92NOB3GCYgFXznF4d25qiP4ZCyI4RYGesut6FXK6GwPpKK8WHEkhYui0AyEmr5Ml3uBFtPFdnioI8RiCooa7Z1G1WuyIi3nSNglutc+xY8BkeW3JJXPK6jd2VIMpaSxpVtFq+R+ySK9J6WG5Qvt+C+QH1hyYUOVK7857nFmyDBYgZ/o+AnibzNVqyYCJQvyDXDTK+iXdkA71bY7TL3bvuLxLBQ8kbTvTEY9aqkQ3+MiLWbEgjLzOH+lXgco1ERgzd80rDCymlpaRQbOYnKG/ODoFl46lzT0cjM5FYVvv0qLUbD5lyJtMUaC1pFlTkNONx6lliaX9o0i/1vws5bNKn5OuENQEKmLlcP4o2ZmJjD4zzd3Fk32uQ4uRWkPSUqb4LBe3EXHdORNB2BWsws5daRnMfNVX7isPSb1hMQdAJi1/qmDMfRUlCU74pmnzjbXfL8PVG8NsW6IQM2Ne23iCPIpryJjYbVnm5hCvKpMa7HLViNiNc+xTfDIaKm3jctViD8A1M9YPJNk003VVr4Zo2MuGW8vil8SLaGpPXqG7I4DLdtl8a4Rbx1Lt4w5Huqaa1XzZBtj208EJVGcmKYEuaeN27zT9EE6a09JerXdEbpaNgNqYJdhP1NdqiPKsbDRUi86XvvNC7rME5mrSQtrzAZVndtSjCMqd8BmaeGR4l4YFULGRBeXIV9Y4yxLFdyoUNpiy2IhePSWzBofYPP0eIa2q5JP4j9G8at/AqoSsLAUuRXtvgsqX/zYwsE+of6oSDbUOo4RMJw+DOUTJq+hnqwKim9Yy/napyZNTc2rCq6V9jHtJbxGPDwlzWj/Sk3zF/BHOlT/fSjSq7FqlPI1q6J+ru8Aku008SFINXZfOfnZNOvGPMtEmn2gLPt+H4QLA+/SYe4j398auzhKIp2Pok3mPC5q1IN1HgR+mnEfc4NeeHYwd2/kpszR3cBn7ni9NbIqhtSWFW8xbUJuUPVOeeXu3j0IGZmFNiwaNZ6rH4/zQ2ODz6tFxRLsUYZu1bfd1uIvfQDt4YD/efKYv8VF8bHGDgK22w2Wqwpi43vNCOXFJZCGMqWiPbL8mil6tsmOTXAWCyMCw73e2rADZj2IK6rqksM3EXF2cbLb4vjB14wa/yXK5vwU+05MzERJ5nXsXsW21o7M+gO0js2OyKciP5uF2iXyb2DiptwQeHeqygkrNsqVCSlldxBMpwHi1vfc8RKpP/4L3Lmpq6DZcvhDDfxTCE3splacTcOtXdK2g303dIWBVe2wD/Gvja1cClFQ67gw0t1ZUttsUgQ1Veky8oOpS6ksYEc4bqseCbZy766SvL3FodmnahlWJRgVCNjPxhL/fk2wyvlKhITH/VQCipOI0dNcRa5B1M5HmOBjTLeZQJy237e2mobwmDyJNHePhdDmiknvLKaDbShL+Is1XTCJuLQd2wmdJL7+mKvs294whXQD+vtd88KKk0DXP8B1Xu9J+xo69VOuFgexgTrcvI6SyltuLix9OPuE6/iRJYoBMEXxU4shQMf4Fjqwf1PtnJ/wWSZd29rhZjRmTGgiGTAUQqRz+nCdjeMfYhsBD5Lv60KILWEvNEHfmsDs2L0A252351eUoYxAysVaCJVLdH9QFWAmqJDCODUcdoo12+gd6bW2boY0pBVHWL6LQDK5bYWh1V8vFvi0cRpfwv7cJiMX3AZNJuTddHehTIdU0YQ/sQ1dLoF2xQPcCuHKiuCWOY30DHe1OwcClLAhqAKyqlnIbH/8u9ScJpcS4kgp6HKDUdiOgRaRGSiUCRBjzI5gSksMZKqy7Sd51aeg0tgJ+x0TH9YH2Mgsap9N7ENZdEB0bey2DMTrBA1hn56SErNHf3tKtqyL9b6yXEP97/rc+jgD2N1LNUH6RM9AzP3kSipr06RkKOolR7HO768jjWiH1X92jA7dkg7gcNcjqsZCgfqWw0tPXdLg20cF6vnQypg7gLtkazrHAodyYfENPQZsdfnjMZiNu4nJO97D1/sQE+3vNFzrSDOKw+keLECYf7RJwVHeP/j79833oZ0egonYB2FlFE5qj02B/LVOMJQlsB8uNg3Leg4qtZwntsOSNidR0abbZmAK4sCzvt8Yiuz2yrNCJoH5O8XvX/vLeR/BBYTWj0sOPYM/jyxRd5+/JziKAABaPcw/34UA3aj/gLZxZgRCWN6m4m3demanNgsx0P237/Q+Ew5VYnJPkyCY0cIVHoFn2Ay/e7U4P19APbPFXEHX94N6KhEMPG7iwB3+I+O1jd5n6VSgHegxgaSawO6iQCYFgDsPSMsNOcUj4q3sF6KzGaH/0u5PQoAj/8zq6Uc9MoNrGqhYeb2jQo0WlGlXjxtanZLS24/OIN5Gx/2g684BPDQpwlqnkFcxpmP/osnOXrFuu4PqifouQH0eF5qCkvITQbJw/Zvy5mAHWC9oU+cTiYhJmSfKsCyt1cGVxisKu+NymEQIAyaCgud/V09qT3nk/9s/SWsYtha7yNpzBIMM40rCSGaJ9u6lEkl00vXBiEt7p9P5IBCiavynEOv7FgLqPdeqxRiCwuFVMolSIUBcoyfUC2e2FJSAUgYdVGFf0b0Kn2EZlK97yyxrT2MVgvtRikfdaAW8RwEEfN+B7/eK8bBdp7URpbqn1xcrC6d2UjdsKbzCjBFqkKkoZt7Mrhg6YagE7spkqj0jOrWM+UGQ0MUlG2evP1uE1p2xSv4dMK0dna6ENcNUF+xkaJ7B764NdxLCpuvhblltVRAf7vK5qPttJ/9RYFUUSGcLdibnz6mf7WkPO3MkUUhR2mAOuGv8IWw5XG1ZvoVMnjSAZe6T7WYA99GENxoHkMiKxHlCuK5Gd0INrISImHQrQmv6F4mqU/TTQ8nHMDzCRivKySQ8dqkpQgnUMnwIkaAuc6/FGq1hw3b2Sba398BhUwUZSAIO8XZvnuLdY2n6hOXws+gq9BHUKcKFA6kz6FDnpxLPICa3qGhnc97bo1FT/XJk48LrkHJ2CAtBv0RtN97N21plfpXHvZ8gMJb7Zc4cfI6MbPwsW7AilCSXMFIEUEmir8XLEklA0ztYbGpTTGqttp5hpFTTIqUyaAIqvMT9A/x+Ji5ejA4Bhxb/cl1pUdOD6epd3yilIdO6j297xInoiBPuEDW2/UfslDyhGkQs7Wy253bVnlT+SWg89zYIK/9KXFl5fe+jow2rd5FXv8zDPrmfMXiUPt9QBO/iK4QGbX5j/7Rx1c1vzsY8ONbP3lVIaPrhL4+1QrECTN3nyKavGG0gBBtHvTKhGoBHgMXHStFowN+HKrPriYu+OZ05Frn8okQrPaaxoKP1ULCS/cmKFN3gcH7HQlVjraCeQmtjg1pSQxeuqXiSKgLpxc/1OiZsU4+n4lz4hpahGyWBURLi4642n1gn9qz9bIsaCeEPJ0uJmenMWp2tJmIwLQ6VSgDYErOeBCfSj9P4G/vI7oIF+l/n5fp956QgxGvur77ynawAu3G9MdFbJbu49NZnWnnFcQHjxRuhUYvg1U/e84N4JTecciDAKb/KYIFXzloyuE1eYXf54MmhjTq7B/yBToDzzpx3tJCTo3HCmVPYfmtBRe3mPYEE/6RlTIxbf4fSOcaKFGk4gbaUWe44hVk9SZzhW80yfW5QWBHxmtUzvMhfVQli4gZTktIOZd9mjJ5hsbmzttaHQB29Am3dZkmx3g/qvYocyhZ2PXAWsNQiIaf+Q8W/MWPIK7/TjvCx5q2XRp4lVWydMc2wIQkhadDB0xsnw/kSEyGjLKjI4coVIwtubTF3E7MJ6LS6UOsJKj82XVAVPJJcepfewbzE91ivXZvOvYfsmMevwtPpfMzGmC7WJlyW2j0jh7AF1JLmwEJSKYwIvu6DHc3YnyLH9ZdIBnQ+nOVDRiP+REpqv++typYHIvoJyICGA40d8bR7HR2k7do6UQTHF4oriYeIQbxKe4Th6+/l1BjUtS9hqORh3MbgvYrStXTfSwaBOmAVQZzpYNqsAmQyjY56MUqty3c/xH6GuhNvNaG9vGbG6cPtBM8UA3e8r51D0AR9kozKuGGSMgLz3nAHxDNnc7GTwpLj7/6HeWp1iksDeTjwCLpxejuMtpMnGJgsiku1sOACwQ9ukzESiDRN77YNESxR5LphOlcASXA5uIts1LnBIcn1J7BLWs49DMALSnuz95gdOrTZr0u1SeYHinno/pE58xYoXbVO/S+FEMMs5qyWkMnp8Q3ClyTlZP52Y9nq7b8fITPuVXUk9ohG5EFHw4gAEcjFxfKb3xuAsEjx2z1wxNbSZMcgS9GKyW3R6KwJONgtA64LTyxWm8Bvudp0M1FdJPEGopM4Fvg7G/hsptkhCfHFegv4ENwxPeXmYhxwZy7js+BeM27t9ODBMynVCLJ7RWcBMteZJtvjOYHb5lOnCLYWNEMKC59BA7covu1cANa2PXL05iGdufOzkgFqqHBOrgQVUmLEc+Mkz4Rq8O6WkNr7atNkH4M8d+SD1t/tSzt3oFql+neVs+AwEI5JaBJaxARtY2Z4mKoUqxds4UpZ0sv3zIbNoo0J4fihldQTX3XNcuNcZmcrB5LTWMdzeRuAtBk3cZHYQF6gTi3PNuDJ0nmR+4LPLoHvxQIxRgJ9iNNXqf2SYJhcvCtJiVWo85TsyFOuq7EyBPJrAdhEgE0cTq16FQXhYPJFqSfiVn0IQnPOy0LbU4BeG94QjdYNB0CiQ3QaxQqD2ebSMiNjaVaw8WaM4Z5WnzcVDsr4eGweSLa2DE3BWViaxhZFIcSTjgxNCAfelg+hznVOYoe5VqTYs1g7WtfTm3e4/WduC6p+qqAM8H4ZyrJCGpewThTDPe6H7CzX/zQ8Tm+r65HeZn+MsmxUciEWPlAVaK/VBaQBWfoG/aRL/jSZIQfep/89GjasWmbaWzeEZ2R1FOjvyJT37O9B8046SRSKVEnXWlBqbkb5XCS3qFeuE9xb9+frEknxWB5h1D/hruz2iVDEAS7+qkEz5Ot5agHJc7WCdY94Ws61sURcX5nG8UELGBAHZ3i+3VulAyT0nKNNz4K2LBHBWJcTBX1wzf+//u/j/9+//v87+9/l9Lbh/L/uyNYiTsWV2LwsjaA6MxTuzFMqmxW8Jw/+IppdX8t/Clgi1rI1SN0UC/r6tX/4lUc2VV1OQReSeCsjUpKZchw4XUcjHfw6ryCV3R8s6VXm67vp4n+lcPV9gJwmbKQEsmrJi9c2vkwrm8HFbVYNTaRGq8D91t9n5+U+aD/hNtN3HjC/nC/vUoGFSCkXP+NlRcmLUqLbiUBl4LYf1U/CCvwtd3ryCH8gUmGITAxiH1O5rnGTz7y1LuFjmnFGQ1UWuM7HwfXtWl2fPFKklYwNUpF2IL/TmaRETjQiM5SJacI+3Gv5MBU8lP5Io6gWkawpyzNEVGqOdx4YlO1dCvjbWFZWbCmeiFKPSlMKtKcMFLs/KQxtgAHi7NZNCQ32bBAW2mbHflVZ8wXKi1JKVHkW20bnYnl3dKWJeWJOiX3oKPBD6Zbi0ZvSIuWktUHB8qDR8DMMh1ZfkBL9FS9x5r0hBGLJ8pUCJv3NYH+Ae8p40mZWd5m5fhobFjQeQvqTT4VKWIYfRL0tfaXKiVl75hHReuTJEcqVlug+eOIIc4bdIydtn2K0iNZPsYWQvQio2qbO3OqAlPHDDOB7DfjGEfVF51FqqNacd6QmgFKJpMfLp5DHTv4wXlONKVXF9zTJpDV4m1sYZqJPhotcsliZM8yksKkCkzpiXt+EcRQvSQqmBS9WdWkxMTJXPSw94jqI3varCjQxTazjlMH8jTS8ilaW8014/vwA/LNa+YiFoyyx3s/KswP3O8QW1jtq45yTM/DX9a8M4voTVaO2ebvw1EooDw/yg6Y1faY+WwrdVs5Yt0hQ5EwRfYXSFxray1YvSM+kYmlpLG2/9mm1MfmbKHXr44Ih8nVKb1M537ZANUkCtdsPZ80JVKVKabVHCadaLXg+IV8i5GSwpZti0h6diTaKs9sdpUKEpd7jDUpYmHtiX33SKiO3tuydkaxA7pEc9XIQEOfWJlszj5YpL5bKeQyT7aZSBOamvSHl8xsWvgo26IP/bqk+0EJUz+gkkcvlUlyPp2kdKFtt7y5aCdks9ZJJcFp5ZWeaWKgtnXMN3ORwGLBE0PtkEIek5FY2aVssUZHtsWIvnljMVJtuVIjpZup/5VL1yPOHWWHkOMc6YySWMckczD5jUj2mlLVquFaMU8leGVaqeXis+aRRL8zm4WuBk6cyWfGMxgtr8useQEx7k/PvRoZyd9nde1GUCV84gMX8Ogu/BWezYPSR27llzQnA97oo0pYyxobYUJfsj+ysTm9zJ+S4pk0TGo9VTG0KjqYhTmALfoDZVKla2b5yhv241PxFaLJs3i05K0AAIdcGxCJZmT3ZdT7CliR7q+kur7WdQjygYtOWRL9B8E4s4LI8KpAj7bE0dg7DLOaX+MGeAi0hMMSSWZEz+RudXbZCsGYS0QqiXjH9XQbd8sCB+nIVTq7/T/FDS+zWY9q7Z2fdq1tdLb6v3hKKVDAw5gjj6o9r1wHFROdHc18MJp4SJ2Ucvu+iQ9EgkekW8VCM+psM6y+/2SBy8tNN4a3L1MzP+OLsyvESo5gS7IQOnIqMmviJBVc6zbVG1n8eXiA3j46kmvvtJlewwNDrxk4SbJOtP/TV/lIVK9ueShNbbMHfwnLTLLhbZuO79ec5XvfgRwLFK+w1r5ZWW15rVFZrE+wKqNRv5KqsLNfpGgnoUU6Y71NxEmN7MyqwqAQqoIULOw/LbuUB2+uE75gJt+kq1qY4LoxV+qR/zalupea3D5+WMeaRIn0sAI6DDWDh158fqUb4YhAxhREbUN0qyyJYkBU4V2KARXDT65gW3gRsiv7xSPYEKLwzgriWcWgPr0sbZnv7m1XHNFW6xPdGNZUdxFiUYlmXNjDVWuu7LCkX/nVkrXaJhiYktBISC2xgBXQnNEP+cptWl1eG62a7CPXrnrkTQ5BQASbEqUZWMDiZUisKyHDeLFOaJILUo5f6iDt4ZO8MlqaKLto0AmTHVVbkGuyPa1R/ywZsWRoRDoRdNMMHwYTsklMVnlAd2S0282bgMI8fiJpDh69OSL6K3qbo20KfpNMurnYGQSr/stFqZ7hYsxKlLnKAKhsmB8AIpEQ4bd/NrTLTXefsE6ChRmKWjXKVgpGoPs8GAicgKVw4K0qgDgy1A6hFq1WRat3fHF+FkU+b6H4NWpOU3KXTxrIb2qSHAb+qhm8hiSROi/9ofapjxhyKxxntPpge6KL5Z4+WBMYkAcE6+0Hd3Yh2zBsK2MV3iW0Y6cvOCroXlRb2MMJtdWx+3dkFzGh2Pe3DZ9QpSqpaR/rE1ImOrHqYYyccpiLC22amJIjRWVAherTfpQLmo6/K2pna85GrDuQPlH1Tsar8isAJbXLafSwOof4gg9RkAGm/oYpBQQiPUoyDk2BCQ1k+KILq48ErFo4WSRhHLq/y7mgw3+L85PpP6xWr6cgp9sOjYjKagOrxF148uhuaWtjet953fh1IQiEzgC+d2IgBCcUZqgTAICm2bR8oCjDLBsmg+ThyhfD+zBalsKBY1Ce54Y/t9cwfbLu9SFwEgphfopNA3yNxgyDafUM3mYTovZNgPGdd4ZFFOj1vtfFW3u7N+iHEN1HkeesDMXKPyoCDCGVMo4GCCD6PBhQ3dRZIHy0Y/3MaE5zU9mTCrwwnZojtE+qNpMSkJSpmGe0EzLyFelMJqhfFQ7a50uXxZ8pCc2wxtAKWgHoeamR2O7R+bq7IbPYItO0esdRgoTaY38hZLJ5y02oIVwoPokGIzxAMDuanQ1vn2WDQ00Rh6o5QOaCRu99fwDbQcN0XAuqkFpxT/cfz3slGRVokrNU0iqiMAJFEbKScZdmSkTUznC0U+MfwFOGdLgsewRyPKwBZYSmy6U325iUhBQNxbAC3FLKDV9VSOuQpOOukJ/GAmu/tyEbX9DgEp6dv1zoU0IqzpG6gssSjIYRVPGgU1QAQYRgIT8gEV0EXr1sqeh2I6rXjtmoCYyEDCe/PkFEi/Q48FuT29p557iN+LCwk5CK/CZ2WdAdfQZh2Z9QGrzPLSNRj5igUWzl9Vi0rCqH8G1Kp4QMLkuwMCAypdviDXyOIk0AHTM8HBYKh3b0/F+DxoNj4ZdoZfCpQVdnZarqoMaHWnMLNVcyevytGsrXQEoIbubqWYNo7NRHzdc0zvT21fWVirj7g36iy6pxogfvgHp1xH1Turbz8QyyHnXeBJicpYUctbzApwzZ1HT+FPEXMAgUZetgeGMwt4G+DHiDT2Lu+PT21fjJCAfV16a/Wu1PqOkUHSTKYhWW6PhhHUlNtWzFnA7MbY+r64vkwdpfNB2JfWgWXAvkzd42K4lN9x7Wrg4kIKgXCb4mcW595MCPJ/cTfPAMQMFWwnqwde4w8HZYJFpQwcSMhjVz4B8p6ncSCN1X4klxoIH4BN2J6taBMj6lHkAOs8JJAmXq5xsQtrPIPIIp/HG6i21xMGcFgqDXSRF0xQg14d2uy6HgKE13LSvQe52oShF5Jx1R6avyL4thhXQZHfC94oZzuPUBKFYf1VvDaxIrtV6dNGSx7DO0i1p6CzBkuAmEqyWceQY7F9+U0ObYDzoa1iKao/cOD/v6Q9gHrrr1uCeOk8fST9MG23Ul0KmM3r+Wn6Hi6WAcL7gEeaykicvgjzkjSwFsAXIR81Zx4QJ6oosVyJkCcT+4xAldCcihqvTf94HHUPXYp3REIaR4dhpQF6+FK1H0i9i7Pvh8owu3lO4PT1iuqu+DkL2Bj9+kdfGAg2TXw03iNHyobxofLE2ibjsYDPgeEQlRMR7afXbSGQcnPjI2D+sdtmuQ771dbASUsDndU7t58jrrNGRzISvwioAlHs5FA+cBE5Ccznkd8NMV6BR6ksnKLPZnMUawRDU1MZ/ib3xCdkTblHKu4blNiylH5n213yM0zubEie0o4JhzcfAy3H5qh2l17uLooBNLaO+gzonTH2uF8PQu9EyH+pjGsACTMy4cHzsPdymUSXYJOMP3yTkXqvO/lpvt0cX5ekDEu9PUfBeZODkFuAjXCaGdi6ew4qxJ8PmFfwmPpkgQjQlWqomFY6UkjmcnAtJG75EVR+NpzGpP1Ef5qUUbfowrC3zcSLX3BxgWEgEx/v9cP8H8u1Mvt9/rMDYf6sjwU1xSOPBgzFEeJLMRVFtKo5QHsUYT8ZRLCah27599EuqoC9PYjYO6aoAMHB8X1OHwEAYouHfHB3nyb2B+SnZxM/vw/bCtORjLMSy5aZoEpvgdGvlJfNPFUu/p7Z4VVK1hiI0/UTuB3ZPq4ohEbm7Mntgc1evEtknaosgZSwnDC2BdMmibpeg48X8Ixl+/8+xXdbshQXUPPvx8jT3fkELivHSmqbhblfNFShWAyQnJ3WBU6SMYSIpTDmHjdLVAdlADdz9gCplZw6mTiHqDwIsxbm9ErGusiVpg2w8Q3khKV/R9Oj8PFeF43hmW/nSd99nZzhyjCX3QOZkkB6BsH4H866WGyv9E0hVAzPYah2tkRfQZMmP2rinfOeQalge0ovhduBjJs9a1GBwReerceify49ctOh5/65ATYuMsAkVltmvTLBk4oHpdl6i+p8DoNj4Fb2vhdFYer2JSEilEwPd5n5zNoGBXEjreg/wh2NFnNRaIUHSOXa4eJRwygZoX6vnWnqVdCRT1ARxeFrNBJ+tsdooMwqnYhE7zIxnD8pZH+P0Nu1wWxCPTADfNWmqx626IBJJq6NeapcGeOmbtXvl0TeWG0Y7OGGV4+EHTtNBIT5Wd0Bujl7inXgZgfXTM5efD3qDTJ54O9v3Bkv+tdIRlq1kXcVD0BEMirmFxglNPt5pedb1AnxuCYMChUykwsTIWqT23XDpvTiKEru1cTcEMeniB+HQDehxPXNmkotFdwUPnilB/u4Nx5Xc6l8J9jH1EgKZUUt8t8cyoZleDBEt8oibDmJRAoMKJ5Oe9CSWS5ZMEJvacsGVdXDWjp/Ype5x0p9PXB2PAwt2LRD3d+ftNgpuyvxlP8pB84oB1i73vAVpwyrmXW72hfW6Dzn9Jkj4++0VQ4d0KSx1AsDA4OtXXDo63/w+GD+zC7w5SJaxsmnlYRQ4dgdjA7tTl2KNLnpJ+mvkoDxtt1a4oPaX3EVqj96o9sRKBQqU7ZOiupeAIyLMD+Y3YwHx30XWHB5CQiw7q3mj1EDlP2eBsZbz79ayUMbyHQ7s8gu4Lgip1LiGJj7NQj905/+rgUYKAA5qdrlHKIknWmqfuR+PB8RdBkDg/NgnlT89G72h2NvySnj7UyBwD+mi/IWs1xWbxuVwUIVXun5cMqBtFbrccI+DILjsVQg6eeq0itiRfedn89CvyFtpkxaauEvSANuZmB1p8FGPbU94J9medwsZ9HkUYjmI7OH5HuxendLbxTaYrPuIfE2ffXFKhoNBUp33HsFAXmCV/Vxpq5AYgFoRr5Ay93ZLRlgaIPjhZjXZZChT+aE5iWAXMX0oSFQEtwjiuhQQItTQX5IYrKfKB+queTNplR1Hoflo5/I6aPPmACwQCE2jTOYo5Dz1cs7Sod0KTG/3kEDGk3kUaUCON19xSJCab3kNpWZhSWkO8l+SpW70Wn3g0ciOIJO5JXma6dbos6jyisuxXwUUhj2+1uGhcvuliKtWwsUTw4gi1c/diEEpZHoKoxTBeMDmhPhKTx7TXWRakV8imJR355DcIHkR9IREHxohP4TbyR5LtFU24umRPRmEYHbpe1LghyxPx7YgUHjNbbQFRQhh4KeU1EabXx8FS3JAxp2rwRDoeWkJgWRUSKw6gGP5U2PuO9V4ZuiKXGGzFQuRuf+tkSSsbBtRJKhCi3ENuLlXhPbjTKD4djXVnfXFds6Zb+1XiUrRfyayGxJq1+SYBEfbKlgjiSmk0orgTqzSS+DZ5rTqsJbttiNtp+KMqGE2AHGFw6jQqM5vD6vMptmXV9OAjq49Uf/Lx9Opam+Hn5O9p8qoBBAQixzQZ4eNVkO9sPzJAMyR1y4/RCQQ1s0pV5KAU5sKLw3tkcFbI/JqrjCsK4Mw+W8aod4lioYuawUiCyVWBE/qPaFi5bnkgpfu/ae47174rI1fqQoTbW0HrU6FAejq7ByM0V4zkZTg02/YJK2N7hUQRCeZ4BIgSEqgD8XsjzG6LIsSbuHoIdz/LhFzbNn1clci1NHWJ0/6/O8HJMdIpEZbqi1RrrFfoo/rI/7ufm2MPG5lUI0IYJ4MAiHRTSOFJ2oTverFHYXThkYFIoyFx6rMYFgaOKM4xNWdlOnIcKb/suptptgTOTdVIf4YgdaAjJnIAm4qNNHNQqqAzvi53GkyRCEoseUBrHohZsjUbkR8gfKtc/+Oa72lwxJ8Mq6HDfDATbfbJhzeIuFQJSiw1uZprHlzUf90WgqG76zO0eCB1WdPv1IT6sNxxh91GEL2YpgC97ikFHyoaH92ndwduqZ6IYjkg20DX33MWdoZk7QkcKUCgisIYslOaaLyvIIqRKWQj16jE1DlQWJJaPopWTJjXfixEjRJJo8g4++wuQjbq+WVYjsqCuNIQW3YjnxKe2M5ZKEqq+cX7ZVgnkbsU3RWIyXA1rxv4kGersYJjD//auldXGmcEbcfTeF16Y1708FB1HIfmWv6dSFi6oD4E+RIjCsEZ+kY7dKnwReJJw3xCjKvi3kGN42rvyhUlIz0Bp+fNSV5xwFiuBzG296e5s/oHoFtUyUplmPulIPl+e1CQIQVtjlzLzzzbV+D/OVQtYzo5ixtMi5BmHuG4N/uKfJk5UIREp7+12oZlKtPBomXSzAY0KgtbPzzZoHQxujnREUgBU+O/jKKhgxVhRPtbqyHiUaRwRpHv7pgRPyUrnE7fYkVblGmfTY28tFCvlILC04Tz3ivkNWVazA+OsYrxvRM/hiNn8Fc4bQBeUZABGx5S/xFf9Lbbmk298X7iFg2yeimvsQqqJ+hYbt6uq+Zf9jC+Jcwiccd61NKQtFvGWrgJiHB5lwi6fR8KzYS7EaEHf/ka9EC7H8D+WEa3TEACHBkNSj/cXxFeq4RllC+fUFm2xtstYLL2nos1DfzsC9vqDDdRVcPA3Ho95aEQHvExVThXPqym65llkKlfRXbPTRiDepdylHjmV9YTWAEjlD9DdQnCem7Aj/ml58On366392214B5zrmQz/9ySG2mFqEwjq5sFl5tYJPw5hNz8lyZPUTsr5E0F2C9VMPnZckWP7+mbwp/BiN7f4kf7vtGnZF2JGvjK/sDX1RtcFY5oPQnE4lIAYV49U3C9SP0LCY/9i/WIFK9ORjzM9kG/KGrAuwFmgdEpdLaiqQNpCTGZVuAO65afkY1h33hrqyLjZy92JK3/twdj9pafFcwfXONmPQWldPlMe7jlP24Js0v9m8bIJ9TgS2IuRvE9ZVRaCwSJYOtAfL5H/YS4FfzKWKbek+GFulheyKtDNlBtrdmr+KU+ibHTdalzFUmMfxw3f36x+3cQbJLItSilW9cuvZEMjKw987jykZRlsH/UI+HlKfo2tLwemBEeBFtmxF2xmItA/dAIfQ+rXnm88dqvXa+GapOYVt/2waFimXFx3TC2MUiOi5/Ml+3rj/YU6Ihx2hXgiDXFsUeQkRAD6wF3SCPi2flk7XwKAA4zboqynuELD312EJ88lmDEVOMa1W/K/a8tGylZRMrMoILyoMQzzbDJHNZrhH77L9qSC42HVmKiZ5S0016UTp83gOhCwz9XItK9fgXfK3F5d7nZCBUekoLxrutQaPHa16Rjsa0gTrzyjqTnmcIcrxg6X6dkKiucudc0DD5W4pJPf0vuDW8r5/uw24YfMuxFRpD2ovT2mFX79xH6Jf+MVdv2TYqR6/955QgVPe3JCD/WjAYcLA9tpXgFiEjge2J5ljeI/iUzg91KQuHkII4mmHZxC3XQORLAC6G7uFn5LOmlnXkjFdoO976moNTxElS8HdxWoPAkjjocDR136m2l+f5t6xaaNgdodOvTu0rievnhNAB79WNrVs6EsPgkgfahF9gSFzzAd+rJSraw5Mllit7vUP5YxA843lUpu6/5jAR0RvH4rRXkSg3nE+O5GFyfe+L0s5r3k05FyghSFnKo4TTgs07qj4nTLqOYj6qaW9knJTDkF5OFMYbmCP+8H16Ty482OjvERV6OFyw043L9w3hoJi408sR+SGo1WviXUu8d7qS+ehKjpKwxeCthsm2LBFSFeetx0x4AaKPxtp3CxdWqCsLrB1s/j5TAhc1jNZsXWl6tjo/WDoewxzg8T8NnhZ1niUwL/nhfygLanCnRwaFGDyLw+sfZhyZ1UtYTp8TYB6dE7R3VsKKH95CUxJ8u8N+9u2/9HUNKHW3x3w5GQrfOPafk2w5qZq8MaHT0ebeY3wIsp3rN9lrpIsW9c1ws3VNV+JwNz0Lo9+V7zZr6GD56We6gWVIvtmam5GPPkVAbr74r6SwhuL+TRXtW/0pgyX16VNl4/EAD50TnUPuwrW6OcUO2VlWXS0inq872kk7GUlW6o/ozFKq+Sip6LcTtSDfDrPTcCHhx75H8BeRon+KG2wRwzfDgWhALmiWOMO6h3pm1UCZEPEjScyk7tdLx6WrdA2N1QTPENvNnhCQjW6kl057/qv7IwRryHrZBCwVSbLLnFRiHdTwk8mlYixFt1slEcPD7FVht13HyqVeyD55HOXrh2ElAxJyinGeoFzwKA91zfrdLvDxJSjzmImfvTisreI25EDcVfGsmxLVbfU8PGe/7NmWWKjXcdTJ11jAlVIY/Bv/mcxg/Q10vCHwKG1GW/XbJq5nxDhyLqiorn7Wd7VEVL8UgVzpHMjQ+Z8DUgSukiVwWAKkeTlVVeZ7t1DGnCgJVIdBPZAEK5f8CDyDNo7tK4/5DBjdD5MPV86TaEhGsLVFPQSI68KlBYy84FievdU9gWh6XZrugvtCZmi9vfd6db6V7FmoEcRHnG36VZH8N4aZaldq9zZawt1uBFgxYYx+Gs/qW1jwANeFy+LCoymyM6zgG7j8bGzUyLhvrbJkTYAEdICEb4kMKusKT9V3eIwMLsjdUdgijMc+7iKrr+TxrVWG0U+W95SGrxnxGrE4eaJFfgvAjUM4SAy8UaRwE9j6ZQH5qYAWGtXByvDiLSDfOD0yFA3UCMKSyQ30fyy1mIRg4ZcgZHLNHWl+c9SeijOvbOJxoQy7lTN2r3Y8p6ovxvUY74aOYbuVezryqXA6U+fcp6wSV9X5/OZKP18tB56Ua0gMyxJI7XyNT7IrqN8GsB9rL/kP5KMrjXxgqKLDa+V5OCH6a5hmOWemMUsea9vQl9t5Oce76PrTyTv50ExOqngE3PHPfSL//AItPdB7kGnyTRhVUUFNdJJ2z7RtktZwgmQzhBG/G7QsjZmJfCE7k75EmdIKH7xlnmDrNM/XbTT6FzldcH/rcRGxlPrv4qDScqE7JSmQABJWqRT/TUcJSwoQM+1jvDigvrjjH8oeK2in1S+/yO1j8xAws/T5u0VnIvAPqaE1atNuN0cuRliLcH2j0nTL4JpcR7w9Qya0JoaHgsOiALLCCzRkl1UUESz+ze/gIXHGtDwgYrK6pCFKJ1webSDog4zTlPkgXZqxlQDiYMjhDpwTtBW2WxthWbov9dt2X9XFLFmcF+eEc1UaQ74gqZiZsdj63pH1qcv3Vy8JYciogIVKsJ8Yy3J9w/GhjWVSQAmrS0BPOWK+RKV+0lWqXgYMnIFwpcZVD7zPSp547i9HlflB8gVnSTGmmq1ClO081OW/UH11pEQMfkEdDFzjLC1Cdo/BdL3s7cXb8J++Hzz1rhOUVZFIPehRiZ8VYu6+7Er7j5PSZu9g/GBdmNzJmyCD9wiswj9BZw+T3iBrg81re36ihMLjoVLoWc+62a1U/7qVX5CpvTVF7rocSAKwv4cBVqZm7lLDS/qoXs4fMs/VQi6BtVbNA3uSzKpQfjH1o3x4LrvkOn40zhm6hjduDglzJUwA0POabgdXIndp9fzhOo23Pe+Rk9GSLX0d71Poqry8NQDTzNlsa+JTNG9+UrEf+ngxCjGEsDCc0bz+udVRyHQI1jmEO3S+IOQycEq7XwB6z3wfMfa73m8PVRp+iOgtZfeSBl01xn03vMaQJkyj7vnhGCklsCWVRUl4y+5oNUzQ63B2dbjDF3vikd/3RUMifPYnX5Glfuk2FsV/7RqjI9yKTbE8wJY+74p7qXO8+dIYgjtLD/N8TJtRh04N9tXJA4H59IkMmLElgvr0Q5OCeVfdAt+5hkh4pQgfRMHpL74XatLQpPiOyHRs/OdmHtBf8nOZcxVKzdGclIN16lE7kJ+pVMjspOI+5+TqLRO6m0ZpNXJoZRv9MPDRcAfJUtNZHyig/s2wwReakFgPPJwCQmu1I30/tcBbji+Na53i1W1N+BqoY7Zxo+U/M9XyJ4Ok2SSkBtoOrwuhAY3a03Eu6l8wFdIG1cN+e8hopTkiKF093KuH/BcB39rMiGDLn6XVhGKEaaT/vqb/lufuAdpGExevF1+J9itkFhCfymWr9vGb3BTK4j598zRH7+e+MU9maruZqb0pkGxRDRE1CD4Z8LV4vhgPidk5w2Bq816g3nHw1//j3JStz7NR9HIWELO8TMn3QrP/zZp//+Dv9p429/ogv+GATR+n/UdF+ns9xNkXZQJXY4t9jMkJNUFygAtzndXwjss+yWH9HAnLQQfhAskdZS2l01HLWv7L7us5uTH409pqitvfSOQg/c+Zt7k879P3K9+WV68n7+3cZfuRd/dDPP/03rn+d+/nBvWfgDlt8+LzjqJ/vx3CnNOwiXhho778C96iD+1TBvRZYeP+EH81LE0vVwOOrmCLB3iKzI1x+vJEsrPH4uF0UB4TJ4X3uDfOCo3PYpYe0MF4bouh0DQ/l43fxUF7Y+dpWuvTSffB0yO2UQUETI/LwCZE3BvnevJ7c9zUlY3H58xzke6DNFDQG8n0WtDN4LAYN4nogKav1ezOfK/z+t6tsCTp+dhx4ymjWuCJk1dEUifDP+HyS4iP/Vg9B2jTo9L4NbiBuDS4nuuHW6H+JDQn2JtqRKGkEQPEYE7uzazXIkcxIAqUq1esasZBETlEZY7y7Jo+RoV/IsjY9eIMkUvr42Hc0xqtsavZvhz1OLwSxMOTuqzlhb0WbdOwBH9EYiyBjatz40bUxTHbiWxqJ0uma19qhPruvcWJlbiSSH48OLDDpaHPszvyct41ZfTu10+vjox6kOqK6v0K/gEPphEvMl/vwSv+A4Hhm36JSP9IXTyCZDm4kKsqD5ay8b1Sad/vaiyO5N/sDfEV6Z4q95E+yfjxpqBoBETW2C7xl4pIO2bDODDFurUPwE7EWC2Uplq+AHmBHvir2PSgkR12/Ry65O0aZtQPeXi9mTlF/Wj5GQ+vFkYyhXsLTjrBSP9hwk4GPqDP5rBn5/l8b0mLRAvRSzXHc293bs3s8EsdE3m2exxidWVB4joHR+S+dz5/W+v00K3TqN14CDBth8eWcsTbiwXPsygHdGid0PEdy6HHm2v/IUuV5RVapYmzGsX90mpnIdNGcOOq64Dbc5GUbYpD9M7S+6cLY//QmjxFLP5cuTFRm3vA5rkFZroFnO3bjHF35uU3s8mvL7Tp9nyTc4mymTJ5sLIp7umSnGkO23faehtz3mmTS7fbVx5rP7x3HXIjRNeq/A3xCs9JNB08c9S9BF2O3bOur0ItslFxXgRPdaapBIi4dRpKGxVz7ir69t/bc9qTxjvtOyGOfiLGDhR4fYywHv1WdOplxIV87TpLBy3Wc0QP0P9s4G7FBNOdITS/tep3o3h1TEa5XDDii7fWtqRzUEReP2fbxz7bHWWJdbIOxOUJZtItNZpTFRfj6vm9sYjRxQVO+WTdiOhdPeTJ+8YirPvoeL88l5iLYOHd3b/Imkq+1ZN1El3UikhftuteEYxf1Wujof8Pr4ICTu5ezZyZ4tHQMxlzUHLYO2VMOoNMGL/20S5i2o2obfk+8qqdR7xzbRDbgU0lnuIgz4LelQ5XS7xbLuSQtNS95v3ZUOdaUx/Qd8qxCt6xf2E62yb/HukLO6RyorV8KgYl5YNc75y+KvefrxY+lc/64y9kvWP0a0bDz/rojq+RWjO06WeruWqNFU7r3HPIcLWRql8ICZsz2Ls/qOm/CLn6++X+Qf7mGspYCrZod/lpl6Rw4xN/yuq8gqV4B6aHk1hVE1SfILxWu5gvXqbfARYQpspcxKp1F/c8XOPzkZvmoSw+vEqBLdrq1fr3wAPv5NnM9i8F+jdAuxkP5Z71c6uhK3enlnGymr7UsWZKC12qgUiG8XXGQ9mxnqz4GSIlybF9eXmbqj2sHX+a1jf0gRoONHRdRSrIq03Ty89eQ1GbV/Bk+du4+V15zls+vvERvZ4E7ZbnxWTVjDjb4o/k8jlw44pTIrUGxxuJvBeO+heuhOjpFsO6lVJ/aXnJDa/bM0Ql1cLbXE/Pbv3EZ3vj3iVrB5irjupZTzlnv677NrI9UNYNqbPgp/HZXS+lJmk87wec+7YOxTDo2aw2l3NfDr34VNlvqWJBknuK7oSlZ6/T10zuOoPZOeoIk81N+sL843WJ2Q4Z0fZ3scsqC/JV2fuhWi1jGURSKZV637lf53Xnnx16/vKEXY89aVJ0fv91jGdfG+G4+sniwHes4hS+udOr4RfhFhG/F5gUG35QaU+McuLmclb5ZWmR+sG5V6nf+PxYzlrnFGxpZaK8eqqVo0NfmAWoGfXDiT/FnUbWvzGDOTr8aktOZWg4BYvz5YH12ZbfCcGtNk+dDAZNGWvHov+PIOnY9Prjg8h/wLRrT69suaMVZ5bNuK00lSVpnqSX1NON/81FoP92rYndionwgOiA8WMf4vc8l15KqEEG4yAm2+WAN5Brfu1sq9suWYqgoajgOYt/JCk1gC8wPkK+XKCtRX6TAtgvrnuBgNRmn6I8lVDipOVB9kX6Oxkp4ZKyd1M6Gj8/v2U7k+YQBL95Kb9PQENucJb0JlW3b5tObN7m/Z1j1ev388d7o15zgXsI9CikAGAViR6lkJv7nb4Ak40M2G8TJ447kN+pvfHiOFjSUSP6PM+QfbAywKJCBaxSVxpizHseZUyUBhq59vFwrkyGoRiHbo0apweEZeSLuNiQ+HAekOnarFg00dZNXaPeoHPTRR0FmEyqYExOVaaaO8c0uFUh7U4e/UxdBmthlBDgg257Q33j1hA7HTxSeTTSuVnPZbgW1nodwmG16aKBDKxEetv7D9OjO0JhrbJTnoe+kcGoDJazFSO8/fUN9Jy/g4XK5PUkw2dgPDGpJqBfhe7GA+cjzfE/EGsMM+FV9nj9IAhrSfT/J3QE5TEIYyk5UjsI6ZZcCPr6A8FZUF4g9nnpVmjX90MLSQysIPD0nFzqwCcSJmIb5mYv2Cmk+C1MDFkZQyCBq4c/Yai9LJ6xYkGS/x2s5/frIW2vmG2Wrv0APpCdgCA9snFvfpe8uc0OwdRs4G9973PGEBnQB5qKrCQ6m6X/H7NInZ7y/1674/ZXOVp7OeuCRk8JFS516VHrnH1HkIUIlTIljjHaQtEtkJtosYul77cVwjk3gW1Ajaa6zWeyHGLlpk3VHE2VFzT2yI/EvlGUSz2H9zYE1s4nsKMtMqNyKNtL/59CpFJki5Fou6VXGm8vWATEPwrUVOLvoA8jLuwOzVBCgHB2Cr5V6OwEWtJEKokJkfc87h+sNHTvMb0KVTp5284QTPupoWvQVUwUeogZR3kBMESYo0mfukewRVPKh5+rzLQb7HKjFFIgWhj1w3yN/qCNoPI8XFiUgBNT1hCHBsAz8L7Oyt8wQWUFj92ONn/APyJFg8hzueqoJdNj57ROrFbffuS/XxrSXLTRgj5uxZjpgQYceeMc2wJrahReSKpm3QjHfqExTLAB2ipVumE8pqcZv8LYXQiPHHsgb5BMW8zM5pvQit+mQx8XGaVDcfVbLyMTlY8xcfmm/RSAT/H09UQol5gIz7rESDmnrQ4bURIB4iRXMDQwxgex1GgtDxKp2HayIkR+E/aDmCttNm2C6lytWdfOVzD6X2SpDWjQDlMRvAp1symWv4my1bPCD+E1EmGnMGWhNwmycJnDV2WrQNxO45ukEb08AAffizYKVULp15I4vbNK5DzWwCSUADfmKhfGSUqii1L2UsE8rB7mLuHuUJZOx4+WiizHBJ/hwboaBzhpNOVvgFTf5cJsHef7L1HCI9dOUUbb+YxUJWn6dYOLz+THi91kzY5dtO5c+grX7v0jEbsuoOGnoIreDIg/sFMyG+TyCLIcAWd1IZ1UNFxE8Uie13ucm40U2fcxC0u3WLvLOxwu+F7MWUsHsdtFQZ7W+nlfCASiAKyh8rnP3EyDByvtJb6Kax6/HkLzT9SyEyTMVM1zPtM0MJY14DmsWh4MgD15Ea9Hd00AdkTZ0EiG5NAGuIBzQJJ0JR0na+OB7lQA6UKxMfihIQ7GCCnVz694QvykWXTxpS2soDu+smru1UdIxSvAszBFD1c8c6ZOobA8bJiJIvuycgIXBQIXWwhyTgZDQxJTRXgEwRNAawGSXO0a1DKjdihLVNp/taE/xYhsgwe+VpKEEB4LlraQyE84gEihxCnbfoyOuJIEXy2FIYw+JjRusybKlU2g/vhTSGTydvCvXhYBdtAXtS2v7LkHtmXh/8fly1do8FI/D0f8UbzVb5h+KRhMGSAmR2mhi0YG/uj7wgxcfzCrMvdjitUIpXDX8ae2JcF/36qUWIMwN6JsjaRGNj+jEteGDcFyTUb8X/NHSucKMJp7pduxtD6KuxVlyxxwaeiC1FbGBESO84lbyrAugYxdl+2N8/6AgWpo/IeoAOcsG35IA/b3AuSyoa55L7llBLlaWlEWvuCFd8f8NfcTUgzJv6CbB+6ohWwodlk9nGWFpBAOaz5uEW5xBvmjnHFeDsb0mXwayj3mdYq5gxxNf3H3/tnCgHwjSrpSgVxLmiTtuszdRUFIsn6LiMPjL808vL1uQhDbM7aA43mISXReqjSskynIRcHCJ9qeFopJfx9tqyUoGbSwJex/0aDE3plBPGtNBYgWbdLom3+Q/bjdizR2/AS/c/dH/d3G7pyl1qDXgtOFtEqidwLqxPYtrNEveasWq3vPUUtqTeu8gpov4bdOQRI2kneFvRNMrShyVeEupK1PoLDPMSfWMIJcs267mGB8X9CehQCF0gIyhpP10mbyM7lwW1e6TGvHBV1sg/UyTghHPGRqMyaebC6pbB1WKNCQtlai1GGvmq9zUKaUzLaXsXEBYtHxmFbEZ2kJhR164LhWW2Tlp1dhsGE7ZgIWRBOx3Zcu2DxgH+G83WTPceKG0TgQKKiiNNOlWgvqNEbnrk6fVD+AqRam2OguZb0YWSTX88N+i/ELSxbaUUpPx4vJUzYg/WonSeA8xUK6u7DPHgpqWpEe6D4cXg5uK9FIYVba47V/nb+wyOtk+zG8RrS4EA0ouwa04iByRLSvoJA2FzaobbZtXnq8GdbfqEp5I2dpfpj59TCVif6+E75p665faiX8gS213RqBxTZqfHP46nF6NSenOneuT+vgbLUbdTH2/t0REFXZJOEB6DHvx6N6g9956CYrY/AYcm9gELJXYkrSi+0F0geKDZgOCIYkLU/+GOW5aGj8mvLFgtFH5+XC8hvAE3CvHRfl4ofM/Qwk4x2A+R+nyc9gNu/9Tem7XW4XRnyRymf52z09cTOdr+PG6+P/Vb4QiXlwauc5WB1z3o+IJjlbxI8MyWtSzT+k4sKVbhF3xa+vDts3NxXa87iiu+xRH9cAprnOL2h6vV54iQRXuOAj1s8nLFK8gZ70ThIQcWdF19/2xaJmT0efrkNDkWbpAQPdo92Z8+Hn/aLjbOzB9AI/k12fPs9HhUNDJ1u6ax2VxD3R6PywN7BrLJ26z6s3QoMp76qzzwetrDABKSGkfW5PwS1GvYNUbK6uRqxfyVGNyFB0E+OugMM8kKwmJmupuRWO8XkXXXQECyRVw9UyIrtCtcc4oNqXqr7AURBmKn6Khz3eBN96LwIJrAGP9mr/59uTOSx631suyT+QujDd4beUFpZ0kJEEnjlP+X/Kr2kCKhnENTg4BsMTOmMqlj2WMFLRUlVG0fzdCBgUta9odrJfpVdFomTi6ak0tFjXTcdqqvWBAzjY6hVrH9sbt3Z9gn+AVDpTcQImefbB4edirjzrsNievve4ZT4EUZWV3TxEsIW+9MT/RJoKfZZYSRGfC1CwPG/9rdMOM8qR/LUYvw5f/emUSoD7YSFuOoqchdUg2UePd1eCtFSKgxLSZ764oy4lvRCIH6bowPxZWwxNFctksLeil47pfevcBipkkBIc4ngZG+kxGZ71a72KQ7VaZ6MZOZkQJZXM6kb/Ac0/XkJx8dvyfJcWbI3zONEaEPIW8GbkYjsZcwy+eMoKrYjDmvEEixHzkCSCRPRzhOfJZuLdcbx19EL23MA8rnjTZZ787FGMnkqnpuzB5/90w1gtUSRaWcb0eta8198VEeZMUSfIhyuc4/nywFQ9uqn7jdqXh+5wwv+RK9XouNPbYdoEelNGo34KyySwigsrfCe0v/PlWPvQvQg8R0KgHO18mTVThhQrlbEQ0Kp/JxPdjHyR7E1QPw/ut0r+HDDG7BwZFm9IqEUZRpv2WpzlMkOemeLcAt5CsrzskLGaVOAxyySzZV/D2EY7ydNZMf8e8VhHcKGHAWNszf1EOq8fNstijMY4JXyATwTdncFFqcNDfDo+mWFvxJJpc4sEZtjXyBdoFcxbUmniCoKq5jydUHNjYJxMqN1KzYV62MugcELVhS3Bnd+TLLOh7dws/zSXWzxEb4Nj4aFun5x4kDWLK5TUF/yCXB/cZYvI9kPgVsG2jShtXkxfgT+xzjJofXqPEnIXIQ1lnIdmVzBOM90EXvJUW6a0nZ/7XjJGl8ToO3H/fdxnxmTNKBZxnkpXLVgLXCZywGT3YyS75w/PAH5I/jMuRspej8xZObU9kREbRA+kqjmKRFaKGWAmFQspC+QLbKPf0RaK3OXvBSWqo46p70ws/eZpu6jCtZUgQy6r4tHMPUdAgWGGUYNbuv/1a6K+MVFsd3T183+T8capSo6m0+Sh57fEeG/95dykGJBQMj09DSW2bY0mUonDy9a8trLnnL5B5LW3Nl8rJZNysO8Zb+80zXxqUGFpud3Qzwb7bf+8mq6x0TAnJU9pDQR9YQmZhlna2xuxJt0aCO/f1SU8gblOrbIyMsxTlVUW69VJPzYU2HlRXcqE2lLLxnObZuz2tT9CivfTAUYfmzJlt/lOPgsR6VN64/xQd4Jlk/RV7UKVv2Gx/AWsmTAuCWKhdwC+4HmKEKYZh2Xis4KsUR1BeObs1c13wqFRnocdmuheaTV30gvVXZcouzHKK5zwrN52jXJEuX6dGx3BCpV/++4f3hyaW/cQJLFKqasjsMuO3B3WlMq2gyYfdK1e7L2pO/tRye2mwzwZPfdUMrl5wdLqdd2Kv/wVtnpyWYhd49L6rsOV+8HXPrWH2Kup89l2tz6bf80iYSd+V4LROSOHeamvexR524q4r43rTmtFzQvArpvWfLYFZrbFspBsXNUqqenjxNNsFXatZvlIhk7teUPfK+YL32F8McTnjv0BZNppb+vshoCrtLXjIWq3EJXpVXIlG6ZNL0dh6qEm2WMwDjD3LfOfkGh1/czYc/0qhiD2ozNnH4882MVVt3JbVFkbwowNCO3KL5IoYW5wlVeGCViOuv1svZx7FbzxKzA4zGqBlRRaRWCobXaVq4yYCWbZf8eiJwt3OY+MFiSJengcFP2t0JMfzOiJ7cECvpx7neg1Rc5x+7myPJOXt2FohVRyXtD+/rDoTOyGYInJelZMjolecVHUhUNqvdZWg2J2t0jPmiLFeRD/8fOT4o+NGILb+TufCo9ceBBm3JLVn+MO2675n7qiEX/6W+188cYg3Zn5NSTjgOKfWFSAANa6raCxSoVU851oJLY11WIoYK0du0ec5E4tCnAPoKh71riTsjVIp3gKvBbEYQiNYrmH22oLQWA2AdwMnID6PX9b58dR2QKo4qag1D1Z+L/FwEKTR7osOZPWECPJIHQqPUsM5i/CH5YupVPfFA5pHUBcsesh8eO5YhyWnaVRPZn/BmdXVumZWPxMP5e28zm2uqHgFoT9CymHYNNrzrrjlXZM06HnzDxYNlI5b/QosxLmmrqDFqmogQdqk0WLkUceoAvQxHgkIyvWU69BPFr24VB6+lx75Rna6dGtrmOxDnvBojvi1/4dHjVeg8owofPe1cOnxU1ioh016s/Vudv9mhV9f35At+Sh28h1bpp8xhr09+vf47Elx3Ms6hyp6QvB3t0vnLbOhwo660cp7K0vvepabK7YJfxEWWfrC2YzJfYOjygPwfwd/1amTqa0hZ5ueebhWYVMubRTwIjj+0Oq0ohU3zfRfuL8gt59XsHdwKtxTQQ4Y2qz6gisxnm2UdlmpEkgOsZz7iEk6QOt8BuPwr+NR01LTqXmJo1C76o1N274twJvl+I069TiLpenK/miRxhyY8jvYV6W1WuSwhH9q7kuwnJMtm7IWcqs7HsnyHSqWXLSpYtZGaR1V3t0gauninFPZGtWskF65rtti48UV9uV9KM8kfDYs0pgB00S+TlzTXV6P8mxq15b9En8sz3jWSszcifZa/NuufPNnNTb031pptt0+sRSH/7UG8pzbsgtt3OG3ut7B9JzDMt2mTZuyRNIV8D54TuTrpNcHtgmMlYJeiY9XS83NYJicjRjtJSf9BZLsQv629QdDsKQhTK5CnXhpk7vMNkHzPhm0ExW/VCGApHfPyBagtZQTQmPHx7g5IXXsrQDPzIVhv2LB6Ih138iSDww1JNHrDvzUxvp73MsQBVhW8EbrReaVUcLB1R3PUXyaYG4HpJUcLVxMgDxcPkVRQpL7VTAGabDzbKcvg12t5P8TSGQkrj/gOrpnbiDHwluA73xbXts/L7u468cRWSWRtgTwlQnA47EKg0OiZDgFxAKQQUcsbGomITgeXUAAyKe03eA7Mp4gnyKQmm0LXJtEk6ddksMJCuxDmmHzmVhO+XaN2A54MIh3niw5CF7PwiXFZrnA8wOdeHLvvhdoqIDG9PDI7UnWWHq526T8y6ixJPhkuVKZnoUruOpUgOOp3iIKBjk+yi1vHo5cItHXb1PIKzGaZlRS0g5d3MV2pD8FQdGYLZ73aae/eEIUePMc4NFz8pIUfLCrrF4jVWH5gQneN3S8vANBmUXrEcKGn6hIUN95y1vpsvLwbGpzV9L0ZKTan6TDXM05236uLJcIEMKVAxKNT0K8WljuwNny3BNQRfzovA85beI9zr1AGNYnYCVkR1aGngWURUrgqR+gRrQhxW81l3CHevjvGEPzPMTxdsIfB9dfGRbZU0cg/1mcubtECX4tvaedmNAvTxCJtc2QaoUalGfENCGK7IS/O8CRpdOVca8EWCRwv2sSWE8CJPW5PCugjCXPd3h6U60cPD+bdhtXZuYB6stcoveE7Sm5MM2yvfUHXFSW7KzLmi7/EeEWL0wqcOH9MOSKjhCHHmw+JGLcYE/7SBZQCRggox0ZZTAxrlzNNXYXL5fNIjkdT4YMqVUz6p8YDt049v4OXGdg3qTrtLBUXOZf7ahPlZAY/O+7Sp0bvGSHdyQ8B1LOsplqMb9Se8VAE7gIdSZvxbRSrfl+Lk5Qaqi5QJceqjitdErcHXg/3MryljPSIAMaaloFm1cVwBJ8DNmkDqoGROSHFetrgjQ5CahuKkdH5pRPigMrgTtlFI8ufJPJSUlGgTjbBSvpRc0zypiUn6U5KZqcRoyrtzhmJ7/caeZkmVRwJQeLOG8LY6vP5ChpKhc8Js0El+n6FXqbx9ItdtLtYP92kKfaTLtCi8StLZdENJa9Ex1nOoz1kQ7qxoiZFKRyLf4O4CHRT0T/0W9F8epNKVoeyxUXhy3sQMMsJjQJEyMOjmOhMFgOmmlscV4eFi1CldU92yjwleirEKPW3bPAuEhRZV7JsKV3Lr5cETAiFuX5Nw5UlF7d2HZ96Bh0sgFIL5KGaKSoVYVlvdKpZJVP5+NZ7xDEkQhmDgsDKciazJCXJ6ZN2B3FY2f6VZyGl/t4aunGIAk/BHaS+i+SpdRfnB/OktOvyjinWNfM9Ksr6WwtCa1hCmeRI6icpFM4o8quCLsikU0tMoZI/9EqXRMpKGaWzofl4nQuVQm17d5fU5qXCQeCDqVaL9XJ9qJ08n3G3EFZS28SHEb3cdRBdtO0YcTzil3QknNKEe/smQ1fTb0XbpyNB5xAeuIlf+5KWlEY0DqJbsnzJlQxJPOVyHiKMx5Xu9FcEv1Fbg6Fhm4t+Jyy5JC1W3YO8dYLsO0PXPbxodBgttTbH3rt9Cp1lJIk2r3O1Zqu94eRbnIz2f50lWolYzuKsj4PMok4abHLO8NAC884hiXx5Fy5pWKO0bWL7uEGXaJCtznhP67SlQ4xjWIfgq6EpZ28QMtuZK7JC0RGbl9nA4XtFLug/NLMoH1pGt9IonAJqcEDLyH6TDROcbsmGPaGIxMo41IUAnQVPMPGByp4mOmh9ZQMkBAcksUK55LsZj7E5z5XuZoyWCKu6nHmDq22xI/9Z8YdxJy4kWpD16jLVrpwGLWfyOD0Wd+cBzFBxVaGv7S5k9qwh/5t/LQEXsRqI3Q9Rm3QIoaZW9GlsDaKOUyykyWuhNOprSEi0s1G4rgoiX1V743EELti+pJu5og6X0g6oTynUqlhH9k6ezyRi05NGZHz0nvp3HOJr7ebrAUFrDjbkFBObEvdQWkkUbL0pEvMU46X58vF9j9F3j6kpyetNUBItrEubW9ZvMPM4qNqLlsSBJqOH3XbNwv/cXDXNxN8iFLzUhteisYY+RlHYOuP29/Cb+L+xv+35Rv7xudnZ6ohK4cMPfCG8KI7dNmjNk/H4e84pOxn/sZHK9psfvj8ncA8qJz7O8xqbxESDivGJOZzF7o5PJLQ7g34qAWoyuA+x3btU98LT6ZyGyceIXjrqob2CAVql4VOTQPUQYvHV/g4zAuCZGvYQBtf0wmd5lilrvuEn1BXLny01B4h4SMDlYsnNpm9d7m9h578ufpef9Z4WplqWQvqo52fyUA7J24eZD5av6SyGIV9kpmHNqyvdfzcpEMw97BvknV2fq+MFHun9BT3Lsf8pbzvisWiIQvYkng+8Vxk1V+dli1u56kY50LRjaPdotvT5BwqtwyF+emo/z9J3yVUVGfKrxQtJMOAQWoQii/4dp9wgybSa5mkucmRLtEQZ/pz0tL/NVcgWAd95nEQ3Tg6tNbuyn3Iepz65L3huMUUBntllWuu4DbtOFSMSbpILV4fy6wlM0SOvi6CpLh81c1LreIvKd61uEWBcDw1lUBUW1I0Z+m/PaRlX+PQ/oxg0Ye6KUiIiTF4ADNk59Ydpt5/rkxmq9tV5Kcp/eQLUVVmBzQNVuytQCP6Ezd0G8eLxWyHpmZWJ3bAzkWTtg4lZlw42SQezEmiUPaJUuR/qklVA/87S4ArFCpALdY3QRdUw3G3XbWUp6aq9z0zUizcPa7351p9JXOZyfdZBFnqt90VzQndXB/mwf8LC9STj5kenVpNuqOQQP3mIRJj7eV21FxG8VAxKrEn3c+XfmZ800EPb9/5lIlijscUbB6da0RQaMook0zug1G0tKi/JBC4rw7/D3m4ARzAkzMcVrDcT2SyFtUdWAsFlsPDFqV3N+EjyXaoEePwroaZCiLqEzb8MW+PNE9TmTC01EzWli51PzZvUqkmyuROU+V6ik+Le/9qT6nwzUzf9tP68tYei0YaDGx6kAd7jn1cKqOCuYbiELH9zYqcc4MnRJjkeGiqaGwLImhyeKs+xKJMBlOJ05ow9gGCKZ1VpnMKoSCTbMS+X+23y042zOb5MtcY/6oBeAo1Vy89OTyhpavFP78jXCcFH0t7Gx24hMEOm2gsEfGabVpQgvFqbQKMsknFRRmuPHcZu0Su/WMFphZvB2r/EGbG72rpGGho3h+Msz0uGzJ7hNK2uqQiE1qmn0zgacKYYZBCqsxV+sjbpoVdSilW/b94n2xNb648VmNIoizqEWhBnsen+d0kbCPmRItfWqSBeOd9Wne3c6bcd6uvXOJ6WdiSsuXq0ndhqrQ4QoWUjCjYtZ0EAhnSOP1m44xkf0O7jXghrzSJWxP4a/t72jU29Vu2rvu4n7HfHkkmQOMGSS+NPeLGO5I73mC2B7+lMiBQQZRM9/9liLIfowupUFAbPBbR+lxDM6M8Ptgh1paJq5Rvs7yEuLQv/7d1oU2woFSb3FMPWQOKMuCuJ7pDDjpIclus5TeEoMBy2YdVB4fxmesaCeMNsEgTHKS5WDSGyNUOoEpcC2OFWtIRf0w27ck34/DjxRTVIcc9+kqZE6iMSiVDsiKdP/Xz5XfEhm/sBhO50p1rvJDlkyyxuJ9SPgs7YeUJBjXdeAkE+P9OQJm6SZnn1svcduI78dYmbkE2mtziPrcjVisXG78spLvbZaSFx/Rks9zP4LKn0Cdz/3JsetkT06A8f/yCgMO6Mb1Hme0JJ7b2wZz1qleqTuKBGokhPVUZ0dVu+tnQYNEY1fmkZSz6+EGZ5EzL7657mreZGR3jUfaEk458PDniBzsSmBKhDRzfXameryJv9/D5m6HIqZ0R+ouCE54Dzp4IJuuD1e4Dc5i+PpSORJfG23uVgqixAMDvchMR0nZdH5brclYwRoJRWv/rlxGRI5ffD5NPGmIDt7vDE1434pYdVZIFh89Bs94HGGJbTwrN8T6lh1HZFTOB4lWzWj6EVqxSMvC0/ljWBQ3F2kc/mO2b6tWonT2JEqEwFts8rz2h+oWNds9ceR2cb7zZvJTDppHaEhK5avWqsseWa2Dt5BBhabdWSktS80oMQrL4TvAM9b5HMmyDnO+OkkbMXfUJG7eXqTIG6lqSOEbqVR+qYdP7uWb57WEJqzyh411GAVsDinPs7KvUeXItlcMdOUWzXBH6zscymV1LLVCtc8IePojzXHF9m5b5zGwBRdzcyUJkiu938ApmAayRdJrX1PmVguWUvt2ThQ62czItTyWJMW2An/hdDfMK7SiFQlGIdAbltHz3ycoh7j9V7GxNWBpbtcSdqm4XxRwTawc3cbZ+xfSv9qQfEkDKfZTwCkqWGI/ur250ItXlMlh6vUNWEYIg9A3GzbgmbqvTN8js2YMo87CU5y6nZ4dbJLDQJj9fc7yM7tZzJDZFtqOcU8+mZjYlq4VmifI23iHb1ZoT9E+kT2dolnP1AfiOkt7PQCSykBiXy5mv637IegWSKj9IKrYZf4Lu9+I7ub+mkRdlvYzehh/jaJ9n7HUH5b2IbgeNdkY7wx1yVzxS7pbvky6+nmVUtRllEFfweUQ0/nG017WoUYSxs+j2B4FV/F62EtHlMWZXYrjGHpthnNb1x66LKZ0Qe92INWHdfR/vqp02wMS8r1G4dJqHok8KmQ7947G13a4YXbsGgHcBvRuVu1eAi4/A5+ZixmdSXM73LupB/LH7O9yxLTVXJTyBbI1S49TIROrfVCOb/czZ9pM4JsZx8kUz8dQGv7gUWKxXvTH7QM/3J2OuXXgciUhqY+cgtaOliQQVOYthBLV3xpESZT3rmfEYNZxmpBbb24CRao86prn+i9TNOh8VxRJGXJfXHATJHs1T5txgc/opYrY8XjlGQQbRcoxIBcnVsMjmU1ymmIUL4dviJXndMAJ0Yet+c7O52/p98ytlmAsGBaTAmMhimAnvp1TWNGM9BpuitGj+t810CU2UhorrjPKGtThVC8WaXw04WFnT5fTjqmPyrQ0tN3CkLsctVy2xr0ZWgiWVZ1OrlFjjxJYsOiZv2cAoOvE+7sY0I/TwWcZqMoyIKNOftwP7w++Rfg67ljfovKYa50if3fzE/8aPYVey/Nq35+nH2sLPh/fP5TsylSKGOZ4k69d2PnH43+kq++sRXHQqGArWdwhx+hpwQC6JgT2uxehYU4Zbw7oNb6/HLikPyJROGK2ouyr+vzseESp9G50T4AyFrSqOQ0rroCYP4sMDFBrHn342EyZTMlSyk47rHSq89Y9/nI3zG5lX16Z5lxphguLOcZUndL8wNcrkyjH82jqg8Bo8OYkynrxZvbFno5lUS3OPr8Ko3mX9NoRPdYOKKjD07bvgFgpZ/RF+YzkWvJ/Hs/tUbfeGzGWLxNAjfDzHHMVSDwB5SabQLsIZHiBp43FjGkaienYoDd18hu2BGwOK7U3o70K/WY/kuuKdmdrykIBUdG2mvE91L1JtTbh20mOLbk1vCAamu7utlXeGU2ooVikbU/actcgmsC1FKk2qmj3GWeIWbj4tGIxE7BLcBWUvvcnd/lYxsMV4F917fWeFB/XbINN3qGvIyTpCalz1lVewdIGqeAS/gB8Mi+sA+BqDiX3VGD2eUunTRbSY+AuDy4E3Qx3hAhwnSXX+B0zuj3eQ1miS8Vux2z/l6/BkWtjKGU72aJkOCWhGcSf3+kFkkB15vGOsQrSdFr6qTj0gBYiOlnBO41170gOWHSUoBVRU2JjwppYdhIFDfu7tIRHccSNM5KZOFDPz0TGMAjzzEpeLwTWp+kn201kU6NjbiMQJx83+LX1e1tZ10kuChJZ/XBUQ1dwaBHjTDJDqOympEk8X2M3VtVw21JksChA8w1tTefO3RJ1FMbqZ01bHHkudDB/OhLfe7P5GOHaI28ZXKTMuqo0hLWQ4HabBsGG7NbP1RiXtETz074er6w/OerJWEqjmkq2y51q1BVI+JUudnVa3ogBpzdhFE7fC7kybrAt2Z6RqDjATAUEYeYK45WMupBKQRtQlU+uNsjnzj6ZmGrezA+ASrWxQ6LMkHRXqXwNq7ftv28dUx/ZSJciDXP2SWJsWaN0FjPX9Yko6LobZ7aYW/IdUktI9apTLyHS8DyWPyuoZyxN1TK/vtfxk3HwWh6JczZC8Ftn0bIJay2g+n5wd7lm9rEsKO+svqVmi+c1j88hSCxbzrg4+HEP0Nt1/B6YW1XVm09T1CpAKjc9n18hjqsaFGdfyva1ZG0Xu3ip6N6JGpyTSqY5h4BOlpLPaOnyw45PdXTN+DtAKg7DLrLFTnWusoSBHk3s0d7YouJHq85/R09Tfc37ENXZF48eAYLnq9GLioNcwDZrC6FW6godB8JnqYUPvn0pWLfQz0lM0Yy8Mybgn84Ds3Q9bDP10bLyOV+qzxa4Rd9Dhu7cju8mMaONXK3UqmBQ9qIg7etIwEqM/kECk/Dzja4Bs1xR+Q/tCbc8IKrSGsTdJJ0vge7IG20W687uVmK6icWQ6cD3lwFzgNMGtFvO5qyJeKflGLAAcQZOrkxVwy3cWvqlGpvjmf9Qe6Ap20MPbV92DPV0OhFM4kz8Yr0ffC2zLWSQ1kqY6QdQrttR3kh1YLtQd1kCEv5hVoPIRWl5ERcUTttBIrWp6Xs5Ehh5OUUwI5aEBvuiDmUoENmnVw1FohCrbRp1A1E+XSlWVOTi7ADW+5Ohb9z1vK4qx5R5lPdGCPBJZ00mC+Ssp8VUbgpGAvXWMuWQQRbCqI6Rr2jtxZxtfP7W/8onz+yz0Gs76LaT5HX9ecyiZCB/ZR/gFtMxPsDwohoeCRtiuLxE1GM1vUEUgBv86+eehL58/P56QFGQ/MqOe/vC76L63jzmeax4exd/OKTUvkXg+fOJUHych9xt/9goJMrapSgvXrj8+8vk/N80f22Sewj6cyGqt1B6mztoeklVHHraouhvHJaG/OuBz6DHKMpFmQULU1bRWlyYE0RPXYYkUycIemN7TLtgNCJX6BqdyxDKkegO7nJK5xQ7OVYDZTMf9bVHidtk6DQX9Et+V9M7esgbsYBdEeUpsB0Xvw2kd9+rI7V+m47u+O/tq7mw7262HU1WlS9uFzsV6JxIHNmUCy0QS9e077JGRFbG65z3/dOKB/Zk+yDdKpUmdXjn/aS3N5nv4fK7bMHHmPlHd4E2+iTbV5rpzScRnxk6KARuDTJ8Q1LpK2mP8gj1EbuJ9RIyY+EWK4hCiIDBAS1Tm2IEXAFfgKPgdL9O6mAa06wjCcUAL6EsxPQWO9VNegBPm/0GgkZbDxCynxujX/92vmGcjZRMAY45puak2sFLCLSwXpEsyy5fnF0jGJBhm+fNSHKKUUfy+276A7/feLOFxxUuHRNJI2Osenxyvf8DAGObT60pfTTlhEg9u/KKkhJqm5U1/+BEcSkpFDA5XeCqxwXmPac1jcuZ3JWQ+p0NdWzb/5v1ZvF8GtMTFFEdQjpLO0bwPb0BHNWnip3liDXI2fXf05jjvfJ0NpjLCUgfTh9CMFYVFKEd4Z/OG/2C+N435mnK+9t1gvCiVcaaH7rK4+PjCvpVNiz+t2QyqH1O8x3JKZVl6Q+Lp/XK8wMjVMslOq9FdSw5FtUs/CptXH9PW+wbWHgrV17R5jTVOtGtKFu3nb80T+E0tv9QkzW3J2dbaw/8ddAKZ0pxIaEqLjlPrji3VgJ3GvdFvlqD8075woxh4fVt0JZE0KVFsAvqhe0dqN9b35jtSpnYMXkU+vZq+IAHad3IHc2s/LYrnD1anfG46IFiMIr9oNbZDWvwthqYNqOigaKd/XlLU4XHfk/PXIjPsLy/9/kAtQ+/wKH+hI/IROWj5FPvTZAT9f7j4ZXQyG4M0TujMAFXYkKvEHv1xhySekgXGGqNxWeWKlf8dDAlLuB1cb/qOD+rk7cmwt+1yKpk9cudqBanTi6zTbXRtV8qylNtjyOVKy1HTz0GW9rjt6sSjAZcT5R+KdtyYb0zyqG9pSLuCw5WBwAn7fjBjKLLoxLXMI+52L9cLwIR2B6OllJZLHJ8vDxmWdtF+QJnmt1rsHPIWY20lftk8fYePkAIg6Hgn532QoIpegMxiWgAOfe5/U44APR8Ac0NeZrVh3gEhs12W+tVSiWiUQekf/YBECUy5fdYbA08dd7VzPAP9aiVcIB9k6tY7WdJ1wNV+bHeydNtmC6G5ICtFC1ZwmJU/j8hf0I8TRVKSiz5oYIa93EpUI78X8GYIAZabx47/n8LDAAJ0nNtP1rpROprqKMBRecShca6qXuTSI3jZBLOB3Vp381B5rCGhjSvh/NSVkYp2qIdP/Bg=";
+    }
+  });
+
+  // .goose/out/rc022-prep-20261114-01/source/node_modules/.pnpm/brotli@1.3.3/node_modules/brotli/dec/dictionary-browser.js
+  var require_dictionary_browser = __commonJS({
+    ".goose/out/rc022-prep-20261114-01/source/node_modules/.pnpm/brotli@1.3.3/node_modules/brotli/dec/dictionary-browser.js"(exports) {
+      var base64 = require_base64_js();
+      exports.init = function() {
+        var BrotliDecompressBuffer = require_decode().BrotliDecompressBuffer;
+        var compressed = base64.toByteArray(require_dictionary_bin());
+        return BrotliDecompressBuffer(compressed);
+      };
+    }
+  });
+
+  // .goose/out/rc022-prep-20261114-01/source/node_modules/.pnpm/brotli@1.3.3/node_modules/brotli/dec/dictionary.js
+  var require_dictionary = __commonJS({
+    ".goose/out/rc022-prep-20261114-01/source/node_modules/.pnpm/brotli@1.3.3/node_modules/brotli/dec/dictionary.js"(exports) {
+      var data = require_dictionary_browser();
+      exports.init = function() {
+        exports.dictionary = data.init();
+      };
+      exports.offsetsByLength = new Uint32Array([
+        0,
+        0,
+        0,
+        0,
+        0,
+        4096,
+        9216,
+        21504,
+        35840,
+        44032,
+        53248,
+        63488,
+        74752,
+        87040,
+        93696,
+        100864,
+        104704,
+        106752,
+        108928,
+        113536,
+        115968,
+        118528,
+        119872,
+        121280,
+        122016
+      ]);
+      exports.sizeBitsByLength = new Uint8Array([
+        0,
+        0,
+        0,
+        0,
+        10,
+        10,
+        11,
+        11,
+        10,
+        10,
+        10,
+        10,
+        10,
+        9,
+        9,
+        8,
+        7,
+        7,
+        8,
+        7,
+        7,
+        6,
+        6,
+        5,
+        5
+      ]);
+      exports.minDictionaryWordLength = 4;
+      exports.maxDictionaryWordLength = 24;
+    }
+  });
+
+  // .goose/out/rc022-prep-20261114-01/source/node_modules/.pnpm/brotli@1.3.3/node_modules/brotli/dec/huffman.js
+  var require_huffman = __commonJS({
+    ".goose/out/rc022-prep-20261114-01/source/node_modules/.pnpm/brotli@1.3.3/node_modules/brotli/dec/huffman.js"(exports) {
+      function HuffmanCode(bits2, value) {
+        this.bits = bits2;
+        this.value = value;
+      }
+      exports.HuffmanCode = HuffmanCode;
+      var MAX_LENGTH = 15;
+      function GetNextKey(key, len) {
+        var step = 1 << len - 1;
+        while (key & step) {
+          step >>= 1;
+        }
+        return (key & step - 1) + step;
+      }
+      function ReplicateValue(table, i2, step, end, code) {
+        do {
+          end -= step;
+          table[i2 + end] = new HuffmanCode(code.bits, code.value);
+        } while (end > 0);
+      }
+      function NextTableBitSize(count, len, root_bits) {
+        var left = 1 << len - root_bits;
+        while (len < MAX_LENGTH) {
+          left -= count[len];
+          if (left <= 0) break;
+          ++len;
+          left <<= 1;
+        }
+        return len - root_bits;
+      }
+      exports.BrotliBuildHuffmanTable = function(root_table, table, root_bits, code_lengths, code_lengths_size) {
+        var start_table = table;
+        var code;
+        var len;
+        var symbol;
+        var key;
+        var step;
+        var low;
+        var mask;
+        var table_bits;
+        var table_size;
+        var total_size;
+        var sorted;
+        var count = new Int32Array(MAX_LENGTH + 1);
+        var offset = new Int32Array(MAX_LENGTH + 1);
+        sorted = new Int32Array(code_lengths_size);
+        for (symbol = 0; symbol < code_lengths_size; symbol++) {
+          count[code_lengths[symbol]]++;
+        }
+        offset[1] = 0;
+        for (len = 1; len < MAX_LENGTH; len++) {
+          offset[len + 1] = offset[len] + count[len];
+        }
+        for (symbol = 0; symbol < code_lengths_size; symbol++) {
+          if (code_lengths[symbol] !== 0) {
+            sorted[offset[code_lengths[symbol]]++] = symbol;
+          }
+        }
+        table_bits = root_bits;
+        table_size = 1 << table_bits;
+        total_size = table_size;
+        if (offset[MAX_LENGTH] === 1) {
+          for (key = 0; key < total_size; ++key) {
+            root_table[table + key] = new HuffmanCode(0, sorted[0] & 65535);
+          }
+          return total_size;
+        }
+        key = 0;
+        symbol = 0;
+        for (len = 1, step = 2; len <= root_bits; ++len, step <<= 1) {
+          for (; count[len] > 0; --count[len]) {
+            code = new HuffmanCode(len & 255, sorted[symbol++] & 65535);
+            ReplicateValue(root_table, table + key, step, table_size, code);
+            key = GetNextKey(key, len);
+          }
+        }
+        mask = total_size - 1;
+        low = -1;
+        for (len = root_bits + 1, step = 2; len <= MAX_LENGTH; ++len, step <<= 1) {
+          for (; count[len] > 0; --count[len]) {
+            if ((key & mask) !== low) {
+              table += table_size;
+              table_bits = NextTableBitSize(count, len, root_bits);
+              table_size = 1 << table_bits;
+              total_size += table_size;
+              low = key & mask;
+              root_table[start_table + low] = new HuffmanCode(table_bits + root_bits & 255, table - start_table - low & 65535);
+            }
+            code = new HuffmanCode(len - root_bits & 255, sorted[symbol++] & 65535);
+            ReplicateValue(root_table, table + (key >> root_bits), step, table_size, code);
+            key = GetNextKey(key, len);
+          }
+        }
+        return total_size;
+      };
+    }
+  });
+
+  // .goose/out/rc022-prep-20261114-01/source/node_modules/.pnpm/brotli@1.3.3/node_modules/brotli/dec/context.js
+  var require_context = __commonJS({
+    ".goose/out/rc022-prep-20261114-01/source/node_modules/.pnpm/brotli@1.3.3/node_modules/brotli/dec/context.js"(exports) {
+      exports.lookup = new Uint8Array([
+        /* CONTEXT_UTF8, last byte. */
+        /* ASCII range. */
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        4,
+        4,
+        0,
+        0,
+        4,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        8,
+        12,
+        16,
+        12,
+        12,
+        20,
+        12,
+        16,
+        24,
+        28,
+        12,
+        12,
+        32,
+        12,
+        36,
+        12,
+        44,
+        44,
+        44,
+        44,
+        44,
+        44,
+        44,
+        44,
+        44,
+        44,
+        32,
+        32,
+        24,
+        40,
+        28,
+        12,
+        12,
+        48,
+        52,
+        52,
+        52,
+        48,
+        52,
+        52,
+        52,
+        48,
+        52,
+        52,
+        52,
+        52,
+        52,
+        48,
+        52,
+        52,
+        52,
+        52,
+        52,
+        48,
+        52,
+        52,
+        52,
+        52,
+        52,
+        24,
+        12,
+        28,
+        12,
+        12,
+        12,
+        56,
+        60,
+        60,
+        60,
+        56,
+        60,
+        60,
+        60,
+        56,
+        60,
+        60,
+        60,
+        60,
+        60,
+        56,
+        60,
+        60,
+        60,
+        60,
+        60,
+        56,
+        60,
+        60,
+        60,
+        60,
+        60,
+        24,
+        12,
+        28,
+        12,
+        0,
+        /* UTF8 continuation byte range. */
+        0,
+        1,
+        0,
+        1,
+        0,
+        1,
+        0,
+        1,
+        0,
+        1,
+        0,
+        1,
+        0,
+        1,
+        0,
+        1,
+        0,
+        1,
+        0,
+        1,
+        0,
+        1,
+        0,
+        1,
+        0,
+        1,
+        0,
+        1,
+        0,
+        1,
+        0,
+        1,
+        0,
+        1,
+        0,
+        1,
+        0,
+        1,
+        0,
+        1,
+        0,
+        1,
+        0,
+        1,
+        0,
+        1,
+        0,
+        1,
+        0,
+        1,
+        0,
+        1,
+        0,
+        1,
+        0,
+        1,
+        0,
+        1,
+        0,
+        1,
+        0,
+        1,
+        0,
+        1,
+        /* UTF8 lead byte range. */
+        2,
+        3,
+        2,
+        3,
+        2,
+        3,
+        2,
+        3,
+        2,
+        3,
+        2,
+        3,
+        2,
+        3,
+        2,
+        3,
+        2,
+        3,
+        2,
+        3,
+        2,
+        3,
+        2,
+        3,
+        2,
+        3,
+        2,
+        3,
+        2,
+        3,
+        2,
+        3,
+        2,
+        3,
+        2,
+        3,
+        2,
+        3,
+        2,
+        3,
+        2,
+        3,
+        2,
+        3,
+        2,
+        3,
+        2,
+        3,
+        2,
+        3,
+        2,
+        3,
+        2,
+        3,
+        2,
+        3,
+        2,
+        3,
+        2,
+        3,
+        2,
+        3,
+        2,
+        3,
+        /* CONTEXT_UTF8 second last byte. */
+        /* ASCII range. */
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        1,
+        1,
+        1,
+        1,
+        0,
+        /* UTF8 continuation byte range. */
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        /* UTF8 lead byte range. */
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        /* CONTEXT_SIGNED, second last byte. */
+        0,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        5,
+        5,
+        5,
+        5,
+        5,
+        5,
+        5,
+        5,
+        5,
+        5,
+        5,
+        5,
+        5,
+        5,
+        5,
+        5,
+        5,
+        5,
+        5,
+        5,
+        5,
+        5,
+        5,
+        5,
+        5,
+        5,
+        5,
+        5,
+        5,
+        5,
+        5,
+        5,
+        5,
+        5,
+        5,
+        5,
+        5,
+        5,
+        5,
+        5,
+        5,
+        5,
+        5,
+        5,
+        5,
+        5,
+        5,
+        5,
+        6,
+        6,
+        6,
+        6,
+        6,
+        6,
+        6,
+        6,
+        6,
+        6,
+        6,
+        6,
+        6,
+        6,
+        6,
+        7,
+        /* CONTEXT_SIGNED, last byte, same as the above values shifted by 3 bits. */
+        0,
+        8,
+        8,
+        8,
+        8,
+        8,
+        8,
+        8,
+        8,
+        8,
+        8,
+        8,
+        8,
+        8,
+        8,
+        8,
+        16,
+        16,
+        16,
+        16,
+        16,
+        16,
+        16,
+        16,
+        16,
+        16,
+        16,
+        16,
+        16,
+        16,
+        16,
+        16,
+        16,
+        16,
+        16,
+        16,
+        16,
+        16,
+        16,
+        16,
+        16,
+        16,
+        16,
+        16,
+        16,
+        16,
+        16,
+        16,
+        16,
+        16,
+        16,
+        16,
+        16,
+        16,
+        16,
+        16,
+        16,
+        16,
+        16,
+        16,
+        16,
+        16,
+        16,
+        16,
+        24,
+        24,
+        24,
+        24,
+        24,
+        24,
+        24,
+        24,
+        24,
+        24,
+        24,
+        24,
+        24,
+        24,
+        24,
+        24,
+        24,
+        24,
+        24,
+        24,
+        24,
+        24,
+        24,
+        24,
+        24,
+        24,
+        24,
+        24,
+        24,
+        24,
+        24,
+        24,
+        24,
+        24,
+        24,
+        24,
+        24,
+        24,
+        24,
+        24,
+        24,
+        24,
+        24,
+        24,
+        24,
+        24,
+        24,
+        24,
+        24,
+        24,
+        24,
+        24,
+        24,
+        24,
+        24,
+        24,
+        24,
+        24,
+        24,
+        24,
+        24,
+        24,
+        24,
+        24,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        40,
+        48,
+        48,
+        48,
+        48,
+        48,
+        48,
+        48,
+        48,
+        48,
+        48,
+        48,
+        48,
+        48,
+        48,
+        48,
+        56,
+        /* CONTEXT_LSB6, last byte. */
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        31,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39,
+        40,
+        41,
+        42,
+        43,
+        44,
+        45,
+        46,
+        47,
+        48,
+        49,
+        50,
+        51,
+        52,
+        53,
+        54,
+        55,
+        56,
+        57,
+        58,
+        59,
+        60,
+        61,
+        62,
+        63,
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        31,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39,
+        40,
+        41,
+        42,
+        43,
+        44,
+        45,
+        46,
+        47,
+        48,
+        49,
+        50,
+        51,
+        52,
+        53,
+        54,
+        55,
+        56,
+        57,
+        58,
+        59,
+        60,
+        61,
+        62,
+        63,
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        31,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39,
+        40,
+        41,
+        42,
+        43,
+        44,
+        45,
+        46,
+        47,
+        48,
+        49,
+        50,
+        51,
+        52,
+        53,
+        54,
+        55,
+        56,
+        57,
+        58,
+        59,
+        60,
+        61,
+        62,
+        63,
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        31,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39,
+        40,
+        41,
+        42,
+        43,
+        44,
+        45,
+        46,
+        47,
+        48,
+        49,
+        50,
+        51,
+        52,
+        53,
+        54,
+        55,
+        56,
+        57,
+        58,
+        59,
+        60,
+        61,
+        62,
+        63,
+        /* CONTEXT_MSB6, last byte. */
+        0,
+        0,
+        0,
+        0,
+        1,
+        1,
+        1,
+        1,
+        2,
+        2,
+        2,
+        2,
+        3,
+        3,
+        3,
+        3,
+        4,
+        4,
+        4,
+        4,
+        5,
+        5,
+        5,
+        5,
+        6,
+        6,
+        6,
+        6,
+        7,
+        7,
+        7,
+        7,
+        8,
+        8,
+        8,
+        8,
+        9,
+        9,
+        9,
+        9,
+        10,
+        10,
+        10,
+        10,
+        11,
+        11,
+        11,
+        11,
+        12,
+        12,
+        12,
+        12,
+        13,
+        13,
+        13,
+        13,
+        14,
+        14,
+        14,
+        14,
+        15,
+        15,
+        15,
+        15,
+        16,
+        16,
+        16,
+        16,
+        17,
+        17,
+        17,
+        17,
+        18,
+        18,
+        18,
+        18,
+        19,
+        19,
+        19,
+        19,
+        20,
+        20,
+        20,
+        20,
+        21,
+        21,
+        21,
+        21,
+        22,
+        22,
+        22,
+        22,
+        23,
+        23,
+        23,
+        23,
+        24,
+        24,
+        24,
+        24,
+        25,
+        25,
+        25,
+        25,
+        26,
+        26,
+        26,
+        26,
+        27,
+        27,
+        27,
+        27,
+        28,
+        28,
+        28,
+        28,
+        29,
+        29,
+        29,
+        29,
+        30,
+        30,
+        30,
+        30,
+        31,
+        31,
+        31,
+        31,
+        32,
+        32,
+        32,
+        32,
+        33,
+        33,
+        33,
+        33,
+        34,
+        34,
+        34,
+        34,
+        35,
+        35,
+        35,
+        35,
+        36,
+        36,
+        36,
+        36,
+        37,
+        37,
+        37,
+        37,
+        38,
+        38,
+        38,
+        38,
+        39,
+        39,
+        39,
+        39,
+        40,
+        40,
+        40,
+        40,
+        41,
+        41,
+        41,
+        41,
+        42,
+        42,
+        42,
+        42,
+        43,
+        43,
+        43,
+        43,
+        44,
+        44,
+        44,
+        44,
+        45,
+        45,
+        45,
+        45,
+        46,
+        46,
+        46,
+        46,
+        47,
+        47,
+        47,
+        47,
+        48,
+        48,
+        48,
+        48,
+        49,
+        49,
+        49,
+        49,
+        50,
+        50,
+        50,
+        50,
+        51,
+        51,
+        51,
+        51,
+        52,
+        52,
+        52,
+        52,
+        53,
+        53,
+        53,
+        53,
+        54,
+        54,
+        54,
+        54,
+        55,
+        55,
+        55,
+        55,
+        56,
+        56,
+        56,
+        56,
+        57,
+        57,
+        57,
+        57,
+        58,
+        58,
+        58,
+        58,
+        59,
+        59,
+        59,
+        59,
+        60,
+        60,
+        60,
+        60,
+        61,
+        61,
+        61,
+        61,
+        62,
+        62,
+        62,
+        62,
+        63,
+        63,
+        63,
+        63,
+        /* CONTEXT_{M,L}SB6, second last byte, */
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]);
+      exports.lookupOffsets = new Uint16Array([
+        /* CONTEXT_LSB6 */
+        1024,
+        1536,
+        /* CONTEXT_MSB6 */
+        1280,
+        1536,
+        /* CONTEXT_UTF8 */
+        0,
+        256,
+        /* CONTEXT_SIGNED */
+        768,
+        512
+      ]);
+    }
+  });
+
+  // .goose/out/rc022-prep-20261114-01/source/node_modules/.pnpm/brotli@1.3.3/node_modules/brotli/dec/prefix.js
+  var require_prefix = __commonJS({
+    ".goose/out/rc022-prep-20261114-01/source/node_modules/.pnpm/brotli@1.3.3/node_modules/brotli/dec/prefix.js"(exports) {
+      function PrefixCodeRange(offset, nbits) {
+        this.offset = offset;
+        this.nbits = nbits;
+      }
+      exports.kBlockLengthPrefixCode = [
+        new PrefixCodeRange(1, 2),
+        new PrefixCodeRange(5, 2),
+        new PrefixCodeRange(9, 2),
+        new PrefixCodeRange(13, 2),
+        new PrefixCodeRange(17, 3),
+        new PrefixCodeRange(25, 3),
+        new PrefixCodeRange(33, 3),
+        new PrefixCodeRange(41, 3),
+        new PrefixCodeRange(49, 4),
+        new PrefixCodeRange(65, 4),
+        new PrefixCodeRange(81, 4),
+        new PrefixCodeRange(97, 4),
+        new PrefixCodeRange(113, 5),
+        new PrefixCodeRange(145, 5),
+        new PrefixCodeRange(177, 5),
+        new PrefixCodeRange(209, 5),
+        new PrefixCodeRange(241, 6),
+        new PrefixCodeRange(305, 6),
+        new PrefixCodeRange(369, 7),
+        new PrefixCodeRange(497, 8),
+        new PrefixCodeRange(753, 9),
+        new PrefixCodeRange(1265, 10),
+        new PrefixCodeRange(2289, 11),
+        new PrefixCodeRange(4337, 12),
+        new PrefixCodeRange(8433, 13),
+        new PrefixCodeRange(16625, 24)
+      ];
+      exports.kInsertLengthPrefixCode = [
+        new PrefixCodeRange(0, 0),
+        new PrefixCodeRange(1, 0),
+        new PrefixCodeRange(2, 0),
+        new PrefixCodeRange(3, 0),
+        new PrefixCodeRange(4, 0),
+        new PrefixCodeRange(5, 0),
+        new PrefixCodeRange(6, 1),
+        new PrefixCodeRange(8, 1),
+        new PrefixCodeRange(10, 2),
+        new PrefixCodeRange(14, 2),
+        new PrefixCodeRange(18, 3),
+        new PrefixCodeRange(26, 3),
+        new PrefixCodeRange(34, 4),
+        new PrefixCodeRange(50, 4),
+        new PrefixCodeRange(66, 5),
+        new PrefixCodeRange(98, 5),
+        new PrefixCodeRange(130, 6),
+        new PrefixCodeRange(194, 7),
+        new PrefixCodeRange(322, 8),
+        new PrefixCodeRange(578, 9),
+        new PrefixCodeRange(1090, 10),
+        new PrefixCodeRange(2114, 12),
+        new PrefixCodeRange(6210, 14),
+        new PrefixCodeRange(22594, 24)
+      ];
+      exports.kCopyLengthPrefixCode = [
+        new PrefixCodeRange(2, 0),
+        new PrefixCodeRange(3, 0),
+        new PrefixCodeRange(4, 0),
+        new PrefixCodeRange(5, 0),
+        new PrefixCodeRange(6, 0),
+        new PrefixCodeRange(7, 0),
+        new PrefixCodeRange(8, 0),
+        new PrefixCodeRange(9, 0),
+        new PrefixCodeRange(10, 1),
+        new PrefixCodeRange(12, 1),
+        new PrefixCodeRange(14, 2),
+        new PrefixCodeRange(18, 2),
+        new PrefixCodeRange(22, 3),
+        new PrefixCodeRange(30, 3),
+        new PrefixCodeRange(38, 4),
+        new PrefixCodeRange(54, 4),
+        new PrefixCodeRange(70, 5),
+        new PrefixCodeRange(102, 5),
+        new PrefixCodeRange(134, 6),
+        new PrefixCodeRange(198, 7),
+        new PrefixCodeRange(326, 8),
+        new PrefixCodeRange(582, 9),
+        new PrefixCodeRange(1094, 10),
+        new PrefixCodeRange(2118, 24)
+      ];
+      exports.kInsertRangeLut = [
+        0,
+        0,
+        8,
+        8,
+        0,
+        16,
+        8,
+        16,
+        16
+      ];
+      exports.kCopyRangeLut = [
+        0,
+        8,
+        0,
+        8,
+        16,
+        0,
+        16,
+        8,
+        16
+      ];
+    }
+  });
+
+  // .goose/out/rc022-prep-20261114-01/source/node_modules/.pnpm/brotli@1.3.3/node_modules/brotli/dec/transform.js
+  var require_transform = __commonJS({
+    ".goose/out/rc022-prep-20261114-01/source/node_modules/.pnpm/brotli@1.3.3/node_modules/brotli/dec/transform.js"(exports) {
+      var BrotliDictionary = require_dictionary();
+      var kIdentity = 0;
+      var kOmitLast1 = 1;
+      var kOmitLast2 = 2;
+      var kOmitLast3 = 3;
+      var kOmitLast4 = 4;
+      var kOmitLast5 = 5;
+      var kOmitLast6 = 6;
+      var kOmitLast7 = 7;
+      var kOmitLast8 = 8;
+      var kOmitLast9 = 9;
+      var kUppercaseFirst = 10;
+      var kUppercaseAll = 11;
+      var kOmitFirst1 = 12;
+      var kOmitFirst2 = 13;
+      var kOmitFirst3 = 14;
+      var kOmitFirst4 = 15;
+      var kOmitFirst5 = 16;
+      var kOmitFirst6 = 17;
+      var kOmitFirst7 = 18;
+      var kOmitFirst9 = 20;
+      function Transform(prefix, transform, suffix) {
+        this.prefix = new Uint8Array(prefix.length);
+        this.transform = transform;
+        this.suffix = new Uint8Array(suffix.length);
+        for (var i2 = 0; i2 < prefix.length; i2++)
+          this.prefix[i2] = prefix.charCodeAt(i2);
+        for (var i2 = 0; i2 < suffix.length; i2++)
+          this.suffix[i2] = suffix.charCodeAt(i2);
+      }
+      var kTransforms = [
+        new Transform("", kIdentity, ""),
+        new Transform("", kIdentity, " "),
+        new Transform(" ", kIdentity, " "),
+        new Transform("", kOmitFirst1, ""),
+        new Transform("", kUppercaseFirst, " "),
+        new Transform("", kIdentity, " the "),
+        new Transform(" ", kIdentity, ""),
+        new Transform("s ", kIdentity, " "),
+        new Transform("", kIdentity, " of "),
+        new Transform("", kUppercaseFirst, ""),
+        new Transform("", kIdentity, " and "),
+        new Transform("", kOmitFirst2, ""),
+        new Transform("", kOmitLast1, ""),
+        new Transform(", ", kIdentity, " "),
+        new Transform("", kIdentity, ", "),
+        new Transform(" ", kUppercaseFirst, " "),
+        new Transform("", kIdentity, " in "),
+        new Transform("", kIdentity, " to "),
+        new Transform("e ", kIdentity, " "),
+        new Transform("", kIdentity, '"'),
+        new Transform("", kIdentity, "."),
+        new Transform("", kIdentity, '">'),
+        new Transform("", kIdentity, "\n"),
+        new Transform("", kOmitLast3, ""),
+        new Transform("", kIdentity, "]"),
+        new Transform("", kIdentity, " for "),
+        new Transform("", kOmitFirst3, ""),
+        new Transform("", kOmitLast2, ""),
+        new Transform("", kIdentity, " a "),
+        new Transform("", kIdentity, " that "),
+        new Transform(" ", kUppercaseFirst, ""),
+        new Transform("", kIdentity, ". "),
+        new Transform(".", kIdentity, ""),
+        new Transform(" ", kIdentity, ", "),
+        new Transform("", kOmitFirst4, ""),
+        new Transform("", kIdentity, " with "),
+        new Transform("", kIdentity, "'"),
+        new Transform("", kIdentity, " from "),
+        new Transform("", kIdentity, " by "),
+        new Transform("", kOmitFirst5, ""),
+        new Transform("", kOmitFirst6, ""),
+        new Transform(" the ", kIdentity, ""),
+        new Transform("", kOmitLast4, ""),
+        new Transform("", kIdentity, ". The "),
+        new Transform("", kUppercaseAll, ""),
+        new Transform("", kIdentity, " on "),
+        new Transform("", kIdentity, " as "),
+        new Transform("", kIdentity, " is "),
+        new Transform("", kOmitLast7, ""),
+        new Transform("", kOmitLast1, "ing "),
+        new Transform("", kIdentity, "\n	"),
+        new Transform("", kIdentity, ":"),
+        new Transform(" ", kIdentity, ". "),
+        new Transform("", kIdentity, "ed "),
+        new Transform("", kOmitFirst9, ""),
+        new Transform("", kOmitFirst7, ""),
+        new Transform("", kOmitLast6, ""),
+        new Transform("", kIdentity, "("),
+        new Transform("", kUppercaseFirst, ", "),
+        new Transform("", kOmitLast8, ""),
+        new Transform("", kIdentity, " at "),
+        new Transform("", kIdentity, "ly "),
+        new Transform(" the ", kIdentity, " of "),
+        new Transform("", kOmitLast5, ""),
+        new Transform("", kOmitLast9, ""),
+        new Transform(" ", kUppercaseFirst, ", "),
+        new Transform("", kUppercaseFirst, '"'),
+        new Transform(".", kIdentity, "("),
+        new Transform("", kUppercaseAll, " "),
+        new Transform("", kUppercaseFirst, '">'),
+        new Transform("", kIdentity, '="'),
+        new Transform(" ", kIdentity, "."),
+        new Transform(".com/", kIdentity, ""),
+        new Transform(" the ", kIdentity, " of the "),
+        new Transform("", kUppercaseFirst, "'"),
+        new Transform("", kIdentity, ". This "),
+        new Transform("", kIdentity, ","),
+        new Transform(".", kIdentity, " "),
+        new Transform("", kUppercaseFirst, "("),
+        new Transform("", kUppercaseFirst, "."),
+        new Transform("", kIdentity, " not "),
+        new Transform(" ", kIdentity, '="'),
+        new Transform("", kIdentity, "er "),
+        new Transform(" ", kUppercaseAll, " "),
+        new Transform("", kIdentity, "al "),
+        new Transform(" ", kUppercaseAll, ""),
+        new Transform("", kIdentity, "='"),
+        new Transform("", kUppercaseAll, '"'),
+        new Transform("", kUppercaseFirst, ". "),
+        new Transform(" ", kIdentity, "("),
+        new Transform("", kIdentity, "ful "),
+        new Transform(" ", kUppercaseFirst, ". "),
+        new Transform("", kIdentity, "ive "),
+        new Transform("", kIdentity, "less "),
+        new Transform("", kUppercaseAll, "'"),
+        new Transform("", kIdentity, "est "),
+        new Transform(" ", kUppercaseFirst, "."),
+        new Transform("", kUppercaseAll, '">'),
+        new Transform(" ", kIdentity, "='"),
+        new Transform("", kUppercaseFirst, ","),
+        new Transform("", kIdentity, "ize "),
+        new Transform("", kUppercaseAll, "."),
+        new Transform("\xC2\xA0", kIdentity, ""),
+        new Transform(" ", kIdentity, ","),
+        new Transform("", kUppercaseFirst, '="'),
+        new Transform("", kUppercaseAll, '="'),
+        new Transform("", kIdentity, "ous "),
+        new Transform("", kUppercaseAll, ", "),
+        new Transform("", kUppercaseFirst, "='"),
+        new Transform(" ", kUppercaseFirst, ","),
+        new Transform(" ", kUppercaseAll, '="'),
+        new Transform(" ", kUppercaseAll, ", "),
+        new Transform("", kUppercaseAll, ","),
+        new Transform("", kUppercaseAll, "("),
+        new Transform("", kUppercaseAll, ". "),
+        new Transform(" ", kUppercaseAll, "."),
+        new Transform("", kUppercaseAll, "='"),
+        new Transform(" ", kUppercaseAll, ". "),
+        new Transform(" ", kUppercaseFirst, '="'),
+        new Transform(" ", kUppercaseAll, "='"),
+        new Transform(" ", kUppercaseFirst, "='")
+      ];
+      exports.kTransforms = kTransforms;
+      exports.kNumTransforms = kTransforms.length;
+      function ToUpperCase(p, i2) {
+        if (p[i2] < 192) {
+          if (p[i2] >= 97 && p[i2] <= 122) {
+            p[i2] ^= 32;
+          }
+          return 1;
+        }
+        if (p[i2] < 224) {
+          p[i2 + 1] ^= 32;
+          return 2;
+        }
+        p[i2 + 2] ^= 5;
+        return 3;
+      }
+      exports.transformDictionaryWord = function(dst, idx, word, len, transform) {
+        var prefix = kTransforms[transform].prefix;
+        var suffix = kTransforms[transform].suffix;
+        var t = kTransforms[transform].transform;
+        var skip = t < kOmitFirst1 ? 0 : t - (kOmitFirst1 - 1);
+        var i2 = 0;
+        var start_idx = idx;
+        var uppercase;
+        if (skip > len) {
+          skip = len;
+        }
+        var prefix_pos = 0;
+        while (prefix_pos < prefix.length) {
+          dst[idx++] = prefix[prefix_pos++];
+        }
+        word += skip;
+        len -= skip;
+        if (t <= kOmitLast9) {
+          len -= t;
+        }
+        for (i2 = 0; i2 < len; i2++) {
+          dst[idx++] = BrotliDictionary.dictionary[word + i2];
+        }
+        uppercase = idx - len;
+        if (t === kUppercaseFirst) {
+          ToUpperCase(dst, uppercase);
+        } else if (t === kUppercaseAll) {
+          while (len > 0) {
+            var step = ToUpperCase(dst, uppercase);
+            uppercase += step;
+            len -= step;
+          }
+        }
+        var suffix_pos = 0;
+        while (suffix_pos < suffix.length) {
+          dst[idx++] = suffix[suffix_pos++];
+        }
+        return idx - start_idx;
+      };
+    }
+  });
+
+  // .goose/out/rc022-prep-20261114-01/source/node_modules/.pnpm/brotli@1.3.3/node_modules/brotli/dec/decode.js
+  var require_decode = __commonJS({
+    ".goose/out/rc022-prep-20261114-01/source/node_modules/.pnpm/brotli@1.3.3/node_modules/brotli/dec/decode.js"(exports) {
+      var BrotliInput = require_streams().BrotliInput;
+      var BrotliOutput = require_streams().BrotliOutput;
+      var BrotliBitReader = require_bit_reader();
+      var BrotliDictionary = require_dictionary();
+      var HuffmanCode = require_huffman().HuffmanCode;
+      var BrotliBuildHuffmanTable = require_huffman().BrotliBuildHuffmanTable;
+      var Context = require_context();
+      var Prefix = require_prefix();
+      var Transform = require_transform();
+      var kDefaultCodeLength = 8;
+      var kCodeLengthRepeatCode = 16;
+      var kNumLiteralCodes = 256;
+      var kNumInsertAndCopyCodes = 704;
+      var kNumBlockLengthCodes = 26;
+      var kLiteralContextBits = 6;
+      var kDistanceContextBits = 2;
+      var HUFFMAN_TABLE_BITS = 8;
+      var HUFFMAN_TABLE_MASK = 255;
+      var HUFFMAN_MAX_TABLE_SIZE = 1080;
+      var CODE_LENGTH_CODES = 18;
+      var kCodeLengthCodeOrder = new Uint8Array([
+        1,
+        2,
+        3,
+        4,
+        0,
+        5,
+        17,
+        6,
+        16,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15
+      ]);
+      var NUM_DISTANCE_SHORT_CODES = 16;
+      var kDistanceShortCodeIndexOffset = new Uint8Array([
+        3,
+        2,
+        1,
+        0,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2
+      ]);
+      var kDistanceShortCodeValueOffset = new Int8Array([
+        0,
+        0,
+        0,
+        0,
+        -1,
+        1,
+        -2,
+        2,
+        -3,
+        3,
+        -1,
+        1,
+        -2,
+        2,
+        -3,
+        3
+      ]);
+      var kMaxHuffmanTableSize = new Uint16Array([
+        256,
+        402,
+        436,
+        468,
+        500,
+        534,
+        566,
+        598,
+        630,
+        662,
+        694,
+        726,
+        758,
+        790,
+        822,
+        854,
+        886,
+        920,
+        952,
+        984,
+        1016,
+        1048,
+        1080
+      ]);
+      function DecodeWindowBits(br) {
+        var n;
+        if (br.readBits(1) === 0) {
+          return 16;
+        }
+        n = br.readBits(3);
+        if (n > 0) {
+          return 17 + n;
+        }
+        n = br.readBits(3);
+        if (n > 0) {
+          return 8 + n;
+        }
+        return 17;
+      }
+      function DecodeVarLenUint8(br) {
+        if (br.readBits(1)) {
+          var nbits = br.readBits(3);
+          if (nbits === 0) {
+            return 1;
+          } else {
+            return br.readBits(nbits) + (1 << nbits);
+          }
+        }
+        return 0;
+      }
+      function MetaBlockLength() {
+        this.meta_block_length = 0;
+        this.input_end = 0;
+        this.is_uncompressed = 0;
+        this.is_metadata = false;
+      }
+      function DecodeMetaBlockLength(br) {
+        var out = new MetaBlockLength();
+        var size_nibbles;
+        var size_bytes;
+        var i2;
+        out.input_end = br.readBits(1);
+        if (out.input_end && br.readBits(1)) {
+          return out;
+        }
+        size_nibbles = br.readBits(2) + 4;
+        if (size_nibbles === 7) {
+          out.is_metadata = true;
+          if (br.readBits(1) !== 0)
+            throw new Error("Invalid reserved bit");
+          size_bytes = br.readBits(2);
+          if (size_bytes === 0)
+            return out;
+          for (i2 = 0; i2 < size_bytes; i2++) {
+            var next_byte = br.readBits(8);
+            if (i2 + 1 === size_bytes && size_bytes > 1 && next_byte === 0)
+              throw new Error("Invalid size byte");
+            out.meta_block_length |= next_byte << i2 * 8;
+          }
+        } else {
+          for (i2 = 0; i2 < size_nibbles; ++i2) {
+            var next_nibble = br.readBits(4);
+            if (i2 + 1 === size_nibbles && size_nibbles > 4 && next_nibble === 0)
+              throw new Error("Invalid size nibble");
+            out.meta_block_length |= next_nibble << i2 * 4;
+          }
+        }
+        ++out.meta_block_length;
+        if (!out.input_end && !out.is_metadata) {
+          out.is_uncompressed = br.readBits(1);
+        }
+        return out;
+      }
+      function ReadSymbol(table, index, br) {
+        var start_index = index;
+        var nbits;
+        br.fillBitWindow();
+        index += br.val_ >>> br.bit_pos_ & HUFFMAN_TABLE_MASK;
+        nbits = table[index].bits - HUFFMAN_TABLE_BITS;
+        if (nbits > 0) {
+          br.bit_pos_ += HUFFMAN_TABLE_BITS;
+          index += table[index].value;
+          index += br.val_ >>> br.bit_pos_ & (1 << nbits) - 1;
+        }
+        br.bit_pos_ += table[index].bits;
+        return table[index].value;
+      }
+      function ReadHuffmanCodeLengths(code_length_code_lengths, num_symbols, code_lengths, br) {
+        var symbol = 0;
+        var prev_code_len = kDefaultCodeLength;
+        var repeat = 0;
+        var repeat_code_len = 0;
+        var space = 32768;
+        var table = [];
+        for (var i2 = 0; i2 < 32; i2++)
+          table.push(new HuffmanCode(0, 0));
+        BrotliBuildHuffmanTable(table, 0, 5, code_length_code_lengths, CODE_LENGTH_CODES);
+        while (symbol < num_symbols && space > 0) {
+          var p = 0;
+          var code_len;
+          br.readMoreInput();
+          br.fillBitWindow();
+          p += br.val_ >>> br.bit_pos_ & 31;
+          br.bit_pos_ += table[p].bits;
+          code_len = table[p].value & 255;
+          if (code_len < kCodeLengthRepeatCode) {
+            repeat = 0;
+            code_lengths[symbol++] = code_len;
+            if (code_len !== 0) {
+              prev_code_len = code_len;
+              space -= 32768 >> code_len;
+            }
+          } else {
+            var extra_bits = code_len - 14;
+            var old_repeat;
+            var repeat_delta;
+            var new_len = 0;
+            if (code_len === kCodeLengthRepeatCode) {
+              new_len = prev_code_len;
+            }
+            if (repeat_code_len !== new_len) {
+              repeat = 0;
+              repeat_code_len = new_len;
+            }
+            old_repeat = repeat;
+            if (repeat > 0) {
+              repeat -= 2;
+              repeat <<= extra_bits;
+            }
+            repeat += br.readBits(extra_bits) + 3;
+            repeat_delta = repeat - old_repeat;
+            if (symbol + repeat_delta > num_symbols) {
+              throw new Error("[ReadHuffmanCodeLengths] symbol + repeat_delta > num_symbols");
+            }
+            for (var x2 = 0; x2 < repeat_delta; x2++)
+              code_lengths[symbol + x2] = repeat_code_len;
+            symbol += repeat_delta;
+            if (repeat_code_len !== 0) {
+              space -= repeat_delta << 15 - repeat_code_len;
+            }
+          }
+        }
+        if (space !== 0) {
+          throw new Error("[ReadHuffmanCodeLengths] space = " + space);
+        }
+        for (; symbol < num_symbols; symbol++)
+          code_lengths[symbol] = 0;
+      }
+      function ReadHuffmanCode(alphabet_size, tables, table, br) {
+        var table_size = 0;
+        var simple_code_or_skip;
+        var code_lengths = new Uint8Array(alphabet_size);
+        br.readMoreInput();
+        simple_code_or_skip = br.readBits(2);
+        if (simple_code_or_skip === 1) {
+          var i2;
+          var max_bits_counter = alphabet_size - 1;
+          var max_bits = 0;
+          var symbols = new Int32Array(4);
+          var num_symbols = br.readBits(2) + 1;
+          while (max_bits_counter) {
+            max_bits_counter >>= 1;
+            ++max_bits;
+          }
+          for (i2 = 0; i2 < num_symbols; ++i2) {
+            symbols[i2] = br.readBits(max_bits) % alphabet_size;
+            code_lengths[symbols[i2]] = 2;
+          }
+          code_lengths[symbols[0]] = 1;
+          switch (num_symbols) {
+            case 1:
+              break;
+            case 3:
+              if (symbols[0] === symbols[1] || symbols[0] === symbols[2] || symbols[1] === symbols[2]) {
+                throw new Error("[ReadHuffmanCode] invalid symbols");
+              }
+              break;
+            case 2:
+              if (symbols[0] === symbols[1]) {
+                throw new Error("[ReadHuffmanCode] invalid symbols");
+              }
+              code_lengths[symbols[1]] = 1;
+              break;
+            case 4:
+              if (symbols[0] === symbols[1] || symbols[0] === symbols[2] || symbols[0] === symbols[3] || symbols[1] === symbols[2] || symbols[1] === symbols[3] || symbols[2] === symbols[3]) {
+                throw new Error("[ReadHuffmanCode] invalid symbols");
+              }
+              if (br.readBits(1)) {
+                code_lengths[symbols[2]] = 3;
+                code_lengths[symbols[3]] = 3;
+              } else {
+                code_lengths[symbols[0]] = 2;
+              }
+              break;
+          }
+        } else {
+          var i2;
+          var code_length_code_lengths = new Uint8Array(CODE_LENGTH_CODES);
+          var space = 32;
+          var num_codes = 0;
+          var huff = [
+            new HuffmanCode(2, 0),
+            new HuffmanCode(2, 4),
+            new HuffmanCode(2, 3),
+            new HuffmanCode(3, 2),
+            new HuffmanCode(2, 0),
+            new HuffmanCode(2, 4),
+            new HuffmanCode(2, 3),
+            new HuffmanCode(4, 1),
+            new HuffmanCode(2, 0),
+            new HuffmanCode(2, 4),
+            new HuffmanCode(2, 3),
+            new HuffmanCode(3, 2),
+            new HuffmanCode(2, 0),
+            new HuffmanCode(2, 4),
+            new HuffmanCode(2, 3),
+            new HuffmanCode(4, 5)
+          ];
+          for (i2 = simple_code_or_skip; i2 < CODE_LENGTH_CODES && space > 0; ++i2) {
+            var code_len_idx = kCodeLengthCodeOrder[i2];
+            var p = 0;
+            var v;
+            br.fillBitWindow();
+            p += br.val_ >>> br.bit_pos_ & 15;
+            br.bit_pos_ += huff[p].bits;
+            v = huff[p].value;
+            code_length_code_lengths[code_len_idx] = v;
+            if (v !== 0) {
+              space -= 32 >> v;
+              ++num_codes;
+            }
+          }
+          if (!(num_codes === 1 || space === 0))
+            throw new Error("[ReadHuffmanCode] invalid num_codes or space");
+          ReadHuffmanCodeLengths(code_length_code_lengths, alphabet_size, code_lengths, br);
+        }
+        table_size = BrotliBuildHuffmanTable(tables, table, HUFFMAN_TABLE_BITS, code_lengths, alphabet_size);
+        if (table_size === 0) {
+          throw new Error("[ReadHuffmanCode] BuildHuffmanTable failed: ");
+        }
+        return table_size;
+      }
+      function ReadBlockLength(table, index, br) {
+        var code;
+        var nbits;
+        code = ReadSymbol(table, index, br);
+        nbits = Prefix.kBlockLengthPrefixCode[code].nbits;
+        return Prefix.kBlockLengthPrefixCode[code].offset + br.readBits(nbits);
+      }
+      function TranslateShortCodes(code, ringbuffer, index) {
+        var val;
+        if (code < NUM_DISTANCE_SHORT_CODES) {
+          index += kDistanceShortCodeIndexOffset[code];
+          index &= 3;
+          val = ringbuffer[index] + kDistanceShortCodeValueOffset[code];
+        } else {
+          val = code - NUM_DISTANCE_SHORT_CODES + 1;
+        }
+        return val;
+      }
+      function MoveToFront(v, index) {
+        var value = v[index];
+        var i2 = index;
+        for (; i2; --i2) v[i2] = v[i2 - 1];
+        v[0] = value;
+      }
+      function InverseMoveToFrontTransform(v, v_len) {
+        var mtf = new Uint8Array(256);
+        var i2;
+        for (i2 = 0; i2 < 256; ++i2) {
+          mtf[i2] = i2;
+        }
+        for (i2 = 0; i2 < v_len; ++i2) {
+          var index = v[i2];
+          v[i2] = mtf[index];
+          if (index) MoveToFront(mtf, index);
+        }
+      }
+      function HuffmanTreeGroup(alphabet_size, num_htrees) {
+        this.alphabet_size = alphabet_size;
+        this.num_htrees = num_htrees;
+        this.codes = new Array(num_htrees + num_htrees * kMaxHuffmanTableSize[alphabet_size + 31 >>> 5]);
+        this.htrees = new Uint32Array(num_htrees);
+      }
+      HuffmanTreeGroup.prototype.decode = function(br) {
+        var i2;
+        var table_size;
+        var next = 0;
+        for (i2 = 0; i2 < this.num_htrees; ++i2) {
+          this.htrees[i2] = next;
+          table_size = ReadHuffmanCode(this.alphabet_size, this.codes, next, br);
+          next += table_size;
+        }
+      };
+      function DecodeContextMap(context_map_size, br) {
+        var out = { num_htrees: null, context_map: null };
+        var use_rle_for_zeros;
+        var max_run_length_prefix = 0;
+        var table;
+        var i2;
+        br.readMoreInput();
+        var num_htrees = out.num_htrees = DecodeVarLenUint8(br) + 1;
+        var context_map = out.context_map = new Uint8Array(context_map_size);
+        if (num_htrees <= 1) {
+          return out;
+        }
+        use_rle_for_zeros = br.readBits(1);
+        if (use_rle_for_zeros) {
+          max_run_length_prefix = br.readBits(4) + 1;
+        }
+        table = [];
+        for (i2 = 0; i2 < HUFFMAN_MAX_TABLE_SIZE; i2++) {
+          table[i2] = new HuffmanCode(0, 0);
+        }
+        ReadHuffmanCode(num_htrees + max_run_length_prefix, table, 0, br);
+        for (i2 = 0; i2 < context_map_size; ) {
+          var code;
+          br.readMoreInput();
+          code = ReadSymbol(table, 0, br);
+          if (code === 0) {
+            context_map[i2] = 0;
+            ++i2;
+          } else if (code <= max_run_length_prefix) {
+            var reps = 1 + (1 << code) + br.readBits(code);
+            while (--reps) {
+              if (i2 >= context_map_size) {
+                throw new Error("[DecodeContextMap] i >= context_map_size");
+              }
+              context_map[i2] = 0;
+              ++i2;
+            }
+          } else {
+            context_map[i2] = code - max_run_length_prefix;
+            ++i2;
+          }
+        }
+        if (br.readBits(1)) {
+          InverseMoveToFrontTransform(context_map, context_map_size);
+        }
+        return out;
+      }
+      function DecodeBlockType(max_block_type, trees, tree_type, block_types, ringbuffers, indexes, br) {
+        var ringbuffer = tree_type * 2;
+        var index = tree_type;
+        var type_code = ReadSymbol(trees, tree_type * HUFFMAN_MAX_TABLE_SIZE, br);
+        var block_type;
+        if (type_code === 0) {
+          block_type = ringbuffers[ringbuffer + (indexes[index] & 1)];
+        } else if (type_code === 1) {
+          block_type = ringbuffers[ringbuffer + (indexes[index] - 1 & 1)] + 1;
+        } else {
+          block_type = type_code - 2;
+        }
+        if (block_type >= max_block_type) {
+          block_type -= max_block_type;
+        }
+        block_types[tree_type] = block_type;
+        ringbuffers[ringbuffer + (indexes[index] & 1)] = block_type;
+        ++indexes[index];
+      }
+      function CopyUncompressedBlockToOutput(output, len, pos, ringbuffer, ringbuffer_mask, br) {
+        var rb_size = ringbuffer_mask + 1;
+        var rb_pos = pos & ringbuffer_mask;
+        var br_pos = br.pos_ & BrotliBitReader.IBUF_MASK;
+        var nbytes;
+        if (len < 8 || br.bit_pos_ + (len << 3) < br.bit_end_pos_) {
+          while (len-- > 0) {
+            br.readMoreInput();
+            ringbuffer[rb_pos++] = br.readBits(8);
+            if (rb_pos === rb_size) {
+              output.write(ringbuffer, rb_size);
+              rb_pos = 0;
+            }
+          }
+          return;
+        }
+        if (br.bit_end_pos_ < 32) {
+          throw new Error("[CopyUncompressedBlockToOutput] br.bit_end_pos_ < 32");
+        }
+        while (br.bit_pos_ < 32) {
+          ringbuffer[rb_pos] = br.val_ >>> br.bit_pos_;
+          br.bit_pos_ += 8;
+          ++rb_pos;
+          --len;
+        }
+        nbytes = br.bit_end_pos_ - br.bit_pos_ >> 3;
+        if (br_pos + nbytes > BrotliBitReader.IBUF_MASK) {
+          var tail = BrotliBitReader.IBUF_MASK + 1 - br_pos;
+          for (var x2 = 0; x2 < tail; x2++)
+            ringbuffer[rb_pos + x2] = br.buf_[br_pos + x2];
+          nbytes -= tail;
+          rb_pos += tail;
+          len -= tail;
+          br_pos = 0;
+        }
+        for (var x2 = 0; x2 < nbytes; x2++)
+          ringbuffer[rb_pos + x2] = br.buf_[br_pos + x2];
+        rb_pos += nbytes;
+        len -= nbytes;
+        if (rb_pos >= rb_size) {
+          output.write(ringbuffer, rb_size);
+          rb_pos -= rb_size;
+          for (var x2 = 0; x2 < rb_pos; x2++)
+            ringbuffer[x2] = ringbuffer[rb_size + x2];
+        }
+        while (rb_pos + len >= rb_size) {
+          nbytes = rb_size - rb_pos;
+          if (br.input_.read(ringbuffer, rb_pos, nbytes) < nbytes) {
+            throw new Error("[CopyUncompressedBlockToOutput] not enough bytes");
+          }
+          output.write(ringbuffer, rb_size);
+          len -= nbytes;
+          rb_pos = 0;
+        }
+        if (br.input_.read(ringbuffer, rb_pos, len) < len) {
+          throw new Error("[CopyUncompressedBlockToOutput] not enough bytes");
+        }
+        br.reset();
+      }
+      function JumpToByteBoundary(br) {
+        var new_bit_pos = br.bit_pos_ + 7 & ~7;
+        var pad_bits = br.readBits(new_bit_pos - br.bit_pos_);
+        return pad_bits == 0;
+      }
+      function BrotliDecompressedSize(buffer) {
+        var input = new BrotliInput(buffer);
+        var br = new BrotliBitReader(input);
+        DecodeWindowBits(br);
+        var out = DecodeMetaBlockLength(br);
+        return out.meta_block_length;
+      }
+      exports.BrotliDecompressedSize = BrotliDecompressedSize;
+      function BrotliDecompressBuffer(buffer, output_size) {
+        var input = new BrotliInput(buffer);
+        if (output_size == null) {
+          output_size = BrotliDecompressedSize(buffer);
+        }
+        var output_buffer = new Uint8Array(output_size);
+        var output = new BrotliOutput(output_buffer);
+        BrotliDecompress(input, output);
+        if (output.pos < output.buffer.length) {
+          output.buffer = output.buffer.subarray(0, output.pos);
+        }
+        return output.buffer;
+      }
+      exports.BrotliDecompressBuffer = BrotliDecompressBuffer;
+      function BrotliDecompress(input, output) {
+        var i2;
+        var pos = 0;
+        var input_end = 0;
+        var window_bits = 0;
+        var max_backward_distance;
+        var max_distance = 0;
+        var ringbuffer_size;
+        var ringbuffer_mask;
+        var ringbuffer;
+        var ringbuffer_end;
+        var dist_rb = [16, 15, 11, 4];
+        var dist_rb_idx = 0;
+        var prev_byte1 = 0;
+        var prev_byte2 = 0;
+        var hgroup = [new HuffmanTreeGroup(0, 0), new HuffmanTreeGroup(0, 0), new HuffmanTreeGroup(0, 0)];
+        var block_type_trees;
+        var block_len_trees;
+        var br;
+        var kRingBufferWriteAheadSlack = 128 + BrotliBitReader.READ_SIZE;
+        br = new BrotliBitReader(input);
+        window_bits = DecodeWindowBits(br);
+        max_backward_distance = (1 << window_bits) - 16;
+        ringbuffer_size = 1 << window_bits;
+        ringbuffer_mask = ringbuffer_size - 1;
+        ringbuffer = new Uint8Array(ringbuffer_size + kRingBufferWriteAheadSlack + BrotliDictionary.maxDictionaryWordLength);
+        ringbuffer_end = ringbuffer_size;
+        block_type_trees = [];
+        block_len_trees = [];
+        for (var x2 = 0; x2 < 3 * HUFFMAN_MAX_TABLE_SIZE; x2++) {
+          block_type_trees[x2] = new HuffmanCode(0, 0);
+          block_len_trees[x2] = new HuffmanCode(0, 0);
+        }
+        while (!input_end) {
+          var meta_block_remaining_len = 0;
+          var is_uncompressed;
+          var block_length = [1 << 28, 1 << 28, 1 << 28];
+          var block_type = [0];
+          var num_block_types = [1, 1, 1];
+          var block_type_rb = [0, 1, 0, 1, 0, 1];
+          var block_type_rb_index = [0];
+          var distance_postfix_bits;
+          var num_direct_distance_codes;
+          var distance_postfix_mask;
+          var num_distance_codes;
+          var context_map = null;
+          var context_modes = null;
+          var num_literal_htrees;
+          var dist_context_map = null;
+          var num_dist_htrees;
+          var context_offset = 0;
+          var context_map_slice = null;
+          var literal_htree_index = 0;
+          var dist_context_offset = 0;
+          var dist_context_map_slice = null;
+          var dist_htree_index = 0;
+          var context_lookup_offset1 = 0;
+          var context_lookup_offset2 = 0;
+          var context_mode;
+          var htree_command;
+          for (i2 = 0; i2 < 3; ++i2) {
+            hgroup[i2].codes = null;
+            hgroup[i2].htrees = null;
+          }
+          br.readMoreInput();
+          var _out = DecodeMetaBlockLength(br);
+          meta_block_remaining_len = _out.meta_block_length;
+          if (pos + meta_block_remaining_len > output.buffer.length) {
+            var tmp = new Uint8Array(pos + meta_block_remaining_len);
+            tmp.set(output.buffer);
+            output.buffer = tmp;
+          }
+          input_end = _out.input_end;
+          is_uncompressed = _out.is_uncompressed;
+          if (_out.is_metadata) {
+            JumpToByteBoundary(br);
+            for (; meta_block_remaining_len > 0; --meta_block_remaining_len) {
+              br.readMoreInput();
+              br.readBits(8);
+            }
+            continue;
+          }
+          if (meta_block_remaining_len === 0) {
+            continue;
+          }
+          if (is_uncompressed) {
+            br.bit_pos_ = br.bit_pos_ + 7 & ~7;
+            CopyUncompressedBlockToOutput(
+              output,
+              meta_block_remaining_len,
+              pos,
+              ringbuffer,
+              ringbuffer_mask,
+              br
+            );
+            pos += meta_block_remaining_len;
+            continue;
+          }
+          for (i2 = 0; i2 < 3; ++i2) {
+            num_block_types[i2] = DecodeVarLenUint8(br) + 1;
+            if (num_block_types[i2] >= 2) {
+              ReadHuffmanCode(num_block_types[i2] + 2, block_type_trees, i2 * HUFFMAN_MAX_TABLE_SIZE, br);
+              ReadHuffmanCode(kNumBlockLengthCodes, block_len_trees, i2 * HUFFMAN_MAX_TABLE_SIZE, br);
+              block_length[i2] = ReadBlockLength(block_len_trees, i2 * HUFFMAN_MAX_TABLE_SIZE, br);
+              block_type_rb_index[i2] = 1;
+            }
+          }
+          br.readMoreInput();
+          distance_postfix_bits = br.readBits(2);
+          num_direct_distance_codes = NUM_DISTANCE_SHORT_CODES + (br.readBits(4) << distance_postfix_bits);
+          distance_postfix_mask = (1 << distance_postfix_bits) - 1;
+          num_distance_codes = num_direct_distance_codes + (48 << distance_postfix_bits);
+          context_modes = new Uint8Array(num_block_types[0]);
+          for (i2 = 0; i2 < num_block_types[0]; ++i2) {
+            br.readMoreInput();
+            context_modes[i2] = br.readBits(2) << 1;
+          }
+          var _o1 = DecodeContextMap(num_block_types[0] << kLiteralContextBits, br);
+          num_literal_htrees = _o1.num_htrees;
+          context_map = _o1.context_map;
+          var _o2 = DecodeContextMap(num_block_types[2] << kDistanceContextBits, br);
+          num_dist_htrees = _o2.num_htrees;
+          dist_context_map = _o2.context_map;
+          hgroup[0] = new HuffmanTreeGroup(kNumLiteralCodes, num_literal_htrees);
+          hgroup[1] = new HuffmanTreeGroup(kNumInsertAndCopyCodes, num_block_types[1]);
+          hgroup[2] = new HuffmanTreeGroup(num_distance_codes, num_dist_htrees);
+          for (i2 = 0; i2 < 3; ++i2) {
+            hgroup[i2].decode(br);
+          }
+          context_map_slice = 0;
+          dist_context_map_slice = 0;
+          context_mode = context_modes[block_type[0]];
+          context_lookup_offset1 = Context.lookupOffsets[context_mode];
+          context_lookup_offset2 = Context.lookupOffsets[context_mode + 1];
+          htree_command = hgroup[1].htrees[0];
+          while (meta_block_remaining_len > 0) {
+            var cmd_code;
+            var range_idx;
+            var insert_code;
+            var copy_code;
+            var insert_length;
+            var copy_length;
+            var distance_code;
+            var distance;
+            var context;
+            var j;
+            var copy_dst;
+            br.readMoreInput();
+            if (block_length[1] === 0) {
+              DecodeBlockType(
+                num_block_types[1],
+                block_type_trees,
+                1,
+                block_type,
+                block_type_rb,
+                block_type_rb_index,
+                br
+              );
+              block_length[1] = ReadBlockLength(block_len_trees, HUFFMAN_MAX_TABLE_SIZE, br);
+              htree_command = hgroup[1].htrees[block_type[1]];
+            }
+            --block_length[1];
+            cmd_code = ReadSymbol(hgroup[1].codes, htree_command, br);
+            range_idx = cmd_code >> 6;
+            if (range_idx >= 2) {
+              range_idx -= 2;
+              distance_code = -1;
+            } else {
+              distance_code = 0;
+            }
+            insert_code = Prefix.kInsertRangeLut[range_idx] + (cmd_code >> 3 & 7);
+            copy_code = Prefix.kCopyRangeLut[range_idx] + (cmd_code & 7);
+            insert_length = Prefix.kInsertLengthPrefixCode[insert_code].offset + br.readBits(Prefix.kInsertLengthPrefixCode[insert_code].nbits);
+            copy_length = Prefix.kCopyLengthPrefixCode[copy_code].offset + br.readBits(Prefix.kCopyLengthPrefixCode[copy_code].nbits);
+            prev_byte1 = ringbuffer[pos - 1 & ringbuffer_mask];
+            prev_byte2 = ringbuffer[pos - 2 & ringbuffer_mask];
+            for (j = 0; j < insert_length; ++j) {
+              br.readMoreInput();
+              if (block_length[0] === 0) {
+                DecodeBlockType(
+                  num_block_types[0],
+                  block_type_trees,
+                  0,
+                  block_type,
+                  block_type_rb,
+                  block_type_rb_index,
+                  br
+                );
+                block_length[0] = ReadBlockLength(block_len_trees, 0, br);
+                context_offset = block_type[0] << kLiteralContextBits;
+                context_map_slice = context_offset;
+                context_mode = context_modes[block_type[0]];
+                context_lookup_offset1 = Context.lookupOffsets[context_mode];
+                context_lookup_offset2 = Context.lookupOffsets[context_mode + 1];
+              }
+              context = Context.lookup[context_lookup_offset1 + prev_byte1] | Context.lookup[context_lookup_offset2 + prev_byte2];
+              literal_htree_index = context_map[context_map_slice + context];
+              --block_length[0];
+              prev_byte2 = prev_byte1;
+              prev_byte1 = ReadSymbol(hgroup[0].codes, hgroup[0].htrees[literal_htree_index], br);
+              ringbuffer[pos & ringbuffer_mask] = prev_byte1;
+              if ((pos & ringbuffer_mask) === ringbuffer_mask) {
+                output.write(ringbuffer, ringbuffer_size);
+              }
+              ++pos;
+            }
+            meta_block_remaining_len -= insert_length;
+            if (meta_block_remaining_len <= 0) break;
+            if (distance_code < 0) {
+              var context;
+              br.readMoreInput();
+              if (block_length[2] === 0) {
+                DecodeBlockType(
+                  num_block_types[2],
+                  block_type_trees,
+                  2,
+                  block_type,
+                  block_type_rb,
+                  block_type_rb_index,
+                  br
+                );
+                block_length[2] = ReadBlockLength(block_len_trees, 2 * HUFFMAN_MAX_TABLE_SIZE, br);
+                dist_context_offset = block_type[2] << kDistanceContextBits;
+                dist_context_map_slice = dist_context_offset;
+              }
+              --block_length[2];
+              context = (copy_length > 4 ? 3 : copy_length - 2) & 255;
+              dist_htree_index = dist_context_map[dist_context_map_slice + context];
+              distance_code = ReadSymbol(hgroup[2].codes, hgroup[2].htrees[dist_htree_index], br);
+              if (distance_code >= num_direct_distance_codes) {
+                var nbits;
+                var postfix;
+                var offset;
+                distance_code -= num_direct_distance_codes;
+                postfix = distance_code & distance_postfix_mask;
+                distance_code >>= distance_postfix_bits;
+                nbits = (distance_code >> 1) + 1;
+                offset = (2 + (distance_code & 1) << nbits) - 4;
+                distance_code = num_direct_distance_codes + (offset + br.readBits(nbits) << distance_postfix_bits) + postfix;
+              }
+            }
+            distance = TranslateShortCodes(distance_code, dist_rb, dist_rb_idx);
+            if (distance < 0) {
+              throw new Error("[BrotliDecompress] invalid distance");
+            }
+            if (pos < max_backward_distance && max_distance !== max_backward_distance) {
+              max_distance = pos;
+            } else {
+              max_distance = max_backward_distance;
+            }
+            copy_dst = pos & ringbuffer_mask;
+            if (distance > max_distance) {
+              if (copy_length >= BrotliDictionary.minDictionaryWordLength && copy_length <= BrotliDictionary.maxDictionaryWordLength) {
+                var offset = BrotliDictionary.offsetsByLength[copy_length];
+                var word_id = distance - max_distance - 1;
+                var shift = BrotliDictionary.sizeBitsByLength[copy_length];
+                var mask = (1 << shift) - 1;
+                var word_idx = word_id & mask;
+                var transform_idx = word_id >> shift;
+                offset += word_idx * copy_length;
+                if (transform_idx < Transform.kNumTransforms) {
+                  var len = Transform.transformDictionaryWord(ringbuffer, copy_dst, offset, copy_length, transform_idx);
+                  copy_dst += len;
+                  pos += len;
+                  meta_block_remaining_len -= len;
+                  if (copy_dst >= ringbuffer_end) {
+                    output.write(ringbuffer, ringbuffer_size);
+                    for (var _x = 0; _x < copy_dst - ringbuffer_end; _x++)
+                      ringbuffer[_x] = ringbuffer[ringbuffer_end + _x];
+                  }
+                } else {
+                  throw new Error("Invalid backward reference. pos: " + pos + " distance: " + distance + " len: " + copy_length + " bytes left: " + meta_block_remaining_len);
+                }
+              } else {
+                throw new Error("Invalid backward reference. pos: " + pos + " distance: " + distance + " len: " + copy_length + " bytes left: " + meta_block_remaining_len);
+              }
+            } else {
+              if (distance_code > 0) {
+                dist_rb[dist_rb_idx & 3] = distance;
+                ++dist_rb_idx;
+              }
+              if (copy_length > meta_block_remaining_len) {
+                throw new Error("Invalid backward reference. pos: " + pos + " distance: " + distance + " len: " + copy_length + " bytes left: " + meta_block_remaining_len);
+              }
+              for (j = 0; j < copy_length; ++j) {
+                ringbuffer[pos & ringbuffer_mask] = ringbuffer[pos - distance & ringbuffer_mask];
+                if ((pos & ringbuffer_mask) === ringbuffer_mask) {
+                  output.write(ringbuffer, ringbuffer_size);
+                }
+                ++pos;
+                --meta_block_remaining_len;
+              }
+            }
+            prev_byte1 = ringbuffer[pos - 1 & ringbuffer_mask];
+            prev_byte2 = ringbuffer[pos - 2 & ringbuffer_mask];
+          }
+          pos &= 1073741823;
+        }
+        output.write(ringbuffer, pos & ringbuffer_mask);
+      }
+      exports.BrotliDecompress = BrotliDecompress;
+      BrotliDictionary.init();
+    }
+  });
+
+  // .goose/out/rc022-prep-20261114-01/source/node_modules/.pnpm/brotli@1.3.3/node_modules/brotli/decompress.js
+  var require_decompress = __commonJS({
+    ".goose/out/rc022-prep-20261114-01/source/node_modules/.pnpm/brotli@1.3.3/node_modules/brotli/decompress.js"(exports, module) {
+      module.exports = require_decode().BrotliDecompressBuffer;
+    }
+  });
+
+  // .goose/out/rc022-prep-20261114-01/source/node_modules/.pnpm/xmlchars@2.2.0/node_modules/xmlchars/xml/1.0/ed5.js
+  var require_ed5 = __commonJS({
+    ".goose/out/rc022-prep-20261114-01/source/node_modules/.pnpm/xmlchars@2.2.0/node_modules/xmlchars/xml/1.0/ed5.js"(exports) {
+      "use strict";
+      Object.defineProperty(exports, "__esModule", { value: true });
+      exports.CHAR = "	\n\r -\uD7FF\uE000-\uFFFD\u{10000}-\u{10FFFF}";
+      exports.S = " 	\r\n";
+      exports.NAME_START_CHAR = ":A-Z_a-z\xC0-\xD6\xD8-\xF6\xF8-\u02FF\u0370-\u037D\u037F-\u1FFF\u200C\u200D\u2070-\u218F\u2C00-\u2FEF\u3001-\uD7FF\uF900-\uFDCF\uFDF0-\uFFFD\u{10000}-\u{EFFFF}";
+      exports.NAME_CHAR = "-" + exports.NAME_START_CHAR + ".0-9\xB7\u0300-\u036F\u203F-\u2040";
+      exports.CHAR_RE = new RegExp("^[" + exports.CHAR + "]$", "u");
+      exports.S_RE = new RegExp("^[" + exports.S + "]+$", "u");
+      exports.NAME_START_CHAR_RE = new RegExp("^[" + exports.NAME_START_CHAR + "]$", "u");
+      exports.NAME_CHAR_RE = new RegExp("^[" + exports.NAME_CHAR + "]$", "u");
+      exports.NAME_RE = new RegExp("^[" + exports.NAME_START_CHAR + "][" + exports.NAME_CHAR + "]*$", "u");
+      exports.NMTOKEN_RE = new RegExp("^[" + exports.NAME_CHAR + "]+$", "u");
+      var TAB = 9;
+      var NL = 10;
+      var CR = 13;
+      var SPACE = 32;
+      exports.S_LIST = [SPACE, NL, CR, TAB];
+      function isChar(c) {
+        return c >= SPACE && c <= 55295 || c === NL || c === CR || c === TAB || c >= 57344 && c <= 65533 || c >= 65536 && c <= 1114111;
+      }
+      exports.isChar = isChar;
+      function isS(c) {
+        return c === SPACE || c === NL || c === CR || c === TAB;
+      }
+      exports.isS = isS;
+      function isNameStartChar(c) {
+        return c >= 65 && c <= 90 || c >= 97 && c <= 122 || c === 58 || c === 95 || c === 8204 || c === 8205 || c >= 192 && c <= 214 || c >= 216 && c <= 246 || c >= 248 && c <= 767 || c >= 880 && c <= 893 || c >= 895 && c <= 8191 || c >= 8304 && c <= 8591 || c >= 11264 && c <= 12271 || c >= 12289 && c <= 55295 || c >= 63744 && c <= 64975 || c >= 65008 && c <= 65533 || c >= 65536 && c <= 983039;
+      }
+      exports.isNameStartChar = isNameStartChar;
+      function isNameChar(c) {
+        return isNameStartChar(c) || c >= 48 && c <= 57 || c === 45 || c === 46 || c === 183 || c >= 768 && c <= 879 || c >= 8255 && c <= 8256;
+      }
+      exports.isNameChar = isNameChar;
+    }
+  });
+
+  // .goose/out/rc022-prep-20261114-01/source/node_modules/.pnpm/xmlchars@2.2.0/node_modules/xmlchars/xml/1.1/ed2.js
+  var require_ed2 = __commonJS({
+    ".goose/out/rc022-prep-20261114-01/source/node_modules/.pnpm/xmlchars@2.2.0/node_modules/xmlchars/xml/1.1/ed2.js"(exports) {
+      "use strict";
+      Object.defineProperty(exports, "__esModule", { value: true });
+      exports.CHAR = "-\uD7FF\uE000-\uFFFD\u{10000}-\u{10FFFF}";
+      exports.RESTRICTED_CHAR = "-\b\v\f-\x7F-\x84\x86-\x9F";
+      exports.S = " 	\r\n";
+      exports.NAME_START_CHAR = ":A-Z_a-z\xC0-\xD6\xD8-\xF6\xF8-\u02FF\u0370-\u037D\u037F-\u1FFF\u200C\u200D\u2070-\u218F\u2C00-\u2FEF\u3001-\uD7FF\uF900-\uFDCF\uFDF0-\uFFFD\u{10000}-\u{EFFFF}";
+      exports.NAME_CHAR = "-" + exports.NAME_START_CHAR + ".0-9\xB7\u0300-\u036F\u203F-\u2040";
+      exports.CHAR_RE = new RegExp("^[" + exports.CHAR + "]$", "u");
+      exports.RESTRICTED_CHAR_RE = new RegExp("^[" + exports.RESTRICTED_CHAR + "]$", "u");
+      exports.S_RE = new RegExp("^[" + exports.S + "]+$", "u");
+      exports.NAME_START_CHAR_RE = new RegExp("^[" + exports.NAME_START_CHAR + "]$", "u");
+      exports.NAME_CHAR_RE = new RegExp("^[" + exports.NAME_CHAR + "]$", "u");
+      exports.NAME_RE = new RegExp("^[" + exports.NAME_START_CHAR + "][" + exports.NAME_CHAR + "]*$", "u");
+      exports.NMTOKEN_RE = new RegExp("^[" + exports.NAME_CHAR + "]+$", "u");
+      var TAB = 9;
+      var NL = 10;
+      var CR = 13;
+      var SPACE = 32;
+      exports.S_LIST = [SPACE, NL, CR, TAB];
+      function isChar(c) {
+        return c >= 1 && c <= 55295 || c >= 57344 && c <= 65533 || c >= 65536 && c <= 1114111;
+      }
+      exports.isChar = isChar;
+      function isRestrictedChar(c) {
+        return c >= 1 && c <= 8 || c === 11 || c === 12 || c >= 14 && c <= 31 || c >= 127 && c <= 132 || c >= 134 && c <= 159;
+      }
+      exports.isRestrictedChar = isRestrictedChar;
+      function isCharAndNotRestricted(c) {
+        return c === 9 || c === 10 || c === 13 || c > 31 && c < 127 || c === 133 || c > 159 && c <= 55295 || c >= 57344 && c <= 65533 || c >= 65536 && c <= 1114111;
+      }
+      exports.isCharAndNotRestricted = isCharAndNotRestricted;
+      function isS(c) {
+        return c === SPACE || c === NL || c === CR || c === TAB;
+      }
+      exports.isS = isS;
+      function isNameStartChar(c) {
+        return c >= 65 && c <= 90 || c >= 97 && c <= 122 || c === 58 || c === 95 || c === 8204 || c === 8205 || c >= 192 && c <= 214 || c >= 216 && c <= 246 || c >= 248 && c <= 767 || c >= 880 && c <= 893 || c >= 895 && c <= 8191 || c >= 8304 && c <= 8591 || c >= 11264 && c <= 12271 || c >= 12289 && c <= 55295 || c >= 63744 && c <= 64975 || c >= 65008 && c <= 65533 || c >= 65536 && c <= 983039;
+      }
+      exports.isNameStartChar = isNameStartChar;
+      function isNameChar(c) {
+        return isNameStartChar(c) || c >= 48 && c <= 57 || c === 45 || c === 46 || c === 183 || c >= 768 && c <= 879 || c >= 8255 && c <= 8256;
+      }
+      exports.isNameChar = isNameChar;
+    }
+  });
+
+  // .goose/out/rc022-prep-20261114-01/source/node_modules/.pnpm/xmlchars@2.2.0/node_modules/xmlchars/xmlns/1.0/ed3.js
+  var require_ed3 = __commonJS({
+    ".goose/out/rc022-prep-20261114-01/source/node_modules/.pnpm/xmlchars@2.2.0/node_modules/xmlchars/xmlns/1.0/ed3.js"(exports) {
+      "use strict";
+      Object.defineProperty(exports, "__esModule", { value: true });
+      exports.NC_NAME_START_CHAR = "A-Z_a-z\xC0-\xD6\xD8-\xF6\xF8-\u02FF\u0370-\u037D\u037F-\u1FFF\u200C-\u200D\u2070-\u218F\u2C00-\u2FEF\u3001-\uD7FF\uF900-\uFDCF\uFDF0-\uFFFD\u{10000}-\u{EFFFF}";
+      exports.NC_NAME_CHAR = "-" + exports.NC_NAME_START_CHAR + ".0-9\xB7\u0300-\u036F\u203F-\u2040";
+      exports.NC_NAME_START_CHAR_RE = new RegExp("^[" + exports.NC_NAME_START_CHAR + "]$", "u");
+      exports.NC_NAME_CHAR_RE = new RegExp("^[" + exports.NC_NAME_CHAR + "]$", "u");
+      exports.NC_NAME_RE = new RegExp("^[" + exports.NC_NAME_START_CHAR + "][" + exports.NC_NAME_CHAR + "]*$", "u");
+      function isNCNameStartChar(c) {
+        return c >= 65 && c <= 90 || c === 95 || c >= 97 && c <= 122 || c >= 192 && c <= 214 || c >= 216 && c <= 246 || c >= 248 && c <= 767 || c >= 880 && c <= 893 || c >= 895 && c <= 8191 || c >= 8204 && c <= 8205 || c >= 8304 && c <= 8591 || c >= 11264 && c <= 12271 || c >= 12289 && c <= 55295 || c >= 63744 && c <= 64975 || c >= 65008 && c <= 65533 || c >= 65536 && c <= 983039;
+      }
+      exports.isNCNameStartChar = isNCNameStartChar;
+      function isNCNameChar(c) {
+        return isNCNameStartChar(c) || (c === 45 || c === 46 || c >= 48 && c <= 57 || c === 183 || c >= 768 && c <= 879 || c >= 8255 && c <= 8256);
+      }
+      exports.isNCNameChar = isNCNameChar;
+    }
+  });
+
+  // .goose/out/rc022-prep-20261114-01/source/node_modules/.pnpm/saxes@6.0.0/node_modules/saxes/saxes.js
+  var require_saxes = __commonJS({
+    ".goose/out/rc022-prep-20261114-01/source/node_modules/.pnpm/saxes@6.0.0/node_modules/saxes/saxes.js"(exports) {
+      "use strict";
+      Object.defineProperty(exports, "__esModule", { value: true });
+      exports.SaxesParser = exports.EVENTS = void 0;
+      var ed5 = require_ed5();
+      var ed2 = require_ed2();
+      var NSed3 = require_ed3();
+      var isS = ed5.isS;
+      var isChar10 = ed5.isChar;
+      var isNameStartChar = ed5.isNameStartChar;
+      var isNameChar = ed5.isNameChar;
+      var S_LIST = ed5.S_LIST;
+      var NAME_RE = ed5.NAME_RE;
+      var isChar11 = ed2.isChar;
+      var isNCNameStartChar = NSed3.isNCNameStartChar;
+      var isNCNameChar = NSed3.isNCNameChar;
+      var NC_NAME_RE = NSed3.NC_NAME_RE;
+      var XML_NAMESPACE = "http://www.w3.org/XML/1998/namespace";
+      var XMLNS_NAMESPACE = "http://www.w3.org/2000/xmlns/";
+      var rootNS = {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-assignment
+        __proto__: null,
+        xml: XML_NAMESPACE,
+        xmlns: XMLNS_NAMESPACE
+      };
+      var XML_ENTITIES = {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-assignment
+        __proto__: null,
+        amp: "&",
+        gt: ">",
+        lt: "<",
+        quot: '"',
+        apos: "'"
+      };
+      var EOC = -1;
+      var NL_LIKE = -2;
+      var S_BEGIN = 0;
+      var S_BEGIN_WHITESPACE = 1;
+      var S_DOCTYPE = 2;
+      var S_DOCTYPE_QUOTE = 3;
+      var S_DTD = 4;
+      var S_DTD_QUOTED = 5;
+      var S_DTD_OPEN_WAKA = 6;
+      var S_DTD_OPEN_WAKA_BANG = 7;
+      var S_DTD_COMMENT = 8;
+      var S_DTD_COMMENT_ENDING = 9;
+      var S_DTD_COMMENT_ENDED = 10;
+      var S_DTD_PI = 11;
+      var S_DTD_PI_ENDING = 12;
+      var S_TEXT = 13;
+      var S_ENTITY = 14;
+      var S_OPEN_WAKA = 15;
+      var S_OPEN_WAKA_BANG = 16;
+      var S_COMMENT = 17;
+      var S_COMMENT_ENDING = 18;
+      var S_COMMENT_ENDED = 19;
+      var S_CDATA = 20;
+      var S_CDATA_ENDING = 21;
+      var S_CDATA_ENDING_2 = 22;
+      var S_PI_FIRST_CHAR = 23;
+      var S_PI_REST = 24;
+      var S_PI_BODY = 25;
+      var S_PI_ENDING = 26;
+      var S_XML_DECL_NAME_START = 27;
+      var S_XML_DECL_NAME = 28;
+      var S_XML_DECL_EQ = 29;
+      var S_XML_DECL_VALUE_START = 30;
+      var S_XML_DECL_VALUE = 31;
+      var S_XML_DECL_SEPARATOR = 32;
+      var S_XML_DECL_ENDING = 33;
+      var S_OPEN_TAG = 34;
+      var S_OPEN_TAG_SLASH = 35;
+      var S_ATTRIB = 36;
+      var S_ATTRIB_NAME = 37;
+      var S_ATTRIB_NAME_SAW_WHITE = 38;
+      var S_ATTRIB_VALUE = 39;
+      var S_ATTRIB_VALUE_QUOTED = 40;
+      var S_ATTRIB_VALUE_CLOSED = 41;
+      var S_ATTRIB_VALUE_UNQUOTED = 42;
+      var S_CLOSE_TAG = 43;
+      var S_CLOSE_TAG_SAW_WHITE = 44;
+      var TAB = 9;
+      var NL = 10;
+      var CR = 13;
+      var SPACE = 32;
+      var BANG = 33;
+      var DQUOTE = 34;
+      var AMP = 38;
+      var SQUOTE = 39;
+      var MINUS = 45;
+      var FORWARD_SLASH = 47;
+      var SEMICOLON = 59;
+      var LESS = 60;
+      var EQUAL = 61;
+      var GREATER = 62;
+      var QUESTION = 63;
+      var OPEN_BRACKET = 91;
+      var CLOSE_BRACKET = 93;
+      var NEL = 133;
+      var LS = 8232;
+      var isQuote = (c) => c === DQUOTE || c === SQUOTE;
+      var QUOTES = [DQUOTE, SQUOTE];
+      var DOCTYPE_TERMINATOR = [...QUOTES, OPEN_BRACKET, GREATER];
+      var DTD_TERMINATOR = [...QUOTES, LESS, CLOSE_BRACKET];
+      var XML_DECL_NAME_TERMINATOR = [EQUAL, QUESTION, ...S_LIST];
+      var ATTRIB_VALUE_UNQUOTED_TERMINATOR = [...S_LIST, GREATER, AMP, LESS];
+      function nsPairCheck(parser, prefix, uri) {
+        switch (prefix) {
+          case "xml":
+            if (uri !== XML_NAMESPACE) {
+              parser.fail(`xml prefix must be bound to ${XML_NAMESPACE}.`);
+            }
+            break;
+          case "xmlns":
+            if (uri !== XMLNS_NAMESPACE) {
+              parser.fail(`xmlns prefix must be bound to ${XMLNS_NAMESPACE}.`);
+            }
+            break;
+          default:
+        }
+        switch (uri) {
+          case XMLNS_NAMESPACE:
+            parser.fail(prefix === "" ? `the default namespace may not be set to ${uri}.` : `may not assign a prefix (even "xmlns") to the URI ${XMLNS_NAMESPACE}.`);
+            break;
+          case XML_NAMESPACE:
+            switch (prefix) {
+              case "xml":
+                break;
+              case "":
+                parser.fail(`the default namespace may not be set to ${uri}.`);
+                break;
+              default:
+                parser.fail("may not assign the xml namespace to another prefix.");
+            }
+            break;
+          default:
+        }
+      }
+      function nsMappingCheck(parser, mapping) {
+        for (const local of Object.keys(mapping)) {
+          nsPairCheck(parser, local, mapping[local]);
+        }
+      }
+      var isNCName = (name) => NC_NAME_RE.test(name);
+      var isName = (name) => NAME_RE.test(name);
+      var FORBIDDEN_START = 0;
+      var FORBIDDEN_BRACKET = 1;
+      var FORBIDDEN_BRACKET_BRACKET = 2;
+      exports.EVENTS = [
+        "xmldecl",
+        "text",
+        "processinginstruction",
+        "doctype",
+        "comment",
+        "opentagstart",
+        "attribute",
+        "opentag",
+        "closetag",
+        "cdata",
+        "error",
+        "end",
+        "ready"
+      ];
+      var EVENT_NAME_TO_HANDLER_NAME = {
+        xmldecl: "xmldeclHandler",
+        text: "textHandler",
+        processinginstruction: "piHandler",
+        doctype: "doctypeHandler",
+        comment: "commentHandler",
+        opentagstart: "openTagStartHandler",
+        attribute: "attributeHandler",
+        opentag: "openTagHandler",
+        closetag: "closeTagHandler",
+        cdata: "cdataHandler",
+        error: "errorHandler",
+        end: "endHandler",
+        ready: "readyHandler"
+      };
+      var SaxesParser2 = class {
+        /**
+         * @param opt The parser options.
+         */
+        constructor(opt) {
+          this.opt = opt !== null && opt !== void 0 ? opt : {};
+          this.fragmentOpt = !!this.opt.fragment;
+          const xmlnsOpt = this.xmlnsOpt = !!this.opt.xmlns;
+          this.trackPosition = this.opt.position !== false;
+          this.fileName = this.opt.fileName;
+          if (xmlnsOpt) {
+            this.nameStartCheck = isNCNameStartChar;
+            this.nameCheck = isNCNameChar;
+            this.isName = isNCName;
+            this.processAttribs = this.processAttribsNS;
+            this.pushAttrib = this.pushAttribNS;
+            this.ns = Object.assign({ __proto__: null }, rootNS);
+            const additional = this.opt.additionalNamespaces;
+            if (additional != null) {
+              nsMappingCheck(this, additional);
+              Object.assign(this.ns, additional);
+            }
+          } else {
+            this.nameStartCheck = isNameStartChar;
+            this.nameCheck = isNameChar;
+            this.isName = isName;
+            this.processAttribs = this.processAttribsPlain;
+            this.pushAttrib = this.pushAttribPlain;
+          }
+          this.stateTable = [
+            /* eslint-disable @typescript-eslint/unbound-method */
+            this.sBegin,
+            this.sBeginWhitespace,
+            this.sDoctype,
+            this.sDoctypeQuote,
+            this.sDTD,
+            this.sDTDQuoted,
+            this.sDTDOpenWaka,
+            this.sDTDOpenWakaBang,
+            this.sDTDComment,
+            this.sDTDCommentEnding,
+            this.sDTDCommentEnded,
+            this.sDTDPI,
+            this.sDTDPIEnding,
+            this.sText,
+            this.sEntity,
+            this.sOpenWaka,
+            this.sOpenWakaBang,
+            this.sComment,
+            this.sCommentEnding,
+            this.sCommentEnded,
+            this.sCData,
+            this.sCDataEnding,
+            this.sCDataEnding2,
+            this.sPIFirstChar,
+            this.sPIRest,
+            this.sPIBody,
+            this.sPIEnding,
+            this.sXMLDeclNameStart,
+            this.sXMLDeclName,
+            this.sXMLDeclEq,
+            this.sXMLDeclValueStart,
+            this.sXMLDeclValue,
+            this.sXMLDeclSeparator,
+            this.sXMLDeclEnding,
+            this.sOpenTag,
+            this.sOpenTagSlash,
+            this.sAttrib,
+            this.sAttribName,
+            this.sAttribNameSawWhite,
+            this.sAttribValue,
+            this.sAttribValueQuoted,
+            this.sAttribValueClosed,
+            this.sAttribValueUnquoted,
+            this.sCloseTag,
+            this.sCloseTagSawWhite
+            /* eslint-enable @typescript-eslint/unbound-method */
+          ];
+          this._init();
+        }
+        /**
+         * Indicates whether or not the parser is closed. If ``true``, wait for
+         * the ``ready`` event to write again.
+         */
+        get closed() {
+          return this._closed;
+        }
+        _init() {
+          var _a2;
+          this.openWakaBang = "";
+          this.text = "";
+          this.name = "";
+          this.piTarget = "";
+          this.entity = "";
+          this.q = null;
+          this.tags = [];
+          this.tag = null;
+          this.topNS = null;
+          this.chunk = "";
+          this.chunkPosition = 0;
+          this.i = 0;
+          this.prevI = 0;
+          this.carriedFromPrevious = void 0;
+          this.forbiddenState = FORBIDDEN_START;
+          this.attribList = [];
+          const { fragmentOpt } = this;
+          this.state = fragmentOpt ? S_TEXT : S_BEGIN;
+          this.reportedTextBeforeRoot = this.reportedTextAfterRoot = this.closedRoot = this.sawRoot = fragmentOpt;
+          this.xmlDeclPossible = !fragmentOpt;
+          this.xmlDeclExpects = ["version"];
+          this.entityReturnState = void 0;
+          let { defaultXMLVersion } = this.opt;
+          if (defaultXMLVersion === void 0) {
+            if (this.opt.forceXMLVersion === true) {
+              throw new Error("forceXMLVersion set but defaultXMLVersion is not set");
+            }
+            defaultXMLVersion = "1.0";
+          }
+          this.setXMLVersion(defaultXMLVersion);
+          this.positionAtNewLine = 0;
+          this.doctype = false;
+          this._closed = false;
+          this.xmlDecl = {
+            version: void 0,
+            encoding: void 0,
+            standalone: void 0
+          };
+          this.line = 1;
+          this.column = 0;
+          this.ENTITIES = Object.create(XML_ENTITIES);
+          (_a2 = this.readyHandler) === null || _a2 === void 0 ? void 0 : _a2.call(this);
+        }
+        /**
+         * The stream position the parser is currently looking at. This field is
+         * zero-based.
+         *
+         * This field is not based on counting Unicode characters but is to be
+         * interpreted as a plain index into a JavaScript string.
+         */
+        get position() {
+          return this.chunkPosition + this.i;
+        }
+        /**
+         * The column number of the next character to be read by the parser.  *
+         * This field is zero-based. (The first column in a line is 0.)
+         *
+         * This field reports the index at which the next character would be in the
+         * line if the line were represented as a JavaScript string.  Note that this
+         * *can* be different to a count based on the number of *Unicode characters*
+         * due to how JavaScript handles astral plane characters.
+         *
+         * See [[column]] for a number that corresponds to a count of Unicode
+         * characters.
+         */
+        get columnIndex() {
+          return this.position - this.positionAtNewLine;
+        }
+        /**
+         * Set an event listener on an event. The parser supports one handler per
+         * event type. If you try to set an event handler over an existing handler,
+         * the old handler is silently overwritten.
+         *
+         * @param name The event to listen to.
+         *
+         * @param handler The handler to set.
+         */
+        on(name, handler) {
+          this[EVENT_NAME_TO_HANDLER_NAME[name]] = handler;
+        }
+        /**
+         * Unset an event handler.
+         *
+         * @parma name The event to stop listening to.
+         */
+        off(name) {
+          this[EVENT_NAME_TO_HANDLER_NAME[name]] = void 0;
+        }
+        /**
+         * Make an error object. The error object will have a message that contains
+         * the ``fileName`` option passed at the creation of the parser. If position
+         * tracking was turned on, it will also have line and column number
+         * information.
+         *
+         * @param message The message describing the error to report.
+         *
+         * @returns An error object with a properly formatted message.
+         */
+        makeError(message) {
+          var _a2;
+          let msg = (_a2 = this.fileName) !== null && _a2 !== void 0 ? _a2 : "";
+          if (this.trackPosition) {
+            if (msg.length > 0) {
+              msg += ":";
+            }
+            msg += `${this.line}:${this.column}`;
+          }
+          if (msg.length > 0) {
+            msg += ": ";
+          }
+          return new Error(msg + message);
+        }
+        /**
+         * Report a parsing error. This method is made public so that client code may
+         * check for issues that are outside the scope of this project and can report
+         * errors.
+         *
+         * @param message The error to report.
+         *
+         * @returns this
+         */
+        fail(message) {
+          const err2 = this.makeError(message);
+          const handler = this.errorHandler;
+          if (handler === void 0) {
+            throw err2;
+          } else {
+            handler(err2);
+          }
+          return this;
+        }
+        /**
+         * Write a XML data to the parser.
+         *
+         * @param chunk The XML data to write.
+         *
+         * @returns this
+         */
+        // We do need object for the type here. Yes, it often causes problems
+        // but not in this case.
+        write(chunk2) {
+          if (this.closed) {
+            return this.fail("cannot write after close; assign an onready handler.");
+          }
+          let end = false;
+          if (chunk2 === null) {
+            end = true;
+            chunk2 = "";
+          } else if (typeof chunk2 === "object") {
+            chunk2 = chunk2.toString();
+          }
+          if (this.carriedFromPrevious !== void 0) {
+            chunk2 = `${this.carriedFromPrevious}${chunk2}`;
+            this.carriedFromPrevious = void 0;
+          }
+          let limit = chunk2.length;
+          const lastCode = chunk2.charCodeAt(limit - 1);
+          if (!end && // A trailing CR or surrogate must be carried over to the next
+          // chunk.
+          (lastCode === CR || lastCode >= 55296 && lastCode <= 56319)) {
+            this.carriedFromPrevious = chunk2[limit - 1];
+            limit--;
+            chunk2 = chunk2.slice(0, limit);
+          }
+          const { stateTable } = this;
+          this.chunk = chunk2;
+          this.i = 0;
+          while (this.i < limit) {
+            stateTable[this.state].call(this);
+          }
+          this.chunkPosition += limit;
+          return end ? this.end() : this;
+        }
+        /**
+         * Close the current stream. Perform final well-formedness checks and reset
+         * the parser tstate.
+         *
+         * @returns this
+         */
+        close() {
+          return this.write(null);
+        }
+        /**
+         * Get a single code point out of the current chunk. This updates the current
+         * position if we do position tracking.
+         *
+         * This is the algorithm to use for XML 1.0.
+         *
+         * @returns The character read.
+         */
+        getCode10() {
+          const { chunk: chunk2, i: i2 } = this;
+          this.prevI = i2;
+          this.i = i2 + 1;
+          if (i2 >= chunk2.length) {
+            return EOC;
+          }
+          const code = chunk2.charCodeAt(i2);
+          this.column++;
+          if (code < 55296) {
+            if (code >= SPACE || code === TAB) {
+              return code;
+            }
+            switch (code) {
+              case NL:
+                this.line++;
+                this.column = 0;
+                this.positionAtNewLine = this.position;
+                return NL;
+              case CR:
+                if (chunk2.charCodeAt(i2 + 1) === NL) {
+                  this.i = i2 + 2;
+                }
+                this.line++;
+                this.column = 0;
+                this.positionAtNewLine = this.position;
+                return NL_LIKE;
+              default:
+                this.fail("disallowed character.");
+                return code;
+            }
+          }
+          if (code > 56319) {
+            if (!(code >= 57344 && code <= 65533)) {
+              this.fail("disallowed character.");
+            }
+            return code;
+          }
+          const final = 65536 + (code - 55296) * 1024 + (chunk2.charCodeAt(i2 + 1) - 56320);
+          this.i = i2 + 2;
+          if (final > 1114111) {
+            this.fail("disallowed character.");
+          }
+          return final;
+        }
+        /**
+         * Get a single code point out of the current chunk. This updates the current
+         * position if we do position tracking.
+         *
+         * This is the algorithm to use for XML 1.1.
+         *
+         * @returns {number} The character read.
+         */
+        getCode11() {
+          const { chunk: chunk2, i: i2 } = this;
+          this.prevI = i2;
+          this.i = i2 + 1;
+          if (i2 >= chunk2.length) {
+            return EOC;
+          }
+          const code = chunk2.charCodeAt(i2);
+          this.column++;
+          if (code < 55296) {
+            if (code > 31 && code < 127 || code > 159 && code !== LS || code === TAB) {
+              return code;
+            }
+            switch (code) {
+              case NL:
+                this.line++;
+                this.column = 0;
+                this.positionAtNewLine = this.position;
+                return NL;
+              case CR: {
+                const next = chunk2.charCodeAt(i2 + 1);
+                if (next === NL || next === NEL) {
+                  this.i = i2 + 2;
+                }
+              }
+              /* yes, fall through */
+              case NEL:
+              // 0x85
+              case LS:
+                this.line++;
+                this.column = 0;
+                this.positionAtNewLine = this.position;
+                return NL_LIKE;
+              default:
+                this.fail("disallowed character.");
+                return code;
+            }
+          }
+          if (code > 56319) {
+            if (!(code >= 57344 && code <= 65533)) {
+              this.fail("disallowed character.");
+            }
+            return code;
+          }
+          const final = 65536 + (code - 55296) * 1024 + (chunk2.charCodeAt(i2 + 1) - 56320);
+          this.i = i2 + 2;
+          if (final > 1114111) {
+            this.fail("disallowed character.");
+          }
+          return final;
+        }
+        /**
+         * Like ``getCode`` but with the return value normalized so that ``NL`` is
+         * returned for ``NL_LIKE``.
+         */
+        getCodeNorm() {
+          const c = this.getCode();
+          return c === NL_LIKE ? NL : c;
+        }
+        unget() {
+          this.i = this.prevI;
+          this.column--;
+        }
+        /**
+         * Capture characters into a buffer until encountering one of a set of
+         * characters.
+         *
+         * @param chars An array of codepoints. Encountering a character in the array
+         * ends the capture. (``chars`` may safely contain ``NL``.)
+         *
+         * @return The character code that made the capture end, or ``EOC`` if we hit
+         * the end of the chunk. The return value cannot be NL_LIKE: NL is returned
+         * instead.
+         */
+        captureTo(chars) {
+          let { i: start } = this;
+          const { chunk: chunk2 } = this;
+          while (true) {
+            const c = this.getCode();
+            const isNLLike = c === NL_LIKE;
+            const final = isNLLike ? NL : c;
+            if (final === EOC || chars.includes(final)) {
+              this.text += chunk2.slice(start, this.prevI);
+              return final;
+            }
+            if (isNLLike) {
+              this.text += `${chunk2.slice(start, this.prevI)}
+`;
+              start = this.i;
+            }
+          }
+        }
+        /**
+         * Capture characters into a buffer until encountering a character.
+         *
+         * @param char The codepoint that ends the capture. **NOTE ``char`` MAY NOT
+         * CONTAIN ``NL``.** Passing ``NL`` will result in buggy behavior.
+         *
+         * @return ``true`` if we ran into the character. Otherwise, we ran into the
+         * end of the current chunk.
+         */
+        captureToChar(char) {
+          let { i: start } = this;
+          const { chunk: chunk2 } = this;
+          while (true) {
+            let c = this.getCode();
+            switch (c) {
+              case NL_LIKE:
+                this.text += `${chunk2.slice(start, this.prevI)}
+`;
+                start = this.i;
+                c = NL;
+                break;
+              case EOC:
+                this.text += chunk2.slice(start);
+                return false;
+              default:
+            }
+            if (c === char) {
+              this.text += chunk2.slice(start, this.prevI);
+              return true;
+            }
+          }
+        }
+        /**
+         * Capture characters that satisfy ``isNameChar`` into the ``name`` field of
+         * this parser.
+         *
+         * @return The character code that made the test fail, or ``EOC`` if we hit
+         * the end of the chunk. The return value cannot be NL_LIKE: NL is returned
+         * instead.
+         */
+        captureNameChars() {
+          const { chunk: chunk2, i: start } = this;
+          while (true) {
+            const c = this.getCode();
+            if (c === EOC) {
+              this.name += chunk2.slice(start);
+              return EOC;
+            }
+            if (!isNameChar(c)) {
+              this.name += chunk2.slice(start, this.prevI);
+              return c === NL_LIKE ? NL : c;
+            }
+          }
+        }
+        /**
+         * Skip white spaces.
+         *
+         * @return The character that ended the skip, or ``EOC`` if we hit
+         * the end of the chunk. The return value cannot be NL_LIKE: NL is returned
+         * instead.
+         */
+        skipSpaces() {
+          while (true) {
+            const c = this.getCodeNorm();
+            if (c === EOC || !isS(c)) {
+              return c;
+            }
+          }
+        }
+        setXMLVersion(version) {
+          this.currentXMLVersion = version;
+          if (version === "1.0") {
+            this.isChar = isChar10;
+            this.getCode = this.getCode10;
+          } else {
+            this.isChar = isChar11;
+            this.getCode = this.getCode11;
+          }
+        }
+        // STATE ENGINE METHODS
+        // This needs to be a state separate from S_BEGIN_WHITESPACE because we want
+        // to be sure never to come back to this state later.
+        sBegin() {
+          if (this.chunk.charCodeAt(0) === 65279) {
+            this.i++;
+            this.column++;
+          }
+          this.state = S_BEGIN_WHITESPACE;
+        }
+        sBeginWhitespace() {
+          const iBefore = this.i;
+          const c = this.skipSpaces();
+          if (this.prevI !== iBefore) {
+            this.xmlDeclPossible = false;
+          }
+          switch (c) {
+            case LESS:
+              this.state = S_OPEN_WAKA;
+              if (this.text.length !== 0) {
+                throw new Error("no-empty text at start");
+              }
+              break;
+            case EOC:
+              break;
+            default:
+              this.unget();
+              this.state = S_TEXT;
+              this.xmlDeclPossible = false;
+          }
+        }
+        sDoctype() {
+          var _a2;
+          const c = this.captureTo(DOCTYPE_TERMINATOR);
+          switch (c) {
+            case GREATER: {
+              (_a2 = this.doctypeHandler) === null || _a2 === void 0 ? void 0 : _a2.call(this, this.text);
+              this.text = "";
+              this.state = S_TEXT;
+              this.doctype = true;
+              break;
+            }
+            case EOC:
+              break;
+            default:
+              this.text += String.fromCodePoint(c);
+              if (c === OPEN_BRACKET) {
+                this.state = S_DTD;
+              } else if (isQuote(c)) {
+                this.state = S_DOCTYPE_QUOTE;
+                this.q = c;
+              }
+          }
+        }
+        sDoctypeQuote() {
+          const q = this.q;
+          if (this.captureToChar(q)) {
+            this.text += String.fromCodePoint(q);
+            this.q = null;
+            this.state = S_DOCTYPE;
+          }
+        }
+        sDTD() {
+          const c = this.captureTo(DTD_TERMINATOR);
+          if (c === EOC) {
+            return;
+          }
+          this.text += String.fromCodePoint(c);
+          if (c === CLOSE_BRACKET) {
+            this.state = S_DOCTYPE;
+          } else if (c === LESS) {
+            this.state = S_DTD_OPEN_WAKA;
+          } else if (isQuote(c)) {
+            this.state = S_DTD_QUOTED;
+            this.q = c;
+          }
+        }
+        sDTDQuoted() {
+          const q = this.q;
+          if (this.captureToChar(q)) {
+            this.text += String.fromCodePoint(q);
+            this.state = S_DTD;
+            this.q = null;
+          }
+        }
+        sDTDOpenWaka() {
+          const c = this.getCodeNorm();
+          this.text += String.fromCodePoint(c);
+          switch (c) {
+            case BANG:
+              this.state = S_DTD_OPEN_WAKA_BANG;
+              this.openWakaBang = "";
+              break;
+            case QUESTION:
+              this.state = S_DTD_PI;
+              break;
+            default:
+              this.state = S_DTD;
+          }
+        }
+        sDTDOpenWakaBang() {
+          const char = String.fromCodePoint(this.getCodeNorm());
+          const owb = this.openWakaBang += char;
+          this.text += char;
+          if (owb !== "-") {
+            this.state = owb === "--" ? S_DTD_COMMENT : S_DTD;
+            this.openWakaBang = "";
+          }
+        }
+        sDTDComment() {
+          if (this.captureToChar(MINUS)) {
+            this.text += "-";
+            this.state = S_DTD_COMMENT_ENDING;
+          }
+        }
+        sDTDCommentEnding() {
+          const c = this.getCodeNorm();
+          this.text += String.fromCodePoint(c);
+          this.state = c === MINUS ? S_DTD_COMMENT_ENDED : S_DTD_COMMENT;
+        }
+        sDTDCommentEnded() {
+          const c = this.getCodeNorm();
+          this.text += String.fromCodePoint(c);
+          if (c === GREATER) {
+            this.state = S_DTD;
+          } else {
+            this.fail("malformed comment.");
+            this.state = S_DTD_COMMENT;
+          }
+        }
+        sDTDPI() {
+          if (this.captureToChar(QUESTION)) {
+            this.text += "?";
+            this.state = S_DTD_PI_ENDING;
+          }
+        }
+        sDTDPIEnding() {
+          const c = this.getCodeNorm();
+          this.text += String.fromCodePoint(c);
+          if (c === GREATER) {
+            this.state = S_DTD;
+          }
+        }
+        sText() {
+          if (this.tags.length !== 0) {
+            this.handleTextInRoot();
+          } else {
+            this.handleTextOutsideRoot();
+          }
+        }
+        sEntity() {
+          let { i: start } = this;
+          const { chunk: chunk2 } = this;
+          loop:
+            while (true) {
+              switch (this.getCode()) {
+                case NL_LIKE:
+                  this.entity += `${chunk2.slice(start, this.prevI)}
+`;
+                  start = this.i;
+                  break;
+                case SEMICOLON: {
+                  const { entityReturnState } = this;
+                  const entity = this.entity + chunk2.slice(start, this.prevI);
+                  this.state = entityReturnState;
+                  let parsed;
+                  if (entity === "") {
+                    this.fail("empty entity name.");
+                    parsed = "&;";
+                  } else {
+                    parsed = this.parseEntity(entity);
+                    this.entity = "";
+                  }
+                  if (entityReturnState !== S_TEXT || this.textHandler !== void 0) {
+                    this.text += parsed;
+                  }
+                  break loop;
+                }
+                case EOC:
+                  this.entity += chunk2.slice(start);
+                  break loop;
+                default:
+              }
+            }
+        }
+        sOpenWaka() {
+          const c = this.getCode();
+          if (isNameStartChar(c)) {
+            this.state = S_OPEN_TAG;
+            this.unget();
+            this.xmlDeclPossible = false;
+          } else {
+            switch (c) {
+              case FORWARD_SLASH:
+                this.state = S_CLOSE_TAG;
+                this.xmlDeclPossible = false;
+                break;
+              case BANG:
+                this.state = S_OPEN_WAKA_BANG;
+                this.openWakaBang = "";
+                this.xmlDeclPossible = false;
+                break;
+              case QUESTION:
+                this.state = S_PI_FIRST_CHAR;
+                break;
+              default:
+                this.fail("disallowed character in tag name");
+                this.state = S_TEXT;
+                this.xmlDeclPossible = false;
+            }
+          }
+        }
+        sOpenWakaBang() {
+          this.openWakaBang += String.fromCodePoint(this.getCodeNorm());
+          switch (this.openWakaBang) {
+            case "[CDATA[":
+              if (!this.sawRoot && !this.reportedTextBeforeRoot) {
+                this.fail("text data outside of root node.");
+                this.reportedTextBeforeRoot = true;
+              }
+              if (this.closedRoot && !this.reportedTextAfterRoot) {
+                this.fail("text data outside of root node.");
+                this.reportedTextAfterRoot = true;
+              }
+              this.state = S_CDATA;
+              this.openWakaBang = "";
+              break;
+            case "--":
+              this.state = S_COMMENT;
+              this.openWakaBang = "";
+              break;
+            case "DOCTYPE":
+              this.state = S_DOCTYPE;
+              if (this.doctype || this.sawRoot) {
+                this.fail("inappropriately located doctype declaration.");
+              }
+              this.openWakaBang = "";
+              break;
+            default:
+              if (this.openWakaBang.length >= 7) {
+                this.fail("incorrect syntax.");
+              }
+          }
+        }
+        sComment() {
+          if (this.captureToChar(MINUS)) {
+            this.state = S_COMMENT_ENDING;
+          }
+        }
+        sCommentEnding() {
+          var _a2;
+          const c = this.getCodeNorm();
+          if (c === MINUS) {
+            this.state = S_COMMENT_ENDED;
+            (_a2 = this.commentHandler) === null || _a2 === void 0 ? void 0 : _a2.call(this, this.text);
+            this.text = "";
+          } else {
+            this.text += `-${String.fromCodePoint(c)}`;
+            this.state = S_COMMENT;
+          }
+        }
+        sCommentEnded() {
+          const c = this.getCodeNorm();
+          if (c !== GREATER) {
+            this.fail("malformed comment.");
+            this.text += `--${String.fromCodePoint(c)}`;
+            this.state = S_COMMENT;
+          } else {
+            this.state = S_TEXT;
+          }
+        }
+        sCData() {
+          if (this.captureToChar(CLOSE_BRACKET)) {
+            this.state = S_CDATA_ENDING;
+          }
+        }
+        sCDataEnding() {
+          const c = this.getCodeNorm();
+          if (c === CLOSE_BRACKET) {
+            this.state = S_CDATA_ENDING_2;
+          } else {
+            this.text += `]${String.fromCodePoint(c)}`;
+            this.state = S_CDATA;
+          }
+        }
+        sCDataEnding2() {
+          var _a2;
+          const c = this.getCodeNorm();
+          switch (c) {
+            case GREATER: {
+              (_a2 = this.cdataHandler) === null || _a2 === void 0 ? void 0 : _a2.call(this, this.text);
+              this.text = "";
+              this.state = S_TEXT;
+              break;
+            }
+            case CLOSE_BRACKET:
+              this.text += "]";
+              break;
+            default:
+              this.text += `]]${String.fromCodePoint(c)}`;
+              this.state = S_CDATA;
+          }
+        }
+        // We need this separate state to check the first character fo the pi target
+        // with this.nameStartCheck which allows less characters than this.nameCheck.
+        sPIFirstChar() {
+          const c = this.getCodeNorm();
+          if (this.nameStartCheck(c)) {
+            this.piTarget += String.fromCodePoint(c);
+            this.state = S_PI_REST;
+          } else if (c === QUESTION || isS(c)) {
+            this.fail("processing instruction without a target.");
+            this.state = c === QUESTION ? S_PI_ENDING : S_PI_BODY;
+          } else {
+            this.fail("disallowed character in processing instruction name.");
+            this.piTarget += String.fromCodePoint(c);
+            this.state = S_PI_REST;
+          }
+        }
+        sPIRest() {
+          const { chunk: chunk2, i: start } = this;
+          while (true) {
+            const c = this.getCodeNorm();
+            if (c === EOC) {
+              this.piTarget += chunk2.slice(start);
+              return;
+            }
+            if (!this.nameCheck(c)) {
+              this.piTarget += chunk2.slice(start, this.prevI);
+              const isQuestion = c === QUESTION;
+              if (isQuestion || isS(c)) {
+                if (this.piTarget === "xml") {
+                  if (!this.xmlDeclPossible) {
+                    this.fail("an XML declaration must be at the start of the document.");
+                  }
+                  this.state = isQuestion ? S_XML_DECL_ENDING : S_XML_DECL_NAME_START;
+                } else {
+                  this.state = isQuestion ? S_PI_ENDING : S_PI_BODY;
+                }
+              } else {
+                this.fail("disallowed character in processing instruction name.");
+                this.piTarget += String.fromCodePoint(c);
+              }
+              break;
+            }
+          }
+        }
+        sPIBody() {
+          if (this.text.length === 0) {
+            const c = this.getCodeNorm();
+            if (c === QUESTION) {
+              this.state = S_PI_ENDING;
+            } else if (!isS(c)) {
+              this.text = String.fromCodePoint(c);
+            }
+          } else if (this.captureToChar(QUESTION)) {
+            this.state = S_PI_ENDING;
+          }
+        }
+        sPIEnding() {
+          var _a2;
+          const c = this.getCodeNorm();
+          if (c === GREATER) {
+            const { piTarget } = this;
+            if (piTarget.toLowerCase() === "xml") {
+              this.fail("the XML declaration must appear at the start of the document.");
+            }
+            (_a2 = this.piHandler) === null || _a2 === void 0 ? void 0 : _a2.call(this, {
+              target: piTarget,
+              body: this.text
+            });
+            this.piTarget = this.text = "";
+            this.state = S_TEXT;
+          } else if (c === QUESTION) {
+            this.text += "?";
+          } else {
+            this.text += `?${String.fromCodePoint(c)}`;
+            this.state = S_PI_BODY;
+          }
+          this.xmlDeclPossible = false;
+        }
+        sXMLDeclNameStart() {
+          const c = this.skipSpaces();
+          if (c === QUESTION) {
+            this.state = S_XML_DECL_ENDING;
+            return;
+          }
+          if (c !== EOC) {
+            this.state = S_XML_DECL_NAME;
+            this.name = String.fromCodePoint(c);
+          }
+        }
+        sXMLDeclName() {
+          const c = this.captureTo(XML_DECL_NAME_TERMINATOR);
+          if (c === QUESTION) {
+            this.state = S_XML_DECL_ENDING;
+            this.name += this.text;
+            this.text = "";
+            this.fail("XML declaration is incomplete.");
+            return;
+          }
+          if (!(isS(c) || c === EQUAL)) {
+            return;
+          }
+          this.name += this.text;
+          this.text = "";
+          if (!this.xmlDeclExpects.includes(this.name)) {
+            switch (this.name.length) {
+              case 0:
+                this.fail("did not expect any more name/value pairs.");
+                break;
+              case 1:
+                this.fail(`expected the name ${this.xmlDeclExpects[0]}.`);
+                break;
+              default:
+                this.fail(`expected one of ${this.xmlDeclExpects.join(", ")}`);
+            }
+          }
+          this.state = c === EQUAL ? S_XML_DECL_VALUE_START : S_XML_DECL_EQ;
+        }
+        sXMLDeclEq() {
+          const c = this.getCodeNorm();
+          if (c === QUESTION) {
+            this.state = S_XML_DECL_ENDING;
+            this.fail("XML declaration is incomplete.");
+            return;
+          }
+          if (isS(c)) {
+            return;
+          }
+          if (c !== EQUAL) {
+            this.fail("value required.");
+          }
+          this.state = S_XML_DECL_VALUE_START;
+        }
+        sXMLDeclValueStart() {
+          const c = this.getCodeNorm();
+          if (c === QUESTION) {
+            this.state = S_XML_DECL_ENDING;
+            this.fail("XML declaration is incomplete.");
+            return;
+          }
+          if (isS(c)) {
+            return;
+          }
+          if (!isQuote(c)) {
+            this.fail("value must be quoted.");
+            this.q = SPACE;
+          } else {
+            this.q = c;
+          }
+          this.state = S_XML_DECL_VALUE;
+        }
+        sXMLDeclValue() {
+          const c = this.captureTo([this.q, QUESTION]);
+          if (c === QUESTION) {
+            this.state = S_XML_DECL_ENDING;
+            this.text = "";
+            this.fail("XML declaration is incomplete.");
+            return;
+          }
+          if (c === EOC) {
+            return;
+          }
+          const value = this.text;
+          this.text = "";
+          switch (this.name) {
+            case "version": {
+              this.xmlDeclExpects = ["encoding", "standalone"];
+              const version = value;
+              this.xmlDecl.version = version;
+              if (!/^1\.[0-9]+$/.test(version)) {
+                this.fail("version number must match /^1\\.[0-9]+$/.");
+              } else if (!this.opt.forceXMLVersion) {
+                this.setXMLVersion(version);
+              }
+              break;
+            }
+            case "encoding":
+              if (!/^[A-Za-z][A-Za-z0-9._-]*$/.test(value)) {
+                this.fail("encoding value must match /^[A-Za-z0-9][A-Za-z0-9._-]*$/.");
+              }
+              this.xmlDeclExpects = ["standalone"];
+              this.xmlDecl.encoding = value;
+              break;
+            case "standalone":
+              if (value !== "yes" && value !== "no") {
+                this.fail('standalone value must match "yes" or "no".');
+              }
+              this.xmlDeclExpects = [];
+              this.xmlDecl.standalone = value;
+              break;
+            default:
+          }
+          this.name = "";
+          this.state = S_XML_DECL_SEPARATOR;
+        }
+        sXMLDeclSeparator() {
+          const c = this.getCodeNorm();
+          if (c === QUESTION) {
+            this.state = S_XML_DECL_ENDING;
+            return;
+          }
+          if (!isS(c)) {
+            this.fail("whitespace required.");
+            this.unget();
+          }
+          this.state = S_XML_DECL_NAME_START;
+        }
+        sXMLDeclEnding() {
+          var _a2;
+          const c = this.getCodeNorm();
+          if (c === GREATER) {
+            if (this.piTarget !== "xml") {
+              this.fail("processing instructions are not allowed before root.");
+            } else if (this.name !== "version" && this.xmlDeclExpects.includes("version")) {
+              this.fail("XML declaration must contain a version.");
+            }
+            (_a2 = this.xmldeclHandler) === null || _a2 === void 0 ? void 0 : _a2.call(this, this.xmlDecl);
+            this.name = "";
+            this.piTarget = this.text = "";
+            this.state = S_TEXT;
+          } else {
+            this.fail("The character ? is disallowed anywhere in XML declarations.");
+          }
+          this.xmlDeclPossible = false;
+        }
+        sOpenTag() {
+          var _a2;
+          const c = this.captureNameChars();
+          if (c === EOC) {
+            return;
+          }
+          const tag = this.tag = {
+            name: this.name,
+            attributes: /* @__PURE__ */ Object.create(null)
+          };
+          this.name = "";
+          if (this.xmlnsOpt) {
+            this.topNS = tag.ns = /* @__PURE__ */ Object.create(null);
+          }
+          (_a2 = this.openTagStartHandler) === null || _a2 === void 0 ? void 0 : _a2.call(this, tag);
+          this.sawRoot = true;
+          if (!this.fragmentOpt && this.closedRoot) {
+            this.fail("documents may contain only one root.");
+          }
+          switch (c) {
+            case GREATER:
+              this.openTag();
+              break;
+            case FORWARD_SLASH:
+              this.state = S_OPEN_TAG_SLASH;
+              break;
+            default:
+              if (!isS(c)) {
+                this.fail("disallowed character in tag name.");
+              }
+              this.state = S_ATTRIB;
+          }
+        }
+        sOpenTagSlash() {
+          if (this.getCode() === GREATER) {
+            this.openSelfClosingTag();
+          } else {
+            this.fail("forward-slash in opening tag not followed by >.");
+            this.state = S_ATTRIB;
+          }
+        }
+        sAttrib() {
+          const c = this.skipSpaces();
+          if (c === EOC) {
+            return;
+          }
+          if (isNameStartChar(c)) {
+            this.unget();
+            this.state = S_ATTRIB_NAME;
+          } else if (c === GREATER) {
+            this.openTag();
+          } else if (c === FORWARD_SLASH) {
+            this.state = S_OPEN_TAG_SLASH;
+          } else {
+            this.fail("disallowed character in attribute name.");
+          }
+        }
+        sAttribName() {
+          const c = this.captureNameChars();
+          if (c === EQUAL) {
+            this.state = S_ATTRIB_VALUE;
+          } else if (isS(c)) {
+            this.state = S_ATTRIB_NAME_SAW_WHITE;
+          } else if (c === GREATER) {
+            this.fail("attribute without value.");
+            this.pushAttrib(this.name, this.name);
+            this.name = this.text = "";
+            this.openTag();
+          } else if (c !== EOC) {
+            this.fail("disallowed character in attribute name.");
+          }
+        }
+        sAttribNameSawWhite() {
+          const c = this.skipSpaces();
+          switch (c) {
+            case EOC:
+              return;
+            case EQUAL:
+              this.state = S_ATTRIB_VALUE;
+              break;
+            default:
+              this.fail("attribute without value.");
+              this.text = "";
+              this.name = "";
+              if (c === GREATER) {
+                this.openTag();
+              } else if (isNameStartChar(c)) {
+                this.unget();
+                this.state = S_ATTRIB_NAME;
+              } else {
+                this.fail("disallowed character in attribute name.");
+                this.state = S_ATTRIB;
+              }
+          }
+        }
+        sAttribValue() {
+          const c = this.getCodeNorm();
+          if (isQuote(c)) {
+            this.q = c;
+            this.state = S_ATTRIB_VALUE_QUOTED;
+          } else if (!isS(c)) {
+            this.fail("unquoted attribute value.");
+            this.state = S_ATTRIB_VALUE_UNQUOTED;
+            this.unget();
+          }
+        }
+        sAttribValueQuoted() {
+          const { q, chunk: chunk2 } = this;
+          let { i: start } = this;
+          while (true) {
+            switch (this.getCode()) {
+              case q:
+                this.pushAttrib(this.name, this.text + chunk2.slice(start, this.prevI));
+                this.name = this.text = "";
+                this.q = null;
+                this.state = S_ATTRIB_VALUE_CLOSED;
+                return;
+              case AMP:
+                this.text += chunk2.slice(start, this.prevI);
+                this.state = S_ENTITY;
+                this.entityReturnState = S_ATTRIB_VALUE_QUOTED;
+                return;
+              case NL:
+              case NL_LIKE:
+              case TAB:
+                this.text += `${chunk2.slice(start, this.prevI)} `;
+                start = this.i;
+                break;
+              case LESS:
+                this.text += chunk2.slice(start, this.prevI);
+                this.fail("disallowed character.");
+                return;
+              case EOC:
+                this.text += chunk2.slice(start);
+                return;
+              default:
+            }
+          }
+        }
+        sAttribValueClosed() {
+          const c = this.getCodeNorm();
+          if (isS(c)) {
+            this.state = S_ATTRIB;
+          } else if (c === GREATER) {
+            this.openTag();
+          } else if (c === FORWARD_SLASH) {
+            this.state = S_OPEN_TAG_SLASH;
+          } else if (isNameStartChar(c)) {
+            this.fail("no whitespace between attributes.");
+            this.unget();
+            this.state = S_ATTRIB_NAME;
+          } else {
+            this.fail("disallowed character in attribute name.");
+          }
+        }
+        sAttribValueUnquoted() {
+          const c = this.captureTo(ATTRIB_VALUE_UNQUOTED_TERMINATOR);
+          switch (c) {
+            case AMP:
+              this.state = S_ENTITY;
+              this.entityReturnState = S_ATTRIB_VALUE_UNQUOTED;
+              break;
+            case LESS:
+              this.fail("disallowed character.");
+              break;
+            case EOC:
+              break;
+            default:
+              if (this.text.includes("]]>")) {
+                this.fail('the string "]]>" is disallowed in char data.');
+              }
+              this.pushAttrib(this.name, this.text);
+              this.name = this.text = "";
+              if (c === GREATER) {
+                this.openTag();
+              } else {
+                this.state = S_ATTRIB;
+              }
+          }
+        }
+        sCloseTag() {
+          const c = this.captureNameChars();
+          if (c === GREATER) {
+            this.closeTag();
+          } else if (isS(c)) {
+            this.state = S_CLOSE_TAG_SAW_WHITE;
+          } else if (c !== EOC) {
+            this.fail("disallowed character in closing tag.");
+          }
+        }
+        sCloseTagSawWhite() {
+          switch (this.skipSpaces()) {
+            case GREATER:
+              this.closeTag();
+              break;
+            case EOC:
+              break;
+            default:
+              this.fail("disallowed character in closing tag.");
+          }
+        }
+        // END OF STATE ENGINE METHODS
+        handleTextInRoot() {
+          let { i: start, forbiddenState } = this;
+          const { chunk: chunk2, textHandler: handler } = this;
+          scanLoop:
+            while (true) {
+              switch (this.getCode()) {
+                case LESS: {
+                  this.state = S_OPEN_WAKA;
+                  if (handler !== void 0) {
+                    const { text: text2 } = this;
+                    const slice = chunk2.slice(start, this.prevI);
+                    if (text2.length !== 0) {
+                      handler(text2 + slice);
+                      this.text = "";
+                    } else if (slice.length !== 0) {
+                      handler(slice);
+                    }
+                  }
+                  forbiddenState = FORBIDDEN_START;
+                  break scanLoop;
+                }
+                case AMP:
+                  this.state = S_ENTITY;
+                  this.entityReturnState = S_TEXT;
+                  if (handler !== void 0) {
+                    this.text += chunk2.slice(start, this.prevI);
+                  }
+                  forbiddenState = FORBIDDEN_START;
+                  break scanLoop;
+                case CLOSE_BRACKET:
+                  switch (forbiddenState) {
+                    case FORBIDDEN_START:
+                      forbiddenState = FORBIDDEN_BRACKET;
+                      break;
+                    case FORBIDDEN_BRACKET:
+                      forbiddenState = FORBIDDEN_BRACKET_BRACKET;
+                      break;
+                    case FORBIDDEN_BRACKET_BRACKET:
+                      break;
+                    default:
+                      throw new Error("impossible state");
+                  }
+                  break;
+                case GREATER:
+                  if (forbiddenState === FORBIDDEN_BRACKET_BRACKET) {
+                    this.fail('the string "]]>" is disallowed in char data.');
+                  }
+                  forbiddenState = FORBIDDEN_START;
+                  break;
+                case NL_LIKE:
+                  if (handler !== void 0) {
+                    this.text += `${chunk2.slice(start, this.prevI)}
+`;
+                  }
+                  start = this.i;
+                  forbiddenState = FORBIDDEN_START;
+                  break;
+                case EOC:
+                  if (handler !== void 0) {
+                    this.text += chunk2.slice(start);
+                  }
+                  break scanLoop;
+                default:
+                  forbiddenState = FORBIDDEN_START;
+              }
+            }
+          this.forbiddenState = forbiddenState;
+        }
+        handleTextOutsideRoot() {
+          let { i: start } = this;
+          const { chunk: chunk2, textHandler: handler } = this;
+          let nonSpace = false;
+          outRootLoop:
+            while (true) {
+              const code = this.getCode();
+              switch (code) {
+                case LESS: {
+                  this.state = S_OPEN_WAKA;
+                  if (handler !== void 0) {
+                    const { text: text2 } = this;
+                    const slice = chunk2.slice(start, this.prevI);
+                    if (text2.length !== 0) {
+                      handler(text2 + slice);
+                      this.text = "";
+                    } else if (slice.length !== 0) {
+                      handler(slice);
+                    }
+                  }
+                  break outRootLoop;
+                }
+                case AMP:
+                  this.state = S_ENTITY;
+                  this.entityReturnState = S_TEXT;
+                  if (handler !== void 0) {
+                    this.text += chunk2.slice(start, this.prevI);
+                  }
+                  nonSpace = true;
+                  break outRootLoop;
+                case NL_LIKE:
+                  if (handler !== void 0) {
+                    this.text += `${chunk2.slice(start, this.prevI)}
+`;
+                  }
+                  start = this.i;
+                  break;
+                case EOC:
+                  if (handler !== void 0) {
+                    this.text += chunk2.slice(start);
+                  }
+                  break outRootLoop;
+                default:
+                  if (!isS(code)) {
+                    nonSpace = true;
+                  }
+              }
+            }
+          if (!nonSpace) {
+            return;
+          }
+          if (!this.sawRoot && !this.reportedTextBeforeRoot) {
+            this.fail("text data outside of root node.");
+            this.reportedTextBeforeRoot = true;
+          }
+          if (this.closedRoot && !this.reportedTextAfterRoot) {
+            this.fail("text data outside of root node.");
+            this.reportedTextAfterRoot = true;
+          }
+        }
+        pushAttribNS(name, value) {
+          var _a2;
+          const { prefix, local } = this.qname(name);
+          const attr = { name, prefix, local, value };
+          this.attribList.push(attr);
+          (_a2 = this.attributeHandler) === null || _a2 === void 0 ? void 0 : _a2.call(this, attr);
+          if (prefix === "xmlns") {
+            const trimmed = value.trim();
+            if (this.currentXMLVersion === "1.0" && trimmed === "") {
+              this.fail("invalid attempt to undefine prefix in XML 1.0");
+            }
+            this.topNS[local] = trimmed;
+            nsPairCheck(this, local, trimmed);
+          } else if (name === "xmlns") {
+            const trimmed = value.trim();
+            this.topNS[""] = trimmed;
+            nsPairCheck(this, "", trimmed);
+          }
+        }
+        pushAttribPlain(name, value) {
+          var _a2;
+          const attr = { name, value };
+          this.attribList.push(attr);
+          (_a2 = this.attributeHandler) === null || _a2 === void 0 ? void 0 : _a2.call(this, attr);
+        }
+        /**
+         * End parsing. This performs final well-formedness checks and resets the
+         * parser to a clean state.
+         *
+         * @returns this
+         */
+        end() {
+          var _a2, _b2;
+          if (!this.sawRoot) {
+            this.fail("document must contain a root element.");
+          }
+          const { tags } = this;
+          while (tags.length > 0) {
+            const tag = tags.pop();
+            this.fail(`unclosed tag: ${tag.name}`);
+          }
+          if (this.state !== S_BEGIN && this.state !== S_TEXT) {
+            this.fail("unexpected end.");
+          }
+          const { text: text2 } = this;
+          if (text2.length !== 0) {
+            (_a2 = this.textHandler) === null || _a2 === void 0 ? void 0 : _a2.call(this, text2);
+            this.text = "";
+          }
+          this._closed = true;
+          (_b2 = this.endHandler) === null || _b2 === void 0 ? void 0 : _b2.call(this);
+          this._init();
+          return this;
+        }
+        /**
+         * Resolve a namespace prefix.
+         *
+         * @param prefix The prefix to resolve.
+         *
+         * @returns The namespace URI or ``undefined`` if the prefix is not defined.
+         */
+        resolve(prefix) {
+          var _a2, _b2;
+          let uri = this.topNS[prefix];
+          if (uri !== void 0) {
+            return uri;
+          }
+          const { tags } = this;
+          for (let index = tags.length - 1; index >= 0; index--) {
+            uri = tags[index].ns[prefix];
+            if (uri !== void 0) {
+              return uri;
+            }
+          }
+          uri = this.ns[prefix];
+          if (uri !== void 0) {
+            return uri;
+          }
+          return (_b2 = (_a2 = this.opt).resolvePrefix) === null || _b2 === void 0 ? void 0 : _b2.call(_a2, prefix);
+        }
+        /**
+         * Parse a qname into its prefix and local name parts.
+         *
+         * @param name The name to parse
+         *
+         * @returns
+         */
+        qname(name) {
+          const colon = name.indexOf(":");
+          if (colon === -1) {
+            return { prefix: "", local: name };
+          }
+          const local = name.slice(colon + 1);
+          const prefix = name.slice(0, colon);
+          if (prefix === "" || local === "" || local.includes(":")) {
+            this.fail(`malformed name: ${name}.`);
+          }
+          return { prefix, local };
+        }
+        processAttribsNS() {
+          var _a2;
+          const { attribList } = this;
+          const tag = this.tag;
+          {
+            const { prefix, local } = this.qname(tag.name);
+            tag.prefix = prefix;
+            tag.local = local;
+            const uri = tag.uri = (_a2 = this.resolve(prefix)) !== null && _a2 !== void 0 ? _a2 : "";
+            if (prefix !== "") {
+              if (prefix === "xmlns") {
+                this.fail('tags may not have "xmlns" as prefix.');
+              }
+              if (uri === "") {
+                this.fail(`unbound namespace prefix: ${JSON.stringify(prefix)}.`);
+                tag.uri = prefix;
+              }
+            }
+          }
+          if (attribList.length === 0) {
+            return;
+          }
+          const { attributes } = tag;
+          const seen = /* @__PURE__ */ new Set();
+          for (const attr of attribList) {
+            const { name, prefix, local } = attr;
+            let uri;
+            let eqname;
+            if (prefix === "") {
+              uri = name === "xmlns" ? XMLNS_NAMESPACE : "";
+              eqname = name;
+            } else {
+              uri = this.resolve(prefix);
+              if (uri === void 0) {
+                this.fail(`unbound namespace prefix: ${JSON.stringify(prefix)}.`);
+                uri = prefix;
+              }
+              eqname = `{${uri}}${local}`;
+            }
+            if (seen.has(eqname)) {
+              this.fail(`duplicate attribute: ${eqname}.`);
+            }
+            seen.add(eqname);
+            attr.uri = uri;
+            attributes[name] = attr;
+          }
+          this.attribList = [];
+        }
+        processAttribsPlain() {
+          const { attribList } = this;
+          const attributes = this.tag.attributes;
+          for (const { name, value } of attribList) {
+            if (attributes[name] !== void 0) {
+              this.fail(`duplicate attribute: ${name}.`);
+            }
+            attributes[name] = value;
+          }
+          this.attribList = [];
+        }
+        /**
+         * Handle a complete open tag. This parser code calls this once it has seen
+         * the whole tag. This method checks for well-formeness and then emits
+         * ``onopentag``.
+         */
+        openTag() {
+          var _a2;
+          this.processAttribs();
+          const { tags } = this;
+          const tag = this.tag;
+          tag.isSelfClosing = false;
+          (_a2 = this.openTagHandler) === null || _a2 === void 0 ? void 0 : _a2.call(this, tag);
+          tags.push(tag);
+          this.state = S_TEXT;
+          this.name = "";
+        }
+        /**
+         * Handle a complete self-closing tag. This parser code calls this once it has
+         * seen the whole tag. This method checks for well-formeness and then emits
+         * ``onopentag`` and ``onclosetag``.
+         */
+        openSelfClosingTag() {
+          var _a2, _b2, _c;
+          this.processAttribs();
+          const { tags } = this;
+          const tag = this.tag;
+          tag.isSelfClosing = true;
+          (_a2 = this.openTagHandler) === null || _a2 === void 0 ? void 0 : _a2.call(this, tag);
+          (_b2 = this.closeTagHandler) === null || _b2 === void 0 ? void 0 : _b2.call(this, tag);
+          const top = this.tag = (_c = tags[tags.length - 1]) !== null && _c !== void 0 ? _c : null;
+          if (top === null) {
+            this.closedRoot = true;
+          }
+          this.state = S_TEXT;
+          this.name = "";
+        }
+        /**
+         * Handle a complete close tag. This parser code calls this once it has seen
+         * the whole tag. This method checks for well-formeness and then emits
+         * ``onclosetag``.
+         */
+        closeTag() {
+          const { tags, name } = this;
+          this.state = S_TEXT;
+          this.name = "";
+          if (name === "") {
+            this.fail("weird empty close tag.");
+            this.text += "</>";
+            return;
+          }
+          const handler = this.closeTagHandler;
+          let l = tags.length;
+          while (l-- > 0) {
+            const tag = this.tag = tags.pop();
+            this.topNS = tag.ns;
+            handler === null || handler === void 0 ? void 0 : handler(tag);
+            if (tag.name === name) {
+              break;
+            }
+            this.fail("unexpected close tag.");
+          }
+          if (l === 0) {
+            this.closedRoot = true;
+          } else if (l < 0) {
+            this.fail(`unmatched closing tag: ${name}.`);
+            this.text += `</${name}>`;
+          }
+        }
+        /**
+         * Resolves an entity. Makes any necessary well-formedness checks.
+         *
+         * @param entity The entity to resolve.
+         *
+         * @returns The parsed entity.
+         */
+        parseEntity(entity) {
+          if (entity[0] !== "#") {
+            const defined = this.ENTITIES[entity];
+            if (defined !== void 0) {
+              return defined;
+            }
+            this.fail(this.isName(entity) ? "undefined entity." : "disallowed character in entity name.");
+            return `&${entity};`;
+          }
+          let num = NaN;
+          if (entity[1] === "x" && /^#x[0-9a-f]+$/i.test(entity)) {
+            num = parseInt(entity.slice(2), 16);
+          } else if (/^#[0-9]+$/.test(entity)) {
+            num = parseInt(entity.slice(1), 10);
+          }
+          if (!this.isChar(num)) {
+            this.fail("malformed character entity.");
+            return `&${entity};`;
+          }
+          return String.fromCodePoint(num);
+        }
+      };
+      exports.SaxesParser = SaxesParser2;
+    }
+  });
+
+  // scripts/native/office-browser/entry.js
+  var import_buffer2 = __toESM(require_buffer());
+
+  // scripts/native/office-browser/platform.js
+  var import_buffer = __toESM(require_buffer());
+
+  // .goose/out/rc022-prep-20261114-01/source/node_modules/.pnpm/@noble+hashes@1.8.0/node_modules/@noble/hashes/esm/utils.js
+  function isBytes(a) {
+    return a instanceof Uint8Array || ArrayBuffer.isView(a) && a.constructor.name === "Uint8Array";
+  }
+  function abytes(b, ...lengths) {
+    if (!isBytes(b))
+      throw new Error("Uint8Array expected");
+    if (lengths.length > 0 && !lengths.includes(b.length))
+      throw new Error("Uint8Array expected of length " + lengths + ", got length=" + b.length);
+  }
+  function aexists(instance, checkFinished = true) {
+    if (instance.destroyed)
+      throw new Error("Hash instance has been destroyed");
+    if (checkFinished && instance.finished)
+      throw new Error("Hash#digest() has already been called");
+  }
+  function aoutput(out, instance) {
+    abytes(out);
+    const min = instance.outputLen;
+    if (out.length < min) {
+      throw new Error("digestInto() expects output buffer of length at least " + min);
+    }
+  }
+  function clean(...arrays) {
+    for (let i2 = 0; i2 < arrays.length; i2++) {
+      arrays[i2].fill(0);
+    }
+  }
+  function createView(arr) {
+    return new DataView(arr.buffer, arr.byteOffset, arr.byteLength);
+  }
+  function rotr(word, shift) {
+    return word << 32 - shift | word >>> shift;
+  }
+  function utf8ToBytes(str) {
+    if (typeof str !== "string")
+      throw new Error("string expected");
+    return new Uint8Array(new TextEncoder().encode(str));
+  }
+  function toBytes(data) {
+    if (typeof data === "string")
+      data = utf8ToBytes(data);
+    abytes(data);
+    return data;
+  }
+  var Hash = class {
+  };
+  function createHasher(hashCons) {
+    const hashC = (msg) => hashCons().update(toBytes(msg)).digest();
+    const tmp = hashCons();
+    hashC.outputLen = tmp.outputLen;
+    hashC.blockLen = tmp.blockLen;
+    hashC.create = () => hashCons();
+    return hashC;
+  }
+
+  // .goose/out/rc022-prep-20261114-01/source/node_modules/.pnpm/@noble+hashes@1.8.0/node_modules/@noble/hashes/esm/_md.js
+  function setBigUint64(view, byteOffset, value, isLE) {
+    if (typeof view.setBigUint64 === "function")
+      return view.setBigUint64(byteOffset, value, isLE);
+    const _32n = BigInt(32);
+    const _u32_max = BigInt(4294967295);
+    const wh = Number(value >> _32n & _u32_max);
+    const wl = Number(value & _u32_max);
+    const h = isLE ? 4 : 0;
+    const l = isLE ? 0 : 4;
+    view.setUint32(byteOffset + h, wh, isLE);
+    view.setUint32(byteOffset + l, wl, isLE);
+  }
+  function Chi(a, b, c) {
+    return a & b ^ ~a & c;
+  }
+  function Maj(a, b, c) {
+    return a & b ^ a & c ^ b & c;
+  }
+  var HashMD = class extends Hash {
+    constructor(blockLen, outputLen, padOffset, isLE) {
+      super();
+      this.finished = false;
+      this.length = 0;
+      this.pos = 0;
+      this.destroyed = false;
+      this.blockLen = blockLen;
+      this.outputLen = outputLen;
+      this.padOffset = padOffset;
+      this.isLE = isLE;
+      this.buffer = new Uint8Array(blockLen);
+      this.view = createView(this.buffer);
+    }
+    update(data) {
+      aexists(this);
+      data = toBytes(data);
+      abytes(data);
+      const { view, buffer, blockLen } = this;
+      const len = data.length;
+      for (let pos = 0; pos < len; ) {
+        const take = Math.min(blockLen - this.pos, len - pos);
+        if (take === blockLen) {
+          const dataView = createView(data);
+          for (; blockLen <= len - pos; pos += blockLen)
+            this.process(dataView, pos);
+          continue;
+        }
+        buffer.set(data.subarray(pos, pos + take), this.pos);
+        this.pos += take;
+        pos += take;
+        if (this.pos === blockLen) {
+          this.process(view, 0);
+          this.pos = 0;
+        }
+      }
+      this.length += data.length;
+      this.roundClean();
+      return this;
+    }
+    digestInto(out) {
+      aexists(this);
+      aoutput(out, this);
+      this.finished = true;
+      const { buffer, view, blockLen, isLE } = this;
+      let { pos } = this;
+      buffer[pos++] = 128;
+      clean(this.buffer.subarray(pos));
+      if (this.padOffset > blockLen - pos) {
+        this.process(view, 0);
+        pos = 0;
+      }
+      for (let i2 = pos; i2 < blockLen; i2++)
+        buffer[i2] = 0;
+      setBigUint64(view, blockLen - 8, BigInt(this.length * 8), isLE);
+      this.process(view, 0);
+      const oview = createView(out);
+      const len = this.outputLen;
+      if (len % 4)
+        throw new Error("_sha2: outputLen should be aligned to 32bit");
+      const outLen = len / 4;
+      const state = this.get();
+      if (outLen > state.length)
+        throw new Error("_sha2: outputLen bigger than state");
+      for (let i2 = 0; i2 < outLen; i2++)
+        oview.setUint32(4 * i2, state[i2], isLE);
+    }
+    digest() {
+      const { buffer, outputLen } = this;
+      this.digestInto(buffer);
+      const res = buffer.slice(0, outputLen);
+      this.destroy();
+      return res;
+    }
+    _cloneInto(to) {
+      to || (to = new this.constructor());
+      to.set(...this.get());
+      const { blockLen, buffer, length, finished, destroyed, pos } = this;
+      to.destroyed = destroyed;
+      to.finished = finished;
+      to.length = length;
+      to.pos = pos;
+      if (length % blockLen)
+        to.buffer.set(buffer);
+      return to;
+    }
+    clone() {
+      return this._cloneInto();
+    }
+  };
+  var SHA256_IV = /* @__PURE__ */ Uint32Array.from([
+    1779033703,
+    3144134277,
+    1013904242,
+    2773480762,
+    1359893119,
+    2600822924,
+    528734635,
+    1541459225
+  ]);
+
+  // .goose/out/rc022-prep-20261114-01/source/node_modules/.pnpm/@noble+hashes@1.8.0/node_modules/@noble/hashes/esm/sha2.js
+  var SHA256_K = /* @__PURE__ */ Uint32Array.from([
+    1116352408,
+    1899447441,
+    3049323471,
+    3921009573,
+    961987163,
+    1508970993,
+    2453635748,
+    2870763221,
+    3624381080,
+    310598401,
+    607225278,
+    1426881987,
+    1925078388,
+    2162078206,
+    2614888103,
+    3248222580,
+    3835390401,
+    4022224774,
+    264347078,
+    604807628,
+    770255983,
+    1249150122,
+    1555081692,
+    1996064986,
+    2554220882,
+    2821834349,
+    2952996808,
+    3210313671,
+    3336571891,
+    3584528711,
+    113926993,
+    338241895,
+    666307205,
+    773529912,
+    1294757372,
+    1396182291,
+    1695183700,
+    1986661051,
+    2177026350,
+    2456956037,
+    2730485921,
+    2820302411,
+    3259730800,
+    3345764771,
+    3516065817,
+    3600352804,
+    4094571909,
+    275423344,
+    430227734,
+    506948616,
+    659060556,
+    883997877,
+    958139571,
+    1322822218,
+    1537002063,
+    1747873779,
+    1955562222,
+    2024104815,
+    2227730452,
+    2361852424,
+    2428436474,
+    2756734187,
+    3204031479,
+    3329325298
+  ]);
+  var SHA256_W = /* @__PURE__ */ new Uint32Array(64);
+  var SHA256 = class extends HashMD {
+    constructor(outputLen = 32) {
+      super(64, outputLen, 8, false);
+      this.A = SHA256_IV[0] | 0;
+      this.B = SHA256_IV[1] | 0;
+      this.C = SHA256_IV[2] | 0;
+      this.D = SHA256_IV[3] | 0;
+      this.E = SHA256_IV[4] | 0;
+      this.F = SHA256_IV[5] | 0;
+      this.G = SHA256_IV[6] | 0;
+      this.H = SHA256_IV[7] | 0;
+    }
+    get() {
+      const { A, B, C, D, E, F, G, H } = this;
+      return [A, B, C, D, E, F, G, H];
+    }
+    // prettier-ignore
+    set(A, B, C, D, E, F, G, H) {
+      this.A = A | 0;
+      this.B = B | 0;
+      this.C = C | 0;
+      this.D = D | 0;
+      this.E = E | 0;
+      this.F = F | 0;
+      this.G = G | 0;
+      this.H = H | 0;
+    }
+    process(view, offset) {
+      for (let i2 = 0; i2 < 16; i2++, offset += 4)
+        SHA256_W[i2] = view.getUint32(offset, false);
+      for (let i2 = 16; i2 < 64; i2++) {
+        const W15 = SHA256_W[i2 - 15];
+        const W2 = SHA256_W[i2 - 2];
+        const s0 = rotr(W15, 7) ^ rotr(W15, 18) ^ W15 >>> 3;
+        const s1 = rotr(W2, 17) ^ rotr(W2, 19) ^ W2 >>> 10;
+        SHA256_W[i2] = s1 + SHA256_W[i2 - 7] + s0 + SHA256_W[i2 - 16] | 0;
+      }
+      let { A, B, C, D, E, F, G, H } = this;
+      for (let i2 = 0; i2 < 64; i2++) {
+        const sigma1 = rotr(E, 6) ^ rotr(E, 11) ^ rotr(E, 25);
+        const T1 = H + sigma1 + Chi(E, F, G) + SHA256_K[i2] + SHA256_W[i2] | 0;
+        const sigma0 = rotr(A, 2) ^ rotr(A, 13) ^ rotr(A, 22);
+        const T2 = sigma0 + Maj(A, B, C) | 0;
+        H = G;
+        G = F;
+        F = E;
+        E = D + T1 | 0;
+        D = C;
+        C = B;
+        B = A;
+        A = T1 + T2 | 0;
+      }
+      A = A + this.A | 0;
+      B = B + this.B | 0;
+      C = C + this.C | 0;
+      D = D + this.D | 0;
+      E = E + this.E | 0;
+      F = F + this.F | 0;
+      G = G + this.G | 0;
+      H = H + this.H | 0;
+      this.set(A, B, C, D, E, F, G, H);
+    }
+    roundClean() {
+      clean(SHA256_W);
+    }
+    destroy() {
+      this.set(0, 0, 0, 0, 0, 0, 0, 0);
+      clean(this.buffer);
+    }
+  };
+  var sha256 = /* @__PURE__ */ createHasher(() => new SHA256());
+
+  // .goose/out/rc022-prep-20261114-01/source/node_modules/.pnpm/@noble+hashes@1.8.0/node_modules/@noble/hashes/esm/sha256.js
+  var sha2562 = sha256;
+
+  // scripts/native/office-browser/platform.js
+  var files = /* @__PURE__ */ new Map();
+  var directories = /* @__PURE__ */ new Map();
+  var descriptors = /* @__PURE__ */ new Map();
+  var nextFd = 1;
+  var allowedAssets = /* @__PURE__ */ new Set();
+  var messages = [];
+  var workerData;
+  var parentPort = { postMessage(value) {
+    messages.push(value);
+  } };
+  function request(data) {
+    workerData = data;
+    messages = [];
+  }
+  function received() {
+    return messages;
+  }
+  function volume(manifest, assets) {
+    files = new Map(Object.entries(manifest.files));
+    directories = new Map(Object.entries(manifest.directories));
+    descriptors = /* @__PURE__ */ new Map();
+    nextFd = 1;
+    allowedAssets = new Set(assets);
+  }
+  function absent(path) {
+    const error = Error("Missing memory-volume entry: " + path);
+    error.code = "ENOENT";
+    return error;
+  }
+  function fetchBytes(route) {
+    const xhr = new XMLHttpRequest();
+    xhr.open("GET", route, false);
+    xhr.responseType = "arraybuffer";
+    xhr.send();
+    if (xhr.status !== 200) throw Error("Office asset read failed (" + xhr.status + ").");
+    return import_buffer.Buffer.from(xhr.response);
+  }
+  function bytes(file) {
+    return file.bytes ??= fetchBytes(file.route);
+  }
+  function status(file, directory2 = false) {
+    const identity = file.identity || { dev: "0", ino: "0", size: 0, mtimeNs: "0", ctimeNs: "0" };
+    return {
+      ...identity,
+      dev: BigInt(identity.dev),
+      ino: BigInt(identity.ino),
+      size: BigInt(identity.size),
+      mtimeNs: BigInt(identity.mtimeNs),
+      ctimeNs: BigInt(identity.ctimeNs),
+      isDirectory: () => directory2,
+      isFile: () => !directory2
+    };
+  }
+  var constants = { O_RDONLY: 0, O_NONBLOCK: 0, O_NOFOLLOW: 0 };
+  function openSync(path) {
+    const file = files.get(path);
+    if (!file) throw absent(path);
+    const fd2 = nextFd++;
+    descriptors.set(fd2, { ...file });
+    return fd2;
+  }
+  function closeSync(fd2) {
+    descriptors.delete(fd2);
+  }
+  function fstatSync(fd2) {
+    const file = descriptors.get(fd2);
+    if (!file) throw Error("Closed memory-volume descriptor.");
+    return status(file);
+  }
+  function readSync(fd2, target, offset, length, position) {
+    const file = descriptors.get(fd2);
+    if (!file) throw Error("Closed memory-volume descriptor.");
+    const data = bytes(file).subarray(position, position + length);
+    target.set(data, offset);
+    return data.length;
+  }
+  function readFileSync(path, encoding) {
+    const file = files.get(path), data = file ? bytes(file) : allowedAssets.has(path) ? fetchBytes(path) : null;
+    if (!data) throw absent(path);
+    return encoding ? data.toString(encoding) : data;
+  }
+  function statSync(path) {
+    if (directories.has(path)) return status({}, true);
+    const file = files.get(path);
+    if (!file) throw absent(path);
+    return status(file);
+  }
+  function realpathSync(path) {
+    statSync(path);
+    return path;
+  }
+  function readdirSync(path) {
+    if (!directories.has(path)) throw absent(path);
+    return [...directories.get(path)];
+  }
+  function mkdirSync(path) {
+    if (directories.has(path)) throw Error("Memory directory already exists.");
+    directories.set(path, []);
+  }
+  function writeFileSync(path, value, options) {
+    if (options?.flag === "wx" && files.has(path)) throw Error("Memory file already exists.");
+    const data = import_buffer.Buffer.from(value);
+    files.set(path, { bytes: data, identity: { dev: "0", ino: "0", size: data.length, mtimeNs: "0", ctimeNs: "0" }, output: true });
+  }
+  function unlinkSync(path) {
+    if (!files.delete(path)) throw absent(path);
+  }
+  function renameSync(source, target) {
+    const file = files.get(source);
+    if (!file) throw absent(source);
+    files.set(target, file);
+    files.delete(source);
+  }
+  function outputs() {
+    return Object.fromEntries([...files].filter(([, file]) => file.output).map(([path, file]) => [path, file.bytes]));
+  }
+  function resources() {
+    return { openDescriptors: descriptors.size, retainedReadBuffers: [...files.values()].filter((file) => !file.output && file.bytes).length };
+  }
+  function basename(path) {
+    return path.slice(path.lastIndexOf("/") + 1);
+  }
+  function extname(path) {
+    const name = basename(path), dot = name.lastIndexOf(".");
+    return dot <= 0 ? "" : name.slice(dot);
+  }
+  function isAbsolute(path) {
+    return path.startsWith("/");
+  }
+  function join(...parts) {
+    const text2 = parts.filter(Boolean).join("/"), absolute = text2.startsWith("/"), stack = [];
+    for (const part of text2.split("/")) {
+      if (!part || part === ".") continue;
+      if (part === ".." && stack.length && stack[stack.length - 1] !== "..") stack.pop();
+      else if (part !== ".." || !absolute) stack.push(part);
+    }
+    return (absolute ? "/" : "") + stack.join("/") || ".";
+  }
+  var posix = { join, isAbsolute, basename, extname };
+  var win32 = { join() {
+    throw Error("Physical Windows discovery requires the host font provider.");
+  } };
+  function homedir() {
+    return "/profile";
+  }
+  function createHash(algorithm) {
+    if (algorithm !== "sha256") throw Error("Unsupported Office digest.");
+    const hash = sha2562.create();
+    return {
+      update(value) {
+        hash.update(typeof value === "string" ? new TextEncoder().encode(value) : value);
+        return this;
+      },
+      digest(encoding) {
+        const data = import_buffer.Buffer.from(hash.digest());
+        return encoding ? data.toString(encoding) : data;
+      }
+    };
+  }
+  function createRequire() {
+    return (loader) => {
+      if (!allowedAssets.has(loader)) throw Error("Unlisted Office module loader.");
+      importScripts(loader);
+      return globalThis.createLibreOfficeModule;
+    };
+  }
+
+  // .goose/out/rc022-prep-20261114-01/source/node_modules/.pnpm/restructure@3.0.2/node_modules/restructure/src/DecodeStream.js
+  var ENCODING_MAPPING = {
+    utf16le: "utf-16le",
+    ucs2: "utf-16le",
+    utf16be: "utf-16be"
+  };
+  var DecodeStream = class {
+    constructor(buffer) {
+      this.buffer = buffer;
+      this.view = new DataView(buffer.buffer, buffer.byteOffset, buffer.byteLength);
+      this.pos = 0;
+      this.length = this.buffer.length;
+    }
+    readString(length, encoding = "ascii") {
+      encoding = ENCODING_MAPPING[encoding] || encoding;
+      let buf = this.readBuffer(length);
+      try {
+        let decoder = new TextDecoder(encoding);
+        return decoder.decode(buf);
+      } catch (err2) {
+        return buf;
+      }
+    }
+    readBuffer(length) {
+      return this.buffer.slice(this.pos, this.pos += length);
+    }
+    readUInt24BE() {
+      return (this.readUInt16BE() << 8) + this.readUInt8();
+    }
+    readUInt24LE() {
+      return this.readUInt16LE() + (this.readUInt8() << 16);
+    }
+    readInt24BE() {
+      return (this.readInt16BE() << 8) + this.readUInt8();
+    }
+    readInt24LE() {
+      return this.readUInt16LE() + (this.readInt8() << 16);
+    }
+  };
+  DecodeStream.TYPES = {
+    UInt8: 1,
+    UInt16: 2,
+    UInt24: 3,
+    UInt32: 4,
+    Int8: 1,
+    Int16: 2,
+    Int24: 3,
+    Int32: 4,
+    Float: 4,
+    Double: 8
+  };
+  for (let key of Object.getOwnPropertyNames(DataView.prototype)) {
+    if (key.slice(0, 3) === "get") {
+      let type = key.slice(3).replace("Ui", "UI");
+      if (type === "Float32") {
+        type = "Float";
+      } else if (type === "Float64") {
+        type = "Double";
+      }
+      let bytes2 = DecodeStream.TYPES[type];
+      DecodeStream.prototype["read" + type + (bytes2 === 1 ? "" : "BE")] = function() {
+        const ret = this.view[key](this.pos, false);
+        this.pos += bytes2;
+        return ret;
+      };
+      if (bytes2 !== 1) {
+        DecodeStream.prototype["read" + type + "LE"] = function() {
+          const ret = this.view[key](this.pos, true);
+          this.pos += bytes2;
+          return ret;
+        };
+      }
+    }
+  }
+
+  // .goose/out/rc022-prep-20261114-01/source/node_modules/.pnpm/restructure@3.0.2/node_modules/restructure/src/EncodeStream.js
+  var textEncoder = new TextEncoder();
+  var isBigEndian = new Uint8Array(new Uint16Array([4660]).buffer)[0] == 18;
+  var EncodeStream = class {
+    constructor(buffer) {
+      this.buffer = buffer;
+      this.view = new DataView(this.buffer.buffer, this.buffer.byteOffset, this.buffer.byteLength);
+      this.pos = 0;
+    }
+    writeBuffer(buffer) {
+      this.buffer.set(buffer, this.pos);
+      this.pos += buffer.length;
+    }
+    writeString(string, encoding = "ascii") {
+      let buf;
+      switch (encoding) {
+        case "utf16le":
+        case "utf16-le":
+        case "ucs2":
+          buf = stringToUtf16(string, isBigEndian);
+          break;
+        case "utf16be":
+        case "utf16-be":
+          buf = stringToUtf16(string, !isBigEndian);
+          break;
+        case "utf8":
+          buf = textEncoder.encode(string);
+          break;
+        case "ascii":
+          buf = stringToAscii(string);
+          break;
+        default:
+          throw new Error(`Unsupported encoding: ${encoding}`);
+      }
+      this.writeBuffer(buf);
+    }
+    writeUInt24BE(val) {
+      this.buffer[this.pos++] = val >>> 16 & 255;
+      this.buffer[this.pos++] = val >>> 8 & 255;
+      this.buffer[this.pos++] = val & 255;
+    }
+    writeUInt24LE(val) {
+      this.buffer[this.pos++] = val & 255;
+      this.buffer[this.pos++] = val >>> 8 & 255;
+      this.buffer[this.pos++] = val >>> 16 & 255;
+    }
+    writeInt24BE(val) {
+      if (val >= 0) {
+        this.writeUInt24BE(val);
+      } else {
+        this.writeUInt24BE(val + 16777215 + 1);
+      }
+    }
+    writeInt24LE(val) {
+      if (val >= 0) {
+        this.writeUInt24LE(val);
+      } else {
+        this.writeUInt24LE(val + 16777215 + 1);
+      }
+    }
+    fill(val, length) {
+      if (length < this.buffer.length) {
+        this.buffer.fill(val, this.pos, this.pos + length);
+        this.pos += length;
+      } else {
+        const buf = new Uint8Array(length);
+        buf.fill(val);
+        this.writeBuffer(buf);
+      }
+    }
+  };
+  function stringToUtf16(string, swap) {
+    let buf = new Uint16Array(string.length);
+    for (let i2 = 0; i2 < string.length; i2++) {
+      let code = string.charCodeAt(i2);
+      if (swap) {
+        code = code >> 8 | (code & 255) << 8;
+      }
+      buf[i2] = code;
+    }
+    return new Uint8Array(buf.buffer);
+  }
+  function stringToAscii(string) {
+    let buf = new Uint8Array(string.length);
+    for (let i2 = 0; i2 < string.length; i2++) {
+      buf[i2] = string.charCodeAt(i2);
+    }
+    return buf;
+  }
+  for (let key of Object.getOwnPropertyNames(DataView.prototype)) {
+    if (key.slice(0, 3) === "set") {
+      let type = key.slice(3).replace("Ui", "UI");
+      if (type === "Float32") {
+        type = "Float";
+      } else if (type === "Float64") {
+        type = "Double";
+      }
+      let bytes2 = DecodeStream.TYPES[type];
+      EncodeStream.prototype["write" + type + (bytes2 === 1 ? "" : "BE")] = function(value) {
+        this.view[key](this.pos, value, false);
+        this.pos += bytes2;
+      };
+      if (bytes2 !== 1) {
+        EncodeStream.prototype["write" + type + "LE"] = function(value) {
+          this.view[key](this.pos, value, true);
+          this.pos += bytes2;
+        };
+      }
+    }
+  }
+
+  // .goose/out/rc022-prep-20261114-01/source/node_modules/.pnpm/restructure@3.0.2/node_modules/restructure/src/Base.js
+  var Base = class {
+    fromBuffer(buffer) {
+      let stream = new DecodeStream(buffer);
+      return this.decode(stream);
+    }
+    toBuffer(value) {
+      let size = this.size(value);
+      let buffer = new Uint8Array(size);
+      let stream = new EncodeStream(buffer);
+      this.encode(stream, value);
+      return buffer;
+    }
+  };
+
+  // .goose/out/rc022-prep-20261114-01/source/node_modules/.pnpm/restructure@3.0.2/node_modules/restructure/src/Number.js
+  var NumberT = class extends Base {
+    constructor(type, endian = "BE") {
+      super();
+      this.type = type;
+      this.endian = endian;
+      this.fn = this.type;
+      if (this.type[this.type.length - 1] !== "8") {
+        this.fn += this.endian;
+      }
+    }
+    size() {
+      return DecodeStream.TYPES[this.type];
+    }
+    decode(stream) {
+      return stream[`read${this.fn}`]();
+    }
+    encode(stream, val) {
+      return stream[`write${this.fn}`](val);
+    }
+  };
+  var uint8 = new NumberT("UInt8");
+  var uint16be = new NumberT("UInt16", "BE");
+  var uint16 = uint16be;
+  var uint16le = new NumberT("UInt16", "LE");
+  var uint24be = new NumberT("UInt24", "BE");
+  var uint24 = uint24be;
+  var uint24le = new NumberT("UInt24", "LE");
+  var uint32be = new NumberT("UInt32", "BE");
+  var uint32 = uint32be;
+  var uint32le = new NumberT("UInt32", "LE");
+  var int8 = new NumberT("Int8");
+  var int16be = new NumberT("Int16", "BE");
+  var int16 = int16be;
+  var int16le = new NumberT("Int16", "LE");
+  var int24be = new NumberT("Int24", "BE");
+  var int24le = new NumberT("Int24", "LE");
+  var int32be = new NumberT("Int32", "BE");
+  var int32 = int32be;
+  var int32le = new NumberT("Int32", "LE");
+  var floatbe = new NumberT("Float", "BE");
+  var floatle = new NumberT("Float", "LE");
+  var doublebe = new NumberT("Double", "BE");
+  var doublele = new NumberT("Double", "LE");
+  var Fixed = class extends NumberT {
+    constructor(size, endian, fracBits = size >> 1) {
+      super(`Int${size}`, endian);
+      this._point = 1 << fracBits;
+    }
+    decode(stream) {
+      return super.decode(stream) / this._point;
+    }
+    encode(stream, val) {
+      return super.encode(stream, val * this._point | 0);
+    }
+  };
+  var fixed16be = new Fixed(16, "BE");
+  var fixed16 = fixed16be;
+  var fixed16le = new Fixed(16, "LE");
+  var fixed32be = new Fixed(32, "BE");
+  var fixed32 = fixed32be;
+  var fixed32le = new Fixed(32, "LE");
+
+  // .goose/out/rc022-prep-20261114-01/source/node_modules/.pnpm/restructure@3.0.2/node_modules/restructure/src/utils.js
+  function resolveLength(length, stream, parent) {
+    let res;
+    if (typeof length === "number") {
+      res = length;
+    } else if (typeof length === "function") {
+      res = length.call(parent, parent);
+    } else if (parent && typeof length === "string") {
+      res = parent[length];
+    } else if (stream && length instanceof NumberT) {
+      res = length.decode(stream);
+    }
+    if (isNaN(res)) {
+      throw new Error("Not a fixed size");
+    }
+    return res;
+  }
+  var PropertyDescriptor = class {
+    constructor(opts = {}) {
+      this.enumerable = true;
+      this.configurable = true;
+      for (let key in opts) {
+        const val = opts[key];
+        this[key] = val;
+      }
+    }
+  };
+
+  // .goose/out/rc022-prep-20261114-01/source/node_modules/.pnpm/restructure@3.0.2/node_modules/restructure/src/Array.js
+  var ArrayT = class extends Base {
+    constructor(type, length, lengthType = "count") {
+      super();
+      this.type = type;
+      this.length = length;
+      this.lengthType = lengthType;
+    }
+    decode(stream, parent) {
+      let length;
+      const { pos } = stream;
+      const res = [];
+      let ctx = parent;
+      if (this.length != null) {
+        length = resolveLength(this.length, stream, parent);
+      }
+      if (this.length instanceof NumberT) {
+        Object.defineProperties(res, {
+          parent: { value: parent },
+          _startOffset: { value: pos },
+          _currentOffset: { value: 0, writable: true },
+          _length: { value: length }
+        });
+        ctx = res;
+      }
+      if (length == null || this.lengthType === "bytes") {
+        const target = length != null ? stream.pos + length : (parent != null ? parent._length : void 0) ? parent._startOffset + parent._length : stream.length;
+        while (stream.pos < target) {
+          res.push(this.type.decode(stream, ctx));
+        }
+      } else {
+        for (let i2 = 0, end = length; i2 < end; i2++) {
+          res.push(this.type.decode(stream, ctx));
+        }
+      }
+      return res;
+    }
+    size(array, ctx, includePointers = true) {
+      if (!array) {
+        return this.type.size(null, ctx) * resolveLength(this.length, null, ctx);
+      }
+      let size = 0;
+      if (this.length instanceof NumberT) {
+        size += this.length.size();
+        ctx = { parent: ctx, pointerSize: 0 };
+      }
+      for (let item of array) {
+        size += this.type.size(item, ctx);
+      }
+      if (ctx && includePointers && this.length instanceof NumberT) {
+        size += ctx.pointerSize;
+      }
+      return size;
+    }
+    encode(stream, array, parent) {
+      let ctx = parent;
+      if (this.length instanceof NumberT) {
+        ctx = {
+          pointers: [],
+          startOffset: stream.pos,
+          parent
+        };
+        ctx.pointerOffset = stream.pos + this.size(array, ctx, false);
+        this.length.encode(stream, array.length);
+      }
+      for (let item of array) {
+        this.type.encode(stream, item, ctx);
+      }
+      if (this.length instanceof NumberT) {
+        let i2 = 0;
+        while (i2 < ctx.pointers.length) {
+          const ptr = ctx.pointers[i2++];
+          ptr.type.encode(stream, ptr.val, ptr.parent);
+        }
+      }
+    }
+  };
+
+  // .goose/out/rc022-prep-20261114-01/source/node_modules/.pnpm/restructure@3.0.2/node_modules/restructure/src/LazyArray.js
+  var LazyArray = class extends ArrayT {
+    decode(stream, parent) {
+      const { pos } = stream;
+      const length = resolveLength(this.length, stream, parent);
+      if (this.length instanceof NumberT) {
+        parent = {
+          parent,
+          _startOffset: pos,
+          _currentOffset: 0,
+          _length: length
+        };
+      }
+      const res = new LazyArrayValue(this.type, length, stream, parent);
+      stream.pos += length * this.type.size(null, parent);
+      return res;
+    }
+    size(val, ctx) {
+      if (val instanceof LazyArrayValue) {
+        val = val.toArray();
+      }
+      return super.size(val, ctx);
+    }
+    encode(stream, val, ctx) {
+      if (val instanceof LazyArrayValue) {
+        val = val.toArray();
+      }
+      return super.encode(stream, val, ctx);
+    }
+  };
+  var LazyArrayValue = class {
+    constructor(type, length, stream, ctx) {
+      this.type = type;
+      this.length = length;
+      this.stream = stream;
+      this.ctx = ctx;
+      this.base = this.stream.pos;
+      this.items = [];
+    }
+    get(index) {
+      if (index < 0 || index >= this.length) {
+        return void 0;
+      }
+      if (this.items[index] == null) {
+        const { pos } = this.stream;
+        this.stream.pos = this.base + this.type.size(null, this.ctx) * index;
+        this.items[index] = this.type.decode(this.stream, this.ctx);
+        this.stream.pos = pos;
+      }
+      return this.items[index];
+    }
+    toArray() {
+      const result = [];
+      for (let i2 = 0, end = this.length; i2 < end; i2++) {
+        result.push(this.get(i2));
+      }
+      return result;
+    }
+  };
+
+  // .goose/out/rc022-prep-20261114-01/source/node_modules/.pnpm/restructure@3.0.2/node_modules/restructure/src/Bitfield.js
+  var Bitfield = class extends Base {
+    constructor(type, flags = []) {
+      super();
+      this.type = type;
+      this.flags = flags;
+    }
+    decode(stream) {
+      const val = this.type.decode(stream);
+      const res = {};
+      for (let i2 = 0; i2 < this.flags.length; i2++) {
+        const flag = this.flags[i2];
+        if (flag != null) {
+          res[flag] = !!(val & 1 << i2);
+        }
+      }
+      return res;
+    }
+    size() {
+      return this.type.size();
+    }
+    encode(stream, keys) {
+      let val = 0;
+      for (let i2 = 0; i2 < this.flags.length; i2++) {
+        const flag = this.flags[i2];
+        if (flag != null) {
+          if (keys[flag]) {
+            val |= 1 << i2;
+          }
+        }
+      }
+      return this.type.encode(stream, val);
+    }
+  };
+
+  // .goose/out/rc022-prep-20261114-01/source/node_modules/.pnpm/restructure@3.0.2/node_modules/restructure/src/Buffer.js
+  var BufferT = class extends Base {
+    constructor(length) {
+      super();
+      this.length = length;
+    }
+    decode(stream, parent) {
+      const length = resolveLength(this.length, stream, parent);
+      return stream.readBuffer(length);
+    }
+    size(val, parent) {
+      if (!val) {
+        return resolveLength(this.length, null, parent);
+      }
+      let len = val.length;
+      if (this.length instanceof NumberT) {
+        len += this.length.size();
+      }
+      return len;
+    }
+    encode(stream, buf, parent) {
+      if (this.length instanceof NumberT) {
+        this.length.encode(stream, buf.length);
+      }
+      return stream.writeBuffer(buf);
+    }
+  };
+
+  // .goose/out/rc022-prep-20261114-01/source/node_modules/.pnpm/restructure@3.0.2/node_modules/restructure/src/Optional.js
+  var Optional = class extends Base {
+    constructor(type, condition = true) {
+      super();
+      this.type = type;
+      this.condition = condition;
+    }
+    decode(stream, parent) {
+      let { condition } = this;
+      if (typeof condition === "function") {
+        condition = condition.call(parent, parent);
+      }
+      if (condition) {
+        return this.type.decode(stream, parent);
+      }
+    }
+    size(val, parent) {
+      let { condition } = this;
+      if (typeof condition === "function") {
+        condition = condition.call(parent, parent);
+      }
+      if (condition) {
+        return this.type.size(val, parent);
+      } else {
+        return 0;
+      }
+    }
+    encode(stream, val, parent) {
+      let { condition } = this;
+      if (typeof condition === "function") {
+        condition = condition.call(parent, parent);
+      }
+      if (condition) {
+        return this.type.encode(stream, val, parent);
+      }
+    }
+  };
+
+  // .goose/out/rc022-prep-20261114-01/source/node_modules/.pnpm/restructure@3.0.2/node_modules/restructure/src/Reserved.js
+  var Reserved = class extends Base {
+    constructor(type, count = 1) {
+      super();
+      this.type = type;
+      this.count = count;
+    }
+    decode(stream, parent) {
+      stream.pos += this.size(null, parent);
+      return void 0;
+    }
+    size(data, parent) {
+      const count = resolveLength(this.count, null, parent);
+      return this.type.size() * count;
+    }
+    encode(stream, val, parent) {
+      return stream.fill(0, this.size(val, parent));
+    }
+  };
+
+  // .goose/out/rc022-prep-20261114-01/source/node_modules/.pnpm/restructure@3.0.2/node_modules/restructure/src/String.js
+  var StringT = class extends Base {
+    constructor(length, encoding = "ascii") {
+      super();
+      this.length = length;
+      this.encoding = encoding;
+    }
+    decode(stream, parent) {
+      let length, pos;
+      let { encoding } = this;
+      if (typeof encoding === "function") {
+        encoding = encoding.call(parent, parent) || "ascii";
+      }
+      let width = encodingWidth(encoding);
+      if (this.length != null) {
+        length = resolveLength(this.length, stream, parent);
+      } else {
+        let buffer;
+        ({ buffer, length, pos } = stream);
+        while (pos < length - width + 1 && (buffer[pos] !== 0 || width === 2 && buffer[pos + 1] !== 0)) {
+          pos += width;
+        }
+        length = pos - stream.pos;
+      }
+      const string = stream.readString(length, encoding);
+      if (this.length == null && stream.pos < stream.length) {
+        stream.pos += width;
+      }
+      return string;
+    }
+    size(val, parent) {
+      if (val === void 0 || val === null) {
+        return resolveLength(this.length, null, parent);
+      }
+      let { encoding } = this;
+      if (typeof encoding === "function") {
+        encoding = encoding.call(parent != null ? parent.val : void 0, parent != null ? parent.val : void 0) || "ascii";
+      }
+      if (encoding === "utf16be") {
+        encoding = "utf16le";
+      }
+      let size = byteLength(val, encoding);
+      if (this.length instanceof NumberT) {
+        size += this.length.size();
+      }
+      if (this.length == null) {
+        size += encodingWidth(encoding);
+      }
+      return size;
+    }
+    encode(stream, val, parent) {
+      let { encoding } = this;
+      if (typeof encoding === "function") {
+        encoding = encoding.call(parent != null ? parent.val : void 0, parent != null ? parent.val : void 0) || "ascii";
+      }
+      if (this.length instanceof NumberT) {
+        this.length.encode(stream, byteLength(val, encoding));
+      }
+      stream.writeString(val, encoding);
+      if (this.length == null) {
+        return encodingWidth(encoding) == 2 ? stream.writeUInt16LE(0) : stream.writeUInt8(0);
+      }
+    }
+  };
+  function encodingWidth(encoding) {
+    switch (encoding) {
+      case "ascii":
+      case "utf8":
+        return 1;
+      case "utf16le":
+      case "utf16-le":
+      case "utf-16be":
+      case "utf-16le":
+      case "utf16be":
+      case "utf16-be":
+      case "ucs2":
+        return 2;
+      default:
+        return 1;
+    }
+  }
+  function byteLength(string, encoding) {
+    switch (encoding) {
+      case "ascii":
+        return string.length;
+      case "utf8":
+        let len = 0;
+        for (let i2 = 0; i2 < string.length; i2++) {
+          let c = string.charCodeAt(i2);
+          if (c >= 55296 && c <= 56319 && i2 < string.length - 1) {
+            let c2 = string.charCodeAt(++i2);
+            if ((c2 & 64512) === 56320) {
+              c = ((c & 1023) << 10) + (c2 & 1023) + 65536;
+            } else {
+              i2--;
+            }
+          }
+          if ((c & 4294967168) === 0) {
+            len++;
+          } else if ((c & 4294965248) === 0) {
+            len += 2;
+          } else if ((c & 4294901760) === 0) {
+            len += 3;
+          } else if ((c & 4292870144) === 0) {
+            len += 4;
+          }
+        }
+        return len;
+      case "utf16le":
+      case "utf16-le":
+      case "utf16be":
+      case "utf16-be":
+      case "ucs2":
+        return string.length * 2;
+      default:
+        throw new Error("Unknown encoding " + encoding);
+    }
+  }
+
+  // .goose/out/rc022-prep-20261114-01/source/node_modules/.pnpm/restructure@3.0.2/node_modules/restructure/src/Struct.js
+  var Struct = class extends Base {
+    constructor(fields = {}) {
+      super();
+      this.fields = fields;
+    }
+    decode(stream, parent, length = 0) {
+      const res = this._setup(stream, parent, length);
+      this._parseFields(stream, res, this.fields);
+      if (this.process != null) {
+        this.process.call(res, stream);
+      }
+      return res;
+    }
+    _setup(stream, parent, length) {
+      const res = {};
+      Object.defineProperties(res, {
+        parent: { value: parent },
+        _startOffset: { value: stream.pos },
+        _currentOffset: { value: 0, writable: true },
+        _length: { value: length }
+      });
+      return res;
+    }
+    _parseFields(stream, res, fields) {
+      for (let key in fields) {
+        var val;
+        const type = fields[key];
+        if (typeof type === "function") {
+          val = type.call(res, res);
+        } else {
+          val = type.decode(stream, res);
+        }
+        if (val !== void 0) {
+          if (val instanceof PropertyDescriptor) {
+            Object.defineProperty(res, key, val);
+          } else {
+            res[key] = val;
+          }
+        }
+        res._currentOffset = stream.pos - res._startOffset;
+      }
+    }
+    size(val, parent, includePointers = true) {
+      if (val == null) {
+        val = {};
+      }
+      const ctx = {
+        parent,
+        val,
+        pointerSize: 0
+      };
+      if (this.preEncode != null) {
+        this.preEncode.call(val);
+      }
+      let size = 0;
+      for (let key in this.fields) {
+        const type = this.fields[key];
+        if (type.size != null) {
+          size += type.size(val[key], ctx);
+        }
+      }
+      if (includePointers) {
+        size += ctx.pointerSize;
+      }
+      return size;
+    }
+    encode(stream, val, parent) {
+      let type;
+      if (this.preEncode != null) {
+        this.preEncode.call(val, stream);
+      }
+      const ctx = {
+        pointers: [],
+        startOffset: stream.pos,
+        parent,
+        val,
+        pointerSize: 0
+      };
+      ctx.pointerOffset = stream.pos + this.size(val, ctx, false);
+      for (let key in this.fields) {
+        type = this.fields[key];
+        if (type.encode != null) {
+          type.encode(stream, val[key], ctx);
+        }
+      }
+      let i2 = 0;
+      while (i2 < ctx.pointers.length) {
+        const ptr = ctx.pointers[i2++];
+        ptr.type.encode(stream, ptr.val, ptr.parent);
+      }
+    }
+  };
+
+  // .goose/out/rc022-prep-20261114-01/source/node_modules/.pnpm/restructure@3.0.2/node_modules/restructure/src/VersionedStruct.js
+  var getPath = (object2, pathArray) => {
+    return pathArray.reduce((prevObj, key) => prevObj && prevObj[key], object2);
+  };
+  var VersionedStruct = class _VersionedStruct extends Struct {
+    constructor(type, versions = {}) {
+      super();
+      this.type = type;
+      this.versions = versions;
+      if (typeof type === "string") {
+        this.versionPath = type.split(".");
+      }
+    }
+    decode(stream, parent, length = 0) {
+      const res = this._setup(stream, parent, length);
+      if (typeof this.type === "string") {
+        res.version = getPath(parent, this.versionPath);
+      } else {
+        res.version = this.type.decode(stream);
+      }
+      if (this.versions.header) {
+        this._parseFields(stream, res, this.versions.header);
+      }
+      const fields = this.versions[res.version];
+      if (fields == null) {
+        throw new Error(`Unknown version ${res.version}`);
+      }
+      if (fields instanceof _VersionedStruct) {
+        return fields.decode(stream, parent);
+      }
+      this._parseFields(stream, res, fields);
+      if (this.process != null) {
+        this.process.call(res, stream);
+      }
+      return res;
+    }
+    size(val, parent, includePointers = true) {
+      let key, type;
+      if (!val) {
+        throw new Error("Not a fixed size");
+      }
+      if (this.preEncode != null) {
+        this.preEncode.call(val);
+      }
+      const ctx = {
+        parent,
+        val,
+        pointerSize: 0
+      };
+      let size = 0;
+      if (typeof this.type !== "string") {
+        size += this.type.size(val.version, ctx);
+      }
+      if (this.versions.header) {
+        for (key in this.versions.header) {
+          type = this.versions.header[key];
+          if (type.size != null) {
+            size += type.size(val[key], ctx);
+          }
+        }
+      }
+      const fields = this.versions[val.version];
+      if (fields == null) {
+        throw new Error(`Unknown version ${val.version}`);
+      }
+      for (key in fields) {
+        type = fields[key];
+        if (type.size != null) {
+          size += type.size(val[key], ctx);
+        }
+      }
+      if (includePointers) {
+        size += ctx.pointerSize;
+      }
+      return size;
+    }
+    encode(stream, val, parent) {
+      let key, type;
+      if (this.preEncode != null) {
+        this.preEncode.call(val, stream);
+      }
+      const ctx = {
+        pointers: [],
+        startOffset: stream.pos,
+        parent,
+        val,
+        pointerSize: 0
+      };
+      ctx.pointerOffset = stream.pos + this.size(val, ctx, false);
+      if (typeof this.type !== "string") {
+        this.type.encode(stream, val.version);
+      }
+      if (this.versions.header) {
+        for (key in this.versions.header) {
+          type = this.versions.header[key];
+          if (type.encode != null) {
+            type.encode(stream, val[key], ctx);
+          }
+        }
+      }
+      const fields = this.versions[val.version];
+      for (key in fields) {
+        type = fields[key];
+        if (type.encode != null) {
+          type.encode(stream, val[key], ctx);
+        }
+      }
+      let i2 = 0;
+      while (i2 < ctx.pointers.length) {
+        const ptr = ctx.pointers[i2++];
+        ptr.type.encode(stream, ptr.val, ptr.parent);
+      }
+    }
+  };
+
+  // .goose/out/rc022-prep-20261114-01/source/node_modules/.pnpm/restructure@3.0.2/node_modules/restructure/src/Pointer.js
+  var Pointer = class extends Base {
+    constructor(offsetType, type, options = {}) {
+      super();
+      this.offsetType = offsetType;
+      this.type = type;
+      this.options = options;
+      if (this.type === "void") {
+        this.type = null;
+      }
+      if (this.options.type == null) {
+        this.options.type = "local";
+      }
+      if (this.options.allowNull == null) {
+        this.options.allowNull = true;
+      }
+      if (this.options.nullValue == null) {
+        this.options.nullValue = 0;
+      }
+      if (this.options.lazy == null) {
+        this.options.lazy = false;
+      }
+      if (this.options.relativeTo) {
+        if (typeof this.options.relativeTo !== "function") {
+          throw new Error("relativeTo option must be a function");
+        }
+        this.relativeToGetter = options.relativeTo;
+      }
+    }
+    decode(stream, ctx) {
+      const offset = this.offsetType.decode(stream, ctx);
+      if (offset === this.options.nullValue && this.options.allowNull) {
+        return null;
+      }
+      let relative;
+      switch (this.options.type) {
+        case "local":
+          relative = ctx._startOffset;
+          break;
+        case "immediate":
+          relative = stream.pos - this.offsetType.size();
+          break;
+        case "parent":
+          relative = ctx.parent._startOffset;
+          break;
+        default:
+          var c = ctx;
+          while (c.parent) {
+            c = c.parent;
+          }
+          relative = c._startOffset || 0;
+      }
+      if (this.options.relativeTo) {
+        relative += this.relativeToGetter(ctx);
+      }
+      const ptr = offset + relative;
+      if (this.type != null) {
+        let val = null;
+        const decodeValue = () => {
+          if (val != null) {
+            return val;
+          }
+          const { pos } = stream;
+          stream.pos = ptr;
+          val = this.type.decode(stream, ctx);
+          stream.pos = pos;
+          return val;
+        };
+        if (this.options.lazy) {
+          return new PropertyDescriptor({
+            get: decodeValue
+          });
+        }
+        return decodeValue();
+      } else {
+        return ptr;
+      }
+    }
+    size(val, ctx) {
+      const parent = ctx;
+      switch (this.options.type) {
+        case "local":
+        case "immediate":
+          break;
+        case "parent":
+          ctx = ctx.parent;
+          break;
+        default:
+          while (ctx.parent) {
+            ctx = ctx.parent;
+          }
+      }
+      let { type } = this;
+      if (type == null) {
+        if (!(val instanceof VoidPointer)) {
+          throw new Error("Must be a VoidPointer");
+        }
+        ({ type } = val);
+        val = val.value;
+      }
+      if (val && ctx) {
+        let size = type.size(val, parent);
+        ctx.pointerSize += size;
+      }
+      return this.offsetType.size();
+    }
+    encode(stream, val, ctx) {
+      let relative;
+      const parent = ctx;
+      if (val == null) {
+        this.offsetType.encode(stream, this.options.nullValue);
+        return;
+      }
+      switch (this.options.type) {
+        case "local":
+          relative = ctx.startOffset;
+          break;
+        case "immediate":
+          relative = stream.pos + this.offsetType.size(val, parent);
+          break;
+        case "parent":
+          ctx = ctx.parent;
+          relative = ctx.startOffset;
+          break;
+        default:
+          relative = 0;
+          while (ctx.parent) {
+            ctx = ctx.parent;
+          }
+      }
+      if (this.options.relativeTo) {
+        relative += this.relativeToGetter(parent.val);
+      }
+      this.offsetType.encode(stream, ctx.pointerOffset - relative);
+      let { type } = this;
+      if (type == null) {
+        if (!(val instanceof VoidPointer)) {
+          throw new Error("Must be a VoidPointer");
+        }
+        ({ type } = val);
+        val = val.value;
+      }
+      ctx.pointers.push({
+        type,
+        val,
+        parent
+      });
+      return ctx.pointerOffset += type.size(val, parent);
+    }
+  };
+  var VoidPointer = class {
+    constructor(type, value) {
+      this.type = type;
+      this.value = value;
+    }
+  };
+
+  // .goose/out/rc022-prep-20261114-01/source/node_modules/.pnpm/@swc+helpers@0.5.23/node_modules/@swc/helpers/esm/_define_property.js
+  function _define_property(obj, key, value) {
+    if (key in obj) {
+      Object.defineProperty(obj, key, { value, enumerable: true, configurable: true, writable: true });
+    } else obj[key] = value;
+    return obj;
+  }
+
+  // .goose/out/rc022-prep-20261114-01/source/node_modules/.pnpm/tslib@2.8.1/node_modules/tslib/tslib.es6.mjs
+  function __decorate(decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i2 = decorators.length - 1; i2 >= 0; i2--) if (d = decorators[i2]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+  }
+
+  // .goose/out/rc022-prep-20261114-01/source/node_modules/.pnpm/fontkit@2.0.4/node_modules/fontkit/dist/browser-module.mjs
+  var import_fast_deep_equal = __toESM(require_fast_deep_equal(), 1);
+
+  // .goose/out/rc022-prep-20261114-01/source/node_modules/.pnpm/unicode-properties@1.4.1/node_modules/unicode-properties/dist/module.mjs
+  var import_base64_js = __toESM(require_base64_js(), 1);
+  var import_unicode_trie = __toESM(require_unicode_trie(), 1);
+  function $parcel$interopDefault(a) {
+    return a && a.__esModule ? a.default : a;
+  }
+  var $f4087201da764553$exports = {};
+  $f4087201da764553$exports = JSON.parse('{"categories":["Cc","Zs","Po","Sc","Ps","Pe","Sm","Pd","Nd","Lu","Sk","Pc","Ll","So","Lo","Pi","Cf","No","Pf","Lt","Lm","Mn","Me","Mc","Nl","Zl","Zp","Cs","Co"],"combiningClasses":["Not_Reordered","Above","Above_Right","Below","Attached_Above_Right","Attached_Below","Overlay","Iota_Subscript","Double_Below","Double_Above","Below_Right","Above_Left","CCC10","CCC11","CCC12","CCC13","CCC14","CCC15","CCC16","CCC17","CCC18","CCC19","CCC20","CCC21","CCC22","CCC23","CCC24","CCC25","CCC30","CCC31","CCC32","CCC27","CCC28","CCC29","CCC33","CCC34","CCC35","CCC36","Nukta","Virama","CCC84","CCC91","CCC103","CCC107","CCC118","CCC122","CCC129","CCC130","CCC132","Attached_Above","Below_Left","Left","Kana_Voicing","CCC26","Right"],"scripts":["Common","Latin","Bopomofo","Inherited","Greek","Coptic","Cyrillic","Armenian","Hebrew","Arabic","Syriac","Thaana","Nko","Samaritan","Mandaic","Devanagari","Bengali","Gurmukhi","Gujarati","Oriya","Tamil","Telugu","Kannada","Malayalam","Sinhala","Thai","Lao","Tibetan","Myanmar","Georgian","Hangul","Ethiopic","Cherokee","Canadian_Aboriginal","Ogham","Runic","Tagalog","Hanunoo","Buhid","Tagbanwa","Khmer","Mongolian","Limbu","Tai_Le","New_Tai_Lue","Buginese","Tai_Tham","Balinese","Sundanese","Batak","Lepcha","Ol_Chiki","Braille","Glagolitic","Tifinagh","Han","Hiragana","Katakana","Yi","Lisu","Vai","Bamum","Syloti_Nagri","Phags_Pa","Saurashtra","Kayah_Li","Rejang","Javanese","Cham","Tai_Viet","Meetei_Mayek","null","Linear_B","Lycian","Carian","Old_Italic","Gothic","Old_Permic","Ugaritic","Old_Persian","Deseret","Shavian","Osmanya","Osage","Elbasan","Caucasian_Albanian","Linear_A","Cypriot","Imperial_Aramaic","Palmyrene","Nabataean","Hatran","Phoenician","Lydian","Meroitic_Hieroglyphs","Meroitic_Cursive","Kharoshthi","Old_South_Arabian","Old_North_Arabian","Manichaean","Avestan","Inscriptional_Parthian","Inscriptional_Pahlavi","Psalter_Pahlavi","Old_Turkic","Old_Hungarian","Hanifi_Rohingya","Old_Sogdian","Sogdian","Elymaic","Brahmi","Kaithi","Sora_Sompeng","Chakma","Mahajani","Sharada","Khojki","Multani","Khudawadi","Grantha","Newa","Tirhuta","Siddham","Modi","Takri","Ahom","Dogra","Warang_Citi","Nandinagari","Zanabazar_Square","Soyombo","Pau_Cin_Hau","Bhaiksuki","Marchen","Masaram_Gondi","Gunjala_Gondi","Makasar","Cuneiform","Egyptian_Hieroglyphs","Anatolian_Hieroglyphs","Mro","Bassa_Vah","Pahawh_Hmong","Medefaidrin","Miao","Tangut","Nushu","Duployan","SignWriting","Nyiakeng_Puachue_Hmong","Wancho","Mende_Kikakui","Adlam"],"eaw":["N","Na","A","W","H","F"]}');
+  var $747425b437e121da$var$trie = new (0, import_unicode_trie.default)((0, import_base64_js.default).toByteArray("AAARAAAAAADwfAEAZXl5ONRt+/5bPVFZimRfKoTQJNm37CGE7Iw0j3UsTWKsoyI7kwyyTiEUzSD7NiEzhWYijH0wMVkHE4Mx49fzfo+3nuP4/fdZjvv+XNd5n/d9nef1WZvmKhTxiZndzDQBSEYQqxqKwnsKvGQucFh+6t6cJ792ePQBZv5S9yXSwkyjf/P4T7mTNnIAv1dOVhMlR9lflbUL9JeJguqsjvG9NTj/wLb566VAURnLo2vvRi89S3gW/33ihh2eXpDn40BIW7REl/7coRKIhAFlAiOtbLDTt6mMb4GzMF1gNnvX/sBxtbsAIjfztCNcQjcNDtLThRvuXu5M5g/CBjaLBE4lJm4qy/oZD97+IJryApcXfgWYlkvWbhfXgujOJKVu8B+ozqTLbxyJ5kNiR75CxDqfBM9eOlDMmGeoZ0iQbbS5VUplIwI+ZNXEKQVJxlwqjhOY7w3XwPesbLK5JZE+Tt4X8q8km0dzInsPPzbscrjBMVjF5mOHSeRdJVgKUjLTHiHqXSPkep8N/zFk8167KLp75f6RndkvzdfB6Uz3MmqvRArzdCbs1/iRZjYPLLF3U8Qs+H+Rb8iK51a6NIV2V9+07uJsTGFWpPz8J++7iRu2B6eAKlK/kujrLthwaD/7a6J5w90TusnH1JMAc+gNrql4aspOUG/RrsxUKmPzhHgP4Bleru+6Vfc/MBjgXVx7who94nPn7MPFrnwQP7g0k0Dq0h2GSKO6fTZ8nLodN1SiOUj/5EL/Xo1DBvRm0wmrh3x6phcJ20/9CuMr5h8WPqXMSasLoLHoufTmE7mzYrs6B0dY7KjuCogKqsvxnxAwXWvd9Puc9PnE8DOHT2INHxRlIyVHrqZahtfV2E/A2PDdtA3ewlRHMtFIBKO/T4IozWTQZ+mb+gdKuk/ZHrqloucKdsOSJmlWTSntWjcxVMjUmroXLM10I6TwDLnBq4LP69TxgVeyGsd8yHvhF8ydPlrNRSNs9EP7WmeuSE7Lu10JbOuQcJw/63sDp68wB9iwP5AO+mBpV0R5VDDeyQUFCel1G+4KHBgEVFS0YK+m2sXLWLuGTlkVAd97WwKKdacjWElRCuDRauf33l/yVcDF6sVPKeTes99FC1NpNWcpieGSV/IbO8PCTy5pbUR1U8lxzf4T+y6fZMxOz3LshkQLeeDSd0WmUrQgajmbktrxsb2AZ0ACw2Vgni+gV/m+KvCRWLg08Clx7uhql+v9XySGcjjOHlsp8vBw/e8HS7dtiqF6T/XcSXuaMW66GF1g4q9YyBadHqy3Y5jin1c7yZos6BBr6dsomSHxiUHanYtcYQwnMMZhRhOnaYJeyJzaRuukyCUh48+e/BUvk/aEfDp8ag+jD64BHxNnQ5v/E7WRk7eLjGV13I3oqy45YNONi/1op1oDr7rPjkhPsTXgUpQtGDPlIs55KhQaic9kSGs/UrZ2QKQOflB8MTEQxRF9pullToWO7Eplan6mcMRFnUu2441yxi23x+KqKlr7RWWsi9ZXMWlr8vfP3llk1m2PRj0yudccxBuoa7VfIgRmnFPGX6Pm1WIfMm/Rm4n/xTn8IGqA0GWuqgu48pEUO0U9nN+ZdIvFpPb7VDPphIfRZxznlHeVFebkd9l+raXy9BpTMcIUIvBfgHEb6ndGo8VUkxpief14KjzFOcaANfgvFpvyY8lE8lE4raHizLpluPzMks1hx/e1Hok5yV0p7qQH7GaYeMzzZTFvRpv6k6iaJ4yNqzBvN8J7B430h2wFm1IBPcqbou33G7/NWPgopl4Mllla6e24L3TOTVNkza2zv3QKuDWTeDpClCEYgTQ+5vEBSQZs/rMF50+sm4jofTgWLqgX1x3TkrDEVaRqfY/xZizFZ3Y8/DFEFD31VSfBQ5raEB6nHnZh6ddehtclQJ8fBrldyIh99LNnV32HzKEej04hk6SYjdauCa4aYW0ru/QxvQRGzLKOAQszf3ixJypTW3WWL6BLSF2EMCMIw7OUvWBC6A/gDc2D1jvBapMCc7ztx6jYczwTKsRLL6dMNXb83HS8kdD0pTMMj161zbVHkU0mhSHo9SlBDDXdN6hDvRGizmohtIyR3ot8tF5iUG4GLNcXeGvBudSFrHu+bVZb9jirNVG+rQPI51A7Hu8/b0UeaIaZ4UgDO68PkYx3PE2HWpKapJ764Kxt5TFYpywMy4DLQqVRy11I7SOLhxUFmqiEK52NaijWArIfCg6qG8q5eSiwRCJb1R7GDJG74TrYgx/lVq7w9++Kh929xSJEaoSse5fUOQg9nMAnIZv+7fwVRcNv3gOHI46Vb5jYUC66PYHO6lS+TOmvEQjuYmx4RkffYGxqZIp/DPWNHAixbRBc+XKE3JEOgs4jIwu/dSAwhydruOGF39co91aTs85JJ3Z/LpXoF43hUwJsb/M1Chzdn8HX8vLXnqWUKvRhNLpfAF4PTFqva1sBQG0J+59HyYfmQ3oa4/sxZdapVLlo/fooxSXi/dOEQWIWq8E0FkttEyTFXR2aNMPINMIzZwCNEheYTVltsdaLkMyKoEUluPNAYCM2IG3br0DLy0fVNWKHtbSKbBjfiw7Lu06gQFalC7RC9BwRMSpLYDUo9pDtDfzwUiPJKLJ2LGcSphWBadOI/iJjNqUHV7ucG8yC6+iNM9QYElqBR7ECFXrcTgWQ3eG/tCWacT9bxIkfmxPmi3vOd36KxihAJA73vWNJ+Y9oapXNscVSVqS5g15xOWND/WuUCcA9YAAg6WFbjHamrblZ5c0L6Zx1X58ZittGcfDKU697QRSqW/g+RofNRyvrWMrBn44cPvkRe2HdTu/Cq01C5/riWPHZyXPKHuSDDdW8c1XPgd6ogvLh20qEIu8c19sqr4ufyHrwh37ZN5MkvY1dsGmEz9pUBTxWrvvhNyODyX2Q1k/fbX/T/vbHNcBrmjgDtvBdtZrVtiIg5iXQuzO/DEMvRX8Mi1zymSlt92BGILeKItjoShJXE/H7xwnf0Iewb8BFieJ9MflEBCQYEDm8eZniiEPfGoaYiiEdhQxHQNr2AuRdmbL9mcl18Kumh+HEZLp6z+j35ML9zTbUwahUZCyQQOgQrGfdfQtaR/OYJ/9dYXb2TWZFMijfCA8Nov4sa5FFDUe1T68h4q08WDE7JbbDiej4utRMR9ontevxlXv6LuJTXt1YEv8bDzEt683PuSsIN0afvu0rcBu9AbXZbkOG3K3AhtqQ28N23lXm7S3Yn6KXmAhBhz+GeorJJ4XxO/b3vZk2LXp42+QvsVxGSNVpfSctIFMTR1bD9t70i6sfNF3WKz/uKDEDCpzzztwhL45lsw89H2IpWN10sXHRlhDse9KCdpP5qNNpU84cTY+aiqswqR8XZ9ea0KbVRwRuOGQU3csAtV2fSbnq47U6es6rKlWLWhg3s/B9C9g+oTyp6RtIldR51OOkP5/6nSy6itUVPcMNOp4M/hDdKOz3uK6srbdxOrc2cJgr1Sg02oBxxSky6V7JaG+ziNwlfqnjnvh2/uq1lKfbp+qpwq/D/5OI5gkFl5CejKGxfc2YVJfGqc4E0x5e9PHK2ukbHNI7/RZV6LNe65apbTGjoCaQls0txPPbmQbCQn+/upCoXRZy9yzorWJvZ0KWcbXlBxU/d5I4ERUTxMuVWhSMmF677LNN7NnLwsmKawXkCgbrpcluOl0WChR1qhtSrxGXHu251dEItYhYX3snvn1gS2uXuzdTxCJjZtjsip0iT2sDC0qMS7Bk9su2NyXjFK5/f5ZoWwofg3DtTyjaFqspnOOTSh8xK/CKUFS57guVEkw9xoQuRCwwEO9Lu9z2vYxSa9NFV8DvSxv2C4WYLYF8Nrc4DzWkzNsk81JJOlZ/LYJrGCoj4MmZpnf3AXmzxT4rtl9jsqljEyedz468SGKdBiQzyz/qWKEhFg45ZczlZZ3KGL3l6sn+3TTa3zMVMhPa1obGp/z+fvY0QXTrJTf1XAT3EtQdUfYYlmWZyvPZ/6rWwU7UOQei7pVE0osgN94Iy+T1+omE6z4Rh2O20FjgBeK2y1mcoFiMDOJvuZPn5Moy9fmFH3wyfKvn4+TwfLvt/lHTTVnvrtoUWRBiQXhiNM8nE6ZoWeux/Z0b2unRcdUzdDpmL7CAgd1ToRXwgmHTZOgiGtVT+xr1QH9ObebRTT4NzL+XSpLuuWp62GqQvJVTPoZOeJCb6gIwd9XHMftQ+Kc08IKKdKQANSJ1a2gve3JdRhO0+tNiYzWAZfd7isoeBu67W7xuK8WX7nhJURld98Inb0t/dWOSau/kDvV4DJo/cImw9AO2Gvq0F2n0M7yIZKL8amMbjYld+qFls7hq8Acvq97K2PrCaomuUiesu7qNanGupEl6J/iem8lyr/NMnsTr6o41PO0yhQh3hPFN0wJP7S830je9iTBLzUNgYH+gUZpROo3rN2qgCI+6GewpX8w8CH+ro6QrWiStqmcMzVa3vEel+3/dDxMp0rDv1Q6wTMS3K64zTT6RWzK1y643im25Ja7X2ePCV2mTswd/4jshZPo4bLnerqIosq/hy2bKUAmVn9n4oun1+a0DIZ56UhVwmZHdUNpLa8gmPvxS1eNvCF1T0wo1wKPdCJi0qOrWz7oYRTzgTtkzEzZn308XSLwUog4OWGKJzCn/3FfF9iA32dZHSv30pRCM3KBY9WZoRhtdK/ChHk6DEQBsfV6tN2o1Cn0mLtPBfnkS+qy1L2xfFe9TQPtDE1Be44RTl82E9hPT2rS2+93LFbzhQQO3C/hD2jRFH3BWWbasAfuMhRJFcTri73eE835y016s22DjoFJ862WvLj69fu2TgSF3RHia9D5DSitlQAXYCnbdqjPkR287Lh6dCHDapos+eFDvcZPP2edPmTFxznJE/EBLoQQ0Qmn9EkZOyJmHxMbvKYb8o21ZHmv5YLqgsEPk9gWZwYQY9wLqGXuax/8QlV5qDaPbq9pLPT1yp+zOWKmraEy1OUJI7zdEcEmvBpbdwLrDCgEb2xX8S/nxZgjK4bRi+pbOmbh8bEeoPvU/L9ndx9kntlDALbdAvp0O8ZC3zSUnFg4cePsw7jxewWvL7HRSBLUn6J7vTH9uld5N76JFPgBCdXGF221oEJk++XfRwXplLSyrVO7HFWBEs99nTazKveW3HpbD4dH/YmdAl+lwbSt8BQWyTG7jAsACI7bPPUU9hI9XUHWqQOuezHzUjnx5Qqs6T1qNHfTTHleDtmqK7flA9a0gz2nycIpz1FHBuWxKNtUeTdqP29Fb3tv+tl5JyBqXoR+vCsdzZwZUhf6Lu8bvkB9yQP4x7GGegB0ym0Lpl03Q7e+C0cDsm9GSDepCDji7nUslLyYyluPfvLyKaDSX4xpR+nVYQjQQn5F8KbY1gbIVLiK1J3mW90zTyR1bqApX2BlWh7KG8LAY9/S9nWC0XXh9pZZo6xuir12T43rkaGfQssbQyIslA7uJnSHOV22NhlNtUo0czxPAsXhh8tIQYaTM4l/yAlZlydTcXhlG22Gs/n3BxKBd/3ZjYwg3NaUurVXhNB+afVnFfNr9TbC9ksNdvwpNfeHanyJ8M6GrIVfLlYAPv0ILe4dn0Z+BJSbJkN7eZY/c6+6ttDYcIDeUKIDXqUSE42Xdh5nRbuaObozjht0HJ5H1e+em+NJi/+8kQlyjCbJpPckwThZeIF9/u7lrVIKNeJLCN/TpPAeXxvd31/CUDWHK9MuP1V1TJgngzi4V0qzS3SW3Qy5UiGHqg02wQa5tsEl9s/X9nNMosgLlUgZSfCBj1DiypLfhr9/r0nR0XY2tmhDOcUS4E7cqa4EJBhzqvpbZa35Q5Iz5EqmhYiOGDAYk606Tv74+KGfPjKVuP15rIzgW0I7/niOu9el/sn2bRye0gV+GrePDRDMHjwO1lEdeXH8N+UTO3IoN18kpI3tPxz+fY+n2MGMSGFHAx/83tKeJOl+2i+f1O9v6FfEDBbqrw+lpM8Anav7zHNr7hE78nXUtPNodMbCnITWA7Ma/IHlZ50F9hWge/wzOvSbtqFVFtkS8Of2nssjZwbSFdU+VO8z6tCEc9UA9ACxT5zIUeSrkBB/v1krOpm7bVMrGxEKfI6LcnpB4D8bvn2hDKGqKrJaVAJuDaBEY3F7eXyqnFWlOoFV/8ZLspZiZd7orXLhd4mhHQgbuKbHjJWUzrnm0Dxw/LJLzXCkh7slMxKo8uxZIWZfdKHlfI7uj3LP6ARAuWdF7ZmZ7daOKqKGbz5LxOggTgS39oEioYmrqkCeUDvbxkBYKeHhcLmMN8dMF01ZMb32IpL/cH8R7VHQSI5I0YfL14g9d7P/6cjB1JXXxbozEDbsrPdmL8ph7QW10jio+v7YsqHKQ6xrBbOVtxU0/nFfzUGZwIBLwyUvg49ii+54nv9FyECBpURnQK4Ox6N7lw5fsjdd5l/2SwBcAHMJoyjO1Pifye2dagaOwCVMqdJWAo77pvBe0zdJcTWu5fdzPNfV2p1pc7/JKQ8zhKkwsOELUDhXygPJ5oR8Vpk2lsCen3D3QOQp2zdrSZHjVBstDF/wWO98rrkQ6/7zt/Drip7OHIug1lomNdmRaHRrjmqeodn22sesQQPgzimPOMqC60a5+i/UYh51uZm+ijWkkaI2xjrBO2558DZNZMiuDQlaVAvBy2wLn/bR3FrNzfnO/9oDztYqxZrr7JMIhqmrochbqmQnKowxW29bpqTaJu7kW1VotC72QkYX8OoDDdMDwV1kJRk3mufgJBzf+iwFRJ7XWQwO5ujVglgFgHtycWiMLx5N+6XU+TulLabWjOzoao03fniUW0xvIJNPbk7CQlFZd/RCOPvgQbLjh5ITE8NVJeKt3HGr6JTnFdIzcVOlEtwqbIIX0IM7saC+4N5047MTJ9+Wn11EhyEPIlwsHE5utCeXRjQzlrR+R1Cf/qDzcNbqLXdk3J7gQ39VUrrEkS/VMWjjg+t2oYrqB0tUZClcUF6+LBC3EQ7KnGIwm/qjZX4GKPtjTX1zQKV6nPAb2t/Rza5IqKRf8i2DFEhV/YSifX0YwsiF6TQnp48Gr65TFq0zUe6LGjiY7fq0LSGKL1VnC6ESI2yxvt3XqBx53B3gSlGFeJcPbUbonW1E9E9m4NfuwPh+t5QjRxX34lvBPVxwQd7aeTd+r9dw5CiP1pt8wMZoMdni7GapYdo6KPgeQKcmlFfq4UYhvV0IBgeiR3RnTMBaqDqpZrTRyLdsp4l0IXZTdErfH0sN3dqBG5vRIx3VgCYcHmmkqJ8Hyu3s9K9uBD1d8cZUEx3qYcF5vsqeRpF1GOg8emeWM2OmBlWPdZ6qAXwm3nENFyh+kvXk132PfWAlN0kb7yh4fz2T7VWUY/hEXX5DvxGABC03XRpyOG8t/u3Gh5tZdpsSV9AWaxJN7zwhVglgII1gV28tUViyqn4UMdIh5t+Ea2zo7PO48oba0TwQbiSZOH4YhD578kPF3reuaP7LujPMsjHmaDuId9XEaZBCJhbXJbRg5VCk3KJpryH/+8S3wdhR47pdFcmpZG2p0Bpjp/VbvalgIZMllYX5L31aMPdt1J7r/7wbixt0Mnz2ZvNGTARHPVD+2O1D8SGpWXlVnP2ekgon55YiinADDynyaXtZDXueVqbuTi8z8cHHK325pgqM+mWZwzHeEreMvhZopAScXM14SJHpGwZyRljMlDvcMm9FZ/1e9+r/puOnpXOtc9Iu2fmgBfEP9cGW1Fzb1rGlfJ08pACtq1ZW18bf2cevebzVeHbaA50G9qoUp39JWdPHbYkPCRXjt4gzlq3Cxge28Mky8MoS/+On72kc+ZI2xBtgJytpAQHQ1zrEddMIVyR5urX6yBNu8v5lKC8eLdGKTJtbgIZ3ZyTzSfWmx9f+cvcJe8yM39K/djkp2aUTE/9m2Lj5jg7b8vdRAer7DO3SyLNHs1CAm5x5iAdh2yGJYivArZbCBNY88Tw+w+C1Tbt7wK3zl2rzTHo/D8/gb3c3mYrnEIEipYqPUcdWjnTsSw471O3EUN7Gtg4NOAs9PJrxm03VuZKa5xwXAYCjt7Gs01Km6T2DhOYUMoFcCSu7Hk1p3yP1eG+M3v3Q5luAze6WwBnZIYO0TCucPWK+UJ36KoJ8Y+vpavhLO8g5ed704IjlQdfemrMu//EvPYXTQSGIPPfiagJS9nMqP5IvkxN9pvuJz7h8carPXTKMq8jnTeL0STan6dnLTAqwIswcIwWDR2KwbGddAVN8SYWRB7kfBfBRkSXzvHlIF8D6jo64kUzYk5o/n8oLjKqat0rdXvQ86MkwQGMnnlcasqPPT2+mVtUGb32KuH6cyZQenrRG11TArcAl27+nvOMBDe++EKHf4YdyGf7mznzOz33cFFGEcv329p4qG2hoaQ8ULiMyVz6ENcxhoqGnFIdupcn7GICQWuw3yO3W8S33mzCcMYJ8ywc7U7rmaQf/W5K63Gr4bVTpXOyOp4tbaPyIaatBNpXqlmQUTSZXjxPr19+73PSaT+QnI35YsWn6WpfJjRtK8vlJZoTSgjaRU39AGCkWOZtifJrnefCrqwTKDFmuWUCukEsYcRrMzCoit28wYpP7kSVjMD8WJYQiNc2blMjuqYegmf6SsfC1jqz8XzghMlOX+gn/MKZmgljszrmehEa4V98VreJDxYvHr3j7IeJB9/sBZV41BWT/AZAjuC5XorlIPnZgBAniBEhanp0/0+qZmEWDpu8ige1hUPIyTo6T6gDEcFhWSoduNh8YSu65KgMOGBw7VlNYzNIgwHtq9KP2yyTVysqX5v12sf7D+vQUdR2dRDvCV40rIInXSLWT/yrC6ExOQxBJwIDbeZcl3z1yR5Rj3l8IGpxspapnvBL+fwupA3b6fkFceID9wgiM1ILB0cHVdvo/R4xg8yqKXT8efl0GnGX1/27FUYeUW2L/GNRGGWVGp3i91oaJkb4rybENHre9a2P5viz/yqk8ngWUUS+Kv+fu+9BLFnfLiLXOFcIeBJLhnayCiuDRSqcx0Qu68gVsGYc6EHD500Fkt+gpDj6gvr884n8wZ5o6q7xtL5wA0beXQnffWYkZrs2NGIRgQbsc5NB302SVx+R4ROvmgZaR8wBcji128BMfJ9kcvJ4DC+bQ57kRmv5yxgU4ngZfn0/JNZ8JBwxjTqS+s9kjJFG1unGUGLwMiIuXUD9EFhNIJuyCEAmVZSIGKH4G6v1gRR1LyzQKH2ZqiI1DnHMoDEZspbDjTeaFIAbSvjSq3A+n46y9hhVM8wIpnARSXyzmOD96d9UXvFroSPgGw1dq2vdEqDq9fJN1EbL2WulNmHkFDvxSO9ZT/RX/Bw2gA/BrF90XrJACereVfbV/YXaKfp77Nmx5NjEIUlxojsy7iN7nBHSZigfsbFyVOX1ZTeCCxvqnRSExP4lk5ZeYlRu9caaa743TWNdchRIhEWwadsBIe245C8clpaZ4zrPsk+OwXzxWCvRRumyNSLW5KWaSJyJU95cwheK76gr7228spZ3hmTtLyrfM2QRFqZFMR8/Q6yWfVgwTdfX2Ry4w3+eAO/5VT5nFb5NlzXPvBEAWrNZ6Q3jbH0RF4vcbp+fDngf/ywpoyNQtjrfvcq93AVb1RDWRghvyqgI2BkMr1rwYi8gizZ0G9GmPpMeqPerAQ0dJbzx+KAFM4IBq6iSLpZHUroeyfd9o5o+4fR2EtsZBoJORQEA4SW0CmeXSnblx2e9QkCHIodyqV6+g5ETEpZsLqnd/Na60EKPX/tQpPEcO+COIBPcQdszDzSiHGyQFPly/7KciUh1u+mFfxTCHGv9nn2WqndGgeGjQ/kr02qmTBX7Hc1qiEvgiSz1Tz/sy7Es29wvn6FrDGPP7asXlhOaiHxOctPvTptFA1kHFUk8bME7SsTSnGbFbUrssxrq70LhoSh5OwvQna+w84XdXhZb2sloJ4ZsCg3j+PrjJL08/JBi5zGd6ud/ZxhmcGKLOXPcNunQq5ESW92iJvfsuRrNYtawWwSmNhPYoFj2QqWNF0ffLpGt/ad24RJ8vkb5sXkpyKXmvFG5Vcdzf/44k3PBL/ojJ52+kWGzOArnyp5f969oV3J2c4Li27Nkova9VwRNVKqN0V+gV+mTHitgkXV30aWd3A1RSildEleiNPA+5cp+3+T7X+xfHiRZXQ1s4FA9TxIcnveQs9JSZ5r5qNmgqlW4zMtZ6rYNvgmyVcywKtu8ZxnSbS5vXlBV+NXdIfi3+xzrnJ0TkFL+Un8v1PWOC2PPFCjVPq7qTH7mOpzOYj/b4h0ceT+eHgr97Jqhb1ziVfeANzfN8bFUhPKBi7hJBCukQnB0aGjFTYLJPXL26lQ2b80xrOD5cFWgA8hz3St0e69kwNnD3+nX3gy12FjrjO+ddRvvvfyV3SWbXcxqNHfmsb9u1TV+wHTb9B07/L2sB8WUHJ9eeNomDyysEWZ0deqEhH/oWI2oiEh526gvAK1Nx2kIhNvkYR+tPYHEa9j+nd1VBpQP1uzSjIDO+fDDB7uy029rRjDC5Sk6aKczyz1D5uA9Lu+Rrrapl8JXNL3VRllNQH2K1ZFxOpX8LprttfqQ56MbPM0IttUheXWD/mROOeFqGUbL+kUOVlXLTFX/525g4faLEFO4qWWdmOXMNvVjpIVTWt650HfQjX9oT3Dg5Au6+v1/Ci78La6ZOngYCFPT1AUwxQuZ0yt5xKdNXLaDTISMTeCj16XTryhM36K2mfGRIgot71voWs8tTpL/f1rvcwv3LSDf+/G8THCT7NpfHWcW+lsF/ol8q9Bi6MezNTqp0rpp/kJRiVfNrX/w27cRRTu8RIIqtUblBMkxy4jwAVqCjUJkiPBj2cAoVloG8B2/N5deLdMhDb7xs5nhd3dubJhuj8WbaFRyu1L678DHhhA+rMimNo4C1kGpp0tD/qnCfCFHejpf0LJX43OTr578PY0tnIIrlWyNYyuR/ie6j2xNb1OV6u0dOX/1Dtcd7+ya9W+rY2LmnyQMtk8SMLTon8RAdwOaN2tNg5zVnDKlmVeOxPV2vhHIo9QEPV7jc3f+zVDquiNg1OaHX3cZXJDRY5MJpo+VanAcmqp4oasYLG+wrXUL5vJU0kqk2hGEskhP+Jjigrz1l6QnEwp6n8PMVeJp70Ii6ppeaK9GhF6fJE00ceLyxv08tKiPat4QdxZFgSbQknnEiCLD8Qc1rjazVKM3r3gXnnMeONgdz/yFV1q+haaN+wnF3Fn4uYCI9XsKOuVwDD0LsCO/f0gj5cmxCFcr7sclIcefWjvore+3aSU474cyqDVxH7w1RX3CHsaqsMRX17ZLgjsDXws3kLm2XJdM3Ku383UXqaHqsywzPhx7NFir0Fqjym/w6cxD2U9ypa3dx7Z12w/fi3Jps8sqJ8f8Ah8aZAvkHXvIRyrsxK7rrFaNNdNvjI8+3Emri195DCNa858anj2Qdny6Czshkn4N2+1m+k5S8sunX3Ja7I+JutRzg1mc2e9Yc0Zv9PZn1SwhxIdU9sXwZRTd/J5FoUm0e+PYREeHg3oc2YYzGf2xfJxXExt4pT3RfDRHvMXLUmoXOy63xv5pLuhOEax0dRgSywZ/GH+YBXFgCeTU0hZ8SPEFsn8punp1Kurd1KgXxUZ+la3R5+4ePGR4ZF5UQtOa83+Vj8zh80dfzbhxWCeoJnQ4dkZJM4drzknZOOKx2n3WrvJnzFIS8p0xeic+M3ZRVXIp10tV2DyYKwRxLzulPwzHcLlYTxl4PF7v8l106Azr+6wBFejbq/3P72C/0j78cepY9990/d4eAurn2lqdGKLU8FffnMw7cY7pVeXJRMU73Oxwi2g2vh/+4gX8dvbjfojn/eLVhhYl8GthwCQ50KcZq4z2JeW5eeOnJWFQEnVxDoG459TaC4zXybECEoJ0V5q1tXrQbDMtUxeTV6Pdt1/zJuc7TJoV/9YZFWxUtCf6Ou3Vd/vR/vG0138hJQrHkNeoep5dLe+6umcSquKvMaFpm3EZHDBOvCi0XYyIFHMgX7Cqp3JVXlxJFwQfHSaIUEbI2u1lBVUdlNw4Qa9UsLPEK94Qiln3pyKxQVCeNlx8yd7EegVNQBkFLabKvnietYVB4IPZ1fSor82arbgYec8aSdFMaIluYTYuNx32SxfrjKUdPGq+UNp5YpydoEG3xVLixtmHO9zXxKAnHnPuH2fPGrjx0GcuCDEU+yXUtXh6nfUL+cykws1gJ5vkfYFaFBr9PdCXvVf35OJQxzUMmWjv0W6uGJK11uAGDqSpOwCf6rouSIjPVgw57cJCOQ4b9tkI/Y5WNon9Swe72aZryKo8d+HyHBEdWJKrkary0LIGczA4Irq353Wc0Zga3om7UQiAGCvIl8GGyaqz5zH+1gMP5phWUCpKtttWIyicz09vXg76GxkmiGSMQ06Z9X8BUwqOtauDbPIf4rpK/yYoeAHxJ9soXS9VDe1Aw+awOOxaN8foLrif0TXBvQ55dtRtulRq9emFDBxlQcqKCaD8NeTSE7FOHvcjf/+oKbbtRqz9gbofoc2EzQ3pL6W5JdfJzAWmOk8oeoECe90lVMruwl/ltM015P/zIPazqvdvFmLNVHMIZrwiQ2tIKtGh6PDVH+85ew3caqVt2BsDv5rOcu3G9srQWd7NmgtzCRUXLYknYRSwtH9oUtkqyN3CfP20xQ1faXQl4MEmjQehWR6GmGnkdpYNQYeIG408yAX7uCZmYUic9juOfb+Re28+OVOB+scYK4DaPcBe+5wmji9gymtkMpKo4UKqCz7yxzuN8VIlx9yNozpRJpNaWHtaZVEqP45n2JemTlYBSmNIK1FuSYAUQ1yBLnKxevrjayd+h2i8PjdB3YY6b0nr3JuOXGpPMyh4V2dslpR3DFEvgpsBLqhqLDOWP4yEvIL6f21PpA7/8B"));
+  var $747425b437e121da$var$log2 = Math.log2 || ((n) => Math.log(n) / Math.LN2);
+  var $747425b437e121da$var$bits = (n) => $747425b437e121da$var$log2(n) + 1 | 0;
+  var $747425b437e121da$var$CATEGORY_BITS = $747425b437e121da$var$bits((0, /* @__PURE__ */ $parcel$interopDefault($f4087201da764553$exports)).categories.length - 1);
+  var $747425b437e121da$var$COMBINING_BITS = $747425b437e121da$var$bits((0, /* @__PURE__ */ $parcel$interopDefault($f4087201da764553$exports)).combiningClasses.length - 1);
+  var $747425b437e121da$var$SCRIPT_BITS = $747425b437e121da$var$bits((0, /* @__PURE__ */ $parcel$interopDefault($f4087201da764553$exports)).scripts.length - 1);
+  var $747425b437e121da$var$EAW_BITS = $747425b437e121da$var$bits((0, /* @__PURE__ */ $parcel$interopDefault($f4087201da764553$exports)).eaw.length - 1);
+  var $747425b437e121da$var$NUMBER_BITS = 10;
+  var $747425b437e121da$var$CATEGORY_SHIFT = $747425b437e121da$var$COMBINING_BITS + $747425b437e121da$var$SCRIPT_BITS + $747425b437e121da$var$EAW_BITS + $747425b437e121da$var$NUMBER_BITS;
+  var $747425b437e121da$var$COMBINING_SHIFT = $747425b437e121da$var$SCRIPT_BITS + $747425b437e121da$var$EAW_BITS + $747425b437e121da$var$NUMBER_BITS;
+  var $747425b437e121da$var$SCRIPT_SHIFT = $747425b437e121da$var$EAW_BITS + $747425b437e121da$var$NUMBER_BITS;
+  var $747425b437e121da$var$CATEGORY_MASK = (1 << $747425b437e121da$var$CATEGORY_BITS) - 1;
+  var $747425b437e121da$var$COMBINING_MASK = (1 << $747425b437e121da$var$COMBINING_BITS) - 1;
+  var $747425b437e121da$var$SCRIPT_MASK = (1 << $747425b437e121da$var$SCRIPT_BITS) - 1;
+  var $747425b437e121da$var$EAW_MASK = (1 << $747425b437e121da$var$EAW_BITS) - 1;
+  var $747425b437e121da$var$NUMBER_MASK = (1 << $747425b437e121da$var$NUMBER_BITS) - 1;
+  function $747425b437e121da$export$410364bbb673ddbc(codePoint) {
+    const val = $747425b437e121da$var$trie.get(codePoint);
+    return (0, /* @__PURE__ */ $parcel$interopDefault($f4087201da764553$exports)).categories[val >> $747425b437e121da$var$CATEGORY_SHIFT & $747425b437e121da$var$CATEGORY_MASK];
+  }
+  function $747425b437e121da$export$c03b919c6651ed55(codePoint) {
+    const val = $747425b437e121da$var$trie.get(codePoint);
+    return (0, /* @__PURE__ */ $parcel$interopDefault($f4087201da764553$exports)).combiningClasses[val >> $747425b437e121da$var$COMBINING_SHIFT & $747425b437e121da$var$COMBINING_MASK];
+  }
+  function $747425b437e121da$export$941569448d136665(codePoint) {
+    const val = $747425b437e121da$var$trie.get(codePoint);
+    return (0, /* @__PURE__ */ $parcel$interopDefault($f4087201da764553$exports)).scripts[val >> $747425b437e121da$var$SCRIPT_SHIFT & $747425b437e121da$var$SCRIPT_MASK];
+  }
+  function $747425b437e121da$export$727d9dbc4fbb948f(codePoint) {
+    return $747425b437e121da$export$410364bbb673ddbc(codePoint) === "Nd";
+  }
+  function $747425b437e121da$export$e33ad6871e762338(codePoint) {
+    const category = $747425b437e121da$export$410364bbb673ddbc(codePoint);
+    return category === "Mn" || category === "Me" || category === "Mc";
+  }
+
+  // .goose/out/rc022-prep-20261114-01/source/node_modules/.pnpm/fontkit@2.0.4/node_modules/fontkit/dist/browser-module.mjs
+  var import_unicode_trie2 = __toESM(require_unicode_trie(), 1);
+  var import_dfa = __toESM(require_dfa(), 1);
+  var import_clone = __toESM(require_clone(), 1);
+  var import_tiny_inflate = __toESM(require_tiny_inflate(), 1);
+  var import_decompress = __toESM(require_decompress(), 1);
+  function $parcel$export(e, n, v, s) {
+    Object.defineProperty(e, n, { get: v, set: s, enumerable: true, configurable: true });
+  }
+  function $parcel$interopDefault2(a) {
+    return a && a.__esModule ? a.default : a;
+  }
+  var $d636bc798e7178db$exports = {};
+  $parcel$export($d636bc798e7178db$exports, "logErrors", () => $d636bc798e7178db$export$bd5c5d8b8dcafd78);
+  $parcel$export($d636bc798e7178db$exports, "registerFormat", () => $d636bc798e7178db$export$36b2f24e97d43be);
+  $parcel$export($d636bc798e7178db$exports, "create", () => $d636bc798e7178db$export$185802fd694ee1f5);
+  $parcel$export($d636bc798e7178db$exports, "defaultLanguage", () => $d636bc798e7178db$export$42940898df819940);
+  $parcel$export($d636bc798e7178db$exports, "setDefaultLanguage", () => $d636bc798e7178db$export$5157e7780d44cc36);
+  var $d636bc798e7178db$export$bd5c5d8b8dcafd78 = false;
+  var $d636bc798e7178db$var$formats = [];
+  function $d636bc798e7178db$export$36b2f24e97d43be(format) {
+    $d636bc798e7178db$var$formats.push(format);
+  }
+  function $d636bc798e7178db$export$185802fd694ee1f5(buffer, postscriptName) {
+    for (let i2 = 0; i2 < $d636bc798e7178db$var$formats.length; i2++) {
+      let format = $d636bc798e7178db$var$formats[i2];
+      if (format.probe(buffer)) {
+        let font = new format(new (0, DecodeStream)(buffer));
+        if (postscriptName) return font.getFont(postscriptName);
+        return font;
+      }
+    }
+    throw new Error("Unknown font format");
+  }
+  var $d636bc798e7178db$export$42940898df819940 = "en";
+  function $d636bc798e7178db$export$5157e7780d44cc36(lang = "en") {
+    $d636bc798e7178db$export$42940898df819940 = lang;
+  }
+  function $e71565f2ce09cb6b$export$69a3209f1a06c04d(target, key, descriptor) {
+    if (descriptor.get) {
+      let get = descriptor.get;
+      descriptor.get = function() {
+        let value = get.call(this);
+        Object.defineProperty(this, key, {
+          value
+        });
+        return value;
+      };
+    } else if (typeof descriptor.value === "function") {
+      let fn = descriptor.value;
+      return {
+        get() {
+          let cache = /* @__PURE__ */ new Map();
+          function memoized(...args) {
+            let key2 = args.length > 0 ? args[0] : "value";
+            if (cache.has(key2)) return cache.get(key2);
+            let result = fn.apply(this, args);
+            cache.set(key2, result);
+            return result;
+          }
+          Object.defineProperty(this, key, {
+            value: memoized
+          });
+          return memoized;
+        }
+      };
+    }
+  }
+  var $26a62205ad06574e$var$SubHeader = new Struct({
+    firstCode: uint16,
+    entryCount: uint16,
+    idDelta: int16,
+    idRangeOffset: uint16
+  });
+  var $26a62205ad06574e$var$CmapGroup = new Struct({
+    startCharCode: uint32,
+    endCharCode: uint32,
+    glyphID: uint32
+  });
+  var $26a62205ad06574e$var$UnicodeValueRange = new Struct({
+    startUnicodeValue: uint24,
+    additionalCount: uint8
+  });
+  var $26a62205ad06574e$var$UVSMapping = new Struct({
+    unicodeValue: uint24,
+    glyphID: uint16
+  });
+  var $26a62205ad06574e$var$DefaultUVS = new ArrayT($26a62205ad06574e$var$UnicodeValueRange, uint32);
+  var $26a62205ad06574e$var$NonDefaultUVS = new ArrayT($26a62205ad06574e$var$UVSMapping, uint32);
+  var $26a62205ad06574e$var$VarSelectorRecord = new Struct({
+    varSelector: uint24,
+    defaultUVS: new Pointer(uint32, $26a62205ad06574e$var$DefaultUVS, {
+      type: "parent"
+    }),
+    nonDefaultUVS: new Pointer(uint32, $26a62205ad06574e$var$NonDefaultUVS, {
+      type: "parent"
+    })
+  });
+  var $26a62205ad06574e$var$CmapSubtable = new VersionedStruct(uint16, {
+    0: {
+      length: uint16,
+      language: uint16,
+      codeMap: new LazyArray(uint8, 256)
+    },
+    2: {
+      length: uint16,
+      language: uint16,
+      subHeaderKeys: new ArrayT(uint16, 256),
+      subHeaderCount: (t) => Math.max.apply(Math, t.subHeaderKeys),
+      subHeaders: new LazyArray($26a62205ad06574e$var$SubHeader, "subHeaderCount"),
+      glyphIndexArray: new LazyArray(uint16, "subHeaderCount")
+    },
+    4: {
+      length: uint16,
+      language: uint16,
+      segCountX2: uint16,
+      segCount: (t) => t.segCountX2 >> 1,
+      searchRange: uint16,
+      entrySelector: uint16,
+      rangeShift: uint16,
+      endCode: new LazyArray(uint16, "segCount"),
+      reservedPad: new Reserved(uint16),
+      startCode: new LazyArray(uint16, "segCount"),
+      idDelta: new LazyArray(int16, "segCount"),
+      idRangeOffset: new LazyArray(uint16, "segCount"),
+      glyphIndexArray: new LazyArray(uint16, (t) => (t.length - t._currentOffset) / 2)
+    },
+    6: {
+      length: uint16,
+      language: uint16,
+      firstCode: uint16,
+      entryCount: uint16,
+      glyphIndices: new LazyArray(uint16, "entryCount")
+    },
+    8: {
+      reserved: new Reserved(uint16),
+      length: uint32,
+      language: uint16,
+      is32: new LazyArray(uint8, 8192),
+      nGroups: uint32,
+      groups: new LazyArray($26a62205ad06574e$var$CmapGroup, "nGroups")
+    },
+    10: {
+      reserved: new Reserved(uint16),
+      length: uint32,
+      language: uint32,
+      firstCode: uint32,
+      entryCount: uint32,
+      glyphIndices: new LazyArray(uint16, "numChars")
+    },
+    12: {
+      reserved: new Reserved(uint16),
+      length: uint32,
+      language: uint32,
+      nGroups: uint32,
+      groups: new LazyArray($26a62205ad06574e$var$CmapGroup, "nGroups")
+    },
+    13: {
+      reserved: new Reserved(uint16),
+      length: uint32,
+      language: uint32,
+      nGroups: uint32,
+      groups: new LazyArray($26a62205ad06574e$var$CmapGroup, "nGroups")
+    },
+    14: {
+      length: uint32,
+      numRecords: uint32,
+      varSelectors: new LazyArray($26a62205ad06574e$var$VarSelectorRecord, "numRecords")
+    }
+  });
+  var $26a62205ad06574e$var$CmapEntry = new Struct({
+    platformID: uint16,
+    encodingID: uint16,
+    table: new Pointer(uint32, $26a62205ad06574e$var$CmapSubtable, {
+      type: "parent",
+      lazy: true
+    })
+  });
+  var $26a62205ad06574e$export$2e2bcd8739ae039 = new Struct({
+    version: uint16,
+    numSubtables: uint16,
+    tables: new ArrayT($26a62205ad06574e$var$CmapEntry, "numSubtables")
+  });
+  var $f2612a29f92ac062$export$2e2bcd8739ae039 = new Struct({
+    version: int32,
+    revision: int32,
+    checkSumAdjustment: uint32,
+    magicNumber: uint32,
+    flags: uint16,
+    unitsPerEm: uint16,
+    created: new ArrayT(int32, 2),
+    modified: new ArrayT(int32, 2),
+    xMin: int16,
+    yMin: int16,
+    xMax: int16,
+    yMax: int16,
+    macStyle: new Bitfield(uint16, [
+      "bold",
+      "italic",
+      "underline",
+      "outline",
+      "shadow",
+      "condensed",
+      "extended"
+    ]),
+    lowestRecPPEM: uint16,
+    fontDirectionHint: int16,
+    indexToLocFormat: int16,
+    glyphDataFormat: int16
+    // 0 for current format
+  });
+  var $2c179dd593583073$export$2e2bcd8739ae039 = new Struct({
+    version: int32,
+    ascent: int16,
+    descent: int16,
+    lineGap: int16,
+    advanceWidthMax: uint16,
+    minLeftSideBearing: int16,
+    minRightSideBearing: int16,
+    xMaxExtent: int16,
+    caretSlopeRise: int16,
+    caretSlopeRun: int16,
+    caretOffset: int16,
+    reserved: new Reserved(int16, 4),
+    metricDataFormat: int16,
+    numberOfMetrics: uint16
+    // Number of advance widths in 'hmtx' table
+  });
+  var $bdc9060542264b85$var$HmtxEntry = new Struct({
+    advance: uint16,
+    bearing: int16
+  });
+  var $bdc9060542264b85$export$2e2bcd8739ae039 = new Struct({
+    metrics: new LazyArray($bdc9060542264b85$var$HmtxEntry, (t) => t.parent.hhea.numberOfMetrics),
+    bearings: new LazyArray(int16, (t) => t.parent.maxp.numGlyphs - t.parent.hhea.numberOfMetrics)
+  });
+  var $dbf51cb3d3fe409d$export$2e2bcd8739ae039 = new Struct({
+    version: int32,
+    numGlyphs: uint16,
+    maxPoints: uint16,
+    maxContours: uint16,
+    maxComponentPoints: uint16,
+    maxComponentContours: uint16,
+    maxZones: uint16,
+    maxTwilightPoints: uint16,
+    maxStorage: uint16,
+    maxFunctionDefs: uint16,
+    maxInstructionDefs: uint16,
+    maxStackElements: uint16,
+    maxSizeOfInstructions: uint16,
+    maxComponentElements: uint16,
+    maxComponentDepth: uint16
+    // Maximum levels of recursion; 1 for simple components
+  });
+  function $e449ad78d50845fe$export$badc544e0651b6b1(platformID, encodingID, languageID = 0) {
+    if (platformID === 1 && $e449ad78d50845fe$export$479e671907f486d1[languageID]) return $e449ad78d50845fe$export$479e671907f486d1[languageID];
+    return $e449ad78d50845fe$export$6fef87b7618bdf0b[platformID][encodingID];
+  }
+  var $e449ad78d50845fe$var$SINGLE_BYTE_ENCODINGS = /* @__PURE__ */ new Set([
+    "x-mac-roman",
+    "x-mac-cyrillic",
+    "iso-8859-6",
+    "iso-8859-8"
+  ]);
+  var $e449ad78d50845fe$var$MAC_ENCODINGS = {
+    "x-mac-croatian": "\xC4\xC5\xC7\xC9\xD1\xD6\xDC\xE1\xE0\xE2\xE4\xE3\xE5\xE7\xE9\xE8\xEA\xEB\xED\xEC\xEE\xEF\xF1\xF3\xF2\xF4\xF6\xF5\xFA\xF9\xFB\xFC\u2020\xB0\xA2\xA3\xA7\u2022\xB6\xDF\xAE\u0160\u2122\xB4\xA8\u2260\u017D\xD8\u221E\xB1\u2264\u2265\u2206\xB5\u2202\u2211\u220F\u0161\u222B\xAA\xBA\u03A9\u017E\xF8\xBF\xA1\xAC\u221A\u0192\u2248\u0106\xAB\u010C\u2026 \xC0\xC3\xD5\u0152\u0153\u0110\u2014\u201C\u201D\u2018\u2019\xF7\u25CA\uF8FF\xA9\u2044\u20AC\u2039\u203A\xC6\xBB\u2013\xB7\u201A\u201E\u2030\xC2\u0107\xC1\u010D\xC8\xCD\xCE\xCF\xCC\xD3\xD4\u0111\xD2\xDA\xDB\xD9\u0131\u02C6\u02DC\xAF\u03C0\xCB\u02DA\xB8\xCA\xE6\u02C7",
+    "x-mac-gaelic": "\xC4\xC5\xC7\xC9\xD1\xD6\xDC\xE1\xE0\xE2\xE4\xE3\xE5\xE7\xE9\xE8\xEA\xEB\xED\xEC\xEE\xEF\xF1\xF3\xF2\xF4\xF6\xF5\xFA\xF9\xFB\xFC\u2020\xB0\xA2\xA3\xA7\u2022\xB6\xDF\xAE\xA9\u2122\xB4\xA8\u2260\xC6\xD8\u1E02\xB1\u2264\u2265\u1E03\u010A\u010B\u1E0A\u1E0B\u1E1E\u1E1F\u0120\u0121\u1E40\xE6\xF8\u1E41\u1E56\u1E57\u027C\u0192\u017F\u1E60\xAB\xBB\u2026 \xC0\xC3\xD5\u0152\u0153\u2013\u2014\u201C\u201D\u2018\u2019\u1E61\u1E9B\xFF\u0178\u1E6A\u20AC\u2039\u203A\u0176\u0177\u1E6B\xB7\u1EF2\u1EF3\u204A\xC2\xCA\xC1\xCB\xC8\xCD\xCE\xCF\xCC\xD3\xD4\u2663\xD2\xDA\xDB\xD9\u0131\xDD\xFD\u0174\u0175\u1E84\u1E85\u1E80\u1E81\u1E82\u1E83",
+    "x-mac-greek": "\xC4\xB9\xB2\xC9\xB3\xD6\xDC\u0385\xE0\xE2\xE4\u0384\xA8\xE7\xE9\xE8\xEA\xEB\xA3\u2122\xEE\xEF\u2022\xBD\u2030\xF4\xF6\xA6\u20AC\xF9\xFB\xFC\u2020\u0393\u0394\u0398\u039B\u039E\u03A0\xDF\xAE\xA9\u03A3\u03AA\xA7\u2260\xB0\xB7\u0391\xB1\u2264\u2265\xA5\u0392\u0395\u0396\u0397\u0399\u039A\u039C\u03A6\u03AB\u03A8\u03A9\u03AC\u039D\xAC\u039F\u03A1\u2248\u03A4\xAB\xBB\u2026 \u03A5\u03A7\u0386\u0388\u0153\u2013\u2015\u201C\u201D\u2018\u2019\xF7\u0389\u038A\u038C\u038E\u03AD\u03AE\u03AF\u03CC\u038F\u03CD\u03B1\u03B2\u03C8\u03B4\u03B5\u03C6\u03B3\u03B7\u03B9\u03BE\u03BA\u03BB\u03BC\u03BD\u03BF\u03C0\u03CE\u03C1\u03C3\u03C4\u03B8\u03C9\u03C2\u03C7\u03C5\u03B6\u03CA\u03CB\u0390\u03B0\xAD",
+    "x-mac-icelandic": "\xC4\xC5\xC7\xC9\xD1\xD6\xDC\xE1\xE0\xE2\xE4\xE3\xE5\xE7\xE9\xE8\xEA\xEB\xED\xEC\xEE\xEF\xF1\xF3\xF2\xF4\xF6\xF5\xFA\xF9\xFB\xFC\xDD\xB0\xA2\xA3\xA7\u2022\xB6\xDF\xAE\xA9\u2122\xB4\xA8\u2260\xC6\xD8\u221E\xB1\u2264\u2265\xA5\xB5\u2202\u2211\u220F\u03C0\u222B\xAA\xBA\u03A9\xE6\xF8\xBF\xA1\xAC\u221A\u0192\u2248\u2206\xAB\xBB\u2026 \xC0\xC3\xD5\u0152\u0153\u2013\u2014\u201C\u201D\u2018\u2019\xF7\u25CA\xFF\u0178\u2044\u20AC\xD0\xF0\xDE\xFE\xFD\xB7\u201A\u201E\u2030\xC2\xCA\xC1\xCB\xC8\xCD\xCE\xCF\xCC\xD3\xD4\uF8FF\xD2\xDA\xDB\xD9\u0131\u02C6\u02DC\xAF\u02D8\u02D9\u02DA\xB8\u02DD\u02DB\u02C7",
+    "x-mac-inuit": "\u1403\u1404\u1405\u1406\u140A\u140B\u1431\u1432\u1433\u1434\u1438\u1439\u1449\u144E\u144F\u1450\u1451\u1455\u1456\u1466\u146D\u146E\u146F\u1470\u1472\u1473\u1483\u148B\u148C\u148D\u148E\u1490\u1491\xB0\u14A1\u14A5\u14A6\u2022\xB6\u14A7\xAE\xA9\u2122\u14A8\u14AA\u14AB\u14BB\u14C2\u14C3\u14C4\u14C5\u14C7\u14C8\u14D0\u14EF\u14F0\u14F1\u14F2\u14F4\u14F5\u1505\u14D5\u14D6\u14D7\u14D8\u14DA\u14DB\u14EA\u1528\u1529\u152A\u152B\u152D\u2026 \u152E\u153E\u1555\u1556\u1557\u2013\u2014\u201C\u201D\u2018\u2019\u1558\u1559\u155A\u155D\u1546\u1547\u1548\u1549\u154B\u154C\u1550\u157F\u1580\u1581\u1582\u1583\u1584\u1585\u158F\u1590\u1591\u1592\u1593\u1594\u1595\u1671\u1672\u1673\u1674\u1675\u1676\u1596\u15A0\u15A1\u15A2\u15A3\u15A4\u15A5\u15A6\u157C\u0141\u0142",
+    "x-mac-ce": "\xC4\u0100\u0101\xC9\u0104\xD6\xDC\xE1\u0105\u010C\xE4\u010D\u0106\u0107\xE9\u0179\u017A\u010E\xED\u010F\u0112\u0113\u0116\xF3\u0117\xF4\xF6\xF5\xFA\u011A\u011B\xFC\u2020\xB0\u0118\xA3\xA7\u2022\xB6\xDF\xAE\xA9\u2122\u0119\xA8\u2260\u0123\u012E\u012F\u012A\u2264\u2265\u012B\u0136\u2202\u2211\u0142\u013B\u013C\u013D\u013E\u0139\u013A\u0145\u0146\u0143\xAC\u221A\u0144\u0147\u2206\xAB\xBB\u2026 \u0148\u0150\xD5\u0151\u014C\u2013\u2014\u201C\u201D\u2018\u2019\xF7\u25CA\u014D\u0154\u0155\u0158\u2039\u203A\u0159\u0156\u0157\u0160\u201A\u201E\u0161\u015A\u015B\xC1\u0164\u0165\xCD\u017D\u017E\u016A\xD3\xD4\u016B\u016E\xDA\u016F\u0170\u0171\u0172\u0173\xDD\xFD\u0137\u017B\u0141\u017C\u0122\u02C7",
+    "x-mac-romanian": "\xC4\xC5\xC7\xC9\xD1\xD6\xDC\xE1\xE0\xE2\xE4\xE3\xE5\xE7\xE9\xE8\xEA\xEB\xED\xEC\xEE\xEF\xF1\xF3\xF2\xF4\xF6\xF5\xFA\xF9\xFB\xFC\u2020\xB0\xA2\xA3\xA7\u2022\xB6\xDF\xAE\xA9\u2122\xB4\xA8\u2260\u0102\u0218\u221E\xB1\u2264\u2265\xA5\xB5\u2202\u2211\u220F\u03C0\u222B\xAA\xBA\u03A9\u0103\u0219\xBF\xA1\xAC\u221A\u0192\u2248\u2206\xAB\xBB\u2026 \xC0\xC3\xD5\u0152\u0153\u2013\u2014\u201C\u201D\u2018\u2019\xF7\u25CA\xFF\u0178\u2044\u20AC\u2039\u203A\u021A\u021B\u2021\xB7\u201A\u201E\u2030\xC2\xCA\xC1\xCB\xC8\xCD\xCE\xCF\xCC\xD3\xD4\uF8FF\xD2\xDA\xDB\xD9\u0131\u02C6\u02DC\xAF\u02D8\u02D9\u02DA\xB8\u02DD\u02DB\u02C7",
+    "x-mac-turkish": "\xC4\xC5\xC7\xC9\xD1\xD6\xDC\xE1\xE0\xE2\xE4\xE3\xE5\xE7\xE9\xE8\xEA\xEB\xED\xEC\xEE\xEF\xF1\xF3\xF2\xF4\xF6\xF5\xFA\xF9\xFB\xFC\u2020\xB0\xA2\xA3\xA7\u2022\xB6\xDF\xAE\xA9\u2122\xB4\xA8\u2260\xC6\xD8\u221E\xB1\u2264\u2265\xA5\xB5\u2202\u2211\u220F\u03C0\u222B\xAA\xBA\u03A9\xE6\xF8\xBF\xA1\xAC\u221A\u0192\u2248\u2206\xAB\xBB\u2026 \xC0\xC3\xD5\u0152\u0153\u2013\u2014\u201C\u201D\u2018\u2019\xF7\u25CA\xFF\u0178\u011E\u011F\u0130\u0131\u015E\u015F\u2021\xB7\u201A\u201E\u2030\xC2\xCA\xC1\xCB\xC8\xCD\xCE\xCF\xCC\xD3\xD4\uF8FF\xD2\xDA\xDB\xD9\uF8A0\u02C6\u02DC\xAF\u02D8\u02D9\u02DA\xB8\u02DD\u02DB\u02C7"
+  };
+  var $e449ad78d50845fe$var$encodingCache = /* @__PURE__ */ new Map();
+  function $e449ad78d50845fe$export$1dceb3c14ed68bee(encoding) {
+    let cached = $e449ad78d50845fe$var$encodingCache.get(encoding);
+    if (cached) return cached;
+    let mapping = $e449ad78d50845fe$var$MAC_ENCODINGS[encoding];
+    if (mapping) {
+      let res = /* @__PURE__ */ new Map();
+      for (let i2 = 0; i2 < mapping.length; i2++) res.set(mapping.charCodeAt(i2), 128 + i2);
+      $e449ad78d50845fe$var$encodingCache.set(encoding, res);
+      return res;
+    }
+    if ($e449ad78d50845fe$var$SINGLE_BYTE_ENCODINGS.has(encoding)) {
+      let decoder = new TextDecoder(encoding);
+      let mapping2 = new Uint8Array(128);
+      for (let i2 = 0; i2 < 128; i2++) mapping2[i2] = 128 + i2;
+      let res = /* @__PURE__ */ new Map();
+      let s = decoder.decode(mapping2);
+      for (let i2 = 0; i2 < 128; i2++) res.set(s.charCodeAt(i2), 128 + i2);
+      $e449ad78d50845fe$var$encodingCache.set(encoding, res);
+      return res;
+    }
+  }
+  var $e449ad78d50845fe$export$6fef87b7618bdf0b = [
+    // unicode
+    [
+      "utf-16be",
+      "utf-16be",
+      "utf-16be",
+      "utf-16be",
+      "utf-16be",
+      "utf-16be",
+      "utf-16be"
+    ],
+    // macintosh
+    // Mappings available at http://unicode.org/Public/MAPPINGS/VENDORS/APPLE/
+    // 0	Roman                 17	Malayalam
+    // 1	Japanese	            18	Sinhalese
+    // 2	Traditional Chinese	  19	Burmese
+    // 3	Korean	              20	Khmer
+    // 4	Arabic	              21	Thai
+    // 5	Hebrew	              22	Laotian
+    // 6	Greek	                23	Georgian
+    // 7	Russian	              24	Armenian
+    // 8	RSymbol	              25	Simplified Chinese
+    // 9	Devanagari	          26	Tibetan
+    // 10	Gurmukhi	            27	Mongolian
+    // 11	Gujarati	            28	Geez
+    // 12	Oriya	                29	Slavic
+    // 13	Bengali	              30	Vietnamese
+    // 14	Tamil	                31	Sindhi
+    // 15	Telugu	              32	(Uninterpreted)
+    // 16	Kannada
+    [
+      "x-mac-roman",
+      "shift-jis",
+      "big5",
+      "euc-kr",
+      "iso-8859-6",
+      "iso-8859-8",
+      "x-mac-greek",
+      "x-mac-cyrillic",
+      "x-mac-symbol",
+      "x-mac-devanagari",
+      "x-mac-gurmukhi",
+      "x-mac-gujarati",
+      "Oriya",
+      "Bengali",
+      "Tamil",
+      "Telugu",
+      "Kannada",
+      "Malayalam",
+      "Sinhalese",
+      "Burmese",
+      "Khmer",
+      "iso-8859-11",
+      "Laotian",
+      "Georgian",
+      "Armenian",
+      "gbk",
+      "Tibetan",
+      "Mongolian",
+      "Geez",
+      "x-mac-ce",
+      "Vietnamese",
+      "Sindhi"
+    ],
+    // ISO (deprecated)
+    [
+      "ascii",
+      null,
+      "iso-8859-1"
+    ],
+    // windows
+    // Docs here: http://msdn.microsoft.com/en-us/library/system.text.encoding(v=vs.110).aspx
+    [
+      "symbol",
+      "utf-16be",
+      "shift-jis",
+      "gb18030",
+      "big5",
+      "euc-kr",
+      "johab",
+      null,
+      null,
+      null,
+      "utf-16be"
+    ]
+  ];
+  var $e449ad78d50845fe$export$479e671907f486d1 = {
+    15: "x-mac-icelandic",
+    17: "x-mac-turkish",
+    18: "x-mac-croatian",
+    24: "x-mac-ce",
+    25: "x-mac-ce",
+    26: "x-mac-ce",
+    27: "x-mac-ce",
+    28: "x-mac-ce",
+    30: "x-mac-icelandic",
+    37: "x-mac-romanian",
+    38: "x-mac-ce",
+    39: "x-mac-ce",
+    40: "x-mac-ce",
+    143: "x-mac-inuit",
+    146: "x-mac-gaelic"
+  };
+  var $e449ad78d50845fe$export$2092376fd002e13 = [
+    // unicode
+    [],
+    {
+      0: "en",
+      30: "fo",
+      60: "ks",
+      90: "rw",
+      1: "fr",
+      31: "fa",
+      61: "ku",
+      91: "rn",
+      2: "de",
+      32: "ru",
+      62: "sd",
+      92: "ny",
+      3: "it",
+      33: "zh",
+      63: "bo",
+      93: "mg",
+      4: "nl",
+      34: "nl-BE",
+      64: "ne",
+      94: "eo",
+      5: "sv",
+      35: "ga",
+      65: "sa",
+      128: "cy",
+      6: "es",
+      36: "sq",
+      66: "mr",
+      129: "eu",
+      7: "da",
+      37: "ro",
+      67: "bn",
+      130: "ca",
+      8: "pt",
+      38: "cz",
+      68: "as",
+      131: "la",
+      9: "no",
+      39: "sk",
+      69: "gu",
+      132: "qu",
+      10: "he",
+      40: "si",
+      70: "pa",
+      133: "gn",
+      11: "ja",
+      41: "yi",
+      71: "or",
+      134: "ay",
+      12: "ar",
+      42: "sr",
+      72: "ml",
+      135: "tt",
+      13: "fi",
+      43: "mk",
+      73: "kn",
+      136: "ug",
+      14: "el",
+      44: "bg",
+      74: "ta",
+      137: "dz",
+      15: "is",
+      45: "uk",
+      75: "te",
+      138: "jv",
+      16: "mt",
+      46: "be",
+      76: "si",
+      139: "su",
+      17: "tr",
+      47: "uz",
+      77: "my",
+      140: "gl",
+      18: "hr",
+      48: "kk",
+      78: "km",
+      141: "af",
+      19: "zh-Hant",
+      49: "az-Cyrl",
+      79: "lo",
+      142: "br",
+      20: "ur",
+      50: "az-Arab",
+      80: "vi",
+      143: "iu",
+      21: "hi",
+      51: "hy",
+      81: "id",
+      144: "gd",
+      22: "th",
+      52: "ka",
+      82: "tl",
+      145: "gv",
+      23: "ko",
+      53: "mo",
+      83: "ms",
+      146: "ga",
+      24: "lt",
+      54: "ky",
+      84: "ms-Arab",
+      147: "to",
+      25: "pl",
+      55: "tg",
+      85: "am",
+      148: "el-polyton",
+      26: "hu",
+      56: "tk",
+      86: "ti",
+      149: "kl",
+      27: "es",
+      57: "mn-CN",
+      87: "om",
+      150: "az",
+      28: "lv",
+      58: "mn",
+      88: "so",
+      151: "nn",
+      29: "se",
+      59: "ps",
+      89: "sw"
+    },
+    // ISO (deprecated)
+    [],
+    {
+      1078: "af",
+      16393: "en-IN",
+      1159: "rw",
+      1074: "tn",
+      1052: "sq",
+      6153: "en-IE",
+      1089: "sw",
+      1115: "si",
+      1156: "gsw",
+      8201: "en-JM",
+      1111: "kok",
+      1051: "sk",
+      1118: "am",
+      17417: "en-MY",
+      1042: "ko",
+      1060: "sl",
+      5121: "ar-DZ",
+      5129: "en-NZ",
+      1088: "ky",
+      11274: "es-AR",
+      15361: "ar-BH",
+      13321: "en-PH",
+      1108: "lo",
+      16394: "es-BO",
+      3073: "ar",
+      18441: "en-SG",
+      1062: "lv",
+      13322: "es-CL",
+      2049: "ar-IQ",
+      7177: "en-ZA",
+      1063: "lt",
+      9226: "es-CO",
+      11265: "ar-JO",
+      11273: "en-TT",
+      2094: "dsb",
+      5130: "es-CR",
+      13313: "ar-KW",
+      2057: "en-GB",
+      1134: "lb",
+      7178: "es-DO",
+      12289: "ar-LB",
+      1033: "en",
+      1071: "mk",
+      12298: "es-EC",
+      4097: "ar-LY",
+      12297: "en-ZW",
+      2110: "ms-BN",
+      17418: "es-SV",
+      6145: "ary",
+      1061: "et",
+      1086: "ms",
+      4106: "es-GT",
+      8193: "ar-OM",
+      1080: "fo",
+      1100: "ml",
+      18442: "es-HN",
+      16385: "ar-QA",
+      1124: "fil",
+      1082: "mt",
+      2058: "es-MX",
+      1025: "ar-SA",
+      1035: "fi",
+      1153: "mi",
+      19466: "es-NI",
+      10241: "ar-SY",
+      2060: "fr-BE",
+      1146: "arn",
+      6154: "es-PA",
+      7169: "aeb",
+      3084: "fr-CA",
+      1102: "mr",
+      15370: "es-PY",
+      14337: "ar-AE",
+      1036: "fr",
+      1148: "moh",
+      10250: "es-PE",
+      9217: "ar-YE",
+      5132: "fr-LU",
+      1104: "mn",
+      20490: "es-PR",
+      1067: "hy",
+      6156: "fr-MC",
+      2128: "mn-CN",
+      3082: "es",
+      1101: "as",
+      4108: "fr-CH",
+      1121: "ne",
+      1034: "es",
+      2092: "az-Cyrl",
+      1122: "fy",
+      1044: "nb",
+      21514: "es-US",
+      1068: "az",
+      1110: "gl",
+      2068: "nn",
+      14346: "es-UY",
+      1133: "ba",
+      1079: "ka",
+      1154: "oc",
+      8202: "es-VE",
+      1069: "eu",
+      3079: "de-AT",
+      1096: "or",
+      2077: "sv-FI",
+      1059: "be",
+      1031: "de",
+      1123: "ps",
+      1053: "sv",
+      2117: "bn",
+      5127: "de-LI",
+      1045: "pl",
+      1114: "syr",
+      1093: "bn-IN",
+      4103: "de-LU",
+      1046: "pt",
+      1064: "tg",
+      8218: "bs-Cyrl",
+      2055: "de-CH",
+      2070: "pt-PT",
+      2143: "tzm",
+      5146: "bs",
+      1032: "el",
+      1094: "pa",
+      1097: "ta",
+      1150: "br",
+      1135: "kl",
+      1131: "qu-BO",
+      1092: "tt",
+      1026: "bg",
+      1095: "gu",
+      2155: "qu-EC",
+      1098: "te",
+      1027: "ca",
+      1128: "ha",
+      3179: "qu",
+      1054: "th",
+      3076: "zh-HK",
+      1037: "he",
+      1048: "ro",
+      1105: "bo",
+      5124: "zh-MO",
+      1081: "hi",
+      1047: "rm",
+      1055: "tr",
+      2052: "zh",
+      1038: "hu",
+      1049: "ru",
+      1090: "tk",
+      4100: "zh-SG",
+      1039: "is",
+      9275: "smn",
+      1152: "ug",
+      1028: "zh-TW",
+      1136: "ig",
+      4155: "smj-NO",
+      1058: "uk",
+      1155: "co",
+      1057: "id",
+      5179: "smj",
+      1070: "hsb",
+      1050: "hr",
+      1117: "iu",
+      3131: "se-FI",
+      1056: "ur",
+      4122: "hr-BA",
+      2141: "iu-Latn",
+      1083: "se",
+      2115: "uz-Cyrl",
+      1029: "cs",
+      2108: "ga",
+      2107: "se-SE",
+      1091: "uz",
+      1030: "da",
+      1076: "xh",
+      8251: "sms",
+      1066: "vi",
+      1164: "prs",
+      1077: "zu",
+      6203: "sma-NO",
+      1106: "cy",
+      1125: "dv",
+      1040: "it",
+      7227: "sms",
+      1160: "wo",
+      2067: "nl-BE",
+      2064: "it-CH",
+      1103: "sa",
+      1157: "sah",
+      1043: "nl",
+      1041: "ja",
+      7194: "sr-Cyrl-BA",
+      1144: "ii",
+      3081: "en-AU",
+      1099: "kn",
+      3098: "sr",
+      1130: "yo",
+      10249: "en-BZ",
+      1087: "kk",
+      6170: "sr-Latn-BA",
+      4105: "en-CA",
+      1107: "km",
+      2074: "sr-Latn",
+      9225: "en-029",
+      1158: "quc",
+      1132: "nso"
+    }
+  ];
+  var $2bcf221753ec8e32$var$NameRecord = new Struct({
+    platformID: uint16,
+    encodingID: uint16,
+    languageID: uint16,
+    nameID: uint16,
+    length: uint16,
+    string: new Pointer(uint16, new StringT("length", (t) => (0, $e449ad78d50845fe$export$badc544e0651b6b1)(t.platformID, t.encodingID, t.languageID)), {
+      type: "parent",
+      relativeTo: (ctx) => ctx.parent.stringOffset,
+      allowNull: false
+    })
+  });
+  var $2bcf221753ec8e32$var$LangTagRecord = new Struct({
+    length: uint16,
+    tag: new Pointer(uint16, new StringT("length", "utf16be"), {
+      type: "parent",
+      relativeTo: (ctx) => ctx.stringOffset
+    })
+  });
+  var $2bcf221753ec8e32$var$NameTable = new VersionedStruct(uint16, {
+    0: {
+      count: uint16,
+      stringOffset: uint16,
+      records: new ArrayT($2bcf221753ec8e32$var$NameRecord, "count")
+    },
+    1: {
+      count: uint16,
+      stringOffset: uint16,
+      records: new ArrayT($2bcf221753ec8e32$var$NameRecord, "count"),
+      langTagCount: uint16,
+      langTags: new ArrayT($2bcf221753ec8e32$var$LangTagRecord, "langTagCount")
+    }
+  });
+  var $2bcf221753ec8e32$export$2e2bcd8739ae039 = $2bcf221753ec8e32$var$NameTable;
+  var $2bcf221753ec8e32$var$NAMES = [
+    "copyright",
+    "fontFamily",
+    "fontSubfamily",
+    "uniqueSubfamily",
+    "fullName",
+    "version",
+    "postscriptName",
+    "trademark",
+    "manufacturer",
+    "designer",
+    "description",
+    "vendorURL",
+    "designerURL",
+    "license",
+    "licenseURL",
+    null,
+    "preferredFamily",
+    "preferredSubfamily",
+    "compatibleFull",
+    "sampleText",
+    "postscriptCIDFontName",
+    "wwsFamilyName",
+    "wwsSubfamilyName"
+  ];
+  $2bcf221753ec8e32$var$NameTable.process = function(stream) {
+    var records = {};
+    for (let record2 of this.records) {
+      let language = (0, $e449ad78d50845fe$export$2092376fd002e13)[record2.platformID][record2.languageID];
+      if (language == null && this.langTags != null && record2.languageID >= 32768) language = this.langTags[record2.languageID - 32768].tag;
+      if (language == null) language = record2.platformID + "-" + record2.languageID;
+      let key = record2.nameID >= 256 ? "fontFeatures" : $2bcf221753ec8e32$var$NAMES[record2.nameID] || record2.nameID;
+      if (records[key] == null) records[key] = {};
+      let obj = records[key];
+      if (record2.nameID >= 256) obj = obj[record2.nameID] || (obj[record2.nameID] = {});
+      if (typeof record2.string === "string" || typeof obj[language] !== "string") obj[language] = record2.string;
+    }
+    this.records = records;
+  };
+  $2bcf221753ec8e32$var$NameTable.preEncode = function() {
+    if (Array.isArray(this.records)) return;
+    this.version = 0;
+    let records = [];
+    for (let key in this.records) {
+      let val = this.records[key];
+      if (key === "fontFeatures") continue;
+      records.push({
+        platformID: 3,
+        encodingID: 1,
+        languageID: 1033,
+        nameID: $2bcf221753ec8e32$var$NAMES.indexOf(key),
+        length: val.en.length * 2,
+        string: val.en
+      });
+      if (key === "postscriptName") records.push({
+        platformID: 1,
+        encodingID: 0,
+        languageID: 0,
+        nameID: $2bcf221753ec8e32$var$NAMES.indexOf(key),
+        length: val.en.length,
+        string: val.en
+      });
+    }
+    this.records = records;
+    this.count = records.length;
+    this.stringOffset = $2bcf221753ec8e32$var$NameTable.size(this, null, false);
+  };
+  var $84b272aa31b70606$var$OS2 = new VersionedStruct(uint16, {
+    header: {
+      xAvgCharWidth: int16,
+      usWeightClass: uint16,
+      usWidthClass: uint16,
+      fsType: new Bitfield(uint16, [
+        null,
+        "noEmbedding",
+        "viewOnly",
+        "editable",
+        null,
+        null,
+        null,
+        null,
+        "noSubsetting",
+        "bitmapOnly"
+      ]),
+      ySubscriptXSize: int16,
+      ySubscriptYSize: int16,
+      ySubscriptXOffset: int16,
+      ySubscriptYOffset: int16,
+      ySuperscriptXSize: int16,
+      ySuperscriptYSize: int16,
+      ySuperscriptXOffset: int16,
+      ySuperscriptYOffset: int16,
+      yStrikeoutSize: int16,
+      yStrikeoutPosition: int16,
+      sFamilyClass: int16,
+      panose: new ArrayT(uint8, 10),
+      ulCharRange: new ArrayT(uint32, 4),
+      vendorID: new StringT(4),
+      fsSelection: new Bitfield(uint16, [
+        "italic",
+        "underscore",
+        "negative",
+        "outlined",
+        "strikeout",
+        "bold",
+        "regular",
+        "useTypoMetrics",
+        "wws",
+        "oblique"
+      ]),
+      usFirstCharIndex: uint16,
+      usLastCharIndex: uint16
+      // The maximum Unicode index in this font
+    },
+    // The Apple version of this table ends here, but the Microsoft one continues on...
+    0: {},
+    1: {
+      typoAscender: int16,
+      typoDescender: int16,
+      typoLineGap: int16,
+      winAscent: uint16,
+      winDescent: uint16,
+      codePageRange: new ArrayT(uint32, 2)
+    },
+    2: {
+      // these should be common with version 1 somehow
+      typoAscender: int16,
+      typoDescender: int16,
+      typoLineGap: int16,
+      winAscent: uint16,
+      winDescent: uint16,
+      codePageRange: new ArrayT(uint32, 2),
+      xHeight: int16,
+      capHeight: int16,
+      defaultChar: uint16,
+      breakChar: uint16,
+      maxContent: uint16
+    },
+    5: {
+      typoAscender: int16,
+      typoDescender: int16,
+      typoLineGap: int16,
+      winAscent: uint16,
+      winDescent: uint16,
+      codePageRange: new ArrayT(uint32, 2),
+      xHeight: int16,
+      capHeight: int16,
+      defaultChar: uint16,
+      breakChar: uint16,
+      maxContent: uint16,
+      usLowerOpticalPointSize: uint16,
+      usUpperOpticalPointSize: uint16
+    }
+  });
+  var $84b272aa31b70606$var$versions = $84b272aa31b70606$var$OS2.versions;
+  $84b272aa31b70606$var$versions[3] = $84b272aa31b70606$var$versions[4] = $84b272aa31b70606$var$versions[2];
+  var $84b272aa31b70606$export$2e2bcd8739ae039 = $84b272aa31b70606$var$OS2;
+  var $32d9e2eb9565d93c$export$2e2bcd8739ae039 = new VersionedStruct(fixed32, {
+    header: {
+      italicAngle: fixed32,
+      underlinePosition: int16,
+      underlineThickness: int16,
+      isFixedPitch: uint32,
+      minMemType42: uint32,
+      maxMemType42: uint32,
+      minMemType1: uint32,
+      maxMemType1: uint32
+      // Maximum memory usage when a TrueType font is downloaded as a Type 1 font
+    },
+    1: {},
+    2: {
+      numberOfGlyphs: uint16,
+      glyphNameIndex: new ArrayT(uint16, "numberOfGlyphs"),
+      names: new ArrayT(new StringT(uint8))
+    },
+    2.5: {
+      numberOfGlyphs: uint16,
+      offsets: new ArrayT(uint8, "numberOfGlyphs")
+    },
+    3: {},
+    4: {
+      map: new ArrayT(uint32, (t) => t.parent.maxp.numGlyphs)
+    }
+  });
+  var $5202bd9d9ad8eaac$export$2e2bcd8739ae039 = new Struct({
+    controlValues: new ArrayT(int16)
+  });
+  var $5c0f37ca5ffb1850$export$2e2bcd8739ae039 = new Struct({
+    instructions: new ArrayT(uint8)
+  });
+  var $2b2b260902b1c57e$var$loca = new VersionedStruct("head.indexToLocFormat", {
+    0: {
+      offsets: new ArrayT(uint16)
+    },
+    1: {
+      offsets: new ArrayT(uint32)
+    }
+  });
+  $2b2b260902b1c57e$var$loca.process = function() {
+    if (this.version === 0 && !this._processed) {
+      for (let i2 = 0; i2 < this.offsets.length; i2++) this.offsets[i2] <<= 1;
+      this._processed = true;
+    }
+  };
+  $2b2b260902b1c57e$var$loca.preEncode = function() {
+    if (this.version === 0 && this._processed !== false) {
+      for (let i2 = 0; i2 < this.offsets.length; i2++) this.offsets[i2] >>>= 1;
+      this._processed = false;
+    }
+  };
+  var $2b2b260902b1c57e$export$2e2bcd8739ae039 = $2b2b260902b1c57e$var$loca;
+  var $7afb878c7bea4f66$export$2e2bcd8739ae039 = new Struct({
+    controlValueProgram: new ArrayT(uint8)
+  });
+  var $6c92b6371bce8bd9$export$2e2bcd8739ae039 = new ArrayT(new BufferT());
+  var $43e9821ef3717eec$export$2e2bcd8739ae039 = class {
+    getCFFVersion(ctx) {
+      while (ctx && !ctx.hdrSize) ctx = ctx.parent;
+      return ctx ? ctx.version : -1;
+    }
+    decode(stream, parent) {
+      let version = this.getCFFVersion(parent);
+      let count = version >= 2 ? stream.readUInt32BE() : stream.readUInt16BE();
+      if (count === 0) return [];
+      let offSize = stream.readUInt8();
+      let offsetType;
+      if (offSize === 1) offsetType = uint8;
+      else if (offSize === 2) offsetType = uint16;
+      else if (offSize === 3) offsetType = uint24;
+      else if (offSize === 4) offsetType = uint32;
+      else throw new Error(`Bad offset size in CFFIndex: ${offSize} ${stream.pos}`);
+      let ret = [];
+      let startPos = stream.pos + (count + 1) * offSize - 1;
+      let start = offsetType.decode(stream);
+      for (let i2 = 0; i2 < count; i2++) {
+        let end = offsetType.decode(stream);
+        if (this.type != null) {
+          let pos = stream.pos;
+          stream.pos = startPos + start;
+          parent.length = end - start;
+          ret.push(this.type.decode(stream, parent));
+          stream.pos = pos;
+        } else ret.push({
+          offset: startPos + start,
+          length: end - start
+        });
+        start = end;
+      }
+      stream.pos = startPos + start;
+      return ret;
+    }
+    size(arr, parent) {
+      let size = 2;
+      if (arr.length === 0) return size;
+      let type = this.type || new BufferT();
+      let offset = 1;
+      for (let i2 = 0; i2 < arr.length; i2++) {
+        let item = arr[i2];
+        offset += type.size(item, parent);
+      }
+      let offsetType;
+      if (offset <= 255) offsetType = uint8;
+      else if (offset <= 65535) offsetType = uint16;
+      else if (offset <= 16777215) offsetType = uint24;
+      else if (offset <= 4294967295) offsetType = uint32;
+      else throw new Error("Bad offset in CFFIndex");
+      size += 1 + offsetType.size() * (arr.length + 1);
+      size += offset - 1;
+      return size;
+    }
+    encode(stream, arr, parent) {
+      stream.writeUInt16BE(arr.length);
+      if (arr.length === 0) return;
+      let type = this.type || new BufferT();
+      let sizes = [];
+      let offset = 1;
+      for (let item of arr) {
+        let s = type.size(item, parent);
+        sizes.push(s);
+        offset += s;
+      }
+      let offsetType;
+      if (offset <= 255) offsetType = uint8;
+      else if (offset <= 65535) offsetType = uint16;
+      else if (offset <= 16777215) offsetType = uint24;
+      else if (offset <= 4294967295) offsetType = uint32;
+      else throw new Error("Bad offset in CFFIndex");
+      stream.writeUInt8(offsetType.size());
+      offset = 1;
+      offsetType.encode(stream, offset);
+      for (let size of sizes) {
+        offset += size;
+        offsetType.encode(stream, offset);
+      }
+      for (let item of arr) type.encode(stream, item, parent);
+      return;
+    }
+    constructor(type) {
+      this.type = type;
+    }
+  };
+  var $c2d28e92708f99da$var$FLOAT_EOF = 15;
+  var $c2d28e92708f99da$var$FLOAT_LOOKUP = [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5",
+    "6",
+    "7",
+    "8",
+    "9",
+    ".",
+    "E",
+    "E-",
+    null,
+    "-"
+  ];
+  var $c2d28e92708f99da$var$FLOAT_ENCODE_LOOKUP = {
+    ".": 10,
+    "E": 11,
+    "E-": 12,
+    "-": 14
+  };
+  var $c2d28e92708f99da$export$2e2bcd8739ae039 = class {
+    static decode(stream, value) {
+      if (32 <= value && value <= 246) return value - 139;
+      if (247 <= value && value <= 250) return (value - 247) * 256 + stream.readUInt8() + 108;
+      if (251 <= value && value <= 254) return -(value - 251) * 256 - stream.readUInt8() - 108;
+      if (value === 28) return stream.readInt16BE();
+      if (value === 29) return stream.readInt32BE();
+      if (value === 30) {
+        let str = "";
+        while (true) {
+          let b = stream.readUInt8();
+          let n1 = b >> 4;
+          if (n1 === $c2d28e92708f99da$var$FLOAT_EOF) break;
+          str += $c2d28e92708f99da$var$FLOAT_LOOKUP[n1];
+          let n2 = b & 15;
+          if (n2 === $c2d28e92708f99da$var$FLOAT_EOF) break;
+          str += $c2d28e92708f99da$var$FLOAT_LOOKUP[n2];
+        }
+        return parseFloat(str);
+      }
+      return null;
+    }
+    static size(value) {
+      if (value.forceLarge) value = 32768;
+      if ((value | 0) !== value) {
+        let str = "" + value;
+        return 1 + Math.ceil((str.length + 1) / 2);
+      } else if (-107 <= value && value <= 107) return 1;
+      else if (108 <= value && value <= 1131 || -1131 <= value && value <= -108) return 2;
+      else if (-32768 <= value && value <= 32767) return 3;
+      else return 5;
+    }
+    static encode(stream, value) {
+      let val = Number(value);
+      if (value.forceLarge) {
+        stream.writeUInt8(29);
+        return stream.writeInt32BE(val);
+      } else if ((val | 0) !== val) {
+        stream.writeUInt8(30);
+        let str = "" + val;
+        for (let i2 = 0; i2 < str.length; i2 += 2) {
+          let c1 = str[i2];
+          let n1 = $c2d28e92708f99da$var$FLOAT_ENCODE_LOOKUP[c1] || +c1;
+          if (i2 === str.length - 1) var n2 = $c2d28e92708f99da$var$FLOAT_EOF;
+          else {
+            let c2 = str[i2 + 1];
+            var n2 = $c2d28e92708f99da$var$FLOAT_ENCODE_LOOKUP[c2] || +c2;
+          }
+          stream.writeUInt8(n1 << 4 | n2 & 15);
+        }
+        if (n2 !== $c2d28e92708f99da$var$FLOAT_EOF) return stream.writeUInt8($c2d28e92708f99da$var$FLOAT_EOF << 4);
+      } else if (-107 <= val && val <= 107) return stream.writeUInt8(val + 139);
+      else if (108 <= val && val <= 1131) {
+        val -= 108;
+        stream.writeUInt8((val >> 8) + 247);
+        return stream.writeUInt8(val & 255);
+      } else if (-1131 <= val && val <= -108) {
+        val = -val - 108;
+        stream.writeUInt8((val >> 8) + 251);
+        return stream.writeUInt8(val & 255);
+      } else if (-32768 <= val && val <= 32767) {
+        stream.writeUInt8(28);
+        return stream.writeInt16BE(val);
+      } else {
+        stream.writeUInt8(29);
+        return stream.writeInt32BE(val);
+      }
+    }
+  };
+  var $61aa549f16d58b9b$export$2e2bcd8739ae039 = class {
+    decodeOperands(type, stream, ret, operands) {
+      if (Array.isArray(type)) return operands.map((op, i2) => this.decodeOperands(type[i2], stream, ret, [
+        op
+      ]));
+      else if (type.decode != null) return type.decode(stream, ret, operands);
+      else switch (type) {
+        case "number":
+        case "offset":
+        case "sid":
+          return operands[0];
+        case "boolean":
+          return !!operands[0];
+        default:
+          return operands;
+      }
+    }
+    encodeOperands(type, stream, ctx, operands) {
+      if (Array.isArray(type)) return operands.map((op, i2) => this.encodeOperands(type[i2], stream, ctx, op)[0]);
+      else if (type.encode != null) return type.encode(stream, operands, ctx);
+      else if (typeof operands === "number") return [
+        operands
+      ];
+      else if (typeof operands === "boolean") return [
+        +operands
+      ];
+      else if (Array.isArray(operands)) return operands;
+      else return [
+        operands
+      ];
+    }
+    decode(stream, parent) {
+      let end = stream.pos + parent.length;
+      let ret = {};
+      let operands = [];
+      Object.defineProperties(ret, {
+        parent: {
+          value: parent
+        },
+        _startOffset: {
+          value: stream.pos
+        }
+      });
+      for (let key in this.fields) {
+        let field = this.fields[key];
+        ret[field[1]] = field[3];
+      }
+      while (stream.pos < end) {
+        let b = stream.readUInt8();
+        if (b < 28) {
+          if (b === 12) b = b << 8 | stream.readUInt8();
+          let field = this.fields[b];
+          if (!field) throw new Error(`Unknown operator ${b}`);
+          let val = this.decodeOperands(field[2], stream, ret, operands);
+          if (val != null) {
+            if (val instanceof (0, PropertyDescriptor)) Object.defineProperty(ret, field[1], val);
+            else ret[field[1]] = val;
+          }
+          operands = [];
+        } else operands.push((0, $c2d28e92708f99da$export$2e2bcd8739ae039).decode(stream, b));
+      }
+      return ret;
+    }
+    size(dict, parent, includePointers = true) {
+      let ctx = {
+        parent,
+        val: dict,
+        pointerSize: 0,
+        startOffset: parent.startOffset || 0
+      };
+      let len = 0;
+      for (let k in this.fields) {
+        let field = this.fields[k];
+        let val = dict[field[1]];
+        if (val == null || (0, import_fast_deep_equal.default)(val, field[3])) continue;
+        let operands = this.encodeOperands(field[2], null, ctx, val);
+        for (let op of operands) len += (0, $c2d28e92708f99da$export$2e2bcd8739ae039).size(op);
+        let key = Array.isArray(field[0]) ? field[0] : [
+          field[0]
+        ];
+        len += key.length;
+      }
+      if (includePointers) len += ctx.pointerSize;
+      return len;
+    }
+    encode(stream, dict, parent) {
+      let ctx = {
+        pointers: [],
+        startOffset: stream.pos,
+        parent,
+        val: dict,
+        pointerSize: 0
+      };
+      ctx.pointerOffset = stream.pos + this.size(dict, ctx, false);
+      for (let field of this.ops) {
+        let val = dict[field[1]];
+        if (val == null || (0, import_fast_deep_equal.default)(val, field[3])) continue;
+        let operands = this.encodeOperands(field[2], stream, ctx, val);
+        for (let op of operands) (0, $c2d28e92708f99da$export$2e2bcd8739ae039).encode(stream, op);
+        let key = Array.isArray(field[0]) ? field[0] : [
+          field[0]
+        ];
+        for (let op of key) stream.writeUInt8(op);
+      }
+      let i2 = 0;
+      while (i2 < ctx.pointers.length) {
+        let ptr = ctx.pointers[i2++];
+        ptr.type.encode(stream, ptr.val, ptr.parent);
+      }
+      return;
+    }
+    constructor(ops = []) {
+      this.ops = ops;
+      this.fields = {};
+      for (let field of ops) {
+        let key = Array.isArray(field[0]) ? field[0][0] << 8 | field[0][1] : field[0];
+        this.fields[key] = field;
+      }
+    }
+  };
+  var $0e34a43d05bde82c$export$2e2bcd8739ae039 = class extends Pointer {
+    decode(stream, parent, operands) {
+      this.offsetType = {
+        decode: () => operands[0]
+      };
+      return super.decode(stream, parent, operands);
+    }
+    encode(stream, value, ctx) {
+      if (!stream) {
+        this.offsetType = {
+          size: () => 0
+        };
+        this.size(value, ctx);
+        return [
+          new $0e34a43d05bde82c$var$Ptr(0)
+        ];
+      }
+      let ptr = null;
+      this.offsetType = {
+        encode: (stream2, val) => ptr = val
+      };
+      super.encode(stream, value, ctx);
+      return [
+        new $0e34a43d05bde82c$var$Ptr(ptr)
+      ];
+    }
+    constructor(type, options = {}) {
+      if (options.type == null) options.type = "global";
+      super(null, type, options);
+    }
+  };
+  var $0e34a43d05bde82c$var$Ptr = class {
+    valueOf() {
+      return this.val;
+    }
+    constructor(val) {
+      this.val = val;
+      this.forceLarge = true;
+    }
+  };
+  var $6d59db2e29cc77b3$var$CFFBlendOp = class {
+    static decode(stream, parent, operands) {
+      let numBlends = operands.pop();
+      while (operands.length > numBlends) operands.pop();
+    }
+  };
+  var $6d59db2e29cc77b3$export$2e2bcd8739ae039 = new (0, $61aa549f16d58b9b$export$2e2bcd8739ae039)([
+    // key       name                    type                                          default
+    [
+      6,
+      "BlueValues",
+      "delta",
+      null
+    ],
+    [
+      7,
+      "OtherBlues",
+      "delta",
+      null
+    ],
+    [
+      8,
+      "FamilyBlues",
+      "delta",
+      null
+    ],
+    [
+      9,
+      "FamilyOtherBlues",
+      "delta",
+      null
+    ],
+    [
+      [
+        12,
+        9
+      ],
+      "BlueScale",
+      "number",
+      0.039625
+    ],
+    [
+      [
+        12,
+        10
+      ],
+      "BlueShift",
+      "number",
+      7
+    ],
+    [
+      [
+        12,
+        11
+      ],
+      "BlueFuzz",
+      "number",
+      1
+    ],
+    [
+      10,
+      "StdHW",
+      "number",
+      null
+    ],
+    [
+      11,
+      "StdVW",
+      "number",
+      null
+    ],
+    [
+      [
+        12,
+        12
+      ],
+      "StemSnapH",
+      "delta",
+      null
+    ],
+    [
+      [
+        12,
+        13
+      ],
+      "StemSnapV",
+      "delta",
+      null
+    ],
+    [
+      [
+        12,
+        14
+      ],
+      "ForceBold",
+      "boolean",
+      false
+    ],
+    [
+      [
+        12,
+        17
+      ],
+      "LanguageGroup",
+      "number",
+      0
+    ],
+    [
+      [
+        12,
+        18
+      ],
+      "ExpansionFactor",
+      "number",
+      0.06
+    ],
+    [
+      [
+        12,
+        19
+      ],
+      "initialRandomSeed",
+      "number",
+      0
+    ],
+    [
+      20,
+      "defaultWidthX",
+      "number",
+      0
+    ],
+    [
+      21,
+      "nominalWidthX",
+      "number",
+      0
+    ],
+    [
+      22,
+      "vsindex",
+      "number",
+      0
+    ],
+    [
+      23,
+      "blend",
+      $6d59db2e29cc77b3$var$CFFBlendOp,
+      null
+    ],
+    [
+      19,
+      "Subrs",
+      new (0, $0e34a43d05bde82c$export$2e2bcd8739ae039)(new (0, $43e9821ef3717eec$export$2e2bcd8739ae039)(), {
+        type: "local"
+      }),
+      null
+    ]
+  ]);
+  var $229224aec43783c5$export$2e2bcd8739ae039 = [
+    ".notdef",
+    "space",
+    "exclam",
+    "quotedbl",
+    "numbersign",
+    "dollar",
+    "percent",
+    "ampersand",
+    "quoteright",
+    "parenleft",
+    "parenright",
+    "asterisk",
+    "plus",
+    "comma",
+    "hyphen",
+    "period",
+    "slash",
+    "zero",
+    "one",
+    "two",
+    "three",
+    "four",
+    "five",
+    "six",
+    "seven",
+    "eight",
+    "nine",
+    "colon",
+    "semicolon",
+    "less",
+    "equal",
+    "greater",
+    "question",
+    "at",
+    "A",
+    "B",
+    "C",
+    "D",
+    "E",
+    "F",
+    "G",
+    "H",
+    "I",
+    "J",
+    "K",
+    "L",
+    "M",
+    "N",
+    "O",
+    "P",
+    "Q",
+    "R",
+    "S",
+    "T",
+    "U",
+    "V",
+    "W",
+    "X",
+    "Y",
+    "Z",
+    "bracketleft",
+    "backslash",
+    "bracketright",
+    "asciicircum",
+    "underscore",
+    "quoteleft",
+    "a",
+    "b",
+    "c",
+    "d",
+    "e",
+    "f",
+    "g",
+    "h",
+    "i",
+    "j",
+    "k",
+    "l",
+    "m",
+    "n",
+    "o",
+    "p",
+    "q",
+    "r",
+    "s",
+    "t",
+    "u",
+    "v",
+    "w",
+    "x",
+    "y",
+    "z",
+    "braceleft",
+    "bar",
+    "braceright",
+    "asciitilde",
+    "exclamdown",
+    "cent",
+    "sterling",
+    "fraction",
+    "yen",
+    "florin",
+    "section",
+    "currency",
+    "quotesingle",
+    "quotedblleft",
+    "guillemotleft",
+    "guilsinglleft",
+    "guilsinglright",
+    "fi",
+    "fl",
+    "endash",
+    "dagger",
+    "daggerdbl",
+    "periodcentered",
+    "paragraph",
+    "bullet",
+    "quotesinglbase",
+    "quotedblbase",
+    "quotedblright",
+    "guillemotright",
+    "ellipsis",
+    "perthousand",
+    "questiondown",
+    "grave",
+    "acute",
+    "circumflex",
+    "tilde",
+    "macron",
+    "breve",
+    "dotaccent",
+    "dieresis",
+    "ring",
+    "cedilla",
+    "hungarumlaut",
+    "ogonek",
+    "caron",
+    "emdash",
+    "AE",
+    "ordfeminine",
+    "Lslash",
+    "Oslash",
+    "OE",
+    "ordmasculine",
+    "ae",
+    "dotlessi",
+    "lslash",
+    "oslash",
+    "oe",
+    "germandbls",
+    "onesuperior",
+    "logicalnot",
+    "mu",
+    "trademark",
+    "Eth",
+    "onehalf",
+    "plusminus",
+    "Thorn",
+    "onequarter",
+    "divide",
+    "brokenbar",
+    "degree",
+    "thorn",
+    "threequarters",
+    "twosuperior",
+    "registered",
+    "minus",
+    "eth",
+    "multiply",
+    "threesuperior",
+    "copyright",
+    "Aacute",
+    "Acircumflex",
+    "Adieresis",
+    "Agrave",
+    "Aring",
+    "Atilde",
+    "Ccedilla",
+    "Eacute",
+    "Ecircumflex",
+    "Edieresis",
+    "Egrave",
+    "Iacute",
+    "Icircumflex",
+    "Idieresis",
+    "Igrave",
+    "Ntilde",
+    "Oacute",
+    "Ocircumflex",
+    "Odieresis",
+    "Ograve",
+    "Otilde",
+    "Scaron",
+    "Uacute",
+    "Ucircumflex",
+    "Udieresis",
+    "Ugrave",
+    "Yacute",
+    "Ydieresis",
+    "Zcaron",
+    "aacute",
+    "acircumflex",
+    "adieresis",
+    "agrave",
+    "aring",
+    "atilde",
+    "ccedilla",
+    "eacute",
+    "ecircumflex",
+    "edieresis",
+    "egrave",
+    "iacute",
+    "icircumflex",
+    "idieresis",
+    "igrave",
+    "ntilde",
+    "oacute",
+    "ocircumflex",
+    "odieresis",
+    "ograve",
+    "otilde",
+    "scaron",
+    "uacute",
+    "ucircumflex",
+    "udieresis",
+    "ugrave",
+    "yacute",
+    "ydieresis",
+    "zcaron",
+    "exclamsmall",
+    "Hungarumlautsmall",
+    "dollaroldstyle",
+    "dollarsuperior",
+    "ampersandsmall",
+    "Acutesmall",
+    "parenleftsuperior",
+    "parenrightsuperior",
+    "twodotenleader",
+    "onedotenleader",
+    "zerooldstyle",
+    "oneoldstyle",
+    "twooldstyle",
+    "threeoldstyle",
+    "fouroldstyle",
+    "fiveoldstyle",
+    "sixoldstyle",
+    "sevenoldstyle",
+    "eightoldstyle",
+    "nineoldstyle",
+    "commasuperior",
+    "threequartersemdash",
+    "periodsuperior",
+    "questionsmall",
+    "asuperior",
+    "bsuperior",
+    "centsuperior",
+    "dsuperior",
+    "esuperior",
+    "isuperior",
+    "lsuperior",
+    "msuperior",
+    "nsuperior",
+    "osuperior",
+    "rsuperior",
+    "ssuperior",
+    "tsuperior",
+    "ff",
+    "ffi",
+    "ffl",
+    "parenleftinferior",
+    "parenrightinferior",
+    "Circumflexsmall",
+    "hyphensuperior",
+    "Gravesmall",
+    "Asmall",
+    "Bsmall",
+    "Csmall",
+    "Dsmall",
+    "Esmall",
+    "Fsmall",
+    "Gsmall",
+    "Hsmall",
+    "Ismall",
+    "Jsmall",
+    "Ksmall",
+    "Lsmall",
+    "Msmall",
+    "Nsmall",
+    "Osmall",
+    "Psmall",
+    "Qsmall",
+    "Rsmall",
+    "Ssmall",
+    "Tsmall",
+    "Usmall",
+    "Vsmall",
+    "Wsmall",
+    "Xsmall",
+    "Ysmall",
+    "Zsmall",
+    "colonmonetary",
+    "onefitted",
+    "rupiah",
+    "Tildesmall",
+    "exclamdownsmall",
+    "centoldstyle",
+    "Lslashsmall",
+    "Scaronsmall",
+    "Zcaronsmall",
+    "Dieresissmall",
+    "Brevesmall",
+    "Caronsmall",
+    "Dotaccentsmall",
+    "Macronsmall",
+    "figuredash",
+    "hypheninferior",
+    "Ogoneksmall",
+    "Ringsmall",
+    "Cedillasmall",
+    "questiondownsmall",
+    "oneeighth",
+    "threeeighths",
+    "fiveeighths",
+    "seveneighths",
+    "onethird",
+    "twothirds",
+    "zerosuperior",
+    "foursuperior",
+    "fivesuperior",
+    "sixsuperior",
+    "sevensuperior",
+    "eightsuperior",
+    "ninesuperior",
+    "zeroinferior",
+    "oneinferior",
+    "twoinferior",
+    "threeinferior",
+    "fourinferior",
+    "fiveinferior",
+    "sixinferior",
+    "seveninferior",
+    "eightinferior",
+    "nineinferior",
+    "centinferior",
+    "dollarinferior",
+    "periodinferior",
+    "commainferior",
+    "Agravesmall",
+    "Aacutesmall",
+    "Acircumflexsmall",
+    "Atildesmall",
+    "Adieresissmall",
+    "Aringsmall",
+    "AEsmall",
+    "Ccedillasmall",
+    "Egravesmall",
+    "Eacutesmall",
+    "Ecircumflexsmall",
+    "Edieresissmall",
+    "Igravesmall",
+    "Iacutesmall",
+    "Icircumflexsmall",
+    "Idieresissmall",
+    "Ethsmall",
+    "Ntildesmall",
+    "Ogravesmall",
+    "Oacutesmall",
+    "Ocircumflexsmall",
+    "Otildesmall",
+    "Odieresissmall",
+    "OEsmall",
+    "Oslashsmall",
+    "Ugravesmall",
+    "Uacutesmall",
+    "Ucircumflexsmall",
+    "Udieresissmall",
+    "Yacutesmall",
+    "Thornsmall",
+    "Ydieresissmall",
+    "001.000",
+    "001.001",
+    "001.002",
+    "001.003",
+    "Black",
+    "Bold",
+    "Book",
+    "Light",
+    "Medium",
+    "Regular",
+    "Roman",
+    "Semibold"
+  ];
+  var $bc0433d9b7e41f5f$export$dee0027060fa13bd = [
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "space",
+    "exclam",
+    "quotedbl",
+    "numbersign",
+    "dollar",
+    "percent",
+    "ampersand",
+    "quoteright",
+    "parenleft",
+    "parenright",
+    "asterisk",
+    "plus",
+    "comma",
+    "hyphen",
+    "period",
+    "slash",
+    "zero",
+    "one",
+    "two",
+    "three",
+    "four",
+    "five",
+    "six",
+    "seven",
+    "eight",
+    "nine",
+    "colon",
+    "semicolon",
+    "less",
+    "equal",
+    "greater",
+    "question",
+    "at",
+    "A",
+    "B",
+    "C",
+    "D",
+    "E",
+    "F",
+    "G",
+    "H",
+    "I",
+    "J",
+    "K",
+    "L",
+    "M",
+    "N",
+    "O",
+    "P",
+    "Q",
+    "R",
+    "S",
+    "T",
+    "U",
+    "V",
+    "W",
+    "X",
+    "Y",
+    "Z",
+    "bracketleft",
+    "backslash",
+    "bracketright",
+    "asciicircum",
+    "underscore",
+    "quoteleft",
+    "a",
+    "b",
+    "c",
+    "d",
+    "e",
+    "f",
+    "g",
+    "h",
+    "i",
+    "j",
+    "k",
+    "l",
+    "m",
+    "n",
+    "o",
+    "p",
+    "q",
+    "r",
+    "s",
+    "t",
+    "u",
+    "v",
+    "w",
+    "x",
+    "y",
+    "z",
+    "braceleft",
+    "bar",
+    "braceright",
+    "asciitilde",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "exclamdown",
+    "cent",
+    "sterling",
+    "fraction",
+    "yen",
+    "florin",
+    "section",
+    "currency",
+    "quotesingle",
+    "quotedblleft",
+    "guillemotleft",
+    "guilsinglleft",
+    "guilsinglright",
+    "fi",
+    "fl",
+    "",
+    "endash",
+    "dagger",
+    "daggerdbl",
+    "periodcentered",
+    "",
+    "paragraph",
+    "bullet",
+    "quotesinglbase",
+    "quotedblbase",
+    "quotedblright",
+    "guillemotright",
+    "ellipsis",
+    "perthousand",
+    "",
+    "questiondown",
+    "",
+    "grave",
+    "acute",
+    "circumflex",
+    "tilde",
+    "macron",
+    "breve",
+    "dotaccent",
+    "dieresis",
+    "",
+    "ring",
+    "cedilla",
+    "",
+    "hungarumlaut",
+    "ogonek",
+    "caron",
+    "emdash",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "AE",
+    "",
+    "ordfeminine",
+    "",
+    "",
+    "",
+    "",
+    "Lslash",
+    "Oslash",
+    "OE",
+    "ordmasculine",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "ae",
+    "",
+    "",
+    "",
+    "dotlessi",
+    "",
+    "",
+    "lslash",
+    "oslash",
+    "oe",
+    "germandbls"
+  ];
+  var $bc0433d9b7e41f5f$export$4f58f497e14a53c3 = [
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "space",
+    "exclamsmall",
+    "Hungarumlautsmall",
+    "",
+    "dollaroldstyle",
+    "dollarsuperior",
+    "ampersandsmall",
+    "Acutesmall",
+    "parenleftsuperior",
+    "parenrightsuperior",
+    "twodotenleader",
+    "onedotenleader",
+    "comma",
+    "hyphen",
+    "period",
+    "fraction",
+    "zerooldstyle",
+    "oneoldstyle",
+    "twooldstyle",
+    "threeoldstyle",
+    "fouroldstyle",
+    "fiveoldstyle",
+    "sixoldstyle",
+    "sevenoldstyle",
+    "eightoldstyle",
+    "nineoldstyle",
+    "colon",
+    "semicolon",
+    "commasuperior",
+    "threequartersemdash",
+    "periodsuperior",
+    "questionsmall",
+    "",
+    "asuperior",
+    "bsuperior",
+    "centsuperior",
+    "dsuperior",
+    "esuperior",
+    "",
+    "",
+    "isuperior",
+    "",
+    "",
+    "lsuperior",
+    "msuperior",
+    "nsuperior",
+    "osuperior",
+    "",
+    "",
+    "rsuperior",
+    "ssuperior",
+    "tsuperior",
+    "",
+    "ff",
+    "fi",
+    "fl",
+    "ffi",
+    "ffl",
+    "parenleftinferior",
+    "",
+    "parenrightinferior",
+    "Circumflexsmall",
+    "hyphensuperior",
+    "Gravesmall",
+    "Asmall",
+    "Bsmall",
+    "Csmall",
+    "Dsmall",
+    "Esmall",
+    "Fsmall",
+    "Gsmall",
+    "Hsmall",
+    "Ismall",
+    "Jsmall",
+    "Ksmall",
+    "Lsmall",
+    "Msmall",
+    "Nsmall",
+    "Osmall",
+    "Psmall",
+    "Qsmall",
+    "Rsmall",
+    "Ssmall",
+    "Tsmall",
+    "Usmall",
+    "Vsmall",
+    "Wsmall",
+    "Xsmall",
+    "Ysmall",
+    "Zsmall",
+    "colonmonetary",
+    "onefitted",
+    "rupiah",
+    "Tildesmall",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "exclamdownsmall",
+    "centoldstyle",
+    "Lslashsmall",
+    "",
+    "",
+    "Scaronsmall",
+    "Zcaronsmall",
+    "Dieresissmall",
+    "Brevesmall",
+    "Caronsmall",
+    "",
+    "Dotaccentsmall",
+    "",
+    "",
+    "Macronsmall",
+    "",
+    "",
+    "figuredash",
+    "hypheninferior",
+    "",
+    "",
+    "Ogoneksmall",
+    "Ringsmall",
+    "Cedillasmall",
+    "",
+    "",
+    "",
+    "onequarter",
+    "onehalf",
+    "threequarters",
+    "questiondownsmall",
+    "oneeighth",
+    "threeeighths",
+    "fiveeighths",
+    "seveneighths",
+    "onethird",
+    "twothirds",
+    "",
+    "",
+    "zerosuperior",
+    "onesuperior",
+    "twosuperior",
+    "threesuperior",
+    "foursuperior",
+    "fivesuperior",
+    "sixsuperior",
+    "sevensuperior",
+    "eightsuperior",
+    "ninesuperior",
+    "zeroinferior",
+    "oneinferior",
+    "twoinferior",
+    "threeinferior",
+    "fourinferior",
+    "fiveinferior",
+    "sixinferior",
+    "seveninferior",
+    "eightinferior",
+    "nineinferior",
+    "centinferior",
+    "dollarinferior",
+    "periodinferior",
+    "commainferior",
+    "Agravesmall",
+    "Aacutesmall",
+    "Acircumflexsmall",
+    "Atildesmall",
+    "Adieresissmall",
+    "Aringsmall",
+    "AEsmall",
+    "Ccedillasmall",
+    "Egravesmall",
+    "Eacutesmall",
+    "Ecircumflexsmall",
+    "Edieresissmall",
+    "Igravesmall",
+    "Iacutesmall",
+    "Icircumflexsmall",
+    "Idieresissmall",
+    "Ethsmall",
+    "Ntildesmall",
+    "Ogravesmall",
+    "Oacutesmall",
+    "Ocircumflexsmall",
+    "Otildesmall",
+    "Odieresissmall",
+    "OEsmall",
+    "Oslashsmall",
+    "Ugravesmall",
+    "Uacutesmall",
+    "Ucircumflexsmall",
+    "Udieresissmall",
+    "Yacutesmall",
+    "Thornsmall",
+    "Ydieresissmall"
+  ];
+  var $ef658f5c9a1488b2$export$c33b50336c234f16 = [
+    ".notdef",
+    "space",
+    "exclam",
+    "quotedbl",
+    "numbersign",
+    "dollar",
+    "percent",
+    "ampersand",
+    "quoteright",
+    "parenleft",
+    "parenright",
+    "asterisk",
+    "plus",
+    "comma",
+    "hyphen",
+    "period",
+    "slash",
+    "zero",
+    "one",
+    "two",
+    "three",
+    "four",
+    "five",
+    "six",
+    "seven",
+    "eight",
+    "nine",
+    "colon",
+    "semicolon",
+    "less",
+    "equal",
+    "greater",
+    "question",
+    "at",
+    "A",
+    "B",
+    "C",
+    "D",
+    "E",
+    "F",
+    "G",
+    "H",
+    "I",
+    "J",
+    "K",
+    "L",
+    "M",
+    "N",
+    "O",
+    "P",
+    "Q",
+    "R",
+    "S",
+    "T",
+    "U",
+    "V",
+    "W",
+    "X",
+    "Y",
+    "Z",
+    "bracketleft",
+    "backslash",
+    "bracketright",
+    "asciicircum",
+    "underscore",
+    "quoteleft",
+    "a",
+    "b",
+    "c",
+    "d",
+    "e",
+    "f",
+    "g",
+    "h",
+    "i",
+    "j",
+    "k",
+    "l",
+    "m",
+    "n",
+    "o",
+    "p",
+    "q",
+    "r",
+    "s",
+    "t",
+    "u",
+    "v",
+    "w",
+    "x",
+    "y",
+    "z",
+    "braceleft",
+    "bar",
+    "braceright",
+    "asciitilde",
+    "exclamdown",
+    "cent",
+    "sterling",
+    "fraction",
+    "yen",
+    "florin",
+    "section",
+    "currency",
+    "quotesingle",
+    "quotedblleft",
+    "guillemotleft",
+    "guilsinglleft",
+    "guilsinglright",
+    "fi",
+    "fl",
+    "endash",
+    "dagger",
+    "daggerdbl",
+    "periodcentered",
+    "paragraph",
+    "bullet",
+    "quotesinglbase",
+    "quotedblbase",
+    "quotedblright",
+    "guillemotright",
+    "ellipsis",
+    "perthousand",
+    "questiondown",
+    "grave",
+    "acute",
+    "circumflex",
+    "tilde",
+    "macron",
+    "breve",
+    "dotaccent",
+    "dieresis",
+    "ring",
+    "cedilla",
+    "hungarumlaut",
+    "ogonek",
+    "caron",
+    "emdash",
+    "AE",
+    "ordfeminine",
+    "Lslash",
+    "Oslash",
+    "OE",
+    "ordmasculine",
+    "ae",
+    "dotlessi",
+    "lslash",
+    "oslash",
+    "oe",
+    "germandbls",
+    "onesuperior",
+    "logicalnot",
+    "mu",
+    "trademark",
+    "Eth",
+    "onehalf",
+    "plusminus",
+    "Thorn",
+    "onequarter",
+    "divide",
+    "brokenbar",
+    "degree",
+    "thorn",
+    "threequarters",
+    "twosuperior",
+    "registered",
+    "minus",
+    "eth",
+    "multiply",
+    "threesuperior",
+    "copyright",
+    "Aacute",
+    "Acircumflex",
+    "Adieresis",
+    "Agrave",
+    "Aring",
+    "Atilde",
+    "Ccedilla",
+    "Eacute",
+    "Ecircumflex",
+    "Edieresis",
+    "Egrave",
+    "Iacute",
+    "Icircumflex",
+    "Idieresis",
+    "Igrave",
+    "Ntilde",
+    "Oacute",
+    "Ocircumflex",
+    "Odieresis",
+    "Ograve",
+    "Otilde",
+    "Scaron",
+    "Uacute",
+    "Ucircumflex",
+    "Udieresis",
+    "Ugrave",
+    "Yacute",
+    "Ydieresis",
+    "Zcaron",
+    "aacute",
+    "acircumflex",
+    "adieresis",
+    "agrave",
+    "aring",
+    "atilde",
+    "ccedilla",
+    "eacute",
+    "ecircumflex",
+    "edieresis",
+    "egrave",
+    "iacute",
+    "icircumflex",
+    "idieresis",
+    "igrave",
+    "ntilde",
+    "oacute",
+    "ocircumflex",
+    "odieresis",
+    "ograve",
+    "otilde",
+    "scaron",
+    "uacute",
+    "ucircumflex",
+    "udieresis",
+    "ugrave",
+    "yacute",
+    "ydieresis",
+    "zcaron"
+  ];
+  var $ef658f5c9a1488b2$export$3ed0f9e1fee8d489 = [
+    ".notdef",
+    "space",
+    "exclamsmall",
+    "Hungarumlautsmall",
+    "dollaroldstyle",
+    "dollarsuperior",
+    "ampersandsmall",
+    "Acutesmall",
+    "parenleftsuperior",
+    "parenrightsuperior",
+    "twodotenleader",
+    "onedotenleader",
+    "comma",
+    "hyphen",
+    "period",
+    "fraction",
+    "zerooldstyle",
+    "oneoldstyle",
+    "twooldstyle",
+    "threeoldstyle",
+    "fouroldstyle",
+    "fiveoldstyle",
+    "sixoldstyle",
+    "sevenoldstyle",
+    "eightoldstyle",
+    "nineoldstyle",
+    "colon",
+    "semicolon",
+    "commasuperior",
+    "threequartersemdash",
+    "periodsuperior",
+    "questionsmall",
+    "asuperior",
+    "bsuperior",
+    "centsuperior",
+    "dsuperior",
+    "esuperior",
+    "isuperior",
+    "lsuperior",
+    "msuperior",
+    "nsuperior",
+    "osuperior",
+    "rsuperior",
+    "ssuperior",
+    "tsuperior",
+    "ff",
+    "fi",
+    "fl",
+    "ffi",
+    "ffl",
+    "parenleftinferior",
+    "parenrightinferior",
+    "Circumflexsmall",
+    "hyphensuperior",
+    "Gravesmall",
+    "Asmall",
+    "Bsmall",
+    "Csmall",
+    "Dsmall",
+    "Esmall",
+    "Fsmall",
+    "Gsmall",
+    "Hsmall",
+    "Ismall",
+    "Jsmall",
+    "Ksmall",
+    "Lsmall",
+    "Msmall",
+    "Nsmall",
+    "Osmall",
+    "Psmall",
+    "Qsmall",
+    "Rsmall",
+    "Ssmall",
+    "Tsmall",
+    "Usmall",
+    "Vsmall",
+    "Wsmall",
+    "Xsmall",
+    "Ysmall",
+    "Zsmall",
+    "colonmonetary",
+    "onefitted",
+    "rupiah",
+    "Tildesmall",
+    "exclamdownsmall",
+    "centoldstyle",
+    "Lslashsmall",
+    "Scaronsmall",
+    "Zcaronsmall",
+    "Dieresissmall",
+    "Brevesmall",
+    "Caronsmall",
+    "Dotaccentsmall",
+    "Macronsmall",
+    "figuredash",
+    "hypheninferior",
+    "Ogoneksmall",
+    "Ringsmall",
+    "Cedillasmall",
+    "onequarter",
+    "onehalf",
+    "threequarters",
+    "questiondownsmall",
+    "oneeighth",
+    "threeeighths",
+    "fiveeighths",
+    "seveneighths",
+    "onethird",
+    "twothirds",
+    "zerosuperior",
+    "onesuperior",
+    "twosuperior",
+    "threesuperior",
+    "foursuperior",
+    "fivesuperior",
+    "sixsuperior",
+    "sevensuperior",
+    "eightsuperior",
+    "ninesuperior",
+    "zeroinferior",
+    "oneinferior",
+    "twoinferior",
+    "threeinferior",
+    "fourinferior",
+    "fiveinferior",
+    "sixinferior",
+    "seveninferior",
+    "eightinferior",
+    "nineinferior",
+    "centinferior",
+    "dollarinferior",
+    "periodinferior",
+    "commainferior",
+    "Agravesmall",
+    "Aacutesmall",
+    "Acircumflexsmall",
+    "Atildesmall",
+    "Adieresissmall",
+    "Aringsmall",
+    "AEsmall",
+    "Ccedillasmall",
+    "Egravesmall",
+    "Eacutesmall",
+    "Ecircumflexsmall",
+    "Edieresissmall",
+    "Igravesmall",
+    "Iacutesmall",
+    "Icircumflexsmall",
+    "Idieresissmall",
+    "Ethsmall",
+    "Ntildesmall",
+    "Ogravesmall",
+    "Oacutesmall",
+    "Ocircumflexsmall",
+    "Otildesmall",
+    "Odieresissmall",
+    "OEsmall",
+    "Oslashsmall",
+    "Ugravesmall",
+    "Uacutesmall",
+    "Ucircumflexsmall",
+    "Udieresissmall",
+    "Yacutesmall",
+    "Thornsmall",
+    "Ydieresissmall"
+  ];
+  var $ef658f5c9a1488b2$export$dc28be11139d4120 = [
+    ".notdef",
+    "space",
+    "dollaroldstyle",
+    "dollarsuperior",
+    "parenleftsuperior",
+    "parenrightsuperior",
+    "twodotenleader",
+    "onedotenleader",
+    "comma",
+    "hyphen",
+    "period",
+    "fraction",
+    "zerooldstyle",
+    "oneoldstyle",
+    "twooldstyle",
+    "threeoldstyle",
+    "fouroldstyle",
+    "fiveoldstyle",
+    "sixoldstyle",
+    "sevenoldstyle",
+    "eightoldstyle",
+    "nineoldstyle",
+    "colon",
+    "semicolon",
+    "commasuperior",
+    "threequartersemdash",
+    "periodsuperior",
+    "asuperior",
+    "bsuperior",
+    "centsuperior",
+    "dsuperior",
+    "esuperior",
+    "isuperior",
+    "lsuperior",
+    "msuperior",
+    "nsuperior",
+    "osuperior",
+    "rsuperior",
+    "ssuperior",
+    "tsuperior",
+    "ff",
+    "fi",
+    "fl",
+    "ffi",
+    "ffl",
+    "parenleftinferior",
+    "parenrightinferior",
+    "hyphensuperior",
+    "colonmonetary",
+    "onefitted",
+    "rupiah",
+    "centoldstyle",
+    "figuredash",
+    "hypheninferior",
+    "onequarter",
+    "onehalf",
+    "threequarters",
+    "oneeighth",
+    "threeeighths",
+    "fiveeighths",
+    "seveneighths",
+    "onethird",
+    "twothirds",
+    "zerosuperior",
+    "onesuperior",
+    "twosuperior",
+    "threesuperior",
+    "foursuperior",
+    "fivesuperior",
+    "sixsuperior",
+    "sevensuperior",
+    "eightsuperior",
+    "ninesuperior",
+    "zeroinferior",
+    "oneinferior",
+    "twoinferior",
+    "threeinferior",
+    "fourinferior",
+    "fiveinferior",
+    "sixinferior",
+    "seveninferior",
+    "eightinferior",
+    "nineinferior",
+    "centinferior",
+    "dollarinferior",
+    "periodinferior",
+    "commainferior"
+  ];
+  var $7cbbe4e24ef3cb75$var$LangSysTable = new Struct({
+    reserved: new Reserved(uint16),
+    reqFeatureIndex: uint16,
+    featureCount: uint16,
+    featureIndexes: new ArrayT(uint16, "featureCount")
+  });
+  var $7cbbe4e24ef3cb75$var$LangSysRecord = new Struct({
+    tag: new StringT(4),
+    langSys: new Pointer(uint16, $7cbbe4e24ef3cb75$var$LangSysTable, {
+      type: "parent"
+    })
+  });
+  var $7cbbe4e24ef3cb75$var$Script = new Struct({
+    defaultLangSys: new Pointer(uint16, $7cbbe4e24ef3cb75$var$LangSysTable),
+    count: uint16,
+    langSysRecords: new ArrayT($7cbbe4e24ef3cb75$var$LangSysRecord, "count")
+  });
+  var $7cbbe4e24ef3cb75$var$ScriptRecord = new Struct({
+    tag: new StringT(4),
+    script: new Pointer(uint16, $7cbbe4e24ef3cb75$var$Script, {
+      type: "parent"
+    })
+  });
+  var $7cbbe4e24ef3cb75$export$3e15fc05ce864229 = new ArrayT($7cbbe4e24ef3cb75$var$ScriptRecord, uint16);
+  var $7cbbe4e24ef3cb75$var$FeatureParams = new Struct({
+    version: uint16,
+    nameID: uint16
+  });
+  var $7cbbe4e24ef3cb75$export$6e91cf7616333d5 = new Struct({
+    featureParams: new Pointer(uint16, $7cbbe4e24ef3cb75$var$FeatureParams),
+    lookupCount: uint16,
+    lookupListIndexes: new ArrayT(uint16, "lookupCount")
+  });
+  var $7cbbe4e24ef3cb75$var$FeatureRecord = new Struct({
+    tag: new StringT(4),
+    feature: new Pointer(uint16, $7cbbe4e24ef3cb75$export$6e91cf7616333d5, {
+      type: "parent"
+    })
+  });
+  var $7cbbe4e24ef3cb75$export$aa18130def4b6cb4 = new ArrayT($7cbbe4e24ef3cb75$var$FeatureRecord, uint16);
+  var $7cbbe4e24ef3cb75$var$LookupFlags = new Struct({
+    markAttachmentType: uint8,
+    flags: new Bitfield(uint8, [
+      "rightToLeft",
+      "ignoreBaseGlyphs",
+      "ignoreLigatures",
+      "ignoreMarks",
+      "useMarkFilteringSet"
+    ])
+  });
+  function $7cbbe4e24ef3cb75$export$df0008c6ff2da22a(SubTable) {
+    let Lookup = new Struct({
+      lookupType: uint16,
+      flags: $7cbbe4e24ef3cb75$var$LookupFlags,
+      subTableCount: uint16,
+      subTables: new ArrayT(new Pointer(uint16, SubTable), "subTableCount"),
+      markFilteringSet: new Optional(uint16, (t) => t.flags.flags.useMarkFilteringSet)
+    });
+    return new LazyArray(new Pointer(uint16, Lookup), uint16);
+  }
+  var $7cbbe4e24ef3cb75$var$RangeRecord = new Struct({
+    start: uint16,
+    end: uint16,
+    startCoverageIndex: uint16
+  });
+  var $7cbbe4e24ef3cb75$export$17608c3f81a6111 = new VersionedStruct(uint16, {
+    1: {
+      glyphCount: uint16,
+      glyphs: new ArrayT(uint16, "glyphCount")
+    },
+    2: {
+      rangeCount: uint16,
+      rangeRecords: new ArrayT($7cbbe4e24ef3cb75$var$RangeRecord, "rangeCount")
+    }
+  });
+  var $7cbbe4e24ef3cb75$var$ClassRangeRecord = new Struct({
+    start: uint16,
+    end: uint16,
+    class: uint16
+  });
+  var $7cbbe4e24ef3cb75$export$843d551fbbafef71 = new VersionedStruct(uint16, {
+    1: {
+      startGlyph: uint16,
+      glyphCount: uint16,
+      classValueArray: new ArrayT(uint16, "glyphCount")
+    },
+    2: {
+      classRangeCount: uint16,
+      classRangeRecord: new ArrayT($7cbbe4e24ef3cb75$var$ClassRangeRecord, "classRangeCount")
+    }
+  });
+  var $7cbbe4e24ef3cb75$export$8215d14a63d9fb10 = new Struct({
+    a: uint16,
+    b: uint16,
+    deltaFormat: uint16
+  });
+  var $7cbbe4e24ef3cb75$var$LookupRecord = new Struct({
+    sequenceIndex: uint16,
+    lookupListIndex: uint16
+  });
+  var $7cbbe4e24ef3cb75$var$Rule = new Struct({
+    glyphCount: uint16,
+    lookupCount: uint16,
+    input: new ArrayT(uint16, (t) => t.glyphCount - 1),
+    lookupRecords: new ArrayT($7cbbe4e24ef3cb75$var$LookupRecord, "lookupCount")
+  });
+  var $7cbbe4e24ef3cb75$var$RuleSet = new ArrayT(new Pointer(uint16, $7cbbe4e24ef3cb75$var$Rule), uint16);
+  var $7cbbe4e24ef3cb75$var$ClassRule = new Struct({
+    glyphCount: uint16,
+    lookupCount: uint16,
+    classes: new ArrayT(uint16, (t) => t.glyphCount - 1),
+    lookupRecords: new ArrayT($7cbbe4e24ef3cb75$var$LookupRecord, "lookupCount")
+  });
+  var $7cbbe4e24ef3cb75$var$ClassSet = new ArrayT(new Pointer(uint16, $7cbbe4e24ef3cb75$var$ClassRule), uint16);
+  var $7cbbe4e24ef3cb75$export$841858b892ce1f4c = new VersionedStruct(uint16, {
+    1: {
+      coverage: new Pointer(uint16, $7cbbe4e24ef3cb75$export$17608c3f81a6111),
+      ruleSetCount: uint16,
+      ruleSets: new ArrayT(new Pointer(uint16, $7cbbe4e24ef3cb75$var$RuleSet), "ruleSetCount")
+    },
+    2: {
+      coverage: new Pointer(uint16, $7cbbe4e24ef3cb75$export$17608c3f81a6111),
+      classDef: new Pointer(uint16, $7cbbe4e24ef3cb75$export$843d551fbbafef71),
+      classSetCnt: uint16,
+      classSet: new ArrayT(new Pointer(uint16, $7cbbe4e24ef3cb75$var$ClassSet), "classSetCnt")
+    },
+    3: {
+      glyphCount: uint16,
+      lookupCount: uint16,
+      coverages: new ArrayT(new Pointer(uint16, $7cbbe4e24ef3cb75$export$17608c3f81a6111), "glyphCount"),
+      lookupRecords: new ArrayT($7cbbe4e24ef3cb75$var$LookupRecord, "lookupCount")
+    }
+  });
+  var $7cbbe4e24ef3cb75$var$ChainRule = new Struct({
+    backtrackGlyphCount: uint16,
+    backtrack: new ArrayT(uint16, "backtrackGlyphCount"),
+    inputGlyphCount: uint16,
+    input: new ArrayT(uint16, (t) => t.inputGlyphCount - 1),
+    lookaheadGlyphCount: uint16,
+    lookahead: new ArrayT(uint16, "lookaheadGlyphCount"),
+    lookupCount: uint16,
+    lookupRecords: new ArrayT($7cbbe4e24ef3cb75$var$LookupRecord, "lookupCount")
+  });
+  var $7cbbe4e24ef3cb75$var$ChainRuleSet = new ArrayT(new Pointer(uint16, $7cbbe4e24ef3cb75$var$ChainRule), uint16);
+  var $7cbbe4e24ef3cb75$export$5e6d09e6861162f6 = new VersionedStruct(uint16, {
+    1: {
+      coverage: new Pointer(uint16, $7cbbe4e24ef3cb75$export$17608c3f81a6111),
+      chainCount: uint16,
+      chainRuleSets: new ArrayT(new Pointer(uint16, $7cbbe4e24ef3cb75$var$ChainRuleSet), "chainCount")
+    },
+    2: {
+      coverage: new Pointer(uint16, $7cbbe4e24ef3cb75$export$17608c3f81a6111),
+      backtrackClassDef: new Pointer(uint16, $7cbbe4e24ef3cb75$export$843d551fbbafef71),
+      inputClassDef: new Pointer(uint16, $7cbbe4e24ef3cb75$export$843d551fbbafef71),
+      lookaheadClassDef: new Pointer(uint16, $7cbbe4e24ef3cb75$export$843d551fbbafef71),
+      chainCount: uint16,
+      chainClassSet: new ArrayT(new Pointer(uint16, $7cbbe4e24ef3cb75$var$ChainRuleSet), "chainCount")
+    },
+    3: {
+      backtrackGlyphCount: uint16,
+      backtrackCoverage: new ArrayT(new Pointer(uint16, $7cbbe4e24ef3cb75$export$17608c3f81a6111), "backtrackGlyphCount"),
+      inputGlyphCount: uint16,
+      inputCoverage: new ArrayT(new Pointer(uint16, $7cbbe4e24ef3cb75$export$17608c3f81a6111), "inputGlyphCount"),
+      lookaheadGlyphCount: uint16,
+      lookaheadCoverage: new ArrayT(new Pointer(uint16, $7cbbe4e24ef3cb75$export$17608c3f81a6111), "lookaheadGlyphCount"),
+      lookupCount: uint16,
+      lookupRecords: new ArrayT($7cbbe4e24ef3cb75$var$LookupRecord, "lookupCount")
+    }
+  });
+  var $1a47b0c45c1c22fe$var$F2DOT14 = new Fixed(16, "BE", 14);
+  var $1a47b0c45c1c22fe$var$RegionAxisCoordinates = new Struct({
+    startCoord: $1a47b0c45c1c22fe$var$F2DOT14,
+    peakCoord: $1a47b0c45c1c22fe$var$F2DOT14,
+    endCoord: $1a47b0c45c1c22fe$var$F2DOT14
+  });
+  var $1a47b0c45c1c22fe$var$VariationRegionList = new Struct({
+    axisCount: uint16,
+    regionCount: uint16,
+    variationRegions: new ArrayT(new ArrayT($1a47b0c45c1c22fe$var$RegionAxisCoordinates, "axisCount"), "regionCount")
+  });
+  var $1a47b0c45c1c22fe$var$DeltaSet = new Struct({
+    shortDeltas: new ArrayT(int16, (t) => t.parent.shortDeltaCount),
+    regionDeltas: new ArrayT(int8, (t) => t.parent.regionIndexCount - t.parent.shortDeltaCount),
+    deltas: (t) => t.shortDeltas.concat(t.regionDeltas)
+  });
+  var $1a47b0c45c1c22fe$var$ItemVariationData = new Struct({
+    itemCount: uint16,
+    shortDeltaCount: uint16,
+    regionIndexCount: uint16,
+    regionIndexes: new ArrayT(uint16, "regionIndexCount"),
+    deltaSets: new ArrayT($1a47b0c45c1c22fe$var$DeltaSet, "itemCount")
+  });
+  var $1a47b0c45c1c22fe$export$fe1b122a2710f241 = new Struct({
+    format: uint16,
+    variationRegionList: new Pointer(uint32, $1a47b0c45c1c22fe$var$VariationRegionList),
+    variationDataCount: uint16,
+    itemVariationData: new ArrayT(new Pointer(uint32, $1a47b0c45c1c22fe$var$ItemVariationData), "variationDataCount")
+  });
+  var $1a47b0c45c1c22fe$var$ConditionTable = new VersionedStruct(uint16, {
+    1: {
+      axisIndex: uint16,
+      axisIndex: uint16,
+      filterRangeMinValue: $1a47b0c45c1c22fe$var$F2DOT14,
+      filterRangeMaxValue: $1a47b0c45c1c22fe$var$F2DOT14
+    }
+  });
+  var $1a47b0c45c1c22fe$var$ConditionSet = new Struct({
+    conditionCount: uint16,
+    conditionTable: new ArrayT(new Pointer(uint32, $1a47b0c45c1c22fe$var$ConditionTable), "conditionCount")
+  });
+  var $1a47b0c45c1c22fe$var$FeatureTableSubstitutionRecord = new Struct({
+    featureIndex: uint16,
+    alternateFeatureTable: new Pointer(uint32, (0, $7cbbe4e24ef3cb75$export$6e91cf7616333d5), {
+      type: "parent"
+    })
+  });
+  var $1a47b0c45c1c22fe$var$FeatureTableSubstitution = new Struct({
+    version: fixed32,
+    substitutionCount: uint16,
+    substitutions: new ArrayT($1a47b0c45c1c22fe$var$FeatureTableSubstitutionRecord, "substitutionCount")
+  });
+  var $1a47b0c45c1c22fe$var$FeatureVariationRecord = new Struct({
+    conditionSet: new Pointer(uint32, $1a47b0c45c1c22fe$var$ConditionSet, {
+      type: "parent"
+    }),
+    featureTableSubstitution: new Pointer(uint32, $1a47b0c45c1c22fe$var$FeatureTableSubstitution, {
+      type: "parent"
+    })
+  });
+  var $1a47b0c45c1c22fe$export$441b70b7971dd419 = new Struct({
+    majorVersion: uint16,
+    minorVersion: uint16,
+    featureVariationRecordCount: uint32,
+    featureVariationRecords: new ArrayT($1a47b0c45c1c22fe$var$FeatureVariationRecord, "featureVariationRecordCount")
+  });
+  var $b84fd3dd9d8eddb2$var$PredefinedOp = class {
+    decode(stream, parent, operands) {
+      if (this.predefinedOps[operands[0]]) return this.predefinedOps[operands[0]];
+      return this.type.decode(stream, parent, operands);
+    }
+    size(value, ctx) {
+      return this.type.size(value, ctx);
+    }
+    encode(stream, value, ctx) {
+      let index = this.predefinedOps.indexOf(value);
+      if (index !== -1) return index;
+      return this.type.encode(stream, value, ctx);
+    }
+    constructor(predefinedOps, type) {
+      this.predefinedOps = predefinedOps;
+      this.type = type;
+    }
+  };
+  var $b84fd3dd9d8eddb2$var$CFFEncodingVersion = class extends NumberT {
+    decode(stream) {
+      return uint8.decode(stream) & 127;
+    }
+    constructor() {
+      super("UInt8");
+    }
+  };
+  var $b84fd3dd9d8eddb2$var$Range1 = new Struct({
+    first: uint16,
+    nLeft: uint8
+  });
+  var $b84fd3dd9d8eddb2$var$Range2 = new Struct({
+    first: uint16,
+    nLeft: uint16
+  });
+  var $b84fd3dd9d8eddb2$var$CFFCustomEncoding = new VersionedStruct(new $b84fd3dd9d8eddb2$var$CFFEncodingVersion(), {
+    0: {
+      nCodes: uint8,
+      codes: new ArrayT(uint8, "nCodes")
+    },
+    1: {
+      nRanges: uint8,
+      ranges: new ArrayT($b84fd3dd9d8eddb2$var$Range1, "nRanges")
+    }
+  });
+  var $b84fd3dd9d8eddb2$var$CFFEncoding = new $b84fd3dd9d8eddb2$var$PredefinedOp([
+    (0, $bc0433d9b7e41f5f$export$dee0027060fa13bd),
+    (0, $bc0433d9b7e41f5f$export$4f58f497e14a53c3)
+  ], new (0, $0e34a43d05bde82c$export$2e2bcd8739ae039)($b84fd3dd9d8eddb2$var$CFFCustomEncoding, {
+    lazy: true
+  }));
+  var $b84fd3dd9d8eddb2$var$RangeArray = class extends ArrayT {
+    decode(stream, parent) {
+      let length = (0, resolveLength)(this.length, stream, parent);
+      let count = 0;
+      let res = [];
+      while (count < length) {
+        let range = this.type.decode(stream, parent);
+        range.offset = count;
+        count += range.nLeft + 1;
+        res.push(range);
+      }
+      return res;
+    }
+  };
+  var $b84fd3dd9d8eddb2$var$CFFCustomCharset = new VersionedStruct(uint8, {
+    0: {
+      glyphs: new ArrayT(uint16, (t) => t.parent.CharStrings.length - 1)
+    },
+    1: {
+      ranges: new $b84fd3dd9d8eddb2$var$RangeArray($b84fd3dd9d8eddb2$var$Range1, (t) => t.parent.CharStrings.length - 1)
+    },
+    2: {
+      ranges: new $b84fd3dd9d8eddb2$var$RangeArray($b84fd3dd9d8eddb2$var$Range2, (t) => t.parent.CharStrings.length - 1)
+    }
+  });
+  var $b84fd3dd9d8eddb2$var$CFFCharset = new $b84fd3dd9d8eddb2$var$PredefinedOp([
+    (0, $ef658f5c9a1488b2$export$c33b50336c234f16),
+    (0, $ef658f5c9a1488b2$export$3ed0f9e1fee8d489),
+    (0, $ef658f5c9a1488b2$export$dc28be11139d4120)
+  ], new (0, $0e34a43d05bde82c$export$2e2bcd8739ae039)($b84fd3dd9d8eddb2$var$CFFCustomCharset, {
+    lazy: true
+  }));
+  var $b84fd3dd9d8eddb2$var$FDRange3 = new Struct({
+    first: uint16,
+    fd: uint8
+  });
+  var $b84fd3dd9d8eddb2$var$FDRange4 = new Struct({
+    first: uint32,
+    fd: uint16
+  });
+  var $b84fd3dd9d8eddb2$var$FDSelect = new VersionedStruct(uint8, {
+    0: {
+      fds: new ArrayT(uint8, (t) => t.parent.CharStrings.length)
+    },
+    3: {
+      nRanges: uint16,
+      ranges: new ArrayT($b84fd3dd9d8eddb2$var$FDRange3, "nRanges"),
+      sentinel: uint16
+    },
+    4: {
+      nRanges: uint32,
+      ranges: new ArrayT($b84fd3dd9d8eddb2$var$FDRange4, "nRanges"),
+      sentinel: uint32
+    }
+  });
+  var $b84fd3dd9d8eddb2$var$ptr = new (0, $0e34a43d05bde82c$export$2e2bcd8739ae039)((0, $6d59db2e29cc77b3$export$2e2bcd8739ae039));
+  var $b84fd3dd9d8eddb2$var$CFFPrivateOp = class {
+    decode(stream, parent, operands) {
+      parent.length = operands[0];
+      return $b84fd3dd9d8eddb2$var$ptr.decode(stream, parent, [
+        operands[1]
+      ]);
+    }
+    size(dict, ctx) {
+      return [
+        (0, $6d59db2e29cc77b3$export$2e2bcd8739ae039).size(dict, ctx, false),
+        $b84fd3dd9d8eddb2$var$ptr.size(dict, ctx)[0]
+      ];
+    }
+    encode(stream, dict, ctx) {
+      return [
+        (0, $6d59db2e29cc77b3$export$2e2bcd8739ae039).size(dict, ctx, false),
+        $b84fd3dd9d8eddb2$var$ptr.encode(stream, dict, ctx)[0]
+      ];
+    }
+  };
+  var $b84fd3dd9d8eddb2$var$FontDict = new (0, $61aa549f16d58b9b$export$2e2bcd8739ae039)([
+    // key       name                   type(s)                                 default
+    [
+      18,
+      "Private",
+      new $b84fd3dd9d8eddb2$var$CFFPrivateOp(),
+      null
+    ],
+    [
+      [
+        12,
+        38
+      ],
+      "FontName",
+      "sid",
+      null
+    ],
+    [
+      [
+        12,
+        7
+      ],
+      "FontMatrix",
+      "array",
+      [
+        1e-3,
+        0,
+        0,
+        1e-3,
+        0,
+        0
+      ]
+    ],
+    [
+      [
+        12,
+        5
+      ],
+      "PaintType",
+      "number",
+      0
+    ]
+  ]);
+  var $b84fd3dd9d8eddb2$var$CFFTopDict = new (0, $61aa549f16d58b9b$export$2e2bcd8739ae039)([
+    // key       name                   type(s)                                 default
+    [
+      [
+        12,
+        30
+      ],
+      "ROS",
+      [
+        "sid",
+        "sid",
+        "number"
+      ],
+      null
+    ],
+    [
+      0,
+      "version",
+      "sid",
+      null
+    ],
+    [
+      1,
+      "Notice",
+      "sid",
+      null
+    ],
+    [
+      [
+        12,
+        0
+      ],
+      "Copyright",
+      "sid",
+      null
+    ],
+    [
+      2,
+      "FullName",
+      "sid",
+      null
+    ],
+    [
+      3,
+      "FamilyName",
+      "sid",
+      null
+    ],
+    [
+      4,
+      "Weight",
+      "sid",
+      null
+    ],
+    [
+      [
+        12,
+        1
+      ],
+      "isFixedPitch",
+      "boolean",
+      false
+    ],
+    [
+      [
+        12,
+        2
+      ],
+      "ItalicAngle",
+      "number",
+      0
+    ],
+    [
+      [
+        12,
+        3
+      ],
+      "UnderlinePosition",
+      "number",
+      -100
+    ],
+    [
+      [
+        12,
+        4
+      ],
+      "UnderlineThickness",
+      "number",
+      50
+    ],
+    [
+      [
+        12,
+        5
+      ],
+      "PaintType",
+      "number",
+      0
+    ],
+    [
+      [
+        12,
+        6
+      ],
+      "CharstringType",
+      "number",
+      2
+    ],
+    [
+      [
+        12,
+        7
+      ],
+      "FontMatrix",
+      "array",
+      [
+        1e-3,
+        0,
+        0,
+        1e-3,
+        0,
+        0
+      ]
+    ],
+    [
+      13,
+      "UniqueID",
+      "number",
+      null
+    ],
+    [
+      5,
+      "FontBBox",
+      "array",
+      [
+        0,
+        0,
+        0,
+        0
+      ]
+    ],
+    [
+      [
+        12,
+        8
+      ],
+      "StrokeWidth",
+      "number",
+      0
+    ],
+    [
+      14,
+      "XUID",
+      "array",
+      null
+    ],
+    [
+      15,
+      "charset",
+      $b84fd3dd9d8eddb2$var$CFFCharset,
+      (0, $ef658f5c9a1488b2$export$c33b50336c234f16)
+    ],
+    [
+      16,
+      "Encoding",
+      $b84fd3dd9d8eddb2$var$CFFEncoding,
+      (0, $bc0433d9b7e41f5f$export$dee0027060fa13bd)
+    ],
+    [
+      17,
+      "CharStrings",
+      new (0, $0e34a43d05bde82c$export$2e2bcd8739ae039)(new (0, $43e9821ef3717eec$export$2e2bcd8739ae039)()),
+      null
+    ],
+    [
+      18,
+      "Private",
+      new $b84fd3dd9d8eddb2$var$CFFPrivateOp(),
+      null
+    ],
+    [
+      [
+        12,
+        20
+      ],
+      "SyntheticBase",
+      "number",
+      null
+    ],
+    [
+      [
+        12,
+        21
+      ],
+      "PostScript",
+      "sid",
+      null
+    ],
+    [
+      [
+        12,
+        22
+      ],
+      "BaseFontName",
+      "sid",
+      null
+    ],
+    [
+      [
+        12,
+        23
+      ],
+      "BaseFontBlend",
+      "delta",
+      null
+    ],
+    // CID font specific
+    [
+      [
+        12,
+        31
+      ],
+      "CIDFontVersion",
+      "number",
+      0
+    ],
+    [
+      [
+        12,
+        32
+      ],
+      "CIDFontRevision",
+      "number",
+      0
+    ],
+    [
+      [
+        12,
+        33
+      ],
+      "CIDFontType",
+      "number",
+      0
+    ],
+    [
+      [
+        12,
+        34
+      ],
+      "CIDCount",
+      "number",
+      8720
+    ],
+    [
+      [
+        12,
+        35
+      ],
+      "UIDBase",
+      "number",
+      null
+    ],
+    [
+      [
+        12,
+        37
+      ],
+      "FDSelect",
+      new (0, $0e34a43d05bde82c$export$2e2bcd8739ae039)($b84fd3dd9d8eddb2$var$FDSelect),
+      null
+    ],
+    [
+      [
+        12,
+        36
+      ],
+      "FDArray",
+      new (0, $0e34a43d05bde82c$export$2e2bcd8739ae039)(new (0, $43e9821ef3717eec$export$2e2bcd8739ae039)($b84fd3dd9d8eddb2$var$FontDict)),
+      null
+    ],
+    [
+      [
+        12,
+        38
+      ],
+      "FontName",
+      "sid",
+      null
+    ]
+  ]);
+  var $b84fd3dd9d8eddb2$var$VariationStore = new Struct({
+    length: uint16,
+    itemVariationStore: (0, $1a47b0c45c1c22fe$export$fe1b122a2710f241)
+  });
+  var $b84fd3dd9d8eddb2$var$CFF2TopDict = new (0, $61aa549f16d58b9b$export$2e2bcd8739ae039)([
+    [
+      [
+        12,
+        7
+      ],
+      "FontMatrix",
+      "array",
+      [
+        1e-3,
+        0,
+        0,
+        1e-3,
+        0,
+        0
+      ]
+    ],
+    [
+      17,
+      "CharStrings",
+      new (0, $0e34a43d05bde82c$export$2e2bcd8739ae039)(new (0, $43e9821ef3717eec$export$2e2bcd8739ae039)()),
+      null
+    ],
+    [
+      [
+        12,
+        37
+      ],
+      "FDSelect",
+      new (0, $0e34a43d05bde82c$export$2e2bcd8739ae039)($b84fd3dd9d8eddb2$var$FDSelect),
+      null
+    ],
+    [
+      [
+        12,
+        36
+      ],
+      "FDArray",
+      new (0, $0e34a43d05bde82c$export$2e2bcd8739ae039)(new (0, $43e9821ef3717eec$export$2e2bcd8739ae039)($b84fd3dd9d8eddb2$var$FontDict)),
+      null
+    ],
+    [
+      24,
+      "vstore",
+      new (0, $0e34a43d05bde82c$export$2e2bcd8739ae039)($b84fd3dd9d8eddb2$var$VariationStore),
+      null
+    ],
+    [
+      25,
+      "maxstack",
+      "number",
+      193
+    ]
+  ]);
+  var $b84fd3dd9d8eddb2$var$CFFTop = new VersionedStruct(fixed16, {
+    1: {
+      hdrSize: uint8,
+      offSize: uint8,
+      nameIndex: new (0, $43e9821ef3717eec$export$2e2bcd8739ae039)(new StringT("length")),
+      topDictIndex: new (0, $43e9821ef3717eec$export$2e2bcd8739ae039)($b84fd3dd9d8eddb2$var$CFFTopDict),
+      stringIndex: new (0, $43e9821ef3717eec$export$2e2bcd8739ae039)(new StringT("length")),
+      globalSubrIndex: new (0, $43e9821ef3717eec$export$2e2bcd8739ae039)()
+    },
+    2: {
+      hdrSize: uint8,
+      length: uint16,
+      topDict: $b84fd3dd9d8eddb2$var$CFF2TopDict,
+      globalSubrIndex: new (0, $43e9821ef3717eec$export$2e2bcd8739ae039)()
+    }
+  });
+  var $b84fd3dd9d8eddb2$export$2e2bcd8739ae039 = $b84fd3dd9d8eddb2$var$CFFTop;
+  var $822ac0d589e4e237$var$CFFFont = class _$822ac0d589e4e237$var$CFFFont {
+    static decode(stream) {
+      return new _$822ac0d589e4e237$var$CFFFont(stream);
+    }
+    decode() {
+      let start = this.stream.pos;
+      let top = (0, $b84fd3dd9d8eddb2$export$2e2bcd8739ae039).decode(this.stream);
+      for (let key in top) {
+        let val = top[key];
+        this[key] = val;
+      }
+      if (this.version < 2) {
+        if (this.topDictIndex.length !== 1) throw new Error("Only a single font is allowed in CFF");
+        this.topDict = this.topDictIndex[0];
+      }
+      this.isCIDFont = this.topDict.ROS != null;
+      return this;
+    }
+    string(sid) {
+      if (this.version >= 2) return null;
+      if (sid < (0, $229224aec43783c5$export$2e2bcd8739ae039).length) return (0, $229224aec43783c5$export$2e2bcd8739ae039)[sid];
+      return this.stringIndex[sid - (0, $229224aec43783c5$export$2e2bcd8739ae039).length];
+    }
+    get postscriptName() {
+      if (this.version < 2) return this.nameIndex[0];
+      return null;
+    }
+    get fullName() {
+      return this.string(this.topDict.FullName);
+    }
+    get familyName() {
+      return this.string(this.topDict.FamilyName);
+    }
+    getCharString(glyph) {
+      this.stream.pos = this.topDict.CharStrings[glyph].offset;
+      return this.stream.readBuffer(this.topDict.CharStrings[glyph].length);
+    }
+    getGlyphName(gid) {
+      if (this.version >= 2) return null;
+      if (this.isCIDFont) return null;
+      let { charset } = this.topDict;
+      if (Array.isArray(charset)) return charset[gid];
+      if (gid === 0) return ".notdef";
+      gid -= 1;
+      switch (charset.version) {
+        case 0:
+          return this.string(charset.glyphs[gid]);
+        case 1:
+        case 2:
+          for (let i2 = 0; i2 < charset.ranges.length; i2++) {
+            let range = charset.ranges[i2];
+            if (range.offset <= gid && gid <= range.offset + range.nLeft) return this.string(range.first + (gid - range.offset));
+          }
+          break;
+      }
+      return null;
+    }
+    fdForGlyph(gid) {
+      if (!this.topDict.FDSelect) return null;
+      switch (this.topDict.FDSelect.version) {
+        case 0:
+          return this.topDict.FDSelect.fds[gid];
+        case 3:
+        case 4:
+          let { ranges } = this.topDict.FDSelect;
+          let low = 0;
+          let high = ranges.length - 1;
+          while (low <= high) {
+            let mid = low + high >> 1;
+            if (gid < ranges[mid].first) high = mid - 1;
+            else if (mid < high && gid >= ranges[mid + 1].first) low = mid + 1;
+            else return ranges[mid].fd;
+          }
+        default:
+          throw new Error(`Unknown FDSelect version: ${this.topDict.FDSelect.version}`);
+      }
+    }
+    privateDictForGlyph(gid) {
+      if (this.topDict.FDSelect) {
+        let fd2 = this.fdForGlyph(gid);
+        if (this.topDict.FDArray[fd2]) return this.topDict.FDArray[fd2].Private;
+        return null;
+      }
+      if (this.version < 2) return this.topDict.Private;
+      return this.topDict.FDArray[0].Private;
+    }
+    constructor(stream) {
+      this.stream = stream;
+      this.decode();
+    }
+  };
+  var $822ac0d589e4e237$export$2e2bcd8739ae039 = $822ac0d589e4e237$var$CFFFont;
+  var $2bbf2bc1ce37cd8f$var$VerticalOrigin = new Struct({
+    glyphIndex: uint16,
+    vertOriginY: int16
+  });
+  var $2bbf2bc1ce37cd8f$export$2e2bcd8739ae039 = new Struct({
+    majorVersion: uint16,
+    minorVersion: uint16,
+    defaultVertOriginY: int16,
+    numVertOriginYMetrics: uint16,
+    metrics: new ArrayT($2bbf2bc1ce37cd8f$var$VerticalOrigin, "numVertOriginYMetrics")
+  });
+  var $0941618dc22a946d$export$16b227cb15d716a0 = new Struct({
+    height: uint8,
+    width: uint8,
+    horiBearingX: int8,
+    horiBearingY: int8,
+    horiAdvance: uint8,
+    vertBearingX: int8,
+    vertBearingY: int8,
+    vertAdvance: uint8
+  });
+  var $0941618dc22a946d$export$62c53e75f69bfe12 = new Struct({
+    height: uint8,
+    width: uint8,
+    bearingX: int8,
+    bearingY: int8,
+    advance: uint8
+  });
+  var $0941618dc22a946d$var$EBDTComponent = new Struct({
+    glyph: uint16,
+    xOffset: int8,
+    yOffset: int8
+  });
+  var $0941618dc22a946d$var$ByteAligned = class {
+  };
+  var $0941618dc22a946d$var$BitAligned = class {
+  };
+  var $0941618dc22a946d$export$f1f5ddeb20d14f = new VersionedStruct("version", {
+    1: {
+      metrics: $0941618dc22a946d$export$62c53e75f69bfe12,
+      data: $0941618dc22a946d$var$ByteAligned
+    },
+    2: {
+      metrics: $0941618dc22a946d$export$62c53e75f69bfe12,
+      data: $0941618dc22a946d$var$BitAligned
+    },
+    // format 3 is deprecated
+    // format 4 is not supported by Microsoft
+    5: {
+      data: $0941618dc22a946d$var$BitAligned
+    },
+    6: {
+      metrics: $0941618dc22a946d$export$16b227cb15d716a0,
+      data: $0941618dc22a946d$var$ByteAligned
+    },
+    7: {
+      metrics: $0941618dc22a946d$export$16b227cb15d716a0,
+      data: $0941618dc22a946d$var$BitAligned
+    },
+    8: {
+      metrics: $0941618dc22a946d$export$62c53e75f69bfe12,
+      pad: new Reserved(uint8),
+      numComponents: uint16,
+      components: new ArrayT($0941618dc22a946d$var$EBDTComponent, "numComponents")
+    },
+    9: {
+      metrics: $0941618dc22a946d$export$16b227cb15d716a0,
+      pad: new Reserved(uint8),
+      numComponents: uint16,
+      components: new ArrayT($0941618dc22a946d$var$EBDTComponent, "numComponents")
+    },
+    17: {
+      metrics: $0941618dc22a946d$export$62c53e75f69bfe12,
+      dataLen: uint32,
+      data: new BufferT("dataLen")
+    },
+    18: {
+      metrics: $0941618dc22a946d$export$16b227cb15d716a0,
+      dataLen: uint32,
+      data: new BufferT("dataLen")
+    },
+    19: {
+      dataLen: uint32,
+      data: new BufferT("dataLen")
+    }
+  });
+  var $9911c4c7201c13de$var$SBitLineMetrics = new Struct({
+    ascender: int8,
+    descender: int8,
+    widthMax: uint8,
+    caretSlopeNumerator: int8,
+    caretSlopeDenominator: int8,
+    caretOffset: int8,
+    minOriginSB: int8,
+    minAdvanceSB: int8,
+    maxBeforeBL: int8,
+    minAfterBL: int8,
+    pad: new Reserved(int8, 2)
+  });
+  var $9911c4c7201c13de$var$CodeOffsetPair = new Struct({
+    glyphCode: uint16,
+    offset: uint16
+  });
+  var $9911c4c7201c13de$var$IndexSubtable = new VersionedStruct(uint16, {
+    header: {
+      imageFormat: uint16,
+      imageDataOffset: uint32
+    },
+    1: {
+      offsetArray: new ArrayT(uint32, (t) => t.parent.lastGlyphIndex - t.parent.firstGlyphIndex + 1)
+    },
+    2: {
+      imageSize: uint32,
+      bigMetrics: (0, $0941618dc22a946d$export$16b227cb15d716a0)
+    },
+    3: {
+      offsetArray: new ArrayT(uint16, (t) => t.parent.lastGlyphIndex - t.parent.firstGlyphIndex + 1)
+    },
+    4: {
+      numGlyphs: uint32,
+      glyphArray: new ArrayT($9911c4c7201c13de$var$CodeOffsetPair, (t) => t.numGlyphs + 1)
+    },
+    5: {
+      imageSize: uint32,
+      bigMetrics: (0, $0941618dc22a946d$export$16b227cb15d716a0),
+      numGlyphs: uint32,
+      glyphCodeArray: new ArrayT(uint16, "numGlyphs")
+    }
+  });
+  var $9911c4c7201c13de$var$IndexSubtableArray = new Struct({
+    firstGlyphIndex: uint16,
+    lastGlyphIndex: uint16,
+    subtable: new Pointer(uint32, $9911c4c7201c13de$var$IndexSubtable)
+  });
+  var $9911c4c7201c13de$var$BitmapSizeTable = new Struct({
+    indexSubTableArray: new Pointer(uint32, new ArrayT($9911c4c7201c13de$var$IndexSubtableArray, 1), {
+      type: "parent"
+    }),
+    indexTablesSize: uint32,
+    numberOfIndexSubTables: uint32,
+    colorRef: uint32,
+    hori: $9911c4c7201c13de$var$SBitLineMetrics,
+    vert: $9911c4c7201c13de$var$SBitLineMetrics,
+    startGlyphIndex: uint16,
+    endGlyphIndex: uint16,
+    ppemX: uint8,
+    ppemY: uint8,
+    bitDepth: uint8,
+    flags: new Bitfield(uint8, [
+      "horizontal",
+      "vertical"
+    ])
+  });
+  var $9911c4c7201c13de$export$2e2bcd8739ae039 = new Struct({
+    version: uint32,
+    numSizes: uint32,
+    sizes: new ArrayT($9911c4c7201c13de$var$BitmapSizeTable, "numSizes")
+  });
+  var $abb847051efd51b1$var$ImageTable = new Struct({
+    ppem: uint16,
+    resolution: uint16,
+    imageOffsets: new ArrayT(new Pointer(uint32, "void"), (t) => t.parent.parent.maxp.numGlyphs + 1)
+  });
+  var $abb847051efd51b1$export$2e2bcd8739ae039 = new Struct({
+    version: uint16,
+    flags: new Bitfield(uint16, [
+      "renderOutlines"
+    ]),
+    numImgTables: uint32,
+    imageTables: new ArrayT(new Pointer(uint32, $abb847051efd51b1$var$ImageTable), "numImgTables")
+  });
+  var $eb629188f3dfefdd$var$LayerRecord = new Struct({
+    gid: uint16,
+    paletteIndex: uint16
+    // Index value to use in the appropriate palette. This value must
+  });
+  var $eb629188f3dfefdd$var$BaseGlyphRecord = new Struct({
+    gid: uint16,
+    // and is not rendered for color.
+    firstLayerIndex: uint16,
+    // There will be numLayers consecutive entries for this base glyph.
+    numLayers: uint16
+  });
+  var $eb629188f3dfefdd$export$2e2bcd8739ae039 = new Struct({
+    version: uint16,
+    numBaseGlyphRecords: uint16,
+    baseGlyphRecord: new Pointer(uint32, new ArrayT($eb629188f3dfefdd$var$BaseGlyphRecord, "numBaseGlyphRecords")),
+    layerRecords: new Pointer(uint32, new ArrayT($eb629188f3dfefdd$var$LayerRecord, "numLayerRecords"), {
+      lazy: true
+    }),
+    numLayerRecords: uint16
+  });
+  var $08734b8e7dc64587$var$ColorRecord = new Struct({
+    blue: uint8,
+    green: uint8,
+    red: uint8,
+    alpha: uint8
+  });
+  var $08734b8e7dc64587$export$2e2bcd8739ae039 = new VersionedStruct(uint16, {
+    header: {
+      numPaletteEntries: uint16,
+      numPalettes: uint16,
+      numColorRecords: uint16,
+      colorRecords: new Pointer(uint32, new ArrayT($08734b8e7dc64587$var$ColorRecord, "numColorRecords")),
+      colorRecordIndices: new ArrayT(uint16, "numPalettes")
+    },
+    0: {},
+    1: {
+      offsetPaletteTypeArray: new Pointer(uint32, new ArrayT(uint32, "numPalettes")),
+      offsetPaletteLabelArray: new Pointer(uint32, new ArrayT(uint16, "numPalettes")),
+      offsetPaletteEntryLabelArray: new Pointer(uint32, new ArrayT(uint16, "numPaletteEntries"))
+    }
+  });
+  var $497cef411d884e34$var$BaseCoord = new VersionedStruct(uint16, {
+    1: {
+      coordinate: int16
+      // X or Y value, in design units
+    },
+    2: {
+      coordinate: int16,
+      referenceGlyph: uint16,
+      baseCoordPoint: uint16
+      // Index of contour point on the referenceGlyph
+    },
+    3: {
+      coordinate: int16,
+      deviceTable: new Pointer(uint16, (0, $7cbbe4e24ef3cb75$export$8215d14a63d9fb10))
+      // Device table for X or Y value
+    }
+  });
+  var $497cef411d884e34$var$BaseValues = new Struct({
+    defaultIndex: uint16,
+    baseCoordCount: uint16,
+    baseCoords: new ArrayT(new Pointer(uint16, $497cef411d884e34$var$BaseCoord), "baseCoordCount")
+  });
+  var $497cef411d884e34$var$FeatMinMaxRecord = new Struct({
+    tag: new StringT(4),
+    minCoord: new Pointer(uint16, $497cef411d884e34$var$BaseCoord, {
+      type: "parent"
+    }),
+    maxCoord: new Pointer(uint16, $497cef411d884e34$var$BaseCoord, {
+      type: "parent"
+    })
+    // May be NULL
+  });
+  var $497cef411d884e34$var$MinMax = new Struct({
+    minCoord: new Pointer(uint16, $497cef411d884e34$var$BaseCoord),
+    maxCoord: new Pointer(uint16, $497cef411d884e34$var$BaseCoord),
+    featMinMaxCount: uint16,
+    featMinMaxRecords: new ArrayT($497cef411d884e34$var$FeatMinMaxRecord, "featMinMaxCount")
+    // In alphabetical order
+  });
+  var $497cef411d884e34$var$BaseLangSysRecord = new Struct({
+    tag: new StringT(4),
+    minMax: new Pointer(uint16, $497cef411d884e34$var$MinMax, {
+      type: "parent"
+    })
+  });
+  var $497cef411d884e34$var$BaseScript = new Struct({
+    baseValues: new Pointer(uint16, $497cef411d884e34$var$BaseValues),
+    defaultMinMax: new Pointer(uint16, $497cef411d884e34$var$MinMax),
+    baseLangSysCount: uint16,
+    baseLangSysRecords: new ArrayT($497cef411d884e34$var$BaseLangSysRecord, "baseLangSysCount")
+    // in alphabetical order by BaseLangSysTag
+  });
+  var $497cef411d884e34$var$BaseScriptRecord = new Struct({
+    tag: new StringT(4),
+    script: new Pointer(uint16, $497cef411d884e34$var$BaseScript, {
+      type: "parent"
+    })
+  });
+  var $497cef411d884e34$var$BaseScriptList = new ArrayT($497cef411d884e34$var$BaseScriptRecord, uint16);
+  var $497cef411d884e34$var$BaseTagList = new ArrayT(new StringT(4), uint16);
+  var $497cef411d884e34$var$Axis = new Struct({
+    baseTagList: new Pointer(uint16, $497cef411d884e34$var$BaseTagList),
+    baseScriptList: new Pointer(uint16, $497cef411d884e34$var$BaseScriptList)
+  });
+  var $497cef411d884e34$export$2e2bcd8739ae039 = new VersionedStruct(uint32, {
+    header: {
+      horizAxis: new Pointer(uint16, $497cef411d884e34$var$Axis),
+      vertAxis: new Pointer(uint16, $497cef411d884e34$var$Axis)
+      // May be NULL
+    },
+    65536: {},
+    65537: {
+      itemVariationStore: new Pointer(uint32, (0, $1a47b0c45c1c22fe$export$fe1b122a2710f241))
+    }
+  });
+  var $cf5f33c63ef209e6$var$AttachPoint = new ArrayT(uint16, uint16);
+  var $cf5f33c63ef209e6$var$AttachList = new Struct({
+    coverage: new Pointer(uint16, (0, $7cbbe4e24ef3cb75$export$17608c3f81a6111)),
+    glyphCount: uint16,
+    attachPoints: new ArrayT(new Pointer(uint16, $cf5f33c63ef209e6$var$AttachPoint), "glyphCount")
+  });
+  var $cf5f33c63ef209e6$var$CaretValue = new VersionedStruct(uint16, {
+    1: {
+      coordinate: int16
+    },
+    2: {
+      caretValuePoint: uint16
+    },
+    3: {
+      coordinate: int16,
+      deviceTable: new Pointer(uint16, (0, $7cbbe4e24ef3cb75$export$8215d14a63d9fb10))
+    }
+  });
+  var $cf5f33c63ef209e6$var$LigGlyph = new ArrayT(new Pointer(uint16, $cf5f33c63ef209e6$var$CaretValue), uint16);
+  var $cf5f33c63ef209e6$var$LigCaretList = new Struct({
+    coverage: new Pointer(uint16, (0, $7cbbe4e24ef3cb75$export$17608c3f81a6111)),
+    ligGlyphCount: uint16,
+    ligGlyphs: new ArrayT(new Pointer(uint16, $cf5f33c63ef209e6$var$LigGlyph), "ligGlyphCount")
+  });
+  var $cf5f33c63ef209e6$var$MarkGlyphSetsDef = new Struct({
+    markSetTableFormat: uint16,
+    markSetCount: uint16,
+    coverage: new ArrayT(new Pointer(uint32, (0, $7cbbe4e24ef3cb75$export$17608c3f81a6111)), "markSetCount")
+  });
+  var $cf5f33c63ef209e6$export$2e2bcd8739ae039 = new VersionedStruct(uint32, {
+    header: {
+      glyphClassDef: new Pointer(uint16, (0, $7cbbe4e24ef3cb75$export$843d551fbbafef71)),
+      attachList: new Pointer(uint16, $cf5f33c63ef209e6$var$AttachList),
+      ligCaretList: new Pointer(uint16, $cf5f33c63ef209e6$var$LigCaretList),
+      markAttachClassDef: new Pointer(uint16, (0, $7cbbe4e24ef3cb75$export$843d551fbbafef71))
+    },
+    65536: {},
+    65538: {
+      markGlyphSetsDef: new Pointer(uint16, $cf5f33c63ef209e6$var$MarkGlyphSetsDef)
+    },
+    65539: {
+      markGlyphSetsDef: new Pointer(uint16, $cf5f33c63ef209e6$var$MarkGlyphSetsDef),
+      itemVariationStore: new Pointer(uint32, (0, $1a47b0c45c1c22fe$export$fe1b122a2710f241))
+    }
+  });
+  var $47e0e8ef515d9903$var$ValueFormat = new Bitfield(uint16, [
+    "xPlacement",
+    "yPlacement",
+    "xAdvance",
+    "yAdvance",
+    "xPlaDevice",
+    "yPlaDevice",
+    "xAdvDevice",
+    "yAdvDevice"
+  ]);
+  var $47e0e8ef515d9903$var$types = {
+    xPlacement: int16,
+    yPlacement: int16,
+    xAdvance: int16,
+    yAdvance: int16,
+    xPlaDevice: new Pointer(uint16, (0, $7cbbe4e24ef3cb75$export$8215d14a63d9fb10), {
+      type: "global",
+      relativeTo: (ctx) => ctx.rel
+    }),
+    yPlaDevice: new Pointer(uint16, (0, $7cbbe4e24ef3cb75$export$8215d14a63d9fb10), {
+      type: "global",
+      relativeTo: (ctx) => ctx.rel
+    }),
+    xAdvDevice: new Pointer(uint16, (0, $7cbbe4e24ef3cb75$export$8215d14a63d9fb10), {
+      type: "global",
+      relativeTo: (ctx) => ctx.rel
+    }),
+    yAdvDevice: new Pointer(uint16, (0, $7cbbe4e24ef3cb75$export$8215d14a63d9fb10), {
+      type: "global",
+      relativeTo: (ctx) => ctx.rel
+    })
+  };
+  var $47e0e8ef515d9903$var$ValueRecord = class {
+    buildStruct(parent) {
+      let struct = parent;
+      while (!struct[this.key] && struct.parent) struct = struct.parent;
+      if (!struct[this.key]) return;
+      let fields = {};
+      fields.rel = () => struct._startOffset;
+      let format = struct[this.key];
+      for (let key in format) if (format[key]) fields[key] = $47e0e8ef515d9903$var$types[key];
+      return new Struct(fields);
+    }
+    size(val, ctx) {
+      return this.buildStruct(ctx).size(val, ctx);
+    }
+    decode(stream, parent) {
+      let res = this.buildStruct(parent).decode(stream, parent);
+      delete res.rel;
+      return res;
+    }
+    constructor(key = "valueFormat") {
+      this.key = key;
+    }
+  };
+  var $47e0e8ef515d9903$var$PairValueRecord = new Struct({
+    secondGlyph: uint16,
+    value1: new $47e0e8ef515d9903$var$ValueRecord("valueFormat1"),
+    value2: new $47e0e8ef515d9903$var$ValueRecord("valueFormat2")
+  });
+  var $47e0e8ef515d9903$var$PairSet = new ArrayT($47e0e8ef515d9903$var$PairValueRecord, uint16);
+  var $47e0e8ef515d9903$var$Class2Record = new Struct({
+    value1: new $47e0e8ef515d9903$var$ValueRecord("valueFormat1"),
+    value2: new $47e0e8ef515d9903$var$ValueRecord("valueFormat2")
+  });
+  var $47e0e8ef515d9903$var$Anchor = new VersionedStruct(uint16, {
+    1: {
+      xCoordinate: int16,
+      yCoordinate: int16
+    },
+    2: {
+      xCoordinate: int16,
+      yCoordinate: int16,
+      anchorPoint: uint16
+    },
+    3: {
+      xCoordinate: int16,
+      yCoordinate: int16,
+      xDeviceTable: new Pointer(uint16, (0, $7cbbe4e24ef3cb75$export$8215d14a63d9fb10)),
+      yDeviceTable: new Pointer(uint16, (0, $7cbbe4e24ef3cb75$export$8215d14a63d9fb10))
+    }
+  });
+  var $47e0e8ef515d9903$var$EntryExitRecord = new Struct({
+    entryAnchor: new Pointer(uint16, $47e0e8ef515d9903$var$Anchor, {
+      type: "parent"
+    }),
+    exitAnchor: new Pointer(uint16, $47e0e8ef515d9903$var$Anchor, {
+      type: "parent"
+    })
+  });
+  var $47e0e8ef515d9903$var$MarkRecord = new Struct({
+    class: uint16,
+    markAnchor: new Pointer(uint16, $47e0e8ef515d9903$var$Anchor, {
+      type: "parent"
+    })
+  });
+  var $47e0e8ef515d9903$var$MarkArray = new ArrayT($47e0e8ef515d9903$var$MarkRecord, uint16);
+  var $47e0e8ef515d9903$var$BaseRecord = new ArrayT(new Pointer(uint16, $47e0e8ef515d9903$var$Anchor), (t) => t.parent.classCount);
+  var $47e0e8ef515d9903$var$BaseArray = new ArrayT($47e0e8ef515d9903$var$BaseRecord, uint16);
+  var $47e0e8ef515d9903$var$ComponentRecord = new ArrayT(new Pointer(uint16, $47e0e8ef515d9903$var$Anchor), (t) => t.parent.parent.classCount);
+  var $47e0e8ef515d9903$var$LigatureAttach = new ArrayT($47e0e8ef515d9903$var$ComponentRecord, uint16);
+  var $47e0e8ef515d9903$var$LigatureArray = new ArrayT(new Pointer(uint16, $47e0e8ef515d9903$var$LigatureAttach), uint16);
+  var $47e0e8ef515d9903$export$73a8cfb19cd43a0f = new VersionedStruct("lookupType", {
+    1: new VersionedStruct(uint16, {
+      1: {
+        coverage: new Pointer(uint16, (0, $7cbbe4e24ef3cb75$export$17608c3f81a6111)),
+        valueFormat: $47e0e8ef515d9903$var$ValueFormat,
+        value: new $47e0e8ef515d9903$var$ValueRecord()
+      },
+      2: {
+        coverage: new Pointer(uint16, (0, $7cbbe4e24ef3cb75$export$17608c3f81a6111)),
+        valueFormat: $47e0e8ef515d9903$var$ValueFormat,
+        valueCount: uint16,
+        values: new LazyArray(new $47e0e8ef515d9903$var$ValueRecord(), "valueCount")
+      }
+    }),
+    2: new VersionedStruct(uint16, {
+      1: {
+        coverage: new Pointer(uint16, (0, $7cbbe4e24ef3cb75$export$17608c3f81a6111)),
+        valueFormat1: $47e0e8ef515d9903$var$ValueFormat,
+        valueFormat2: $47e0e8ef515d9903$var$ValueFormat,
+        pairSetCount: uint16,
+        pairSets: new LazyArray(new Pointer(uint16, $47e0e8ef515d9903$var$PairSet), "pairSetCount")
+      },
+      2: {
+        coverage: new Pointer(uint16, (0, $7cbbe4e24ef3cb75$export$17608c3f81a6111)),
+        valueFormat1: $47e0e8ef515d9903$var$ValueFormat,
+        valueFormat2: $47e0e8ef515d9903$var$ValueFormat,
+        classDef1: new Pointer(uint16, (0, $7cbbe4e24ef3cb75$export$843d551fbbafef71)),
+        classDef2: new Pointer(uint16, (0, $7cbbe4e24ef3cb75$export$843d551fbbafef71)),
+        class1Count: uint16,
+        class2Count: uint16,
+        classRecords: new LazyArray(new LazyArray($47e0e8ef515d9903$var$Class2Record, "class2Count"), "class1Count")
+      }
+    }),
+    3: {
+      format: uint16,
+      coverage: new Pointer(uint16, (0, $7cbbe4e24ef3cb75$export$17608c3f81a6111)),
+      entryExitCount: uint16,
+      entryExitRecords: new ArrayT($47e0e8ef515d9903$var$EntryExitRecord, "entryExitCount")
+    },
+    4: {
+      format: uint16,
+      markCoverage: new Pointer(uint16, (0, $7cbbe4e24ef3cb75$export$17608c3f81a6111)),
+      baseCoverage: new Pointer(uint16, (0, $7cbbe4e24ef3cb75$export$17608c3f81a6111)),
+      classCount: uint16,
+      markArray: new Pointer(uint16, $47e0e8ef515d9903$var$MarkArray),
+      baseArray: new Pointer(uint16, $47e0e8ef515d9903$var$BaseArray)
+    },
+    5: {
+      format: uint16,
+      markCoverage: new Pointer(uint16, (0, $7cbbe4e24ef3cb75$export$17608c3f81a6111)),
+      ligatureCoverage: new Pointer(uint16, (0, $7cbbe4e24ef3cb75$export$17608c3f81a6111)),
+      classCount: uint16,
+      markArray: new Pointer(uint16, $47e0e8ef515d9903$var$MarkArray),
+      ligatureArray: new Pointer(uint16, $47e0e8ef515d9903$var$LigatureArray)
+    },
+    6: {
+      format: uint16,
+      mark1Coverage: new Pointer(uint16, (0, $7cbbe4e24ef3cb75$export$17608c3f81a6111)),
+      mark2Coverage: new Pointer(uint16, (0, $7cbbe4e24ef3cb75$export$17608c3f81a6111)),
+      classCount: uint16,
+      mark1Array: new Pointer(uint16, $47e0e8ef515d9903$var$MarkArray),
+      mark2Array: new Pointer(uint16, $47e0e8ef515d9903$var$BaseArray)
+    },
+    7: (0, $7cbbe4e24ef3cb75$export$841858b892ce1f4c),
+    8: (0, $7cbbe4e24ef3cb75$export$5e6d09e6861162f6),
+    9: {
+      posFormat: uint16,
+      lookupType: uint16,
+      extension: new Pointer(uint32, null)
+    }
+  });
+  $47e0e8ef515d9903$export$73a8cfb19cd43a0f.versions[9].extension.type = $47e0e8ef515d9903$export$73a8cfb19cd43a0f;
+  var $47e0e8ef515d9903$export$2e2bcd8739ae039 = new VersionedStruct(uint32, {
+    header: {
+      scriptList: new Pointer(uint16, (0, $7cbbe4e24ef3cb75$export$3e15fc05ce864229)),
+      featureList: new Pointer(uint16, (0, $7cbbe4e24ef3cb75$export$aa18130def4b6cb4)),
+      lookupList: new Pointer(uint16, new (0, $7cbbe4e24ef3cb75$export$df0008c6ff2da22a)($47e0e8ef515d9903$export$73a8cfb19cd43a0f))
+    },
+    65536: {},
+    65537: {
+      featureVariations: new Pointer(uint32, (0, $1a47b0c45c1c22fe$export$441b70b7971dd419))
+    }
+  });
+  var $d3f442064af66e06$var$Sequence = new ArrayT(uint16, uint16);
+  var $d3f442064af66e06$var$AlternateSet = $d3f442064af66e06$var$Sequence;
+  var $d3f442064af66e06$var$Ligature = new Struct({
+    glyph: uint16,
+    compCount: uint16,
+    components: new ArrayT(uint16, (t) => t.compCount - 1)
+  });
+  var $d3f442064af66e06$var$LigatureSet = new ArrayT(new Pointer(uint16, $d3f442064af66e06$var$Ligature), uint16);
+  var $d3f442064af66e06$var$GSUBLookup = new VersionedStruct("lookupType", {
+    1: new VersionedStruct(uint16, {
+      1: {
+        coverage: new Pointer(uint16, (0, $7cbbe4e24ef3cb75$export$17608c3f81a6111)),
+        deltaGlyphID: int16
+      },
+      2: {
+        coverage: new Pointer(uint16, (0, $7cbbe4e24ef3cb75$export$17608c3f81a6111)),
+        glyphCount: uint16,
+        substitute: new LazyArray(uint16, "glyphCount")
+      }
+    }),
+    2: {
+      substFormat: uint16,
+      coverage: new Pointer(uint16, (0, $7cbbe4e24ef3cb75$export$17608c3f81a6111)),
+      count: uint16,
+      sequences: new LazyArray(new Pointer(uint16, $d3f442064af66e06$var$Sequence), "count")
+    },
+    3: {
+      substFormat: uint16,
+      coverage: new Pointer(uint16, (0, $7cbbe4e24ef3cb75$export$17608c3f81a6111)),
+      count: uint16,
+      alternateSet: new LazyArray(new Pointer(uint16, $d3f442064af66e06$var$AlternateSet), "count")
+    },
+    4: {
+      substFormat: uint16,
+      coverage: new Pointer(uint16, (0, $7cbbe4e24ef3cb75$export$17608c3f81a6111)),
+      count: uint16,
+      ligatureSets: new LazyArray(new Pointer(uint16, $d3f442064af66e06$var$LigatureSet), "count")
+    },
+    5: (0, $7cbbe4e24ef3cb75$export$841858b892ce1f4c),
+    6: (0, $7cbbe4e24ef3cb75$export$5e6d09e6861162f6),
+    7: {
+      substFormat: uint16,
+      lookupType: uint16,
+      extension: new Pointer(uint32, null)
+    },
+    8: {
+      substFormat: uint16,
+      coverage: new Pointer(uint16, (0, $7cbbe4e24ef3cb75$export$17608c3f81a6111)),
+      backtrackCoverage: new ArrayT(new Pointer(uint16, (0, $7cbbe4e24ef3cb75$export$17608c3f81a6111)), "backtrackGlyphCount"),
+      lookaheadGlyphCount: uint16,
+      lookaheadCoverage: new ArrayT(new Pointer(uint16, (0, $7cbbe4e24ef3cb75$export$17608c3f81a6111)), "lookaheadGlyphCount"),
+      glyphCount: uint16,
+      substitutes: new ArrayT(uint16, "glyphCount")
+    }
+  });
+  $d3f442064af66e06$var$GSUBLookup.versions[7].extension.type = $d3f442064af66e06$var$GSUBLookup;
+  var $d3f442064af66e06$export$2e2bcd8739ae039 = new VersionedStruct(uint32, {
+    header: {
+      scriptList: new Pointer(uint16, (0, $7cbbe4e24ef3cb75$export$3e15fc05ce864229)),
+      featureList: new Pointer(uint16, (0, $7cbbe4e24ef3cb75$export$aa18130def4b6cb4)),
+      lookupList: new Pointer(uint16, new (0, $7cbbe4e24ef3cb75$export$df0008c6ff2da22a)($d3f442064af66e06$var$GSUBLookup))
+    },
+    65536: {},
+    65537: {
+      featureVariations: new Pointer(uint32, (0, $1a47b0c45c1c22fe$export$441b70b7971dd419))
+    }
+  });
+  var $71cfb3c4767fbd0c$var$JstfGSUBModList = new ArrayT(uint16, uint16);
+  var $71cfb3c4767fbd0c$var$JstfPriority = new Struct({
+    shrinkageEnableGSUB: new Pointer(uint16, $71cfb3c4767fbd0c$var$JstfGSUBModList),
+    shrinkageDisableGSUB: new Pointer(uint16, $71cfb3c4767fbd0c$var$JstfGSUBModList),
+    shrinkageEnableGPOS: new Pointer(uint16, $71cfb3c4767fbd0c$var$JstfGSUBModList),
+    shrinkageDisableGPOS: new Pointer(uint16, $71cfb3c4767fbd0c$var$JstfGSUBModList),
+    shrinkageJstfMax: new Pointer(uint16, new (0, $7cbbe4e24ef3cb75$export$df0008c6ff2da22a)((0, $47e0e8ef515d9903$export$73a8cfb19cd43a0f))),
+    extensionEnableGSUB: new Pointer(uint16, $71cfb3c4767fbd0c$var$JstfGSUBModList),
+    extensionDisableGSUB: new Pointer(uint16, $71cfb3c4767fbd0c$var$JstfGSUBModList),
+    extensionEnableGPOS: new Pointer(uint16, $71cfb3c4767fbd0c$var$JstfGSUBModList),
+    extensionDisableGPOS: new Pointer(uint16, $71cfb3c4767fbd0c$var$JstfGSUBModList),
+    extensionJstfMax: new Pointer(uint16, new (0, $7cbbe4e24ef3cb75$export$df0008c6ff2da22a)((0, $47e0e8ef515d9903$export$73a8cfb19cd43a0f)))
+  });
+  var $71cfb3c4767fbd0c$var$JstfLangSys = new ArrayT(new Pointer(uint16, $71cfb3c4767fbd0c$var$JstfPriority), uint16);
+  var $71cfb3c4767fbd0c$var$JstfLangSysRecord = new Struct({
+    tag: new StringT(4),
+    jstfLangSys: new Pointer(uint16, $71cfb3c4767fbd0c$var$JstfLangSys)
+  });
+  var $71cfb3c4767fbd0c$var$JstfScript = new Struct({
+    extenderGlyphs: new Pointer(uint16, new ArrayT(uint16, uint16)),
+    defaultLangSys: new Pointer(uint16, $71cfb3c4767fbd0c$var$JstfLangSys),
+    langSysCount: uint16,
+    langSysRecords: new ArrayT($71cfb3c4767fbd0c$var$JstfLangSysRecord, "langSysCount")
+  });
+  var $71cfb3c4767fbd0c$var$JstfScriptRecord = new Struct({
+    tag: new StringT(4),
+    script: new Pointer(uint16, $71cfb3c4767fbd0c$var$JstfScript, {
+      type: "parent"
+    })
+  });
+  var $71cfb3c4767fbd0c$export$2e2bcd8739ae039 = new Struct({
+    version: uint32,
+    scriptCount: uint16,
+    scriptList: new ArrayT($71cfb3c4767fbd0c$var$JstfScriptRecord, "scriptCount")
+  });
+  var $d059a6bd2d3b5b63$var$VariableSizeNumber = class {
+    decode(stream, parent) {
+      switch (this.size(0, parent)) {
+        case 1:
+          return stream.readUInt8();
+        case 2:
+          return stream.readUInt16BE();
+        case 3:
+          return stream.readUInt24BE();
+        case 4:
+          return stream.readUInt32BE();
+      }
+    }
+    size(val, parent) {
+      return (0, resolveLength)(this._size, null, parent);
+    }
+    constructor(size) {
+      this._size = size;
+    }
+  };
+  var $d059a6bd2d3b5b63$var$MapDataEntry = new Struct({
+    entry: new $d059a6bd2d3b5b63$var$VariableSizeNumber((t) => ((t.parent.entryFormat & 48) >> 4) + 1),
+    outerIndex: (t) => t.entry >> (t.parent.entryFormat & 15) + 1,
+    innerIndex: (t) => t.entry & (1 << (t.parent.entryFormat & 15) + 1) - 1
+  });
+  var $d059a6bd2d3b5b63$var$DeltaSetIndexMap = new Struct({
+    entryFormat: uint16,
+    mapCount: uint16,
+    mapData: new ArrayT($d059a6bd2d3b5b63$var$MapDataEntry, "mapCount")
+  });
+  var $d059a6bd2d3b5b63$export$2e2bcd8739ae039 = new Struct({
+    majorVersion: uint16,
+    minorVersion: uint16,
+    itemVariationStore: new Pointer(uint32, (0, $1a47b0c45c1c22fe$export$fe1b122a2710f241)),
+    advanceWidthMapping: new Pointer(uint32, $d059a6bd2d3b5b63$var$DeltaSetIndexMap),
+    LSBMapping: new Pointer(uint32, $d059a6bd2d3b5b63$var$DeltaSetIndexMap),
+    RSBMapping: new Pointer(uint32, $d059a6bd2d3b5b63$var$DeltaSetIndexMap)
+  });
+  var $dceeca3e1977ce30$var$Signature = new Struct({
+    format: uint32,
+    length: uint32,
+    offset: uint32
+  });
+  var $dceeca3e1977ce30$var$SignatureBlock = new Struct({
+    reserved: new Reserved(uint16, 2),
+    cbSignature: uint32,
+    signature: new BufferT("cbSignature")
+  });
+  var $dceeca3e1977ce30$export$2e2bcd8739ae039 = new Struct({
+    ulVersion: uint32,
+    usNumSigs: uint16,
+    usFlag: uint16,
+    signatures: new ArrayT($dceeca3e1977ce30$var$Signature, "usNumSigs"),
+    signatureBlocks: new ArrayT($dceeca3e1977ce30$var$SignatureBlock, "usNumSigs")
+  });
+  var $8acd740a9435aad0$var$GaspRange = new Struct({
+    rangeMaxPPEM: uint16,
+    rangeGaspBehavior: new Bitfield(uint16, [
+      "grayscale",
+      "gridfit",
+      "symmetricSmoothing",
+      "symmetricGridfit"
+      // only in version 1, for ClearType
+    ])
+  });
+  var $8acd740a9435aad0$export$2e2bcd8739ae039 = new Struct({
+    version: uint16,
+    numRanges: uint16,
+    gaspRanges: new ArrayT($8acd740a9435aad0$var$GaspRange, "numRanges")
+    // Sorted by ppem
+  });
+  var $b5f380243c34d6a0$var$DeviceRecord = new Struct({
+    pixelSize: uint8,
+    maximumWidth: uint8,
+    widths: new ArrayT(uint8, (t) => t.parent.parent.maxp.numGlyphs)
+  });
+  var $b5f380243c34d6a0$export$2e2bcd8739ae039 = new Struct({
+    version: uint16,
+    numRecords: int16,
+    sizeDeviceRecord: int32,
+    records: new ArrayT($b5f380243c34d6a0$var$DeviceRecord, "numRecords")
+  });
+  var $ca2df1256966e313$var$KernPair = new Struct({
+    left: uint16,
+    right: uint16,
+    value: int16
+  });
+  var $ca2df1256966e313$var$ClassTable = new Struct({
+    firstGlyph: uint16,
+    nGlyphs: uint16,
+    offsets: new ArrayT(uint16, "nGlyphs"),
+    max: (t) => t.offsets.length && Math.max.apply(Math, t.offsets)
+  });
+  var $ca2df1256966e313$var$Kern2Array = new Struct({
+    off: (t) => t._startOffset - t.parent.parent._startOffset,
+    len: (t) => ((t.parent.leftTable.max - t.off) / t.parent.rowWidth + 1) * (t.parent.rowWidth / 2),
+    values: new LazyArray(int16, "len")
+  });
+  var $ca2df1256966e313$var$KernSubtable = new VersionedStruct("format", {
+    0: {
+      nPairs: uint16,
+      searchRange: uint16,
+      entrySelector: uint16,
+      rangeShift: uint16,
+      pairs: new ArrayT($ca2df1256966e313$var$KernPair, "nPairs")
+    },
+    2: {
+      rowWidth: uint16,
+      leftTable: new Pointer(uint16, $ca2df1256966e313$var$ClassTable, {
+        type: "parent"
+      }),
+      rightTable: new Pointer(uint16, $ca2df1256966e313$var$ClassTable, {
+        type: "parent"
+      }),
+      array: new Pointer(uint16, $ca2df1256966e313$var$Kern2Array, {
+        type: "parent"
+      })
+    },
+    3: {
+      glyphCount: uint16,
+      kernValueCount: uint8,
+      leftClassCount: uint8,
+      rightClassCount: uint8,
+      flags: uint8,
+      kernValue: new ArrayT(int16, "kernValueCount"),
+      leftClass: new ArrayT(uint8, "glyphCount"),
+      rightClass: new ArrayT(uint8, "glyphCount"),
+      kernIndex: new ArrayT(uint8, (t) => t.leftClassCount * t.rightClassCount)
+    }
+  });
+  var $ca2df1256966e313$var$KernTable = new VersionedStruct("version", {
+    0: {
+      subVersion: uint16,
+      length: uint16,
+      format: uint8,
+      coverage: new Bitfield(uint8, [
+        "horizontal",
+        "minimum",
+        "crossStream",
+        "override"
+        // If set to 1 the value in this table replaces the accumulated value
+      ]),
+      subtable: $ca2df1256966e313$var$KernSubtable,
+      padding: new Reserved(uint8, (t) => t.length - t._currentOffset)
+    },
+    1: {
+      length: uint32,
+      coverage: new Bitfield(uint8, [
+        null,
+        null,
+        null,
+        null,
+        null,
+        "variation",
+        "crossStream",
+        "vertical"
+        // Set if table has vertical kerning values
+      ]),
+      format: uint8,
+      tupleIndex: uint16,
+      subtable: $ca2df1256966e313$var$KernSubtable,
+      padding: new Reserved(uint8, (t) => t.length - t._currentOffset)
+    }
+  });
+  var $ca2df1256966e313$export$2e2bcd8739ae039 = new VersionedStruct(uint16, {
+    0: {
+      nTables: uint16,
+      tables: new ArrayT($ca2df1256966e313$var$KernTable, "nTables")
+    },
+    1: {
+      reserved: new Reserved(uint16),
+      nTables: uint32,
+      tables: new ArrayT($ca2df1256966e313$var$KernTable, "nTables")
+    }
+  });
+  var $7a9f92b0c46ebe33$export$2e2bcd8739ae039 = new Struct({
+    version: uint16,
+    numGlyphs: uint16,
+    yPels: new ArrayT(uint8, "numGlyphs")
+  });
+  var $2b2ccc419d152631$export$2e2bcd8739ae039 = new Struct({
+    version: uint16,
+    fontNumber: uint32,
+    pitch: uint16,
+    xHeight: uint16,
+    style: uint16,
+    typeFamily: uint16,
+    capHeight: uint16,
+    symbolSet: uint16,
+    typeface: new StringT(16),
+    characterComplement: new StringT(8),
+    fileName: new StringT(6),
+    strokeWeight: new StringT(1),
+    widthType: new StringT(1),
+    serifStyle: uint8,
+    reserved: new Reserved(uint8)
+  });
+  var $ca5b40b9bcda9c9b$var$Ratio = new Struct({
+    bCharSet: uint8,
+    xRatio: uint8,
+    yStartRatio: uint8,
+    yEndRatio: uint8
+    // Ending y-Ratio value
+  });
+  var $ca5b40b9bcda9c9b$var$vTable = new Struct({
+    yPelHeight: uint16,
+    yMax: int16,
+    yMin: int16
+    // Minimum value (in pels) for this yPelHeight
+  });
+  var $ca5b40b9bcda9c9b$var$VdmxGroup = new Struct({
+    recs: uint16,
+    startsz: uint8,
+    endsz: uint8,
+    entries: new ArrayT($ca5b40b9bcda9c9b$var$vTable, "recs")
+    // The VDMX records
+  });
+  var $ca5b40b9bcda9c9b$export$2e2bcd8739ae039 = new Struct({
+    version: uint16,
+    numRecs: uint16,
+    numRatios: uint16,
+    ratioRanges: new ArrayT($ca5b40b9bcda9c9b$var$Ratio, "numRatios"),
+    offsets: new ArrayT(uint16, "numRatios"),
+    groups: new ArrayT($ca5b40b9bcda9c9b$var$VdmxGroup, "numRecs")
+    // The actual VDMX groupings
+  });
+  var $69530a3c40755af0$export$2e2bcd8739ae039 = new Struct({
+    version: uint16,
+    ascent: int16,
+    descent: int16,
+    lineGap: int16,
+    advanceHeightMax: int16,
+    minTopSideBearing: int16,
+    minBottomSideBearing: int16,
+    yMaxExtent: int16,
+    caretSlopeRise: int16,
+    caretSlopeRun: int16,
+    caretOffset: int16,
+    reserved: new Reserved(int16, 4),
+    metricDataFormat: int16,
+    numberOfMetrics: uint16
+    // Number of advance heights in the Vertical Metrics table
+  });
+  var $344073dd270f0e62$var$VmtxEntry = new Struct({
+    advance: uint16,
+    bearing: int16
+    // The top sidebearing of the glyph
+  });
+  var $344073dd270f0e62$export$2e2bcd8739ae039 = new Struct({
+    metrics: new LazyArray($344073dd270f0e62$var$VmtxEntry, (t) => t.parent.vhea.numberOfMetrics),
+    bearings: new LazyArray(int16, (t) => t.parent.maxp.numGlyphs - t.parent.vhea.numberOfMetrics)
+  });
+  var $3793b781918cfced$var$shortFrac = new Fixed(16, "BE", 14);
+  var $3793b781918cfced$var$Correspondence = new Struct({
+    fromCoord: $3793b781918cfced$var$shortFrac,
+    toCoord: $3793b781918cfced$var$shortFrac
+  });
+  var $3793b781918cfced$var$Segment = new Struct({
+    pairCount: uint16,
+    correspondence: new ArrayT($3793b781918cfced$var$Correspondence, "pairCount")
+  });
+  var $3793b781918cfced$export$2e2bcd8739ae039 = new Struct({
+    version: fixed32,
+    axisCount: uint32,
+    segment: new ArrayT($3793b781918cfced$var$Segment, "axisCount")
+  });
+  var $6cb7dd5f47d82580$var$UnboundedArrayAccessor = class {
+    getItem(index) {
+      if (this._items[index] == null) {
+        let pos = this.stream.pos;
+        this.stream.pos = this.base + this.type.size(null, this.parent) * index;
+        this._items[index] = this.type.decode(this.stream, this.parent);
+        this.stream.pos = pos;
+      }
+      return this._items[index];
+    }
+    inspect() {
+      return `[UnboundedArray ${this.type.constructor.name}]`;
+    }
+    constructor(type, stream, parent) {
+      this.type = type;
+      this.stream = stream;
+      this.parent = parent;
+      this.base = this.stream.pos;
+      this._items = [];
+    }
+  };
+  var $6cb7dd5f47d82580$export$c5af1eebc882e39a = class extends ArrayT {
+    decode(stream, parent) {
+      return new $6cb7dd5f47d82580$var$UnboundedArrayAccessor(this.type, stream, parent);
+    }
+    constructor(type) {
+      super(type, 0);
+    }
+  };
+  var $6cb7dd5f47d82580$export$8351f8c2ae2f103c = function(ValueType = uint16) {
+    class Shadow {
+      decode(stream, ctx) {
+        ctx = ctx.parent.parent;
+        return this.type.decode(stream, ctx);
+      }
+      size(val, ctx) {
+        ctx = ctx.parent.parent;
+        return this.type.size(val, ctx);
+      }
+      encode(stream, val, ctx) {
+        ctx = ctx.parent.parent;
+        return this.type.encode(stream, val, ctx);
+      }
+      constructor(type) {
+        this.type = type;
+      }
+    }
+    ValueType = new Shadow(ValueType);
+    let BinarySearchHeader = new Struct({
+      unitSize: uint16,
+      nUnits: uint16,
+      searchRange: uint16,
+      entrySelector: uint16,
+      rangeShift: uint16
+    });
+    let LookupSegmentSingle = new Struct({
+      lastGlyph: uint16,
+      firstGlyph: uint16,
+      value: ValueType
+    });
+    let LookupSegmentArray = new Struct({
+      lastGlyph: uint16,
+      firstGlyph: uint16,
+      values: new Pointer(uint16, new ArrayT(ValueType, (t) => t.lastGlyph - t.firstGlyph + 1), {
+        type: "parent"
+      })
+    });
+    let LookupSingle = new Struct({
+      glyph: uint16,
+      value: ValueType
+    });
+    return new VersionedStruct(uint16, {
+      0: {
+        values: new $6cb7dd5f47d82580$export$c5af1eebc882e39a(ValueType)
+        // length == number of glyphs maybe?
+      },
+      2: {
+        binarySearchHeader: BinarySearchHeader,
+        segments: new ArrayT(LookupSegmentSingle, (t) => t.binarySearchHeader.nUnits)
+      },
+      4: {
+        binarySearchHeader: BinarySearchHeader,
+        segments: new ArrayT(LookupSegmentArray, (t) => t.binarySearchHeader.nUnits)
+      },
+      6: {
+        binarySearchHeader: BinarySearchHeader,
+        segments: new ArrayT(LookupSingle, (t) => t.binarySearchHeader.nUnits)
+      },
+      8: {
+        firstGlyph: uint16,
+        count: uint16,
+        values: new ArrayT(ValueType, "count")
+      }
+    });
+  };
+  function $6cb7dd5f47d82580$export$79f7d93d790934ba(entryData = {}, lookupType = uint16) {
+    let entry = Object.assign({
+      newState: uint16,
+      flags: uint16
+    }, entryData);
+    let Entry = new Struct(entry);
+    let StateArray = new $6cb7dd5f47d82580$export$c5af1eebc882e39a(new ArrayT(uint16, (t) => t.nClasses));
+    let StateHeader = new Struct({
+      nClasses: uint32,
+      classTable: new Pointer(uint32, new $6cb7dd5f47d82580$export$8351f8c2ae2f103c(lookupType)),
+      stateArray: new Pointer(uint32, StateArray),
+      entryTable: new Pointer(uint32, new $6cb7dd5f47d82580$export$c5af1eebc882e39a(Entry))
+    });
+    return StateHeader;
+  }
+  function $6cb7dd5f47d82580$export$105027425199cc51(entryData = {}, lookupType = uint16) {
+    let ClassLookupTable = new Struct({
+      version() {
+        return 8;
+      },
+      firstGlyph: uint16,
+      values: new ArrayT(uint8, uint16)
+    });
+    let entry = Object.assign({
+      newStateOffset: uint16,
+      // convert offset to stateArray index
+      newState: (t) => (t.newStateOffset - (t.parent.stateArray.base - t.parent._startOffset)) / t.parent.nClasses,
+      flags: uint16
+    }, entryData);
+    let Entry = new Struct(entry);
+    let StateArray = new $6cb7dd5f47d82580$export$c5af1eebc882e39a(new ArrayT(uint8, (t) => t.nClasses));
+    let StateHeader1 = new Struct({
+      nClasses: uint16,
+      classTable: new Pointer(uint16, ClassLookupTable),
+      stateArray: new Pointer(uint16, StateArray),
+      entryTable: new Pointer(uint16, new $6cb7dd5f47d82580$export$c5af1eebc882e39a(Entry))
+    });
+    return StateHeader1;
+  }
+  var $6a3746e8c708f5a3$var$BslnSubtable = new VersionedStruct("format", {
+    0: {
+      deltas: new ArrayT(int16, 32)
+    },
+    1: {
+      deltas: new ArrayT(int16, 32),
+      mappingData: new (0, $6cb7dd5f47d82580$export$8351f8c2ae2f103c)(uint16)
+    },
+    2: {
+      standardGlyph: uint16,
+      controlPoints: new ArrayT(uint16, 32)
+    },
+    3: {
+      standardGlyph: uint16,
+      controlPoints: new ArrayT(uint16, 32),
+      mappingData: new (0, $6cb7dd5f47d82580$export$8351f8c2ae2f103c)(uint16)
+    }
+  });
+  var $6a3746e8c708f5a3$export$2e2bcd8739ae039 = new Struct({
+    version: fixed32,
+    format: uint16,
+    defaultBaseline: uint16,
+    subtable: $6a3746e8c708f5a3$var$BslnSubtable
+  });
+  var $d0c76fac617b308a$var$Setting = new Struct({
+    setting: uint16,
+    nameIndex: int16,
+    name: (t) => t.parent.parent.parent.name.records.fontFeatures[t.nameIndex]
+  });
+  var $d0c76fac617b308a$var$FeatureName = new Struct({
+    feature: uint16,
+    nSettings: uint16,
+    settingTable: new Pointer(uint32, new ArrayT($d0c76fac617b308a$var$Setting, "nSettings"), {
+      type: "parent"
+    }),
+    featureFlags: new Bitfield(uint8, [
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      "hasDefault",
+      "exclusive"
+    ]),
+    defaultSetting: uint8,
+    nameIndex: int16,
+    name: (t) => t.parent.parent.name.records.fontFeatures[t.nameIndex]
+  });
+  var $d0c76fac617b308a$export$2e2bcd8739ae039 = new Struct({
+    version: fixed32,
+    featureNameCount: uint16,
+    reserved1: new Reserved(uint16),
+    reserved2: new Reserved(uint32),
+    featureNames: new ArrayT($d0c76fac617b308a$var$FeatureName, "featureNameCount")
+  });
+  var $e83fd065f00fcd01$var$Axis = new Struct({
+    axisTag: new StringT(4),
+    minValue: fixed32,
+    defaultValue: fixed32,
+    maxValue: fixed32,
+    flags: uint16,
+    nameID: uint16,
+    name: (t) => t.parent.parent.name.records.fontFeatures[t.nameID]
+  });
+  var $e83fd065f00fcd01$var$Instance = new Struct({
+    nameID: uint16,
+    name: (t) => t.parent.parent.name.records.fontFeatures[t.nameID],
+    flags: uint16,
+    coord: new ArrayT(fixed32, (t) => t.parent.axisCount),
+    postscriptNameID: new Optional(uint16, (t) => t.parent.instanceSize - t._currentOffset > 0)
+  });
+  var $e83fd065f00fcd01$export$2e2bcd8739ae039 = new Struct({
+    version: fixed32,
+    offsetToData: uint16,
+    countSizePairs: uint16,
+    axisCount: uint16,
+    axisSize: uint16,
+    instanceCount: uint16,
+    instanceSize: uint16,
+    axis: new ArrayT($e83fd065f00fcd01$var$Axis, "axisCount"),
+    instance: new ArrayT($e83fd065f00fcd01$var$Instance, "instanceCount")
+  });
+  var $dbe33c8d3a7f131c$var$shortFrac = new Fixed(16, "BE", 14);
+  var $dbe33c8d3a7f131c$var$Offset = class {
+    static decode(stream, parent) {
+      return parent.flags ? stream.readUInt32BE() : stream.readUInt16BE() * 2;
+    }
+  };
+  var $dbe33c8d3a7f131c$var$gvar = new Struct({
+    version: uint16,
+    reserved: new Reserved(uint16),
+    axisCount: uint16,
+    globalCoordCount: uint16,
+    globalCoords: new Pointer(uint32, new ArrayT(new ArrayT($dbe33c8d3a7f131c$var$shortFrac, "axisCount"), "globalCoordCount")),
+    glyphCount: uint16,
+    flags: uint16,
+    offsetToData: uint32,
+    offsets: new ArrayT(new Pointer($dbe33c8d3a7f131c$var$Offset, "void", {
+      relativeTo: (ctx) => ctx.offsetToData,
+      allowNull: false
+    }), (t) => t.glyphCount + 1)
+  });
+  var $dbe33c8d3a7f131c$export$2e2bcd8739ae039 = $dbe33c8d3a7f131c$var$gvar;
+  var $05b01887df96c4ee$var$ClassTable = new Struct({
+    length: uint16,
+    coverage: uint16,
+    subFeatureFlags: uint32,
+    stateTable: new (0, $6cb7dd5f47d82580$export$105027425199cc51)()
+  });
+  var $05b01887df96c4ee$var$WidthDeltaRecord = new Struct({
+    justClass: uint32,
+    beforeGrowLimit: fixed32,
+    beforeShrinkLimit: fixed32,
+    afterGrowLimit: fixed32,
+    afterShrinkLimit: fixed32,
+    growFlags: uint16,
+    shrinkFlags: uint16
+  });
+  var $05b01887df96c4ee$var$WidthDeltaCluster = new ArrayT($05b01887df96c4ee$var$WidthDeltaRecord, uint32);
+  var $05b01887df96c4ee$var$ActionData = new VersionedStruct("actionType", {
+    0: {
+      lowerLimit: fixed32,
+      upperLimit: fixed32,
+      order: uint16,
+      glyphs: new ArrayT(uint16, uint16)
+    },
+    1: {
+      addGlyph: uint16
+    },
+    2: {
+      substThreshold: fixed32,
+      addGlyph: uint16,
+      substGlyph: uint16
+    },
+    3: {},
+    4: {
+      variationAxis: uint32,
+      minimumLimit: fixed32,
+      noStretchValue: fixed32,
+      maximumLimit: fixed32
+    },
+    5: {
+      flags: uint16,
+      glyph: uint16
+    }
+  });
+  var $05b01887df96c4ee$var$Action = new Struct({
+    actionClass: uint16,
+    actionType: uint16,
+    actionLength: uint32,
+    actionData: $05b01887df96c4ee$var$ActionData,
+    padding: new Reserved(uint8, (t) => t.actionLength - t._currentOffset)
+  });
+  var $05b01887df96c4ee$var$PostcompensationAction = new ArrayT($05b01887df96c4ee$var$Action, uint32);
+  var $05b01887df96c4ee$var$PostCompensationTable = new Struct({
+    lookupTable: new (0, $6cb7dd5f47d82580$export$8351f8c2ae2f103c)(new Pointer(uint16, $05b01887df96c4ee$var$PostcompensationAction))
+  });
+  var $05b01887df96c4ee$var$JustificationTable = new Struct({
+    classTable: new Pointer(uint16, $05b01887df96c4ee$var$ClassTable, {
+      type: "parent"
+    }),
+    wdcOffset: uint16,
+    postCompensationTable: new Pointer(uint16, $05b01887df96c4ee$var$PostCompensationTable, {
+      type: "parent"
+    }),
+    widthDeltaClusters: new (0, $6cb7dd5f47d82580$export$8351f8c2ae2f103c)(new Pointer(uint16, $05b01887df96c4ee$var$WidthDeltaCluster, {
+      type: "parent",
+      relativeTo: (ctx) => ctx.wdcOffset
+    }))
+  });
+  var $05b01887df96c4ee$export$2e2bcd8739ae039 = new Struct({
+    version: uint32,
+    format: uint16,
+    horizontal: new Pointer(uint16, $05b01887df96c4ee$var$JustificationTable),
+    vertical: new Pointer(uint16, $05b01887df96c4ee$var$JustificationTable)
+  });
+  var $03ee6ebd54db1053$var$LigatureData = {
+    action: uint16
+  };
+  var $03ee6ebd54db1053$var$ContextualData = {
+    markIndex: uint16,
+    currentIndex: uint16
+  };
+  var $03ee6ebd54db1053$var$InsertionData = {
+    currentInsertIndex: uint16,
+    markedInsertIndex: uint16
+  };
+  var $03ee6ebd54db1053$var$SubstitutionTable = new Struct({
+    items: new (0, $6cb7dd5f47d82580$export$c5af1eebc882e39a)(new Pointer(uint32, new (0, $6cb7dd5f47d82580$export$8351f8c2ae2f103c)()))
+  });
+  var $03ee6ebd54db1053$var$SubtableData = new VersionedStruct("type", {
+    0: {
+      stateTable: new (0, $6cb7dd5f47d82580$export$79f7d93d790934ba)()
+    },
+    1: {
+      stateTable: new (0, $6cb7dd5f47d82580$export$79f7d93d790934ba)($03ee6ebd54db1053$var$ContextualData),
+      substitutionTable: new Pointer(uint32, $03ee6ebd54db1053$var$SubstitutionTable)
+    },
+    2: {
+      stateTable: new (0, $6cb7dd5f47d82580$export$79f7d93d790934ba)($03ee6ebd54db1053$var$LigatureData),
+      ligatureActions: new Pointer(uint32, new (0, $6cb7dd5f47d82580$export$c5af1eebc882e39a)(uint32)),
+      components: new Pointer(uint32, new (0, $6cb7dd5f47d82580$export$c5af1eebc882e39a)(uint16)),
+      ligatureList: new Pointer(uint32, new (0, $6cb7dd5f47d82580$export$c5af1eebc882e39a)(uint16))
+    },
+    4: {
+      lookupTable: new (0, $6cb7dd5f47d82580$export$8351f8c2ae2f103c)()
+    },
+    5: {
+      stateTable: new (0, $6cb7dd5f47d82580$export$79f7d93d790934ba)($03ee6ebd54db1053$var$InsertionData),
+      insertionActions: new Pointer(uint32, new (0, $6cb7dd5f47d82580$export$c5af1eebc882e39a)(uint16))
+    }
+  });
+  var $03ee6ebd54db1053$var$Subtable = new Struct({
+    length: uint32,
+    coverage: uint24,
+    type: uint8,
+    subFeatureFlags: uint32,
+    table: $03ee6ebd54db1053$var$SubtableData,
+    padding: new Reserved(uint8, (t) => t.length - t._currentOffset)
+  });
+  var $03ee6ebd54db1053$var$FeatureEntry = new Struct({
+    featureType: uint16,
+    featureSetting: uint16,
+    enableFlags: uint32,
+    disableFlags: uint32
+  });
+  var $03ee6ebd54db1053$var$MorxChain = new Struct({
+    defaultFlags: uint32,
+    chainLength: uint32,
+    nFeatureEntries: uint32,
+    nSubtables: uint32,
+    features: new ArrayT($03ee6ebd54db1053$var$FeatureEntry, "nFeatureEntries"),
+    subtables: new ArrayT($03ee6ebd54db1053$var$Subtable, "nSubtables")
+  });
+  var $03ee6ebd54db1053$export$2e2bcd8739ae039 = new Struct({
+    version: uint16,
+    unused: new Reserved(uint16),
+    nChains: uint32,
+    chains: new ArrayT($03ee6ebd54db1053$var$MorxChain, "nChains")
+  });
+  var $b7492a80b0d1a056$var$OpticalBounds = new Struct({
+    left: int16,
+    top: int16,
+    right: int16,
+    bottom: int16
+  });
+  var $b7492a80b0d1a056$export$2e2bcd8739ae039 = new Struct({
+    version: fixed32,
+    format: uint16,
+    lookupTable: new (0, $6cb7dd5f47d82580$export$8351f8c2ae2f103c)($b7492a80b0d1a056$var$OpticalBounds)
+  });
+  var $c3395722bea751e2$var$tables = {};
+  var $c3395722bea751e2$export$2e2bcd8739ae039 = $c3395722bea751e2$var$tables;
+  $c3395722bea751e2$var$tables.cmap = (0, $26a62205ad06574e$export$2e2bcd8739ae039);
+  $c3395722bea751e2$var$tables.head = (0, $f2612a29f92ac062$export$2e2bcd8739ae039);
+  $c3395722bea751e2$var$tables.hhea = (0, $2c179dd593583073$export$2e2bcd8739ae039);
+  $c3395722bea751e2$var$tables.hmtx = (0, $bdc9060542264b85$export$2e2bcd8739ae039);
+  $c3395722bea751e2$var$tables.maxp = (0, $dbf51cb3d3fe409d$export$2e2bcd8739ae039);
+  $c3395722bea751e2$var$tables.name = (0, $2bcf221753ec8e32$export$2e2bcd8739ae039);
+  $c3395722bea751e2$var$tables["OS/2"] = (0, $84b272aa31b70606$export$2e2bcd8739ae039);
+  $c3395722bea751e2$var$tables.post = (0, $32d9e2eb9565d93c$export$2e2bcd8739ae039);
+  $c3395722bea751e2$var$tables.fpgm = (0, $5c0f37ca5ffb1850$export$2e2bcd8739ae039);
+  $c3395722bea751e2$var$tables.loca = (0, $2b2b260902b1c57e$export$2e2bcd8739ae039);
+  $c3395722bea751e2$var$tables.prep = (0, $7afb878c7bea4f66$export$2e2bcd8739ae039);
+  $c3395722bea751e2$var$tables["cvt "] = (0, $5202bd9d9ad8eaac$export$2e2bcd8739ae039);
+  $c3395722bea751e2$var$tables.glyf = (0, $6c92b6371bce8bd9$export$2e2bcd8739ae039);
+  $c3395722bea751e2$var$tables["CFF "] = (0, $822ac0d589e4e237$export$2e2bcd8739ae039);
+  $c3395722bea751e2$var$tables["CFF2"] = (0, $822ac0d589e4e237$export$2e2bcd8739ae039);
+  $c3395722bea751e2$var$tables.VORG = (0, $2bbf2bc1ce37cd8f$export$2e2bcd8739ae039);
+  $c3395722bea751e2$var$tables.EBLC = (0, $9911c4c7201c13de$export$2e2bcd8739ae039);
+  $c3395722bea751e2$var$tables.CBLC = $c3395722bea751e2$var$tables.EBLC;
+  $c3395722bea751e2$var$tables.sbix = (0, $abb847051efd51b1$export$2e2bcd8739ae039);
+  $c3395722bea751e2$var$tables.COLR = (0, $eb629188f3dfefdd$export$2e2bcd8739ae039);
+  $c3395722bea751e2$var$tables.CPAL = (0, $08734b8e7dc64587$export$2e2bcd8739ae039);
+  $c3395722bea751e2$var$tables.BASE = (0, $497cef411d884e34$export$2e2bcd8739ae039);
+  $c3395722bea751e2$var$tables.GDEF = (0, $cf5f33c63ef209e6$export$2e2bcd8739ae039);
+  $c3395722bea751e2$var$tables.GPOS = (0, $47e0e8ef515d9903$export$2e2bcd8739ae039);
+  $c3395722bea751e2$var$tables.GSUB = (0, $d3f442064af66e06$export$2e2bcd8739ae039);
+  $c3395722bea751e2$var$tables.JSTF = (0, $71cfb3c4767fbd0c$export$2e2bcd8739ae039);
+  $c3395722bea751e2$var$tables.HVAR = (0, $d059a6bd2d3b5b63$export$2e2bcd8739ae039);
+  $c3395722bea751e2$var$tables.DSIG = (0, $dceeca3e1977ce30$export$2e2bcd8739ae039);
+  $c3395722bea751e2$var$tables.gasp = (0, $8acd740a9435aad0$export$2e2bcd8739ae039);
+  $c3395722bea751e2$var$tables.hdmx = (0, $b5f380243c34d6a0$export$2e2bcd8739ae039);
+  $c3395722bea751e2$var$tables.kern = (0, $ca2df1256966e313$export$2e2bcd8739ae039);
+  $c3395722bea751e2$var$tables.LTSH = (0, $7a9f92b0c46ebe33$export$2e2bcd8739ae039);
+  $c3395722bea751e2$var$tables.PCLT = (0, $2b2ccc419d152631$export$2e2bcd8739ae039);
+  $c3395722bea751e2$var$tables.VDMX = (0, $ca5b40b9bcda9c9b$export$2e2bcd8739ae039);
+  $c3395722bea751e2$var$tables.vhea = (0, $69530a3c40755af0$export$2e2bcd8739ae039);
+  $c3395722bea751e2$var$tables.vmtx = (0, $344073dd270f0e62$export$2e2bcd8739ae039);
+  $c3395722bea751e2$var$tables.avar = (0, $3793b781918cfced$export$2e2bcd8739ae039);
+  $c3395722bea751e2$var$tables.bsln = (0, $6a3746e8c708f5a3$export$2e2bcd8739ae039);
+  $c3395722bea751e2$var$tables.feat = (0, $d0c76fac617b308a$export$2e2bcd8739ae039);
+  $c3395722bea751e2$var$tables.fvar = (0, $e83fd065f00fcd01$export$2e2bcd8739ae039);
+  $c3395722bea751e2$var$tables.gvar = (0, $dbe33c8d3a7f131c$export$2e2bcd8739ae039);
+  $c3395722bea751e2$var$tables.just = (0, $05b01887df96c4ee$export$2e2bcd8739ae039);
+  $c3395722bea751e2$var$tables.morx = (0, $03ee6ebd54db1053$export$2e2bcd8739ae039);
+  $c3395722bea751e2$var$tables.opbd = (0, $b7492a80b0d1a056$export$2e2bcd8739ae039);
+  var $816c07a04b6dba87$var$TableEntry = new Struct({
+    tag: new StringT(4),
+    checkSum: uint32,
+    offset: new Pointer(uint32, "void", {
+      type: "global"
+    }),
+    length: uint32
+  });
+  var $816c07a04b6dba87$var$Directory = new Struct({
+    tag: new StringT(4),
+    numTables: uint16,
+    searchRange: uint16,
+    entrySelector: uint16,
+    rangeShift: uint16,
+    tables: new ArrayT($816c07a04b6dba87$var$TableEntry, "numTables")
+  });
+  $816c07a04b6dba87$var$Directory.process = function() {
+    let tables = {};
+    for (let table of this.tables) tables[table.tag] = table;
+    this.tables = tables;
+  };
+  $816c07a04b6dba87$var$Directory.preEncode = function() {
+    if (!Array.isArray(this.tables)) {
+      let tables = [];
+      for (let tag in this.tables) {
+        let table = this.tables[tag];
+        if (table) tables.push({
+          tag,
+          checkSum: 0,
+          offset: new VoidPointer((0, $c3395722bea751e2$export$2e2bcd8739ae039)[tag], table),
+          length: (0, $c3395722bea751e2$export$2e2bcd8739ae039)[tag].size(table)
+        });
+      }
+      this.tables = tables;
+    }
+    this.tag = "true";
+    this.numTables = this.tables.length;
+    let maxExponentFor2 = Math.floor(Math.log(this.numTables) / Math.LN2);
+    let maxPowerOf2 = Math.pow(2, maxExponentFor2);
+    this.searchRange = maxPowerOf2 * 16;
+    this.entrySelector = Math.log(maxPowerOf2) / Math.LN2;
+    this.rangeShift = this.numTables * 16 - this.searchRange;
+  };
+  var $816c07a04b6dba87$export$2e2bcd8739ae039 = $816c07a04b6dba87$var$Directory;
+  function $12727730ddfc8bfe$export$2e0ae67339d5f1ac(arr, cmp) {
+    let min = 0;
+    let max2 = arr.length - 1;
+    while (min <= max2) {
+      let mid = min + max2 >> 1;
+      let res = cmp(arr[mid]);
+      if (res < 0) max2 = mid - 1;
+      else if (res > 0) min = mid + 1;
+      else return mid;
+    }
+    return -1;
+  }
+  function $12727730ddfc8bfe$export$d02631cccf789723(index, end) {
+    let range = [];
+    while (index < end) range.push(index++);
+    return range;
+  }
+  var $12727730ddfc8bfe$export$3d28c1996ced1f14 = new TextDecoder("ascii");
+  var $12727730ddfc8bfe$var$CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+  var $12727730ddfc8bfe$var$LOOKUP = new Uint8Array(256);
+  for (let i2 = 0; i2 < $12727730ddfc8bfe$var$CHARS.length; i2++) $12727730ddfc8bfe$var$LOOKUP[$12727730ddfc8bfe$var$CHARS.charCodeAt(i2)] = i2;
+  function $12727730ddfc8bfe$export$94fdf11bafc8de6b(base64) {
+    let bufferLength = base64.length * 0.75;
+    if (base64[base64.length - 1] === "=") {
+      bufferLength--;
+      if (base64[base64.length - 2] === "=") bufferLength--;
+    }
+    let bytes2 = new Uint8Array(bufferLength);
+    let p = 0;
+    for (let i2 = 0, len = base64.length; i2 < len; i2 += 4) {
+      let encoded1 = $12727730ddfc8bfe$var$LOOKUP[base64.charCodeAt(i2)];
+      let encoded2 = $12727730ddfc8bfe$var$LOOKUP[base64.charCodeAt(i2 + 1)];
+      let encoded3 = $12727730ddfc8bfe$var$LOOKUP[base64.charCodeAt(i2 + 2)];
+      let encoded4 = $12727730ddfc8bfe$var$LOOKUP[base64.charCodeAt(i2 + 3)];
+      bytes2[p++] = encoded1 << 2 | encoded2 >> 4;
+      bytes2[p++] = (encoded2 & 15) << 4 | encoded3 >> 2;
+      bytes2[p++] = (encoded3 & 3) << 6 | encoded4 & 63;
+    }
+    return bytes2;
+  }
+  var $f08dd41ef10b694c$export$2e2bcd8739ae039 = class {
+    findSubtable(cmapTable, pairs) {
+      for (let [platformID, encodingID] of pairs) for (let cmap of cmapTable.tables) {
+        if (cmap.platformID === platformID && cmap.encodingID === encodingID) return cmap.table;
+      }
+      return null;
+    }
+    lookup(codepoint, variationSelector) {
+      if (this.encoding) codepoint = this.encoding.get(codepoint) || codepoint;
+      else if (variationSelector) {
+        let gid = this.getVariationSelector(codepoint, variationSelector);
+        if (gid) return gid;
+      }
+      let cmap = this.cmap;
+      switch (cmap.version) {
+        case 0:
+          return cmap.codeMap.get(codepoint) || 0;
+        case 4: {
+          let min = 0;
+          let max2 = cmap.segCount - 1;
+          while (min <= max2) {
+            let mid = min + max2 >> 1;
+            if (codepoint < cmap.startCode.get(mid)) max2 = mid - 1;
+            else if (codepoint > cmap.endCode.get(mid)) min = mid + 1;
+            else {
+              let rangeOffset = cmap.idRangeOffset.get(mid);
+              let gid;
+              if (rangeOffset === 0) gid = codepoint + cmap.idDelta.get(mid);
+              else {
+                let index = rangeOffset / 2 + (codepoint - cmap.startCode.get(mid)) - (cmap.segCount - mid);
+                gid = cmap.glyphIndexArray.get(index) || 0;
+                if (gid !== 0) gid += cmap.idDelta.get(mid);
+              }
+              return gid & 65535;
+            }
+          }
+          return 0;
+        }
+        case 8:
+          throw new Error("TODO: cmap format 8");
+        case 6:
+        case 10:
+          return cmap.glyphIndices.get(codepoint - cmap.firstCode) || 0;
+        case 12:
+        case 13: {
+          let min = 0;
+          let max2 = cmap.nGroups - 1;
+          while (min <= max2) {
+            let mid = min + max2 >> 1;
+            let group = cmap.groups.get(mid);
+            if (codepoint < group.startCharCode) max2 = mid - 1;
+            else if (codepoint > group.endCharCode) min = mid + 1;
+            else {
+              if (cmap.version === 12) return group.glyphID + (codepoint - group.startCharCode);
+              else return group.glyphID;
+            }
+          }
+          return 0;
+        }
+        case 14:
+          throw new Error("TODO: cmap format 14");
+        default:
+          throw new Error(`Unknown cmap format ${cmap.version}`);
+      }
+    }
+    getVariationSelector(codepoint, variationSelector) {
+      if (!this.uvs) return 0;
+      let selectors = this.uvs.varSelectors.toArray();
+      let i2 = (0, $12727730ddfc8bfe$export$2e0ae67339d5f1ac)(selectors, (x2) => variationSelector - x2.varSelector);
+      let sel = selectors[i2];
+      if (i2 !== -1 && sel.defaultUVS) i2 = (0, $12727730ddfc8bfe$export$2e0ae67339d5f1ac)(sel.defaultUVS, (x2) => codepoint < x2.startUnicodeValue ? -1 : codepoint > x2.startUnicodeValue + x2.additionalCount ? 1 : 0);
+      if (i2 !== -1 && sel.nonDefaultUVS) {
+        i2 = (0, $12727730ddfc8bfe$export$2e0ae67339d5f1ac)(sel.nonDefaultUVS, (x2) => codepoint - x2.unicodeValue);
+        if (i2 !== -1) return sel.nonDefaultUVS[i2].glyphID;
+      }
+      return 0;
+    }
+    getCharacterSet() {
+      let cmap = this.cmap;
+      switch (cmap.version) {
+        case 0:
+          return (0, $12727730ddfc8bfe$export$d02631cccf789723)(0, cmap.codeMap.length);
+        case 4: {
+          let res = [];
+          let endCodes = cmap.endCode.toArray();
+          for (let i2 = 0; i2 < endCodes.length; i2++) {
+            let tail = endCodes[i2] + 1;
+            let start = cmap.startCode.get(i2);
+            res.push(...(0, $12727730ddfc8bfe$export$d02631cccf789723)(start, tail));
+          }
+          return res;
+        }
+        case 8:
+          throw new Error("TODO: cmap format 8");
+        case 6:
+        case 10:
+          return (0, $12727730ddfc8bfe$export$d02631cccf789723)(cmap.firstCode, cmap.firstCode + cmap.glyphIndices.length);
+        case 12:
+        case 13: {
+          let res = [];
+          for (let group of cmap.groups.toArray()) res.push(...(0, $12727730ddfc8bfe$export$d02631cccf789723)(group.startCharCode, group.endCharCode + 1));
+          return res;
+        }
+        case 14:
+          throw new Error("TODO: cmap format 14");
+        default:
+          throw new Error(`Unknown cmap format ${cmap.version}`);
+      }
+    }
+    codePointsForGlyph(gid) {
+      let cmap = this.cmap;
+      switch (cmap.version) {
+        case 0: {
+          let res = [];
+          for (let i2 = 0; i2 < 256; i2++) if (cmap.codeMap.get(i2) === gid) res.push(i2);
+          return res;
+        }
+        case 4: {
+          let res = [];
+          for (let i2 = 0; i2 < cmap.segCount; i2++) {
+            let end = cmap.endCode.get(i2);
+            let start = cmap.startCode.get(i2);
+            let rangeOffset = cmap.idRangeOffset.get(i2);
+            let delta = cmap.idDelta.get(i2);
+            for (var c = start; c <= end; c++) {
+              let g = 0;
+              if (rangeOffset === 0) g = c + delta;
+              else {
+                let index = rangeOffset / 2 + (c - start) - (cmap.segCount - i2);
+                g = cmap.glyphIndexArray.get(index) || 0;
+                if (g !== 0) g += delta;
+              }
+              if (g === gid) res.push(c);
+            }
+          }
+          return res;
+        }
+        case 12: {
+          let res = [];
+          for (let group of cmap.groups.toArray()) if (gid >= group.glyphID && gid <= group.glyphID + (group.endCharCode - group.startCharCode)) res.push(group.startCharCode + (gid - group.glyphID));
+          return res;
+        }
+        case 13: {
+          let res = [];
+          for (let group of cmap.groups.toArray()) if (gid === group.glyphID) res.push(...(0, $12727730ddfc8bfe$export$d02631cccf789723)(group.startCharCode, group.endCharCode + 1));
+          return res;
+        }
+        default:
+          throw new Error(`Unknown cmap format ${cmap.version}`);
+      }
+    }
+    constructor(cmapTable) {
+      this.encoding = null;
+      this.cmap = this.findSubtable(cmapTable, [
+        // 32-bit subtables
+        [
+          3,
+          10
+        ],
+        [
+          0,
+          6
+        ],
+        [
+          0,
+          4
+        ],
+        // 16-bit subtables
+        [
+          3,
+          1
+        ],
+        [
+          0,
+          3
+        ],
+        [
+          0,
+          2
+        ],
+        [
+          0,
+          1
+        ],
+        [
+          0,
+          0
+        ]
+      ]);
+      if (!this.cmap) for (let cmap of cmapTable.tables) {
+        let encoding = (0, $e449ad78d50845fe$export$badc544e0651b6b1)(cmap.platformID, cmap.encodingID, cmap.table.language - 1);
+        let mapping = (0, $e449ad78d50845fe$export$1dceb3c14ed68bee)(encoding);
+        if (mapping) {
+          this.cmap = cmap.table;
+          this.encoding = mapping;
+        }
+      }
+      if (!this.cmap) throw new Error("Could not find a supported cmap table");
+      this.uvs = this.findSubtable(cmapTable, [
+        [
+          0,
+          5
+        ]
+      ]);
+      if (this.uvs && this.uvs.version !== 14) this.uvs = null;
+    }
+  };
+  (0, __decorate)([
+    (0, $e71565f2ce09cb6b$export$69a3209f1a06c04d)
+  ], $f08dd41ef10b694c$export$2e2bcd8739ae039.prototype, "getCharacterSet", null);
+  (0, __decorate)([
+    (0, $e71565f2ce09cb6b$export$69a3209f1a06c04d)
+  ], $f08dd41ef10b694c$export$2e2bcd8739ae039.prototype, "codePointsForGlyph", null);
+  var $0bba3a9db57637f3$export$2e2bcd8739ae039 = class {
+    process(glyphs, positions) {
+      for (let glyphIndex = 0; glyphIndex < glyphs.length - 1; glyphIndex++) {
+        let left = glyphs[glyphIndex].id;
+        let right = glyphs[glyphIndex + 1].id;
+        positions[glyphIndex].xAdvance += this.getKerning(left, right);
+      }
+    }
+    getKerning(left, right) {
+      let res = 0;
+      for (let table of this.kern.tables) {
+        if (table.coverage.crossStream) continue;
+        switch (table.version) {
+          case 0:
+            if (!table.coverage.horizontal) continue;
+            break;
+          case 1:
+            if (table.coverage.vertical || table.coverage.variation) continue;
+            break;
+          default:
+            throw new Error(`Unsupported kerning table version ${table.version}`);
+        }
+        let val = 0;
+        let s = table.subtable;
+        switch (table.format) {
+          case 0:
+            let pairIdx = (0, $12727730ddfc8bfe$export$2e0ae67339d5f1ac)(s.pairs, function(pair) {
+              return left - pair.left || right - pair.right;
+            });
+            if (pairIdx >= 0) val = s.pairs[pairIdx].value;
+            break;
+          case 2:
+            let leftOffset = 0, rightOffset = 0;
+            if (left >= s.leftTable.firstGlyph && left < s.leftTable.firstGlyph + s.leftTable.nGlyphs) leftOffset = s.leftTable.offsets[left - s.leftTable.firstGlyph];
+            else leftOffset = s.array.off;
+            if (right >= s.rightTable.firstGlyph && right < s.rightTable.firstGlyph + s.rightTable.nGlyphs) rightOffset = s.rightTable.offsets[right - s.rightTable.firstGlyph];
+            let index = (leftOffset + rightOffset - s.array.off) / 2;
+            val = s.array.values.get(index);
+            break;
+          case 3:
+            if (left >= s.glyphCount || right >= s.glyphCount) return 0;
+            val = s.kernValue[s.kernIndex[s.leftClass[left] * s.rightClassCount + s.rightClass[right]]];
+            break;
+          default:
+            throw new Error(`Unsupported kerning sub-table format ${table.format}`);
+        }
+        if (table.coverage.override) res = val;
+        else res += val;
+      }
+      return res;
+    }
+    constructor(font) {
+      this.kern = font.kern;
+    }
+  };
+  var $0a4bdfeb6dfd6f5e$export$2e2bcd8739ae039 = class {
+    positionGlyphs(glyphs, positions) {
+      let clusterStart = 0;
+      let clusterEnd = 0;
+      for (let index = 0; index < glyphs.length; index++) {
+        let glyph = glyphs[index];
+        if (glyph.isMark) clusterEnd = index;
+        else {
+          if (clusterStart !== clusterEnd) this.positionCluster(glyphs, positions, clusterStart, clusterEnd);
+          clusterStart = clusterEnd = index;
+        }
+      }
+      if (clusterStart !== clusterEnd) this.positionCluster(glyphs, positions, clusterStart, clusterEnd);
+      return positions;
+    }
+    positionCluster(glyphs, positions, clusterStart, clusterEnd) {
+      let base = glyphs[clusterStart];
+      let baseBox = base.cbox.copy();
+      if (base.codePoints.length > 1)
+        baseBox.minX += (base.codePoints.length - 1) * baseBox.width / base.codePoints.length;
+      let xOffset = -positions[clusterStart].xAdvance;
+      let yOffset = 0;
+      let yGap = this.font.unitsPerEm / 16;
+      for (let index = clusterStart + 1; index <= clusterEnd; index++) {
+        let mark = glyphs[index];
+        let markBox = mark.cbox;
+        let position = positions[index];
+        let combiningClass = this.getCombiningClass(mark.codePoints[0]);
+        if (combiningClass !== "Not_Reordered") {
+          position.xOffset = position.yOffset = 0;
+          switch (combiningClass) {
+            case "Double_Above":
+            case "Double_Below":
+              position.xOffset += baseBox.minX - markBox.width / 2 - markBox.minX;
+              break;
+            case "Attached_Below_Left":
+            case "Below_Left":
+            case "Above_Left":
+              position.xOffset += baseBox.minX - markBox.minX;
+              break;
+            case "Attached_Above_Right":
+            case "Below_Right":
+            case "Above_Right":
+              position.xOffset += baseBox.maxX - markBox.width - markBox.minX;
+              break;
+            default:
+              position.xOffset += baseBox.minX + (baseBox.width - markBox.width) / 2 - markBox.minX;
+          }
+          switch (combiningClass) {
+            case "Double_Below":
+            case "Below_Left":
+            case "Below":
+            case "Below_Right":
+            case "Attached_Below_Left":
+            case "Attached_Below":
+              if (combiningClass === "Attached_Below_Left" || combiningClass === "Attached_Below") baseBox.minY += yGap;
+              position.yOffset = -baseBox.minY - markBox.maxY;
+              baseBox.minY += markBox.height;
+              break;
+            case "Double_Above":
+            case "Above_Left":
+            case "Above":
+            case "Above_Right":
+            case "Attached_Above":
+            case "Attached_Above_Right":
+              if (combiningClass === "Attached_Above" || combiningClass === "Attached_Above_Right") baseBox.maxY += yGap;
+              position.yOffset = baseBox.maxY - markBox.minY;
+              baseBox.maxY += markBox.height;
+              break;
+          }
+          position.xAdvance = position.yAdvance = 0;
+          position.xOffset += xOffset;
+          position.yOffset += yOffset;
+        } else {
+          xOffset -= position.xAdvance;
+          yOffset -= position.yAdvance;
+        }
+      }
+      return;
+    }
+    getCombiningClass(codePoint) {
+      let combiningClass = (0, $747425b437e121da$export$c03b919c6651ed55)(codePoint);
+      if ((codePoint & -256) === 3584) {
+        if (combiningClass === "Not_Reordered") switch (codePoint) {
+          case 3633:
+          case 3636:
+          case 3637:
+          case 3638:
+          case 3639:
+          case 3655:
+          case 3660:
+          case 3645:
+          case 3662:
+            return "Above_Right";
+          case 3761:
+          case 3764:
+          case 3765:
+          case 3766:
+          case 3767:
+          case 3771:
+          case 3788:
+          case 3789:
+            return "Above";
+          case 3772:
+            return "Below";
+        }
+        else if (codePoint === 3642) return "Below_Right";
+      }
+      switch (combiningClass) {
+        // Hebrew
+        case "CCC10":
+        case "CCC11":
+        case "CCC12":
+        case "CCC13":
+        case "CCC14":
+        case "CCC15":
+        case "CCC16":
+        case "CCC17":
+        case "CCC18":
+        case "CCC20":
+        case "CCC22":
+          return "Below";
+        case "CCC23":
+          return "Attached_Above";
+        case "CCC24":
+          return "Above_Right";
+        case "CCC25":
+        case "CCC19":
+          return "Above_Left";
+        case "CCC26":
+          return "Above";
+        case "CCC21":
+          break;
+        // Arabic and Syriac
+        case "CCC27":
+        case "CCC28":
+        case "CCC30":
+        case "CCC31":
+        case "CCC33":
+        case "CCC34":
+        case "CCC35":
+        case "CCC36":
+          return "Above";
+        case "CCC29":
+        case "CCC32":
+          return "Below";
+        // Thai
+        case "CCC103":
+          return "Below_Right";
+        case "CCC107":
+          return "Above_Right";
+        // Lao
+        case "CCC118":
+          return "Below";
+        case "CCC122":
+          return "Above";
+        // Tibetan
+        case "CCC129":
+        case "CCC132":
+          return "Below";
+        case "CCC130":
+          return "Above";
+      }
+      return combiningClass;
+    }
+    constructor(font) {
+      this.font = font;
+    }
+  };
+  var $f34600ab9d7f70d8$export$2e2bcd8739ae039 = class _$f34600ab9d7f70d8$export$2e2bcd8739ae039 {
+    /**
+    * The width of the bounding box
+    * @type {number}
+    */
+    get width() {
+      return this.maxX - this.minX;
+    }
+    /**
+    * The height of the bounding box
+    * @type {number}
+    */
+    get height() {
+      return this.maxY - this.minY;
+    }
+    addPoint(x2, y) {
+      if (Math.abs(x2) !== Infinity) {
+        if (x2 < this.minX) this.minX = x2;
+        if (x2 > this.maxX) this.maxX = x2;
+      }
+      if (Math.abs(y) !== Infinity) {
+        if (y < this.minY) this.minY = y;
+        if (y > this.maxY) this.maxY = y;
+      }
+    }
+    copy() {
+      return new _$f34600ab9d7f70d8$export$2e2bcd8739ae039(this.minX, this.minY, this.maxX, this.maxY);
+    }
+    constructor(minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity) {
+      this.minX = minX;
+      this.minY = minY;
+      this.maxX = maxX;
+      this.maxY = maxY;
+    }
+  };
+  var $130d1a642ebcd2b7$var$UNICODE_SCRIPTS = {
+    Caucasian_Albanian: "aghb",
+    Arabic: "arab",
+    Imperial_Aramaic: "armi",
+    Armenian: "armn",
+    Avestan: "avst",
+    Balinese: "bali",
+    Bamum: "bamu",
+    Bassa_Vah: "bass",
+    Batak: "batk",
+    Bengali: [
+      "bng2",
+      "beng"
+    ],
+    Bopomofo: "bopo",
+    Brahmi: "brah",
+    Braille: "brai",
+    Buginese: "bugi",
+    Buhid: "buhd",
+    Chakma: "cakm",
+    Canadian_Aboriginal: "cans",
+    Carian: "cari",
+    Cham: "cham",
+    Cherokee: "cher",
+    Coptic: "copt",
+    Cypriot: "cprt",
+    Cyrillic: "cyrl",
+    Devanagari: [
+      "dev2",
+      "deva"
+    ],
+    Deseret: "dsrt",
+    Duployan: "dupl",
+    Egyptian_Hieroglyphs: "egyp",
+    Elbasan: "elba",
+    Ethiopic: "ethi",
+    Georgian: "geor",
+    Glagolitic: "glag",
+    Gothic: "goth",
+    Grantha: "gran",
+    Greek: "grek",
+    Gujarati: [
+      "gjr2",
+      "gujr"
+    ],
+    Gurmukhi: [
+      "gur2",
+      "guru"
+    ],
+    Hangul: "hang",
+    Han: "hani",
+    Hanunoo: "hano",
+    Hebrew: "hebr",
+    Hiragana: "hira",
+    Pahawh_Hmong: "hmng",
+    Katakana_Or_Hiragana: "hrkt",
+    Old_Italic: "ital",
+    Javanese: "java",
+    Kayah_Li: "kali",
+    Katakana: "kana",
+    Kharoshthi: "khar",
+    Khmer: "khmr",
+    Khojki: "khoj",
+    Kannada: [
+      "knd2",
+      "knda"
+    ],
+    Kaithi: "kthi",
+    Tai_Tham: "lana",
+    Lao: "lao ",
+    Latin: "latn",
+    Lepcha: "lepc",
+    Limbu: "limb",
+    Linear_A: "lina",
+    Linear_B: "linb",
+    Lisu: "lisu",
+    Lycian: "lyci",
+    Lydian: "lydi",
+    Mahajani: "mahj",
+    Mandaic: "mand",
+    Manichaean: "mani",
+    Mende_Kikakui: "mend",
+    Meroitic_Cursive: "merc",
+    Meroitic_Hieroglyphs: "mero",
+    Malayalam: [
+      "mlm2",
+      "mlym"
+    ],
+    Modi: "modi",
+    Mongolian: "mong",
+    Mro: "mroo",
+    Meetei_Mayek: "mtei",
+    Myanmar: [
+      "mym2",
+      "mymr"
+    ],
+    Old_North_Arabian: "narb",
+    Nabataean: "nbat",
+    Nko: "nko ",
+    Ogham: "ogam",
+    Ol_Chiki: "olck",
+    Old_Turkic: "orkh",
+    Oriya: [
+      "ory2",
+      "orya"
+    ],
+    Osmanya: "osma",
+    Palmyrene: "palm",
+    Pau_Cin_Hau: "pauc",
+    Old_Permic: "perm",
+    Phags_Pa: "phag",
+    Inscriptional_Pahlavi: "phli",
+    Psalter_Pahlavi: "phlp",
+    Phoenician: "phnx",
+    Miao: "plrd",
+    Inscriptional_Parthian: "prti",
+    Rejang: "rjng",
+    Runic: "runr",
+    Samaritan: "samr",
+    Old_South_Arabian: "sarb",
+    Saurashtra: "saur",
+    Shavian: "shaw",
+    Sharada: "shrd",
+    Siddham: "sidd",
+    Khudawadi: "sind",
+    Sinhala: "sinh",
+    Sora_Sompeng: "sora",
+    Sundanese: "sund",
+    Syloti_Nagri: "sylo",
+    Syriac: "syrc",
+    Tagbanwa: "tagb",
+    Takri: "takr",
+    Tai_Le: "tale",
+    New_Tai_Lue: "talu",
+    Tamil: [
+      "tml2",
+      "taml"
+    ],
+    Tai_Viet: "tavt",
+    Telugu: [
+      "tel2",
+      "telu"
+    ],
+    Tifinagh: "tfng",
+    Tagalog: "tglg",
+    Thaana: "thaa",
+    Thai: "thai",
+    Tibetan: "tibt",
+    Tirhuta: "tirh",
+    Ugaritic: "ugar",
+    Vai: "vai ",
+    Warang_Citi: "wara",
+    Old_Persian: "xpeo",
+    Cuneiform: "xsux",
+    Yi: "yi  ",
+    Inherited: "zinh",
+    Common: "zyyy",
+    Unknown: "zzzz"
+  };
+  var $130d1a642ebcd2b7$var$OPENTYPE_SCRIPTS = {};
+  for (let script in $130d1a642ebcd2b7$var$UNICODE_SCRIPTS) {
+    let tag = $130d1a642ebcd2b7$var$UNICODE_SCRIPTS[script];
+    if (Array.isArray(tag)) for (let t of tag) $130d1a642ebcd2b7$var$OPENTYPE_SCRIPTS[t] = script;
+    else $130d1a642ebcd2b7$var$OPENTYPE_SCRIPTS[tag] = script;
+  }
+  function $130d1a642ebcd2b7$export$ce50e82f12a827a4(tag) {
+    return $130d1a642ebcd2b7$var$OPENTYPE_SCRIPTS[tag];
+  }
+  function $130d1a642ebcd2b7$export$e5cb25e204fb8450(string) {
+    let len = string.length;
+    let idx = 0;
+    while (idx < len) {
+      let code = string.charCodeAt(idx++);
+      if (55296 <= code && code <= 56319 && idx < len) {
+        let next = string.charCodeAt(idx);
+        if (56320 <= next && next <= 57343) {
+          idx++;
+          code = ((code & 1023) << 10) + (next & 1023) + 65536;
+        }
+      }
+      let script = (0, $747425b437e121da$export$941569448d136665)(code);
+      if (script !== "Common" && script !== "Inherited" && script !== "Unknown") return $130d1a642ebcd2b7$var$UNICODE_SCRIPTS[script];
+    }
+    return $130d1a642ebcd2b7$var$UNICODE_SCRIPTS.Unknown;
+  }
+  function $130d1a642ebcd2b7$export$16fab0757cfc223d(codePoints) {
+    for (let i2 = 0; i2 < codePoints.length; i2++) {
+      let codePoint = codePoints[i2];
+      let script = (0, $747425b437e121da$export$941569448d136665)(codePoint);
+      if (script !== "Common" && script !== "Inherited" && script !== "Unknown") return $130d1a642ebcd2b7$var$UNICODE_SCRIPTS[script];
+    }
+    return $130d1a642ebcd2b7$var$UNICODE_SCRIPTS.Unknown;
+  }
+  var $130d1a642ebcd2b7$var$RTL = {
+    arab: true,
+    hebr: true,
+    syrc: true,
+    thaa: true,
+    cprt: true,
+    khar: true,
+    phnx: true,
+    "nko ": true,
+    lydi: true,
+    avst: true,
+    armi: true,
+    phli: true,
+    prti: true,
+    sarb: true,
+    orkh: true,
+    samr: true,
+    mand: true,
+    merc: true,
+    mero: true,
+    // Unicode 7.0 (not listed on http://www.microsoft.com/typography/otspec/scripttags.htm)
+    mani: true,
+    mend: true,
+    nbat: true,
+    narb: true,
+    palm: true,
+    phlp: true
+    // Psalter Pahlavi
+  };
+  function $130d1a642ebcd2b7$export$9fddb9d0dd7d8a54(script) {
+    if ($130d1a642ebcd2b7$var$RTL[script]) return "rtl";
+    return "ltr";
+  }
+  var $be07b3e97a42687a$export$2e2bcd8739ae039 = class {
+    /**
+    * The total advance width of the run.
+    * @type {number}
+    */
+    get advanceWidth() {
+      let width = 0;
+      for (let position of this.positions) width += position.xAdvance;
+      return width;
+    }
+    /**
+    * The total advance height of the run.
+    * @type {number}
+    */
+    get advanceHeight() {
+      let height = 0;
+      for (let position of this.positions) height += position.yAdvance;
+      return height;
+    }
+    /**
+    * The bounding box containing all glyphs in the run.
+    * @type {BBox}
+    */
+    get bbox() {
+      let bbox = new (0, $f34600ab9d7f70d8$export$2e2bcd8739ae039)();
+      let x2 = 0;
+      let y = 0;
+      for (let index = 0; index < this.glyphs.length; index++) {
+        let glyph = this.glyphs[index];
+        let p = this.positions[index];
+        let b = glyph.bbox;
+        bbox.addPoint(b.minX + x2 + p.xOffset, b.minY + y + p.yOffset);
+        bbox.addPoint(b.maxX + x2 + p.xOffset, b.maxY + y + p.yOffset);
+        x2 += p.xAdvance;
+        y += p.yAdvance;
+      }
+      return bbox;
+    }
+    constructor(glyphs, features, script, language, direction) {
+      this.glyphs = glyphs;
+      this.positions = null;
+      this.script = script;
+      this.language = language || null;
+      this.direction = direction || $130d1a642ebcd2b7$export$9fddb9d0dd7d8a54(script);
+      this.features = {};
+      if (Array.isArray(features)) for (let tag of features) this.features[tag] = true;
+      else if (typeof features === "object") this.features = features;
+    }
+  };
+  var $1ac75d9a55b67f01$export$2e2bcd8739ae039 = class {
+    constructor(xAdvance = 0, yAdvance = 0, xOffset = 0, yOffset = 0) {
+      this.xAdvance = xAdvance;
+      this.yAdvance = yAdvance;
+      this.xOffset = xOffset;
+      this.yOffset = yOffset;
+    }
+  };
+  var $3b6302b64eccc32c$var$features = {
+    allTypographicFeatures: {
+      code: 0,
+      exclusive: false,
+      allTypeFeatures: 0
+    },
+    ligatures: {
+      code: 1,
+      exclusive: false,
+      requiredLigatures: 0,
+      commonLigatures: 2,
+      rareLigatures: 4,
+      // logos: 6
+      rebusPictures: 8,
+      diphthongLigatures: 10,
+      squaredLigatures: 12,
+      abbrevSquaredLigatures: 14,
+      symbolLigatures: 16,
+      contextualLigatures: 18,
+      historicalLigatures: 20
+    },
+    cursiveConnection: {
+      code: 2,
+      exclusive: true,
+      unconnected: 0,
+      partiallyConnected: 1,
+      cursive: 2
+    },
+    letterCase: {
+      code: 3,
+      exclusive: true
+    },
+    // upperAndLowerCase: 0          # deprecated
+    // allCaps: 1                    # deprecated
+    // allLowerCase: 2               # deprecated
+    // smallCaps: 3                  # deprecated
+    // initialCaps: 4                # deprecated
+    // initialCapsAndSmallCaps: 5    # deprecated
+    verticalSubstitution: {
+      code: 4,
+      exclusive: false,
+      substituteVerticalForms: 0
+    },
+    linguisticRearrangement: {
+      code: 5,
+      exclusive: false,
+      linguisticRearrangement: 0
+    },
+    numberSpacing: {
+      code: 6,
+      exclusive: true,
+      monospacedNumbers: 0,
+      proportionalNumbers: 1,
+      thirdWidthNumbers: 2,
+      quarterWidthNumbers: 3
+    },
+    smartSwash: {
+      code: 8,
+      exclusive: false,
+      wordInitialSwashes: 0,
+      wordFinalSwashes: 2,
+      // lineInitialSwashes: 4
+      // lineFinalSwashes: 6
+      nonFinalSwashes: 8
+    },
+    diacritics: {
+      code: 9,
+      exclusive: true,
+      showDiacritics: 0,
+      hideDiacritics: 1,
+      decomposeDiacritics: 2
+    },
+    verticalPosition: {
+      code: 10,
+      exclusive: true,
+      normalPosition: 0,
+      superiors: 1,
+      inferiors: 2,
+      ordinals: 3,
+      scientificInferiors: 4
+    },
+    fractions: {
+      code: 11,
+      exclusive: true,
+      noFractions: 0,
+      verticalFractions: 1,
+      diagonalFractions: 2
+    },
+    overlappingCharacters: {
+      code: 13,
+      exclusive: false,
+      preventOverlap: 0
+    },
+    typographicExtras: {
+      code: 14,
+      exclusive: false,
+      // hyphensToEmDash: 0
+      // hyphenToEnDash: 2
+      slashedZero: 4
+    },
+    // formInterrobang: 6
+    // smartQuotes: 8
+    // periodsToEllipsis: 10
+    mathematicalExtras: {
+      code: 15,
+      exclusive: false,
+      // hyphenToMinus: 0
+      // asteristoMultiply: 2
+      // slashToDivide: 4
+      // inequalityLigatures: 6
+      // exponents: 8
+      mathematicalGreek: 10
+    },
+    ornamentSets: {
+      code: 16,
+      exclusive: true,
+      noOrnaments: 0,
+      dingbats: 1,
+      piCharacters: 2,
+      fleurons: 3,
+      decorativeBorders: 4,
+      internationalSymbols: 5,
+      mathSymbols: 6
+    },
+    characterAlternatives: {
+      code: 17,
+      exclusive: true,
+      noAlternates: 0
+    },
+    // user defined options
+    designComplexity: {
+      code: 18,
+      exclusive: true,
+      designLevel1: 0,
+      designLevel2: 1,
+      designLevel3: 2,
+      designLevel4: 3,
+      designLevel5: 4
+    },
+    styleOptions: {
+      code: 19,
+      exclusive: true,
+      noStyleOptions: 0,
+      displayText: 1,
+      engravedText: 2,
+      illuminatedCaps: 3,
+      titlingCaps: 4,
+      tallCaps: 5
+    },
+    characterShape: {
+      code: 20,
+      exclusive: true,
+      traditionalCharacters: 0,
+      simplifiedCharacters: 1,
+      JIS1978Characters: 2,
+      JIS1983Characters: 3,
+      JIS1990Characters: 4,
+      traditionalAltOne: 5,
+      traditionalAltTwo: 6,
+      traditionalAltThree: 7,
+      traditionalAltFour: 8,
+      traditionalAltFive: 9,
+      expertCharacters: 10,
+      JIS2004Characters: 11,
+      hojoCharacters: 12,
+      NLCCharacters: 13,
+      traditionalNamesCharacters: 14
+    },
+    numberCase: {
+      code: 21,
+      exclusive: true,
+      lowerCaseNumbers: 0,
+      upperCaseNumbers: 1
+    },
+    textSpacing: {
+      code: 22,
+      exclusive: true,
+      proportionalText: 0,
+      monospacedText: 1,
+      halfWidthText: 2,
+      thirdWidthText: 3,
+      quarterWidthText: 4,
+      altProportionalText: 5,
+      altHalfWidthText: 6
+    },
+    transliteration: {
+      code: 23,
+      exclusive: true,
+      noTransliteration: 0
+    },
+    // hanjaToHangul: 1
+    // hiraganaToKatakana: 2
+    // katakanaToHiragana: 3
+    // kanaToRomanization: 4
+    // romanizationToHiragana: 5
+    // romanizationToKatakana: 6
+    // hanjaToHangulAltOne: 7
+    // hanjaToHangulAltTwo: 8
+    // hanjaToHangulAltThree: 9
+    annotation: {
+      code: 24,
+      exclusive: true,
+      noAnnotation: 0,
+      boxAnnotation: 1,
+      roundedBoxAnnotation: 2,
+      circleAnnotation: 3,
+      invertedCircleAnnotation: 4,
+      parenthesisAnnotation: 5,
+      periodAnnotation: 6,
+      romanNumeralAnnotation: 7,
+      diamondAnnotation: 8,
+      invertedBoxAnnotation: 9,
+      invertedRoundedBoxAnnotation: 10
+    },
+    kanaSpacing: {
+      code: 25,
+      exclusive: true,
+      fullWidthKana: 0,
+      proportionalKana: 1
+    },
+    ideographicSpacing: {
+      code: 26,
+      exclusive: true,
+      fullWidthIdeographs: 0,
+      proportionalIdeographs: 1,
+      halfWidthIdeographs: 2
+    },
+    unicodeDecomposition: {
+      code: 27,
+      exclusive: false,
+      canonicalComposition: 0,
+      compatibilityComposition: 2,
+      transcodingComposition: 4
+    },
+    rubyKana: {
+      code: 28,
+      exclusive: false,
+      // noRubyKana: 0     # deprecated - use rubyKanaOff instead
+      // rubyKana: 1     # deprecated - use rubyKanaOn instead
+      rubyKana: 2
+    },
+    CJKSymbolAlternatives: {
+      code: 29,
+      exclusive: true,
+      noCJKSymbolAlternatives: 0,
+      CJKSymbolAltOne: 1,
+      CJKSymbolAltTwo: 2,
+      CJKSymbolAltThree: 3,
+      CJKSymbolAltFour: 4,
+      CJKSymbolAltFive: 5
+    },
+    ideographicAlternatives: {
+      code: 30,
+      exclusive: true,
+      noIdeographicAlternatives: 0,
+      ideographicAltOne: 1,
+      ideographicAltTwo: 2,
+      ideographicAltThree: 3,
+      ideographicAltFour: 4,
+      ideographicAltFive: 5
+    },
+    CJKVerticalRomanPlacement: {
+      code: 31,
+      exclusive: true,
+      CJKVerticalRomanCentered: 0,
+      CJKVerticalRomanHBaseline: 1
+    },
+    italicCJKRoman: {
+      code: 32,
+      exclusive: false,
+      // noCJKItalicRoman: 0     # deprecated - use CJKItalicRomanOff instead
+      // CJKItalicRoman: 1     # deprecated - use CJKItalicRomanOn instead
+      CJKItalicRoman: 2
+    },
+    caseSensitiveLayout: {
+      code: 33,
+      exclusive: false,
+      caseSensitiveLayout: 0,
+      caseSensitiveSpacing: 2
+    },
+    alternateKana: {
+      code: 34,
+      exclusive: false,
+      alternateHorizKana: 0,
+      alternateVertKana: 2
+    },
+    stylisticAlternatives: {
+      code: 35,
+      exclusive: false,
+      noStylisticAlternates: 0,
+      stylisticAltOne: 2,
+      stylisticAltTwo: 4,
+      stylisticAltThree: 6,
+      stylisticAltFour: 8,
+      stylisticAltFive: 10,
+      stylisticAltSix: 12,
+      stylisticAltSeven: 14,
+      stylisticAltEight: 16,
+      stylisticAltNine: 18,
+      stylisticAltTen: 20,
+      stylisticAltEleven: 22,
+      stylisticAltTwelve: 24,
+      stylisticAltThirteen: 26,
+      stylisticAltFourteen: 28,
+      stylisticAltFifteen: 30,
+      stylisticAltSixteen: 32,
+      stylisticAltSeventeen: 34,
+      stylisticAltEighteen: 36,
+      stylisticAltNineteen: 38,
+      stylisticAltTwenty: 40
+    },
+    contextualAlternates: {
+      code: 36,
+      exclusive: false,
+      contextualAlternates: 0,
+      swashAlternates: 2,
+      contextualSwashAlternates: 4
+    },
+    lowerCase: {
+      code: 37,
+      exclusive: true,
+      defaultLowerCase: 0,
+      lowerCaseSmallCaps: 1,
+      lowerCasePetiteCaps: 2
+    },
+    upperCase: {
+      code: 38,
+      exclusive: true,
+      defaultUpperCase: 0,
+      upperCaseSmallCaps: 1,
+      upperCasePetiteCaps: 2
+    },
+    languageTag: {
+      code: 39,
+      exclusive: true
+    },
+    CJKRomanSpacing: {
+      code: 103,
+      exclusive: true,
+      halfWidthCJKRoman: 0,
+      proportionalCJKRoman: 1,
+      defaultCJKRoman: 2,
+      fullWidthCJKRoman: 3
+    }
+  };
+  var $3b6302b64eccc32c$var$feature = (name, selector) => [
+    $3b6302b64eccc32c$var$features[name].code,
+    $3b6302b64eccc32c$var$features[name][selector]
+  ];
+  var $3b6302b64eccc32c$var$OTMapping = {
+    rlig: $3b6302b64eccc32c$var$feature("ligatures", "requiredLigatures"),
+    clig: $3b6302b64eccc32c$var$feature("ligatures", "contextualLigatures"),
+    dlig: $3b6302b64eccc32c$var$feature("ligatures", "rareLigatures"),
+    hlig: $3b6302b64eccc32c$var$feature("ligatures", "historicalLigatures"),
+    liga: $3b6302b64eccc32c$var$feature("ligatures", "commonLigatures"),
+    hist: $3b6302b64eccc32c$var$feature("ligatures", "historicalLigatures"),
+    smcp: $3b6302b64eccc32c$var$feature("lowerCase", "lowerCaseSmallCaps"),
+    pcap: $3b6302b64eccc32c$var$feature("lowerCase", "lowerCasePetiteCaps"),
+    frac: $3b6302b64eccc32c$var$feature("fractions", "diagonalFractions"),
+    dnom: $3b6302b64eccc32c$var$feature("fractions", "diagonalFractions"),
+    numr: $3b6302b64eccc32c$var$feature("fractions", "diagonalFractions"),
+    afrc: $3b6302b64eccc32c$var$feature("fractions", "verticalFractions"),
+    // aalt
+    // abvf, abvm, abvs, akhn, blwf, blwm, blws, cfar, cjct, cpsp, falt, isol, jalt, ljmo, mset?
+    // ltra, ltrm, nukt, pref, pres, pstf, psts, rand, rkrf, rphf, rtla, rtlm, size, tjmo, tnum?
+    // unic, vatu, vhal, vjmo, vpal, vrt2
+    // dist -> trak table?
+    // kern, vkrn -> kern table
+    // lfbd + opbd + rtbd -> opbd table?
+    // mark, mkmk -> acnt table?
+    // locl -> languageTag + ltag table
+    case: $3b6302b64eccc32c$var$feature("caseSensitiveLayout", "caseSensitiveLayout"),
+    ccmp: $3b6302b64eccc32c$var$feature("unicodeDecomposition", "canonicalComposition"),
+    cpct: $3b6302b64eccc32c$var$feature("CJKVerticalRomanPlacement", "CJKVerticalRomanCentered"),
+    valt: $3b6302b64eccc32c$var$feature("CJKVerticalRomanPlacement", "CJKVerticalRomanCentered"),
+    swsh: $3b6302b64eccc32c$var$feature("contextualAlternates", "swashAlternates"),
+    cswh: $3b6302b64eccc32c$var$feature("contextualAlternates", "contextualSwashAlternates"),
+    curs: $3b6302b64eccc32c$var$feature("cursiveConnection", "cursive"),
+    c2pc: $3b6302b64eccc32c$var$feature("upperCase", "upperCasePetiteCaps"),
+    c2sc: $3b6302b64eccc32c$var$feature("upperCase", "upperCaseSmallCaps"),
+    init: $3b6302b64eccc32c$var$feature("smartSwash", "wordInitialSwashes"),
+    fin2: $3b6302b64eccc32c$var$feature("smartSwash", "wordFinalSwashes"),
+    medi: $3b6302b64eccc32c$var$feature("smartSwash", "nonFinalSwashes"),
+    med2: $3b6302b64eccc32c$var$feature("smartSwash", "nonFinalSwashes"),
+    fin3: $3b6302b64eccc32c$var$feature("smartSwash", "wordFinalSwashes"),
+    fina: $3b6302b64eccc32c$var$feature("smartSwash", "wordFinalSwashes"),
+    pkna: $3b6302b64eccc32c$var$feature("kanaSpacing", "proportionalKana"),
+    half: $3b6302b64eccc32c$var$feature("textSpacing", "halfWidthText"),
+    halt: $3b6302b64eccc32c$var$feature("textSpacing", "altHalfWidthText"),
+    hkna: $3b6302b64eccc32c$var$feature("alternateKana", "alternateHorizKana"),
+    vkna: $3b6302b64eccc32c$var$feature("alternateKana", "alternateVertKana"),
+    // hngl: feature 'transliteration', 'hanjaToHangulSelector' # deprecated
+    ital: $3b6302b64eccc32c$var$feature("italicCJKRoman", "CJKItalicRoman"),
+    lnum: $3b6302b64eccc32c$var$feature("numberCase", "upperCaseNumbers"),
+    onum: $3b6302b64eccc32c$var$feature("numberCase", "lowerCaseNumbers"),
+    mgrk: $3b6302b64eccc32c$var$feature("mathematicalExtras", "mathematicalGreek"),
+    // nalt: not enough info. what type of annotation?
+    // ornm: ditto, which ornament style?
+    calt: $3b6302b64eccc32c$var$feature("contextualAlternates", "contextualAlternates"),
+    vrt2: $3b6302b64eccc32c$var$feature("verticalSubstitution", "substituteVerticalForms"),
+    vert: $3b6302b64eccc32c$var$feature("verticalSubstitution", "substituteVerticalForms"),
+    tnum: $3b6302b64eccc32c$var$feature("numberSpacing", "monospacedNumbers"),
+    pnum: $3b6302b64eccc32c$var$feature("numberSpacing", "proportionalNumbers"),
+    sups: $3b6302b64eccc32c$var$feature("verticalPosition", "superiors"),
+    subs: $3b6302b64eccc32c$var$feature("verticalPosition", "inferiors"),
+    ordn: $3b6302b64eccc32c$var$feature("verticalPosition", "ordinals"),
+    pwid: $3b6302b64eccc32c$var$feature("textSpacing", "proportionalText"),
+    hwid: $3b6302b64eccc32c$var$feature("textSpacing", "halfWidthText"),
+    qwid: $3b6302b64eccc32c$var$feature("textSpacing", "quarterWidthText"),
+    twid: $3b6302b64eccc32c$var$feature("textSpacing", "thirdWidthText"),
+    fwid: $3b6302b64eccc32c$var$feature("textSpacing", "proportionalText"),
+    palt: $3b6302b64eccc32c$var$feature("textSpacing", "altProportionalText"),
+    trad: $3b6302b64eccc32c$var$feature("characterShape", "traditionalCharacters"),
+    smpl: $3b6302b64eccc32c$var$feature("characterShape", "simplifiedCharacters"),
+    jp78: $3b6302b64eccc32c$var$feature("characterShape", "JIS1978Characters"),
+    jp83: $3b6302b64eccc32c$var$feature("characterShape", "JIS1983Characters"),
+    jp90: $3b6302b64eccc32c$var$feature("characterShape", "JIS1990Characters"),
+    jp04: $3b6302b64eccc32c$var$feature("characterShape", "JIS2004Characters"),
+    expt: $3b6302b64eccc32c$var$feature("characterShape", "expertCharacters"),
+    hojo: $3b6302b64eccc32c$var$feature("characterShape", "hojoCharacters"),
+    nlck: $3b6302b64eccc32c$var$feature("characterShape", "NLCCharacters"),
+    tnam: $3b6302b64eccc32c$var$feature("characterShape", "traditionalNamesCharacters"),
+    ruby: $3b6302b64eccc32c$var$feature("rubyKana", "rubyKana"),
+    titl: $3b6302b64eccc32c$var$feature("styleOptions", "titlingCaps"),
+    zero: $3b6302b64eccc32c$var$feature("typographicExtras", "slashedZero"),
+    ss01: $3b6302b64eccc32c$var$feature("stylisticAlternatives", "stylisticAltOne"),
+    ss02: $3b6302b64eccc32c$var$feature("stylisticAlternatives", "stylisticAltTwo"),
+    ss03: $3b6302b64eccc32c$var$feature("stylisticAlternatives", "stylisticAltThree"),
+    ss04: $3b6302b64eccc32c$var$feature("stylisticAlternatives", "stylisticAltFour"),
+    ss05: $3b6302b64eccc32c$var$feature("stylisticAlternatives", "stylisticAltFive"),
+    ss06: $3b6302b64eccc32c$var$feature("stylisticAlternatives", "stylisticAltSix"),
+    ss07: $3b6302b64eccc32c$var$feature("stylisticAlternatives", "stylisticAltSeven"),
+    ss08: $3b6302b64eccc32c$var$feature("stylisticAlternatives", "stylisticAltEight"),
+    ss09: $3b6302b64eccc32c$var$feature("stylisticAlternatives", "stylisticAltNine"),
+    ss10: $3b6302b64eccc32c$var$feature("stylisticAlternatives", "stylisticAltTen"),
+    ss11: $3b6302b64eccc32c$var$feature("stylisticAlternatives", "stylisticAltEleven"),
+    ss12: $3b6302b64eccc32c$var$feature("stylisticAlternatives", "stylisticAltTwelve"),
+    ss13: $3b6302b64eccc32c$var$feature("stylisticAlternatives", "stylisticAltThirteen"),
+    ss14: $3b6302b64eccc32c$var$feature("stylisticAlternatives", "stylisticAltFourteen"),
+    ss15: $3b6302b64eccc32c$var$feature("stylisticAlternatives", "stylisticAltFifteen"),
+    ss16: $3b6302b64eccc32c$var$feature("stylisticAlternatives", "stylisticAltSixteen"),
+    ss17: $3b6302b64eccc32c$var$feature("stylisticAlternatives", "stylisticAltSeventeen"),
+    ss18: $3b6302b64eccc32c$var$feature("stylisticAlternatives", "stylisticAltEighteen"),
+    ss19: $3b6302b64eccc32c$var$feature("stylisticAlternatives", "stylisticAltNineteen"),
+    ss20: $3b6302b64eccc32c$var$feature("stylisticAlternatives", "stylisticAltTwenty")
+  };
+  for (let i2 = 1; i2 <= 99; i2++) $3b6302b64eccc32c$var$OTMapping[`cv${`00${i2}`.slice(-2)}`] = [
+    $3b6302b64eccc32c$var$features.characterAlternatives.code,
+    i2
+  ];
+  var $3b6302b64eccc32c$var$AATMapping = {};
+  for (let ot in $3b6302b64eccc32c$var$OTMapping) {
+    let aat = $3b6302b64eccc32c$var$OTMapping[ot];
+    if ($3b6302b64eccc32c$var$AATMapping[aat[0]] == null) $3b6302b64eccc32c$var$AATMapping[aat[0]] = {};
+    $3b6302b64eccc32c$var$AATMapping[aat[0]][aat[1]] = ot;
+  }
+  function $3b6302b64eccc32c$export$b813f7d2a1677c16(features) {
+    let res = {};
+    for (let k in features) {
+      let r;
+      if (r = $3b6302b64eccc32c$var$OTMapping[k]) {
+        if (res[r[0]] == null) res[r[0]] = {};
+        res[r[0]][r[1]] = features[k];
+      }
+    }
+    return res;
+  }
+  function $3b6302b64eccc32c$var$mapFeatureStrings(f) {
+    let [type, setting] = f;
+    if (isNaN(type)) var typeCode = $3b6302b64eccc32c$var$features[type] && $3b6302b64eccc32c$var$features[type].code;
+    else var typeCode = type;
+    if (isNaN(setting)) var settingCode = $3b6302b64eccc32c$var$features[type] && $3b6302b64eccc32c$var$features[type][setting];
+    else var settingCode = setting;
+    return [
+      typeCode,
+      settingCode
+    ];
+  }
+  function $3b6302b64eccc32c$export$bd6df347a4f391c4(features) {
+    let res = {};
+    if (Array.isArray(features)) for (let k = 0; k < features.length; k++) {
+      let r;
+      let f = $3b6302b64eccc32c$var$mapFeatureStrings(features[k]);
+      if (r = $3b6302b64eccc32c$var$AATMapping[f[0]] && $3b6302b64eccc32c$var$AATMapping[f[0]][f[1]]) res[r] = true;
+    }
+    else if (typeof features === "object") for (let type in features) {
+      let feature = features[type];
+      for (let setting in feature) {
+        let r;
+        let f = $3b6302b64eccc32c$var$mapFeatureStrings([
+          type,
+          setting
+        ]);
+        if (feature[setting] && (r = $3b6302b64eccc32c$var$AATMapping[f[0]] && $3b6302b64eccc32c$var$AATMapping[f[0]][f[1]])) res[r] = true;
+      }
+    }
+    return Object.keys(res);
+  }
+  var $ff5ce077dae0f144$export$2e2bcd8739ae039 = class {
+    lookup(glyph) {
+      switch (this.table.version) {
+        case 0:
+          return this.table.values.getItem(glyph);
+        case 2:
+        case 4: {
+          let min = 0;
+          let max2 = this.table.binarySearchHeader.nUnits - 1;
+          while (min <= max2) {
+            var mid = min + max2 >> 1;
+            var seg = this.table.segments[mid];
+            if (seg.firstGlyph === 65535) return null;
+            if (glyph < seg.firstGlyph) max2 = mid - 1;
+            else if (glyph > seg.lastGlyph) min = mid + 1;
+            else {
+              if (this.table.version === 2) return seg.value;
+              else return seg.values[glyph - seg.firstGlyph];
+            }
+          }
+          return null;
+        }
+        case 6: {
+          let min = 0;
+          let max2 = this.table.binarySearchHeader.nUnits - 1;
+          while (min <= max2) {
+            var mid = min + max2 >> 1;
+            var seg = this.table.segments[mid];
+            if (seg.glyph === 65535) return null;
+            if (glyph < seg.glyph) max2 = mid - 1;
+            else if (glyph > seg.glyph) min = mid + 1;
+            else return seg.value;
+          }
+          return null;
+        }
+        case 8:
+          return this.table.values[glyph - this.table.firstGlyph];
+        default:
+          throw new Error(`Unknown lookup table format: ${this.table.version}`);
+      }
+    }
+    glyphsForValue(classValue) {
+      let res = [];
+      switch (this.table.version) {
+        case 2:
+        case 4:
+          for (let segment of this.table.segments) if (this.table.version === 2 && segment.value === classValue) res.push(...(0, $12727730ddfc8bfe$export$d02631cccf789723)(segment.firstGlyph, segment.lastGlyph + 1));
+          else {
+            for (let index = 0; index < segment.values.length; index++) if (segment.values[index] === classValue) res.push(segment.firstGlyph + index);
+          }
+          break;
+        case 6:
+          for (let segment of this.table.segments) if (segment.value === classValue) res.push(segment.glyph);
+          break;
+        case 8:
+          for (let i2 = 0; i2 < this.table.values.length; i2++) if (this.table.values[i2] === classValue) res.push(this.table.firstGlyph + i2);
+          break;
+        default:
+          throw new Error(`Unknown lookup table format: ${this.table.version}`);
+      }
+      return res;
+    }
+    constructor(table) {
+      this.table = table;
+    }
+  };
+  (0, __decorate)([
+    (0, $e71565f2ce09cb6b$export$69a3209f1a06c04d)
+  ], $ff5ce077dae0f144$export$2e2bcd8739ae039.prototype, "glyphsForValue", null);
+  var $50c7aac9316f2948$var$START_OF_TEXT_STATE = 0;
+  var $50c7aac9316f2948$var$END_OF_TEXT_CLASS = 0;
+  var $50c7aac9316f2948$var$OUT_OF_BOUNDS_CLASS = 1;
+  var $50c7aac9316f2948$var$DELETED_GLYPH_CLASS = 2;
+  var $50c7aac9316f2948$var$DONT_ADVANCE = 16384;
+  var $50c7aac9316f2948$export$2e2bcd8739ae039 = class {
+    process(glyphs, reverse, processEntry) {
+      let currentState = $50c7aac9316f2948$var$START_OF_TEXT_STATE;
+      let index = reverse ? glyphs.length - 1 : 0;
+      let dir = reverse ? -1 : 1;
+      while (dir === 1 && index <= glyphs.length || dir === -1 && index >= -1) {
+        let glyph = null;
+        let classCode = $50c7aac9316f2948$var$OUT_OF_BOUNDS_CLASS;
+        let shouldAdvance = true;
+        if (index === glyphs.length || index === -1) classCode = $50c7aac9316f2948$var$END_OF_TEXT_CLASS;
+        else {
+          glyph = glyphs[index];
+          if (glyph.id === 65535) classCode = $50c7aac9316f2948$var$DELETED_GLYPH_CLASS;
+          else {
+            classCode = this.lookupTable.lookup(glyph.id);
+            if (classCode == null) classCode = $50c7aac9316f2948$var$OUT_OF_BOUNDS_CLASS;
+          }
+        }
+        let row = this.stateTable.stateArray.getItem(currentState);
+        let entryIndex = row[classCode];
+        let entry = this.stateTable.entryTable.getItem(entryIndex);
+        if (classCode !== $50c7aac9316f2948$var$END_OF_TEXT_CLASS && classCode !== $50c7aac9316f2948$var$DELETED_GLYPH_CLASS) {
+          processEntry(glyph, entry, index);
+          shouldAdvance = !(entry.flags & $50c7aac9316f2948$var$DONT_ADVANCE);
+        }
+        currentState = entry.newState;
+        if (shouldAdvance) index += dir;
+      }
+      return glyphs;
+    }
+    /**
+    * Performs a depth-first traversal of the glyph strings
+    * represented by the state machine.
+    */
+    traverse(opts, state = 0, visited = /* @__PURE__ */ new Set()) {
+      if (visited.has(state)) return;
+      visited.add(state);
+      let { nClasses, stateArray, entryTable } = this.stateTable;
+      let row = stateArray.getItem(state);
+      for (let classCode = 4; classCode < nClasses; classCode++) {
+        let entryIndex = row[classCode];
+        let entry = entryTable.getItem(entryIndex);
+        for (let glyph of this.lookupTable.glyphsForValue(classCode)) {
+          if (opts.enter) opts.enter(glyph, entry);
+          if (entry.newState !== 0) this.traverse(opts, entry.newState, visited);
+          if (opts.exit) opts.exit(glyph, entry);
+        }
+      }
+    }
+    constructor(stateTable) {
+      this.stateTable = stateTable;
+      this.lookupTable = new (0, $ff5ce077dae0f144$export$2e2bcd8739ae039)(stateTable.classTable);
+    }
+  };
+  var $55f71433a605c87d$var$MARK_FIRST = 32768;
+  var $55f71433a605c87d$var$MARK_LAST = 8192;
+  var $55f71433a605c87d$var$VERB = 15;
+  var $55f71433a605c87d$var$SET_MARK = 32768;
+  var $55f71433a605c87d$var$SET_COMPONENT = 32768;
+  var $55f71433a605c87d$var$PERFORM_ACTION = 8192;
+  var $55f71433a605c87d$var$LAST_MASK = 2147483648;
+  var $55f71433a605c87d$var$STORE_MASK = 1073741824;
+  var $55f71433a605c87d$var$OFFSET_MASK = 1073741823;
+  var $55f71433a605c87d$var$REVERSE_DIRECTION = 4194304;
+  var $55f71433a605c87d$var$CURRENT_INSERT_BEFORE = 2048;
+  var $55f71433a605c87d$var$MARKED_INSERT_BEFORE = 1024;
+  var $55f71433a605c87d$var$CURRENT_INSERT_COUNT = 992;
+  var $55f71433a605c87d$var$MARKED_INSERT_COUNT = 31;
+  var $55f71433a605c87d$export$2e2bcd8739ae039 = class {
+    // Processes an array of glyphs and applies the specified features
+    // Features should be in the form of {featureType:{featureSetting:boolean}}
+    process(glyphs, features = {}) {
+      for (let chain of this.morx.chains) {
+        let flags = chain.defaultFlags;
+        for (let feature of chain.features) {
+          let f;
+          if (f = features[feature.featureType]) {
+            if (f[feature.featureSetting]) {
+              flags &= feature.disableFlags;
+              flags |= feature.enableFlags;
+            } else if (f[feature.featureSetting] === false) {
+              flags |= ~feature.disableFlags;
+              flags &= ~feature.enableFlags;
+            }
+          }
+        }
+        for (let subtable of chain.subtables) if (subtable.subFeatureFlags & flags) this.processSubtable(subtable, glyphs);
+      }
+      let index = glyphs.length - 1;
+      while (index >= 0) {
+        if (glyphs[index].id === 65535) glyphs.splice(index, 1);
+        index--;
+      }
+      return glyphs;
+    }
+    processSubtable(subtable, glyphs) {
+      this.subtable = subtable;
+      this.glyphs = glyphs;
+      if (this.subtable.type === 4) {
+        this.processNoncontextualSubstitutions(this.subtable, this.glyphs);
+        return;
+      }
+      this.ligatureStack = [];
+      this.markedGlyph = null;
+      this.firstGlyph = null;
+      this.lastGlyph = null;
+      this.markedIndex = null;
+      let stateMachine = this.getStateMachine(subtable);
+      let process2 = this.getProcessor();
+      let reverse = !!(this.subtable.coverage & $55f71433a605c87d$var$REVERSE_DIRECTION);
+      return stateMachine.process(this.glyphs, reverse, process2);
+    }
+    getStateMachine(subtable) {
+      return new (0, $50c7aac9316f2948$export$2e2bcd8739ae039)(subtable.table.stateTable);
+    }
+    getProcessor() {
+      switch (this.subtable.type) {
+        case 0:
+          return this.processIndicRearragement;
+        case 1:
+          return this.processContextualSubstitution;
+        case 2:
+          return this.processLigature;
+        case 4:
+          return this.processNoncontextualSubstitutions;
+        case 5:
+          return this.processGlyphInsertion;
+        default:
+          throw new Error(`Invalid morx subtable type: ${this.subtable.type}`);
+      }
+    }
+    processIndicRearragement(glyph, entry, index) {
+      if (entry.flags & $55f71433a605c87d$var$MARK_FIRST) this.firstGlyph = index;
+      if (entry.flags & $55f71433a605c87d$var$MARK_LAST) this.lastGlyph = index;
+      $55f71433a605c87d$var$reorderGlyphs(this.glyphs, entry.flags & $55f71433a605c87d$var$VERB, this.firstGlyph, this.lastGlyph);
+    }
+    processContextualSubstitution(glyph, entry, index) {
+      let subsitutions = this.subtable.table.substitutionTable.items;
+      if (entry.markIndex !== 65535) {
+        let lookup = subsitutions.getItem(entry.markIndex);
+        let lookupTable = new (0, $ff5ce077dae0f144$export$2e2bcd8739ae039)(lookup);
+        glyph = this.glyphs[this.markedGlyph];
+        var gid = lookupTable.lookup(glyph.id);
+        if (gid) this.glyphs[this.markedGlyph] = this.font.getGlyph(gid, glyph.codePoints);
+      }
+      if (entry.currentIndex !== 65535) {
+        let lookup = subsitutions.getItem(entry.currentIndex);
+        let lookupTable = new (0, $ff5ce077dae0f144$export$2e2bcd8739ae039)(lookup);
+        glyph = this.glyphs[index];
+        var gid = lookupTable.lookup(glyph.id);
+        if (gid) this.glyphs[index] = this.font.getGlyph(gid, glyph.codePoints);
+      }
+      if (entry.flags & $55f71433a605c87d$var$SET_MARK) this.markedGlyph = index;
+    }
+    processLigature(glyph, entry, index) {
+      if (entry.flags & $55f71433a605c87d$var$SET_COMPONENT) this.ligatureStack.push(index);
+      if (entry.flags & $55f71433a605c87d$var$PERFORM_ACTION) {
+        let actions = this.subtable.table.ligatureActions;
+        let components = this.subtable.table.components;
+        let ligatureList = this.subtable.table.ligatureList;
+        let actionIndex = entry.action;
+        let last = false;
+        let ligatureIndex = 0;
+        let codePoints = [];
+        let ligatureGlyphs = [];
+        while (!last) {
+          let componentGlyph = this.ligatureStack.pop();
+          codePoints.unshift(...this.glyphs[componentGlyph].codePoints);
+          let action = actions.getItem(actionIndex++);
+          last = !!(action & $55f71433a605c87d$var$LAST_MASK);
+          let store = !!(action & $55f71433a605c87d$var$STORE_MASK);
+          let offset = (action & $55f71433a605c87d$var$OFFSET_MASK) << 2 >> 2;
+          offset += this.glyphs[componentGlyph].id;
+          let component = components.getItem(offset);
+          ligatureIndex += component;
+          if (last || store) {
+            let ligatureEntry = ligatureList.getItem(ligatureIndex);
+            this.glyphs[componentGlyph] = this.font.getGlyph(ligatureEntry, codePoints);
+            ligatureGlyphs.push(componentGlyph);
+            ligatureIndex = 0;
+            codePoints = [];
+          } else this.glyphs[componentGlyph] = this.font.getGlyph(65535);
+        }
+        this.ligatureStack.push(...ligatureGlyphs);
+      }
+    }
+    processNoncontextualSubstitutions(subtable, glyphs, index) {
+      let lookupTable = new (0, $ff5ce077dae0f144$export$2e2bcd8739ae039)(subtable.table.lookupTable);
+      for (index = 0; index < glyphs.length; index++) {
+        let glyph = glyphs[index];
+        if (glyph.id !== 65535) {
+          let gid = lookupTable.lookup(glyph.id);
+          if (gid) glyphs[index] = this.font.getGlyph(gid, glyph.codePoints);
+        }
+      }
+    }
+    _insertGlyphs(glyphIndex, insertionActionIndex, count, isBefore) {
+      let insertions = [];
+      while (count--) {
+        let gid = this.subtable.table.insertionActions.getItem(insertionActionIndex++);
+        insertions.push(this.font.getGlyph(gid));
+      }
+      if (!isBefore) glyphIndex++;
+      this.glyphs.splice(glyphIndex, 0, ...insertions);
+    }
+    processGlyphInsertion(glyph, entry, index) {
+      if (entry.flags & $55f71433a605c87d$var$SET_MARK) this.markedIndex = index;
+      if (entry.markedInsertIndex !== 65535) {
+        let count = (entry.flags & $55f71433a605c87d$var$MARKED_INSERT_COUNT) >>> 5;
+        let isBefore = !!(entry.flags & $55f71433a605c87d$var$MARKED_INSERT_BEFORE);
+        this._insertGlyphs(this.markedIndex, entry.markedInsertIndex, count, isBefore);
+      }
+      if (entry.currentInsertIndex !== 65535) {
+        let count = (entry.flags & $55f71433a605c87d$var$CURRENT_INSERT_COUNT) >>> 5;
+        let isBefore = !!(entry.flags & $55f71433a605c87d$var$CURRENT_INSERT_BEFORE);
+        this._insertGlyphs(index, entry.currentInsertIndex, count, isBefore);
+      }
+    }
+    getSupportedFeatures() {
+      let features = [];
+      for (let chain of this.morx.chains) for (let feature of chain.features) features.push([
+        feature.featureType,
+        feature.featureSetting
+      ]);
+      return features;
+    }
+    generateInputs(gid) {
+      if (!this.inputCache) this.generateInputCache();
+      return this.inputCache[gid] || [];
+    }
+    generateInputCache() {
+      this.inputCache = {};
+      for (let chain of this.morx.chains) {
+        let flags = chain.defaultFlags;
+        for (let subtable of chain.subtables) if (subtable.subFeatureFlags & flags) this.generateInputsForSubtable(subtable);
+      }
+    }
+    generateInputsForSubtable(subtable) {
+      if (subtable.type !== 2) return;
+      let reverse = !!(subtable.coverage & $55f71433a605c87d$var$REVERSE_DIRECTION);
+      if (reverse) throw new Error("Reverse subtable, not supported.");
+      this.subtable = subtable;
+      this.ligatureStack = [];
+      let stateMachine = this.getStateMachine(subtable);
+      let process2 = this.getProcessor();
+      let input = [];
+      let stack = [];
+      this.glyphs = [];
+      stateMachine.traverse({
+        enter: (glyph, entry) => {
+          let glyphs = this.glyphs;
+          stack.push({
+            glyphs: glyphs.slice(),
+            ligatureStack: this.ligatureStack.slice()
+          });
+          let g = this.font.getGlyph(glyph);
+          input.push(g);
+          glyphs.push(input[input.length - 1]);
+          process2(glyphs[glyphs.length - 1], entry, glyphs.length - 1);
+          let count = 0;
+          let found = 0;
+          for (let i2 = 0; i2 < glyphs.length && count <= 1; i2++) if (glyphs[i2].id !== 65535) {
+            count++;
+            found = glyphs[i2].id;
+          }
+          if (count === 1) {
+            let result = input.map((g2) => g2.id);
+            let cache = this.inputCache[found];
+            if (cache) cache.push(result);
+            else this.inputCache[found] = [
+              result
+            ];
+          }
+        },
+        exit: () => {
+          ({ glyphs: this.glyphs, ligatureStack: this.ligatureStack } = stack.pop());
+          input.pop();
+        }
+      });
+    }
+    constructor(font) {
+      this.processIndicRearragement = this.processIndicRearragement.bind(this);
+      this.processContextualSubstitution = this.processContextualSubstitution.bind(this);
+      this.processLigature = this.processLigature.bind(this);
+      this.processNoncontextualSubstitutions = this.processNoncontextualSubstitutions.bind(this);
+      this.processGlyphInsertion = this.processGlyphInsertion.bind(this);
+      this.font = font;
+      this.morx = font.morx;
+      this.inputCache = null;
+    }
+  };
+  (0, __decorate)([
+    (0, $e71565f2ce09cb6b$export$69a3209f1a06c04d)
+  ], $55f71433a605c87d$export$2e2bcd8739ae039.prototype, "getStateMachine", null);
+  function $55f71433a605c87d$var$swap(glyphs, rangeA, rangeB, reverseA = false, reverseB = false) {
+    let end = glyphs.splice(rangeB[0] - (rangeB[1] - 1), rangeB[1]);
+    if (reverseB) end.reverse();
+    let start = glyphs.splice(rangeA[0], rangeA[1], ...end);
+    if (reverseA) start.reverse();
+    glyphs.splice(rangeB[0] - (rangeA[1] - 1), 0, ...start);
+    return glyphs;
+  }
+  function $55f71433a605c87d$var$reorderGlyphs(glyphs, verb, firstGlyph, lastGlyph) {
+    let length = lastGlyph - firstGlyph + 1;
+    switch (verb) {
+      case 0:
+        return glyphs;
+      case 1:
+        return $55f71433a605c87d$var$swap(glyphs, [
+          firstGlyph,
+          1
+        ], [
+          lastGlyph,
+          0
+        ]);
+      case 2:
+        return $55f71433a605c87d$var$swap(glyphs, [
+          firstGlyph,
+          0
+        ], [
+          lastGlyph,
+          1
+        ]);
+      case 3:
+        return $55f71433a605c87d$var$swap(glyphs, [
+          firstGlyph,
+          1
+        ], [
+          lastGlyph,
+          1
+        ]);
+      case 4:
+        return $55f71433a605c87d$var$swap(glyphs, [
+          firstGlyph,
+          2
+        ], [
+          lastGlyph,
+          0
+        ]);
+      case 5:
+        return $55f71433a605c87d$var$swap(glyphs, [
+          firstGlyph,
+          2
+        ], [
+          lastGlyph,
+          0
+        ], true, false);
+      case 6:
+        return $55f71433a605c87d$var$swap(glyphs, [
+          firstGlyph,
+          0
+        ], [
+          lastGlyph,
+          2
+        ]);
+      case 7:
+        return $55f71433a605c87d$var$swap(glyphs, [
+          firstGlyph,
+          0
+        ], [
+          lastGlyph,
+          2
+        ], false, true);
+      case 8:
+        return $55f71433a605c87d$var$swap(glyphs, [
+          firstGlyph,
+          1
+        ], [
+          lastGlyph,
+          2
+        ]);
+      case 9:
+        return $55f71433a605c87d$var$swap(glyphs, [
+          firstGlyph,
+          1
+        ], [
+          lastGlyph,
+          2
+        ], false, true);
+      case 10:
+        return $55f71433a605c87d$var$swap(glyphs, [
+          firstGlyph,
+          2
+        ], [
+          lastGlyph,
+          1
+        ]);
+      case 11:
+        return $55f71433a605c87d$var$swap(glyphs, [
+          firstGlyph,
+          2
+        ], [
+          lastGlyph,
+          1
+        ], true, false);
+      case 12:
+        return $55f71433a605c87d$var$swap(glyphs, [
+          firstGlyph,
+          2
+        ], [
+          lastGlyph,
+          2
+        ]);
+      case 13:
+        return $55f71433a605c87d$var$swap(glyphs, [
+          firstGlyph,
+          2
+        ], [
+          lastGlyph,
+          2
+        ], true, false);
+      case 14:
+        return $55f71433a605c87d$var$swap(glyphs, [
+          firstGlyph,
+          2
+        ], [
+          lastGlyph,
+          2
+        ], false, true);
+      case 15:
+        return $55f71433a605c87d$var$swap(glyphs, [
+          firstGlyph,
+          2
+        ], [
+          lastGlyph,
+          2
+        ], true, true);
+      default:
+        throw new Error(`Unknown verb: ${verb}`);
+    }
+  }
+  var $ba6dd74203be8728$export$2e2bcd8739ae039 = class {
+    substitute(glyphRun) {
+      if (glyphRun.direction === "rtl") glyphRun.glyphs.reverse();
+      this.morxProcessor.process(glyphRun.glyphs, $3b6302b64eccc32c$export$b813f7d2a1677c16(glyphRun.features));
+    }
+    getAvailableFeatures(script, language) {
+      return $3b6302b64eccc32c$export$bd6df347a4f391c4(this.morxProcessor.getSupportedFeatures());
+    }
+    stringsForGlyph(gid) {
+      let glyphStrings = this.morxProcessor.generateInputs(gid);
+      let result = /* @__PURE__ */ new Set();
+      for (let glyphs of glyphStrings) this._addStrings(glyphs, 0, result, "");
+      return result;
+    }
+    _addStrings(glyphs, index, strings, string) {
+      let codePoints = this.font._cmapProcessor.codePointsForGlyph(glyphs[index]);
+      for (let codePoint of codePoints) {
+        let s = string + String.fromCodePoint(codePoint);
+        if (index < glyphs.length - 1) this._addStrings(glyphs, index + 1, strings, s);
+        else strings.add(s);
+      }
+    }
+    constructor(font) {
+      this.font = font;
+      this.morxProcessor = new (0, $55f71433a605c87d$export$2e2bcd8739ae039)(font);
+      this.fallbackPosition = false;
+    }
+  };
+  var $94d7a73bd2edfc9a$export$2e2bcd8739ae039 = class {
+    /**
+    * Adds the given features to the last stage.
+    * Ignores features that have already been applied.
+    */
+    _addFeatures(features, global) {
+      let stageIndex = this.stages.length - 1;
+      let stage = this.stages[stageIndex];
+      for (let feature of features) if (this.allFeatures[feature] == null) {
+        stage.push(feature);
+        this.allFeatures[feature] = stageIndex;
+        if (global) this.globalFeatures[feature] = true;
+      }
+    }
+    /**
+    * Add features to the last stage
+    */
+    add(arg, global = true) {
+      if (this.stages.length === 0) this.stages.push([]);
+      if (typeof arg === "string") arg = [
+        arg
+      ];
+      if (Array.isArray(arg)) this._addFeatures(arg, global);
+      else if (typeof arg === "object") {
+        this._addFeatures(arg.global || [], true);
+        this._addFeatures(arg.local || [], false);
+      } else throw new Error("Unsupported argument to ShapingPlan#add");
+    }
+    /**
+    * Add a new stage
+    */
+    addStage(arg, global) {
+      if (typeof arg === "function") this.stages.push(arg, []);
+      else {
+        this.stages.push([]);
+        this.add(arg, global);
+      }
+    }
+    setFeatureOverrides(features) {
+      if (Array.isArray(features)) this.add(features);
+      else if (typeof features === "object") for (let tag in features) {
+        if (features[tag]) this.add(tag);
+        else if (this.allFeatures[tag] != null) {
+          let stage = this.stages[this.allFeatures[tag]];
+          stage.splice(stage.indexOf(tag), 1);
+          delete this.allFeatures[tag];
+          delete this.globalFeatures[tag];
+        }
+      }
+    }
+    /**
+    * Assigns the global features to the given glyphs
+    */
+    assignGlobalFeatures(glyphs) {
+      for (let glyph of glyphs) for (let feature in this.globalFeatures) glyph.features[feature] = true;
+    }
+    /**
+    * Executes the planned stages using the given OTProcessor
+    */
+    process(processor, glyphs, positions) {
+      for (let stage of this.stages) {
+        if (typeof stage === "function") {
+          if (!positions) stage(this.font, glyphs, this);
+        } else if (stage.length > 0) processor.applyFeatures(stage, glyphs, positions);
+      }
+    }
+    constructor(font, script, direction) {
+      this.font = font;
+      this.script = script;
+      this.direction = direction;
+      this.stages = [];
+      this.globalFeatures = {};
+      this.allFeatures = {};
+    }
+  };
+  var $649970d87335b30f$var$VARIATION_FEATURES = [
+    "rvrn"
+  ];
+  var $649970d87335b30f$var$COMMON_FEATURES = [
+    "ccmp",
+    "locl",
+    "rlig",
+    "mark",
+    "mkmk"
+  ];
+  var $649970d87335b30f$var$FRACTIONAL_FEATURES = [
+    "frac",
+    "numr",
+    "dnom"
+  ];
+  var $649970d87335b30f$var$HORIZONTAL_FEATURES = [
+    "calt",
+    "clig",
+    "liga",
+    "rclt",
+    "curs",
+    "kern"
+  ];
+  var $649970d87335b30f$var$DIRECTIONAL_FEATURES = {
+    ltr: [
+      "ltra",
+      "ltrm"
+    ],
+    rtl: [
+      "rtla",
+      "rtlm"
+    ]
+  };
+  var $649970d87335b30f$export$2e2bcd8739ae039 = class {
+    static plan(plan, glyphs, features) {
+      this.planPreprocessing(plan);
+      this.planFeatures(plan);
+      this.planPostprocessing(plan, features);
+      plan.assignGlobalFeatures(glyphs);
+      this.assignFeatures(plan, glyphs);
+    }
+    static planPreprocessing(plan) {
+      plan.add({
+        global: [
+          ...$649970d87335b30f$var$VARIATION_FEATURES,
+          ...$649970d87335b30f$var$DIRECTIONAL_FEATURES[plan.direction]
+        ],
+        local: $649970d87335b30f$var$FRACTIONAL_FEATURES
+      });
+    }
+    static planFeatures(plan) {
+    }
+    static planPostprocessing(plan, userFeatures) {
+      plan.add([
+        ...$649970d87335b30f$var$COMMON_FEATURES,
+        ...$649970d87335b30f$var$HORIZONTAL_FEATURES
+      ]);
+      plan.setFeatureOverrides(userFeatures);
+    }
+    static assignFeatures(plan, glyphs) {
+      for (let i2 = 0; i2 < glyphs.length; i2++) {
+        let glyph = glyphs[i2];
+        if (glyph.codePoints[0] === 8260) {
+          let start = i2;
+          let end = i2 + 1;
+          while (start > 0 && (0, $747425b437e121da$export$727d9dbc4fbb948f)(glyphs[start - 1].codePoints[0])) {
+            glyphs[start - 1].features.numr = true;
+            glyphs[start - 1].features.frac = true;
+            start--;
+          }
+          while (end < glyphs.length && (0, $747425b437e121da$export$727d9dbc4fbb948f)(glyphs[end].codePoints[0])) {
+            glyphs[end].features.dnom = true;
+            glyphs[end].features.frac = true;
+            end++;
+          }
+          glyph.features.frac = true;
+          i2 = end - 1;
+        }
+      }
+    }
+  };
+  (0, _define_property)($649970d87335b30f$export$2e2bcd8739ae039, "zeroMarkWidths", "AFTER_GPOS");
+  var $764eb544bbe1ccf0$var$trie = new (0, import_unicode_trie2.default)((0, $12727730ddfc8bfe$export$94fdf11bafc8de6b)("APABAAAAAAAAOAAAAf0BAv7tmi1MxDAUx7vtvjhAgcDgkEgEAnmXEBIMCYaEcygEiqBQ4FAkCE4ikUgMiiBJSAgSiUQSDMn9L9eSl6bddddug9t7yS/trevre+3r27pcNxZiG+yCfdCVv/9LeQxOwRm4AJegD27ALbgD9+ABPJF+z+BN/h7yDj5k/VOWX6SdmU5+wLWknggxDxaS8u0qiiX4uiz9XamQ3wzDMAzDMAzDMAzDVI/h959V/v7BMAzDMAzDMLlyNTNiMSdewVxbiA44B4/guz1qW58VYlMI0WsJ0W+N6kXw0spvPtdwhtkwnGM6uLaV4Xyzg3v3PM9DPfQ/sOg4xPWjipy31P8LTqbU304c/cLCUmWJLNB2Uz2U1KTeRKNmKHVMfbJC+/0loTZRH/W5cvEvBJPMbREkWt3FD1NcqXZBSpuE2Ad0PBehPtNrPtIEdYP+hiRt/V1jIiE69X4NT/uVZI3PUHE9bm5M7ePGdZWy951v7Nn6j8v1WWKP3mt6ttnsigx6VN7Vc0VomSSGqW2mGNP1muZPl7LfjNUaKNFtDGVf2fvE9O7VlBS5j333c5p/eeoOqcs1R/hIqDWLJ7TTlksirVT1SI7l8k4Yp+g3jafGcrU1RM6l9th80XOpnlN97bDNY4i4s61B0Si/ipa0uHMl6zqEjlFfCZm/TM8KmzQDjmuTAQ=="));
+  var $764eb544bbe1ccf0$var$FEATURES = [
+    "isol",
+    "fina",
+    "fin2",
+    "fin3",
+    "medi",
+    "med2",
+    "init"
+  ];
+  var $764eb544bbe1ccf0$var$ShapingClasses = {
+    Non_Joining: 0,
+    Left_Joining: 1,
+    Right_Joining: 2,
+    Dual_Joining: 3,
+    Join_Causing: 3,
+    ALAPH: 4,
+    "DALATH RISH": 5,
+    Transparent: 6
+  };
+  var $764eb544bbe1ccf0$var$ISOL = "isol";
+  var $764eb544bbe1ccf0$var$FINA = "fina";
+  var $764eb544bbe1ccf0$var$FIN2 = "fin2";
+  var $764eb544bbe1ccf0$var$FIN3 = "fin3";
+  var $764eb544bbe1ccf0$var$MEDI = "medi";
+  var $764eb544bbe1ccf0$var$MED2 = "med2";
+  var $764eb544bbe1ccf0$var$INIT = "init";
+  var $764eb544bbe1ccf0$var$NONE = null;
+  var $764eb544bbe1ccf0$var$STATE_TABLE = [
+    //   Non_Joining,        Left_Joining,       Right_Joining,     Dual_Joining,           ALAPH,            DALATH RISH
+    // State 0: prev was U,  not willing to join.
+    [
+      [
+        $764eb544bbe1ccf0$var$NONE,
+        $764eb544bbe1ccf0$var$NONE,
+        0
+      ],
+      [
+        $764eb544bbe1ccf0$var$NONE,
+        $764eb544bbe1ccf0$var$ISOL,
+        2
+      ],
+      [
+        $764eb544bbe1ccf0$var$NONE,
+        $764eb544bbe1ccf0$var$ISOL,
+        1
+      ],
+      [
+        $764eb544bbe1ccf0$var$NONE,
+        $764eb544bbe1ccf0$var$ISOL,
+        2
+      ],
+      [
+        $764eb544bbe1ccf0$var$NONE,
+        $764eb544bbe1ccf0$var$ISOL,
+        1
+      ],
+      [
+        $764eb544bbe1ccf0$var$NONE,
+        $764eb544bbe1ccf0$var$ISOL,
+        6
+      ]
+    ],
+    // State 1: prev was R or ISOL/ALAPH,  not willing to join.
+    [
+      [
+        $764eb544bbe1ccf0$var$NONE,
+        $764eb544bbe1ccf0$var$NONE,
+        0
+      ],
+      [
+        $764eb544bbe1ccf0$var$NONE,
+        $764eb544bbe1ccf0$var$ISOL,
+        2
+      ],
+      [
+        $764eb544bbe1ccf0$var$NONE,
+        $764eb544bbe1ccf0$var$ISOL,
+        1
+      ],
+      [
+        $764eb544bbe1ccf0$var$NONE,
+        $764eb544bbe1ccf0$var$ISOL,
+        2
+      ],
+      [
+        $764eb544bbe1ccf0$var$NONE,
+        $764eb544bbe1ccf0$var$FIN2,
+        5
+      ],
+      [
+        $764eb544bbe1ccf0$var$NONE,
+        $764eb544bbe1ccf0$var$ISOL,
+        6
+      ]
+    ],
+    // State 2: prev was D/L in ISOL form,  willing to join.
+    [
+      [
+        $764eb544bbe1ccf0$var$NONE,
+        $764eb544bbe1ccf0$var$NONE,
+        0
+      ],
+      [
+        $764eb544bbe1ccf0$var$NONE,
+        $764eb544bbe1ccf0$var$ISOL,
+        2
+      ],
+      [
+        $764eb544bbe1ccf0$var$INIT,
+        $764eb544bbe1ccf0$var$FINA,
+        1
+      ],
+      [
+        $764eb544bbe1ccf0$var$INIT,
+        $764eb544bbe1ccf0$var$FINA,
+        3
+      ],
+      [
+        $764eb544bbe1ccf0$var$INIT,
+        $764eb544bbe1ccf0$var$FINA,
+        4
+      ],
+      [
+        $764eb544bbe1ccf0$var$INIT,
+        $764eb544bbe1ccf0$var$FINA,
+        6
+      ]
+    ],
+    // State 3: prev was D in FINA form,  willing to join.
+    [
+      [
+        $764eb544bbe1ccf0$var$NONE,
+        $764eb544bbe1ccf0$var$NONE,
+        0
+      ],
+      [
+        $764eb544bbe1ccf0$var$NONE,
+        $764eb544bbe1ccf0$var$ISOL,
+        2
+      ],
+      [
+        $764eb544bbe1ccf0$var$MEDI,
+        $764eb544bbe1ccf0$var$FINA,
+        1
+      ],
+      [
+        $764eb544bbe1ccf0$var$MEDI,
+        $764eb544bbe1ccf0$var$FINA,
+        3
+      ],
+      [
+        $764eb544bbe1ccf0$var$MEDI,
+        $764eb544bbe1ccf0$var$FINA,
+        4
+      ],
+      [
+        $764eb544bbe1ccf0$var$MEDI,
+        $764eb544bbe1ccf0$var$FINA,
+        6
+      ]
+    ],
+    // State 4: prev was FINA ALAPH,  not willing to join.
+    [
+      [
+        $764eb544bbe1ccf0$var$NONE,
+        $764eb544bbe1ccf0$var$NONE,
+        0
+      ],
+      [
+        $764eb544bbe1ccf0$var$NONE,
+        $764eb544bbe1ccf0$var$ISOL,
+        2
+      ],
+      [
+        $764eb544bbe1ccf0$var$MED2,
+        $764eb544bbe1ccf0$var$ISOL,
+        1
+      ],
+      [
+        $764eb544bbe1ccf0$var$MED2,
+        $764eb544bbe1ccf0$var$ISOL,
+        2
+      ],
+      [
+        $764eb544bbe1ccf0$var$MED2,
+        $764eb544bbe1ccf0$var$FIN2,
+        5
+      ],
+      [
+        $764eb544bbe1ccf0$var$MED2,
+        $764eb544bbe1ccf0$var$ISOL,
+        6
+      ]
+    ],
+    // State 5: prev was FIN2/FIN3 ALAPH,  not willing to join.
+    [
+      [
+        $764eb544bbe1ccf0$var$NONE,
+        $764eb544bbe1ccf0$var$NONE,
+        0
+      ],
+      [
+        $764eb544bbe1ccf0$var$NONE,
+        $764eb544bbe1ccf0$var$ISOL,
+        2
+      ],
+      [
+        $764eb544bbe1ccf0$var$ISOL,
+        $764eb544bbe1ccf0$var$ISOL,
+        1
+      ],
+      [
+        $764eb544bbe1ccf0$var$ISOL,
+        $764eb544bbe1ccf0$var$ISOL,
+        2
+      ],
+      [
+        $764eb544bbe1ccf0$var$ISOL,
+        $764eb544bbe1ccf0$var$FIN2,
+        5
+      ],
+      [
+        $764eb544bbe1ccf0$var$ISOL,
+        $764eb544bbe1ccf0$var$ISOL,
+        6
+      ]
+    ],
+    // State 6: prev was DALATH/RISH,  not willing to join.
+    [
+      [
+        $764eb544bbe1ccf0$var$NONE,
+        $764eb544bbe1ccf0$var$NONE,
+        0
+      ],
+      [
+        $764eb544bbe1ccf0$var$NONE,
+        $764eb544bbe1ccf0$var$ISOL,
+        2
+      ],
+      [
+        $764eb544bbe1ccf0$var$NONE,
+        $764eb544bbe1ccf0$var$ISOL,
+        1
+      ],
+      [
+        $764eb544bbe1ccf0$var$NONE,
+        $764eb544bbe1ccf0$var$ISOL,
+        2
+      ],
+      [
+        $764eb544bbe1ccf0$var$NONE,
+        $764eb544bbe1ccf0$var$FIN3,
+        5
+      ],
+      [
+        $764eb544bbe1ccf0$var$NONE,
+        $764eb544bbe1ccf0$var$ISOL,
+        6
+      ]
+    ]
+  ];
+  var $764eb544bbe1ccf0$export$2e2bcd8739ae039 = class extends (0, $649970d87335b30f$export$2e2bcd8739ae039) {
+    static planFeatures(plan) {
+      plan.add([
+        "ccmp",
+        "locl"
+      ]);
+      for (let i2 = 0; i2 < $764eb544bbe1ccf0$var$FEATURES.length; i2++) {
+        let feature = $764eb544bbe1ccf0$var$FEATURES[i2];
+        plan.addStage(feature, false);
+      }
+      plan.addStage("mset");
+    }
+    static assignFeatures(plan, glyphs) {
+      super.assignFeatures(plan, glyphs);
+      let prev = -1;
+      let state = 0;
+      let actions = [];
+      for (let i2 = 0; i2 < glyphs.length; i2++) {
+        let curAction, prevAction;
+        var glyph = glyphs[i2];
+        let type = $764eb544bbe1ccf0$var$getShapingClass(glyph.codePoints[0]);
+        if (type === $764eb544bbe1ccf0$var$ShapingClasses.Transparent) {
+          actions[i2] = $764eb544bbe1ccf0$var$NONE;
+          continue;
+        }
+        [prevAction, curAction, state] = $764eb544bbe1ccf0$var$STATE_TABLE[state][type];
+        if (prevAction !== $764eb544bbe1ccf0$var$NONE && prev !== -1) actions[prev] = prevAction;
+        actions[i2] = curAction;
+        prev = i2;
+      }
+      for (let index = 0; index < glyphs.length; index++) {
+        let feature;
+        var glyph = glyphs[index];
+        if (feature = actions[index]) glyph.features[feature] = true;
+      }
+    }
+  };
+  function $764eb544bbe1ccf0$var$getShapingClass(codePoint) {
+    let res = $764eb544bbe1ccf0$var$trie.get(codePoint);
+    if (res) return res - 1;
+    let category = (0, $747425b437e121da$export$410364bbb673ddbc)(codePoint);
+    if (category === "Mn" || category === "Me" || category === "Cf") return $764eb544bbe1ccf0$var$ShapingClasses.Transparent;
+    return $764eb544bbe1ccf0$var$ShapingClasses.Non_Joining;
+  }
+  var $85d408632270248b$export$2e2bcd8739ae039 = class {
+    reset(options = {}, index = 0) {
+      this.options = options;
+      this.flags = options.flags || {};
+      this.markAttachmentType = options.markAttachmentType || 0;
+      this.index = index;
+    }
+    get cur() {
+      return this.glyphs[this.index] || null;
+    }
+    shouldIgnore(glyph) {
+      return this.flags.ignoreMarks && glyph.isMark || this.flags.ignoreBaseGlyphs && glyph.isBase || this.flags.ignoreLigatures && glyph.isLigature || this.markAttachmentType && glyph.isMark && glyph.markAttachmentType !== this.markAttachmentType;
+    }
+    move(dir) {
+      this.index += dir;
+      while (0 <= this.index && this.index < this.glyphs.length && this.shouldIgnore(this.glyphs[this.index])) this.index += dir;
+      if (0 > this.index || this.index >= this.glyphs.length) return null;
+      return this.glyphs[this.index];
+    }
+    next() {
+      return this.move(1);
+    }
+    prev() {
+      return this.move(-1);
+    }
+    peek(count = 1) {
+      let idx = this.index;
+      let res = this.increment(count);
+      this.index = idx;
+      return res;
+    }
+    peekIndex(count = 1) {
+      let idx = this.index;
+      this.increment(count);
+      let res = this.index;
+      this.index = idx;
+      return res;
+    }
+    increment(count = 1) {
+      let dir = count < 0 ? -1 : 1;
+      count = Math.abs(count);
+      while (count--) this.move(dir);
+      return this.glyphs[this.index];
+    }
+    constructor(glyphs, options) {
+      this.glyphs = glyphs;
+      this.reset(options);
+    }
+  };
+  var $a83b9c36aaa94fd3$var$DEFAULT_SCRIPTS = [
+    "DFLT",
+    "dflt",
+    "latn"
+  ];
+  var $a83b9c36aaa94fd3$export$2e2bcd8739ae039 = class {
+    findScript(script) {
+      if (this.table.scriptList == null) return null;
+      if (!Array.isArray(script)) script = [
+        script
+      ];
+      for (let s of script) for (let entry of this.table.scriptList) {
+        if (entry.tag === s) return entry;
+      }
+      return null;
+    }
+    selectScript(script, language, direction) {
+      let changed = false;
+      let entry;
+      if (!this.script || script !== this.scriptTag) {
+        entry = this.findScript(script);
+        if (!entry) entry = this.findScript($a83b9c36aaa94fd3$var$DEFAULT_SCRIPTS);
+        if (!entry) return this.scriptTag;
+        this.scriptTag = entry.tag;
+        this.script = entry.script;
+        this.language = null;
+        this.languageTag = null;
+        changed = true;
+      }
+      if (!direction || direction !== this.direction) this.direction = direction || $130d1a642ebcd2b7$export$9fddb9d0dd7d8a54(script);
+      if (language && language.length < 4) language += " ".repeat(4 - language.length);
+      if (!language || language !== this.languageTag) {
+        this.language = null;
+        for (let lang of this.script.langSysRecords) if (lang.tag === language) {
+          this.language = lang.langSys;
+          this.languageTag = lang.tag;
+          break;
+        }
+        if (!this.language) {
+          this.language = this.script.defaultLangSys;
+          this.languageTag = null;
+        }
+        changed = true;
+      }
+      if (changed) {
+        this.features = {};
+        if (this.language) for (let featureIndex of this.language.featureIndexes) {
+          let record2 = this.table.featureList[featureIndex];
+          let substituteFeature = this.substituteFeatureForVariations(featureIndex);
+          this.features[record2.tag] = substituteFeature || record2.feature;
+        }
+      }
+      return this.scriptTag;
+    }
+    lookupsForFeatures(userFeatures = [], exclude) {
+      let lookups = [];
+      for (let tag of userFeatures) {
+        let feature = this.features[tag];
+        if (!feature) continue;
+        for (let lookupIndex of feature.lookupListIndexes) {
+          if (exclude && exclude.indexOf(lookupIndex) !== -1) continue;
+          lookups.push({
+            feature: tag,
+            index: lookupIndex,
+            lookup: this.table.lookupList.get(lookupIndex)
+          });
+        }
+      }
+      lookups.sort((a, b) => a.index - b.index);
+      return lookups;
+    }
+    substituteFeatureForVariations(featureIndex) {
+      if (this.variationsIndex === -1) return null;
+      let record2 = this.table.featureVariations.featureVariationRecords[this.variationsIndex];
+      let substitutions = record2.featureTableSubstitution.substitutions;
+      for (let substitution of substitutions) {
+        if (substitution.featureIndex === featureIndex) return substitution.alternateFeatureTable;
+      }
+      return null;
+    }
+    findVariationsIndex(coords) {
+      let variations = this.table.featureVariations;
+      if (!variations) return -1;
+      let records = variations.featureVariationRecords;
+      for (let i2 = 0; i2 < records.length; i2++) {
+        let conditions = records[i2].conditionSet.conditionTable;
+        if (this.variationConditionsMatch(conditions, coords)) return i2;
+      }
+      return -1;
+    }
+    variationConditionsMatch(conditions, coords) {
+      return conditions.every((condition) => {
+        let coord = condition.axisIndex < coords.length ? coords[condition.axisIndex] : 0;
+        return condition.filterRangeMinValue <= coord && coord <= condition.filterRangeMaxValue;
+      });
+    }
+    applyFeatures(userFeatures, glyphs, advances) {
+      let lookups = this.lookupsForFeatures(userFeatures);
+      this.applyLookups(lookups, glyphs, advances);
+    }
+    applyLookups(lookups, glyphs, positions) {
+      this.glyphs = glyphs;
+      this.positions = positions;
+      this.glyphIterator = new (0, $85d408632270248b$export$2e2bcd8739ae039)(glyphs);
+      for (let { feature, lookup } of lookups) {
+        this.currentFeature = feature;
+        this.glyphIterator.reset(lookup.flags);
+        while (this.glyphIterator.index < glyphs.length) {
+          if (!(feature in this.glyphIterator.cur.features)) {
+            this.glyphIterator.next();
+            continue;
+          }
+          for (let table of lookup.subTables) {
+            let res = this.applyLookup(lookup.lookupType, table);
+            if (res) break;
+          }
+          this.glyphIterator.next();
+        }
+      }
+    }
+    applyLookup(lookup, table) {
+      throw new Error("applyLookup must be implemented by subclasses");
+    }
+    applyLookupList(lookupRecords) {
+      let options = this.glyphIterator.options;
+      let glyphIndex = this.glyphIterator.index;
+      for (let lookupRecord of lookupRecords) {
+        this.glyphIterator.reset(options, glyphIndex);
+        this.glyphIterator.increment(lookupRecord.sequenceIndex);
+        let lookup = this.table.lookupList.get(lookupRecord.lookupListIndex);
+        this.glyphIterator.reset(lookup.flags, this.glyphIterator.index);
+        for (let table of lookup.subTables) {
+          if (this.applyLookup(lookup.lookupType, table)) break;
+        }
+      }
+      this.glyphIterator.reset(options, glyphIndex);
+      return true;
+    }
+    coverageIndex(coverage, glyph) {
+      if (glyph == null) glyph = this.glyphIterator.cur.id;
+      switch (coverage.version) {
+        case 1:
+          return coverage.glyphs.indexOf(glyph);
+        case 2:
+          for (let range of coverage.rangeRecords) {
+            if (range.start <= glyph && glyph <= range.end) return range.startCoverageIndex + glyph - range.start;
+          }
+          break;
+      }
+      return -1;
+    }
+    match(sequenceIndex, sequence, fn, matched) {
+      let pos = this.glyphIterator.index;
+      let glyph = this.glyphIterator.increment(sequenceIndex);
+      let idx = 0;
+      while (idx < sequence.length && glyph && fn(sequence[idx], glyph)) {
+        if (matched) matched.push(this.glyphIterator.index);
+        idx++;
+        glyph = this.glyphIterator.next();
+      }
+      this.glyphIterator.index = pos;
+      if (idx < sequence.length) return false;
+      return matched || true;
+    }
+    sequenceMatches(sequenceIndex, sequence) {
+      return this.match(sequenceIndex, sequence, (component, glyph) => component === glyph.id);
+    }
+    sequenceMatchIndices(sequenceIndex, sequence) {
+      return this.match(sequenceIndex, sequence, (component, glyph) => {
+        if (!(this.currentFeature in glyph.features)) return false;
+        return component === glyph.id;
+      }, []);
+    }
+    coverageSequenceMatches(sequenceIndex, sequence) {
+      return this.match(sequenceIndex, sequence, (coverage, glyph) => this.coverageIndex(coverage, glyph.id) >= 0);
+    }
+    getClassID(glyph, classDef) {
+      switch (classDef.version) {
+        case 1:
+          let i2 = glyph - classDef.startGlyph;
+          if (i2 >= 0 && i2 < classDef.classValueArray.length) return classDef.classValueArray[i2];
+          break;
+        case 2:
+          for (let range of classDef.classRangeRecord) {
+            if (range.start <= glyph && glyph <= range.end) return range.class;
+          }
+          break;
+      }
+      return 0;
+    }
+    classSequenceMatches(sequenceIndex, sequence, classDef) {
+      return this.match(sequenceIndex, sequence, (classID, glyph) => classID === this.getClassID(glyph.id, classDef));
+    }
+    applyContext(table) {
+      let index, set;
+      switch (table.version) {
+        case 1:
+          index = this.coverageIndex(table.coverage);
+          if (index === -1) return false;
+          set = table.ruleSets[index];
+          for (let rule of set) {
+            if (this.sequenceMatches(1, rule.input)) return this.applyLookupList(rule.lookupRecords);
+          }
+          break;
+        case 2:
+          if (this.coverageIndex(table.coverage) === -1) return false;
+          index = this.getClassID(this.glyphIterator.cur.id, table.classDef);
+          if (index === -1) return false;
+          set = table.classSet[index];
+          for (let rule of set) {
+            if (this.classSequenceMatches(1, rule.classes, table.classDef)) return this.applyLookupList(rule.lookupRecords);
+          }
+          break;
+        case 3:
+          if (this.coverageSequenceMatches(0, table.coverages)) return this.applyLookupList(table.lookupRecords);
+          break;
+      }
+      return false;
+    }
+    applyChainingContext(table) {
+      let index;
+      switch (table.version) {
+        case 1:
+          index = this.coverageIndex(table.coverage);
+          if (index === -1) return false;
+          let set = table.chainRuleSets[index];
+          for (let rule of set) {
+            if (this.sequenceMatches(-rule.backtrack.length, rule.backtrack) && this.sequenceMatches(1, rule.input) && this.sequenceMatches(1 + rule.input.length, rule.lookahead)) return this.applyLookupList(rule.lookupRecords);
+          }
+          break;
+        case 2:
+          if (this.coverageIndex(table.coverage) === -1) return false;
+          index = this.getClassID(this.glyphIterator.cur.id, table.inputClassDef);
+          let rules = table.chainClassSet[index];
+          if (!rules) return false;
+          for (let rule of rules) {
+            if (this.classSequenceMatches(-rule.backtrack.length, rule.backtrack, table.backtrackClassDef) && this.classSequenceMatches(1, rule.input, table.inputClassDef) && this.classSequenceMatches(1 + rule.input.length, rule.lookahead, table.lookaheadClassDef)) return this.applyLookupList(rule.lookupRecords);
+          }
+          break;
+        case 3:
+          if (this.coverageSequenceMatches(-table.backtrackGlyphCount, table.backtrackCoverage) && this.coverageSequenceMatches(0, table.inputCoverage) && this.coverageSequenceMatches(table.inputGlyphCount, table.lookaheadCoverage)) return this.applyLookupList(table.lookupRecords);
+          break;
+      }
+      return false;
+    }
+    constructor(font, table) {
+      this.font = font;
+      this.table = table;
+      this.script = null;
+      this.scriptTag = null;
+      this.language = null;
+      this.languageTag = null;
+      this.features = {};
+      this.lookups = {};
+      this.variationsIndex = font._variationProcessor ? this.findVariationsIndex(font._variationProcessor.normalizedCoords) : -1;
+      this.selectScript();
+      this.glyphs = [];
+      this.positions = [];
+      this.ligatureID = 1;
+      this.currentFeature = null;
+    }
+  };
+  var $10e7b257e1a9a756$export$2e2bcd8739ae039 = class _$10e7b257e1a9a756$export$2e2bcd8739ae039 {
+    get id() {
+      return this._id;
+    }
+    set id(id) {
+      this._id = id;
+      this.substituted = true;
+      let GDEF = this._font.GDEF;
+      if (GDEF && GDEF.glyphClassDef) {
+        let classID = (0, $a83b9c36aaa94fd3$export$2e2bcd8739ae039).prototype.getClassID(id, GDEF.glyphClassDef);
+        this.isBase = classID === 1;
+        this.isLigature = classID === 2;
+        this.isMark = classID === 3;
+        this.markAttachmentType = GDEF.markAttachClassDef ? (0, $a83b9c36aaa94fd3$export$2e2bcd8739ae039).prototype.getClassID(id, GDEF.markAttachClassDef) : 0;
+      } else {
+        this.isMark = this.codePoints.length > 0 && this.codePoints.every((0, $747425b437e121da$export$e33ad6871e762338));
+        this.isBase = !this.isMark;
+        this.isLigature = this.codePoints.length > 1;
+        this.markAttachmentType = 0;
+      }
+    }
+    copy() {
+      return new _$10e7b257e1a9a756$export$2e2bcd8739ae039(this._font, this.id, this.codePoints, this.features);
+    }
+    constructor(font, id, codePoints = [], features) {
+      this._font = font;
+      this.codePoints = codePoints;
+      this.id = id;
+      this.features = {};
+      if (Array.isArray(features)) for (let i2 = 0; i2 < features.length; i2++) {
+        let feature = features[i2];
+        this.features[feature] = true;
+      }
+      else if (typeof features === "object") Object.assign(this.features, features);
+      this.ligatureID = null;
+      this.ligatureComponent = null;
+      this.isLigated = false;
+      this.cursiveAttachment = null;
+      this.markAttachment = null;
+      this.shaperInfo = null;
+      this.substituted = false;
+      this.isMultiplied = false;
+    }
+  };
+  var $e1c6bbc8cb416f8c$export$2e2bcd8739ae039 = class extends (0, $649970d87335b30f$export$2e2bcd8739ae039) {
+    static planFeatures(plan) {
+      plan.add([
+        "ljmo",
+        "vjmo",
+        "tjmo"
+      ], false);
+    }
+    static assignFeatures(plan, glyphs) {
+      let state = 0;
+      let i2 = 0;
+      while (i2 < glyphs.length) {
+        let action;
+        let glyph = glyphs[i2];
+        let code = glyph.codePoints[0];
+        let type = $e1c6bbc8cb416f8c$var$getType(code);
+        [action, state] = $e1c6bbc8cb416f8c$var$STATE_TABLE[state][type];
+        switch (action) {
+          case $e1c6bbc8cb416f8c$var$DECOMPOSE:
+            if (!plan.font.hasGlyphForCodePoint(code)) i2 = $e1c6bbc8cb416f8c$var$decompose(glyphs, i2, plan.font);
+            break;
+          case $e1c6bbc8cb416f8c$var$COMPOSE:
+            i2 = $e1c6bbc8cb416f8c$var$compose(glyphs, i2, plan.font);
+            break;
+          case $e1c6bbc8cb416f8c$var$TONE_MARK:
+            $e1c6bbc8cb416f8c$var$reorderToneMark(glyphs, i2, plan.font);
+            break;
+          case $e1c6bbc8cb416f8c$var$INVALID:
+            i2 = $e1c6bbc8cb416f8c$var$insertDottedCircle(glyphs, i2, plan.font);
+            break;
+        }
+        i2++;
+      }
+    }
+  };
+  (0, _define_property)($e1c6bbc8cb416f8c$export$2e2bcd8739ae039, "zeroMarkWidths", "NONE");
+  var $e1c6bbc8cb416f8c$var$HANGUL_BASE = 44032;
+  var $e1c6bbc8cb416f8c$var$HANGUL_END = 55204;
+  var $e1c6bbc8cb416f8c$var$HANGUL_COUNT = $e1c6bbc8cb416f8c$var$HANGUL_END - $e1c6bbc8cb416f8c$var$HANGUL_BASE + 1;
+  var $e1c6bbc8cb416f8c$var$L_BASE = 4352;
+  var $e1c6bbc8cb416f8c$var$V_BASE = 4449;
+  var $e1c6bbc8cb416f8c$var$T_BASE = 4519;
+  var $e1c6bbc8cb416f8c$var$L_COUNT = 19;
+  var $e1c6bbc8cb416f8c$var$V_COUNT = 21;
+  var $e1c6bbc8cb416f8c$var$T_COUNT = 28;
+  var $e1c6bbc8cb416f8c$var$L_END = $e1c6bbc8cb416f8c$var$L_BASE + $e1c6bbc8cb416f8c$var$L_COUNT - 1;
+  var $e1c6bbc8cb416f8c$var$V_END = $e1c6bbc8cb416f8c$var$V_BASE + $e1c6bbc8cb416f8c$var$V_COUNT - 1;
+  var $e1c6bbc8cb416f8c$var$T_END = $e1c6bbc8cb416f8c$var$T_BASE + $e1c6bbc8cb416f8c$var$T_COUNT - 1;
+  var $e1c6bbc8cb416f8c$var$DOTTED_CIRCLE = 9676;
+  var $e1c6bbc8cb416f8c$var$isL = (code) => 4352 <= code && code <= 4447 || 43360 <= code && code <= 43388;
+  var $e1c6bbc8cb416f8c$var$isV = (code) => 4448 <= code && code <= 4519 || 55216 <= code && code <= 55238;
+  var $e1c6bbc8cb416f8c$var$isT = (code) => 4520 <= code && code <= 4607 || 55243 <= code && code <= 55291;
+  var $e1c6bbc8cb416f8c$var$isTone = (code) => 12334 <= code && code <= 12335;
+  var $e1c6bbc8cb416f8c$var$isLVT = (code) => $e1c6bbc8cb416f8c$var$HANGUL_BASE <= code && code <= $e1c6bbc8cb416f8c$var$HANGUL_END;
+  var $e1c6bbc8cb416f8c$var$isLV = (code) => code - $e1c6bbc8cb416f8c$var$HANGUL_BASE < $e1c6bbc8cb416f8c$var$HANGUL_COUNT && (code - $e1c6bbc8cb416f8c$var$HANGUL_BASE) % $e1c6bbc8cb416f8c$var$T_COUNT === 0;
+  var $e1c6bbc8cb416f8c$var$isCombiningL = (code) => $e1c6bbc8cb416f8c$var$L_BASE <= code && code <= $e1c6bbc8cb416f8c$var$L_END;
+  var $e1c6bbc8cb416f8c$var$isCombiningV = (code) => $e1c6bbc8cb416f8c$var$V_BASE <= code && code <= $e1c6bbc8cb416f8c$var$V_END;
+  var $e1c6bbc8cb416f8c$var$isCombiningT = (code) => $e1c6bbc8cb416f8c$var$T_BASE + 1 && 1 <= code && code <= $e1c6bbc8cb416f8c$var$T_END;
+  var $e1c6bbc8cb416f8c$var$X = 0;
+  var $e1c6bbc8cb416f8c$var$L = 1;
+  var $e1c6bbc8cb416f8c$var$V = 2;
+  var $e1c6bbc8cb416f8c$var$T = 3;
+  var $e1c6bbc8cb416f8c$var$LV = 4;
+  var $e1c6bbc8cb416f8c$var$LVT = 5;
+  var $e1c6bbc8cb416f8c$var$M = 6;
+  function $e1c6bbc8cb416f8c$var$getType(code) {
+    if ($e1c6bbc8cb416f8c$var$isL(code)) return $e1c6bbc8cb416f8c$var$L;
+    if ($e1c6bbc8cb416f8c$var$isV(code)) return $e1c6bbc8cb416f8c$var$V;
+    if ($e1c6bbc8cb416f8c$var$isT(code)) return $e1c6bbc8cb416f8c$var$T;
+    if ($e1c6bbc8cb416f8c$var$isLV(code)) return $e1c6bbc8cb416f8c$var$LV;
+    if ($e1c6bbc8cb416f8c$var$isLVT(code)) return $e1c6bbc8cb416f8c$var$LVT;
+    if ($e1c6bbc8cb416f8c$var$isTone(code)) return $e1c6bbc8cb416f8c$var$M;
+    return $e1c6bbc8cb416f8c$var$X;
+  }
+  var $e1c6bbc8cb416f8c$var$NO_ACTION = 0;
+  var $e1c6bbc8cb416f8c$var$DECOMPOSE = 1;
+  var $e1c6bbc8cb416f8c$var$COMPOSE = 2;
+  var $e1c6bbc8cb416f8c$var$TONE_MARK = 4;
+  var $e1c6bbc8cb416f8c$var$INVALID = 5;
+  var $e1c6bbc8cb416f8c$var$STATE_TABLE = [
+    //       X                 L                 V                T                  LV                LVT               M
+    // State 0: start state
+    [
+      [
+        $e1c6bbc8cb416f8c$var$NO_ACTION,
+        0
+      ],
+      [
+        $e1c6bbc8cb416f8c$var$NO_ACTION,
+        1
+      ],
+      [
+        $e1c6bbc8cb416f8c$var$NO_ACTION,
+        0
+      ],
+      [
+        $e1c6bbc8cb416f8c$var$NO_ACTION,
+        0
+      ],
+      [
+        $e1c6bbc8cb416f8c$var$DECOMPOSE,
+        2
+      ],
+      [
+        $e1c6bbc8cb416f8c$var$DECOMPOSE,
+        3
+      ],
+      [
+        $e1c6bbc8cb416f8c$var$INVALID,
+        0
+      ]
+    ],
+    // State 1: <L>
+    [
+      [
+        $e1c6bbc8cb416f8c$var$NO_ACTION,
+        0
+      ],
+      [
+        $e1c6bbc8cb416f8c$var$NO_ACTION,
+        1
+      ],
+      [
+        $e1c6bbc8cb416f8c$var$COMPOSE,
+        2
+      ],
+      [
+        $e1c6bbc8cb416f8c$var$NO_ACTION,
+        0
+      ],
+      [
+        $e1c6bbc8cb416f8c$var$DECOMPOSE,
+        2
+      ],
+      [
+        $e1c6bbc8cb416f8c$var$DECOMPOSE,
+        3
+      ],
+      [
+        $e1c6bbc8cb416f8c$var$INVALID,
+        0
+      ]
+    ],
+    // State 2: <L,V> or <LV>
+    [
+      [
+        $e1c6bbc8cb416f8c$var$NO_ACTION,
+        0
+      ],
+      [
+        $e1c6bbc8cb416f8c$var$NO_ACTION,
+        1
+      ],
+      [
+        $e1c6bbc8cb416f8c$var$NO_ACTION,
+        0
+      ],
+      [
+        $e1c6bbc8cb416f8c$var$COMPOSE,
+        3
+      ],
+      [
+        $e1c6bbc8cb416f8c$var$DECOMPOSE,
+        2
+      ],
+      [
+        $e1c6bbc8cb416f8c$var$DECOMPOSE,
+        3
+      ],
+      [
+        $e1c6bbc8cb416f8c$var$TONE_MARK,
+        0
+      ]
+    ],
+    // State 3: <L,V,T> or <LVT>
+    [
+      [
+        $e1c6bbc8cb416f8c$var$NO_ACTION,
+        0
+      ],
+      [
+        $e1c6bbc8cb416f8c$var$NO_ACTION,
+        1
+      ],
+      [
+        $e1c6bbc8cb416f8c$var$NO_ACTION,
+        0
+      ],
+      [
+        $e1c6bbc8cb416f8c$var$NO_ACTION,
+        0
+      ],
+      [
+        $e1c6bbc8cb416f8c$var$DECOMPOSE,
+        2
+      ],
+      [
+        $e1c6bbc8cb416f8c$var$DECOMPOSE,
+        3
+      ],
+      [
+        $e1c6bbc8cb416f8c$var$TONE_MARK,
+        0
+      ]
+    ]
+  ];
+  function $e1c6bbc8cb416f8c$var$getGlyph(font, code, features) {
+    return new (0, $10e7b257e1a9a756$export$2e2bcd8739ae039)(font, font.glyphForCodePoint(code).id, [
+      code
+    ], features);
+  }
+  function $e1c6bbc8cb416f8c$var$decompose(glyphs, i2, font) {
+    let glyph = glyphs[i2];
+    let code = glyph.codePoints[0];
+    let s = code - $e1c6bbc8cb416f8c$var$HANGUL_BASE;
+    let t = $e1c6bbc8cb416f8c$var$T_BASE + s % $e1c6bbc8cb416f8c$var$T_COUNT;
+    s = s / $e1c6bbc8cb416f8c$var$T_COUNT | 0;
+    let l = $e1c6bbc8cb416f8c$var$L_BASE + s / $e1c6bbc8cb416f8c$var$V_COUNT | 0;
+    let v = $e1c6bbc8cb416f8c$var$V_BASE + s % $e1c6bbc8cb416f8c$var$V_COUNT;
+    if (!font.hasGlyphForCodePoint(l) || !font.hasGlyphForCodePoint(v) || t !== $e1c6bbc8cb416f8c$var$T_BASE && !font.hasGlyphForCodePoint(t)) return i2;
+    let ljmo = $e1c6bbc8cb416f8c$var$getGlyph(font, l, glyph.features);
+    ljmo.features.ljmo = true;
+    let vjmo = $e1c6bbc8cb416f8c$var$getGlyph(font, v, glyph.features);
+    vjmo.features.vjmo = true;
+    let insert = [
+      ljmo,
+      vjmo
+    ];
+    if (t > $e1c6bbc8cb416f8c$var$T_BASE) {
+      let tjmo = $e1c6bbc8cb416f8c$var$getGlyph(font, t, glyph.features);
+      tjmo.features.tjmo = true;
+      insert.push(tjmo);
+    }
+    glyphs.splice(i2, 1, ...insert);
+    return i2 + insert.length - 1;
+  }
+  function $e1c6bbc8cb416f8c$var$compose(glyphs, i2, font) {
+    let glyph = glyphs[i2];
+    let code = glyphs[i2].codePoints[0];
+    let type = $e1c6bbc8cb416f8c$var$getType(code);
+    let prev = glyphs[i2 - 1].codePoints[0];
+    let prevType = $e1c6bbc8cb416f8c$var$getType(prev);
+    let lv, ljmo, vjmo, tjmo;
+    if (prevType === $e1c6bbc8cb416f8c$var$LV && type === $e1c6bbc8cb416f8c$var$T) {
+      lv = prev;
+      tjmo = glyph;
+    } else {
+      if (type === $e1c6bbc8cb416f8c$var$V) {
+        ljmo = glyphs[i2 - 1];
+        vjmo = glyph;
+      } else {
+        ljmo = glyphs[i2 - 2];
+        vjmo = glyphs[i2 - 1];
+        tjmo = glyph;
+      }
+      let l = ljmo.codePoints[0];
+      let v = vjmo.codePoints[0];
+      if ($e1c6bbc8cb416f8c$var$isCombiningL(l) && $e1c6bbc8cb416f8c$var$isCombiningV(v)) lv = $e1c6bbc8cb416f8c$var$HANGUL_BASE + ((l - $e1c6bbc8cb416f8c$var$L_BASE) * $e1c6bbc8cb416f8c$var$V_COUNT + (v - $e1c6bbc8cb416f8c$var$V_BASE)) * $e1c6bbc8cb416f8c$var$T_COUNT;
+    }
+    let t = tjmo && tjmo.codePoints[0] || $e1c6bbc8cb416f8c$var$T_BASE;
+    if (lv != null && (t === $e1c6bbc8cb416f8c$var$T_BASE || $e1c6bbc8cb416f8c$var$isCombiningT(t))) {
+      let s = lv + (t - $e1c6bbc8cb416f8c$var$T_BASE);
+      if (font.hasGlyphForCodePoint(s)) {
+        let del = prevType === $e1c6bbc8cb416f8c$var$V ? 3 : 2;
+        glyphs.splice(i2 - del + 1, del, $e1c6bbc8cb416f8c$var$getGlyph(font, s, glyph.features));
+        return i2 - del + 1;
+      }
+    }
+    if (ljmo) ljmo.features.ljmo = true;
+    if (vjmo) vjmo.features.vjmo = true;
+    if (tjmo) tjmo.features.tjmo = true;
+    if (prevType === $e1c6bbc8cb416f8c$var$LV) {
+      $e1c6bbc8cb416f8c$var$decompose(glyphs, i2 - 1, font);
+      return i2 + 1;
+    }
+    return i2;
+  }
+  function $e1c6bbc8cb416f8c$var$getLength(code) {
+    switch ($e1c6bbc8cb416f8c$var$getType(code)) {
+      case $e1c6bbc8cb416f8c$var$LV:
+      case $e1c6bbc8cb416f8c$var$LVT:
+        return 1;
+      case $e1c6bbc8cb416f8c$var$V:
+        return 2;
+      case $e1c6bbc8cb416f8c$var$T:
+        return 3;
+    }
+  }
+  function $e1c6bbc8cb416f8c$var$reorderToneMark(glyphs, i2, font) {
+    let glyph = glyphs[i2];
+    let code = glyphs[i2].codePoints[0];
+    if (font.glyphForCodePoint(code).advanceWidth === 0) return;
+    let prev = glyphs[i2 - 1].codePoints[0];
+    let len = $e1c6bbc8cb416f8c$var$getLength(prev);
+    glyphs.splice(i2, 1);
+    return glyphs.splice(i2 - len, 0, glyph);
+  }
+  function $e1c6bbc8cb416f8c$var$insertDottedCircle(glyphs, i2, font) {
+    let glyph = glyphs[i2];
+    let code = glyphs[i2].codePoints[0];
+    if (font.hasGlyphForCodePoint($e1c6bbc8cb416f8c$var$DOTTED_CIRCLE)) {
+      let dottedCircle = $e1c6bbc8cb416f8c$var$getGlyph(font, $e1c6bbc8cb416f8c$var$DOTTED_CIRCLE, glyph.features);
+      let idx = font.glyphForCodePoint(code).advanceWidth === 0 ? i2 : i2 + 1;
+      glyphs.splice(idx, 0, dottedCircle);
+      i2++;
+    }
+    return i2;
+  }
+  var $4b0735ca6c692ea5$exports = {};
+  $4b0735ca6c692ea5$exports = JSON.parse('{"stateTable":[[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,2,3,4,5,6,7,8,9,0,10,11,11,12,13,14,15,16,17],[0,0,0,18,19,20,21,22,23,0,24,0,0,25,26,0,0,27,0],[0,0,0,28,29,30,31,32,33,0,34,0,0,35,36,0,0,37,0],[0,0,0,38,5,7,7,8,9,0,10,0,0,0,13,0,0,16,0],[0,39,0,0,0,40,41,0,9,0,10,0,0,0,42,0,39,0,0],[0,0,0,0,43,44,44,8,9,0,0,0,0,12,43,0,0,0,0],[0,0,0,0,43,44,44,8,9,0,0,0,0,0,43,0,0,0,0],[0,0,0,45,46,47,48,49,9,0,10,0,0,0,42,0,0,0,0],[0,0,0,0,0,50,0,0,51,0,10,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,52,0,0,0,0,0,0,0,0],[0,0,0,53,54,55,56,57,58,0,59,0,0,60,61,0,0,62,0],[0,0,0,4,5,7,7,8,9,0,10,0,0,0,13,0,0,16,0],[0,63,64,0,0,40,41,0,9,0,10,0,0,0,42,0,63,0,0],[0,2,3,4,5,6,7,8,9,0,10,11,11,12,13,0,2,16,0],[0,0,0,18,65,20,21,22,23,0,24,0,0,25,26,0,0,27,0],[0,0,0,0,66,67,67,8,9,0,10,0,0,0,68,0,0,0,0],[0,0,0,69,0,70,70,0,71,0,72,0,0,0,0,0,0,0,0],[0,0,0,73,19,74,74,22,23,0,24,0,0,0,26,0,0,27,0],[0,75,0,0,0,76,77,0,23,0,24,0,0,0,78,0,75,0,0],[0,0,0,0,79,80,80,22,23,0,0,0,0,25,79,0,0,0,0],[0,0,0,18,19,20,74,22,23,0,24,0,0,25,26,0,0,27,0],[0,0,0,81,82,83,84,85,23,0,24,0,0,0,78,0,0,0,0],[0,0,0,0,0,86,0,0,87,0,24,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,88,0,0,0,0,0,0,0,0],[0,0,0,18,19,74,74,22,23,0,24,0,0,0,26,0,0,27,0],[0,89,90,0,0,76,77,0,23,0,24,0,0,0,78,0,89,0,0],[0,0,0,0,91,92,92,22,23,0,24,0,0,0,93,0,0,0,0],[0,0,0,94,29,95,31,32,33,0,34,0,0,0,36,0,0,37,0],[0,96,0,0,0,97,98,0,33,0,34,0,0,0,99,0,96,0,0],[0,0,0,0,100,101,101,32,33,0,0,0,0,35,100,0,0,0,0],[0,0,0,0,100,101,101,32,33,0,0,0,0,0,100,0,0,0,0],[0,0,0,102,103,104,105,106,33,0,34,0,0,0,99,0,0,0,0],[0,0,0,0,0,107,0,0,108,0,34,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,109,0,0,0,0,0,0,0,0],[0,0,0,28,29,95,31,32,33,0,34,0,0,0,36,0,0,37,0],[0,110,111,0,0,97,98,0,33,0,34,0,0,0,99,0,110,0,0],[0,0,0,0,112,113,113,32,33,0,34,0,0,0,114,0,0,0,0],[0,0,0,0,5,7,7,8,9,0,10,0,0,0,13,0,0,16,0],[0,0,0,115,116,117,118,8,9,0,10,0,0,119,120,0,0,16,0],[0,0,0,0,0,121,121,0,9,0,10,0,0,0,42,0,0,0,0],[0,39,0,122,0,123,123,8,9,0,10,0,0,0,42,0,39,0,0],[0,124,64,0,0,0,0,0,0,0,0,0,0,0,0,0,124,0,0],[0,39,0,0,0,121,125,0,9,0,10,0,0,0,42,0,39,0,0],[0,0,0,0,0,126,126,8,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,46,47,48,49,9,0,10,0,0,0,42,0,0,0,0],[0,0,0,0,0,47,47,49,9,0,10,0,0,0,42,0,0,0,0],[0,0,0,0,0,127,127,49,9,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,128,127,127,49,9,0,0,0,0,0,0,0,0,0,0],[0,0,0,129,130,131,132,133,9,0,10,0,0,0,42,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,10,0,0,0,0,0,0,0,0],[0,0,0,0,0,50,0,0,0,0,10,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,134,0,0,0,0,0,0,0,0],[0,0,0,135,54,56,56,57,58,0,59,0,0,0,61,0,0,62,0],[0,136,0,0,0,137,138,0,58,0,59,0,0,0,139,0,136,0,0],[0,0,0,0,140,141,141,57,58,0,0,0,0,60,140,0,0,0,0],[0,0,0,0,140,141,141,57,58,0,0,0,0,0,140,0,0,0,0],[0,0,0,142,143,144,145,146,58,0,59,0,0,0,139,0,0,0,0],[0,0,0,0,0,147,0,0,148,0,59,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,149,0,0,0,0,0,0,0,0],[0,0,0,53,54,56,56,57,58,0,59,0,0,0,61,0,0,62,0],[0,150,151,0,0,137,138,0,58,0,59,0,0,0,139,0,150,0,0],[0,0,0,0,152,153,153,57,58,0,59,0,0,0,154,0,0,0,0],[0,0,0,155,116,156,157,8,9,0,10,0,0,158,120,0,0,16,0],[0,0,0,0,0,121,121,0,9,0,10,0,0,0,0,0,0,0,0],[0,75,3,4,5,159,160,8,161,0,162,0,11,12,163,0,75,16,0],[0,0,0,0,0,40,164,0,9,0,10,0,0,0,42,0,0,0,0],[0,0,0,0,165,44,44,8,9,0,0,0,0,0,165,0,0,0,0],[0,124,64,0,0,40,164,0,9,0,10,0,0,0,42,0,124,0,0],[0,0,0,0,0,70,70,0,71,0,72,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,71,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,166,0,0,167,0,72,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,168,0,0,0,0,0,0,0,0],[0,0,0,0,19,74,74,22,23,0,24,0,0,0,26,0,0,27,0],[0,0,0,0,79,80,80,22,23,0,0,0,0,0,79,0,0,0,0],[0,0,0,169,170,171,172,22,23,0,24,0,0,173,174,0,0,27,0],[0,0,0,0,0,175,175,0,23,0,24,0,0,0,78,0,0,0,0],[0,75,0,176,0,177,177,22,23,0,24,0,0,0,78,0,75,0,0],[0,178,90,0,0,0,0,0,0,0,0,0,0,0,0,0,178,0,0],[0,75,0,0,0,175,179,0,23,0,24,0,0,0,78,0,75,0,0],[0,0,0,0,0,180,180,22,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,82,83,84,85,23,0,24,0,0,0,78,0,0,0,0],[0,0,0,0,0,83,83,85,23,0,24,0,0,0,78,0,0,0,0],[0,0,0,0,0,181,181,85,23,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,182,181,181,85,23,0,0,0,0,0,0,0,0,0,0],[0,0,0,183,184,185,186,187,23,0,24,0,0,0,78,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,24,0,0,0,0,0,0,0,0],[0,0,0,0,0,86,0,0,0,0,24,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,188,0,0,0,0,0,0,0,0],[0,0,0,189,170,190,191,22,23,0,24,0,0,192,174,0,0,27,0],[0,0,0,0,0,175,175,0,23,0,24,0,0,0,0,0,0,0,0],[0,0,0,0,0,76,193,0,23,0,24,0,0,0,78,0,0,0,0],[0,0,0,0,194,80,80,22,23,0,0,0,0,0,194,0,0,0,0],[0,178,90,0,0,76,193,0,23,0,24,0,0,0,78,0,178,0,0],[0,0,0,0,29,95,31,32,33,0,34,0,0,0,36,0,0,37,0],[0,0,0,0,100,101,101,32,33,0,0,0,0,0,100,0,0,0,0],[0,0,0,195,196,197,198,32,33,0,34,0,0,199,200,0,0,37,0],[0,0,0,0,0,201,201,0,33,0,34,0,0,0,99,0,0,0,0],[0,96,0,202,0,203,203,32,33,0,34,0,0,0,99,0,96,0,0],[0,204,111,0,0,0,0,0,0,0,0,0,0,0,0,0,204,0,0],[0,96,0,0,0,201,205,0,33,0,34,0,0,0,99,0,96,0,0],[0,0,0,0,0,206,206,32,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,103,104,105,106,33,0,34,0,0,0,99,0,0,0,0],[0,0,0,0,0,104,104,106,33,0,34,0,0,0,99,0,0,0,0],[0,0,0,0,0,207,207,106,33,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,208,207,207,106,33,0,0,0,0,0,0,0,0,0,0],[0,0,0,209,210,211,212,213,33,0,34,0,0,0,99,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,34,0,0,0,0,0,0,0,0],[0,0,0,0,0,107,0,0,0,0,34,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,214,0,0,0,0,0,0,0,0],[0,0,0,215,196,216,217,32,33,0,34,0,0,218,200,0,0,37,0],[0,0,0,0,0,201,201,0,33,0,34,0,0,0,0,0,0,0,0],[0,0,0,0,0,97,219,0,33,0,34,0,0,0,99,0,0,0,0],[0,0,0,0,220,101,101,32,33,0,0,0,0,0,220,0,0,0,0],[0,204,111,0,0,97,219,0,33,0,34,0,0,0,99,0,204,0,0],[0,0,0,221,116,222,222,8,9,0,10,0,0,0,120,0,0,16,0],[0,223,0,0,0,40,224,0,9,0,10,0,0,0,42,0,223,0,0],[0,0,0,0,225,44,44,8,9,0,0,0,0,119,225,0,0,0,0],[0,0,0,115,116,117,222,8,9,0,10,0,0,119,120,0,0,16,0],[0,0,0,115,116,222,222,8,9,0,10,0,0,0,120,0,0,16,0],[0,226,64,0,0,40,224,0,9,0,10,0,0,0,42,0,226,0,0],[0,0,0,0,0,0,0,0,9,0,0,0,0,0,0,0,0,0,0],[0,39,0,0,0,121,121,0,9,0,10,0,0,0,42,0,39,0,0],[0,0,0,0,0,44,44,8,9,0,0,0,0,0,0,0,0,0,0],[0,0,0,227,0,228,229,0,9,0,10,0,0,230,0,0,0,0,0],[0,39,0,122,0,121,121,0,9,0,10,0,0,0,42,0,39,0,0],[0,0,0,0,0,0,0,8,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,231,231,49,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,232,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,130,131,132,133,9,0,10,0,0,0,42,0,0,0,0],[0,0,0,0,0,131,131,133,9,0,10,0,0,0,42,0,0,0,0],[0,0,0,0,0,233,233,133,9,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,234,233,233,133,9,0,0,0,0,0,0,0,0,0,0],[0,0,0,235,236,237,238,239,9,0,10,0,0,0,42,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,54,56,56,57,58,0,59,0,0,0,61,0,0,62,0],[0,0,0,240,241,242,243,57,58,0,59,0,0,244,245,0,0,62,0],[0,0,0,0,0,246,246,0,58,0,59,0,0,0,139,0,0,0,0],[0,136,0,247,0,248,248,57,58,0,59,0,0,0,139,0,136,0,0],[0,249,151,0,0,0,0,0,0,0,0,0,0,0,0,0,249,0,0],[0,136,0,0,0,246,250,0,58,0,59,0,0,0,139,0,136,0,0],[0,0,0,0,0,251,251,57,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,143,144,145,146,58,0,59,0,0,0,139,0,0,0,0],[0,0,0,0,0,144,144,146,58,0,59,0,0,0,139,0,0,0,0],[0,0,0,0,0,252,252,146,58,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,253,252,252,146,58,0,0,0,0,0,0,0,0,0,0],[0,0,0,254,255,256,257,258,58,0,59,0,0,0,139,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,59,0,0,0,0,0,0,0,0],[0,0,0,0,0,147,0,0,0,0,59,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,259,0,0,0,0,0,0,0,0],[0,0,0,260,241,261,262,57,58,0,59,0,0,263,245,0,0,62,0],[0,0,0,0,0,246,246,0,58,0,59,0,0,0,0,0,0,0,0],[0,0,0,0,0,137,264,0,58,0,59,0,0,0,139,0,0,0,0],[0,0,0,0,265,141,141,57,58,0,0,0,0,0,265,0,0,0,0],[0,249,151,0,0,137,264,0,58,0,59,0,0,0,139,0,249,0,0],[0,0,0,221,116,222,222,8,9,0,10,0,0,0,120,0,0,16,0],[0,0,0,0,225,44,44,8,9,0,0,0,0,158,225,0,0,0,0],[0,0,0,155,116,156,222,8,9,0,10,0,0,158,120,0,0,16,0],[0,0,0,155,116,222,222,8,9,0,10,0,0,0,120,0,0,16,0],[0,0,0,0,43,266,266,8,161,0,24,0,0,12,267,0,0,0,0],[0,75,0,176,43,268,268,269,161,0,24,0,0,0,267,0,75,0,0],[0,0,0,0,0,270,0,0,271,0,162,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,272,0,0,0,0,0,0,0,0],[0,273,274,0,0,40,41,0,9,0,10,0,0,0,42,0,273,0,0],[0,0,0,40,0,123,123,8,9,0,10,0,0,0,42,0,0,0,0],[0,0,0,0,0,121,275,0,9,0,10,0,0,0,42,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,72,0,0,0,0,0,0,0,0],[0,0,0,0,0,166,0,0,0,0,72,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,276,0,0,0,0,0,0,0,0],[0,0,0,277,170,278,278,22,23,0,24,0,0,0,174,0,0,27,0],[0,279,0,0,0,76,280,0,23,0,24,0,0,0,78,0,279,0,0],[0,0,0,0,281,80,80,22,23,0,0,0,0,173,281,0,0,0,0],[0,0,0,169,170,171,278,22,23,0,24,0,0,173,174,0,0,27,0],[0,0,0,169,170,278,278,22,23,0,24,0,0,0,174,0,0,27,0],[0,282,90,0,0,76,280,0,23,0,24,0,0,0,78,0,282,0,0],[0,0,0,0,0,0,0,0,23,0,0,0,0,0,0,0,0,0,0],[0,75,0,0,0,175,175,0,23,0,24,0,0,0,78,0,75,0,0],[0,0,0,0,0,80,80,22,23,0,0,0,0,0,0,0,0,0,0],[0,0,0,283,0,284,285,0,23,0,24,0,0,286,0,0,0,0,0],[0,75,0,176,0,175,175,0,23,0,24,0,0,0,78,0,75,0,0],[0,0,0,0,0,0,0,22,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,287,287,85,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,288,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,184,185,186,187,23,0,24,0,0,0,78,0,0,0,0],[0,0,0,0,0,185,185,187,23,0,24,0,0,0,78,0,0,0,0],[0,0,0,0,0,289,289,187,23,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,290,289,289,187,23,0,0,0,0,0,0,0,0,0,0],[0,0,0,291,292,293,294,295,23,0,24,0,0,0,78,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,277,170,278,278,22,23,0,24,0,0,0,174,0,0,27,0],[0,0,0,0,281,80,80,22,23,0,0,0,0,192,281,0,0,0,0],[0,0,0,189,170,190,278,22,23,0,24,0,0,192,174,0,0,27,0],[0,0,0,189,170,278,278,22,23,0,24,0,0,0,174,0,0,27,0],[0,0,0,76,0,177,177,22,23,0,24,0,0,0,78,0,0,0,0],[0,0,0,0,0,175,296,0,23,0,24,0,0,0,78,0,0,0,0],[0,0,0,297,196,298,298,32,33,0,34,0,0,0,200,0,0,37,0],[0,299,0,0,0,97,300,0,33,0,34,0,0,0,99,0,299,0,0],[0,0,0,0,301,101,101,32,33,0,0,0,0,199,301,0,0,0,0],[0,0,0,195,196,197,298,32,33,0,34,0,0,199,200,0,0,37,0],[0,0,0,195,196,298,298,32,33,0,34,0,0,0,200,0,0,37,0],[0,302,111,0,0,97,300,0,33,0,34,0,0,0,99,0,302,0,0],[0,0,0,0,0,0,0,0,33,0,0,0,0,0,0,0,0,0,0],[0,96,0,0,0,201,201,0,33,0,34,0,0,0,99,0,96,0,0],[0,0,0,0,0,101,101,32,33,0,0,0,0,0,0,0,0,0,0],[0,0,0,303,0,304,305,0,33,0,34,0,0,306,0,0,0,0,0],[0,96,0,202,0,201,201,0,33,0,34,0,0,0,99,0,96,0,0],[0,0,0,0,0,0,0,32,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,307,307,106,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,308,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,210,211,212,213,33,0,34,0,0,0,99,0,0,0,0],[0,0,0,0,0,211,211,213,33,0,34,0,0,0,99,0,0,0,0],[0,0,0,0,0,309,309,213,33,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,310,309,309,213,33,0,0,0,0,0,0,0,0,0,0],[0,0,0,311,312,313,314,315,33,0,34,0,0,0,99,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,297,196,298,298,32,33,0,34,0,0,0,200,0,0,37,0],[0,0,0,0,301,101,101,32,33,0,0,0,0,218,301,0,0,0,0],[0,0,0,215,196,216,298,32,33,0,34,0,0,218,200,0,0,37,0],[0,0,0,215,196,298,298,32,33,0,34,0,0,0,200,0,0,37,0],[0,0,0,97,0,203,203,32,33,0,34,0,0,0,99,0,0,0,0],[0,0,0,0,0,201,316,0,33,0,34,0,0,0,99,0,0,0,0],[0,0,0,0,116,222,222,8,9,0,10,0,0,0,120,0,0,16,0],[0,0,0,0,225,44,44,8,9,0,0,0,0,0,225,0,0,0,0],[0,0,0,317,318,319,320,8,9,0,10,0,0,321,322,0,0,16,0],[0,223,0,323,0,123,123,8,9,0,10,0,0,0,42,0,223,0,0],[0,223,0,0,0,121,324,0,9,0,10,0,0,0,42,0,223,0,0],[0,0,0,325,318,326,327,8,9,0,10,0,0,328,322,0,0,16,0],[0,0,0,64,0,121,121,0,9,0,10,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,9,0,0,0,0,230,0,0,0,0,0],[0,0,0,227,0,228,121,0,9,0,10,0,0,230,0,0,0,0,0],[0,0,0,227,0,121,121,0,9,0,10,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,49,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,46,0,0],[0,0,0,0,0,329,329,133,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,330,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,236,237,238,239,9,0,10,0,0,0,42,0,0,0,0],[0,0,0,0,0,237,237,239,9,0,10,0,0,0,42,0,0,0,0],[0,0,0,0,0,331,331,239,9,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,332,331,331,239,9,0,0,0,0,0,0,0,0,0,0],[0,0,0,333,40,121,334,0,9,0,10,0,0,0,42,0,0,0,0],[0,0,0,335,241,336,336,57,58,0,59,0,0,0,245,0,0,62,0],[0,337,0,0,0,137,338,0,58,0,59,0,0,0,139,0,337,0,0],[0,0,0,0,339,141,141,57,58,0,0,0,0,244,339,0,0,0,0],[0,0,0,240,241,242,336,57,58,0,59,0,0,244,245,0,0,62,0],[0,0,0,240,241,336,336,57,58,0,59,0,0,0,245,0,0,62,0],[0,340,151,0,0,137,338,0,58,0,59,0,0,0,139,0,340,0,0],[0,0,0,0,0,0,0,0,58,0,0,0,0,0,0,0,0,0,0],[0,136,0,0,0,246,246,0,58,0,59,0,0,0,139,0,136,0,0],[0,0,0,0,0,141,141,57,58,0,0,0,0,0,0,0,0,0,0],[0,0,0,341,0,342,343,0,58,0,59,0,0,344,0,0,0,0,0],[0,136,0,247,0,246,246,0,58,0,59,0,0,0,139,0,136,0,0],[0,0,0,0,0,0,0,57,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,345,345,146,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,346,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,255,256,257,258,58,0,59,0,0,0,139,0,0,0,0],[0,0,0,0,0,256,256,258,58,0,59,0,0,0,139,0,0,0,0],[0,0,0,0,0,347,347,258,58,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,348,347,347,258,58,0,0,0,0,0,0,0,0,0,0],[0,0,0,349,350,351,352,353,58,0,59,0,0,0,139,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,335,241,336,336,57,58,0,59,0,0,0,245,0,0,62,0],[0,0,0,0,339,141,141,57,58,0,0,0,0,263,339,0,0,0,0],[0,0,0,260,241,261,336,57,58,0,59,0,0,263,245,0,0,62,0],[0,0,0,260,241,336,336,57,58,0,59,0,0,0,245,0,0,62,0],[0,0,0,137,0,248,248,57,58,0,59,0,0,0,139,0,0,0,0],[0,0,0,0,0,246,354,0,58,0,59,0,0,0,139,0,0,0,0],[0,0,0,0,0,126,126,8,23,0,0,0,0,0,0,0,0,0,0],[0,355,90,0,0,121,125,0,9,0,10,0,0,0,42,0,355,0,0],[0,0,0,0,0,356,356,269,23,0,0,0,0,0,0,0,0,0,0],[0,0,0,357,358,359,360,361,161,0,162,0,0,0,362,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,162,0,0,0,0,0,0,0,0],[0,0,0,0,0,270,0,0,0,0,162,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,363,0,0,0,0,0,0,0,0],[0,0,0,364,116,365,366,8,161,0,162,0,0,367,120,0,0,16,0],[0,0,0,0,0,368,368,0,161,0,162,0,0,0,0,0,0,0,0],[0,0,0,40,0,121,121,0,9,0,10,0,0,0,42,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,170,278,278,22,23,0,24,0,0,0,174,0,0,27,0],[0,0,0,0,281,80,80,22,23,0,0,0,0,0,281,0,0,0,0],[0,0,0,369,370,371,372,22,23,0,24,0,0,373,374,0,0,27,0],[0,279,0,375,0,177,177,22,23,0,24,0,0,0,78,0,279,0,0],[0,279,0,0,0,175,376,0,23,0,24,0,0,0,78,0,279,0,0],[0,0,0,377,370,378,379,22,23,0,24,0,0,380,374,0,0,27,0],[0,0,0,90,0,175,175,0,23,0,24,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,23,0,0,0,0,286,0,0,0,0,0],[0,0,0,283,0,284,175,0,23,0,24,0,0,286,0,0,0,0,0],[0,0,0,283,0,175,175,0,23,0,24,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,85,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,82,0,0],[0,0,0,0,0,381,381,187,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,382,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,292,293,294,295,23,0,24,0,0,0,78,0,0,0,0],[0,0,0,0,0,293,293,295,23,0,24,0,0,0,78,0,0,0,0],[0,0,0,0,0,383,383,295,23,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,384,383,383,295,23,0,0,0,0,0,0,0,0,0,0],[0,0,0,385,76,175,386,0,23,0,24,0,0,0,78,0,0,0,0],[0,0,0,76,0,175,175,0,23,0,24,0,0,0,78,0,0,0,0],[0,0,0,0,196,298,298,32,33,0,34,0,0,0,200,0,0,37,0],[0,0,0,0,301,101,101,32,33,0,0,0,0,0,301,0,0,0,0],[0,0,0,387,388,389,390,32,33,0,34,0,0,391,392,0,0,37,0],[0,299,0,393,0,203,203,32,33,0,34,0,0,0,99,0,299,0,0],[0,299,0,0,0,201,394,0,33,0,34,0,0,0,99,0,299,0,0],[0,0,0,395,388,396,397,32,33,0,34,0,0,398,392,0,0,37,0],[0,0,0,111,0,201,201,0,33,0,34,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,33,0,0,0,0,306,0,0,0,0,0],[0,0,0,303,0,304,201,0,33,0,34,0,0,306,0,0,0,0,0],[0,0,0,303,0,201,201,0,33,0,34,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,106,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,103,0,0],[0,0,0,0,0,399,399,213,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,400,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,312,313,314,315,33,0,34,0,0,0,99,0,0,0,0],[0,0,0,0,0,313,313,315,33,0,34,0,0,0,99,0,0,0,0],[0,0,0,0,0,401,401,315,33,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,402,401,401,315,33,0,0,0,0,0,0,0,0,0,0],[0,0,0,403,97,201,404,0,33,0,34,0,0,0,99,0,0,0,0],[0,0,0,97,0,201,201,0,33,0,34,0,0,0,99,0,0,0,0],[0,0,0,405,318,406,406,8,9,0,10,0,0,0,322,0,0,16,0],[0,407,0,0,0,40,408,0,9,0,10,0,0,0,42,0,407,0,0],[0,0,0,0,409,44,44,8,9,0,0,0,0,321,409,0,0,0,0],[0,0,0,317,318,319,406,8,9,0,10,0,0,321,322,0,0,16,0],[0,0,0,317,318,406,406,8,9,0,10,0,0,0,322,0,0,16,0],[0,410,64,0,0,40,408,0,9,0,10,0,0,0,42,0,410,0,0],[0,223,0,0,0,121,121,0,9,0,10,0,0,0,42,0,223,0,0],[0,223,0,323,0,121,121,0,9,0,10,0,0,0,42,0,223,0,0],[0,0,0,405,318,406,406,8,9,0,10,0,0,0,322,0,0,16,0],[0,0,0,0,409,44,44,8,9,0,0,0,0,328,409,0,0,0,0],[0,0,0,325,318,326,406,8,9,0,10,0,0,328,322,0,0,16,0],[0,0,0,325,318,406,406,8,9,0,10,0,0,0,322,0,0,16,0],[0,0,0,0,0,0,0,133,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,130,0,0],[0,0,0,0,0,411,411,239,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,412,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,40,121,334,0,9,0,10,0,0,0,42,0,0,0,0],[0,0,0,0,413,0,0,0,9,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,241,336,336,57,58,0,59,0,0,0,245,0,0,62,0],[0,0,0,0,339,141,141,57,58,0,0,0,0,0,339,0,0,0,0],[0,0,0,414,415,416,417,57,58,0,59,0,0,418,419,0,0,62,0],[0,337,0,420,0,248,248,57,58,0,59,0,0,0,139,0,337,0,0],[0,337,0,0,0,246,421,0,58,0,59,0,0,0,139,0,337,0,0],[0,0,0,422,415,423,424,57,58,0,59,0,0,425,419,0,0,62,0],[0,0,0,151,0,246,246,0,58,0,59,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,58,0,0,0,0,344,0,0,0,0,0],[0,0,0,341,0,342,246,0,58,0,59,0,0,344,0,0,0,0,0],[0,0,0,341,0,246,246,0,58,0,59,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,146,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,143,0,0],[0,0,0,0,0,426,426,258,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,427,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,350,351,352,353,58,0,59,0,0,0,139,0,0,0,0],[0,0,0,0,0,351,351,353,58,0,59,0,0,0,139,0,0,0,0],[0,0,0,0,0,428,428,353,58,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,429,428,428,353,58,0,0,0,0,0,0,0,0,0,0],[0,0,0,430,137,246,431,0,58,0,59,0,0,0,139,0,0,0,0],[0,0,0,137,0,246,246,0,58,0,59,0,0,0,139,0,0,0,0],[0,0,0,432,116,433,434,8,161,0,162,0,0,435,120,0,0,16,0],[0,0,0,0,0,180,180,269,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,358,359,360,361,161,0,162,0,0,0,362,0,0,0,0],[0,0,0,0,0,359,359,361,161,0,162,0,0,0,362,0,0,0,0],[0,0,0,0,0,436,436,361,161,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,437,436,436,361,161,0,0,0,0,0,0,0,0,0,0],[0,0,0,438,439,440,441,442,161,0,162,0,0,0,362,0,0,0,0],[0,443,274,0,0,0,0,0,0,0,0,0,0,0,0,0,443,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,444,116,445,445,8,161,0,162,0,0,0,120,0,0,16,0],[0,0,0,0,225,44,44,8,161,0,0,0,0,367,225,0,0,0,0],[0,0,0,364,116,365,445,8,161,0,162,0,0,367,120,0,0,16,0],[0,0,0,364,116,445,445,8,161,0,162,0,0,0,120,0,0,16,0],[0,0,0,0,0,0,0,0,161,0,0,0,0,0,0,0,0,0,0],[0,0,0,446,370,447,447,22,23,0,24,0,0,0,374,0,0,27,0],[0,448,0,0,0,76,449,0,23,0,24,0,0,0,78,0,448,0,0],[0,0,0,0,450,80,80,22,23,0,0,0,0,373,450,0,0,0,0],[0,0,0,369,370,371,447,22,23,0,24,0,0,373,374,0,0,27,0],[0,0,0,369,370,447,447,22,23,0,24,0,0,0,374,0,0,27,0],[0,451,90,0,0,76,449,0,23,0,24,0,0,0,78,0,451,0,0],[0,279,0,0,0,175,175,0,23,0,24,0,0,0,78,0,279,0,0],[0,279,0,375,0,175,175,0,23,0,24,0,0,0,78,0,279,0,0],[0,0,0,446,370,447,447,22,23,0,24,0,0,0,374,0,0,27,0],[0,0,0,0,450,80,80,22,23,0,0,0,0,380,450,0,0,0,0],[0,0,0,377,370,378,447,22,23,0,24,0,0,380,374,0,0,27,0],[0,0,0,377,370,447,447,22,23,0,24,0,0,0,374,0,0,27,0],[0,0,0,0,0,0,0,187,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,184,0,0],[0,0,0,0,0,452,452,295,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,453,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,76,175,386,0,23,0,24,0,0,0,78,0,0,0,0],[0,0,0,0,454,0,0,0,23,0,0,0,0,0,0,0,0,0,0],[0,0,0,455,388,456,456,32,33,0,34,0,0,0,392,0,0,37,0],[0,457,0,0,0,97,458,0,33,0,34,0,0,0,99,0,457,0,0],[0,0,0,0,459,101,101,32,33,0,0,0,0,391,459,0,0,0,0],[0,0,0,387,388,389,456,32,33,0,34,0,0,391,392,0,0,37,0],[0,0,0,387,388,456,456,32,33,0,34,0,0,0,392,0,0,37,0],[0,460,111,0,0,97,458,0,33,0,34,0,0,0,99,0,460,0,0],[0,299,0,0,0,201,201,0,33,0,34,0,0,0,99,0,299,0,0],[0,299,0,393,0,201,201,0,33,0,34,0,0,0,99,0,299,0,0],[0,0,0,455,388,456,456,32,33,0,34,0,0,0,392,0,0,37,0],[0,0,0,0,459,101,101,32,33,0,0,0,0,398,459,0,0,0,0],[0,0,0,395,388,396,456,32,33,0,34,0,0,398,392,0,0,37,0],[0,0,0,395,388,456,456,32,33,0,34,0,0,0,392,0,0,37,0],[0,0,0,0,0,0,0,213,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,210,0,0],[0,0,0,0,0,461,461,315,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,462,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,97,201,404,0,33,0,34,0,0,0,99,0,0,0,0],[0,0,0,0,463,0,0,0,33,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,318,406,406,8,9,0,10,0,0,0,322,0,0,16,0],[0,0,0,0,409,44,44,8,9,0,0,0,0,0,409,0,0,0,0],[0,0,0,464,465,466,467,8,9,0,10,0,0,468,469,0,0,16,0],[0,407,0,470,0,123,123,8,9,0,10,0,0,0,42,0,407,0,0],[0,407,0,0,0,121,471,0,9,0,10,0,0,0,42,0,407,0,0],[0,0,0,472,465,473,474,8,9,0,10,0,0,475,469,0,0,16,0],[0,0,0,0,0,0,0,239,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,236,0,0],[0,0,0,0,0,0,476,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,477,415,478,478,57,58,0,59,0,0,0,419,0,0,62,0],[0,479,0,0,0,137,480,0,58,0,59,0,0,0,139,0,479,0,0],[0,0,0,0,481,141,141,57,58,0,0,0,0,418,481,0,0,0,0],[0,0,0,414,415,416,478,57,58,0,59,0,0,418,419,0,0,62,0],[0,0,0,414,415,478,478,57,58,0,59,0,0,0,419,0,0,62,0],[0,482,151,0,0,137,480,0,58,0,59,0,0,0,139,0,482,0,0],[0,337,0,0,0,246,246,0,58,0,59,0,0,0,139,0,337,0,0],[0,337,0,420,0,246,246,0,58,0,59,0,0,0,139,0,337,0,0],[0,0,0,477,415,478,478,57,58,0,59,0,0,0,419,0,0,62,0],[0,0,0,0,481,141,141,57,58,0,0,0,0,425,481,0,0,0,0],[0,0,0,422,415,423,478,57,58,0,59,0,0,425,419,0,0,62,0],[0,0,0,422,415,478,478,57,58,0,59,0,0,0,419,0,0,62,0],[0,0,0,0,0,0,0,258,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,255,0,0],[0,0,0,0,0,483,483,353,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,484,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,137,246,431,0,58,0,59,0,0,0,139,0,0,0,0],[0,0,0,0,485,0,0,0,58,0,0,0,0,0,0,0,0,0,0],[0,0,0,444,116,445,445,8,161,0,162,0,0,0,120,0,0,16,0],[0,0,0,0,225,44,44,8,161,0,0,0,0,435,225,0,0,0,0],[0,0,0,432,116,433,445,8,161,0,162,0,0,435,120,0,0,16,0],[0,0,0,432,116,445,445,8,161,0,162,0,0,0,120,0,0,16,0],[0,0,0,0,0,486,486,361,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,487,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,439,440,441,442,161,0,162,0,0,0,362,0,0,0,0],[0,0,0,0,0,440,440,442,161,0,162,0,0,0,362,0,0,0,0],[0,0,0,0,0,488,488,442,161,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,489,488,488,442,161,0,0,0,0,0,0,0,0,0,0],[0,0,0,490,491,492,493,494,161,0,162,0,0,0,362,0,0,0,0],[0,0,0,495,0,496,497,0,161,0,162,0,0,498,0,0,0,0,0],[0,0,0,0,116,445,445,8,161,0,162,0,0,0,120,0,0,16,0],[0,0,0,0,225,44,44,8,161,0,0,0,0,0,225,0,0,0,0],[0,0,0,0,370,447,447,22,23,0,24,0,0,0,374,0,0,27,0],[0,0,0,0,450,80,80,22,23,0,0,0,0,0,450,0,0,0,0],[0,0,0,499,500,501,502,22,23,0,24,0,0,503,504,0,0,27,0],[0,448,0,505,0,177,177,22,23,0,24,0,0,0,78,0,448,0,0],[0,448,0,0,0,175,506,0,23,0,24,0,0,0,78,0,448,0,0],[0,0,0,507,500,508,509,22,23,0,24,0,0,510,504,0,0,27,0],[0,0,0,0,0,0,0,295,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,292,0,0],[0,0,0,0,0,0,511,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,388,456,456,32,33,0,34,0,0,0,392,0,0,37,0],[0,0,0,0,459,101,101,32,33,0,0,0,0,0,459,0,0,0,0],[0,0,0,512,513,514,515,32,33,0,34,0,0,516,517,0,0,37,0],[0,457,0,518,0,203,203,32,33,0,34,0,0,0,99,0,457,0,0],[0,457,0,0,0,201,519,0,33,0,34,0,0,0,99,0,457,0,0],[0,0,0,520,513,521,522,32,33,0,34,0,0,523,517,0,0,37,0],[0,0,0,0,0,0,0,315,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,312,0,0],[0,0,0,0,0,0,524,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,525,465,526,526,8,9,0,10,0,0,0,469,0,0,16,0],[0,527,0,0,0,40,528,0,9,0,10,0,0,0,42,0,527,0,0],[0,0,0,0,529,44,44,8,9,0,0,0,0,468,529,0,0,0,0],[0,0,0,464,465,466,526,8,9,0,10,0,0,468,469,0,0,16,0],[0,0,0,464,465,526,526,8,9,0,10,0,0,0,469,0,0,16,0],[0,530,64,0,0,40,528,0,9,0,10,0,0,0,42,0,530,0,0],[0,407,0,0,0,121,121,0,9,0,10,0,0,0,42,0,407,0,0],[0,407,0,470,0,121,121,0,9,0,10,0,0,0,42,0,407,0,0],[0,0,0,525,465,526,526,8,9,0,10,0,0,0,469,0,0,16,0],[0,0,0,0,529,44,44,8,9,0,0,0,0,475,529,0,0,0,0],[0,0,0,472,465,473,526,8,9,0,10,0,0,475,469,0,0,16,0],[0,0,0,472,465,526,526,8,9,0,10,0,0,0,469,0,0,16,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,40,0,0],[0,0,0,0,415,478,478,57,58,0,59,0,0,0,419,0,0,62,0],[0,0,0,0,481,141,141,57,58,0,0,0,0,0,481,0,0,0,0],[0,0,0,531,532,533,534,57,58,0,59,0,0,535,536,0,0,62,0],[0,479,0,537,0,248,248,57,58,0,59,0,0,0,139,0,479,0,0],[0,479,0,0,0,246,538,0,58,0,59,0,0,0,139,0,479,0,0],[0,0,0,539,532,540,541,57,58,0,59,0,0,542,536,0,0,62,0],[0,0,0,0,0,0,0,353,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,350,0,0],[0,0,0,0,0,0,543,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,361,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,358,0,0],[0,0,0,0,0,544,544,442,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,545,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,491,492,493,494,161,0,162,0,0,0,362,0,0,0,0],[0,0,0,0,0,492,492,494,161,0,162,0,0,0,362,0,0,0,0],[0,0,0,0,0,546,546,494,161,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,547,546,546,494,161,0,0,0,0,0,0,0,0,0,0],[0,0,0,548,549,368,550,0,161,0,162,0,0,0,362,0,0,0,0],[0,0,0,274,0,368,368,0,161,0,162,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,161,0,0,0,0,498,0,0,0,0,0],[0,0,0,495,0,496,368,0,161,0,162,0,0,498,0,0,0,0,0],[0,0,0,495,0,368,368,0,161,0,162,0,0,0,0,0,0,0,0],[0,0,0,551,500,552,552,22,23,0,24,0,0,0,504,0,0,27,0],[0,553,0,0,0,76,554,0,23,0,24,0,0,0,78,0,553,0,0],[0,0,0,0,555,80,80,22,23,0,0,0,0,503,555,0,0,0,0],[0,0,0,499,500,501,552,22,23,0,24,0,0,503,504,0,0,27,0],[0,0,0,499,500,552,552,22,23,0,24,0,0,0,504,0,0,27,0],[0,556,90,0,0,76,554,0,23,0,24,0,0,0,78,0,556,0,0],[0,448,0,0,0,175,175,0,23,0,24,0,0,0,78,0,448,0,0],[0,448,0,505,0,175,175,0,23,0,24,0,0,0,78,0,448,0,0],[0,0,0,551,500,552,552,22,23,0,24,0,0,0,504,0,0,27,0],[0,0,0,0,555,80,80,22,23,0,0,0,0,510,555,0,0,0,0],[0,0,0,507,500,508,552,22,23,0,24,0,0,510,504,0,0,27,0],[0,0,0,507,500,552,552,22,23,0,24,0,0,0,504,0,0,27,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,76,0,0],[0,0,0,557,513,558,558,32,33,0,34,0,0,0,517,0,0,37,0],[0,559,0,0,0,97,560,0,33,0,34,0,0,0,99,0,559,0,0],[0,0,0,0,561,101,101,32,33,0,0,0,0,516,561,0,0,0,0],[0,0,0,512,513,514,558,32,33,0,34,0,0,516,517,0,0,37,0],[0,0,0,512,513,558,558,32,33,0,34,0,0,0,517,0,0,37,0],[0,562,111,0,0,97,560,0,33,0,34,0,0,0,99,0,562,0,0],[0,457,0,0,0,201,201,0,33,0,34,0,0,0,99,0,457,0,0],[0,457,0,518,0,201,201,0,33,0,34,0,0,0,99,0,457,0,0],[0,0,0,557,513,558,558,32,33,0,34,0,0,0,517,0,0,37,0],[0,0,0,0,561,101,101,32,33,0,0,0,0,523,561,0,0,0,0],[0,0,0,520,513,521,558,32,33,0,34,0,0,523,517,0,0,37,0],[0,0,0,520,513,558,558,32,33,0,34,0,0,0,517,0,0,37,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,97,0,0],[0,0,0,0,465,526,526,8,9,0,10,0,0,0,469,0,0,16,0],[0,0,0,0,529,44,44,8,9,0,0,0,0,0,529,0,0,0,0],[0,0,0,563,66,564,565,8,9,0,10,0,0,566,68,0,0,16,0],[0,527,0,567,0,123,123,8,9,0,10,0,0,0,42,0,527,0,0],[0,527,0,0,0,121,568,0,9,0,10,0,0,0,42,0,527,0,0],[0,0,0,569,66,570,571,8,9,0,10,0,0,572,68,0,0,16,0],[0,0,0,573,532,574,574,57,58,0,59,0,0,0,536,0,0,62,0],[0,575,0,0,0,137,576,0,58,0,59,0,0,0,139,0,575,0,0],[0,0,0,0,577,141,141,57,58,0,0,0,0,535,577,0,0,0,0],[0,0,0,531,532,533,574,57,58,0,59,0,0,535,536,0,0,62,0],[0,0,0,531,532,574,574,57,58,0,59,0,0,0,536,0,0,62,0],[0,578,151,0,0,137,576,0,58,0,59,0,0,0,139,0,578,0,0],[0,479,0,0,0,246,246,0,58,0,59,0,0,0,139,0,479,0,0],[0,479,0,537,0,246,246,0,58,0,59,0,0,0,139,0,479,0,0],[0,0,0,573,532,574,574,57,58,0,59,0,0,0,536,0,0,62,0],[0,0,0,0,577,141,141,57,58,0,0,0,0,542,577,0,0,0,0],[0,0,0,539,532,540,574,57,58,0,59,0,0,542,536,0,0,62,0],[0,0,0,539,532,574,574,57,58,0,59,0,0,0,536,0,0,62,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,137,0,0],[0,0,0,0,0,0,0,442,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,439,0,0],[0,0,0,0,0,579,579,494,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,580,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,549,368,550,0,161,0,162,0,0,0,362,0,0,0,0],[0,0,0,0,0,368,368,0,161,0,162,0,0,0,362,0,0,0,0],[0,0,0,0,581,0,0,0,161,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,500,552,552,22,23,0,24,0,0,0,504,0,0,27,0],[0,0,0,0,555,80,80,22,23,0,0,0,0,0,555,0,0,0,0],[0,0,0,582,91,583,584,22,23,0,24,0,0,585,93,0,0,27,0],[0,553,0,586,0,177,177,22,23,0,24,0,0,0,78,0,553,0,0],[0,553,0,0,0,175,587,0,23,0,24,0,0,0,78,0,553,0,0],[0,0,0,588,91,589,590,22,23,0,24,0,0,591,93,0,0,27,0],[0,0,0,0,513,558,558,32,33,0,34,0,0,0,517,0,0,37,0],[0,0,0,0,561,101,101,32,33,0,0,0,0,0,561,0,0,0,0],[0,0,0,592,112,593,594,32,33,0,34,0,0,595,114,0,0,37,0],[0,559,0,596,0,203,203,32,33,0,34,0,0,0,99,0,559,0,0],[0,559,0,0,0,201,597,0,33,0,34,0,0,0,99,0,559,0,0],[0,0,0,598,112,599,600,32,33,0,34,0,0,601,114,0,0,37,0],[0,0,0,602,66,67,67,8,9,0,10,0,0,0,68,0,0,16,0],[0,0,0,0,165,44,44,8,9,0,0,0,0,566,165,0,0,0,0],[0,0,0,563,66,564,67,8,9,0,10,0,0,566,68,0,0,16,0],[0,0,0,563,66,67,67,8,9,0,10,0,0,0,68,0,0,16,0],[0,527,0,0,0,121,121,0,9,0,10,0,0,0,42,0,527,0,0],[0,527,0,567,0,121,121,0,9,0,10,0,0,0,42,0,527,0,0],[0,0,0,602,66,67,67,8,9,0,10,0,0,0,68,0,0,16,0],[0,0,0,0,165,44,44,8,9,0,0,0,0,572,165,0,0,0,0],[0,0,0,569,66,570,67,8,9,0,10,0,0,572,68,0,0,16,0],[0,0,0,569,66,67,67,8,9,0,10,0,0,0,68,0,0,16,0],[0,0,0,0,532,574,574,57,58,0,59,0,0,0,536,0,0,62,0],[0,0,0,0,577,141,141,57,58,0,0,0,0,0,577,0,0,0,0],[0,0,0,603,152,604,605,57,58,0,59,0,0,606,154,0,0,62,0],[0,575,0,607,0,248,248,57,58,0,59,0,0,0,139,0,575,0,0],[0,575,0,0,0,246,608,0,58,0,59,0,0,0,139,0,575,0,0],[0,0,0,609,152,610,611,57,58,0,59,0,0,612,154,0,0,62,0],[0,0,0,0,0,0,0,494,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,491,0,0],[0,0,0,0,0,0,613,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,614,91,92,92,22,23,0,24,0,0,0,93,0,0,27,0],[0,0,0,0,194,80,80,22,23,0,0,0,0,585,194,0,0,0,0],[0,0,0,582,91,583,92,22,23,0,24,0,0,585,93,0,0,27,0],[0,0,0,582,91,92,92,22,23,0,24,0,0,0,93,0,0,27,0],[0,553,0,0,0,175,175,0,23,0,24,0,0,0,78,0,553,0,0],[0,553,0,586,0,175,175,0,23,0,24,0,0,0,78,0,553,0,0],[0,0,0,614,91,92,92,22,23,0,24,0,0,0,93,0,0,27,0],[0,0,0,0,194,80,80,22,23,0,0,0,0,591,194,0,0,0,0],[0,0,0,588,91,589,92,22,23,0,24,0,0,591,93,0,0,27,0],[0,0,0,588,91,92,92,22,23,0,24,0,0,0,93,0,0,27,0],[0,0,0,615,112,113,113,32,33,0,34,0,0,0,114,0,0,37,0],[0,0,0,0,220,101,101,32,33,0,0,0,0,595,220,0,0,0,0],[0,0,0,592,112,593,113,32,33,0,34,0,0,595,114,0,0,37,0],[0,0,0,592,112,113,113,32,33,0,34,0,0,0,114,0,0,37,0],[0,559,0,0,0,201,201,0,33,0,34,0,0,0,99,0,559,0,0],[0,559,0,596,0,201,201,0,33,0,34,0,0,0,99,0,559,0,0],[0,0,0,615,112,113,113,32,33,0,34,0,0,0,114,0,0,37,0],[0,0,0,0,220,101,101,32,33,0,0,0,0,601,220,0,0,0,0],[0,0,0,598,112,599,113,32,33,0,34,0,0,601,114,0,0,37,0],[0,0,0,598,112,113,113,32,33,0,34,0,0,0,114,0,0,37,0],[0,0,0,0,66,67,67,8,9,0,10,0,0,0,68,0,0,16,0],[0,0,0,616,152,153,153,57,58,0,59,0,0,0,154,0,0,62,0],[0,0,0,0,265,141,141,57,58,0,0,0,0,606,265,0,0,0,0],[0,0,0,603,152,604,153,57,58,0,59,0,0,606,154,0,0,62,0],[0,0,0,603,152,153,153,57,58,0,59,0,0,0,154,0,0,62,0],[0,575,0,0,0,246,246,0,58,0,59,0,0,0,139,0,575,0,0],[0,575,0,607,0,246,246,0,58,0,59,0,0,0,139,0,575,0,0],[0,0,0,616,152,153,153,57,58,0,59,0,0,0,154,0,0,62,0],[0,0,0,0,265,141,141,57,58,0,0,0,0,612,265,0,0,0,0],[0,0,0,609,152,610,153,57,58,0,59,0,0,612,154,0,0,62,0],[0,0,0,609,152,153,153,57,58,0,59,0,0,0,154,0,0,62,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,549,0,0],[0,0,0,0,91,92,92,22,23,0,24,0,0,0,93,0,0,27,0],[0,0,0,0,112,113,113,32,33,0,34,0,0,0,114,0,0,37,0],[0,0,0,0,152,153,153,57,58,0,59,0,0,0,154,0,0,62,0]],"accepting":[false,true,true,true,true,true,false,false,true,true,true,true,true,true,true,true,true,true,true,true,false,true,true,true,true,true,true,true,true,true,false,true,true,true,true,true,true,true,true,true,true,true,false,true,false,true,true,false,false,true,true,true,true,true,true,false,false,true,true,true,true,true,true,true,true,true,true,false,true,true,false,true,true,true,false,true,true,true,false,true,false,true,true,false,false,true,true,true,true,true,true,true,false,true,true,false,true,true,true,false,true,false,true,true,false,false,true,true,true,true,true,true,true,false,true,true,true,false,true,true,true,false,true,false,true,true,false,false,false,true,true,false,false,true,true,true,true,true,true,false,true,false,true,true,false,false,true,true,true,true,true,true,true,false,true,true,false,true,true,true,true,true,true,true,true,true,true,true,true,true,true,false,true,true,true,false,true,false,true,true,false,false,false,true,true,false,false,true,true,true,false,true,true,true,true,true,true,false,true,true,true,false,true,false,true,true,false,false,false,true,true,false,false,true,true,true,false,true,true,true,true,true,false,true,true,true,true,true,false,true,true,false,false,false,false,true,true,false,false,true,true,true,false,true,true,true,false,true,false,true,true,false,false,false,true,true,false,false,true,true,true,false,true,true,true,true,false,true,false,true,true,true,true,true,true,true,true,true,false,true,true,true,true,true,false,true,true,false,false,false,false,true,true,false,false,true,true,true,false,true,true,true,true,true,false,true,true,false,false,false,false,true,true,false,false,true,true,true,true,false,true,true,true,true,true,true,false,true,true,false,false,false,false,true,false,true,false,true,true,true,true,true,false,true,true,false,false,false,false,true,true,false,false,true,true,true,false,true,true,false,false,true,false,true,true,false,true,true,false,true,true,false,true,true,true,true,true,true,false,true,true,false,false,false,false,true,false,true,true,false,true,true,true,true,true,true,false,true,true,false,false,false,false,true,false,true,false,true,true,true,true,false,false,false,true,true,false,true,true,true,true,true,true,false,true,true,false,false,false,false,true,false,true,false,true,true,false,false,true,true,false,false,true,true,true,false,true,false,true,true,true,true,false,false,false,true,false,true,true,true,true,false,false,false,true,true,false,true,true,true,true,true,true,false,true,true,false,true,false,true,true,true,true,false,false,false,false,false,false,false,true,true,false,false,true,true,false,true,true,true,true,false,true,true,true,true,true,true,false,true,true,false,true,true,false,true,true,true,true,true,true,false,true,true,false,true,false,true,true,true,true,true,true,false,true,true,true,true,true,true,false,true,true,false,false,false,false,false,true,true,false,true,false,true,true,true,true,true,false,true,true,true,true,true,false,true,true,true,true,true,false,true,true,true,false,true,true,true,true,false,false,false,true,false,true,true,true,true,true,false,true,true,true,false,true,true,true,true,true,false,true,true,true,true,false,true,true,true,true,true,false,true,true,false,true,true,true],"tags":[[],["broken_cluster"],["consonant_syllable"],["vowel_syllable"],["broken_cluster"],["broken_cluster"],[],[],["broken_cluster"],["broken_cluster"],["broken_cluster"],["standalone_cluster"],["broken_cluster"],["broken_cluster"],["broken_cluster"],["consonant_syllable"],["broken_cluster"],["symbol_cluster"],["consonant_syllable"],["consonant_syllable"],[],["consonant_syllable"],["consonant_syllable"],["consonant_syllable"],["consonant_syllable"],["consonant_syllable"],["consonant_syllable"],["consonant_syllable"],["vowel_syllable"],["vowel_syllable"],[],["vowel_syllable"],["vowel_syllable"],["vowel_syllable"],["vowel_syllable"],["vowel_syllable"],["vowel_syllable"],["vowel_syllable"],["broken_cluster"],["broken_cluster"],["broken_cluster"],["broken_cluster"],[],["broken_cluster"],[],["broken_cluster"],["broken_cluster"],[],[],["broken_cluster"],["broken_cluster"],["broken_cluster"],["broken_cluster"],["standalone_cluster"],["standalone_cluster"],[],[],["standalone_cluster"],["standalone_cluster"],["standalone_cluster"],["standalone_cluster"],["standalone_cluster"],["standalone_cluster"],["broken_cluster"],["broken_cluster"],["consonant_syllable","broken_cluster"],["broken_cluster"],[],["broken_cluster"],["symbol_cluster"],[],["symbol_cluster"],["symbol_cluster"],["consonant_syllable"],[],["consonant_syllable"],["consonant_syllable"],["consonant_syllable"],[],["consonant_syllable"],[],["consonant_syllable"],["consonant_syllable"],[],[],["consonant_syllable"],["consonant_syllable"],["consonant_syllable"],["consonant_syllable"],["consonant_syllable"],["consonant_syllable"],["consonant_syllable"],[],["consonant_syllable"],["vowel_syllable"],[],["vowel_syllable"],["vowel_syllable"],["vowel_syllable"],[],["vowel_syllable"],[],["vowel_syllable"],["vowel_syllable"],[],[],["vowel_syllable"],["vowel_syllable"],["vowel_syllable"],["vowel_syllable"],["vowel_syllable"],["vowel_syllable"],["vowel_syllable"],[],["vowel_syllable"],["broken_cluster"],["broken_cluster"],[],["broken_cluster"],["broken_cluster"],["broken_cluster"],[],["broken_cluster"],[],["broken_cluster"],["broken_cluster"],[],[],[],["broken_cluster"],["broken_cluster"],[],[],["broken_cluster"],["broken_cluster"],["standalone_cluster"],["standalone_cluster"],["standalone_cluster"],["standalone_cluster"],[],["standalone_cluster"],[],["standalone_cluster"],["standalone_cluster"],[],[],["standalone_cluster"],["standalone_cluster"],["standalone_cluster"],["standalone_cluster"],["standalone_cluster"],["standalone_cluster"],["standalone_cluster"],[],["standalone_cluster"],["broken_cluster"],[],["broken_cluster"],["broken_cluster"],["consonant_syllable"],["consonant_syllable"],["consonant_syllable","broken_cluster"],["consonant_syllable","broken_cluster"],["broken_cluster"],["broken_cluster"],["broken_cluster"],["symbol_cluster"],["symbol_cluster"],["symbol_cluster"],["consonant_syllable"],["consonant_syllable"],[],["consonant_syllable"],["consonant_syllable"],["consonant_syllable"],[],["consonant_syllable"],[],["consonant_syllable"],["consonant_syllable"],[],[],[],["consonant_syllable"],["consonant_syllable"],[],[],["consonant_syllable"],["consonant_syllable"],["consonant_syllable"],[],["consonant_syllable"],["consonant_syllable"],["consonant_syllable"],["consonant_syllable"],["vowel_syllable"],["vowel_syllable"],[],["vowel_syllable"],["vowel_syllable"],["vowel_syllable"],[],["vowel_syllable"],[],["vowel_syllable"],["vowel_syllable"],[],[],[],["vowel_syllable"],["vowel_syllable"],[],[],["vowel_syllable"],["vowel_syllable"],["vowel_syllable"],[],["vowel_syllable"],["vowel_syllable"],["vowel_syllable"],["vowel_syllable"],["broken_cluster"],[],["broken_cluster"],["broken_cluster"],["broken_cluster"],["broken_cluster"],["broken_cluster"],[],["broken_cluster"],["broken_cluster"],[],[],[],[],["broken_cluster"],["broken_cluster"],[],[],["broken_cluster"],["standalone_cluster"],["standalone_cluster"],[],["standalone_cluster"],["standalone_cluster"],["standalone_cluster"],[],["standalone_cluster"],[],["standalone_cluster"],["standalone_cluster"],[],[],[],["standalone_cluster"],["standalone_cluster"],[],[],["standalone_cluster"],["standalone_cluster"],["standalone_cluster"],[],["standalone_cluster"],["standalone_cluster"],["standalone_cluster"],["standalone_cluster"],[],["broken_cluster"],[],["consonant_syllable","broken_cluster"],["consonant_syllable","broken_cluster"],["consonant_syllable","broken_cluster"],["consonant_syllable","broken_cluster"],["consonant_syllable","broken_cluster"],["consonant_syllable","broken_cluster"],["broken_cluster"],["symbol_cluster"],["consonant_syllable"],[],["consonant_syllable"],["consonant_syllable"],["consonant_syllable"],["consonant_syllable"],["consonant_syllable"],[],["consonant_syllable"],["consonant_syllable"],[],[],[],[],["consonant_syllable"],["consonant_syllable"],[],[],["consonant_syllable"],["consonant_syllable"],["vowel_syllable"],[],["vowel_syllable"],["vowel_syllable"],["vowel_syllable"],["vowel_syllable"],["vowel_syllable"],[],["vowel_syllable"],["vowel_syllable"],[],[],[],[],["vowel_syllable"],["vowel_syllable"],[],[],["vowel_syllable"],["vowel_syllable"],["broken_cluster"],["broken_cluster"],[],["broken_cluster"],["broken_cluster"],["broken_cluster"],["broken_cluster"],["broken_cluster"],["broken_cluster"],[],["broken_cluster"],["broken_cluster"],[],[],[],[],["broken_cluster"],[],["standalone_cluster"],[],["standalone_cluster"],["standalone_cluster"],["standalone_cluster"],["standalone_cluster"],["standalone_cluster"],[],["standalone_cluster"],["standalone_cluster"],[],[],[],[],["standalone_cluster"],["standalone_cluster"],[],[],["standalone_cluster"],["standalone_cluster"],["consonant_syllable","broken_cluster"],[],["consonant_syllable","broken_cluster"],["consonant_syllable","broken_cluster"],[],[],["consonant_syllable","broken_cluster"],[],["consonant_syllable","broken_cluster"],["consonant_syllable","broken_cluster"],[],["consonant_syllable","broken_cluster"],["consonant_syllable","broken_cluster"],[],["consonant_syllable"],["consonant_syllable"],[],["consonant_syllable"],["consonant_syllable"],["consonant_syllable"],["consonant_syllable"],["consonant_syllable"],["consonant_syllable"],[],["consonant_syllable"],["consonant_syllable"],[],[],[],[],["consonant_syllable"],[],["vowel_syllable"],["vowel_syllable"],[],["vowel_syllable"],["vowel_syllable"],["vowel_syllable"],["vowel_syllable"],["vowel_syllable"],["vowel_syllable"],[],["vowel_syllable"],["vowel_syllable"],[],[],[],[],["vowel_syllable"],[],["broken_cluster"],[],["broken_cluster"],["broken_cluster"],["broken_cluster"],["broken_cluster"],[],[],[],["standalone_cluster"],["standalone_cluster"],[],["standalone_cluster"],["standalone_cluster"],["standalone_cluster"],["standalone_cluster"],["standalone_cluster"],["standalone_cluster"],[],["standalone_cluster"],["standalone_cluster"],[],[],[],[],["standalone_cluster"],[],["consonant_syllable","broken_cluster"],[],["consonant_syllable","broken_cluster"],["consonant_syllable","broken_cluster"],[],[],["consonant_syllable","broken_cluster"],["consonant_syllable","broken_cluster"],[],[],["consonant_syllable","broken_cluster"],["consonant_syllable","broken_cluster"],["consonant_syllable","broken_cluster"],[],["consonant_syllable"],[],["consonant_syllable"],["consonant_syllable"],["consonant_syllable"],["consonant_syllable"],[],[],[],["vowel_syllable"],[],["vowel_syllable"],["vowel_syllable"],["vowel_syllable"],["vowel_syllable"],[],[],[],["broken_cluster"],["broken_cluster"],[],["broken_cluster"],["broken_cluster"],["broken_cluster"],["broken_cluster"],["broken_cluster"],["broken_cluster"],[],["broken_cluster"],["broken_cluster"],[],["standalone_cluster"],[],["standalone_cluster"],["standalone_cluster"],["standalone_cluster"],["standalone_cluster"],[],[],[],[],[],[],[],["consonant_syllable","broken_cluster"],["consonant_syllable","broken_cluster"],[],[],["consonant_syllable","broken_cluster"],["consonant_syllable","broken_cluster"],[],["consonant_syllable","broken_cluster"],["consonant_syllable","broken_cluster"],["consonant_syllable"],["consonant_syllable"],[],["consonant_syllable"],["consonant_syllable"],["consonant_syllable"],["consonant_syllable"],["consonant_syllable"],["consonant_syllable"],[],["consonant_syllable"],["consonant_syllable"],[],["vowel_syllable"],["vowel_syllable"],[],["vowel_syllable"],["vowel_syllable"],["vowel_syllable"],["vowel_syllable"],["vowel_syllable"],["vowel_syllable"],[],["vowel_syllable"],["vowel_syllable"],[],["broken_cluster"],[],["broken_cluster"],["broken_cluster"],["broken_cluster"],["broken_cluster"],["standalone_cluster"],["standalone_cluster"],[],["standalone_cluster"],["standalone_cluster"],["standalone_cluster"],["standalone_cluster"],["standalone_cluster"],["standalone_cluster"],[],["standalone_cluster"],["standalone_cluster"],[],[],[],[],[],["consonant_syllable","broken_cluster"],["consonant_syllable","broken_cluster"],[],["consonant_syllable"],[],["consonant_syllable"],["consonant_syllable"],["consonant_syllable"],["consonant_syllable"],["vowel_syllable"],[],["vowel_syllable"],["vowel_syllable"],["vowel_syllable"],["vowel_syllable"],["broken_cluster"],[],["broken_cluster"],["broken_cluster"],["broken_cluster"],["broken_cluster"],["broken_cluster"],[],["broken_cluster"],["broken_cluster"],["standalone_cluster"],[],["standalone_cluster"],["standalone_cluster"],["standalone_cluster"],["standalone_cluster"],[],[],[],["consonant_syllable"],[],["consonant_syllable"],["consonant_syllable"],["consonant_syllable"],["consonant_syllable"],["consonant_syllable"],[],["consonant_syllable"],["consonant_syllable"],["vowel_syllable"],[],["vowel_syllable"],["vowel_syllable"],["vowel_syllable"],["vowel_syllable"],["vowel_syllable"],[],["vowel_syllable"],["vowel_syllable"],["broken_cluster"],["standalone_cluster"],[],["standalone_cluster"],["standalone_cluster"],["standalone_cluster"],["standalone_cluster"],["standalone_cluster"],[],["standalone_cluster"],["standalone_cluster"],[],["consonant_syllable"],["vowel_syllable"],["standalone_cluster"]]}');
+  var $aa333a9607471296$exports = {};
+  $aa333a9607471296$exports = JSON.parse('{"categories":["O","IND","S","GB","B","FM","CGJ","VMAbv","VMPst","VAbv","VPst","CMBlw","VPre","VBlw","H","VMBlw","CMAbv","MBlw","CS","R","SUB","MPst","MPre","FAbv","FPst","FBlw","null","SMAbv","SMBlw","VMPre","ZWNJ","ZWJ","WJ","M","VS","N","HN","MAbv"],"decompositions":{"2507":[2503,2494],"2508":[2503,2519],"2888":[2887,2902],"2891":[2887,2878],"2892":[2887,2903],"3018":[3014,3006],"3019":[3015,3006],"3020":[3014,3031],"3144":[3142,3158],"3264":[3263,3285],"3271":[3270,3285],"3272":[3270,3286],"3274":[3270,3266],"3275":[3270,3266,3285],"3402":[3398,3390],"3403":[3399,3390],"3404":[3398,3415],"3546":[3545,3530],"3548":[3545,3535],"3549":[3545,3535,3530],"3550":[3545,3551],"3635":[3661,3634],"3763":[3789,3762],"3955":[3953,3954],"3957":[3953,3956],"3958":[4018,3968],"3959":[4018,3953,3968],"3960":[4019,3968],"3961":[4019,3953,3968],"3969":[3953,3968],"6971":[6970,6965],"6973":[6972,6965],"6976":[6974,6965],"6977":[6975,6965],"6979":[6978,6965],"69934":[69937,69927],"69935":[69938,69927],"70475":[70471,70462],"70476":[70471,70487],"70843":[70841,70842],"70844":[70841,70832],"70846":[70841,70845],"71098":[71096,71087],"71099":[71097,71087]},"stateTable":[[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[2,2,3,4,4,5,0,6,7,8,9,10,11,12,13,14,15,16,0,17,18,11,19,20,21,22,0,0,0,23,0,0,2,0,0,24,0,25],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,26,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,27,28,0,0,0,0,0,27,0,0,0],[0,0,0,0,0,29,0,30,31,32,33,34,35,36,37,38,39,40,0,0,41,35,42,43,44,45,0,0,0,46,0,0,0,0,39,0,0,47],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,5,0,6,7,0,0,0,0,0,0,14,0,0,0,0,0,0,0,20,21,22,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,5,0,0,7,0,0,0,0,0,0,0,0,0,0,0,0,0,0,20,21,22,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,5,0,6,7,8,9,0,0,12,0,14,0,0,0,0,0,0,0,20,21,22,0,0,0,23,0,0,0,0,0,0,0,0],[0,0,0,0,0,5,0,6,7,0,9,0,0,0,0,14,0,0,0,0,0,0,0,20,21,22,0,0,0,23,0,0,0,0,0,0,0,0],[0,0,0,0,0,5,0,6,7,8,9,10,11,12,13,14,0,16,0,0,18,11,19,20,21,22,0,0,0,23,0,0,0,0,0,0,0,25],[0,0,0,0,0,5,0,6,7,8,9,0,11,12,0,14,0,0,0,0,0,0,0,20,21,22,0,0,0,23,0,0,0,0,0,0,0,0],[0,0,0,0,0,5,0,6,7,0,9,0,0,12,0,14,0,0,0,0,0,0,0,20,21,22,0,0,0,23,0,0,0,0,0,0,0,0],[0,0,0,0,18,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,5,0,0,7,0,0,0,0,0,0,14,0,0,0,0,0,0,0,20,21,22,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,5,0,6,7,8,9,10,11,12,13,14,15,16,0,0,18,11,19,20,21,22,0,0,0,23,0,0,0,0,0,0,0,25],[0,0,0,0,0,5,0,6,7,8,9,0,11,12,0,14,0,0,0,0,0,11,0,20,21,22,0,0,0,23,0,0,0,0,0,0,0,0],[0,0,0,4,4,5,0,6,7,8,9,10,11,12,13,14,15,16,0,0,18,11,19,20,21,22,0,0,0,23,0,0,0,0,0,0,0,25],[0,0,0,0,0,5,0,6,7,8,9,48,11,12,13,14,48,16,0,0,18,11,19,20,21,22,0,0,0,23,0,0,0,0,49,0,0,25],[0,0,0,0,0,5,0,6,7,8,9,0,11,12,0,14,0,16,0,0,0,11,0,20,21,22,0,0,0,23,0,0,0,0,0,0,0,25],[0,0,0,0,0,5,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,20,21,22,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,5,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,21,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,5,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,21,22,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,5,0,6,7,0,0,0,0,0,0,14,0,0,0,0,0,0,0,20,21,22,0,0,0,23,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,50,0,51,0],[0,0,0,0,0,5,0,6,7,8,9,0,11,12,0,14,0,16,0,0,0,11,0,20,21,22,0,0,0,23,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,27,28,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,28,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,29,0,30,31,0,0,0,0,0,0,38,0,0,0,0,0,0,0,43,44,45,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,29,0,0,31,0,0,0,0,0,0,0,0,0,0,0,0,0,0,43,44,45,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,29,0,30,31,32,33,0,0,36,0,38,0,0,0,0,0,0,0,43,44,45,0,0,0,46,0,0,0,0,0,0,0,0],[0,0,0,0,0,29,0,30,31,0,33,0,0,0,0,38,0,0,0,0,0,0,0,43,44,45,0,0,0,46,0,0,0,0,0,0,0,0],[0,0,0,0,0,29,0,30,31,32,33,34,35,36,37,38,0,40,0,0,41,35,42,43,44,45,0,0,0,46,0,0,0,0,0,0,0,47],[0,0,0,0,0,29,0,30,31,32,33,0,35,36,0,38,0,0,0,0,0,0,0,43,44,45,0,0,0,46,0,0,0,0,0,0,0,0],[0,0,0,0,0,29,0,30,31,0,33,0,0,36,0,38,0,0,0,0,0,0,0,43,44,45,0,0,0,46,0,0,0,0,0,0,0,0],[0,0,0,0,41,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,29,0,0,31,0,0,0,0,0,0,38,0,0,0,0,0,0,0,43,44,45,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,29,0,30,31,32,33,34,35,36,37,38,39,40,0,0,41,35,42,43,44,45,0,0,0,46,0,0,0,0,0,0,0,47],[0,0,0,0,0,29,0,30,31,32,33,0,35,36,0,38,0,0,0,0,0,35,0,43,44,45,0,0,0,46,0,0,0,0,0,0,0,0],[0,0,0,0,0,29,0,30,31,32,33,52,35,36,37,38,52,40,0,0,41,35,42,43,44,45,0,0,0,46,0,0,0,0,53,0,0,47],[0,0,0,0,0,29,0,30,31,32,33,0,35,36,0,38,0,40,0,0,0,35,0,43,44,45,0,0,0,46,0,0,0,0,0,0,0,47],[0,0,0,0,0,29,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,43,44,45,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,29,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,44,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,29,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,44,45,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,29,0,30,31,0,0,0,0,0,0,38,0,0,0,0,0,0,0,43,44,45,0,0,0,46,0,0,0,0,0,0,0,0],[0,0,0,0,0,29,0,30,31,32,33,0,35,36,0,38,0,40,0,0,0,35,0,43,44,45,0,0,0,46,0,0,0,0,0,0,0,0],[0,0,0,0,0,5,0,6,7,8,9,48,11,12,13,14,0,16,0,0,18,11,19,20,21,22,0,0,0,23,0,0,0,0,0,0,0,25],[0,0,0,0,0,5,0,6,7,8,9,48,11,12,13,14,48,16,0,0,18,11,19,20,21,22,0,0,0,23,0,0,0,0,0,0,0,25],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,51,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,54,0,0],[0,0,0,0,0,29,0,30,31,32,33,52,35,36,37,38,0,40,0,0,41,35,42,43,44,45,0,0,0,46,0,0,0,0,0,0,0,47],[0,0,0,0,0,29,0,30,31,32,33,52,35,36,37,38,52,40,0,0,41,35,42,43,44,45,0,0,0,46,0,0,0,0,0,0,0,47],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,50,0,51,0]],"accepting":[false,true,true,true,true,true,true,true,true,true,true,true,true,false,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true],"tags":[[],["broken_cluster"],["independent_cluster"],["symbol_cluster"],["standard_cluster"],["broken_cluster"],["broken_cluster"],["broken_cluster"],["broken_cluster"],["broken_cluster"],["broken_cluster"],["broken_cluster"],["broken_cluster"],[],["broken_cluster"],["broken_cluster"],["broken_cluster"],["broken_cluster"],["broken_cluster"],["broken_cluster"],["broken_cluster"],["broken_cluster"],["broken_cluster"],["broken_cluster"],["numeral_cluster"],["broken_cluster"],["independent_cluster"],["symbol_cluster"],["symbol_cluster"],["standard_cluster"],["standard_cluster"],["standard_cluster"],["standard_cluster"],["standard_cluster"],["standard_cluster"],["standard_cluster"],["standard_cluster"],["virama_terminated_cluster"],["standard_cluster"],["standard_cluster"],["standard_cluster"],["standard_cluster"],["standard_cluster"],["standard_cluster"],["standard_cluster"],["standard_cluster"],["standard_cluster"],["standard_cluster"],["broken_cluster"],["broken_cluster"],["numeral_cluster"],["number_joiner_terminated_cluster"],["standard_cluster"],["standard_cluster"],["numeral_cluster"]]}');
+  var $90a9d3398ee54fe5$export$a513ea61a7bee91c = {
+    X: 1,
+    C: 2,
+    V: 4,
+    N: 8,
+    H: 16,
+    ZWNJ: 32,
+    ZWJ: 64,
+    M: 128,
+    SM: 256,
+    VD: 512,
+    A: 1024,
+    Placeholder: 2048,
+    Dotted_Circle: 4096,
+    RS: 8192,
+    Coeng: 16384,
+    Repha: 32768,
+    Ra: 65536,
+    CM: 131072,
+    Symbol: 262144
+    // Avagraha, etc that take marks (SM,A,VD).
+  };
+  var $90a9d3398ee54fe5$export$1a1f61c9c4dd9df0 = {
+    Start: 1,
+    Ra_To_Become_Reph: 2,
+    Pre_M: 4,
+    Pre_C: 8,
+    Base_C: 16,
+    After_Main: 32,
+    Above_C: 64,
+    Before_Sub: 128,
+    Below_C: 256,
+    After_Sub: 512,
+    Before_Post: 1024,
+    Post_C: 2048,
+    After_Post: 4096,
+    Final_C: 8192,
+    SMVD: 16384,
+    End: 32768
+  };
+  var $90a9d3398ee54fe5$export$8519deaa7de2b07 = $90a9d3398ee54fe5$export$a513ea61a7bee91c.C | $90a9d3398ee54fe5$export$a513ea61a7bee91c.Ra | $90a9d3398ee54fe5$export$a513ea61a7bee91c.CM | $90a9d3398ee54fe5$export$a513ea61a7bee91c.V | $90a9d3398ee54fe5$export$a513ea61a7bee91c.Placeholder | $90a9d3398ee54fe5$export$a513ea61a7bee91c.Dotted_Circle;
+  var $90a9d3398ee54fe5$export$bbcd928767338e0d = $90a9d3398ee54fe5$export$a513ea61a7bee91c.ZWJ | $90a9d3398ee54fe5$export$a513ea61a7bee91c.ZWNJ;
+  var $90a9d3398ee54fe5$export$ca9599b2a300afc = $90a9d3398ee54fe5$export$a513ea61a7bee91c.H | $90a9d3398ee54fe5$export$a513ea61a7bee91c.Coeng;
+  var $90a9d3398ee54fe5$export$e99d119da76a0fc5 = {
+    Default: {
+      hasOldSpec: false,
+      virama: 0,
+      basePos: "Last",
+      rephPos: $90a9d3398ee54fe5$export$1a1f61c9c4dd9df0.Before_Post,
+      rephMode: "Implicit",
+      blwfMode: "Pre_And_Post"
+    },
+    Devanagari: {
+      hasOldSpec: true,
+      virama: 2381,
+      basePos: "Last",
+      rephPos: $90a9d3398ee54fe5$export$1a1f61c9c4dd9df0.Before_Post,
+      rephMode: "Implicit",
+      blwfMode: "Pre_And_Post"
+    },
+    Bengali: {
+      hasOldSpec: true,
+      virama: 2509,
+      basePos: "Last",
+      rephPos: $90a9d3398ee54fe5$export$1a1f61c9c4dd9df0.After_Sub,
+      rephMode: "Implicit",
+      blwfMode: "Pre_And_Post"
+    },
+    Gurmukhi: {
+      hasOldSpec: true,
+      virama: 2637,
+      basePos: "Last",
+      rephPos: $90a9d3398ee54fe5$export$1a1f61c9c4dd9df0.Before_Sub,
+      rephMode: "Implicit",
+      blwfMode: "Pre_And_Post"
+    },
+    Gujarati: {
+      hasOldSpec: true,
+      virama: 2765,
+      basePos: "Last",
+      rephPos: $90a9d3398ee54fe5$export$1a1f61c9c4dd9df0.Before_Post,
+      rephMode: "Implicit",
+      blwfMode: "Pre_And_Post"
+    },
+    Oriya: {
+      hasOldSpec: true,
+      virama: 2893,
+      basePos: "Last",
+      rephPos: $90a9d3398ee54fe5$export$1a1f61c9c4dd9df0.After_Main,
+      rephMode: "Implicit",
+      blwfMode: "Pre_And_Post"
+    },
+    Tamil: {
+      hasOldSpec: true,
+      virama: 3021,
+      basePos: "Last",
+      rephPos: $90a9d3398ee54fe5$export$1a1f61c9c4dd9df0.After_Post,
+      rephMode: "Implicit",
+      blwfMode: "Pre_And_Post"
+    },
+    Telugu: {
+      hasOldSpec: true,
+      virama: 3149,
+      basePos: "Last",
+      rephPos: $90a9d3398ee54fe5$export$1a1f61c9c4dd9df0.After_Post,
+      rephMode: "Explicit",
+      blwfMode: "Post_Only"
+    },
+    Kannada: {
+      hasOldSpec: true,
+      virama: 3277,
+      basePos: "Last",
+      rephPos: $90a9d3398ee54fe5$export$1a1f61c9c4dd9df0.After_Post,
+      rephMode: "Implicit",
+      blwfMode: "Post_Only"
+    },
+    Malayalam: {
+      hasOldSpec: true,
+      virama: 3405,
+      basePos: "Last",
+      rephPos: $90a9d3398ee54fe5$export$1a1f61c9c4dd9df0.After_Main,
+      rephMode: "Log_Repha",
+      blwfMode: "Pre_And_Post"
+    },
+    // Handled by UniversalShaper
+    // Sinhala: {
+    //   hasOldSpec: false,
+    //   virama: 0x0DCA,
+    //   basePos: 'Last_Sinhala',
+    //   rephPos: POSITIONS.After_Main,
+    //   rephMode: 'Explicit',
+    //   blwfMode: 'Pre_And_Post'
+    // },
+    Khmer: {
+      hasOldSpec: false,
+      virama: 6098,
+      basePos: "First",
+      rephPos: $90a9d3398ee54fe5$export$1a1f61c9c4dd9df0.Ra_To_Become_Reph,
+      rephMode: "Vis_Repha",
+      blwfMode: "Pre_And_Post"
+    }
+  };
+  var $90a9d3398ee54fe5$export$f647c9cfdd77d95a = {
+    // Khmer
+    6078: [
+      6081,
+      6078
+    ],
+    6079: [
+      6081,
+      6079
+    ],
+    6080: [
+      6081,
+      6080
+    ],
+    6084: [
+      6081,
+      6084
+    ],
+    6085: [
+      6081,
+      6085
+    ]
+  };
+  var { decompositions: $7826f90f6f0cecc9$var$decompositions } = (0, /* @__PURE__ */ $parcel$interopDefault2($aa333a9607471296$exports));
+  var $7826f90f6f0cecc9$var$trie = new (0, import_unicode_trie2.default)((0, $12727730ddfc8bfe$export$94fdf11bafc8de6b)("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"));
+  var $7826f90f6f0cecc9$var$stateMachine = new (0, import_dfa.default)((0, /* @__PURE__ */ $parcel$interopDefault2($4b0735ca6c692ea5$exports)));
+  var $7826f90f6f0cecc9$export$2e2bcd8739ae039 = class extends (0, $649970d87335b30f$export$2e2bcd8739ae039) {
+    static planFeatures(plan) {
+      plan.addStage($7826f90f6f0cecc9$var$setupSyllables);
+      plan.addStage([
+        "locl",
+        "ccmp"
+      ]);
+      plan.addStage($7826f90f6f0cecc9$var$initialReordering);
+      plan.addStage("nukt");
+      plan.addStage("akhn");
+      plan.addStage("rphf", false);
+      plan.addStage("rkrf");
+      plan.addStage("pref", false);
+      plan.addStage("blwf", false);
+      plan.addStage("abvf", false);
+      plan.addStage("half", false);
+      plan.addStage("pstf", false);
+      plan.addStage("vatu");
+      plan.addStage("cjct");
+      plan.addStage("cfar", false);
+      plan.addStage($7826f90f6f0cecc9$var$finalReordering);
+      plan.addStage({
+        local: [
+          "init"
+        ],
+        global: [
+          "pres",
+          "abvs",
+          "blws",
+          "psts",
+          "haln",
+          "dist",
+          "abvm",
+          "blwm",
+          "calt",
+          "clig"
+        ]
+      });
+      plan.unicodeScript = $130d1a642ebcd2b7$export$ce50e82f12a827a4(plan.script);
+      plan.indicConfig = (0, $90a9d3398ee54fe5$export$e99d119da76a0fc5)[plan.unicodeScript] || (0, $90a9d3398ee54fe5$export$e99d119da76a0fc5).Default;
+      plan.isOldSpec = plan.indicConfig.hasOldSpec && plan.script[plan.script.length - 1] !== "2";
+    }
+    static assignFeatures(plan, glyphs) {
+      for (let i2 = glyphs.length - 1; i2 >= 0; i2--) {
+        let codepoint = glyphs[i2].codePoints[0];
+        let d = (0, $90a9d3398ee54fe5$export$f647c9cfdd77d95a)[codepoint] || $7826f90f6f0cecc9$var$decompositions[codepoint];
+        if (d) {
+          let decomposed = d.map((c) => {
+            let g = plan.font.glyphForCodePoint(c);
+            return new (0, $10e7b257e1a9a756$export$2e2bcd8739ae039)(plan.font, g.id, [
+              c
+            ], glyphs[i2].features);
+          });
+          glyphs.splice(i2, 1, ...decomposed);
+        }
+      }
+    }
+  };
+  (0, _define_property)($7826f90f6f0cecc9$export$2e2bcd8739ae039, "zeroMarkWidths", "NONE");
+  function $7826f90f6f0cecc9$var$indicCategory(glyph) {
+    return $7826f90f6f0cecc9$var$trie.get(glyph.codePoints[0]) >> 8;
+  }
+  function $7826f90f6f0cecc9$var$indicPosition(glyph) {
+    return 1 << ($7826f90f6f0cecc9$var$trie.get(glyph.codePoints[0]) & 255);
+  }
+  var $7826f90f6f0cecc9$var$IndicInfo = class {
+    constructor(category, position, syllableType, syllable) {
+      this.category = category;
+      this.position = position;
+      this.syllableType = syllableType;
+      this.syllable = syllable;
+    }
+  };
+  function $7826f90f6f0cecc9$var$setupSyllables(font, glyphs) {
+    let syllable = 0;
+    let last = 0;
+    for (let [start, end, tags] of $7826f90f6f0cecc9$var$stateMachine.match(glyphs.map($7826f90f6f0cecc9$var$indicCategory))) {
+      if (start > last) {
+        ++syllable;
+        for (let i2 = last; i2 < start; i2++) glyphs[i2].shaperInfo = new $7826f90f6f0cecc9$var$IndicInfo((0, $90a9d3398ee54fe5$export$a513ea61a7bee91c).X, (0, $90a9d3398ee54fe5$export$1a1f61c9c4dd9df0).End, "non_indic_cluster", syllable);
+      }
+      ++syllable;
+      for (let i2 = start; i2 <= end; i2++) glyphs[i2].shaperInfo = new $7826f90f6f0cecc9$var$IndicInfo(1 << $7826f90f6f0cecc9$var$indicCategory(glyphs[i2]), $7826f90f6f0cecc9$var$indicPosition(glyphs[i2]), tags[0], syllable);
+      last = end + 1;
+    }
+    if (last < glyphs.length) {
+      ++syllable;
+      for (let i2 = last; i2 < glyphs.length; i2++) glyphs[i2].shaperInfo = new $7826f90f6f0cecc9$var$IndicInfo((0, $90a9d3398ee54fe5$export$a513ea61a7bee91c).X, (0, $90a9d3398ee54fe5$export$1a1f61c9c4dd9df0).End, "non_indic_cluster", syllable);
+    }
+  }
+  function $7826f90f6f0cecc9$var$isConsonant(glyph) {
+    return glyph.shaperInfo.category & (0, $90a9d3398ee54fe5$export$8519deaa7de2b07);
+  }
+  function $7826f90f6f0cecc9$var$isJoiner(glyph) {
+    return glyph.shaperInfo.category & (0, $90a9d3398ee54fe5$export$bbcd928767338e0d);
+  }
+  function $7826f90f6f0cecc9$var$isHalantOrCoeng(glyph) {
+    return glyph.shaperInfo.category & (0, $90a9d3398ee54fe5$export$ca9599b2a300afc);
+  }
+  function $7826f90f6f0cecc9$var$wouldSubstitute(glyphs, feature) {
+    for (let glyph of glyphs) glyph.features = {
+      [feature]: true
+    };
+    let GSUB = glyphs[0]._font._layoutEngine.engine.GSUBProcessor;
+    GSUB.applyFeatures([
+      feature
+    ], glyphs);
+    return glyphs.length === 1;
+  }
+  function $7826f90f6f0cecc9$var$consonantPosition(font, consonant, virama) {
+    let glyphs = [
+      virama,
+      consonant,
+      virama
+    ];
+    if ($7826f90f6f0cecc9$var$wouldSubstitute(glyphs.slice(0, 2), "blwf") || $7826f90f6f0cecc9$var$wouldSubstitute(glyphs.slice(1, 3), "blwf")) return (0, $90a9d3398ee54fe5$export$1a1f61c9c4dd9df0).Below_C;
+    else if ($7826f90f6f0cecc9$var$wouldSubstitute(glyphs.slice(0, 2), "pstf") || $7826f90f6f0cecc9$var$wouldSubstitute(glyphs.slice(1, 3), "pstf")) return (0, $90a9d3398ee54fe5$export$1a1f61c9c4dd9df0).Post_C;
+    else if ($7826f90f6f0cecc9$var$wouldSubstitute(glyphs.slice(0, 2), "pref") || $7826f90f6f0cecc9$var$wouldSubstitute(glyphs.slice(1, 3), "pref")) return (0, $90a9d3398ee54fe5$export$1a1f61c9c4dd9df0).Post_C;
+    return (0, $90a9d3398ee54fe5$export$1a1f61c9c4dd9df0).Base_C;
+  }
+  function $7826f90f6f0cecc9$var$initialReordering(font, glyphs, plan) {
+    let indicConfig = plan.indicConfig;
+    let features = font._layoutEngine.engine.GSUBProcessor.features;
+    let dottedCircle = font.glyphForCodePoint(9676).id;
+    let virama = font.glyphForCodePoint(indicConfig.virama).id;
+    if (virama) {
+      let info = new (0, $10e7b257e1a9a756$export$2e2bcd8739ae039)(font, virama, [
+        indicConfig.virama
+      ]);
+      for (let i2 = 0; i2 < glyphs.length; i2++) if (glyphs[i2].shaperInfo.position === (0, $90a9d3398ee54fe5$export$1a1f61c9c4dd9df0).Base_C) glyphs[i2].shaperInfo.position = $7826f90f6f0cecc9$var$consonantPosition(font, glyphs[i2].copy(), info);
+    }
+    for (let start = 0, end = $7826f90f6f0cecc9$var$nextSyllable(glyphs, 0); start < glyphs.length; start = end, end = $7826f90f6f0cecc9$var$nextSyllable(glyphs, start)) {
+      let { category, syllableType } = glyphs[start].shaperInfo;
+      if (syllableType === "symbol_cluster" || syllableType === "non_indic_cluster") continue;
+      if (syllableType === "broken_cluster" && dottedCircle) {
+        let g = new (0, $10e7b257e1a9a756$export$2e2bcd8739ae039)(font, dottedCircle, [
+          9676
+        ]);
+        g.shaperInfo = new $7826f90f6f0cecc9$var$IndicInfo(1 << $7826f90f6f0cecc9$var$indicCategory(g), $7826f90f6f0cecc9$var$indicPosition(g), glyphs[start].shaperInfo.syllableType, glyphs[start].shaperInfo.syllable);
+        let i2 = start;
+        while (i2 < end && glyphs[i2].shaperInfo.category === (0, $90a9d3398ee54fe5$export$a513ea61a7bee91c).Repha) i2++;
+        glyphs.splice(i2++, 0, g);
+        end++;
+      }
+      let base = end;
+      let limit = start;
+      let hasReph = false;
+      if (indicConfig.rephPos !== (0, $90a9d3398ee54fe5$export$1a1f61c9c4dd9df0).Ra_To_Become_Reph && features.rphf && start + 3 <= end && (indicConfig.rephMode === "Implicit" && !$7826f90f6f0cecc9$var$isJoiner(glyphs[start + 2]) || indicConfig.rephMode === "Explicit" && glyphs[start + 2].shaperInfo.category === (0, $90a9d3398ee54fe5$export$a513ea61a7bee91c).ZWJ)) {
+        let g = [
+          glyphs[start].copy(),
+          glyphs[start + 1].copy(),
+          glyphs[start + 2].copy()
+        ];
+        if ($7826f90f6f0cecc9$var$wouldSubstitute(g.slice(0, 2), "rphf") || indicConfig.rephMode === "Explicit" && $7826f90f6f0cecc9$var$wouldSubstitute(g, "rphf")) {
+          limit += 2;
+          while (limit < end && $7826f90f6f0cecc9$var$isJoiner(glyphs[limit])) limit++;
+          base = start;
+          hasReph = true;
+        }
+      } else if (indicConfig.rephMode === "Log_Repha" && glyphs[start].shaperInfo.category === (0, $90a9d3398ee54fe5$export$a513ea61a7bee91c).Repha) {
+        limit++;
+        while (limit < end && $7826f90f6f0cecc9$var$isJoiner(glyphs[limit])) limit++;
+        base = start;
+        hasReph = true;
+      }
+      switch (indicConfig.basePos) {
+        case "Last": {
+          let i2 = end;
+          let seenBelow = false;
+          do {
+            let info = glyphs[--i2].shaperInfo;
+            if ($7826f90f6f0cecc9$var$isConsonant(glyphs[i2])) {
+              if (info.position !== (0, $90a9d3398ee54fe5$export$1a1f61c9c4dd9df0).Below_C && (info.position !== (0, $90a9d3398ee54fe5$export$1a1f61c9c4dd9df0).Post_C || seenBelow)) {
+                base = i2;
+                break;
+              }
+              if (info.position === (0, $90a9d3398ee54fe5$export$1a1f61c9c4dd9df0).Below_C) seenBelow = true;
+              base = i2;
+            } else if (start < i2 && info.category === (0, $90a9d3398ee54fe5$export$a513ea61a7bee91c).ZWJ && glyphs[i2 - 1].shaperInfo.category === (0, $90a9d3398ee54fe5$export$a513ea61a7bee91c).H) break;
+          } while (i2 > limit);
+          break;
+        }
+        case "First":
+          base = start;
+          for (let i2 = base + 1; i2 < end; i2++) if ($7826f90f6f0cecc9$var$isConsonant(glyphs[i2])) glyphs[i2].shaperInfo.position = (0, $90a9d3398ee54fe5$export$1a1f61c9c4dd9df0).Below_C;
+      }
+      if (hasReph && base === start && limit - base <= 2) hasReph = false;
+      for (let i2 = start; i2 < base; i2++) {
+        let info = glyphs[i2].shaperInfo;
+        info.position = Math.min((0, $90a9d3398ee54fe5$export$1a1f61c9c4dd9df0).Pre_C, info.position);
+      }
+      if (base < end) glyphs[base].shaperInfo.position = (0, $90a9d3398ee54fe5$export$1a1f61c9c4dd9df0).Base_C;
+      for (let i2 = base + 1; i2 < end; i2++) if (glyphs[i2].shaperInfo.category === (0, $90a9d3398ee54fe5$export$a513ea61a7bee91c).M) {
+        for (let j = i2 + 1; j < end; j++) if ($7826f90f6f0cecc9$var$isConsonant(glyphs[j])) {
+          glyphs[j].shaperInfo.position = (0, $90a9d3398ee54fe5$export$1a1f61c9c4dd9df0).Final_C;
+          break;
+        }
+        break;
+      }
+      if (hasReph) glyphs[start].shaperInfo.position = (0, $90a9d3398ee54fe5$export$1a1f61c9c4dd9df0).Ra_To_Become_Reph;
+      if (plan.isOldSpec) {
+        let disallowDoubleHalants = plan.unicodeScript !== "Malayalam";
+        for (let i2 = base + 1; i2 < end; i2++) if (glyphs[i2].shaperInfo.category === (0, $90a9d3398ee54fe5$export$a513ea61a7bee91c).H) {
+          let j;
+          for (j = end - 1; j > i2; j--) {
+            if ($7826f90f6f0cecc9$var$isConsonant(glyphs[j]) || disallowDoubleHalants && glyphs[j].shaperInfo.category === (0, $90a9d3398ee54fe5$export$a513ea61a7bee91c).H) break;
+          }
+          if (glyphs[j].shaperInfo.category !== (0, $90a9d3398ee54fe5$export$a513ea61a7bee91c).H && j > i2) {
+            let t = glyphs[i2];
+            glyphs.splice(i2, 0, ...glyphs.splice(i2 + 1, j - i2));
+            glyphs[j] = t;
+          }
+          break;
+        }
+      }
+      let lastPos = (0, $90a9d3398ee54fe5$export$1a1f61c9c4dd9df0).Start;
+      for (let i2 = start; i2 < end; i2++) {
+        let info = glyphs[i2].shaperInfo;
+        if (info.category & ((0, $90a9d3398ee54fe5$export$bbcd928767338e0d) | (0, $90a9d3398ee54fe5$export$a513ea61a7bee91c).N | (0, $90a9d3398ee54fe5$export$a513ea61a7bee91c).RS | (0, $90a9d3398ee54fe5$export$a513ea61a7bee91c).CM | (0, $90a9d3398ee54fe5$export$ca9599b2a300afc) & info.category)) {
+          info.position = lastPos;
+          if (info.category === (0, $90a9d3398ee54fe5$export$a513ea61a7bee91c).H && info.position === (0, $90a9d3398ee54fe5$export$1a1f61c9c4dd9df0).Pre_M) {
+            for (let j = i2; j > start; j--) if (glyphs[j - 1].shaperInfo.position !== (0, $90a9d3398ee54fe5$export$1a1f61c9c4dd9df0).Pre_M) {
+              info.position = glyphs[j - 1].shaperInfo.position;
+              break;
+            }
+          }
+        } else if (info.position !== (0, $90a9d3398ee54fe5$export$1a1f61c9c4dd9df0).SMVD) lastPos = info.position;
+      }
+      let last = base;
+      for (let i2 = base + 1; i2 < end; i2++) {
+        if ($7826f90f6f0cecc9$var$isConsonant(glyphs[i2])) {
+          for (let j = last + 1; j < i2; j++) if (glyphs[j].shaperInfo.position < (0, $90a9d3398ee54fe5$export$1a1f61c9c4dd9df0).SMVD) glyphs[j].shaperInfo.position = glyphs[i2].shaperInfo.position;
+          last = i2;
+        } else if (glyphs[i2].shaperInfo.category === (0, $90a9d3398ee54fe5$export$a513ea61a7bee91c).M) last = i2;
+      }
+      let arr = glyphs.slice(start, end);
+      arr.sort((a, b) => a.shaperInfo.position - b.shaperInfo.position);
+      glyphs.splice(start, arr.length, ...arr);
+      for (let i2 = start; i2 < end; i2++) if (glyphs[i2].shaperInfo.position === (0, $90a9d3398ee54fe5$export$1a1f61c9c4dd9df0).Base_C) {
+        base = i2;
+        break;
+      }
+      for (let i2 = start; i2 < end && glyphs[i2].shaperInfo.position === (0, $90a9d3398ee54fe5$export$1a1f61c9c4dd9df0).Ra_To_Become_Reph; i2++) glyphs[i2].features.rphf = true;
+      let blwf = !plan.isOldSpec && indicConfig.blwfMode === "Pre_And_Post";
+      for (let i2 = start; i2 < base; i2++) {
+        glyphs[i2].features.half = true;
+        if (blwf) glyphs[i2].features.blwf = true;
+      }
+      for (let i2 = base + 1; i2 < end; i2++) {
+        glyphs[i2].features.abvf = true;
+        glyphs[i2].features.pstf = true;
+        glyphs[i2].features.blwf = true;
+      }
+      if (plan.isOldSpec && plan.unicodeScript === "Devanagari") {
+        for (let i2 = start; i2 + 1 < base; i2++) if (glyphs[i2].shaperInfo.category === (0, $90a9d3398ee54fe5$export$a513ea61a7bee91c).Ra && glyphs[i2 + 1].shaperInfo.category === (0, $90a9d3398ee54fe5$export$a513ea61a7bee91c).H && (i2 + 1 === base || glyphs[i2 + 2].shaperInfo.category === (0, $90a9d3398ee54fe5$export$a513ea61a7bee91c).ZWJ)) {
+          glyphs[i2].features.blwf = true;
+          glyphs[i2 + 1].features.blwf = true;
+        }
+      }
+      let prefLen = 2;
+      if (features.pref && base + prefLen < end)
+        for (let i2 = base + 1; i2 + prefLen - 1 < end; i2++) {
+          let g = [
+            glyphs[i2].copy(),
+            glyphs[i2 + 1].copy()
+          ];
+          if ($7826f90f6f0cecc9$var$wouldSubstitute(g, "pref")) {
+            for (let j = 0; j < prefLen; j++) glyphs[i2++].features.pref = true;
+            if (features.cfar) for (; i2 < end; i2++) glyphs[i2].features.cfar = true;
+            break;
+          }
+        }
+      for (let i2 = start + 1; i2 < end; i2++) if ($7826f90f6f0cecc9$var$isJoiner(glyphs[i2])) {
+        let nonJoiner = glyphs[i2].shaperInfo.category === (0, $90a9d3398ee54fe5$export$a513ea61a7bee91c).ZWNJ;
+        let j = i2;
+        do {
+          j--;
+          if (nonJoiner) delete glyphs[j].features.half;
+        } while (j > start && !$7826f90f6f0cecc9$var$isConsonant(glyphs[j]));
+      }
+    }
+  }
+  function $7826f90f6f0cecc9$var$finalReordering(font, glyphs, plan) {
+    let indicConfig = plan.indicConfig;
+    let features = font._layoutEngine.engine.GSUBProcessor.features;
+    for (let start = 0, end = $7826f90f6f0cecc9$var$nextSyllable(glyphs, 0); start < glyphs.length; start = end, end = $7826f90f6f0cecc9$var$nextSyllable(glyphs, start)) {
+      let tryPref = !!features.pref;
+      let base = start;
+      for (; base < end; base++) if (glyphs[base].shaperInfo.position >= (0, $90a9d3398ee54fe5$export$1a1f61c9c4dd9df0).Base_C) {
+        if (tryPref && base + 1 < end) {
+          for (let i2 = base + 1; i2 < end; i2++) if (glyphs[i2].features.pref) {
+            if (!(glyphs[i2].substituted && glyphs[i2].isLigated && !glyphs[i2].isMultiplied)) {
+              base = i2;
+              while (base < end && $7826f90f6f0cecc9$var$isHalantOrCoeng(glyphs[base])) base++;
+              glyphs[base].shaperInfo.position = (0, $90a9d3398ee54fe5$export$1a1f61c9c4dd9df0).BASE_C;
+              tryPref = false;
+            }
+            break;
+          }
+        }
+        if (plan.unicodeScript === "Malayalam") for (let i2 = base + 1; i2 < end; i2++) {
+          while (i2 < end && $7826f90f6f0cecc9$var$isJoiner(glyphs[i2])) i2++;
+          if (i2 === end || !$7826f90f6f0cecc9$var$isHalantOrCoeng(glyphs[i2])) break;
+          i2++;
+          while (i2 < end && $7826f90f6f0cecc9$var$isJoiner(glyphs[i2])) i2++;
+          if (i2 < end && $7826f90f6f0cecc9$var$isConsonant(glyphs[i2]) && glyphs[i2].shaperInfo.position === (0, $90a9d3398ee54fe5$export$1a1f61c9c4dd9df0).Below_C) {
+            base = i2;
+            glyphs[base].shaperInfo.position = (0, $90a9d3398ee54fe5$export$1a1f61c9c4dd9df0).Base_C;
+          }
+        }
+        if (start < base && glyphs[base].shaperInfo.position > (0, $90a9d3398ee54fe5$export$1a1f61c9c4dd9df0).Base_C) base--;
+        break;
+      }
+      if (base === end && start < base && glyphs[base - 1].shaperInfo.category === (0, $90a9d3398ee54fe5$export$a513ea61a7bee91c).ZWJ) base--;
+      if (base < end) while (start < base && glyphs[base].shaperInfo.category & ((0, $90a9d3398ee54fe5$export$a513ea61a7bee91c).N | (0, $90a9d3398ee54fe5$export$ca9599b2a300afc))) base--;
+      if (start + 1 < end && start < base) {
+        let newPos = base === end ? base - 2 : base - 1;
+        if (plan.unicodeScript !== "Malayalam" && plan.unicodeScript !== "Tamil") {
+          while (newPos > start && !(glyphs[newPos].shaperInfo.category & ((0, $90a9d3398ee54fe5$export$a513ea61a7bee91c).M | (0, $90a9d3398ee54fe5$export$ca9599b2a300afc)))) newPos--;
+          if ($7826f90f6f0cecc9$var$isHalantOrCoeng(glyphs[newPos]) && glyphs[newPos].shaperInfo.position !== (0, $90a9d3398ee54fe5$export$1a1f61c9c4dd9df0).Pre_M) {
+            if (newPos + 1 < end && $7826f90f6f0cecc9$var$isJoiner(glyphs[newPos + 1])) newPos++;
+          } else newPos = start;
+        }
+        if (start < newPos && glyphs[newPos].shaperInfo.position !== (0, $90a9d3398ee54fe5$export$1a1f61c9c4dd9df0).Pre_M) {
+          for (let i2 = newPos; i2 > start; i2--) if (glyphs[i2 - 1].shaperInfo.position === (0, $90a9d3398ee54fe5$export$1a1f61c9c4dd9df0).Pre_M) {
+            let oldPos = i2 - 1;
+            if (oldPos < base && base <= newPos) base--;
+            let tmp = glyphs[oldPos];
+            glyphs.splice(oldPos, 0, ...glyphs.splice(oldPos + 1, newPos - oldPos));
+            glyphs[newPos] = tmp;
+            newPos--;
+          }
+        }
+      }
+      if (start + 1 < end && glyphs[start].shaperInfo.position === (0, $90a9d3398ee54fe5$export$1a1f61c9c4dd9df0).Ra_To_Become_Reph && glyphs[start].shaperInfo.category === (0, $90a9d3398ee54fe5$export$a513ea61a7bee91c).Repha !== (glyphs[start].isLigated && !glyphs[start].isMultiplied)) {
+        let newRephPos;
+        let rephPos = indicConfig.rephPos;
+        let found = false;
+        if (rephPos !== (0, $90a9d3398ee54fe5$export$1a1f61c9c4dd9df0).After_Post) {
+          newRephPos = start + 1;
+          while (newRephPos < base && !$7826f90f6f0cecc9$var$isHalantOrCoeng(glyphs[newRephPos])) newRephPos++;
+          if (newRephPos < base && $7826f90f6f0cecc9$var$isHalantOrCoeng(glyphs[newRephPos])) {
+            if (newRephPos + 1 < base && $7826f90f6f0cecc9$var$isJoiner(glyphs[newRephPos + 1])) newRephPos++;
+            found = true;
+          }
+          if (!found && rephPos === (0, $90a9d3398ee54fe5$export$1a1f61c9c4dd9df0).After_Main) {
+            newRephPos = base;
+            while (newRephPos + 1 < end && glyphs[newRephPos + 1].shaperInfo.position <= (0, $90a9d3398ee54fe5$export$1a1f61c9c4dd9df0).After_Main) newRephPos++;
+            found = newRephPos < end;
+          }
+          if (!found && rephPos === (0, $90a9d3398ee54fe5$export$1a1f61c9c4dd9df0).After_Sub) {
+            newRephPos = base;
+            while (newRephPos + 1 < end && !(glyphs[newRephPos + 1].shaperInfo.position & ((0, $90a9d3398ee54fe5$export$1a1f61c9c4dd9df0).Post_C | (0, $90a9d3398ee54fe5$export$1a1f61c9c4dd9df0).After_Post | (0, $90a9d3398ee54fe5$export$1a1f61c9c4dd9df0).SMVD))) newRephPos++;
+            found = newRephPos < end;
+          }
+        }
+        if (!found) {
+          newRephPos = start + 1;
+          while (newRephPos < base && !$7826f90f6f0cecc9$var$isHalantOrCoeng(glyphs[newRephPos])) newRephPos++;
+          if (newRephPos < base && $7826f90f6f0cecc9$var$isHalantOrCoeng(glyphs[newRephPos])) {
+            if (newRephPos + 1 < base && $7826f90f6f0cecc9$var$isJoiner(glyphs[newRephPos + 1])) newRephPos++;
+            found = true;
+          }
+        }
+        if (!found) {
+          newRephPos = end - 1;
+          while (newRephPos > start && glyphs[newRephPos].shaperInfo.position === (0, $90a9d3398ee54fe5$export$1a1f61c9c4dd9df0).SMVD) newRephPos--;
+          if ($7826f90f6f0cecc9$var$isHalantOrCoeng(glyphs[newRephPos])) {
+            for (let i2 = base + 1; i2 < newRephPos; i2++) if (glyphs[i2].shaperInfo.category === (0, $90a9d3398ee54fe5$export$a513ea61a7bee91c).M) newRephPos--;
+          }
+        }
+        let reph = glyphs[start];
+        glyphs.splice(start, 0, ...glyphs.splice(start + 1, newRephPos - start));
+        glyphs[newRephPos] = reph;
+        if (start < base && base <= newRephPos) base--;
+      }
+      if (tryPref && base + 1 < end) {
+        for (let i2 = base + 1; i2 < end; i2++) if (glyphs[i2].features.pref) {
+          if (glyphs[i2].isLigated && !glyphs[i2].isMultiplied) {
+            let newPos = base;
+            if (plan.unicodeScript !== "Malayalam" && plan.unicodeScript !== "Tamil") {
+              while (newPos > start && !(glyphs[newPos - 1].shaperInfo.category & ((0, $90a9d3398ee54fe5$export$a513ea61a7bee91c).M | (0, $90a9d3398ee54fe5$export$ca9599b2a300afc)))) newPos--;
+              if (newPos > start && glyphs[newPos - 1].shaperInfo.category === (0, $90a9d3398ee54fe5$export$a513ea61a7bee91c).M) {
+                let oldPos2 = i2;
+                for (let j = base + 1; j < oldPos2; j++) if (glyphs[j].shaperInfo.category === (0, $90a9d3398ee54fe5$export$a513ea61a7bee91c).M) {
+                  newPos--;
+                  break;
+                }
+              }
+            }
+            if (newPos > start && $7826f90f6f0cecc9$var$isHalantOrCoeng(glyphs[newPos - 1])) {
+              if (newPos < end && $7826f90f6f0cecc9$var$isJoiner(glyphs[newPos])) newPos++;
+            }
+            let oldPos = i2;
+            let tmp = glyphs[oldPos];
+            glyphs.splice(newPos + 1, 0, ...glyphs.splice(newPos, oldPos - newPos));
+            glyphs[newPos] = tmp;
+            if (newPos <= base && base < oldPos) base++;
+          }
+          break;
+        }
+      }
+      if (glyphs[start].shaperInfo.position === (0, $90a9d3398ee54fe5$export$1a1f61c9c4dd9df0).Pre_M && (!start || !/Cf|Mn/.test((0, $747425b437e121da$export$410364bbb673ddbc)(glyphs[start - 1].codePoints[0])))) glyphs[start].features.init = true;
+    }
+  }
+  function $7826f90f6f0cecc9$var$nextSyllable(glyphs, start) {
+    if (start >= glyphs.length) return start;
+    let syllable = glyphs[start].shaperInfo.syllable;
+    while (++start < glyphs.length && glyphs[start].shaperInfo.syllable === syllable) ;
+    return start;
+  }
+  var { categories: $7ab494fe977143c6$var$categories, decompositions: $7ab494fe977143c6$var$decompositions } = (0, /* @__PURE__ */ $parcel$interopDefault2($aa333a9607471296$exports));
+  var $7ab494fe977143c6$var$trie = new (0, import_unicode_trie2.default)((0, $12727730ddfc8bfe$export$94fdf11bafc8de6b)("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"));
+  var $7ab494fe977143c6$var$stateMachine = new (0, import_dfa.default)((0, /* @__PURE__ */ $parcel$interopDefault2($aa333a9607471296$exports)));
+  var $7ab494fe977143c6$export$2e2bcd8739ae039 = class extends (0, $649970d87335b30f$export$2e2bcd8739ae039) {
+    static planFeatures(plan) {
+      plan.addStage($7ab494fe977143c6$var$setupSyllables);
+      plan.addStage([
+        "locl",
+        "ccmp",
+        "nukt",
+        "akhn"
+      ]);
+      plan.addStage($7ab494fe977143c6$var$clearSubstitutionFlags);
+      plan.addStage([
+        "rphf"
+      ], false);
+      plan.addStage($7ab494fe977143c6$var$recordRphf);
+      plan.addStage($7ab494fe977143c6$var$clearSubstitutionFlags);
+      plan.addStage([
+        "pref"
+      ]);
+      plan.addStage($7ab494fe977143c6$var$recordPref);
+      plan.addStage([
+        "rkrf",
+        "abvf",
+        "blwf",
+        "half",
+        "pstf",
+        "vatu",
+        "cjct"
+      ]);
+      plan.addStage($7ab494fe977143c6$var$reorder);
+      plan.addStage([
+        "abvs",
+        "blws",
+        "pres",
+        "psts",
+        "dist",
+        "abvm",
+        "blwm"
+      ]);
+    }
+    static assignFeatures(plan, glyphs) {
+      for (let i2 = glyphs.length - 1; i2 >= 0; i2--) {
+        let codepoint = glyphs[i2].codePoints[0];
+        if ($7ab494fe977143c6$var$decompositions[codepoint]) {
+          let decomposed = $7ab494fe977143c6$var$decompositions[codepoint].map((c) => {
+            let g = plan.font.glyphForCodePoint(c);
+            return new (0, $10e7b257e1a9a756$export$2e2bcd8739ae039)(plan.font, g.id, [
+              c
+            ], glyphs[i2].features);
+          });
+          glyphs.splice(i2, 1, ...decomposed);
+        }
+      }
+    }
+  };
+  (0, _define_property)($7ab494fe977143c6$export$2e2bcd8739ae039, "zeroMarkWidths", "BEFORE_GPOS");
+  function $7ab494fe977143c6$var$useCategory(glyph) {
+    return $7ab494fe977143c6$var$trie.get(glyph.codePoints[0]);
+  }
+  var $7ab494fe977143c6$var$USEInfo = class {
+    constructor(category, syllableType, syllable) {
+      this.category = category;
+      this.syllableType = syllableType;
+      this.syllable = syllable;
+    }
+  };
+  function $7ab494fe977143c6$var$setupSyllables(font, glyphs) {
+    let syllable = 0;
+    for (let [start, end, tags] of $7ab494fe977143c6$var$stateMachine.match(glyphs.map($7ab494fe977143c6$var$useCategory))) {
+      ++syllable;
+      for (let i2 = start; i2 <= end; i2++) glyphs[i2].shaperInfo = new $7ab494fe977143c6$var$USEInfo($7ab494fe977143c6$var$categories[$7ab494fe977143c6$var$useCategory(glyphs[i2])], tags[0], syllable);
+      let limit = glyphs[start].shaperInfo.category === "R" ? 1 : Math.min(3, end - start);
+      for (let i2 = start; i2 < start + limit; i2++) glyphs[i2].features.rphf = true;
+    }
+  }
+  function $7ab494fe977143c6$var$clearSubstitutionFlags(font, glyphs) {
+    for (let glyph of glyphs) glyph.substituted = false;
+  }
+  function $7ab494fe977143c6$var$recordRphf(font, glyphs) {
+    for (let glyph of glyphs) if (glyph.substituted && glyph.features.rphf)
+      glyph.shaperInfo.category = "R";
+  }
+  function $7ab494fe977143c6$var$recordPref(font, glyphs) {
+    for (let glyph of glyphs) if (glyph.substituted)
+      glyph.shaperInfo.category = "VPre";
+  }
+  function $7ab494fe977143c6$var$reorder(font, glyphs) {
+    let dottedCircle = font.glyphForCodePoint(9676).id;
+    for (let start = 0, end = $7ab494fe977143c6$var$nextSyllable(glyphs, 0); start < glyphs.length; start = end, end = $7ab494fe977143c6$var$nextSyllable(glyphs, start)) {
+      let i2, j;
+      let info = glyphs[start].shaperInfo;
+      let type = info.syllableType;
+      if (type !== "virama_terminated_cluster" && type !== "standard_cluster" && type !== "broken_cluster") continue;
+      if (type === "broken_cluster" && dottedCircle) {
+        let g = new (0, $10e7b257e1a9a756$export$2e2bcd8739ae039)(font, dottedCircle, [
+          9676
+        ]);
+        g.shaperInfo = info;
+        for (i2 = start; i2 < end && glyphs[i2].shaperInfo.category === "R"; i2++) ;
+        glyphs.splice(++i2, 0, g);
+        end++;
+      }
+      if (info.category === "R" && end - start > 1)
+        for (i2 = start + 1; i2 < end; i2++) {
+          info = glyphs[i2].shaperInfo;
+          if ($7ab494fe977143c6$var$isBase(info) || $7ab494fe977143c6$var$isHalant(glyphs[i2])) {
+            if ($7ab494fe977143c6$var$isHalant(glyphs[i2])) i2--;
+            glyphs.splice(start, 0, ...glyphs.splice(start + 1, i2 - start), glyphs[i2]);
+            break;
+          }
+        }
+      for (i2 = start, j = end; i2 < end; i2++) {
+        info = glyphs[i2].shaperInfo;
+        if ($7ab494fe977143c6$var$isBase(info) || $7ab494fe977143c6$var$isHalant(glyphs[i2]))
+          j = $7ab494fe977143c6$var$isHalant(glyphs[i2]) ? i2 + 1 : i2;
+        else if ((info.category === "VPre" || info.category === "VMPre") && j < i2) glyphs.splice(j, 1, glyphs[i2], ...glyphs.splice(j, i2 - j));
+      }
+    }
+  }
+  function $7ab494fe977143c6$var$nextSyllable(glyphs, start) {
+    if (start >= glyphs.length) return start;
+    let syllable = glyphs[start].shaperInfo.syllable;
+    while (++start < glyphs.length && glyphs[start].shaperInfo.syllable === syllable) ;
+    return start;
+  }
+  function $7ab494fe977143c6$var$isHalant(glyph) {
+    return glyph.shaperInfo.category === "H" && !glyph.isLigated;
+  }
+  function $7ab494fe977143c6$var$isBase(info) {
+    return info.category === "B" || info.category === "GB";
+  }
+  var $102b6fe50f1d50b4$var$SHAPERS = {
+    arab: (0, $764eb544bbe1ccf0$export$2e2bcd8739ae039),
+    mong: (0, $764eb544bbe1ccf0$export$2e2bcd8739ae039),
+    syrc: (0, $764eb544bbe1ccf0$export$2e2bcd8739ae039),
+    "nko ": (0, $764eb544bbe1ccf0$export$2e2bcd8739ae039),
+    phag: (0, $764eb544bbe1ccf0$export$2e2bcd8739ae039),
+    mand: (0, $764eb544bbe1ccf0$export$2e2bcd8739ae039),
+    mani: (0, $764eb544bbe1ccf0$export$2e2bcd8739ae039),
+    phlp: (0, $764eb544bbe1ccf0$export$2e2bcd8739ae039),
+    hang: (0, $e1c6bbc8cb416f8c$export$2e2bcd8739ae039),
+    bng2: (0, $7826f90f6f0cecc9$export$2e2bcd8739ae039),
+    beng: (0, $7826f90f6f0cecc9$export$2e2bcd8739ae039),
+    dev2: (0, $7826f90f6f0cecc9$export$2e2bcd8739ae039),
+    deva: (0, $7826f90f6f0cecc9$export$2e2bcd8739ae039),
+    gjr2: (0, $7826f90f6f0cecc9$export$2e2bcd8739ae039),
+    gujr: (0, $7826f90f6f0cecc9$export$2e2bcd8739ae039),
+    guru: (0, $7826f90f6f0cecc9$export$2e2bcd8739ae039),
+    gur2: (0, $7826f90f6f0cecc9$export$2e2bcd8739ae039),
+    knda: (0, $7826f90f6f0cecc9$export$2e2bcd8739ae039),
+    knd2: (0, $7826f90f6f0cecc9$export$2e2bcd8739ae039),
+    mlm2: (0, $7826f90f6f0cecc9$export$2e2bcd8739ae039),
+    mlym: (0, $7826f90f6f0cecc9$export$2e2bcd8739ae039),
+    ory2: (0, $7826f90f6f0cecc9$export$2e2bcd8739ae039),
+    orya: (0, $7826f90f6f0cecc9$export$2e2bcd8739ae039),
+    taml: (0, $7826f90f6f0cecc9$export$2e2bcd8739ae039),
+    tml2: (0, $7826f90f6f0cecc9$export$2e2bcd8739ae039),
+    telu: (0, $7826f90f6f0cecc9$export$2e2bcd8739ae039),
+    tel2: (0, $7826f90f6f0cecc9$export$2e2bcd8739ae039),
+    khmr: (0, $7826f90f6f0cecc9$export$2e2bcd8739ae039),
+    bali: (0, $7ab494fe977143c6$export$2e2bcd8739ae039),
+    batk: (0, $7ab494fe977143c6$export$2e2bcd8739ae039),
+    brah: (0, $7ab494fe977143c6$export$2e2bcd8739ae039),
+    bugi: (0, $7ab494fe977143c6$export$2e2bcd8739ae039),
+    buhd: (0, $7ab494fe977143c6$export$2e2bcd8739ae039),
+    cakm: (0, $7ab494fe977143c6$export$2e2bcd8739ae039),
+    cham: (0, $7ab494fe977143c6$export$2e2bcd8739ae039),
+    dupl: (0, $7ab494fe977143c6$export$2e2bcd8739ae039),
+    egyp: (0, $7ab494fe977143c6$export$2e2bcd8739ae039),
+    gran: (0, $7ab494fe977143c6$export$2e2bcd8739ae039),
+    hano: (0, $7ab494fe977143c6$export$2e2bcd8739ae039),
+    java: (0, $7ab494fe977143c6$export$2e2bcd8739ae039),
+    kthi: (0, $7ab494fe977143c6$export$2e2bcd8739ae039),
+    kali: (0, $7ab494fe977143c6$export$2e2bcd8739ae039),
+    khar: (0, $7ab494fe977143c6$export$2e2bcd8739ae039),
+    khoj: (0, $7ab494fe977143c6$export$2e2bcd8739ae039),
+    sind: (0, $7ab494fe977143c6$export$2e2bcd8739ae039),
+    lepc: (0, $7ab494fe977143c6$export$2e2bcd8739ae039),
+    limb: (0, $7ab494fe977143c6$export$2e2bcd8739ae039),
+    mahj: (0, $7ab494fe977143c6$export$2e2bcd8739ae039),
+    // mand: UniversalShaper, // Mandaic
+    // mani: UniversalShaper, // Manichaean
+    mtei: (0, $7ab494fe977143c6$export$2e2bcd8739ae039),
+    modi: (0, $7ab494fe977143c6$export$2e2bcd8739ae039),
+    // mong: UniversalShaper, // Mongolian
+    // 'nko ': UniversalShaper, // N’Ko
+    hmng: (0, $7ab494fe977143c6$export$2e2bcd8739ae039),
+    // phag: UniversalShaper, // Phags-pa
+    // phlp: UniversalShaper, // Psalter Pahlavi
+    rjng: (0, $7ab494fe977143c6$export$2e2bcd8739ae039),
+    saur: (0, $7ab494fe977143c6$export$2e2bcd8739ae039),
+    shrd: (0, $7ab494fe977143c6$export$2e2bcd8739ae039),
+    sidd: (0, $7ab494fe977143c6$export$2e2bcd8739ae039),
+    sinh: (0, $7826f90f6f0cecc9$export$2e2bcd8739ae039),
+    sund: (0, $7ab494fe977143c6$export$2e2bcd8739ae039),
+    sylo: (0, $7ab494fe977143c6$export$2e2bcd8739ae039),
+    tglg: (0, $7ab494fe977143c6$export$2e2bcd8739ae039),
+    tagb: (0, $7ab494fe977143c6$export$2e2bcd8739ae039),
+    tale: (0, $7ab494fe977143c6$export$2e2bcd8739ae039),
+    lana: (0, $7ab494fe977143c6$export$2e2bcd8739ae039),
+    tavt: (0, $7ab494fe977143c6$export$2e2bcd8739ae039),
+    takr: (0, $7ab494fe977143c6$export$2e2bcd8739ae039),
+    tibt: (0, $7ab494fe977143c6$export$2e2bcd8739ae039),
+    tfng: (0, $7ab494fe977143c6$export$2e2bcd8739ae039),
+    tirh: (0, $7ab494fe977143c6$export$2e2bcd8739ae039),
+    latn: (0, $649970d87335b30f$export$2e2bcd8739ae039),
+    DFLT: (0, $649970d87335b30f$export$2e2bcd8739ae039)
+  };
+  function $102b6fe50f1d50b4$export$7877a478dd30fd3d(script) {
+    if (!Array.isArray(script)) script = [
+      script
+    ];
+    for (let s of script) {
+      let shaper = $102b6fe50f1d50b4$var$SHAPERS[s];
+      if (shaper) return shaper;
+    }
+    return 0, $649970d87335b30f$export$2e2bcd8739ae039;
+  }
+  var $0a876c45f1f7c41c$export$2e2bcd8739ae039 = class extends (0, $a83b9c36aaa94fd3$export$2e2bcd8739ae039) {
+    applyLookup(lookupType, table) {
+      switch (lookupType) {
+        case 1: {
+          let index = this.coverageIndex(table.coverage);
+          if (index === -1) return false;
+          let glyph = this.glyphIterator.cur;
+          switch (table.version) {
+            case 1:
+              glyph.id = glyph.id + table.deltaGlyphID & 65535;
+              break;
+            case 2:
+              glyph.id = table.substitute.get(index);
+              break;
+          }
+          return true;
+        }
+        case 2: {
+          let index = this.coverageIndex(table.coverage);
+          if (index !== -1) {
+            let sequence = table.sequences.get(index);
+            if (sequence.length === 0) {
+              this.glyphs.splice(this.glyphIterator.index, 1);
+              return true;
+            }
+            this.glyphIterator.cur.id = sequence[0];
+            this.glyphIterator.cur.ligatureComponent = 0;
+            let features = this.glyphIterator.cur.features;
+            let curGlyph = this.glyphIterator.cur;
+            let replacement = sequence.slice(1).map((gid, i2) => {
+              let glyph = new (0, $10e7b257e1a9a756$export$2e2bcd8739ae039)(this.font, gid, void 0, features);
+              glyph.shaperInfo = curGlyph.shaperInfo;
+              glyph.isLigated = curGlyph.isLigated;
+              glyph.ligatureComponent = i2 + 1;
+              glyph.substituted = true;
+              glyph.isMultiplied = true;
+              return glyph;
+            });
+            this.glyphs.splice(this.glyphIterator.index + 1, 0, ...replacement);
+            return true;
+          }
+          return false;
+        }
+        case 3: {
+          let index = this.coverageIndex(table.coverage);
+          if (index !== -1) {
+            let USER_INDEX = 0;
+            this.glyphIterator.cur.id = table.alternateSet.get(index)[USER_INDEX];
+            return true;
+          }
+          return false;
+        }
+        case 4: {
+          let index = this.coverageIndex(table.coverage);
+          if (index === -1) return false;
+          for (let ligature of table.ligatureSets.get(index)) {
+            let matched = this.sequenceMatchIndices(1, ligature.components);
+            if (!matched) continue;
+            let curGlyph = this.glyphIterator.cur;
+            let characters = curGlyph.codePoints.slice();
+            for (let index2 of matched) characters.push(...this.glyphs[index2].codePoints);
+            let ligatureGlyph = new (0, $10e7b257e1a9a756$export$2e2bcd8739ae039)(this.font, ligature.glyph, characters, curGlyph.features);
+            ligatureGlyph.shaperInfo = curGlyph.shaperInfo;
+            ligatureGlyph.isLigated = true;
+            ligatureGlyph.substituted = true;
+            let isMarkLigature = curGlyph.isMark;
+            for (let i2 = 0; i2 < matched.length && isMarkLigature; i2++) isMarkLigature = this.glyphs[matched[i2]].isMark;
+            ligatureGlyph.ligatureID = isMarkLigature ? null : this.ligatureID++;
+            let lastLigID = curGlyph.ligatureID;
+            let lastNumComps = curGlyph.codePoints.length;
+            let curComps = lastNumComps;
+            let idx = this.glyphIterator.index + 1;
+            for (let matchIndex of matched) {
+              if (isMarkLigature) idx = matchIndex;
+              else while (idx < matchIndex) {
+                var ligatureComponent = curComps - lastNumComps + Math.min(this.glyphs[idx].ligatureComponent || 1, lastNumComps);
+                this.glyphs[idx].ligatureID = ligatureGlyph.ligatureID;
+                this.glyphs[idx].ligatureComponent = ligatureComponent;
+                idx++;
+              }
+              lastLigID = this.glyphs[idx].ligatureID;
+              lastNumComps = this.glyphs[idx].codePoints.length;
+              curComps += lastNumComps;
+              idx++;
+            }
+            if (lastLigID && !isMarkLigature) for (let i2 = idx; i2 < this.glyphs.length; i2++) {
+              if (this.glyphs[i2].ligatureID === lastLigID) {
+                var ligatureComponent = curComps - lastNumComps + Math.min(this.glyphs[i2].ligatureComponent || 1, lastNumComps);
+                this.glyphs[i2].ligatureComponent = ligatureComponent;
+              } else break;
+            }
+            for (let i2 = matched.length - 1; i2 >= 0; i2--) this.glyphs.splice(matched[i2], 1);
+            this.glyphs[this.glyphIterator.index] = ligatureGlyph;
+            return true;
+          }
+          return false;
+        }
+        case 5:
+          return this.applyContext(table);
+        case 6:
+          return this.applyChainingContext(table);
+        case 7:
+          return this.applyLookup(table.lookupType, table.extension);
+        default:
+          throw new Error(`GSUB lookupType ${lookupType} is not supported`);
+      }
+    }
+  };
+  var $c96c93587d49c14d$export$2e2bcd8739ae039 = class extends (0, $a83b9c36aaa94fd3$export$2e2bcd8739ae039) {
+    applyPositionValue(sequenceIndex, value) {
+      let position = this.positions[this.glyphIterator.peekIndex(sequenceIndex)];
+      if (value.xAdvance != null) position.xAdvance += value.xAdvance;
+      if (value.yAdvance != null) position.yAdvance += value.yAdvance;
+      if (value.xPlacement != null) position.xOffset += value.xPlacement;
+      if (value.yPlacement != null) position.yOffset += value.yPlacement;
+      let variationProcessor = this.font._variationProcessor;
+      let variationStore = this.font.GDEF && this.font.GDEF.itemVariationStore;
+      if (variationProcessor && variationStore) {
+        if (value.xPlaDevice) position.xOffset += variationProcessor.getDelta(variationStore, value.xPlaDevice.a, value.xPlaDevice.b);
+        if (value.yPlaDevice) position.yOffset += variationProcessor.getDelta(variationStore, value.yPlaDevice.a, value.yPlaDevice.b);
+        if (value.xAdvDevice) position.xAdvance += variationProcessor.getDelta(variationStore, value.xAdvDevice.a, value.xAdvDevice.b);
+        if (value.yAdvDevice) position.yAdvance += variationProcessor.getDelta(variationStore, value.yAdvDevice.a, value.yAdvDevice.b);
+      }
+    }
+    applyLookup(lookupType, table) {
+      switch (lookupType) {
+        case 1: {
+          let index = this.coverageIndex(table.coverage);
+          if (index === -1) return false;
+          switch (table.version) {
+            case 1:
+              this.applyPositionValue(0, table.value);
+              break;
+            case 2:
+              this.applyPositionValue(0, table.values.get(index));
+              break;
+          }
+          return true;
+        }
+        case 2: {
+          let nextGlyph = this.glyphIterator.peek();
+          if (!nextGlyph) return false;
+          let index = this.coverageIndex(table.coverage);
+          if (index === -1) return false;
+          switch (table.version) {
+            case 1:
+              let set = table.pairSets.get(index);
+              for (let pair2 of set) if (pair2.secondGlyph === nextGlyph.id) {
+                this.applyPositionValue(0, pair2.value1);
+                this.applyPositionValue(1, pair2.value2);
+                return true;
+              }
+              return false;
+            case 2:
+              let class1 = this.getClassID(this.glyphIterator.cur.id, table.classDef1);
+              let class2 = this.getClassID(nextGlyph.id, table.classDef2);
+              if (class1 === -1 || class2 === -1) return false;
+              var pair = table.classRecords.get(class1).get(class2);
+              this.applyPositionValue(0, pair.value1);
+              this.applyPositionValue(1, pair.value2);
+              return true;
+          }
+        }
+        case 3: {
+          let nextIndex = this.glyphIterator.peekIndex();
+          let nextGlyph = this.glyphs[nextIndex];
+          if (!nextGlyph) return false;
+          let curRecord = table.entryExitRecords[this.coverageIndex(table.coverage)];
+          if (!curRecord || !curRecord.exitAnchor) return false;
+          let nextRecord = table.entryExitRecords[this.coverageIndex(table.coverage, nextGlyph.id)];
+          if (!nextRecord || !nextRecord.entryAnchor) return false;
+          let entry = this.getAnchor(nextRecord.entryAnchor);
+          let exit = this.getAnchor(curRecord.exitAnchor);
+          let cur = this.positions[this.glyphIterator.index];
+          let next = this.positions[nextIndex];
+          let d;
+          switch (this.direction) {
+            case "ltr":
+              cur.xAdvance = exit.x + cur.xOffset;
+              d = entry.x + next.xOffset;
+              next.xAdvance -= d;
+              next.xOffset -= d;
+              break;
+            case "rtl":
+              d = exit.x + cur.xOffset;
+              cur.xAdvance -= d;
+              cur.xOffset -= d;
+              next.xAdvance = entry.x + next.xOffset;
+              break;
+          }
+          if (this.glyphIterator.flags.rightToLeft) {
+            this.glyphIterator.cur.cursiveAttachment = nextIndex;
+            cur.yOffset = entry.y - exit.y;
+          } else {
+            nextGlyph.cursiveAttachment = this.glyphIterator.index;
+            cur.yOffset = exit.y - entry.y;
+          }
+          return true;
+        }
+        case 4: {
+          let markIndex = this.coverageIndex(table.markCoverage);
+          if (markIndex === -1) return false;
+          let baseGlyphIndex = this.glyphIterator.index;
+          while (--baseGlyphIndex >= 0 && (this.glyphs[baseGlyphIndex].isMark || this.glyphs[baseGlyphIndex].ligatureComponent > 0)) ;
+          if (baseGlyphIndex < 0) return false;
+          let baseIndex = this.coverageIndex(table.baseCoverage, this.glyphs[baseGlyphIndex].id);
+          if (baseIndex === -1) return false;
+          let markRecord = table.markArray[markIndex];
+          let baseAnchor = table.baseArray[baseIndex][markRecord.class];
+          this.applyAnchor(markRecord, baseAnchor, baseGlyphIndex);
+          return true;
+        }
+        case 5: {
+          let markIndex = this.coverageIndex(table.markCoverage);
+          if (markIndex === -1) return false;
+          let baseGlyphIndex = this.glyphIterator.index;
+          while (--baseGlyphIndex >= 0 && this.glyphs[baseGlyphIndex].isMark) ;
+          if (baseGlyphIndex < 0) return false;
+          let ligIndex = this.coverageIndex(table.ligatureCoverage, this.glyphs[baseGlyphIndex].id);
+          if (ligIndex === -1) return false;
+          let ligAttach = table.ligatureArray[ligIndex];
+          let markGlyph = this.glyphIterator.cur;
+          let ligGlyph = this.glyphs[baseGlyphIndex];
+          let compIndex = ligGlyph.ligatureID && ligGlyph.ligatureID === markGlyph.ligatureID && markGlyph.ligatureComponent > 0 ? Math.min(markGlyph.ligatureComponent, ligGlyph.codePoints.length) - 1 : ligGlyph.codePoints.length - 1;
+          let markRecord = table.markArray[markIndex];
+          let baseAnchor = ligAttach[compIndex][markRecord.class];
+          this.applyAnchor(markRecord, baseAnchor, baseGlyphIndex);
+          return true;
+        }
+        case 6: {
+          let mark1Index = this.coverageIndex(table.mark1Coverage);
+          if (mark1Index === -1) return false;
+          let prevIndex = this.glyphIterator.peekIndex(-1);
+          let prev = this.glyphs[prevIndex];
+          if (!prev || !prev.isMark) return false;
+          let cur = this.glyphIterator.cur;
+          let good = false;
+          if (cur.ligatureID === prev.ligatureID) {
+            if (!cur.ligatureID) good = true;
+            else if (cur.ligatureComponent === prev.ligatureComponent) good = true;
+          } else if (cur.ligatureID && !cur.ligatureComponent || prev.ligatureID && !prev.ligatureComponent) good = true;
+          if (!good) return false;
+          let mark2Index = this.coverageIndex(table.mark2Coverage, prev.id);
+          if (mark2Index === -1) return false;
+          let markRecord = table.mark1Array[mark1Index];
+          let baseAnchor = table.mark2Array[mark2Index][markRecord.class];
+          this.applyAnchor(markRecord, baseAnchor, prevIndex);
+          return true;
+        }
+        case 7:
+          return this.applyContext(table);
+        case 8:
+          return this.applyChainingContext(table);
+        case 9:
+          return this.applyLookup(table.lookupType, table.extension);
+        default:
+          throw new Error(`Unsupported GPOS table: ${lookupType}`);
+      }
+    }
+    applyAnchor(markRecord, baseAnchor, baseGlyphIndex) {
+      let baseCoords = this.getAnchor(baseAnchor);
+      let markCoords = this.getAnchor(markRecord.markAnchor);
+      let basePos = this.positions[baseGlyphIndex];
+      let markPos = this.positions[this.glyphIterator.index];
+      markPos.xOffset = baseCoords.x - markCoords.x;
+      markPos.yOffset = baseCoords.y - markCoords.y;
+      this.glyphIterator.cur.markAttachment = baseGlyphIndex;
+    }
+    getAnchor(anchor) {
+      let x2 = anchor.xCoordinate;
+      let y = anchor.yCoordinate;
+      let variationProcessor = this.font._variationProcessor;
+      let variationStore = this.font.GDEF && this.font.GDEF.itemVariationStore;
+      if (variationProcessor && variationStore) {
+        if (anchor.xDeviceTable) x2 += variationProcessor.getDelta(variationStore, anchor.xDeviceTable.a, anchor.xDeviceTable.b);
+        if (anchor.yDeviceTable) y += variationProcessor.getDelta(variationStore, anchor.yDeviceTable.a, anchor.yDeviceTable.b);
+      }
+      return {
+        x: x2,
+        y
+      };
+    }
+    applyFeatures(userFeatures, glyphs, advances) {
+      super.applyFeatures(userFeatures, glyphs, advances);
+      for (var i2 = 0; i2 < this.glyphs.length; i2++) this.fixCursiveAttachment(i2);
+      this.fixMarkAttachment();
+    }
+    fixCursiveAttachment(i2) {
+      let glyph = this.glyphs[i2];
+      if (glyph.cursiveAttachment != null) {
+        let j = glyph.cursiveAttachment;
+        glyph.cursiveAttachment = null;
+        this.fixCursiveAttachment(j);
+        this.positions[i2].yOffset += this.positions[j].yOffset;
+      }
+    }
+    fixMarkAttachment() {
+      for (let i2 = 0; i2 < this.glyphs.length; i2++) {
+        let glyph = this.glyphs[i2];
+        if (glyph.markAttachment != null) {
+          let j = glyph.markAttachment;
+          this.positions[i2].xOffset += this.positions[j].xOffset;
+          this.positions[i2].yOffset += this.positions[j].yOffset;
+          if (this.direction === "ltr") for (let k = j; k < i2; k++) {
+            this.positions[i2].xOffset -= this.positions[k].xAdvance;
+            this.positions[i2].yOffset -= this.positions[k].yAdvance;
+          }
+          else for (let k = j + 1; k < i2 + 1; k++) {
+            this.positions[i2].xOffset += this.positions[k].xAdvance;
+            this.positions[i2].yOffset += this.positions[k].yAdvance;
+          }
+        }
+      }
+    }
+  };
+  var $a62492810de27e3d$export$2e2bcd8739ae039 = class {
+    setup(glyphRun) {
+      this.glyphInfos = glyphRun.glyphs.map((glyph) => new (0, $10e7b257e1a9a756$export$2e2bcd8739ae039)(this.font, glyph.id, [
+        ...glyph.codePoints
+      ]));
+      let script = null;
+      if (this.GPOSProcessor) script = this.GPOSProcessor.selectScript(glyphRun.script, glyphRun.language, glyphRun.direction);
+      if (this.GSUBProcessor) script = this.GSUBProcessor.selectScript(glyphRun.script, glyphRun.language, glyphRun.direction);
+      this.shaper = $102b6fe50f1d50b4$export$7877a478dd30fd3d(script);
+      this.plan = new (0, $94d7a73bd2edfc9a$export$2e2bcd8739ae039)(this.font, script, glyphRun.direction);
+      this.shaper.plan(this.plan, this.glyphInfos, glyphRun.features);
+      for (let key in this.plan.allFeatures) glyphRun.features[key] = true;
+    }
+    substitute(glyphRun) {
+      if (this.GSUBProcessor) {
+        this.plan.process(this.GSUBProcessor, this.glyphInfos);
+        glyphRun.glyphs = this.glyphInfos.map((glyphInfo) => this.font.getGlyph(glyphInfo.id, glyphInfo.codePoints));
+      }
+    }
+    position(glyphRun) {
+      if (this.shaper.zeroMarkWidths === "BEFORE_GPOS") this.zeroMarkAdvances(glyphRun.positions);
+      if (this.GPOSProcessor) this.plan.process(this.GPOSProcessor, this.glyphInfos, glyphRun.positions);
+      if (this.shaper.zeroMarkWidths === "AFTER_GPOS") this.zeroMarkAdvances(glyphRun.positions);
+      if (glyphRun.direction === "rtl") {
+        glyphRun.glyphs.reverse();
+        glyphRun.positions.reverse();
+      }
+      return this.GPOSProcessor && this.GPOSProcessor.features;
+    }
+    zeroMarkAdvances(positions) {
+      for (let i2 = 0; i2 < this.glyphInfos.length; i2++) if (this.glyphInfos[i2].isMark) {
+        positions[i2].xAdvance = 0;
+        positions[i2].yAdvance = 0;
+      }
+    }
+    cleanup() {
+      this.glyphInfos = null;
+      this.plan = null;
+      this.shaper = null;
+    }
+    getAvailableFeatures(script, language) {
+      let features = [];
+      if (this.GSUBProcessor) {
+        this.GSUBProcessor.selectScript(script, language);
+        features.push(...Object.keys(this.GSUBProcessor.features));
+      }
+      if (this.GPOSProcessor) {
+        this.GPOSProcessor.selectScript(script, language);
+        features.push(...Object.keys(this.GPOSProcessor.features));
+      }
+      return features;
+    }
+    constructor(font) {
+      this.font = font;
+      this.glyphInfos = null;
+      this.plan = null;
+      this.GSUBProcessor = null;
+      this.GPOSProcessor = null;
+      this.fallbackPosition = true;
+      if (font.GSUB) this.GSUBProcessor = new (0, $0a876c45f1f7c41c$export$2e2bcd8739ae039)(font, font.GSUB);
+      if (font.GPOS) this.GPOSProcessor = new (0, $c96c93587d49c14d$export$2e2bcd8739ae039)(font, font.GPOS);
+    }
+  };
+  var $4c0a7fa5df7a9ab1$export$2e2bcd8739ae039 = class {
+    layout(string, features, script, language, direction) {
+      if (typeof features === "string") {
+        direction = language;
+        language = script;
+        script = features;
+        features = [];
+      }
+      if (typeof string === "string") {
+        if (script == null) script = $130d1a642ebcd2b7$export$e5cb25e204fb8450(string);
+        var glyphs = this.font.glyphsForString(string);
+      } else {
+        if (script == null) {
+          let codePoints = [];
+          for (let glyph of string) codePoints.push(...glyph.codePoints);
+          script = $130d1a642ebcd2b7$export$16fab0757cfc223d(codePoints);
+        }
+        var glyphs = string;
+      }
+      let glyphRun = new (0, $be07b3e97a42687a$export$2e2bcd8739ae039)(glyphs, features, script, language, direction);
+      if (glyphs.length === 0) {
+        glyphRun.positions = [];
+        return glyphRun;
+      }
+      if (this.engine && this.engine.setup) this.engine.setup(glyphRun);
+      this.substitute(glyphRun);
+      this.position(glyphRun);
+      this.hideDefaultIgnorables(glyphRun.glyphs, glyphRun.positions);
+      if (this.engine && this.engine.cleanup) this.engine.cleanup();
+      return glyphRun;
+    }
+    substitute(glyphRun) {
+      if (this.engine && this.engine.substitute) this.engine.substitute(glyphRun);
+    }
+    position(glyphRun) {
+      glyphRun.positions = glyphRun.glyphs.map((glyph) => new (0, $1ac75d9a55b67f01$export$2e2bcd8739ae039)(glyph.advanceWidth));
+      let positioned = null;
+      if (this.engine && this.engine.position) positioned = this.engine.position(glyphRun);
+      if (!positioned && (!this.engine || this.engine.fallbackPosition)) {
+        if (!this.unicodeLayoutEngine) this.unicodeLayoutEngine = new (0, $0a4bdfeb6dfd6f5e$export$2e2bcd8739ae039)(this.font);
+        this.unicodeLayoutEngine.positionGlyphs(glyphRun.glyphs, glyphRun.positions);
+      }
+      if ((!positioned || !positioned.kern) && glyphRun.features.kern !== false && this.font.kern) {
+        if (!this.kernProcessor) this.kernProcessor = new (0, $0bba3a9db57637f3$export$2e2bcd8739ae039)(this.font);
+        this.kernProcessor.process(glyphRun.glyphs, glyphRun.positions);
+        glyphRun.features.kern = true;
+      }
+    }
+    hideDefaultIgnorables(glyphs, positions) {
+      let space = this.font.glyphForCodePoint(32);
+      for (let i2 = 0; i2 < glyphs.length; i2++) if (this.isDefaultIgnorable(glyphs[i2].codePoints[0])) {
+        glyphs[i2] = space;
+        positions[i2].xAdvance = 0;
+        positions[i2].yAdvance = 0;
+      }
+    }
+    isDefaultIgnorable(ch) {
+      let plane = ch >> 16;
+      if (plane === 0)
+        switch (ch >> 8) {
+          case 0:
+            return ch === 173;
+          case 3:
+            return ch === 847;
+          case 6:
+            return ch === 1564;
+          case 23:
+            return 6068 <= ch && ch <= 6069;
+          case 24:
+            return 6155 <= ch && ch <= 6158;
+          case 32:
+            return 8203 <= ch && ch <= 8207 || 8234 <= ch && ch <= 8238 || 8288 <= ch && ch <= 8303;
+          case 254:
+            return 65024 <= ch && ch <= 65039 || ch === 65279;
+          case 255:
+            return 65520 <= ch && ch <= 65528;
+          default:
+            return false;
+        }
+      else
+        switch (plane) {
+          case 1:
+            return 113824 <= ch && ch <= 113827 || 119155 <= ch && ch <= 119162;
+          case 14:
+            return 917504 <= ch && ch <= 921599;
+          default:
+            return false;
+        }
+    }
+    getAvailableFeatures(script, language) {
+      let features = [];
+      if (this.engine) features.push(...this.engine.getAvailableFeatures(script, language));
+      if (this.font.kern && features.indexOf("kern") === -1) features.push("kern");
+      return features;
+    }
+    stringsForGlyph(gid) {
+      let result = /* @__PURE__ */ new Set();
+      let codePoints = this.font._cmapProcessor.codePointsForGlyph(gid);
+      for (let codePoint of codePoints) result.add(String.fromCodePoint(codePoint));
+      if (this.engine && this.engine.stringsForGlyph) for (let string of this.engine.stringsForGlyph(gid)) result.add(string);
+      return Array.from(result);
+    }
+    constructor(font) {
+      this.font = font;
+      this.unicodeLayoutEngine = null;
+      this.kernProcessor = null;
+      if (this.font.morx) this.engine = new (0, $ba6dd74203be8728$export$2e2bcd8739ae039)(this.font);
+      else if (this.font.GSUB || this.font.GPOS) this.engine = new (0, $a62492810de27e3d$export$2e2bcd8739ae039)(this.font);
+    }
+  };
+  var $f43aec954cdfdf21$var$SVG_COMMANDS = {
+    moveTo: "M",
+    lineTo: "L",
+    quadraticCurveTo: "Q",
+    bezierCurveTo: "C",
+    closePath: "Z"
+  };
+  var $f43aec954cdfdf21$export$2e2bcd8739ae039 = class _$f43aec954cdfdf21$export$2e2bcd8739ae039 {
+    /**
+    * Compiles the path to a JavaScript function that can be applied with
+    * a graphics context in order to render the path.
+    * @return {string}
+    */
+    toFunction() {
+      return (ctx) => {
+        this.commands.forEach((c) => {
+          return ctx[c.command].apply(ctx, c.args);
+        });
+      };
+    }
+    /**
+    * Converts the path to an SVG path data string
+    * @return {string}
+    */
+    toSVG() {
+      let cmds = this.commands.map((c) => {
+        let args = c.args.map((arg) => Math.round(arg * 100) / 100);
+        return `${$f43aec954cdfdf21$var$SVG_COMMANDS[c.command]}${args.join(" ")}`;
+      });
+      return cmds.join("");
+    }
+    /**
+    * Gets the "control box" of a path.
+    * This is like the bounding box, but it includes all points including
+    * control points of bezier segments and is much faster to compute than
+    * the real bounding box.
+    * @type {BBox}
+    */
+    get cbox() {
+      if (!this._cbox) {
+        let cbox = new (0, $f34600ab9d7f70d8$export$2e2bcd8739ae039)();
+        for (let command of this.commands) for (let i2 = 0; i2 < command.args.length; i2 += 2) cbox.addPoint(command.args[i2], command.args[i2 + 1]);
+        this._cbox = Object.freeze(cbox);
+      }
+      return this._cbox;
+    }
+    /**
+    * Gets the exact bounding box of the path by evaluating curve segments.
+    * Slower to compute than the control box, but more accurate.
+    * @type {BBox}
+    */
+    get bbox() {
+      if (this._bbox) return this._bbox;
+      let bbox = new (0, $f34600ab9d7f70d8$export$2e2bcd8739ae039)();
+      let cx = 0, cy = 0;
+      let f = (t) => Math.pow(1 - t, 3) * p0[i2] + 3 * Math.pow(1 - t, 2) * t * p1[i2] + 3 * (1 - t) * Math.pow(t, 2) * p2[i2] + Math.pow(t, 3) * p3[i2];
+      for (let c of this.commands) switch (c.command) {
+        case "moveTo":
+        case "lineTo":
+          let [x2, y] = c.args;
+          bbox.addPoint(x2, y);
+          cx = x2;
+          cy = y;
+          break;
+        case "quadraticCurveTo":
+        case "bezierCurveTo":
+          if (c.command === "quadraticCurveTo") {
+            var [qp1x, qp1y, p3x, p3y] = c.args;
+            var cp1x = cx + 2 / 3 * (qp1x - cx);
+            var cp1y = cy + 2 / 3 * (qp1y - cy);
+            var cp2x = p3x + 2 / 3 * (qp1x - p3x);
+            var cp2y = p3y + 2 / 3 * (qp1y - p3y);
+          } else var [cp1x, cp1y, cp2x, cp2y, p3x, p3y] = c.args;
+          bbox.addPoint(p3x, p3y);
+          var p0 = [
+            cx,
+            cy
+          ];
+          var p1 = [
+            cp1x,
+            cp1y
+          ];
+          var p2 = [
+            cp2x,
+            cp2y
+          ];
+          var p3 = [
+            p3x,
+            p3y
+          ];
+          for (var i2 = 0; i2 <= 1; i2++) {
+            let b = 6 * p0[i2] - 12 * p1[i2] + 6 * p2[i2];
+            let a = -3 * p0[i2] + 9 * p1[i2] - 9 * p2[i2] + 3 * p3[i2];
+            c = 3 * p1[i2] - 3 * p0[i2];
+            if (a === 0) {
+              if (b === 0) continue;
+              let t = -c / b;
+              if (0 < t && t < 1) {
+                if (i2 === 0) bbox.addPoint(f(t), bbox.maxY);
+                else if (i2 === 1) bbox.addPoint(bbox.maxX, f(t));
+              }
+              continue;
+            }
+            let b2ac = Math.pow(b, 2) - 4 * c * a;
+            if (b2ac < 0) continue;
+            let t1 = (-b + Math.sqrt(b2ac)) / (2 * a);
+            if (0 < t1 && t1 < 1) {
+              if (i2 === 0) bbox.addPoint(f(t1), bbox.maxY);
+              else if (i2 === 1) bbox.addPoint(bbox.maxX, f(t1));
+            }
+            let t2 = (-b - Math.sqrt(b2ac)) / (2 * a);
+            if (0 < t2 && t2 < 1) {
+              if (i2 === 0) bbox.addPoint(f(t2), bbox.maxY);
+              else if (i2 === 1) bbox.addPoint(bbox.maxX, f(t2));
+            }
+          }
+          cx = p3x;
+          cy = p3y;
+          break;
+      }
+      return this._bbox = Object.freeze(bbox);
+    }
+    /**
+    * Applies a mapping function to each point in the path.
+    * @param {function} fn
+    * @return {Path}
+    */
+    mapPoints(fn) {
+      let path = new _$f43aec954cdfdf21$export$2e2bcd8739ae039();
+      for (let c of this.commands) {
+        let args = [];
+        for (let i2 = 0; i2 < c.args.length; i2 += 2) {
+          let [x2, y] = fn(c.args[i2], c.args[i2 + 1]);
+          args.push(x2, y);
+        }
+        path[c.command](...args);
+      }
+      return path;
+    }
+    /**
+    * Transforms the path by the given matrix.
+    */
+    transform(m0, m1, m2, m3, m4, m5) {
+      return this.mapPoints((x2, y) => {
+        const tx = m0 * x2 + m2 * y + m4;
+        const ty = m1 * x2 + m3 * y + m5;
+        return [
+          tx,
+          ty
+        ];
+      });
+    }
+    /**
+    * Translates the path by the given offset.
+    */
+    translate(x2, y) {
+      return this.transform(1, 0, 0, 1, x2, y);
+    }
+    /**
+    * Rotates the path by the given angle (in radians).
+    */
+    rotate(angle) {
+      let cos = Math.cos(angle);
+      let sin = Math.sin(angle);
+      return this.transform(cos, sin, -sin, cos, 0, 0);
+    }
+    /**
+    * Scales the path.
+    */
+    scale(scaleX, scaleY = scaleX) {
+      return this.transform(scaleX, 0, 0, scaleY, 0, 0);
+    }
+    constructor() {
+      this.commands = [];
+      this._bbox = null;
+      this._cbox = null;
+    }
+  };
+  for (let command of [
+    "moveTo",
+    "lineTo",
+    "quadraticCurveTo",
+    "bezierCurveTo",
+    "closePath"
+  ]) $f43aec954cdfdf21$export$2e2bcd8739ae039.prototype[command] = function(...args) {
+    this._bbox = this._cbox = null;
+    this.commands.push({
+      command,
+      args
+    });
+    return this;
+  };
+  var $7713b9b7b438dff8$export$2e2bcd8739ae039 = [
+    ".notdef",
+    ".null",
+    "nonmarkingreturn",
+    "space",
+    "exclam",
+    "quotedbl",
+    "numbersign",
+    "dollar",
+    "percent",
+    "ampersand",
+    "quotesingle",
+    "parenleft",
+    "parenright",
+    "asterisk",
+    "plus",
+    "comma",
+    "hyphen",
+    "period",
+    "slash",
+    "zero",
+    "one",
+    "two",
+    "three",
+    "four",
+    "five",
+    "six",
+    "seven",
+    "eight",
+    "nine",
+    "colon",
+    "semicolon",
+    "less",
+    "equal",
+    "greater",
+    "question",
+    "at",
+    "A",
+    "B",
+    "C",
+    "D",
+    "E",
+    "F",
+    "G",
+    "H",
+    "I",
+    "J",
+    "K",
+    "L",
+    "M",
+    "N",
+    "O",
+    "P",
+    "Q",
+    "R",
+    "S",
+    "T",
+    "U",
+    "V",
+    "W",
+    "X",
+    "Y",
+    "Z",
+    "bracketleft",
+    "backslash",
+    "bracketright",
+    "asciicircum",
+    "underscore",
+    "grave",
+    "a",
+    "b",
+    "c",
+    "d",
+    "e",
+    "f",
+    "g",
+    "h",
+    "i",
+    "j",
+    "k",
+    "l",
+    "m",
+    "n",
+    "o",
+    "p",
+    "q",
+    "r",
+    "s",
+    "t",
+    "u",
+    "v",
+    "w",
+    "x",
+    "y",
+    "z",
+    "braceleft",
+    "bar",
+    "braceright",
+    "asciitilde",
+    "Adieresis",
+    "Aring",
+    "Ccedilla",
+    "Eacute",
+    "Ntilde",
+    "Odieresis",
+    "Udieresis",
+    "aacute",
+    "agrave",
+    "acircumflex",
+    "adieresis",
+    "atilde",
+    "aring",
+    "ccedilla",
+    "eacute",
+    "egrave",
+    "ecircumflex",
+    "edieresis",
+    "iacute",
+    "igrave",
+    "icircumflex",
+    "idieresis",
+    "ntilde",
+    "oacute",
+    "ograve",
+    "ocircumflex",
+    "odieresis",
+    "otilde",
+    "uacute",
+    "ugrave",
+    "ucircumflex",
+    "udieresis",
+    "dagger",
+    "degree",
+    "cent",
+    "sterling",
+    "section",
+    "bullet",
+    "paragraph",
+    "germandbls",
+    "registered",
+    "copyright",
+    "trademark",
+    "acute",
+    "dieresis",
+    "notequal",
+    "AE",
+    "Oslash",
+    "infinity",
+    "plusminus",
+    "lessequal",
+    "greaterequal",
+    "yen",
+    "mu",
+    "partialdiff",
+    "summation",
+    "product",
+    "pi",
+    "integral",
+    "ordfeminine",
+    "ordmasculine",
+    "Omega",
+    "ae",
+    "oslash",
+    "questiondown",
+    "exclamdown",
+    "logicalnot",
+    "radical",
+    "florin",
+    "approxequal",
+    "Delta",
+    "guillemotleft",
+    "guillemotright",
+    "ellipsis",
+    "nonbreakingspace",
+    "Agrave",
+    "Atilde",
+    "Otilde",
+    "OE",
+    "oe",
+    "endash",
+    "emdash",
+    "quotedblleft",
+    "quotedblright",
+    "quoteleft",
+    "quoteright",
+    "divide",
+    "lozenge",
+    "ydieresis",
+    "Ydieresis",
+    "fraction",
+    "currency",
+    "guilsinglleft",
+    "guilsinglright",
+    "fi",
+    "fl",
+    "daggerdbl",
+    "periodcentered",
+    "quotesinglbase",
+    "quotedblbase",
+    "perthousand",
+    "Acircumflex",
+    "Ecircumflex",
+    "Aacute",
+    "Edieresis",
+    "Egrave",
+    "Iacute",
+    "Icircumflex",
+    "Idieresis",
+    "Igrave",
+    "Oacute",
+    "Ocircumflex",
+    "apple",
+    "Ograve",
+    "Uacute",
+    "Ucircumflex",
+    "Ugrave",
+    "dotlessi",
+    "circumflex",
+    "tilde",
+    "macron",
+    "breve",
+    "dotaccent",
+    "ring",
+    "cedilla",
+    "hungarumlaut",
+    "ogonek",
+    "caron",
+    "Lslash",
+    "lslash",
+    "Scaron",
+    "scaron",
+    "Zcaron",
+    "zcaron",
+    "brokenbar",
+    "Eth",
+    "eth",
+    "Yacute",
+    "yacute",
+    "Thorn",
+    "thorn",
+    "minus",
+    "multiply",
+    "onesuperior",
+    "twosuperior",
+    "threesuperior",
+    "onehalf",
+    "onequarter",
+    "threequarters",
+    "franc",
+    "Gbreve",
+    "gbreve",
+    "Idotaccent",
+    "Scedilla",
+    "scedilla",
+    "Cacute",
+    "cacute",
+    "Ccaron",
+    "ccaron",
+    "dcroat"
+  ];
+  var $f92906be28e61769$export$2e2bcd8739ae039 = class {
+    _getPath() {
+      return new (0, $f43aec954cdfdf21$export$2e2bcd8739ae039)();
+    }
+    _getCBox() {
+      return this.path.cbox;
+    }
+    _getBBox() {
+      return this.path.bbox;
+    }
+    _getTableMetrics(table) {
+      if (this.id < table.metrics.length) return table.metrics.get(this.id);
+      let metric = table.metrics.get(table.metrics.length - 1);
+      let res = {
+        advance: metric ? metric.advance : 0,
+        bearing: table.bearings.get(this.id - table.metrics.length) || 0
+      };
+      return res;
+    }
+    _getMetrics(cbox) {
+      if (this._metrics) return this._metrics;
+      let { advance: advanceWidth, bearing: leftBearing } = this._getTableMetrics(this._font.hmtx);
+      if (this._font.vmtx) var { advance: advanceHeight, bearing: topBearing } = this._getTableMetrics(this._font.vmtx);
+      else {
+        let os2;
+        if (typeof cbox === "undefined" || cbox === null) ({ cbox } = this);
+        if ((os2 = this._font["OS/2"]) && os2.version > 0) {
+          var advanceHeight = Math.abs(os2.typoAscender - os2.typoDescender);
+          var topBearing = os2.typoAscender - cbox.maxY;
+        } else {
+          let { hhea } = this._font;
+          var advanceHeight = Math.abs(hhea.ascent - hhea.descent);
+          var topBearing = hhea.ascent - cbox.maxY;
+        }
+      }
+      if (this._font._variationProcessor && this._font.HVAR) advanceWidth += this._font._variationProcessor.getAdvanceAdjustment(this.id, this._font.HVAR);
+      return this._metrics = {
+        advanceWidth,
+        advanceHeight,
+        leftBearing,
+        topBearing
+      };
+    }
+    /**
+    * The glyph’s control box.
+    * This is often the same as the bounding box, but is faster to compute.
+    * Because of the way bezier curves are defined, some of the control points
+    * can be outside of the bounding box. Where `bbox` takes this into account,
+    * `cbox` does not. Thus, cbox is less accurate, but faster to compute.
+    * See [here](http://www.freetype.org/freetype2/docs/glyphs/glyphs-6.html#section-2)
+    * for a more detailed description.
+    *
+    * @type {BBox}
+    */
+    get cbox() {
+      return this._getCBox();
+    }
+    /**
+    * The glyph’s bounding box, i.e. the rectangle that encloses the
+    * glyph outline as tightly as possible.
+    * @type {BBox}
+    */
+    get bbox() {
+      return this._getBBox();
+    }
+    /**
+    * A vector Path object representing the glyph outline.
+    * @type {Path}
+    */
+    get path() {
+      return this._getPath();
+    }
+    /**
+    * Returns a path scaled to the given font size.
+    * @param {number} size
+    * @return {Path}
+    */
+    getScaledPath(size) {
+      let scale = 1 / this._font.unitsPerEm * size;
+      return this.path.scale(scale);
+    }
+    /**
+    * The glyph's advance width.
+    * @type {number}
+    */
+    get advanceWidth() {
+      return this._getMetrics().advanceWidth;
+    }
+    /**
+    * The glyph's advance height.
+    * @type {number}
+    */
+    get advanceHeight() {
+      return this._getMetrics().advanceHeight;
+    }
+    get ligatureCaretPositions() {
+    }
+    _getName() {
+      let { post } = this._font;
+      if (!post) return null;
+      switch (post.version) {
+        case 1:
+          return (0, $7713b9b7b438dff8$export$2e2bcd8739ae039)[this.id];
+        case 2:
+          let id = post.glyphNameIndex[this.id];
+          if (id < (0, $7713b9b7b438dff8$export$2e2bcd8739ae039).length) return (0, $7713b9b7b438dff8$export$2e2bcd8739ae039)[id];
+          return post.names[id - (0, $7713b9b7b438dff8$export$2e2bcd8739ae039).length];
+        case 2.5:
+          return (0, $7713b9b7b438dff8$export$2e2bcd8739ae039)[this.id + post.offsets[this.id]];
+        case 4:
+          return String.fromCharCode(post.map[this.id]);
+      }
+    }
+    /**
+    * The glyph's name
+    * @type {string}
+    */
+    get name() {
+      return this._getName();
+    }
+    /**
+    * Renders the glyph to the given graphics context, at the specified font size.
+    * @param {CanvasRenderingContext2d} ctx
+    * @param {number} size
+    */
+    render(ctx, size) {
+      ctx.save();
+      let scale = 1 / this._font.head.unitsPerEm * size;
+      ctx.scale(scale, scale);
+      let fn = this.path.toFunction();
+      fn(ctx);
+      ctx.fill();
+      ctx.restore();
+    }
+    constructor(id, codePoints, font) {
+      this.id = id;
+      this.codePoints = codePoints;
+      this._font = font;
+      this.isMark = this.codePoints.length > 0 && this.codePoints.every((0, $747425b437e121da$export$e33ad6871e762338));
+      this.isLigature = this.codePoints.length > 1;
+    }
+  };
+  (0, __decorate)([
+    (0, $e71565f2ce09cb6b$export$69a3209f1a06c04d)
+  ], $f92906be28e61769$export$2e2bcd8739ae039.prototype, "cbox", null);
+  (0, __decorate)([
+    (0, $e71565f2ce09cb6b$export$69a3209f1a06c04d)
+  ], $f92906be28e61769$export$2e2bcd8739ae039.prototype, "bbox", null);
+  (0, __decorate)([
+    (0, $e71565f2ce09cb6b$export$69a3209f1a06c04d)
+  ], $f92906be28e61769$export$2e2bcd8739ae039.prototype, "path", null);
+  (0, __decorate)([
+    (0, $e71565f2ce09cb6b$export$69a3209f1a06c04d)
+  ], $f92906be28e61769$export$2e2bcd8739ae039.prototype, "advanceWidth", null);
+  (0, __decorate)([
+    (0, $e71565f2ce09cb6b$export$69a3209f1a06c04d)
+  ], $f92906be28e61769$export$2e2bcd8739ae039.prototype, "advanceHeight", null);
+  (0, __decorate)([
+    (0, $e71565f2ce09cb6b$export$69a3209f1a06c04d)
+  ], $f92906be28e61769$export$2e2bcd8739ae039.prototype, "name", null);
+  var $69aac16029968692$var$GlyfHeader = new Struct({
+    numberOfContours: int16,
+    xMin: int16,
+    yMin: int16,
+    xMax: int16,
+    yMax: int16
+  });
+  var $69aac16029968692$var$ON_CURVE = 1;
+  var $69aac16029968692$var$X_SHORT_VECTOR = 2;
+  var $69aac16029968692$var$Y_SHORT_VECTOR = 4;
+  var $69aac16029968692$var$REPEAT = 8;
+  var $69aac16029968692$var$SAME_X = 16;
+  var $69aac16029968692$var$SAME_Y = 32;
+  var $69aac16029968692$var$ARG_1_AND_2_ARE_WORDS = 1;
+  var $69aac16029968692$var$WE_HAVE_A_SCALE = 8;
+  var $69aac16029968692$var$MORE_COMPONENTS = 32;
+  var $69aac16029968692$var$WE_HAVE_AN_X_AND_Y_SCALE = 64;
+  var $69aac16029968692$var$WE_HAVE_A_TWO_BY_TWO = 128;
+  var $69aac16029968692$var$WE_HAVE_INSTRUCTIONS = 256;
+  var $69aac16029968692$export$baf26146a414f24a = class _$69aac16029968692$export$baf26146a414f24a {
+    copy() {
+      return new _$69aac16029968692$export$baf26146a414f24a(this.onCurve, this.endContour, this.x, this.y);
+    }
+    constructor(onCurve, endContour, x2 = 0, y = 0) {
+      this.onCurve = onCurve;
+      this.endContour = endContour;
+      this.x = x2;
+      this.y = y;
+    }
+  };
+  var $69aac16029968692$var$Component = class {
+    constructor(glyphID, dx, dy) {
+      this.glyphID = glyphID;
+      this.dx = dx;
+      this.dy = dy;
+      this.pos = 0;
+      this.scaleX = this.scaleY = 1;
+      this.scale01 = this.scale10 = 0;
+    }
+  };
+  var $69aac16029968692$export$2e2bcd8739ae039 = class extends (0, $f92906be28e61769$export$2e2bcd8739ae039) {
+    // Parses just the glyph header and returns the bounding box
+    _getCBox(internal) {
+      if (this._font._variationProcessor && !internal) return this.path.cbox;
+      let stream = this._font._getTableStream("glyf");
+      stream.pos += this._font.loca.offsets[this.id];
+      let glyph = $69aac16029968692$var$GlyfHeader.decode(stream);
+      let cbox = new (0, $f34600ab9d7f70d8$export$2e2bcd8739ae039)(glyph.xMin, glyph.yMin, glyph.xMax, glyph.yMax);
+      return Object.freeze(cbox);
+    }
+    // Parses a single glyph coordinate
+    _parseGlyphCoord(stream, prev, short, same) {
+      if (short) {
+        var val = stream.readUInt8();
+        if (!same) val = -val;
+        val += prev;
+      } else if (same) var val = prev;
+      else var val = prev + stream.readInt16BE();
+      return val;
+    }
+    // Decodes the glyph data into points for simple glyphs,
+    // or components for composite glyphs
+    _decode() {
+      let glyfPos = this._font.loca.offsets[this.id];
+      let nextPos = this._font.loca.offsets[this.id + 1];
+      if (glyfPos === nextPos) return null;
+      let stream = this._font._getTableStream("glyf");
+      stream.pos += glyfPos;
+      let startPos = stream.pos;
+      let glyph = $69aac16029968692$var$GlyfHeader.decode(stream);
+      if (glyph.numberOfContours > 0) this._decodeSimple(glyph, stream);
+      else if (glyph.numberOfContours < 0) this._decodeComposite(glyph, stream, startPos);
+      return glyph;
+    }
+    _decodeSimple(glyph, stream) {
+      glyph.points = [];
+      let endPtsOfContours = new ArrayT(uint16, glyph.numberOfContours).decode(stream);
+      glyph.instructions = new ArrayT(uint8, uint16).decode(stream);
+      let flags = [];
+      let numCoords = endPtsOfContours[endPtsOfContours.length - 1] + 1;
+      while (flags.length < numCoords) {
+        var flag = stream.readUInt8();
+        flags.push(flag);
+        if (flag & $69aac16029968692$var$REPEAT) {
+          let count = stream.readUInt8();
+          for (let j = 0; j < count; j++) flags.push(flag);
+        }
+      }
+      for (var i2 = 0; i2 < flags.length; i2++) {
+        var flag = flags[i2];
+        let point = new $69aac16029968692$export$baf26146a414f24a(!!(flag & $69aac16029968692$var$ON_CURVE), endPtsOfContours.indexOf(i2) >= 0, 0, 0);
+        glyph.points.push(point);
+      }
+      let px = 0;
+      for (var i2 = 0; i2 < flags.length; i2++) {
+        var flag = flags[i2];
+        glyph.points[i2].x = px = this._parseGlyphCoord(stream, px, flag & $69aac16029968692$var$X_SHORT_VECTOR, flag & $69aac16029968692$var$SAME_X);
+      }
+      let py = 0;
+      for (var i2 = 0; i2 < flags.length; i2++) {
+        var flag = flags[i2];
+        glyph.points[i2].y = py = this._parseGlyphCoord(stream, py, flag & $69aac16029968692$var$Y_SHORT_VECTOR, flag & $69aac16029968692$var$SAME_Y);
+      }
+      if (this._font._variationProcessor) {
+        let points = glyph.points.slice();
+        points.push(...this._getPhantomPoints(glyph));
+        this._font._variationProcessor.transformPoints(this.id, points);
+        glyph.phantomPoints = points.slice(-4);
+      }
+      return;
+    }
+    _decodeComposite(glyph, stream, offset = 0) {
+      glyph.components = [];
+      let haveInstructions = false;
+      let flags = $69aac16029968692$var$MORE_COMPONENTS;
+      while (flags & $69aac16029968692$var$MORE_COMPONENTS) {
+        flags = stream.readUInt16BE();
+        let gPos = stream.pos - offset;
+        let glyphID = stream.readUInt16BE();
+        if (!haveInstructions) haveInstructions = (flags & $69aac16029968692$var$WE_HAVE_INSTRUCTIONS) !== 0;
+        if (flags & $69aac16029968692$var$ARG_1_AND_2_ARE_WORDS) {
+          var dx = stream.readInt16BE();
+          var dy = stream.readInt16BE();
+        } else {
+          var dx = stream.readInt8();
+          var dy = stream.readInt8();
+        }
+        var component = new $69aac16029968692$var$Component(glyphID, dx, dy);
+        component.pos = gPos;
+        if (flags & $69aac16029968692$var$WE_HAVE_A_SCALE)
+          component.scaleX = component.scaleY = (stream.readUInt8() << 24 | stream.readUInt8() << 16) / 1073741824;
+        else if (flags & $69aac16029968692$var$WE_HAVE_AN_X_AND_Y_SCALE) {
+          component.scaleX = (stream.readUInt8() << 24 | stream.readUInt8() << 16) / 1073741824;
+          component.scaleY = (stream.readUInt8() << 24 | stream.readUInt8() << 16) / 1073741824;
+        } else if (flags & $69aac16029968692$var$WE_HAVE_A_TWO_BY_TWO) {
+          component.scaleX = (stream.readUInt8() << 24 | stream.readUInt8() << 16) / 1073741824;
+          component.scale01 = (stream.readUInt8() << 24 | stream.readUInt8() << 16) / 1073741824;
+          component.scale10 = (stream.readUInt8() << 24 | stream.readUInt8() << 16) / 1073741824;
+          component.scaleY = (stream.readUInt8() << 24 | stream.readUInt8() << 16) / 1073741824;
+        }
+        glyph.components.push(component);
+      }
+      if (this._font._variationProcessor) {
+        let points = [];
+        for (let j = 0; j < glyph.components.length; j++) {
+          var component = glyph.components[j];
+          points.push(new $69aac16029968692$export$baf26146a414f24a(true, true, component.dx, component.dy));
+        }
+        points.push(...this._getPhantomPoints(glyph));
+        this._font._variationProcessor.transformPoints(this.id, points);
+        glyph.phantomPoints = points.splice(-4, 4);
+        for (let i2 = 0; i2 < points.length; i2++) {
+          let point = points[i2];
+          glyph.components[i2].dx = point.x;
+          glyph.components[i2].dy = point.y;
+        }
+      }
+      return haveInstructions;
+    }
+    _getPhantomPoints(glyph) {
+      let cbox = this._getCBox(true);
+      if (this._metrics == null) this._metrics = (0, $f92906be28e61769$export$2e2bcd8739ae039).prototype._getMetrics.call(this, cbox);
+      let { advanceWidth, advanceHeight, leftBearing, topBearing } = this._metrics;
+      return [
+        new $69aac16029968692$export$baf26146a414f24a(false, true, glyph.xMin - leftBearing, 0),
+        new $69aac16029968692$export$baf26146a414f24a(false, true, glyph.xMin - leftBearing + advanceWidth, 0),
+        new $69aac16029968692$export$baf26146a414f24a(false, true, 0, glyph.yMax + topBearing),
+        new $69aac16029968692$export$baf26146a414f24a(false, true, 0, glyph.yMax + topBearing + advanceHeight)
+      ];
+    }
+    // Decodes font data, resolves composite glyphs, and returns an array of contours
+    _getContours() {
+      let glyph = this._decode();
+      if (!glyph) return [];
+      let points = [];
+      if (glyph.numberOfContours < 0)
+        for (let component of glyph.components) {
+          let contours2 = this._font.getGlyph(component.glyphID)._getContours();
+          for (let i2 = 0; i2 < contours2.length; i2++) {
+            let contour = contours2[i2];
+            for (let j = 0; j < contour.length; j++) {
+              let point2 = contour[j];
+              let x2 = point2.x * component.scaleX + point2.y * component.scale01 + component.dx;
+              let y = point2.y * component.scaleY + point2.x * component.scale10 + component.dy;
+              points.push(new $69aac16029968692$export$baf26146a414f24a(point2.onCurve, point2.endContour, x2, y));
+            }
+          }
+        }
+      else points = glyph.points || [];
+      if (glyph.phantomPoints && !this._font.directory.tables.HVAR) {
+        this._metrics.advanceWidth = glyph.phantomPoints[1].x - glyph.phantomPoints[0].x;
+        this._metrics.advanceHeight = glyph.phantomPoints[3].y - glyph.phantomPoints[2].y;
+        this._metrics.leftBearing = glyph.xMin - glyph.phantomPoints[0].x;
+        this._metrics.topBearing = glyph.phantomPoints[2].y - glyph.yMax;
+      }
+      let contours = [];
+      let cur = [];
+      for (let k = 0; k < points.length; k++) {
+        var point = points[k];
+        cur.push(point);
+        if (point.endContour) {
+          contours.push(cur);
+          cur = [];
+        }
+      }
+      return contours;
+    }
+    _getMetrics() {
+      if (this._metrics) return this._metrics;
+      let cbox = this._getCBox(true);
+      super._getMetrics(cbox);
+      if (this._font._variationProcessor && !this._font.HVAR)
+        this.path;
+      return this._metrics;
+    }
+    // Converts contours to a Path object that can be rendered
+    _getPath() {
+      let contours = this._getContours();
+      let path = new (0, $f43aec954cdfdf21$export$2e2bcd8739ae039)();
+      for (let i2 = 0; i2 < contours.length; i2++) {
+        let contour = contours[i2];
+        let firstPt = contour[0];
+        let lastPt = contour[contour.length - 1];
+        let start = 0;
+        if (firstPt.onCurve) {
+          var curvePt = null;
+          start = 1;
+        } else {
+          if (lastPt.onCurve)
+            firstPt = lastPt;
+          else
+            firstPt = new $69aac16029968692$export$baf26146a414f24a(false, false, (firstPt.x + lastPt.x) / 2, (firstPt.y + lastPt.y) / 2);
+          var curvePt = firstPt;
+        }
+        path.moveTo(firstPt.x, firstPt.y);
+        for (let j = start; j < contour.length; j++) {
+          let pt = contour[j];
+          let prevPt = j === 0 ? firstPt : contour[j - 1];
+          if (prevPt.onCurve && pt.onCurve) path.lineTo(pt.x, pt.y);
+          else if (prevPt.onCurve && !pt.onCurve) var curvePt = pt;
+          else if (!prevPt.onCurve && !pt.onCurve) {
+            let midX = (prevPt.x + pt.x) / 2;
+            let midY = (prevPt.y + pt.y) / 2;
+            path.quadraticCurveTo(prevPt.x, prevPt.y, midX, midY);
+            var curvePt = pt;
+          } else if (!prevPt.onCurve && pt.onCurve) {
+            path.quadraticCurveTo(curvePt.x, curvePt.y, pt.x, pt.y);
+            var curvePt = null;
+          } else throw new Error("Unknown TTF path state");
+        }
+        if (curvePt) path.quadraticCurveTo(curvePt.x, curvePt.y, firstPt.x, firstPt.y);
+        path.closePath();
+      }
+      return path;
+    }
+    constructor(...args) {
+      super(...args);
+      (0, _define_property)(this, "type", "TTF");
+    }
+  };
+  var $62cc5109c6101893$export$2e2bcd8739ae039 = class extends (0, $f92906be28e61769$export$2e2bcd8739ae039) {
+    _getName() {
+      if (this._font.CFF2) return super._getName();
+      return this._font["CFF "].getGlyphName(this.id);
+    }
+    bias(s) {
+      if (s.length < 1240) return 107;
+      else if (s.length < 33900) return 1131;
+      else return 32768;
+    }
+    _getPath() {
+      let cff = this._font.CFF2 || this._font["CFF "];
+      let { stream } = cff;
+      let str = cff.topDict.CharStrings[this.id];
+      let end = str.offset + str.length;
+      stream.pos = str.offset;
+      let path = new (0, $f43aec954cdfdf21$export$2e2bcd8739ae039)();
+      let stack = [];
+      let trans = [];
+      let width = null;
+      let nStems = 0;
+      let x2 = 0, y = 0;
+      let usedGsubrs;
+      let usedSubrs;
+      let open = false;
+      this._usedGsubrs = usedGsubrs = {};
+      this._usedSubrs = usedSubrs = {};
+      let gsubrs = cff.globalSubrIndex || [];
+      let gsubrsBias = this.bias(gsubrs);
+      let privateDict = cff.privateDictForGlyph(this.id) || {};
+      let subrs = privateDict.Subrs || [];
+      let subrsBias = this.bias(subrs);
+      let vstore = cff.topDict.vstore && cff.topDict.vstore.itemVariationStore;
+      let vsindex = privateDict.vsindex;
+      let variationProcessor = this._font._variationProcessor;
+      function checkWidth() {
+        if (width == null) width = stack.shift() + privateDict.nominalWidthX;
+      }
+      function parseStems() {
+        if (stack.length % 2 !== 0) checkWidth();
+        nStems += stack.length >> 1;
+        return stack.length = 0;
+      }
+      function moveTo(x3, y2) {
+        if (open) path.closePath();
+        path.moveTo(x3, y2);
+        open = true;
+      }
+      let parse = function() {
+        while (stream.pos < end) {
+          let op = stream.readUInt8();
+          if (op < 32) {
+            let index, subr, phase;
+            let c1x, c1y, c2x, c2y, c3x, c3y;
+            let c4x, c4y, c5x, c5y, c6x, c6y;
+            let pts;
+            switch (op) {
+              case 1:
+              case 3:
+              case 18:
+              case 23:
+                parseStems();
+                break;
+              case 4:
+                if (stack.length > 1) checkWidth();
+                y += stack.shift();
+                moveTo(x2, y);
+                break;
+              case 5:
+                while (stack.length >= 2) {
+                  x2 += stack.shift();
+                  y += stack.shift();
+                  path.lineTo(x2, y);
+                }
+                break;
+              case 6:
+              case 7:
+                phase = op === 6;
+                while (stack.length >= 1) {
+                  if (phase) x2 += stack.shift();
+                  else y += stack.shift();
+                  path.lineTo(x2, y);
+                  phase = !phase;
+                }
+                break;
+              case 8:
+                while (stack.length > 0) {
+                  c1x = x2 + stack.shift();
+                  c1y = y + stack.shift();
+                  c2x = c1x + stack.shift();
+                  c2y = c1y + stack.shift();
+                  x2 = c2x + stack.shift();
+                  y = c2y + stack.shift();
+                  path.bezierCurveTo(c1x, c1y, c2x, c2y, x2, y);
+                }
+                break;
+              case 10:
+                index = stack.pop() + subrsBias;
+                subr = subrs[index];
+                if (subr) {
+                  usedSubrs[index] = true;
+                  let p = stream.pos;
+                  let e = end;
+                  stream.pos = subr.offset;
+                  end = subr.offset + subr.length;
+                  parse();
+                  stream.pos = p;
+                  end = e;
+                }
+                break;
+              case 11:
+                if (cff.version >= 2) break;
+                return;
+              case 14:
+                if (cff.version >= 2) break;
+                if (stack.length > 0) checkWidth();
+                if (open) {
+                  path.closePath();
+                  open = false;
+                }
+                break;
+              case 15:
+                if (cff.version < 2) throw new Error("vsindex operator not supported in CFF v1");
+                vsindex = stack.pop();
+                break;
+              case 16: {
+                if (cff.version < 2) throw new Error("blend operator not supported in CFF v1");
+                if (!variationProcessor) throw new Error("blend operator in non-variation font");
+                let blendVector = variationProcessor.getBlendVector(vstore, vsindex);
+                let numBlends = stack.pop();
+                let numOperands = numBlends * blendVector.length;
+                let delta = stack.length - numOperands;
+                let base = delta - numBlends;
+                for (let i2 = 0; i2 < numBlends; i2++) {
+                  let sum = stack[base + i2];
+                  for (let j = 0; j < blendVector.length; j++) sum += blendVector[j] * stack[delta++];
+                  stack[base + i2] = sum;
+                }
+                while (numOperands--) stack.pop();
+                break;
+              }
+              case 19:
+              case 20:
+                parseStems();
+                stream.pos += nStems + 7 >> 3;
+                break;
+              case 21:
+                if (stack.length > 2) checkWidth();
+                x2 += stack.shift();
+                y += stack.shift();
+                moveTo(x2, y);
+                break;
+              case 22:
+                if (stack.length > 1) checkWidth();
+                x2 += stack.shift();
+                moveTo(x2, y);
+                break;
+              case 24:
+                while (stack.length >= 8) {
+                  c1x = x2 + stack.shift();
+                  c1y = y + stack.shift();
+                  c2x = c1x + stack.shift();
+                  c2y = c1y + stack.shift();
+                  x2 = c2x + stack.shift();
+                  y = c2y + stack.shift();
+                  path.bezierCurveTo(c1x, c1y, c2x, c2y, x2, y);
+                }
+                x2 += stack.shift();
+                y += stack.shift();
+                path.lineTo(x2, y);
+                break;
+              case 25:
+                while (stack.length >= 8) {
+                  x2 += stack.shift();
+                  y += stack.shift();
+                  path.lineTo(x2, y);
+                }
+                c1x = x2 + stack.shift();
+                c1y = y + stack.shift();
+                c2x = c1x + stack.shift();
+                c2y = c1y + stack.shift();
+                x2 = c2x + stack.shift();
+                y = c2y + stack.shift();
+                path.bezierCurveTo(c1x, c1y, c2x, c2y, x2, y);
+                break;
+              case 26:
+                if (stack.length % 2) x2 += stack.shift();
+                while (stack.length >= 4) {
+                  c1x = x2;
+                  c1y = y + stack.shift();
+                  c2x = c1x + stack.shift();
+                  c2y = c1y + stack.shift();
+                  x2 = c2x;
+                  y = c2y + stack.shift();
+                  path.bezierCurveTo(c1x, c1y, c2x, c2y, x2, y);
+                }
+                break;
+              case 27:
+                if (stack.length % 2) y += stack.shift();
+                while (stack.length >= 4) {
+                  c1x = x2 + stack.shift();
+                  c1y = y;
+                  c2x = c1x + stack.shift();
+                  c2y = c1y + stack.shift();
+                  x2 = c2x + stack.shift();
+                  y = c2y;
+                  path.bezierCurveTo(c1x, c1y, c2x, c2y, x2, y);
+                }
+                break;
+              case 28:
+                stack.push(stream.readInt16BE());
+                break;
+              case 29:
+                index = stack.pop() + gsubrsBias;
+                subr = gsubrs[index];
+                if (subr) {
+                  usedGsubrs[index] = true;
+                  let p = stream.pos;
+                  let e = end;
+                  stream.pos = subr.offset;
+                  end = subr.offset + subr.length;
+                  parse();
+                  stream.pos = p;
+                  end = e;
+                }
+                break;
+              case 30:
+              case 31:
+                phase = op === 31;
+                while (stack.length >= 4) {
+                  if (phase) {
+                    c1x = x2 + stack.shift();
+                    c1y = y;
+                    c2x = c1x + stack.shift();
+                    c2y = c1y + stack.shift();
+                    y = c2y + stack.shift();
+                    x2 = c2x + (stack.length === 1 ? stack.shift() : 0);
+                  } else {
+                    c1x = x2;
+                    c1y = y + stack.shift();
+                    c2x = c1x + stack.shift();
+                    c2y = c1y + stack.shift();
+                    x2 = c2x + stack.shift();
+                    y = c2y + (stack.length === 1 ? stack.shift() : 0);
+                  }
+                  path.bezierCurveTo(c1x, c1y, c2x, c2y, x2, y);
+                  phase = !phase;
+                }
+                break;
+              case 12:
+                op = stream.readUInt8();
+                switch (op) {
+                  case 3:
+                    let a = stack.pop();
+                    let b = stack.pop();
+                    stack.push(a && b ? 1 : 0);
+                    break;
+                  case 4:
+                    a = stack.pop();
+                    b = stack.pop();
+                    stack.push(a || b ? 1 : 0);
+                    break;
+                  case 5:
+                    a = stack.pop();
+                    stack.push(a ? 0 : 1);
+                    break;
+                  case 9:
+                    a = stack.pop();
+                    stack.push(Math.abs(a));
+                    break;
+                  case 10:
+                    a = stack.pop();
+                    b = stack.pop();
+                    stack.push(a + b);
+                    break;
+                  case 11:
+                    a = stack.pop();
+                    b = stack.pop();
+                    stack.push(a - b);
+                    break;
+                  case 12:
+                    a = stack.pop();
+                    b = stack.pop();
+                    stack.push(a / b);
+                    break;
+                  case 14:
+                    a = stack.pop();
+                    stack.push(-a);
+                    break;
+                  case 15:
+                    a = stack.pop();
+                    b = stack.pop();
+                    stack.push(a === b ? 1 : 0);
+                    break;
+                  case 18:
+                    stack.pop();
+                    break;
+                  case 20:
+                    let val = stack.pop();
+                    let idx = stack.pop();
+                    trans[idx] = val;
+                    break;
+                  case 21:
+                    idx = stack.pop();
+                    stack.push(trans[idx] || 0);
+                    break;
+                  case 22:
+                    let s1 = stack.pop();
+                    let s2 = stack.pop();
+                    let v1 = stack.pop();
+                    let v2 = stack.pop();
+                    stack.push(v1 <= v2 ? s1 : s2);
+                    break;
+                  case 23:
+                    stack.push(Math.random());
+                    break;
+                  case 24:
+                    a = stack.pop();
+                    b = stack.pop();
+                    stack.push(a * b);
+                    break;
+                  case 26:
+                    a = stack.pop();
+                    stack.push(Math.sqrt(a));
+                    break;
+                  case 27:
+                    a = stack.pop();
+                    stack.push(a, a);
+                    break;
+                  case 28:
+                    a = stack.pop();
+                    b = stack.pop();
+                    stack.push(b, a);
+                    break;
+                  case 29:
+                    idx = stack.pop();
+                    if (idx < 0) idx = 0;
+                    else if (idx > stack.length - 1) idx = stack.length - 1;
+                    stack.push(stack[idx]);
+                    break;
+                  case 30:
+                    let n = stack.pop();
+                    let j = stack.pop();
+                    if (j >= 0) while (j > 0) {
+                      var t = stack[n - 1];
+                      for (let i2 = n - 2; i2 >= 0; i2--) stack[i2 + 1] = stack[i2];
+                      stack[0] = t;
+                      j--;
+                    }
+                    else while (j < 0) {
+                      var t = stack[0];
+                      for (let i2 = 0; i2 <= n; i2++) stack[i2] = stack[i2 + 1];
+                      stack[n - 1] = t;
+                      j++;
+                    }
+                    break;
+                  case 34:
+                    c1x = x2 + stack.shift();
+                    c1y = y;
+                    c2x = c1x + stack.shift();
+                    c2y = c1y + stack.shift();
+                    c3x = c2x + stack.shift();
+                    c3y = c2y;
+                    c4x = c3x + stack.shift();
+                    c4y = c3y;
+                    c5x = c4x + stack.shift();
+                    c5y = c4y;
+                    c6x = c5x + stack.shift();
+                    c6y = c5y;
+                    x2 = c6x;
+                    y = c6y;
+                    path.bezierCurveTo(c1x, c1y, c2x, c2y, c3x, c3y);
+                    path.bezierCurveTo(c4x, c4y, c5x, c5y, c6x, c6y);
+                    break;
+                  case 35:
+                    pts = [];
+                    for (let i2 = 0; i2 <= 5; i2++) {
+                      x2 += stack.shift();
+                      y += stack.shift();
+                      pts.push(x2, y);
+                    }
+                    path.bezierCurveTo(...pts.slice(0, 6));
+                    path.bezierCurveTo(...pts.slice(6));
+                    stack.shift();
+                    break;
+                  case 36:
+                    c1x = x2 + stack.shift();
+                    c1y = y + stack.shift();
+                    c2x = c1x + stack.shift();
+                    c2y = c1y + stack.shift();
+                    c3x = c2x + stack.shift();
+                    c3y = c2y;
+                    c4x = c3x + stack.shift();
+                    c4y = c3y;
+                    c5x = c4x + stack.shift();
+                    c5y = c4y + stack.shift();
+                    c6x = c5x + stack.shift();
+                    c6y = c5y;
+                    x2 = c6x;
+                    y = c6y;
+                    path.bezierCurveTo(c1x, c1y, c2x, c2y, c3x, c3y);
+                    path.bezierCurveTo(c4x, c4y, c5x, c5y, c6x, c6y);
+                    break;
+                  case 37:
+                    let startx = x2;
+                    let starty = y;
+                    pts = [];
+                    for (let i2 = 0; i2 <= 4; i2++) {
+                      x2 += stack.shift();
+                      y += stack.shift();
+                      pts.push(x2, y);
+                    }
+                    if (Math.abs(x2 - startx) > Math.abs(y - starty)) {
+                      x2 += stack.shift();
+                      y = starty;
+                    } else {
+                      x2 = startx;
+                      y += stack.shift();
+                    }
+                    pts.push(x2, y);
+                    path.bezierCurveTo(...pts.slice(0, 6));
+                    path.bezierCurveTo(...pts.slice(6));
+                    break;
+                  default:
+                    throw new Error(`Unknown op: 12 ${op}`);
+                }
+                break;
+              default:
+                throw new Error(`Unknown op: ${op}`);
+            }
+          } else if (op < 247) stack.push(op - 139);
+          else if (op < 251) {
+            var b1 = stream.readUInt8();
+            stack.push((op - 247) * 256 + b1 + 108);
+          } else if (op < 255) {
+            var b1 = stream.readUInt8();
+            stack.push(-(op - 251) * 256 - b1 - 108);
+          } else stack.push(stream.readInt32BE() / 65536);
+        }
+      };
+      parse();
+      if (open) path.closePath();
+      return path;
+    }
+    constructor(...args) {
+      super(...args);
+      (0, _define_property)(this, "type", "CFF");
+    }
+  };
+  var $25d8f049c222084c$var$SBIXImage = new Struct({
+    originX: uint16,
+    originY: uint16,
+    type: new StringT(4),
+    data: new BufferT((t) => t.parent.buflen - t._currentOffset)
+  });
+  var $25d8f049c222084c$export$2e2bcd8739ae039 = class extends (0, $69aac16029968692$export$2e2bcd8739ae039) {
+    /**
+    * Returns an object representing a glyph image at the given point size.
+    * The object has a data property with a Buffer containing the actual image data,
+    * along with the image type, and origin.
+    *
+    * @param {number} size
+    * @return {object}
+    */
+    getImageForSize(size) {
+      for (let i2 = 0; i2 < this._font.sbix.imageTables.length; i2++) {
+        var table = this._font.sbix.imageTables[i2];
+        if (table.ppem >= size) break;
+      }
+      let offsets = table.imageOffsets;
+      let start = offsets[this.id];
+      let end = offsets[this.id + 1];
+      if (start === end) return null;
+      this._font.stream.pos = start;
+      return $25d8f049c222084c$var$SBIXImage.decode(this._font.stream, {
+        buflen: end - start
+      });
+    }
+    render(ctx, size) {
+      let img = this.getImageForSize(size);
+      if (img != null) {
+        let scale = size / this._font.unitsPerEm;
+        ctx.image(img.data, {
+          height: size,
+          x: img.originX,
+          y: (this.bbox.minY - img.originY) * scale
+        });
+      }
+      if (this._font.sbix.flags.renderOutlines) super.render(ctx, size);
+    }
+    constructor(...args) {
+      super(...args);
+      (0, _define_property)(this, "type", "SBIX");
+    }
+  };
+  var $0d411f0165859681$var$COLRLayer = class {
+    constructor(glyph, color) {
+      this.glyph = glyph;
+      this.color = color;
+    }
+  };
+  var $0d411f0165859681$export$2e2bcd8739ae039 = class extends (0, $f92906be28e61769$export$2e2bcd8739ae039) {
+    _getBBox() {
+      let bbox = new (0, $f34600ab9d7f70d8$export$2e2bcd8739ae039)();
+      for (let i2 = 0; i2 < this.layers.length; i2++) {
+        let layer = this.layers[i2];
+        let b = layer.glyph.bbox;
+        bbox.addPoint(b.minX, b.minY);
+        bbox.addPoint(b.maxX, b.maxY);
+      }
+      return bbox;
+    }
+    /**
+    * Returns an array of objects containing the glyph and color for
+    * each layer in the composite color glyph.
+    * @type {object[]}
+    */
+    get layers() {
+      let cpal = this._font.CPAL;
+      let colr = this._font.COLR;
+      let low = 0;
+      let high = colr.baseGlyphRecord.length - 1;
+      while (low <= high) {
+        let mid = low + high >> 1;
+        var rec = colr.baseGlyphRecord[mid];
+        if (this.id < rec.gid) high = mid - 1;
+        else if (this.id > rec.gid) low = mid + 1;
+        else {
+          var baseLayer = rec;
+          break;
+        }
+      }
+      if (baseLayer == null) {
+        var g = this._font._getBaseGlyph(this.id);
+        var color = {
+          red: 0,
+          green: 0,
+          blue: 0,
+          alpha: 255
+        };
+        return [
+          new $0d411f0165859681$var$COLRLayer(g, color)
+        ];
+      }
+      let layers = [];
+      for (let i2 = baseLayer.firstLayerIndex; i2 < baseLayer.firstLayerIndex + baseLayer.numLayers; i2++) {
+        var rec = colr.layerRecords[i2];
+        var color = cpal.colorRecords[rec.paletteIndex];
+        var g = this._font._getBaseGlyph(rec.gid);
+        layers.push(new $0d411f0165859681$var$COLRLayer(g, color));
+      }
+      return layers;
+    }
+    render(ctx, size) {
+      for (let { glyph, color } of this.layers) {
+        ctx.fillColor([
+          color.red,
+          color.green,
+          color.blue
+        ], color.alpha / 255 * 100);
+        glyph.render(ctx, size);
+      }
+      return;
+    }
+    constructor(...args) {
+      super(...args);
+      (0, _define_property)(this, "type", "COLR");
+    }
+  };
+  var $0bb840cac04e911b$var$TUPLES_SHARE_POINT_NUMBERS = 32768;
+  var $0bb840cac04e911b$var$TUPLE_COUNT_MASK = 4095;
+  var $0bb840cac04e911b$var$EMBEDDED_TUPLE_COORD = 32768;
+  var $0bb840cac04e911b$var$INTERMEDIATE_TUPLE = 16384;
+  var $0bb840cac04e911b$var$PRIVATE_POINT_NUMBERS = 8192;
+  var $0bb840cac04e911b$var$TUPLE_INDEX_MASK = 4095;
+  var $0bb840cac04e911b$var$POINTS_ARE_WORDS = 128;
+  var $0bb840cac04e911b$var$POINT_RUN_COUNT_MASK = 127;
+  var $0bb840cac04e911b$var$DELTAS_ARE_ZERO = 128;
+  var $0bb840cac04e911b$var$DELTAS_ARE_WORDS = 64;
+  var $0bb840cac04e911b$var$DELTA_RUN_COUNT_MASK = 63;
+  var $0bb840cac04e911b$export$2e2bcd8739ae039 = class {
+    normalizeCoords(coords) {
+      let normalized = [];
+      for (var i2 = 0; i2 < this.font.fvar.axis.length; i2++) {
+        let axis = this.font.fvar.axis[i2];
+        if (coords[i2] < axis.defaultValue) normalized.push((coords[i2] - axis.defaultValue + Number.EPSILON) / (axis.defaultValue - axis.minValue + Number.EPSILON));
+        else normalized.push((coords[i2] - axis.defaultValue + Number.EPSILON) / (axis.maxValue - axis.defaultValue + Number.EPSILON));
+      }
+      if (this.font.avar) for (var i2 = 0; i2 < this.font.avar.segment.length; i2++) {
+        let segment = this.font.avar.segment[i2];
+        for (let j = 0; j < segment.correspondence.length; j++) {
+          let pair = segment.correspondence[j];
+          if (j >= 1 && normalized[i2] < pair.fromCoord) {
+            let prev = segment.correspondence[j - 1];
+            normalized[i2] = ((normalized[i2] - prev.fromCoord) * (pair.toCoord - prev.toCoord) + Number.EPSILON) / (pair.fromCoord - prev.fromCoord + Number.EPSILON) + prev.toCoord;
+            break;
+          }
+        }
+      }
+      return normalized;
+    }
+    transformPoints(gid, glyphPoints) {
+      if (!this.font.fvar || !this.font.gvar) return;
+      let { gvar } = this.font;
+      if (gid >= gvar.glyphCount) return;
+      let offset = gvar.offsets[gid];
+      if (offset === gvar.offsets[gid + 1]) return;
+      let { stream } = this.font;
+      stream.pos = offset;
+      if (stream.pos >= stream.length) return;
+      let tupleCount = stream.readUInt16BE();
+      let offsetToData = offset + stream.readUInt16BE();
+      if (tupleCount & $0bb840cac04e911b$var$TUPLES_SHARE_POINT_NUMBERS) {
+        var here = stream.pos;
+        stream.pos = offsetToData;
+        var sharedPoints = this.decodePoints();
+        offsetToData = stream.pos;
+        stream.pos = here;
+      }
+      let origPoints = glyphPoints.map((pt) => pt.copy());
+      tupleCount &= $0bb840cac04e911b$var$TUPLE_COUNT_MASK;
+      for (let i2 = 0; i2 < tupleCount; i2++) {
+        let tupleDataSize = stream.readUInt16BE();
+        let tupleIndex = stream.readUInt16BE();
+        if (tupleIndex & $0bb840cac04e911b$var$EMBEDDED_TUPLE_COORD) {
+          var tupleCoords = [];
+          for (let a = 0; a < gvar.axisCount; a++) tupleCoords.push(stream.readInt16BE() / 16384);
+        } else {
+          if ((tupleIndex & $0bb840cac04e911b$var$TUPLE_INDEX_MASK) >= gvar.globalCoordCount) throw new Error("Invalid gvar table");
+          var tupleCoords = gvar.globalCoords[tupleIndex & $0bb840cac04e911b$var$TUPLE_INDEX_MASK];
+        }
+        if (tupleIndex & $0bb840cac04e911b$var$INTERMEDIATE_TUPLE) {
+          var startCoords = [];
+          for (let a = 0; a < gvar.axisCount; a++) startCoords.push(stream.readInt16BE() / 16384);
+          var endCoords = [];
+          for (let a = 0; a < gvar.axisCount; a++) endCoords.push(stream.readInt16BE() / 16384);
+        }
+        let factor = this.tupleFactor(tupleIndex, tupleCoords, startCoords, endCoords);
+        if (factor === 0) {
+          offsetToData += tupleDataSize;
+          continue;
+        }
+        var here = stream.pos;
+        stream.pos = offsetToData;
+        if (tupleIndex & $0bb840cac04e911b$var$PRIVATE_POINT_NUMBERS) var points = this.decodePoints();
+        else var points = sharedPoints;
+        let nPoints = points.length === 0 ? glyphPoints.length : points.length;
+        let xDeltas = this.decodeDeltas(nPoints);
+        let yDeltas = this.decodeDeltas(nPoints);
+        if (points.length === 0) for (let i3 = 0; i3 < glyphPoints.length; i3++) {
+          var point = glyphPoints[i3];
+          point.x += Math.round(xDeltas[i3] * factor);
+          point.y += Math.round(yDeltas[i3] * factor);
+        }
+        else {
+          let outPoints = origPoints.map((pt) => pt.copy());
+          let hasDelta = glyphPoints.map(() => false);
+          for (let i3 = 0; i3 < points.length; i3++) {
+            let idx = points[i3];
+            if (idx < glyphPoints.length) {
+              let point2 = outPoints[idx];
+              hasDelta[idx] = true;
+              point2.x += xDeltas[i3] * factor;
+              point2.y += yDeltas[i3] * factor;
+            }
+          }
+          this.interpolateMissingDeltas(outPoints, origPoints, hasDelta);
+          for (let i3 = 0; i3 < glyphPoints.length; i3++) {
+            let deltaX = outPoints[i3].x - origPoints[i3].x;
+            let deltaY = outPoints[i3].y - origPoints[i3].y;
+            glyphPoints[i3].x = Math.round(glyphPoints[i3].x + deltaX);
+            glyphPoints[i3].y = Math.round(glyphPoints[i3].y + deltaY);
+          }
+        }
+        offsetToData += tupleDataSize;
+        stream.pos = here;
+      }
+    }
+    decodePoints() {
+      let stream = this.font.stream;
+      let count = stream.readUInt8();
+      if (count & $0bb840cac04e911b$var$POINTS_ARE_WORDS) count = (count & $0bb840cac04e911b$var$POINT_RUN_COUNT_MASK) << 8 | stream.readUInt8();
+      let points = new Uint16Array(count);
+      let i2 = 0;
+      let point = 0;
+      while (i2 < count) {
+        let run3 = stream.readUInt8();
+        let runCount = (run3 & $0bb840cac04e911b$var$POINT_RUN_COUNT_MASK) + 1;
+        let fn = run3 & $0bb840cac04e911b$var$POINTS_ARE_WORDS ? stream.readUInt16 : stream.readUInt8;
+        for (let j = 0; j < runCount && i2 < count; j++) {
+          point += fn.call(stream);
+          points[i2++] = point;
+        }
+      }
+      return points;
+    }
+    decodeDeltas(count) {
+      let stream = this.font.stream;
+      let i2 = 0;
+      let deltas = new Int16Array(count);
+      while (i2 < count) {
+        let run3 = stream.readUInt8();
+        let runCount = (run3 & $0bb840cac04e911b$var$DELTA_RUN_COUNT_MASK) + 1;
+        if (run3 & $0bb840cac04e911b$var$DELTAS_ARE_ZERO) i2 += runCount;
+        else {
+          let fn = run3 & $0bb840cac04e911b$var$DELTAS_ARE_WORDS ? stream.readInt16BE : stream.readInt8;
+          for (let j = 0; j < runCount && i2 < count; j++) deltas[i2++] = fn.call(stream);
+        }
+      }
+      return deltas;
+    }
+    tupleFactor(tupleIndex, tupleCoords, startCoords, endCoords) {
+      let normalized = this.normalizedCoords;
+      let { gvar } = this.font;
+      let factor = 1;
+      for (let i2 = 0; i2 < gvar.axisCount; i2++) {
+        if (tupleCoords[i2] === 0) continue;
+        if (normalized[i2] === 0) return 0;
+        if ((tupleIndex & $0bb840cac04e911b$var$INTERMEDIATE_TUPLE) === 0) {
+          if (normalized[i2] < Math.min(0, tupleCoords[i2]) || normalized[i2] > Math.max(0, tupleCoords[i2])) return 0;
+          factor = (factor * normalized[i2] + Number.EPSILON) / (tupleCoords[i2] + Number.EPSILON);
+        } else {
+          if (normalized[i2] < startCoords[i2] || normalized[i2] > endCoords[i2]) return 0;
+          else if (normalized[i2] < tupleCoords[i2]) factor = factor * (normalized[i2] - startCoords[i2] + Number.EPSILON) / (tupleCoords[i2] - startCoords[i2] + Number.EPSILON);
+          else factor = factor * (endCoords[i2] - normalized[i2] + Number.EPSILON) / (endCoords[i2] - tupleCoords[i2] + Number.EPSILON);
+        }
+      }
+      return factor;
+    }
+    // Interpolates points without delta values.
+    // Needed for the Ø and Q glyphs in Skia.
+    // Algorithm from Freetype.
+    interpolateMissingDeltas(points, inPoints, hasDelta) {
+      if (points.length === 0) return;
+      let point = 0;
+      while (point < points.length) {
+        let firstPoint = point;
+        let endPoint = point;
+        let pt = points[endPoint];
+        while (!pt.endContour) pt = points[++endPoint];
+        while (point <= endPoint && !hasDelta[point]) point++;
+        if (point > endPoint) continue;
+        let firstDelta = point;
+        let curDelta = point;
+        point++;
+        while (point <= endPoint) {
+          if (hasDelta[point]) {
+            this.deltaInterpolate(curDelta + 1, point - 1, curDelta, point, inPoints, points);
+            curDelta = point;
+          }
+          point++;
+        }
+        if (curDelta === firstDelta) this.deltaShift(firstPoint, endPoint, curDelta, inPoints, points);
+        else {
+          this.deltaInterpolate(curDelta + 1, endPoint, curDelta, firstDelta, inPoints, points);
+          if (firstDelta > 0) this.deltaInterpolate(firstPoint, firstDelta - 1, curDelta, firstDelta, inPoints, points);
+        }
+        point = endPoint + 1;
+      }
+    }
+    deltaInterpolate(p1, p2, ref1, ref2, inPoints, outPoints) {
+      if (p1 > p2) return;
+      let iterable = [
+        "x",
+        "y"
+      ];
+      for (let i2 = 0; i2 < iterable.length; i2++) {
+        let k = iterable[i2];
+        if (inPoints[ref1][k] > inPoints[ref2][k]) {
+          var p = ref1;
+          ref1 = ref2;
+          ref2 = p;
+        }
+        let in1 = inPoints[ref1][k];
+        let in2 = inPoints[ref2][k];
+        let out1 = outPoints[ref1][k];
+        let out2 = outPoints[ref2][k];
+        if (in1 !== in2 || out1 === out2) {
+          let scale = in1 === in2 ? 0 : (out2 - out1) / (in2 - in1);
+          for (let p3 = p1; p3 <= p2; p3++) {
+            let out = inPoints[p3][k];
+            if (out <= in1) out += out1 - in1;
+            else if (out >= in2) out += out2 - in2;
+            else out = out1 + (out - in1) * scale;
+            outPoints[p3][k] = out;
+          }
+        }
+      }
+    }
+    deltaShift(p1, p2, ref, inPoints, outPoints) {
+      let deltaX = outPoints[ref].x - inPoints[ref].x;
+      let deltaY = outPoints[ref].y - inPoints[ref].y;
+      if (deltaX === 0 && deltaY === 0) return;
+      for (let p = p1; p <= p2; p++) if (p !== ref) {
+        outPoints[p].x += deltaX;
+        outPoints[p].y += deltaY;
+      }
+    }
+    getAdvanceAdjustment(gid, table) {
+      let outerIndex, innerIndex;
+      if (table.advanceWidthMapping) {
+        let idx = gid;
+        if (idx >= table.advanceWidthMapping.mapCount) idx = table.advanceWidthMapping.mapCount - 1;
+        let entryFormat = table.advanceWidthMapping.entryFormat;
+        ({ outerIndex, innerIndex } = table.advanceWidthMapping.mapData[idx]);
+      } else {
+        outerIndex = 0;
+        innerIndex = gid;
+      }
+      return this.getDelta(table.itemVariationStore, outerIndex, innerIndex);
+    }
+    // See pseudo code from `Font Variations Overview'
+    // in the OpenType specification.
+    getDelta(itemStore, outerIndex, innerIndex) {
+      if (outerIndex >= itemStore.itemVariationData.length) return 0;
+      let varData = itemStore.itemVariationData[outerIndex];
+      if (innerIndex >= varData.deltaSets.length) return 0;
+      let deltaSet = varData.deltaSets[innerIndex];
+      let blendVector = this.getBlendVector(itemStore, outerIndex);
+      let netAdjustment = 0;
+      for (let master = 0; master < varData.regionIndexCount; master++) netAdjustment += deltaSet.deltas[master] * blendVector[master];
+      return netAdjustment;
+    }
+    getBlendVector(itemStore, outerIndex) {
+      let varData = itemStore.itemVariationData[outerIndex];
+      if (this.blendVectors.has(varData)) return this.blendVectors.get(varData);
+      let normalizedCoords = this.normalizedCoords;
+      let blendVector = [];
+      for (let master = 0; master < varData.regionIndexCount; master++) {
+        let scalar = 1;
+        let regionIndex = varData.regionIndexes[master];
+        let axes = itemStore.variationRegionList.variationRegions[regionIndex];
+        for (let j = 0; j < axes.length; j++) {
+          let axis = axes[j];
+          let axisScalar;
+          if (axis.startCoord > axis.peakCoord || axis.peakCoord > axis.endCoord) axisScalar = 1;
+          else if (axis.startCoord < 0 && axis.endCoord > 0 && axis.peakCoord !== 0) axisScalar = 1;
+          else if (axis.peakCoord === 0) axisScalar = 1;
+          else if (normalizedCoords[j] < axis.startCoord || normalizedCoords[j] > axis.endCoord) axisScalar = 0;
+          else {
+            if (normalizedCoords[j] === axis.peakCoord) axisScalar = 1;
+            else if (normalizedCoords[j] < axis.peakCoord) axisScalar = (normalizedCoords[j] - axis.startCoord + Number.EPSILON) / (axis.peakCoord - axis.startCoord + Number.EPSILON);
+            else axisScalar = (axis.endCoord - normalizedCoords[j] + Number.EPSILON) / (axis.endCoord - axis.peakCoord + Number.EPSILON);
+          }
+          scalar *= axisScalar;
+        }
+        blendVector[master] = scalar;
+      }
+      this.blendVectors.set(varData, blendVector);
+      return blendVector;
+    }
+    constructor(font, coords) {
+      this.font = font;
+      this.normalizedCoords = this.normalizeCoords(coords);
+      this.blendVectors = /* @__PURE__ */ new Map();
+    }
+  };
+  var $5cc7476da92df375$var$resolved = Promise.resolve();
+  var $5cc7476da92df375$export$2e2bcd8739ae039 = class {
+    includeGlyph(glyph) {
+      if (typeof glyph === "object") glyph = glyph.id;
+      if (this.mapping[glyph] == null) {
+        this.glyphs.push(glyph);
+        this.mapping[glyph] = this.glyphs.length - 1;
+      }
+      return this.mapping[glyph];
+    }
+    constructor(font) {
+      this.font = font;
+      this.glyphs = [];
+      this.mapping = {};
+      this.includeGlyph(0);
+    }
+  };
+  var $807e58506be70005$var$ON_CURVE = 1;
+  var $807e58506be70005$var$X_SHORT_VECTOR = 2;
+  var $807e58506be70005$var$Y_SHORT_VECTOR = 4;
+  var $807e58506be70005$var$REPEAT = 8;
+  var $807e58506be70005$var$SAME_X = 16;
+  var $807e58506be70005$var$SAME_Y = 32;
+  var $807e58506be70005$var$Point = class {
+    static size(val) {
+      return val >= 0 && val <= 255 ? 1 : 2;
+    }
+    static encode(stream, value) {
+      if (value >= 0 && value <= 255) stream.writeUInt8(value);
+      else stream.writeInt16BE(value);
+    }
+  };
+  var $807e58506be70005$var$Glyf = new Struct({
+    numberOfContours: int16,
+    xMin: int16,
+    yMin: int16,
+    xMax: int16,
+    yMax: int16,
+    endPtsOfContours: new ArrayT(uint16, "numberOfContours"),
+    instructions: new ArrayT(uint8, uint16),
+    flags: new ArrayT(uint8, 0),
+    xPoints: new ArrayT($807e58506be70005$var$Point, 0),
+    yPoints: new ArrayT($807e58506be70005$var$Point, 0)
+  });
+  var $807e58506be70005$export$2e2bcd8739ae039 = class {
+    encodeSimple(path, instructions = []) {
+      let endPtsOfContours = [];
+      let xPoints = [];
+      let yPoints = [];
+      let flags = [];
+      let same = 0;
+      let lastX = 0, lastY = 0, lastFlag = 0;
+      let pointCount = 0;
+      for (let i2 = 0; i2 < path.commands.length; i2++) {
+        let c = path.commands[i2];
+        for (let j = 0; j < c.args.length; j += 2) {
+          let x2 = c.args[j];
+          let y = c.args[j + 1];
+          let flag = 0;
+          if (c.command === "quadraticCurveTo" && j === 2) {
+            let next = path.commands[i2 + 1];
+            if (next && next.command === "quadraticCurveTo") {
+              let midX = (lastX + next.args[0]) / 2;
+              let midY = (lastY + next.args[1]) / 2;
+              if (x2 === midX && y === midY) continue;
+            }
+          }
+          if (!(c.command === "quadraticCurveTo" && j === 0)) flag |= $807e58506be70005$var$ON_CURVE;
+          flag = this._encodePoint(x2, lastX, xPoints, flag, $807e58506be70005$var$X_SHORT_VECTOR, $807e58506be70005$var$SAME_X);
+          flag = this._encodePoint(y, lastY, yPoints, flag, $807e58506be70005$var$Y_SHORT_VECTOR, $807e58506be70005$var$SAME_Y);
+          if (flag === lastFlag && same < 255) {
+            flags[flags.length - 1] |= $807e58506be70005$var$REPEAT;
+            same++;
+          } else {
+            if (same > 0) {
+              flags.push(same);
+              same = 0;
+            }
+            flags.push(flag);
+            lastFlag = flag;
+          }
+          lastX = x2;
+          lastY = y;
+          pointCount++;
+        }
+        if (c.command === "closePath") endPtsOfContours.push(pointCount - 1);
+      }
+      if (path.commands.length > 1 && path.commands[path.commands.length - 1].command !== "closePath") endPtsOfContours.push(pointCount - 1);
+      let bbox = path.bbox;
+      let glyf = {
+        numberOfContours: endPtsOfContours.length,
+        xMin: bbox.minX,
+        yMin: bbox.minY,
+        xMax: bbox.maxX,
+        yMax: bbox.maxY,
+        endPtsOfContours,
+        instructions,
+        flags,
+        xPoints,
+        yPoints
+      };
+      let size = $807e58506be70005$var$Glyf.size(glyf);
+      let tail = 4 - size % 4;
+      let stream = new EncodeStream(size + tail);
+      $807e58506be70005$var$Glyf.encode(stream, glyf);
+      if (tail !== 0) stream.fill(0, tail);
+      return stream.buffer;
+    }
+    _encodePoint(value, last, points, flag, shortFlag, sameFlag) {
+      let diff = value - last;
+      if (value === last) flag |= sameFlag;
+      else {
+        if (-255 <= diff && diff <= 255) {
+          flag |= shortFlag;
+          if (diff < 0) diff = -diff;
+          else flag |= sameFlag;
+        }
+        points.push(diff);
+      }
+      return flag;
+    }
+  };
+  var $4abbb6a5dbdc441a$export$2e2bcd8739ae039 = class extends (0, $5cc7476da92df375$export$2e2bcd8739ae039) {
+    _addGlyph(gid) {
+      let glyph = this.font.getGlyph(gid);
+      let glyf = glyph._decode();
+      let curOffset = this.font.loca.offsets[gid];
+      let nextOffset = this.font.loca.offsets[gid + 1];
+      let stream = this.font._getTableStream("glyf");
+      stream.pos += curOffset;
+      let buffer = stream.readBuffer(nextOffset - curOffset);
+      if (glyf && glyf.numberOfContours < 0) {
+        buffer = new Uint8Array(buffer);
+        let view = new DataView(buffer.buffer);
+        for (let component of glyf.components) {
+          gid = this.includeGlyph(component.glyphID);
+          view.setUint16(component.pos, gid);
+        }
+      } else if (glyf && this.font._variationProcessor)
+        buffer = this.glyphEncoder.encodeSimple(glyph.path, glyf.instructions);
+      this.glyf.push(buffer);
+      this.loca.offsets.push(this.offset);
+      this.hmtx.metrics.push({
+        advance: glyph.advanceWidth,
+        bearing: glyph._getMetrics().leftBearing
+      });
+      this.offset += buffer.length;
+      return this.glyf.length - 1;
+    }
+    encode() {
+      this.glyf = [];
+      this.offset = 0;
+      this.loca = {
+        offsets: [],
+        version: this.font.loca.version
+      };
+      this.hmtx = {
+        metrics: [],
+        bearings: []
+      };
+      let i2 = 0;
+      while (i2 < this.glyphs.length) this._addGlyph(this.glyphs[i2++]);
+      let maxp = (0, import_clone.default)(this.font.maxp);
+      maxp.numGlyphs = this.glyf.length;
+      this.loca.offsets.push(this.offset);
+      let head = (0, import_clone.default)(this.font.head);
+      head.indexToLocFormat = this.loca.version;
+      let hhea = (0, import_clone.default)(this.font.hhea);
+      hhea.numberOfMetrics = this.hmtx.metrics.length;
+      return (0, $816c07a04b6dba87$export$2e2bcd8739ae039).toBuffer({
+        tables: {
+          head,
+          hhea,
+          loca: this.loca,
+          maxp,
+          "cvt ": this.font["cvt "],
+          prep: this.font.prep,
+          glyf: this.glyf,
+          hmtx: this.hmtx,
+          fpgm: this.font.fpgm
+        }
+      });
+    }
+    constructor(font) {
+      super(font);
+      this.glyphEncoder = new (0, $807e58506be70005$export$2e2bcd8739ae039)();
+    }
+  };
+  var $001d739428a71d5a$export$2e2bcd8739ae039 = class extends (0, $5cc7476da92df375$export$2e2bcd8739ae039) {
+    subsetCharstrings() {
+      this.charstrings = [];
+      let gsubrs = {};
+      for (let gid of this.glyphs) {
+        this.charstrings.push(this.cff.getCharString(gid));
+        let glyph = this.font.getGlyph(gid);
+        let path = glyph.path;
+        for (let subr in glyph._usedGsubrs) gsubrs[subr] = true;
+      }
+      this.gsubrs = this.subsetSubrs(this.cff.globalSubrIndex, gsubrs);
+    }
+    subsetSubrs(subrs, used) {
+      let res = [];
+      for (let i2 = 0; i2 < subrs.length; i2++) {
+        let subr = subrs[i2];
+        if (used[i2]) {
+          this.cff.stream.pos = subr.offset;
+          res.push(this.cff.stream.readBuffer(subr.length));
+        } else res.push(new Uint8Array([
+          11
+        ]));
+      }
+      return res;
+    }
+    subsetFontdict(topDict) {
+      topDict.FDArray = [];
+      topDict.FDSelect = {
+        version: 0,
+        fds: []
+      };
+      let used_fds = {};
+      let used_subrs = [];
+      let fd_select = {};
+      for (let gid of this.glyphs) {
+        let fd2 = this.cff.fdForGlyph(gid);
+        if (fd2 == null) continue;
+        if (!used_fds[fd2]) {
+          topDict.FDArray.push(Object.assign({}, this.cff.topDict.FDArray[fd2]));
+          used_subrs.push({});
+          fd_select[fd2] = topDict.FDArray.length - 1;
+        }
+        used_fds[fd2] = true;
+        topDict.FDSelect.fds.push(fd_select[fd2]);
+        let glyph = this.font.getGlyph(gid);
+        let path = glyph.path;
+        for (let subr in glyph._usedSubrs) used_subrs[fd_select[fd2]][subr] = true;
+      }
+      for (let i2 = 0; i2 < topDict.FDArray.length; i2++) {
+        let dict = topDict.FDArray[i2];
+        delete dict.FontName;
+        if (dict.Private && dict.Private.Subrs) {
+          dict.Private = Object.assign({}, dict.Private);
+          dict.Private.Subrs = this.subsetSubrs(dict.Private.Subrs, used_subrs[i2]);
+        }
+      }
+      return;
+    }
+    createCIDFontdict(topDict) {
+      let used_subrs = {};
+      for (let gid of this.glyphs) {
+        let glyph = this.font.getGlyph(gid);
+        let path = glyph.path;
+        for (let subr in glyph._usedSubrs) used_subrs[subr] = true;
+      }
+      let privateDict = Object.assign({}, this.cff.topDict.Private);
+      if (this.cff.topDict.Private && this.cff.topDict.Private.Subrs) privateDict.Subrs = this.subsetSubrs(this.cff.topDict.Private.Subrs, used_subrs);
+      topDict.FDArray = [
+        {
+          Private: privateDict
+        }
+      ];
+      return topDict.FDSelect = {
+        version: 3,
+        nRanges: 1,
+        ranges: [
+          {
+            first: 0,
+            fd: 0
+          }
+        ],
+        sentinel: this.charstrings.length
+      };
+    }
+    addString(string) {
+      if (!string) return null;
+      if (!this.strings) this.strings = [];
+      this.strings.push(string);
+      return (0, $229224aec43783c5$export$2e2bcd8739ae039).length + this.strings.length - 1;
+    }
+    encode() {
+      this.subsetCharstrings();
+      let charset = {
+        version: this.charstrings.length > 255 ? 2 : 1,
+        ranges: [
+          {
+            first: 1,
+            nLeft: this.charstrings.length - 2
+          }
+        ]
+      };
+      let topDict = Object.assign({}, this.cff.topDict);
+      topDict.Private = null;
+      topDict.charset = charset;
+      topDict.Encoding = null;
+      topDict.CharStrings = this.charstrings;
+      for (let key of [
+        "version",
+        "Notice",
+        "Copyright",
+        "FullName",
+        "FamilyName",
+        "Weight",
+        "PostScript",
+        "BaseFontName",
+        "FontName"
+      ]) topDict[key] = this.addString(this.cff.string(topDict[key]));
+      topDict.ROS = [
+        this.addString("Adobe"),
+        this.addString("Identity"),
+        0
+      ];
+      topDict.CIDCount = this.charstrings.length;
+      if (this.cff.isCIDFont) this.subsetFontdict(topDict);
+      else this.createCIDFontdict(topDict);
+      let top = {
+        version: 1,
+        hdrSize: this.cff.hdrSize,
+        offSize: 4,
+        header: this.cff.header,
+        nameIndex: [
+          this.cff.postscriptName
+        ],
+        topDictIndex: [
+          topDict
+        ],
+        stringIndex: this.strings,
+        globalSubrIndex: this.gsubrs
+      };
+      return (0, $b84fd3dd9d8eddb2$export$2e2bcd8739ae039).toBuffer(top);
+    }
+    constructor(font) {
+      super(font);
+      this.cff = this.font["CFF "];
+      if (!this.cff) throw new Error("Not a CFF Font");
+    }
+  };
+  var $4c1709dee528ea76$export$2e2bcd8739ae039 = class _$4c1709dee528ea76$export$2e2bcd8739ae039 {
+    static probe(buffer) {
+      let format = (0, $12727730ddfc8bfe$export$3d28c1996ced1f14).decode(buffer.slice(0, 4));
+      return format === "true" || format === "OTTO" || format === String.fromCharCode(0, 1, 0, 0);
+    }
+    setDefaultLanguage(lang = null) {
+      this.defaultLanguage = lang;
+    }
+    _getTable(table) {
+      if (!(table.tag in this._tables)) try {
+        this._tables[table.tag] = this._decodeTable(table);
+      } catch (e) {
+        if ($d636bc798e7178db$export$bd5c5d8b8dcafd78) {
+          console.error(`Error decoding table ${table.tag}`);
+          console.error(e.stack);
+        }
+      }
+      return this._tables[table.tag];
+    }
+    _getTableStream(tag) {
+      let table = this.directory.tables[tag];
+      if (table) {
+        this.stream.pos = table.offset;
+        return this.stream;
+      }
+      return null;
+    }
+    _decodeDirectory() {
+      return this.directory = (0, $816c07a04b6dba87$export$2e2bcd8739ae039).decode(this.stream, {
+        _startOffset: 0
+      });
+    }
+    _decodeTable(table) {
+      let pos = this.stream.pos;
+      let stream = this._getTableStream(table.tag);
+      let result = (0, $c3395722bea751e2$export$2e2bcd8739ae039)[table.tag].decode(stream, this, table.length);
+      this.stream.pos = pos;
+      return result;
+    }
+    /**
+    * Gets a string from the font's `name` table
+    * `lang` is a BCP-47 language code.
+    * @return {string}
+    */
+    getName(key, lang = this.defaultLanguage || $d636bc798e7178db$export$42940898df819940) {
+      let record2 = this.name && this.name.records[key];
+      if (record2)
+        return record2[lang] || record2[this.defaultLanguage] || record2[$d636bc798e7178db$export$42940898df819940] || record2["en"] || record2[Object.keys(record2)[0]] || null;
+      return null;
+    }
+    /**
+    * The unique PostScript name for this font, e.g. "Helvetica-Bold"
+    * @type {string}
+    */
+    get postscriptName() {
+      return this.getName("postscriptName");
+    }
+    /**
+    * The font's full name, e.g. "Helvetica Bold"
+    * @type {string}
+    */
+    get fullName() {
+      return this.getName("fullName");
+    }
+    /**
+    * The font's family name, e.g. "Helvetica"
+    * @type {string}
+    */
+    get familyName() {
+      return this.getName("fontFamily");
+    }
+    /**
+    * The font's sub-family, e.g. "Bold".
+    * @type {string}
+    */
+    get subfamilyName() {
+      return this.getName("fontSubfamily");
+    }
+    /**
+    * The font's copyright information
+    * @type {string}
+    */
+    get copyright() {
+      return this.getName("copyright");
+    }
+    /**
+    * The font's version number
+    * @type {string}
+    */
+    get version() {
+      return this.getName("version");
+    }
+    /**
+    * The font’s [ascender](https://en.wikipedia.org/wiki/Ascender_(typography))
+    * @type {number}
+    */
+    get ascent() {
+      return this.hhea.ascent;
+    }
+    /**
+    * The font’s [descender](https://en.wikipedia.org/wiki/Descender)
+    * @type {number}
+    */
+    get descent() {
+      return this.hhea.descent;
+    }
+    /**
+    * The amount of space that should be included between lines
+    * @type {number}
+    */
+    get lineGap() {
+      return this.hhea.lineGap;
+    }
+    /**
+    * The offset from the normal underline position that should be used
+    * @type {number}
+    */
+    get underlinePosition() {
+      return this.post.underlinePosition;
+    }
+    /**
+    * The weight of the underline that should be used
+    * @type {number}
+    */
+    get underlineThickness() {
+      return this.post.underlineThickness;
+    }
+    /**
+    * If this is an italic font, the angle the cursor should be drawn at to match the font design
+    * @type {number}
+    */
+    get italicAngle() {
+      return this.post.italicAngle;
+    }
+    /**
+    * The height of capital letters above the baseline.
+    * See [here](https://en.wikipedia.org/wiki/Cap_height) for more details.
+    * @type {number}
+    */
+    get capHeight() {
+      let os2 = this["OS/2"];
+      return os2 ? os2.capHeight : this.ascent;
+    }
+    /**
+    * The height of lower case letters in the font.
+    * See [here](https://en.wikipedia.org/wiki/X-height) for more details.
+    * @type {number}
+    */
+    get xHeight() {
+      let os2 = this["OS/2"];
+      return os2 ? os2.xHeight : 0;
+    }
+    /**
+    * The number of glyphs in the font.
+    * @type {number}
+    */
+    get numGlyphs() {
+      return this.maxp.numGlyphs;
+    }
+    /**
+    * The size of the font’s internal coordinate grid
+    * @type {number}
+    */
+    get unitsPerEm() {
+      return this.head.unitsPerEm;
+    }
+    /**
+    * The font’s bounding box, i.e. the box that encloses all glyphs in the font.
+    * @type {BBox}
+    */
+    get bbox() {
+      return Object.freeze(new (0, $f34600ab9d7f70d8$export$2e2bcd8739ae039)(this.head.xMin, this.head.yMin, this.head.xMax, this.head.yMax));
+    }
+    get _cmapProcessor() {
+      return new (0, $f08dd41ef10b694c$export$2e2bcd8739ae039)(this.cmap);
+    }
+    /**
+    * An array of all of the unicode code points supported by the font.
+    * @type {number[]}
+    */
+    get characterSet() {
+      return this._cmapProcessor.getCharacterSet();
+    }
+    /**
+    * Returns whether there is glyph in the font for the given unicode code point.
+    *
+    * @param {number} codePoint
+    * @return {boolean}
+    */
+    hasGlyphForCodePoint(codePoint) {
+      return !!this._cmapProcessor.lookup(codePoint);
+    }
+    /**
+    * Maps a single unicode code point to a Glyph object.
+    * Does not perform any advanced substitutions (there is no context to do so).
+    *
+    * @param {number} codePoint
+    * @return {Glyph}
+    */
+    glyphForCodePoint(codePoint) {
+      return this.getGlyph(this._cmapProcessor.lookup(codePoint), [
+        codePoint
+      ]);
+    }
+    /**
+    * Returns an array of Glyph objects for the given string.
+    * This is only a one-to-one mapping from characters to glyphs.
+    * For most uses, you should use font.layout (described below), which
+    * provides a much more advanced mapping supporting AAT and OpenType shaping.
+    *
+    * @param {string} string
+    * @return {Glyph[]}
+    */
+    glyphsForString(string) {
+      let glyphs = [];
+      let len = string.length;
+      let idx = 0;
+      let last = -1;
+      let state = -1;
+      while (idx <= len) {
+        let code = 0;
+        let nextState = 0;
+        if (idx < len) {
+          code = string.charCodeAt(idx++);
+          if (55296 <= code && code <= 56319 && idx < len) {
+            let next = string.charCodeAt(idx);
+            if (56320 <= next && next <= 57343) {
+              idx++;
+              code = ((code & 1023) << 10) + (next & 1023) + 65536;
+            }
+          }
+          nextState = 65024 <= code && code <= 65039 || 917760 <= code && code <= 917999 ? 1 : 0;
+        } else idx++;
+        if (state === 0 && nextState === 1)
+          glyphs.push(this.getGlyph(this._cmapProcessor.lookup(last, code), [
+            last,
+            code
+          ]));
+        else if (state === 0 && nextState === 0)
+          glyphs.push(this.glyphForCodePoint(last));
+        last = code;
+        state = nextState;
+      }
+      return glyphs;
+    }
+    get _layoutEngine() {
+      return new (0, $4c0a7fa5df7a9ab1$export$2e2bcd8739ae039)(this);
+    }
+    /**
+    * Returns a GlyphRun object, which includes an array of Glyphs and GlyphPositions for the given string.
+    *
+    * @param {string} string
+    * @param {string[]} [userFeatures]
+    * @param {string} [script]
+    * @param {string} [language]
+    * @param {string} [direction]
+    * @return {GlyphRun}
+    */
+    layout(string, userFeatures, script, language, direction) {
+      return this._layoutEngine.layout(string, userFeatures, script, language, direction);
+    }
+    /**
+    * Returns an array of strings that map to the given glyph id.
+    * @param {number} gid - glyph id
+    */
+    stringsForGlyph(gid) {
+      return this._layoutEngine.stringsForGlyph(gid);
+    }
+    /**
+    * An array of all [OpenType feature tags](https://www.microsoft.com/typography/otspec/featuretags.htm)
+    * (or mapped AAT tags) supported by the font.
+    * The features parameter is an array of OpenType feature tags to be applied in addition to the default set.
+    * If this is an AAT font, the OpenType feature tags are mapped to AAT features.
+    *
+    * @type {string[]}
+    */
+    get availableFeatures() {
+      return this._layoutEngine.getAvailableFeatures();
+    }
+    getAvailableFeatures(script, language) {
+      return this._layoutEngine.getAvailableFeatures(script, language);
+    }
+    _getBaseGlyph(glyph, characters = []) {
+      if (!this._glyphs[glyph]) {
+        if (this.directory.tables.glyf) this._glyphs[glyph] = new (0, $69aac16029968692$export$2e2bcd8739ae039)(glyph, characters, this);
+        else if (this.directory.tables["CFF "] || this.directory.tables.CFF2) this._glyphs[glyph] = new (0, $62cc5109c6101893$export$2e2bcd8739ae039)(glyph, characters, this);
+      }
+      return this._glyphs[glyph] || null;
+    }
+    /**
+    * Returns a glyph object for the given glyph id.
+    * You can pass the array of code points this glyph represents for
+    * your use later, and it will be stored in the glyph object.
+    *
+    * @param {number} glyph
+    * @param {number[]} characters
+    * @return {Glyph}
+    */
+    getGlyph(glyph, characters = []) {
+      if (!this._glyphs[glyph]) {
+        if (this.directory.tables.sbix) this._glyphs[glyph] = new (0, $25d8f049c222084c$export$2e2bcd8739ae039)(glyph, characters, this);
+        else if (this.directory.tables.COLR && this.directory.tables.CPAL) this._glyphs[glyph] = new (0, $0d411f0165859681$export$2e2bcd8739ae039)(glyph, characters, this);
+        else this._getBaseGlyph(glyph, characters);
+      }
+      return this._glyphs[glyph] || null;
+    }
+    /**
+    * Returns a Subset for this font.
+    * @return {Subset}
+    */
+    createSubset() {
+      if (this.directory.tables["CFF "]) return new (0, $001d739428a71d5a$export$2e2bcd8739ae039)(this);
+      return new (0, $4abbb6a5dbdc441a$export$2e2bcd8739ae039)(this);
+    }
+    /**
+    * Returns an object describing the available variation axes
+    * that this font supports. Keys are setting tags, and values
+    * contain the axis name, range, and default value.
+    *
+    * @type {object}
+    */
+    get variationAxes() {
+      let res = {};
+      if (!this.fvar) return res;
+      for (let axis of this.fvar.axis) res[axis.axisTag.trim()] = {
+        name: axis.name.en,
+        min: axis.minValue,
+        default: axis.defaultValue,
+        max: axis.maxValue
+      };
+      return res;
+    }
+    /**
+    * Returns an object describing the named variation instances
+    * that the font designer has specified. Keys are variation names
+    * and values are the variation settings for this instance.
+    *
+    * @type {object}
+    */
+    get namedVariations() {
+      let res = {};
+      if (!this.fvar) return res;
+      for (let instance of this.fvar.instance) {
+        let settings = {};
+        for (let i2 = 0; i2 < this.fvar.axis.length; i2++) {
+          let axis = this.fvar.axis[i2];
+          settings[axis.axisTag.trim()] = instance.coord[i2];
+        }
+        res[instance.name.en] = settings;
+      }
+      return res;
+    }
+    /**
+    * Returns a new font with the given variation settings applied.
+    * Settings can either be an instance name, or an object containing
+    * variation tags as specified by the `variationAxes` property.
+    *
+    * @param {object} settings
+    * @return {TTFFont}
+    */
+    getVariation(settings) {
+      if (!(this.directory.tables.fvar && (this.directory.tables.gvar && this.directory.tables.glyf || this.directory.tables.CFF2))) throw new Error("Variations require a font with the fvar, gvar and glyf, or CFF2 tables.");
+      if (typeof settings === "string") settings = this.namedVariations[settings];
+      if (typeof settings !== "object") throw new Error("Variation settings must be either a variation name or settings object.");
+      let coords = this.fvar.axis.map((axis, i2) => {
+        let axisTag = axis.axisTag.trim();
+        if (axisTag in settings) return Math.max(axis.minValue, Math.min(axis.maxValue, settings[axisTag]));
+        else return axis.defaultValue;
+      });
+      let stream = new DecodeStream(this.stream.buffer);
+      stream.pos = this._directoryPos;
+      let font = new _$4c1709dee528ea76$export$2e2bcd8739ae039(stream, coords);
+      font._tables = this._tables;
+      return font;
+    }
+    get _variationProcessor() {
+      if (!this.fvar) return null;
+      let variationCoords = this.variationCoords;
+      if (!variationCoords && !this.CFF2) return null;
+      if (!variationCoords) variationCoords = this.fvar.axis.map((axis) => axis.defaultValue);
+      return new (0, $0bb840cac04e911b$export$2e2bcd8739ae039)(this, variationCoords);
+    }
+    // Standardized format plugin API
+    getFont(name) {
+      return this.getVariation(name);
+    }
+    constructor(stream, variationCoords = null) {
+      (0, _define_property)(this, "type", "TTF");
+      this.defaultLanguage = null;
+      this.stream = stream;
+      this.variationCoords = variationCoords;
+      this._directoryPos = this.stream.pos;
+      this._tables = {};
+      this._glyphs = {};
+      this._decodeDirectory();
+      for (let tag in this.directory.tables) {
+        let table = this.directory.tables[tag];
+        if ((0, $c3395722bea751e2$export$2e2bcd8739ae039)[tag] && table.length > 0) Object.defineProperty(this, tag, {
+          get: this._getTable.bind(this, table)
+        });
+      }
+    }
+  };
+  (0, __decorate)([
+    (0, $e71565f2ce09cb6b$export$69a3209f1a06c04d)
+  ], $4c1709dee528ea76$export$2e2bcd8739ae039.prototype, "bbox", null);
+  (0, __decorate)([
+    (0, $e71565f2ce09cb6b$export$69a3209f1a06c04d)
+  ], $4c1709dee528ea76$export$2e2bcd8739ae039.prototype, "_cmapProcessor", null);
+  (0, __decorate)([
+    (0, $e71565f2ce09cb6b$export$69a3209f1a06c04d)
+  ], $4c1709dee528ea76$export$2e2bcd8739ae039.prototype, "characterSet", null);
+  (0, __decorate)([
+    (0, $e71565f2ce09cb6b$export$69a3209f1a06c04d)
+  ], $4c1709dee528ea76$export$2e2bcd8739ae039.prototype, "_layoutEngine", null);
+  (0, __decorate)([
+    (0, $e71565f2ce09cb6b$export$69a3209f1a06c04d)
+  ], $4c1709dee528ea76$export$2e2bcd8739ae039.prototype, "variationAxes", null);
+  (0, __decorate)([
+    (0, $e71565f2ce09cb6b$export$69a3209f1a06c04d)
+  ], $4c1709dee528ea76$export$2e2bcd8739ae039.prototype, "namedVariations", null);
+  (0, __decorate)([
+    (0, $e71565f2ce09cb6b$export$69a3209f1a06c04d)
+  ], $4c1709dee528ea76$export$2e2bcd8739ae039.prototype, "_variationProcessor", null);
+  var $c1726355ecc5b889$var$WOFFDirectoryEntry = new Struct({
+    tag: new StringT(4),
+    offset: new Pointer(uint32, "void", {
+      type: "global"
+    }),
+    compLength: uint32,
+    length: uint32,
+    origChecksum: uint32
+  });
+  var $c1726355ecc5b889$var$WOFFDirectory = new Struct({
+    tag: new StringT(4),
+    flavor: uint32,
+    length: uint32,
+    numTables: uint16,
+    reserved: new Reserved(uint16),
+    totalSfntSize: uint32,
+    majorVersion: uint16,
+    minorVersion: uint16,
+    metaOffset: uint32,
+    metaLength: uint32,
+    metaOrigLength: uint32,
+    privOffset: uint32,
+    privLength: uint32,
+    tables: new ArrayT($c1726355ecc5b889$var$WOFFDirectoryEntry, "numTables")
+  });
+  $c1726355ecc5b889$var$WOFFDirectory.process = function() {
+    let tables = {};
+    for (let table of this.tables) tables[table.tag] = table;
+    this.tables = tables;
+  };
+  var $c1726355ecc5b889$export$2e2bcd8739ae039 = $c1726355ecc5b889$var$WOFFDirectory;
+  var $760785214b9fc52c$export$2e2bcd8739ae039 = class extends (0, $4c1709dee528ea76$export$2e2bcd8739ae039) {
+    static probe(buffer) {
+      return (0, $12727730ddfc8bfe$export$3d28c1996ced1f14).decode(buffer.slice(0, 4)) === "wOFF";
+    }
+    _decodeDirectory() {
+      this.directory = (0, $c1726355ecc5b889$export$2e2bcd8739ae039).decode(this.stream, {
+        _startOffset: 0
+      });
+    }
+    _getTableStream(tag) {
+      let table = this.directory.tables[tag];
+      if (table) {
+        this.stream.pos = table.offset;
+        if (table.compLength < table.length) {
+          this.stream.pos += 2;
+          let outBuffer = new Uint8Array(table.length);
+          let buf = (0, import_tiny_inflate.default)(this.stream.readBuffer(table.compLength - 2), outBuffer);
+          return new DecodeStream(buf);
+        } else return this.stream;
+      }
+      return null;
+    }
+    constructor(...args) {
+      super(...args);
+      (0, _define_property)(this, "type", "WOFF");
+    }
+  };
+  var $8046190c9f1ad19e$export$2e2bcd8739ae039 = class extends (0, $69aac16029968692$export$2e2bcd8739ae039) {
+    _decode() {
+      return this._font._transformedGlyphs[this.id];
+    }
+    _getCBox() {
+      return this.path.bbox;
+    }
+    constructor(...args) {
+      super(...args);
+      (0, _define_property)(this, "type", "WOFF2");
+    }
+  };
+  var $c28ec7bbb3b8de3a$var$Base128 = {
+    decode(stream) {
+      let result = 0;
+      let iterable = [
+        0,
+        1,
+        2,
+        3,
+        4
+      ];
+      for (let j = 0; j < iterable.length; j++) {
+        let i2 = iterable[j];
+        let code = stream.readUInt8();
+        if (result & 3758096384) throw new Error("Overflow");
+        result = result << 7 | code & 127;
+        if ((code & 128) === 0) return result;
+      }
+      throw new Error("Bad base 128 number");
+    }
+  };
+  var $c28ec7bbb3b8de3a$var$knownTags = [
+    "cmap",
+    "head",
+    "hhea",
+    "hmtx",
+    "maxp",
+    "name",
+    "OS/2",
+    "post",
+    "cvt ",
+    "fpgm",
+    "glyf",
+    "loca",
+    "prep",
+    "CFF ",
+    "VORG",
+    "EBDT",
+    "EBLC",
+    "gasp",
+    "hdmx",
+    "kern",
+    "LTSH",
+    "PCLT",
+    "VDMX",
+    "vhea",
+    "vmtx",
+    "BASE",
+    "GDEF",
+    "GPOS",
+    "GSUB",
+    "EBSC",
+    "JSTF",
+    "MATH",
+    "CBDT",
+    "CBLC",
+    "COLR",
+    "CPAL",
+    "SVG ",
+    "sbix",
+    "acnt",
+    "avar",
+    "bdat",
+    "bloc",
+    "bsln",
+    "cvar",
+    "fdsc",
+    "feat",
+    "fmtx",
+    "fvar",
+    "gvar",
+    "hsty",
+    "just",
+    "lcar",
+    "mort",
+    "morx",
+    "opbd",
+    "prop",
+    "trak",
+    "Zapf",
+    "Silf",
+    "Glat",
+    "Gloc",
+    "Feat",
+    "Sill"
+  ];
+  var $c28ec7bbb3b8de3a$var$WOFF2DirectoryEntry = new Struct({
+    flags: uint8,
+    customTag: new Optional(new StringT(4), (t) => (t.flags & 63) === 63),
+    tag: (t) => t.customTag || $c28ec7bbb3b8de3a$var$knownTags[t.flags & 63],
+    length: $c28ec7bbb3b8de3a$var$Base128,
+    transformVersion: (t) => t.flags >>> 6 & 3,
+    transformed: (t) => t.tag === "glyf" || t.tag === "loca" ? t.transformVersion === 0 : t.transformVersion !== 0,
+    transformLength: new Optional($c28ec7bbb3b8de3a$var$Base128, (t) => t.transformed)
+  });
+  var $c28ec7bbb3b8de3a$var$WOFF2Directory = new Struct({
+    tag: new StringT(4),
+    flavor: uint32,
+    length: uint32,
+    numTables: uint16,
+    reserved: new Reserved(uint16),
+    totalSfntSize: uint32,
+    totalCompressedSize: uint32,
+    majorVersion: uint16,
+    minorVersion: uint16,
+    metaOffset: uint32,
+    metaLength: uint32,
+    metaOrigLength: uint32,
+    privOffset: uint32,
+    privLength: uint32,
+    tables: new ArrayT($c28ec7bbb3b8de3a$var$WOFF2DirectoryEntry, "numTables")
+  });
+  $c28ec7bbb3b8de3a$var$WOFF2Directory.process = function() {
+    let tables = {};
+    for (let i2 = 0; i2 < this.tables.length; i2++) {
+      let table = this.tables[i2];
+      tables[table.tag] = table;
+    }
+    return this.tables = tables;
+  };
+  var $c28ec7bbb3b8de3a$export$2e2bcd8739ae039 = $c28ec7bbb3b8de3a$var$WOFF2Directory;
+  var $21ee218f84ac7f32$export$2e2bcd8739ae039 = class extends (0, $4c1709dee528ea76$export$2e2bcd8739ae039) {
+    static probe(buffer) {
+      return (0, $12727730ddfc8bfe$export$3d28c1996ced1f14).decode(buffer.slice(0, 4)) === "wOF2";
+    }
+    _decodeDirectory() {
+      this.directory = (0, $c28ec7bbb3b8de3a$export$2e2bcd8739ae039).decode(this.stream);
+      this._dataPos = this.stream.pos;
+    }
+    _decompress() {
+      if (!this._decompressed) {
+        this.stream.pos = this._dataPos;
+        let buffer = this.stream.readBuffer(this.directory.totalCompressedSize);
+        let decompressedSize = 0;
+        for (let tag in this.directory.tables) {
+          let entry = this.directory.tables[tag];
+          entry.offset = decompressedSize;
+          decompressedSize += entry.transformLength != null ? entry.transformLength : entry.length;
+        }
+        let decompressed = (0, import_decompress.default)(buffer, decompressedSize);
+        if (!decompressed) throw new Error("Error decoding compressed data in WOFF2");
+        this.stream = new DecodeStream(decompressed);
+        this._decompressed = true;
+      }
+    }
+    _decodeTable(table) {
+      this._decompress();
+      return super._decodeTable(table);
+    }
+    // Override this method to get a glyph and return our
+    // custom subclass if there is a glyf table.
+    _getBaseGlyph(glyph, characters = []) {
+      if (!this._glyphs[glyph]) {
+        if (this.directory.tables.glyf && this.directory.tables.glyf.transformed) {
+          if (!this._transformedGlyphs) this._transformGlyfTable();
+          return this._glyphs[glyph] = new (0, $8046190c9f1ad19e$export$2e2bcd8739ae039)(glyph, characters, this);
+        } else return super._getBaseGlyph(glyph, characters);
+      }
+    }
+    _transformGlyfTable() {
+      this._decompress();
+      this.stream.pos = this.directory.tables.glyf.offset;
+      let table = $21ee218f84ac7f32$var$GlyfTable.decode(this.stream);
+      let glyphs = [];
+      for (let index = 0; index < table.numGlyphs; index++) {
+        let glyph = {};
+        let nContours = table.nContours.readInt16BE();
+        glyph.numberOfContours = nContours;
+        if (nContours > 0) {
+          let nPoints = [];
+          let totalPoints = 0;
+          for (let i2 = 0; i2 < nContours; i2++) {
+            let r = $21ee218f84ac7f32$var$read255UInt16(table.nPoints);
+            totalPoints += r;
+            nPoints.push(totalPoints);
+          }
+          glyph.points = $21ee218f84ac7f32$var$decodeTriplet(table.flags, table.glyphs, totalPoints);
+          for (let i2 = 0; i2 < nContours; i2++) glyph.points[nPoints[i2] - 1].endContour = true;
+          var instructionSize = $21ee218f84ac7f32$var$read255UInt16(table.glyphs);
+        } else if (nContours < 0) {
+          let haveInstructions = (0, $69aac16029968692$export$2e2bcd8739ae039).prototype._decodeComposite.call({
+            _font: this
+          }, glyph, table.composites);
+          if (haveInstructions) var instructionSize = $21ee218f84ac7f32$var$read255UInt16(table.glyphs);
+        }
+        glyphs.push(glyph);
+      }
+      this._transformedGlyphs = glyphs;
+    }
+    constructor(...args) {
+      super(...args);
+      (0, _define_property)(this, "type", "WOFF2");
+    }
+  };
+  var $21ee218f84ac7f32$var$Substream = class {
+    decode(stream, parent) {
+      return new DecodeStream(this._buf.decode(stream, parent));
+    }
+    constructor(length) {
+      this.length = length;
+      this._buf = new BufferT(length);
+    }
+  };
+  var $21ee218f84ac7f32$var$GlyfTable = new Struct({
+    version: uint32,
+    numGlyphs: uint16,
+    indexFormat: uint16,
+    nContourStreamSize: uint32,
+    nPointsStreamSize: uint32,
+    flagStreamSize: uint32,
+    glyphStreamSize: uint32,
+    compositeStreamSize: uint32,
+    bboxStreamSize: uint32,
+    instructionStreamSize: uint32,
+    nContours: new $21ee218f84ac7f32$var$Substream("nContourStreamSize"),
+    nPoints: new $21ee218f84ac7f32$var$Substream("nPointsStreamSize"),
+    flags: new $21ee218f84ac7f32$var$Substream("flagStreamSize"),
+    glyphs: new $21ee218f84ac7f32$var$Substream("glyphStreamSize"),
+    composites: new $21ee218f84ac7f32$var$Substream("compositeStreamSize"),
+    bboxes: new $21ee218f84ac7f32$var$Substream("bboxStreamSize"),
+    instructions: new $21ee218f84ac7f32$var$Substream("instructionStreamSize")
+  });
+  var $21ee218f84ac7f32$var$WORD_CODE = 253;
+  var $21ee218f84ac7f32$var$ONE_MORE_BYTE_CODE2 = 254;
+  var $21ee218f84ac7f32$var$ONE_MORE_BYTE_CODE1 = 255;
+  var $21ee218f84ac7f32$var$LOWEST_U_CODE = 253;
+  function $21ee218f84ac7f32$var$read255UInt16(stream) {
+    let code = stream.readUInt8();
+    if (code === $21ee218f84ac7f32$var$WORD_CODE) return stream.readUInt16BE();
+    if (code === $21ee218f84ac7f32$var$ONE_MORE_BYTE_CODE1) return stream.readUInt8() + $21ee218f84ac7f32$var$LOWEST_U_CODE;
+    if (code === $21ee218f84ac7f32$var$ONE_MORE_BYTE_CODE2) return stream.readUInt8() + $21ee218f84ac7f32$var$LOWEST_U_CODE * 2;
+    return code;
+  }
+  function $21ee218f84ac7f32$var$withSign(flag, baseval) {
+    return flag & 1 ? baseval : -baseval;
+  }
+  function $21ee218f84ac7f32$var$decodeTriplet(flags, glyphs, nPoints) {
+    let y;
+    let x2 = y = 0;
+    let res = [];
+    for (let i2 = 0; i2 < nPoints; i2++) {
+      let dx = 0, dy = 0;
+      let flag = flags.readUInt8();
+      let onCurve = !(flag >> 7);
+      flag &= 127;
+      if (flag < 10) {
+        dx = 0;
+        dy = $21ee218f84ac7f32$var$withSign(flag, ((flag & 14) << 7) + glyphs.readUInt8());
+      } else if (flag < 20) {
+        dx = $21ee218f84ac7f32$var$withSign(flag, ((flag - 10 & 14) << 7) + glyphs.readUInt8());
+        dy = 0;
+      } else if (flag < 84) {
+        var b0 = flag - 20;
+        var b1 = glyphs.readUInt8();
+        dx = $21ee218f84ac7f32$var$withSign(flag, 1 + (b0 & 48) + (b1 >> 4));
+        dy = $21ee218f84ac7f32$var$withSign(flag >> 1, 1 + ((b0 & 12) << 2) + (b1 & 15));
+      } else if (flag < 120) {
+        var b0 = flag - 84;
+        dx = $21ee218f84ac7f32$var$withSign(flag, 1 + (b0 / 12 << 8) + glyphs.readUInt8());
+        dy = $21ee218f84ac7f32$var$withSign(flag >> 1, 1 + (b0 % 12 >> 2 << 8) + glyphs.readUInt8());
+      } else if (flag < 124) {
+        var b1 = glyphs.readUInt8();
+        let b22 = glyphs.readUInt8();
+        dx = $21ee218f84ac7f32$var$withSign(flag, (b1 << 4) + (b22 >> 4));
+        dy = $21ee218f84ac7f32$var$withSign(flag >> 1, ((b22 & 15) << 8) + glyphs.readUInt8());
+      } else {
+        dx = $21ee218f84ac7f32$var$withSign(flag, glyphs.readUInt16BE());
+        dy = $21ee218f84ac7f32$var$withSign(flag >> 1, glyphs.readUInt16BE());
+      }
+      x2 += dx;
+      y += dy;
+      res.push(new (0, $69aac16029968692$export$baf26146a414f24a)(onCurve, false, x2, y));
+    }
+    return res;
+  }
+  var $cd5853a56c68fec7$var$TTCHeader = new VersionedStruct(uint32, {
+    65536: {
+      numFonts: uint32,
+      offsets: new ArrayT(uint32, "numFonts")
+    },
+    131072: {
+      numFonts: uint32,
+      offsets: new ArrayT(uint32, "numFonts"),
+      dsigTag: uint32,
+      dsigLength: uint32,
+      dsigOffset: uint32
+    }
+  });
+  var $cd5853a56c68fec7$export$2e2bcd8739ae039 = class {
+    static probe(buffer) {
+      return (0, $12727730ddfc8bfe$export$3d28c1996ced1f14).decode(buffer.slice(0, 4)) === "ttcf";
+    }
+    getFont(name) {
+      for (let offset of this.header.offsets) {
+        let stream = new DecodeStream(this.stream.buffer);
+        stream.pos = offset;
+        let font = new (0, $4c1709dee528ea76$export$2e2bcd8739ae039)(stream);
+        if (font.postscriptName === name || font.postscriptName instanceof Uint8Array && name instanceof Uint8Array && font.postscriptName.every((v, i2) => name[i2] === v)) return font;
+      }
+      return null;
+    }
+    get fonts() {
+      let fonts = [];
+      for (let offset of this.header.offsets) {
+        let stream = new DecodeStream(this.stream.buffer);
+        stream.pos = offset;
+        fonts.push(new (0, $4c1709dee528ea76$export$2e2bcd8739ae039)(stream));
+      }
+      return fonts;
+    }
+    constructor(stream) {
+      (0, _define_property)(this, "type", "TTC");
+      this.stream = stream;
+      if (stream.readString(4) !== "ttcf") throw new Error("Not a TrueType collection");
+      this.header = $cd5853a56c68fec7$var$TTCHeader.decode(stream);
+    }
+  };
+  var $05f49f930186144e$var$DFontName = new StringT(uint8);
+  var $05f49f930186144e$var$DFontData = new Struct({
+    len: uint32,
+    buf: new BufferT("len")
+  });
+  var $05f49f930186144e$var$Ref = new Struct({
+    id: uint16,
+    nameOffset: int16,
+    attr: uint8,
+    dataOffset: uint24,
+    handle: uint32
+  });
+  var $05f49f930186144e$var$Type = new Struct({
+    name: new StringT(4),
+    maxTypeIndex: uint16,
+    refList: new Pointer(uint16, new ArrayT($05f49f930186144e$var$Ref, (t) => t.maxTypeIndex + 1), {
+      type: "parent"
+    })
+  });
+  var $05f49f930186144e$var$TypeList = new Struct({
+    length: uint16,
+    types: new ArrayT($05f49f930186144e$var$Type, (t) => t.length + 1)
+  });
+  var $05f49f930186144e$var$DFontMap = new Struct({
+    reserved: new Reserved(uint8, 24),
+    typeList: new Pointer(uint16, $05f49f930186144e$var$TypeList),
+    nameListOffset: new Pointer(uint16, "void")
+  });
+  var $05f49f930186144e$var$DFontHeader = new Struct({
+    dataOffset: uint32,
+    map: new Pointer(uint32, $05f49f930186144e$var$DFontMap),
+    dataLength: uint32,
+    mapLength: uint32
+  });
+  var $05f49f930186144e$export$2e2bcd8739ae039 = class {
+    static probe(buffer) {
+      let stream = new DecodeStream(buffer);
+      try {
+        var header = $05f49f930186144e$var$DFontHeader.decode(stream);
+      } catch (e) {
+        return false;
+      }
+      for (let type of header.map.typeList.types) {
+        if (type.name === "sfnt") return true;
+      }
+      return false;
+    }
+    getFont(name) {
+      if (!this.sfnt) return null;
+      for (let ref of this.sfnt.refList) {
+        let pos = this.header.dataOffset + ref.dataOffset + 4;
+        let stream = new DecodeStream(this.stream.buffer.slice(pos));
+        let font = new (0, $4c1709dee528ea76$export$2e2bcd8739ae039)(stream);
+        if (font.postscriptName === name || font.postscriptName instanceof Uint8Array && name instanceof Uint8Array && font.postscriptName.every((v, i2) => name[i2] === v)) return font;
+      }
+      return null;
+    }
+    get fonts() {
+      let fonts = [];
+      for (let ref of this.sfnt.refList) {
+        let pos = this.header.dataOffset + ref.dataOffset + 4;
+        let stream = new DecodeStream(this.stream.buffer.slice(pos));
+        fonts.push(new (0, $4c1709dee528ea76$export$2e2bcd8739ae039)(stream));
+      }
+      return fonts;
+    }
+    constructor(stream) {
+      (0, _define_property)(this, "type", "DFont");
+      this.stream = stream;
+      this.header = $05f49f930186144e$var$DFontHeader.decode(this.stream);
+      for (let type of this.header.map.typeList.types) {
+        for (let ref of type.refList) if (ref.nameOffset >= 0) {
+          this.stream.pos = ref.nameOffset + this.header.map.nameListOffset;
+          ref.name = $05f49f930186144e$var$DFontName.decode(this.stream);
+        } else ref.name = null;
+        if (type.name === "sfnt") this.sfnt = type;
+      }
+    }
+  };
+  (0, $d636bc798e7178db$export$36b2f24e97d43be)((0, $4c1709dee528ea76$export$2e2bcd8739ae039));
+  (0, $d636bc798e7178db$export$36b2f24e97d43be)((0, $760785214b9fc52c$export$2e2bcd8739ae039));
+  (0, $d636bc798e7178db$export$36b2f24e97d43be)((0, $21ee218f84ac7f32$export$2e2bcd8739ae039));
+  (0, $d636bc798e7178db$export$36b2f24e97d43be)((0, $cd5853a56c68fec7$export$2e2bcd8739ae039));
+  (0, $d636bc798e7178db$export$36b2f24e97d43be)((0, $05f49f930186144e$export$2e2bcd8739ae039));
+
+  // office-original:font-snapshot-worker.js
+  function fontFileIdentity(status2) {
+    return {
+      dev: status2.dev.toString(),
+      ino: status2.ino.toString(),
+      size: Number(status2.size),
+      mtimeMs: Number(status2.mtimeNs) / 1e6,
+      ctimeMs: Number(status2.ctimeNs) / 1e6
+    };
+  }
+  function matchesFontFile(status2, expected) {
+    const current = fontFileIdentity(status2);
+    return [
+      "dev",
+      "ino",
+      "size",
+      "mtimeMs",
+      "ctimeMs"
+    ].every((key) => current[key] === expected[key]);
+  }
+  var FONT_EXTENSIONS$1 = /* @__PURE__ */ new Set([
+    ".ttf",
+    ".otf",
+    ".ttc",
+    ".otc",
+    ".dfont"
+  ]);
+  function absent2(error) {
+    return error instanceof Error && "code" in error && [
+      "ENOENT",
+      "EACCES",
+      "EPERM",
+      "ENOTDIR"
+    ].includes(String(error.code));
+  }
+  function normalize(value) {
+    return value.normalize("NFKC").toLowerCase().replaceAll(/[\s_-]/g, "");
+  }
+  function fontPaths(directories2, maxFiles) {
+    const pending = [...directories2].reverse();
+    const visited = /* @__PURE__ */ new Set();
+    const paths = [];
+    for (let path = pending.pop(); path !== void 0; path = pending.pop()) {
+      let canonical;
+      let status2;
+      try {
+        canonical = realpathSync(path);
+        status2 = statSync(canonical);
+      } catch (error) {
+        if (absent2(error)) continue;
+        throw error;
+      }
+      if (visited.has(canonical)) continue;
+      visited.add(canonical);
+      if (status2.isDirectory()) {
+        let names;
+        try {
+          names = readdirSync(canonical);
+        } catch (error) {
+          if (absent2(error)) continue;
+          throw error;
+        }
+        pending.push(...names.sort().reverse().map((name) => join(canonical, name)));
+      } else if (status2.isFile() && FONT_EXTENSIONS$1.has(extname(canonical).toLowerCase())) {
+        if (paths.length >= maxFiles) throw new Error("The system font catalog exceeds maxFontFiles.");
+        paths.push(canonical);
+      }
+    }
+    return paths;
+  }
+  function faceMetrics(font) {
+    const os2 = font["OS/2"];
+    return {
+      weight: os2 === void 0 ? 400 : os2.usWeightClass,
+      width: os2 === void 0 ? 5 : os2.usWidthClass,
+      fixed: Boolean(font.post?.isFixedPitch)
+    };
+  }
+  function inspect(path, maxBytes, observed) {
+    let status2;
+    let bytes2;
+    try {
+      const fd2 = openSync(path, constants.O_RDONLY | constants.O_NONBLOCK | constants.O_NOFOLLOW);
+      try {
+        status2 = fstatSync(fd2, { bigint: true });
+        if (!status2.isFile() || status2.size > maxBytes) return [];
+        bytes2 = Buffer.alloc(Number(status2.size));
+        let offset = 0;
+        while (offset < bytes2.length) {
+          const count = readSync(fd2, bytes2, offset, bytes2.length - offset, offset);
+          if (count === 0) throw new Error("A system font was truncated while indexing; reload the font service.");
+          offset += count;
+        }
+        const after = fstatSync(fd2, { bigint: true });
+        if (after.size !== status2.size || after.mtimeNs !== status2.mtimeNs || after.ctimeNs !== status2.ctimeNs) throw new Error("A system font changed while indexing; reload the font service.");
+      } finally {
+        closeSync(fd2);
+      }
+    } catch (error) {
+      if (absent2(error)) return [];
+      throw error;
+    }
+    let faces;
+    try {
+      const parsed = $d636bc798e7178db$export$185802fd694ee1f5(bytes2);
+      faces = ("fonts" in parsed ? parsed.fonts : [parsed]).map((font, faceIndex) => {
+        const names = [
+          "fontFamily",
+          "preferredFamily",
+          "fullName",
+          "postscriptName"
+        ].flatMap((key) => Object.values(font.name?.records[key] ?? {})).filter((name) => typeof name === "string");
+        const aliases = [...new Set([
+          ...names,
+          font.familyName,
+          font.fullName,
+          font.postscriptName
+        ].filter((name) => Boolean(name)).map(normalize))];
+        return {
+          path,
+          ...fontFileIdentity(status2),
+          faceIndex,
+          family: font.familyName,
+          style: font.subfamilyName,
+          aliases,
+          ...faceMetrics(font),
+          italic: font.italicAngle !== 0,
+          postscriptName: font.postscriptName
+        };
+      });
+    } catch {
+      faces = [];
+    }
+    observed?.set(path, {
+      path,
+      ...fontFileIdentity(status2),
+      faces
+    });
+    return faces;
+  }
+  function indexSystemFonts(options, previous = /* @__PURE__ */ new Map(), observed) {
+    return fontPaths(options.directories, options.maxFiles).flatMap((path) => {
+      const prior = observed?.get(path) ?? previous.get(path);
+      if (prior !== void 0) try {
+        const fd2 = openSync(path, constants.O_RDONLY | constants.O_NONBLOCK | constants.O_NOFOLLOW);
+        try {
+          const current = fstatSync(fd2, { bigint: true });
+          if (current.isFile() && current.size <= options.maxFileBytes && matchesFontFile(current, prior)) {
+            observed?.set(path, prior);
+            return prior.faces;
+          }
+          if (observed?.has(path)) throw new Error("A system font changed while indexing; reload the font service.");
+        } finally {
+          closeSync(fd2);
+        }
+      } catch (error) {
+        if (absent2(error)) return [];
+        throw error;
+      }
+      return inspect(path, options.maxFileBytes, observed);
+    });
+  }
+  var FONT_EXTENSIONS = /* @__PURE__ */ new Set([
+    ".ttf",
+    ".otf",
+    ".ttc",
+    ".otc",
+    ".dfont"
+  ]);
+  var OFFICE_FONT_FILE = /^(?:aptos(?:[- ].*)?|arial(?:bd|bi|i)?|calibri(?:b|i|z|l|li)?|cambria(?:b|i|z)?|cour(?:bd|bi|i)?|deng(?:b|l)?|fangsong|kaiti|msjh(?:bd)?|msyh(?:bd|l)?|segoeui(?:b|i|z|l|li|sb|sbi|sl|sli)?|simhei|simsunb?|symbol|times(?:bd|bi|i)?|wingdings(?: [23])?|wingdng[23])\.(?:ttf|otf|ttc|otc)$/iu;
+  var FAMILIES = new Set([
+    "aptos",
+    "aptos display",
+    "aptos narrow",
+    "arial",
+    "calibri",
+    "calibri light",
+    "cambria",
+    "cambria math",
+    "courier new",
+    "dengxian",
+    "fangsong",
+    "kaiti",
+    "microsoft jhenghei",
+    "microsoft jhenghei ui",
+    "microsoft yahei",
+    "microsoft yahei ui",
+    "nsimsun",
+    "segoe ui",
+    "simhei",
+    "simsun",
+    "symbol",
+    "times new roman",
+    "wingdings",
+    "wingdings 2",
+    "wingdings 3"
+  ].map(normalize));
+  function officeFontFace(face) {
+    return face.aliases.some((alias) => FAMILIES.has(alias));
+  }
+  function directory(path) {
+    try {
+      return statSync(path).isDirectory();
+    } catch (error) {
+      if (absent2(error)) return false;
+      throw error;
+    }
+  }
+  function files2(root, recursive, namesOnly = true) {
+    const pending = [root], result = [];
+    for (let current = pending.pop(); current !== void 0; current = pending.pop()) {
+      let entries;
+      try {
+        entries = readdirSync(current, { withFileTypes: true });
+      } catch (error) {
+        if (absent2(error)) continue;
+        throw error;
+      }
+      for (const entry of entries.sort((a, b) => a.name.localeCompare(b.name, "en"))) if (entry.isDirectory()) {
+        if (recursive && entry.name !== "PreviewFont") pending.push(join(current, entry.name));
+      } else if (entry.isFile() && FONT_EXTENSIONS.has(extname(entry.name).toLowerCase()) && (!namesOnly || OFFICE_FONT_FILE.test(entry.name))) result.push(join(current, entry.name));
+    }
+    return result;
+  }
+  function officeFontFiles(platform = process.platform, home = homedir(), env = process.env, applicationRoots = ["/Applications", posix.join(home, "Applications")]) {
+    const bundled = platform === "darwin" ? [
+      "Microsoft Word",
+      "Microsoft Excel",
+      "Microsoft PowerPoint"
+    ].flatMap((app) => applicationRoots.map((root) => posix.join(root, `${app}.app/Contents/Resources/DFonts`))).find(directory) : platform === "win32" ? [env.ProgramFiles, env["ProgramFiles(x86)"]].filter((root) => Boolean(root)).map((root) => win32.join(root, "Microsoft Office", "root", "vfs", "Fonts", "private")).find(directory) : void 0;
+    const cloud = platform === "darwin" ? posix.join(home, "Library/Group Containers/UBF8T346G9.Office/FontCache") : platform === "win32" ? win32.join(env.LOCALAPPDATA ?? win32.join(home, "AppData", "Local"), "Microsoft", "FontCache") : void 0;
+    const ordered = [...bundled === void 0 ? [] : files2(bundled, false).sort(), ...cloud === void 0 ? [] : files2(cloud, true, false).sort((a, b) => b.localeCompare(a, "en", { numeric: true }))];
+    const unique = /* @__PURE__ */ new Map();
+    for (const file of ordered) {
+      const portable = file.replaceAll("\\", "/");
+      const name = portable.slice(portable.lastIndexOf("/") + 1).toLowerCase();
+      if (!unique.has(name)) unique.set(name, file);
+    }
+    return [...unique.values()];
+  }
+  var VERSION = {
+    format: 1,
+    extractor: 2,
+    fontkit: "2.0.4"
+  };
+  var digest = (records) => createHash("sha256").update(JSON.stringify(records)).digest("hex");
+  function object(value) {
+    return typeof value === "object" && value !== null && !Array.isArray(value);
+  }
+  var finite = (value) => typeof value === "number" && Number.isFinite(value);
+  var text = (value) => typeof value === "string" && !value.includes("\0");
+  var IDENTITY = [
+    "size",
+    "mtimeMs",
+    "ctimeMs",
+    "dev",
+    "ino"
+  ];
+  function record(value) {
+    if (!object(value) || !text(value.path) || !isAbsolute(value.path) || ![
+      "size",
+      "mtimeMs",
+      "ctimeMs"
+    ].every((key) => finite(value[key])) || !["dev", "ino"].every((key) => typeof value[key] === "string" && /^\d+$/.test(value[key])) || !Number.isSafeInteger(value.size) || Number(value.size) < 0 || !Object.keys(value).every((key) => [
+      "path",
+      ...IDENTITY,
+      "faces"
+    ].includes(key)) || !Array.isArray(value.faces)) return false;
+    return value.faces.every((face, index) => object(face) && face.path === value.path && IDENTITY.every((key) => face[key] === value[key]) && face.faceIndex === index && text(face.family) && text(face.style) && Array.isArray(face.aliases) && face.aliases.every(text) && finite(face.weight) && finite(face.width) && typeof face.italic === "boolean" && typeof face.fixed === "boolean" && (face.postscriptName === null || text(face.postscriptName)) && Object.keys(face).every((key) => [
+      "path",
+      ...IDENTITY,
+      "faceIndex",
+      "family",
+      "style",
+      "aliases",
+      "weight",
+      "width",
+      "italic",
+      "fixed",
+      "postscriptName"
+    ].includes(key)));
+  }
+  function readFontMetadataCache(options) {
+    return readCache(options) ?? [];
+  }
+  function readCache(options) {
+    if (options.fontMetadataCacheDirectory === false) return void 0;
+    try {
+      const fd2 = openSync(join(options.fontMetadataCacheDirectory, "font-metadata.json"), constants.O_RDONLY | constants.O_NONBLOCK | constants.O_NOFOLLOW);
+      let bytes2;
+      try {
+        const before = fstatSync(fd2);
+        if (!before.isFile() || before.size > options.maxFontMetadataCacheBytes) return void 0;
+        bytes2 = Buffer.alloc(before.size);
+        for (let offset = 0; offset < bytes2.length; ) {
+          const count = readSync(fd2, bytes2, offset, bytes2.length - offset, offset);
+          if (count === 0) return void 0;
+          offset += count;
+        }
+        const after = fstatSync(fd2);
+        if (IDENTITY.some((key) => before[key] !== after[key])) return void 0;
+      } finally {
+        closeSync(fd2);
+      }
+      const data = JSON.parse(bytes2.toString("utf8"));
+      if (!object(data) || data.format !== VERSION.format || data.extractor !== VERSION.extractor || data.fontkit !== VERSION.fontkit || !Object.keys(data).every((key) => [
+        "format",
+        "extractor",
+        "fontkit",
+        "digest",
+        "records"
+      ].includes(key)) || !Array.isArray(data.records) || !data.records.every(record)) return void 0;
+      const records = data.records;
+      return data.digest === digest(records) && new Set(records.map((file) => file.path)).size === records.length ? records : void 0;
+    } catch {
+      return;
+    }
+  }
+  function writeFontMetadataCache(options, records, temporaryPath) {
+    if (options.fontMetadataCacheDirectory === false) return;
+    let owned = false;
+    try {
+      const bytes2 = JSON.stringify({
+        ...VERSION,
+        digest: digest(records),
+        records
+      });
+      if (Buffer.byteLength(bytes2) > options.maxFontMetadataCacheBytes) return;
+      const existing = readCache(options);
+      if (JSON.stringify(existing) === JSON.stringify(records)) return;
+      mkdirSync(options.fontMetadataCacheDirectory, {
+        recursive: true,
+        mode: 448
+      });
+      const fd2 = openSync(temporaryPath, "wx", 384);
+      owned = true;
+      try {
+        writeFileSync(fd2, bytes2);
+      } finally {
+        closeSync(fd2);
+      }
+      renameSync(temporaryPath, join(options.fontMetadataCacheDirectory, "font-metadata.json"));
+      owned = false;
+    } catch {
+    } finally {
+      if (owned) try {
+        unlinkSync(temporaryPath);
+      } catch {
+      }
+    }
+  }
+  function scanFontSnapshot(options, previous = []) {
+    const reusable = new Map([...readFontMetadataCache(options), ...previous].map((file) => [file.path, file]));
+    const observed = /* @__PURE__ */ new Map();
+    const primary = indexSystemFonts({
+      directories: options.fontDirectories,
+      maxFiles: options.maxFontFiles,
+      maxFileBytes: options.maxFontFileBytes
+    }, reusable, observed);
+    let faces = primary;
+    if (options.includeOfficeFonts) {
+      const remaining = Math.max(0, options.maxFontFiles - new Set(primary.map((face) => face.path)).size);
+      if (remaining > 0) {
+        const supplemental = indexSystemFonts({
+          directories: officeFontFiles().slice(0, remaining),
+          maxFiles: remaining,
+          maxFileBytes: options.maxFontFileBytes
+        }, reusable, observed);
+        const aliases = new Set(primary.flatMap((face) => face.aliases));
+        faces = [...primary, ...supplemental.filter((face) => officeFontFace(face) && !face.aliases.some((alias) => aliases.has(alias)))];
+      }
+    }
+    return {
+      faces,
+      records: [...observed.values()],
+      generation: createHash("sha256").update(JSON.stringify(faces)).digest("hex")
+    };
+  }
+  var CODES = /* @__PURE__ */ new Set([
+    "input-too-large",
+    "output-too-large",
+    "invalid-document",
+    "unsupported-format",
+    "invalid-output",
+    "timeout",
+    "unavailable",
+    "failed"
+  ]);
+  function failureCode(error) {
+    const code = error?.code;
+    return typeof code === "string" && CODES.has(code) ? code : "failed";
+  }
+  async function run() {
+    try {
+      const { options, previous, temporaryPath } = workerData;
+      const snapshot = scanFontSnapshot(options, previous);
+      if (temporaryPath !== void 0) writeFontMetadataCache(options, snapshot.records, temporaryPath);
+      parentPort.postMessage({
+        ok: true,
+        snapshot
+      });
+    } catch (error) {
+      parentPort.postMessage({
+        ok: false,
+        code: failureCode(error),
+        error: error instanceof Error ? error.message : String(error)
+      });
+    }
+  }
+
+  // .goose/out/rc022-prep-20261114-01/source/node_modules/.pnpm/fflate@0.8.2/node_modules/fflate/esm/browser.js
+  var u8 = Uint8Array;
+  var u16 = Uint16Array;
+  var i32 = Int32Array;
+  var fleb = new u8([
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    1,
+    1,
+    1,
+    1,
+    2,
+    2,
+    2,
+    2,
+    3,
+    3,
+    3,
+    3,
+    4,
+    4,
+    4,
+    4,
+    5,
+    5,
+    5,
+    5,
+    0,
+    /* unused */
+    0,
+    0,
+    /* impossible */
+    0
+  ]);
+  var fdeb = new u8([
+    0,
+    0,
+    0,
+    0,
+    1,
+    1,
+    2,
+    2,
+    3,
+    3,
+    4,
+    4,
+    5,
+    5,
+    6,
+    6,
+    7,
+    7,
+    8,
+    8,
+    9,
+    9,
+    10,
+    10,
+    11,
+    11,
+    12,
+    12,
+    13,
+    13,
+    /* unused */
+    0,
+    0
+  ]);
+  var clim = new u8([16, 17, 18, 0, 8, 7, 9, 6, 10, 5, 11, 4, 12, 3, 13, 2, 14, 1, 15]);
+  var freb = function(eb, start) {
+    var b = new u16(31);
+    for (var i2 = 0; i2 < 31; ++i2) {
+      b[i2] = start += 1 << eb[i2 - 1];
+    }
+    var r = new i32(b[30]);
+    for (var i2 = 1; i2 < 30; ++i2) {
+      for (var j = b[i2]; j < b[i2 + 1]; ++j) {
+        r[j] = j - b[i2] << 5 | i2;
+      }
+    }
+    return { b, r };
+  };
+  var _a = freb(fleb, 2);
+  var fl = _a.b;
+  var revfl = _a.r;
+  fl[28] = 258, revfl[258] = 28;
+  var _b = freb(fdeb, 0);
+  var fd = _b.b;
+  var revfd = _b.r;
+  var rev = new u16(32768);
+  for (i = 0; i < 32768; ++i) {
+    x = (i & 43690) >> 1 | (i & 21845) << 1;
+    x = (x & 52428) >> 2 | (x & 13107) << 2;
+    x = (x & 61680) >> 4 | (x & 3855) << 4;
+    rev[i] = ((x & 65280) >> 8 | (x & 255) << 8) >> 1;
+  }
+  var x;
+  var i;
+  var hMap = (function(cd, mb, r) {
+    var s = cd.length;
+    var i2 = 0;
+    var l = new u16(mb);
+    for (; i2 < s; ++i2) {
+      if (cd[i2])
+        ++l[cd[i2] - 1];
+    }
+    var le = new u16(mb);
+    for (i2 = 1; i2 < mb; ++i2) {
+      le[i2] = le[i2 - 1] + l[i2 - 1] << 1;
+    }
+    var co;
+    if (r) {
+      co = new u16(1 << mb);
+      var rvb = 15 - mb;
+      for (i2 = 0; i2 < s; ++i2) {
+        if (cd[i2]) {
+          var sv = i2 << 4 | cd[i2];
+          var r_1 = mb - cd[i2];
+          var v = le[cd[i2] - 1]++ << r_1;
+          for (var m = v | (1 << r_1) - 1; v <= m; ++v) {
+            co[rev[v] >> rvb] = sv;
+          }
+        }
+      }
+    } else {
+      co = new u16(s);
+      for (i2 = 0; i2 < s; ++i2) {
+        if (cd[i2]) {
+          co[i2] = rev[le[cd[i2] - 1]++] >> 15 - cd[i2];
+        }
+      }
+    }
+    return co;
+  });
+  var flt = new u8(288);
+  for (i = 0; i < 144; ++i)
+    flt[i] = 8;
+  var i;
+  for (i = 144; i < 256; ++i)
+    flt[i] = 9;
+  var i;
+  for (i = 256; i < 280; ++i)
+    flt[i] = 7;
+  var i;
+  for (i = 280; i < 288; ++i)
+    flt[i] = 8;
+  var i;
+  var fdt = new u8(32);
+  for (i = 0; i < 32; ++i)
+    fdt[i] = 5;
+  var i;
+  var flm = /* @__PURE__ */ hMap(flt, 9, 0);
+  var flrm = /* @__PURE__ */ hMap(flt, 9, 1);
+  var fdm = /* @__PURE__ */ hMap(fdt, 5, 0);
+  var fdrm = /* @__PURE__ */ hMap(fdt, 5, 1);
+  var max = function(a) {
+    var m = a[0];
+    for (var i2 = 1; i2 < a.length; ++i2) {
+      if (a[i2] > m)
+        m = a[i2];
+    }
+    return m;
+  };
+  var bits = function(d, p, m) {
+    var o = p / 8 | 0;
+    return (d[o] | d[o + 1] << 8) >> (p & 7) & m;
+  };
+  var bits16 = function(d, p) {
+    var o = p / 8 | 0;
+    return (d[o] | d[o + 1] << 8 | d[o + 2] << 16) >> (p & 7);
+  };
+  var shft = function(p) {
+    return (p + 7) / 8 | 0;
+  };
+  var slc = function(v, s, e) {
+    if (s == null || s < 0)
+      s = 0;
+    if (e == null || e > v.length)
+      e = v.length;
+    return new u8(v.subarray(s, e));
+  };
+  var ec = [
+    "unexpected EOF",
+    "invalid block type",
+    "invalid length/literal",
+    "invalid distance",
+    "stream finished",
+    "no stream handler",
+    ,
+    "no callback",
+    "invalid UTF-8 data",
+    "extra field too long",
+    "date not in range 1980-2099",
+    "filename too long",
+    "stream finishing",
+    "invalid zip data"
+    // determined by unknown compression method
+  ];
+  var err = function(ind, msg, nt) {
+    var e = new Error(msg || ec[ind]);
+    e.code = ind;
+    if (Error.captureStackTrace)
+      Error.captureStackTrace(e, err);
+    if (!nt)
+      throw e;
+    return e;
+  };
+  var inflt = function(dat, st, buf, dict) {
+    var sl = dat.length, dl = dict ? dict.length : 0;
+    if (!sl || st.f && !st.l)
+      return buf || new u8(0);
+    var noBuf = !buf;
+    var resize = noBuf || st.i != 2;
+    var noSt = st.i;
+    if (noBuf)
+      buf = new u8(sl * 3);
+    var cbuf = function(l2) {
+      var bl = buf.length;
+      if (l2 > bl) {
+        var nbuf = new u8(Math.max(bl * 2, l2));
+        nbuf.set(buf);
+        buf = nbuf;
+      }
+    };
+    var final = st.f || 0, pos = st.p || 0, bt = st.b || 0, lm = st.l, dm = st.d, lbt = st.m, dbt = st.n;
+    var tbts = sl * 8;
+    do {
+      if (!lm) {
+        final = bits(dat, pos, 1);
+        var type = bits(dat, pos + 1, 3);
+        pos += 3;
+        if (!type) {
+          var s = shft(pos) + 4, l = dat[s - 4] | dat[s - 3] << 8, t = s + l;
+          if (t > sl) {
+            if (noSt)
+              err(0);
+            break;
+          }
+          if (resize)
+            cbuf(bt + l);
+          buf.set(dat.subarray(s, t), bt);
+          st.b = bt += l, st.p = pos = t * 8, st.f = final;
+          continue;
+        } else if (type == 1)
+          lm = flrm, dm = fdrm, lbt = 9, dbt = 5;
+        else if (type == 2) {
+          var hLit = bits(dat, pos, 31) + 257, hcLen = bits(dat, pos + 10, 15) + 4;
+          var tl = hLit + bits(dat, pos + 5, 31) + 1;
+          pos += 14;
+          var ldt = new u8(tl);
+          var clt = new u8(19);
+          for (var i2 = 0; i2 < hcLen; ++i2) {
+            clt[clim[i2]] = bits(dat, pos + i2 * 3, 7);
+          }
+          pos += hcLen * 3;
+          var clb = max(clt), clbmsk = (1 << clb) - 1;
+          var clm = hMap(clt, clb, 1);
+          for (var i2 = 0; i2 < tl; ) {
+            var r = clm[bits(dat, pos, clbmsk)];
+            pos += r & 15;
+            var s = r >> 4;
+            if (s < 16) {
+              ldt[i2++] = s;
+            } else {
+              var c = 0, n = 0;
+              if (s == 16)
+                n = 3 + bits(dat, pos, 3), pos += 2, c = ldt[i2 - 1];
+              else if (s == 17)
+                n = 3 + bits(dat, pos, 7), pos += 3;
+              else if (s == 18)
+                n = 11 + bits(dat, pos, 127), pos += 7;
+              while (n--)
+                ldt[i2++] = c;
+            }
+          }
+          var lt = ldt.subarray(0, hLit), dt = ldt.subarray(hLit);
+          lbt = max(lt);
+          dbt = max(dt);
+          lm = hMap(lt, lbt, 1);
+          dm = hMap(dt, dbt, 1);
+        } else
+          err(1);
+        if (pos > tbts) {
+          if (noSt)
+            err(0);
+          break;
+        }
+      }
+      if (resize)
+        cbuf(bt + 131072);
+      var lms = (1 << lbt) - 1, dms = (1 << dbt) - 1;
+      var lpos = pos;
+      for (; ; lpos = pos) {
+        var c = lm[bits16(dat, pos) & lms], sym = c >> 4;
+        pos += c & 15;
+        if (pos > tbts) {
+          if (noSt)
+            err(0);
+          break;
+        }
+        if (!c)
+          err(2);
+        if (sym < 256)
+          buf[bt++] = sym;
+        else if (sym == 256) {
+          lpos = pos, lm = null;
+          break;
+        } else {
+          var add = sym - 254;
+          if (sym > 264) {
+            var i2 = sym - 257, b = fleb[i2];
+            add = bits(dat, pos, (1 << b) - 1) + fl[i2];
+            pos += b;
+          }
+          var d = dm[bits16(dat, pos) & dms], dsym = d >> 4;
+          if (!d)
+            err(3);
+          pos += d & 15;
+          var dt = fd[dsym];
+          if (dsym > 3) {
+            var b = fdeb[dsym];
+            dt += bits16(dat, pos) & (1 << b) - 1, pos += b;
+          }
+          if (pos > tbts) {
+            if (noSt)
+              err(0);
+            break;
+          }
+          if (resize)
+            cbuf(bt + 131072);
+          var end = bt + add;
+          if (bt < dt) {
+            var shift = dl - dt, dend = Math.min(dt, end);
+            if (shift + bt < 0)
+              err(3);
+            for (; bt < dend; ++bt)
+              buf[bt] = dict[shift + bt];
+          }
+          for (; bt < end; ++bt)
+            buf[bt] = buf[bt - dt];
+        }
+      }
+      st.l = lm, st.p = lpos, st.b = bt, st.f = final;
+      if (lm)
+        final = 1, st.m = lbt, st.d = dm, st.n = dbt;
+    } while (!final);
+    return bt != buf.length && noBuf ? slc(buf, 0, bt) : buf.subarray(0, bt);
+  };
+  var wbits = function(d, p, v) {
+    v <<= p & 7;
+    var o = p / 8 | 0;
+    d[o] |= v;
+    d[o + 1] |= v >> 8;
+  };
+  var wbits16 = function(d, p, v) {
+    v <<= p & 7;
+    var o = p / 8 | 0;
+    d[o] |= v;
+    d[o + 1] |= v >> 8;
+    d[o + 2] |= v >> 16;
+  };
+  var hTree = function(d, mb) {
+    var t = [];
+    for (var i2 = 0; i2 < d.length; ++i2) {
+      if (d[i2])
+        t.push({ s: i2, f: d[i2] });
+    }
+    var s = t.length;
+    var t2 = t.slice();
+    if (!s)
+      return { t: et, l: 0 };
+    if (s == 1) {
+      var v = new u8(t[0].s + 1);
+      v[t[0].s] = 1;
+      return { t: v, l: 1 };
+    }
+    t.sort(function(a, b) {
+      return a.f - b.f;
+    });
+    t.push({ s: -1, f: 25001 });
+    var l = t[0], r = t[1], i0 = 0, i1 = 1, i22 = 2;
+    t[0] = { s: -1, f: l.f + r.f, l, r };
+    while (i1 != s - 1) {
+      l = t[t[i0].f < t[i22].f ? i0++ : i22++];
+      r = t[i0 != i1 && t[i0].f < t[i22].f ? i0++ : i22++];
+      t[i1++] = { s: -1, f: l.f + r.f, l, r };
+    }
+    var maxSym = t2[0].s;
+    for (var i2 = 1; i2 < s; ++i2) {
+      if (t2[i2].s > maxSym)
+        maxSym = t2[i2].s;
+    }
+    var tr = new u16(maxSym + 1);
+    var mbt = ln(t[i1 - 1], tr, 0);
+    if (mbt > mb) {
+      var i2 = 0, dt = 0;
+      var lft = mbt - mb, cst = 1 << lft;
+      t2.sort(function(a, b) {
+        return tr[b.s] - tr[a.s] || a.f - b.f;
+      });
+      for (; i2 < s; ++i2) {
+        var i2_1 = t2[i2].s;
+        if (tr[i2_1] > mb) {
+          dt += cst - (1 << mbt - tr[i2_1]);
+          tr[i2_1] = mb;
+        } else
+          break;
+      }
+      dt >>= lft;
+      while (dt > 0) {
+        var i2_2 = t2[i2].s;
+        if (tr[i2_2] < mb)
+          dt -= 1 << mb - tr[i2_2]++ - 1;
+        else
+          ++i2;
+      }
+      for (; i2 >= 0 && dt; --i2) {
+        var i2_3 = t2[i2].s;
+        if (tr[i2_3] == mb) {
+          --tr[i2_3];
+          ++dt;
+        }
+      }
+      mbt = mb;
+    }
+    return { t: new u8(tr), l: mbt };
+  };
+  var ln = function(n, l, d) {
+    return n.s == -1 ? Math.max(ln(n.l, l, d + 1), ln(n.r, l, d + 1)) : l[n.s] = d;
+  };
+  var lc = function(c) {
+    var s = c.length;
+    while (s && !c[--s])
+      ;
+    var cl = new u16(++s);
+    var cli = 0, cln = c[0], cls = 1;
+    var w = function(v) {
+      cl[cli++] = v;
+    };
+    for (var i2 = 1; i2 <= s; ++i2) {
+      if (c[i2] == cln && i2 != s)
+        ++cls;
+      else {
+        if (!cln && cls > 2) {
+          for (; cls > 138; cls -= 138)
+            w(32754);
+          if (cls > 2) {
+            w(cls > 10 ? cls - 11 << 5 | 28690 : cls - 3 << 5 | 12305);
+            cls = 0;
+          }
+        } else if (cls > 3) {
+          w(cln), --cls;
+          for (; cls > 6; cls -= 6)
+            w(8304);
+          if (cls > 2)
+            w(cls - 3 << 5 | 8208), cls = 0;
+        }
+        while (cls--)
+          w(cln);
+        cls = 1;
+        cln = c[i2];
+      }
+    }
+    return { c: cl.subarray(0, cli), n: s };
+  };
+  var clen = function(cf, cl) {
+    var l = 0;
+    for (var i2 = 0; i2 < cl.length; ++i2)
+      l += cf[i2] * cl[i2];
+    return l;
+  };
+  var wfblk = function(out, pos, dat) {
+    var s = dat.length;
+    var o = shft(pos + 2);
+    out[o] = s & 255;
+    out[o + 1] = s >> 8;
+    out[o + 2] = out[o] ^ 255;
+    out[o + 3] = out[o + 1] ^ 255;
+    for (var i2 = 0; i2 < s; ++i2)
+      out[o + i2 + 4] = dat[i2];
+    return (o + 4 + s) * 8;
+  };
+  var wblk = function(dat, out, final, syms, lf, df, eb, li, bs, bl, p) {
+    wbits(out, p++, final);
+    ++lf[256];
+    var _a2 = hTree(lf, 15), dlt = _a2.t, mlb = _a2.l;
+    var _b2 = hTree(df, 15), ddt = _b2.t, mdb = _b2.l;
+    var _c = lc(dlt), lclt = _c.c, nlc = _c.n;
+    var _d = lc(ddt), lcdt = _d.c, ndc = _d.n;
+    var lcfreq = new u16(19);
+    for (var i2 = 0; i2 < lclt.length; ++i2)
+      ++lcfreq[lclt[i2] & 31];
+    for (var i2 = 0; i2 < lcdt.length; ++i2)
+      ++lcfreq[lcdt[i2] & 31];
+    var _e = hTree(lcfreq, 7), lct = _e.t, mlcb = _e.l;
+    var nlcc = 19;
+    for (; nlcc > 4 && !lct[clim[nlcc - 1]]; --nlcc)
+      ;
+    var flen = bl + 5 << 3;
+    var ftlen = clen(lf, flt) + clen(df, fdt) + eb;
+    var dtlen = clen(lf, dlt) + clen(df, ddt) + eb + 14 + 3 * nlcc + clen(lcfreq, lct) + 2 * lcfreq[16] + 3 * lcfreq[17] + 7 * lcfreq[18];
+    if (bs >= 0 && flen <= ftlen && flen <= dtlen)
+      return wfblk(out, p, dat.subarray(bs, bs + bl));
+    var lm, ll, dm, dl;
+    wbits(out, p, 1 + (dtlen < ftlen)), p += 2;
+    if (dtlen < ftlen) {
+      lm = hMap(dlt, mlb, 0), ll = dlt, dm = hMap(ddt, mdb, 0), dl = ddt;
+      var llm = hMap(lct, mlcb, 0);
+      wbits(out, p, nlc - 257);
+      wbits(out, p + 5, ndc - 1);
+      wbits(out, p + 10, nlcc - 4);
+      p += 14;
+      for (var i2 = 0; i2 < nlcc; ++i2)
+        wbits(out, p + 3 * i2, lct[clim[i2]]);
+      p += 3 * nlcc;
+      var lcts = [lclt, lcdt];
+      for (var it = 0; it < 2; ++it) {
+        var clct = lcts[it];
+        for (var i2 = 0; i2 < clct.length; ++i2) {
+          var len = clct[i2] & 31;
+          wbits(out, p, llm[len]), p += lct[len];
+          if (len > 15)
+            wbits(out, p, clct[i2] >> 5 & 127), p += clct[i2] >> 12;
+        }
+      }
+    } else {
+      lm = flm, ll = flt, dm = fdm, dl = fdt;
+    }
+    for (var i2 = 0; i2 < li; ++i2) {
+      var sym = syms[i2];
+      if (sym > 255) {
+        var len = sym >> 18 & 31;
+        wbits16(out, p, lm[len + 257]), p += ll[len + 257];
+        if (len > 7)
+          wbits(out, p, sym >> 23 & 31), p += fleb[len];
+        var dst = sym & 31;
+        wbits16(out, p, dm[dst]), p += dl[dst];
+        if (dst > 3)
+          wbits16(out, p, sym >> 5 & 8191), p += fdeb[dst];
+      } else {
+        wbits16(out, p, lm[sym]), p += ll[sym];
+      }
+    }
+    wbits16(out, p, lm[256]);
+    return p + ll[256];
+  };
+  var deo = /* @__PURE__ */ new i32([65540, 131080, 131088, 131104, 262176, 1048704, 1048832, 2114560, 2117632]);
+  var et = /* @__PURE__ */ new u8(0);
+  var dflt = function(dat, lvl, plvl, pre, post, st) {
+    var s = st.z || dat.length;
+    var o = new u8(pre + s + 5 * (1 + Math.ceil(s / 7e3)) + post);
+    var w = o.subarray(pre, o.length - post);
+    var lst = st.l;
+    var pos = (st.r || 0) & 7;
+    if (lvl) {
+      if (pos)
+        w[0] = st.r >> 3;
+      var opt = deo[lvl - 1];
+      var n = opt >> 13, c = opt & 8191;
+      var msk_1 = (1 << plvl) - 1;
+      var prev = st.p || new u16(32768), head = st.h || new u16(msk_1 + 1);
+      var bs1_1 = Math.ceil(plvl / 3), bs2_1 = 2 * bs1_1;
+      var hsh = function(i3) {
+        return (dat[i3] ^ dat[i3 + 1] << bs1_1 ^ dat[i3 + 2] << bs2_1) & msk_1;
+      };
+      var syms = new i32(25e3);
+      var lf = new u16(288), df = new u16(32);
+      var lc_1 = 0, eb = 0, i2 = st.i || 0, li = 0, wi = st.w || 0, bs = 0;
+      for (; i2 + 2 < s; ++i2) {
+        var hv = hsh(i2);
+        var imod = i2 & 32767, pimod = head[hv];
+        prev[imod] = pimod;
+        head[hv] = imod;
+        if (wi <= i2) {
+          var rem = s - i2;
+          if ((lc_1 > 7e3 || li > 24576) && (rem > 423 || !lst)) {
+            pos = wblk(dat, w, 0, syms, lf, df, eb, li, bs, i2 - bs, pos);
+            li = lc_1 = eb = 0, bs = i2;
+            for (var j = 0; j < 286; ++j)
+              lf[j] = 0;
+            for (var j = 0; j < 30; ++j)
+              df[j] = 0;
+          }
+          var l = 2, d = 0, ch_1 = c, dif = imod - pimod & 32767;
+          if (rem > 2 && hv == hsh(i2 - dif)) {
+            var maxn = Math.min(n, rem) - 1;
+            var maxd = Math.min(32767, i2);
+            var ml = Math.min(258, rem);
+            while (dif <= maxd && --ch_1 && imod != pimod) {
+              if (dat[i2 + l] == dat[i2 + l - dif]) {
+                var nl = 0;
+                for (; nl < ml && dat[i2 + nl] == dat[i2 + nl - dif]; ++nl)
+                  ;
+                if (nl > l) {
+                  l = nl, d = dif;
+                  if (nl > maxn)
+                    break;
+                  var mmd = Math.min(dif, nl - 2);
+                  var md = 0;
+                  for (var j = 0; j < mmd; ++j) {
+                    var ti = i2 - dif + j & 32767;
+                    var pti = prev[ti];
+                    var cd = ti - pti & 32767;
+                    if (cd > md)
+                      md = cd, pimod = ti;
+                  }
+                }
+              }
+              imod = pimod, pimod = prev[imod];
+              dif += imod - pimod & 32767;
+            }
+          }
+          if (d) {
+            syms[li++] = 268435456 | revfl[l] << 18 | revfd[d];
+            var lin = revfl[l] & 31, din = revfd[d] & 31;
+            eb += fleb[lin] + fdeb[din];
+            ++lf[257 + lin];
+            ++df[din];
+            wi = i2 + l;
+            ++lc_1;
+          } else {
+            syms[li++] = dat[i2];
+            ++lf[dat[i2]];
+          }
+        }
+      }
+      for (i2 = Math.max(i2, wi); i2 < s; ++i2) {
+        syms[li++] = dat[i2];
+        ++lf[dat[i2]];
+      }
+      pos = wblk(dat, w, lst, syms, lf, df, eb, li, bs, i2 - bs, pos);
+      if (!lst) {
+        st.r = pos & 7 | w[pos / 8 | 0] << 3;
+        pos -= 7;
+        st.h = head, st.p = prev, st.i = i2, st.w = wi;
+      }
+    } else {
+      for (var i2 = st.w || 0; i2 < s + lst; i2 += 65535) {
+        var e = i2 + 65535;
+        if (e >= s) {
+          w[pos / 8 | 0] = lst;
+          e = s;
+        }
+        pos = wfblk(w, pos + 1, dat.subarray(i2, e));
+      }
+      st.i = s;
+    }
+    return slc(o, 0, pre + shft(pos) + post);
+  };
+  var adler = function() {
+    var a = 1, b = 0;
+    return {
+      p: function(d) {
+        var n = a, m = b;
+        var l = d.length | 0;
+        for (var i2 = 0; i2 != l; ) {
+          var e = Math.min(i2 + 2655, l);
+          for (; i2 < e; ++i2)
+            m += n += d[i2];
+          n = (n & 65535) + 15 * (n >> 16), m = (m & 65535) + 15 * (m >> 16);
+        }
+        a = n, b = m;
+      },
+      d: function() {
+        a %= 65521, b %= 65521;
+        return (a & 255) << 24 | (a & 65280) << 8 | (b & 255) << 8 | b >> 8;
+      }
+    };
+  };
+  var dopt = function(dat, opt, pre, post, st) {
+    if (!st) {
+      st = { l: 1 };
+      if (opt.dictionary) {
+        var dict = opt.dictionary.subarray(-32768);
+        var newDat = new u8(dict.length + dat.length);
+        newDat.set(dict);
+        newDat.set(dat, dict.length);
+        dat = newDat;
+        st.w = dict.length;
+      }
+    }
+    return dflt(dat, opt.level == null ? 6 : opt.level, opt.mem == null ? st.l ? Math.ceil(Math.max(8, Math.min(13, Math.log(dat.length))) * 1.5) : 20 : 12 + opt.mem, pre, post, st);
+  };
+  var b2 = function(d, b) {
+    return d[b] | d[b + 1] << 8;
+  };
+  var b4 = function(d, b) {
+    return (d[b] | d[b + 1] << 8 | d[b + 2] << 16 | d[b + 3] << 24) >>> 0;
+  };
+  var b8 = function(d, b) {
+    return b4(d, b) + b4(d, b + 4) * 4294967296;
+  };
+  var wbytes = function(d, b, v) {
+    for (; v; ++b)
+      d[b] = v, v >>>= 8;
+  };
+  var zlh = function(c, o) {
+    var lv = o.level, fl2 = lv == 0 ? 0 : lv < 6 ? 1 : lv == 9 ? 3 : 2;
+    c[0] = 120, c[1] = fl2 << 6 | (o.dictionary && 32);
+    c[1] |= 31 - (c[0] << 8 | c[1]) % 31;
+    if (o.dictionary) {
+      var h = adler();
+      h.p(o.dictionary);
+      wbytes(c, 2, h.d());
+    }
+  };
+  function inflateSync(data, opts) {
+    return inflt(data, { i: 2 }, opts && opts.out, opts && opts.dictionary);
+  }
+  function zlibSync(data, opts) {
+    if (!opts)
+      opts = {};
+    var a = adler();
+    a.p(data);
+    var d = dopt(data, opts, opts.dictionary ? 6 : 2, 4);
+    return zlh(d, opts), wbytes(d, d.length - 4, a.d()), d;
+  }
+  var td = typeof TextDecoder != "undefined" && /* @__PURE__ */ new TextDecoder();
+  var tds = 0;
+  try {
+    td.decode(et, { stream: true });
+    tds = 1;
+  } catch (e) {
+  }
+  var dutf8 = function(d) {
+    for (var r = "", i2 = 0; ; ) {
+      var c = d[i2++];
+      var eb = (c > 127) + (c > 223) + (c > 239);
+      if (i2 + eb > d.length)
+        return { s: r, r: slc(d, i2 - 1) };
+      if (!eb)
+        r += String.fromCharCode(c);
+      else if (eb == 3) {
+        c = ((c & 15) << 18 | (d[i2++] & 63) << 12 | (d[i2++] & 63) << 6 | d[i2++] & 63) - 65536, r += String.fromCharCode(55296 | c >> 10, 56320 | c & 1023);
+      } else if (eb & 1)
+        r += String.fromCharCode((c & 31) << 6 | d[i2++] & 63);
+      else
+        r += String.fromCharCode((c & 15) << 12 | (d[i2++] & 63) << 6 | d[i2++] & 63);
+    }
+  };
+  function strFromU8(dat, latin1) {
+    if (latin1) {
+      var r = "";
+      for (var i2 = 0; i2 < dat.length; i2 += 16384)
+        r += String.fromCharCode.apply(null, dat.subarray(i2, i2 + 16384));
+      return r;
+    } else if (td) {
+      return td.decode(dat);
+    } else {
+      var _a2 = dutf8(dat), s = _a2.s, r = _a2.r;
+      if (r.length)
+        err(8);
+      return s;
+    }
+  }
+  var slzh = function(d, b) {
+    return b + 30 + b2(d, b + 26) + b2(d, b + 28);
+  };
+  var zh = function(d, b, z) {
+    var fnl = b2(d, b + 28), fn = strFromU8(d.subarray(b + 46, b + 46 + fnl), !(b2(d, b + 8) & 2048)), es = b + 46 + fnl, bs = b4(d, b + 20);
+    var _a2 = z && bs == 4294967295 ? z64e(d, es) : [bs, b4(d, b + 24), b4(d, b + 42)], sc = _a2[0], su = _a2[1], off = _a2[2];
+    return [b2(d, b + 10), sc, su, fn, es + b2(d, b + 30) + b2(d, b + 32), off];
+  };
+  var z64e = function(d, b) {
+    for (; b2(d, b) != 1; b += 4 + b2(d, b + 2))
+      ;
+    return [b8(d, b + 12), b8(d, b + 4), b8(d, b + 20)];
+  };
+  function unzipSync(data, opts) {
+    var files3 = {};
+    var e = data.length - 22;
+    for (; b4(data, e) != 101010256; --e) {
+      if (!e || data.length - e > 65558)
+        err(13);
+    }
+    ;
+    var c = b2(data, e + 8);
+    if (!c)
+      return {};
+    var o = b4(data, e + 16);
+    var z = o == 4294967295 || c == 65535;
+    if (z) {
+      var ze = b4(data, e - 12);
+      z = b4(data, ze) == 101075792;
+      if (z) {
+        c = b4(data, ze + 32);
+        o = b4(data, ze + 48);
+      }
+    }
+    var fltr = opts && opts.filter;
+    for (var i2 = 0; i2 < c; ++i2) {
+      var _a2 = zh(data, o, z), c_2 = _a2[0], sc = _a2[1], su = _a2[2], fn = _a2[3], no = _a2[4], off = _a2[5], b = slzh(data, off);
+      o = no;
+      if (!fltr || fltr({
+        name: fn,
+        size: sc,
+        originalSize: su,
+        compression: c_2
+      })) {
+        if (!c_2)
+          files3[fn] = slc(data, b, b + sc);
+        else if (c_2 == 8)
+          files3[fn] = inflateSync(data.subarray(b, b + sc), { out: new u8(su) });
+        else
+          err(14, "unknown compression type " + c_2);
+      }
+    }
+    return files3;
+  }
+
+  // office-original:worker.js
+  var import_saxes = __toESM(require_saxes());
+  var CODES2 = /* @__PURE__ */ new Set([
+    "input-too-large",
+    "output-too-large",
+    "invalid-document",
+    "unsupported-format",
+    "invalid-output",
+    "timeout",
+    "unavailable",
+    "failed"
+  ]);
+  var ConversionError = class extends Error {
+    /** Published failure category carried across worker and helper transports. */
+    code;
+    /**
+    * @param code - Published failure category.
+    * @param message - Consumer-facing failure description.
+    * @param options - Standard error options; a cause is preserved for diagnostics.
+    */
+    constructor(code, message, options) {
+      super(message, options);
+      this.name = "ConversionError";
+      this.code = code;
+    }
+  };
+  function failureCode2(error) {
+    const code = error?.code;
+    return typeof code === "string" && CODES2.has(code) ? code : "failed";
+  }
+  function fontFileIdentity2(status2) {
+    return {
+      dev: status2.dev.toString(),
+      ino: status2.ino.toString(),
+      size: Number(status2.size),
+      mtimeMs: Number(status2.mtimeNs) / 1e6,
+      ctimeMs: Number(status2.ctimeNs) / 1e6
+    };
+  }
+  function matchesFontFile2(status2, expected) {
+    const current = fontFileIdentity2(status2);
+    return [
+      "dev",
+      "ino",
+      "size",
+      "mtimeMs",
+      "ctimeMs"
+    ].every((key) => current[key] === expected[key]);
+  }
+  var VCL_WEIGHTS = [
+    400,
+    100,
+    200,
+    300,
+    350,
+    400,
+    500,
+    600,
+    700,
+    800,
+    900
+  ];
+  var GENERIC_FAMILIES = /* @__PURE__ */ new Set([
+    "serif",
+    "sansserif",
+    "monospace",
+    "cursive",
+    "fantasy",
+    "systemui",
+    "symbol"
+  ]);
+  function normalize2(value) {
+    return value.normalize("NFKC").toLowerCase().replaceAll(/[\s_-]/g, "");
+  }
+  function fontFamilyPriority(requested, groups, pitch = 0, symbols = false) {
+    const original = requested.map(normalize2);
+    const matched = groups.filter((group) => group.some((family) => original.includes(normalize2(family))));
+    const generic = original.includes("monospace") || pitch === 1 ? "monospace" : original.includes("serif") ? "serif" : matched.flat().map(normalize2).find((family) => family === "serif" || family === "sansserif" || family === "monospace") ?? "sansserif";
+    const families = [...requested, ...matched.flat()];
+    for (const kind of symbols ? ["symbol", generic] : [generic]) for (const group of groups) if (group.some((family) => normalize2(family) === kind)) families.push(...group);
+    const priority = /* @__PURE__ */ new Map();
+    for (const family of families) {
+      const name = normalize2(family);
+      if (!priority.has(name)) priority.set(name, family);
+    }
+    return [...priority.values()];
+  }
+  function indexedFace(parsed, face) {
+    const font = "fonts" in parsed ? parsed.fonts[face.faceIndex] : parsed;
+    if (font === void 0 || font.postscriptName !== face.postscriptName) throw new Error("The indexed font face is no longer available; recreate the converter.");
+    return font;
+  }
+  function regionalPriority(face, language) {
+    const locale = language.toLowerCase();
+    const preferred = locale.startsWith("ja") ? ["jp"] : locale.startsWith("ko") ? ["kr"] : locale.startsWith("zh") ? /hant|tw|hk|mo/.test(locale) ? ["tc", "hk"] : ["sc"] : [];
+    if (preferred.length === 0) return 0;
+    const region = `${face.family} ${face.postscriptName} ${basename(face.path)}`.toLowerCase().match(/(?:cjk|[\s_-])(sc|tc|jp|kr|hk)(?=[\s_.-]|$)/)?.[1];
+    return region === void 0 ? 1 : preferred.includes(region) ? 0 : 2;
+  }
+  var SystemFontCatalog = class {
+    options;
+    faces;
+    queried = /* @__PURE__ */ new Map();
+    byFile = /* @__PURE__ */ new Map();
+    /**
+    * @param options - Host metadata snapshot and fallback families.
+    */
+    constructor(options) {
+      this.options = options;
+      this.faces = options.faces.map((face) => ({ ...face }));
+      for (const face of this.faces) {
+        const members = this.byFile.get(face.path) ?? [];
+        members.push(face);
+        this.byFile.set(face.path, members);
+      }
+    }
+    /**
+    * Find installed faces covering the requested family or missing characters.
+    * Exact families precede configured alternatives, symbol families for requests without letters or numbers,
+    * generic families, then other glyph-covering faces.
+    * @param request - VCL family/style attributes and Unicode scalars missing from its current font.
+    * @param signal - cancellation checked between synchronous font reads.
+    * @returns selected physical files, deduplicated across collection faces; absent glyphs remain unresolved.
+    * @throws if an indexed font changes or cannot be read during glyph matching.
+    */
+    match(request2, signal) {
+      signal.throwIfAborted();
+      const requested = request2.family.split(";").map((family) => family.trim()).filter(Boolean);
+      const primary = requested[0];
+      let missingFamily;
+      if (primary !== void 0 && !GENERIC_FAMILIES.has(normalize2(primary)) && !this.faces.some((face) => face.aliases.includes(normalize2(primary)))) missingFamily = primary;
+      const symbols = request2.codePoints.some((point) => new RegExp("\\p{Symbol}", "u").test(String.fromCodePoint(point))) && !request2.codePoints.some((point) => /[\p{Letter}\p{Number}]/u.test(String.fromCodePoint(point)));
+      const priority = fontFamilyPriority(requested, this.options.fallbackFamilies, request2.pitch, symbols).map(normalize2);
+      const missing = new Set(request2.codePoints);
+      const ranked = this.faces.map((face) => {
+        const rank = priority.findIndex((family) => face.aliases.includes(family));
+        const region = regionalPriority(face, request2.language);
+        const style = (request2.style && normalize2(request2.style) === normalize2(face.style) ? -1 : 0) + (request2.italic === 3 || request2.italic !== 0 === face.italic ? 0 : 100) + (request2.pitch === 0 || request2.pitch === 1 === face.fixed ? 0 : 50) + Math.abs((VCL_WEIGHTS[request2.weight] ?? 400) - face.weight) / 100 + (request2.width === 0 ? 0 : Math.abs(request2.width - face.width));
+        return {
+          face,
+          rank: rank < 0 ? priority.length : rank,
+          region,
+          style
+        };
+      }).sort((left, right) => left.rank - right.rank || left.region - right.region || left.style - right.style || left.face.path.localeCompare(right.face.path, "en") || left.face.faceIndex - right.face.faceIndex);
+      const selected = [];
+      const files3 = /* @__PURE__ */ new Set();
+      for (const { face } of ranked) {
+        signal.throwIfAborted();
+        let covered;
+        if (face.coverage !== void 0) {
+          const coverage = face.coverage;
+          covered = [...missing].filter((point) => coverage.some(([first, last]) => point >= first && point <= last));
+        } else {
+          let known = this.queried.get(face);
+          if (known === void 0) {
+            known = /* @__PURE__ */ new Map();
+            this.queried.set(face, known);
+          }
+          const unknown = [...missing].filter((point) => !known.has(point));
+          if (unknown.length > 0) {
+            const parsed = $d636bc798e7178db$export$185802fd694ee1f5(readFont(face));
+            const collection = "fonts" in parsed ? { fonts: parsed.fonts } : parsed;
+            for (const member of this.byFile.get(face.path)) {
+              let answers = this.queried.get(member);
+              if (answers === void 0) {
+                answers = /* @__PURE__ */ new Map();
+                this.queried.set(member, answers);
+              }
+              const font = indexedFace(collection, member);
+              try {
+                for (const point of unknown) answers.set(point, font.hasGlyphForCodePoint(point));
+              } catch {
+                for (const point of unknown) answers.set(point, false);
+              }
+            }
+          }
+          covered = [...missing].filter((point) => known.get(point));
+        }
+        if (missing.size > 0 && covered.length === 0) continue;
+        if (!files3.has(face.path)) {
+          selected.push(face);
+          files3.add(face.path);
+        }
+        for (const point of covered) missing.delete(point);
+        if (missing.size === 0) break;
+      }
+      return {
+        fonts: selected,
+        ...missingFamily === void 0 ? {} : { missingFamily },
+        ...missing.size === 0 ? {} : { unresolvedCodePoints: [...missing] }
+      };
+    }
+  };
+  function readFont(face) {
+    const fd2 = openSync(face.path, constants.O_RDONLY | constants.O_NONBLOCK | constants.O_NOFOLLOW);
+    try {
+      const before = fstatSync(fd2, { bigint: true });
+      if (!before.isFile() || !matchesFontFile2(before, face)) throw new Error("An indexed font changed; recreate the converter.");
+      const bytes2 = Buffer.alloc(face.size);
+      for (let offset = 0; offset < bytes2.length; ) {
+        const count = readSync(fd2, bytes2, offset, bytes2.length - offset, offset);
+        if (!count) throw new Error("An indexed font was truncated.");
+        offset += count;
+      }
+      if (!matchesFontFile2(fstatSync(fd2, { bigint: true }), face)) throw new Error("An indexed font changed while reading.");
+      return bytes2;
+    } finally {
+      closeSync(fd2);
+    }
+  }
+  var MAIN_PARTS = {
+    odt: ["content.xml", "application/vnd.oasis.opendocument.text"],
+    ods: ["content.xml", "application/vnd.oasis.opendocument.spreadsheet"],
+    odp: ["content.xml", "application/vnd.oasis.opendocument.presentation"],
+    docx: ["word/document.xml", "application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"],
+    xlsx: ["xl/workbook.xml", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"],
+    pptx: ["ppt/presentation.xml", "application/vnd.openxmlformats-officedocument.presentationml.presentation.main+xml"]
+  };
+  function codePointOf(character) {
+    return character.codePointAt(0);
+  }
+  function inspectDocument$1(bytes2, extension, limits) {
+    const main2 = MAIN_PARTS[extension];
+    if (!main2) throw new ConversionError("unsupported-format", "Input extension must be docx, xlsx, or pptx.");
+    const odf = [
+      "odt",
+      "ods",
+      "odp"
+    ].includes(extension);
+    const names = /* @__PURE__ */ new Set();
+    let total = 0;
+    let files3;
+    try {
+      files3 = unzipSync(bytes2, { filter(entry) {
+        total += entry.originalSize;
+        if (names.has(entry.name) || names.size >= limits.maxArchiveEntries || !Number.isSafeInteger(total) || total > limits.maxUncompressedBytes) throw new Error("OOXML archive exceeds its limits or repeats an entry.");
+        names.add(entry.name);
+        if (odf) return [
+          "mimetype",
+          "content.xml",
+          "styles.xml",
+          "META-INF/manifest.xml"
+        ].includes(entry.name);
+        return entry.name === "[Content_Types].xml" || /^(word|xl|ppt)\/.*\.xml$/.test(entry.name) && !entry.name.endsWith("/fontTable.xml") && !entry.name.includes("/theme/");
+      } });
+    } catch (cause) {
+      throw new ConversionError("invalid-document", "Input is not a supported, bounded OOXML archive.", { cause });
+    }
+    const contentTypes = files3["[Content_Types].xml"];
+    if (odf ? !names.has("content.xml") || !names.has("META-INF/manifest.xml") || strFromU8(files3.mimetype ?? /* @__PURE__ */ new Uint8Array()) !== main2[1] : !names.has("_rels/.rels") || !names.has(main2[0]) || contentTypes === void 0 || !strFromU8(contentTypes).includes(main2[1])) throw new ConversionError("invalid-document", `Input does not contain a ${extension} document.`);
+    const families = /* @__PURE__ */ new Map();
+    const codePoints = /* @__PURE__ */ new Set();
+    for (const [name, data] of Object.entries(files3)) {
+      if (name === "[Content_Types].xml" || name === "mimetype" || name === "META-INF/manifest.xml") continue;
+      const partFamilies = [];
+      const partPoints = /* @__PURE__ */ new Set();
+      const parser = new import_saxes.SaxesParser({ xmlns: true });
+      parser.on("opentag", (tag) => {
+        const word = /wordprocessingml\/(?:2006\/)?main$/.test(tag.uri) && tag.local === "rFonts";
+        const drawing = /drawingml\/(?:2006\/)?main$/.test(tag.uri);
+        const sheet = /spreadsheetml\/(?:2006\/)?main$/.test(tag.uri) && tag.local === "name";
+        for (const attribute of Object.values(tag.attributes)) {
+          if (odf && attribute.local === "font-family") partFamilies.push(attribute.value.replace(/^['"]|['"]$/g, ""));
+          if (word && [
+            "ascii",
+            "hAnsi",
+            "eastAsia",
+            "cs"
+          ].includes(attribute.local) || drawing && attribute.local === "typeface" || sheet && attribute.local === "val") partFamilies.push(attribute.value);
+        }
+      });
+      parser.on("text", (text2) => {
+        for (const char of text2) if (!/\s/u.test(char)) partPoints.add(codePointOf(char));
+      });
+      const encoding = data[0] === 255 && data[1] === 254 ? "utf-16le" : data[0] === 254 && data[1] === 255 ? "utf-16be" : "utf-8";
+      try {
+        parser.write(new TextDecoder(encoding).decode(data)).close();
+      } catch {
+        continue;
+      }
+      for (const declared of partFamilies) for (const family of declared.split(";").map((value) => value.trim()).filter((value) => value && !/^\+(?:mj|mn)-(?:lt|ea|cs)$/.test(value))) families.set(normalize2(family), family);
+      for (const point of partPoints) codePoints.add(point);
+    }
+    return {
+      families,
+      codePoints: [...codePoints]
+    };
+  }
+  var DOCUMENT_EXTENSIONS = [
+    "doc",
+    "docx",
+    "odt",
+    "xls",
+    "xlsx",
+    "ods",
+    "ppt",
+    "pptx",
+    "odp"
+  ];
+  var COMPOUND_SIGNATURE = [
+    208,
+    207,
+    17,
+    224,
+    161,
+    177,
+    26,
+    225
+  ];
+  function inspectDocument(bytes2, extension, limits) {
+    if (!DOCUMENT_EXTENSIONS.includes(extension)) throw new ConversionError("unsupported-format", `Input extension must be ${DOCUMENT_EXTENSIONS.join(", ")}.`);
+    if ([
+      "docx",
+      "xlsx",
+      "pptx",
+      "odt",
+      "ods",
+      "odp"
+    ].includes(extension)) return inspectDocument$1(bytes2, extension, limits);
+    if (bytes2.length < 512 || !COMPOUND_SIGNATURE.every((value, index) => bytes2[index] === value)) throw new ConversionError("invalid-document", "Legacy Office input must contain an OLE compound document.");
+    const header = new DataView(bytes2.buffer, bytes2.byteOffset, bytes2.byteLength);
+    const version = header.getUint16(26, true);
+    const sectorShift = header.getUint16(30, true);
+    if (header.getUint16(28, true) !== 65534 || header.getUint16(32, true) !== 6 || !(version === 3 && sectorShift === 9 || version === 4 && sectorShift === 12) || bytes2.length < 2 ** sectorShift * 2 || bytes2.length % 2 ** sectorShift !== 0) throw new ConversionError("invalid-document", "Legacy Office input has an invalid or truncated compound-file header.");
+    return {
+      families: /* @__PURE__ */ new Map(),
+      codePoints: []
+    };
+  }
+  var faceKey = (face) => `${face.path}\0${face.faceIndex}`;
+  var requestKey = ({ codePoints: _codePoints, ...request2 }) => JSON.stringify(request2);
+  function createFontLoader(options, document, install, faces, cache = []) {
+    const catalog = new SystemFontCatalog({
+      faces,
+      fallbackFamilies: options.fontFallbacks
+    });
+    const byFace = new Map(faces.map((face) => [faceKey(face), face]));
+    const matches = /* @__PURE__ */ new Map();
+    for (const entry of cache.slice(-options.maxFontResolutionEntries)) matches.set(entry.key, {
+      ...entry,
+      codePoints: [...entry.codePoints],
+      faces: entry.faces.map((face) => ({ ...face }))
+    });
+    const loaded = /* @__PURE__ */ new Map();
+    const resolved = /* @__PURE__ */ new Map();
+    const missing = /* @__PURE__ */ new Map();
+    const substitutions = /* @__PURE__ */ new Map();
+    const signal = new AbortController().signal;
+    let bytes2 = 0;
+    function retain(entry) {
+      matches.delete(entry.key);
+      matches.set(entry.key, entry);
+      while (matches.size > options.maxFontResolutionEntries) matches.delete(matches.keys().next().value);
+    }
+    function cachedMatch(request2) {
+      const key = requestKey(request2);
+      const points = [...new Set(request2.codePoints)].sort((left, right) => left - right);
+      const prior = matches.get(key);
+      if (prior && (points.length === 0 && prior.emptyRequest || points.every((point) => prior.codePoints.includes(point)))) {
+        retain(prior);
+        return {
+          fonts: prior.faces.map((reference) => byFace.get(faceKey(reference))).filter((face) => face !== void 0),
+          ...prior.missingFamily === void 0 ? {} : { missingFamily: prior.missingFamily }
+        };
+      }
+      const unknown = prior === void 0 ? points : points.filter((point) => !prior.codePoints.includes(point));
+      const current = catalog.match({
+        ...request2,
+        codePoints: points.length === 0 ? [] : unknown
+      }, signal);
+      const references = new Map((prior?.faces ?? []).map((face) => [faceKey(face), face]));
+      for (const face of current.fonts) references.set(faceKey(face), {
+        path: face.path,
+        faceIndex: face.faceIndex
+      });
+      const missingFamily = prior?.missingFamily ?? current.missingFamily;
+      const entry = {
+        key,
+        codePoints: [.../* @__PURE__ */ new Set([...prior?.codePoints ?? [], ...points])].sort((left, right) => left - right),
+        emptyRequest: prior?.emptyRequest === true || points.length === 0,
+        faces: [...references.values()],
+        ...missingFamily === void 0 ? {} : { missingFamily }
+      };
+      retain(entry);
+      return {
+        fonts: entry.faces.map((reference) => byFace.get(faceKey(reference))).filter((face) => face !== void 0),
+        ...entry.missingFamily === void 0 ? {} : { missingFamily: entry.missingFamily }
+      };
+    }
+    return {
+      get missingFonts() {
+        return [...missing.values()];
+      },
+      get substitutions() {
+        return [...substitutions.values()];
+      },
+      get files() {
+        return [...loaded.values()];
+      },
+      get cacheEntries() {
+        return [...matches.values()];
+      },
+      resolve(request2) {
+        const key = JSON.stringify(request2);
+        const cached = resolved.get(key);
+        if (cached) return cached;
+        const match = cachedMatch(request2);
+        if (match.missingFamily && document.families.has(normalize2(match.missingFamily))) {
+          const family = normalize2(match.missingFamily);
+          missing.set(family, match.missingFamily);
+          if (match.fonts[0]) substitutions.set(family, {
+            family: match.missingFamily,
+            substitute: match.fonts[0].family
+          });
+        }
+        const paths = match.fonts.map((face) => {
+          const installed = loaded.get(face.path);
+          if (installed !== void 0) return installed;
+          if (bytes2 + face.size > options.maxLoadedFontBytes) throw new Error("Imported fonts exceed maxLoadedFontBytes.");
+          const path = install(`${loaded.size}${extname(face.path)}`, readFont(face));
+          bytes2 += face.size;
+          loaded.set(face.path, path);
+          return path;
+        });
+        resolved.set(key, paths);
+        return paths;
+      }
+    };
+  }
+  function preloadFonts(loader, options, document, native = false) {
+    const families = [
+      ...options.initialFontFamilies,
+      ...native ? [...document.families.values()] : [],
+      "sans-serif"
+    ];
+    for (const family of families) loader.resolve({
+      family,
+      style: "",
+      weight: 5,
+      italic: 0,
+      width: 5,
+      pitch: 0,
+      language: "",
+      codePoints: native ? document.codePoints : []
+    });
+  }
+  function memoryFontConfig(families, requested = []) {
+    const escape = (value) => value.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;").replaceAll("'", "&apos;");
+    return `<?xml version="1.0"?><!DOCTYPE fontconfig SYSTEM "fonts.dtd"><fontconfig><dir>/dsh-fonts</dir><cachedir>/dsh/font-cache</cachedir>${[...new Map([...families.flatMap((group) => group.slice(0, 1)), ...requested].map((name) => [normalize2(name), name])).values()].map((name) => {
+      const alternatives = fontFamilyPriority([name], families).filter((family) => normalize2(family) !== normalize2(name));
+      return `<alias><family>${escape(name)}</family><accept>${alternatives.map((family) => `<family>${escape(family)}</family>`).join("")}</accept></alias>`;
+    }).join("")}</fontconfig>`;
+  }
+  function fontFileFormat(bytes2) {
+    const magic = new TextDecoder().decode(bytes2.subarray(0, 4));
+    if (magic === "ttcf") return "ttc";
+    if (magic === "OTTO") return "otf";
+    if (magic === "true" || bytes2[0] === 0 && bytes2[1] === 1 && bytes2[2] === 0 && bytes2[3] === 0) return "ttf";
+    throw new Error("The full font asset is not an sfnt font or collection.");
+  }
+  function fullFontFile(face) {
+    const original = readFont(face);
+    const sourceHash = createHash("sha256").update(original).digest("hex");
+    let bytes2 = original;
+    if (extname(face.path).toLowerCase() === ".dfont") bytes2 = indexedFace($d636bc798e7178db$export$185802fd694ee1f5(original), face).stream.buffer;
+    return {
+      bytes: bytes2,
+      sourceHash,
+      format: fontFileFormat(bytes2)
+    };
+  }
+  function preloadPdfFonts(options, faces, install) {
+    const catalog = new SystemFontCatalog({
+      faces,
+      fallbackFamilies: options.fontFallbacks
+    });
+    const files3 = /* @__PURE__ */ new Set();
+    const assets = /* @__PURE__ */ new Set();
+    let total = 0;
+    const families = [.../* @__PURE__ */ new Set([
+      ...options.initialFontFamilies,
+      ...options.fontFallbacks.flat(),
+      "sans-serif",
+      "serif",
+      "monospace"
+    ])];
+    for (const family of families) {
+      const result = catalog.match({
+        family,
+        style: "",
+        weight: 5,
+        italic: 0,
+        width: 5,
+        pitch: 0,
+        language: "",
+        codePoints: []
+      }, new AbortController().signal);
+      for (const face of result.fonts) {
+        const physical = `${face.path}#${extname(face.path).toLowerCase() === ".dfont" ? face.faceIndex : ""}`;
+        if (files3.has(physical)) continue;
+        files3.add(physical);
+        const { bytes: bytes2, format } = fullFontFile(face);
+        const id = createHash("sha256").update(bytes2).digest("hex");
+        if (assets.has(id)) continue;
+        if (total + bytes2.length > options.maxLoadedFontBytes) throw new Error("PDF full-font preload exceeds maxLoadedFontBytes.");
+        install(`${id}.${format}`, bytes2);
+        total += bytes2.length;
+        assets.add(id);
+      }
+    }
+  }
+  function profileXml(fontNodes = "") {
+    return `<?xml version="1.0" encoding="UTF-8"?><oor:items xmlns:oor="http://openoffice.org/2001/registry"><item oor:path="/org.openoffice.Office.Calc/Input"><prop oor:name="WarnActiveSheet" oor:op="fuse"><value>false</value></prop></item><item oor:path="/org.openoffice.VCL/FontSubstitutions/en">${fontNodes}</item></oor:items>
+`;
+  }
+  function validateOutput(bytes2, format) {
+    if (format === "pdf" && new TextDecoder().decode(bytes2.subarray(0, 5)) !== "%PDF-") throw new ConversionError("invalid-output", "LibreOffice did not produce a PDF.");
+    if ([
+      "docx",
+      "xlsx",
+      "pptx",
+      "odt",
+      "ods",
+      "odp"
+    ].includes(format) && (bytes2[0] !== 80 || bytes2[1] !== 75 || bytes2[2] !== 3 || bytes2[3] !== 4)) throw new ConversionError("invalid-output", `LibreOffice did not produce a ${format} archive.`);
+  }
+  var require2 = createRequire(location.href);
+  function engineError(module, office) {
+    const pointer = module.ccall("dsh_lok_error", "number", ["number"], [office]);
+    if (!pointer) return /* @__PURE__ */ new Error("LibreOffice WASM could not convert the document.");
+    try {
+      return new Error(module.UTF8ToString(pointer));
+    } finally {
+      module.ccall("free", null, ["number"], [pointer]);
+    }
+  }
+  function requiredFontLoader(loader) {
+    if (loader === void 0) throw new Error("LibreOffice initialized without its font loader.");
+    return loader;
+  }
+  async function withWasmSession(request2, use) {
+    const { engine, bytes: bytes2, extension, options, document: metadata, faces } = request2;
+    const pdf = extension === "pdf";
+    let idleReady = false;
+    const factory = require2(engine.loader);
+    const raw = readFileSync(engine.data);
+    const data = raw.buffer.slice(raw.byteOffset, raw.byteOffset + raw.byteLength);
+    let module;
+    let office = 0;
+    let document = 0;
+    let fontLoader;
+    let fatal = false;
+    let failure;
+    try {
+      module = await factory({
+        dshOnCallback(type, payload) {
+          if (type !== 16) return;
+          try {
+            const result2 = JSON.parse(payload);
+            if (result2.commandName === ".uno:ReportWhenIdle" && result2.idleID === "node-raster") idleReady = true;
+          } catch {
+          }
+        },
+        noInitialRun: true,
+        mainScriptUrlOrBlob: engine.loader,
+        locateFile(name) {
+          const file = basename(name);
+          if (file === "dsoffice.wasm") return engine.wasm;
+          for (const asset of [
+            engine.loader,
+            engine.data,
+            engine.wasm,
+            engine.metadata
+          ]) if (basename(asset) === file) return asset;
+          throw new Error(`LibreOffice requested an unlisted asset: ${file}`);
+        },
+        getPreloadedPackage: () => data,
+        dshResolveSystemFonts(request3) {
+          if (!fontLoader) throw new Error("LibreOffice requested fonts before initializing MEMFS.");
+          return fontLoader.resolve(request3);
+        },
+        preRun: [(loadedModule) => {
+          for (const path of [
+            "/dsh/profile/user",
+            "/dsh/font-cache",
+            "/dsh-fonts"
+          ]) loadedModule.FS.mkdirTree(path);
+          loadedModule.FS.writeFile("/dsh/profile/user/registrymodifications.xcu", new TextEncoder().encode(profileXml()));
+          loadedModule.FS.writeFile("/dsh/fonts.conf", new TextEncoder().encode(memoryFontConfig(options.fontFallbacks, metadata.families.values())));
+          Object.assign(loadedModule.ENV, {
+            HOME: "/dsh/profile",
+            TMPDIR: "/tmp",
+            FONTCONFIG_FILE: "/dsh/fonts.conf",
+            LOK_HOST_ALLOWLIST: "^$"
+          });
+          fontLoader = createFontLoader(options, metadata, (name, bytes3) => {
+            const path = `/dsh-fonts/${name}`;
+            loadedModule.FS.writeFile(path, bytes3);
+            return path;
+          }, faces, request2.fontCache);
+          if (pdf) {
+            loadedModule.FS.mkdirTree("/usr/share/fonts/dsh-pdfium");
+            preloadPdfFonts(options, faces, (name, bytes3) => loadedModule.FS.writeFile(`/usr/share/fonts/dsh-pdfium/${name}`, bytes3));
+          } else preloadFonts(fontLoader, options, metadata);
+        }],
+        onAbort() {
+          fatal = true;
+        },
+        print() {
+        },
+        printErr() {
+        }
+      });
+      const instance = module;
+      const input = `/dsh/document.${extension}`;
+      if (!pdf) instance.FS.writeFile(input, bytes2);
+      if (pdf) {
+        const pointer = instance.ccall("malloc", "number", ["number"], [bytes2.length]);
+        if (!pointer) throw engineError(instance, 0);
+        try {
+          new Uint8Array(instance.HEAPU32.buffer).set(bytes2, pointer);
+          document = instance.ccall("dsh_pdf_open", "number", [
+            "number",
+            "number",
+            "string"
+          ], [
+            pointer,
+            bytes2.length,
+            ""
+          ]);
+        } finally {
+          instance.ccall("free", null, ["number"], [pointer]);
+        }
+        if (!document) throw engineError(instance, 0);
+      } else {
+        office = instance.ccall("dsh_lok_initialize", "number", ["string", "string"], [engine.programDirectory, "file:///dsh/profile"]);
+        if (!office) throw engineError(instance, 0);
+        document = instance.ccall("dsh_lok_document_load", "number", [
+          "number",
+          "string",
+          "string"
+        ], [
+          office,
+          `file://${input}`,
+          "Batch=true,EnableMacrosExecution=false"
+        ]);
+        if (!document) throw engineError(instance, office);
+      }
+      const result = await use({
+        module: instance,
+        office,
+        document,
+        pdf,
+        get missingFonts() {
+          return requiredFontLoader(fontLoader).missingFonts;
+        },
+        async idle() {
+          if (pdf) return;
+          idleReady = false;
+          if (!instance.ccall("dsh_lok_document_command", "number", [
+            "number",
+            "string",
+            "string"
+          ], [
+            document,
+            ".uno:ReportWhenIdle",
+            '{"idleID":{"type":"string","value":"node-raster"}}'
+          ])) throw engineError(instance, office);
+          const deadline = performance.now() + options.timeoutMs;
+          while (!idleReady) {
+            for (let i2 = 0; i2 < 8 && !idleReady; i2++) {
+              const pending = instance.ccall("dsh_lok_pump", "number", [], []);
+              if (pending < 0) throw engineError(instance, office);
+              if (!pending) break;
+            }
+            if (performance.now() > deadline) throw new ConversionError("timeout", "LibreOffice did not reach its raster idle barrier.");
+            if (!idleReady) await new Promise((resolve) => setTimeout(resolve, 0));
+          }
+        }
+      });
+      request2.onFontCache?.(requiredFontLoader(fontLoader).cacheEntries);
+      return result;
+    } catch (error) {
+      fatal ||= error instanceof WebAssembly.RuntimeError;
+      failure = error;
+      throw error;
+    } finally {
+      const errors = [];
+      if (module && !fatal) {
+        if (document) try {
+          if (!module.ccall(pdf ? "dsh_pdf_destroy" : "dsh_lok_document_destroy", "number", ["number"], [document])) throw engineError(module, office);
+        } catch (error) {
+          errors.push(error);
+          fatal ||= error instanceof WebAssembly.RuntimeError;
+        }
+        if (office && !fatal) try {
+          if (!module.ccall("dsh_lok_destroy", "number", ["number"], [office])) throw engineError(module, 0);
+        } catch (error) {
+          errors.push(error);
+        }
+      }
+      if (module) try {
+        module.PThread.terminateAllThreads();
+      } catch (error) {
+        errors.push(error);
+      }
+      if (errors.length) throw new AggregateError(failure ? [failure, ...errors] : errors, "LibreOffice WASM cleanup failed.");
+    }
+  }
+  async function convertWithWasm(request2) {
+    return withWasmSession(request2, (session) => {
+      const { module, office, document } = session;
+      const { options } = request2;
+      const operation = request2.operation ?? {
+        format: "pdf",
+        recalculate: false
+      };
+      const output = `/dsh/output.${operation.format}`;
+      const filterOptions = operation.format === "pdf" ? JSON.stringify({
+        ExportBookmarks: {
+          type: "boolean",
+          value: "true"
+        },
+        ReduceImageResolution: {
+          type: "boolean",
+          value: "true"
+        },
+        MaxImageResolution: {
+          type: "long",
+          value: String(options.maxImageResolution)
+        }
+      }) : operation.format === "txt" ? "UTF8,LF" : "";
+      if (!module.ccall("dsh_lok_document_export", "number", [
+        "number",
+        "number",
+        "string",
+        "string",
+        "string",
+        "number",
+        "string"
+      ], [
+        office,
+        document,
+        `file://${output}`,
+        operation.format,
+        filterOptions,
+        Number(operation.recalculate),
+        operation.sheet ?? ""
+      ])) throw engineError(module, office);
+      if (!module.FS.analyzePath(output).exists) throw new ConversionError("invalid-output", "LibreOffice did not create its output.");
+      const status2 = module.FS.stat(output);
+      if (!module.FS.isFile(status2.mode)) throw new ConversionError("invalid-output", "Generated output is not a regular file.");
+      if (status2.size > options.maxOutputBytes) throw new ConversionError("output-too-large", "Generated output exceeds its output byte limit.");
+      const result = module.FS.readFile(output);
+      validateOutput(result, operation.format);
+      return {
+        output: result,
+        missingFonts: session.missingFonts
+      };
+    });
+  }
+  function unmirrorRtlTile({ width, height, rgba }) {
+    for (let y = 0; y < height; y++) for (let x2 = 0; x2 < Math.floor(width / 2); x2++) {
+      const left = (y * width + x2) * 4, right = (y * width + width - 1 - x2) * 4;
+      for (let channel = 0; channel < 4; channel++) {
+        const value = rgba[left + channel];
+        rgba[left + channel] = rgba[right + channel];
+        rgba[right + channel] = value;
+      }
+    }
+  }
+  function splitRasterRectangle(rectangle, scale, limits) {
+    const { x: x2, y, width, height } = rectangle;
+    const { maxPixels, maxDimension, maxTiles } = limits;
+    if (![
+      x2,
+      y,
+      width,
+      height,
+      scale
+    ].every(Number.isFinite) || x2 < 0 || y < 0 || width <= 0 || height <= 0 || scale <= 0 || !Number.isSafeInteger(maxPixels) || maxPixels < 1 || maxPixels > 16777216 || !Number.isSafeInteger(maxDimension) || maxDimension < 1 || maxDimension > 16777216 || !Number.isSafeInteger(maxTiles) || maxTiles < 0) throw new TypeError("Invalid raster splitting limits or rectangle.");
+    const pixelWidth = Math.ceil(width * scale - 1e-9), pixelHeight = Math.ceil(height * scale - 1e-9);
+    if (![pixelWidth, pixelHeight].every((value) => Number.isSafeInteger(value) && value > 0)) throw new RangeError("Raster dimensions exceed the coordinate range.");
+    let tileWidth = Math.min(pixelWidth, maxDimension), tileHeight = Math.min(pixelHeight, maxDimension);
+    if (tileWidth * tileHeight > maxPixels) {
+      const side = Math.floor(Math.sqrt(maxPixels));
+      if (tileWidth <= side) tileHeight = Math.floor(maxPixels / tileWidth);
+      else if (tileHeight <= side) tileWidth = Math.floor(maxPixels / tileHeight);
+      else {
+        tileWidth = side;
+        tileHeight = Math.min(tileHeight, Math.floor(maxPixels / tileWidth));
+      }
+    }
+    const columns = Math.ceil(pixelWidth / tileWidth), rows = Math.ceil(pixelHeight / tileHeight);
+    if (columns * rows > maxTiles) throw new RangeError("Raster batch exceeds maxPages after worksheet splitting.");
+    const result = [];
+    for (let row = 0; row < rows; row++) for (let column2 = 0; column2 < columns; column2++) {
+      const left = column2 * tileWidth / scale, top = row * tileHeight / scale;
+      result.push({
+        x: x2 + left,
+        y: y + top,
+        width: Math.min(tileWidth / scale, width - left),
+        height: Math.min(tileHeight / scale, height - top)
+      });
+    }
+    return result;
+  }
+  function writerPages(rectangles) {
+    const pages = rectangles.split(";").filter((value) => value.trim()).flatMap((rectangle) => {
+      const fields = rectangle.split(",").map((value) => Number(value.trim()));
+      const [x2, y, width, height] = fields;
+      if (fields.length !== 4 || x2 === void 0 || y === void 0 || width === void 0 || height === void 0 || fields.some((value) => !Number.isSafeInteger(value) || value < 0 || value > 2147483647) || width === 0 !== (height === 0) || x2 + width > 2147483647 || y + height > 2147483647) throw new Error("LibreOffice returned invalid page rectangles.");
+      return width === 0 ? [] : [{
+        x: x2,
+        y,
+        width: width / 15,
+        height: height / 15,
+        part: -1
+      }];
+    });
+    if (pages.length === 0) throw new Error("LibreOffice returned no document pages.");
+    return pages;
+  }
+  function tileDimensions(request2, pages) {
+    const page = pages[request2.pageIndex];
+    if (!Number.isSafeInteger(request2.pageIndex) || !page || ![
+      request2.x,
+      request2.y,
+      request2.width,
+      request2.height,
+      request2.scale
+    ].every(Number.isFinite) || request2.x < 0 || request2.y < 0 || request2.width <= 0 || request2.height <= 0 || request2.scale <= 0 || request2.x + request2.width > page.width + 1e-3 || request2.y + request2.height > page.height + 1e-3) throw new Error("Tile rectangle lies outside its page.");
+    const width = Math.ceil(request2.width * request2.scale - 1e-9);
+    const height = Math.ceil(request2.height * request2.scale - 1e-9);
+    if (width <= 0 || height <= 0 || !Number.isSafeInteger(width * height) || width * height > 16777216) throw new Error("Tile exceeds the 16 megapixel allocation limit.");
+    const twips = [
+      page.x + Math.round(request2.x * 15),
+      page.y + Math.round(request2.y * 15),
+      Math.round(request2.width * 15),
+      Math.round(request2.height * 15)
+    ];
+    if (twips.some((value) => !Number.isSafeInteger(value) || value < 0 || value > 2147483647) || twips[0] + twips[2] > 2147483647 || twips[1] + twips[3] > 2147483647) throw new Error("Tile coordinates exceed the wasm32 range.");
+    return {
+      page,
+      width,
+      height
+    };
+  }
+  function rgbaPixels(source, tileMode) {
+    if (tileMode !== 0 && tileMode !== 1 || source.length % 4 !== 0) throw new Error("LibreOffice returned an unsupported tile pixel format.");
+    const result = new Uint8ClampedArray(source.length);
+    for (let index = 0; index < source.length; index += 4) {
+      const alpha = source[index + 3];
+      const multiplier = alpha === 0 ? 0 : 255 / alpha;
+      result[index] = source[index + (tileMode === 1 ? 2 : 0)] * multiplier;
+      result[index + 1] = source[index + 1] * multiplier;
+      result[index + 2] = source[index + (tileMode === 1 ? 0 : 2)] * multiplier;
+      result[index + 3] = alpha;
+    }
+    return result;
+  }
+  function numericCall(module, name, args) {
+    return module.ccall(name, "number", args.map(() => "number"), args);
+  }
+  function engineString(module, name, types, args, failure) {
+    const pointer = module.ccall(name, "number", types, args);
+    if (!pointer) throw failure();
+    try {
+      return module.UTF8ToString(pointer);
+    } finally {
+      numericCall(module, "free", [pointer]);
+    }
+  }
+  function renderRegion(module, document, request2, pages, failure, pdf = false) {
+    const call = (name, args) => numericCall(module, name, args);
+    const { page, width, height } = tileDimensions(request2, pages);
+    const size = width * height * 4;
+    const pointer = call("malloc", [size]);
+    if (!pointer) throw failure();
+    try {
+      new Uint8Array(module.HEAPU32.buffer, pointer, size).fill(0);
+      const position = [
+        page.x + Math.round(request2.x * 15),
+        page.y + Math.round(request2.y * 15),
+        Math.max(1, Math.round(request2.width * 15)),
+        Math.max(1, Math.round(request2.height * 15))
+      ];
+      if (!call(pdf ? "dsh_pdf_paint" : "dsh_lok_document_paint", [
+        document,
+        pointer,
+        page.part,
+        width,
+        height,
+        ...position
+      ])) throw failure();
+      const source = new Uint8Array(module.HEAPU32.buffer, pointer, size);
+      return {
+        width,
+        height,
+        rgba: pdf ? new Uint8ClampedArray(source) : rgbaPixels(source, call("dsh_lok_document_tile_mode", [document]))
+      };
+    } finally {
+      call("free", [pointer]);
+    }
+  }
+  function pdfPages(module, pdf, failure) {
+    const count = numericCall(module, "dsh_pdf_page_count", [pdf]);
+    if (!Number.isSafeInteger(count) || count < 1 || count > 1e5) throw failure();
+    const pointer = numericCall(module, "malloc", [8]);
+    if (!pointer) throw failure();
+    try {
+      return Array.from({ length: count }, (_, part) => {
+        if (!numericCall(module, "dsh_pdf_page_size", [
+          pdf,
+          part,
+          pointer,
+          pointer + 4
+        ])) throw failure();
+        const width = module.HEAPU32[pointer / 4];
+        const height = module.HEAPU32[pointer / 4 + 1];
+        if (width < 1 || height < 1 || width > 2147483647 || height > 2147483647) throw failure();
+        return {
+          part,
+          x: 0,
+          y: 0,
+          width: width / 15,
+          height: height / 15
+        };
+      });
+    } finally {
+      numericCall(module, "free", [pointer]);
+    }
+  }
+  var MAX_COLUMN = 16383;
+  var MAX_ROW = 1048575;
+  function column(index) {
+    let name = "";
+    for (let value = index + 1; value > 0; value = Math.floor((value - 1) / 26)) name = String.fromCharCode(65 + (value - 1) % 26) + name;
+    return name;
+  }
+  function rangeName(range) {
+    return `${column(range.firstColumn)}${range.firstRow + 1}:${column(range.lastColumn)}${range.lastRow + 1}`;
+  }
+  function parseCellRange(value) {
+    const match = /^\$?([A-Z]{1,3})\$?([1-9]\d{0,6})(?::\$?([A-Z]{1,3})\$?([1-9]\d{0,6}))?$/i.exec(value);
+    if (!match) throw new TypeError("range must be an A1 cell or rectangle without a sheet prefix.");
+    const col = (name) => [...name.toUpperCase()].reduce((sum, c) => sum * 26 + c.charCodeAt(0) - 64, 0) - 1;
+    const firstColumn = col(match[1]);
+    const firstRow = Number(match[2]) - 1;
+    const lastColumn = col(match[3] ?? match[1]);
+    const lastRow = Number(match[4] ?? match[2]) - 1;
+    if (lastColumn < firstColumn || lastRow < firstRow || lastColumn > MAX_COLUMN || lastRow > MAX_ROW) throw new TypeError("range exceeds Calc worksheet bounds or has reversed endpoints.");
+    return {
+      firstColumn,
+      firstRow,
+      lastColumn,
+      lastRow
+    };
+  }
+  function sheetPartInfo(value) {
+    const info = JSON.parse(value);
+    if (!info || typeof info.name !== "string" || ![0, 1].includes(info.visible) || ![0, 1].includes(info.rtllayout) || !Number.isInteger(info.lastcolumn) || !Number.isInteger(info.lastrow) || info.lastcolumn < 0 || info.lastrow < 0 || info.lastcolumn > MAX_COLUMN || info.lastrow > MAX_ROW) throw new Error("LibreOffice returned invalid worksheet data-area metadata.");
+    return info;
+  }
+  function dataArea(info) {
+    return {
+      firstColumn: 0,
+      firstRow: 0,
+      lastColumn: info.lastcolumn,
+      lastRow: info.lastrow
+    };
+  }
+  function spans(encoded, flags, maximum) {
+    if (typeof encoded !== "string" || encoded.length > 33554432) throw new Error("Invalid worksheet geometry span encoding.");
+    const tokens = encoded.trim().split(/\s+/);
+    let previous = -1;
+    let flag = 0;
+    const result = tokens.map((token, i2) => {
+      const fields = token.split(":");
+      let value;
+      let end;
+      if (flags && i2 > 0) {
+        value = flag = 1 - flag;
+        end = Number(fields[0]);
+        if (fields.length !== 1) throw new Error("Invalid worksheet flag span.");
+      } else {
+        value = Number(fields[0]);
+        end = Number(fields[1]);
+        flag = value;
+        if (fields.length !== 2) throw new Error("Invalid worksheet size span.");
+      }
+      if (!Number.isSafeInteger(value) || value < 0 || (flags ? value > 1 : value > 65535) || !Number.isSafeInteger(end) || end <= previous || end > maximum) throw new Error("Invalid worksheet geometry span.");
+      previous = end;
+      return {
+        end,
+        value
+      };
+    });
+    if (previous !== maximum) throw new Error("Worksheet geometry does not cover the complete dimension.");
+    return result;
+  }
+  function dimension(data, first, last, maximum, scale) {
+    const sizes = spans(data?.sizes, false, maximum);
+    const hidden = spans(data?.hidden, true, maximum);
+    const filtered = spans(data?.filtered, true, maximum);
+    let position = 0, start = 0, index = 0, si = 0, hi = 0, fi = 0;
+    while (index <= last) {
+      const size = sizes[si], hide = hidden[hi], filter = filtered[fi];
+      const end = Math.min(size.end, hide.end, filter.end, last, index < first ? first - 1 : last);
+      const pixels = hide.value || filter.value || size.value === 0 ? 0 : Math.max(1, Math.floor(size.value * scale / 15));
+      if (index === first) start = position;
+      position += (end - index + 1) * pixels;
+      index = end + 1;
+      if (index > size.end) si++;
+      if (index > hide.end) hi++;
+      if (index > filter.end) fi++;
+    }
+    return [start / scale, (position - start) / scale];
+  }
+  function sheetRangeRectangle(geometry, range, scale) {
+    if (!Number.isFinite(scale) || scale <= 0 || scale > 16) throw new TypeError("Invalid worksheet raster scale.");
+    const [x2, width] = dimension(geometry.columns, range.firstColumn, range.lastColumn, MAX_COLUMN, scale);
+    const [y, height] = dimension(geometry.rows, range.firstRow, range.lastRow, MAX_ROW, scale);
+    if (width <= 0 || height <= 0) throw new Error("The selected worksheet range is entirely hidden or filtered.");
+    if ([
+      x2,
+      y,
+      width,
+      height,
+      x2 + width,
+      y + height
+    ].some((value) => !Number.isFinite(value) || value * 15 > 2147483647)) throw new Error("The selected worksheet range exceeds the supported coordinate range.");
+    return {
+      x: x2,
+      y,
+      width,
+      height
+    };
+  }
+  function selectedPages(pages, count, limit) {
+    if (!Number.isSafeInteger(count) || count < 1) throw new ConversionError("invalid-document", "The document contains no renderable pages.");
+    const result = pages === void 0 || pages === "all" ? Array.from({ length: Math.min(count, limit + 1) }, (_, i2) => i2 + 1) : [...pages];
+    if (result.length > limit) throw new ConversionError("output-too-large", "Selected page count exceeds maxPages; select pages or raise the limit.");
+    if (result.some((page) => page > count)) throw new TypeError(`Selected page lies outside the ${count}-page document.`);
+    return result;
+  }
+  var crcTable = Uint32Array.from({ length: 256 }, (_, value) => {
+    for (let bit = 0; bit < 8; bit++) value = value & 1 ? 3988292384 ^ value >>> 1 : value >>> 1;
+    return value >>> 0;
+  });
+  function chunk(type, bytes2) {
+    const output = new Uint8Array(bytes2.length + 12);
+    const view = new DataView(output.buffer);
+    view.setUint32(0, bytes2.length);
+    output.set(new TextEncoder().encode(type), 4);
+    output.set(bytes2, 8);
+    let crc = 4294967295;
+    for (let i2 = 4; i2 < output.length - 4; i2++) crc = crcTable[(crc ^ output[i2]) & 255] ^ crc >>> 8;
+    view.setUint32(output.length - 4, (crc ^ 4294967295) >>> 0);
+    return output;
+  }
+  function encodePng(width, height, rgba) {
+    if (!Number.isSafeInteger(width) || !Number.isSafeInteger(height) || width < 1 || height < 1 || width * height > 16777216 || rgba.byteLength !== width * height * 4) throw new TypeError("Invalid PNG raster dimensions.");
+    const header = /* @__PURE__ */ new Uint8Array(13);
+    const view = new DataView(header.buffer);
+    view.setUint32(0, width);
+    view.setUint32(4, height);
+    header[8] = 8;
+    header[9] = 6;
+    const scanlines = new Uint8Array(height * (width * 4 + 1));
+    for (let y = 0; y < height; y++) {
+      const source = y * width * 4;
+      const target = y * (width * 4 + 1);
+      scanlines[target] = 1;
+      for (let x2 = 0; x2 < width * 4; x2++) scanlines[target + 1 + x2] = rgba[source + x2] - (x2 < 4 ? 0 : rgba[source + x2 - 4]);
+    }
+    const chunks = [
+      new Uint8Array([
+        137,
+        80,
+        78,
+        71,
+        13,
+        10,
+        26,
+        10
+      ]),
+      chunk("IHDR", header),
+      chunk("IDAT", zlibSync(scanlines, { level: 6 })),
+      chunk("IEND", /* @__PURE__ */ new Uint8Array())
+    ];
+    const result = new Uint8Array(chunks.reduce((sum, value) => sum + value.length, 0));
+    let offset = 0;
+    for (const value of chunks) {
+      result.set(value, offset);
+      offset += value.length;
+    }
+    return result;
+  }
+  async function regions(session, request2) {
+    const { module, document, office, pdf } = session;
+    const call = (name, args) => numericCall(module, name, args);
+    const failure = () => engineError(module, office);
+    const text2 = (name, args) => engineString(module, name, args.map(() => "number"), args, failure);
+    const values = (command) => engineString(module, "dsh_lok_document_command_values", ["number", "string"], [document, command], failure);
+    const select = (pages) => ({
+      count: pages.length,
+      regions: selectedPages(request2.pages, pages.length, request2.maxPages).map((number) => {
+        const page = pages[number - 1];
+        return {
+          page,
+          number,
+          rectangle: {
+            x: 0,
+            y: 0,
+            width: page.width,
+            height: page.height
+          }
+        };
+      })
+    });
+    if (pdf) return select(pdfPages(module, document, failure));
+    if (!call("dsh_lok_document_initialize_rendering", [document]) || !call("dsh_lok_document_listen", [document])) throw failure();
+    await session.idle();
+    const type = call("dsh_lok_document_type", [document]);
+    if (type !== ([
+      "xls",
+      "xlsx",
+      "ods"
+    ].includes(request2.extension) ? 1 : [
+      "ppt",
+      "pptx",
+      "odp"
+    ].includes(request2.extension) ? 2 : 0)) throw new ConversionError("invalid-document", "LibreOffice imported the input as an unexpected document type.");
+    if (type === 0) return select(writerPages(text2("dsh_lok_document_page_rectangles", [document])));
+    const parts = call("dsh_lok_document_parts", [document]);
+    if (!Number.isSafeInteger(parts) || parts < 1 || parts > 1e5) throw new ConversionError("invalid-document", "Invalid document part count.");
+    if (type === 2) {
+      const sizes = JSON.parse(values(".uno:AllPageSize"));
+      if (!Array.isArray(sizes.parts) || sizes.parts.length !== parts) throw new ConversionError("invalid-document", "Impress returned inconsistent slide dimensions.");
+      return select(sizes.parts.map(({ width, height }, part) => {
+        if (!Number.isSafeInteger(width) || !Number.isSafeInteger(height) || width < 1 || height < 1 || width > 2147483647 || height > 2147483647) throw new ConversionError("invalid-document", "Impress returned invalid slide dimensions.");
+        return {
+          part,
+          x: 0,
+          y: 0,
+          width: width / 15,
+          height: height / 15
+        };
+      }));
+    }
+    const sheets = Array.from({ length: parts }, (_, part) => ({
+      part,
+      info: sheetPartInfo(text2("dsh_lok_document_part_info", [document, part]))
+    }));
+    const count = sheets.filter(({ info }) => info.visible).length;
+    const selected = request2.sheet === void 0 ? sheets.filter(({ info }) => info.visible) : sheets.filter(({ info }) => info.name === request2.sheet);
+    if (!selected.length) throw new ConversionError("invalid-document", "The exact worksheet name does not exist or the workbook has no visible sheets.");
+    if (selected.length > request2.maxPages) throw new ConversionError("output-too-large", "Selected worksheet count exceeds maxPages; select a sheet or raise the limit.");
+    const result = [];
+    const scale = request2.dpi / 96;
+    for (const { part, info } of selected) {
+      if (!call("dsh_lok_document_part", [document, part])) throw failure();
+      await session.idle();
+      const range = request2.range === void 0 ? dataArea(info) : parseCellRange(request2.range);
+      const rectangle = sheetRangeRectangle(JSON.parse(values(".uno:SheetGeometryData")), range, scale);
+      const page = {
+        x: 0,
+        y: 0,
+        width: rectangle.x + rectangle.width,
+        height: rectangle.y + rectangle.height,
+        part
+      };
+      result.push({
+        page,
+        rectangle,
+        sheet: info.name,
+        range: rangeName(range),
+        rtl: Boolean(info.rtllayout)
+      });
+    }
+    return {
+      count,
+      regions: result
+    };
+  }
+  async function renderImagesWithWasm(request2) {
+    return withWasmSession(request2, async (session) => {
+      const { operation, options } = request2;
+      const { count, regions: sourceRegions } = await regions(session, operation);
+      const scale = operation.dpi / 96;
+      const selected = [];
+      for (const region of sourceRegions) {
+        if (region.sheet === void 0) {
+          selected.push(region);
+          continue;
+        }
+        let rectangles;
+        try {
+          rectangles = splitRasterRectangle(region.rectangle, scale, {
+            maxPixels: operation.maxPixels,
+            maxDimension: operation.maxDimension,
+            maxTiles: operation.maxPages - selected.length
+          });
+        } catch (cause) {
+          throw new ConversionError("output-too-large", String(cause), { cause });
+        }
+        selected.push(...rectangles.map((rectangle) => ({
+          ...region,
+          rectangle
+        })));
+      }
+      for (const { page, rectangle } of selected) {
+        const pixelWidth = Math.ceil(rectangle.width * scale - 1e-9), pixelHeight = Math.ceil(rectangle.height * scale - 1e-9);
+        if (pixelWidth > operation.maxDimension || pixelHeight > operation.maxDimension || pixelWidth * pixelHeight > operation.maxPixels) throw new ConversionError("output-too-large", "Selected page exceeds maxPixels or maxDimension; reduce DPI or raise the image limits.");
+        tileDimensions({
+          pageIndex: 0,
+          ...rectangle,
+          scale
+        }, [page]);
+      }
+      const images = [];
+      let total = 0;
+      for (const region of selected) {
+        if (region.sheet !== void 0) {
+          const call = (name, args) => numericCall(session.module, name, args);
+          if (!call("dsh_lok_document_part", [session.document, region.page.part])) throw engineError(session.module, session.office);
+          const { x: x2, y, width, height } = region.rectangle;
+          const command = `.uno:ViewRowColumnHeaders?x=${Math.round(x2 * 15)}&y=${Math.round(y * 15)}&width=${Math.round(width * 15)}&height=${Math.round(height * 15)}`;
+          if (!call("dsh_lok_document_viewport", [
+            session.document,
+            Math.round(scale * 1440),
+            21600,
+            Math.round(x2 * 15),
+            Math.round(y * 15),
+            Math.round(width * 15),
+            Math.round(height * 15)
+          ])) throw engineError(session.module, session.office);
+          engineString(session.module, "dsh_lok_document_command_values", ["number", "string"], [session.document, command], () => engineError(session.module, session.office));
+          await session.idle();
+        }
+        const tile = renderRegion(session.module, session.document, {
+          pageIndex: 0,
+          ...region.rectangle,
+          scale
+        }, [region.page], () => engineError(session.module, session.office), session.pdf);
+        if (region.rtl) unmirrorRtlTile(tile);
+        const png = encodePng(tile.width, tile.height, tile.rgba);
+        total += png.length;
+        if (total > options.maxOutputBytes) throw new ConversionError("output-too-large", "PNG batch exceeds maxOutputBytes.");
+        const index = images.length + 1;
+        const path = join(operation.outputDir, `page-${String(index).padStart(4, "0")}.png`);
+        writeFileSync(path, png, {
+          flag: "wx",
+          mode: 384
+        });
+        images.push({
+          index,
+          ...region.number === void 0 ? {} : { page: region.number },
+          ...region.sheet === void 0 ? {} : {
+            sheet: region.sheet,
+            range: region.range,
+            rtl: region.rtl
+          },
+          path,
+          width: tile.width,
+          height: tile.height,
+          rectangle: region.rectangle,
+          byteLength: png.length
+        });
+      }
+      return {
+        schemaVersion: 1,
+        backend: "wasm",
+        rasterEngine: session.pdf ? "pdfium" : "libreoffice",
+        source: "saved",
+        inputPath: operation.inputPath,
+        sourceSha256: createHash("sha256").update(request2.bytes).digest("hex"),
+        dpi: operation.dpi,
+        pageCount: count,
+        images,
+        missingFonts: session.missingFonts
+      };
+    });
+  }
+  async function run2() {
+    function requireParentPort(port2) {
+      if (port2 === null) throw new Error("The LibreOffice conversion worker requires a parent port.");
+      return port2;
+    }
+    const port = requireParentPort(parentPort);
+    try {
+      const { bytes: bytes2, extension, operation, options, engine, scratch, fontFaces, fontCache } = workerData;
+      const images = "kind" in operation && operation.kind === "images";
+      if (images && extension === "pdf" && new TextDecoder().decode(bytes2.subarray(0, 5)) !== "%PDF-") throw new ConversionError("invalid-document", "Input does not contain a PDF header.");
+      const document = images && extension === "pdf" ? {
+        families: /* @__PURE__ */ new Map(),
+        codePoints: []
+      } : inspectDocument(bytes2, extension, options);
+      if (engine.backend === "wasm") {
+        if (fontFaces.length === 0 && extension !== "pdf") throw new ConversionError("unavailable", "No usable fonts were found. Install fonts or configure fontDirectories before converting documents.");
+        if (images) {
+          let cacheEntries = [];
+          const result = await renderImagesWithWasm({
+            engine,
+            bytes: bytes2,
+            extension,
+            operation,
+            options,
+            document,
+            faces: fontFaces,
+            ...fontCache === void 0 ? {} : { fontCache },
+            onFontCache: (entries) => {
+              cacheEntries = entries;
+            }
+          });
+          port.postMessage({
+            kind: "font-cache",
+            entries: cacheEntries
+          });
+          port.postMessage({
+            ok: true,
+            images: result
+          });
+        } else {
+          const result = await convertWithWasm({
+            engine,
+            bytes: bytes2,
+            extension,
+            operation,
+            options,
+            document,
+            faces: fontFaces,
+            ...fontCache === void 0 ? {} : { fontCache },
+            onFontCache: (entries) => port.postMessage({
+              kind: "font-cache",
+              entries
+            })
+          });
+          port.postMessage({
+            ok: true,
+            ...result
+          }, [result.output.buffer]);
+        }
+      } else {
+        const directory2 = join(scratch, "fonts");
+        mkdirSync(directory2, { mode: 448 });
+        const fonts = createFontLoader(options, document, (name, data) => {
+          const path = join(directory2, name);
+          writeFileSync(path, data, {
+            flag: "wx",
+            mode: 384
+          });
+          return path;
+        }, fontFaces, fontCache);
+        preloadFonts(fonts, options, document, true);
+        port.postMessage({
+          kind: "font-cache",
+          entries: fonts.cacheEntries
+        });
+        port.postMessage({
+          ok: true,
+          fonts: fonts.files,
+          substitutions: fonts.substitutions,
+          missingFonts: fonts.missingFonts
+        });
+      }
+    } catch (error) {
+      port.postMessage({
+        ok: false,
+        code: failureCode2(error),
+        error: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : void 0
+      });
+    }
+  }
+
+  // office-original:index.js
+  var SANS_CJK_FAMILIES = [
+    "Microsoft YaHei",
+    "Microsoft YaHei UI",
+    "\u5FAE\u8F6F\u96C5\u9ED1",
+    "PingFang SC",
+    "Noto Sans CJK SC",
+    "Noto Sans SC",
+    "Source Han Sans SC",
+    "SimHei",
+    "\u9ED1\u4F53",
+    "Heiti SC",
+    "STHeiti"
+  ];
+  var FONT_FALLBACKS = [
+    ["Calibri", "Carlito"],
+    [
+      "Calibri Light",
+      "Carlito",
+      "Calibri"
+    ],
+    ["Cambria", "Caladea"],
+    [
+      "\u5B8B\u4F53",
+      "SimSun",
+      "NSimSun",
+      "Songti SC",
+      "STSong",
+      "Noto Serif CJK SC",
+      "Noto Serif SC",
+      "Source Han Serif SC"
+    ],
+    [
+      "\u9ED1\u4F53",
+      "SimHei",
+      "Heiti SC",
+      "STHeiti",
+      "Noto Sans CJK SC",
+      "Noto Sans SC",
+      "Source Han Sans SC"
+    ],
+    [
+      "\u5FAE\u8F6F\u96C5\u9ED1",
+      "Microsoft YaHei",
+      "Microsoft YaHei UI",
+      "PingFang SC",
+      "Noto Sans CJK SC",
+      "Noto Sans SC"
+    ],
+    [
+      "\u6977\u4F53",
+      "KaiTi",
+      "Kaiti SC",
+      "STKaiti",
+      "LXGW WenKai"
+    ],
+    [
+      "\u4EFF\u5B8B",
+      "FangSong",
+      "STFangsong",
+      "Songti SC",
+      "Noto Serif CJK SC"
+    ],
+    [
+      "sans-serif",
+      "Arial",
+      "Liberation Sans",
+      "Helvetica",
+      "DejaVu Sans",
+      "Calibri",
+      "Calibri Light",
+      "Carlito",
+      ...SANS_CJK_FAMILIES
+    ],
+    [
+      "serif",
+      "Times New Roman",
+      "Liberation Serif",
+      "Times",
+      "DejaVu Serif",
+      "Cambria",
+      "Caladea",
+      "SimSun",
+      "NSimSun",
+      "\u5B8B\u4F53",
+      "Songti SC",
+      "STSong",
+      "Noto Serif CJK SC",
+      "Noto Serif SC",
+      "Source Han Serif SC"
+    ],
+    [
+      "monospace",
+      "Courier New",
+      "Liberation Mono",
+      "DejaVu Sans Mono",
+      "Menlo",
+      "Monaco",
+      "Courier",
+      "NSimSun",
+      "Noto Sans Mono CJK SC",
+      ...SANS_CJK_FAMILIES
+    ],
+    [
+      "Symbol",
+      "Standard Symbols PS",
+      "Symbola",
+      "Segoe UI Symbol",
+      "Apple Symbols",
+      "FreeSerif",
+      "DejaVu Sans"
+    ]
+  ];
+  var DEFAULT_LIMITS = {
+    timeoutMs: 12e4,
+    maxInputBytes: 67108864,
+    maxOutputBytes: 134217728,
+    maxImageResolution: 144,
+    maxArchiveEntries: 2e4,
+    maxUncompressedBytes: 536870912,
+    maxFontFiles: 2e4,
+    maxFontFileBytes: 268435456,
+    maxLoadedFontBytes: 536870912,
+    maxFontResolutionEntries: 4096,
+    maxFontMetadataCacheBytes: 33554432
+  };
+
+  // scripts/native/office-browser/entry.js
+  globalThis.Buffer = import_buffer2.Buffer;
+  async function main() {
+    const input = await (await fetch("request.json")).json();
+    input.options = { ...DEFAULT_LIMITS, initialFontFamilies: [], fontFallbacks: FONT_FALLBACKS, ...input.options };
+    for (const key of ["loader", "data", "wasm", "metadata"]) input.engine[key] = new URL(input.engine[key], location.href).href;
+    if (input.options.includeOfficeFonts || input.options.fontMetadataCacheDirectory !== false)
+      throw Error("Browser volume requires explicit host font roots and no disk metadata cache.");
+    volume(input.volume, Object.values(input.engine).filter((value) => typeof value === "string" && value.startsWith("http:")));
+    request({ options: input.options, previous: input.previous || [] });
+    await run();
+    const scanned = received().find((value) => "ok" in value);
+    if (!scanned?.ok) {
+      self.postMessage({ ...scanned, adapter: resources() });
+      return;
+    }
+    if (input.scanOnly) {
+      self.postMessage({ ...scanned, adapter: resources() });
+      return;
+    }
+    const bytes2 = new Uint8Array(await (await fetch(input.inputRoute)).arrayBuffer());
+    request({ ...input, bytes: bytes2, fontFaces: scanned.snapshot.faces });
+    await run2();
+    const result = received().find((value) => "ok" in value);
+    self.postMessage({
+      ...result,
+      fontCache: received().filter((value) => value.kind === "font-cache"),
+      files: outputs(),
+      snapshot: scanned.snapshot,
+      adapter: resources()
+    });
+  }
+  main();
+})();

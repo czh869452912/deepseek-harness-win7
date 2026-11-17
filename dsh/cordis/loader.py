@@ -16,6 +16,7 @@ import re
 import sys
 import time
 import uuid
+from collections import ChainMap
 from typing import Any, Callable, Dict, Iterator, List, Optional, Set, Tuple, Union
 import yaml
 
@@ -735,10 +736,17 @@ def evaluate_expr(ctx: Any, expr: str) -> Any:
             return "true" if value else "false"
         return str(value)
 
+    process_environment = os.environ
+    context_get = getattr(ctx, 'get', None)
+    if callable(context_get):
+        isolated_environment = context_get('nativeProcessEnvironment')
+        if isolated_environment is not None:
+            process_environment = ChainMap(isolated_environment)
+
     class _Process:
         platform = "win32" if sys.platform.startswith("win") else sys.platform
         version = "v20.0.0"
-        env = os.environ
+        env = process_environment
 
     class _JSON:
         parse = staticmethod(json.loads)
@@ -751,7 +759,7 @@ def evaluate_expr(ctx: Any, expr: str) -> Any:
         "_throw": _throw,
         "Error": RuntimeError,
         "ctx": ctx,
-        "env": os.environ,
+        "env": process_environment,
         "sys": sys,
         "os": os,
         "platform": platform,

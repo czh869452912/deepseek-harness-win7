@@ -20,6 +20,8 @@ async def test_formal_web_profile_starts_and_closes(tmp_path, monkeypatch, capsy
     server = ctx.get('webServer')
     try:
         assert server._is_running
+        assert ctx.get('productAnalytics') is None
+        assert ctx.get('productTelemetry') is None
         for name in ('sessionController', 'workspaceController', 'sessionReferenceResolver', 'dynamicCordisRunner'):
             assert ctx.get(name) is not None
         assert (ctx.get('sessionTelemetry') is None) is telemetry_disabled

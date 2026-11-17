@@ -17,6 +17,7 @@ class DesktopHostProcess{
       const {python,root,profile,home}=this.options;
       const env=Object.fromEntries(Object.entries(process.env).filter(([key])=>
         key!=='NODE_OPTIONS'&&!/^DSH_DESKTOP_/i.test(key)&&!/^(?:npm|pnpm|corepack)_/i.test(key)));
+      env.DSH_CLIENT_VERSION=require('./package.json').version;
       const child=this.child=spawn(python,['-m','dsh.host.desktop.process','--profile-dir',profile,'--home',home],
         {cwd:root,env,windowsHide:true,stdio:['pipe','pipe','pipe']});
       const timer=setTimeout(()=>{reject(new Error('Desktop Host readiness timed out'));this.terminate();},60000);

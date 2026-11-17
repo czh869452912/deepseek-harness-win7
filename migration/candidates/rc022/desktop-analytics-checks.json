@@ -1,0 +1,61 @@
+{
+  "part": "C8-GR",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "scope": "Desktop product analytics composition and current Connection Peer carrier integration",
+  "source_inputs": {
+    "files": {
+      "packages/client/product-analytics/lib/client.js": {
+        "bytes": 1340,
+        "sha256": "62e8706437381c745a184d04fbb130c3beac62535b764427bfb5cc8c6d170024"
+      },
+      "packages/client/product-analytics/lib/client.js.map": {
+        "bytes": 3670,
+        "sha256": "b71bcd76c8f04694e793607065af77437dca50094ff938bdfd0f6cec7cb86893"
+      },
+      "packages/client/product-analytics/lib/typert.host.js": {
+        "bytes": 24735,
+        "sha256": "9b9419792faca6beda15c9f8a49216071fcb082bfd784e1846b20761e52daacb"
+      },
+      "packages/client/product-analytics/package.json": {
+        "bytes": 2550,
+        "sha256": "fa030e4f05cc7374a730bc70c21b4b048771569989364df6e266815e90352f5a"
+      }
+    },
+    "bundle_block_sha256": "1ea89742c5a4f2ece78ff08df6474de34c8d613a8d37ce1b52e6d1749e898c41"
+  },
+  "verification": {
+    "native": "native8: 9 passed, covering actual Desktop startup/close/reopen, owner Remote HTTP call, real ordinary HTTP event export, live user policy recomposition, scoped app process environment, launcher HMR consumers and existing expression behavior. native10: both release-stamp cases pass with actual policy stream and listener cleanup after adding the stream carrier check.",
+    "web": "Initial run: both formal Web startup/HTML/teardown cases passed and assert Desktop product services are absent; existing stdio checks also passed.",
+    "source": "7 passed in collection.client.spec.ts; copied client bundle/map and generated Host artifact match the pinned build byte-for-byte.",
+    "hmr": "The fixed 25s HMR regression failed during this integration. Profiling and the independent 80c6a58a fix restore 14 checks and 12 paired observations; see hmr-import-cache-checks.json.",
+    "scope_reason": "App-owned profile inputs, loader package resolution, application readiness, current Peer admission, unchanged client contribution and their live Desktop/Web consumers."
+  },
+  "behavior": [
+    "Copies exactly the two guarded Desktop product rows from Source and adds their declared workspace dependencies. Ordinary Web keeps both rows disabled.",
+    "Desktop publishes profileContext, immutable installation package resolution and application readiness. HMR overlays retain socket-free Desktop wiring and allow user policy config edits.",
+    "Electron stamps DSH_CLIENT_VERSION from its running package. In-process Python callers get a scoped app process environment view with the same packaged release, without mutating os.environ or freezing user settings in config overlays.",
+    "Private app Fetch and policy streams pass the Connection-owned owner Peer into current Remote dispatch. Renderer request data does not supply a principal.",
+    "Actual startup creates no product collector request. Accepted event is flushed through productTelemetry/otel on teardown; selected running release is present in event and resource fields."
+  ],
+  "diagnostics": [
+    "Initial activation failures exposed missing installation layout, application readiness and newly required generated client/Host artifacts.",
+    "Missing app overlays caused HMR recomposition to retire the running Desktop composition while an intake awaited identity. Owned task stacks were preserved; retaining overlays resolves the wait.",
+    "Original Desktop shared Fetch/stream calls used the previous Peer-less signatures; both are now adapted and exercised.",
+    "Early timeout and explicitly terminated diagnostic runs remain failures in their original command receipts. They are not acceptance evidence."
+  ],
+  "limitations": [
+    "Whole official client/bundle promotion, existing modelSelection version collision and remaining old composition rows still belong to C9. The overall production pin and accepted_upstream remain unchanged.",
+    "These are actual Python Desktop carrier/Host and pinned client-unit checks, not full Electron/browser interaction, installer, actual Windows 7 or Portable release acceptance.",
+    "The private Desktop stream coverage here is the unidirectional product policy stream; it does not establish all duplex/uplink/event carrier behavior."
+  ],
+  "cleanup": {
+    "bytes_removed": 833594,
+    "links_removed": 4644,
+    "receipts": [
+      "rc022-desktop-analytics-hmr-profile-20261116-01/cleanup.json",
+      "rc022-desktop-analytics-control-20261116-01/retired-profiler-payload.json"
+    ],
+    "removed": "All owned pytest/home/tmp/profile fixtures, isolated profiles/links, two-mode profiler fixtures and consumed binary profiler payload. Timed-out diagnostic processes were explicitly stopped by verified owned command lines; no matching processes remain.",
+    "retained": "Commands, exit statuses, raw failure logs/task stacks, selected observations, input hashes, XML/Source report and profiler text. Shared Source/toolchains/builds remain needed until C9."
+  }
+}

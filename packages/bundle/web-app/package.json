@@ -121,7 +121,9 @@
     "commander": "^15.0.0",
     "open": "^11.0.0",
     "@deepseek-ai/dsh-harness-dev-context": "workspace:*",
-    "@deepseek-ai/dsh-mcp-manager": "workspace:*"
+    "@deepseek-ai/dsh-mcp-manager": "workspace:*",
+    "@deepseek-ai/dsh-client-product-analytics": "workspace:*",
+    "@deepseek-ai/dsh-host-product-telemetry-otel": "workspace:*"
   },
   "peerDependencies": {
     "@deepseek-ai/cordis": "workspace:*",

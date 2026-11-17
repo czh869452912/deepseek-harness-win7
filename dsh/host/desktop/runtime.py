@@ -1,5 +1,7 @@
 """Socket-free desktop composition over the canonical Connection and Gateway."""
 import asyncio
+import copy
+from collections import ChainMap
 import json
 import os
 import sys
@@ -9,10 +11,11 @@ from urllib.parse import unquote, urlsplit
 from dsh.boot.app_boot import boot, load_layered_env
 from dsh.boot.cmdline import provide_cmdline
 from dsh.boot.profile import (init_profile, load_profile_directory, heal_profiles_module_fallback)
-from dsh.boot.profile_boot import INSTALL_ANCHOR, admit_historical_persona_patches
+from dsh.boot.profile_boot import INSTALL_ANCHOR, admit_historical_persona_patches, create_app_ready
 from dsh.boot.profile_lease import ProfileLease
 from dsh.boot.python_plugin_dependencies import PythonDependencyLease
 from dsh.cordis.environment import DSH_LAUNCH_ENVIRONMENT_KEY
+from dsh.cordis.environment import resolve_dsh_home
 from dsh.cordis.json_text import stringify_json
 from dsh.host.browser_compat.plugin import BrowserCompatibilityPlugin
 from dsh.host.frontend_static.frontend_static import MIME_TYPES
@@ -49,6 +52,10 @@ class DesktopRuntime:
         self.ctx, self.release = ctx, release
         self.dist = (Path(dist) if dist else ROOT / 'apps/web/dist').resolve()
         self.api = ctx.get('connection').createSharedFetchHandler('/api')
+        # This carrier is reached only through the app-owned Electron protocol;
+        # it shares Connection's lifetime-owned owner Peer with local browser
+        # requests rather than accepting a principal in renderer input.
+        self.peer = ctx.get('connection').browserPeer
         self.closed = False
 
     async def close(self):
@@ -81,7 +88,8 @@ class DesktopRuntime:
             if not isinstance(payload, dict) or not isinstance(payload.get('endpoint'), str) or 'payload' not in payload:
                 return result(400)
             async def stream():
-                iterator = await self.ctx.get('typertGateway').wireStream.open(payload['endpoint'], payload['payload'], signal)
+                iterator = await self.ctx.get('typertGateway').wireStream.open(
+                    payload['endpoint'], payload['payload'], None, self.peer, signal)
                 try:
                     async for item in iterator:
                         signal.throwIfAborted()
@@ -93,7 +101,7 @@ class DesktopRuntime:
         if url.path.startswith('/api/'):
             if self.api.requestBodyMode(request) != 'streaming':
                 request['body'] = await body_bytes(request.get('body'))
-            return await self.api.fetch(request)
+            return await self.api.fetch(request, self.peer)
         if request['method'] not in ('GET', 'HEAD'):
             return result(405)
         if url.path.startswith('/plugins/'):
@@ -142,7 +150,17 @@ async def run_desktop_host(profile_dir, environment=None, patches=None):
         dispose_proxy = await install_proxy_from_environment(environment, lambda message: sys.stderr.write('dsh desktop: ' + message + '\n'))
         profile = load_profile_directory('dsh desktop', str(directory), INSTALL_ANCHOR)
         await heal_profiles_module_fallback(dict(installAnchor=INSTALL_ANCHOR, profile=profile))
+        from dsh.boot.runtime_resolution import create_runtime_resolution
+        from dsh.boot.plugin_packages import PluginPackages
+        resolution = await create_runtime_resolution(dict(
+            installAnchor=INSTALL_ANCHOR, home=resolve_dsh_home(), profile=profile,
+            installationLayout=str(ROOT)))
+        profile_context = dict(name='desktop', dir=profile.dir, patchPath=profile.patchPath,
+            installAnchor=INSTALL_ANCHOR, cwd=os.getcwd(), home=os.path.abspath(resolve_dsh_home()),
+            startedBundles=[layer.package_name for layer in profile.layers], overlays=[],
+            telemetryDisabledEnv=os.environ.get('DSH_TELEMETRY_DISABLED'))
         rows = [row for layer in profile.layers for row in layer.patches] + profile.patches
+        application_patch_start = len(rows)
         rows += [dict(id=identity, disabled=True) for identity in
                  ('web-startup', 'webserver', 'web-runtime', 'client-hmr', 'open-in-app', 'ui-open-in-app', 'directory-picker')]
         rows += [dict(id='connection', inject=['credentials'], config={}), dict(insert=[
@@ -150,14 +168,27 @@ async def run_desktop_host(profile_dir, environment=None, patches=None):
             dict(id='ui-directory-picker-native', name='@deepseek-ai/dsh-client-ui-directory-picker-native')])]
         if os.environ.get('DSH_TELEMETRY_DISABLED'):
             rows.append(dict(id='session-telemetry-otel', disabled=True))
+        # The Electron launcher stamps its running release. In-process Python
+        # callers receive the same app-owned process view without mutating the
+        # shared interpreter environment or freezing user config in an overlay.
+        process_environment = os.environ
+        if os.environ.get('DSH_CLIENT_VERSION') is None:
+            with (ROOT/'apps/desktop/package.json').open(encoding='utf-8') as stream:
+                client_version = json.load(stream)['version']
+            process_environment = ChainMap(dict(DSH_CLIENT_VERSION=client_version),os.environ)
         rows += patches or []
+        profile_context['overlays'] = copy.deepcopy(rows[application_patch_start:])
         from dsh.boot.session_compatibility import preserve_default_session_encoding
         rows = await asyncio.get_running_loop().run_in_executor(None, preserve_default_session_encoding, rows)
         root_config = directory / 'desktop.cordis.yml'
         root_config.write_text('# Desktop composition root; user overrides belong in cordis.patch.yml.\n[]\n', encoding='utf-8')
+        app_ready = create_app_ready()
         def prepare(host):
             host.provide(DSH_LAUNCH_ENVIRONMENT_KEY, environment)
-            provide_cmdline(host, dict(args=[], exit=lambda code: None))
+            host.provide('profileContext', profile_context)
+            host.provide('nativeProcessEnvironment', process_environment)
+            PluginPackages(host, dict(resolution=resolution))
+            provide_cmdline(host, dict(args=[], exit=lambda code: None, ready=app_ready['service']))
         ctx = await boot('dsh desktop', str(root_config), admit_historical_persona_patches(rows), prepare)
         await ctx.plugin(BrowserCompatibilityPlugin)
         for name in ('connection', 'typertGateway', 'clientModules'):
@@ -165,6 +196,7 @@ async def run_desktop_host(profile_dir, environment=None, patches=None):
                 raise RuntimeError('dsh desktop: composition did not provide ' + name)
         if ctx.get('webServer') is not None:
             raise RuntimeError('dsh desktop: socket carrier unexpectedly mounted')
+        app_ready['commit']()
         return DesktopRuntime(ctx, release)
     except BaseException:
         try:

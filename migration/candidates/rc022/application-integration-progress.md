@@ -371,3 +371,5 @@
 | C8-GQ | Product analytics Remote Host, live policy, cached environment, identity and actual ordinary HTTP consumer | [Product analytics](product-analytics-checks.json) |
 
 | C1 follow-up | HMR module import syntax reuse, reload invalidation and weak ownership | [HMR import cache](hmr-import-cache-checks.json) |
+
+| C8-GR | Desktop product composition, profile/HMR ownership, release stamp and current Peer HTTP/policy stream | [Desktop analytics](desktop-analytics-checks.json) |

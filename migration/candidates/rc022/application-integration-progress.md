@@ -447,3 +447,5 @@
 | C9-AI | Current Workspace missing-directory candidate ownership, attach admission, per-id reindex/replacement and persisted pruning | [Workspace membership](workspace-membership-checks.json) |
 
 | C9-AJ | Pinned market index validation/install targets and multilingual MiniSearch in shipped x64/x86 Win7 worker; 110 paired observations | [Market index](market-index-checks.json) |
+
+| C9-AK | Market configured-source URL rules and shared document cache: TTL/pins, monotonic identity, removal, cancellation and disposal | [Market cache](market-cache-checks.json) |

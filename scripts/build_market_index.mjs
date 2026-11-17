@@ -20,6 +20,8 @@ const result = await build({ entryPoints: ['scripts/native/market-index/entry.ts
   alias: {
     '@market/index': resolve(source, 'packages/util/plugin-market-index/src/index.ts'),
     '@market/search': resolve(source, 'packages/boot/plugin-market/src/search.ts'),
+    '@market/index-url': resolve(source, 'packages/boot/plugin-market/src/index-url.ts'),
+    '@deepseek-ai/dsh-typert-protocol': resolve(source, 'packages/typert/protocol/src/remote-error.ts'),
     '@deepseek-ai/dsh-util-values': resolve(source, 'packages/util/values/src/index.ts'),
   } })
 const digest = bytes => createHash('sha256').update(bytes).digest('hex'), inputs = {}, resources = {}

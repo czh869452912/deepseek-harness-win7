@@ -57,7 +57,9 @@
     ".goose/out/rc022-prep-20261114-01/source/packages/util/values/src/partial-json.ts": "d06228f26e0c670dc18615082b5be283f72a1562220c977c3c5d54edc0b5971e",
     ".goose/out/rc022-prep-20261114-01/source/packages/util/values/src/index.ts": "28a44a8df506ff9481de968135b8b20c240d7771f331bdc9e8cd634d04758858",
     ".goose/out/rc022-prep-20261114-01/source/packages/boot/plugin-market/src/search.ts": "d88db9df16dcfe1ebde1c5924ed348ef009376a50a8dec949e11bc4f5a5a985c",
-    "scripts/native/market-index/entry.ts": "d6f48bc62e3045cbb2b8f5e1fbd56522d6e4259126aebd41fd308971d39564b9",
+    ".goose/out/rc022-prep-20261114-01/source/packages/typert/protocol/src/remote-error.ts": "bb902ec537e1dfbc74885e77a01192e6532b50a959a5bc4cc55c1fbf52e0a368",
+    ".goose/out/rc022-prep-20261114-01/source/packages/boot/plugin-market/src/index-url.ts": "dd174d5e31fead47e5db308b61b8b0a784c60fb6bace9dfd0c602952cad951b7",
+    "scripts/native/market-index/entry.ts": "5d5dbf912b46e9407a4e4ec8f60671c8a07a64663521da550b3167dd1c3bdb28",
     "scripts/native/market-index/driver.js": "d9d03992a563dcc738a06b81307deb55a71426e3ac844b90c92484a850a4f26f",
     ".goose/out/rc022-prep-20261114-01/source/LICENSE": "ebb4f09972aee8608be255debaf78451a68e95c290f55c240dec2ecfa16ea6be",
     "dsh/host/browser_compat/url.js": "d4ee03603a1a56cc92284568fa75f141b59d9edb41775549626bb80c82f64300",
@@ -70,10 +72,10 @@
     "scripts/oracles/node_modules/esbuild/package.json": "9d0bc453f4e791553c4cc2298ba023b409241fd9801e494741666eb0f6051490",
     "scripts/oracles/node_modules/esbuild/lib/main.js": "61ec0ba144ff93f4bf0e96ad6fab6f430ede0aa13e27ace8063ed63ba416b3cd",
     "scripts/oracles/node_modules/@esbuild/win32-x64/esbuild.exe": "c7bee37877d0aa6a046e52783fa0a2cf1a9ce5579d68bb3083bda99d4bff18ef",
-    "scripts/build_market_index.mjs": "ad1bc7b0e9db6b17dc24ef26dbb3ad9f3e8efaa2d816f7980935ed63d8987043"
+    "scripts/build_market_index.mjs": "7c3bb8f2eecd5ad27e92932b801697e8e54f68638eae60f812af7aed11e72bc0"
   },
   "resources": {
-    "market.js": "cdad9da60b08f5d5d75de23977597db089a31869bbe78bfb2626befd0eb38c24",
+    "market.js": "1928b8dff05290c9bffff6da2cc7add76b62596ef6edb91c7091b1aaa7539084",
     "driver.js": "d9d03992a563dcc738a06b81307deb55a71426e3ac844b90c92484a850a4f26f",
     "SOURCE-LICENSE": "ebb4f09972aee8608be255debaf78451a68e95c290f55c240dec2ecfa16ea6be",
     "url.js": "d4ee03603a1a56cc92284568fa75f141b59d9edb41775549626bb80c82f64300",

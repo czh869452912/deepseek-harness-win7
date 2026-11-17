@@ -4863,9 +4863,53 @@ var __marketIndex = (() => {
     }
   };
 
+  // .goose/out/rc022-prep-20261114-01/source/packages/typert/protocol/src/remote-error.ts
+  var RemoteError = class extends Error {
+    /**
+     * @param code - stable failure code declared in {@link RemoteErrorDetailsMap}.
+     * @param message - human diagnostic carried across the wire.
+     * @param details - structured payload typed by the code.
+     * @param options - standard Error options (`cause` survives in-process only).
+     */
+    constructor(code, message, details, options) {
+      super(message, options);
+      this.code = code;
+      this.details = details;
+      this.name = "RemoteError";
+    }
+    code;
+    details;
+    /** Structural marker: cross-realm/bundle identification never uses instanceof. */
+    isDSHRemoteError = true;
+  };
+
+  // .goose/out/rc022-prep-20261114-01/source/packages/boot/plugin-market/src/index-url.ts
+  function normalizeIndexUrl(text) {
+    let url;
+    try {
+      url = new URL(text.trim());
+    } catch {
+      throw new RemoteError("plugin-market/invalid-index-url", `Not an absolute URL: ${text}`, { url: text, reason: "not-absolute" });
+    }
+    if (url.protocol !== "https:" && url.protocol !== "http:") {
+      throw new RemoteError("plugin-market/invalid-index-url", `Index URLs use http or https: ${text}`, { url: text, reason: "scheme" });
+    }
+    if (url.username !== "" || url.password !== "" || url.href.includes("#")) {
+      throw new RemoteError("plugin-market/invalid-index-url", `Index URLs carry no credentials or fragment: ${text}`, { url: text, reason: "credentials-or-fragment" });
+    }
+    return url.href;
+  }
+
   // scripts/native/market-index/entry.ts
   async function observe(operation) {
     try {
+      if (operation.kind === "url") {
+        return {
+          ok: true,
+          canonical: URL.canParse(operation.text) ? new URL(operation.text).href : operation.text,
+          value: normalizeIndexUrl(operation.text)
+        };
+      }
       const index = parseMarketIndex(operation.value, operation.url);
       if (operation.kind === "search") {
         const engine = new MarketSearch(index);
@@ -4883,6 +4927,8 @@ var __marketIndex = (() => {
       return { ok: false, error: {
         name: error.name,
         message: error.message,
+        ...error.code === void 0 ? {} : { code: error.code, details: error.details },
+        ...operation.kind !== "url" ? {} : { canonical: URL.canParse(operation.text) ? new URL(operation.text).href : operation.text },
         ...error.path === void 0 ? {} : { path: error.path, reason: error.reason }
       } };
     }

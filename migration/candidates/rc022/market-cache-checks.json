@@ -1,0 +1,39 @@
+{
+  "part": "C9-AK",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "scope": "Market document cache ownership, configured-source URL admission and replacement",
+  "implementation": [
+    "Carries unchanged normalizeIndexUrl and shared RemoteError implementation in the private worker; canonical key comparison retains configured invalid spellings while detecting equivalent new duplicates.",
+    "MarketDocumentCache uses an injected validated-index fetch and live URL getter. Concurrent readers share a task; caller cancellation withdraws only its wait. Cached titles/errors, strict TTL boundary, pinned expired pages and monotonic per-URL fetch identifiers match Source.",
+    "Volatile reconciliation drops removed/unusable cache and error facts. Finishing removed fetches do not restore facts. Disposal aborts the provider lifetime and waits for owned fetch settlement."
+  ],
+  "verification": {
+    "paired": {
+      "run": "rc022-market-cache-pair-20261117-01",
+      "observations": 34,
+      "differences": 0,
+      "scope": "Actual unchanged Source PluginMarket private document cache, URL normalizer and settings replacement with controlled validated-index fetch collaborator"
+    },
+    "index_regression": {
+      "run": "rc022-market-cache-index-pair-20261117-01",
+      "observations": 110,
+      "differences": 0
+    },
+    "native": {
+      "run": "rc022-market-cache-native-20261117-01",
+      "passed": 54,
+      "scope": "Cache retry/replacement/pins/disposal/cancellation/refusal, index carrier x86/x64/integrity, tool and worker consumers"
+    }
+  },
+  "cleanup": {
+    "removed": "Native synthetic fixtures/home/tmp, reconstructible paired input, byte-verified duplicate carrier build",
+    "bytes": 22206464,
+    "owned_processes_after": [],
+    "retained": "Paired Source/Native observations and input hashes, commands/log/XML; shared Source/toolchain retained for C1-C9 acceptance"
+  },
+  "limitations": [
+    "This layer receives already validated indexes from a collaborator. Actual HTTP/body decoding/size/deadline, Gateway queries, profile-specific annotation, details and application market journey remain pending.",
+    "No public cache reload API or production profile binding is introduced by this internal cache layer.",
+    "Targeted completion only; unified release qualification and production baseline promotion remain pending."
+  ]
+}

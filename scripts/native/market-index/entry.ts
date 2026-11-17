@@ -1,9 +1,14 @@
 /** Private carrier: validation and search execute unchanged pinned Source code. */
 import { parseMarketIndex, marketInstallTarget } from '@market/index'
 import { MarketSearch } from '@market/search'
+import { normalizeIndexUrl } from '@market/index-url'
 
 export async function observe(operation: any): Promise<any> {
   try {
+    if (operation.kind === 'url') {
+      return { ok: true, canonical: URL.canParse(operation.text) ? new URL(operation.text).href : operation.text,
+        value: normalizeIndexUrl(operation.text) }
+    }
     const index = parseMarketIndex(operation.value, operation.url)
     if (operation.kind === 'search') {
       const engine = new MarketSearch(index)
@@ -19,6 +24,8 @@ export async function observe(operation: any): Promise<any> {
     })) }
   } catch (error: any) {
     return { ok: false, error: { name: error.name, message: error.message,
+      ...error.code === undefined ? {} : { code: error.code, details: error.details },
+      ...operation.kind !== 'url' ? {} : { canonical: URL.canParse(operation.text) ? new URL(operation.text).href : operation.text },
       ...error.path === undefined ? {} : { path: error.path, reason: error.reason } } }
   }
 }

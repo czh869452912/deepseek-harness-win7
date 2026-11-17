@@ -1,7 +1,11 @@
 """Generation-scoped, lossless DeepSeek Session-log request contribution."""
 import weakref
+import math
 
 from dsh.cordis.plugin import Plugin
+from dsh.cordis.service import Service
+from dsh.cordis.schema import Schema
+from dsh.cordis.json_text import stringify_json
 from dsh.cordis.utils import js_to_string
 from dsh.core.session.current import safe
 from dsh.core.session.current_vocabulary import KNOWN_SESSION_EVENT_TYPES
@@ -11,6 +15,14 @@ from dsh.core.session.json import UNDEFINED
 
 ACCEPTED_EVENT_TYPE = 'session-log-deepseek/delivery-accepted'
 _FOLDS = weakref.WeakKeyDictionary()
+_BLOCKED_WARNINGS = weakref.WeakKeyDictionary()
+
+
+def json_bytes(value):
+    try:
+        return len(stringify_json(value).encode('utf-8'))
+    except (TypeError, ValueError, RecursionError):
+        return float('inf')
 
 
 def accepted_through(session):
@@ -62,7 +74,7 @@ def wire_event(event):
     result = {key: event[key] for key in ('type', 'seq', 'time', 'data')}
     if 'ignorable' in event:
         result['ignorable'] = event['ignorable']
-    if kind in ('system/message', 'user/message', 'assistant/message', 'tool/result'):
+    if kind in ('developer/message', 'system/message', 'user/message', 'assistant/message', 'tool/result'):
         op = event['surfaceOp']
         result['surfaceOp'] = op if op == 'append' else {key: op[key] for key in ('op', 'startSeq', 'endSeq')}
         if kind != 'assistant/message' and 'sourceEventSeqs' in event:
@@ -74,27 +86,76 @@ def wire_event(event):
     return result
 
 
-class CurrentSessionLogDeepSeekPlugin(Plugin):
-    id = 'session-log-deepseek'
-    inject = ['deepseekLlmApiExtensions', 'sessions']
-
-    def apply(self, ctx):
-        if self.config.get('enabled') is not True:
-            return
+class CurrentSessionLogDeepSeekService(Service):
+    def __init__(self, ctx, config):
+        super().__init__(ctx, 'sessionLogDeepSeek')
+        self.config = config
+        self.exclusions = []
+        max_bytes = config['maxBytes']
         def prepare(request):
+            enabled = self.config['enabled']
+            if not (enabled.get() if hasattr(enabled, 'get') else enabled):
+                return None
             identity = request.get('sessionId')
             session = ctx.get('sessions').get(identity) if identity is not None else None
             if session is None:
                 return None
+            upload = dict(sessionId=session.id)
+            if 'purpose' in request:
+                upload['purpose'] = request['purpose']
+            for entry in list(self.exclusions):
+                if entry['exclude'](upload):
+                    return None
             after = accepted_through(session)
-            events = session.snapshotEvents()
+            pending = session.snapshotEvents(after + 1)
+            envelope = dict(version=1, sessionFormatVersion=session.header.version,
+                            session=wire_header(session), afterSeq=after)
+            size = json_bytes(dict(envelope, throughSeq=0, events=[])) - 1
+            events = []
+            candidate_bytes = 0
+            for event in pending:
+                wire = wire_event(event)
+                next_size = size + (1 if events else 0) + json_bytes(wire)
+                candidate_bytes = next_size + len(str(event['seq']))
+                if candidate_bytes > max_bytes:
+                    break
+                size = next_size
+                events.append(wire)
             if not events:
+                first = pending[0] if pending else None
+                if first is not None and _BLOCKED_WARNINGS.get(session) != first['seq']:
+                    _BLOCKED_WARNINGS[session] = first['seq']
+                    seq = str(first['seq'])
+                    if math.isfinite(candidate_bytes):
+                        warning = ('session-log-deepseek: event %s of session "%s" needs a %s-byte'
+                                   ' dsh_session_log field, above maxBytes %s; this session\'s upload stays at event %s'
+                                   ' until maxBytes admits it') % (seq, session.id, candidate_bytes, max_bytes, seq)
+                    else:
+                        warning = ('session-log-deepseek: event %s of session "%s" is too large to serialize into a dsh_session_log field;'
+                                   ' this session\'s upload stays at event %s') % (seq, session.id, seq)
+                    ctx.logger.warn(warning)
                 return None
-            through = events[-1]['seq']
-            value = dict(version=1, sessionFormatVersion=session.header.version, session=wire_header(session),
-                         afterSeq=after, throughSeq=through, events=[wire_event(e) for e in session.snapshotEvents(after + 1)])
+            through = pending[len(events) - 1]['seq']
+            value = dict(envelope, throughSeq=through, events=events)
             def accept():
                 session.append(ACCEPTED_EVENT_TYPE, dict(sessionId=session.id,
                     sessionFormatVersion=session.header.version, throughSeq=through))
             return dict(value=value, accept=accept)
         ctx.get('deepseekLlmApiExtensions').register('dsh_session_log', dict(prepare=prepare))
+
+    def registerExclusion(self, exclude):
+        entry = dict(exclude=exclude)
+        def setup():
+            self.exclusions.append(entry)
+            return lambda: self.exclusions.remove(entry)
+        return self.ctx.effect(setup, 'sessionLogDeepSeek.registerExclusion()')
+
+
+class CurrentSessionLogDeepSeekPlugin(Plugin):
+    id = 'session-log-deepseek'
+    inject = ['deepseekLlmApiExtensions', 'sessions']
+    Config = Schema.object(dict(enabled=Schema.boolean().default(True).volatile(),
+                                maxBytes=Schema.number().step(1).min(1).default(8 * 1024 * 1024)))
+
+    def apply(self, ctx):
+        CurrentSessionLogDeepSeekService(ctx, self.config)

@@ -46,7 +46,7 @@ def run(side, scenario, options, destination):
             dsh=dict(profile=dict(bundles=['@deepseek-ai/dsh-sdk-minimal']))), stream, indent=2)
         stream.write('\n')
     if side == 'source':
-        (profile / 'cordis.patch.yml').write_text(SOURCE_MINIMAL_EDITOR_PATCH, encoding='utf-8')
+        (profile / 'cordis.patch.yml').write_text(getattr(options, 'source_patch', SOURCE_MINIMAL_EDITOR_PATCH), encoding='utf-8')
     requests, observed, errors, fixture_errors = [], [], [], []
     released = threading.Event()
     stopping = threading.Event()
@@ -66,6 +66,10 @@ def run(side, scenario, options, destination):
             else:
                 chunk = dict(choices=[dict(delta=dict(content='SDK_PENDING' if scenario == 'cancel' else 'SDK_PARTIAL_ERROR'), finish_reason=None)])
             payload = ('data: ' + json.dumps(chunk, separators=(',', ':')) + '\n\n' + ('data: [DONE]\n\n' if scenario == 'normal' else '')).encode('utf-8')
+            if getattr(options, 'protocol', 'completions') == 'messages':
+                from scripts.model_http_fixture import model_sse
+                payload = model_sse(self.path, chunk['choices'][0]['delta'],
+                                    chunk['choices'][0]['finish_reason'], complete=scenario == 'normal')
             self.send_response(200)
             self.send_header('Content-Type', 'text/event-stream')
             if scenario != 'cancel':
@@ -97,7 +101,7 @@ def run(side, scenario, options, destination):
         DEEPSEEK_BASE_URL='http://127.0.0.1:' + str(server.server_port), DSH_SDK_NATIVE_ROOT=str(options.native_root),
         DSH_SDK_SOURCE_ROOT=str(options.source_root), DSH_SDK_RUNTIME_OUTPUT=str(native_receipt),
         DSH_SDK_LIVE_BARRIER=str(phase / 'live-barrier.json'),
-        TSX_TSCONFIG_PATH=str(options.source_root / 'tsconfig.json'))
+        TSX_TSCONFIG_PATH=str(options.source_root / getattr(options, 'tsconfig', 'tsconfig.json')))
     observers = Path(__file__).resolve().parent
     if side == 'source':
         command = [shutil.which('node'), '--import', (options.source_root / 'node_modules/tsx/dist/esm/index.mjs').as_uri(),

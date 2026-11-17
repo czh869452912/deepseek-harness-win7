@@ -1,0 +1,27 @@
+{
+  "contract": "C9-CF",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "status": "targeted passed",
+  "changes": [
+    "Mount current DeepSeek Session-log uploads by default; resolve volatile enablement for each request, admit the longest pending prefix within the UTF-8 field limit, and warn once per blocked event.",
+    "Expose the Session-log service and reversible caller-owned upload exclusions; preserve developer/message surface metadata.",
+    "Add an actual current Source/Python SDK process observer using Messages, the declared Minimal editor overlay and Node 24.9.0. Preserve complete requests, stdio frames, durable events and transient cancellation barrier; normalize only interval-checked clocks, consistently mapped UUIDs and the shared workspace path.",
+    "Freeze tracked Source/native inputs and prepared Source libraries before/after capture, validate the actual Python 3.8.10 import closure, and share the loopback model fixture between process tests and development observers."
+  ],
+  "verification": [
+    {"run": "rc022-sdk-current-paired-20261118-05", "scenarios": ["normal", "error", "cancel"], "result": "passed", "scope": "Actual Source/Python process pairs, full request/frame/log equality, real persistent PowerShell roundtrip and shutdown; sealed inputs unchanged and actual imported Python bytes matched."},
+    {"run": "rc022-session-log-upload-paired-20261118-08", "observations": 12, "result": "passed", "scope": "Mounted default/disabled/live config, purpose and throwing exclusions, byte boundary, blocked-warning deduplication, prefix acceptance/continuation, provider unload and exclusion caller disposal."},
+    {"run": "rc022-session-log-upload-native-20261118-02", "passed": 49, "seconds": 38.53, "scope": "New upload regression, existing upload/watermark contracts, actual SDK process journeys and actual shipped Web/PTC/profile consumers."}
+  ],
+  "diagnostics": "Original missing-upload process comparison and initial observer/test fixture failures remain in their original directories. The 48 direct-consumer tests passed in the first regression; its new prefix expectation was corrected to a same-size UTF-8 fixture and the final 49-case selection passed.",
+  "cleanup": {
+    "removed_directories": 28,
+    "bytes_removed": 625588,
+    "records": [
+      ".goose/out/rc022-sdk-current-control-20261118-01/cleanup.json",
+      ".goose/out/rc022-source-preparation-control-20261118-01/cleanup-rc022-session-log-upload-native-20261118-01.json"
+    ],
+    "retained": "Commands/logs/XML, process captures, sealed input identities, actual durable Session bytes with size/SHA and paired facts. Completed owned SDK homes, pytest workspaces/tmp/homes removed. Shared Source/toolchains and approved offline inputs remain active for unified qualification."
+  },
+  "limitations": "Targeted current SDK and upload contracts only; unified current gate and actual extracted candidate qualification remain pending. No new Windows 7 system acceptance."
+}

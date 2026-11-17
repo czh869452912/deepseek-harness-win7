@@ -2,6 +2,8 @@
 
 固定目标：`38a6a5c965aa99ab525161efb7cc5cf1fe62fced`。本页记录定向检查；生产 pin 已在 C9-CC 协调切换，`accepted_upstream` 仍为 null，完整资格待后续验证。
 
+C9-CF：当前 SDK 的实际 Source/Python 正常工具往返、错误和取消进程配对通过；补齐默认会话日志上传、UTF-8 限额与调用者所有的排除规则。12 组独立 Source 对照及 49 项直接消费者检查通过，已清理本轮失效工作区。[精确记录](sdk-process-upload-checks.json)。
+
 | 单元 | 已验证边界 | 记录 |
 | --- | --- | --- |
 | C8-A | 带类型的上传回执、已存图片准入、混合图片预算和取消/卸载 | [上传](upload-checks.json) |

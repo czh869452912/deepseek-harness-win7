@@ -1,6 +1,7 @@
 """rc.3 bindings staged for coordinated bundle, protocol and pin promotion."""
 
 CURRENT_HARNESS_PLUGIN_CLASSES = {
+    '@deepseek-ai/dsh-skill-office': 'dsh.skill.office_current:CurrentOfficeSkills',
     '@deepseek-ai/dsh-tool-workspace-dependencies': 'dsh.host.workspace_dependencies_current:CurrentWorkspaceDependencies',
     '@deepseek-ai/dsh-client-product-analytics': 'dsh.client.product_analytics_current:CurrentProductAnalytics',
     '@deepseek-ai/dsh-host-product-telemetry-otel': 'dsh.host.product_telemetry_current:CurrentProductTelemetry',

@@ -379,3 +379,5 @@
 | C8-GT | Primary runtime filesystem validation, transactional install/recovery and linked-directory protection | [Workspace files](workspace-files-checks.json) |
 
 | C8-GU | Canonical workspace dependencies tool, shared preparation/retry and disposal ownership | [Workspace tool](workspace-tool-checks.json) |
+
+| C8-GV | Bundled Office skills, environment guidance, lazy reads/failure recovery and owned disposal | [Office skills](office-skills-checks.json) |

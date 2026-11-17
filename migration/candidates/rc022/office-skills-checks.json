@@ -1,0 +1,46 @@
+{
+  "part": "C8-GV",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "scope": "Canonical bundled Office skill provider and byte-preserved resources",
+  "paired": {
+    "run": "rc022-office-skills-paired3-20261117-01",
+    "observations": 17,
+    "differences": 0,
+    "comparison": "Actual Cordis skill registries/providers: all four original skill descriptions and bodies, environment sections, malformed/missing frontmatter, YAML core booleans/date text/merge/duplicates, warning counts, recovery through remount and disposal."
+  },
+  "verification": {
+    "native": "6 passed: real 17-scenario corpus, transient read retry and exact error identity, pre-abort, cached-body invalidation and in-flight abort/disposal read drain.",
+    "source": "16 passed original skill-office.spec.ts cases.",
+    "scope_reason": "New provider and direct skill-registry/resource consumers; Office engine execution is outside this batch."
+  },
+  "behavior": [
+    "Registers four bundled dsh-office candidates at Source rank 600 and reads current metadata/body on demand. Resources are copied from the fixed Source unchanged.",
+    "Adds the selected Python environment instruction to the three authoring skills only. Missing/invalid resources produce complete catalogs with those candidates omitted; transient errors keep discovery incomplete and remain retryable.",
+    "Reports each distinct per-skill failure once until a successful read. Failed persistent loads invalidate discovery; aborts do not become resource warnings, and plugin disposal drains its owned filesystem reads."
+  ],
+  "source_inputs": {
+    "packages/skill/skill-office/src/index.ts": "74831a58badb77ce438d7e89ad6586c595d48ae37a4af195653ff41738675043",
+    "packages/skill/skill-office/package.json": "8d80db1f1a136edabc6aae1fd5076d81438ff7b05ad9aa8d9aab92e1b3cb371a",
+    "packages/skill/skill-office/assets/office/SKILL.md": "62489e93485b86332380677cf889c67188fe9d0e6f48ed40b5811e7981f8f2f3",
+    "packages/skill/skill-office/assets/office-docx/SKILL.md": "4a057d4b0f3f5c960f71b153dd6162192259fdb69d30e77327447e1382d14936",
+    "packages/skill/skill-office/assets/office-pptx/SKILL.md": "060e1d44b8d5a5952351d690cb2d15bdb211af2c0d2de65f0751d7030631649d",
+    "packages/skill/skill-office/assets/office-xlsx/SKILL.md": "7b5a828e5fb028d375e88eac4ce371e1a59154528113e57ff6e98ece8dbf69d1"
+  },
+  "diagnostics": {
+    "excluded": [
+      "rc022-office-skills-paired-20261117-01",
+      "rc022-office-skills-paired2-20261117-01"
+    ],
+    "reason": "Initial oracle called a non-public registry method; corrected to public plugin remount. Second paired run exposed YAML timestamp resolution; date text is now retained like Source."
+  },
+  "limitations": [
+    "Office skill composition and runtime selection follow next; no real Office engine, actual Win7, browser or Portable release acceptance is claimed.",
+    "YAML diagnostics use the Native parser wording; warning count/behavior is compared. Arbitrary custom tag/alias expansion edge cases are not fully qualified."
+  ],
+  "cleanup": {
+    "bytes_removed": 2932248,
+    "receipt": "rc022-office-skills-source-20261117-01/cleanup.json",
+    "removed": "All owned paired resource copies and pytest/tmp/home directories. No matching processes remain.",
+    "retained": "Paired raw results, failed oracle/error observations, Source result/XML/logs, command and input hashes. Shared Source/toolchains remain required through C9."
+  }
+}

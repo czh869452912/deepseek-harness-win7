@@ -1,0 +1,35 @@
+{
+  "part": "C9-R",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "scope": "Current Host timer, acknowledged inbox delivery and reserved target recovery",
+  "paired": {
+    "run": "rc022-schedule-runtime-paired2-20261117-01",
+    "observations": 26,
+    "differences": 0,
+    "method": "Actual fixed ScheduleRuntime and Native over controlled clocks, target Agents and transaction callbacks. Exact task state, framing/receipt/commit traces, execution slots, timer delays and refusal counts; generated identities normalized bijectively."
+  },
+  "verification": {
+    "native": "18 passed: new runtime observations, public drive coalescing/drain/admission/cancellation and direct current task/update consumers.",
+    "source": "67 original runtime, recovery and target-recovery tests passed; their broader service/application portions remain Source-only evidence."
+  },
+  "behavior": [
+    "Uses one Host timer and serial transaction callback, coalesces recomputations and clamps long timer delays. Failed due members do not automatically spin; successfully committed batch members retain their own next obligation.",
+    "Recurring tasks with the same existing-session target share one message. Session flush must acknowledge before receipts advance; partial commit failure releases only uncommitted execution slots.",
+    "Reused destinations hold task slots until whole-Agent idle, including restored queued inbox messages. Occurrence- or acknowledgement-based delivery floors prevent overlapping timed/manual delivery without accumulating avoidable latency drift.",
+    "New-per-delivery targets persist a reservation before Session creation and reuse it on failed-delivery retry. Create-once targets become existing-session targets only on acknowledged delivery. Archive checks precede activation, Workspace/title failures are contained, and manual delivery preserves the scheduled occurrence and status.",
+    "Teardown stops admission/timers and drains the accepted drive transaction before its storage owner may close. Context services and the schedule/resolve-agent waterfall own activation and creation."
+  ],
+  "diagnostics": [
+    "The initial observer referenced a nonexistent Source module filename; corrected to the discovered remote-error.ts. Original failed import/report remains retained."
+  ],
+  "cleanup": {
+    "bytes_removed": 123282,
+    "owned_processes_after": [],
+    "retained": "Exact paired tasks/traces, input hashes, Source results, Native logs/XML/observations and cleanup receipt. Owned synthetic short workspaces and isolated homes removed."
+  },
+  "limitations": [
+    "Controlled Agent/provider observations do not establish full live Agent, persistence-controller, Remote/tool or official application composition acceptance; service integration is next.",
+    "All possible async interleavings, synchronous RRULE worker responsiveness and extended-year receipt timestamp edge cases are not certified by this finite scope.",
+    "No complete regression, Portable/browser/Win7 acceptance or upstream promotion."
+  ]
+}

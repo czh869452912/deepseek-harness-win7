@@ -1,0 +1,63 @@
+{
+  "part": "C9-AT",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "scope": "Unchanged optional Market Discover bundle through canonical profile, strict generated RPCs and authenticated adjacent image HTTP",
+  "verification": {
+    "run": "rc022-application-candidate49-20261117-01",
+    "browser": "Chromium 108.0.5359.0; 1440x900 desktop and 390x844 mobile; Browser plugin not available, regular Playwright fallback",
+    "seconds": 82.813,
+    "passed": true,
+    "steps": [
+      "optional-original-discover-opened",
+      "source-saved-and-listing-loaded",
+      "original-search-filtered",
+      "original-detail-and-image-rendered",
+      "saved-source-survived-reload",
+      "mobile-detail-rendered"
+    ],
+    "errors": [],
+    "strict_descriptors": {
+      "pluginMarket/listIndexes": true,
+      "pluginMarket/search": true,
+      "pluginMarket/setIndexes": true,
+      "pluginMarket/readEntryDetail": true
+    },
+    "client_graph": {
+      "release": {
+        "version": "0.2.2-rc.3"
+      },
+      "entries": 76,
+      "batches": 3
+    },
+    "screenshot_review": "Desktop detail and mobile detail visually inspected; no overlap or clipping in the verified detail content."
+  },
+  "diagnostics": {
+    "failed_runs": "candidate39-candidate48; raw failures retained",
+    "findings": [
+      "Use a canonical profile bundle entry for editable Settings ownership; command-line overlay protection is expected behavior.",
+      "Fixture publishTimestamp is seconds; search input uses role searchbox.",
+      "20-second listing deadline failed under synchronous package metadata/inventory work; candidate48 cProfile measured 23.612s in read_plugin_meta across 1310 calls (profiling overhead included). No evidence of a cache deadlock; direct Host search succeeded.",
+      "Changed listing wait budget to 60s and subprocess deadline to 150s while retaining all reload postconditions. Performance remains pending; this is functional evidence."
+    ]
+  },
+  "inputs": {
+    ".goose/out/rc022-prep-20261114-01/source/packages/experimental/plugin-market-bundle/package.json": "eabb12269034586c3b2ead0a3e4e8d29231ea79baaac26bd31506ea765adcc03",
+    ".goose/out/rc022-prep-20261114-01/source/packages/experimental/plugin-market-bundle/cordis.patch.yml": "bf99572c619c1fdcdb8251273b715eaba6a990c380d0ab5385fca6566ddb7f7e",
+    ".goose/out/rc022-prep-20261114-01/source/packages/client/ui-plugin-market/package.json": "27fe66276a7ed9b521f86a48f58c0a239af27120c15cfb124cb7c8dbee5361cb",
+    "scripts/rc022_application_probe.py": "e6d6d7fb6ec7c30fdd936163391e5e9d46d0cba631a78e785704f2dc6c2fbf1c",
+    "scripts/rc022_market_browser_probe.py": "b0617d890764d58e8627a01ef724680fe50e9f8d47eec8aafb1e192d381080d5",
+    "scripts/oracles/rc022_market_browser.mjs": "86cb751b30694af33d43c192e3ffd66704b785636241f0c231ff9143c04cc789"
+  },
+  "cleanup": {
+    "bytes": 248256,
+    "removed": "Owned candidate39-candidate49 homes, synthetic pytest workspaces and tmp directories; temporary authenticated browser config removed in finally.",
+    "owned_processes_after": [],
+    "retained": "Raw failed and successful observations, screenshots, commands/logs and candidate48 CPU profile. Shared Source/toolchain remain owned by C1-C9 acceptance."
+  },
+  "limitations": [
+    "Controlled localhost index and bounded CDN file collaborator do not establish external network qualification.",
+    "Page reload is verified; cold Host process restart remains pending.",
+    "Repeated synchronous package resource reads and per-query search index construction remain performance work.",
+    "No production pin/binding promotion or full release acceptance is claimed."
+  ]
+}

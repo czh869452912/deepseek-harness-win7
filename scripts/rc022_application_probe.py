@@ -21,6 +21,7 @@ PLATFORM_PATCHES=[]
 EXECUTE_PTC=False
 BEFORE_SESSIONS=None
 AFTER_SESSIONS=None
+PREPARE_HOME=None
 BINDINGS={
  '@deepseek-ai/dsh-host-plugin-inventory':'dsh.host.plugin_inventory.current:CurrentPluginInventory',
  '@deepseek-ai/dsh-typert-loader':'dsh.typert.loader_current:CurrentTypertLoader',
@@ -32,6 +33,7 @@ BINDINGS={
  '@deepseek-ai/dsh-client-locale':'dsh.client.appearance_current:CurrentLocaleHost',
  '@deepseek-ai/dsh-agent-default-model':'dsh.core.default_model_current:CurrentAgentDefaultModelConfig',
  '@deepseek-ai/dsh-plugin-market/tools':'dsh.boot.plugin_market_tools:CurrentPluginMarketTools',
+ '@deepseek-ai/dsh-plugin-market':'dsh.boot.plugin_market_022:CurrentPluginMarket',
  '@deepseek-ai/dsh-tool-schedule':'dsh.schedule.tools_current:CurrentToolSchedule',
  '@deepseek-ai/dsh-schedule':'dsh.schedule.service_current:CurrentScheduleService',
  '@deepseek-ai/dsh-client-modules':'dsh.host.client_modules.current:CurrentClientModulesPlugin',
@@ -49,6 +51,8 @@ async def observe(source,output):
     from dsh.cordis.environment import LaunchEnvironmentSnapshot
     result={};started=time.monotonic();app=None
     home=output/'home';home.mkdir()
+    if PREPARE_HOME is not None:
+        PREPARE_HOME(home)
     loop=asyncio.get_running_loop();diagnostic=None
     def dump():
         nonlocal diagnostic
@@ -121,6 +125,7 @@ def main():
         source/'packages/bundle/web-app/package.json',source/'packages/bundle/web-app/cordis.patch.yml',
         source/'packages/client/modules/src/index.ts',source/'packages/client/modules/src/assets.ts',
         Path(__file__).resolve(),Path(sys.argv[0]).resolve(),ROOT/'dsh/boot/plugin_registry_current.py',
+        *[ROOT/'dsh/boot'/name for name in ['plugin_market_022.py','market_detail_022.py','market_repository_cache_022.py','market_git_022.py']],
         ROOT/'dsh/cordis/loader.py',ROOT/'dsh/api/session_agents_current.py',ROOT/'dsh/client/appearance_current.py',ROOT/'dsh/boot/plugin_market_tools.py',ROOT/'dsh/boot/plugin_market_tools.json',
         ROOT/'dsh/api/workspace_current.py',ROOT/'dsh/api/workspace_directory_current.py',ROOT/'dsh/workspace/registry_022.py',ROOT/'dsh/workspace/spec_022.py',
         *[ROOT/'dsh/workspace'/name for name in ['current.py','entity.py','entity_022.py','workspace.py']],

@@ -465,3 +465,5 @@
 | C9-AR | Actual Git partial clones, fixed/default commits, exact binary bounds, process-tree cancellation, cross-cache locks and deferred LRU eviction | [Market Git](market-git-checks.json) |
 
 | C9-AS | Market detail Remote composes actual readers/cache, preserves original fallback/errors and owns reversible authenticated image route | [Market Remote](market-remote-checks.json) |
+
+| C9-AT | Unchanged optional Discover bundle: strict Market RPCs, saved index, search, detail/image, reload and mobile; measured synchronous metadata cost retained | [Market browser](market-browser-checks.json) |

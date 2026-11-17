@@ -43,6 +43,9 @@ def main():
                 elif cursor is None:result['nextCursor']='next'
                 if modern:result.update(resultType='complete',ttlMs=0,cacheScope='private')
                 if mode=='modern-cache':result['ttlMs']=60000
+                if mode=='modern-output':
+                    for tool in result['tools']:
+                        tool['outputSchema']=dict(type='object',properties=dict(answer=dict(type='integer')),required=['answer'])
                 if mode=='modern-input-state':result=dict(resultType='input_required',requestState='opaque')
                 elif mode=='modern-input-empty':result=dict(resultType='input_required')
                 elif mode=='modern-unknown-result':result=dict(resultType='future')
@@ -58,6 +61,8 @@ def main():
                         'roots':dict(method='roots/list'),'sampling':dict(method='sampling/createMessage'),
                         'elicitation':dict(method='elicitation/create')}[label]
                     result=dict(resultType='input_required',inputRequests=dict(query=entry))
+            elif method=='tools/call' and mode=='modern-output':
+                result=dict(resultType='complete',content=[],structuredContent=packet['params'].get('arguments',{}))
             else:
                 self.answer(dict(jsonrpc='2.0',id=packet.get('id'),error=dict(code=-32601,message='unknown')));return
             self.answer(dict(jsonrpc='2.0',id=packet['id'],result=result))

@@ -17,6 +17,7 @@ class CurrentSdkClient:
         self._cache = CurrentResponseCache()
         self.default_cache_ttl_ms = default_cache_ttl_ms
         self.list_max_pages = list_max_pages
+        self._output_validator = None
 
     async def connect(self, transport, options=None):
         if self._wire is not None:
@@ -29,6 +30,8 @@ class CurrentSdkClient:
         def closed():
             self.transport = None
             self._cache.reset()
+            if self._output_validator is not None:
+                self._output_validator.close()
             if previous is not None:
                 previous()
             if self.onclose is not None:
@@ -45,8 +48,13 @@ class CurrentSdkClient:
             signal.throw_if_aborted()
 
     async def close(self):
-        if self._wire is not None:
-            await self._wire.close()
+        try:
+            if self._wire is not None:
+                await self._wire.close()
+        finally:
+            self._cache.reset()
+            if self._output_validator is not None:
+                await self._output_validator.close()
 
     def _notification(self, packet):
         self._cache.notification(packet)
@@ -155,4 +163,37 @@ class CurrentSdkClient:
         return result
 
     async def callTool(self, params, options=None):
-        return await self.request(dict(method='tools/call', params=params), options)
+        options = options or {}
+        definition = options.get('toolDefinition')
+        if 'toolDefinition' not in options:
+            entry = self._cache.entries.get(('tools/list', ''))
+            if entry is not None:
+                import json
+                for tool in json.loads(entry['value'])['tools']:
+                    if tool['name'] == params['name']:
+                        definition = tool
+        from dsh.cordis.utils import _js_truthy as js_truthy
+        schema = definition.get('outputSchema') if definition is not None else None
+        if js_truthy(schema):
+            if self._output_validator is None:
+                from dsh.mcp.output_validator_current import CurrentOutputValidator
+                self._output_validator = CurrentOutputValidator()
+            compiled = await self._output_validator.observe(dict(schema=schema,compileOnly=True))
+            if not compiled['compiled']:
+                message = compiled['message'].encode('utf-16-le','surrogatepass')[:400].decode('utf-16-le','surrogatepass')
+                raise CurrentProtocolError(-32602, "Tool '"+params['name']+"' has an invalid outputSchema: "+message)
+        result = await self.request(dict(method='tools/call', params=params), options)
+        if js_truthy(schema) and not js_truthy(result.get('isError')):
+            if 'structuredContent' not in result:
+                raise CurrentProtocolError(-32600, 'Tool '+params['name']+' has an output schema but did not return structured content')
+            validation = await self._output_validator.observe(dict(schema=schema,value=result['structuredContent']))
+            if not validation['valid']:
+                raise CurrentProtocolError(-32602, "Structured content does not match the tool's output schema: "+validation['errorMessage'])
+        return result
+
+
+class CurrentProtocolError(RuntimeError):
+    name = 'ProtocolError'
+    def __init__(self, code, message):
+        self.code, self.message = code, message
+        super().__init__(message)

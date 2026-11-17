@@ -1,0 +1,16 @@
+{
+  "contract": "C9-BE",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "status": "targeted passed",
+  "implementation": "Carry the unchanged pinned SDK AjvJsonSchemaValidator and its embedded Ajv engines/formats in the existing Win7 QuickJS runtime. Each client lazily owns one isolated persistent provider, preserving $id reuse. callTool resolves the held list even when TTL-stale, isolates caller overrides, rejects uncompilable output schemas before RPC, requires structured results and validates them unless isError is truthy. Close/disconnect resets the cache and reaps the validator; independent cancelled observers cannot cancel spawn or close ownership.",
+  "verification": {
+    "paired": {"run": "rc022-mcp-output-pair3-20261117-01", "cases": 20, "observations": 158, "scope": "Actual SDK and Native callTool/cache methods with identical scripted request collaborators: default/07/2019/2020 drafts, formats, references, numeric/string/array/object constraints, unsupported dialects, missing refs and unfinished regexp class; missing/error results, override isolation, $id provider reuse, notification eviction and per-tool error isolation. Raw result/error objects and request packets compare exactly."},
+    "native_consumers": {"run": "rc022-mcp-output-native-20261117-01", "passed": 107, "failed": 1, "scope": "HTTP/stdio and MCP direct consumers; the one new test wrongly assumed an invalid urn:owned schema identifier could compile. Source and Native both rejected it."},
+    "native_focused": {"run": "rc022-mcp-output-native2-20261117-01", "passed": 4, "scope": "Corrected valid identifier, entire corpus in actual x86/x64 workers, real modern localhost HTTP structured output failure, actual child exit and held-spawn/cancelled-close observer ownership. No production changes after the consumer run."},
+    "source": {"run": "rc022-mcp-output-source-20261117-01", "passed": 65, "failed": 0, "scope": "Pinned mcp-client, protocol, server-context and tool-definition suites."}
+  },
+  "diagnostics": "First full pairing found only the V8/QuickJS unfinished regexp class error prose difference. A private RegExp adapter preserves this unambiguous observed diagnostic and leaves successful patterns unchanged. Initial/final raw observations retained; arbitrary other VM regexp syntax-error wording is not established by this corpus.",
+  "artifact": {"manifest_sha256": "88f0f70ca832534e5c1a95a54c2e03303d67146dce86aef950741045f74d7f84", "path": "dsh/mcp/validator/manifest.json", "licenses": "The SDK Apache license plus exact embedded dependency licenses retained. Original npm archives verified against published integrity; URLs/archive and member hashes in license-inputs.json. Modern Node is a build/comparison tool only."},
+  "cleanup": {"bytes_removed": 2316746, "scope": "All owned targeted workspaces/home/tmp, five redundant build outputs and verified license transfer archives removed; exact shipped artifact, manifests, logs/XML and original observations retained.", "owned_processes_after": []},
+  "limitations": ["Caller-supplied schema-validator engines and shared response stores are not exposed by this host API.", "Header mirroring/recovery and multi-leg total deadline remain pending separate contracts.", "This is targeted verification, not pin promotion, release qualification or an actual Windows 7 run."]
+}

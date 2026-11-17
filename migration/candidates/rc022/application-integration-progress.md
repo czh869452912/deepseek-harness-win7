@@ -487,3 +487,5 @@
 | C9-BC | Returned plain/TLS upgrade callbacks transfer socket ownership; later frames, half-open peer, real RST and unload checked against Original | [Upgrade ownership](upgrade-owner-checks.json) |
 
 | C9-BD | MCP default connection cache honours TTL/refresh/bypass, isolates returned values and rejects stale in-flight writes after notifications; actual HTTP and consumers checked | [MCP response cache](mcp-cache-checks.json) |
+
+| C9-BE | Pinned SDK output-schema provider runs in owned Win7 x86/x64 workers; pre-RPC errors, structured results, cached definitions and close/cancel ownership checked | [MCP tool output validation](mcp-output-checks.json) |

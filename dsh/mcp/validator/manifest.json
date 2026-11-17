@@ -1,0 +1,38 @@
+{
+  "format": "dsh-mcp-validator@1",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "engine": "shipped Win7 QuickJS",
+  "node": "v22.22.2",
+  "esbuild": "0.28.2",
+  "build_inputs": {
+    "scripts/native/mcp-validator/driver.js": "b876a104bb233a726ab9ca398557050b6dff0bba0cf4bee5d63dc8a23692cba0",
+    ".goose/out/rc022-prep-20261114-01/source/node_modules/.pnpm/@modelcontextprotocol+client@2.2.0/node_modules/@modelcontextprotocol/client/dist/chunk-Br0eD_fh.mjs": "d4a000980e7c6a8a2ee04c12d80cf538b11e5040e8487dad7661b09d85894e74",
+    ".goose/out/rc022-prep-20261114-01/source/node_modules/.pnpm/@modelcontextprotocol+client@2.2.0/node_modules/@modelcontextprotocol/client/dist/dialects-BOhdv1Fc.mjs": "34447f2f5bffaab20cf5148c190137fc3129e7b23614a75a47c1db3b0994969e",
+    ".goose/out/rc022-prep-20261114-01/source/node_modules/.pnpm/@modelcontextprotocol+client@2.2.0/node_modules/@modelcontextprotocol/client/dist/ajvProvider-97rDpkRx.mjs": "5c4d6ce22cd6f3323ebc16d2e97956eb6238d1135102f6aefb25bacf40bf14be",
+    "scripts/native/mcp-validator/licenses/ajv-LICENSE": "a05350a88e318e4f5f2c2a1ff1e2e88daa4dd38e6e78b71cccae422bdc762cc3",
+    "scripts/native/mcp-validator/licenses/fast-deep-equal-LICENSE": "7bf9b2de73a6b356761c948d0e9eeb4be6c1270bd04c79cd489c1e400ffdfc1a",
+    "scripts/native/mcp-validator/licenses/json-schema-traverse-LICENSE": "7bf9b2de73a6b356761c948d0e9eeb4be6c1270bd04c79cd489c1e400ffdfc1a",
+    "scripts/native/mcp-validator/licenses/fast-uri-LICENSE": "185ef4f377743572c2bf0931f741fae52401268cbe70c880b74063799814083e",
+    "scripts/native/mcp-validator/licenses/ajv-formats-LICENSE": "9df3bb69929a3b650ed73b3bfa1756725aaff0ac296461605753547004eafeaf",
+    ".goose/out/rc022-prep-20261114-01/source/node_modules/.pnpm/@modelcontextprotocol+client@2.2.0/node_modules/@modelcontextprotocol/client/dist/validators/ajv.mjs": "cf73b8f95c5cb97709132e6a59f00c1084afbcf85794d1cbca06c401da4c7001",
+    "scripts/native/mcp-validator/entry.ts": "f442c165a132b5989f000114d1951360a62c6d8c6ec5d1d4d881cdb25c801117",
+    ".goose/out/rc022-prep-20261114-01/source/node_modules/.pnpm/@modelcontextprotocol+client@2.2.0/node_modules/@modelcontextprotocol/client/package.json": "c23181ae4211b562c6ca9c7ec1280ed80c32de28e812ed79481d4ebecf3be2de",
+    ".goose/out/rc022-prep-20261114-01/source/node_modules/.pnpm/@modelcontextprotocol+client@2.2.0/node_modules/@modelcontextprotocol/client/LICENSE": "0382b0057770ca05e9c350a50aa3b1c1fea84da0bc81d723bf00b9aa841be58a",
+    "scripts/build_mcp_validator.mjs": "1abfdcdf1a069a403295b2ad2cf9bda786a86e54fcf182acb609dc4a2c565413",
+    "scripts/oracles/node_modules/esbuild/package.json": "9d0bc453f4e791553c4cc2298ba023b409241fd9801e494741666eb0f6051490",
+    "scripts/oracles/node_modules/esbuild/lib/main.js": "61ec0ba144ff93f4bf0e96ad6fab6f430ede0aa13e27ace8063ed63ba416b3cd",
+    "scripts/oracles/node_modules/@esbuild/win32-x64/esbuild.exe": "c7bee37877d0aa6a046e52783fa0a2cf1a9ce5579d68bb3083bda99d4bff18ef",
+    "scripts/native/mcp-validator/licenses/inputs.json": "4a436cfa977ca54670113c022fec12970d103730763acc34d3c7f68e8bcf4d2e"
+  },
+  "resources": {
+    "validator.js": "4cbd672b1aa38118065ca55ce54559f42f21bce4f346c8a9dfb2d86184c55b77",
+    "driver.js": "b876a104bb233a726ab9ca398557050b6dff0bba0cf4bee5d63dc8a23692cba0",
+    "ajv-LICENSE": "a05350a88e318e4f5f2c2a1ff1e2e88daa4dd38e6e78b71cccae422bdc762cc3",
+    "fast-deep-equal-LICENSE": "7bf9b2de73a6b356761c948d0e9eeb4be6c1270bd04c79cd489c1e400ffdfc1a",
+    "json-schema-traverse-LICENSE": "7bf9b2de73a6b356761c948d0e9eeb4be6c1270bd04c79cd489c1e400ffdfc1a",
+    "fast-uri-LICENSE": "185ef4f377743572c2bf0931f741fae52401268cbe70c880b74063799814083e",
+    "ajv-formats-LICENSE": "9df3bb69929a3b650ed73b3bfa1756725aaff0ac296461605753547004eafeaf",
+    "@modelcontextprotocol+client-LICENSE": "0382b0057770ca05e9c350a50aa3b1c1fea84da0bc81d723bf00b9aa841be58a",
+    "license-inputs.json": "4a436cfa977ca54670113c022fec12970d103730763acc34d3c7f68e8bcf4d2e"
+  }
+}

@@ -76,3 +76,8 @@ dsh/boot/market-index/** -text
 dsh/boot/market-index/*LICENSE* -whitespace
 scripts/build_market_index.mjs -text
 scripts/native/market-index/** -text
+dsh/mcp/validator/** -text
+dsh/mcp/validator/*LICENSE* -whitespace
+scripts/native/mcp-validator/** -text
+scripts/native/mcp-validator/licenses/*LICENSE -whitespace
+scripts/build_mcp_validator.mjs -text

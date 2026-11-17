@@ -78,6 +78,48 @@ def test_dependency_requires_integrated_exact_contract_evidence(ledger):
     assert not m.blockers(consumer, data)
 
 
+@pytest.mark.parametrize('state', ['ready', 'running', 'review'])
+def test_baseline_switch_preserves_open_history_without_current_eligibility(ledger, state):
+    data, root = ledger
+    task = data['tasks']['TASK-A']
+    task.update(state=state, owner='original-owner', open_findings=['original unresolved observation'])
+    data['baseline']['target_upstream'] = 'b' * 40
+    data['modules']['target_upstream'] = 'b' * 40
+    data['contracts']['CON-A']['historical'] = True
+    with pytest.raises(m.RecordError, match='target mismatch'):
+        m.validate(data, root)
+    task['historical'] = True
+    before = copy.deepcopy(task)
+    m.validate(data, root)
+    assert task == before
+    assert m.blockers(task, data) == ['historical task; current target revalidation required']
+    assert not m.valid_runs(task, data)
+    assert 'historical task; current target revalidation required' in m.render_status(data)
+
+
+def test_current_task_cannot_use_history_flag_to_bypass_acceptance(ledger):
+    data, root = ledger
+    data['tasks']['TASK-A']['historical'] = True
+    with pytest.raises(m.RecordError, match='current target cannot be archived'):
+        m.validate(data, root)
+
+
+def test_preserved_verified_history_still_requires_its_original_evidence(ledger):
+    data, root = ledger
+    certify(data, root, state='verified')
+    data['baseline']['target_upstream'] = 'b' * 40
+    data['modules']['target_upstream'] = 'b' * 40
+    data['contracts']['CON-A']['historical'] = True
+    task = data['tasks']['TASK-A']
+    task['historical'] = True
+    m.validate(data, root)
+    assert task['state'] == 'verified' and not m.valid_runs(task, data)
+    assert m.valid_runs(task, data, current=False)
+    data['evidence']['RUN-A']['exit_code'] = 1
+    with pytest.raises(m.RecordError, match='no matching passing evidence'):
+        m.validate(data, root)
+
+
 def test_external_index_preserves_history_without_certifying_missing_bytes(ledger, monkeypatch):
     data, root = ledger
     consumer = add_consumer(data)

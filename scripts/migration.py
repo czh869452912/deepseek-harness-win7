@@ -233,7 +233,10 @@ def validate(data, root, verify_artifacts=True):
         need(task["state"] in STATES, key + ": invalid state")
         need(task["kind"] in {"analysis", "implementation", "verification", "release"}, key + ": invalid kind")
         require_sha(task["target_upstream"], key + ".target_upstream")
-        historical = task["state"] == "integrated"
+        need('historical' not in task or type(task['historical']) is bool, key + ': invalid historical flag')
+        archived = task.get('historical') is True
+        need(not archived or task['target_upstream'] != target, key + ': current target cannot be archived')
+        historical = task["state"] == "integrated" or archived
         need(historical or task["target_upstream"] == target, key + ": target mismatch")
         require_sha(task["base_product"], key + ".base_product")
         for name in ("acceptance", "evidence_ids", "expected_paths", "open_findings", "conflicts_with"):
@@ -285,9 +288,10 @@ def validate(data, root, verify_artifacts=True):
             if task["state"] == "integrated":
                 require_sha(task.get("integrated_commit"), key + ".integrated_commit")
             need(not task["open_findings"], key + ": unresolved findings prevent verification")
-            need(bool(valid_runs(task, data, current=task["state"] != "integrated",
+            current = task["state"] != "integrated" and task.get('historical') is not True
+            need(bool(valid_runs(task, data, current=current,
                                  require_artifacts=verify_artifacts)), key + ": no matching passing evidence")
-            if task["state"] != "integrated":
+            if current:
                 need(not blockers(task, data, require_artifacts=verify_artifacts), key + ": unresolved dependency/conflict")
     for key, mapping in data["mappings"].items():
         fields(mapping, {"target_upstream": str, "cases": list}, key)
@@ -345,6 +349,8 @@ def valid_runs(task, data, current=True, require_artifacts=True):
 
 def blockers(task, data, require_artifacts=True):
     reasons = []
+    if task.get('historical') is True:
+        reasons.append('historical task; current target revalidation required')
     if task.get("blocked_reason"):
         reasons.append(task["blocked_reason"])
     for dep in task["requires"]:
@@ -354,7 +360,8 @@ def blockers(task, data, require_artifacts=True):
             reasons.append("requires {} {}@{}".format(dep["task"], dep["contract"], dep["revision"]))
     for key, other in data["tasks"].items():
         conflict = key in task["conflicts_with"] or task["id"] in other["conflicts_with"]
-        if conflict and other["state"] in {"running", "review", "verified", "queued"}:
+        if (conflict and other.get('historical') is not True
+                and other["state"] in {"running", "review", "verified", "queued"}):
             reasons.append("active conflict " + key)
     return reasons
 

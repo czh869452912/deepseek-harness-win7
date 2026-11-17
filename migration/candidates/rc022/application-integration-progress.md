@@ -531,3 +531,5 @@
 | C9-BY | 统一门禁冻结 Office 离线输入并核验实际解压资源/来源；16 项定向、双架构输入逐资源检查；旧完整回执探针失败单独保留待修 | [Office 发行输入门禁](office-release-gate-checks.json) |
 
 | C9-BZ | 既有 JavaScript/LLM 配置门禁预加载闭包；66/60 项消费者、32/26 组原固定 Source 对照；SDK 取消失败留待新版入口协调 | [门禁导入闭包](gate-import-closure-checks.json) |
+
+| C9-CA | 新旧目标切换时保留旧任务原状态且禁止提供当前资格；36 项迁移工作流定向检查 | [未完历史记录](migration-open-history-checks.json) |

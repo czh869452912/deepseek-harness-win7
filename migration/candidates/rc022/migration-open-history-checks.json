@@ -1,0 +1,17 @@
+{
+  "contract": "C9-CA",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "status": "targeted passed",
+  "verification": {
+    "run": "rc022-migration-history-native-20261118-01",
+    "passed": 36,
+    "seconds": 0.40,
+    "scope": "Preserve old open states without current eligibility; reject current-target archival; require original verified evidence; existing dependency, exact revision and external-evidence gates."
+  },
+  "cleanup": {
+    "removed": ["pytest-workspace", "tmp", "home"],
+    "record": ".goose/out/rc022-migration-history-native-20261118-01/cleanup.json",
+    "retained": "Command, XML and log only."
+  },
+  "limitations": "No baseline/reference switch, task-state change or new qualification in this batch."
+}

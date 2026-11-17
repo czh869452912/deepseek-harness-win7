@@ -1,0 +1,11 @@
+import {readFileSync,existsSync} from 'node:fs'
+import {join} from 'node:path'
+import {load} from './rc022_subagent_fixture.mts'
+const {defaultWorkspaceDirectory}=await load('packages/api/workspace-controller/src/default-directory.ts'),{Context}=await load('vendor/cordis/src/index.ts'),{default:Workspace}=await load('packages/workspace/workspace/src/index.ts'),{default:Controller}=await load('packages/api/workspace-controller/src/index.ts'),{JsonStorageBackend}=await load('packages/storage/storage-json/src/index.ts'),{DomainFacility}=await load('packages/storage/storage-domain/src/index.ts')
+const {files,cases}=JSON.parse(readFileSync(process.argv[3]!,'utf8')),rows:any[]=[]
+for(const entry of cases){const calls:any[]=[];const run=async(command:string,args:string[],signal:AbortSignal,visibility:string)=>{calls.push({command,arguments:args.length,visibility});return {stdout:entry.stdout??'',stderr:''}};let answer;try{answer={value:await defaultWorkspaceDirectory(entry.directory,new AbortController().signal,{platform:entry.platform,home:'/home/a',run})}}catch(error:any){answer={error:error.message}}rows.push({case:entry,calls,...answer})}
+const ctx=new Context(),backend=new JsonStorageBackend(join(files,'source'));ctx.provide('storage',{backend:{get:()=>backend}} as any)
+const facility=new DomainFacility(ctx,{backend:'fixture'});ctx.provide('storageDomain',facility);ctx.provide('sessionPersistence',{list:async()=>[]} as any);ctx.provide('sessions',{get:()=>undefined,list:()=>[]} as any);ctx.provide('remoteAccess',{allows:()=>true} as any)
+await ctx.plugin(Workspace);ctx.provide('typert',{resources:{register:()=>()=>{}}} as any);const controller=new Controller(ctx,{documentsDirectory:join(files,'Documents')})
+try{const first=await controller.initializeDefault(new AbortController().signal),aborted=AbortSignal.abort(),second=await controller.initializeDefault(aborted),row=first!.workspace;rows.push({step:'first-remote',title:row.title,path:row.path,exists:existsSync(row.path),same:row.workspaceId===second!.workspace.workspaceId,sessions:ctx.sessions.list().length});await controller.delete({workspaceId:row.workspaceId});rows.push({step:'deleted-default',absent:await controller.initializeDefault(aborted)===undefined})}finally{await ctx.fiber.dispose();await facility.closeAll();await backend.close()}
+console.log(JSON.stringify(rows))

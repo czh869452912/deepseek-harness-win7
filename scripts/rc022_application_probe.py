@@ -22,6 +22,8 @@ EXECUTE_PTC=False
 BEFORE_SESSIONS=None
 AFTER_SESSIONS=None
 BINDINGS={
+ '@deepseek-ai/dsh-workspace':'dsh.workspace.registry_022:Current022WorkspacePlugin',
+ '@deepseek-ai/dsh-api-workspace-controller':'dsh.api.workspace_current:CurrentWorkspaceController',
  '@deepseek-ai/dsh-api-session-controller':'dsh.api.session_authorized:AuthorizedSessionController',
  '@deepseek-ai/dsh-client-ui-settings-general':'dsh.client.appearance_current:CurrentGeneralSettingsHost',
  '@deepseek-ai/dsh-client-ui-theme':'dsh.client.appearance_current:CurrentThemeHost',
@@ -118,6 +120,7 @@ def main():
         source/'packages/client/modules/src/index.ts',source/'packages/client/modules/src/assets.ts',
         Path(__file__).resolve(),Path(sys.argv[0]).resolve(),ROOT/'dsh/boot/plugin_registry_current.py',
         ROOT/'dsh/cordis/loader.py',ROOT/'dsh/api/session_agents_current.py',ROOT/'dsh/client/appearance_current.py',ROOT/'dsh/boot/plugin_market_tools.py',ROOT/'dsh/boot/plugin_market_tools.json',
+        ROOT/'dsh/api/workspace_current.py',ROOT/'dsh/api/workspace_directory_current.py',ROOT/'dsh/workspace/registry_022.py',ROOT/'dsh/workspace/spec_022.py',
         ROOT/'dsh/core/ptc_dispatches.py',ROOT/'dsh/core/default_model_current.py',ROOT/'dsh/code_runtime/confined_ptc.py',ROOT/'dsh/code_runtime/ptc.py',ROOT/'dsh/code_runtime/process.py',ROOT/'dsh/code_runtime/worker.py',
         ROOT/'dsh/host/client_modules/current.py',ROOT/'dsh/host/client_modules/resources_current.py',ROOT/'dsh/host/client_modules/assets_current.py',
         *[ROOT/'dsh/schedule'/name for name in ['tools_current.py','tools_current.json','service_current.py','runtime_current.py','storage_current.py','domain_current.py','update_current.py']]]

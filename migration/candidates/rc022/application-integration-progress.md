@@ -435,3 +435,5 @@
 | C9-AC | First-use Workspace identity and current create/delete journal rollback with cold recovery | [Workspace default](workspace-default-checks.json) |
 
 | C9-AD | Current Workspace commands and resource-filtered committed feed with reconnect and revocation replacement | [Workspace Remote](workspace-remote-checks.json) |
+
+| C9-AE | First-use Documents policy and candidate Workspace binding remove the browser baseline crash; Schedule catalog failure retained | [Workspace directory](workspace-directory-checks.json) |

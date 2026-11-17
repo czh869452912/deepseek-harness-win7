@@ -7,13 +7,20 @@ from dsh.workspace.workspace import WorkspaceOrderInvalidError
 from dsh.workspace.registry_022 import WorkspaceUnknownSessionError, WorkspaceActiveSessionError, WorkspaceArchivedSessionPinError
 from dsh.workspace.entity import WorkspaceMoveInvalidError
 from dsh.workspace.spec_022 import record as workspace_record, state as workspace_domain_state
+from dsh.cordis.schema import Schema
+from dsh.core.abort import AbortController
+from dsh.core.session.json import UNDEFINED
+from dsh.api.workspace_directory_current import default_workspace_directory, validate_documents_directory
 
 
 class CurrentWorkspaceController(TypertRemoteService):
     inject=['remoteAccess','typert','workspaceRegistry']
+    Config=Schema.object(dict(documentsDirectory=Schema.string(),documentsLookupTimeoutMs=Schema.natural().min(1).default(10000)))
 
-    def __init__(self,ctx):
+    def __init__(self,ctx,config=None):
         super().__init__(ctx,'workspaceController',dict(namespace='workspace'))
+        self.config=self.Config(config or {})
+        if 'documentsDirectory' in self.config:validate_documents_directory(self.config['documentsDirectory'])
         ctx.get('typert').resources.register('workspace',dict(field='workspaceId'))
         self._followers=set();registry=self._registry()
         self._order=[row.id for row in registry.list()];self._known=set(self._order)
@@ -28,6 +35,17 @@ class CurrentWorkspaceController(TypertRemoteService):
         ctx.plugin(DirectoryPickerController)
 
     def _registry(self):return self.ctx.get('workspaceRegistry')
+
+    @Remote
+    async def initializeDefault(self,signal):
+        async def resolve():
+            combined=AbortController();release=signal.add_listener('abort',combined.abort)
+            error=TimeoutError('The operation was aborted due to timeout');error.name='TimeoutError'
+            timer=asyncio.get_running_loop().call_later(self.config['documentsLookupTimeoutMs']/1000,combined.abort,error)
+            try:return await default_workspace_directory(self.config.get('documentsDirectory'),combined.signal)
+            finally:timer.cancel();release()
+        workspace=await self._registry().initializeDefault(resolve)
+        return UNDEFINED if workspace is None else dict(workspace=workspace.to_dict())
 
     def _require(self,identity):
         value=self._registry().get(identity)

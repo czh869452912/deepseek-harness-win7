@@ -1,0 +1,32 @@
+{
+  "part": "C9-L",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "scope": "Private pinned RRULE UTC-wall enumerator for the Native bounded time engine",
+  "paired": {
+    "run": "rc022-rrule-enumerator-paired2-20261117-01",
+    "observations": 60,
+    "differences": 0,
+    "method": "Actual installed rrule@2.8.1 in fixed Source versus the byte-preserved package on the shipped Win7 QuickJS worker; exact bounded pages and inclusive after values."
+  },
+  "verification": {
+    "native": "3 passed: 60 enumeration observations, private query guards and actual x86 Python/worker enumeration. No machine Node is used by the Native helper."
+  },
+  "behavior": [
+    "Preserves the original 46,464-byte BSD-3-Clause library and its license, records SHA-256 provenance, verifies resources before execution and pins checkout bytes through Git attributes.",
+    "The closed worker driver only constructs prepared UTC-shaped recurrences and returns bounded epoch arrays or one inclusive after value. Python will own validation, time-zone decisions and task policy.",
+    "Pairs cover all six admitted frequencies, weekday/set-position/week-number/year-day filters, impossible dates and early/late calendar anchors. Worker processes exit per call; Portable already copies these ordinary dsh resources."
+  ],
+  "diagnostics": [
+    "The initial Source observer incorrectly selected a default from the TSX module namespace; corrected the observer and retained its error.",
+    "The first x86 assertion used March 28 for the last weekday of March 2024; actual enumeration correctly answered March 29. The fixture expectation was corrected and original logs retained."
+  ],
+  "cleanup": {
+    "bytes_removed": 5290,
+    "owned_processes_after": [],
+    "retained": "Commands, package/resource hashes, both Source attempts, observations, Native logs/XML and x86 output; synthetic short workspaces and homes removed."
+  },
+  "limitations": [
+    "This dependency seam does not yet establish the full bounded RRULE parser, COUNT/UNTIL/DST policy, Schedule persistence/runtime/tool integration, arbitrary JavaScript or Node/TypeScript support.",
+    "No complete regression, Portable/browser/Win7 acceptance or upstream promotion."
+  ]
+}

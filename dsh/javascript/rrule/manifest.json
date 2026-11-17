@@ -1,0 +1,15 @@
+{
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "package": "rrule",
+  "version": "2.8.1",
+  "license": "BSD-3-Clause",
+  "inputs": {
+    "dist/es5/rrule.min.js": "f125534233e976a287691398c72b875fd2344837bce560142379b73009ca3427",
+    "LICENCE": "6c12f89b62fce4d9a75629a68086f1bcf0192a2ce678d2caadd9f86aa1a0fa58"
+  },
+  "resources": {
+    "rrule.min.js": "f125534233e976a287691398c72b875fd2344837bce560142379b73009ca3427",
+    "LICENCE": "6c12f89b62fce4d9a75629a68086f1bcf0192a2ce678d2caadd9f86aa1a0fa58",
+    "driver.js": "511fe358d12e05cbd0fd297e359176059d32d928b2a895c48b5d843ca2c5bc67"
+  }
+}

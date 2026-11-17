@@ -1,6 +1,7 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import {pathToFileURL} from 'node:url';
+import {deferCurrentProviderWithPlaywright} from '../current_browser_onboarding.mjs';
 const [source,out]=process.argv.slice(2),root=process.cwd();
 const {chromium}=await import(pathToFileURL(path.join(source,'node_modules/.pnpm/playwright@1.61.1/node_modules/playwright/index.mjs')));
 const config=JSON.parse(await fs.readFile(path.join(out,'browser-config.json'),'utf8'));
@@ -9,7 +10,7 @@ let browser,page,heartbeat;
 let progress=Promise.resolve();
 function event(value){progress=progress.then(()=>fs.appendFile(path.join(out,'browser-progress.jsonl'),JSON.stringify({at:Date.now(),...value})+'\n'));}
 try{
- browser=await chromium.launch({executablePath:path.join(root,'.goose/tools/chromium-1058931/chrome-win/chrome.exe'),headless:true});
+ browser=await chromium.launch({executablePath:config.browser || path.join(root,'.goose/tools/chromium-1058931/chrome-win/chrome.exe'),headless:true});
  page=await browser.newPage({viewport:result.viewport});result.version=browser.version();
  page.setDefaultTimeout(10000);
  page.on('pageerror',error=>{const row={kind:'pageerror',message:error.message,stack:error.stack};result.errors.push(row);event(row)});
@@ -26,7 +27,8 @@ try{
   if(await proceed.isVisible())throw Error('Welcome confirmation was not restored');
   result.steps.push('cold-process-welcome-restored');
  }else{await proceed.waitFor({state:'visible',timeout:10000});await proceed.click();await proceed.waitFor({state:'hidden',timeout:10000});}
- const dialog=page.getByRole('dialog');if(await dialog.isVisible()){
+ if(config.currentOnboarding) await deferCurrentProviderWithPlaywright(page);
+ const dialog=page.getByRole('dialog');if(!config.currentOnboarding && await dialog.isVisible()){
   const close=dialog.getByRole('button').filter({hasText:/^$/});if(await close.count()===1)await close.click();
  }
  result.home=await page.locator('body').innerText();await page.screenshot({path:path.join(out,'browser-home.png')});
@@ -87,7 +89,9 @@ try{
  result.mobileMenuGeometry={viewport:{width:390,height:844},anchor:await page.getByRole('button',{name:/^(自动化任务操作|Automation task actions)$/}).boundingBox(),menu:await page.getByRole('menu').boundingBox()};
  await page.screenshot({path:path.join(out,'browser-mobile-menu.png')});
  result.steps.push('original-menu-follows-mobile-resize');
- await run.click();
+ // A cold process restores the real one-minute delivery floor. Wait for the
+ // original menu to admit the next run; do not edit its clock or stored task.
+ await run.click({timeout:75000});
  await page.getByRole('tab',{name:/^(任务运行记录|Records)$/}).click();
  const deliveries=page.getByRole('region',{name:/^(已保存的任务运行记录|Saved delivery record)$/});
  await deliveries.first().waitFor({state:'visible',timeout:15000});

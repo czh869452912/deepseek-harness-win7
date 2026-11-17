@@ -12,7 +12,8 @@ from urllib.parse import urlsplit, parse_qs
 from dsh.boot.bundle_platform import UnsupportedBundlePlatformError
 from dsh.boot.plugin_switch import flatten, write_plugin_enabled
 from dsh.boot.plugin_bundle_metadata import (OFFICIAL_DATA, OFFICIAL_CATALOG, OPTIONAL_BUNDLES,
-    bundle_directory, bundle_manifest, bundle_selection, official_bundle_install_target, update_refusal)
+    bundle_directory, bundle_manifest, bundle_selection, bundle_resolution_scope,
+    official_bundle_install_target, update_refusal)
 from dsh.boot.plugin_install_spec import dependency_spec, parse_install_spec, InvalidInstallSpecError
 from dsh.boot.plugin_bundle_detail import read_bundle_document, read_bundle_image
 from dsh.boot.plugin_inspection import PluginInspection
@@ -245,6 +246,10 @@ class CurrentPluginManager(PluginUpdate, PluginInstallation, PluginInspection, T
         return dict(rows=rows, overrides=overrides)
 
     def _read_bundles(self):
+        with bundle_resolution_scope():
+            return self._read_bundle_rows()
+
+    def _read_bundle_rows(self):
         manifest = read_profile_manifest('dsh', _field(self.profile, 'dir'))
         exemptions = read_profile_version_exemptions(_field(self.profile, 'dir'))
         selected, recorded = bundle_selection(manifest), manifest.get('dependencies') or {}

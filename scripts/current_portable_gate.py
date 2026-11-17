@@ -181,6 +181,10 @@ def qualify(args):
                 report['sdk'] = sdk_journey(source, node, portable, output, frozen['native'])
                 report['browsers'] = browser_journeys(portable, workspace, output, env, node,
                     args.browser.resolve(), args.browser108.resolve(), archive, report['runtime'])
+                from scripts.current_application_gate import journeys
+                applications = output / 'applications'; applications.mkdir()
+                report['applications'] = journeys(portable, workspace / 'applications', applications,
+                    source, node, args.browser108.resolve())
             report['status'] = 'passed'
     except BaseException as error:
         report['error'] = str(error)

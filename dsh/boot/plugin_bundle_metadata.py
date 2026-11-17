@@ -1,5 +1,7 @@
 """Read-only package identities and official install targets, without imports."""
 import glob
+from contextlib import contextmanager
+from contextvars import ContextVar
 import json
 import os
 from pathlib import Path
@@ -13,6 +15,21 @@ from dsh.boot.semver import parse
 OFFICIAL_DATA = json.loads(Path(__file__).with_name('official_bundles_current.json').read_text(encoding='utf-8'))
 OPTIONAL_BUNDLES = OFFICIAL_DATA['optionalBundles']
 OFFICIAL_CATALOG = OFFICIAL_DATA['catalog']
+_resolution_scope = ContextVar('bundle_metadata_resolution', default=None)
+
+
+@contextmanager
+def bundle_resolution_scope():
+    """Reuse the flattened graph within one synchronous metadata enumeration.
+
+    A later enumeration rebuilds its inventory, so installs and removals remain
+    visible. No resolver is retained on the service or shared across requests.
+    """
+    token = _resolution_scope.set({})
+    try:
+        yield
+    finally:
+        _resolution_scope.reset(token)
 
 
 def bundle_selection(manifest):
@@ -26,7 +43,14 @@ def bundle_directory(name, directory, anchor):
     options = dict(installAnchor=anchor)
     if os.path.abspath(anchor) in _CANDIDATE_ANCHORS:
         options['installationLayout'] = str(Path(__file__).resolve().parents[2])
-    resolve_installation = _installation_resolver(options)
+    scope = _resolution_scope.get()
+    key = (os.path.abspath(anchor), options.get('installationLayout'))
+    if scope is None:
+        resolve_installation = _installation_resolver(options)
+    else:
+        if key not in scope:
+            scope[key] = _installation_resolver(options)
+        resolve_installation = scope[key]
     from dsh.boot.runtime_resolution import native_package_dir
     package = resolve_installation(anchor, name) or native_package_dir(os.path.join(directory, 'package.json'), name)
     if package is None:

@@ -7,6 +7,50 @@ from scripts.rc022_bundle_inventory_probe import observe
 
 
 @pytest.mark.asyncio
+async def test_portable_listing_scans_flattened_inventory_once_and_refreshes_next_request(tmp_path, monkeypatch):
+    from types import SimpleNamespace as NS
+    from dsh.boot import plugin_bundle_metadata as metadata, profile_boot
+    from dsh.boot.plugin_manager_current import CurrentPluginManager
+    from dsh.cordis import Context
+    root = tmp_path / 'portable'
+    anchor = root / 'apps/cli/package.json'
+    anchor.parent.mkdir(parents=True)
+    anchor.write_text(json.dumps(dict(name='installation', dependencies={'one':'*', 'two':'*'})), encoding='utf-8')
+    directory = tmp_path / 'profile'; directory.mkdir()
+    (directory / 'package.json').write_text(json.dumps(dict(name='profile', dsh=dict(profile=dict(bundles=[])))), encoding='utf-8')
+    for name in ['one', 'two']:
+        package = root / 'packages/bundle' / name; package.mkdir(parents=True)
+        (package / 'package.json').write_text(json.dumps(dict(name=name, version='1.0.0', dsh=dict(bundle=dict(patch='patch.yml')))), encoding='utf-8')
+        (package / 'patch.yml').write_text('[]', encoding='utf-8')
+    monkeypatch.setattr(metadata, '__file__', str(root / 'dsh/boot/plugin_bundle_metadata.py'))
+    monkeypatch.setattr(profile_boot, '_CANDIDATE_ANCHORS', [str(anchor)])
+    calls = []
+    original = metadata._installation_resolver
+    def counted(options):
+        calls.append(dict(options))
+        return original(options)
+    monkeypatch.setattr(metadata, '_installation_resolver', counted)
+    ctx = Context()
+    ctx.set_service('loader', NS(entries=lambda: []))
+    ctx.set_service('profileContext', dict(dir=str(directory), installAnchor=str(anchor), startedBundles=[]))
+    await ctx.plugin(CurrentPluginManager)
+    try:
+        first = await ctx.pluginManager.listBundles()
+        assert len(calls) == 1
+        assert {row['name'] for row in first if row['availability'] == 'installation'} == {'one', 'two'}
+        package = root / 'packages/bundle/two/package.json'
+        value = json.loads(package.read_text(encoding='utf-8')); value['version'] = '2.0.0'
+        package.write_text(json.dumps(value), encoding='utf-8')
+        second = await ctx.pluginManager.listBundles()
+        assert len(calls) == 2
+        assert next(row['version'] for row in second if row['name'] == 'two') == '2.0.0'
+        assert next(row['version'] for row in first if row['name'] == 'two') == '1.0.0'
+        assert metadata._resolution_scope.get() is None
+    finally:
+        await ctx.fiber.dispose()
+
+
+@pytest.mark.asyncio
 async def test_bundle_ownership_platform_selection_and_update_projection(tmp_path):
     observations = await observe(tmp_path)
     assert observations[0]['data']['catalog'] == OFFICIAL_CATALOG

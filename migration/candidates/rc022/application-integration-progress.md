@@ -2,6 +2,8 @@
 
 固定目标：`38a6a5c965aa99ab525161efb7cc5cf1fe62fced`。本页记录定向检查；生产 pin 已在 C9-CC 协调切换，`accepted_upstream` 仍为 null，完整资格待后续验证。
 
+C9-CJ：实际解压的隔离 Python 3.8.10 与原版 Chromium108 完成 Schedule/Discover 的首次运行和冷恢复四阶段。修复 Portable 插件列表重复扫描安装图造成的阻塞；每次查询复用解析器，下一次查询重新读取文件。48 项定向控制与固定 Source 清单/选择对照通过，旧失败诊断和会话保留，失效测试资产已清理。此次使用显式修补的调试解压目录，不认证原 ZIP；冻结包统一资格仍待完成。[精确记录](current-application-journeys-checks.json)。
+
 C9-CF：当前 SDK 的实际 Source/Python 正常工具往返、错误和取消进程配对通过；补齐默认会话日志上传、UTF-8 限额与调用者所有的排除规则。12 组独立 Source 对照及 49 项直接消费者检查通过，已清理本轮失效工作区。[精确记录](sdk-process-upload-checks.json)。
 
 C9-CG：显式整理 472 个原版测试文件、399 个当前配对入口，另记 6 个待实际安装/解压验收接替的开发载体。新门禁通道的 14 项控制、110 项原版测试和 4 种实际配对回执检查通过；整份清单及完整 Python/解压浏览器资格尚未执行。[通道记录](current-gate-lanes-checks.json)。

@@ -1,13 +1,14 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import {pathToFileURL} from 'node:url';
+import {deferCurrentProviderWithPlaywright} from '../current_browser_onboarding.mjs';
 const [source,out]=process.argv.slice(2),root=process.cwd();
 const {chromium}=await import(pathToFileURL(path.join(source,'node_modules/.pnpm/playwright@1.61.1/node_modules/playwright/index.mjs')));
 const config=JSON.parse(await fs.readFile(path.join(out,'browser-config.json'),'utf8'));
 const result={browserPlugin:'absent',fallback:'Browser plugin not available',steps:[],errors:[],responses:[],api:[],requests:[],passed:false};
 let browser,page;const requestRefs=[],pending=new Map();
 try {
- browser=await chromium.launch({executablePath:path.join(root,'.goose/tools/chromium-1058931/chrome-win/chrome.exe'),headless:true});
+ browser=await chromium.launch({executablePath:config.browser || path.join(root,'.goose/tools/chromium-1058931/chrome-win/chrome.exe'),headless:true});
  page=await browser.newPage({viewport:{width:1440,height:900}});page.setDefaultTimeout(10000);result.version=browser.version();
  page.on('request',request=>pending.set(request,{path:new URL(request.url()).pathname,started:Date.now()}));
  page.on('requestfinished',request=>pending.delete(request));page.on('requestfailed',request=>pending.delete(request));
@@ -27,7 +28,8 @@ try {
  const proceed=page.getByRole('button',{name:/^(继续|Continue)$/});
  if(config.cold){await proceed.waitFor({state:'hidden'});result.steps.push('welcome-acknowledgement-survived-process-restart')}
  else{await proceed.waitFor({state:'visible'});await proceed.click();await proceed.waitFor({state:'hidden'})}
- const dialog=page.getByRole('dialog');if(await dialog.isVisible()){
+ if(config.currentOnboarding) await deferCurrentProviderWithPlaywright(page);
+ const dialog=page.getByRole('dialog');if(!config.currentOnboarding && await dialog.isVisible()){
   const close=dialog.getByRole('button').filter({hasText:/^$/});if(await close.count()===1)await close.click();
  }
  await page.getByRole('button',{name:/^(插件|Plugins)$/}).click();

@@ -1,0 +1,129 @@
+{
+  "contract": "C9-CJ",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "status": "targeted passed; frozen unified qualification pending",
+  "scope": "Actual isolated extracted Python 3.8.10 canonical Web, real Schedule delivery/session history and optional Discover source/search/Markdown/image original-browser fresh/cold consumers. Portable flattened graph enumeration reuses one resolver per synchronous query and refreshes on the next query.",
+  "original_browser": [
+    {
+      "phase": "schedule-fresh",
+      "process_id": 95960,
+      "browser": "108.0.5359.0",
+      "steps": [
+        "original-schedule-catalog-loaded",
+        "original-task-details-opened",
+        "original-pause-acknowledged",
+        "original-resume-acknowledged",
+        "original-edit-acknowledged",
+        "original-edit-survived-reload",
+        "original-menu-reopened-at-anchor",
+        "original-menu-follows-mobile-resize",
+        "original-run-delivery-history-visible"
+      ],
+      "imported_modules": 941,
+      "seconds": 35.68800000002375,
+      "host_sha256": "16aa3ea375df92564cc4a3588f09907a0ae532dfad95745c9caa777121552ce0",
+      "browser_sha256": "5ec2d64f926aabe0b187b83b4aa45a5d95b4fd185c8c4b3fa20621c28424184b"
+    },
+    {
+      "phase": "schedule-cold",
+      "process_id": 105000,
+      "browser": "108.0.5359.0",
+      "steps": [
+        "cold-process-welcome-restored",
+        "original-schedule-catalog-loaded",
+        "original-task-details-opened",
+        "cold-process-task-edits-restored",
+        "original-pause-acknowledged",
+        "original-resume-acknowledged",
+        "original-edit-acknowledged",
+        "original-edit-survived-reload",
+        "original-menu-reopened-at-anchor",
+        "original-menu-follows-mobile-resize",
+        "original-run-delivery-history-visible"
+      ],
+      "imported_modules": 941,
+      "seconds": 60.65700000000652,
+      "host_sha256": "d508e06919c79b0f3e1a677ce0353a7ad73697aeba7584069b4260570d4b140b",
+      "browser_sha256": "ab2a59adc8eb69ad6f7b2a4214fbd6c578b02dbed2a381e63e47cd9515415058"
+    },
+    {
+      "phase": "market-fresh",
+      "process_id": 4492,
+      "browser": "108.0.5359.0",
+      "steps": [
+        "optional-original-discover-opened",
+        "source-saved-and-listing-loaded",
+        "original-search-filtered",
+        "original-detail-and-image-rendered",
+        "saved-source-survived-reload",
+        "mobile-detail-rendered"
+      ],
+      "imported_modules": 940,
+      "seconds": 51.71899999998277,
+      "host_sha256": "0fa195175216f762297c611833a323d8d007daab26d6784363ac4228b635bc37",
+      "browser_sha256": "219e31c504fc342eb492a948a3157d5f5a3355f8f31bc81fb38ccec7038a89b7"
+    },
+    {
+      "phase": "market-cold",
+      "process_id": 110032,
+      "browser": "108.0.5359.0",
+      "steps": [
+        "welcome-acknowledgement-survived-process-restart",
+        "optional-original-discover-opened",
+        "saved-source-refetched-after-process-restart",
+        "original-search-filtered",
+        "original-detail-and-image-rendered",
+        "saved-source-survived-reload",
+        "mobile-detail-rendered"
+      ],
+      "imported_modules": 937,
+      "seconds": 43.67200000002049,
+      "host_sha256": "23517011e5b59f9c9ac173ba6d6aef8db461c871f36597831bdfd5ad4474f69f",
+      "browser_sha256": "8351acf1ddbd8c38c8ec7deec35597f6f667852cc52e1dc2df1fc905914e6fc0"
+    }
+  ],
+  "checks": [
+    {
+      "run": "rc022-portable-market-resolution-20261118-01",
+      "passed": 17,
+      "seconds": 36.4
+    },
+    {
+      "run": "rc022-current-application-controls-20261118-01",
+      "passed": 31,
+      "seconds": 24.4
+    },
+    {
+      "run": "rc022-portable-market-pair-20261118-01",
+      "result": "Exact fixed Source and Native bundle inventory/selection facts"
+    }
+  ],
+  "verification_reason": "Real installed providers/import closures, strict browser state and process restart, runtime/import-byte/browser negative controls, installation graph scan bound and next-request refresh, manager wire/details/inspection/version-exemption and Source selection consumers.",
+  "input_sha256": {
+    "dsh/boot/plugin_bundle_metadata.py": "2e0adee5de3121507b8246d8e2244d514702d777f2211a58ca903a5261b9ef23",
+    "dsh/boot/plugin_manager_current.py": "133f3b56a4eb1650575962d3956e9ead478cdbe2aca75c3dca3e4678252f4436",
+    "scripts/current_application_gate.py": "c5d339f7446ed3afd2b93ba58dd6b1a08f161061e32d9cd252af7ce7e4fc4896",
+    "scripts/current_application_host.py": "849ea8cfe088e6649210ee160269a993aa013f8ea9d294c65d3cb73835938ade",
+    "scripts/current_portable_gate.py": "6fab45da856db379adf40d2d62e044b6a10b5b770d4fb6dc872a6d29f7106ffd",
+    "scripts/oracles/rc022_market_browser.mjs": "c20f766be10f9bcda844c7776384e0940e243abd7ff38b3e2f16f5ddd667723a",
+    "scripts/oracles/rc022_schedule_browser.mjs": "2eced357ced21356605a8612ada714833a0d6d0ff682ec3a14bd5aac3ae54c39"
+  },
+  "archive": {
+    "sha256": "408fa5e696c80acfa74ac4cf51eac2f1f9323b032da5ab3df4fcff730f58fdf6",
+    "qualified": false,
+    "reason": "Retained integration extraction has seven explicitly patched product files; original ZIP is unchanged and is not certified.",
+    "patch_receipts": [
+      ".goose/out/rc022-current-portable-control-20261118-01/debug-product-patches.json",
+      ".goose/out/rc022-current-portable-control-20261118-01/debug-market-patches.json"
+    ]
+  },
+  "cleanup": {
+    "application_directories": 41,
+    "application_bytes": 350715,
+    "targeted_test_bytes": 314791,
+    "paired_fixture_bytes": 22087,
+    "retained": "Compact raw browser/thread/task/session/profile failure observations; owner current migration coordinator, review after frozen candidate qualification. Retained integration extraction, runtime inputs and original ZIP still have qualification/debug consumers."
+  },
+  "prior_failures": "Runs 01-15 remain distinct: observer preset/onboarding/source/session/delivery/index-cache assumptions, real isolated ACL helper import (fixed in C9-CI), and repeated Portable installation graph enumeration (fixed here). No old failed run is promoted.",
+  "limitations": "No current complete Python/Source/paired or exact new archive/Desktop qualification. Real Windows 7 remains deferred; accepted_upstream is unchanged."
+}

@@ -21,8 +21,9 @@ def test_actual_source_workspace_registry_contract(case):
 
 @pytest.mark.parametrize('path',['','relative','C:relative','\\rooted','/current-drive'])
 def test_nonqualified_windows_paths_reject_before_filesystem_resolution(path):
-    with patch('dsh.workspace.current.platform_of',return_value='win32'),patch('dsh.workspace.current.previous_normalize') as resolver:
+    with patch('dsh.workspace.current.platform_of',return_value='win32'),patch('dsh.workspace.current.os.stat') as stat,patch('dsh.workspace.current.os.path.realpath') as resolver:
         with pytest.raises(TypeError,match='Workspace path is not fully qualified'):realpath_normalize(path)
+        stat.assert_not_called()
         resolver.assert_not_called()
 
 

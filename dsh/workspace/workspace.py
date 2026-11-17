@@ -25,6 +25,7 @@ class WorkspaceOrderInvalidError(Exception):
 
 class WorkspaceRegistry:
     domain_spec = workspace_domain_spec
+    entity_class = WorkspaceEntity
     _normalize_path = staticmethod(realpath_normalize)
     _default_title = staticmethod(os.path.basename)
 
@@ -47,7 +48,7 @@ class WorkspaceRegistry:
         await self._recover_pending_mutation()
         self._validate_stored_state()
         if not self._state['initialized'] or self._table.size:
-            await self._index_headers(await self._list_stored_headers())
+            await self._replace_header_index(await self._list_stored_headers())
         if not self._state['initialized']:
             await self._bootstrap()
         sessions = self.ctx.get('sessions')
@@ -55,7 +56,7 @@ class WorkspaceRegistry:
             await self._index_headers([session.header for session in sessions.list()])
         self._validate_stored_state()
         for identity in self._state['workspaceIds']:
-            self._entities[identity] = WorkspaceEntity(self._host, identity, self._table.get(identity))
+            self._entities[identity] = self.entity_class(self._host, identity, self._table.get(identity))
 
     async def _set_state(self, state):
         await self._global.set(state)
@@ -100,7 +101,7 @@ class WorkspaceRegistry:
                     return entity
             identity, now = str(uuid.uuid4()), now_iso()
             record = dict(path=canonical, title=title if title is not None else self._default_title(canonical), sessionIds=[], createdAt=now, updatedAt=now)
-            entity = WorkspaceEntity(self._host, identity, record)
+            entity = self.entity_class(self._host, identity, record)
             state = self._state
             self._entities[identity] = entity
             try:
@@ -199,6 +200,9 @@ class WorkspaceRegistry:
     def _remember_session_path(self, sid, path):
         self._session_paths[sid] = path
         self._invalid_session_paths.pop(sid, None)
+
+    async def _replace_header_index(self, headers):
+        await self._index_headers(headers)
 
     async def _index_headers(self, headers):
         for header in headers:

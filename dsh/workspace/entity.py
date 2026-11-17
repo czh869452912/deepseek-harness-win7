@@ -18,11 +18,12 @@ class WorkspaceMoveInvalidError(Exception):
 
 
 class WorkspaceEntityHost:
-    def __init__(self, table_fn, session_path_fn, read_session_header_fn, remember_session_path_fn):
+    def __init__(self, table_fn, session_path_fn, read_session_header_fn, remember_session_path_fn, candidate_matches_fn=None):
         self.table = table_fn
         self.session_path = session_path_fn
         self.read_session_header = read_session_header_fn
         self.remember_session_path = remember_session_path_fn
+        self.candidate_matches = candidate_matches_fn or (lambda identity, path: session_path_fn(identity) == path)
 
 
 class _Unchanged(Exception):
@@ -59,7 +60,7 @@ class WorkspaceEntity:
 
     @property
     def sessionIds(self):
-        return [sid for sid in self._record['sessionIds'] if self._host.session_path(sid) == self.path]
+        return [sid for sid in self._record['sessionIds'] if self._host.candidate_matches(sid, self.path)]
 
     session_ids = sessionIds
 
@@ -109,7 +110,7 @@ class WorkspaceEntity:
     async def _mutate(self, fn):
         def update(current):
             changed = fn(current)
-            ids = [sid for sid in changed['sessionIds'] if self._host.session_path(sid) == changed['path']]
+            ids = [sid for sid in changed['sessionIds'] if self._host.candidate_matches(sid, changed['path'])]
             if changed is current and len(ids) == len(current['sessionIds']):
                 raise _Unchanged()
             return dict(changed, sessionIds=ids, updatedAt=now_iso())

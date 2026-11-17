@@ -4,7 +4,6 @@ import re
 import sys
 
 from dsh.typert.stores import field
-from dsh.workspace.paths import realpath_normalize as previous_normalize
 from dsh.workspace.workspace import WorkspaceRegistry, WorkspacePlugin
 
 
@@ -33,7 +32,10 @@ def default_workspace_title(path, platform=None):
 def realpath_normalize(path):
     if not fully_qualified_workspace_path(path):
         raise TypeError("Workspace path is not fully qualified: '%s'" % path)
-    return previous_normalize(path)
+    # exists()/isdir() suppress permission, ENOTDIR and symlink-loop failures.
+    # The current registry may exempt only an actual ENOENT from projection.
+    os.stat(path)
+    return os.path.normpath(os.path.realpath(path))
 
 
 class CurrentWorkspaceRegistry(WorkspaceRegistry):

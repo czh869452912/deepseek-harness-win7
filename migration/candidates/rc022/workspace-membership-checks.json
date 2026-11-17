@@ -1,0 +1,46 @@
+{
+  "part": "C9-AI",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "scope": "Current Workspace candidate projection and precise attach admission over persistent JSON",
+  "implementation": [
+    "Registry-owned candidate membership preserves already-accounted ids for fully qualified ENOENT paths, including later mutations and cold reopen, while rejecting new attachments to unresolved paths.",
+    "Append indexing replaces each indexed id's missing/invalid/path facts; full replacement clears all prior facts. Cached header hits intentionally retain Source semantics.",
+    "Filesystem stat/realpath admission preserves actual failure categories instead of exists()/isdir() suppression. No-cwd/relative/file/foreign-path attach diagnostics match Source; current pending-marker inconsistency names its operation.",
+    "Shared entity candidate/factory and startup-index hooks retain historical defaults; the current registry selects the new entity. Startup warnings expose filtered candidates. Candidate application hashes include all changed Workspace providers."
+  ],
+  "verification": {
+    "paired": {
+      "run": "rc022-workspace-membership-pair2-20261117-01",
+      "observations": 16,
+      "differences": 0,
+      "scope": "Actual Source and Native JSON media: cold removed-directory ownership/order, edits, new-attach refusal, fresh pin-triggered header reindex to foreign/missing/no-cwd paths, prune, restore/reattach, absent cold headers and no bootstrap for missing unowned paths"
+    },
+    "native": {
+      "run": "rc022-workspace-membership-native2-20261117-01",
+      "passed": 162,
+      "scope": "New membership/error/late-stat/replacement/pending recovery cases plus direct Remote, default directory, default journal, pin/archive, historical Workspace and storage consumers"
+    },
+    "source": {
+      "run": "rc022-workspace-membership-source-20261117-01",
+      "passed": 12,
+      "pending": 72,
+      "scope": "Original header-validated membership projection cases excluding the symlink fixture; other test groups intentionally outside targeted selection"
+    },
+    "windows_error_reference": {
+      "url": "https://raw.githubusercontent.com/libuv/libuv/v1.51.0/src/win/error.c",
+      "runtime": "Fixed Node v24.9.0 reports libuv 1.51.0; actual Windows file-parent/child probe returns ENOENT in both Node and Python 3.8.10"
+    }
+  },
+  "diagnostics": [
+    "First Native run: 156 passed, six fixture failures (new observer count expected 17 instead of actual 16; five earlier path-gate tests patched removed previous_normalize alias). Updated count and actual stat/realpath boundary mocks retain path-gate coverage; no product checks were deselected. Original failure XML/log/text preserved."
+  ],
+  "cleanup": {
+    "owned_processes_after": [],
+    "removed": "Both paired fixture media, Native failed/final synthetic fixtures, selected Source test workspaces, homes/tmp directories and isolated invalid-parent file",
+    "retained": "Commands/logs/XML/Source JSON, original failure text and final paired observations/input hashes. Shared C1-C9 Source/toolchain remain owned until migration acceptance."
+  },
+  "limitations": [
+    "Source symlink/junction fixture remains outside this targeted run because of the already recorded Windows fixture capability limit; no new symlink qualification claim.",
+    "Targeted completion only; unified release qualification, remaining migration work and production baseline promotion are pending."
+  ]
+}

@@ -123,6 +123,7 @@ def main():
         Path(__file__).resolve(),Path(sys.argv[0]).resolve(),ROOT/'dsh/boot/plugin_registry_current.py',
         ROOT/'dsh/cordis/loader.py',ROOT/'dsh/api/session_agents_current.py',ROOT/'dsh/client/appearance_current.py',ROOT/'dsh/boot/plugin_market_tools.py',ROOT/'dsh/boot/plugin_market_tools.json',
         ROOT/'dsh/api/workspace_current.py',ROOT/'dsh/api/workspace_directory_current.py',ROOT/'dsh/workspace/registry_022.py',ROOT/'dsh/workspace/spec_022.py',
+        *[ROOT/'dsh/workspace'/name for name in ['current.py','entity.py','entity_022.py','workspace.py']],
         ROOT/'dsh/typert/loader.py',ROOT/'dsh/typert/loader_current.py',ROOT/'dsh/host/plugin_inventory/current.py',
         *[ROOT/'dsh/host/browser_compat'/name for name in ['plugin.py','anchor.js','anchor-runtime.js','anchor-input.json']],
         ROOT/'dsh/core/ptc_dispatches.py',ROOT/'dsh/core/default_model_current.py',ROOT/'dsh/code_runtime/confined_ptc.py',ROOT/'dsh/code_runtime/ptc.py',ROOT/'dsh/code_runtime/process.py',ROOT/'dsh/code_runtime/worker.py',

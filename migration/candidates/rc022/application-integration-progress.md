@@ -443,3 +443,5 @@
 | C9-AG | Original Schedule pause/resume/edit/reload/run journey reaches actual persisted delivery; old-browser menu geometry defect retained | [Schedule browser](schedule-browser-checks.json) |
 
 | C9-AH | Host CSS anchor compatibility fixes original menu placement/reopen/mobile resize without changing Source bundles; dynamic/color-mix ownership and cleanup checked | [Browser anchors](browser-anchor-checks.json) |
+
+| C9-AI | Current Workspace missing-directory candidate ownership, attach admission, per-id reindex/replacement and persisted pruning | [Workspace membership](workspace-membership-checks.json) |

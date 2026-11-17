@@ -439,3 +439,5 @@
 | C9-AE | First-use Documents policy and candidate Workspace binding remove the browser baseline crash; Schedule catalog failure retained | [Workspace directory](workspace-directory-checks.json) |
 
 | C9-AF | Canonical Typert artifact ownership and current Plugin Inventory close the original Schedule catalog/details browser flow | [Typert ownership](typert-owner-checks.json) |
+
+| C9-AG | Original Schedule pause/resume/edit/reload/run journey reaches actual persisted delivery; old-browser menu geometry defect retained | [Schedule browser](schedule-browser-checks.json) |

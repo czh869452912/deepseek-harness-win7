@@ -1,5 +1,6 @@
 """Unchanged fixed Web client against the actual candidate Native Schedule."""
 import asyncio
+import hashlib
 import json
 from pathlib import Path
 import sys
@@ -41,6 +42,7 @@ async def after(ctx,result,output):
     result['renderedIndexBytes']=len(rendered.encode('utf-8'))
     node=ROOT/'.goose/out/rc022-prep-20261114-01/toolchain/node-v24.9.0-win-x64/node.exe'
     command=[str(node),str(ROOT/'scripts/oracles/rc022_schedule_browser.mjs'),str(source),str(output)]
+    result['browserScriptSha256']=hashlib.sha256(Path(command[1]).read_bytes()).hexdigest()
     (output/'browser-command.json').write_text(json.dumps(command),encoding='utf-8')
     process=await asyncio.create_subprocess_exec(*command,stdout=asyncio.subprocess.PIPE,stderr=asyncio.subprocess.STDOUT)
     try:log=await asyncio.wait_for(process.communicate(),90)
@@ -52,6 +54,16 @@ async def after(ctx,result,output):
     result['browser']=json.loads((output/'browser-observations.json').read_text(encoding='utf-8'))
     result['browserTask']=await ctx.schedule.view(dict(id=entry['id']))
     assert process.returncode==0 and result['browser']['passed']
+    task=result['browserTask'];assert task['title']=='Browser Schedule edited' and task['prompt']=='Edited by original browser'
+    assert task['status']=='active' and task['scheduledAt']==entry['scheduledAt']
+    receipt=task['lastDelivery'];agent=ctx.agents.get(receipt['targetSessionId'])
+    await asyncio.wait_for(agent.whenIdle(),15);await ctx.sessions.flush(agent.session)
+    observed=await ctx.sessionQuery.observeSession(agent.session.id,dict(projectionMode='none'))
+    try:
+        messages=[event['data'] for event in observed.events if event['type']=='user/message' and event['data'].get('source',{}).get('kind')=='schedule' and event['data']['id']==receipt['messageId']]
+        result['browserPersistedDelivery']=dict(receipt=receipt,messages=messages,history=await ctx.schedule.history(dict(id=entry['id'],limit=10)))
+        assert len(messages)==1
+    finally:observed.dispose()
 
 
 if __name__=='__main__':

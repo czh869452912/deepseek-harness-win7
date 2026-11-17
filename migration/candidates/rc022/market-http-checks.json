@@ -1,0 +1,38 @@
+{
+  "part": "C9-AM",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "scope": "Actual bounded anonymous HTTP market index reads and parser integration",
+  "implementation": [
+    "MarketHttpReader uses the existing demand-driven owned Host HTTP transport with GET/JSON accept, no redirected fetch, configured headers/body timeout and both declared and streamed decoded-byte size bounds.",
+    "HTTP errors and size refusals close the response without further demand; scope timer/listeners are removed before parsing, while the service lifetime still aborts the isolated parser.",
+    "Fetch errors preserve capped cause chains; physical body truncation maps to original terminated diagnostic with underlying cause retained."
+  ],
+  "verification": {
+    "paired": {
+      "run": "rc022-market-http-pair2-20261117-01",
+      "observations": 13,
+      "differences": 0,
+      "scope": "Actual same localhost fixture reached independently by unchanged Source fetch/parse Worker and Native transport/worker. Success/BOM, HTTP404, redirect refusal, declared/chunked/gzip decoded size, invalid UTF-8/format, headers timeout, premature EOF and disposal abort compare exactly. Empty-body invalid JSON compares only code/path/prefix, full engine errors retained separately."
+    },
+    "native": {
+      "run": "rc022-market-http-native-20261117-01",
+      "passed": 82,
+      "scope": "Actual HTTP fixture plus no-demand close, overflow stop, parsing beyond fetch deadline, parser lifetime abort, cycle-depth and JS numeric length cases; shared HTTP fetch, body/cache/index x86-x64/tools/worker regressions"
+    }
+  },
+  "diagnostics": [
+    "Initial paired actual EOF case differed: Native exposed declared Content-Length truncation detail, Source exposed terminated. Market boundary mapping fixed it; first failed observations and both underlying diagnostics retained."
+  ],
+  "cleanup": {
+    "removed": "Owned HTTP server/listen socket and test request threads, Native synthetic fixtures/home/tmp and obsolete server connection inputs",
+    "bytes": 21726189,
+    "owned_processes_after": [],
+    "retained": "Failed/final paired raw diagnostics, Source/Native results, command/log/XML/hashes; shared C1-C9 Source/toolchain retained until acceptance"
+  },
+  "limitations": [
+    "Invalid JSON diagnostic V8/QuickJS prose remains explicitly pending from C9-AL.",
+    "Controlled local HTTP only; no new HTTPS trust-store, external DNS/proxy/network diagnostic or actual Windows 7 environment qualification.",
+    "128-MiB maximum-size input and worker memory/deadline qualification remain pending.",
+    "Profile-specific listing annotation, Remote bindings, details and application market journey remain subsequent layers; targeted verification is not release acceptance."
+  ]
+}

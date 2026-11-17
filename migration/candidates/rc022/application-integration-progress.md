@@ -451,3 +451,5 @@
 | C9-AK | Market configured-source URL rules and shared document cache: TTL/pins, monotonic identity, removal, cancellation and disposal | [Market cache](market-cache-checks.json) |
 
 | C9-AL | Strict UTF-8/BOM + JS JSON acceptance and abort-safe parser process ownership; exact V8/QuickJS syntax diagnostics explicitly pending | [Market body](market-body-checks.json) |
+
+| C9-AM | Actual bounded market HTTP + isolated parsing: no redirect, decoded size, deadline/lifetime abort, EOF and response cleanup | [Market HTTP](market-http-checks.json) |

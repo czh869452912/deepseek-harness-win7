@@ -1,0 +1,42 @@
+{
+  "part": "C8-GU",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "scope": "Active canonical workspace dependencies tool provider and package registry",
+  "paired": {
+    "run": "rc022-workspace-tool-paired2-20261117-01",
+    "observations": 21,
+    "differences": 0,
+    "comparison": "Actual Cordis Tools registration, Source defineTool schemas, description/presentation/render, resolve/install/retry/cached values, config rejection and exact unregistration. Schema and wrong-type rejection use categories."
+  },
+  "verification": {
+    "native": "10 passed: actual mounted corpus, shared in-flight preparation and disposal after cancelled awaiters with success/failure, real typed tool pipeline failure/retry/output, direct filesystem regressions.",
+    "source": "The immediately preceding GT run qualified 73 original runtime/tool tests and 9 alias-copy tests; this batch additionally compares mounted actual Source and Native providers.",
+    "scope_reason": "New tool provider, direct filesystem consumer and canonical registry binding; full migration/release acceptance remains pending."
+  },
+  "behavior": [
+    "Registers load_workspace_dependencies through ctx.tools with Source output schema and exact model-facing description and generic read presentation.",
+    "Prepares once per mounted plugin, shares concurrent requests, retries after a preparation rejection and waits for outstanding filesystem work during disposal. Successful results remain cached.",
+    "Returns explicit bundled paths and recorded distributions, never changes PATH or package-manager environment. Optional omitted root resolves in place; explicit null fails as a wrong path type."
+  ],
+  "source_inputs": {
+    "packages/skill/tool-workspace-dependencies/src/index.ts": "835e40ffefd839085d1ccb5612055f874abc6a6c3a26bad856c8f8206a7c4e28",
+    "packages/skill/tool-workspace-dependencies/package.json": "cc3bc6f0a33cdeb9ebfb0ce0b4ce5800248fdb636da39dd8f4dc5099d01d48cd"
+  },
+  "diagnostics": {
+    "excluded": [
+      "rc022-workspace-tool-paired-20261117-01",
+      "rc022-workspace-tool-native-20261117-01"
+    ],
+    "reason": "Initial fixture did not classify Source null-root TypeError; Native also treated null as omission. Both fixed and original failures retained."
+  },
+  "limitations": [
+    "Desktop/SDK DSH_PRIMARY_RUNTIME composition and Office skill content/provider follow next. The tool does not certify payload OS compatibility, perform package installation or establish actual Win7/Portable qualification."
+  ],
+  "cleanup": {
+    "bytes_removed": 263643,
+    "links_removed": 36,
+    "receipt": "rc022-workspace-tool-native3-20261117-01/cleanup.json",
+    "removed": "All owned paired filesystem payloads and pytest/tmp/home trees; no matching processes remain.",
+    "retained": "Command/input hashes, Source/Native observations and failures, XML/logs and Source package bytes. Shared Source/toolchains remain owned by the migration through C9."
+  }
+}

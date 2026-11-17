@@ -18,7 +18,8 @@ async def test_web_shutdown_drains_live_agents_and_projection_writes(tmp_path, m
         for index in range(4):
             handle = await ctx.get('agents').create(dict(sessionId='shutdown-%s' % index))
             handles.append(handle)
-            handle.agent.session.append('session/title', dict(title='durable title %s' % index, source='manual'))
+            handle.agent.session.append('session/title', dict(title='durable title %s' % index,
+                source=dict(kind='user'), messageSeqs=[]))
     finally:
         running['shutdown'].shutdown(0)
         await running['shutdown'].wait()

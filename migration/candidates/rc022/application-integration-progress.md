@@ -535,3 +535,5 @@
 | C9-CA | 新旧目标切换时保留旧任务原状态且禁止提供当前资格；36 项迁移工作流定向检查 | [未完历史记录](migration-open-history-checks.json) |
 
 | C9-CB | 前端原始构建记录随资源备份、核验和原字节导入，冷恢复不冒用旧归档；18 项导入与恢复定向 | [原始构建记录导入](frontend-build-record-checks.json) |
+
+| C9-CC | 生产目标、原版元数据/371 份前端、40 份 Typert 声明和当前宿主绑定协调切换；真实 Web 四预设、Python PTC、关停与七配置入口定向通过，完整资格仍待后续 | [协调安装切换](coordinated-installation-checks.json) |

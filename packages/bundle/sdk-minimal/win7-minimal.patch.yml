@@ -1,0 +1,10 @@
+# Product Minimal retains exactly the editor and persistent platform shell.
+- id: tool-fs
+  disabled: true
+- id: tool-working-directory
+  disabled: true
+- insert:
+    - id: str-replace-editor
+      name: '@deepseek-ai/dsh-tool-str-replace-editor'
+      config:
+        maxOutputChars: 16000

@@ -1,0 +1,31 @@
+{
+  "id": "MIG-RC022-COORDINATION-001",
+  "goal": "完成 rc022 C1-C9 实际合同和协调安装切换",
+  "kind": "implementation",
+  "state": "running",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "base_product": "32d656acbc6d69b7a9a1ff02dc45a132e2ed64e9",
+  "owner": "current-session-coordinator",
+  "requires": [],
+  "provides": [],
+  "acceptance": [
+    "Qualify the fixed target through actual Source/native contracts and current application entrypoints.",
+    "Freeze one stable candidate and exact offline inputs for the unified release gate.",
+    "Preserve old qualifications without relabelling and clean completed owned test payloads."
+  ],
+  "expected_paths": [
+    "dsh",
+    "packages",
+    "apps",
+    "scripts",
+    "migration",
+    "tests"
+  ],
+  "evidence_ids": [],
+  "open_findings": [
+    "Unified current Source gate/SDK consumers and extracted candidate qualification remain pending.",
+    "Actual Windows 7 requalification is not established by current Windows observations."
+  ],
+  "next_action": "Finish current entrypoint and gate-consumer adaptation, qualify stable candidate, preserve deferred platform scope.",
+  "conflicts_with": []
+}

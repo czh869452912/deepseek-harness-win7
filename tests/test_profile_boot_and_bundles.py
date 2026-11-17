@@ -28,7 +28,8 @@ def test_creative_profile_mounts_its_native_bundle_over_original_composition():
     assert BUILTIN_PROFILES["creative"]["patches"] == []
     assert PROFILE_TEMPLATES['creative']['bundles'] == PROFILE_TEMPLATES['standard']['bundles'] + ['@deepseek-win7/dsh-creative']
     assert [row['name'] for row in BUILTIN_BUNDLES['dsh-creative'][0]['insert']] == [
-        '@deepseek-ai/dsh-cordis-host-runner', '@deepseek-ai/dsh-tool-cordis']
+        '@deepseek-ai/dsh-cordis-host-runner', '@deepseek-ai/dsh-cordis-manager',
+        '@deepseek-ai/dsh-tool-cordis/host']
 
     preset_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "dsh", "presets", "creative.yaml")
     with open(preset_path, "r", encoding="utf-8") as f:
@@ -142,4 +143,6 @@ def test_dump_config_output():
     from pathlib import Path
     source = Path(__file__).resolve().parents[1] / 'reference/packages/bundle/sdk-minimal/cordis.patch.yml'
     expected_ids = re.findall(r'^    - id: (\S+)', source.read_text(encoding='utf-8'), re.MULTILINE)
-    assert ids_min == expected_ids + ['fs-local', 'str-replace-editor']
+    assert ids_min == expected_ids + ['str-replace-editor']
+    rows = {row['id']: row for row in parsed_min}
+    assert rows['tool-fs']['disabled'] and rows['tool-working-directory']['disabled']

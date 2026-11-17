@@ -1,0 +1,33 @@
+{
+  "contract": "C9-CC",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "status": "production inputs switched; targeted passed; unified qualification pending",
+  "installation": {
+    "original_metadata_members": 2892,
+    "selected_package_manifests": 336,
+    "frontend_original_members": 371,
+    "frontend_sha256": "7e2ef76a38189a5747eefd00a78bc138d6497e16e6963f6d6980e773126440df",
+    "typert_host_declarations": 40,
+    "adaptations": [
+      "Explicit @deepseek-win7/dsh-ptc-runtime-python replaces the disabled Node PTC provider through a separate base patch.",
+      "Minimal disables upstream filesystem/working-directory tools and mounts the existing str_replace_editor alongside persistent platform shell.",
+      "Creative mounts the Native manager plus current inspect providers for the seven-tool workflow."
+    ],
+    "history": "Previous baseline bytes preserved separately. Historical contracts/tasks/receipts retain their original qualifications. accepted_upstream remains null."
+  },
+  "verification": [
+    {"run": "rc022-coordinate-native-20261118-02", "passed": 63, "failed": 1, "seconds": 68.07, "scope": "Original frontend strict import, profile composition/init, actual Web boot, cold Source frontend restore and archive version. Shutdown fixture used an invalid v4 title source; corrected and rerun separately."},
+    {"run": "rc022-coordinated-app-native-20261118-01", "passed": 2, "failed": 1, "seconds": 16.91, "scope": "Corrected real shutdown and seven profile compositions passed; new Web test used the wrong presets Remote result shape, corrected in the following run."},
+    {"run": "rc022-coordinate-typert-20261118-02", "passed": 7, "seconds": 3.25, "scope": "Exact current declaration roster, declarative parsing, executable codecs and archive version."},
+    {"run": "rc022-coordinated-app-native-20261118-02", "passed": 2, "seconds": 11.01, "scope": "Actual shipped Web without candidate registry/anchor patches, all four presets create sessions, real Python PTC calls schedule_list, client graph and terminal Typert; seven profiles compose explicit adaptations."}
+  ],
+  "diagnostics": "All seven coordination run commands/logs/XML retained. Earlier missing declarations, obsolete roster and fixture mismatches remain in their original failed logs; relevant raw zstd sessions retained with size/SHA provenance.",
+  "cleanup": {
+    "record": ".goose/out/rc022-coordinate-20261118-01/cleanup.json",
+    "removed_directories": 21,
+    "bytes_removed": 158237062,
+    "retained_observations": 20,
+    "protected_inputs": "Previous verified frontend archive retained through current release qualification. Independent pinned Source/toolchain and approved Office inputs remain active C9 inputs."
+  },
+  "limitations": "No unified regression/release acceptance claimed. Current Source build preparation, SDK consumers and actual extracted candidate/browser qualification remain to be completed. Current Windows observations do not establish Windows 7 acceptance."
+}

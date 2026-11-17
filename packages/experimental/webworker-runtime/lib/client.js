@@ -1,3 +1,4 @@
+import { applyIndexInjections } from "@deepseek-ai/dsh-client-web/injections";
 //#region src/image-layout.ts
 /**
 * Leaf name of the packed base image: one gzip member holding the ustar archive.
@@ -50,8 +51,175 @@ function parsePreviewFixtureManifest(value) {
 		fixtures
 	};
 }
+new TextEncoder();
+const decoder = new TextDecoder();
+const BLOCK = 512;
+/** @returns The NUL-terminated string in one header field. */
+function readField(header, offset, length) {
+	let end = offset;
+	while (end < offset + length && header[end] !== 0) end += 1;
+	return decoder.decode(header.subarray(offset, end));
+}
+/**
+* Parse an uncompressed ustar archive.
+*
+* File bytes are subarray views into `archive`, not copies; callers own the
+* aliasing. Entry kinds outside the written subset (links, PAX extensions)
+* fail loud instead of being skipped.
+* @param archive - Archive bytes.
+* @returns Entries in archive order.
+*/
+function parseTar(archive) {
+	const entries = [];
+	let offset = 0;
+	while (offset + BLOCK <= archive.length) {
+		const header = archive.subarray(offset, offset + BLOCK);
+		if (header.every((byte) => byte === 0)) break;
+		const short = readField(header, 0, 100);
+		const prefix = readField(header, 345, 155);
+		const name = prefix === "" ? short : `${prefix}/${short}`;
+		const size = Number.parseInt(readField(header, 124, 12).trim() || "0", 8);
+		const mode = Number.parseInt(readField(header, 100, 8).trim() || "0", 8) & 511;
+		const typeflag = header[156];
+		const directory = typeflag === 53 || name.endsWith("/");
+		if (typeflag !== 48 && typeflag !== 0 && typeflag !== 53) throw new Error(`vfs tar: unsupported entry type ${String.fromCharCode(typeflag ?? 0)} for "${name}"`);
+		const dataStart = offset + BLOCK;
+		entries.push({
+			name,
+			bytes: archive.subarray(dataStart, dataStart + size),
+			directory,
+			mode
+		});
+		offset = dataStart + Math.ceil(size / BLOCK) * BLOCK;
+	}
+	return entries;
+}
+//#endregion
+//#region src/package-assets.ts
+/** Media type of each asset extension the Client build emits. */
+const ASSET_MEDIA_TYPES = new Map([
+	[".svg", "image/svg+xml"],
+	[".png", "image/png"],
+	[".webp", "image/webp"],
+	[".jpg", "image/jpeg"],
+	[".jpeg", "image/jpeg"]
+]);
+/**
+* Map each archived package asset to a Blob URL kept for the page's lifetime.
+* @param archive - Archive from {@link packPackageAssets}.
+* @returns The synchronous resolver behind `require.asset`: the Blob URL of a
+* reference the image holds, otherwise the reference itself, which then fails as an unserved image.
+*/
+function packageAssetResolver(archive) {
+	const urls = /* @__PURE__ */ new Map();
+	for (const entry of parseTar(archive)) {
+		const [, name, path] = /^plugins\/((?:@[^/]+\/)?[^/]+)\/assets\/(.+)$/u.exec(entry.name) ?? [];
+		if (name === void 0 || path === void 0) continue;
+		const reference = `plugins/${name}/assets/${path.split("/").map((segment) => encodeURIComponent(segment).replace(/[!'()*]/gu, (char) => `%${char.charCodeAt(0).toString(16).toUpperCase()}`)).join("/")}`;
+		const extension = path.slice(path.lastIndexOf(".")).toLowerCase();
+		urls.set(reference, URL.createObjectURL(new Blob([new Uint8Array(entry.bytes)], { type: ASSET_MEDIA_TYPES.get(extension) ?? "" })));
+	}
+	return (reference) => urls.get(reference) ?? reference;
+}
+//#endregion
+//#region src/client/text-viewer.ts
+/** Read-only text viewer the page shows when the worker's `xdg-open` names a VFS file. */
+const VIEWER_STYLE = `
+  [data-preview-text-viewer] {
+    width: min(960px, calc(100vw - 32px));
+    height: min(720px, calc(100dvh - 32px));
+    padding: 0;
+    box-sizing: border-box;
+    border: 1px solid var(--dsw-alias-border-l2, rgb(0 0 0 / 10%));
+    border-radius: var(--dsw-radius-lg, 16px);
+    color: var(--dsw-alias-label-primary, #0f1115);
+    background: var(--dsw-alias-bg-base, #fff);
+    font-family: var(--dsw-font-family, inherit);
+  }
+  [data-preview-text-viewer][open] { display: flex; flex-direction: column; }
+  [data-preview-text-viewer]::backdrop { background: rgb(0 0 0 / 32%); }
+  [data-preview-text-viewer] header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--dsw-alias-border-l1, rgb(0 0 0 / 6%));
+  }
+  [data-preview-text-viewer] h2 {
+    flex: 1;
+    min-width: 0;
+    margin: 0;
+    overflow: hidden;
+    font-size: 14px;
+    line-height: 22px;
+    font-weight: 500;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  [data-preview-text-viewer] button {
+    height: 28px;
+    padding: 0 12px;
+    border: 1px solid var(--dsw-alias-border-l2, rgb(0 0 0 / 10%));
+    border-radius: var(--dsw-radius-sm, 8px);
+    color: inherit;
+    background: transparent;
+    font: inherit;
+    cursor: pointer;
+  }
+  [data-preview-text-viewer] pre {
+    flex: 1;
+    margin: 0;
+    padding: 16px;
+    overflow: auto;
+    background: var(--dsw-alias-markdown-code-block, transparent);
+    font: 13px/20px ui-monospace, SFMono-Regular, Menlo, monospace;
+    white-space: pre;
+  }
+`;
+/**
+* Show one file in the page's modal viewer, replacing any file it already shows.
+* @param path - Absolute VFS path used as the title.
+* @param text - File contents, rendered as plain text.
+*/
+function showTextViewer(path, text) {
+	let dialog = document.querySelector("dialog[data-preview-text-viewer]");
+	if (dialog === null) {
+		const style = document.createElement("style");
+		style.textContent = VIEWER_STYLE;
+		document.head.append(style);
+		dialog = document.createElement("dialog");
+		dialog.dataset.previewTextViewer = "";
+		const header = document.createElement("header");
+		const title = document.createElement("h2");
+		const close = document.createElement("button");
+		close.type = "button";
+		close.textContent = "Close";
+		const shown = dialog;
+		close.addEventListener("click", () => {
+			shown.close();
+		});
+		dialog.addEventListener("keydown", (event) => {
+			event.stopPropagation();
+		});
+		header.append(title, close);
+		dialog.append(header, document.createElement("pre"));
+		document.body.append(dialog);
+	}
+	const title = dialog.querySelector("h2");
+	title.textContent = path;
+	title.title = path;
+	dialog.querySelector("pre").textContent = text;
+	if (!dialog.open) dialog.showModal();
+}
 //#endregion
 //#region src/client/client.ts
+/**
+* Page half of the postMessage tunnel. It
+* turns fetch-shaped calls into `req` frames and rebuilds Responses from the
+* worker's `res` / `res-head`+`res-chunk`+`res-end` frames, so every consumer
+* (boot payload, bundle transport, ApiClient, Typert RPC) speaks plain HTTP.
+* The worker's unsolicited `view-text` frame opens the page's text viewer.
+*/
 /** Error carrying stream semantics across independently bundled Client code. */
 var TunnelLogicalStreamError = class extends Error {
 	dshRemoteStreamFailure;
@@ -101,13 +269,21 @@ var LogicalStreamInbox = class {
 const REFUSAL_STATUS = 500;
 const encoder = new TextEncoder();
 const SOURCE_MAP_TRAILER = /\/\/# sourceMappingURL=([^\r\n]+)\s*$/;
-const BASE64_CHUNK_BYTES = 32 * 1024;
-/** Encode UTF-8 text for an inline data URL without a call-stack-sized spread. */
-function base64(value) {
-	const bytes = encoder.encode(value);
-	let binary = "";
-	for (let offset = 0; offset < bytes.length; offset += BASE64_CHUNK_BYTES) binary += String.fromCharCode(...bytes.subarray(offset, offset + BASE64_CHUNK_BYTES));
-	return btoa(binary);
+/**
+* Encode source-map bytes as a Base64 data URL with the browser's native encoder.
+* DevTools cannot load a `blob:` source map, so the map must be inline.
+*/
+function sourceMapDataUrl(bytes) {
+	const reader = new FileReader();
+	return new Promise((resolve, reject) => {
+		reader.addEventListener("load", () => {
+			resolve(reader.result);
+		}, { once: true });
+		reader.addEventListener("error", () => {
+			reject(reader.error ?? /* @__PURE__ */ new Error("source map encoding failed"));
+		}, { once: true });
+		reader.readAsDataURL(new Blob([bytes], { type: "application/json;charset=utf-8" }));
+	});
 }
 /** Replace a tunnel-only map reference with a self-contained Base64 data URL. */
 async function localizeSourceMap(source, bundleUrl, fetch) {
@@ -116,7 +292,7 @@ async function localizeSourceMap(source, bundleUrl, fetch) {
 	try {
 		const response = await fetch(new URL(match[1], new URL(bundleUrl, globalThis.location.origin)));
 		if (!response.ok) return source.replace(SOURCE_MAP_TRAILER, "");
-		const dataUrl = `data:application/json;charset=utf-8;base64,${base64(await response.text())}`;
+		const dataUrl = await sourceMapDataUrl(await response.arrayBuffer());
 		return source.replace(SOURCE_MAP_TRAILER, `//# sourceMappingURL=${dataUrl}`);
 	} catch {
 		return source.replace(SOURCE_MAP_TRAILER, "");
@@ -178,7 +354,7 @@ var WorkerTunnel = class {
 				kind: "carrier",
 				message: `web-preview tunnel: worker failed: ${event.message}`
 			}, { cause: reason });
-			for (const inbox of this.logicalStreams.values()) inbox.fail(failure);
+			for (const { inbox } of this.logicalStreams.values()) inbox.fail(failure);
 			this.logicalStreams.clear();
 			for (const release of this.releases.values()) release();
 			this.releases.clear();
@@ -234,19 +410,24 @@ var WorkerTunnel = class {
 	* @param endpoint - canonical Gateway Remote endpoint.
 	* @param payload - decoded endpoint payload.
 	* @param signal - logical-stream cancellation.
+	* @param uplink - the stream's uplink, posted as `stream-uplink-item` frames and closed with `stream-uplink-end`.
 	* @returns decoded stream values from the worker Host.
 	*/
-	async *open(endpoint, payload, signal) {
+	async *open(endpoint, payload, signal, uplink) {
 		signal.throwIfAborted();
 		const id = this.nextId++;
 		const inbox = new LogicalStreamInbox();
+		const stream = {
+			inbox,
+			pump: void 0
+		};
 		let opened = false;
 		let terminal = false;
 		const onAbort = () => {
 			inbox.fail(signal.reason);
 		};
 		signal.addEventListener("abort", onAbort, { once: true });
-		this.logicalStreams.set(id, inbox);
+		this.logicalStreams.set(id, stream);
 		this.inFlight.set(id, `STREAM ${endpoint}`);
 		try {
 			const frame = {
@@ -264,6 +445,7 @@ var WorkerTunnel = class {
 					message: `web-preview tunnel: failed to open Remote stream ${endpoint}`
 				}, { cause });
 			}
+			if (uplink !== void 0) stream.pump = this.pumpUplink(id, uplink, signal, inbox);
 			while (true) {
 				const response = await inbox.next();
 				signal.throwIfAborted();
@@ -279,8 +461,67 @@ var WorkerTunnel = class {
 			signal.removeEventListener("abort", onAbort);
 			this.logicalStreams.delete(id);
 			this.inFlight.delete(id);
+			stream.pump?.stop();
 			if (opened && !terminal) this.abortWorkerOperation(id);
+			if (stream.pump !== void 0) await stream.pump.done;
 		}
+	}
+	/**
+	* Post the caller's uplink items for one logical stream. A failing uplink
+	* fails the downlink, and the enclosing `open` then aborts the worker side.
+	* `stop()` interrupts a pump blocked on `uplink.next()` and returns the
+	* caller's iterator at once, so a handle's queue closes and `send()` throws
+	* from then on; a generator blocked in `next()` completes that return only
+	* once it yields, so it is not awaited.
+	*/
+	pumpUplink(id, uplink, signal, inbox) {
+		const interrupt = Promise.withResolvers();
+		const iterator = uplink[Symbol.asyncIterator]();
+		const state = {
+			active: true,
+			released: false
+		};
+		const release = () => {
+			if (state.released) return;
+			state.released = true;
+			Promise.resolve(iterator.return?.()).catch(() => void 0);
+		};
+		return {
+			done: this.forwardUplink(id, iterator, interrupt.promise, () => state.active && !signal.aborted).then((exhausted) => {
+				state.released ||= exhausted;
+			}, (error) => {
+				inbox.fail(error);
+			}).then(release),
+			stop: () => {
+				state.active = false;
+				interrupt.resolve({
+					value: void 0,
+					done: true
+				});
+				release();
+			}
+		};
+	}
+	/**
+	* Post items until the caller's iterator ends, the pump is stopped, or the page aborts the stream.
+	* @returns whether the caller's iterator was exhausted and the uplink end posted.
+	*/
+	async forwardUplink(id, iterator, interrupt, isActive) {
+		for (;;) {
+			const next = await Promise.race([iterator.next(), interrupt]);
+			if (!isActive()) return false;
+			if (next.done === true) break;
+			this.worker.postMessage({
+				t: "stream-uplink-item",
+				id,
+				value: next.value
+			});
+		}
+		this.worker.postMessage({
+			t: "stream-uplink-end",
+			id
+		});
+		return true;
 	}
 	/**
 	* Read the pre-cordis boot payload (the injection table).
@@ -292,12 +533,22 @@ var WorkerTunnel = class {
 		return await response.json();
 	}
 	/**
+	* Read every package asset of the image and map each reference to a Blob URL.
+	* @returns The synchronous resolver the module system calls for `require.asset`.
+	*/
+	async packageAssets() {
+		const response = await this.fetch("/__assets__");
+		if (!response.ok) throw new Error(`web-preview tunnel: package assets failed with HTTP ${String(response.status)}: ${await response.text()}`);
+		return packageAssetResolver(new Uint8Array(await response.arrayBuffer()));
+	}
+	/**
 	* `loadBundle` seam: take one client bundle through the tunnel and execute it
 	* as a classic script, exactly like the shell's same-origin `<script src>`.
 	* The image packs each bundle with a trailing `sourceURL` naming its image
 	* path, so the blob shows under that name in the debugger instead of as an
 	* anonymous blob entry.
-	* @param url - Graph combo URL (`/plugins/??<id>/client.js&rev=...`).
+	* @param url - Graph combo reference (`plugins/??<id>/client.js&rev=...`), which
+	* this tunnel resolves against the page origin it maps from.
 	*/
 	async loadBundle(url) {
 		const response = await this.fetch(url);
@@ -471,53 +722,22 @@ var WorkerTunnel = class {
 				controller.error(reason);
 				return;
 			}
+			case "view-text":
+				showTextViewer(frame.path, frame.text);
+				return;
 			case "stream-item":
 			case "stream-end":
-			case "stream-error":
-				this.logicalStreams.get(frame.id)?.push(frame);
+			case "stream-error": {
+				const stream = this.logicalStreams.get(frame.id);
+				if (stream === void 0) return;
+				stream.inbox.push(frame);
+				if (frame.t !== "stream-item") stream.pump?.stop();
 				return;
+			}
 			default: throw new Error(`web-preview tunnel: unknown frame ${JSON.stringify(frame)}`);
 		}
 	}
 };
-//#endregion
-//#region src/client/apply-injections.ts
-function assertNever(row) {
-	throw new Error(`webworker-runtime: unknown index injection row ${JSON.stringify(row)}`);
-}
-/**
-* Execute every row in table order.
-* @param rows - Injection table from the boot payload.
-* @param loadScript - Executes one script-src row; the tunnel's `loadBundle`,
-* because the row URLs (`/plugins/...`) resolve only through the worker.
-*/
-async function applyIndexInjections(rows, loadScript) {
-	for (const row of rows) switch (row.kind) {
-		case "global":
-			globalThis[row.name] = row.value;
-			break;
-		case "script": {
-			const el = document.createElement("script");
-			el.textContent = row.text;
-			(row.placement === "head" ? document.head : document.body).append(el);
-			break;
-		}
-		case "script-src":
-			await loadScript(row.src);
-			break;
-		case "script-preload": break;
-		case "style": {
-			const el = document.createElement("style");
-			el.textContent = row.text;
-			document.head.append(el);
-			break;
-		}
-		case "html":
-			(row.placement === "head" ? document.head : document.body).insertAdjacentHTML("beforeend", row.html);
-			break;
-		default: assertNever(row);
-	}
-}
 //#endregion
 //#region src/client/source-chooser.ts
 /** Pre-boot filesystem-source chooser for static WebWorker previews. */
@@ -830,11 +1050,12 @@ async function connectWorkerHost(worker, options) {
 	try {
 		const tunnel = new WorkerTunnel(worker);
 		tunnel.init(new URL(options?.image ?? "vfs-image.tar.gz", document.baseURI).href, (options?.overlays ?? []).map((overlay) => new URL(overlay, document.baseURI).href));
-		const payload = await tunnel.bootPayload();
+		const [payload, resolveAsset] = await Promise.all([tunnel.bootPayload(), tunnel.packageAssets()]);
 		globalThis.__DSH_TRANSPORT__ = {
 			fetch: (input, init) => tunnel.fetch(input, init),
-			openStream: (endpoint, payload, signal) => tunnel.open(endpoint, payload, signal),
+			openStream: (endpoint, payload, signal, uplink) => tunnel.open(endpoint, payload, signal, uplink),
 			loadBundle: (url) => tunnel.loadBundle(url),
+			resolveAsset,
 			ownsHost: true
 		};
 		globalThis.__DSH_FILE_UPLOAD__ = { fetch: (input, init) => tunnel.fetch(input, init) };

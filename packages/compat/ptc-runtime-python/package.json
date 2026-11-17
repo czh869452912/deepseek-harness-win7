@@ -1,0 +1,6 @@
+{
+  "name": "@deepseek-win7/dsh-ptc-runtime-python",
+  "version": "0.2.2-rc.3-r1",
+  "private": true,
+  "description": "Win7 Python 3.8 stateless function-body PTC provider; installed through the native registry."
+}

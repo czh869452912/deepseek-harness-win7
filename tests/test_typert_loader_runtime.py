@@ -144,7 +144,9 @@ def test_all_shipped_artifacts_are_executable_and_recursive_json_codec_rejects_n
     assert schema.parse({"x": [1, None, {"a": False}]}) == {"x": [1, None, {"a": False}]}
     with pytest.raises(ValueError):
         schema.parse({"x": object()})
-    assert "$defs" in schema.to_json_schema()
+    # Current generator publishes the record boundary while its executable
+    # codec continues rejecting non-JSON values recursively.
+    assert schema.to_json_schema() == dict(type='object', properties={}, required=[], additionalProperties=True)
 
 
 def test_generated_grammar_rejects_executable_code_and_preserves_undefined():

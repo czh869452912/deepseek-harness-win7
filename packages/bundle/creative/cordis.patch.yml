@@ -3,7 +3,9 @@
     - id: cordis-host-runner
       name: '@deepseek-ai/dsh-cordis-host-runner'
     - id: tool-cordis
-      name: '@deepseek-ai/dsh-tool-cordis'
+      name: '@deepseek-ai/dsh-cordis-manager'
+    - id: cordis-inspect-providers
+      name: '@deepseek-ai/dsh-tool-cordis/host'
 
 - id: system-prompt
   config:

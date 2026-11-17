@@ -1,0 +1,6 @@
+# Product adaptation: qualified Python 3.8 stateless function bodies.
+- id: ptc-runtime
+  disabled: true
+- insert:
+    - id: win7-ptc-runtime
+      name: '@deepseek-win7/dsh-ptc-runtime-python'

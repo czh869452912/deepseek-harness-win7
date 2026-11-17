@@ -120,3 +120,25 @@ CURRENT_HARNESS_PLUGIN_CLASSES = {
 from dsh.client.surfaces_current import PURE_HOST_HALVES
 for _package, _class_name in PURE_HOST_HALVES.items():
     CURRENT_HARNESS_PLUGIN_CLASSES[_package] = 'dsh.client.surfaces_current:' + _class_name
+
+# Application contracts qualified against the fixed rc022 Source.
+COORDINATED_APPLICATION_BINDINGS = {'@deepseek-ai/dsh-agent-default-model': 'dsh.core.default_model_current:CurrentAgentDefaultModelConfig',
+ '@deepseek-ai/dsh-api-session-controller': 'dsh.api.session_authorized:AuthorizedSessionController',
+ '@deepseek-ai/dsh-api-workspace-controller': 'dsh.api.workspace_current:CurrentWorkspaceController',
+ '@deepseek-ai/dsh-client-locale': 'dsh.client.appearance_current:CurrentLocaleHost',
+ '@deepseek-ai/dsh-client-modules': 'dsh.host.client_modules.current:CurrentClientModulesPlugin',
+ '@deepseek-ai/dsh-client-ui-settings-general': 'dsh.client.appearance_current:CurrentGeneralSettingsHost',
+ '@deepseek-ai/dsh-client-ui-theme': 'dsh.client.appearance_current:CurrentThemeHost',
+ '@deepseek-ai/dsh-cordis-host-runner': 'dsh.extensions.host_runner_current:CurrentDynamicCordisRunner',
+ '@deepseek-ai/dsh-cordis-manager': 'dsh.extensions.cordis_manager_current:CurrentNativeCordisManager',
+ '@deepseek-ai/dsh-host-plugin-inventory': 'dsh.host.plugin_inventory.current:CurrentPluginInventory',
+ '@deepseek-ai/dsh-plugin-market': 'dsh.boot.plugin_market_022:CurrentPluginMarket',
+ '@deepseek-ai/dsh-plugin-market/tools': 'dsh.boot.plugin_market_tools:CurrentPluginMarketTools',
+ '@deepseek-ai/dsh-schedule': 'dsh.schedule.service_current:CurrentScheduleService',
+ '@deepseek-ai/dsh-tool-cordis': 'dsh.extensions.inspect_tools_current:CurrentCordisInspectTools',
+ '@deepseek-ai/dsh-tool-cordis/host': 'dsh.extensions.inspect_providers_current:CurrentCordisInspectProviders',
+ '@deepseek-ai/dsh-tool-schedule': 'dsh.schedule.tools_current:CurrentToolSchedule',
+ '@deepseek-ai/dsh-typert-loader': 'dsh.typert.loader_current:CurrentTypertLoader',
+ '@deepseek-ai/dsh-workspace': 'dsh.workspace.registry_022:Current022WorkspacePlugin',
+ '@deepseek-win7/dsh-ptc-runtime-python': 'dsh.code_runtime.confined_ptc:ConfinedPythonPtcRuntime'}
+CURRENT_HARNESS_PLUGIN_CLASSES.update(COORDINATED_APPLICATION_BINDINGS)

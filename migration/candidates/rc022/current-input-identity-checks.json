@@ -1,0 +1,76 @@
+{
+  "contract": "C9-CQ",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "status": "input utility targeted passed; current orchestration integration pending",
+  "scope": "Freeze actual prepared Node/Source directory graph and exact Python runtime/dependency copy inputs. This single inventory is not a stability/Source parity or release qualification claim.",
+  "checks": {
+    "run": "rc022-qualification-input-controls-20261118-03",
+    "passed": 12,
+    "seconds": 0.73,
+    "coverage": [
+      "Changed, added and removed installed code",
+      "Directory cycles, escaped targets and explicit volatile exclusions",
+      "Missing optional links becoming available",
+      "Actual copied standard-library/DLL/locked dependency bytes",
+      "Unapproved Python distribution files"
+    ]
+  },
+  "actual": {
+    "run": "rc022-qualification-inputs-actual-20261118-04",
+    "report": {
+      "status": "passed",
+      "node_files": 135100,
+      "links": 10363,
+      "python": {
+        "x64": {
+          "files": 2539,
+          "distributions": 29,
+          "observed": {
+            "version": [
+              3,
+              8,
+              10
+            ],
+            "platform": "win32",
+            "bits": 64,
+            "files": {
+              "python.exe": "4010cba30d24412a68c952eba29d89228b469a40f1bc866496ade6465d8a91ee",
+              "python38.dll": "24c7443fe51a7640251467b362fdc9f7558c784643e0bde5c2875d347c7d42ee"
+            }
+          }
+        },
+        "x86": {
+          "files": 2514,
+          "distributions": 28,
+          "observed": {
+            "version": [
+              3,
+              8,
+              10
+            ],
+            "platform": "win32",
+            "bits": 32,
+            "files": {
+              "python.exe": "da2293a6ed23fcfc1eb795d420f1e04c784e2b7c0eddebc953d4bccfc2f7ee69",
+              "python38.dll": "a9675a91d767095c9d4a2ae1df6e17bdb59102dbd2b4504c3493b0bcbed5ef55"
+            }
+          }
+        }
+      },
+      "seconds": 401.98399999999674
+    },
+    "missing_optional_links": 18,
+    "manifest_sha256": {
+      "node-dependencies.json": "35b890c145807626559a6a338967f55f2cf216b3b407f6d9ae8255ecaa5ccad1",
+      "python-x64.json": "863cfd0ec9b24897a50dcc0c6f7d98451257f76bf10953d823934e5a7d7c9c5d",
+      "python-x86.json": "c0fee28818f9c81aa7490c03655f08caf4c4caea5e4ac9163abc4beb09c4a0ab"
+    }
+  },
+  "development_failures": "Run01/02 slow probes interrupted with exact owned-process diagnostics retained. Run03 refused a dangling optional js-yaml link; the utility now binds the exact missing target without claiming the dependency is usable. Root/link resolution avoids redundant per-file Windows ancestor queries.",
+  "cleanup": "Targeted fixtures and workspaces removed; utility reads shared preparation inputs without making disposable payload copies. Full input manifests and failure/process diagnostics retained. Source/Office/runtime preparation assets remain owned by the final candidate qualification milestone.",
+  "input_sha256": {
+    "scripts/qualification_inputs.py": "bc76ca46154960f768dd695511c752acef8eba41a421224e3f885da12fa5930f",
+    "tests/test_qualification_inputs.py": "ea9ba3371666891e69bd89e39e43667a692b84c683f58767e003382830e8684e"
+  },
+  "limitations": "Not yet wired into the current orchestrator. Complete frozen Python/Source/paired/extracted/Desktop and Windows7 acceptance are not established."
+}

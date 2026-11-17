@@ -15,7 +15,7 @@ def calendar_date(days):
     return year+(month<=2),month,day
 
 
-def local_day(epoch,time_zone):
+def local_epoch(epoch,time_zone):
     utc=EPOCH+timedelta(milliseconds=epoch);zone=ZoneInfo(time_zone)
     try:offset=zone.fromutc(utc.replace(tzinfo=zone)).utcoffset()
     except (ValueError,OverflowError):
@@ -23,7 +23,10 @@ def local_day(epoch,time_zone):
         # has the same weekday/leap cycle and the same pre/final zone rules.
         year=utc.year+400 if utc.year==1 else utc.year-400
         offset=zone.fromutc(utc.replace(year=year,tzinfo=zone)).utcoffset()
-    return (epoch+int(offset.total_seconds()*1000))//86400000
+    return epoch+int(offset.total_seconds()*1000)
+
+
+def local_day(epoch,time_zone):return local_epoch(epoch,time_zone)//86400000
 
 
 def day_parts(day,time):

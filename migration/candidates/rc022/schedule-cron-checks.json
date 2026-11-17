@@ -1,0 +1,29 @@
+{
+  "part": "C9-K",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "scope": "Shared strict Cron recurrence and its current Schedule record consumers",
+  "paired": {
+    "run": "rc022-schedule-cron-paired-20261117-01",
+    "observations": 121,
+    "differences": 0,
+    "method": "Actual fixed util/time Cron and Schedule domain versus Native, exact fields, canonical text, rejections, error causes/names/codes/messages and latest/next decisions."
+  },
+  "verification": {
+    "source": "147 original util/time and Schedule Cron tests passed.",
+    "native": "17 passed: shared Cron and direct Schedule consumers, previously added wall/interval/time contracts and historical regressions."
+  },
+  "behavior": [
+    "Five strict numeric fields support stars, lists, ranges and range/star steps. Canonicalization preserves Vixie star flags and Sunday folding independently of matched values.",
+    "Bounded forward/backward calendar walks retain a 400-year horizon, skip unselected months, preserve a committed due floor and stop at four-digit instant exhaustion.",
+    "Source-paired decisions include repeated DST hours, forward gaps, skipped dates, opposite-side UTC/local dates, leap-day rules, year-zero local floor and year-10000 local ceiling. Immutable matched fields and exact Schedule record decoding keep reads independent of target recomputation."
+  ],
+  "cleanup": {
+    "bytes_removed": 99955,
+    "owned_processes_after": [],
+    "retained": "Paired fields/errors/decisions and hashes, commands, Source results and Native logs/XML/observations; owned synthetic workspaces and homes removed."
+  },
+  "limitations": [
+    "RRULE, Host storage, management, runtime and tools remain pending; staged rule modules do not promote production bindings.",
+    "No full regression, application/session, Portable/browser/Win7 qualification or upstream promotion."
+  ]
+}

@@ -307,3 +307,57 @@ createWeeklyScheduleRecord=create_weekly_schedule_record
 acceptedDecision=accepted_decision
 resolveDailyOccurrence=resolve_daily_occurrence
 resolveWeeklyOccurrence=resolve_weekly_occurrence
+
+
+def read_recurrence(result):
+    if result['kind']=='accepted':return result['rule']
+    codes=dict(syntax='invalid_rule',time_zone='invalid_time_zone',density='frequency_too_high')
+    raise ScheduleInputError(codes[result['reason']],result['detail'],result.get('cause'))
+
+
+def canonicalize_cron_expression(expression):
+    from dsh.util_time_cron import Cron
+    return read_recurrence(Cron.parse(expression,'UTC')).expression
+
+
+def parse_cron_input(value):
+    if not isinstance(value,dict) or set(value)!={'expression','time_zone'} or not isinstance(value['expression'],str):
+        raise ScheduleInputError('invalid_rule','cron must contain exactly expression and time_zone, with a five-field cron expression.')
+    if not isinstance(value['time_zone'],str):raise ScheduleInputError('invalid_time_zone','time_zone must be a string.')
+    return dict(expression=canonicalize_cron_expression(value['expression']),timeZone=canonicalize_time_zone(value['time_zone']))
+
+
+def create_cron_schedule_record(id,prompt,cron,now,title):
+    from dsh.util_time_cron import Cron
+    prompt=_prompt(prompt);parsed=parse_cron_input(cron)
+    if not instant.is_four_digit_year_instant(now):raise ScheduleInputError('time_out_of_range','Cron creation time must be a representable four-digit-year UTC instant.')
+    target=read_recurrence(Cron.parse(parsed['expression'],parsed['timeZone'])).next(now)
+    if target is None:raise ScheduleInputError('time_out_of_range','No future cron occurrence is representable as a four-digit-year UTC instant.')
+    return FrozenDict(id=id,kind='cron',title=schedule_title(title),prompt=prompt,scheduledAt=target,**parsed)
+
+
+def resolve_cron_occurrence(record,accepted_at):
+    from dsh.util_time_cron import Cron
+    accepted_decision('cron',accepted_at)
+    if accepted_at<instant.four_digit_year_epoch(record['scheduledAt'])['epoch']:raise ScheduleLogError('cron dispatch cannot precede the active scheduledAt')
+    return read_recurrence(Cron.parse(record['expression'],record['timeZone'])).resolve(record['scheduledAt'],accepted_at)
+
+
+def decode_cron_record(value):
+    if not isinstance(value,dict):raise ScheduleLogError('schedule record must be an object')
+    title=decode_stored_title(value.get('title'))
+    if set(value)!={'id','kind','title','prompt','expression','timeZone','scheduledAt'}:
+        raise ScheduleLogError('cron schedule must contain exactly id, kind, title, prompt, expression, timeZone, and scheduledAt')
+    prompt=value['prompt'];expression=value['expression'];zone=value['timeZone']
+    if not isinstance(prompt,str) or not prompt or trim_js(prompt)!=prompt:raise ScheduleLogError('cron prompt must be non-empty and already trimmed')
+    if not isinstance(expression,str) or not isinstance(zone,str):raise ScheduleLogError('cron expression and timeZone must be strings')
+    try:canonicalize_time_zone(zone);canonical=canonicalize_cron_expression(expression)
+    except ScheduleInputError as error:raise ScheduleLogError(error.name+': '+str(error)) from error
+    if canonical!=expression:raise ScheduleLogError('cron expression must be canonical')
+    return FrozenDict(id=decode_id(value['id']),kind='cron',title=title,prompt=prompt,expression=expression,timeZone=zone,scheduledAt=decode_instant(value['scheduledAt']))
+
+
+canonicalizeCronExpression=canonicalize_cron_expression
+parseCronInput=parse_cron_input
+createCronScheduleRecord=create_cron_schedule_record
+resolveCronOccurrence=resolve_cron_occurrence

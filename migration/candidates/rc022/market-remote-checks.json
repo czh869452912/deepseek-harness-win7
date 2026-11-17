@@ -1,0 +1,41 @@
+{
+  "part": "C9-AS",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "scope": "Market detail Remote and reversible adjacent-image route",
+  "implementation": [
+    "CurrentPluginMarket composes repository identity/API/Git cache and shared npm/detail readers under its lifetime. readEntryDetail preserves language admission ordering, listed-version selection, private registry repository fallback, manifest fallback, source-self suppression and DetailFailure conversion.",
+    "Connection GET detail-file route preserves document/path parsing, bounded adjacent images, status/header policy and reversible scope ownership. Disposal aborts reads, drains cache and detail tasks. Gateway omitted optional arguments support both native undefined representations."
+  ],
+  "verification": {
+    "paired": {
+      "run": "rc022-market-remote-pair3-20261117-01",
+      "observations": 18,
+      "differences": 0,
+      "scope": "Original Market and file readers, controlled HTTP bodies; localized/pinned Git/npm/private/manifest, cache/refresh/error ordering, exact document IDs, image bytes/headers and route disposal"
+    },
+    "native": {
+      "regression_run": "rc022-market-remote-native2-20261117-01",
+      "regressions_passed": 55,
+      "focused_run": "rc022-market-remote-native4-20261117-01",
+      "focused_passed": 2,
+      "scope": "Listing/Git/repository/detail/shared HTTP/manager consumers plus corrected original-outcome expectations and actual authorized Connection/Gateway HTTP optional-argument, binary image and route-unload test; this is targeted evidence, not a combined full-gate receipt"
+    },
+    "source": {
+      "run": "rc022-market-remote-source-20261117-01",
+      "passed": 4,
+      "failed": 0,
+      "scope": "Unmodified detail-remote suite"
+    }
+  },
+  "cleanup": {
+    "bytes": 695091,
+    "removed": "Owned synthetic test workspaces/home/tmp and reconstructible paired input/cache directories",
+    "owned_processes_after": [],
+    "retained": "All failures, commands/logs/XML/Vitest, paired observations/input hashes; shared Source/toolchain until C1-C9 acceptance"
+  },
+  "limitations": [
+    "Controlled file HTTP collaborators do not establish live CDN/private-host connectivity.",
+    "HTTP Gateway fixture uses an explicit SRC descriptor; pinned generated strict descriptors and unchanged frontend journey remain the next candidate application/browser qualification.",
+    "Production binding/pin promotion, search reuse performance and full release gate are not claimed."
+  ]
+}

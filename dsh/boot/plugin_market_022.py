@@ -1,18 +1,29 @@
-"""Candidate market listing service; detail methods are a subsequent contract."""
+"""Pinned Market listing, document details and adjacent-image Remote service."""
+import asyncio
 import math
 import os
 import re
+from urllib.parse import parse_qs, urlsplit
 
 from dsh.boot.market_document_022 import MarketDocumentCache
+from dsh.boot.market_detail_022 import MarketDetailReader
 from dsh.boot.market_http_022 import MarketHttpReader
 from dsh.boot.market_index_022 import observe_market_operations_async
 from dsh.boot.market_listing_022 import listing_of
+from dsh.boot.market_repository_022 import repository_of, manifest_repository
+from dsh.boot.market_repository_cache_022 import RepositoryCache
+from dsh.boot.market_repository_files_022 import RepositoryFiles
 from dsh.boot.plugin_compatibility import get_dsh_runtime_version
+from dsh.core.session.json import UNDEFINED
 from dsh.cordis.awaiting import await_callback_result
 from dsh.cordis.schema import Schema as z
 from dsh.cordis.text import JS_WHITESPACE
+from dsh.host.url_current import _url
 from dsh.typert.remote import Remote, RemoteError, TypertRemoteService
+from dsh.typert.artifact import UNDEFINED as WIRE_UNDEFINED
 from dsh.typert.stores import field
+from dsh.util.plugin_detail import DetailFailure, detail_image_response, language_chain, npm_file_source_order
+from dsh.util.plugin_detail_http import NpmFiles
 
 
 def integer(value):
@@ -46,11 +57,23 @@ class CurrentPluginMarket(TypertRemoteService):
         self.detail_cache_dir = cache_dir
         self.documents = MarketDocumentCache(lambda: self.config['indexes'].get(),
             MarketHttpReader(config['fetchTimeoutMs'], config['maxBytes']), config['cacheTtlMs'])
+        self.repositories = RepositoryCache(dict(dir=cache_dir, maxRepositoryBytes=config['detailRepositoryMaxBytes'],
+            maxCacheBytes=config['detailCacheMaxBytes'], timeoutMs=config['detailGitTimeoutMs'], ttlMs=config['cacheTtlMs'],
+            transports=['https', 'http', 'ssh'], lifetime=self.documents.lifetime.signal, sizePollMs=200))
+        self.details = MarketDetailReader(dict(maxDocumentBytes=config['detailMaxBytes'], maxImageBytes=config['detailImageMaxBytes'],
+            ttlMs=config['cacheTtlMs']), self.detail_repository_options(), RepositoryFiles, manifest_repository)
+        def register(scope):
+            scope.effect(lambda: scope.get('connection').fetch.register(dict(path='/api/plugin-market/detail-file',
+                methods=['GET'], requestBody='buffered', fetch=self.serve_detail_file)), 'plugin-market: detail-file')
+        ctx.inject(['connection'], register)
         def updated(*_):
             self.documents.volatile_update()
             ctx.emit('plugin-market/changed')
         ctx.on('loader/volatile-update', updated)
-        ctx.effect(lambda: self.documents.dispose, 'plugin-market document reads')
+        async def dispose():
+            await self.documents.dispose()
+            await asyncio.gather(self.repositories.settled(), *list(self.details.pending.values()), return_exceptions=True)
+        ctx.effect(lambda: dispose, 'plugin-market owned reads')
 
     @Remote
     def listIndexes(self):
@@ -96,3 +119,52 @@ class CurrentPluginMarket(TypertRemoteService):
         index = (await self.documents.document(url))['index']
         plugin = next((plugin for plugin in index['plugins'] if plugin['name'] == name), None)
         return None if plugin is None else (await self.annotator())(plugin)
+
+    def detail_repository_options(self):
+        return dict(timeoutMs=self.config['fetchTimeoutMs'], lifetime=self.documents.lifetime.signal,
+            gitlabHosts=[host.lower() for host in self.config['detailGitlabHosts']], cache=self.repositories)
+
+    @Remote
+    async def readEntryDetail(self, url, name, version, language, options=None):
+        try:
+            languages = language_chain(language)
+        except Exception as error:
+            raise RemoteError('plugin-market/invalid-query', str(error), dict(field='language', reason='format'), cause=error)
+        options = {} if options is None or options is WIRE_UNDEFINED or options is UNDEFINED else options
+        index = (await self.documents.document(url))['index']
+        plugin = next((candidate for candidate in index['plugins'] if candidate['name'] == name), None)
+        listed = None if plugin is None else next((candidate for candidate in plugin['versions'] if candidate['version'] == version), None)
+        if listed is None:
+            raise RemoteError('plugin-market/unknown-plugin', url+' lists no '+name+'@'+version, dict(name=name, version=version))
+        declared = plugin.get('repository')
+        found = None if declared is None else repository_of(declared['url'])
+        repository = None if found is None else dict(found, directory=declared.get('directory', ''))
+        source = listed['source']
+        if source['type'] == 'git':
+            ref = repository_of(source['url'])
+            if ref is None:
+                return dict(status='none')
+            directory = source.get('path', '')
+            if repository is not None and repository['url'] == ref['url'] and repository['directory'] == directory:
+                repository = None
+            location = dict(files=RepositoryFiles(ref, source['commit'], self.detail_repository_options()), dir=directory, repository=repository)
+        elif source.get('registry') is None or urlsplit(_url(source['registry'])['origin']).netloc in ('registry.npmjs.org', 'registry.npmmirror.com'):
+            sources = npm_file_source_order(self.config['detailNpmFileSources'], options.get('npmFileSources', []))
+            files = NpmFiles(name, version, sources, dict(timeoutMs=self.config['fetchTimeoutMs'], lifetime=self.documents.lifetime.signal))
+            location = dict(files=files, dir='', repository=repository if repository is not None else 'manifest')
+        else:
+            location = dict(dir='', repository=repository)
+        try:
+            return await self.details.read(location, languages, options.get('refresh') is True)
+        except DetailFailure as error:
+            raise RemoteError('plugin-market/detail-unavailable', str(error), dict(reason=error.reason), cause=error)
+
+    async def serve_detail_file(self, request):
+        params = parse_qs(urlsplit(field(request, 'url')).query, keep_blank_values=True)
+        cache = 'private, max-age='+str(self.config['cacheTtlMs']//1000)
+        if 'document' not in params or 'path' not in params:
+            return detail_image_response('invalid', cache)
+        try:
+            return detail_image_response(await self.details.image(params['document'][0], params['path'][0]), cache)
+        except DetailFailure as error:
+            return detail_image_response(error.reason, cache)

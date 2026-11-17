@@ -463,3 +463,5 @@
 | C9-AQ | Repository API reads and clone fallback: encoded GitHub/GitLab URLs, ambiguous misses, public/private checks and README order | [Market files](market-files-checks.json) |
 
 | C9-AR | Actual Git partial clones, fixed/default commits, exact binary bounds, process-tree cancellation, cross-cache locks and deferred LRU eviction | [Market Git](market-git-checks.json) |
+
+| C9-AS | Market detail Remote composes actual readers/cache, preserves original fallback/errors and owns reversible authenticated image route | [Market Remote](market-remote-checks.json) |

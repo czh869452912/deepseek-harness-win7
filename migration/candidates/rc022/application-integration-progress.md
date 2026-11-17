@@ -475,3 +475,5 @@
 | C9-AW | One owned Win7 worker reuses pinned lazy search instances per live document; concurrent/cancel/refresh/retire/crash recovery and original browser journey checked | [Market search reuse](market-search-checks.json) |
 
 | C9-AX | Event-driven owned stream handoff removes fixed per-chunk delay; actual default 128 MiB exact/overflow HTTP and x86/x64 parser boundary matches Source | [Market boundary](market-boundary-checks.json) |
+
+| C9-AY | Exact pinned V8 JSON syntax prose/UTF-16 locations/context on Win7 worker; 7,849 exact pairs, full x86/x64 corpus and original body/Market consumers | [Market JSON diagnostics](market-json-checks.json) |

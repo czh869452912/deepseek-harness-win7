@@ -57,6 +57,7 @@ for (const file of result.outputFiles) {
   writeFileSync(resolve(output, name), file.contents); resources[name] = digest(file.contents)
 }
 for (const [name, path] of [ ['driver.js', 'scripts/native/market-index/driver.js'], ['search-driver.js', 'scripts/native/market-index/search-driver.js'],
+  ['V8-LICENSE', 'scripts/native/market-index/V8-LICENSE'], ['json-diagnostics-input.json', 'scripts/native/market-index/json-diagnostics-input.json'],
   ['SOURCE-LICENSE', resolve(source, 'LICENSE')], ['url.js', 'dsh/host/browser_compat/url.js'],
   ['url.LICENSE.txt', 'dsh/host/browser_compat/url.LICENSE.txt'], ['url-input.json', 'dsh/host/browser_compat/url-input.json'] ]) copy(name, path)
 const dependencies = new Set()

@@ -3,6 +3,7 @@ import { MarketIndexError, parseMarketIndex, marketInstallTarget } from '@market
 import { MarketSearch } from '@market/search'
 import { normalizeIndexUrl } from '@market/index-url'
 import { repositoryOf, manifestRepository } from '@market/repository'
+import { jsonSyntaxMessage } from './json-diagnostics'
 
 /** One document owns its unchanged, lazily built Source search engine. */
 export function openSearch(value: unknown, url: string) {
@@ -18,7 +19,7 @@ export async function observe(operation: any): Promise<any> {
       let value: unknown
       try { value = JSON.parse(operation.text) }
       catch (error: any) {
-        const reason = `must be JSON: ${error.message}`
+        const reason = `must be JSON: ${jsonSyntaxMessage(operation.text) ?? error.message}`
         return { ok: false, path: '$', reason, message: reason }
       }
       try { return { ok: true, index: parseMarketIndex(value, operation.url) } }

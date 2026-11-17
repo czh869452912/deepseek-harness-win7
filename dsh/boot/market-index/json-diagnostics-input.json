@@ -1,0 +1,31 @@
+{
+  "node": "v24.9.0",
+  "v8": "13.6.233.10-node.27",
+  "scope": "Grammar diagnostic selection, UTF-16 positions, CRLF line/column and unescaped source-context excerpts; not a replacement value parser.",
+  "inputs": [
+    {
+      "url": "https://raw.githubusercontent.com/nodejs/node/v24.9.0/deps/v8/src/json/json-parser.cc",
+      "file": "json-parser.cc",
+      "size": 84855,
+      "sha256": "b0e5be0990a6f89b31396e70756ab2f8b1d32d081b0af35d33fcb23714380462"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/nodejs/node/v24.9.0/deps/v8/src/common/message-template.h",
+      "file": "message-template.h",
+      "size": 61623,
+      "sha256": "0b4100c04e752548600d39cb126ea188b0afbff8ae2ebe7bceb95e96236013b9"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/nodejs/node/v24.9.0/deps/v8/LICENSE",
+      "file": "LICENSE",
+      "size": 3093,
+      "sha256": "6ab33af8774a0f396ee3aeeb761e3229057682d6f9fa7f572e390c2cb3a6e509"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/nodejs/node/v24.9.0/deps/v8/src/json/json-parser.h",
+      "file": "json-parser.h",
+      "size": 13867,
+      "sha256": "b973d3e7f7da4a715f121d1ce55a3a8045a103526075ab1db678656bc7f491d9"
+    }
+  ]
+}

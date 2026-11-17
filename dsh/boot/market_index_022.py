@@ -1,7 +1,8 @@
 """Pinned market format-1 validator/search in the shipped Win7 JavaScript worker.
 
 This private carrier accepts JSON values, not untrusted executable source. It
-does not fetch indexes, validate Gateway queries, or claim Node JSON diagnostics.
+does not fetch indexes or validate Gateway queries. Syntax errors use a pinned
+V8 diagnostic recognizer; VM capacity failures retain the shipped VM diagnostic.
 """
 import asyncio
 import hashlib
@@ -14,7 +15,7 @@ from dsh.javascript.runtime import (JavaScriptRuntimeError, encode,
                                     verify_resources, worker_environment)
 
 RESOURCE_ROOT = Path(__file__).with_name('market-index')
-MANIFEST_SHA256 = 'e6b4b97f0e04d842050ba82021822702f9f00ce6fb2c14f7e59ddf8ee5ff99b4'
+MANIFEST_SHA256 = 'db01ce340b541d22e936339157fbcd72e4644df4d765c74d3594a539d7a980f3'
 
 
 class MarketIndexError(ValueError):
@@ -117,9 +118,8 @@ async def observe_market_operations_async(operations, signal=None):
 async def parse_index_body(body, url, signal=None):
     """Platform strict UTF-8/BOM decode, then JS JSON and pinned validation.
 
-    JSON syntax failures preserve the '$' path and 'must be JSON: ' prefix.
-    Their shipped-engine wording differs from V8; exact prose alignment remains
-    explicitly outside this platform-decoding and worker-lifetime batch.
+    JSON syntax failures preserve the pinned V8 prose and UTF-16 locations.
+    VM capacity/resource exhaustion is separate from syntax recognition.
     """
     if signal is not None:
         signal.throwIfAborted()

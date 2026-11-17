@@ -1,4 +1,4 @@
-"""Strict UTF-8/JSON behavior, preserving separate engine diagnostic evidence."""
+"""Strict UTF-8/JSON behavior with exact pinned syntax diagnostics."""
 import base64
 import json
 from pathlib import Path
@@ -35,16 +35,7 @@ async def observe():
     raw = [await parse_index_body(body, URL) for body in cases()]
     if FILES is not None:
         (FILES/'native-diagnostics.json').write_text(json.dumps(raw, ensure_ascii=True), encoding='utf-8')
-    return summarize(raw)
-
-
-def summarize(raw):
-    rows = []
-    for result in raw:
-        if not result['ok'] and result['reason'].startswith('must be JSON: '):
-            rows.append(dict(ok=False, path=result['path'], reasonPrefix='must be JSON: ', diagnosticPresent=len(result['reason'])>14))
-        else: rows.append(result)
-    return rows
+    return raw
 
 
 def prepare(output):
@@ -57,5 +48,5 @@ def prepare(output):
 
 if __name__ == '__main__':
     probe.native = observe
-    probe.main('rc022_market_body.mts', scope='Strict UTF-8 including overlong/surrogate/out-of-range/truncated sequences, BOM, JS JSON acceptance and pinned format validation. Invalid JSON compares path/prefix/present diagnostic only; original V8 and QuickJS prose retained separately and not claimed identical.',
+    probe.main('rc022_market_body.mts', scope='Strict UTF-8 including overlong/surrogate/out-of-range/truncated sequences, BOM, JS JSON acceptance and pinned format validation; exact original syntax diagnostics.',
         prepare=prepare, extra_inputs=[ROOT/'dsh/boot/market_index_022.py', ROOT/'dsh/boot/market-index/manifest.json', ROOT/'scripts/rc022_market_body_probe.py'])

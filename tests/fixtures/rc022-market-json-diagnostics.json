@@ -1,0 +1,241 @@
+{
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "node": "v24.9.0",
+  "observer": "scripts/oracles/rc022_market_json.mts",
+  "rows": [
+    {
+      "text": "",
+      "result": {
+        "ok": false,
+        "path": "$",
+        "reason": "must be JSON: Unexpected end of JSON input",
+        "message": "must be JSON: Unexpected end of JSON input"
+      }
+    },
+    {
+      "text": "undefined",
+      "result": {
+        "ok": false,
+        "path": "$",
+        "reason": "must be JSON: \"undefined\" is not valid JSON",
+        "message": "must be JSON: \"undefined\" is not valid JSON"
+      }
+    },
+    {
+      "text": "NaN",
+      "result": {
+        "ok": false,
+        "path": "$",
+        "reason": "must be JSON: \"NaN\" is not valid JSON",
+        "message": "must be JSON: \"NaN\" is not valid JSON"
+      }
+    },
+    {
+      "text": "Infinity",
+      "result": {
+        "ok": false,
+        "path": "$",
+        "reason": "must be JSON: \"Infinity\" is not valid JSON",
+        "message": "must be JSON: \"Infinity\" is not valid JSON"
+      }
+    },
+    {
+      "text": "[object Object]",
+      "result": {
+        "ok": false,
+        "path": "$",
+        "reason": "must be JSON: \"[object Object]\" is not valid JSON",
+        "message": "must be JSON: \"[object Object]\" is not valid JSON"
+      }
+    },
+    {
+      "text": "{",
+      "result": {
+        "ok": false,
+        "path": "$",
+        "reason": "must be JSON: Expected property name or '}' in JSON at position 1 (line 1 column 2)",
+        "message": "must be JSON: Expected property name or '}' in JSON at position 1 (line 1 column 2)"
+      }
+    },
+    {
+      "text": "[",
+      "result": {
+        "ok": false,
+        "path": "$",
+        "reason": "must be JSON: Unexpected end of JSON input",
+        "message": "must be JSON: Unexpected end of JSON input"
+      }
+    },
+    {
+      "text": "0null",
+      "result": {
+        "ok": false,
+        "path": "$",
+        "reason": "must be JSON: Unexpected non-whitespace character after JSON at position 1 (line 1 column 2)",
+        "message": "must be JSON: Unexpected non-whitespace character after JSON at position 1 (line 1 column 2)"
+      }
+    },
+    {
+      "text": "00",
+      "result": {
+        "ok": false,
+        "path": "$",
+        "reason": "must be JSON: Unexpected number in JSON at position 1 (line 1 column 2)",
+        "message": "must be JSON: Unexpected number in JSON at position 1 (line 1 column 2)"
+      }
+    },
+    {
+      "text": "-x",
+      "result": {
+        "ok": false,
+        "path": "$",
+        "reason": "must be JSON: No number after minus sign in JSON at position 1 (line 1 column 2)",
+        "message": "must be JSON: No number after minus sign in JSON at position 1 (line 1 column 2)"
+      }
+    },
+    {
+      "text": "1.",
+      "result": {
+        "ok": false,
+        "path": "$",
+        "reason": "must be JSON: Unterminated fractional number in JSON at position 2 (line 1 column 3)",
+        "message": "must be JSON: Unterminated fractional number in JSON at position 2 (line 1 column 3)"
+      }
+    },
+    {
+      "text": "1e-",
+      "result": {
+        "ok": false,
+        "path": "$",
+        "reason": "must be JSON: Exponent part is missing a number in JSON at position 3 (line 1 column 4)",
+        "message": "must be JSON: Exponent part is missing a number in JSON at position 3 (line 1 column 4)"
+      }
+    },
+    {
+      "text": "\"\\",
+      "result": {
+        "ok": false,
+        "path": "$",
+        "reason": "must be JSON: Unexpected end of JSON input",
+        "message": "must be JSON: Unexpected end of JSON input"
+      }
+    },
+    {
+      "text": "\"\\\u4e2d",
+      "result": {
+        "ok": false,
+        "path": "$",
+        "reason": "must be JSON: Unexpected token '\u4e2d', \"\"\\\u4e2d\" is not valid JSON",
+        "message": "must be JSON: Unexpected token '\u4e2d', \"\"\\\u4e2d\" is not valid JSON"
+      }
+    },
+    {
+      "text": "\"\\\ud83d\ude00",
+      "result": {
+        "ok": false,
+        "path": "$",
+        "reason": "must be JSON: Unexpected token '\ud83d', \"\"\\\ud83d\ude00\" is not valid JSON",
+        "message": "must be JSON: Unexpected token '\ud83d', \"\"\\\ud83d\ude00\" is not valid JSON"
+      }
+    },
+    {
+      "text": "\"\\u000x",
+      "result": {
+        "ok": false,
+        "path": "$",
+        "reason": "must be JSON: Bad Unicode escape in JSON at position 6 (line 1 column 7)",
+        "message": "must be JSON: Bad Unicode escape in JSON at position 6 (line 1 column 7)"
+      }
+    },
+    {
+      "text": "\"\u001f\"",
+      "result": {
+        "ok": false,
+        "path": "$",
+        "reason": "must be JSON: Bad control character in string literal in JSON at position 1 (line 1 column 2)",
+        "message": "must be JSON: Bad control character in string literal in JSON at position 1 (line 1 column 2)"
+      }
+    },
+    {
+      "text": "\r\n[\r-",
+      "result": {
+        "ok": false,
+        "path": "$",
+        "reason": "must be JSON: No number after minus sign in JSON at position 5 (line 3 column 2)",
+        "message": "must be JSON: No number after minus sign in JSON at position 5 (line 3 column 2)"
+      }
+    },
+    {
+      "text": "[\"\ud83d\ude00\",-",
+      "result": {
+        "ok": false,
+        "path": "$",
+        "reason": "must be JSON: No number after minus sign in JSON at position 7 (line 1 column 8)",
+        "message": "must be JSON: No number after minus sign in JSON at position 7 (line 1 column 8)"
+      }
+    },
+    {
+      "text": "         x           ",
+      "result": {
+        "ok": false,
+        "path": "$",
+        "reason": "must be JSON: Unexpected token 'x', \"         x         \"... is not valid JSON",
+        "message": "must be JSON: Unexpected token 'x', \"         x         \"... is not valid JSON"
+      }
+    },
+    {
+      "text": "          x          ",
+      "result": {
+        "ok": false,
+        "path": "$",
+        "reason": "must be JSON: Unexpected token 'x', ...\"          x         \"... is not valid JSON",
+        "message": "must be JSON: Unexpected token 'x', ...\"          x         \"... is not valid JSON"
+      }
+    },
+    {
+      "text": "           x         ",
+      "result": {
+        "ok": false,
+        "path": "$",
+        "reason": "must be JSON: Unexpected token 'x', ...\"          x         \" is not valid JSON",
+        "message": "must be JSON: Unexpected token 'x', ...\"          x         \" is not valid JSON"
+      }
+    },
+    {
+      "text": "                    x",
+      "result": {
+        "ok": false,
+        "path": "$",
+        "reason": "must be JSON: Unexpected token 'x', ...\"          x\" is not valid JSON",
+        "message": "must be JSON: Unexpected token 'x', ...\"          x\" is not valid JSON"
+      }
+    },
+    {
+      "text": "{\"a\":1,2],\"b\":{\"c\":false}}",
+      "result": {
+        "ok": false,
+        "path": "$",
+        "reason": "must be JSON: Expected double-quoted property name in JSON at position 7 (line 1 column 8)",
+        "message": "must be JSON: Expected double-quoted property name in JSON at position 7 (line 1 column 8)"
+      }
+    },
+    {
+      "text": "[0",
+      "result": {
+        "ok": false,
+        "path": "$",
+        "reason": "must be JSON: Expected ',' or ']' after array element in JSON at position 2 (line 1 column 3)",
+        "message": "must be JSON: Expected ',' or ']' after array element in JSON at position 2 (line 1 column 3)"
+      }
+    },
+    {
+      "text": "\"\u4e2d\u6587\ud83d\ude00",
+      "result": {
+        "ok": false,
+        "path": "$",
+        "reason": "must be JSON: Unterminated string in JSON at position 5 (line 1 column 6)",
+        "message": "must be JSON: Unterminated string in JSON at position 5 (line 1 column 6)"
+      }
+    }
+  ]
+}

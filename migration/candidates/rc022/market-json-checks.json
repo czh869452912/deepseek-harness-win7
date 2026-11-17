@@ -1,0 +1,49 @@
+{
+  "contract": "C9-AY",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "status": "targeted passed",
+  "implementation": "Iterative grammar-only recognizer supplies pinned Node 24.9.0 / V8 13.6 syntax prose after shipped QuickJS JSON.parse rejects; valid values remain VM-owned. UTF-16 locations, CRLF, context excerpts, literals/containers/numbers/escapes; source attribution and immutable inputs ship with hash-verified resources.",
+  "verification": {
+    "paired": {
+      "run": "rc022-market-json-pair3-20261117-01",
+      "observations": 7849,
+      "comparison": "Exact actual original parseIndexBody return objects, no prose normalization"
+    },
+    "body": {
+      "run": "rc022-market-body-exact-pair-20261117-01",
+      "observations": 41,
+      "comparison": "Strict UTF-8/BOM, exact syntax and format-validation results"
+    },
+    "native": {
+      "run": "rc022-json-tests-native-20261117-01",
+      "passed": 69,
+      "scope": "Original captured diagnostic regression, full x86/x64 corpus equality, async worker ownership, HTTP, cache/listing/search and detail Remote direct consumers"
+    },
+    "source": {
+      "run": "rc022-json-tests-source-20261117-01",
+      "passed": 5,
+      "failed": 0,
+      "scope": "Original parse.spec.ts and market-parse-failure.spec.ts"
+    },
+    "first_failure": {
+      "run": "rc022-market-json-pair-20261117-01",
+      "scope": "Tail diagnostic inserted an extra in JSON; fixed. Initial direct-worker probe also omitted the production UTF-8-sig BOM removal; probe corrected. Raw comparisons retained."
+    },
+    "final_resource_check": "Final exact corpus repeats after provenance-only CRLF normalization and manifest hash update; grammar bytes unchanged."
+  },
+  "golden_fixture": {
+    "path": "tests/fixtures/rc022-market-json-diagnostics.json",
+    "rows": 26,
+    "sha256": "7c51b1c15e8499bf3212c38aad2d66a0f0e9b29ba2668e2a2033814a1cfc74ae"
+  },
+  "cleanup": {
+    "bytes": 3106770,
+    "removed": "Owned test workspaces/home/tmp, duplicate generated bundles, downloaded reference source copies after retaining immutable identities",
+    "retained": "Commands/XML/logs, Source/native results, first mismatch, corpus and build/source hashes; shared Source/toolchains remain needed through C9",
+    "owned_processes_after": []
+  },
+  "limitations": [
+    "VM capacity/resource exhaustion remains a separate platform limit; the recognizer does not turn VM failures into successful values.",
+    "No full release gate or actual Win7 OS acceptance is claimed."
+  ]
+}

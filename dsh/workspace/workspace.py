@@ -24,6 +24,7 @@ class WorkspaceOrderInvalidError(Exception):
 
 
 class WorkspaceRegistry:
+    domain_spec = workspace_domain_spec
     _normalize_path = staticmethod(realpath_normalize)
     _default_title = staticmethod(os.path.basename)
 
@@ -39,7 +40,7 @@ class WorkspaceRegistry:
                                          self._read_session_header, self._remember_session_path)
 
     async def init(self):
-        domain = await self.ctx.get('storageDomain').open(workspace_domain_spec)
+        domain = await self.ctx.get('storageDomain').open(self.domain_spec)
         self.ctx.effect(lambda: domain.close)
         self._table, self._global = domain.table('workspaces'), domain.global_handle
         self._state = self._global.get()

@@ -429,3 +429,5 @@
 | C9-Z | Current live theme/locale companions close the index HTTP400; preview and Session-list browser failures retained | [Appearance](appearance-checks.json) |
 
 | C9-AA | Live welcome acknowledgement and resource-aware Session controller candidate binding; Workspace browser gap retained | [General Settings](general-settings-checks.json) |
+
+| C9-AB | Durable Workspace pin/default fields and queued pin/archive activity lifecycle | [Workspace pins](workspace-pins-checks.json) |

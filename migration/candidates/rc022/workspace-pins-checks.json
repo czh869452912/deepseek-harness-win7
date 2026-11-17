@@ -1,0 +1,10 @@
+{
+  "part": "C9-AB",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "scope": "Workspace durable pin/default fields and queued pin/archive lifecycle",
+  "paired": {"run": "rc022-workspace-pins-paired-20261117-01", "observations": 25, "differences": 0},
+  "verification": {"native": "127 tests passed across new pin/archive queue faults, previous Workspace registries, storage and Remote consumers.", "source": "19 original archive/unarchive/pin/unpin and archive follow-up tests passed in the focused run. Earlier whole Workspace file had 81 passed and 3 EPERM symlink-creation failures; original diagnostics retained, not labelled a complete pass."},
+  "behavior": ["Explicit current version-2 spec adds defaultWorkspaceId/pinnedSessionIds, defaults old omitted arrays, validates string elements and pending markers and strips unknown fields. Historical spec stays unchanged.", "Current candidate registry serializes accepted pin/archive/unarchive/unpin alongside create/delete/reorder, shields accepted operations from abandoned callers and permits subsequent work after rejection.", "Pin order is newest first, duplicate pins do not reorder, archiving drops a pin in the same commit. Activity refusal writes nothing; stopActivity commits before fan-out stops and follow-up admission. Stop/follow-up failure retains the archive; failed unarchive admission preserves it.", "Actual JSON cold reopen retains archive/pin state. Persistence failures propagate instead of masquerading as unknown Session errors."],
+  "cleanup": {"bytes_removed": 5502, "owned_processes_after": [], "retained": "Commands/logs/XML, Source reports, paired observations and original EPERM diagnostics; synthetic media and test workspaces removed."},
+  "limitations": ["Finite registry pin/archive scope. Default Workspace initialization, complete create/delete journal faults, missing-directory membership and current Workspace Remote feed/authorization remain follow-up work; no application binding added yet.", "No production promotion, complete regression/release or Win7 guest qualification."]
+}

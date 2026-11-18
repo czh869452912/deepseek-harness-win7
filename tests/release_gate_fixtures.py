@@ -4,6 +4,7 @@ These fixtures exercise the retained receipt validators. They do not execute a
 current Source oracle or establish parity/release acceptance. Current Source
 and extracted qualification run separately against a frozen current candidate.
 """
+import functools
 import json
 import os
 from pathlib import Path
@@ -17,6 +18,33 @@ from evidence_fixtures import read_member
 
 ROOT = Path(__file__).resolve().parents[1]
 ARCHIVE = 'RC3-QUALIFICATION-20261018-228CFACC.zip'
+
+
+def runtime_fixture(callback):
+    """Execute a shared observer once, including an unsuccessful initialization.
+
+    Each dependent control still fails when initialization fails. Re-running the
+    same expensive observer for every parameter only duplicates its diagnostics
+    and workspace. A fresh pytest process is required to retry after a fix.
+    """
+    outcome = []
+
+    @functools.wraps(callback)
+    def load():
+        if not outcome:
+            try:
+                value = callback()
+            except Exception as error:
+                outcome.append((False, error))
+                raise
+            outcome.append((True, value))
+        passed, value = outcome[0]
+        if not passed:
+            raise RuntimeError('Shared observer initialization already failed: '
+                               + callback.__name__ + '; original diagnostics retained') from value
+        return value
+
+    return load
 
 
 def historical_source(name):

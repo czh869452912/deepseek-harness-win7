@@ -4,7 +4,6 @@ import copy
 import hashlib
 import importlib.util
 import json
-import functools
 import os
 import subprocess
 import shutil
@@ -89,7 +88,7 @@ from scripts.canonical_llm_oracle import observation_digest as canonical_llm_obs
 from test_canonical_llm_consumers import damage_observations as damage_canonical_llm_observations
 from scripts.jsonl_sharing_oracle import observation_digest as sharing_observation_digest
 from test_jsonl_sharing_consumers import damage_observations as damage_sharing_observations
-from release_gate_fixtures import historical_source, native_fixture, pair_fixture, synthetic_native_model
+from release_gate_fixtures import historical_source, native_fixture, pair_fixture, synthetic_native_model, runtime_fixture
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -600,7 +599,7 @@ def test_successful_paired_receipt_forms_are_supported(tmp_path, report):
     assert GATE.validate_paired(path) == report
 
 
-@functools.lru_cache(maxsize=1)
+@runtime_fixture
 def unicode_runtime_fixture():
     with tempfile.TemporaryDirectory(prefix='unicode-validator-fixture-') as directory:
         output = Path(directory) / 'native.json'
@@ -610,7 +609,7 @@ def unicode_runtime_fixture():
         return json.loads(output.read_text(encoding='utf-8'))
 
 
-@functools.lru_cache(maxsize=1)
+@runtime_fixture
 def session_text_runtime_fixture():
     with tempfile.TemporaryDirectory(prefix='text-validator-fixture-') as directory:
         output, inputs = Path(directory) / 'native.json', Path(directory) / 'inputs.json'
@@ -623,7 +622,7 @@ def session_text_runtime_fixture():
         return json.loads(output.read_text(encoding='utf-8')), GATE.digest(inputs)
 
 
-@functools.lru_cache(maxsize=1)
+@runtime_fixture
 def scheduler_runtime_fixture():
     with tempfile.TemporaryDirectory(prefix='scheduler-validator-fixture-') as directory:
         output = Path(directory) / 'native.json'
@@ -656,7 +655,7 @@ def test_extracted_scheduler_requires_fresh_source_and_owned_runtime(tmp_path, d
         validate_model(report, path, archive, candidate)
 
 
-@functools.lru_cache(maxsize=1)
+@runtime_fixture
 def redirect_runtime_fixture():
     with tempfile.TemporaryDirectory(prefix='redirect-validator-fixture-') as directory:
         output = Path(directory) / 'native.json'
@@ -689,7 +688,7 @@ def test_extracted_redirect_requires_fresh_source_and_owned_runtime(tmp_path, da
         validate_model(report, path, archive, candidate)
 
 
-@functools.lru_cache(maxsize=1)
+@runtime_fixture
 def javascript_runtime_fixture():
     return native_fixture('javascript-workflow', arguments=('--cases', ROOT / 'tests/fixtures/javascript-workflow/cases.json'))
 
@@ -744,7 +743,7 @@ def test_javascript_runtime_and_source_consumer_lanes_are_mandatory(tmp_path, mo
         GATE.validate_regression(path)
 
 
-@functools.lru_cache(maxsize=1)
+@runtime_fixture
 def context_runtime_fixture():
     return native_fixture('runtime-context')
 
@@ -792,7 +791,7 @@ def test_runtime_context_consumer_lanes_are_mandatory(tmp_path, damage):
         GATE.validate_regression(path)
 
 
-@functools.lru_cache(maxsize=1)
+@runtime_fixture
 def ready_runtime_fixture():
     return native_fixture('javascript-ready')
 
@@ -844,7 +843,7 @@ def test_ready_consumer_lanes_are_mandatory(tmp_path, damage):
         GATE.validate_regression(path)
 
 
-@functools.lru_cache(maxsize=1)
+@runtime_fixture
 def read_runtime_fixture():
     return native_fixture('persistence-read')
 
@@ -905,7 +904,7 @@ def test_read_consumer_lanes_are_mandatory(tmp_path, damage):
         GATE.validate_regression(path)
 
 
-@functools.lru_cache(maxsize=1)
+@runtime_fixture
 def initial_runtime_fixture():
     return native_fixture('javascript-initial')
 
@@ -962,7 +961,7 @@ def test_initial_consumer_lanes_are_mandatory(tmp_path, damage):
         GATE.validate_regression(path)
 
 
-@functools.lru_cache(maxsize=1)
+@runtime_fixture
 def number_runtime_fixture():
     return native_fixture('session-number')
 
@@ -1026,7 +1025,7 @@ def test_number_consumer_lanes_are_mandatory(tmp_path, damage):
         GATE.validate_regression(path)
 
 
-@functools.lru_cache(maxsize=1)
+@runtime_fixture
 def diagnostic_runtime_fixture():
     return native_fixture('session-diagnostic')
 
@@ -1082,7 +1081,7 @@ def test_diagnostic_consumer_lanes_are_mandatory(tmp_path, damage):
         GATE.validate_regression(path)
 
 
-@functools.lru_cache(maxsize=1)
+@runtime_fixture
 def restore_sign_runtime_fixture():
     return native_fixture('session-restore-sign')
 
@@ -1134,7 +1133,7 @@ def test_restore_sign_consumer_lanes_are_mandatory(tmp_path, damage):
         GATE.validate_regression(path)
 
 
-@functools.lru_cache(maxsize=1)
+@runtime_fixture
 def full_request_runtime_fixture():
     return native_fixture('runtime-full-request')
 
@@ -1195,7 +1194,7 @@ def test_full_request_consumer_lanes_are_mandatory(tmp_path, damage):
         GATE.validate_regression(path)
 
 
-@functools.lru_cache(maxsize=1)
+@runtime_fixture
 def deepseek_error_runtime_fixture():
     return native_fixture('deepseek-error')
 
@@ -1238,7 +1237,7 @@ def test_deepseek_error_consumer_lanes_are_mandatory(tmp_path, damage):
         GATE.validate_regression(path)
 
 
-@functools.lru_cache(maxsize=1)
+@runtime_fixture
 def deepseek_capture_runtime_fixture():
     return native_fixture('deepseek-capture', source=historical_source('deepseek-capture'))
 
@@ -1280,7 +1279,7 @@ def test_deepseek_capture_consumer_lanes_are_mandatory(tmp_path, damage):
         GATE.validate_regression(path)
 
 
-@functools.lru_cache(maxsize=1)
+@runtime_fixture
 def sharing_runtime_fixture():
     return native_fixture('jsonl-sharing')
 
@@ -1322,7 +1321,7 @@ def test_jsonl_sharing_consumer_lanes_are_mandatory(tmp_path, damage):
         GATE.validate_regression(path)
 
 
-@functools.lru_cache(maxsize=1)
+@runtime_fixture
 def canonical_llm_runtime_fixture():
     return native_fixture('canonical-llm')
 
@@ -1373,7 +1372,7 @@ def test_canonical_llm_consumer_lanes_are_mandatory(tmp_path, damage):
         GATE.validate_regression(path)
 
 
-@functools.lru_cache(maxsize=1)
+@runtime_fixture
 def llm_metadata_runtime_fixture():
     return native_fixture('llm-metadata')
 
@@ -1424,7 +1423,7 @@ def test_llm_metadata_consumer_lanes_are_mandatory(tmp_path, damage):
         GATE.validate_regression(path)
 
 
-@functools.lru_cache(maxsize=1)
+@runtime_fixture
 def llm_prepared_runtime_fixture():
     return native_fixture('llm-prepared')
 
@@ -1475,7 +1474,7 @@ def test_llm_prepared_consumer_lanes_are_mandatory(tmp_path, damage):
         GATE.validate_regression(path)
 
 
-@functools.lru_cache(maxsize=1)
+@runtime_fixture
 def llm_config_runtime_fixture():
     return native_fixture('llm-config')
 
@@ -1526,7 +1525,7 @@ def test_llm_config_consumer_lanes_are_mandatory(tmp_path, damage):
         GATE.validate_regression(path)
 
 
-@functools.lru_cache(maxsize=1)
+@runtime_fixture
 def win32_stat_runtime_fixture():
     with tempfile.TemporaryDirectory(prefix='dsh-current-stat-') as folder:
         output = Path(folder) / 'paired.json'
@@ -1575,7 +1574,7 @@ def test_windows_stat_consumer_lanes_are_mandatory(tmp_path, damage):
         GATE.validate_regression(path)
 
 
-@functools.lru_cache(maxsize=1)
+@runtime_fixture
 def sdk_profile_runtime_fixture():
     with tempfile.TemporaryDirectory(prefix='dsh-sdk-profile-source-') as folder:
         output = Path(folder) / 'paired.json'
@@ -1592,17 +1591,17 @@ def sdk_profile_runtime_fixture():
             native=json.loads(output.with_suffix('.native.json').read_text(encoding='utf-8')))
 
 
-@functools.lru_cache(maxsize=1)
+@runtime_fixture
 def permission_presets_runtime_fixture():
     return pair_fixture('permission-presets')
 
 
-@functools.lru_cache(maxsize=1)
+@runtime_fixture
 def tool_errors_runtime_fixture():
     return pair_fixture('tool-errors')
 
 
-@functools.lru_cache(maxsize=1)
+@runtime_fixture
 def host_lifecycle_runtime_fixture():
     with tempfile.TemporaryDirectory(prefix='dsh-host-lifecycle-') as folder:
         try:
@@ -1782,7 +1781,7 @@ def test_plan_contract_lanes_are_mandatory(tmp_path, damage):
             GATE.validate_regression(path)
 
 
-@functools.lru_cache(maxsize=1)
+@runtime_fixture
 def javascript_errors_runtime_fixture():
     return pair_fixture('javascript-errors')
 
@@ -1847,7 +1846,7 @@ def test_extracted_complete_frontend_requires_frozen_build_record(tmp_path, dama
         validate_model(report, path, archive, candidate)
 
 
-@functools.lru_cache(maxsize=1)
+@runtime_fixture
 def native_search_runtime_fixture():
     with tempfile.TemporaryDirectory(prefix='native-search-receipt-') as folder:
         output = Path(folder) / 'runtime.json'
@@ -2273,7 +2272,7 @@ def test_session_text_lanes_are_mandatory(tmp_path, damage):
                 GATE.validate_regression(path)
 
 
-@functools.lru_cache(maxsize=1)
+@runtime_fixture
 def jsonl_provider_runtime_fixture():
     from scripts.jsonl_provider_oracle import MODULES
     native = synthetic_native_model('full-gate-root.zip!/jsonl-provider-paired.native.json', MODULES, exact=True)
@@ -2315,7 +2314,7 @@ def test_extracted_jsonl_provider_requires_fresh_source_and_owned_resources(tmp_
         validate_model(report, output, archive, candidate)
 
 
-@functools.lru_cache(maxsize=1)
+@runtime_fixture
 def legacy_reader_runtime_fixture():
     with tempfile.TemporaryDirectory(prefix='legacy-reader-validator-fixture-') as directory:
         output = Path(directory) / 'reader.json'
@@ -2365,7 +2364,7 @@ def test_extracted_legacy_reader_requires_owned_resources_and_historical_identit
         validate_model(report, output, archive, candidate)
 
 
-@functools.lru_cache(maxsize=1)
+@runtime_fixture
 def sqlite_format_runtime_fixture():
     with tempfile.TemporaryDirectory(prefix='sqlite-format-validator-fixture-') as directory:
         output = Path(directory) / 'paired.json'
@@ -2431,7 +2430,7 @@ def test_extracted_sqlite_format_requires_fresh_source_and_owned_assets(tmp_path
         validate_model(report, output, archive, candidate)
 
 
-@functools.lru_cache(maxsize=1)
+@runtime_fixture
 def session_tools_runtime_fixture():
     with tempfile.TemporaryDirectory(prefix='session-tools-validator-fixture-') as directory:
         output = Path(directory) / 'native.json'
@@ -3119,7 +3118,7 @@ def test_extracted_session_tracing_requires_exact_observations_and_runtime(tmp_p
         GATE.validate_extracted(path,archive,candidate)
 
 
-@functools.lru_cache(maxsize=1)
+@runtime_fixture
 def subagent_model_runtime_fixture():
     return pair_fixture('subagent-model')
 
@@ -3160,7 +3159,7 @@ def test_extracted_subagent_model_accepts_complete_qualified_values(tmp_path):
     validate_model(report, output, archive, candidate)
 
 
-@functools.lru_cache(maxsize=1)
+@runtime_fixture
 def unicode_carrier_runtime_fixture():
     return pair_fixture('unicode-carrier')
 
@@ -3201,7 +3200,7 @@ def test_extracted_unicode_carrier_accepts_complete_qualified_values(tmp_path):
     validate_model(report, output, archive, candidate)
 
 
-@functools.lru_cache(maxsize=1)
+@runtime_fixture
 def fs_values_runtime_fixture():
     return pair_fixture('fs-values')
 
@@ -3243,7 +3242,7 @@ def test_fs_values_consumer_lanes_are_mandatory(tmp_path, damage):
 
 
 
-@functools.lru_cache(maxsize=1)
+@runtime_fixture
 def message_values_runtime_fixture():
     return pair_fixture('message-values')
 
@@ -3278,7 +3277,7 @@ def test_message_values_consumer_lanes_are_mandatory(tmp_path, damage):
                 GATE.validate_regression(path)
 
 
-@functools.lru_cache(maxsize=1)
+@runtime_fixture
 def ask_user_runtime_fixture():
     return pair_fixture('ask-user')
 
@@ -3311,7 +3310,7 @@ def test_ask_user_consumer_lanes_are_mandatory(tmp_path, damage):
                 GATE.validate_regression(path)
 
 
-@functools.lru_cache(maxsize=1)
+@runtime_fixture
 def agent_dependencies_runtime_fixture():
     return pair_fixture('agent-dependencies')
 
@@ -3344,7 +3343,7 @@ def test_agent_dependencies_consumer_lanes_are_mandatory(tmp_path, damage):
                 GATE.validate_regression(path)
 
 
-@functools.lru_cache(maxsize=1)
+@runtime_fixture
 def tool_durable_runtime_fixture():
     return pair_fixture('tool-durable')
 
@@ -3481,7 +3480,7 @@ def test_extracted_filters_require_exact_observations_and_runtime(tmp_path,damag
         GATE.validate_extracted(path,archive,candidate)
 
 
-@functools.lru_cache(maxsize=1)
+@runtime_fixture
 def rc1_runtime_fixture():
     from scripts.rc1_capabilities_oracle import CURRENT_MODULES
     return synthetic_native_model('rc1-capabilities.zip!/native.json', CURRENT_MODULES)

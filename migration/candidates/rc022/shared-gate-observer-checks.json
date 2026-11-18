@@ -1,0 +1,10 @@
+{
+  "contract": "C9-DJ",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "status": "Targeted shared observer and extracted consumer checks passed",
+  "changes": "Cache unsuccessful initialization as well as successful results for the 39 shared runtime fixtures in the retained extracted receipt-parser controls. Every dependent case still fails and preserves the original exception as its cause; the expensive process and identical failure workspace run only once per pytest process. A fresh process is needed after a fix. No negative control, required case or production observation removed.",
+  "verification": [{"run": "rc022-shared-gate-observers-20261118-01", "passed": 11, "seconds": 135.99, "scope": "Actual owned file-write counter proves failed shared initialization executes once, successful fixture identity, all eight extracted physical-tree corruption controls and mandatory test-definition guard"}],
+  "cleanup": {"bytes_removed": 194, "owned_directories_removed": 3, "retained": "Commands and XML/logs; successful shared runtime fixtures remove their own temporary workspaces"},
+  "diagnostic_run": {"run": "rc022-unified-20261118-03", "candidate": "3f20446cd32c530542b39352d2793f0f6409ec66", "python_status": "Explicitly interrupted after repeated identical SDK fixture initialization failures at approximately 19 percent; not a completed regression", "reason": "The prior success-only cache reran the same failing process and copied its workspace for every dependent control, adding redundant file operations. Original failures remain preserved; final candidate/dependency byte recheck continues independently."},
+  "follow_up": "Remaining Python cases run as a separately labelled diagnostic subset; neither it nor partial frozen runs can be combined into complete regression or release acceptance."
+}

@@ -242,8 +242,12 @@
     "packages/interaction/commands/tests/builtin.spec.ts",
     "packages/interaction/commands/tests/commands.spec.ts",
     "packages/interaction/permission-presets/tests/permission-presets.spec.ts",
+    "packages/interaction/tool-ask-user/tests/tool-ask-user.spec.ts",
     "packages/interaction/user-approval/tests/approval.spec.ts",
     "packages/interaction/user-approval/tests/projection.spec.ts",
+    "packages/interaction/user-questions/tests/projection.spec.ts",
+    "packages/interaction/user-questions/tests/timed-wait.spec.ts",
+    "packages/interaction/user-questions/tests/user-questions.spec.ts",
     "packages/jobs/jobs-local/tests/events.spec.ts",
     "packages/jobs/jobs-local/tests/jobs.spec.ts",
     "packages/jobs/jobs-local/tests/pump.spec.ts",
@@ -4576,6 +4580,36 @@
     },
     {
       "script": "scripts/rc022_query_activity_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_question_projection_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
+      "script": "scripts/rc022_question_service_probe.py",
       "node": true,
       "browser": false,
       "receipt": "report",

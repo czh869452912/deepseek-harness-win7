@@ -2,6 +2,10 @@
 
 固定目标：`38a6a5c965aa99ab525161efb7cc5cf1fe62fced`。本页记录定向检查；生产 pin 已在 C9-CC 协调切换，`accepted_upstream` 仍为 null，完整资格待后续验证。
 
+C9-CR：限时提问提供者完成：前台等待与 Client 声明、超时后可回答投影、迟到答案消息及接纳、重复回复所有权、Remote 与两种工具 schema。37 项本地、98 项原版及两组当前配对通过，输入前后不变；正式启动链路接入和浏览器验收仍待下一部分。已清理自有合成工作区。[记录](current-question-providers-checks.json)。
+
+C9-CP：回执破坏性控制改用内存 JSON 值，保留文件边界和全部原案例并新增 3 项。首轮时限前 1,383 个连续成功标记、余下 147 项完整 XML 通过分别记录，未拼接成单次完整资格；失效合成工作区已清理。[记录](parser-memory-controls-checks.json)。
+
 C9-CQ：实际构建输入身份工具完成 12 项控制，以及当前 Node/Source 135,100 文件、10,363 链接和双架构 Python 的实测枚举；绑定标准库、DLL 与精确锁定分发包，缺失可选链接的出现也会改变身份。仅为输入工具定向完成，尚未接入新的统一编排或提供冻结验收资格；临时夹具已清理，输入清单和原失败诊断保留。[精确记录](current-input-identity-checks.json)。
 
 C9-CO：权限旧 SettingsProvider 合同转为明确的历史兼容回归，原版成员及其输入摘要原样保留、Native 旧域重新执行；所有旧案例及拒绝检查保留，相关 137 项通过。新版权限目录与配置编辑表单分别重新执行当前原版/Python 配对，冻结输入前后不变。没有用旧域观察替代新版资格，临时工作区已清理。[精确记录](permission-contract-transition-checks.json)。

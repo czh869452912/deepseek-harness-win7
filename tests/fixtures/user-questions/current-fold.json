@@ -1,0 +1,6 @@
+{
+  "tools": [{"name":"ask_user_question","parameters":{"properties":{"questions":{},"timeout":{}}}}],
+  "arguments": {"questions":[{"id":"scope","question":"Which scope?","header":"Scope","options":[{"label":"One","description":"Only one","extra":42},{"label":"All"}],"multi_select":true,"extra":"ignored"}]},
+  "answers": [{"id":"scope","selected":["One"],"custom":"also docs"}],
+  "invalidArguments": ["{", "null", "[]", "{}", "{\"questions\":[]}", "{\"questions\":[{\"id\":1,\"question\":\"Q\"}]}", "{\"questions\":[{\"id\":\"x\",\"question\":\"Q\",\"options\":[{\"label\":null}]}]}"]
+}

@@ -1,0 +1,136 @@
+{
+  "contract": "C9-CR",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "status": "providers targeted passed; canonical mount and actual browser acceptance pending",
+  "scope": "Timed-question v4 projection and strict restore; foreground timer paused by Client stream claims; Remote answer/attachWait, exact live/subagent-origin fences, reply queue ownership/admission and approval intents; timed/legacy model tools and exact schemas. Existing historical helpers retained for historical contracts. Canonical registry wiring is the next portion.",
+  "verification": {
+    "native_cases": 37,
+    "current_source_cases": 98,
+    "current_paired_observers": 2,
+    "checks": [
+      {
+        "run": "rc022-question-source-selection-20261118-01",
+        "report_sha256": "25afe645f0d9345fd24b43ed6e76025f115d26e87368c46d75835486ba52a6a6",
+        "result": {
+          "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+          "plan_sha256": "5b6daf95480f642b7411722c2dc4a1fcd3aeb5fa96c2c310f16aac6ae09085f6",
+          "status": "passed",
+          "lane": "source",
+          "complete_lane": false,
+          "release_acceptance": false,
+          "rows": [
+            {
+              "name": "source-001",
+              "files": [
+                "packages/interaction/tool-ask-user/tests/tool-ask-user.spec.ts",
+                "packages/interaction/user-questions/tests/projection.spec.ts",
+                "packages/interaction/user-questions/tests/timed-wait.spec.ts",
+                "packages/interaction/user-questions/tests/user-questions.spec.ts"
+              ],
+              "passed": 98,
+              "pending": 0,
+              "sha256": "34520a36641c284f20035fda4b4371b9ccd9f83d38f42905c32b9e953c5b9707",
+              "seconds": 4.405999999959022
+            }
+          ],
+          "inputs_unchanged": true
+        }
+      },
+      {
+        "run": "rc022-question-current-pairs-20261118-01",
+        "report_sha256": "dc8189453ff0ec4a789a91d9459f83399624e484516e79e208fa49141e414e79",
+        "result": {
+          "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+          "plan_sha256": "5b6daf95480f642b7411722c2dc4a1fcd3aeb5fa96c2c310f16aac6ae09085f6",
+          "status": "passed",
+          "lane": "paired",
+          "complete_lane": false,
+          "release_acceptance": false,
+          "rows": [
+            {
+              "script": "scripts/rc022_question_projection_probe.py",
+              "receipt": "report.json",
+              "sha256": "8c9b433d90a170f0feec50ea55028038f6c7529be45b8fc6cbc672254813347e",
+              "seconds": 1.4540000000270084,
+              "cleanup": {
+                "removed": [],
+                "bytes_removed": 0
+              }
+            },
+            {
+              "script": "scripts/rc022_question_service_probe.py",
+              "receipt": "report.json",
+              "sha256": "ada9889b26ab97bc73888e94779fda454b8ea92a5899136b1f2c0184fa441c4d",
+              "seconds": 1.4839999999967404,
+              "cleanup": {
+                "removed": [],
+                "bytes_removed": 0
+              }
+            }
+          ],
+          "inputs_unchanged": true
+        }
+      }
+    ]
+  },
+  "cleanup": [
+    {
+      "run": "rc022-question-projection-native-20261118-01",
+      "removed": [
+        "pytest-workspace",
+        "tmp",
+        "home"
+      ],
+      "bytes_removed": 0,
+      "retained": "Original commands/log/XML and parser inputs/models or paired observations; only reconstructed synthetic workspaces retired after all consumers ended."
+    },
+    {
+      "run": "rc022-question-service-native-20261118-01",
+      "removed": [
+        "pytest-workspace",
+        "tmp",
+        "home"
+      ],
+      "bytes_removed": 437,
+      "retained": "Original commands/log/XML and parser inputs/models or paired observations; only reconstructed synthetic workspaces retired after all consumers ended."
+    },
+    {
+      "run": "rc022-question-service-native-20261118-02",
+      "removed": [
+        "pytest-workspace",
+        "tmp",
+        "home"
+      ],
+      "bytes_removed": 1285,
+      "retained": "Original commands/log/XML and parser inputs/models or paired observations; only reconstructed synthetic workspaces retired after all consumers ended."
+    },
+    {
+      "run": "rc022-question-service-native-20261118-03",
+      "removed": [
+        "pytest-workspace",
+        "tmp",
+        "home"
+      ],
+      "bytes_removed": 0,
+      "retained": "Original commands/log/XML and parser inputs/models or paired observations; only reconstructed synthetic workspaces retired after all consumers ended."
+    },
+    {
+      "run": "rc022-question-providers-final-20261118-01",
+      "removed": [
+        "pytest-workspace",
+        "tmp",
+        "home"
+      ],
+      "bytes_removed": 627019,
+      "retained": "Original commands/log/XML and parser inputs/models or paired observations; only reconstructed synthetic workspaces retired after all consumers ended."
+    }
+  ],
+  "failure_preservation": "Initial fixture setup failures and the observer diagnostic that read decorated Python str(error) instead of the wire .message remain as failed logs; final probes compare raw wire messages with no prefix normalization.",
+  "input_sha256": {
+    "dsh/interaction/question_projection.py": "867ac48a64e72108f5660b9bd7f06233c12f35c1299ac24deee20df4c7e27600",
+    "dsh/interaction/question_wait.py": "c062131b17dbae1fd28e83b09b26c306159b6a3a1b9a163d320bf008ce7be75d",
+    "dsh/interaction/user_questions_current.py": "f6eb0937d49d668c64d779e1ba8f3176953baac585983a7f41341870f7be60e7",
+    "dsh/interaction/tool_ask_user_current.py": "293633f6c62478dc81e4a7dac499259dc4c2c2d46b03e8356a585ded81a56f4b"
+  },
+  "limitations": "No complete Python/476 Source/401 paired/extracted/Desktop qualification. New providers are not yet wired into canonical boot; accepted_upstream remains null and Win7 acceptance deferred."
+}

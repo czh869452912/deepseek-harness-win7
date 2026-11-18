@@ -40,7 +40,7 @@ def load_plan():
             or {Path(name).name for name in separate} != SEPARATE):
         raise ValueError('Unaccounted, duplicate or silently omitted current observer')
     tests = plan['source_tests']
-    if len(tests) != len(set(tests)) or len(tests) < 472 or len(scripts) < 399:
+    if len(tests) != len(set(tests)) or len(tests) < 476 or len(scripts) < 401:
         raise ValueError('Current contract/test selection shrank')
     for name in tests + scripts:
         if Path(name).is_absolute() or '..' in Path(name).parts or '\\' in name:

@@ -7,7 +7,7 @@ from scripts import rc022_gate_runner as gate
 
 def test_plan_accounts_for_every_current_observer_and_original_selection():
     plan = gate.load_plan()
-    assert len(plan['paired']) == 399 and len(plan['source_tests']) == 472
+    assert len(plan['paired']) == 401 and len(plan['source_tests']) == 476
     assert all((gate.ROOT / row['script']).is_file() for row in plan['paired'])
 
 

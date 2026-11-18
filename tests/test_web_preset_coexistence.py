@@ -5,6 +5,7 @@ import json
 from canonical_web_fixture import web_context, close_web_context
 from dsh.core.abort import NEVER_ABORTED
 from dsh.core.scope import scope_of
+from dsh.cordis.utils import Symbols
 from dsh.llm.message import create_assistant_message
 
 
@@ -71,7 +72,9 @@ async def test_standard_ptc_and_cordis_coexist_and_execute(tmp_path):
             existing = registry.inspectCompositions(agents[preset].ctx)
             assert len(selected) == len(existing) == 1
             assert selected[0]['id'] == existing[0]['id'] == preset
-            assert registry.serviceFor(agents['minimal'], 'workflowEngine') is registry.serviceFor(agents[preset], 'workflowEngine')
+            selected_engine = registry.serviceFor(agents['minimal'], 'workflowEngine')
+            existing_engine = registry.serviceFor(agents[preset], 'workflowEngine')
+            assert getattr(selected_engine, Symbols.original, selected_engine) is getattr(existing_engine, Symbols.original, existing_engine)
         assert await model_tools(agents['ptc']) == ['run_code']
     finally:
         await close_web_context(ctx)

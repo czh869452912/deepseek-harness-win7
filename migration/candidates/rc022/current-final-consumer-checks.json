@@ -1,0 +1,31 @@
+{
+  "contract": "C9-FV",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "change": "Compare unwrapped workflowEngine original identities across use-site proxies. Confirm all eight original package update/URL/abandoned-wait failures are fixed by C9-FM without additional provider changes.",
+  "verification": [
+    {
+      "run": "rc022-current-c9fv-hmr-consumers-20261119-01",
+      "exit_code": 124,
+      "seconds": 361.235,
+      "scope": "Combined wider selection hit its 360 second controller budget after 21 dots; no XML/full pass claim."
+    },
+    {
+      "run": "rc022-current-c9fv-hmr-failures-20261119-02",
+      "passed": 8,
+      "seconds": 238.41,
+      "scope": "All six original update cases, actual remote package install/remove and abandoned update waiter"
+    },
+    {
+      "run": "rc022-current-c9fv-preset-identity-20261119-01",
+      "passed": 1,
+      "seconds": 7.59,
+      "scope": "Actual Web standard/PTC/Cordis/minimal coexistence, file tool, persistence and composition switching"
+    }
+  ],
+  "cleanup": {
+    "directories": 9,
+    "bytes_removed": 202672,
+    "retained": "Original timeout diagnostics, commands, XML/logs and raw observations"
+  },
+  "qualification": "Targeted completion only; new stable candidate requires its own single complete qualification."
+}

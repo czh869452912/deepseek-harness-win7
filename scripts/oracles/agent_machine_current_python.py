@@ -35,6 +35,23 @@ def legacy_lifecycle_notification(name, payload):
                                    if key != 'parentSessionId'})
 
 
+def bind_retained_sdk_subagent_shutdown(ctx):
+    """Map the retained v3 provider's real drain to the current SDK boundary.
+
+    Only this historical observation fixture mounts CurrentSubagentRuntime;
+    production profiles use the current SubagentRuntime directly.
+    """
+    from dsh.subagent.runtime_current import CurrentSubagentRuntime
+    service = ctx.get('subagents')
+    original = getattr(service, 'cordis.original')
+    if not isinstance(original, CurrentSubagentRuntime):
+        raise TypeError('Retained SDK fixture requires its explicit v3 subagent provider')
+    adapter = patch.object(original, 'drainDescendants',
+                           service.drainContinuableDescendants, create=True)
+    adapter.start()
+    ctx.effect(lambda: adapter.stop)
+
+
 class ScriptAdapter:
     def __init__(self,test):self.test=test;self.script=list(test.get('script',[]))
     async def resolve_model(self,provider,model,signal=None):
@@ -245,6 +262,8 @@ async def run(test,decode):
                     elif method=='forwardResult':value=await asyncio.wait_for(forward,3)
                     elif method=='sdkConfig':
                         from dsh.sdk.server import HarnessSdkJsonRpcServer
+                        if test.get('subagents'):
+                            bind_retained_sdk_subagent_shutdown(ctx)
                         sdk=HarnessSdkJsonRpcServer(ctx,SimpleNamespace(notify=lambda name,params:notifications.append(normalize(dict(name=name,payload=params)))),action.get('options'))
                     elif method=='sdkInitialize':
                         value=await sdk.initialize(dict(dict(cwd=os.getcwd(),provider='script',model='model'),**action.get('params',{})))

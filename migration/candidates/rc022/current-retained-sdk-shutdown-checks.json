@@ -1,0 +1,8 @@
+{
+  "contract": "C9-FG",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "change": "The explicitly retained v3 machine observer maps its old provider's real drainContinuableDescendants to the modern SDK drainDescendants boundary, and removes that instance adapter through the Context effect. Canonical providers and SDK production code are unchanged. Label the four old SDK journeys as retained compatibility, not current Source parity.",
+  "verification": {"run": "rc022-current-c9fg-retained-sdk-20261118-01", "passed": 69, "seconds": 3.72, "scope": "All four retained SDK journeys, including local/external children and shutdown, plus the complete shared Agent machine consumer module"},
+  "cleanup": {"directories": 3, "bytes_removed": 1947, "retained": "Command, log/XML and original failure observation"},
+  "qualification": "Retained compatibility completion only. Current SDK acceptance uses separate rc022 probes and a fresh unified candidate."
+}

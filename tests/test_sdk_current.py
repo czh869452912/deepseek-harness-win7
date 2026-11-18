@@ -1,4 +1,4 @@
-"""Unchanged SDK business API against the actual current Session/Agent runtime."""
+"""Retained pre-v4 SDK journeys; current acceptance uses the rc022 SDK probes."""
 import json
 from pathlib import Path
 
@@ -12,7 +12,7 @@ CASES=json.loads((ROOT/'scripts/oracles/sdk_current_cases.json').read_text(encod
 
 
 @pytest.mark.parametrize('case',CASES,ids=lambda case:case['case'])
-def test_actual_source_sdk_consumer(case):
+def test_retained_sdk_business_api_with_legacy_machine(case):
     result=execute(case,decode)
     assert result==case['expected']
     if case['case'].startswith('sdk-current-'):

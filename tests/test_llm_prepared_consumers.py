@@ -1,3 +1,4 @@
+"""Historical llm-prepared compatibility and receipt controls; not current parity."""
 import copy
 import json
 from pathlib import Path
@@ -11,7 +12,10 @@ from scripts.verify_portable import llm_prepared_receipts
 from scripts.canonical_llm_values import observation_digest as value_digest
 
 
+from historical_domain_models import historical_identity, historical_pair
+
 ROOT = Path(__file__).resolve().parents[1]
+identity = historical_identity('llm-prepared', oracle.identity)
 VALUE_DAMAGES = ('config','boolean','defaults','context','error','dispatch','trace','replay','signal','frozen','header','empty','message-form','message-split','tail','duplicate','order','type')
 RUNTIME_DAMAGES = ('root','python','executable','module','bytes','group-missing','group-rows','group-root','group-executable','group-module')
 
@@ -73,13 +77,8 @@ def damage_observations(runtime, damage):
 
 
 @pytest.fixture(scope='module')
-def actual_pair(tmp_path_factory):
-    output = tmp_path_factory.mktemp('llm-prepared-pair') / 'paired.json'
-    completed = subprocess.run([sys.executable, str(ROOT / 'scripts/llm_prepared_oracle.py'), '--output', str(output)], cwd=str(ROOT), capture_output=True, timeout=300)
-    assert completed.returncode == 0, completed.stdout + completed.stderr + output.read_bytes()
-    report = json.loads(output.read_text(encoding='utf-8'))
-    assert report['status'] == 'matched' and report['cases'] == 108
-    return json.loads(output.with_suffix('.source.json').read_text(encoding='utf-8')), json.loads(output.with_suffix('.native.json').read_text(encoding='utf-8'))
+def actual_pair():
+    return historical_pair('llm-prepared')
 
 
 @pytest.mark.parametrize('name', oracle.NAMES)
@@ -90,7 +89,7 @@ def test_actual_original_and_native_llm_prepared_match(actual_pair, name):
     if source_row['group'] == 'agent':
         source_row, native_row = dict(source_row, group='retry'), dict(native_row, group='retry')
     assert value_digest([source_row], side='source') == value_digest([native_row], side='native')
-    oracle.validate_runtime(native, ROOT, oracle.identity(source), native['modules'])
+    oracle.validate_runtime(native, ROOT, identity(source), native['modules'])
 
 
 @pytest.mark.parametrize('damage', VALUE_DAMAGES + RUNTIME_DAMAGES)
@@ -120,7 +119,7 @@ def test_llm_prepared_requires_complete_values_and_runtime(actual_pair, damage, 
     else:
         damage_observations(runtime, damage)
     with pytest.raises(ValueError):
-        oracle.validate_runtime(runtime, ROOT, oracle.identity(source, check_files=False), original['modules'])
+        oracle.validate_runtime(runtime, ROOT, identity(source, check_files=False), original['modules'])
 
 
 @pytest.mark.parametrize('damage', ('pin', 'node', 'inputs', 'bytes'))
@@ -135,7 +134,7 @@ def test_llm_prepared_source_identity_is_required(actual_pair, damage):
     else:
         source['inputs']['scripts/oracles/llm_prepared_public.probe.spec.ts'] = '0' * 64
     with pytest.raises(ValueError):
-        oracle.identity(source)
+        identity(source)
 
 
 def test_llm_prepared_source_message_identity_retains_uuid_shape(actual_pair):
@@ -144,7 +143,7 @@ def test_llm_prepared_source_message_identity_retains_uuid_shape(actual_pair):
     message = row['messages'][0]
     message['id'] = 'msg-12abcdef'
     with pytest.raises(ValueError):
-        oracle.identity(source)
+        identity(source)
 
 
 @pytest.mark.parametrize('side', ('source', 'native'))

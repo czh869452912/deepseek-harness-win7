@@ -1,3 +1,4 @@
+"""Historical deepseek-error compatibility and receipt controls; not current parity."""
 import copy
 import json
 from pathlib import Path
@@ -10,7 +11,10 @@ from scripts.deepseek_error_oracle import NAMES, identity, validate_runtime
 from scripts.verify_portable import deepseek_error_receipts
 
 
+from historical_domain_models import historical_identity, historical_pair
+
 ROOT = Path(__file__).resolve().parents[1]
+identity = historical_identity('deepseek-error', identity)
 DAMAGES = ('error-name', 'error-message', 'failure-message', 'error-code', 'status', 'retry-after',
     'request-id', 'preview', 'surrogate', 'timer', 'fraction', 'chunk', 'request-body',
     'tail', 'duplicate', 'root', 'python', 'executable', 'module', 'bytes')
@@ -45,14 +49,8 @@ def damage_observations(runtime, damage):
 
 
 @pytest.fixture(scope='module')
-def actual_pair(tmp_path_factory):
-    output = tmp_path_factory.mktemp('deepseek-error-pair') / 'paired.json'
-    completed = subprocess.run([sys.executable, str(ROOT / 'scripts/deepseek_error_oracle.py'),
-        '--output', str(output)], cwd=str(ROOT), capture_output=True, timeout=90)
-    (output.parent / 'runner.log').write_bytes(completed.stdout + completed.stderr)
-    assert completed.returncode == 0, output.read_text(encoding='utf-8')
-    return (json.loads(output.with_suffix('.source.json').read_text(encoding='utf-8')),
-        json.loads(output.with_suffix('.native.json').read_text(encoding='utf-8')))
+def actual_pair():
+    return historical_pair('deepseek-error')
 
 
 @pytest.mark.parametrize('name', NAMES)
@@ -152,6 +150,7 @@ def test_failed_error_oracle_preserves_complete_original_captures(actual_pair, t
         return SimpleNamespace(returncode=0, stdout=b'', stderr=b'')
 
     monkeypatch.setattr(oracle, 'source_pin', lambda: None)
+    monkeypatch.setattr(oracle, 'identity', identity)
     monkeypatch.setattr(oracle.subprocess, 'run', controlled_observers)
     monkeypatch.setattr(sys, 'argv', ['deepseek_error_oracle.py', '--output', str(output)])
     assert oracle.main() == 1

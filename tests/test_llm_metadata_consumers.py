@@ -1,3 +1,4 @@
+"""Historical llm-metadata compatibility and receipt controls; not current parity."""
 import copy
 import json
 from pathlib import Path
@@ -10,7 +11,10 @@ from scripts import llm_metadata_oracle as oracle
 from scripts.verify_portable import llm_metadata_receipts
 
 
+from historical_domain_models import historical_identity, historical_pair
+
 ROOT = Path(__file__).resolve().parents[1]
+identity = historical_identity('llm-metadata', oracle.identity)
 VALUE_DAMAGES = ('model', 'context', 'reasoning', 'description', 'max-tokens', 'modalities', 'trace', 'tail', 'duplicate', 'order', 'type')
 RUNTIME_DAMAGES = ('root', 'python', 'executable', 'module', 'bytes', 'group-missing', 'group-rows', 'group-root', 'group-executable', 'group-module')
 
@@ -46,20 +50,15 @@ def damage_observations(runtime, damage):
 
 
 @pytest.fixture(scope='module')
-def actual_pair(tmp_path_factory):
-    output = tmp_path_factory.mktemp('llm-metadata-pair') / 'paired.json'
-    completed = subprocess.run([sys.executable, str(ROOT / 'scripts/llm_metadata_oracle.py'), '--output', str(output)], cwd=str(ROOT), capture_output=True, timeout=300)
-    assert completed.returncode == 0, completed.stdout + completed.stderr + output.read_bytes()
-    report = json.loads(output.read_text(encoding='utf-8'))
-    assert report['status'] == 'matched' and report['cases'] == 137
-    return json.loads(output.with_suffix('.source.json').read_text(encoding='utf-8')), json.loads(output.with_suffix('.native.json').read_text(encoding='utf-8'))
+def actual_pair():
+    return historical_pair('llm-metadata')
 
 
 @pytest.mark.parametrize('name', oracle.NAMES)
 def test_actual_original_and_native_llm_metadata_match(actual_pair, name):
     source, native = actual_pair
     assert next(row for row in source['rows'] if row['name'] == name) == next(row for row in native['rows'] if row['name'] == name)
-    oracle.validate_runtime(native, ROOT, oracle.identity(source), native['modules'])
+    oracle.validate_runtime(native, ROOT, identity(source), native['modules'])
 
 
 @pytest.mark.parametrize('damage', VALUE_DAMAGES + RUNTIME_DAMAGES)
@@ -89,7 +88,7 @@ def test_llm_metadata_requires_complete_values_and_runtime(actual_pair, damage, 
     else:
         damage_observations(runtime, damage)
     with pytest.raises(ValueError):
-        oracle.validate_runtime(runtime, ROOT, oracle.identity(source, check_files=False), original['modules'])
+        oracle.validate_runtime(runtime, ROOT, identity(source, check_files=False), original['modules'])
 
 
 @pytest.mark.parametrize('damage', ('pin', 'node', 'inputs', 'bytes'))
@@ -104,7 +103,7 @@ def test_llm_metadata_source_identity_is_required(actual_pair, damage):
     else:
         source['inputs']['scripts/oracles/llm_metadata_catalog.probe.spec.ts'] = '0' * 64
     with pytest.raises(ValueError):
-        oracle.identity(source)
+        identity(source)
 
 
 @pytest.mark.parametrize('side', ('source', 'native'))

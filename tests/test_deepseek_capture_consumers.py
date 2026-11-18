@@ -1,3 +1,4 @@
+"""Historical deepseek-capture compatibility and receipt controls; not current parity."""
 import copy
 import json
 from pathlib import Path
@@ -12,7 +13,10 @@ from scripts.deepseek_capture_oracle import canonical_rows, NAMES, identity, val
 from scripts.verify_portable import deepseek_capture_receipts
 
 
+from historical_domain_models import historical_identity, historical_pair
+
 ROOT = Path(__file__).resolve().parents[1]
+identity = historical_identity('deepseek-capture', identity)
 DAMAGES = ('config-name', 'config-message', 'error-name', 'error-message', 'failure-message',
     'error-code', 'file-message', 'file-failure', 'file-quota', 'file-status', 'settings-model',
     'settings-provider', 'settings-retry', 'stream', 'serialization', 'usage', 'request-body',
@@ -86,14 +90,8 @@ def damage_observations(runtime, damage):
 
 
 @pytest.fixture(scope='module')
-def actual_pair(tmp_path_factory):
-    output = tmp_path_factory.mktemp('deepseek-capture-pair') / 'paired.json'
-    result = subprocess.run([sys.executable, str(ROOT / 'scripts/deepseek_capture_oracle.py'), '--output', str(output)],
-        cwd=str(ROOT), capture_output=True, timeout=180)
-    (output.parent / 'runner.log').write_bytes(result.stdout + result.stderr)
-    assert result.returncode == 0, output.read_text(encoding='utf-8')
-    return (json.loads(output.with_suffix('.source.json').read_text(encoding='utf-8')),
-        json.loads(output.with_suffix('.native.json').read_text(encoding='utf-8')))
+def actual_pair():
+    return historical_pair('deepseek-capture')
 
 
 @pytest.mark.parametrize('name', NAMES)

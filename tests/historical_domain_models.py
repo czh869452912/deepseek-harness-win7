@@ -17,11 +17,18 @@ from release_gate_fixtures import historical_source, native_fixture
 ROOT = Path(__file__).resolve().parents[1]
 DOMAINS = frozenset(('agent-dependencies', 'ask-user', 'javascript-errors',
                      'message-values', 'subagent-model', 'tool-durable',
-                     'tool-errors', 'unicode-carrier', 'canonical-llm'))
+                     'tool-errors', 'unicode-carrier', 'canonical-llm',
+                     'llm-metadata', 'llm-config', 'llm-prepared',
+                     'deepseek-capture', 'deepseek-error'))
 
 # Current production observations run independently in the current paired lane.
 # These mappings identify successors, never transfer historical acceptance.
 SUCCESSORS = {
+    'llm-metadata': ('rc022_model_listing', 'rc022_model_discovery'),
+    'llm-config': ('rc022_configured_model', 'rc022_request_extensions'),
+    'llm-prepared': ('rc022_configured_model', 'rc022_messages_adapter'),
+    'deepseek-capture': ('rc022_messages_wire', 'rc022_request_files', 'rc022_request_extensions'),
+    'deepseek-error': ('rc022_messages_adapter', 'rc022_messages_framing'),
     'canonical-llm': ('rc022_messages_wire', 'rc022_messages_adapter',
                       'rc022_messages_framing', 'rc022_request_extensions'),
     'agent-dependencies': ('rc022_agent_registration', 'rc022_agent_boundary'),
@@ -44,7 +51,7 @@ def _pair(name):
     if name not in DOMAINS:
         raise ValueError('Unreviewed historical domain model: ' + name)
     source = historical_source(name)
-    native = native_fixture(name)
+    native = native_fixture(name, source=source if name == 'deepseek-capture' else None)
     changes = {}
     if 'fixtureSha256' in native:
         observer = 'scripts/oracles/' + name.replace('-', '_') + '_python.py'

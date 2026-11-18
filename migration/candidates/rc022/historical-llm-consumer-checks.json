@@ -1,0 +1,15 @@
+{
+  "contract": "C9-DO",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "status": "Targeted compatibility controls and current successors passed",
+  "changes": "Five old LLM metadata/config/prepared and DeepSeek capture/error consumer modules now explicitly test historical compatibility models, using byte-preserved original Source archive members and freshly executed retained Native providers. Original Source pin, Node identity and all observations remain unchanged. Derived observer-byte metadata remains guarded; these models cannot establish current parity. DeepSeek capture receives the original required Source fixture; the controlled error-oracle diagnostic test uses the same explicit historical identity guard.",
+  "provenance": "Four minimal Source members extracted from verified RC3-QUALIFICATION-20261018-228CFACC.zip, full-gate-root.zip; archive/container/member SHA-256 and sizes indexed in tests/fixtures/evidence/manifest.json. Original archive remains external; no temporary archive copies created.",
+  "verification": [
+    {"run": "rc022-historical-model-consumers-20261118-01", "passed": 367, "errors": 1, "seconds": 76.09, "remaining": "Missing required --source in DeepSeek capture Native fixture; fixed"},
+    {"run": "rc022-historical-model-consumers-20261118-02", "passed": 176, "failed": 1, "seconds": 47.95, "remaining": "Controlled error-oracle negative test still invoked current-checkout identity; fixed without changing production oracle"},
+    {"run": "rc022-historical-model-consumers-20261118-03", "passed": 17, "seconds": 75.45, "scope": "Remaining two complete-failure diagnostics and all 14 historical domain identity/provenance/successor guards plus unknown-domain refusal"},
+    {"run": "rc022-current-model-successors-20261118-01", "status": "Four actual unchanged Source/Native probes passed", "scopes": ["model_listing", "model_discovery", "configured_model", "request_files"]}
+  ],
+  "cleanup": "Completed targeted runs' nine synthetic workspace/home/tmp directories removed: 320005 bytes. Raw failures copied outside retired workspaces first. Commands, XML/logs, Native parser observations and current paired Source/Native observations retained. Successful current probe synthetic file roots retired through runner retention helper.",
+  "qualification": "Targeted completion only. No historical receipt promoted or rewritten; frozen gate03 remains failed. A fresh complete candidate qualification is still required."
+}

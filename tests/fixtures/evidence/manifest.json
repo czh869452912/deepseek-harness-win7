@@ -251,6 +251,50 @@
       "sha256": "bfd03a3941712985d1a47d1eece32b7c564919173de4eb8e9b0faef1d30aca2f",
       "fixture": "bfd03a3941712985d1a47d1eece32b7c564919173de4eb8e9b0faef1d30aca2f.json.gz",
       "scope": "Original historical capability inputs; unit tests derive only their owned workspace path. Never current Source evidence"
+    },
+    {
+      "archive": "RC3-QUALIFICATION-20261018-228CFACC.zip",
+      "archive_sha256": "f0f175c64849ce0d22b0790fd2fc591daf41989f58961fb8fc7db7f62458f0f2",
+      "member": "full-gate-root.zip!/llm-metadata-paired.source.json",
+      "container": "full-gate-root.zip",
+      "container_sha256": "72b203024ac56295e662764c6b3c6f2deb36153e62e678fd4ec3d1d46e942e3b",
+      "size": 77051,
+      "sha256": "5f98fbfb7e2c3cec0e6a977eec87f6a7094da745c1f9bc905e8a4e4440b5f175",
+      "fixture": "5f98fbfb7e2c3cec0e6a977eec87f6a7094da745c1f9bc905e8a4e4440b5f175.json.gz",
+      "scope": "Byte-preserved historical Source facts for explicit compatibility/parser unit controls; never current Source or release evidence"
+    },
+    {
+      "archive": "RC3-QUALIFICATION-20261018-228CFACC.zip",
+      "archive_sha256": "f0f175c64849ce0d22b0790fd2fc591daf41989f58961fb8fc7db7f62458f0f2",
+      "member": "full-gate-root.zip!/llm-config-paired.source.json",
+      "container": "full-gate-root.zip",
+      "container_sha256": "72b203024ac56295e662764c6b3c6f2deb36153e62e678fd4ec3d1d46e942e3b",
+      "size": 32458,
+      "sha256": "81d6d766434d3bd64bb0a6547849be6da5d92b287b8af80f9af65acbc596dc5c",
+      "fixture": "81d6d766434d3bd64bb0a6547849be6da5d92b287b8af80f9af65acbc596dc5c.json.gz",
+      "scope": "Byte-preserved historical Source facts for explicit compatibility/parser unit controls; never current Source or release evidence"
+    },
+    {
+      "archive": "RC3-QUALIFICATION-20261018-228CFACC.zip",
+      "archive_sha256": "f0f175c64849ce0d22b0790fd2fc591daf41989f58961fb8fc7db7f62458f0f2",
+      "member": "full-gate-root.zip!/llm-prepared-paired.source.json",
+      "container": "full-gate-root.zip",
+      "container_sha256": "72b203024ac56295e662764c6b3c6f2deb36153e62e678fd4ec3d1d46e942e3b",
+      "size": 133165,
+      "sha256": "8d0a4d304ed2ad431e8f544c34e2523ffdcc6972248e4628473dc04989678160",
+      "fixture": "8d0a4d304ed2ad431e8f544c34e2523ffdcc6972248e4628473dc04989678160.json.gz",
+      "scope": "Byte-preserved historical Source facts for explicit compatibility/parser unit controls; never current Source or release evidence"
+    },
+    {
+      "archive": "RC3-QUALIFICATION-20261018-228CFACC.zip",
+      "archive_sha256": "f0f175c64849ce0d22b0790fd2fc591daf41989f58961fb8fc7db7f62458f0f2",
+      "member": "full-gate-root.zip!/deepseek-error-paired.source.json",
+      "container": "full-gate-root.zip",
+      "container_sha256": "72b203024ac56295e662764c6b3c6f2deb36153e62e678fd4ec3d1d46e942e3b",
+      "size": 26854,
+      "sha256": "b452d02bc46981e04286d5e6e1fcd095bf82131ba3e3cf61d2c2c323b41ba105",
+      "fixture": "b452d02bc46981e04286d5e6e1fcd095bf82131ba3e3cf61d2c2c323b41ba105.json.gz",
+      "scope": "Byte-preserved historical Source facts for explicit compatibility/parser unit controls; never current Source or release evidence"
     }
   ]
 }

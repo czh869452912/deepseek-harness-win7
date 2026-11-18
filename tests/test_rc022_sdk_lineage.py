@@ -32,3 +32,13 @@ async def test_one_shot_and_epoch_helpers_snapshot_direct_creator():
     observer=ActivationObserver(lambda *args:events.append(args),'provider','epoch',parent)
     parent.session.id='changed-again';observer.settle()
     assert events[-1][1]['parentSessionId']=='changed'
+
+
+def test_retained_v3_observer_uses_explicit_lifecycle_view():
+    from scripts.oracles.agent_machine_current_python import legacy_lifecycle_notification
+    payload=dict(parentSessionId='direct',id='child',local=True,stopReason='completed')
+    view=legacy_lifecycle_notification('subagent/end',payload)
+    assert view==dict(name='subagent/end',payload=dict(id='child',local=True,stopReason='completed'))
+    assert payload['parentSessionId']=='direct'
+    with pytest.raises(ValueError):legacy_lifecycle_notification('agent/status',payload)
+    with pytest.raises(ValueError):legacy_lifecycle_notification('subagent/end',dict(id='child'))

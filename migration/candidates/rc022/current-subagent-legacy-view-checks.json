@@ -1,0 +1,29 @@
+{
+  "contract": "C9-EN",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "change": "Retained v3 machine observer now declares its historical DTO view explicitly. Only subagent start/end creator field is projected from that legacy view, with presence/type required. Production full current notifications and immutable archived cases remain unchanged.",
+  "verification": [
+    {
+      "run": "rc022-current-subagent-legacy-view-20261118-01",
+      "passed": 709,
+      "seconds": 14.91,
+      "scope": "Legacy external/provider/runtime/tools/Remote contracts plus current SDK lineage, actual service and lifetime consumers"
+    },
+    {
+      "run": "rc022-current-subagent-legacy-successors-20261118-01",
+      "exit_code": 0,
+      "pairs": [
+        "sdk_lineage",
+        "subagent_lifetime",
+        "subagent_service"
+      ],
+      "scope": "Actual pinned current Source/Native pairs retain and compare full creator DTOs"
+    }
+  ],
+  "cleanup": {
+    "bytes_removed": 69170,
+    "directories": 3,
+    "observations_retained": 16
+  },
+  "qualification": "Targeted only; legacy normalized views cannot substitute for current Source pairing or release qualification."
+}

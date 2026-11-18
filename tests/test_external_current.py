@@ -21,7 +21,7 @@ CASES=json.loads((ROOT/'scripts/oracles/external_current_cases.json').read_text(
 
 
 @pytest.mark.parametrize('case',CASES,ids=lambda case:case['case'])
-def test_actual_source_acp_ownership_contract(case):
+def test_retained_v3_acp_ownership_contract(case):
     result=(machine if case['kind']=='machine-current' else execute)(case,decode)
     assert result==case['expected']
     if case['kind']=='machine-current':

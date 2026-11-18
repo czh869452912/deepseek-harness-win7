@@ -21,7 +21,7 @@ CASES=json.loads((Path(__file__).resolve().parents[1]/'scripts/oracles/subagent_
 
 
 @pytest.mark.parametrize('case',CASES,ids=lambda case:case['case'])
-def test_actual_source_tool_journey(case):
+def test_retained_v3_tool_journey(case):
     assert execute(case,decode)==case['expected']
 
 

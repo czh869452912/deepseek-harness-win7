@@ -1,4 +1,9 @@
-"""Actual candidate factory, model runtime and handle-backed machine observations."""
+"""Retained v3 machine-contract compatibility observations.
+
+The original archived journeys predate the v4 lifecycle creator field. The
+explicit v3 notification view below preserves that old DTO for comparison; full
+current lifecycle/SDK DTOs are qualified separately by rc022 probes.
+"""
 import asyncio
 import json
 import os
@@ -18,6 +23,16 @@ from dsh.core.agent_current import CurrentAgentPlugin
 from dsh.core.agent_loop_current import CurrentAgentLoopPlugin
 from dsh.llm.runtime_current import CurrentLlmRuntime
 from dsh.session.jsonl_backend_current import CurrentJsonlSessionPersistencePlugin
+
+
+def legacy_lifecycle_notification(name, payload):
+    """Project just the added creator field out of the old v3 DTO contract."""
+    if name not in ('subagent/start', 'subagent/end'):
+        raise ValueError('Only the retained v3 lifecycle DTO is supported')
+    if not isinstance(payload.get('parentSessionId'), str):
+        raise ValueError('Current lifecycle notification must retain its creator')
+    return dict(name=name, payload={key: value for key, value in payload.items()
+                                   if key != 'parentSessionId'})
 
 
 class ScriptAdapter:
@@ -81,7 +96,7 @@ async def run(test,decode):
                 from dsh.subagent.in_process_current import CurrentSpawnInProcess,CurrentForkInProcess
                 await ctx.plugin(CurrentSqliteSessionQueryPlugin,dict(path=':memory:',openAt='never'))
                 for plugin in (CurrentSubagentPlugin,CurrentSpawnInProcess,CurrentForkInProcess):await ctx.plugin(plugin)
-                for name in ('subagent/start','subagent/end'):ctx.on(name,lambda payload,key=name:notifications.append(normalize(dict(name=key,payload=payload))))
+                for name in ('subagent/start','subagent/end'):ctx.on(name,lambda payload,key=name:notifications.append(normalize(legacy_lifecycle_notification(key,payload))))
             await ctx.plugin(CurrentAgentLoopPlugin,dict(agents=[]))
             if test.get('goals'):
                 from dsh.goal.current import CurrentGoalService,CurrentGoalRoundDriver

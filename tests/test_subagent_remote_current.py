@@ -14,7 +14,7 @@ JOURNEYS, ZONES = CASES[:-1], CASES[-1]
 
 
 @pytest.mark.parametrize('case', JOURNEYS, ids=lambda case: case['case'])
-def test_actual_current_subagent_remote(case):
+def test_retained_v3_subagent_remote(case):
     result = execute(case, decode)
     assert result == case['expected']
     if case['case'].endswith(('actual-queue', 'actual-steer')):

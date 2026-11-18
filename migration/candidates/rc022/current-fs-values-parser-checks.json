@@ -1,0 +1,19 @@
+{
+  "contract": "C9-EM",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "change": "Separate retained old FS receipt-parser values from removed current tool APIs. Immutable historical input hashes remain guarded, synthetic Native import placeholders cannot establish current parity. All eight retention refusal controls still exercise a newly allocated real owned filesystem tree and real hardlink/tamper checks.",
+  "verification": [
+    {
+      "run": "rc022-current-fs-values-parser-20261118-01",
+      "passed": 61,
+      "seconds": 16.24,
+      "scope": "Full retained parser controls plus actual current FS mutations"
+    }
+  ],
+  "cleanup": {
+    "directories": 3,
+    "bytes_removed": 21153630,
+    "observations_retained": 1
+  },
+  "qualification": "Targeted only. Current Native FS Source pairing is independent; no old receipts or source facts relabelled."
+}

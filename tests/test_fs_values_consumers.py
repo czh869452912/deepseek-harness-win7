@@ -8,8 +8,9 @@ import sys
 import pytest
 
 from scripts.fs_values_cases import SOURCE_DAMAGES, VALUE_DAMAGES, damage_runtime, damage_source
-from scripts.fs_values_oracle import GROUPS, ROOT, complete_digest, identity, json_values, validate_runtime
+from scripts.fs_values_oracle import GROUPS, ROOT, complete_digest, json_values
 from scripts.verify_portable import fs_values_receipts
+from historical_fs_values_model import identity, validate_runtime, parser_pair
 
 
 @pytest.fixture(scope='module')
@@ -19,20 +20,12 @@ def actual_pair_output(tmp_path_factory):
 
 @pytest.fixture(scope='module')
 def actual_pair(actual_pair_output):
-    output = actual_pair_output
-    process = subprocess.run([sys.executable, str(ROOT / 'scripts/fs_values_oracle.py'), '--output', str(output)],
-        cwd=str(ROOT), capture_output=True, timeout=240)
-    output.with_suffix('.log').write_bytes(process.stdout + process.stderr)
-    assert process.returncode == 0, output.read_text(encoding='utf-8')
-    source = json.loads(output.with_suffix('.source.json').read_text(encoding='utf-8'))
-    native = json.loads(output.with_suffix('.native.json').read_text(encoding='utf-8'))
-    identity(source, ROOT / 'reference')
-    validate_runtime(native, ROOT, sys.executable, source, native['imports'])
+    # A retained parser model, not execution of the removed Source tool API.
+    # Cleanup controls still use a newly allocated real owned filesystem tree.
+    source, native = parser_pair(actual_pair_output)
     yield source, native
-    # These tests are the last consumers of this pair. Retain observations and
-    # prune only the isolated, byte-verified successful fixture workspace.
     from scripts.fs_fixture_workspace import cleanup
-    cleanup(output)
+    cleanup(actual_pair_output)
 
 
 @pytest.mark.parametrize('damage', ('foreign-owner', 'allocated', 'unmatched', 'observation',
@@ -98,7 +91,7 @@ def test_fixture_allocation_refuses_repository_temporary_parent(monkeypatch, tmp
 
 
 @pytest.mark.parametrize('group', GROUPS)
-def test_actual_source_native_complete_fs_values(actual_pair, group):
+def test_retained_parser_model_complete_fs_values(actual_pair, group):
     source, native = actual_pair
     left, right = copy.deepcopy(source['rows']), copy.deepcopy(native['rows'])
     for rows in (left, right):

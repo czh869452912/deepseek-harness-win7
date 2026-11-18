@@ -1522,6 +1522,14 @@ REQUIRED_REGRESSION['test_storage_atomic_replace'] = {
     'test_replace_failure_is_bounded_and_keeps_original_record[5-6]',
     'test_replace_failure_is_bounded_and_keeps_original_record[112-1]',
 }
+REQUIRED_REGRESSION['test_current_release_orchestration'] = {
+    'test_current_cli_routes_to_current_qualification',
+    'test_current_x86_runtime_freezes_separate_approved_dependencies',
+    'test_current_archives_cannot_substitute_the_other_architecture',
+    *{'test_current_desktop_requires_owned_candidate_and_complete_real_observations[' + damage + ']'
+      for damage in ('none', 'candidate', 'dirty', 'partial-pipe', 'installer-bytes',
+                     'browser-rejected', 'browser-error', 'browser-console')},
+}
 REQUIRED_REGRESSION['test_message_feedback_contract'] = {
     'test_durable_feedback_identity_accepts_whole_json_numbers',
     *{'test_durable_feedback_identity_rejects_non_safe_integer_numbers[' + value + ']'
@@ -2209,6 +2217,9 @@ def run_python_regression(python, output, environment, timeout=None):
 
 
 def verify(args, output):
+    if getattr(args, 'current', False):
+        from scripts.current_release_gate import verify as verify_current
+        return verify_current(args, output)
     if sys.platform != 'win32' or sys.version_info[:3] != (3, 8, 10):
         raise RuntimeError('run this gate with Windows Python 3.8.10')
     browser = Path(args.browser or os.environ.get('DSH_TEST_CHROMIUM', '')).resolve()
@@ -2601,6 +2612,16 @@ def positive_seconds(value):
 
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
+    # CLI qualification always uses the current production contract. The
+    # retained validator implementation remains callable by parser unit tests.
+    parser.set_defaults(current=True)
+    parser.add_argument('--node', type=Path, help='Pinned Node 24.9.0 development observer')
+    parser.add_argument('--python32', type=Path, help='Python3.8.10 x86 base runtime')
+    parser.add_argument('--site-packages32', type=Path, help='Approved x86 dependency environment')
+    parser.add_argument('--site-packages', type=Path, help='Approved x64 dependency environment')
+    parser.add_argument('--electron64', type=Path, help='Pinned Electron22 x64 archive')
+    parser.add_argument('--electron32', type=Path, help='Pinned Electron22 ia32 archive')
+    parser.add_argument('--nsis', type=Path, help='Pinned NSIS archive')
     parser.add_argument('--prepare', action='store_true', help='Install pinned development dependencies before verification')
     parser.add_argument('--browser', help='Absolute Chromium executable; defaults to DSH_TEST_CHROMIUM')
     parser.add_argument('--browser108', help='Fixed Chromium 108 executable; defaults to DSH_TEST_CHROMIUM108')

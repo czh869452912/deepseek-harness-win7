@@ -212,7 +212,7 @@ def qualify(args):
             report['runtime'] = runtime_journey(portable, workspace, output, env, args.architecture)
             report['office'] = office_journey(portable, workspace, output, env, source, args.architecture)
             report['metadata'] = metadata_journey(source, node, portable, output, frozen['native'])
-            if args.architecture == 'x64':
+            if args.architecture in ('x64', 'x86'):
                 report['sdk'] = sdk_journey(source, node, portable, output, frozen['native'])
                 report['browsers'] = browser_journeys(portable, workspace, output, env, node,
                     args.browser.resolve(), args.browser108.resolve(), archive, report['runtime'])

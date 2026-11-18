@@ -1,0 +1,29 @@
+{
+  "contract": "C9-FZ",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "candidate": "01499ca488d5e8e9f1373ec89df7557bd07fcc63",
+  "result": "in-progress",
+  "publishable": false,
+  "verification": {
+    "controller": ".goose/out/rc022-unified-control-20261119-09",
+    "output": ".goose/out/rc022-unified-20261119-09",
+    "checkout": "C:\\Users\\czh86\\Documents\\Codex\\dsh-rc022-qualification",
+    "started": "2026-11-19T01:28:03.516748",
+    "bound_inputs_verified": 23,
+    "worktree_dirty": false,
+    "scope": "Single complete Python, pinned Source/paired, fresh x64/x86 extracted Portable and agreed Electron22 Standard Desktop qualification; no Win7/admin/AIO installation acceptance."
+  },
+  "preparation": {
+    "run08": "Stopped during initial freeze after a pre-launch assertion failure was masked by the following PowerShell command. No tests executed; empty output removed. Controller diagnostics retained.",
+    "refresh": "Exact HEAD bytes and Git CRLF index metadata refreshed; all 23 receipt inputs verified and clean status required inside the new controller before launch."
+  },
+  "index_checks": {
+    "check": "Passed; external artifact bytes not verified and no parity certification.",
+    "ready": ".goose/out/rc022-current-migration-index-20261119-01/command.json"
+  },
+  "retention": {
+    "active_inputs": "Current independent checkout and Source copies, prepared dependency graphs, Office, x86 runtime/dependencies and observer runtimes owned by C9 qualification until final frozen input reread and archive validation finish.",
+    "previous_checkout": "Old temporary qualification checkout retains failed receipts and input context for comparison until the new independent qualification closes; retire reconstructible copies at that milestone.",
+    "blocked": "Previously policy-rejected Edge profiles and worktree marker are unchanged; no retry."
+  }
+}

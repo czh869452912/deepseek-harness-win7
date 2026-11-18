@@ -1,0 +1,12 @@
+{
+  "contract": "C9-CW",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "status": "collection manifest repaired; no tests executed",
+  "run": "rc022-current-collection-20261118-01",
+  "collected": 22568,
+  "required_lanes": 3957,
+  "failure": "Original collection refused two stale required names after the historical default-model test rename. Original refusal retained.",
+  "repair": "Required identities now use the explicit historical name. Revalidated the unchanged original collected identities against the corrected required manifest.",
+  "scope": "Collection only; not a Python regression or current qualification",
+  "cleanup": "No test bodies ran and no fixture workspaces were created; compact command, log, original collection and derived recheck retained"
+}

@@ -181,7 +181,7 @@ REQUIRED_REGRESSION = {
         for case in ('deepseek-base', 'shared-retry', 'pi-cache-union', 'locale-unicode')
     },
     'test_boot_remote_composition': {
-        *{'test_boot_default_model_has_serializable_live_settings[' + value + ']' for value in ('False', 'True')},
+        *{'test_historical_default_model_has_serializable_live_settings[' + value + ']' for value in ('False', 'True')},
         *{'test_boot_commands_remote_serializes_and_owns_effects[' + value + ']' for value in ('False', 'True')},
         *{'test_model_catalog_preserves_error_message_without_code_prefix[' + value + ']' for value in ('error0', 'error1')},
     },

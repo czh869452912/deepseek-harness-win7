@@ -1,7 +1,9 @@
+"""Retained historical unicode-carrier compatibility models; never current Source parity.
+
+Current production successors are explicitly mapped in historical_domain_models.
+"""
 import copy
-import json
 from pathlib import Path
-import subprocess
 import sys
 
 import pytest
@@ -11,25 +13,20 @@ from scripts.unicode_carrier_oracle import NAMES, identity, validate_runtime
 from scripts.verify_portable import unicode_carrier_receipts
 
 
+from historical_domain_models import historical_identity, historical_pair
+
+
 ROOT = Path(__file__).resolve().parents[1]
+identity = historical_identity('unicode-carrier', identity)
 
 
 @pytest.fixture(scope='module')
-def actual_pair(tmp_path_factory):
-    output = tmp_path_factory.mktemp('unicode-carrier-pair') / 'paired.json'
-    completed = subprocess.run([sys.executable, str(ROOT / 'scripts/unicode_carrier_oracle.py'),
-        '--output', str(output)], cwd=str(ROOT), capture_output=True, timeout=240)
-    (output.parent / 'runner.log').write_bytes(completed.stdout + completed.stderr)
-    assert completed.returncode == 0, output.read_text(encoding='utf-8')
-    source = json.loads(output.with_suffix('.source.json').read_text(encoding='utf-8'))
-    native = json.loads(output.with_suffix('.native.json').read_text(encoding='utf-8'))
-    identity(source, ROOT / 'reference')
-    validate_runtime(native, ROOT, sys.executable, source, native['imports'])
-    return source, native
+def actual_pair():
+    return historical_pair('unicode-carrier')
 
 
 @pytest.mark.parametrize('name', NAMES)
-def test_actual_source_native_unicode_carrier_values(actual_pair, name):
+def test_historical_source_native_unicode_carrier_values(actual_pair, name):
     source, native = actual_pair
     assert next(row for row in native['rows'] if row['name'] == name) == next(row for row in source['rows'] if row['name'] == name)
 

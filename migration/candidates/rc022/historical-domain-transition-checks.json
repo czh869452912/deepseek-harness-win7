@@ -1,0 +1,55 @@
+{
+  "contract": "C9-CU",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "status": "targeted passed; unified gate pending",
+  "scope": "Eight historical domain consumer suites keep every case and negative control as explicit unit models. Original archived Source observations and input identity are unchanged. Only observer identity and verified corpus newline variants are derived in clearly labeled test models. They cannot provide current parity.",
+  "verification": {
+    "native_run": "rc022-historical-domain-consumers-20261118-02",
+    "passed": 518,
+    "seconds": 37.35,
+    "current_paired_run": "rc022-domain-successors-20261118-01",
+    "current_pairs": 14,
+    "inputs_unchanged": true,
+    "report_sha256": "080656f0d4763cb75b3c151e3cc7fea9f6c63a0704d6026907fa8a55ed0945ee"
+  },
+  "production_successors": {
+    "agent-dependencies": [
+      "rc022_agent_registration",
+      "rc022_agent_boundary"
+    ],
+    "ask-user": [
+      "rc022_question_service",
+      "rc022_question_projection"
+    ],
+    "javascript-errors": [
+      "rc022_subprocess_errors",
+      "rc022_tool_pipeline"
+    ],
+    "message-values": [
+      "rc022_messages_wire",
+      "rc022_messages_framing"
+    ],
+    "subagent-model": [
+      "rc022_subagent_service",
+      "rc022_subagent_manager"
+    ],
+    "tool-durable": [
+      "rc022_tool_recovery",
+      "rc022_tool_updates"
+    ],
+    "tool-errors": [
+      "rc022_tool_pipeline",
+      "rc022_tool_admission"
+    ],
+    "unicode-carrier": [
+      "rc022_messages_wire",
+      "rc022_messages_adapter"
+    ]
+  },
+  "failures": "01 selected a nonexistent manifest test and collected nothing; raw log retained. 02 and current successors independently passed.",
+  "cleanup": {
+    "bytes_removed": 0,
+    "owned_directories_removed": 6,
+    "retained": "Log/XML, commands, immutable archived members, fresh Native observations and current paired observations. All owned synthetic fixture workspaces are retired."
+  }
+}

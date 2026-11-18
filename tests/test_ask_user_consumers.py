@@ -1,7 +1,9 @@
+"""Retained historical ask-user compatibility models; never current Source parity.
+
+Current production successors are explicitly mapped in historical_domain_models.
+"""
 import copy
-import json
 from pathlib import Path
-import subprocess
 import sys
 
 import pytest
@@ -11,25 +13,20 @@ from scripts.ask_user_oracle import NAMES, complete_digest, identity, validate_r
 from scripts.verify_portable import ask_user_receipts
 
 
+from historical_domain_models import historical_identity, historical_pair
+
+
 ROOT = Path(__file__).resolve().parents[1]
+identity = historical_identity('ask-user', identity)
 
 
 @pytest.fixture(scope='module')
-def actual_pair(tmp_path_factory):
-    output = tmp_path_factory.mktemp('ask-user-pair') / 'paired.json'
-    completed = subprocess.run([sys.executable, str(ROOT / 'scripts/ask_user_oracle.py'),
-        '--output', str(output)], cwd=str(ROOT), capture_output=True, timeout=240)
-    (output.parent / 'runner.log').write_bytes(completed.stdout + completed.stderr)
-    assert completed.returncode == 0, output.read_text(encoding='utf-8')
-    source = json.loads(output.with_suffix('.source.json').read_text(encoding='utf-8'))
-    native = json.loads(output.with_suffix('.native.json').read_text(encoding='utf-8'))
-    identity(source, ROOT / 'reference')
-    validate_runtime(native, ROOT, sys.executable, source, native['imports'])
-    return source, native
+def actual_pair():
+    return historical_pair('ask-user')
 
 
 @pytest.mark.parametrize('name', NAMES)
-def test_actual_source_native_ask_user_protocol(actual_pair, name):
+def test_historical_source_native_ask_user_protocol(actual_pair, name):
     source, native = actual_pair
     selected_source = copy.deepcopy(source['rows'])
     selected_native = copy.deepcopy(native['rows'])

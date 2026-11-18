@@ -212,7 +212,7 @@ REQUIRED_REGRESSION = {
           for damage in ('missing-client', 'changed-client', 'extra-client', 'wrong-build-profile')},
     },
     'test_subagent_model_consumers': {
-        *{'test_actual_source_native_subagent_model_values[' + name + ']' for name in SUBAGENT_MODEL_NAMES},
+        *{'test_historical_source_native_subagent_model_values[' + name + ']' for name in SUBAGENT_MODEL_NAMES},
         *{'test_subagent_model_requires_complete_public_results_and_runtime[' + damage + ']' for damage in SUBAGENT_MODEL_DAMAGES},
         *{'test_subagent_model_source_requires_pinned_guarded_inputs[' + damage + ']' for damage in SUBAGENT_MODEL_SOURCE_DAMAGES},
         'test_subagent_model_owned_interpreter_and_independent_imports',
@@ -220,7 +220,7 @@ REQUIRED_REGRESSION = {
         'test_portable_subagent_model_refuses_partial_receipts[native]',
     },
     'test_unicode_carrier_consumers': {
-        *{'test_actual_source_native_unicode_carrier_values[' + name + ']' for name in UNICODE_CARRIER_NAMES},
+        *{'test_historical_source_native_unicode_carrier_values[' + name + ']' for name in UNICODE_CARRIER_NAMES},
         *{'test_unicode_carrier_requires_complete_public_results_and_runtime[' + damage + ']' for damage in UNICODE_CARRIER_DAMAGES},
         *{'test_unicode_carrier_source_requires_pinned_guarded_inputs[' + damage + ']' for damage in UNICODE_CARRIER_SOURCE_DAMAGES},
         'test_unicode_carrier_owned_interpreter_and_independent_imports',
@@ -260,7 +260,7 @@ REQUIRED_REGRESSION = {
     },
     'test_tools_upstream_parity': {'test_agent_loop_waits_for_owned_tools_and_retires_on_loss'},
     'test_tool_errors_consumers': {
-        *{'test_actual_source_native_tool_errors_and_prompt_ownership[' + name + ']' for name in TOOL_ERROR_NAMES},
+        *{'test_historical_source_native_tool_errors_and_prompt_ownership[' + name + ']' for name in TOOL_ERROR_NAMES},
         *{'test_tool_errors_requires_complete_public_results_and_runtime[' + damage + ']' for damage in TOOL_ERROR_DAMAGES},
         *{'test_tool_errors_source_requires_pinned_guarded_inputs[' + damage + ']' for damage in TOOL_ERROR_SOURCE_DAMAGES},
         'test_tool_errors_owned_interpreter_and_independent_imports',
@@ -268,7 +268,7 @@ REQUIRED_REGRESSION = {
         'test_portable_tool_errors_refuses_partial_receipts[native]',
     },
     'test_tool_durable_consumers': {
-        *{'test_actual_source_native_durable_tool_results[' + name + ']' for name in TOOL_DURABLE_NAMES},
+        *{'test_historical_source_native_durable_tool_results[' + name + ']' for name in TOOL_DURABLE_NAMES},
         *{'test_durable_tools_requires_complete_values_and_runtime[' + damage + ']' for damage in TOOL_DURABLE_DAMAGES},
         *{'test_durable_tools_source_requires_pinned_guarded_inputs[' + damage + ']' for damage in TOOL_DURABLE_SOURCE_DAMAGES},
         'test_durable_tools_owned_interpreter_and_independent_imports',
@@ -276,7 +276,7 @@ REQUIRED_REGRESSION = {
         'test_portable_durable_tools_refuses_partial_receipts[native]',
     },
     'test_agent_dependencies_consumers': {
-        *{'test_actual_source_native_agent_dependency_lifecycle[' + name + ']' for name in AGENT_DEPENDENCIES_NAMES},
+        *{'test_historical_source_native_agent_dependency_lifecycle[' + name + ']' for name in AGENT_DEPENDENCIES_NAMES},
         *{'test_agent_dependencies_requires_complete_values_and_runtime[' + damage + ']' for damage in AGENT_DEPENDENCIES_DAMAGES},
         *{'test_agent_dependencies_source_requires_pinned_guarded_inputs[' + damage + ']' for damage in AGENT_DEPENDENCIES_SOURCE_DAMAGES},
         'test_agent_dependencies_owned_interpreter_and_independent_imports',
@@ -284,7 +284,7 @@ REQUIRED_REGRESSION = {
         'test_portable_agent_dependencies_refuses_partial_receipts[native]',
     },
     'test_ask_user_consumers': {
-        *{'test_actual_source_native_ask_user_protocol[' + name + ']' for name in ASK_USER_NAMES},
+        *{'test_historical_source_native_ask_user_protocol[' + name + ']' for name in ASK_USER_NAMES},
         *{'test_ask_user_requires_complete_values_and_runtime[' + damage + ']' for damage in ASK_USER_DAMAGES},
         *{'test_ask_user_source_requires_pinned_guarded_inputs[' + damage + ']' for damage in ASK_USER_SOURCE_DAMAGES},
         'test_ask_user_owned_interpreter_and_independent_imports',
@@ -292,7 +292,7 @@ REQUIRED_REGRESSION = {
         'test_portable_ask_user_refuses_partial_receipts[native]',
     },
     'test_message_values_consumers': {
-        *{'test_actual_source_native_message_values[' + name + ']' for name in MESSAGE_VALUES_NAMES},
+        *{'test_historical_source_native_message_values[' + name + ']' for name in MESSAGE_VALUES_NAMES},
         *{'test_message_values_requires_complete_values_and_runtime[' + damage + ']' for damage in MESSAGE_VALUES_DAMAGES},
         *{'test_message_values_source_requires_pinned_guarded_inputs[' + damage + ']' for damage in MESSAGE_VALUES_SOURCE_DAMAGES},
         'test_message_values_owned_interpreter_and_independent_imports',
@@ -539,7 +539,7 @@ REQUIRED_REGRESSION = {
         *{'test_exited_initial_pipe_failure_uses_recorded_physical_outcome[' + error + ']' for error in ('BrokenPipeError', 'ConnectionResetError')},
     },
     'test_javascript_errors_consumers': {
-        *{'test_actual_original_and_native_javascript_error_boundaries_match[' + name + ']' for name in ERROR_NAMES},
+        *{'test_historical_original_and_native_javascript_error_boundaries_match[' + name + ']' for name in ERROR_NAMES},
         *{'test_javascript_error_receipt_requires_complete_values_and_owned_runtime[' + damage + ']' for damage in JS_ERROR_DAMAGES},
         *{'test_javascript_error_source_requires_pinned_complete_inputs[' + damage + ']' for damage in JS_ERROR_SOURCE_DAMAGES},
         *{'test_portable_javascript_errors_refuses_partial_receipts[' + side + ']' for side in ('source', 'native')},

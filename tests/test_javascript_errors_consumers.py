@@ -1,7 +1,9 @@
+"""Retained historical javascript-errors compatibility models; never current Source parity.
+
+Current production successors are explicitly mapped in historical_domain_models.
+"""
 import copy
-import json
 from pathlib import Path
-import subprocess
 import sys
 
 import pytest
@@ -10,22 +12,20 @@ from scripts.javascript_errors_cases import VALUE_DAMAGES, SOURCE_DAMAGES, damag
 from scripts.javascript_errors_oracle import NAMES, identity, normalize_platform_observations, validate_runtime
 
 
+from historical_domain_models import historical_identity, historical_pair
+
+
 ROOT = Path(__file__).resolve().parents[1]
+identity = historical_identity('javascript-errors', identity)
 
 
 @pytest.fixture(scope='module')
-def actual_pair(tmp_path_factory):
-    output = tmp_path_factory.mktemp('javascript-errors-pair') / 'paired.json'
-    completed = subprocess.run([sys.executable, str(ROOT / 'scripts/javascript_errors_oracle.py'),
-        '--output', str(output)], cwd=str(ROOT), capture_output=True, timeout=360)
-    (output.parent / 'runner.log').write_bytes(completed.stdout + completed.stderr)
-    assert completed.returncode == 0, (completed.stdout + completed.stderr).decode('utf-8', errors='replace')
-    return (json.loads(output.with_suffix('.source.json').read_text(encoding='utf-8')),
-        json.loads(output.with_suffix('.native.json').read_text(encoding='utf-8')))
+def actual_pair():
+    return historical_pair('javascript-errors')
 
 
 @pytest.mark.parametrize('name', NAMES)
-def test_actual_original_and_native_javascript_error_boundaries_match(actual_pair, name):
+def test_historical_original_and_native_javascript_error_boundaries_match(actual_pair, name):
     source, native = actual_pair
     source_rows = normalize_platform_observations(source['rows'], 'source')
     native_rows = normalize_platform_observations(native['rows'], 'native')

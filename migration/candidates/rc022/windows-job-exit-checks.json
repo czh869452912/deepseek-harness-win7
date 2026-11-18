@@ -1,0 +1,21 @@
+{
+  "contract": "C9-DP",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "status": "Targeted process ownership checks passed",
+  "problem": "Two cancellation consumers observed a still-unsignaled Python process after their package query returned cancellation. The venv executable launches another Python process inside the owned Job; zero Job active accounting alone was insufficient for these observed return boundaries.",
+  "changes": "Before Job termination retain handles for its current member list, verify membership to avoid PID reuse, and require those process handles to be signaled before reporting range exit. Resize the real Job process-list query on MORE_DATA. Close retained handles with the owner. Keep Job accounting and direct-process waits; do not replace them with arbitrary delay.",
+  "verification": [
+    {"run": "rc022-current-boundary-recheck-20261118-02", "passed": 11, "failed": 1, "remaining": "Git cancellation still observed an unfinished member"},
+    {"run": "rc022-current-process-cancel-diagnostic-20261118-01", "passed": 4, "seconds": 4.52, "scope": "Recorded actual parent/child wait statuses; a passing isolated observation did not resolve the earlier failure"},
+    {"run": "rc022-current-process-consumers-20261118-01", "passed": 22, "failed": 1, "seconds": 9.62, "remaining": "Package cancellation returned while observed process wait status was WAIT_TIMEOUT (258)"},
+    {"run": "rc022-package-cancel-trace-20261118-01", "scope": "12 bounded pre-fix diagnostics recorded launcher/member identities and real Job calls; all happened to pass and were not claimed as a fix"},
+    {"run": "rc022-current-process-consumers-20261118-02", "passed": 29, "seconds": 15.00, "scope": "Deterministic zero-accounting/pending-process regression, real Git parent/descendant cancellation, package query cancellation, ordinary spawn/ownership/cleanup and direct telemetry consumer"}
+  ],
+  "api_references": [
+    "https://learn.microsoft.com/windows/win32/api/winnt/ns-winnt-jobobject_basic_process_id_list",
+    "https://learn.microsoft.com/en-us/windows/win32/procthread/terminating-a-process"
+  ],
+  "compatibility": "Uses existing Win7-compatible Job/process APIs; actual Win7 guest qualification and arbitrary process-creation race schedules remain outside these targeted observations.",
+  "cleanup": "Completed test workspaces retired after retaining raw failures and actual process observations; 12 bounded diagnostic script/PID directories removed after all recorded members had exited. Commands/XML/logs retained.",
+  "qualification": "Targeted completion only; exact frozen full candidate remains pending."
+}

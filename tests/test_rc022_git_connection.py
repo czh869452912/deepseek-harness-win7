@@ -89,7 +89,9 @@ async def test_cancellation_joins_parent_and_descendant_with_open_stream(tmp_pat
         try:
             task.cancel()
             with pytest.raises(asyncio.CancelledError):await task
-            assert all(kernel.WaitForSingleObject(handle,0)==0 for handle in handles)
+            statuses=[kernel.WaitForSingleObject(handle,0) for handle in handles]
+            (tmp_path/'git-cancellation-observations.json').write_text(json.dumps(dict(pids=json.loads(pidfile.read_text(encoding='utf-8')),wait_statuses=statuses)),encoding='utf-8')
+            assert statuses==[0,0]
         finally:
             for handle in handles:kernel.CloseHandle(handle)
     assert (tmp_path/'tree.log').read_bytes()==b'started\r\n'

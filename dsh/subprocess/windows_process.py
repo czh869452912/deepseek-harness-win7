@@ -17,6 +17,7 @@ class WindowsJobProcess:
         import msvcrt
         from dsh.sandbox.windows_acl import WinApi,JobLimit,P,D
         self.api=WinApi();self.job=self.process=None;self.pid=-1;self.returncode=None
+        self._termination_handles={}
         self.stdin=self.stdout=self.stderr=None
         query=self.api.kernel.QueryInformationJobObject
         query.argtypes=[P,c.c_int,P,D,P];query.restype=c.c_int
@@ -86,14 +87,52 @@ class WindowsJobProcess:
         if self.job is None:return False
         values=Accounting()
         self.api.check(self.query(self.job,1,c.byref(values),c.sizeof(values),None),'QueryInformationJobObject')
-        return values.active!=0
+        if values.active:return True
+        # Accounting removal can precede a member process becoming signaled.
+        # Cancellation must join the actual processes, including venv launchers'
+        # children, before publishing that the owned range has exited.
+        for handle in self._termination_handles.values():
+            state=self.api.WaitForSingleObject(handle,0)
+            if state==0x102:return True
+            if state!=0:self.api.error('WaitForSingleObject',c.get_last_error())
+        return False
+
+    def _retain_termination_members(self):
+        capacity=16
+        while True:
+            class ProcessIds(c.Structure):
+                _fields_=[('assigned',c.c_ulong),('listed',c.c_ulong),('ids',c.c_size_t*capacity)]
+            values=ProcessIds()
+            success=self.query(self.job,3,c.byref(values),c.sizeof(values),None)
+            if not success and c.get_last_error()!=234:
+                self.api.error('QueryInformationJobObject',c.get_last_error())
+            if success and values.assigned<=capacity and values.listed==values.assigned:break
+            capacity=max(capacity*2,values.assigned)
+        open_process=self.api.kernel.OpenProcess
+        open_process.argtypes=[c.c_ulong,c.c_int,c.c_ulong];open_process.restype=c.c_void_p
+        for pid in values.ids[:values.listed]:
+            if pid in self._termination_handles:continue
+            handle=open_process(0x100000|0x1000,False,pid)
+            if not handle:
+                error=c.get_last_error()
+                if error==87:continue  # The member finished before OpenProcess.
+                self.api.error('OpenProcess',error)
+            try:
+                belongs=c.c_int()
+                self.api.check(self.api.IsProcessInJob(handle,self.job,c.byref(belongs)),'IsProcessInJob')
+                if belongs.value:self._termination_handles[pid]=handle;handle=None
+            finally:
+                if handle is not None:self.api.CloseHandle(handle)
 
     def kill_range(self):
         if self.job is None:return
+        self._retain_termination_members()
         terminate=self.api.kernel.TerminateJobObject
         terminate.argtypes=[c.c_void_p,c.c_ulong];terminate.restype=c.c_int
         self.api.check(terminate(self.job,1),'TerminateJobObject')
 
     def close_handles(self):
+        for handle in self._termination_handles.values():self.api.CloseHandle(handle)
+        self._termination_handles.clear()
         if self.job is not None:self.api.CloseHandle(self.job);self.job=None
         if self.process is not None:self.api.CloseHandle(self.process);self.process=None

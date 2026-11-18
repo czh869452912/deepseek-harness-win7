@@ -20,6 +20,7 @@ from test_session_remote import local_llm
 @pytest.mark.parametrize('preset', ['minimal', 'standard', 'cordis'])
 async def test_legacy_sqlite_export_remote_model_fork_search_and_cold_restart(tmp_path, monkeypatch, preset, local_llm):
     monkeypatch.setenv('DSH_TELEMETRY_DISABLED', '1')
+    monkeypatch.setenv('DSH_HOME', str(tmp_path / 'home'))
     database = tmp_path / 'sessions.db'
     writer = SqliteSessionPersistence(str(database), journal_mode='delete')
     await writer.create(SessionHeader('legacy-history', created_at=1, cwd=str(tmp_path)))

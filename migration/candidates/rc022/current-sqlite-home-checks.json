@@ -1,0 +1,17 @@
+{
+  "contract": "C9-FU",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "failure": "The legacy SQLite Remote fixture set dshHome for profile resolution but did not set DSH_HOME for environment-expanded package paths, consulting the real user home.",
+  "change": "Set fixture-owned DSH_HOME before canonical boot, matching the existing session Remote fixture; do not modify user credentials or locks.",
+  "verification": {
+    "run": "rc022-current-c9fu-sqlite-home-20261119-01",
+    "passed": 7,
+    "seconds": 110.94
+  },
+  "cleanup": {
+    "directories": 3,
+    "bytes_removed": 1592334,
+    "retained": "Commands, logs/XML and selected raw observations"
+  },
+  "qualification": "Targeted only; frozen run07 unchanged."
+}

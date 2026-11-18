@@ -4,6 +4,8 @@
 
 C9-FT：嵌套完整回归使用同一次冻结的 checkout 清单，严格原件与所有权校验保持；92 项通过，3 个目录清理、回收 685,519,985 字节。见[检查](current-nested-preflight-checks.json)。
 
+C9-FU：SQLite Remote 夹具显式隔离 DSH_HOME，真实迁出、三预设模型/分叉/搜索/冷启及 Session Remote 共 7 项通过；3 个目录清理、回收 1,592,334 字节。见[检查](current-sqlite-home-checks.json)。
+
 C9-FS：规范 Source 路径下实际生成终端描述与双向通信通过，保持 wire 字段；Shell Job 等既有范围清理后再断言无活动进程。3 项通过，3 个目录清理、回收 17,414 字节，保留 6 份观察。见[生成通信检查](current-generated-carrier-checks.json)。
 
 C9-FR：当前 Source 时区观察的 Node 版本断言由残留的 22.22.2 对齐到固定 24.9.0，UTC/上海偏移、日期恢复/解析和属性格式仍精确比较。8 项实际原版与 Python 3.8 检查通过，3 个工作目录清理、回收 29,124 字节，历史观察器运行时保持独立。见[当前 Source 时区检查](current-source-timezone-checks.json)。

@@ -47,8 +47,21 @@ def desktop_tools(args):
         nsis=Path(getattr(args, 'nsis', None) or ROOT / '.goose/tools/nsis-3.13/nsis-3.13.zip').resolve())
 
 
+def installed_node_identity(source, node):
+    roots = [source, node.parent, ROOT / 'node_modules'] + [ROOT / folder / 'node_modules' for folder in
+        ['scripts/oracles', 'scripts/oracles/official', 'scripts/source-runtime']]
+    # Bind installed bytes and resolution links, including absent optional links.
+    # Every dependency root is explicit; links may not escape these inputs.
+    return tree_identity(roots, [ROOT, source, node.parent] + [path.resolve() for path in roots],
+        progress=lambda item: print('Dependency bytes: ' + str(item['files']), flush=True)
+            if item['files'] % 20000 == 0 else None)
+
+
 def freeze(source, node, browsers, office, runtimes, tools):
     value = lanes.input_identity(source, node)
+    # Check copy inputs before traversing the much larger installed Node graph.
+    value['python_build_inputs'] = {arch:python_identity(ROOT, runtime, site, arch)
+                                    for arch, (runtime, site) in runtimes.items()}
     names = subprocess.check_output(['git', '-C', str(ROOT), 'ls-files', '-z', '--cached',
                                     '--others', '--exclude-standard']).decode('utf-8').split('\0')
     value['checkout'] = {name:lanes.digest(ROOT / name) for name in sorted(set(names))
@@ -56,15 +69,7 @@ def freeze(source, node, browsers, office, runtimes, tools):
     value['browsers'] = {str(path):lanes.digest(path) for path in browsers}
     value['office'] = {architecture:verified_manifest(office_runtime_source(ROOT, office, architecture), architecture)
                        for architecture in ['x64', 'x86']}
-    roots = [source, node.parent] + [ROOT / folder / 'node_modules' for folder in
-        ['scripts/oracles', 'scripts/oracles/official', 'scripts/source-runtime']]
-    # Bind installed bytes and resolution links, including absent optional links.
-    # Every dependency root is explicit; links may not escape these inputs.
-    value['installed_node'] = tree_identity(roots, [ROOT, source, node.parent] + [path.resolve() for path in roots],
-        progress=lambda item: print('Dependency bytes: ' + str(item['files']), flush=True)
-            if item['files'] % 20000 == 0 else None)
-    value['python_build_inputs'] = {arch:python_identity(ROOT, runtime, site, arch)
-                                    for arch, (runtime, site) in runtimes.items()}
+    value['installed_node'] = installed_node_identity(source, node)
     value['desktop_tools'] = {name:dict(path=str(path), sha256=lanes.digest(path)) for name,path in tools.items()}
     observers = [path.parent for path in browsers] + [
         ROOT / '.goose/tools/electron-44.0.0-win32-x64/runtime',

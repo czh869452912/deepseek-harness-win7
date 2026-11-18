@@ -21,6 +21,26 @@ def test_current_cli_routes_to_current_qualification(tmp_path, monkeypatch):
     assert received == [(True, Path('base32'), Path('deps32'))]
 
 
+def test_current_gate_binds_root_installed_dependencies(tmp_path, monkeypatch):
+    monkeypatch.setattr(gate, 'ROOT', tmp_path)
+    source, node = tmp_path / 'source', tmp_path / 'toolchain/node.exe'
+    roots = [source, node.parent, tmp_path / 'node_modules'] + [
+        tmp_path / folder / 'node_modules' for folder in
+        ['scripts/oracles', 'scripts/oracles/official', 'scripts/source-runtime']]
+    for path in roots:
+        path.mkdir(parents=True)
+    node.write_bytes(b'node')
+    module = tmp_path / 'node_modules/module.js'
+    module.write_bytes(b'installed dependency')
+    before = gate.installed_node_identity(source, node)
+    assert str(module) in before['files']
+    module.write_bytes(b'changed dependency')
+    assert gate.installed_node_identity(source, node) != before
+    module.unlink(); module.parent.rmdir()
+    with pytest.raises(FileNotFoundError):
+        gate.installed_node_identity(source, node)
+
+
 def test_current_x86_runtime_freezes_separate_approved_dependencies(tmp_path):
     args = NS(python32=tmp_path / 'base', site_packages32=tmp_path / 'approved', site_packages=None)
     value = gate.runtime_inputs(args)

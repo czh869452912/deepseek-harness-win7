@@ -1,0 +1,16 @@
+{
+  "contract": "C9-CY",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "status": "targeted passed; fresh unified qualification pending",
+  "failure": "Clean candidate 9c74e794 initial input freeze rejected runtime bytes before any test body ran. Two YAML files had checkout CRLF conversion; two retained package manifests had LF Git blobs despite verified CRLF working bytes.",
+  "original_attempt": "rc022-unified-20261118-01; original failed current-progress and summary retained unchanged",
+  "changes": [
+    "Preserve bundle YAML bytes across Windows checkout",
+    "Commit the already verified original CRLF bytes of two retained package manifests, preserving existing current and historical SHA identities",
+    "Bind the root installed node_modules as an explicit required input alongside Source and observer dependencies",
+    "Validate actual Python Portable copy inputs before the expensive installed Node graph traversal"
+  ],
+  "verification": {"run": "rc022-checkout-freeze-20261118-01", "passed": 32, "seconds": 2.27},
+  "cleanup": {"bytes_removed": 3316, "owned_directories_removed": 3, "retained": "command, log/XML, original qualification refusal"},
+  "acceptance": "No complete Python, Source/paired or archive acceptance established"
+}

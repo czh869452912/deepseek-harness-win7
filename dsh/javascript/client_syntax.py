@@ -1,6 +1,6 @@
 """Compile Client code in Function-body context on the shipped Win7 worker.
 
-The pinned grammar disables productions absent from the fixed Node gate;
+The pinned grammar targets the current Node 24 Function-body compile gate;
 it does not certify every Node/V8 syntax edge. No model code is executed.
 """
 import hashlib
@@ -14,7 +14,7 @@ from dsh.javascript.runtime import (JavaScriptParseError, JavaScriptRuntimeError
                                     encode, verify_resources, worker_environment)
 
 RESOURCE_ROOT = Path(__file__).with_name('client-syntax')
-MANIFEST_SHA256 = '73c59f97bbdd80dfc7257c59ffc4fff73caf9ec5a2d306dcd7edeb0348664ee0'
+MANIFEST_SHA256 = 'e173d7a69923a1146d448b1cfebfb05400261aa1543cd477927138767423438b'
 
 
 def client_syntax_bootstrap():

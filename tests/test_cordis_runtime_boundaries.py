@@ -32,8 +32,6 @@ REGEX_VALID_BODIES = [
     r'const p = /(?<\u0077ord>a)|(?<other>b)/u; return ctx => {};',
     r'const p = /[\p{ASCII}&&\p{Letter}]/v; return ctx => {};',
     r'const p = /(?<word>a)/d; return ctx => {};',
-]
-REGEX_INVALID_BODIES = [
     'const p = /(?i:a)/; return ctx => {};',
     'const p = /(?<word>a)|(?<word>b)/; return ctx => {};',
     'const p = /(?im-s:a)/; return ctx => {};',
@@ -42,12 +40,12 @@ REGEX_INVALID_BODIES = [
     'const p = /(?i:a)/v; return ctx => {};',
     'const p = /(?:(?<word>a)|(?:(?<word>b)|c))/; return ctx => {};',
     r'const p = /(?<word>a)|(?<\u0077ord>b)/u; return ctx => {};',
-    'const p = /(?<word>a)(?<word>b)/; return ctx => {};',
     'const p = /(?<word>a)|(?<word>b)/v; return ctx => {};',
 ]
+REGEX_INVALID_BODIES = ['const p = /(?<word>a)(?<word>b)/; return ctx => {};']
 
 
-CLIENT_BODIES = [
+CLIENT_VALID_BODIES = [
     'return () => {}', 'await Promise.resolve(); return () => {}',
     'for (;;) {}', 'throw new Error("must not run during define")',
     'const constructed = new.target !== undefined; return ctx => {};',
@@ -61,13 +59,23 @@ CLIENT_BODIES = [
     'const using = Promise.resolve(1); await using; return ctx => {};',
     'return import("unused-client-module", {with: {type: "json"}});',
     *REGEX_VALID_BODIES,
-    'return {', 'return () => {', 'const x: number = 1; return () => {}',
-    'return { value: 1 as const }', 'await;',
     'using resource = null; return ctx => {};',
     'await using resource = null; return ctx => {};',
     'for (using item of []) {} return ctx => {};',
+    'const using = () => 1; await using(); return ctx => {};',
+    'const using = 1; await using /* expression */; return ctx => {};',
+    'await using /* binding */ resource = null; return ctx => {};',
+    'await using r\u00e9source = null; return ctx => {};',
+    'await using\nresource = null; return ctx => {};',
+]
+CLIENT_INVALID_BODIES = [
+    'return {', 'return () => {', 'const x: number = 1; return () => {}',
+    'return { value: 1 as const }', 'await;',
+    'using resource; return ctx => {};',
+    'await using resource; return ctx => {};',
     *REGEX_INVALID_BODIES,
 ]
+CLIENT_BODIES = CLIENT_VALID_BODIES + CLIENT_INVALID_BODIES
 
 
 @pytest.mark.asyncio
@@ -85,8 +93,9 @@ console.log(JSON.stringify({node:process.version, accepted, evaluatedPluginType:
                                capture_output=True, encoding='utf-8', check=True)
     source_observation = json.loads(completed.stdout)
     expected = source_observation['accepted']
+    assert source_observation['node'] == 'v24.9.0'
     assert source_observation['evaluatedPluginType'] == 'function'
-    assert expected == [True] * (14 + len(REGEX_VALID_BODIES)) + [False] * (8 + len(REGEX_INVALID_BODIES))
+    assert expected == [True] * len(CLIENT_VALID_BODIES) + [False] * len(CLIENT_INVALID_BODIES)
     print(json.dumps(dict(bodies=CLIENT_BODIES, source_acceptance=expected,
                          node=source_observation['node'])))
     ctx = Context()
@@ -158,8 +167,11 @@ def test_client_syntax_gate_on_both_shipped_worker_architectures(monkeypatch, ar
     assert hashlib.sha256(binary.read_bytes()).hexdigest() == identity['binary_sha256']
     monkeypatch.setattr(client_syntax, 'verify_resources', lambda: binary)
     precheck_client_body('const constructed = new.target !== undefined; return ctx => {};')
-    with pytest.raises(JavaScriptParseError, match='code.client:1:7'):
-        precheck_client_body('using resource = null; return ctx => {};')
+    for body in CLIENT_VALID_BODIES:
+        precheck_client_body(body)
+    for body in CLIENT_INVALID_BODIES:
+        with pytest.raises(JavaScriptParseError):
+            precheck_client_body(body)
     for body in REGEX_VALID_BODIES:
         precheck_client_body(body)
     for body in REGEX_INVALID_BODIES:

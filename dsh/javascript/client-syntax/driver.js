@@ -5,25 +5,15 @@ globalThis.__drive = async () => {
   try {
     const wrapped = `(async () => {\n${__request.clientCode}\n})()`;
     // Match Function's ordinary function-body context, including new.target.
-    // Disable the productions absent from the fixed Node 22.20 gate. Keep
-    // newer syntax it accepts, such as dynamic-import options. These hooks
-    // belong to the pinned, hash-checked Acorn version; do not scan source text.
+    // Match the current Node 24 grammar. Acorn 8.15 mistakes `await using;`
+    // for a declaration; token lookahead distinguishes a binding identifier
+    // from ordinary uses of the identifier without evaluating model code.
     const Parser = acorn.Parser.extend(Base => class extends Base {
-      isUsing() { return false; }
-      isAwaitUsing() { return false; }
-      regexp_eatModifiers(state) {
-        const modifiers = super.regexp_eatModifiers(state);
-        if (modifiers) state.raise('Invalid group');
-        return modifiers;
-      }
-      regexp_groupSpecifier(state) {
-        const start = state.pos;
-        super.regexp_groupSpecifier(state);
-        // Acorn normalizes escaped names and tracks disjoint alternatives.
-        // The fixed V8 gate rejects repeated names even in separate branches.
-        if (state.pos !== start && state.groupNames[state.lastStringValue].length > 1) {
-          state.raise('Duplicate capture group name');
-        }
+      isAwaitUsing(isFor) {
+        if (!super.isAwaitUsing(isFor)) return false;
+        const lexer = acorn.tokenizer(this.input.slice(this.pos), { ecmaVersion: 'latest', locations: true });
+        const keyword = lexer.getToken(), binding = lexer.getToken();
+        return binding.type.label === 'name' && binding.loc.start.line === keyword.loc.end.line;
       }
     });
     Parser.parse(`function anonymous() {\n${wrapped}\n}`, { ecmaVersion: 'latest', locations: true });

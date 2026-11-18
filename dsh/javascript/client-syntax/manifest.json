@@ -9,16 +9,17 @@
   },
   "source": "Node v22.20.0 deps/acorn/acorn/dist/acorn.js (unmodified embedded module)",
   "license": "ACORN-LICENSE",
-  "purpose": "Compile-only Client Function-body checks with fixed Node 22.20 feature restrictions; no complete V8 grammar parity claim",
+  "purpose": "Compile-only Client Function-body checks against current Node 24.9.0 feature acceptance; no complete V8 grammar parity claim",
   "resources": {
     "acorn.js": "f54183d5dab56a87f59d98e332b484023a6d94310f26ab15f202092ba6d7d549",
-    "driver.js": "bfa8b092da6a1cceb6af8f3a3941b2307029fa67e1445ace354b8366cfb7f0ff",
+    "driver.js": "19dc509624a22d05d7c1f9e50a5ce42712e9970012d89c5aeea707d93e26c4b2",
     "ACORN-LICENSE": "6efcda476a22a6ccae4a541443a2a9aa1af762d2ec6b4b6d88f0941838486529"
   },
-  "disabled_productions": [
-    "using declaration",
-    "await using declaration",
-    "regular expression inline modifiers",
-    "duplicate named capture groups across disjunction alternatives"
-  ]
+  "disabled_productions": [],
+  "grammar_target": {
+    "node": "v24.9.0",
+    "source_commit": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+    "context": "Function body wrapping an async arrow",
+    "parser_adaptation": "Token lookahead distinguishes await using expressions from resource bindings"
+  }
 }

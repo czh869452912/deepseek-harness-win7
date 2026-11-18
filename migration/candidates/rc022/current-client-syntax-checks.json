@@ -1,0 +1,14 @@
+{
+  "contract": "C9-DN",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "status": "Targeted current Client compile and Native runner checks passed",
+  "changes": "Client definition precheck now targets fixed Node 24.9.0 Function-body acceptance. Remove old Node 22 grammar restrictions on resource-management declarations, regex inline modifiers and disjoint duplicate capture groups. Preserve the original embedded Acorn bytes; token lookahead distinguishes its ambiguous await-using declaration from ordinary identifier expressions. Compile the original wrapper on the existing Win7 worker without executing user code. Resource hashes and grammar-target metadata updated.",
+  "verification": [
+    {"run": "rc022-current-client-syntax-diagnostic-20261118-01", "scope": "Actual Node 24 and trusted modified parser comparison identified Acorn await-using ambiguity before production edit"},
+    {"run": "rc022-current-client-syntax-20261118-01", "passed": 9, "failed": 4, "seconds": 9.83, "remaining_failure": "The proposed negative newline case is valid as two expressions in both actual Node and Native; corrected its category, retaining the case"},
+    {"run": "rc022-current-client-syntax-20261118-02", "passed": 115, "seconds": 34.05, "scope": "Actual Node 24 acceptance of all 53 bodies, x64/x86 compile gates, Client-only and dual-half definition atomicity, historical callback compatibility and all original runner journeys"}
+  ],
+  "safety_boundary": "Only trusted parser/driver and a fixed dummy body execute during precheck. Browser activation and Python Host deadlines retain their separate boundaries. This finite corpus is not universal V8 grammar certification.",
+  "cleanup": "Both completed targeted runs' synthetic workspaces and homes removed after retaining raw failures, commands, XML/logs and actual session observations; initial controlled parser diagnostic retained for provenance.",
+  "qualification": "Targeted completion only; full candidate qualification remains pending."
+}

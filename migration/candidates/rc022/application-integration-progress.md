@@ -28,6 +28,8 @@ C9-DL：五类 Cordis 历史观察固定原 pin，以 16 份最小原版源码�
 
 C9-DM：12 类生命周期和两类 Loader 消费者改用当前原版实际观察，Include 刷新归属、失败树保留、Handle 恢复和服务实例 epoch 均按新合同验证。38 项首轮通过后，单项 epoch 修正及 2/1 项消费者/身份复验通过；当前 HMR 公共接口 7 组实际对照通过，退役 API 不再冒充当前证据。六轮已结束合成资产清理，旧失败保留；冻结运行 03 最终输入与候选均未漂移，仍为失败/未完成。[检查](current-include-lifecycle-checks.json)。
 
+C9-DN：Client 定义预检从旧 Node 22 语法限制迁至当前 Node 24.9，支持资源声明、新正则修饰符和分支重复命名组；以 token 前瞻区分 `await using` 表达式，保留 Acorn 原字节和只编译边界。115 项实际 Node、双架构解析、定义原子性和 Native runner 兼容检查通过，首轮 9 项执行边界检查亦通过；失败分类已修正并保留原日志，临时工作区清理完成。[检查](current-client-syntax-checks.json)。
+
 C9-CX：Win7 Desktop 外壳的旧来源与当前宿主/前端输入分开核验，明确私有管道 v3 并非当前原版 Desktop v4 生命周期。首轮 158 项通过、一项旧异步消费者失败，修复后 26 项及诊断编码两项复验通过，原始失败保留；失效工作区已清理。[范围与限制](../../../docs/research/2026-11-18-win7-desktop-current-scope.md)、[检查](desktop-current-scope-checks.json)。
 
 C9-CV：统一入口接到当前完整合同，冻结实际安装依赖/双架构构建输入和观察器；新鲜 x64/x86 包运行完整 SDK、Office、元数据、原版浏览器、应用冷恢复及 Standard Desktop 打包检查。相关 89 项与最后 47 项定向通过；这些单元控制不构成实际统一资格。已清理约 2.0 MiB 失效夹具。[编排检查](current-orchestration-checks.json)。

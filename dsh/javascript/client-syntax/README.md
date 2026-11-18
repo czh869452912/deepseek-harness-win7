@@ -8,16 +8,16 @@ records source identity and resource hashes. No Node or npm install is required
 by the product. Portable copying includes this directory under `dsh/`.
 
 Acorn parses the source inside an ordinary function body using its latest grammar,
-with ERM declarations, inline regular-expression modifiers, and duplicate named
-capture groups across alternatives disabled, then QuickJS constructs the
+including ERM declarations, inline regular-expression modifiers, and duplicate named
+capture groups across disjoint alternatives, then QuickJS constructs the
 original `new Function` async-arrow wrapper.
 Neither parser calls the resulting function. Only the worker's fixed dummy body
 and the trusted parser/driver execute. This permits lexical `new.target` and
-rejects resource-management declarations unsupported by the fixed Node 22.20 gate,
-without blocking the identifier `using` in ordinary expressions or literals.
-The regex restrictions use Acorn's parsed modifier and normalized capture-name
-state. Escapes, character classes, text literals, and `RegExp(...)` constructor
-arguments are not scanned as regex syntax. Dynamic-import options, Unicode sets
+matches the fixed Node 24.9.0 definition gate without blocking the identifier
+`using` in ordinary expressions or literals. Token lookahead corrects Acorn's
+ambiguity between `await using;` and an actual resource binding. The original
+Acorn module remains unchanged. Escapes, character classes, text literals, and
+`RegExp(...)` constructor arguments are not scanned as regex syntax. Dynamic-import options, Unicode sets
 (`v`), indices (`d`), and distinct named groups retain their existing acceptance.
 
 The workflow compiler retains its existing global-script semantics. This private

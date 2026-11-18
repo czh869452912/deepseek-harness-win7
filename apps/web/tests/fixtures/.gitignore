@@ -1,0 +1,3 @@
+# These are byte-preserved pinned upstream fixtures, not generated session logs.
+!/markdown-colon-file-links/session.v3.jsonl
+!/model-badge/session.v4.jsonl

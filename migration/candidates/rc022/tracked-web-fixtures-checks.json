@@ -1,0 +1,17 @@
+{
+  "contract": "C9-DE",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "status": "targeted and staged original blob audit passed",
+  "trigger": "Frozen 3f20446c complete regression reported the mirror guard missing markdown-colon-file-links/session.v3.jsonl. C9-DA had imported both original JSONL files into the working tree, but the runtime log ignore rule kept them out of its commit.",
+  "changes": "Add a local two-file fixture allowlist, preserve both original source blobs, and require all pinned original Web source paths in the Native Git index as well as in the working tree. The user's root .gitignore change is excluded.",
+  "verification": [
+    {"run": "rc022-tracked-web-fixtures-20261118-01", "passed": 11, "seconds": 2.17, "scope": "Complete 673-file source mirror, document, PWA and Vite supporting contracts"},
+    {"observation": "rc022-tracked-web-fixtures-20261118-01/staged-source-audit.json", "original_files": 673, "staged_blob_differences": 0}
+  ],
+  "original_fixtures": [
+    {"path": "apps/web/tests/fixtures/markdown-colon-file-links/session.v3.jsonl", "bytes": 2972, "git_blob": "7ef94261389b8bb46304360b2ff2d5cdf54a8cb3", "sha256": "46ea9a9acfa468cd01cf8fa0546dabc576c5cbe9994dbb4b898b72f9b50d241d"},
+    {"path": "apps/web/tests/fixtures/model-badge/session.v4.jsonl", "bytes": 156, "git_blob": "d614cc6727c2b226e39714e389d3c4fd1231cf72", "sha256": "43bc91d027de571700f4d149e809007934b04911822c842dc5efaea040f64a6c"}
+  ],
+  "cleanup": {"bytes_removed": 0, "empty_owned_directories_removed": 3, "retained": "Commands, log/XML and exact staged Source audit; original Source fixtures are permanent regression inputs"},
+  "acceptance": "Current full diagnostics continue on the unchanged 3f20446c candidate. This later repair does not relabel that run or establish complete acceptance."
+}

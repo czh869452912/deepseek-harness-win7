@@ -45,6 +45,8 @@ def test_current_web_source_mirror_matches_pinned_reference():
     source = root / 'reference'
     assert subprocess.check_output(['git', '-C', str(source), 'rev-parse', 'HEAD'], encoding='utf-8').strip() == '38a6a5c965aa99ab525161efb7cc5cf1fe62fced'
     names = subprocess.check_output(['git', '-C', str(source), 'ls-files', '-z', '--', 'apps/web']).decode('utf-8').split('\0')
+    tracked = set(subprocess.check_output(['git', '-C', str(root), 'ls-files', '-z', '--', 'apps/web']).decode('utf-8').split('\0'))
+    assert set(names) <= tracked, 'Pinned Web source files missing from Git: ' + repr(sorted(set(names) - tracked))
     for name in filter(None, names):
         expected = (source / name).read_bytes()
         actual = (root / name).read_bytes()

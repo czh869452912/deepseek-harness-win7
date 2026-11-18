@@ -1,0 +1,9 @@
+{
+  "contract": "C9-FQ",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "failure": "Run07 asserted the subprocess live set was empty immediately after a promoted PowerShell job's direct completion. The pinned original subprocess-local provider separately releases live ownership through handle.waitForExit after handle.done, so managed-range cleanup may still be pending.",
+  "change": "The real PowerShell test explicitly awaits the existing ordinary cleanup tasks with a three-second test boundary before asserting empty ownership. Preserve output-offset, completed status, descendant ownership, and production done/waitForExit behavior.",
+  "verification": {"run": "rc022-current-c9fq-pwsh-range-drain-20261119-02", "passed": 80, "seconds": 18.33, "scope": "Actual promoted PowerShell/job output, complete ordinary cleanup/spawn contracts and process artifact retention", "initial_command": "Run01 referenced a nonexistent retention test filename and executed no tests; its original log is retained."},
+  "cleanup": {"runs": 2, "directories": 6, "bytes_removed": 448092, "retained": "Commands/logs/XML and actual process observations"},
+  "qualification": "Targeted test-consumer correction only; frozen run07 and production process ownership are unchanged."
+}

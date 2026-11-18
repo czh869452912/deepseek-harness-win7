@@ -59,6 +59,9 @@ async def test_actual_powershell_promotes_then_job_tools_read_only_remaining_out
         assert not final.is_error and final.value['text']=='tail' and final.value['job']['status']=='completed'
         again=await call('job_output',dict(job_id=identity))
         assert again.value['text']==''
+        # The subprocess owner releases its managed range after direct done,
+        # matching Source's separate waitForExit continuation.
+        await asyncio.wait_for(asyncio.gather(*ctx.subprocess.ordinary_cleanups),3)
         assert not ctx.subprocess.live
     finally:await lease.dispose();await ctx.fiber.dispose()
 

@@ -2,6 +2,8 @@
 
 固定目标：`38a6a5c965aa99ab525161efb7cc5cf1fe62fced`。本页记录定向检查；生产 pin 已在 C9-CC 协调切换，`accepted_upstream` 仍为 null，完整资格待后续验证。
 
+C9-FQ：实际 PowerShell 回归先等待既有 managed range 清理任务，再断言 live 集合为空；与固定原版的直接 `done`、后续 `waitForExit` 分离保持一致，生产行为不变。80 项真实输出/普通进程/资产保留检查通过，两次定向的 6 个目录清理、回收 448,092 字节。见[进程范围排空检查](current-pwsh-range-drain-checks.json)。
+
 C9-FP：07 checkout 本身位于系统临时目录，真实文件系统政策允许临时目录写入，令“目录外拒绝”夹具失真。下一独立候选移到临时目录之外，保持实际政策不变；干净候选、独立固定 Source 及 30 项真实围栏/输入/生命周期/HMR 检查通过。3 个定向目录清理、回收 937,783 字节；活动 Source 复制品与依赖链接明确保留到下一统一资格最后消费者结束。见[隔离布局检查](current-isolated-workspace-checks.json)。
 
 C9-FO：检查注册表身份断言按当前 Cordis 返回值追踪在两端解包 `cordis.original`；保留类型、37 毫秒期限、查询拒绝和 Host/监听器回收断言。完整 Runner/Inspect 7 项通过，3 个工作目录清理、回收 30,246 字节，生产身份行为不变。见[检查代理身份](current-inspect-proxy-identity-checks.json)。

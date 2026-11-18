@@ -1,0 +1,36 @@
+{
+  "result": "failed",
+  "publishable": false,
+  "product_commit": "01499ca488d5e8e9f1373ec89df7557bd07fcc63",
+  "complete_regression": true,
+  "regression": {
+    "tests": 22632,
+    "passed": 22592,
+    "failures": 1,
+    "errors": 0,
+    "skipped": 39,
+    "seconds": 7674.026
+  },
+  "final_input_recheck_complete": false,
+  "inputs_unchanged": null,
+  "candidate_unchanged": null,
+  "interrupted_at": "2026-11-19T04:25:57.737018",
+  "reason": "Complete Python diagnostics finished with one direct-done versus process-range cleanup fixture assertion. C9-GA and C9-GB targeted consumers already passed. Stop failed frozen candidate during final dependency reread, preserve exact original diagnostics; no Source/build/release acceptance or final input integrity claim.",
+  "contract": "C9-GC",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "cleanup": {
+    "files": 47080,
+    "bytes_removed": 1924891251,
+    "retained_observations": 15702,
+    "readonly_unlinks": 2530,
+    "reparse_entries": 6712,
+    "shared_attributes_changed": false
+  },
+  "followups": [
+    "C9-GA",
+    "C9-GB"
+  ],
+  "control": ".goose/out/rc022-unified-control-20261119-09",
+  "scope": "Complete Python diagnostic only. One failed test prevents qualification. Source/paired/build stages were not executed. Final dependency reread intentionally stopped without an unchanged-input claim. Original run07 failures all absent; current complete candidate must rerun after the fixture fix.",
+  "removed_workspace": "C:\\Users\\czh86\\Documents\\Codex\\dsh-rc022-qualification\\.goose\\out\\rc022-unified-20261119-09\\regression\\pytest-workspace"
+}

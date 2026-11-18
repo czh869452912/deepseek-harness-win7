@@ -1674,6 +1674,11 @@ def validate_office_acceptance(report, candidate):
 
 def validate_extracted(path, archive, candidate):
     report = json.loads(path.read_text(encoding='utf-8'))
+    return validate_extracted_value(report, path, archive, candidate)
+
+
+def validate_extracted_value(report, path, archive, candidate):
+    """Validate decoded receipt values; file loading stays at the public boundary."""
     validate_office_acceptance(report, candidate)
     ucrt = candidate.get('ucrt_input')
     if (not isinstance(ucrt, dict) or report.get('provenance', {}).get('ucrt_input') != ucrt

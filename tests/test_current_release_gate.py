@@ -98,6 +98,13 @@ GATE = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(GATE)
 
 
+def validate_model(report, path, archive, candidate):
+    # Keep exactly the JSON wire types used at the file boundary, while avoiding
+    # a multi-megabyte synthetic file for every pure receipt corruption control.
+    decoded = json.loads(json.dumps(report))
+    return GATE.validate_extracted_value(decoded, path, archive, candidate)
+
+
 @pytest.fixture(autouse=True)
 def prune_completed_gate_test(request):
     yield
@@ -117,6 +124,21 @@ def test_clean_and_explicit_dirty_receipts_have_distinct_acceptance(tmp_path):
     candidate['worktree_dirty'] = report['provenance']['worktree_dirty'] = True
     path.write_text(json.dumps(report), encoding='utf-8')
     assert GATE.validate_extracted(path, archive, candidate) == report
+
+
+@pytest.mark.parametrize('payload', [b'\xff', b'{'])
+def test_receipt_file_boundary_rejects_invalid_utf8_and_json(tmp_path, payload):
+    path = tmp_path / 'receipt.json'; path.write_bytes(payload)
+    with pytest.raises((UnicodeDecodeError, json.JSONDecodeError)):
+        GATE.validate_extracted(path, tmp_path / 'archive.zip', {})
+
+
+def test_receipt_file_boundary_cannot_bypass_candidate_validation(tmp_path):
+    archive, candidate, report = extracted_receipt(tmp_path)
+    path = tmp_path / 'receipt.json'; path.write_text(json.dumps(report), encoding='utf-8')
+    candidate['product_commit'] = 'b' * 40
+    with pytest.raises(RuntimeError):
+        GATE.validate_extracted(path, archive, candidate)
 
 
 @pytest.mark.parametrize('damage', ['none', 'omit', 'skip', 'duplicate', 'failure'])
@@ -220,9 +242,8 @@ def test_extracted_physical_tree_is_required_and_cannot_hide_survivors(tmp_path,
         else:
             del row['physical']
     path = tmp_path / 'extracted.json'
-    path.write_text(json.dumps(report), encoding='utf-8')
     with pytest.raises(RuntimeError):
-        GATE.validate_extracted(path, archive, candidate)
+        validate_model(report, path, archive, candidate)
 
 
 @pytest.mark.parametrize('damage', ['omit', 'skip', 'duplicate', 'failure'])
@@ -276,9 +297,8 @@ def test_extracted_projection_cache_reads_cannot_hide_failure_or_change_runtime(
     else:
         cache['unknown'] = True
     path = tmp_path / 'extracted.json'
-    path.write_text(json.dumps(report), encoding='utf-8')
     with pytest.raises(RuntimeError):
-        GATE.validate_extracted(path, archive, candidate)
+        validate_model(report, path, archive, candidate)
 
 
 @pytest.mark.parametrize('damage', ['omit', 'skip', 'duplicate', 'failure'])
@@ -332,9 +352,8 @@ def test_extracted_session_observation_reads_require_exact_errors_cut_and_releas
     else:
         read['unknown'] = True
     path = tmp_path / 'extracted.json'
-    path.write_text(json.dumps(report), encoding='utf-8')
     with pytest.raises(RuntimeError):
-        GATE.validate_extracted(path, archive, candidate)
+        validate_model(report, path, archive, candidate)
 
 
 @pytest.mark.parametrize('damage', ['omit', 'skip', 'duplicate', 'failure'])
@@ -388,9 +407,8 @@ def test_extracted_session_corpus_list_requires_exact_errors_signals_and_sources
     else:
         read['unknown'] = True
     path = tmp_path / 'extracted.json'
-    path.write_text(json.dumps(report), encoding='utf-8')
     with pytest.raises(RuntimeError):
-        GATE.validate_extracted(path, archive, candidate)
+        validate_model(report, path, archive, candidate)
 
 
 @pytest.mark.parametrize('operation', ['add', 'upgrade'])
@@ -460,9 +478,8 @@ def test_extracted_session_corpus_read_requires_exact_sources_and_batch_drain(tm
     else:
         read['unknown'] = True
     path = tmp_path / 'extracted.json'
-    path.write_text(json.dumps(report), encoding='utf-8')
     with pytest.raises(RuntimeError):
-        GATE.validate_extracted(path, archive, candidate)
+        validate_model(report, path, archive, candidate)
 
 
 def test_regression_requires_browser_portable_and_acp_process_lanes(tmp_path):
@@ -635,9 +652,8 @@ def test_extracted_scheduler_requires_fresh_source_and_owned_runtime(tmp_path, d
     else:
         report['toolScheduler']['rows'].pop()
     path = tmp_path / 'receipt.json'
-    path.write_text(json.dumps(report), encoding='utf-8')
     with pytest.raises(RuntimeError, match='toolScheduler'):
-        GATE.validate_extracted(path, archive, candidate)
+        validate_model(report, path, archive, candidate)
 
 
 @functools.lru_cache(maxsize=1)
@@ -669,9 +685,8 @@ def test_extracted_redirect_requires_fresh_source_and_owned_runtime(tmp_path, da
     else:
         report['httpRedirect']['rows'].pop()
     path = tmp_path / 'extracted.json'
-    path.write_text(json.dumps(report), encoding='utf-8')
     with pytest.raises(RuntimeError, match='httpRedirect'):
-        GATE.validate_extracted(path, archive, candidate)
+        validate_model(report, path, archive, candidate)
 
 
 @functools.lru_cache(maxsize=1)
@@ -714,9 +729,8 @@ def test_extracted_javascript_requires_fresh_source_modules_assets_and_whole_obs
         late = next(row for row in runtime['observations'] if row['name'] == 'dropped-child-continuation')
         late['events'].pop()
     output = tmp_path / 'extracted.json'
-    output.write_text(json.dumps(report), encoding='utf-8')
     with pytest.raises(RuntimeError, match='javascriptWorkflow'):
-        GATE.validate_extracted(output, archive, candidate)
+        validate_model(report, output, archive, candidate)
 
 
 @pytest.mark.parametrize('module', ['test_javascript_runtime', 'test_javascript_workflow_session',
@@ -765,9 +779,8 @@ def test_extracted_context_requires_source_identity_and_complete_messages(tmp_pa
     else:
         runtime['observations'][0]['snapshots'][0]['id'] = 'foreign-message-identity'
     output = tmp_path / 'extracted.json'
-    output.write_text(json.dumps(report), encoding='utf-8')
     with pytest.raises(RuntimeError, match='runtimeContext'):
-        GATE.validate_extracted(output, archive, candidate)
+        validate_model(report, output, archive, candidate)
 
 
 @pytest.mark.parametrize('damage', ['omit', 'skip', 'duplicate', 'failure'])
@@ -818,9 +831,8 @@ def test_extracted_ready_requires_source_assets_and_complete_observations(tmp_pa
     else:
         runtime['observations'][0]['events'].append(dict(type='phase', title='unreachable'))
     output = tmp_path / 'extracted.json'
-    output.write_text(json.dumps(report), encoding='utf-8')
     with pytest.raises(RuntimeError, match='javascriptReady'):
-        GATE.validate_extracted(output, archive, candidate)
+        validate_model(report, output, archive, candidate)
 
 
 @pytest.mark.parametrize('damage', ['omit', 'skip', 'duplicate', 'failure'])
@@ -880,9 +892,8 @@ def test_extracted_read_requires_source_assets_and_complete_observations(tmp_pat
     else:
         next(row for row in runtime['rows'] if row['name'] == 'jsonl-none/read/whole')['value']['fromSeq'] = 1
     output = tmp_path / 'extracted.json'
-    output.write_text(json.dumps(report), encoding='utf-8')
     with pytest.raises(RuntimeError, match='persistenceRead'):
-        GATE.validate_extracted(output, archive, candidate)
+        validate_model(report, output, archive, candidate)
 
 
 @pytest.mark.parametrize('damage', ['omit', 'skip', 'duplicate', 'failure'])
@@ -938,9 +949,8 @@ def test_extracted_initial_requires_source_assets_and_complete_observations(tmp_
     else:
         runtime['observations'][0]['before']['readyMessages'] = 1
     output = tmp_path / 'extracted.json'
-    output.write_text(json.dumps(report), encoding='utf-8')
     with pytest.raises(RuntimeError, match='javascriptInitial'):
-        GATE.validate_extracted(output, archive, candidate)
+        validate_model(report, output, archive, candidate)
 
 
 @pytest.mark.parametrize('damage', ['omit', 'skip', 'duplicate', 'failure'])
@@ -1003,9 +1013,8 @@ def test_extracted_number_requires_source_and_complete_metadata(tmp_path, damage
         else:
             row['input']['extra']['nested'].append(3)
     output = tmp_path / 'extracted.json'
-    output.write_text(json.dumps(report), encoding='utf-8')
     with pytest.raises(RuntimeError, match='sessionNumber'):
-        GATE.validate_extracted(output, archive, candidate)
+        validate_model(report, output, archive, candidate)
 
 
 @pytest.mark.parametrize('damage', ['omit', 'skip', 'duplicate', 'failure'])
@@ -1060,9 +1069,8 @@ def test_extracted_diagnostic_requires_exact_errors_and_source(tmp_path, damage)
         row = next(row for row in runtime['rows'] if row['name'] == 'restore/version/negative-zero')
         row['accepted'] = not row['accepted']
     output = tmp_path / 'extracted.json'
-    output.write_text(json.dumps(report), encoding='utf-8')
     with pytest.raises(RuntimeError, match='sessionDiagnostic'):
-        GATE.validate_extracted(output, archive, candidate)
+        validate_model(report, output, archive, candidate)
 
 
 @pytest.mark.parametrize('damage', ['omit', 'skip', 'duplicate', 'failure'])
@@ -1113,9 +1121,8 @@ def test_extracted_restore_sign_requires_numeric_identity_and_source(tmp_path, d
     else:
         next(row for row in runtime['rows'] if row['name'] == 'version/fraction')['error']['message'] = 'wrong version'
     output = tmp_path / 'extracted.json'
-    output.write_text(json.dumps(report), encoding='utf-8')
     with pytest.raises(RuntimeError, match='sessionRestoreSign'):
-        GATE.validate_extracted(output, archive, candidate)
+        validate_model(report, output, archive, candidate)
 
 
 @pytest.mark.parametrize('damage', ['omit', 'skip', 'duplicate', 'failure'])
@@ -1175,9 +1182,8 @@ def test_extracted_full_request_requires_complete_graph_and_source(tmp_path, dam
         else:
             row['requests'][0]['signal']['aborted'] = True
     output = tmp_path / 'extracted.json'
-    output.write_text(json.dumps(report), encoding='utf-8')
     with pytest.raises(RuntimeError, match='runtimeFullRequest'):
-        GATE.validate_extracted(output, archive, candidate)
+        validate_model(report, output, archive, candidate)
 
 
 @pytest.mark.parametrize('damage', ['omit', 'skip', 'duplicate', 'failure'])
@@ -1219,9 +1225,8 @@ def test_extracted_deepseek_error_requires_complete_rows_and_source(tmp_path, da
     else:
         damage_observations(runtime, damage)
     output = tmp_path / 'extracted.json'
-    output.write_text(json.dumps(report), encoding='utf-8')
     with pytest.raises(RuntimeError, match='deepseekError'):
-        GATE.validate_extracted(output, archive, candidate)
+        validate_model(report, output, archive, candidate)
 
 
 @pytest.mark.parametrize('damage', ['omit', 'skip', 'duplicate', 'failure'])
@@ -1262,9 +1267,8 @@ def test_extracted_deepseek_capture_requires_complete_rows_and_source(tmp_path, 
     else:
         damage_capture_observations(runtime, damage)
     output = tmp_path / 'extracted.json'
-    output.write_text(json.dumps(report), encoding='utf-8')
     with pytest.raises(RuntimeError, match='deepseekCapture'):
-        GATE.validate_extracted(output, archive, candidate)
+        validate_model(report, output, archive, candidate)
 
 
 @pytest.mark.parametrize('damage', ['omit', 'skip', 'duplicate', 'failure'])
@@ -1305,9 +1309,8 @@ def test_extracted_jsonl_sharing_requires_complete_values_and_runtime(tmp_path, 
     else:
         damage_sharing_observations(runtime, damage)
     output = tmp_path / 'extracted.json'
-    output.write_text(json.dumps(report), encoding='utf-8')
     with pytest.raises(RuntimeError, match='jsonlSharing'):
-        GATE.validate_extracted(output, archive, candidate)
+        validate_model(report, output, archive, candidate)
 
 
 @pytest.mark.parametrize('damage', ('omit', 'skip', 'duplicate', 'failure'))
@@ -1357,9 +1360,8 @@ def test_extracted_canonical_llm_requires_complete_values_and_runtime(tmp_path, 
     else:
         damage_canonical_llm_observations(runtime, damage)
     output = tmp_path / 'extracted.json'
-    output.write_text(json.dumps(report), encoding='utf-8')
     with pytest.raises(RuntimeError, match='canonicalLlm'):
-        GATE.validate_extracted(output, archive, candidate)
+        validate_model(report, output, archive, candidate)
 
 
 @pytest.mark.parametrize('damage', ('omit', 'skip', 'duplicate', 'failure'))
@@ -1409,9 +1411,8 @@ def test_extracted_llm_metadata_requires_complete_values_and_runtime(tmp_path, d
     else:
         damage_llm_metadata_observations(runtime, damage)
     output = tmp_path / 'extracted.json'
-    output.write_text(json.dumps(report), encoding='utf-8')
     with pytest.raises(RuntimeError, match='llmMetadata'):
-        GATE.validate_extracted(output, archive, candidate)
+        validate_model(report, output, archive, candidate)
 
 
 @pytest.mark.parametrize('damage', ('omit', 'skip', 'duplicate', 'failure'))
@@ -1461,9 +1462,8 @@ def test_extracted_llm_prepared_requires_complete_values_and_runtime(tmp_path, d
     else:
         damage_llm_prepared_observations(runtime, damage)
     output = tmp_path / 'extracted.json'
-    output.write_text(json.dumps(report), encoding='utf-8')
     with pytest.raises(RuntimeError, match='llmPrepared'):
-        GATE.validate_extracted(output, archive, candidate)
+        validate_model(report, output, archive, candidate)
 
 
 @pytest.mark.parametrize('damage', ('omit', 'skip', 'duplicate', 'failure'))
@@ -1513,9 +1513,8 @@ def test_extracted_llm_config_requires_complete_values_and_runtime(tmp_path, dam
     else:
         damage_llm_config_observations(runtime, damage)
     output = tmp_path / 'extracted.json'
-    output.write_text(json.dumps(report), encoding='utf-8')
     with pytest.raises(RuntimeError, match='llmConfig'):
-        GATE.validate_extracted(output, archive, candidate)
+        validate_model(report, output, archive, candidate)
 
 
 @pytest.mark.parametrize('damage', ('omit', 'skip', 'duplicate', 'failure'))
@@ -1563,9 +1562,8 @@ def test_extracted_windows_stat_requires_complete_values_and_runtime(tmp_path, d
     else:
         damage_win32_stat_runtime(runtime, 'missing' if damage == 'missing-file' else damage, tmp_path)
     output = tmp_path / 'extracted.json'
-    output.write_text(json.dumps(report), encoding='utf-8')
     with pytest.raises(RuntimeError, match='win32Stat'):
-        GATE.validate_extracted(output, archive, candidate)
+        validate_model(report, output, archive, candidate)
 
 
 @pytest.mark.parametrize('damage', ('omit', 'skip', 'duplicate', 'failure'))
@@ -1629,9 +1627,8 @@ def test_extracted_tool_errors_requires_complete_values_and_runtime(tmp_path, da
     else:
         report['toolErrors'] = damage_tool_error_runtime(report['toolErrors'], damage)
     output = tmp_path / 'extracted.json'
-    output.write_text(json.dumps(report), encoding='utf-8')
     with pytest.raises(RuntimeError, match='toolErrors'):
-        GATE.validate_extracted(output, archive, candidate)
+        validate_model(report, output, archive, candidate)
 
 
 @pytest.mark.parametrize('damage', ('omit', 'skip', 'duplicate', 'failure'))
@@ -1669,9 +1666,8 @@ def test_extracted_host_lifecycle_requires_owned_complete_observations(tmp_path,
     else:
         runtime['rows'][0]['restoredCounter'] = 1
     output = tmp_path / 'extracted.json'
-    output.write_text(json.dumps(report), encoding='utf-8')
     with pytest.raises(RuntimeError, match='exportedHostLifecycle'):
-        GATE.validate_extracted(output, archive, candidate)
+        validate_model(report, output, archive, candidate)
 
 
 @pytest.mark.parametrize('damage', GATE.PERMISSION_EXTRACTED_DAMAGES)
@@ -1690,9 +1686,8 @@ def test_extracted_permission_presets_requires_complete_values_and_runtime(tmp_p
     else:
         report['permissionPresets'] = damage_permission_runtime(report['permissionPresets'], damage, tmp_path / 'foreign-runtime')
     output = tmp_path / 'extracted.json'
-    output.write_text(json.dumps(report), encoding='utf-8')
     with pytest.raises(RuntimeError, match='permissionPresets'):
-        GATE.validate_extracted(output, archive, candidate)
+        validate_model(report, output, archive, candidate)
 
 
 @pytest.mark.parametrize('damage', ('omit', 'skip', 'duplicate', 'failure'))
@@ -1722,9 +1717,8 @@ def test_extracted_sdk_profile_requires_complete_values_and_runtime(tmp_path, da
     else:
         damage_sdk_profile_runtime(report['sdkProfile'], damage)
     output = tmp_path / 'extracted.json'
-    output.write_text(json.dumps(report), encoding='utf-8')
     with pytest.raises(RuntimeError, match='sdkProfile'):
-        GATE.validate_extracted(output, archive, candidate)
+        validate_model(report, output, archive, candidate)
 
 
 @pytest.mark.parametrize('damage', ('omit', 'skip', 'duplicate', 'failure'))
@@ -1808,9 +1802,8 @@ def test_extracted_javascript_errors_requires_complete_values_and_assets(tmp_pat
     else:
         report['javascriptErrors'] = damage_runtime(report['javascriptErrors'], damage, tmp_path / 'foreign')
     output = tmp_path / 'extracted.json'
-    output.write_text(json.dumps(report), encoding='utf-8')
     with pytest.raises(RuntimeError, match='javascriptErrors'):
-        GATE.validate_extracted(output, archive, candidate)
+        validate_model(report, output, archive, candidate)
 
 
 @pytest.mark.parametrize('damage', ('omit', 'skip', 'duplicate', 'failure'))
@@ -1838,8 +1831,7 @@ def test_complete_frontend_and_settings_lanes_are_mandatory(tmp_path, module, da
 def test_extracted_complete_frontend_requires_frozen_build_record(tmp_path, damage):
     archive, candidate, report = extracted_receipt(tmp_path)
     path = tmp_path / 'extracted.json'
-    path.write_text(json.dumps(report), encoding='utf-8')
-    assert GATE.validate_extracted(path, archive, candidate)['result'] == 'passed'
+    assert validate_model(report, path, archive, candidate)['result'] == 'passed'
     if damage == 'missing-provenance':
         del report['provenance']['frontend']
     elif damage == 'changed-provenance':
@@ -1851,9 +1843,8 @@ def test_extracted_complete_frontend_requires_frozen_build_record(tmp_path, dama
         report['frontendClientFilesChecked'] -= 1
     else:
         report['frontendBuildDigest'] = '0' * 64
-    path.write_text(json.dumps(report), encoding='utf-8')
     with pytest.raises(RuntimeError, match='complete frontend'):
-        GATE.validate_extracted(path, archive, candidate)
+        validate_model(report, path, archive, candidate)
 
 
 @functools.lru_cache(maxsize=1)
@@ -1877,12 +1868,10 @@ def test_extracted_native_search_requires_real_receipt(tmp_path, damage):
     from tests.test_ripgrep_compatibility import damage_runtime
     archive, candidate, report = extracted_receipt(tmp_path)
     path = tmp_path / 'extracted.json'
-    path.write_text(json.dumps(report), encoding='utf-8')
-    GATE.validate_extracted(path, archive, candidate)
+    validate_model(report, path, archive, candidate)
     report['nativeSearch'] = damage_runtime(copy.deepcopy(report['nativeSearch']), damage)
-    path.write_text(json.dumps(report), encoding='utf-8')
     with pytest.raises(RuntimeError, match='native search'):
-        GATE.validate_extracted(path, archive, candidate)
+        validate_model(report, path, archive, candidate)
 
 
 @pytest.mark.parametrize('damage', ['missing-candidate', 'missing-observation', 'changed-observation',
@@ -1905,9 +1894,8 @@ def test_extracted_office_runtime_acceptance_is_required(tmp_path, damage):
         report['provenance'].pop('office_runtime_input')
     else:
         report['provenance']['office_runtime_input']['sdk'] = 'foreign-sdk'
-    path.write_text(json.dumps(report), encoding='utf-8')
     with pytest.raises(RuntimeError, match='offline Office runtime'):
-        GATE.validate_extracted(path, archive, candidate)
+        validate_model(report, path, archive, candidate)
 
 
 def extracted_receipt(tmp_path):
@@ -2323,9 +2311,8 @@ def test_extracted_jsonl_provider_requires_fresh_source_and_owned_resources(tmp_
     else:
         candidate['jsonl_provider_assets'] = None
     output = tmp_path / 'jsonl-extracted.json'
-    output.write_text(json.dumps(report), encoding='utf-8')
     with pytest.raises(RuntimeError, match='jsonlProvider'):
-        GATE.validate_extracted(output, archive, candidate)
+        validate_model(report, output, archive, candidate)
 
 
 @functools.lru_cache(maxsize=1)
@@ -2374,9 +2361,8 @@ def test_extracted_legacy_reader_requires_owned_resources_and_historical_identit
     else:
         candidate['legacy_reader_modules'] = None
     output = tmp_path / 'reader-extracted.json'
-    output.write_text(json.dumps(report), encoding='utf-8')
     with pytest.raises(RuntimeError, match='legacySessionReader'):
-        GATE.validate_extracted(output, archive, candidate)
+        validate_model(report, output, archive, candidate)
 
 
 @functools.lru_cache(maxsize=1)
@@ -2441,9 +2427,8 @@ def test_extracted_sqlite_format_requires_fresh_source_and_owned_assets(tmp_path
     else:
         current['zstdVersion'] = 'foreign'
     output = tmp_path / 'format-extracted.json'
-    output.write_text(json.dumps(report), encoding='utf-8')
     with pytest.raises(RuntimeError, match='sqliteFormat'):
-        GATE.validate_extracted(output, archive, candidate)
+        validate_model(report, output, archive, candidate)
 
 
 @functools.lru_cache(maxsize=1)
@@ -2493,9 +2478,8 @@ def test_extracted_session_tools_require_fresh_source_and_owned_modules(tmp_path
     else:
         del candidate['session_tools_modules']
     output = tmp_path / 'tools-extracted.json'
-    output.write_text(json.dumps(report), encoding='utf-8')
     with pytest.raises(RuntimeError, match='sessionTools'):
-        GATE.validate_extracted(output, archive, candidate)
+        validate_model(report, output, archive, candidate)
 
 
 @pytest.mark.parametrize('damage', ['missing', 'root', 'module', 'data', 'locale', 'normalization',
@@ -2531,9 +2515,8 @@ def test_extracted_session_text_requires_exact_source_and_owned_runtime(tmp_path
     else:
         del candidate['session_text_observations_sha256']
     output = tmp_path / 'text-extracted.json'
-    output.write_text(json.dumps(report), encoding='utf-8')
     with pytest.raises(RuntimeError, match='sessionText'):
-        GATE.validate_extracted(output, archive, candidate)
+        validate_model(report, output, archive, candidate)
 
 
 @pytest.mark.parametrize('damage', ['omit', 'skip', 'duplicate', 'failure'])
@@ -2572,9 +2555,8 @@ def test_extracted_unicode_requires_exact_source_and_owned_runtime(tmp_path, dam
     else:
         del candidate['query_unicode_observations_sha256']
     output = tmp_path / 'unicode-extracted.json'
-    output.write_text(json.dumps(report), encoding='utf-8')
     with pytest.raises(RuntimeError, match='queryUnicode'):
-        GATE.validate_extracted(output, archive, candidate)
+        validate_model(report, output, archive, candidate)
 
 
 @pytest.mark.parametrize('damage', ['omit', 'skip', 'duplicate', 'failure'])
@@ -2611,9 +2593,8 @@ def test_extracted_query_engine_requires_candidate_provider_and_exact_observatio
     else:
         engine['observations'] = []
     output = tmp_path / 'extracted.json'
-    output.write_text(json.dumps(report), encoding='utf-8')
     with pytest.raises(RuntimeError, match='queryEngine'):
-        GATE.validate_extracted(output, archive, candidate)
+        validate_model(report, output, archive, candidate)
 
 
 @pytest.mark.parametrize('damage', ['omit', 'skip', 'duplicate', 'failure'])
@@ -2653,9 +2634,8 @@ def test_extracted_query_schema_requires_candidate_database_and_exact_observatio
         key = {'version': 'version', 'source-id': 'sourceId', 'dll': 'dll', 'hash': 'sha256'}[damage]
         schema['sqlite'][key] = 'foreign'
     path = tmp_path / 'extracted.json'
-    path.write_text(json.dumps(report), encoding='utf-8')
     with pytest.raises(RuntimeError, match='querySchema'):
-        GATE.validate_extracted(path, archive, candidate)
+        validate_model(report, path, archive, candidate)
 
 
 @pytest.mark.parametrize('damage', ['omit', 'skip', 'duplicate', 'failure'])
@@ -2695,9 +2675,8 @@ def test_extracted_python_directory_publication_is_exact_and_owned(tmp_path, dam
     else:
         directory['platform'] = 'linux'
     path = tmp_path / 'extracted.json'
-    path.write_text(json.dumps(report), encoding='utf-8')
     with pytest.raises(RuntimeError, match='pythonDirectory'):
-        GATE.validate_extracted(path, archive, candidate)
+        validate_model(report, path, archive, candidate)
 
 
 @pytest.mark.parametrize('damage', ['omit', 'skip', 'duplicate', 'failure'])
@@ -2756,9 +2735,8 @@ def test_extracted_session_snapshots_are_exact_and_owned(tmp_path, damage):
     else:
         snapshot['unknown'] = True
     path = tmp_path / 'extracted.json'
-    path.write_text(json.dumps(report), encoding='utf-8')
     with pytest.raises(RuntimeError, match='sessionSnapshots'):
-        GATE.validate_extracted(path, archive, candidate)
+        validate_model(report, path, archive, candidate)
 
 
 @pytest.mark.parametrize('damage', ['missing', 'empty', 'reverse', 'tail', 'reset-count',
@@ -2795,9 +2773,8 @@ def test_extracted_webserver_reset_cannot_hide_failure_or_change_runtime(tmp_pat
     else:
         reset['unknown'] = True
     path = tmp_path / 'extracted.json'
-    path.write_text(json.dumps(report), encoding='utf-8')
     with pytest.raises(RuntimeError, match='WebServer reset cleanup'):
-        GATE.validate_extracted(path, archive, candidate)
+        validate_model(report, path, archive, candidate)
 
 
 @pytest.mark.parametrize('damage', ['browser-skipped', 'runtime-missing', 'runtime-stderr',
@@ -2859,9 +2836,8 @@ def test_extracted_runtime_and_browser_receipt_is_bound_to_the_candidate(tmp_pat
     else:
         report['frontendFilesChecked'] = 0
     path = tmp_path / 'receipt.json'
-    path.write_text(json.dumps(report), encoding='utf-8')
     with pytest.raises(RuntimeError):
-        GATE.validate_extracted(path, archive, candidate)
+        validate_model(report, path, archive, candidate)
 
 
 def test_failure_replaces_previous_success_with_nonpublishable_diagnostics(tmp_path, monkeypatch):
@@ -2974,9 +2950,8 @@ def test_extracted_subprocess_ownership_preserves_pending_handles_and_failure_me
     else:
         ownership['python'] = ['3', '8', '10']
     path = tmp_path / 'receipt.json'
-    path.write_text(json.dumps(report), encoding='utf-8')
     with pytest.raises(RuntimeError):
-        GATE.validate_extracted(path, archive, candidate)
+        validate_model(report, path, archive, candidate)
 
 
 @pytest.mark.parametrize('damage', ['missing', 'numeric-reaped', 'no-stdio', 'missing-model-consumer', 'open-http', 'open-acp'])
@@ -2995,9 +2970,8 @@ def test_extracted_acp_mcp_consumer_cannot_be_omitted_or_fabricated(tmp_path, da
     else:
         report['acpMcp']['acpClosed'] = False
     path = tmp_path / 'receipt.json'
-    path.write_text(json.dumps(report), encoding='utf-8')
     with pytest.raises(RuntimeError):
-        GATE.validate_extracted(path, archive, candidate)
+        validate_model(report, path, archive, candidate)
 
 
 def test_node_setup_runs_each_locked_workspace_without_prefix_root_ambiguity(tmp_path, monkeypatch):
@@ -3041,9 +3015,8 @@ def test_extracted_subprocess_acp_consumer_cannot_be_omitted_or_fabricated(tmp_p
     else:
         report['subagentAcp']['parentClosed'] = False
     path = tmp_path / 'receipt.json'
-    path.write_text(json.dumps(report), encoding='utf-8')
     with pytest.raises(RuntimeError):
-        GATE.validate_extracted(path, archive, candidate)
+        validate_model(report, path, archive, candidate)
 
 
 def test_node_setup_refuses_missing_package_manager(tmp_path, monkeypatch):
@@ -3072,9 +3045,8 @@ def test_extracted_subprocess_acp_teardown_cannot_be_omitted_or_fabricated(tmp_p
         teardown['root'] = str(tmp_path / 'foreign')
         teardown['module'] = str(tmp_path / 'foreign/dsh/__init__.py')
     path = tmp_path / 'receipt.json'
-    path.write_text(json.dumps(report), encoding='utf-8')
     with pytest.raises(RuntimeError):
-        GATE.validate_extracted(path, archive, candidate)
+        validate_model(report, path, archive, candidate)
 
 
 @pytest.mark.parametrize('damage', ['omit', 'skip', 'duplicate', 'failure'])
@@ -3104,9 +3076,8 @@ def test_extracted_mcp_disposal_requires_queue_factory_and_runtime_ownership(tmp
     else:
         disposal['python'] = ['3', '8', '10']
     path = tmp_path / 'receipt.json'
-    path.write_text(json.dumps(report), encoding='utf-8')
     with pytest.raises(RuntimeError):
-        GATE.validate_extracted(path, archive, candidate)
+        validate_model(report, path, archive, candidate)
 
 
 @pytest.mark.parametrize('module', ['test_session_lineage_source','test_session_event_trace_source',
@@ -3157,8 +3128,7 @@ def subagent_model_runtime_fixture():
 def test_extracted_subagent_model_requires_complete_values_and_runtime(tmp_path, damage):
     archive, candidate, report = extracted_receipt(tmp_path)
     output = tmp_path / 'extracted.json'
-    output.write_text(json.dumps(report), encoding='utf-8')
-    GATE.validate_extracted(output, archive, candidate)
+    validate_model(report, output, archive, candidate)
     if damage == 'receipt-missing':
         del report['subagentModels']
     elif damage == 'source-missing':
@@ -3170,9 +3140,8 @@ def test_extracted_subagent_model_requires_complete_values_and_runtime(tmp_path,
     else:
         report['subagentModels'] = damage_subagent_model_runtime(report['subagentModels'], damage)
     output = tmp_path / 'extracted.json'
-    output.write_text(json.dumps(report), encoding='utf-8')
     with pytest.raises(RuntimeError, match='subagentModels'):
-        GATE.validate_extracted(output, archive, candidate)
+        validate_model(report, output, archive, candidate)
 
 
 @pytest.mark.parametrize('damage', ('omit', 'skip', 'duplicate', 'failure'))
@@ -3188,8 +3157,7 @@ def test_subagent_model_consumer_lanes_are_mandatory(tmp_path, damage):
 def test_extracted_subagent_model_accepts_complete_qualified_values(tmp_path):
     archive, candidate, report = extracted_receipt(tmp_path)
     output = tmp_path / 'extracted.json'
-    output.write_text(json.dumps(report), encoding='utf-8')
-    GATE.validate_extracted(output, archive, candidate)
+    validate_model(report, output, archive, candidate)
 
 
 @functools.lru_cache(maxsize=1)
@@ -3201,8 +3169,7 @@ def unicode_carrier_runtime_fixture():
 def test_extracted_unicode_carrier_requires_complete_values_and_runtime(tmp_path, damage):
     archive, candidate, report = extracted_receipt(tmp_path)
     output = tmp_path / 'extracted.json'
-    output.write_text(json.dumps(report), encoding='utf-8')
-    GATE.validate_extracted(output, archive, candidate)
+    validate_model(report, output, archive, candidate)
     if damage == 'receipt-missing':
         del report['unicodeCarriers']
     elif damage == 'source-missing':
@@ -3214,9 +3181,8 @@ def test_extracted_unicode_carrier_requires_complete_values_and_runtime(tmp_path
     else:
         report['unicodeCarriers'] = damage_unicode_carrier_runtime(report['unicodeCarriers'], damage)
     output = tmp_path / 'extracted.json'
-    output.write_text(json.dumps(report), encoding='utf-8')
     with pytest.raises(RuntimeError, match='unicodeCarriers'):
-        GATE.validate_extracted(output, archive, candidate)
+        validate_model(report, output, archive, candidate)
 
 
 @pytest.mark.parametrize('damage', ('omit', 'skip', 'duplicate', 'failure'))
@@ -3232,8 +3198,7 @@ def test_unicode_carrier_consumer_lanes_are_mandatory(tmp_path, damage):
 def test_extracted_unicode_carrier_accepts_complete_qualified_values(tmp_path):
     archive, candidate, report = extracted_receipt(tmp_path)
     output = tmp_path / 'extracted.json'
-    output.write_text(json.dumps(report), encoding='utf-8')
-    GATE.validate_extracted(output, archive, candidate)
+    validate_model(report, output, archive, candidate)
 
 
 @functools.lru_cache(maxsize=1)
@@ -3245,8 +3210,7 @@ def fs_values_runtime_fixture():
 def test_extracted_fs_values_requires_complete_values_and_runtime(tmp_path, damage):
     archive, candidate, report = extracted_receipt(tmp_path)
     output = tmp_path / 'extracted.json'
-    output.write_text(json.dumps(report), encoding='utf-8')
-    GATE.validate_extracted(output, archive, candidate)
+    validate_model(report, output, archive, candidate)
     if damage == 'receipt-missing':
         del report['fsValues']
     elif damage == 'source-missing':
@@ -3258,16 +3222,14 @@ def test_extracted_fs_values_requires_complete_values_and_runtime(tmp_path, dama
     else:
         report['fsValues'] = damage_fs_values_runtime(report['fsValues'], damage)
     output = tmp_path / 'extracted.json'
-    output.write_text(json.dumps(report), encoding='utf-8')
     with pytest.raises(RuntimeError, match='fsValues'):
-        GATE.validate_extracted(output, archive, candidate)
+        validate_model(report, output, archive, candidate)
 
 
 def test_extracted_fs_values_accepts_complete_qualified_values(tmp_path):
     archive, candidate, report = extracted_receipt(tmp_path)
     output = tmp_path / 'extracted.json'
-    output.write_text(json.dumps(report), encoding='utf-8')
-    GATE.validate_extracted(output, archive, candidate)
+    validate_model(report, output, archive, candidate)
 
 
 @pytest.mark.parametrize('damage', ('omit', 'skip', 'duplicate', 'failure'))
@@ -3290,8 +3252,7 @@ def message_values_runtime_fixture():
 def test_extracted_message_values_requires_complete_values_and_runtime(tmp_path, damage):
     archive, candidate, report = extracted_receipt(tmp_path)
     output = tmp_path / 'extracted.json'
-    output.write_text(json.dumps(report), encoding='utf-8')
-    GATE.validate_extracted(output, archive, candidate)
+    validate_model(report, output, archive, candidate)
     if damage == 'receipt-missing':
         del report['messageValues']
     elif damage == 'source-missing':
@@ -3303,9 +3264,8 @@ def test_extracted_message_values_requires_complete_values_and_runtime(tmp_path,
     else:
         report['messageValues'] = damage_message_values_runtime(report['messageValues'], damage)
     output = tmp_path / 'extracted.json'
-    output.write_text(json.dumps(report), encoding='utf-8')
     with pytest.raises(RuntimeError, match='messageValues'):
-        GATE.validate_extracted(output, archive, candidate)
+        validate_model(report, output, archive, candidate)
 
 
 @pytest.mark.parametrize('damage', ('omit', 'skip', 'duplicate', 'failure'))
@@ -3337,9 +3297,8 @@ def test_extracted_ask_user_requires_complete_values_and_runtime(tmp_path, damag
     else:
         report['askUser'] = damage_ask_user_runtime(report['askUser'], damage)
     output = tmp_path / 'extracted.json'
-    output.write_text(json.dumps(report), encoding='utf-8')
     with pytest.raises(RuntimeError, match='askUser'):
-        GATE.validate_extracted(output, archive, candidate)
+        validate_model(report, output, archive, candidate)
 
 
 @pytest.mark.parametrize('damage', ('omit', 'skip', 'duplicate', 'failure'))
@@ -3371,9 +3330,8 @@ def test_extracted_agent_dependencies_requires_complete_values_and_runtime(tmp_p
     else:
         report['agentDependencies'] = damage_agent_dependencies_runtime(report['agentDependencies'], damage)
     output = tmp_path / 'extracted.json'
-    output.write_text(json.dumps(report), encoding='utf-8')
     with pytest.raises(RuntimeError, match='agentDependencies'):
-        GATE.validate_extracted(output, archive, candidate)
+        validate_model(report, output, archive, candidate)
 
 
 @pytest.mark.parametrize('damage', ('omit', 'skip', 'duplicate', 'failure'))
@@ -3404,9 +3362,8 @@ def test_extracted_tool_durable_requires_complete_values_and_runtime(tmp_path, d
     else:
         report['toolDurable'] = damage_tool_durable_runtime(report['toolDurable'], damage)
     output = tmp_path / 'extracted.json'
-    output.write_text(json.dumps(report), encoding='utf-8')
     with pytest.raises(RuntimeError, match='toolDurable'):
-        GATE.validate_extracted(output, archive, candidate)
+        validate_model(report, output, archive, candidate)
 
 @pytest.mark.parametrize('damage', ('omit', 'skip', 'duplicate', 'failure'))
 def test_tool_durable_consumer_lanes_are_mandatory(tmp_path, damage):
@@ -3551,6 +3508,5 @@ def test_extracted_rc1_capabilities_require_exact_source_and_candidate(tmp_path,
     else:
         rc1['observations']['outline'] = []
     path = tmp_path / 'extracted.json'
-    path.write_text(json.dumps(report), encoding='utf-8')
     with pytest.raises(RuntimeError, match='rc1Capabilities'):
-        GATE.validate_extracted(path, archive, candidate)
+        validate_model(report, path, archive, candidate)

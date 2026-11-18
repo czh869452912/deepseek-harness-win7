@@ -1,5 +1,4 @@
 import asyncio
-import hashlib
 import json
 from pathlib import Path
 from types import SimpleNamespace
@@ -22,10 +21,9 @@ FROZEN_SOURCE = json.loads((ROOT / 'tests/fixtures/remote-frozen-source-observat
 
 
 def test_frozen_remote_source_evidence_is_bound_to_actual_pinned_validators():
-    assert FROZEN_SOURCE['target_upstream'] == json.loads((ROOT / 'migration/baseline.json').read_text(encoding='utf-8'))['target_upstream']
+    from historical_source_binding import assert_historical_inputs
+    assert_historical_inputs('remote-frozen', FROZEN_SOURCE)
     assert len(FROZEN_SOURCE['observations']) == 16
-    for path, digest in FROZEN_SOURCE['source_sha256'].items():
-        assert hashlib.sha256((ROOT / path).read_text(encoding='utf-8').encode('utf-8')).hexdigest() == digest, path
 
 
 @pytest.mark.parametrize('row', FROZEN_SOURCE['observations'], ids=lambda row: row['container'] + '/' + row['recipe'])

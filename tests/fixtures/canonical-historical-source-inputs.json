@@ -1,0 +1,33 @@
+{
+  "source_commit": "a4c74a91e06b00fe0b0937bde982170c526cc842",
+  "scope": "Minimal original Git blobs for retained rc.3 Remote/Abort compatibility observations; never current acceptance",
+  "content_size": 130324,
+  "content_sha256": "4e7aba60ef294f3b5bbfa779a2008fa5697e032b4380cf5b0877dd485002bfbe",
+  "members": {
+    "reference/packages/api/gateway/src/stream-protocol.ts": {
+      "size": 15509,
+      "sha256": "24bc63f54b5fdd31d6eac7c19306f539bdde2d5848ada2471b46c6ce32036f3b",
+      "git_blob": "142598863ec569193504373b5c6137e76e84b6fa"
+    },
+    "reference/packages/core/tools/src/index.ts": {
+      "size": 87748,
+      "sha256": "cc8d54b6a0d6005a26871e84ce3390ba0bbd7fa61a8c65d4b9cc2fbd86126ac2",
+      "git_blob": "bef11baf263984b40e0f040505068cf4f7440c93"
+    },
+    "reference/packages/extensions/cordis-host-runner/src/inspect-registry.ts": {
+      "size": 10323,
+      "sha256": "1f530c25e6eeffdf6386e2896b4555825111cb6efdb4b784fae71c3cc08e518e",
+      "git_blob": "7a4351348986708b3a5e8f83f0facd53451a144f"
+    },
+    "reference/packages/guard/timeout-policy/src/index.ts": {
+      "size": 3560,
+      "sha256": "f4f2fc036ff273ff01588e29682504d1ff6fd3db6386345f2e7085074bec2959",
+      "git_blob": "9ee3c7026b52df87510f0af1d4c55b073d4168a2"
+    },
+    "reference/packages/util/values/src/index.ts": {
+      "size": 9759,
+      "sha256": "573c77ba7017fc747f90fdbd5445cfd565db6ff6d53a6b999f6c34ed842bbb8f",
+      "git_blob": "78a2cbb493faca3ac87e2fa7cafcd76a8ef79591"
+    }
+  }
+}

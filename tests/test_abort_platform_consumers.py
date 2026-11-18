@@ -1,6 +1,5 @@
 """Regress actual platform/Inspect observations and native cancellation consumers."""
 import asyncio
-import hashlib
 import json
 from pathlib import Path
 from types import SimpleNamespace
@@ -29,10 +28,9 @@ async def test_native_abort_and_inspect_match_actual_platform_observations():
 
 
 def test_platform_observation_inputs_are_pinned():
-    assert FIXTURE['target_upstream'] == json.loads((ROOT / 'migration/baseline.json').read_text(encoding='utf-8'))['target_upstream']
+    from historical_source_binding import assert_historical_inputs
+    assert_historical_inputs('abort', FIXTURE)
     assert len(FIXTURE['observations']) == 56
-    for path, expected in FIXTURE['source_sha256'].items():
-        assert hashlib.sha256((ROOT / path).read_text(encoding='utf-8').encode('utf-8')).hexdigest() == expected
 
 
 @pytest.mark.parametrize('reason', [None, False, 0, '', 'stop', {'nested': [None, True]}])

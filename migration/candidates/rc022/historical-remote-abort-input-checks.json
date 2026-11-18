@@ -1,0 +1,12 @@
+{
+  "contract": "C9-EE",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "historical_source": "a4c74a91e06b00fe0b0937bde982170c526cc842",
+  "status": "Retained historical compatibility checks passed",
+  "change": "Bind the unchanged Node22 Remote/Abort observations to five minimal original Git blobs with byte size, SHA-256 and Git blob identities. Verify the complete fixture hashes and original pin; never compare these historical observations with changed current Source validators or relabel their acceptance.",
+  "verification": [
+    {"run": "rc022-historical-remote-abort-inputs-20261118-01", "passed": 85, "seconds": 1.23, "scope": "Retained Remote dispatch and 56 actual platform observations plus direct cancellation consumers"}
+  ],
+  "cleanup": "Owned pytest workspace, home and temp directories removed; command, log and XML retained.",
+  "qualification": "Historical compatibility only. Current authorized Remote/event pairs run independently; this does not qualify current migration or release acceptance."
+}

@@ -1,0 +1,14 @@
+{
+  "contract": "C9-EB",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "status": "Targeted current Web settings consumer checks passed",
+  "change": "Check the exact descriptor captured from the actual HTTP invocation, preserving volatile schema identities. Use current declarative preset selection, DeepSeek model catalog, settings forms, active plugin inventory and public composition inspection APIs.",
+  "verification": [
+    {"run": "rc022-current-settings-consumers-20261118-02", "scope": "All three settings Remote consumers passed; the independent ordinary-provider inventory assertion failed and was corrected in the next run."},
+    {"run": "rc022-current-settings-consumers-20261118-03", "scope": "All four schema and inventory parameter cases passed; the separate HMR lifecycle assertion was corrected in the next persistence run."},
+    {"run": "rc022-current-settings-consumers-20261118-05", "passed": 7, "seconds": 21.95, "scope": "Actual persistence and cold restart consumer plus all six current settings form controls"},
+    {"run": "rc022-current-settings-events-successors-20261118-01", "scope": "Five actual pinned Source/Native pairs: settings_forms, settings_schema, preset_registry, authorized_events and authorized_calls", "exit_code": 0}
+  ],
+  "cleanup": "Completed diagnostic and successful workspaces retired after raw observations and session records were preserved; commands, logs and XML retained.",
+  "qualification": "Targeted checks only; failed mixed runs remain failed and do not establish complete migration or release acceptance."
+}

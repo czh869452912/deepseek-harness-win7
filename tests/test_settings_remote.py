@@ -1,5 +1,6 @@
 import json
 import asyncio
+from functools import wraps
 
 import pytest
 
@@ -15,10 +16,22 @@ from canonical_web_fixture import web_context, close_web_context
 
 
 @pytest.mark.asyncio
-async def test_formal_web_settings_over_authenticated_http(tmp_path):
+async def test_formal_web_settings_over_authenticated_http(tmp_path, monkeypatch):
     """Exercise serialization of every shipped namespace, not a fixture schema."""
     ctx = await web_context(tmp_path)
     try:
+        # Forms allocate fresh Schema identities for each describe. Capture the
+        # actual HTTP invocation so the entire wire graph is compared exactly.
+        controller = ctx.get('settingsController')
+        original = getattr(controller, '_original', controller)
+        describe = type(original).describe
+        captured = []
+        @wraps(describe)
+        def capture(self):
+            value = describe(self)
+            captured.append(value)
+            return value
+        monkeypatch.setattr(type(original), 'describe', capture)
         async def request(method, path, body=b'', cookie=b''):
             reader, writer = await asyncio.open_connection('127.0.0.1', ctx.get('webServer').port)
             headers = ('%s %s HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n'
@@ -46,21 +59,22 @@ async def test_formal_web_settings_over_authenticated_http(tmp_path):
 
         directory = await call('describe', {})
         from dsh.cordis.json_text import stringify_json
-        raw_directory = ctx.get('settingsController').describe()
+        assert len(captured) == 1
+        raw_directory = captured[0]
         assert json.loads(stringify_json(raw_directory)) == directory
         assert all(isinstance(key, str) for namespace in raw_directory['namespaces']
                    if isinstance(namespace.get('schema'), dict) and 'refs' in namespace['schema']
                    for key in namespace['schema']['refs'])
         rows = {row['ns']: row for row in directory['namespaces']}
-        assert {'agent-presets', 'agent-default-model', 'llm-pi-ai', 'agent-loop'} <= rows.keys()
+        assert {'agent-preset-registry', 'agent-default-model', 'llm-deepseek', 'pwsh-sandbox'} <= rows.keys()
         from dsh.cordis.schema import Schema
-        schema = Schema(rows['agent-presets']['schema'])
-        assert schema({'default': 'minimal'}) == {'default': 'minimal'}
+        schema = Schema(rows['agent-preset-registry']['schema'])
+        assert schema({'selectedDefault': 'minimal'}) == {'selectedDefault': 'minimal'}
         with pytest.raises(Exception):
-            schema({'default': 123})
-        updated = await call('update', dict(ns='agent-presets', patch={'default': 'minimal'},
-                                           expectedRevision=rows['agent-presets']['revision']))
-        assert updated['value']['default'] == ctx.get('agentPresets').default_id == 'minimal'
+            schema({'selectedDefault': 123})
+        updated = await call('update', dict(ns='agent-preset-registry', patch={'selectedDefault': 'minimal'},
+                                           expectedRevision=rows['agent-preset-registry']['revision']))
+        assert updated['value']['selectedDefault'] == ctx.get('agentPresets').defaultId == 'minimal'
         assert (await call('describe', {}))['namespaces']
     finally:
         await close_web_context(ctx)

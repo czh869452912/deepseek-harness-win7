@@ -20,11 +20,18 @@ DOMAINS = frozenset(('agent-dependencies', 'ask-user', 'javascript-errors',
                      'tool-errors', 'unicode-carrier', 'canonical-llm',
                      'llm-metadata', 'llm-config', 'llm-prepared',
                      'deepseek-capture', 'deepseek-error', 'javascript-initial',
-                     'javascript-ready', 'persistence-read'))
+                     'javascript-ready', 'persistence-read', 'runtime-context',
+                     'runtime-full-request', 'session-diagnostic', 'session-number',
+                     'session-restore-sign'))
 
 # Current production observations run independently in the current paired lane.
 # These mappings identify successors, never transfer historical acceptance.
 SUCCESSORS = {
+    'runtime-context': ('rc022_agent_boundary', 'rc022_messages_wire'),
+    'runtime-full-request': ('rc022_agent_registration', 'rc022_messages_adapter'),
+    'session-diagnostic': ('rc022_session_admission', 'rc022_session_state'),
+    'session-number': ('rc022_session_admission', 'rc022_session_composition'),
+    'session-restore-sign': ('rc022_session_state', 'rc022_session_fork'),
     'javascript-initial': ('rc022_workflow_host', 'rc022_workflow_guest'),
     'javascript-ready': ('rc022_workflow_host', 'rc022_workflow_guest'),
     'persistence-read': ('rc022_sqlite_batch', 'rc022_session_access'),

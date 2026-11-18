@@ -18,7 +18,8 @@ def test_historical_domain_guard_keeps_original_facts_and_rejects_changed_inputs
     arguments = () if name in ('javascript-errors', 'canonical-llm', 'llm-metadata',
                                'llm-config', 'llm-prepared', 'deepseek-capture',
                                'deepseek-error', 'javascript-initial', 'javascript-ready',
-                               'persistence-read') else (ROOT / 'reference',)
+                               'persistence-read', 'runtime-context', 'runtime-full-request',
+                               'session-diagnostic', 'session-number', 'session-restore-sign') else (ROOT / 'reference',)
     guard(source, *arguments)
     altered = copy.deepcopy(source)
     altered['inputs'][next(iter(altered['inputs']))] = '0' * 64

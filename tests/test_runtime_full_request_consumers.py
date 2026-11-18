@@ -1,3 +1,4 @@
+"""Retained historical runtime-full-request controls; current production has separate Source pairs."""
 from dsh.session.projections import SessionProjectionsPlugin
 from dsh.core.agent import AgentPlugin
 from dsh.core.session import SessionPlugin
@@ -14,6 +15,9 @@ from scripts.runtime_full_request_oracle import NAMES, identity, validate_runtim
 from scripts.verify_portable import full_request_receipts
 
 
+from historical_domain_models import historical_identity, historical_pair
+identity=historical_identity('runtime-full-request',identity)
+
 ROOT = Path(__file__).resolve().parents[1]
 DAMAGES = ('provider', 'system', 'tools', 'assistant-alias', 'token-alias', 'reasoning-alias',
     'message-owner', 'signal-owner', 'signal-state', 'tail', 'duplicate', 'root', 'python', 'executable', 'module', 'bytes')
@@ -21,13 +25,7 @@ DAMAGES = ('provider', 'system', 'tools', 'assistant-alias', 'token-alias', 'rea
 
 @pytest.fixture(scope='module')
 def actual_pair(tmp_path_factory):
-    output = tmp_path_factory.mktemp('runtime-full-request-pair') / 'paired.json'
-    completed = subprocess.run([sys.executable, str(ROOT / 'scripts/runtime_full_request_oracle.py'),
-        '--output', str(output)], cwd=str(ROOT), capture_output=True, timeout=90)
-    (output.parent / 'runner.log').write_bytes(completed.stdout + completed.stderr)
-    assert completed.returncode == 0, output.read_text(encoding='utf-8')
-    return (json.loads(output.with_suffix('.source.json').read_text(encoding='utf-8')),
-        json.loads(output.with_suffix('.native.json').read_text(encoding='utf-8')))
+    return historical_pair('runtime-full-request')
 
 
 @pytest.mark.parametrize('name', NAMES)

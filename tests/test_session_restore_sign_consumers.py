@@ -1,3 +1,4 @@
+"""Retained historical session-restore-sign controls; current production has separate Source pairs."""
 import copy
 import json
 import math
@@ -12,6 +13,9 @@ from scripts.session_restore_sign_oracle import NAMES, identity, validate_runtim
 from scripts.verify_portable import restore_sign_receipts
 
 
+from historical_domain_models import historical_identity, historical_pair
+identity=historical_identity('session-restore-sign',identity)
+
 ROOT = Path(__file__).resolve().parents[1]
 DAMAGES = ('accepted', 'signed-zero', 'input-value', 'safe-integer', 'error-text',
     'missing-case', 'duplicate', 'root', 'python', 'executable', 'module', 'module-bytes')
@@ -19,13 +23,7 @@ DAMAGES = ('accepted', 'signed-zero', 'input-value', 'safe-integer', 'error-text
 
 @pytest.fixture(scope='module')
 def actual_pair(tmp_path_factory):
-    output = tmp_path_factory.mktemp('session-restore-sign-pair') / 'paired.json'
-    completed = subprocess.run([sys.executable, str(ROOT / 'scripts/session_restore_sign_oracle.py'),
-        '--output', str(output)], cwd=str(ROOT), capture_output=True, timeout=90)
-    (output.parent / 'runner.log').write_bytes(completed.stdout + completed.stderr)
-    assert completed.returncode == 0, output.read_text(encoding='utf-8')
-    return (json.loads(output.with_suffix('.source.json').read_text(encoding='utf-8')),
-        json.loads(output.with_suffix('.native.json').read_text(encoding='utf-8')))
+    return historical_pair('session-restore-sign')
 
 
 @pytest.mark.parametrize('name', NAMES)

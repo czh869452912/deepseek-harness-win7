@@ -1,3 +1,4 @@
+"""Retained historical runtime-context controls; current production has separate Source pairs."""
 import copy
 import json
 from pathlib import Path
@@ -9,6 +10,9 @@ import pytest
 from scripts.oracles.runtime_context_python import observe
 from scripts.runtime_context_oracle import NAMES, canonical, identity, validate_runtime
 
+
+from historical_domain_models import historical_identity, historical_pair
+identity=historical_identity('runtime-context',identity)
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -31,13 +35,7 @@ def test_development_interpreter_may_be_shared_but_product_interpreter_is_owned(
 
 @pytest.fixture(scope='module')
 def actual_pair(tmp_path_factory):
-    output = tmp_path_factory.mktemp('runtime-context-pair') / 'paired.json'
-    completed = subprocess.run([sys.executable, str(ROOT / 'scripts/runtime_context_oracle.py'),
-        '--output', str(output)], cwd=str(ROOT), capture_output=True, timeout=60)
-    (output.parent / 'runner.log').write_bytes(completed.stdout + completed.stderr)
-    assert completed.returncode == 0, output.read_text(encoding='utf-8')
-    return (json.loads(output.with_suffix('.source.json').read_text(encoding='utf-8')),
-        json.loads(output.with_suffix('.native.json').read_text(encoding='utf-8')))
+    return historical_pair('runtime-context')
 
 
 @pytest.mark.asyncio

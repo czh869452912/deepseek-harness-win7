@@ -1,3 +1,4 @@
+"""Retained historical session-number controls; current production has separate Source pairs."""
 import copy
 import json
 from pathlib import Path
@@ -11,6 +12,9 @@ from scripts.verify_portable import number_receipts
 from dsh.core.session import Session
 
 
+from historical_domain_models import historical_identity, historical_pair
+identity=historical_identity('session-number',identity)
+
 ROOT = Path(__file__).resolve().parents[1]
 DAMAGES = ('outcome', 'header-field', 'header-mutation', 'nested-mutation', 'input-mutation',
     'clone-missing', 'clone-deep', 'clone-shallow', 'clone-original',
@@ -19,13 +23,7 @@ DAMAGES = ('outcome', 'header-field', 'header-mutation', 'nested-mutation', 'inp
 
 @pytest.fixture(scope='module')
 def actual_pair(tmp_path_factory):
-    output = tmp_path_factory.mktemp('session-number-pair') / 'paired.json'
-    completed = subprocess.run([sys.executable, str(ROOT / 'scripts/session_number_oracle.py'),
-        '--output', str(output)], cwd=str(ROOT), capture_output=True, timeout=90)
-    (output.parent / 'runner.log').write_bytes(completed.stdout + completed.stderr)
-    assert completed.returncode == 0, output.read_text(encoding='utf-8')
-    return (json.loads(output.with_suffix('.source.json').read_text(encoding='utf-8')),
-        json.loads(output.with_suffix('.native.json').read_text(encoding='utf-8')))
+    return historical_pair('session-number')
 
 
 @pytest.mark.parametrize('name', NAMES)

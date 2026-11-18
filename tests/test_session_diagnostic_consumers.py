@@ -1,3 +1,4 @@
+"""Retained historical session-diagnostic controls; current production has separate Source pairs."""
 import copy
 import json
 from pathlib import Path
@@ -10,6 +11,9 @@ from scripts.session_diagnostic_oracle import NAMES, identity, validate_runtime
 from scripts.verify_portable import diagnostic_receipts
 
 
+from historical_domain_models import historical_identity, historical_pair
+identity=historical_identity('session-diagnostic',identity)
+
 ROOT = Path(__file__).resolve().parents[1]
 DAMAGES = ('accepted', 'error-name', 'error-text', 'lossless-first', 'restore-negative-zero',
     'missing-case', 'duplicate', 'root', 'python', 'executable', 'module', 'module-bytes')
@@ -17,13 +21,7 @@ DAMAGES = ('accepted', 'error-name', 'error-text', 'lossless-first', 'restore-ne
 
 @pytest.fixture(scope='module')
 def actual_pair(tmp_path_factory):
-    output = tmp_path_factory.mktemp('session-diagnostic-pair') / 'paired.json'
-    completed = subprocess.run([sys.executable, str(ROOT / 'scripts/session_diagnostic_oracle.py'),
-        '--output', str(output)], cwd=str(ROOT), capture_output=True, timeout=90)
-    (output.parent / 'runner.log').write_bytes(completed.stdout + completed.stderr)
-    assert completed.returncode == 0, output.read_text(encoding='utf-8')
-    return (json.loads(output.with_suffix('.source.json').read_text(encoding='utf-8')),
-        json.loads(output.with_suffix('.native.json').read_text(encoding='utf-8')))
+    return historical_pair('session-diagnostic')
 
 
 @pytest.mark.parametrize('name', NAMES)

@@ -1,0 +1,29 @@
+{
+  "contract": "C9-DT",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "status": "Targeted retained compatibility and actual current successors passed",
+  "changes": "Five old runtime-context/full-request and Session diagnostic/number/restore-sign suites use byte-preserved original Source facts and fresh execution of retained Native compatibility providers. Local identity wrappers keep original pin, runtime, observations and damage controls; no old receipts or acceptance are relabelled.",
+  "provenance": "Five minimal original members verified against archive, nested container and member size/SHA-256 in the evidence manifest; external original archive retained.",
+  "verification": [
+    {
+      "run": "rc022-historical-runtime-sessions-20261118-01",
+      "passed": 314,
+      "seconds": 85.61,
+      "scope": "Five retained-provider suites plus all historical identity, immutable-fact and actual current successor roster guards"
+    },
+    {
+      "run": "rc022-current-runtime-session-successors-20261118-01",
+      "status": "Six actual unchanged Source/Native pairs passed",
+      "scopes": [
+        "agent_boundary",
+        "agent_registration",
+        "session_admission",
+        "session_state",
+        "session_composition",
+        "session_fork"
+      ]
+    }
+  ],
+  "cleanup": "Completed pytest home/tmp/workspace retired; original facts, actual Native parser observations and current Source/Native results retained. Original external archive was not extracted to disk.",
+  "qualification": "Targeted results only; a fresh complete frozen candidate is still required."
+}

@@ -24,7 +24,9 @@ async def dispatch(hmr):
             full_reload = True
             continue
         cache = getattr(getattr(loader, 'internal', None), 'loadCache', None)
-        if cache is not None and url in cache:
+        cache_has = getattr(cache, 'has', None)
+        loaded = cache_has(url) if callable(cache_has) else cache is not None and url in cache
+        if loaded:
             hmr._stashed[url] = None
             continue
         if manifest:

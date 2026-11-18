@@ -1,0 +1,13 @@
+{
+  "contract": "C9-DF",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "status": "targeted, actual Source tests and actual pairs passed",
+  "changes": "Root batch classification queries the installed cache's has(url) interface, retaining plain-dict fallback for lightweight carriers. Relative and absolute root aliases both exercise the canonical queried URL; file-change routing remains owned by the shared transaction.",
+  "verification": [
+    {"run": "rc022-hmr-cache-query-20261118-01", "passed": 18, "seconds": 8.97, "scope": "Original alias failure, both root spellings, batch dispatch, partial replacement and root membership"},
+    {"run": "rc022-hmr-cache-dispatch-pair-20261118-01", "source_rows": 6, "native_rows": 6, "status": "passed", "seconds": 3.328},
+    {"run": "rc022-hmr-cache-source-20261118-01", "source_file": "packages/boot/hmr/tests/watch-config.spec.ts", "passed": 19, "pending": 0, "seconds": 27.0, "inputs_unchanged": true, "complete_lane": false}
+  ],
+  "cleanup": {"bytes_removed": 6045, "owned_directories_removed": 4, "owned_links_removed": 2, "retained": "Commands, log/XML, original Source JSON and actual pair observations; Source runner also removed its completed external workspace"},
+  "acceptance": "Frozen 3f20446c complete regression diagnostics continue unchanged. These later targeted observations are not complete release acceptance."
+}

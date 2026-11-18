@@ -1,5 +1,5 @@
 """
-1:1 parity test suite porting reference/packages/boot/app-boot/tests/hmr-config.spec.ts
+Supporting parity cases for reference/packages/boot/hmr/tests/watch-config.spec.ts.
 Tests exact config and module paths watched by HMR, alias collapsing, serialization, and error normalization.
 Compatible with Python 3.8.10 and Windows 7 SP1.
 """
@@ -47,9 +47,11 @@ async def eventually(test_fn, message: str, timeout: float = 10.0) -> None:
 
 
 @pytest.mark.asyncio
-async def test_observes_module_changes_when_watch_base_is_filesystem_alias():
-    target = tempfile.mkdtemp(prefix="dsh-hmr-module-canonical-")
-    alias = f"{target}-alias"
+@pytest.mark.parametrize('root_kind', ['relative', 'absolute'])
+async def test_observes_module_changes_when_watch_base_is_filesystem_alias(tmp_path, root_kind):
+    target = str(tmp_path / 'target')
+    os.mkdir(target)
+    alias = str(tmp_path / 'alias')
     alias_filename = os.path.join(alias, "module.ts")
     if sys.platform == "win32":
         import _winapi
@@ -60,7 +62,7 @@ async def test_observes_module_changes_when_watch_base_is_filesystem_alias():
     with open(alias_filename, "w", encoding="utf-8") as f:
         f.write("export const generation = 0\n")
 
-    ctx = await boot_hmr(alias, ["."], True)
+    ctx = await boot_hmr(alias, ["." if root_kind == 'relative' else alias], True)
     filename = os.path.join(os.path.realpath(target), "module.ts")
     expected = pathlib.Path(filename).as_uri()
 

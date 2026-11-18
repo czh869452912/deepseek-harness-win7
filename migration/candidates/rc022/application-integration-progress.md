@@ -2,6 +2,10 @@
 
 固定目标：`38a6a5c965aa99ab525161efb7cc5cf1fe62fced`。本页记录定向检查；生产 pin 已在 C9-CC 协调切换，`accepted_upstream` 仍为 null，完整资格待后续验证。
 
+C9-EV / EW / EX：当前 Agent v4 的实际 Source/Native 取消与恢复配对及 4 项回归通过，28 项维护/压缩消费者通过；持久化取消原因仅保留原版规定字段，实时信号原因身份不变。Context 的定义/使用双层作用域、返回影子解包和子插件独立 inject 按原版修正，47 项直接消费者、20 项签名回归和实际配对通过。最后 6 项旧启动/配置/命令/epoch 断言经正式入口更新，42 项通过，分别提交 `3f4ea72d`、`535439e7`、`e41cac3e`。这些结果均为定向检查；见[取消信号](current-agent-signal-checks.json)、[作用域](current-shadow-context-checks.json)、[启动消费者](current-loader-consumers-checks.json)。
+
+C9-EY：失效准备版 Portable、修改过的解压副本和三份重复输入已移除，回收 1,112,124,487 字节；保存旧 provenance、修改模块、会话观察和一份字节相同的压缩输入。两个约 11 MiB 的旧 Edge 配置及零字节标记此前被自动审批拒绝删除，继续明确保留，未绕过策略。用户开启开发者模式后文件符号链接实测通过；新统一门禁 04 在干净 `e41cac3e` 上启动，仍在进行，不构成签收。见[清理与系统条件](current-preparation-retention-checks.json)。
+
 C9-DA：同步全部 673 份当前原版 `apps/web` 源码镜像，既有 371 份原样构建产物哈希保持。PWA、启动/资源 URL、真实活动 Loader、反馈 v3→v4 夹具及文件引用行所有权已定向修复；最后广域 164 项通过/两项失败后，其余四项消费者复验与实际 25 行 Source/Python 配对通过。40 个历史快照保留原 pin 和 207 文件字节身份，不冒充当前 74 个场景。首轮完整回归原失败保留，完整资格仍待新的稳定候选。[检查](web-source-contract-checks.json)。
 
 C9-DB：当前统一门禁一次执行完整 Python 集合并收集普通用例失败；既有内部调用保持默认首错停止。55 项定向检查包含真实的三失败/一失败隔离执行，工作区已清理。`8f69c6a1` 原门禁的最终输入与候选复核均未漂移，结果仍为失败，未执行后续 Source/配对/打包。[检查](complete-failure-collection-checks.json)。

@@ -1,0 +1,69 @@
+{
+  "contract": "C9-EY",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "scope": "Retire superseded dirty preparation Portable and modified extraction; neither was unified qualification. Preserve actual old provenance, modified modules, synthetic session observations and one byte-identical input recipe.",
+  "cleanup": {
+    "bytes_removed": 1112124487,
+    "removed": [
+      {
+        "path": "C:\\Users\\czh86\\AppData\\Local\\Temp\\dsh Portable \u4e2d\u6587 10m_16oz",
+        "bytes": 820385469
+      },
+      {
+        "path": "C:\\Users\\czh86\\Documents\\Codex\\deepseek-harness-win7\\.goose\\out\\rc022-current-portable-build-20261118-02\\build\\dsh-win7-portable-v0.2.2-rc.3-r1.zip",
+        "bytes": 288696067
+      },
+      {
+        "path": "C:\\Users\\czh86\\Documents\\Codex\\deepseek-harness-win7\\.goose\\out\\rc022-current-query-text-pair-20261118-01\\inputs.json",
+        "bytes": 1014317
+      },
+      {
+        "path": "C:\\Users\\czh86\\Documents\\Codex\\deepseek-harness-win7\\.goose\\out\\rc022-current-query-text-pair-20261118-02\\inputs.json",
+        "bytes": 1014317
+      },
+      {
+        "path": "C:\\Users\\czh86\\Documents\\Codex\\deepseek-harness-win7\\.goose\\out\\rc022-current-query-text-pair-20261118-03\\inputs.json",
+        "bytes": 1014317
+      }
+    ],
+    "retained_observations": 42,
+    "modified_files": 7,
+    "retained_recipe": {
+      "size": 1014317,
+      "sha256": "e725e1be45f1fbba71bba59fa4fd0863a3ed5d2fa0c4853f7922ba9c70c26ed1",
+      "storage": ".goose/out/rc022-retired-preparation-20261118-01/observations/query-text-inputs.json.gz"
+    }
+  },
+  "removed_preparation_archive": {
+    "size": 288696067,
+    "sha256": "408fa5e696c80acfa74ac4cf51eac2f1f9323b032da5ab3df4fcff730f58fdf6",
+    "extraction_product_commit": "a670030b0380b9f8fa02e10ee192927ac99ab654",
+    "worktree_dirty": true,
+    "release_qualification": false
+  },
+  "retained_inputs": "Current Node 24/Source, Python x64/x86, Office, Electron/NSIS and browsers remain active qualification inputs. Original historical archives and failed qualification diagnostics retained.",
+  "system_preflight": {
+    "run": "rc022-source-symlink-preflight-20261118-03",
+    "created": true,
+    "owned_payload_removed": true,
+    "operator": "User enabled Windows Developer Mode after EPERM was reproduced in runs 01/02."
+  },
+  "pending_cleanup": [
+    {
+      "paths": [
+        "C:/Users/czh86/AppData/Local/Temp/dsh-guide-cdp-nZcnHa",
+        "C:/Users/czh86/AppData/Local/Temp/dsh-guide-cdp-xMf1t4"
+      ],
+      "bytes": 11515675,
+      "purpose": "Obsolete task-owned Edge endpoint-failure profiles",
+      "reason": "Automatic approval review rejected deletion: blocked by policy. No bypass attempted.",
+      "next_cleanup": "Manual operator removal or a later host cleanup permitted by policy."
+    },
+    {
+      "path": "C:/Users/czh86/.codex/worktrees/rc022-qualification/.codex-worktree-name",
+      "bytes": 0,
+      "reason": "Automatic approval review rejected prior deletion: blocked by policy. Empty stale marker retained."
+    }
+  ],
+  "qualification": "Unified run 04 is frozen at e41cac3e and remains in progress; no release acceptance claimed."
+}

@@ -1,0 +1,26 @@
+{
+  "contract": "C9-FJ",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "scope": "Completed failed unified run03 synthetic regression workspace; current frozen run07 and all active build/dependency inputs are excluded.",
+  "verification": {
+    "run03_candidate": "3f20446cd32c530542b39352d2793f0f6409ec66",
+    "controller_exit_code": 1,
+    "original_result": "failed",
+    "original_inputs_unchanged": true,
+    "original_candidate_unchanged": true,
+    "remaining_processes_for_old_run": 0,
+    "checks": "Confirmed completed controller and exact retained-workspace mapping. Captured size/SHA-256 inventory, copied and verified every JSON/JSONL/zstd/log/PNG member, and rechecked member hashes before unlinking. Original failed/incomplete run identity is preserved."
+  },
+  "cleanup": {
+    "directories": 1,
+    "files": 3740,
+    "bytes_removed": 26705419,
+    "observations_retained": 1006,
+    "reparse_entries_unlinked_without_following": 36,
+    "readonly_git_entries_unlinked": 476,
+    "shared_file_attributes_changed": false,
+    "retained": "Original frozen input manifest, collection/logs, raw failures and observations, parser observations and historical-domain reports remain under the run03 gate/controller directories."
+  },
+  "policy_blocked_assets": "Two obsolete Edge profiles and a zero-byte managed-worktree marker remain as previously recorded. No deletion retry or alternate-technique bypass was attempted.",
+  "qualification": "Retention housekeeping only. This does not alter run03 failure or establish current release acceptance. Run07 continues independently."
+}

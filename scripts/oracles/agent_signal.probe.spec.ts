@@ -5,16 +5,19 @@ import { Context } from '@deepseek-ai/cordis'
 import LlmRuntime, { createUserMessage } from '@deepseek-ai/dsh-llm'
 import SessionStore, { SessionId } from '@deepseek-ai/dsh-session'
 import SystemPrompt from '@deepseek-ai/dsh-system-prompt'
-import ToolRuntime, { defineContentToolFixture } from '@deepseek-ai/dsh-tools'
+import ToolRuntime from '@deepseek-ai/dsh-tools'
+import { defineContentToolFixture } from '@deepseek-ai/dsh-tool-testkit'
 import AgentRegistry from '@deepseek-ai/dsh-agent'
 import AgentLoop from '@deepseek-ai/dsh-agent-loop'
+import * as NativeToolExecutor from '../../reference/packages/core/tool-executor-native/src/index.ts'
 import { MockAdapter, textResponse, toolCallResponse } from '../../reference/packages/core/agent-loop/tests/mock-adapter.ts'
 
 async function harness(script: any[]) {
   const ctx = new Context()
   for (const plugin of [LlmRuntime, SessionStore, SystemPrompt, ToolRuntime, AgentRegistry]) await ctx.plugin(plugin)
   if (!ctx.sessionProjections) await ctx.plugin(Rc1SessionProjections);
-await ctx.plugin(AgentLoop, {agents: []})
+  await ctx.plugin(NativeToolExecutor)
+  await ctx.plugin(AgentLoop, {agents: []})
   const adapter = new MockAdapter(script)
   ctx.llm.registerAdapter(['mock'], adapter)
   const handle = await ctx.agents.create({sessionId: SessionId('signal-owner'), agentOptions: {provider: 'mock', model: 'fixture'}})
@@ -26,6 +29,7 @@ it('observes original model/tool abort generations and cancellation containment'
   const cause = {kind: 'user', detail: 'actual cancellation reason'} as const
   const first = await harness([toolCallResponse('signal-first', 'signal_probe', {}),
     toolCallResponse('signal-next', 'signal_probe', {}), textResponse('next turn completed')])
+  first.ctx.on('agent/error', ({error}) => { throw error })
   const signals: AbortSignal[] = []
   const notifications: any[] = []
   const ready = Promise.withResolvers<void>()
@@ -44,12 +48,12 @@ it('observes original model/tool abort generations and cancellation containment'
       } finally {signal.removeEventListener('abort', cancelled)}
     }}))
   try {
-    first.handle.agent.followup(createUserMessage({content: 'first turn'}))
+    await first.handle.agent.followup(createUserMessage({source: {kind: 'user'}, content: [{type: 'text', text: 'first turn'}]}))
     await ready.promise
     const initiallyActive = !signals[0]!.aborted
     first.handle.agent.cancel(cause)
     await first.handle.agent.whenIdle()
-    first.handle.agent.followup(createUserMessage({content: 'next turn'}))
+    await first.handle.agent.followup(createUserMessage({source: {kind: 'user'}, content: [{type: 'text', text: 'next turn'}]}))
     await first.handle.agent.whenIdle()
     observations.tools = {signalCount: signals.length, initiallyActive,
       firstAborted: signals[0]!.aborted, reason: signals[0]!.reason, notifications,
@@ -67,9 +71,9 @@ it('observes original model/tool abort generations and cancellation containment'
     throw new Error('controlled failure after cancellation')
   })
   try {
-    second.handle.agent.followup(createUserMessage({content: 'cancelled admission'}))
+    await second.handle.agent.followup(createUserMessage({source: {kind: 'user'}, content: [{type: 'text', text: 'cancelled admission'}]}))
     await second.handle.agent.whenIdle()
-    second.handle.agent.followup(createUserMessage({content: 'next admitted turn'}))
+    await second.handle.agent.followup(createUserMessage({source: {kind: 'user'}, content: [{type: 'text', text: 'next admitted turn'}]}))
     await second.handle.agent.whenIdle()
     observations.admission = {status: second.handle.agent.status, modelRequests: second.adapter.requests.length,
       turnReasons: second.handle.agent.session.snapshotEvents().filter(event => event.type === 'turn/end').map(event => (event as any).data.reason)}
@@ -87,9 +91,9 @@ it('observes original model/tool abort generations and cancellation containment'
       return [{type: 'text', text: 'queued tool consumed'}]
     }}))
   try {
-    third.handle.agent.followup(createUserMessage({content: 'first queued turn'}))
+    await third.handle.agent.followup(createUserMessage({source: {kind: 'user'}, content: [{type: 'text', text: 'first queued turn'}]}))
     await queuedReady.promise
-    third.handle.agent.followup(createUserMessage({content: 'second queued turn'}))
+    await third.handle.agent.followup(createUserMessage({source: {kind: 'user'}, content: [{type: 'text', text: 'second queued turn'}]}))
     release.resolve()
     await third.handle.agent.whenIdle()
     observations.queued = {signalCount: queuedSignals.length, sameSignal: queuedSignals[0] === queuedSignals[1],
@@ -97,5 +101,21 @@ it('observes original model/tool abort generations and cancellation containment'
       turnReasons: third.handle.agent.session.snapshotEvents().filter(event => event.type === 'turn/end').map(event => (event as any).data.reason)}
     expect(queuedSignals.length).toBe(2)
   } finally {release.resolve(); await third.handle.dispose(); await third.ctx.fiber.dispose()}
+  observations.causes = []
+  for (const kind of ['user', 'parent', 'disposed', 'hook']) {
+    const current = await harness([])
+    const reason: any = {kind, ...(kind === 'hook' ? {reason: 'hook veto'} : {})}
+    reason.extra = reason
+    current.handle.agent.ctx.on('agent/pre-step', () => {
+      current.handle.agent.cancel(reason)
+      throw new Error('controlled failure after cancellation')
+    })
+    try {
+      await current.handle.agent.followup(createUserMessage({source: {kind: 'user'}, content: [{type: 'text', text: kind}]}))
+      await current.handle.agent.whenIdle()
+      observations.causes.push({kind, modelRequests: current.adapter.requests.length,
+        turnReasons: current.handle.agent.session.snapshotEvents().filter(event => event.type === 'turn/end').map(event => (event as any).data.reason)})
+    } finally {await current.handle.dispose(); await current.ctx.fiber.dispose()}
+  }
   writeFileSync(process.env.AGENT_SIGNAL_OUTPUT!, JSON.stringify(observations, null, 2) + '\n')
 }, 20000)

@@ -7,13 +7,18 @@ import sys
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
 from dsh.cordis import Context
-from dsh.core.agent import AgentPlugin
-from dsh.core.session import SessionPlugin
+from dsh.core.runtime_v4 import AgentV4Plugin as AgentPlugin, SessionV4Plugin as SessionPlugin, SessionProjectionsV4Plugin
 from dsh.core.abort import AbortSignal
-from dsh.session.projections import SessionProjectionRegistry
-from dsh.core.agent_loop import AgentLoopPlugin
-from dsh.core.system_prompt import SystemPrompt
+from dsh.core.agent_loop_current import CurrentAgentLoopPlugin as AgentLoopPlugin
+from dsh.core.system_prompt.current import CurrentSystemPrompt as SystemPrompt
+from dsh.llm.runtime_current import CurrentLlmRuntime
+from dsh.core.tool_executor_native import NativeToolExecutorPlugin
 from dsh.core.tools import ToolsPlugin
+from dsh.llm.message import create_user_message as identified_user_message
+
+
+def create_user_message(text):
+    return identified_user_message(dict(source=dict(kind='user'), content=[dict(type='text', text=text)]))
 
 
 class Model:
@@ -32,19 +37,31 @@ class Model:
                 'function': {'name': 'signal_probe', 'arguments': '{}'}}]}
         else:
             delta = {'content': 'next turn completed' if self.tools else 'recovered after cancellation'}
-        yield {'choices': [{'delta': delta, 'finish_reason': 'tool_calls' if 'tool_calls' in delta else 'stop'}]}
+        if 'tool_calls' in delta:
+            call = delta['tool_calls'][0]
+            block = dict(type='tool-call', id=call['id'], name=call['function']['name'],
+                         arguments=call['function']['arguments'])
+            yield dict(type='block-start', index=0, blockType='tool-call')
+            yield dict(type='block-end', index=0, block=block)
+        else:
+            yield dict(type='block-start', index=0, blockType='text')
+            yield dict(type='text-delta', index=0, text=delta['content'])
+            yield dict(type='block-end', index=0, block=dict(type='text', text=delta['content']))
+        yield dict(type='finish', reason=dict(kind='stop'))
 
 
 async def harness(tools=False, queued=False):
     ctx, model = Context(), Model(tools, queued)
-    SessionProjectionRegistry(ctx)
-    ctx.set_service('llm', model)
-    await ctx.plugin(ToolsPlugin)
-    await ctx.plugin(SystemPrompt)
+    await ctx.plugin(CurrentLlmRuntime)
     await ctx.plugin(SessionPlugin)
+    await ctx.plugin(SessionProjectionsV4Plugin)
+    await ctx.plugin(SystemPrompt)
+    await ctx.plugin(ToolsPlugin)
+    await ctx.plugin(NativeToolExecutorPlugin)
     await ctx.plugin(AgentPlugin)
     await ctx.plugin(AgentLoopPlugin)
-    handle = await ctx.get('agents').create({'sessionId': 'signal-owner'})
+    ctx.get('llm').register_adapter(['fixture'], model)
+    handle = await ctx.get('agents').create({'sessionId': 'signal-owner', 'options': {'provider': 'fixture', 'model': 'fixture'}})
     return ctx, model, handle
 
 
@@ -76,12 +93,12 @@ async def observations():
         'parameters': {'type': 'object', 'properties': {}}, 'execute': execute,
         'output': {'schema': {'type': 'string'}, 'render': lambda args, value: [{'type': 'text', 'text': value}]}})
     try:
-        handle.agent.followup('first turn')
+        handle.agent.followup(create_user_message('first turn'))
         await asyncio.wait_for(ready.wait(), 3)
         initially_active = not signals[0].aborted
         handle.agent.cancel(cause)
         await asyncio.wait_for(handle.agent.when_idle(), 3)
-        handle.agent.followup('next turn')
+        handle.agent.followup(create_user_message('next turn'))
         await asyncio.wait_for(handle.agent.when_idle(), 3)
         output['tools'] = {'signalCount': len(signals), 'initiallyActive': initially_active,
             'firstAborted': signals[0].aborted, 'reason': signals[0].reason, 'notifications': notifications,
@@ -101,9 +118,9 @@ async def observations():
         raise RuntimeError('controlled failure after cancellation')
     handle.agent.ctx.on('agent/pre-step', admission)
     try:
-        handle.agent.followup('cancelled admission')
+        handle.agent.followup(create_user_message('cancelled admission'))
         await asyncio.wait_for(handle.agent.when_idle(), 3)
-        handle.agent.followup('next admitted turn')
+        handle.agent.followup(create_user_message('next admitted turn'))
         await asyncio.wait_for(handle.agent.when_idle(), 3)
         output['admission'] = {'status': handle.agent.status, 'modelRequests': len(model.requests),
                                'turnReasons': turn_reasons(handle.agent)}
@@ -122,9 +139,9 @@ async def observations():
         'parameters': {'type': 'object', 'properties': {}}, 'execute': queued_execute,
         'output': {'schema': {'type': 'string'}, 'render': lambda args, value: [{'type': 'text', 'text': value}]}})
     try:
-        handle.agent.followup('first queued turn')
+        handle.agent.followup(create_user_message('first queued turn'))
         await asyncio.wait_for(queued_ready.wait(), 3)
-        handle.agent.followup('second queued turn')
+        handle.agent.followup(create_user_message('second queued turn'))
         release.set()
         await asyncio.wait_for(handle.agent.when_idle(), 3)
         output['queued'] = {'signalCount': len(queued_signals), 'sameSignal': queued_signals[0] is queued_signals[1],
@@ -134,6 +151,25 @@ async def observations():
         release.set()
         await handle.dispose()
         await ctx.fiber.dispose()
+    output['causes'] = []
+    for kind in ('user', 'parent', 'disposed', 'hook'):
+        ctx, model, handle = await harness()
+        reason = dict(kind=kind)
+        if kind == 'hook':
+            reason['reason'] = 'hook veto'
+        reason['extra'] = reason
+        def cancel_admission(payload, next_fn):
+            handle.agent.cancel(reason)
+            raise RuntimeError('controlled failure after cancellation')
+        handle.agent.ctx.on('agent/pre-step', cancel_admission)
+        try:
+            handle.agent.followup(create_user_message(kind))
+            await asyncio.wait_for(handle.agent.when_idle(), 3)
+            output['causes'].append(dict(kind=kind, modelRequests=len(model.requests),
+                                         turnReasons=turn_reasons(handle.agent)))
+        finally:
+            await handle.dispose()
+            await ctx.fiber.dispose()
     return output
 
 

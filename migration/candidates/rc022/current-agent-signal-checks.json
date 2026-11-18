@@ -1,0 +1,26 @@
+{
+  "contract": "C9-EV",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "change": "Observe actual current Source/Native Agent v4 with native tool executor, identified user messages and StreamChunk adapter. Copy the closed durable cancellation cause while preserving live tool signal identity and reason; ignore cyclic extra metadata on user/parent/disposed/hook causes.",
+  "verification": [
+    {
+      "run": "rc022-current-agent-signal-20261118-14",
+      "passed": 4,
+      "seconds": 5.54,
+      "scope": "Actual current Source/Native signal/cancellation/recovery/queued-generation pair and retained cancel/error regressions"
+    },
+    {
+      "run": "rc022-current-maintenance-diagnostic-20261118-01",
+      "passed": 28,
+      "seconds": 1.02,
+      "scope": "Maintenance ownership, cancellation, queued wake and real compaction disposal consumers"
+    }
+  ],
+  "cleanup": {
+    "runs": 14,
+    "directories": 42,
+    "bytes_removed": 29329,
+    "retained": "Commands, logs/XML and original Source/Native JSON observations. Invalid-command exit 4 and deadline exit 124 remain diagnostics, never acceptance."
+  },
+  "qualification": "Targeted checks only; unified release acceptance pending."
+}

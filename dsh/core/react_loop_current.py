@@ -26,6 +26,17 @@ from dsh.llm.message import create_assistant_message, create_message
 from dsh.llm.stream_bridge import iter_chunks
 
 
+def aborted_cancel_cause(signal):
+    """Copy the closed durable cause without mutating the live abort reason."""
+    if not signal.aborted:
+        return None
+    cause = signal.reason
+    result = dict(kind=cause['kind'])
+    if cause['kind'] == 'hook':
+        result['reason'] = cause['reason']
+    return result
+
+
 def request_proposal(header):
     config = dict(header['config'])
     for key in ('reasoningEffort', 'maxTokens'):
@@ -110,7 +121,7 @@ class ReactLoopAgent:
                 return await await_callback_result(job(phase['abort'].signal))
             finally:
                 self._set_phase(dict(kind='idle', lastTurn=phase['lastTurn']))
-                reason=phase['abort'].signal.reason
+                reason=aborted_cancel_cause(phase['abort'].signal) if getattr(self.session, 'format_version', 3) == 4 else phase['abort'].signal.reason
                 disposed=isinstance(reason,dict) and reason.get('kind')=='disposed'
                 if (not disposed or getattr(self.session,'format_version',3) != 4) and phase['wakeRequested'] and self.inbox.hasPending:
                     self._wake_driver()
@@ -138,7 +149,7 @@ class ReactLoopAgent:
         if self.lifetime_signal is not None and self.lifetime_signal.aborted:
             return
         if self.phase['kind'] != 'idle':
-            reason = self.phase['abort'].signal.reason
+            reason = aborted_cancel_cause(self.phase['abort'].signal) if getattr(self.session, 'format_version', 3) == 4 else self.phase['abort'].signal.reason
             disposed = isinstance(reason, dict) and reason.get('kind') == 'disposed'
             if not disposed and (self.phase['kind'] == 'maintenance' or wake_after_abort):
                 self.phase['wakeRequested'] = True
@@ -307,7 +318,7 @@ class ReactLoopAgent:
                 target = 'next-step'
         except BaseException as error:
             if signal.aborted:
-                ending = dict(kind='aborted', reason=signal.reason)
+                ending = dict(kind='aborted', reason=aborted_cancel_cause(signal) if getattr(self.session, 'format_version', 3) == 4 else signal.reason)
                 raise
             ending = dict(kind='error', error=error.failure if isinstance(error, LlmError)
                           else dict(message=error_chain(error), code=error.code if isinstance(error, ToolActivationError) else 'UNKNOWN'))

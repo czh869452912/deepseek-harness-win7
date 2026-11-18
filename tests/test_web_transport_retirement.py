@@ -83,11 +83,13 @@ async def test_original_remote_is_served_while_legacy_routes_are_unclaimed(tmp_p
 
 
 @pytest.mark.asyncio
-async def test_canonical_session_and_fork_publish_only_complete_agents(tmp_path):
+async def test_canonical_session_and_fork_publish_session_then_agent_availability(tmp_path):
     ctx = await web_context(tmp_path / 'home')
     states = []
     ctx.on('session/created', lambda session: states.append(
-        (session.id, ctx.get('agents').get(session.id) is not None)))
+        ('session', session.id, ctx.get('agents').get(session.id) is not None)))
+    ctx.on('agent/created', lambda payload: states.append(
+        ('agent', payload['agent'].id, ctx.get('agents').get(payload['agent'].id) is payload['agent'])))
     try:
         await call(ctx, 'session', 'create', request=dict(sessionId='web', cwd=str(tmp_path), agentPreset='minimal'))
         (tmp_path / 'other').mkdir()
@@ -103,13 +105,14 @@ async def test_canonical_session_and_fork_publish_only_complete_agents(tmp_path)
         await agent.session.flush()
         fork = await call(ctx, 'session', 'fork', request=dict(sessionId='web'))
         assert ctx.get('agents').get(fork['sessionId']) is not None
-        assert states == [('web', True), ('attached', True), (fork['sessionId'], True)]
+        assert states == [(kind, sid, available) for sid in ('web','attached',fork['sessionId'])
+                          for kind, available in (('session',False),('agent',True))]
         assert ctx.get('sessions').get('web').header.cwd == str(tmp_path)
         assert 'attached' in ctx.get('workspaceRegistry').get(wid).sessionIds
         before = list(states)
         with pytest.raises(RemoteError) as rejected:
             await call(ctx, 'session', 'create', request=dict(sessionId='rejected', cwd=str(tmp_path), agentPreset='absent'))
-        assert rejected.value.code == 'gateway/internal'
+        assert rejected.value.code == 'agent-preset/not-found'
         assert states == before
         assert ctx.get('agents').get('rejected') is None
         assert ctx.get('sessions').get('rejected') is None
@@ -118,17 +121,15 @@ async def test_canonical_session_and_fork_publish_only_complete_agents(tmp_path)
 
 
 @pytest.mark.asyncio
-async def test_preset_authoring_and_nondefault_session_projection_use_actual_remotes(tmp_path):
+async def test_declarative_preset_read_and_nondefault_projection_use_actual_remotes(tmp_path):
     ctx = await web_context(tmp_path / 'home')
     stream = None
     try:
         presets = await call(ctx, 'agentPresets', 'list')
-        assert presets['authorable'] is True
-        assert any(row['id'] == 'standard' and row['isDefault'] and row['trust'] == 'system'
+        assert any(row['id'] == 'standard' and row['isDefault']
                    for row in presets['presets'])
-        assert await call(ctx, 'agentPresets', 'copy', **{'from': 'standard', 'id': 'custom-standard'}) is UNDEFINED
-        document = await call(ctx, 'agentPresets', 'read', agentPreset='custom-standard')
-        assert document['trust'] == 'user' and document['content']
+        document = await call(ctx, 'agentPresets', 'read', agentPreset='standard')
+        assert document['agentPreset'] == 'standard' and document['content']
         await call(ctx, 'session', 'create', request=dict(sessionId='selected', cwd=str(tmp_path), agentPreset='standard'))
         await call(ctx, 'session', 'create', request=dict(sessionId='other', cwd=str(tmp_path), agentPreset='minimal'))
         stream = await RemoteDispatcher(ctx).stream(dict(namespace='session', method='control', args={}, signal=AbortController().signal))
@@ -136,13 +137,14 @@ async def test_preset_authoring_and_nondefault_session_projection_use_actual_rem
         assert await call(ctx, 'agentPresets', 'select', agentId='selected', agentPreset='minimal') == 'minimal'
         async def projection():
             async for frame in stream:
-                if frame['type'] == 'projection' and frame['key'] == 'agentPreset':
+                if frame['type'] == 'projection' and any(
+                        change['key'] == 'agentPreset' for change in frame['changes']):
                     return frame
         frame = await asyncio.wait_for(projection(), 5)
-        assert frame['sessionId'] == 'selected' and frame['value'] == 'minimal'
+        assert frame['sessionId'] == 'selected'
+        assert next(change['val'] for change in frame['changes']
+                    if change['key'] == 'agentPreset') == 'minimal'
         assert ctx.get('sessionProjections').snapshot(ctx.get('agents').get('other').session)['values']['agentPreset'] == 'minimal'
-        assert await call(ctx, 'agentPresets', 'deletePreset', id='custom-standard') is UNDEFINED
-        assert all(row['id'] != 'custom-standard' for row in (await call(ctx, 'agentPresets', 'list'))['presets'])
     finally:
         if stream is not None:
             await stream.aclose()
@@ -159,7 +161,8 @@ async def test_scoped_human_request_uses_gateway_event_result_and_cancellation(t
         await call(ctx, 'session', 'create', request=dict(sessionId='question-owner', cwd=str(tmp_path), agentPreset='standard'))
         agent = ctx.get('agents').get('question-owner')
         gateway = ctx.get('typertGateway')
-        stream = await gateway.open_wire_stream('$events', dict(args={}), AbortController().signal)
+        stream = await gateway.wireStream.open('$events', dict(args={}), None,
+                                              ctx.get('connection').browserPeer, AbortController().signal)
         ready = await stream.__anext__()
         signal = AbortController()
         question = dict(id='q1', question='Which mode?', options=[dict(label='Fast'), dict(label='Slow')])

@@ -1,0 +1,14 @@
+{
+  "contract": "C9-EC",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "status": "Targeted canonical Web consumers passed",
+  "change": "Use the authenticated browser Peer for gateway events, current declarative preset read and selection, per-event projection changes and Session-before-Agent lifecycle publication. Do not restore retired preset authoring or legacy HTTP/SSE carriers.",
+  "verification": [
+    {"run": "rc022-current-web-events-20261118-10", "scope": "Actual authenticated original Remote routing, retired route refusals and lifecycle publication passed; the projection consumer failed before its current changes-array correction."},
+    {"run": "rc022-current-web-events-20261118-11", "passed": 7, "deselected": 2, "seconds": 40.32, "scope": "Actual declarative preset read and selection projection plus question, tool and approval event responses and cancellations"},
+    {"run": "rc022-current-agent-goal-publication-20261118-01", "scope": "Independent actual Web lifecycle and fork publication regression passed alongside Goal consumers"},
+    {"run": "rc022-current-settings-events-successors-20261118-01", "scope": "Independent actual current Source/Native authorized_events, authorized_calls and preset_registry pairs passed"}
+  ],
+  "cleanup": "Three completed diagnostic/passing runs retired 9 owned workspace directories and 115967 bytes after preserving 18 necessary observations. Logs, commands and XML retained.",
+  "qualification": "Targeted checks only; no complete migration or release acceptance. Failed runs retain their original outcomes."
+}

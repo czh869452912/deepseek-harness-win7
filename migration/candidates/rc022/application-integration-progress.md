@@ -4,6 +4,8 @@
 
 C9-FT：嵌套完整回归使用同一次冻结的 checkout 清单，严格原件与所有权校验保持；92 项通过，3 个目录清理、回收 685,519,985 字节。见[检查](current-nested-preflight-checks.json)。
 
+C9-GA: Run09 exposed a remaining GitRunner fixture race between direct done and managed-range cleanup. The fixture now awaits existing cleanup tasks; all six actual Git cases passed, production behavior unchanged. Three workspaces cleaned, 114,020 bytes removed. Run09 remains an independent frozen diagnostic. [Record](current-git-range-checks.json).
+
 C9-FZ: All known run07 failures have targeted follow-ups. Independent clean candidate `01499ca4` started its single complete qualification in run09 after 23 bound inputs were verified. Run08 stopped before tests and remains incomplete; no release acceptance is implied. [Candidate record](current-stable-candidate-start.json).
 
 C9-FY: Frozen run07 completed 22,626 Python cases: 22,511 passed, 46 skipped, 51 failed and 18 setup errors. It remains failed, without final input recheck or release acceptance. Original diagnostics and 8,548 raw observations preserved; 37,205 reconstructible files removed, reclaiming 1,249,473,666 bytes. Known failures have targeted follow-ups; the next stable candidate requires its own complete gate. [Record](current-complete-regression-retry-checks.json).

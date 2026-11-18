@@ -1,0 +1,19 @@
+{
+  "contract": "C9-GA",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "failure": "Frozen run09 timed out a real GitRunner child and the fixture asserted live ownership before the existing managed-range cleanup callback completed.",
+  "change": "Await existing ordinary_cleanups with a three-second bound before final live/cleanup assertions, preserving the exact 50ms timeout message and signal listener withdrawal. Production GitRunner behavior unchanged.",
+  "source_contract": "workspace-changes/src/git.ts awaits handle.done; subprocess-local/src/index.ts releases live only after waitForExit. Direct completion and managed-range teardown remain distinct.",
+  "verification": {
+    "run": "rc022-current-c9ga-git-range-20261119-01",
+    "passed": 6,
+    "seconds": 5.19,
+    "scope": "Complete actual Git private snapshots, timeout, abort, caller cancellation and source-state preservation"
+  },
+  "cleanup": {
+    "directories": 3,
+    "bytes_removed": 114020,
+    "observations": 1
+  },
+  "qualification": "Targeted only; this change does not belong to frozen run09, whose complete Python diagnostics continue."
+}

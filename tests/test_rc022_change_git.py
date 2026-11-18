@@ -57,6 +57,7 @@ async def test_git_runner_joins_real_process_and_withdraws_timer_signal_on_failu
         if action != 'cancel':
             assert ('timed out after 50ms' if action == 'timeout' else 'was aborted') in str(raised.value)
         assert not controller.signal._listeners
+        await asyncio.wait_for(asyncio.gather(*ctx.subprocess.ordinary_cleanups), 3)
         assert not ctx.subprocess.live
         assert not ctx.subprocess.ordinary_cleanups
     finally:

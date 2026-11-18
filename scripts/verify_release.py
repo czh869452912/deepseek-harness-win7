@@ -2150,7 +2150,9 @@ def retain_regression_workspace(workspace, retained, timeout=1.0):
             time.sleep(min(0.02, remaining))
 
 
-def run_python_regression(python, output, environment, timeout=None):
+def run_python_regression(python, output, environment, timeout=None, maxfail=1):
+    if type(maxfail) is not int or maxfail < 0:
+        raise ValueError('Regression maxfail must be a non-negative integer')
     retained = (output / 'pytest-workspace').resolve()
     retained.relative_to(output.resolve())
     if retained.exists():
@@ -2170,7 +2172,7 @@ def run_python_regression(python, output, environment, timeout=None):
     workspace.relative_to(temporary_parent)
     (output / 'pytest-workspace-mapping.json').write_text(json.dumps(dict(
         format='dsh-release-workspace@2', temporary_parent=str(temporary_parent),
-        execution_path=str(workspace), retained_path=str(retained), timeout_seconds=timeout,
+        execution_path=str(workspace), retained_path=str(retained), timeout_seconds=timeout, maxfail=maxfail,
         scope='Fresh owned short system-temp execution path outside the repository. Atomic retention after pytest, including failure/timeout; raw observations retain execution paths.'), indent=2) + '\n', encoding='utf-8')
     primary_failure = None
     exitstatus = None
@@ -2185,7 +2187,7 @@ def run_python_regression(python, output, environment, timeout=None):
     except ValueError:
         pass
     try:
-        exitstatus = run([python, '-m', 'pytest', 'tests', '-p', 'scripts.release_pytest_collection', '-ra', '--maxfail=1', '--junitxml=' + str(output / 'pytest.xml'),
+        exitstatus = run([python, '-m', 'pytest', 'tests', '-p', 'scripts.release_pytest_collection', '-ra', '--maxfail=' + str(maxfail), '--junitxml=' + str(output / 'pytest.xml'),
             '--basetemp=' + str(workspace)], 'pytest', output, env=regression_environment, timeout=timeout, accepted=(0, 1))
         if exitstatus == 1:
             primary_failure = RuntimeError('pytest failed (1); see ' + str(output / 'pytest.log'))

@@ -1,0 +1,14 @@
+{
+  "contract": "C9-DB",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "status": "targeted passed; stable-candidate complete qualification pending",
+  "changes": [
+    "Current complete qualification runs the entire Python collection after ordinary case failures, collecting the remaining migration diagnostics in one candidate run",
+    "Existing internal regression callers retain maxfail=1 by default; current qualification explicitly selects maxfail=0",
+    "Failure limit is validated and recorded alongside the owned workspace; all-failure execution remains failed/non-publishable and does not advance Source/paired/package stages"
+  ],
+  "verification": {"run": "rc022-complete-failure-collection-20261118-01", "passed": 55, "seconds": 16.71, "scope": "Actual isolated three-failure pytest runs prove all three execute with maxfail=0 and only one with maxfail=1; workspace retention, deadlines, invalid controls and current orchestration regressions"},
+  "cleanup": {"bytes_removed": 439357, "owned_directories_removed": 3, "retained": "Commands, outer log/XML and actual nested runner log/XML/workspace mappings"},
+  "previous_attempt": {"candidate": "8f69c6a1553444f2b5e75dca777446ae860ba138", "run": "rc022-unified-20261118-02", "result": "failed", "python_passed": 154, "python_failed": 1, "collected": 22581, "inputs_unchanged": true, "candidate_unchanged": true, "scope": "Stopped at the first stale Web source contract; no Source/paired/build/package stage executed. Original complete refusal remains unchanged."},
+  "acceptance": "No current complete regression or release acceptance established by this runner change"
+}

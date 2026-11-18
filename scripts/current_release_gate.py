@@ -167,7 +167,7 @@ def verify(args, output):
         # The complete Python collection belongs to this one gate, with no
         # duplicate full pytest pass scheduled immediately beforehand.
         regression = output / 'regression'; regression.mkdir()
-        retained.run_python_regression(sys.executable, regression, environment, timeout=args.regression_timeout)
+        retained.run_python_regression(sys.executable, regression, environment, timeout=args.regression_timeout, maxfail=0)
         report['stages']['regression'] = dict(status='passed', **retained.validate_regression(regression / 'pytest.xml'))
         checkpoint()
         for lane in ['source', 'paired']:

@@ -9,6 +9,35 @@ import pytest
 from scripts import verify_release as gate
 
 
+@pytest.mark.parametrize('maxfail,expected', [(0, 3), (1, 1)])
+def test_regression_can_collect_all_failures_without_restarting_the_gate(tmp_path, monkeypatch, maxfail, expected):
+    import xml.etree.ElementTree as ET
+    fixture = tmp_path / 'test_regression_failure_fixture.py'
+    fixture.write_text('\n'.join('def test_failure_%d():\n    assert False\n' % i for i in range(3)), encoding='utf-8')
+    output = tmp_path / 'regression'; output.mkdir()
+    original_run = gate.run
+    def execute(command, name, selected_output, **arguments):
+        command = list(command)
+        command[3] = str(fixture)
+        assert command[4:6] == ['-p', 'scripts.release_pytest_collection']
+        del command[4:6]
+        return original_run(command, name, selected_output, **arguments)
+    monkeypatch.setattr(gate, 'run', execute)
+    with pytest.raises(RuntimeError, match='pytest failed'):
+        gate.run_python_regression(sys.executable, output, dict(os.environ), maxfail=maxfail)
+    rows = ET.parse(str(output / 'pytest.xml')).getroot().findall('.//testcase')
+    assert len(rows) == expected
+    assert all(row.find('failure') is not None for row in rows)
+    assert json.loads((output / 'pytest-workspace-mapping.json').read_text(encoding='utf-8'))['maxfail'] == maxfail
+
+
+@pytest.mark.parametrize('maxfail', [-1, True, None, '0'])
+def test_regression_refuses_invalid_failure_limits_before_creating_assets(tmp_path, maxfail):
+    with pytest.raises(ValueError, match='non-negative integer'):
+        gate.run_python_regression(sys.executable, tmp_path / 'unused', {}, maxfail=maxfail)
+    assert not list(tmp_path.iterdir())
+
+
 @pytest.mark.parametrize('timeout', [None, 7200])
 @pytest.mark.parametrize('outcome', ['passed', 'failed'])
 def test_short_pytest_workspace_retains_owned_success_and_failure_artifacts(tmp_path, monkeypatch, outcome, timeout):

@@ -1104,6 +1104,7 @@ class Fiber:
                     try:
                         loop = asyncio.get_running_loop()
                         self.inertia = loop.create_task(_run_coro_init())
+                        self._close_unstarted_setup(self.inertia, init_res)
                         return
                     except RuntimeError:
                         pass
@@ -1172,6 +1173,7 @@ class Fiber:
                     try:
                         loop = asyncio.get_running_loop()
                         self.inertia = loop.create_task(_async_wait_res())
+                        self._close_unstarted_setup(self.inertia, res)
                         return
                     except RuntimeError:
                         ret = asyncio.run(res)
@@ -1463,6 +1465,16 @@ class Fiber:
             # retire the parent's registration while cleanup is still running.
             await asyncio.shield(task)
         return _observe_settlement()
+
+    @staticmethod
+    def _close_unstarted_setup(task: Any, setup: Any) -> None:
+        """A cancelled wrapper may never enter and take ownership of its coroutine."""
+        if not inspect.iscoroutine(setup):
+            return
+        def close_unstarted(done):
+            if done.cancelled() and inspect.getcoroutinestate(setup) == inspect.CORO_CREATED:
+                setup.close()
+        task.add_done_callback(close_unstarted)
 
     def schedule_settlement(self, awaitable: Any) -> Any:
         """

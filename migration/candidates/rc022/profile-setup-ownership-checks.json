@@ -1,0 +1,10 @@
+{
+  "contract": "C9-DK",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "status": "Targeted profile and plugin coroutine ownership checks passed",
+  "changes": "Read every patch declared by installed bundles, including the Win7 Python runtime override; distinguish Native Creative management from current read-only inspection. Exercise help through the actual isolated launcher, and evaluate shipped expressions with real installation resolution and profile anchors. Close setup coroutines when their owning task is cancelled before its first step.",
+  "verification": [{"run": "rc022-profile-lifecycle-20261118-01", "passed": 106, "seconds": 265.93, "scope": "All profile registry and module fallback consumers, both unstarted init/apply cancellation paths, current config updates, and Fiber lifecycle/effect tests; actual creative help must exit with empty stderr"}],
+  "prior_failures": ["rc022-current-profile-inventory-20261118-01", "rc022-current-profile-inventory-20261118-02", "rc022-unstarted-plugin-setup-20261118-01", "rc022-creative-help-diagnostic-20261118-01"],
+  "cleanup": {"bytes_removed": 11935, "owned_directories_removed": 12, "additional": "Creative-help synthetic home removed separately; commands, stdout/stderr, logs/XML and original failure reports retained"},
+  "qualification": "Targeted completion only; no unified regression or release acceptance established."
+}

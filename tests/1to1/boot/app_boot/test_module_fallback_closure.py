@@ -308,7 +308,7 @@ async def test_the_healed_generation_resolves_every_shipped_subpath_row_through_
     The pinned Node-anchor contract, end to end on the real installation.
 
     A row named `<package>/<subpath>` (dsh-web-app/startup, dsh-headless/startup,
-    dsh-tool-subagent-control/list-agents) resolves the way Node resolves it:
+    dsh-plugin-manager/tools) resolves the way Node resolves it:
     the healed `$DSH_HOME/profiles/node_modules` link makes the package root
     reachable, and the package's own `exports` map answers the subpath. No
     synthetic staging is involved: this heals the pinned installation anchor and
@@ -327,9 +327,9 @@ async def test_the_healed_generation_resolves_every_shipped_subpath_row_through_
             ("@deepseek-ai/dsh-web-app/startup", "@deepseek-ai/dsh-web-app", "startup"),
             ("@deepseek-ai/dsh-headless/startup", "@deepseek-ai/dsh-headless", "startup"),
             (
-                "@deepseek-ai/dsh-tool-subagent-control/list-agents",
-                "@deepseek-ai/dsh-tool-subagent-control",
-                "list-agents",
+                "@deepseek-ai/dsh-plugin-manager/tools",
+                "@deepseek-ai/dsh-plugin-manager",
+                "tools",
             ),
         ):
             resolved = resolve_module_specifier(row, profile_dir, roots)

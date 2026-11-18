@@ -33,6 +33,7 @@ import asyncio
 import json
 import os
 import re
+import subprocess
 import sys
 import tempfile
 from typing import Any, Dict, List, Optional, Set
@@ -130,11 +131,12 @@ def safe_rmtree(path: str) -> None:
 
 
 def _shipped_bundle_patches(bundle_package: str) -> List[Dict[str, Any]]:
-    """Load one shipped bundle patch through the same parser profile boot uses."""
-    path = os.path.join(
-        REPOSITORY_ROOT, "packages", "bundle", BUNDLE_DIRS[bundle_package], "cordis.patch.yml"
-    )
-    return load_overlay_patches(NAME, path)
+    """Read every declared patch, including the installed Win7 runtime layer."""
+    directory = os.path.join(REPOSITORY_ROOT, "packages", "bundle", BUNDLE_DIRS[bundle_package])
+    with open(os.path.join(directory, 'package.json'), encoding='utf-8') as stream:
+        declared = json.load(stream)['dsh']['bundle']['patch']
+    paths = declared if isinstance(declared, list) else [declared]
+    return [row for path in paths for row in load_overlay_patches(NAME, os.path.join(directory, path))]
 
 
 def shipped_enabled_rows(profile: str, ctx: Optional[Context] = None) -> List[str]:
@@ -669,12 +671,11 @@ async def test_build_harness_preset_rows_resolve_through_the_table():
         await close_web_context(ctx)
 
 
-def test_table_keeps_the_cordis_manager_row_alias_the_presets_name():
-    # dsh/presets/*.yaml name the `dsh-cordis-manager` row; the package
-    # publishes itself as `dsh-tool-cordis`. Both names resolve to one class.
-    assert resolve_harness_plugin("@deepseek-ai/dsh-cordis-manager") is resolve_harness_plugin(
-        "@deepseek-ai/dsh-tool-cordis"
-    )
+def test_table_resolves_separate_manager_and_inspection_rows():
+    from dsh.extensions.cordis_manager_current import CurrentNativeCordisManager
+    from dsh.extensions.inspect_tools_current import CurrentCordisInspectTools
+    assert resolve_harness_plugin('@deepseek-ai/dsh-cordis-manager') is CurrentNativeCordisManager
+    assert resolve_harness_plugin('@deepseek-ai/dsh-tool-cordis') is CurrentCordisInspectTools
 
 
 def test_table_names_are_sorted_and_unique():
@@ -746,6 +747,17 @@ async def test_run_profile_reports_exactly_the_shipped_provider_gap(profile, mon
     home = tmp()
     monkeypatch.setenv('DSH_HOME', home)
     try:
+        if '--help' in PROFILE_INVOCATION_ARGS[profile]:
+            # Help is a process-exit path. Exercise the actual launcher in an
+            # isolated process so its exit controller cannot exit pytest's loop.
+            completed = await asyncio.get_running_loop().run_in_executor(None, lambda: subprocess.run(
+                [sys.executable, '-m', 'apps.cli.main',
+                 '--profile', profile, '--help'], cwd=REPOSITORY_ROOT,
+                capture_output=True, timeout=30))
+            assert completed.returncode == 0, completed.stdout + completed.stderr
+            assert b'Usage:' in completed.stdout
+            assert completed.stderr == b''
+            return
         if not SHIPPED_PROVIDER_GAP[profile]:
             result = await asyncio.wait_for(run_profile(dict(profile=profile, dshHome=home,
                 waitForExit=False, args=PROFILE_INVOCATION_ARGS[profile])), timeout=30)
@@ -851,7 +863,7 @@ def shipped_js_expressions(profile: str) -> List[str]:
 
 
 @pytest.mark.parametrize("profile", PROFILES)
-def test_every_shipped_js_expression_evaluates(profile):
+def test_every_shipped_js_expression_evaluates(profile, tmp_path):
     """
     No shipped `!!js` body fails to translate. A row whose body reads a service
     the row itself injects (`ctx.webStartup.*`, `ctx.headlessStartup.*`,
@@ -862,7 +874,16 @@ def test_every_shipped_js_expression_evaluates(profile):
     assert expressions, f"profile {profile} composes no !!js body to check"
 
     ctx = Context()
-    ctx.provide("dshHomePath", lambda sub="": os.path.join("H", sub) if sub else "H")
+    profile_dir = tmp_path / 'profiles' / profile
+    profile_dir.mkdir(parents=True)
+    ctx.base_url = path_to_file_url(str(profile_dir)) + '/'
+    from dsh.boot.plugin_packages import PluginPackages
+    from dsh.boot.runtime_resolution import create_runtime_resolution
+    resolution = asyncio.run(create_runtime_resolution(dict(
+        installAnchor=os.path.join(REPOSITORY_ROOT, 'apps', 'cli', 'package.json'),
+        installationLayout=REPOSITORY_ROOT, home=str(tmp_path))))
+    PluginPackages(ctx, dict(resolution=resolution))
+    ctx.provide("dshHomePath", lambda *parts: os.path.join("H", *parts))
     for expr in expressions:
         if expr.startswith("ctx."):
             continue
@@ -918,7 +939,7 @@ def test_shipped_js_bodies_evaluate_to_their_upstream_values(monkeypatch):
     assert evaluate_expr(ctx, "process.platform !== 'win32'") == (sys.platform != "win32")
     assert evaluate_expr(ctx, "process.cwd()") == os.getcwd()
 
-    ctx.provide("dshHomePath", lambda sub="": os.path.join("H", sub) if sub else "H")
+    ctx.provide("dshHomePath", lambda *parts: os.path.join("H", *parts))
     assert evaluate_expr(ctx, "dshHomePath('sessions')") == os.path.join("H", "sessions")
 
     ctx.provide("webStartup", {"host": None, "port": None, "openBrowser": False, "trustedHosts": []})

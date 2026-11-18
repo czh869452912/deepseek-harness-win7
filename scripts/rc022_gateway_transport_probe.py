@@ -24,7 +24,7 @@ async def observe():
         value=mutate(records.get(key))
         if value is not None:records[key]=value
         return records.get(key)
-    ctx.set_service('credentials',SimpleNamespace(modify_record=modify))
+    ctx.set_service('credentials',SimpleNamespace(modifyRecord=modify))
     def on_ready(callback):ready_callbacks.append(callback);return lambda:ready_callbacks.remove(callback) if callback in ready_callbacks else None
     ctx.set_service('appReady',SimpleNamespace(onReady=on_ready))
     await ctx.plugin(CurrentTypertRegistry);await ctx.plugin(RemoteAccessService)

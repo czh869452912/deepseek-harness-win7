@@ -1,10 +1,8 @@
-"""
-1:1 parity test suite porting reference/packages/boot/app-boot/tests/config-reload.spec.ts
-Tests transactional config replacement through booted Include and Loader tree.
-Compatible with Python 3.8.10 and Windows 7 SP1.
-"""
+"""Current booted Include recovery/overlays from the pinned config-reload.spec.ts.
 
-import asyncio
+The upstream target publishes raw options and applies best-effort edits. Historical
+transaction rollback assertions do not describe this contract.
+"""
 import builtins
 import inspect
 import os
@@ -28,9 +26,6 @@ class TreeFixture(NamedTuple):
     dir: str
     include: Include
 
-
-def plugin(name: str, body: str = "") -> str:
-    return f"export default function {name}(_ctx, config = {{}}) {{ {body} }}\n"
 
 
 async def boot_tree(config_body: str, files: Optional[Dict[str, str]] = None) -> TreeFixture:
@@ -58,11 +53,13 @@ async def boot_tree(config_body: str, files: Optional[Dict[str, str]] = None) ->
     return TreeFixture(ctx=ctx, dir=tmp_dir, include=include_entry.subtree)
 
 
+
 def entry_config(ctx: Context, entry_id: str) -> Any:
     for entry in ctx.loader.entries():
         if entry.options.get("id") == entry_id:
             return entry.options.get("config")
     return None
+
 
 
 def entry_by_id(ctx: Context, entry_id: str) -> Entry:
@@ -72,288 +69,113 @@ def entry_by_id(ctx: Context, entry_id: str) -> Entry:
     raise RuntimeError(f"missing loader entry {entry_id}")
 
 
-async def expect_update_failure(task: Any, stage: str) -> None:
-    try:
-        if inspect.isawaitable(task):
-            await task
-    except Exception as error:
-        err_msg = str(error)
-        assert f"failed to {stage} loader entry" in err_msg, f"Expected error to contain 'failed to {stage} loader entry', got: {err_msg}"
-        return
-    raise AssertionError(f"expected loader update to fail during {stage}")
-
-
-# --- Include refresh with an invalid file ---
 
 @pytest.mark.asyncio
-async def test_include_refresh_with_an_invalid_file_rejects_and_retains_good_tree():
-    fixture = await boot_tree("- id: noop\n  name: ./noop.mjs\n  config:\n    value: 1\n")
-    ctx, dir_path, include = fixture.ctx, fixture.dir, fixture.include
+async def test_invalid_include_keeps_last_good_tree_then_accepts_a_valid_edit():
+    fixture = await boot_tree("- id: noop\n  name: ./noop.mjs\n  config: { value: 1 }\n")
+    ctx, directory, include = fixture
     try:
-        assert entry_config(ctx, "noop") == {"value": 1}
-
-        config_path = os.path.join(dir_path, "cordis.yml")
-        with open(config_path, "w", encoding="utf-8") as f:
-            f.write("invalid: [unclosed\n")
-        with pytest.raises(Exception, match="failed to parse config file"):
-            await include.refresh()
-        assert entry_config(ctx, "noop") == {"value": 1}
-
-        # An empty file parses to None without a YAML error; treated like parse failure
-        with open(config_path, "w", encoding="utf-8") as f:
-            f.write("")
-        with pytest.raises(Exception, match="failed to validate config file"):
-            await include.refresh()
-        assert entry_config(ctx, "noop") == {"value": 1}
-
-        with open(config_path, "w", encoding="utf-8") as f:
-            f.write("- id: noop\n  name: ./noop.mjs\n  config:\n    value: 2\n")
+        filename = os.path.join(directory, 'cordis.yml')
+        for invalid in ('invalid: [unclosed\n', ''):
+            with open(filename, 'w', encoding='utf-8') as stream:
+                stream.write(invalid)
+            assert await include.refresh() is None
+            assert entry_config(ctx, 'noop') == {'value': 1}
+        with open(filename, 'w', encoding='utf-8') as stream:
+            stream.write('- id: noop\n  name: ./noop.mjs\n  config: { value: 2 }\n')
         await include.refresh()
         await ctx.loader.await_()
-        assert entry_config(ctx, "noop") == {"value": 2}
+        assert entry_config(ctx, 'noop') == {'value': 2}
     finally:
         await ctx.fiber.dispose()
-        shutil.rmtree(dir_path, ignore_errors=True)
-
-
-# --- Loader entry replacement ---
-
-@pytest.mark.asyncio
-async def test_imports_a_changed_name_before_replacing_the_running_plugin():
-    fixture = await boot_tree(
-        "- id: target\n  name: ./old.mjs\n",
-        {
-            "old.mjs": plugin("oldPlugin"),
-            "new.mjs": plugin("newPlugin"),
-        },
-    )
-    ctx, dir_path = fixture.ctx, fixture.dir
-    try:
-        entry = entry_by_id(ctx, "target")
-        res = entry.update({"name": "./new.mjs"})
-        if inspect.isawaitable(res):
-            await res
-        assert entry.options.get("name") == "./new.mjs"
-        assert any(opt.get("id") == "target" for opt in entry.parent.data)
-        assert getattr(entry.fiber.runtime.callback, "name", None) == "newPlugin"
-        assert entry.options.get("disabled") is None or entry.options.get("disabled") is False
-        if entry.fiber and hasattr(entry.fiber, "await_settled"):
-            await entry.fiber.await_settled()
-    finally:
-        await ctx.fiber.dispose()
-        shutil.rmtree(dir_path, ignore_errors=True)
+        shutil.rmtree(directory)
 
 
 @pytest.mark.asyncio
-async def test_retains_the_running_plugin_when_the_replacement_cannot_be_imported():
+async def test_missing_include_writes_and_activates_initial_entries():
     fixture = await boot_tree(
-        "- id: target\n  name: ./old.mjs\n",
-        {
-            "old.mjs": plugin("oldPlugin"),
-        },
-    )
-    ctx, dir_path = fixture.ctx, fixture.dir
+        "- id: initialized\n  name: cordis:include\n  config:\n"
+        "    path: ./created.yml\n    initial:\n      - id: noop\n"
+        "        name: ./noop.mjs\n        config: { value: initial }\n")
+    ctx, directory, _ = fixture
     try:
-        entry = entry_by_id(ctx, "target")
-        fiber = entry.fiber
-        await expect_update_failure(entry.update({"name": "./missing.mjs"}), "import")
-        assert entry.options.get("name") == "./old.mjs"
-        assert entry.fiber is fiber
-        if fiber and hasattr(fiber, "await_settled"):
-            await fiber.await_settled()
+        assert entry_config(ctx, 'noop') == {'value': 'initial'}
+        with open(os.path.join(directory, 'created.yml'), encoding='utf-8') as stream:
+            assert 'id: noop' in stream.read()
+        assert entry_by_id(ctx, 'noop').fiber.state == 2
     finally:
         await ctx.fiber.dispose()
-        shutil.rmtree(dir_path, ignore_errors=True)
+        shutil.rmtree(directory)
 
 
 @pytest.mark.asyncio
-async def test_restores_the_previous_plugin_after_replacement_application_fails():
-    fixture = await boot_tree(
-        "- id: target\n  name: ./old.mjs\n",
-        {
-            "old.mjs": plugin("oldPlugin"),
-            "bad.mjs": plugin("badPlugin", 'throw new Error("candidate apply failed")'),
-        },
-    )
-    ctx, dir_path = fixture.ctx, fixture.dir
+@pytest.mark.parametrize('kind,expected_state', [
+    ('import', None), ('sync apply', 3), ('async apply', 3), ('dependency', 0)])
+async def test_required_id_reload_failure_keeps_siblings_and_recovers(kind, expected_state):
+    sources = {
+        'sync apply': 'def apply(ctx, config):\n    if config["fail"]: raise RuntimeError("reload sync failure")\n',
+        'async apply': 'import asyncio\nasync def apply(ctx, config):\n    await asyncio.sleep(0)\n    if config["fail"]: raise RuntimeError("reload async failure")\n',
+        'dependency': 'inject = ["reloadMissing"]\ndef apply(ctx, config): pass\n',
+    }
+    files = {'provider.py': 'def apply(ctx, config): ctx.provide("reloadMissing", True)\n'}
+    if kind != 'import':
+        files['failure.py'] = sources[kind]
+    base = '- id: good\n  name: ./noop.mjs\n'
+    fixture = await boot_tree(base, files)
+    ctx, directory, include = fixture
     try:
-        entry = entry_by_id(ctx, "target")
-        previous = entry.fiber
-        await expect_update_failure(entry.update({"name": "./bad.mjs"}), "apply")
-        assert entry.options.get("name") == "./old.mjs"
-        assert entry.fiber is not previous
-        assert getattr(entry.fiber.runtime.callback, "name", None) == "oldPlugin"
-        assert entry.options.get("disabled") is None or entry.options.get("disabled") is False
-        if entry.fiber and hasattr(entry.fiber, "await_settled"):
-            await entry.fiber.await_settled()
-    finally:
-        await ctx.fiber.dispose()
-        shutil.rmtree(dir_path, ignore_errors=True)
-
-
-@pytest.mark.asyncio
-async def test_restores_the_previous_config_when_an_in_place_restart_fails():
-    fixture = await boot_tree(
-        "- id: target\n  name: ./configurable.mjs\n  config:\n    fail: false\n",
-        {
-            "configurable.mjs": plugin("configurablePlugin", 'if (config.fail) throw new Error("candidate config failed")'),
-        },
-    )
-    ctx, dir_path = fixture.ctx, fixture.dir
-    try:
-        entry = entry_by_id(ctx, "target")
-        fiber = entry.fiber
-        await expect_update_failure(entry.update({"config": {"fail": True}}), "apply")
-        assert entry.options.get("config") == {"fail": False}
-        assert entry.fiber is fiber
-        if fiber and hasattr(fiber, "await_settled"):
-            await fiber.await_settled()
-    finally:
-        await ctx.fiber.dispose()
-        shutil.rmtree(dir_path, ignore_errors=True)
-
-
-@pytest.mark.asyncio
-async def test_does_not_persist_a_failed_direct_fiber_update():
-    fixture = await boot_tree(
-        "- id: target\n  name: ./configurable.mjs\n  config:\n    fail: false\n",
-        {
-            "configurable.mjs": plugin("configurablePlugin", 'if (config.fail) throw new Error("candidate config failed")'),
-        },
-    )
-    ctx, dir_path = fixture.ctx, fixture.dir
-    try:
-        entry = entry_by_id(ctx, "target")
-        fiber = entry.fiber
-        assert fiber is not None
-        with pytest.raises(Exception, match="candidate config failed"):
-            await fiber.update({"fail": True})
-        assert entry.options.get("config") == {"fail": False}
-        assert any(opt.get("id") == "target" for opt in entry.parent.data)
-    finally:
-        await ctx.fiber.dispose()
-        shutil.rmtree(dir_path, ignore_errors=True)
-
-
-# --- Loader tree replacement ---
-
-@pytest.mark.asyncio
-async def test_rolls_back_earlier_updates_and_additions_when_a_later_entry_fails():
-    fixture = await boot_tree(
-        "- id: existing\n  name: ./configurable.mjs\n  config:\n    value: old\n",
-        {
-            "configurable.mjs": plugin("configurablePlugin"),
-            "bad.mjs": plugin("badPlugin", 'throw new Error("candidate apply failed")'),
-        },
-    )
-    ctx, dir_path, include = fixture.ctx, fixture.dir, fixture.include
-    try:
-        config_path = os.path.join(dir_path, "cordis.yml")
-        with open(config_path, "w", encoding="utf-8") as f:
-            f.write(
-                "- id: existing\n"
-                "  name: ./configurable.mjs\n"
-                "  config:\n"
-                "    value: candidate\n"
-                "- id: added\n"
-                "  name: ./noop.mjs\n"
-                "- id: bad\n"
-                "  name: ./bad.mjs\n"
-            )
-        with pytest.raises(Exception, match="failed to apply loader entry bad"):
-            await include.refresh()
-
-        assert entry_config(ctx, "existing") == {"value": "old"}
-        assert not any(entry.options.get("id") == "added" for entry in ctx.loader.entries())
-        assert not any(entry.options.get("id") == "bad" for entry in ctx.loader.entries())
-
-        with open(config_path, "w", encoding="utf-8") as f:
-            f.write(
-                "- id: existing\n"
-                "  name: ./configurable.mjs\n"
-                "  config:\n"
-                "    value: committed\n"
-                "- id: added\n"
-                "  name: ./noop.mjs\n"
-            )
+        good = entry_by_id(ctx, 'good').fiber
+        filename = os.path.join(directory, 'cordis.yml')
+        with open(filename, 'w', encoding='utf-8') as stream:
+            stream.write(base + '- id: webserver\n  name: ./failure.py\n  config: { fail: true }\n')
         await include.refresh()
-        assert entry_config(ctx, "existing") == {"value": "committed"}
-        assert entry_by_id(ctx, "added").fiber is not None
+        await ctx.loader.await_()
+        failed = entry_by_id(ctx, 'webserver')
+        assert (failed.fiber.state if failed.fiber is not None else None) == expected_state
+        assert good.state == ctx.fiber.state == 2
+        replacement = 'noop.mjs' if kind == 'import' else 'failure.py'
+        provider = '- id: provider\n  name: ./provider.py\n' if kind == 'dependency' else ''
+        with open(filename, 'w', encoding='utf-8') as stream:
+            stream.write(base + '- id: webserver\n  name: ./' + replacement + '\n  config: { fail: false }\n' + provider)
+        await include.refresh()
+        await ctx.loader.await_()
+        assert entry_by_id(ctx, 'webserver').fiber.state == 2
+        assert entry_by_id(ctx, 'good').fiber is good
     finally:
         await ctx.fiber.dispose()
-        shutil.rmtree(dir_path, ignore_errors=True)
+        shutil.rmtree(directory)
 
 
 @pytest.mark.asyncio
-async def test_stops_and_restores_descendants_when_an_ancestor_group_is_disabled_and_reenabled():
-    fixture = await boot_tree("- id: noop\n  name: ./noop.mjs\n")
-    ctx, dir_path, include = fixture.ctx, fixture.dir, fixture.include
+async def test_schema_rejection_keeps_effective_config_and_retries_valid_edit():
+    def composition(value):
+        import json
+        return '- id: webserver\n  name: ./schema.py\n  config: { value: ' + json.dumps(value) + ' }\n'
+    fixture = await boot_tree(composition(1), {'schema.py':
+        'from dsh.cordis.schema import Schema\n'
+        'Config = Schema.object({"value": Schema.number().required()})\n'
+        'def apply(ctx, config): ctx.provide("validatedValue", config["value"])\n'})
+    ctx, directory, include = fixture
     try:
-        def group_config(disabled: bool) -> str:
-            return (
-                "- id: parent\n"
-                "  name: cordis:group\n"
-                "  group: true\n"
-                f"  disabled: {'true' if disabled else 'false'}\n"
-                "  config:\n"
-                "    - id: child\n"
-                "      name: ./noop.mjs\n"
-            )
-
-        config_path = os.path.join(dir_path, "cordis.yml")
-        with open(config_path, "w", encoding="utf-8") as f:
-            f.write(group_config(False))
+        entry = entry_by_id(ctx, 'webserver')
+        filename = os.path.join(directory, 'cordis.yml')
+        with open(filename, 'w', encoding='utf-8') as stream:
+            stream.write(composition('invalid'))
         await include.refresh()
-        assert entry_by_id(ctx, "child").fiber is not None
-
-        with open(config_path, "w", encoding="utf-8") as f:
-            f.write(group_config(True))
+        await ctx.loader.await_()
+        assert entry.options['config'] == {'value': 'invalid'}
+        assert entry.fiber.effectiveConfig == {'value': 1}
+        assert ctx.get('validatedValue') == 1
+        with open(filename, 'w', encoding='utf-8') as stream:
+            stream.write(composition(2))
         await include.refresh()
-        assert entry_by_id(ctx, "child").fiber is None
-
-        with open(config_path, "w", encoding="utf-8") as f:
-            f.write(group_config(False))
-        await include.refresh()
-        assert entry_by_id(ctx, "child").fiber is not None
+        await ctx.loader.await_()
+        assert entry.fiber.effectiveConfig == {'value': 2}
+        assert ctx.get('validatedValue') == 2
     finally:
         await ctx.fiber.dispose()
-        shutil.rmtree(dir_path, ignore_errors=True)
+        shutil.rmtree(directory)
 
-
-@pytest.mark.asyncio
-async def test_restores_a_programmatic_entry_move_when_its_update_fails():
-    fixture = await boot_tree(
-        "- id: noop\n  name: ./noop.mjs\n",
-        {
-            "movable.mjs": plugin("movablePlugin", 'if (config.fail) throw new Error("candidate config failed")'),
-        },
-    )
-    ctx, dir_path = fixture.ctx, fixture.dir
-    try:
-        group_id = await ctx.loader.create({"name": "cordis:group", "group": True, "config": []})
-        target_id = await ctx.loader.create({"name": "./movable.mjs", "config": {"fail": False}})
-        target = entry_by_id(ctx, target_id)
-        source = target.parent
-        source_index = source.data.index(target.options)
-        group_entry = entry_by_id(ctx, group_id)
-        destination = group_entry.subgroup
-        assert destination is not None, "created loader group has no subgroup"
-
-        await expect_update_failure(
-            ctx.loader.update(target_id, {"config": {"fail": True}}, group_id),
-            "apply",
-        )
-
-        assert target.parent == source
-        assert source.data.index(target.options) == source_index
-        assert target.options not in destination.data
-        assert target.options.get("config") == {"fail": False}
-    finally:
-        await ctx.fiber.dispose()
-        shutil.rmtree(dir_path, ignore_errors=True)
-
-
-# --- Include refresh with overlay patches ---
 
 @pytest.mark.asyncio
 async def test_reapplies_entry_patches_and_inserted_entries_on_every_reread():
@@ -426,7 +248,6 @@ async def test_reapplies_entry_patches_and_inserted_entries_on_every_reread():
         shutil.rmtree(tmp_dir, ignore_errors=True)
 
 
-# --- Include patches layered over one base ---
 
 @pytest.mark.asyncio
 async def test_lets_a_later_patch_configure_or_disable_a_row_an_earlier_patch_inserted():
@@ -474,7 +295,6 @@ async def test_lets_a_later_patch_configure_or_disable_a_row_an_earlier_patch_in
         shutil.rmtree(tmp_dir, ignore_errors=True)
 
 
-# --- Shipped builtins: isolate realm ---
 
 @pytest.mark.asyncio
 async def test_lets_a_booted_composition_share_one_isolate_realm_across_a_group_of_rows():

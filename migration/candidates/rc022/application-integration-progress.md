@@ -14,6 +14,8 @@ C9-DE：独立检出暴露两份原版 JSONL 夹具此前被日志忽略规则�
 
 C9-DF：HMR 根事件分类改用运行时缓存的 `has(url)` 查询，保持字典载体回退；相对/绝对别名和规范 URL 均覆盖。18 项定向、19 项当前原版监听测试、6 组实际 Source/Python 对照通过。6045 字节夹具和两个测试链接已清理，原门禁继续独立收集完整失败。[检查](hmr-cache-query-checks.json)。
 
+C9-DG：旧重载事务回滚断言改按当前原版的尽力应用、原始候选/目标所有权保留和修复后恢复验证；完整移植当前重载文件的四类失败、初始文件、schema 和 overlay 用例。修复新建 Context 缺少 Loader 被误判为退出的问题，23 项最终定向、10 项原版及 11/8/8 组实际对照通过。约 43 KiB 夹具已清理，原失败诊断保留；完整门禁继续收集其它问题。[检查](current-reload-contracts-checks.json)。
+
 C9-CX：Win7 Desktop 外壳的旧来源与当前宿主/前端输入分开核验，明确私有管道 v3 并非当前原版 Desktop v4 生命周期。首轮 158 项通过、一项旧异步消费者失败，修复后 26 项及诊断编码两项复验通过，原始失败保留；失效工作区已清理。[范围与限制](../../../docs/research/2026-11-18-win7-desktop-current-scope.md)、[检查](desktop-current-scope-checks.json)。
 
 C9-CV：统一入口接到当前完整合同，冻结实际安装依赖/双架构构建输入和观察器；新鲜 x64/x86 包运行完整 SDK、Office、元数据、原版浏览器、应用冷恢复及 Standard Desktop 打包检查。相关 89 项与最后 47 项定向通过；这些单元控制不构成实际统一资格。已清理约 2.0 MiB 失效夹具。[编排检查](current-orchestration-checks.json)。

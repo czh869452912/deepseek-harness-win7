@@ -108,7 +108,9 @@ def _table(resolution):
 
 
 async def _recompose(ctx, patches, bin_name, options, with_resolution):
-    if _stopping(ctx):
+    # A fresh Context without Loader is not a retiring application. Let _apply
+    # report the missing bootstrap Include; only actual root teardown is a no-op.
+    if ctx.fiber.uid is None or ctx.fiber.state == FiberState.UNLOADING:
         return dict(warnings=[])
     applying = False
     stopped = []

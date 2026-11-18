@@ -1,0 +1,17 @@
+{
+  "contract": "C9-DG",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "status": "targeted and actual current Source controls passed",
+  "changes": "Port the booted Include suite to the actual current original config-reload.spec.ts: last-good parse recovery, initial files, all four required-id failure modes, schema rejection/retry and overlays. Replace superseded transaction rollback assertions with the current Loader's retained raw candidate, owner and recovery checks. A fresh Context missing Loader now reports the missing bootstrap Include instead of being mistaken for root teardown; real teardown remains a no-op at admission.",
+  "verification": [
+    {"run": "rc022-current-reload-contracts-20261118-01", "passed": 16, "failed": 1, "seconds": 5.69, "failure": "Fresh Context without Loader incorrectly suppressed the expected root Include diagnostic; raw failure preserved"},
+    {"run": "rc022-current-loader-failure-contracts-20261118-01", "passed": 3, "seconds": 0.69},
+    {"run": "rc022-current-reload-contracts-20261118-02", "passed": 23, "seconds": 6.91, "scope": "Booted reloads, entry/move recovery, reconciliation, startup, immediate HMR exit and Loader lifecycle"},
+    {"run": "rc022-current-reload-source-20261118-01", "passed": 10, "pending": 0, "inputs_unchanged": true, "scope": "Unmodified original config-reload.spec.ts at the current pin"},
+    {"run": "rc022-current-reload-reconcile-pair-20261118-01", "source_rows": 11, "native_rows": 11, "status": "passed", "seconds": 1.937},
+    {"run": "rc022-current-reload-lifecycle-pair-20261118-01", "source_cases": 8, "native_cases": 8, "status": "passed", "seconds": 0.594},
+    {"run": "rc022-current-reload-exit-pair-20261118-01", "source_rows": 8, "native_rows": 8, "status": "passed", "seconds": 5.125}
+  ],
+  "cleanup": {"bytes_removed": 44268, "owned_directories_removed": 11, "retained": "Commands, log/XML, original failure traceback, raw actual Source/native observations; completed targeted Source workspace also removed by its runner"},
+  "acceptance": "The frozen 3f20446c complete collection continues independently and remains its original candidate. This batch adds no accepted exception or complete qualification claim."
+}

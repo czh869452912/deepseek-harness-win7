@@ -2,6 +2,8 @@
 
 固定目标：`38a6a5c965aa99ab525161efb7cc5cf1fe62fced`。本页记录定向检查；生产 pin 已在 C9-CC 协调切换，`accepted_upstream` 仍为 null，完整资格待后续验证。
 
+C9-FC：冻结 `e99904f4` 的统一门禁 05 在约 17% 因已知预设启动错误持续产生无效失败，保存 30 项原始失败后停止自有进程树，保持失败/未完成身份；未执行最终输入复核。修复后 12 项完整 Python 诊断、19 项完整插件退场回归通过。两次定向运行及原短工作区已清理，保存 721 份原始观察，合计移除 7,031,039 字节；只读 Git 对象仅删除自有目录项，未更改共享属性。下一干净候选重新执行单次统一资格。见[诊断与重试](current-unified-diagnostic-retry-checks.json)。
+
 C9-FB：服务返回值追踪保留 `cordis.original` 原始身份，符号调用仍绑定使用端；返回插件构造器时不调用实例 `_extend`。72 项协议/作用域、8 项构造器、83 项 Session/Commands/Loader、140 项 Cordis 消费者、3 项实际原浏览器及新增身份/构造器 Source/Native 配对通过。8 个已结束运行的 24 个工作目录已清理，回收 1,780,912 字节并保存失败原始观察。冻结 `e99904f4` 的统一门禁 05 不含本修复，仍独立收集问题；本项仅为定向完成。见[追踪身份检查](current-trace-identity-checks.json)。
 
 C9-EV / EW / EX：当前 Agent v4 的实际 Source/Native 取消与恢复配对及 4 项回归通过，28 项维护/压缩消费者通过；持久化取消原因仅保留原版规定字段，实时信号原因身份不变。Context 的定义/使用双层作用域、返回影子解包和子插件独立 inject 按原版修正，47 项直接消费者、20 项签名回归和实际配对通过。最后 6 项旧启动/配置/命令/epoch 断言经正式入口更新，42 项通过，分别提交 `3f4ea72d`、`535439e7`、`e41cac3e`。这些结果均为定向检查；见[取消信号](current-agent-signal-checks.json)、[作用域](current-shadow-context-checks.json)、[启动消费者](current-loader-consumers-checks.json)。

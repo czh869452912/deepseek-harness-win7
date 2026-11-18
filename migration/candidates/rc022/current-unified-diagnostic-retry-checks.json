@@ -1,0 +1,34 @@
+{
+  "contract": "C9-FC",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "failed_run": {
+    "run": "rc022-unified-20261118-05",
+    "product_commit": "e99904f40cafd7acc3bca73cd1957a5d725bbdfd",
+    "result": "failed and interrupted",
+    "publishable": false,
+    "collection": {"total": 22625, "required": 3966, "valid": true},
+    "failed_observations": 30,
+    "seconds": 1750.843,
+    "complete_regression": false,
+    "final_input_recheck_complete": false,
+    "inputs_unchanged": null,
+    "candidate_unchanged": null,
+    "reason": "Repeated pre-test preset activation failures after the service identity/constructor regressions had been fixed and verified in a separate commit. Preserved the original diagnostics before terminating the owned process tree. No Source/paired/Portable acceptance from this run."
+  },
+  "targeted_followup": [
+    {"run": "rc022-current-c9fc-python-diagnostics-20261118-01", "passed": 12, "seconds": 75.15, "scope": "All startup/RPC synchronous/asynchronous traceback and chained-exception cases that failed at preset activation in the frozen candidate"},
+    {"run": "rc022-current-c9fc-retirement-20261118-01", "passed": 19, "seconds": 22.12, "scope": "Entire retirement module, including the five frozen-run failures; original Source binding and historical reviewed exception remain explicit"}
+  ],
+  "cleanup": {
+    "targeted_directories": 6,
+    "targeted_bytes_removed": 85387,
+    "frozen_run_workspace": "C:/Users/czh86/AppData/Local/Temp/g-bxijx1at",
+    "workspace_bytes_removed": 6945652,
+    "workspace_files": 3183,
+    "raw_observations_retained": 721,
+    "readonly_git_entries_unlinked": 476,
+    "shared_attributes_changed": false,
+    "retained": "Original commands, logs, collection roster, input identities, 30 failure reports and raw observations. The ordinary cleanup first refused readonly Git objects; the remaining file hashes were checked before unlinking owned entries without changing shared attributes."
+  },
+  "qualification": "Targeted followup only; a new clean stable candidate must pass one complete unified run. No partial runs are combined into acceptance."
+}

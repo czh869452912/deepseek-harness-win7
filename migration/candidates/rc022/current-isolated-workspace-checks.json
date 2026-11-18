@@ -1,0 +1,19 @@
+{
+  "contract": "C9-FP",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "failure": "Run07's qualification checkout was itself inside the OS temporary directory. The real filesystem policy grants temporary-root writes, so its attempted outside-grant fence fixture was writable and the destructive move legitimately succeeded.",
+  "change": "Prepare the next independent clean qualification checkout outside the OS temporary root. Keep the real Source and Native permission policies unchanged. Copy and hash-check prepared ignored Source build inputs, use ignored directory junctions for reusable dependencies, and retain a separate clean pinned Source Git clone.",
+  "verification": {
+    "candidate": "edff6f13",
+    "run": "rc022-current-c9fp-isolated-inputs-20261119-01",
+    "passed": 30,
+    "seconds": 91.22,
+    "scope": "Real filesystem mutation fences, actual Node analytics query, client bindings, executor composition, exact account bytes, Manager HTTP lifecycle, Host runner/inspect identity and complete HMR graph/write cases",
+    "clean_checkout": true,
+    "clean_independent_pinned_source": true,
+    "source_preparation": {"files": 16972, "bytes": 218473402, "directory_junctions": 434}
+  },
+  "cleanup": {"targeted_directories": 3, "bytes_removed": 937783, "retained": "Command/log/XML, raw observations and compact filesystem fixture retention receipt"},
+  "active_assets": {"owner": "C9 qualification coordinator", "purpose": "Next single frozen unified qualification", "cleanup_milestone": "After the last complete qualification consumer, preserve exact receipts/archives and remove reconstructible checkouts, Source build copies and dependency links."},
+  "qualification": "Targeted isolated-layout completion only; frozen run07 remains separate and has not completed Python regression."
+}

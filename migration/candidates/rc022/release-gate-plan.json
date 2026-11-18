@@ -4699,6 +4699,21 @@
       ]
     },
     {
+      "script": "scripts/rc022_released_logical_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
       "script": "scripts/rc022_remote_access_probe.py",
       "node": true,
       "browser": false,

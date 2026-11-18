@@ -1,0 +1,45 @@
+{
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "scope": "Current Source deltas only; old corpus expectations are preserved unchanged",
+  "observations": 867,
+  "source_sha256": "967727b723ad764d96fd304ed29be3ac0d72e065b38b0ca1c0417406bd8a427c",
+  "inputs": {
+    "reference/vendor/cordis/src/events.ts": "a464c843822da4eb31a8d998c5e2216a817b8a7dfeacb6e1aab7f830e7320d6b",
+    "dsh/cordis/events.py": "24048396f4ee46229d90e0eb3ede1a98f03603d7209e92383cde68a0e9dcae53",
+    "scripts/oracles/rc022_released_logical.mts": "65ced1b5a2e4fb09bcc367a8db90ff54e2f523df381bf716c6c66921626dc6f7",
+    "scripts/rc022_events_probe.py": "2504c03a583b01feb3ce2f18d95c10f8db19fd08011ee1b7dc7121da36d114eb",
+    "scripts/rc022_released_logical_probe.py": "d121153e23438661756dde5631f46463b3c5a622e102bea13c6d336f235869dd",
+    "scripts/oracles/session_released_payload_cases.json": "bb8f37ee8996b1934cabca18beceda4f5724915fe91773c9485a0ec1154328c6",
+    "scripts/oracles/session_released_restore_cases.json": "4c68bc03f8d0f49f4be7fc007e149618f75ac01b5e5626a6b6f2d9356c7f7301",
+    "reference/packages/session/session-format-v0-to-v1/src/codec.ts": "8965cf99710edabef10b28788c6d2b4d42503f995dbeb968b372cae294fdd716",
+    "reference/packages/session/session-format-v0-to-v1/src/dispositions.ts": "c3d901ff9486027c77ccd3e6636b7b635ca386a736dc5bed708ed6cc0ffdfb79",
+    "reference/packages/session/session-format-v0-to-v1/src/index.ts": "2448cf89913e910a9ee281327e0669188d2546f8cbacc52a4914d60d78028988",
+    "reference/packages/session/session-format-v0-to-v1/src/migration.ts": "0548cbc656c0669fccdc503ef7bde5b854fbeb12a327fff8884343fd9cd1605e",
+    "reference/packages/session/session-format-v0-to-v1/src/payload-validation.ts": "aa3e3ee5a9c3a6561d5df0ded1ef0da4e62b89052d62e9e201a106ce7f6f0957",
+    "reference/packages/session/session-format-v0-to-v1/src/relationships.ts": "5f85fabd852eba9f734af247afd151f76250251138ded5d19d0d8c9bbc3e07cb",
+    "reference/packages/session/session-format-v0-to-v1/src/testing/restore.ts": "89762d7538c79e6f3e02a67fa5ebc69e68884295e5f736941816fd59852edee5",
+    "reference/packages/session/session-format-v0-to-v1/src/testing/validation.ts": "c0fca1ff4ce68100565a203eabd3ec26d5f0bce2184d15167dc41ce4cd1ac18b",
+    "reference/packages/session/session-format-v0-to-v1/src/validation-helpers.ts": "e0b9d9d696ca3d65acc0f62d1f7037284cb40afb4a55367fe19a53d7377918fd",
+    "reference/packages/session/session-format-v0-to-v1/src/validation.ts": "7ca7b3827bc9cac92df08a7d25cdb880b44be6b9cf7c87e6a8828afc41c0c358",
+    "dsh/session/format_v0_to_v1/__init__.py": "a1bd7383a8ebeb8019ff393581248af34a4e8db0f5272f977202daf0f44fc047",
+    "dsh/session/format_v0_to_v1/codec.py": "eb4c11c683ca5ee96639a9ad7a21fa377fe7cd8c0aaad50834d78a6230267cb8",
+    "dsh/session/format_v0_to_v1/migration.py": "4f8e0c82439c74225e06c6c9e448346cc14124564b1bcc00ecdf18aebc926aaf",
+    "dsh/session/format_v0_to_v1/payload.py": "e93e08a8f78fc9085271acc4ad0793caa8ba7aece107b50c6ac01c55c18c5463",
+    "dsh/session/format_v0_to_v1/relationships.py": "d5ec182325d2a5bd1968417b23f4874e670489ad57afebb065549acd5689b037",
+    "dsh/session/format_v0_to_v1/validation.py": "6783b75f07924a460589c838f5f1d0aec15dd63467bf3237a92cc158d391e79f"
+  },
+  "current_deltas": [
+    {
+      "case": "subagent/descriptor/omit/mode",
+      "outcome": "error",
+      "name": "SessionFormatError",
+      "message": "subagent/descriptor 3 mode must be one of continuable"
+    },
+    {
+      "case": "subagent/descriptor/omit/label",
+      "outcome": "error",
+      "name": "SessionFormatError",
+      "message": "subagent/descriptor 3 data lacks required member \"label\""
+    }
+  ]
+}

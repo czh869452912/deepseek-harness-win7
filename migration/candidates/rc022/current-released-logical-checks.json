@@ -1,0 +1,13 @@
+{
+  "contract": "C9-EF",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "status": "Current released-format logical checks passed",
+  "change": "Run the complete retained 867-input logical corpus against actual current Source validators and Python. Record only the two changed subagent descriptor refusal messages separately with exact input identities; keep the original historical corpus facts unchanged. Add this observer to the mandatory complete gate roster, now 402 paired observers with the original 476 Source tests.",
+  "verification": [
+    {"run": "rc022-current-released-logical-pair-20261118-01", "observations": 867, "status": "passed", "scope": "Actual pinned Node24 Source and Python logical validation, relationship checks and restore calls"},
+    {"run": "rc022-current-logical-and-gate-plan-20261118-01", "passed": 872, "scope": "All current logical consumers and input binding passed; the separate gate roster count assertion failed before its 402-observer update."},
+    {"run": "rc022-current-logical-gate-plan-20261118-02", "passed": 30, "seconds": 1.85, "scope": "Current gate roster, observer omission and damaged receipt refusal, cleanup and frozen qualification orchestration"}
+  ],
+  "cleanup": "Synthetic pytest workspaces retired after necessary observations were preserved. Source/native/corpus JSON and bounded receipts remain; no Portable built for these local fixes.",
+  "qualification": "Targeted finite contracts only; failed mixed runs remain failed. Complete candidate and extracted release qualification are pending."
+}

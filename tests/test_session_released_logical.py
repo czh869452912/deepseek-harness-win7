@@ -1,5 +1,6 @@
 """Released semantic rules and actual upstream restore calls, frozen at rc.3."""
 import json
+import hashlib
 from pathlib import Path
 
 import pytest
@@ -14,11 +15,24 @@ ROOT = Path(__file__).resolve().parents[1]
 CASES = []
 for name in ('session_released_payload_cases.json', 'session_released_restore_cases.json'):
     CASES.extend(json.loads((ROOT / 'scripts/oracles' / name).read_text(encoding='utf-8')))
+CURRENT = json.loads((ROOT / 'tests/fixtures/rc022-released-logical-deltas.json').read_text(encoding='utf-8'))
+CURRENT_DELTAS = {row['case']: row for row in CURRENT['current_deltas']}
+
+
+def test_current_released_logical_deltas_keep_original_facts_and_exact_inputs():
+    assert CURRENT['target_upstream'] == json.loads((ROOT / 'migration/baseline.json').read_text(encoding='utf-8'))['target_upstream']
+    assert CURRENT['observations'] == len(CASES)
+    assert set(CURRENT_DELTAS) == {'subagent/descriptor/omit/mode', 'subagent/descriptor/omit/label'}
+    for path, digest in CURRENT['inputs'].items():
+        assert hashlib.sha256((ROOT / path).read_bytes()).hexdigest() == digest, path
+    for case in CASES:
+        if case['case'] in CURRENT_DELTAS:
+            assert dict(case['expected'], case=case['case']) != CURRENT_DELTAS[case['case']]
 
 
 @pytest.mark.parametrize('case', CASES, ids=[case['case'] for case in CASES])
 def test_released_logical_source_observations(case):
-    expected = dict(case['expected'], case=case['case'])
+    expected = CURRENT_DELTAS.get(case['case'], dict(case['expected'], case=case['case']))
     # Compare the same wire observations as the paired subprocess runner. Frozen
     # containers in native memory are an additional guarantee, not a JSON type.
     actual = json.loads(json.dumps(observe(case)))

@@ -1,0 +1,15 @@
+{
+  "contract": "C9-FE",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "change": "Add exactly dsh/session/text_current.py, dsh/subagent/acp_candidate.py and dsh/subagent/out_of_process.py to all three actual SDK import closures. They are now reached through the canonical query/ACP provider integration. Keep all required/extra-module and byte-identity checks; adapter_failure remains the sole optional cancellation import.",
+  "verification": {
+    "run": "rc022-current-c9fe-sdk-imports-20261118-01",
+    "passed": 66,
+    "failed": 2,
+    "seconds": 202.5,
+    "scope": "Actual current Source/Native SDK normal/cancel/error, SDK strict consumers and path checks passed. Two separate retained machine cases still mounted the old subagent service without the current shutdown method and remain followup work; their failures are not classified as passed."
+  },
+  "original_failure": "Frozen ee1e7f5a unified run06 preserved its strict SDK imported-closure failure and cached dependent failures. No wire comparison, Source input or production provider was weakened to close it.",
+  "cleanup": {"directories": 3, "bytes_removed": 6216430, "retained": "Original log/XML, complete Source/Native SDK captures, session observations and the two retained-machine failures"},
+  "qualification": "Targeted SDK closure completion only; unified acceptance pending."
+}

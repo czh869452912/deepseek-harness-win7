@@ -37,6 +37,21 @@ def _flat(text: str) -> str:
     return re.sub(r"\s+", " ", text).strip()
 
 
+def test_current_web_source_mirror_matches_pinned_reference():
+    """The supporting source mirror must advance with the original dist."""
+    import subprocess
+    from pathlib import Path
+    root = Path(REPO_ROOT)
+    source = root / 'reference'
+    assert subprocess.check_output(['git', '-C', str(source), 'rev-parse', 'HEAD'], encoding='utf-8').strip() == '38a6a5c965aa99ab525161efb7cc5cf1fe62fced'
+    names = subprocess.check_output(['git', '-C', str(source), 'ls-files', '-z', '--', 'apps/web']).decode('utf-8').split('\0')
+    for name in filter(None, names):
+        expected = (source / name).read_bytes()
+        actual = (root / name).read_bytes()
+        if actual != expected:
+            assert actual.decode('utf-8').replace('\r\n', '\n') == expected.decode('utf-8').replace('\r\n', '\n'), name
+
+
 def test_source_document_projects_into_the_built_document():
     """`index.html` is the source of `dist/index.html`; `base: './'` rewrites its URLs."""
     source = _read_text(os.path.join(WEB_ROOT, "index.html"))
@@ -59,8 +74,9 @@ def test_source_document_projects_into_the_built_document():
     # URLs; the built document carries the same two links under `base: './'`.
     assert '<link rel="manifest" href="/manifest.webmanifest" />' in source
     assert '<link rel="manifest" href="./manifest.webmanifest" />' in built
-    assert '<link rel="icon" type="image/svg+xml" href="/favicon.svg" />' in source
-    assert '<link rel="icon" type="image/svg+xml" href="./favicon.svg" />' in built
+    for icon, scheme in [('favicon.svg', 'light'), ('favicon-dark.svg', 'dark')]:
+        assert '<link rel="icon" type="image/svg+xml" href="/%s" media="(prefers-color-scheme: %s)" />' % (icon, scheme) in source
+        assert '<link rel="icon" type="image/svg+xml" href="./%s" media="(prefers-color-scheme: %s)" />' % (icon, scheme) in built
     assert '<script type="module" src="/src/main.ts"></script>' in source
 
     # The built page drops the TypeScript entry in favour of the emitted chunk,
@@ -76,10 +92,12 @@ def test_source_document_projects_into_the_built_document():
 def test_entry_module_boots_the_client_web_shell_from_the_root_element():
     """`src/main.ts` runs `AppWebEntry` from `@deepseek-ai/dsh-client-web`."""
     entry = _read_text(os.path.join(SRC_ROOT, "main.ts"))
-    assert "import { AppWebEntry } from '@deepseek-ai/dsh-client-web'" in entry
+    assert "import { AppWebEntry, applyIndexInjections } from '@deepseek-ai/dsh-client-web'" in entry
     assert "document.getElementById('root')" in entry
     assert "throw new Error('web app: missing #root')" in entry
-    assert "void new AppWebEntry(el).run()" in entry
+    assert "const entry = new AppWebEntry(el)" in entry
+    assert "void entry.run(desktop === undefined ? undefined : reportFailure)" in entry
+    assert "desktop.ready().then(async ({ injections, streamBaseUrl })" in entry
 
     # The shipped payload is the build of that entry: the shell it mounts
     # carries its own boot contract, and none of the port-authored shell
@@ -162,7 +180,7 @@ def test_official_lane_and_stress_suite_are_mirrored():
 
     # The lane boots the real composition in-process; it declares that in its README.
     readme = _read_text(os.path.join(LANE_ROOT, "README.md"))
-    assert "boot the real web composition in-process and drive it with a real" in readme
+    assert "boot the real web composition in-process and drive it with real browsers over real HTTP" in readme
 
     # Every `*.e2e.ts` file of the lane is mirrored, so no case lives only in reference/.
     reference_lane = os.path.join(REPO_ROOT, "reference", "apps", "web", "tests")

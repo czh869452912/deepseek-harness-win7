@@ -2,6 +2,8 @@
 
 固定目标：`38a6a5c965aa99ab525161efb7cc5cf1fe62fced`。本页记录定向检查；生产 pin 已在 C9-CC 协调切换，`accepted_upstream` 仍为 null，完整资格待后续验证。
 
+C9-DA：同步全部 673 份当前原版 `apps/web` 源码镜像，既有 371 份原样构建产物哈希保持。PWA、启动/资源 URL、真实活动 Loader、反馈 v3→v4 夹具及文件引用行所有权已定向修复；最后广域 164 项通过/两项失败后，其余四项消费者复验与实际 25 行 Source/Python 配对通过。40 个历史快照保留原 pin 和 207 文件字节身份，不冒充当前 74 个场景。首轮完整回归原失败保留，完整资格仍待新的稳定候选。[检查](web-source-contract-checks.json)。
+
 C9-CX：Win7 Desktop 外壳的旧来源与当前宿主/前端输入分开核验，明确私有管道 v3 并非当前原版 Desktop v4 生命周期。首轮 158 项通过、一项旧异步消费者失败，修复后 26 项及诊断编码两项复验通过，原始失败保留；失效工作区已清理。[范围与限制](../../../docs/research/2026-11-18-win7-desktop-current-scope.md)、[检查](desktop-current-scope-checks.json)。
 
 C9-CV：统一入口接到当前完整合同，冻结实际安装依赖/双架构构建输入和观察器；新鲜 x64/x86 包运行完整 SDK、Office、元数据、原版浏览器、应用冷恢复及 Standard Desktop 打包检查。相关 89 项与最后 47 项定向通过；这些单元控制不构成实际统一资格。已清理约 2.0 MiB 失效夹具。[编排检查](current-orchestration-checks.json)。

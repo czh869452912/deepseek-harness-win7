@@ -1,35 +1,12 @@
+"""Retained a4c74a91 web snapshot compatibility corpus.
+
+The forty recordings and their host/UI goldens retain original historical
+identities. They do not certify the current upstream web snapshot corpus.
+Current original frontend and application observations run independently.
 """
-Corpus lane for the recorded-session snapshots the `apps/web` tests resolve.
-
-The reference `apps/web` lane reads its fixtures from the repository snapshot
-tree (`reference/apps/web/tests/*.snapshot.ts` ->
-`fileURLToPath(new URL('../../../snapshots/web/<scenario>', import.meta.url))`).
-Per `reference/snapshots/AGENTS.md` every scenario owns one primary
-`session.jsonl` plus contiguous child files, or declares a read-only shared
-source in its `snapshot.yml`; the manifest is the executable record of which
-profile, composition, header class, workspace oracle, and replay override the
-scenario needs.
-
-The scenarios' goldens come in two faces:
-
-  - **host face** — `session.jsonl` (the recorded Session the scenario boots
-    from), `system-prompt.expected.md` and `tool-schemas.expected.json` (the
-    request the Host assembles), and `protocol.expected.json` (the served
-    Remote transcript). These are reproducible by a Python Host composition and
-    are the half this port can execute without a browser;
-  - **UI face** — the `*.expected.md` aria/geometry goldens a browser renders
-    (`ui.expected.md`, `geometry.expected.md`, `sidebar.expected.md`, ...).
-
-The cases below carry the corpus and pin the structure every scenario must
-satisfy before either face can be replayed: the manifest, the resolvable
-session source, the scrub/redaction invariants (`assertFixtureInventory`), and a
-per-artifact classification so no golden is silently unowned. Replaying the
-recorded sessions against the shipped profile is the `tests/web-snapshot-lane`
-work item; the UI half additionally needs the Chromium lane
-(`apps/web-browser-e2e-lane`).
-"""
-
 import os
+import json
+import hashlib
 
 from .snapshot_fixtures import assertFixtureInventory, snapshot_support
 from .snapshot_fixtures import parseSessionFixtureName, sessionFixtureFiles, assertSessionFixtureVersion
@@ -92,7 +69,7 @@ def read_text(path):
         return handle.read()
 
 
-def test_the_web_snapshot_corpus_is_carried_verbatim():
+def test_historical_web_snapshot_corpus_is_carried_verbatim():
     """
     Every scenario directory the reference lane resolves exists in the port.
 
@@ -101,20 +78,25 @@ def test_the_web_snapshot_corpus_is_carried_verbatim():
     against a fixture the recorded behavior never produced.
     """
     assert os.path.isdir(CORPUS_ROOT), CORPUS_ROOT
-    official = scenarios(REFERENCE_ROOT)
-    assert len(official) == 40, official
+    # These forty recordings belong to a4c74a91, not the current seventy-four
+    # scenarios. Bind original historical Git provenance and retained bytes;
+    # current browser/application observations run independently.
+    manifest = json.loads(read_text(os.path.join(REPO_ROOT, 'tests', 'fixtures',
+                                                'historical-web-snapshot-inputs.json')))
+    assert manifest['source_upstream'] == 'a4c74a91e06b00fe0b0937bde982170c526cc842'
+    assert not manifest['mismatches']
+    rows = {row['path'][len('snapshots/web/'):]: row for row in manifest['files']}
+    official = sorted({name.split('/', 1)[0] for name in rows})
+    assert len(official) == 40
     assert scenarios() == official
 
     for name in official:
-        expected = artifacts(os.path.join(REFERENCE_ROOT, name))
+        expected = sorted(path[len(name) + 1:] for path in rows if path.startswith(name + '/'))
         actual = artifacts(os.path.join(CORPUS_ROOT, name))
         assert actual == expected, name
         for relative in expected:
-            reference = os.path.join(REFERENCE_ROOT, name, relative)
-            with open(reference, "rb") as handle:
-                reference_bytes = handle.read()
             with open(os.path.join(CORPUS_ROOT, name, relative), "rb") as handle:
-                assert handle.read() == reference_bytes, "%s/%s" % (name, relative)
+                assert hashlib.sha256(handle.read()).hexdigest() == rows[name + '/' + relative]['sha256']
 
 
 def test_every_web_scenario_manifest_resolves_its_session_source():

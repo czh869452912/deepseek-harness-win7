@@ -1,0 +1,26 @@
+{
+  "contract": "C9-DA",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "status": "targeted fixes passed; new stable-candidate complete qualification pending",
+  "changes": [
+    "Synchronize all 673 canonical tracked apps/web Source blobs; remove nine retired Source files; preserve all 371 sealed original frontend build members",
+    "Current document/PWA two fixed-color icons, relative published metadata, current entry/desktop-ready hook, build plugins and package exports",
+    "Real served startup batches, actual active Loader roster, current row revisions, registrations and relative source-map references; immutable test metadata scanned once",
+    "Feedback recording enters installed v4 through the actual adjacent-format reader with explicit empty child facts; failed setup closes its owned Host",
+    "Production file-guidance row and executor are consumed through their existing canonical owners",
+    "Correct current credentials API in the actual static-resource paired observer",
+    "Forty historical web snapshots remain byte-bound to original a4c74a91 Git provenance (207 files), independently of the current seventy-four scenarios"
+  ],
+  "verification": [
+    {"run": "rc022-frontend-source-contracts-20261118-01", "passed": 81, "failed": 16, "seconds": 193.74},
+    {"run": "rc022-frontend-source-contracts-20261118-02", "passed": 25, "failed": 2, "seconds": 16.42},
+    {"run": "rc022-frontend-served-contracts-20261118-01", "passed": 20, "failed": 2, "seconds": 136.77},
+    {"run": "rc022-frontend-served-contracts-20261118-02", "passed": 67, "failed": 1, "seconds": 77.53},
+    {"run": "rc022-frontend-source-contracts-20261118-04", "passed": 164, "failed": 2, "seconds": 121.49},
+    {"run": "rc022-frontend-consumer-fixes-20261118-01", "passed": 4, "failed": 0, "seconds": 8.81, "scope": "Both remaining failed consumers and their static-resource regressions"},
+    {"run": "rc022-frontend-resource-recheck-20261118-01", "source_rows": 25, "native_rows": 25, "status": "passed", "seconds": 1.453}
+  ],
+  "diagnostics": "Original 8f69c6a1 full regression stopped at one failure/154 passes; not a complete run. Targeted selection 03 referred to a nonexistent filename, exit 4 and no test bodies; original command/error retained. No fragments combined into complete acceptance.",
+  "cleanup": {"bytes_removed": 190868, "owned_directories_removed": 22, "retained": "Commands, log/XML, original failure reports and six real session observations; Source/native paired JSON, manifest and import audits"},
+  "acceptance": "Current complete Python, full Source/paired, fresh archives, packaged Desktop and Windows 7 qualification remain independent of these targeted checks"
+}

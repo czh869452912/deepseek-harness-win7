@@ -64,12 +64,12 @@ def test_package_publishes_the_built_app_contract():
         "./dist/*": "./dist/*",
         "./package.json": "./package.json",
     }
-    # Sourcemaps and the worker-preview surface are built but never published.
+    # Current upstream publishes src and dist; the preview surface is excluded.
     assert package["files"] == [
         "dist",
-        "!dist/**/*.map",
         "!dist/preview.html",
         "!dist/preview",
+        "src",
     ]
     # `.npmignore` drops sourcemaps from a directory publish of the same tree.
     assert _read_text(os.path.join(WEB_ROOT, ".npmignore")).strip() == "*.map"

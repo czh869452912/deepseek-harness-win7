@@ -1,28 +1,8 @@
+"""Current upstream PWA metadata and fixed-color favicon artifact contracts.
+
+These static checks mirror the current metadata and SVG cases. Rasterizer and
+maskable-pixel scenarios require actual Source/browser observations.
 """
-1:1 port of `reference/apps/web/tests/pwa-manifest.e2e.ts`
-(`@deepseek-ai/dsh-web-frontend`).
-
-Upstream cases (vitest, no browser — the file reads the vite build output):
-
-  - ``ships install metadata with the built web application``
-  - ``ships a favicon that switches to a light mark under dark color scheme``
-
-Upstream reads ``new URL('../dist', import.meta.url)``, i.e. the built web
-application the SPA seat serves. The Python port serves the same prebuilt dist
-through ``dsh/host/frontend_static`` (``apps/web/dist/index.html``), so the
-assertions read the identical artifact paths and the identical semantics:
-exact manifest equality after JSON parsing, the exact manifest link tag in
-``dist/index.html``, and the favicon's dark-scheme media query with both the
-``#fff`` per-scheme fill and the black light-mode fill.
-
-The install metadata is authored in ``apps/web/public/`` and copied verbatim
-into ``dist/`` by the app build; ``test_web_package_contract.py`` asserts that
-public -> dist relation. ``dist/index.html`` is the build of the mirrored
-source document (``apps/web/index.html``), which declares the same manifest
-link as a root-absolute URL; ``test_app_source_contract.py`` asserts that
-source -> dist projection.
-"""
-
 import json
 import os
 import re
@@ -32,19 +12,22 @@ REPO_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.p
 DIST_ROOT = os.path.join(REPO_ROOT, "apps", "web", "dist")
 
 EXPECTED_MANIFEST: Dict[str, Any] = {
-    "id": "/",
     "name": "DeepSeek Harness",
     "short_name": "DSH",
-    "start_url": "/",
-    "scope": "/",
-    "display": "fullscreen",
+    "start_url": "./",
+    "scope": "./",
+    "display": "standalone",
+    "background_color": "#ffffff",
+    "theme_color": "#ffffff",
     "icons": [
         {
-            "src": "/favicon.svg",
-            "sizes": "any",
-            "type": "image/svg+xml",
+            "src": "icon-192.png",
+            "sizes": "192x192",
+            "type": "image/png",
             "purpose": "any",
-        }
+        },
+        {"src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any"},
+        {"src": "icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable"},
     ],
 }
 
@@ -58,6 +41,9 @@ def test_ships_install_metadata_with_the_built_web_application():
     """Mirrors upstream `it('ships install metadata with the built web application')`."""
     index = _read_text(os.path.join(DIST_ROOT, "index.html"))
     assert '<link rel="manifest" href="./manifest.webmanifest" />' in index
+    assert '<link rel="apple-touch-icon" href="./apple-touch-icon.png" />' in index
+    assert '<meta name="mobile-web-app-capable" content="yes" />' in index
+    assert '<meta name="apple-mobile-web-app-title" content="DSH" />' in index
 
     manifest = json.loads(_read_text(os.path.join(DIST_ROOT, "manifest.webmanifest")))
     # Upstream asserts `expect(manifest).toEqual({...})`: JSON equality on the
@@ -66,13 +52,13 @@ def test_ships_install_metadata_with_the_built_web_application():
 
 
 def test_ships_a_favicon_that_switches_to_a_light_mark_under_dark_color_scheme():
-    """Mirrors upstream `it('ships a favicon that switches to a light mark ...')`."""
+    """Current Source selects two fixed-color SVGs through document media queries."""
     favicon = _read_text(os.path.join(DIST_ROOT, "favicon.svg"))
-    # The light fill must live inside the dark-scheme media query, so the icon
-    # stays black in light mode and only turns white under a dark scheme.
-    assert re.search(
-        r"@media \(prefers-color-scheme: dark\)\s*{\s*path\s*{[^}]*fill:\s*#fff",
-        favicon,
-        re.IGNORECASE,
-    ) is not None
+    dark = _read_text(os.path.join(DIST_ROOT, "favicon-dark.svg"))
+    index = _read_text(os.path.join(DIST_ROOT, "index.html"))
+    for icon, scheme in [('favicon.svg', 'light'), ('favicon-dark.svg', 'dark')]:
+        assert '<link rel="icon" type="image/svg+xml" href="./%s" media="(prefers-color-scheme: %s)" />' % (icon, scheme) in index
+    assert '<style>' not in favicon
     assert 'fill="#000"' in favicon
+    assert 'fill="#fff"' in dark
+    assert dark.replace('fill="#fff"', 'fill="#000"') == favicon

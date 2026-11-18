@@ -53,7 +53,7 @@ async def observe(workspace=None):
         value = mutate(records.get(key))
         if value is not None: records[key] = value
         return records.get(key)
-    ctx.set_service('credentials', SimpleNamespace(modify_record=modify))
+    ctx.set_service('credentials', SimpleNamespace(modifyRecord=modify))
     ctx.set_service('webServer', server)
     await ctx.plugin(AuthorizedConnectionPlugin); await ctx.plugin(RemoteAccessService)
     ctx.remoteAccess.registerPolicy('guest', SimpleNamespace(bindings=lambda principal: [dict(resource=dict(kind='session', id='visible'), role=dict(actions=['notes/read', 'event:notice']))]))

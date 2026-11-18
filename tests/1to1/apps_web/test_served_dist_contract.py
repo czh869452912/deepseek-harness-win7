@@ -31,22 +31,7 @@ REPO_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.p
 WEB_ROOT = os.path.join(REPO_ROOT, "apps", "web")
 DIST_ROOT = os.path.join(WEB_ROOT, "dist")
 
-EXPECTED_MANIFEST = {
-    "id": "/",
-    "name": "DeepSeek Harness",
-    "short_name": "DSH",
-    "start_url": "/",
-    "scope": "/",
-    "display": "fullscreen",
-    "icons": [
-        {
-            "src": "/favicon.svg",
-            "sizes": "any",
-            "type": "image/svg+xml",
-            "purpose": "any",
-        }
-    ],
-}
+from .test_pwa_manifest import EXPECTED_MANIFEST
 
 
 class RecordingStream:
@@ -157,12 +142,11 @@ async def test_served_favicon_keeps_its_dark_scheme_mark(served_web):
     assert response.status == 200
     assert response.headers.get("content-type") == "image/svg+xml"
     body = _body_text(response)
-    assert re.search(
-        r"@media \(prefers-color-scheme: dark\)\s*{\s*path\s*{[^}]*fill:\s*#fff",
-        body,
-        re.IGNORECASE,
-    ) is not None
+    assert '<style>' not in body
     assert 'fill="#000"' in body
+    dark = await _request(served_web, "/favicon-dark.svg")
+    assert dark.status == 200
+    assert _body_text(dark).replace('fill="#fff"', 'fill="#000"') == body
 
 
 @pytest.mark.asyncio

@@ -15,7 +15,7 @@ import {
   webSnapshotMode,
   type WebScaffold,
 } from './scaffold.ts'
-import { newEnglishPage, saveFailureShot } from './support.ts'
+import { newEnglishPage, saveFailureShot, WEB_FIXTURE_TIME } from './support.ts'
 
 const SNAPSHOT_DIR = fileURLToPath(new URL('./expected/markdown-cjk-strong', import.meta.url))
 const UI_EXPECTED = fileURLToPath(new URL('./expected/markdown-cjk-strong/ui.expected.md', import.meta.url))
@@ -36,7 +36,6 @@ const CASES = [
 /** Build one settled assistant reply covering CJK-adjacent strong punctuation boundaries. */
 function markdownFixture(): string {
   const session = Session.create(SessionId('markdown-cjk-strong-source'))
-  const eventTimeOrigin = new Date().setHours(12, 0, 0, 0)
   session.append('turn/start', { turn: 1 })
   const user = session.append('user/message', createUserMessage({
     content: [{ type: 'text', text: 'Render adjacent CJK strong emphasis.' }],
@@ -81,7 +80,7 @@ function markdownFixture(): string {
     }),
     ...session.snapshotEvents().map(event => JSON.stringify({
       ...event,
-      time: eventTimeOrigin + event.seq * 1_000,
+      time: WEB_FIXTURE_TIME + event.seq * 1_000,
     })),
     '',
   ].join('\n')
@@ -95,9 +94,10 @@ describe('web e2e: CJK-adjacent Markdown strong emphasis', () => {
 
   beforeAll(async () => {
     scaffold = await launchWebScaffold({})
-    await seedSession(scaffold, markdownFixture(), SEED_ID)
+    await seedSession(scaffold, markdownFixture(), SEED_ID, undefined, { createdAt: WEB_FIXTURE_TIME })
     browser = await chromium.launch()
     page = await newEnglishPage(browser)
+    await page.clock.setFixedTime(WEB_FIXTURE_TIME)
     tripwire = watchConsole(page)
     await page.goto(scaffold.authenticatedUrl, { waitUntil: 'load' })
     await page.waitForSelector('[class*="frame"]', { timeout: 30_000 })
@@ -123,6 +123,36 @@ describe('web e2e: CJK-adjacent Markdown strong emphasis', () => {
     expect(await strong.allTextContents()).toEqual(CASES.map(([, expected]) => expected))
     for (const [, , paragraph] of CASES) {
       expect(await page.getByText(paragraph, { exact: true }).count()).toBe(1)
+    }
+
+    const viewport = page.viewportSize()!
+    try {
+      for (const size of [{ width: 390, height: 844 }, { width: 951, height: 669 }, { width: 669, height: 951 }]) {
+        await page.setViewportSize(size)
+        expect(await page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('-webkit-text-size-adjust')))
+          .toBe('100%')
+        expect(await strong.evaluateAll(elements => elements.map(element => getComputedStyle(element).fontSize)))
+          .toEqual(CASES.map(() => '14px'))
+      }
+      const restoreFont = await page.evaluateHandle(() => {
+        const style = document.body.style
+        const before = style.getPropertyValue('--dsh-content-font-size')
+        const priority = style.getPropertyPriority('--dsh-content-font-size')
+        style.setProperty('--dsh-content-font-size', '18px')
+        return () => {
+          if (before) style.setProperty('--dsh-content-font-size', before, priority)
+          else style.removeProperty('--dsh-content-font-size')
+        }
+      })
+      try {
+        expect(await strong.evaluateAll(elements => elements.map(element => getComputedStyle(element).fontSize)))
+          .toEqual(CASES.map(() => '18px'))
+      } finally {
+        await restoreFont.evaluate((restore) => { restore() })
+        await restoreFont.dispose()
+      }
+    } finally {
+      await page.setViewportSize(viewport)
     }
 
     const snapshot = (await captureStableAria(page, '[class*="centerCol"]', scaffold.workspaceCwd))

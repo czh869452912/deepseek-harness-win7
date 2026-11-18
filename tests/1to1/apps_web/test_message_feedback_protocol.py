@@ -137,7 +137,7 @@ async def seed_session(ctx, cwd):
 
     persistence = ctx.get("sessionPersistence")
     session_id = SessionId(SESSION_ID)
-    meta = dict(version=3, id=session_id, createdAt=header["createdAt"], cwd=cwd,
+    meta = dict(version=4, id=session_id, createdAt=header["createdAt"], cwd=cwd,
                 isSeeded=False, delegationDepth=0)
     fixture_created_at = header["createdAt"]
     time_anchor = meta["createdAt"] if fixture_created_at == 0 else fixture_created_at
@@ -147,6 +147,14 @@ async def seed_session(ctx, cwd):
         record["seq"] = index
         record["time"] = time_anchor + index
         materialized.append(record)
+    # Apply the same adjacent-format reader used by the current Source scaffold
+    # before writing a retained v3 recording through the installed v4 provider.
+    from dsh.session.format_catalog.candidate import createSessionFormatCatalogWithChildren
+    restore = createSessionFormatCatalogWithChildren([]).createRestore(header, dict(recovery='strict', validation='current'))
+    for record in materialized:
+        restore.decodeRow(record)
+    artifact = restore.finish()
+    materialized = artifact['events']
     handle = await persistence.create(meta)
     try:
         await handle.append(materialized)
@@ -232,21 +240,25 @@ async def launch_served_host(tmp_path):
     Gateway, FrontendStatic and the message-feedback row.
     """
     ctx = await web_context(tmp_path / "host")
-    service = ctx.get("messageFeedback")
-    assert service is not None, "the shipped web composition mounted no messageFeedback provider"
-    await seed_session(ctx, str(tmp_path))
-
-    server = ctx.get("webServer")
-    await server.start()
-    connection = ctx.get("connection")
-    launch = connection.authenticated_url("http://127.0.0.1:%d" % server.listened_port)
-    token = launch.split("token=", 1)[1]
-    status, headers, _ = await raw_request(server.listened_port, "GET", "/?token=" + token)
-    assert status == 303, "launch-token exchange did not redirect"
-    assert headers.get("location") == "/"
-    cookie = headers["set-cookie"].split(";", 1)[0]
-    assert cookie, "launch-token exchange returned an empty session cookie"
-    return ServedWebHost(ctx, server, server.listened_port, cookie)
+    try:
+        service = ctx.get("messageFeedback")
+        assert service is not None, "the shipped web composition mounted no messageFeedback provider"
+        await seed_session(ctx, str(tmp_path))
+        server = ctx.get("webServer")
+        await server.start()
+        connection = ctx.get("connection")
+        launch = connection.authenticated_url("http://127.0.0.1:%d" % server.listened_port)
+        token = launch.split("token=", 1)[1]
+        status, headers, _ = await raw_request(server.listened_port, "GET", "/?token=" + token)
+        assert status == 303, "launch-token exchange did not redirect"
+        assert headers.get("location") == "./"
+        cookie = headers["set-cookie"].split(";", 1)[0]
+        assert cookie, "launch-token exchange returned an empty session cookie"
+        return ServedWebHost(ctx, server, server.listened_port, cookie)
+    except BaseException:
+        from canonical_web_fixture import close_web_context
+        await close_web_context(ctx)
+        raise
 
 
 def created_version(response):

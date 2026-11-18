@@ -82,7 +82,7 @@ def test_rejects_the_package_dev_alias_with_the_full_host_correction():
     # The correction names the supported entries: a repository checkout and an
     # installed package both go through the host (`dsh web`), never bare Vite.
     assert "From a repository checkout, run `pnpm dsh web`; an installed package uses `dsh web`." in message
-    assert "For client-plugin HMR, run `pnpm dsh web` together with `pnpm run dev:web`." in message
+    assert "For client-plugin HMR, run `pnpm run dev:web`, which starts `dsh web` and the rebuild watchers together." in message
 
 
 def test_rejects_the_standalone_vite_server_with_the_full_host_correction():
@@ -96,7 +96,8 @@ def test_rejects_the_standalone_vite_server_with_the_full_host_correction():
     assert "name: 'dsh-reject-standalone-web-serve'" in config
     assert "config(_config, env)" in config
     assert "if (env.command === 'serve') throw new Error(STANDALONE_ERROR)" in config
-    assert "plugins: [rejectStandaloneServe(), clientDocumentTitle(), react(), emitPreviewPage()]" in config
+    assert "rejectStandaloneServe(), clientDocumentTitle(), brandFontLicense(), katexWoff2Fonts(), react(), emitPreviewPage()," in config
+    assert "productWebBundleIsolation(src('../..'), src('.'))" in config
     # It owns the serve command only: `build` and `watch` stay available.
     refusal = config[config.index("function rejectStandaloneServe(): Plugin"):config.index("function emitPreviewPage(): Plugin")]
     assert "configResolved" not in refusal

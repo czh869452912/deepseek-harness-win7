@@ -157,21 +157,18 @@ async def test_file_reference_guidance_is_owned_separately_from_deliverables_ui(
     """Current Source separates desktop file guidance from authenticated UI actions."""
     from canonical_web_fixture import close_web_context, web_context
     from dsh.client.file_references_current import CurrentDeliverableFileReferences, FILE_REFERENCE_SECTION
-    from dsh.core.tool_executor_native import NativeToolExecutorPlugin
 
     # rc.3 also injects the native-open providers. Use their actual production
     # composition so this Loader lifecycle check cannot pass with a pending row.
     ctx = await web_context(tmp_path)
     try:
-        # This is the prompt ownership unit, while shipped profile inputs are
-        # promoted separately. Current Tools requires an explicit executor.
-        await ctx.plugin(NativeToolExecutorPlugin)
+        # The canonical production profile already owns its single executor.
         mounted = next(entry for entry in ctx.loader.entries()
                        if entry.options.get("name") == "@deepseek-ai/dsh-client-ui-deliverables")
         assert mounted.fiber.state == FiberState.ACTIVE
-        before = await ctx.systemPrompt.assemble()
-        assert section_named(before, "ui:deliverable-file-references") is None
-        guidance = await ctx.plugin(CurrentDeliverableFileReferences)
+        guidance = next(entry for entry in ctx.loader.entries()
+                        if entry.options.get('name') == '@deepseek-ai/dsh-deliverable-file-references')
+        assert guidance.fiber.state == FiberState.ACTIVE
         assembly = await ctx.systemPrompt.assemble()
         section = section_named(assembly, "ui:deliverable-file-references")
         assert section is not None
@@ -179,7 +176,7 @@ async def test_file_reference_guidance_is_owned_separately_from_deliverables_ui(
 
         await mounted.fiber.dispose()
         assert section_named(await ctx.systemPrompt.assemble(), "ui:deliverable-file-references") is not None
-        await guidance.dispose()
+        await guidance.fiber.dispose()
         after = await ctx.systemPrompt.assemble()
         assert section_named(after, "ui:deliverable-file-references") is None
     finally:

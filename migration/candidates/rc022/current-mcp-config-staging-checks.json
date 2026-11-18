@@ -1,0 +1,11 @@
+{
+  "contract": "C9-EK",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "change": "Compare actual current MCP Source configuration with the current resource-aware plugin schema, including close timeout and template defaults. Keep the ripgrep byte-staging unit fixture independent of large external Office inputs by explicitly substituting synthetic Office selection/copy functions in that one test.",
+  "verification": [
+    {"run": "rc022-current-mcp-config-20261118-01", "passed": 1, "seconds": 5.85, "scope": "176 actual current Source/Native configuration and reconnect policy observations"},
+    {"run": "rc022-current-fs-search-staging-20261118-01", "passed": 3, "seconds": 37.98, "scope": "Preset search configuration and actual Portable staging/ZIP ripgrep bytes and runtime resolver using a deliberately synthetic Python/Office unit fixture"}
+  ],
+  "qualification": "Targeted consumer/unit checks only. The staging fixture neither executes a real Portable nor qualifies Office; exact Office and extracted release checks remain mandatory in unified qualification.",
+  "cleanup": "Both completed runs retired their owned pytest home/tmp/workspaces after preserving required observations; logs, XML, commands and compact cleanup receipts remain."
+}

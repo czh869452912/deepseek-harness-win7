@@ -4,7 +4,7 @@ from pathlib import Path
 import shutil
 import subprocess
 
-from dsh.mcp.config import CONFIG
+from dsh.mcp.current import RESOURCE_CONFIG as CONFIG
 from dsh.mcp.connection import RECONNECT_ABSENT, resolve_reconnect_policy
 
 

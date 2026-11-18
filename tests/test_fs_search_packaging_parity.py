@@ -126,6 +126,19 @@ def test_portable_stages_pinned_rg_and_zip_path_matches_runtime_resolver(tmp_pat
     (site / 'unreviewed_dev_tool.py').write_text('# must not ship', encoding='utf-8')
     # This test observes staging bytes, not execution of its placeholder EXE.
     monkeypatch.setattr(build, 'inspect_runtime', lambda _: dict(version=[3, 8, 10], platform='win32', bits=64))
+    # Office acceptance runs in its own exact-input/extracted lane. Keep this
+    # ripgrep staging unit test independent of the large external Office input.
+    from scripts import office_runtime_inputs
+    office = fixture_root / 'synthetic-office'
+    office.mkdir()
+    (office / 'runtime.json').write_text(json.dumps(dict(
+        architecture='x64', resources={}, scope='Synthetic ripgrep staging fixture only')), encoding='utf-8')
+    monkeypatch.setattr(office_runtime_inputs, 'office_runtime_source', lambda *_: office)
+    def bundle_office(destination, source, architecture):
+        target = Path(destination) / 'dsh/office/bin' / architecture
+        target.mkdir(parents=True)
+        shutil.copyfile(source / 'runtime.json', target / 'runtime.json')
+    monkeypatch.setattr(office_runtime_inputs, 'bundle_office_runtime', bundle_office)
     build.build_portable(runtime_dir=str(runtime))
     assert (dist / 'lib/fixture_runtime.py').is_file()
     assert not (dist / 'lib/unreviewed_dev_tool.py').exists()

@@ -195,7 +195,7 @@ def regression_xml(path, omit=None, skip=None, duplicate=None, failure=None):
     ET.ElementTree(suites).write(str(path), encoding='utf-8')
 
 
-@pytest.mark.parametrize('case', ['deepseek-base', 'shared-retry', 'pi-cache-union', 'locale-unicode'])
+@pytest.mark.parametrize('case', ['deepseek-base', 'retry-union', 'ordinary-provider', 'locale-pattern'])
 @pytest.mark.parametrize('damage', ['omit', 'skip', 'duplicate', 'failure'])
 def test_actual_web_schema_facts_remain_mandatory(tmp_path, case, damage):
     key = ('test_web_settings_inventory',

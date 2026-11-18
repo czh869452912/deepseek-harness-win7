@@ -1,0 +1,36 @@
+{
+  "contract": "C9-EZ",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "change": "Map 88 stale mandatory collected identities to their explicitly renamed historical tests and current Web settings cases, keeping all 3966 required lanes. No historical test is relabelled current parity; current Source and 406 paired contracts remain independently mandatory.",
+  "verification": [
+    {
+      "run": "rc022-current-c9ez-roster-20261118-01",
+      "passed": 40,
+      "seconds": 13.56,
+      "scope": "Mandatory name, omit/skip/duplicate/failure controls, class-method ambiguity and real test definitions"
+    },
+    {
+      "run": "rc022-current-c9ez-collection-20261118-01",
+      "collected": 22625,
+      "required_lanes": 3966,
+      "result": "collection-valid",
+      "seconds": 28.93,
+      "scope": "Actual complete collect-only with production release collection plugin; no test execution/acceptance"
+    }
+  ],
+  "original_refusal": {
+    "run": "rc022-unified-20261118-04",
+    "candidate": "e41cac3eaaa5d3ee8cb62013d01193bc4c939af2",
+    "collected": 22625,
+    "missing_required": 88,
+    "test_execution": false,
+    "status": "Collection refused; original final input check still running separately"
+  },
+  "cleanup": {
+    "directories": 6,
+    "bytes_removed": 17772296,
+    "retained": "Commands, collection JSON, log/XML and original refusal diagnostics",
+    "links_removed": 4
+  },
+  "qualification": "Next stable candidate requires a new single full run. Run04 cannot be promoted or combined with targeted checks."
+}

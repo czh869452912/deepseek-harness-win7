@@ -22,7 +22,7 @@ from dsh.cordis import Context
 from dsh.core.abort import AbortController
 from dsh.core.session import SessionHeader
 from dsh.core.session.current_session import CurrentSession as Session
-from dsh.core.session.current_session import CurrentSessionPlugin as SessionPlugin
+from current_persistence_fixture import SessionPluginV4 as SessionPlugin
 from dsh.session.query_current import CurrentSessionQueryService as SessionQueryService
 from dsh.session.session_query import compile_session_text_filter, materialize_session_result_filters
 from dsh.session.session_query import materialize_session_event_result_filters, filter_session_event_documents
@@ -61,9 +61,9 @@ async def observe():
             else:
                 context = Context()
                 await context.plugin(SessionPlugin)
-                live = SessionHeader('live', version=3, created_at=2,cwd='/workspace')
-                cold = SessionHeader('cold', version=3, created_at=1)
-                context.get('sessions').enter(Session.create(live.id,events,live))
+                live = SessionHeader('live', version=4, created_at=2,cwd='/workspace')
+                cold = SessionHeader('cold', version=4, created_at=1)
+                context.get('sessions').enter(Session.create(live.id,events,live, format_version=4))
                 controller = AbortController()
                 counters = dict(lists=0,inspections=0,sameSignal=True)
                 observed['counters'] = counters

@@ -1,4 +1,4 @@
-"""v3 live-preferred observations, retained cold cuts, and lazy live snapshots."""
+"""Live-preferred observations, retained cold cuts, and lazy live snapshots."""
 import copy
 from collections import OrderedDict
 
@@ -164,7 +164,11 @@ class CurrentSessionObservationReader:
                 materialized.append(session.snapshotEvents(0,cut))
             return materialized[0]
         registry = self.ctx.get('sessionProjections')
-        projections = None if mode=='none' or registry is None else registry.snapshot(session)
+        try:
+            projections = None if mode=='none' or registry is None else registry.snapshot(session)
+        except Exception as error:
+            raise SessionQueryError('failed to project session "%s": %s' % (session.id,error_message(failure_value(error))),
+                                    'SESSION_QUERY_CORRUPT_SESSION',failure_value(error)) from error
         view = dict(source='live',header=session.header,inheritedEventCount=session.inheritedEventCount,
                     events=events,cursor=cut-1 if cut else -1)
         if projections is not None:

@@ -14,7 +14,7 @@ it('observes one-shot lineage contracts and stack-independent descendants', asyn
     const controller = new AbortController()
     const failure: any = name === 'foreign-rejection' ? 'offline' : new TypeError('controlled lineage failure')
     const counters = {lists: 0, inspections: 0, sameSignal: false}
-    const header = (id: string, createdAt = 1, parent?: string) => ({version: 3, id: SessionId(id), createdAt,
+    const header = (id: string, createdAt = 1, parent?: string) => ({version: 4, id: SessionId(id), createdAt,
       ...parent === undefined ? {} : {parentSession: SessionId(parent)},isSeeded:false})
     let headers: any[] = [header('target')]
     if (['complete','clone-detachment'].includes(name)) headers = [header('root',0),header('parent',1,'root'),

@@ -19,10 +19,11 @@ if __name__ == '__main__':
     ROOT = arguments.root.resolve()
 sys.path.insert(0,str(ROOT))
 import dsh
+sys.path.insert(1, str(Path(__file__).resolve().parent))
 from dsh.cordis import Context
 from dsh.core.abort import AbortController
 from dsh.core.session import SessionHeader
-from dsh.core.session.current_session import CurrentSessionPlugin as SessionPlugin
+from current_persistence_fixture import SessionPluginV4 as SessionPlugin
 from dsh.session.jsonl_backend_current import CurrentJsonlSessionPersistencePlugin as JsonlSessionPersistencePlugin
 
 fixture_spec = importlib.util.spec_from_file_location('session_snapshot_fixture', Path(__file__).with_name('session_snapshot_fixture.py'))
@@ -39,7 +40,7 @@ async def observe():
             parent = Path(tempfile.mkdtemp(prefix='dsh-snapshot-'))
             root = parent/'original'
             file = parent/'original.db'
-            header = SessionHeader(session_id='s',version=3,created_at=1,cwd='/controlled/cwd')
+            header = SessionHeader(session_id='s',version=4,created_at=1,cwd='/controlled/cwd')
             first_event = dict(type='session/end-seed',seq=0,time=1,data={})
             context = None
             async def mount(location):

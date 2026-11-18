@@ -10,7 +10,7 @@ import sys
 
 
 ROOT = Path(__file__).resolve().parents[1]
-INPUTS = ['dsh/session/jsonl_backend_current.py', 'dsh/session/jsonl_current.py', 'dsh/core/session/current_session.py',
+INPUTS = ['scripts/oracles/current_persistence_fixture.py','dsh/session/jsonl_backend_current.py', 'dsh/session/jsonl_current.py', 'dsh/core/session/current_session.py',
     "scripts/session_snapshots_oracle.py",
     "scripts/oracles/session_snapshots_python.py",
     "scripts/oracles/session_snapshot_fixture.py",

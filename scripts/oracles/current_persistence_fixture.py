@@ -25,3 +25,19 @@ def read_fixture(list_headers, read_log=None):
         return SimpleNamespace(header=field('meta'), inheritedEventCount=field('inheritedEventCount'), read=read, close=close)
 
     return SimpleNamespace(list=listing, open=opened)
+
+
+from dsh.cordis.plugin import Plugin
+from dsh.core.session.current_session import CurrentSessionStore
+
+
+class SessionPluginV4(Plugin):
+    """Mount the same current Session version as the pinned Source observer."""
+    def apply(self, ctx):
+        ctx.set_service('sessions', CurrentSessionStore(ctx, 4))
+
+
+class ProjectionPluginV4(Plugin):
+    def apply(self, ctx):
+        from dsh.session.projections import SessionProjectionRegistry
+        SessionProjectionRegistry(ctx, 4)

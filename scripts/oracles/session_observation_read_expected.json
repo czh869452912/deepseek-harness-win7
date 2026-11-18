@@ -165,11 +165,11 @@
     "name": "live-projection-failure",
     "observed": {
       "error": {
-        "name": "TypeError",
-        "message": "controlled read failure",
-        "code": null,
-        "sameCause": false,
-        "sameFailure": true
+        "name": "SessionQueryError",
+        "message": "failed to project session \"owned\": controlled read failure",
+        "code": "SESSION_QUERY_CORRUPT_SESSION",
+        "sameCause": true,
+        "sameFailure": false
       },
       "counters": {
         "stats": 1,

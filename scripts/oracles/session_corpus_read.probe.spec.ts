@@ -15,7 +15,7 @@ it('observes exact corpus loads and bounded title batches', async () => {
     'batch-concurrency', 'batch-abort-drain', 'pre-abort']
   for (const name of names) {
     const ctx = new Context()
-    const header = (id: string, createdAt = 9) => ({version: 3, id: SessionId(id), createdAt, cwd: '/controlled/cwd',isSeeded:false})
+    const header = (id: string, createdAt = 9) => ({version: 4, id: SessionId(id), createdAt, cwd: '/controlled/cwd',isSeeded:false})
     const title = (id: string) => ({type: 'session/title', seq: 0, time: 3,
       data: {title: 'Title ' + id, messageSeqs: [], source: {kind: 'user'}}}) as any
     const controller = new AbortController()

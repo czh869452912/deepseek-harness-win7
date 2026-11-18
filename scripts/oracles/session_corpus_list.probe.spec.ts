@@ -10,7 +10,7 @@ it('observes actual corpus listing with declared listing failure and publication
   for (const name of ['no-provider', 'persisted-live', 'tie-order', 'duplicate-durable', 'foreign-header',
     'listing-failure', 'foreign-rejection', 'pre-abort', 'list-abort', 'signal-forwarded', 'post-list-attach', 'clone-detachment']) {
     const ctx = new Context()
-    const header = {version: 3, id: SessionId('owned'), createdAt: 9, cwd: '/controlled/cwd',isSeeded:false}
+    const header = {version: 4, id: SessionId('owned'), createdAt: 9, cwd: '/controlled/cwd',isSeeded:false}
     const controller = new AbortController()
     const failure: any = name === 'foreign-rejection' ? 'offline' : new TypeError('controlled listing failure')
     const counters = {lists: 0, sameSignal: false}

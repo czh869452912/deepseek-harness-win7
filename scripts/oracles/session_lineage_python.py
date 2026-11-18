@@ -22,7 +22,7 @@ from dsh.cordis.errors import ThrownValueError
 from dsh.core.abort import AbortController
 from dsh.core.session import SessionHeader
 from dsh.core.session.current_session import CurrentSession as Session
-from dsh.core.session.current_session import CurrentSessionPlugin as SessionPlugin
+from current_persistence_fixture import SessionPluginV4 as SessionPlugin
 from dsh.session.query_current import CurrentSessionQueryService as SessionQueryService
 
 
@@ -36,7 +36,7 @@ async def observe():
         failure = 'offline' if name == 'foreign-rejection' else TypeError('controlled lineage failure')
         counters = dict(lists=0, inspections=0, sameSignal=False)
         def header(identity, created_at=1, parent=None):
-            return SessionHeader(identity, version=3, created_at=created_at, parent_session=parent)
+            return SessionHeader(identity, version=4, created_at=created_at, parent_session=parent)
         headers = [header('target')]
         if name in ('complete', 'clone-detachment'):
             headers = [header('root', 0), header('parent', 1, 'root'), header('target', 2, 'parent'),
@@ -76,7 +76,7 @@ async def observe():
             await context.plugin(SessionPlugin)
             if name not in ('persisted', 'listing-failure', 'foreign-rejection', 'pre-abort', 'list-abort'):
                 for meta in headers:
-                    context.get('sessions').enter(Session.create(meta.id, [], meta))
+                    context.get('sessions').enter(Session.create(meta.id, [], meta, format_version=4))
             async def listing(signal=None):
                 counters['lists'] += 1
                 counters['sameSignal'] = signal is controller.signal

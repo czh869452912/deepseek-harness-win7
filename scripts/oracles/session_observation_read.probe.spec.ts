@@ -14,7 +14,7 @@ it('observes actual point-reader failure ownership and independently retained cu
     'prepared-leases', 'live-leases', 'published-live', 'stable-cold-read', 'projection-none', 'prepared-projection']
   for (const name of names) {
     const ctx = new Context()
-    const header = {version: 3, id: SessionId('owned'), createdAt: 9, cwd: '/controlled/cwd',isSeeded:false}
+    const header = {version: 4, id: SessionId('owned'), createdAt: 9, cwd: '/controlled/cwd',isSeeded:false}
     const events = [{type: 'controlled/event', seq: 0, time: 0, data: {}, ignorable: true}] as any
     const controller = new AbortController()
     let failure: any = new TypeError('controlled read failure')
@@ -28,7 +28,7 @@ it('observes actual point-reader failure ownership and independently retained cu
       await ctx.plugin(SessionProjectionRegistry)
       const broken = ['projection-failure', 'live-projection-failure', 'projection-none'].includes(name)
       const schema = {parse(value: any) {return value}}
-      ctx.sessionProjections.register({key: 'controlled/count', stateVersion: 1, stateSchema: schema,
+      await ctx.sessionProjections.register({key: 'controlled/count', stateVersion: 1, stateSchema: schema,
         init: () => {if (broken) throw failure; return 0},
         apply: (state: number) => {counters.applied += 1; return state + 1},
         wire: {viewSchema: schema, view: (state: number) => state}} as any)

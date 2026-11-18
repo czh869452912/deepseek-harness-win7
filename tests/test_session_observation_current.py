@@ -206,7 +206,10 @@ async def test_projection_hydration_failure_and_opt_out(setup,cached):
     assert caught.value.code=='SESSION_QUERY_CORRUPT_SESSION'
     lease=await reader.read('cold',dict(projectionMode='none'));lease.dispose()
     ctx.get('sessions').create('cold');registry.snapshot=fail
-    with pytest.raises(RuntimeError,match='projection'):await reader.read('cold')
+    with pytest.raises(SessionQueryError,match='failed to project session') as caught:
+        await reader.read('cold')
+    assert caught.value.code=='SESSION_QUERY_CORRUPT_SESSION'
+    assert isinstance(caught.value.cause,RuntimeError) and str(caught.value.cause)=='projection'
 
 
 @pytest.mark.parametrize('compression',['none','zstd'])

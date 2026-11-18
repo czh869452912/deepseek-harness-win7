@@ -16,14 +16,16 @@ if __name__ == '__main__':
     ROOT = arguments.root.resolve()
 sys.path.insert(0, str(ROOT))
 import dsh
+sys.path.insert(1, str(Path(__file__).resolve().parent))
 from dsh.cordis import Context
 from dsh.cordis.errors import ThrownValueError
 from dsh.core.abort import AbortController
 from dsh.core.session import SessionHeader
-from dsh.core.session.current_session import CurrentSession as Session, CurrentSessionPlugin as SessionPlugin
+from dsh.core.session.current_session import CurrentSession as Session
+from current_persistence_fixture import SessionPluginV4 as SessionPlugin
 from dsh.session.observation_current import CurrentSessionObservationReader as SessionObservationReader
 from dsh.session.persistence import SessionPersistenceCorruptionError, SessionPersistenceNotFoundError
-from dsh.session.projections import SessionProjectionsPlugin
+from current_persistence_fixture import ProjectionPluginV4 as SessionProjectionsPlugin
 
 
 async def observe():
@@ -33,7 +35,7 @@ async def observe():
         'prepared-leases', 'live-leases', 'published-live', 'stable-cold-read', 'projection-none', 'prepared-projection']
     for name in names:
         context = Context()
-        header = SessionHeader('owned', version=3, created_at=9, cwd='/controlled/cwd')
+        header = SessionHeader('owned', version=4, created_at=9, cwd='/controlled/cwd')
         events = [{'type': 'controlled/event', 'seq': 0, 'time': 0, 'data': {}, 'ignorable': True}]
         controller = AbortController()
         failure = TypeError('controlled read failure')
@@ -56,11 +58,11 @@ async def observe():
             def apply(state, event):
                 counters['applied'] += 1
                 return state + 1
-            context.get('sessionProjections').register({'key': 'controlled/count', 'stateVersion': 1,
+            await context.get('sessionProjections').register({'key': 'controlled/count', 'stateVersion': 1,
                 'stateSchema': lambda value: value, 'init': initialize, 'apply': apply,
                 'wire': {'viewSchema': lambda value: value, 'view': lambda state: state}})
-            meta = SessionHeader('foreign', version=3, created_at=9, cwd=header.cwd) if name == 'wrong-source' else header
-            prepared_session = Session.create(meta.id, events, meta)
+            meta = SessionHeader('foreign', version=4, created_at=9, cwd=header.cwd) if name == 'wrong-source' else header
+            prepared_session = Session.create(meta.id, events, meta, format_version=4)
             if name == 'live-leases':
                 context.get('sessions').enter(prepared_session)
             async def stat(session_id, options=None):
@@ -72,7 +74,7 @@ async def observe():
                 if name == 'stat-abort':
                     controller.abort(failure)
                 if name in ('published-live', 'live-projection-failure'):
-                    context.get('sessions').enter(Session.create(header.id, [], header))
+                    context.get('sessions').enter(Session.create(header.id, [], header, format_version=4))
                 return dict(header=meta, revision='controlled:0')
             async def opened(session_id, mode, options=None):
                 assert mode == 'read'

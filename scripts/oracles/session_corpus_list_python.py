@@ -22,7 +22,7 @@ from dsh.cordis.errors import ThrownValueError
 from dsh.core.abort import AbortController
 from dsh.core.session import SessionHeader
 from dsh.core.session.current_session import CurrentSession as Session
-from dsh.core.session.current_session import CurrentSessionPlugin as SessionPlugin
+from current_persistence_fixture import SessionPluginV4 as SessionPlugin
 from dsh.session.query_current import CurrentSessionQueryService as SessionQueryService
 
 
@@ -31,7 +31,7 @@ async def observe():
     for name in ['no-provider', 'persisted-live', 'tie-order', 'duplicate-durable', 'foreign-header',
         'listing-failure', 'foreign-rejection', 'pre-abort', 'list-abort', 'signal-forwarded', 'post-list-attach', 'clone-detachment']:
         context = Context()
-        header = SessionHeader('owned', version=3, created_at=9, cwd='/controlled/cwd')
+        header = SessionHeader('owned', version=4, created_at=9, cwd='/controlled/cwd')
         controller = AbortController()
         failure = 'offline' if name == 'foreign-rejection' else TypeError('controlled listing failure')
         counters = {'lists': 0, 'sameSignal': False}
@@ -41,12 +41,12 @@ async def observe():
             await context.plugin(SessionPlugin)
             headers = [header]
             if name == 'tie-order':
-                headers = [SessionHeader(identity, version=3, created_at=10 if identity == 'new' else 9, cwd=header.cwd)
+                headers = [SessionHeader(identity, version=4, created_at=10 if identity == 'new' else 9, cwd=header.cwd)
                     for identity in ['b', 'a', 'new']]
             if name == 'duplicate-durable':
-                headers = [header, SessionHeader(header.id, version=3, created_at=10, cwd=header.cwd)]
+                headers = [header, SessionHeader(header.id, version=4, created_at=10, cwd=header.cwd)]
             if name in ('persisted-live', 'foreign-header', 'clone-detachment'):
-                context.get('sessions').enter(Session.create(header.id, [], SessionHeader(header.id, version=3, created_at=8 if name == 'foreign-header' else 9, cwd=header.cwd)))
+                context.get('sessions').enter(Session.create(header.id, [], SessionHeader(header.id, version=4, created_at=8 if name == 'foreign-header' else 9, cwd=header.cwd), format_version=4))
             async def listing(signal=None):
                 counters['lists'] += 1
                 counters['sameSignal'] = signal is controller.signal
@@ -57,7 +57,7 @@ async def observe():
                 if name == 'list-abort':
                     controller.abort(failure)
                 if name == 'post-list-attach':
-                    context.get('sessions').enter(Session.create(header.id, [], header))
+                    context.get('sessions').enter(Session.create(header.id, [], header, format_version=4))
                 return headers
             if name != 'no-provider':
                 context.set_service('sessionPersistence', read_fixture(listing))

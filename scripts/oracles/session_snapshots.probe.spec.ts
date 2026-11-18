@@ -5,7 +5,7 @@ import { spawnSync } from 'node:child_process'
 import { it } from 'vitest'
 import { Context } from '@deepseek-ai/cordis'
 import SessionStore from '@deepseek-ai/dsh-session'
-import Jsonl from '@deepseek-ai/dsh-session-persistence-jsonl'
+import * as Jsonl from '@deepseek-ai/dsh-session-persistence-jsonl'
 
 it('observes actual durable snapshot qualification, stable reopening, copied stores and caller abort', async () => {
   const rows: any[] = []
@@ -16,7 +16,7 @@ it('observes actual durable snapshot qualification, stable reopening, copied sto
       const parent = await mkdtemp(join(tmpdir(),'dsh-snapshot-'))
       const root = join(parent,'original')
       const file = join(parent,'original.db')
-      const meta = {version:3,id:'s',createdAt:1,cwd:'/controlled/cwd',isSeeded:false} as any
+      const meta = {version:4,id:'s',createdAt:1,cwd:'/controlled/cwd',isSeeded:false} as any
       const firstEvent = {type:'session/end-seed',seq:0,time:1,data:{}} as any
       let context: Context | undefined
       const mount = async (location: string) => {

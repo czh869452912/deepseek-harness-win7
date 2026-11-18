@@ -35,8 +35,8 @@ it('observes owned filters, finite bounds, literal matching and concrete query c
       } else {
         ctx = new Context()
         await ctx.plugin(SessionStore)
-        const live = {version:3,id:SessionId('live'),createdAt:2,cwd:'/workspace',isSeeded:false}
-        const cold = {version:3,id:SessionId('cold'),createdAt:1,isSeeded:false}
+        const live = {version:4,id:SessionId('live'),createdAt:2,cwd:'/workspace',isSeeded:false}
+        const cold = {version:4,id:SessionId('cold'),createdAt:1,isSeeded:false}
         ctx.sessions.enter(Session.create(live.id,events,live))
         const controller = new AbortController()
         const counters = {lists:0,inspections:0,sameSignal:true}

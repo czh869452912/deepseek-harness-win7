@@ -36,7 +36,7 @@ async def observe():
     for name in names:
         ctx = Context()
         def header(identity, created_at=9):
-            return SessionHeader(identity, version=3, created_at=created_at, cwd='/controlled/cwd')
+            return SessionHeader(identity, version=4, created_at=created_at, cwd='/controlled/cwd')
         def title(identity):
             return {'type': 'session/title', 'seq': 0, 'time': 3,
                 'data': {'title': 'Title ' + identity, 'messageSeqs': [], 'source': {'kind': 'user'}}}
@@ -54,7 +54,7 @@ async def observe():
         if name == 'load-missing-record':
             listed = []
         def live(identity):
-            ctx.get('sessions').enter(Session.create(identity, [title(identity)], header(identity)))
+            ctx.get('sessions').enter(Session.create(identity, [title(identity)], header(identity), format_version=4))
         def normalize_error(error):
             return {'name': getattr(error, 'name', type(error).__name__),
                 'message': getattr(error, 'message', str(error)), 'code': getattr(error, 'code', None),

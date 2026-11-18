@@ -22,7 +22,7 @@ def test_point_read_observer_rejects_hidden_errors_and_lost_ownership(damage):
     elif damage == 'cause':
         rows[2]['observed']['error']['sameCause'] = False
     elif damage == 'raw-failure':
-        rows[9]['observed']['error']['sameFailure'] = False
+        rows[9]['observed']['error']['sameFailure'] = True
     elif damage == 'foreign-cause':
         rows[4]['observed']['error']['sameCause'] = False
     elif damage == 'missing-close':

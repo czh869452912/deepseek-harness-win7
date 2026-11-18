@@ -1,0 +1,44 @@
+{
+  "contract": "C9-DV",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "status": "Targeted current query/observation contracts passed",
+  "problem": "Six Source query observers still constructed retired v3 Session headers. Snapshot observer imported a removed default backend export. Once mounted against v4 on both sides, actual live projection failures exposed a Native raw-exception mismatch.",
+  "changes": "Both observer sides explicitly construct and mount v4 Sessions; snapshot Source mounts the namespace backend export. Point reads mount current v4 projection registry and await registration. Native live projection errors now use the same corrupt-session taxonomy/message and preserve the original cause as prepared projection errors. The one changed expected observation comes from the unchanged current Source, and its raw-failure damage control now injects the rejected raw identity.",
+  "verification": [
+    {
+      "run": "rc022-current-query-consumers-20261118-01",
+      "failed": 1,
+      "scope": "Source v4 header fix exposed Native v3 fixture mount"
+    },
+    {
+      "run": "rc022-current-query-consumers-20261118-02",
+      "passed": 2,
+      "failed": 1,
+      "scope": "Actual lineage/filters pairs passed; snapshot default export failed"
+    },
+    {
+      "run": "rc022-current-query-rest-20261118-01",
+      "passed": 2,
+      "failed": 1,
+      "scope": "Actual corpus listing/read pairs passed; point-reader differences retained"
+    },
+    {
+      "run": "rc022-current-snapshots-20261118-03",
+      "passed": 1,
+      "seconds": 7.34
+    },
+    {
+      "run": "rc022-current-observation-20261118-02",
+      "passed": 52,
+      "seconds": 5.88
+    },
+    {
+      "run": "rc022-current-query-contracts-20261118-03",
+      "passed": 183,
+      "seconds": 34.44,
+      "scope": "All six actual current Source/Native pairs (111 complete observations), every associated observer damage/runtime control, direct cold/live/cache/cancellation/projection consumers; final v4 projection registration is awaited on both sides"
+    }
+  ],
+  "cleanup": "All six completed pytest workspace/home/tmp sets removed. Original Source/Native observations, failure diagnostics and logs copied with size/SHA-256 before cleanup; commands and XML/logs retained. Snapshot observers retire their own per-case stores in finally.",
+  "qualification": "Current targeted checks only; no complete frozen release qualification claimed."
+}

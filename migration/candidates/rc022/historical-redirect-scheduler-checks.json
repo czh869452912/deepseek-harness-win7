@@ -1,0 +1,26 @@
+{
+  "contract": "C9-DU",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "status": "Targeted historical compatibility and current HTTP/tool successors passed",
+  "changes": "Retained HTTP redirect and scheduler suites compare freshly executed Native providers with byte-preserved historical Source rows. Reviewed row-model helper refuses unknown contracts, keeps complete ordered rows and runtime/damage validation, and checks actual current successor roster. Neither a historical Source process nor current acceptance is claimed.",
+  "provenance": "Two minimal original Source members from the verified original RC3 archive/container; size and SHA-256 recorded in the evidence manifest.",
+  "verification": [
+    {
+      "run": "rc022-historical-redirect-scheduler-20261118-01",
+      "passed": 60,
+      "seconds": 9.22,
+      "scope": "All redirect and scheduler observations, provenance/damage controls, actual empty-body/abort/stalled-redirect lifetime and historical row identity/successor guards"
+    },
+    {
+      "run": "rc022-current-http-tool-successors-20261118-01",
+      "status": "Three actual current Source/Native pairs passed",
+      "scopes": [
+        "http_fetch",
+        "tool_pipeline",
+        "tool_admission"
+      ]
+    }
+  ],
+  "cleanup": "Completed pytest workspace/home/tmp retired. Original facts and Native observations, commands and XML/logs retained; current pairs produced no retained disposable file roots.",
+  "qualification": "Targeted checks only; fresh full frozen acceptance remains required."
+}

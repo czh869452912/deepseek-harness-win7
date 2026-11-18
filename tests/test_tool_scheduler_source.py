@@ -1,3 +1,4 @@
+"""Explicit retained historical tool-scheduler controls; current Source pairs run separately."""
 import copy
 import json
 import os
@@ -9,18 +10,14 @@ import pytest
 
 from scripts.tool_scheduler_oracle import PREFIX_NAMES, identity, validate_runtime
 
+from historical_domain_models import historical_rows_pair
+
 ROOT = Path(__file__).resolve().parents[1]
 
 
 @pytest.fixture(scope='module')
 def observations(tmp_path_factory):
-    output = tmp_path_factory.mktemp('tool-scheduler-source') / 'paired.json'
-    subprocess.run([sys.executable, str(ROOT / 'scripts/tool_scheduler_oracle.py'), '--output', str(output)],
-                   cwd=str(ROOT), env=dict(os.environ), check=True, timeout=45)
-    paired = json.loads(output.read_text(encoding='utf-8'))
-    native = json.loads(output.with_suffix('.native.json').read_text(encoding='utf-8'))
-    assert paired['status'] == 'matched' and paired['cases'] == 30
-    return native, paired['observations_sha256']
+    return historical_rows_pair('tool-scheduler')
 
 
 def test_actual_source_parallel_caps_settings_and_factory_consumers_match(observations):

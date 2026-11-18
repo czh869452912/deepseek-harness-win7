@@ -1,3 +1,4 @@
+"""Explicit retained historical http-redirect controls; current Source pairs run separately."""
 import copy
 import json
 import os
@@ -9,6 +10,8 @@ import pytest
 
 from scripts.http_redirect_oracle import NAMES, validate_runtime
 
+from historical_domain_models import historical_rows_pair
+
 ROOT = Path(__file__).resolve().parents[1]
 DAMAGE = ['missing-module', 'changed-module', 'empty-closure', 'foreign-root', 'foreign-python',
           'missing-row', 'duplicate-row', 'changed-row']
@@ -16,13 +19,7 @@ DAMAGE = ['missing-module', 'changed-module', 'empty-closure', 'foreign-root', '
 
 @pytest.fixture(scope='module')
 def observations(tmp_path_factory):
-    output = tmp_path_factory.mktemp('http-redirect-source') / 'paired.json'
-    subprocess.run([sys.executable, str(ROOT / 'scripts/http_redirect_oracle.py'), '--output', str(output)],
-                   cwd=str(ROOT), env=dict(os.environ), check=True, timeout=45)
-    paired = json.loads(output.read_text(encoding='utf-8'))
-    native = json.loads(output.with_suffix('.native.json').read_text(encoding='utf-8'))
-    assert paired['status'] == 'matched' and paired['cases'] == 29
-    return native, paired['observations_sha256']
+    return historical_rows_pair('http-redirect')
 
 
 @pytest.mark.parametrize('name', NAMES)

@@ -48,3 +48,23 @@ def test_worker_oracle_identity_checks_checkout_bytes_by_default(name, monkeypat
     monkeypatch.setattr(module,'digest',lambda path:'0'*64)
     with pytest.raises(ValueError,match='Source input bytes changed'):
         module.identity(source)
+
+
+@pytest.mark.parametrize('name', ['http-redirect', 'tool-scheduler'])
+def test_original_historical_rows_match_fresh_retained_provider_and_have_current_successors(name):
+    from historical_domain_models import ROWS_SUCCESSORS, historical_rows_pair
+    original = historical_source(name)
+    native, expected = historical_rows_pair(name)
+    validator = importlib.import_module('scripts.' + name.replace('-', '_') + '_oracle')
+    assert native['rows'] == original
+    assert validator.identity(original) == expected
+    assert historical_source(name) == original
+    plan = json.loads((ROOT / 'migration/candidates/rc022/release-gate-plan.json').read_text(encoding='utf-8'))
+    scripts = {row['script'] for row in plan['paired']}
+    assert all('scripts/' + successor + '_probe.py' in scripts for successor in ROWS_SUCCESSORS[name])
+
+
+def test_historical_row_models_refuse_unreviewed_contract():
+    from historical_domain_models import historical_rows_pair
+    with pytest.raises(ValueError, match='Unreviewed'):
+        historical_rows_pair('current-release')

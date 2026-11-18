@@ -110,3 +110,28 @@ def historical_identity(name, validator):
         options['check_files'] = False
         return validator(source, *arguments, **options)
     return identity
+
+
+ROWS_SUCCESSORS = {
+    'http-redirect': ('rc022_http_fetch', 'rc022_otel_http'),
+    'tool-scheduler': ('rc022_tool_pipeline', 'rc022_tool_admission'),
+}
+
+
+@functools.lru_cache(maxsize=None)
+def _rows_pair(name):
+    if name not in ROWS_SUCCESSORS:
+        raise ValueError('Unreviewed historical row model: ' + name)
+    import importlib
+    validator = importlib.import_module('scripts.' + name.replace('-', '_') + '_oracle')
+    source = historical_source(name)
+    native = native_fixture(name)
+    expected = validator.identity(source)
+    if validator.identity(native['rows']) != expected:
+        raise ValueError('Retained Native provider differs from original historical rows')
+    validator.validate_runtime(native, ROOT, expected, native['modules'])
+    return native, expected
+
+
+def historical_rows_pair(name):
+    return copy.deepcopy(_rows_pair(name))

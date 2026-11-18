@@ -8,6 +8,7 @@ import shutil
 import subprocess
 
 import pytest
+from historical_workflow_modules import observe_session
 
 from dsh.cordis.context import Context
 from dsh.javascript import runtime as implementation
@@ -23,16 +24,12 @@ pytestmark = pytest.mark.skipif(os.name != 'nt', reason='Private MSVCRT worker t
 @pytest.fixture(scope='module')
 def source_observations(tmp_path_factory):
     output = tmp_path_factory.mktemp('js-workflow-source') / 'observations'
-    completed = subprocess.run(['node', str(ROOT / 'scripts/oracles/javascript_workflow_source.mjs'), str(output)],
-        cwd=str(ROOT), stdout=subprocess.PIPE, stderr=subprocess.PIPE, encoding='utf-8', timeout=120)
-    (output.parent / 'source.log').write_text(completed.stdout + completed.stderr, encoding='utf-8')
-    assert completed.returncode == 0, completed.stdout + completed.stderr
-    return json.loads((output / 'source.json').read_text(encoding='utf-8'))
+    return observe_session(output)
 
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize('scenario', CASES, ids=[scenario['name'] for scenario in CASES])
-async def test_actual_source_session_child_rpc_and_retained_process(scenario, source_observations, tmp_path):
+async def test_retained_session_against_sealed_old_worker(scenario, source_observations, tmp_path):
     ctx = Context()
     await ctx.plugin(JavaScriptRuntime)
     initial = dict(body=scenario['body'], meta=dict(name=scenario['name'], description='actual Source worker RPC'),

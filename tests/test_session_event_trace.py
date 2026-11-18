@@ -1,4 +1,5 @@
 import copy
+import inspect
 import json
 from pathlib import Path
 import pytest
@@ -50,7 +51,9 @@ async def test_actual_durable_surface_event_trace_and_window_stay_cold_and_detac
             assert stored.events[5]['surfaceOp'] == dict(op='replace',start=3,end=3)
         finally:
             if hasattr(fresh, 'close'):
-                fresh.close()
+                closed = fresh.close()
+                if inspect.isawaitable(closed):
+                    await closed
     finally:
         query.close()
         await context.fiber.dispose()

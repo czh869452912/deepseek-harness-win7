@@ -13,6 +13,7 @@ from dsh.workflow.workflow_service import WorkflowEngine, WorkflowError
 import os
 import subprocess
 import pytest
+from evidence_fixtures import read_member
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -21,18 +22,19 @@ pytestmark = pytest.mark.skipif(os.name != 'nt', reason='Private MSVCRT worker t
 
 
 @pytest.fixture(scope='module')
-def source_host_observations(tmp_path_factory):
-    output = tmp_path_factory.mktemp('js-host-source') / 'observations'
-    completed = subprocess.run(['node', str(ROOT / 'scripts/oracles/javascript_workflow_host_source.mjs'), str(output)],
-        cwd=str(ROOT), stdout=subprocess.PIPE, stderr=subprocess.PIPE, encoding='utf-8', timeout=120)
-    (output.parent / 'source.log').write_text(completed.stdout + completed.stderr, encoding='utf-8')
-    assert completed.returncode == 0, completed.stdout + completed.stderr
-    return json.loads((output / 'source.json').read_text(encoding='utf-8'))
+def source_host_observations():
+    # Immutable original old-Source facts for the retained compatibility host.
+    # Current workflow qualification has separate actual current Source pairs.
+    value = read_member('RC3-QUALIFICATION-20261018-228CFACC.zip',
+                        'full-gate-root.zip!/javascript-workflow-paired.source.json')
+    assert value['sourceCommit'] == 'a4c74a91e06b00fe0b0937bde982170c526cc842'
+    assert len(value['observations']) == len(CASES) == 34
+    return value
 
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize('scenario', CASES, ids=[scenario['name'] for scenario in CASES])
-async def test_workflow_engine_actual_source_host_events_and_children(scenario, source_host_observations, tmp_path):
+async def test_retained_workflow_host_against_immutable_old_source(scenario, source_host_observations, tmp_path):
     ctx = Context()
     await ctx.plugin(JavaScriptRuntime)
     await ctx.plugin(SubagentRuntime)

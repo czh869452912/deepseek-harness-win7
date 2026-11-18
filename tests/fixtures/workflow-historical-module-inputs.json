@@ -1,0 +1,218 @@
+{
+  "source_commit": "a4c74a91e06b00fe0b0937bde982170c526cc842",
+  "content_size": 295824,
+  "content_sha256": "4ca5594cf37827e137e90167a2ef579897db440fc35b2e9e02afdb71354675d0",
+  "members": {
+    "reference/packages/util/values/src/index.ts": {
+      "size": 9759,
+      "sha256": "573c77ba7017fc747f90fdbd5445cfd565db6ff6d53a6b999f6c34ed842bbb8f",
+      "git_commit": "a4c74a91e06b00fe0b0937bde982170c526cc842",
+      "git_path": "packages/util/values/src/index.ts",
+      "git_blob": "78a2cbb493faca3ac87e2fa7cafcd76a8ef79591"
+    },
+    "reference/packages/workflow/workflow-worker-thread/src/realm.ts": {
+      "size": 6670,
+      "sha256": "5bbfbbcf80bb3ff4212d53b013b15571a23fa2bccadb97a696d6f01575bd8109",
+      "git_commit": "a4c74a91e06b00fe0b0937bde982170c526cc842",
+      "git_path": "packages/workflow/workflow-worker-thread/src/realm.ts",
+      "git_blob": "8a1e6fdef98eb5092c469a109ae95b257f41fff5"
+    },
+    "reference/packages/workflow/workflow-worker-thread/src/protocol.ts": {
+      "size": 4932,
+      "sha256": "511f345ea56d8c76791dd8f19a24084d7b039565c2a4a13373efdbcbc6f84a9d",
+      "git_commit": "a4c74a91e06b00fe0b0937bde982170c526cc842",
+      "git_path": "packages/workflow/workflow-worker-thread/src/protocol.ts",
+      "git_blob": "b636b0ad242fbc0957275ec6eb76e8fbfa9a7ca2"
+    },
+    "reference/packages/workflow/workflow-worker-thread/src/host.ts": {
+      "size": 30041,
+      "sha256": "5b42e74c46006661dfdd798fb8640a0e00e0a0131013aaa350045e98a2a37feb",
+      "git_commit": "a4c74a91e06b00fe0b0937bde982170c526cc842",
+      "git_path": "packages/workflow/workflow-worker-thread/src/host.ts",
+      "git_blob": "2cd5ac4a7caa032c1ba86e419a85c108afeba4a6"
+    },
+    "reference/packages/util/brand/src/index.ts": {
+      "size": 1520,
+      "sha256": "f9d6da858d7308117227dcc2306ce7246b7309b2ae22d413d289cbae51e83e98",
+      "git_commit": "a4c74a91e06b00fe0b0937bde982170c526cc842",
+      "git_path": "packages/util/brand/src/index.ts",
+      "git_blob": "7f89f3eddc5e78208da31eb0a6a40b09aa3f71fd"
+    },
+    "reference/packages/llm/llm/src/error.ts": {
+      "size": 7683,
+      "sha256": "d5a46153de9293456b7c998f849b4e3f1a95c3830777aab932cdc5acf036b1b1",
+      "git_commit": "a4c74a91e06b00fe0b0937bde982170c526cc842",
+      "git_path": "packages/llm/llm/src/error.ts",
+      "git_blob": "4b3e25c75f03184bc4b8c7935310b57cb436cd9e"
+    },
+    "scripts/native/workflow/llm.ts": {
+      "size": 163,
+      "sha256": "035de392a0a50d4f6f14821cdb85f16c17936c51a78d4e5f593192d5ea3f55e2",
+      "git_commit": "228cfacc",
+      "git_path": "scripts/native/workflow/llm.ts",
+      "git_blob": "9793bf85d0476f08097b850b512cb2af68b14bbe"
+    },
+    "reference/packages/core/tools/src/json-schema.ts": {
+      "size": 26289,
+      "sha256": "13deffdfd34539e23706b0fde235991da45b2f07c5c18dbbf3ca734c1da0c788",
+      "git_commit": "a4c74a91e06b00fe0b0937bde982170c526cc842",
+      "git_path": "packages/core/tools/src/json-schema.ts",
+      "git_blob": "c064fb294c7bb6349befc825699e3dc841766d30"
+    },
+    "reference/vendor/cosmokit/src/misc.ts": {
+      "size": 3865,
+      "sha256": "117617943074ea57c15f216905dacd2f6d1c4c2ff16586f97a7a7a87dbf2141f",
+      "git_commit": "a4c74a91e06b00fe0b0937bde982170c526cc842",
+      "git_path": "vendor/cosmokit/src/misc.ts",
+      "git_blob": "11ed0a8597b12314f99cf39db10fec71cede8067"
+    },
+    "reference/vendor/cosmokit/src/array.ts": {
+      "size": 1453,
+      "sha256": "cf4de899ecffd66a90d8cef6f4c7d127d31f77f776d8e173d41c30d2d7632cf7",
+      "git_commit": "a4c74a91e06b00fe0b0937bde982170c526cc842",
+      "git_path": "vendor/cosmokit/src/array.ts",
+      "git_blob": "18ed5e407fe6932b2ca9eb2267d63deffca3a8cf"
+    },
+    "reference/vendor/cosmokit/src/types.ts": {
+      "size": 5927,
+      "sha256": "09d72a91052105e88500bfb99a8e8ce0c9ebf6f6e7df569053e114bc77aa019c",
+      "git_commit": "a4c74a91e06b00fe0b0937bde982170c526cc842",
+      "git_path": "vendor/cosmokit/src/types.ts",
+      "git_blob": "499a46273a0ea83079169e10446769ce2f91ec3c"
+    },
+    "reference/vendor/cosmokit/src/string.ts": {
+      "size": 3928,
+      "sha256": "5564272b3e15e49235cbe3a8b453f27306baf282d23a893982841670f65d3c04",
+      "git_commit": "a4c74a91e06b00fe0b0937bde982170c526cc842",
+      "git_path": "vendor/cosmokit/src/string.ts",
+      "git_blob": "6f7084488196e9d73075dfcdb72cd5998ba6dfe6"
+    },
+    "reference/vendor/cosmokit/src/time.ts": {
+      "size": 3054,
+      "sha256": "49957c4608465a1fbd738186a92c47fffcd1fc4ba59dbf89524f8a773fe16fe2",
+      "git_commit": "a4c74a91e06b00fe0b0937bde982170c526cc842",
+      "git_path": "vendor/cosmokit/src/time.ts",
+      "git_blob": "6f9065493e56e8a5592704858a51a5d25f605a88"
+    },
+    "reference/vendor/cosmokit/src/index.ts": {
+      "size": 399,
+      "sha256": "51dd173c70001d7d7891d3aab7e26594da65f7cb6671253f6d457ac889326b3c",
+      "git_commit": "a4c74a91e06b00fe0b0937bde982170c526cc842",
+      "git_path": "vendor/cosmokit/src/index.ts",
+      "git_blob": "9fe48de069a7f1a636f9b46d498d5ac4ddd59d07"
+    },
+    "reference/vendor/cordis/src/utils.ts": {
+      "size": 10236,
+      "sha256": "8fe273424583d21267ef13f248840e97454d09d836a0ac08323a9482c2069263",
+      "git_commit": "a4c74a91e06b00fe0b0937bde982170c526cc842",
+      "git_path": "vendor/cordis/src/utils.ts",
+      "git_blob": "024d21f5e025290b2fd01277ea83ad2128908bfa"
+    },
+    "reference/vendor/cordis/src/events.ts": {
+      "size": 14949,
+      "sha256": "96565a2b5fbf35c26b78cbdc785b2b2e3f01fa55a9fd1f6af5355ab35ccc343c",
+      "git_commit": "a4c74a91e06b00fe0b0937bde982170c526cc842",
+      "git_path": "vendor/cordis/src/events.ts",
+      "git_blob": "e9bd85e3e11116ac2d29538cfbca0cbcfab1ea68"
+    },
+    "reference/vendor/cordis/src/logger.ts": {
+      "size": 8638,
+      "sha256": "5121e76fd9f55b9b90dfea09d6e60d122e7530246b8b19970ddebd9c35ccf7d8",
+      "git_commit": "a4c74a91e06b00fe0b0937bde982170c526cc842",
+      "git_path": "vendor/cordis/src/logger.ts",
+      "git_blob": "c905bce865f47240d9cf5f95a76ab25aba366963"
+    },
+    "reference/vendor/cordis/src/fiber.ts": {
+      "size": 24981,
+      "sha256": "750555b47603f88e7ef7a05d1a8d629b355c176a1185af411aac6e3e1e2b7ba3",
+      "git_commit": "a4c74a91e06b00fe0b0937bde982170c526cc842",
+      "git_path": "vendor/cordis/src/fiber.ts",
+      "git_blob": "38a3197e293ca3dafa6d9d924a2eafbd2231bd94"
+    },
+    "reference/vendor/cordis/src/reflect.ts": {
+      "size": 15434,
+      "sha256": "6847b9781044023d65aebb5896a873b9f0a3d777eaf7fa0dd2a7a408eb6b74a6",
+      "git_commit": "a4c74a91e06b00fe0b0937bde982170c526cc842",
+      "git_path": "vendor/cordis/src/reflect.ts",
+      "git_blob": "7bbe1ae9919b930230844ec3d4365466a78e90a8"
+    },
+    "reference/vendor/cordis/src/registry.ts": {
+      "size": 11753,
+      "sha256": "34bbd60ae502b4f85201c204afb52a9acabde6878d9278493478c1b2183debd3",
+      "git_commit": "a4c74a91e06b00fe0b0937bde982170c526cc842",
+      "git_path": "vendor/cordis/src/registry.ts",
+      "git_blob": "478cf036cb2339fcd6c092ee0cb6f2babc500014"
+    },
+    "reference/vendor/cordis/src/context.ts": {
+      "size": 6153,
+      "sha256": "96b388162d6013c1898de61e35f28917abb93809de24174980f2a1a348d0b115",
+      "git_commit": "a4c74a91e06b00fe0b0937bde982170c526cc842",
+      "git_path": "vendor/cordis/src/context.ts",
+      "git_blob": "0488423088e4da284d28c2d2cef887a5c69ed0f5"
+    },
+    "reference/vendor/cordis/src/service.ts": {
+      "size": 4263,
+      "sha256": "614205c6ce7cf1a057b8b352e96aa4fcd734c967a3d2283a126c9c61f268e3be",
+      "git_commit": "a4c74a91e06b00fe0b0937bde982170c526cc842",
+      "git_path": "vendor/cordis/src/service.ts",
+      "git_blob": "dc5742f8c22d338e6aee874b5bca51b3e3031165"
+    },
+    "reference/vendor/cordis/src/index.ts": {
+      "size": 679,
+      "sha256": "c2232f082c763488225eafcd33530640ad26af0c7d6ea871a4f7e8ebf0eb3704",
+      "git_commit": "a4c74a91e06b00fe0b0937bde982170c526cc842",
+      "git_path": "vendor/cordis/src/index.ts",
+      "git_blob": "d0814213e043198d41b5af7d4da5d4edc0e384de"
+    },
+    "reference/packages/workflow/workflow/src/types.ts": {
+      "size": 5260,
+      "sha256": "8e2a56e4141886dab23922311053082cdb090068dfadf12b9c5f0003261dc302",
+      "git_commit": "a4c74a91e06b00fe0b0937bde982170c526cc842",
+      "git_path": "packages/workflow/workflow/src/types.ts",
+      "git_blob": "52a0bac78560d12688d9b1e22745b39ac819f278"
+    },
+    "reference/packages/workflow/workflow/src/index.ts": {
+      "size": 7507,
+      "sha256": "a7cf7dc7b367f18a9945883fe259f96ef031aa45a7a4e2c216cfcaa9a64b0685",
+      "git_commit": "a4c74a91e06b00fe0b0937bde982170c526cc842",
+      "git_path": "packages/workflow/workflow/src/index.ts",
+      "git_blob": "e345ab55d4c028a793b66b0cf6b2d414b178f9c0"
+    },
+    "reference/packages/workflow/workflow-worker-thread/src/runtime.ts": {
+      "size": 22110,
+      "sha256": "676d0a5e571a8ea205d6481e85028b8e3049e341d31d4bc0dbfeef60600691e4",
+      "git_commit": "a4c74a91e06b00fe0b0937bde982170c526cc842",
+      "git_path": "packages/workflow/workflow-worker-thread/src/runtime.ts",
+      "git_blob": "e93642d4c696a8ccbe3dacba661a570accc40c70"
+    },
+    "reference/packages/workflow/workflow-worker-thread/src/session.ts": {
+      "size": 8107,
+      "sha256": "086cb145eb2a01d95c947fd7f3a3f4dc2c25bb32be2821fb9b63ea46d0e4f3af",
+      "git_commit": "a4c74a91e06b00fe0b0937bde982170c526cc842",
+      "git_path": "packages/workflow/workflow-worker-thread/src/session.ts",
+      "git_blob": "ccafeb8364128a6ed3327a2d4f566bda1de2e49c"
+    },
+    "reference/packages/workflow/workflow-worker-thread/src/worker.ts": {
+      "size": 701,
+      "sha256": "0a3db44c0f1ebf15ac7b4f5c31274052a0feb76571fecad4539e8fbd3149ea41",
+      "git_commit": "a4c74a91e06b00fe0b0937bde982170c526cc842",
+      "git_path": "packages/workflow/workflow-worker-thread/src/worker.ts",
+      "git_blob": "f5cd782f1c88f34bde44f29a59b9497b64ddd5ce"
+    },
+    "reference/tsconfig.base.json": {
+      "size": 38634,
+      "sha256": "606469d9599f2f50d2cabad276da580f7bfc12e749bcec12562044a5ec3fea6b",
+      "git_commit": "a4c74a91e06b00fe0b0937bde982170c526cc842",
+      "git_path": "tsconfig.base.json",
+      "git_blob": "83cabd9e4adf5a16d82af6ce6bb2fa5b7a775f85"
+    },
+    "scripts/native/workflow/session.ts": {
+      "size": 165,
+      "sha256": "5f6108e918b14c865fc3ea4ac5228b5a83dd6472f7dcf943fb8573a80482f5c1",
+      "git_commit": "228cfacc",
+      "git_path": "scripts/native/workflow/session.ts",
+      "git_blob": "b3aba199396e5821cd655108882f3826db1cfe9a"
+    }
+  },
+  "scope": "Byte-sealed old worker and explicit historical fixture helpers. Fresh compatibility composition only; not current Source or historical release qualification."
+}

@@ -493,6 +493,39 @@
       "sha256": "9137f944db428ffe0e076224644a6a8c35053eb710ea2b63a49ee85178a1daa1",
       "fixture": "9137f944db428ffe0e076224644a6a8c35053eb710ea2b63a49ee85178a1daa1.json.gz",
       "scope": "Byte-preserved historical Source compatibility facts; never current Source acceptance"
+    },
+    {
+      "archive": "RC3-QUALIFICATION-20261018-228CFACC.zip",
+      "archive_sha256": "f0f175c64849ce0d22b0790fd2fc591daf41989f58961fb8fc7db7f62458f0f2",
+      "member": "full-gate-root.zip!/javascript-workflow-paired.source.json",
+      "container": "full-gate-root.zip",
+      "container_sha256": "72b203024ac56295e662764c6b3c6f2deb36153e62e678fd4ec3d1d46e942e3b",
+      "size": 20187,
+      "sha256": "ea8a7c9ee9b3de60537a995e7155f1532f6b6060c1e69031581ed9dc0971b601",
+      "fixture": "ea8a7c9ee9b3de60537a995e7155f1532f6b6060c1e69031581ed9dc0971b601.json.gz",
+      "scope": "Immutable historical compatibility/parser inputs; not current Source or release qualification"
+    },
+    {
+      "archive": "RC3-QUALIFICATION-20261018-228CFACC.zip",
+      "archive_sha256": "f0f175c64849ce0d22b0790fd2fc591daf41989f58961fb8fc7db7f62458f0f2",
+      "member": "full-gate-root.zip!/jsonl-provider-paired.source.json",
+      "container": "full-gate-root.zip",
+      "container_sha256": "72b203024ac56295e662764c6b3c6f2deb36153e62e678fd4ec3d1d46e942e3b",
+      "size": 231598,
+      "sha256": "3fe89c94839b3e38520fe99ff5eddaab45ceada586f35fef87c1d9c94b29e868",
+      "fixture": "3fe89c94839b3e38520fe99ff5eddaab45ceada586f35fef87c1d9c94b29e868.json.gz",
+      "scope": "Immutable historical compatibility/parser inputs; not current Source or release qualification"
+    },
+    {
+      "archive": "RC3-QUALIFICATION-20261018-228CFACC.zip",
+      "archive_sha256": "f0f175c64849ce0d22b0790fd2fc591daf41989f58961fb8fc7db7f62458f0f2",
+      "member": "full-gate-root.zip!/session-event-trace-paired.source.json",
+      "container": "full-gate-root.zip",
+      "container_sha256": "72b203024ac56295e662764c6b3c6f2deb36153e62e678fd4ec3d1d46e942e3b",
+      "size": 18475,
+      "sha256": "f1f4b0d102d80d60361d7d9386d4b66ff75853f93b3377f1bbbb1c3e7c883a10",
+      "fixture": "f1f4b0d102d80d60361d7d9386d4b66ff75853f93b3377f1bbbb1c3e7c883a10.json.gz",
+      "scope": "Immutable historical compatibility/parser inputs; not current Source or release qualification"
     }
   ]
 }

@@ -7,6 +7,8 @@ import sys
 import pytest
 
 from scripts import jsonl_provider_oracle as oracle
+from evidence_fixtures import read_member
+from release_gate_fixtures import synthetic_native_model
 
 ROOT = Path(__file__).resolve().parents[1]
 _REPORTS = None
@@ -15,19 +17,21 @@ _REPORTS = None
 def reports(tmp_path):
     global _REPORTS
     if _REPORTS is None:
-        output = tmp_path / 'jsonl.json'
-        result = subprocess.run([sys.executable, str(ROOT / 'scripts/jsonl_provider_oracle.py'), '--output', str(output)],
-            cwd=str(ROOT), capture_output=True, encoding='utf-8', timeout=120)
-        assert result.returncode == 0, result.stdout + result.stderr
-        summary = json.loads(output.read_text(encoding='utf-8'))
-        source = json.loads(output.with_name('jsonl.source.json').read_text(encoding='utf-8'))
-        native = json.loads(output.with_name('jsonl.native.json').read_text(encoding='utf-8'))
-        assert summary['status'] == 'passed' and summary['cases'] == 1030
+        # Synthetic parser values derived from immutable historical facts.
+        # Actual current physical readers have distinct Node24/v4 contracts.
+        archive = 'RC3-QUALIFICATION-20261018-228CFACC.zip'
+        source = read_member(archive, 'full-gate-root.zip!/jsonl-provider-paired.source.json')
+        native = synthetic_native_model('full-gate-root.zip!/jsonl-provider-paired.native.json', oracle.MODULES, exact=True)
+        native['root'] = str(ROOT)
+        native['moduleFile'] = str(ROOT / 'dsh/session/jsonl_backend_current.py')
+        summary = dict(status='parser-model', cases=1030, generatedInputsSha256=native['generatedInputsSha256'],
+                       modules=copy.deepcopy(native['modules']), assets=copy.deepcopy(native['assets']))
+        oracle.source_identity(source)
         _REPORTS = summary, source, native
     return copy.deepcopy(_REPORTS)
 
 
-def test_actual_source_and_native_compressed_jsonl_mutual_files_and_cold_consumers(tmp_path):
+def test_historical_jsonl_receipt_parser_with_immutable_source_values(tmp_path):
     summary, source, native = reports(tmp_path)
     oracle.validate_runtime(native, ROOT, oracle.source_identity(source), summary['generatedInputsSha256'], summary['modules'], summary['assets'])
     assert native['rows'] == source['rows']

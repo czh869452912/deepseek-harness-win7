@@ -225,19 +225,20 @@ def test_invalid_limits_are_unavailable(limit):
 
 @pytest.mark.asyncio
 async def test_actual_pinned_source_complete_mapping_availability_and_missing_key(tmp_path, messages_server):
+    from dsh.web.messages_search_current import DeepSeekSearchProvider
     root = Path(__file__).resolve().parents[1]
     fixture = root / 'tests/fixtures/web-search-deepseek-cases.json'
     output = tmp_path / 'source.json'
     node = shutil.which('node')
     assert node is not None, 'Pinned Node observer must be available'
-    assert subprocess.check_output([node, '--version'], encoding='utf-8').strip() == 'v22.22.2'
+    assert subprocess.check_output([node, '--version'], encoding='utf-8').strip() == 'v24.9.0'
     def source_state():
         return tuple(subprocess.check_output(['git', '-C', str(root / 'reference')] + args,
                                              encoding='utf-8').strip()
                      for args in (['rev-parse', 'HEAD'], ['status', '--porcelain']))
     before = source_state()
-    assert before == ('a4c74a91e06b00fe0b0937bde982170c526cc842', '')
-    environment = dict(os.environ, TSX_TSCONFIG_PATH=str(root / 'reference/tsconfig.json'))
+    assert before == ('38a6a5c965aa99ab525161efb7cc5cf1fe62fced', '')
+    environment = dict(os.environ, TSX_TSCONFIG_PATH=str(root / 'reference/tsconfig.base.json'))
     command = [node, '--import', (root / 'reference/node_modules/tsx/dist/loader.mjs').as_uri(),
                str(root / 'scripts/oracles/web_search_deepseek_source.mjs'), str(root / 'reference'), str(fixture), str(output), messages_server.base]
     result = await asyncio.get_running_loop().run_in_executor(None, lambda: subprocess.run(

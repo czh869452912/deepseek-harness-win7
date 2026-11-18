@@ -49,9 +49,6 @@ async def resolveCredential(resolve,signal):
         return await abortable(operation,signal)
     except Exception as error:
         if aborted(signal) or getattr(error,'name',None)=='AbortError': raise search_aborted(signal,error)
-        if signal is not None:
-            message=error_text(error)
-            error=Exception(message[7:] if message.startswith('Error: ') else message)
         raise WebError('DeepSeek search credential resolution failed: '+error_text(error),'WEB_PROVIDER_ERROR',cause=error)
 
 

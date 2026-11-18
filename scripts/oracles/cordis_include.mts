@@ -95,8 +95,8 @@ export async function scenario(id: number) {
       const fiber = ctx.plugin(ObservedInclude, { path: pathToFileURL(filename).href })
       const errors = await fiber.await().then(() => [], error => error.errors.map((item: Error) => item.message))
       await include.await()
-      const observation = { errors, state: fiber.state, data: (include as any).data ?? null,
-        content: (include as any).content ?? null, rows: include.root.data, log: [...log] }
+      const observation = { errors, state: fiber.state, data: (include as any).cache?.data ?? null,
+        content: (include as any).cache?.content ?? null, rows: include.root.data, log: [...log] }
       await ctx.fiber.dispose()
       return { ...observation, final: fiber.state }
     }
@@ -117,8 +117,8 @@ export async function scenario(id: number) {
       await entered.promise
       finish.release()
       const error = await result
-      const observation = { error, state: fiber.state, data: (include as any).data ?? null,
-        content: (include as any).content ?? null, rows: include.root.data, log: [...log] }
+      const observation = { error, state: fiber.state, data: (include as any).cache?.data ?? null,
+        content: (include as any).cache?.content ?? null, rows: include.root.data, log: [...log] }
       await fiber.dispose()
       return { ...observation, final: fiber.state }
     }
@@ -132,19 +132,9 @@ export async function scenario(id: number) {
       await entered.promise
       let done = false
       const disposal = fiber.dispose().then(() => { done = true; log.push('dispose-complete') })
-      if (id === 42) {
-        // Observe settled teardown before releasing the independent refresh.
-        // Wall-clock sampling can race cleanup under event-loop load.
-        let timeout: ReturnType<typeof setTimeout> | undefined
-        try {
-          await Promise.race([disposal, new Promise((_, reject) => {
-            timeout = setTimeout(() => reject(new Error('Include disposal did not settle')), 5000)
-          })])
-        } finally { clearTimeout(timeout) }
-      } else {
-        // Initial activation is owned inertia and must stay pending.
-        await new Promise(resolve => setTimeout(resolve, 50))
-      }
+      // Both initial activation and a pending refresh are now owned teardown
+      // inertia. Observe them pending, then release and join both operations.
+      await new Promise(resolve => setTimeout(resolve, 50))
       const pending = { done, log: [...log] }
       finish.release()
       const error = await result

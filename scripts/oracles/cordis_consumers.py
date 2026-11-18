@@ -23,12 +23,16 @@ async def scenario(number):
                     name = 'probe'
                     def apply(self, c, config=None):
                         log.append('start:' + str(config['value']))
-                        async def cleanup():
+                        def cleanup():
+                            # JavaScript async functions enter synchronously;
+                            # only the gated remainder suspends in C32.
                             log.append('stop:' + str(config['value']))
                             if number == 32:
                                 entered.set()
-                                await finish.wait()
-                                log.append('cleaned')
+                                async def settle():
+                                    await finish.wait()
+                                    log.append('cleaned')
+                                return settle()
                         return cleanup
                 loader.builtins['probe'] = Probe
                 await loader.tree.root.update([{'id': 'one', 'name': 'cordis:probe', 'config': {'value': 1}}])
@@ -40,6 +44,7 @@ async def scenario(number):
                                    'sameOptions': entry.options is options, 'value': entry.options['config']['value'],
                                    'owner': entry.fiber.entry is entry, 'log': log[:]}
                     await loader.tree.root.remove('one')
+                    await entry.fiber.await_settled()
                     observation.update(after=log[:], removed='one' not in loader.tree.store)
                     return observation
                 removing = asyncio.ensure_future(loader.tree.root.remove('one'))

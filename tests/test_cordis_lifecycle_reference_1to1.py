@@ -714,7 +714,7 @@ async def test_ordinary_effect_stays_owner_visible_until_cleanup_settles():
     """
     fiber.ts `finalizeDisposal` -> `removeWrapper`: an ordinary effect remains
     listed by its owner while its asynchronous cleanup is in flight, a repeated
-    disposal joins that cleanup, and retirement happens only at settlement.
+    public disposal is single-shot, and retirement happens only at settlement.
     """
     ctx = Context()
     release = asyncio.Event()
@@ -741,7 +741,7 @@ async def test_ordinary_effect_stays_owner_visible_until_cleanup_settles():
     assert labels() == ["owner-visible"]
 
     second = dispose()
-    assert second is first
+    assert second is None
 
     release.set()
     await first

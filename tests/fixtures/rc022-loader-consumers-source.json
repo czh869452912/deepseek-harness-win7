@@ -1,0 +1,61 @@
+{
+  "source_commit": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "node": "v24.9.0",
+  "source_sha256": {
+    "scripts/oracles/cordis_consumers.mts": "b950f4390974a8741357e92fdc505be9813337b1e6a44b336afcb76782c15467",
+    "reference/vendor/loader/src/index.ts": "e2d04b34ef703e08d2e40f0ba41daa31ff564343cfeb018f102133fc62317050",
+    "reference/vendor/loader/src/internal.ts": "35a50d597fed58656a11e3c5294fdf99524ed8c106739b4fab522a288eefa877",
+    "reference/vendor/loader/src/resolve.ts": "416336cfdc468ad504c6b7df64d32975a94e18914eca5d5e01dc9682207754d6",
+    "reference/vendor/loader/src/config/diff.ts": "6025a6b9798a0a16af017bb7d8d6394bbe345685b2ace56b15975add5843edb3",
+    "reference/vendor/loader/src/config/entry.ts": "650e4e1f3015bcca63c5a3474310f87a418add6249d9939d173a2b79f2ee7d9b",
+    "reference/vendor/loader/src/config/group.ts": "9f63daea792e38a106c841e2ca062ded8fb67177665e8dcee821992b2071c017",
+    "reference/vendor/loader/src/config/isolate.ts": "70c7f8050a4fdc65031e956c5dae0a751d793ebdb51e5c955312666603c977a3",
+    "reference/vendor/loader/src/config/tree.ts": "dd856ead27ac9b81e88dd51b13753f138d7951cc6d6bf3e5cfcbe206281aa503",
+    "reference/vendor/loader/src/config/utils.ts": "d85b8ac1693af4667e9c0395cd1d6b15ec28387073a81f0d00bd38d909a05f8e",
+    "reference/vendor/cordis/src/context.ts": "fd5a4f1d2bc6b8b34729c87fda7639a07759ce07fb070ab05374acbcb9ccdc0e",
+    "reference/vendor/cordis/src/events.ts": "a464c843822da4eb31a8d998c5e2216a817b8a7dfeacb6e1aab7f830e7320d6b",
+    "reference/vendor/cordis/src/fiber.ts": "b64c3a97f15f0381479dcf3d25965e56dc4cecfa4a0881fc055a49f65b9945df",
+    "reference/vendor/cordis/src/index.ts": "071fb226e9a21556625e4391b28e6641b9b34b1cd402155246e0437993d8b740",
+    "reference/vendor/cordis/src/logger.ts": "a6836ace311d0bd1abc9c1211cffcba73eff61c89ca47641efd82d91747401cb",
+    "reference/vendor/cordis/src/reflect.ts": "047f01fcdef2aa34b4afc39deaf18c16733fabd2a5ef0d55e5c2595b22caadfd",
+    "reference/vendor/cordis/src/registry.ts": "34bbd60ae502b4f85201c204afb52a9acabde6878d9278493478c1b2183debd3",
+    "reference/vendor/cordis/src/service.ts": "614205c6ce7cf1a057b8b352e96aa4fcd734c967a3d2283a126c9c61f268e3be",
+    "reference/vendor/cordis/src/utils.ts": "c68bab85514ebd8cb08227367ea306b0109a214cd10965c497474eeadaaca756"
+  },
+  "observations": {
+    "31": {
+      "sameEntry": true,
+      "sameOptions": true,
+      "value": 2,
+      "owner": true,
+      "log": [
+        "start:1",
+        "stop:1",
+        "start:2"
+      ],
+      "after": [
+        "start:1",
+        "stop:1",
+        "start:2",
+        "stop:2"
+      ],
+      "removed": true
+    },
+    "32": {
+      "pending": {
+        "retained": false,
+        "detached": false,
+        "log": [
+          "start:1",
+          "stop:1"
+        ]
+      },
+      "log": [
+        "start:1",
+        "stop:1",
+        "cleaned"
+      ],
+      "removed": true
+    }
+  }
+}

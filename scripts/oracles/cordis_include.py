@@ -34,7 +34,7 @@ async def scenario(number):
     with tempfile.TemporaryDirectory(prefix='cordis-include-') as directory:
         filename = Path(directory) / 'config.json'
         def write(value):
-            filename.write_text(json.dumps([{'id': 'one', 'name': 'cordis:probe', 'config': {'value': value}}]), encoding='utf-8')
+            filename.write_text(json.dumps([{'id': 'one', 'name': 'cordis:probe', 'config': {'value': value}}], separators=(',', ':')), encoding='utf-8')
         try:
             ctx.baseUrl = Path(directory).as_uri() + '/'
             await ctx.plugin(Loader)
@@ -141,7 +141,7 @@ async def scenario(number):
                 filename.write_text(json.dumps([
                     {'id': 'row' + str(value), 'name': 'cordis:reject', 'config': {'value': value}}
                     for value in (1, 2)
-                ]), encoding='utf-8')
+                ], separators=(',', ':')), encoding='utf-8')
                 fiber = ctx.plugin(ObservedInclude, {'path': filename.as_uri()})
                 errors = []
                 try:
@@ -192,14 +192,9 @@ async def scenario(number):
                     done = True
                     log.append('dispose-complete')
                 disposal = asyncio.create_task(dispose())
-                if number == 42:
-                    # Refresh is not part of Include's teardown inertia. Observe
-                    # disposal settlement before releasing the gated refresh;
-                    # a 50 ms window races cleanup on a loaded event loop.
-                    await asyncio.wait_for(asyncio.shield(disposal), timeout=5)
-                else:
-                    # Initial activation is owned inertia and must stay pending.
-                    await asyncio.sleep(0.05)
+                # Initial activation and a pending refresh are both owned by
+                # teardown. Neither may settle while its work remains gated.
+                await asyncio.sleep(0.05)
                 pending = {'done': done, 'log': log[:]}
                 finish.set()
                 error = await result

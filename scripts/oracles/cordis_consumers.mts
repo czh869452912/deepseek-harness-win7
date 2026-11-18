@@ -37,6 +37,7 @@ export async function scenario(id: number) {
         const observation = { sameEntry: loader.store.one === entry, sameOptions: entry.options === options,
           value: entry.options.config.value, owner: entry.fiber!.entry === entry, log: [...log] }
         await loader.root.remove('one')
+        await entry.fiber!.await()
         return { ...observation, after: [...log], removed: !loader.store.one }
       }
       const removing = loader.root.remove('one')

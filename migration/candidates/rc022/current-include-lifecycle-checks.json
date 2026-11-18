@@ -1,0 +1,20 @@
+{
+  "contract": "C9-DM",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "status": "Targeted current Include, Fiber and Loader consumers passed",
+  "changes": "Capture all twelve lifecycle cases directly from current Source. Observe the current Include cache and tree without changing old evidence; initial apply failure retains the parsed tree, teardown joins refresh work, recovered Handles expose current Fiber state. Loader removal observations join explicit settlement before sampling cleanup. Epoch tests use config revision and service implementation ids; repeated ordinary public disposal returns no second operation while owner teardown still joins cleanup.",
+  "retirement": "The old vendor HMR registerConfig/refreshConfig observations are not current production contracts. Their positive coalescing/cross-registration cases are retired from the historical consumer test; current watchConfig/runExclusive coverage remains selected, including exact path duplication, global serialization, nested transactions, cancellation and disposal ownership. No historical observations or bug exceptions were rewritten.",
+  "verification": [
+    {"run": "rc022-current-cordis-lifecycle-diagnostic-20261118-02", "source_observations": 12, "status": "passed"},
+    {"run": "rc022-current-cordis-lifecycle-diagnostic-20261118-03", "source_observations": 2, "status": "passed"},
+    {"run": "rc022-current-include-lifecycle-20261118-01", "passed": 38, "failed": 1, "seconds": 1.95, "remaining_failure": "Old provider fiber id mistaken for independently allocated service implementation id"},
+    {"run": "rc022-current-include-lifecycle-20261118-02", "passed": 1, "seconds": 0.49},
+    {"run": "rc022-current-loader-consumers-20261118-01", "passed": 6, "failed": 1, "seconds": 1.53, "remaining_failure": "Cleanup sampled before explicit settlement"},
+    {"run": "rc022-current-loader-consumers-20261118-03", "passed": 2, "seconds": 0.44},
+    {"run": "rc022-current-loader-identities-20261118-01", "passed": 1, "seconds": 0.49},
+    {"run": "rc022-current-hmr-queue-recheck-20261118-01", "status": "passed", "observations": 7, "scope": "Independent current Source/Native public HMR queue and watcher comparisons"}
+  ],
+  "cleanup": "All six completed targeted pytest synthetic homes/workspaces removed; command logs, XML, original failures, actual current Source observations and their commands retained. Paired HMR fixture directory is retired after its final consumer below.",
+  "frozen_attempt": {"run": "rc022-unified-20261118-03", "candidate": "3f20446cd32c530542b39352d2793f0f6409ec66", "status": "failed, Python explicitly interrupted", "inputs_unchanged": true, "candidate_unchanged": true, "publishable": false},
+  "qualification": "Targeted completion only; no full regression or release acceptance."
+}

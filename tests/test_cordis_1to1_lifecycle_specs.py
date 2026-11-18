@@ -129,14 +129,16 @@ def test_dynamic_dependency_replacement():
 
     assert fiber.state == FiberState.ACTIVE
     assert b_versions == [1]
-    assert fiber.epoch == f":{f_alpha1.uid}"
+    # Epochs use the config revision and service implementation identity,
+    # whose counter is independent of plugin fiber identities.
+    assert fiber.epoch == '0:1'
 
     # Replace service provider plugin with AlphaPlugin2
     f_alpha2 = ctx.registry.plugin(AlphaPlugin2())
 
     assert fiber.state == FiberState.ACTIVE
     assert b_versions == [1, 2]
-    assert fiber.epoch == f":{f_alpha2.uid}"
+    assert fiber.epoch == '0:2'
 
 
 def test_service_check_guard_condition():

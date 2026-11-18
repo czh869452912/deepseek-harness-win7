@@ -212,7 +212,7 @@ class CurrentUserQuestionService(TypertRemoteService):
         except Exception as error:
             reason = error.value if isinstance(error, ThrownValueError) else error
             if isinstance(reason, UserQuestionError):
-                raise
+                raise reason
             if isinstance(reason, dict) and reason.get('name') == 'UserQuestionError' and isinstance(reason.get('message'), str) and isinstance(reason.get('code'), str):
                 raise UserQuestionError(reason['message'], reason['code'], error)
             if signal is not None and signal.aborted:

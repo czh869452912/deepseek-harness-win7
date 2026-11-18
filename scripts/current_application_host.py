@@ -70,6 +70,22 @@ async def main(config):
                 return dict(provider=provider, id=model, name=model, context=dict(contextWindow=131072))
             async def stream(self, request):
                 report.setdefault('modelRequests', []).append(dict(provider=request['provider'], model=request['model']))
+                if config['kind'] == 'question':
+                    messages = request.get('messages', [])
+                    replies = [message for message in messages if message.get('role') == 'user'
+                        and any(block.get('type') == 'text' and 'answer_to_pending_question' in block.get('text', '') for block in message.get('content', []))]
+                    marker = 'QUESTION_COLD' if previous else 'QUESTION_FRESH'
+                    asked = any(message.get('role') == 'tool' and message.get('toolCallId') == marker for message in messages)
+                    prompt = any(message.get('role') == 'user' and any(block.get('text') == marker for block in message.get('content', [])) for message in messages)
+                    current_replies = [message for message in replies if any(marker in block.get('text', '') for block in message.get('content', []))]
+                    if prompt and not asked and not current_replies:
+                        arguments = json.dumps(dict(questions=[dict(id='choice', question='Choose the retained question result.',
+                            options=[dict(label='Late answer', description='Send the answer after work continued.')])], timeout=1))
+                        yield dict(type='block-start', index=0, blockType='tool-call')
+                        yield dict(type='tool-call-delta', index=0, id=marker, name='ask_user_question', argumentsDelta=arguments)
+                        yield dict(type='block-end', index=0, block=dict(type='tool-call', id=marker, name='ask_user_question', arguments=arguments))
+                        yield dict(type='finish', reason=dict(kind='tool-calls'))
+                        return
                 yield dict(type='block-start', index=0, blockType='text')
                 yield dict(type='text-delta', index=0, text='Scheduled work completed.')
                 yield dict(type='finish', reason=dict(kind='stop'))
@@ -101,7 +117,34 @@ async def main(config):
         else:
             assert previous['processId'] != os.getpid() and ctx.agents.get(sid) is None
             report['steps'].append('new-process-session-not-live-before-browser')
-        if config['kind'] == 'schedule':
+        if config['kind'] == 'question':
+            from dsh.interaction.tool_ask_user_current import CurrentToolAskUserPlugin
+            from dsh.llm.message import create_user_message
+            agent = ctx.agents.get('candidate-standard')
+            if agent is None:
+                agent = (await ctx.sessionController.resolveAgent('candidate-standard'))['agent']
+            if previous:
+                state = ctx.userQuestions.projection.stateOf(agent.session)['questions']
+                assert state['settled'] == previous['questions']['settled']
+                report['steps'].append('saved-late-answer-read-before-browser')
+            await agent.ctx.plugin(CurrentToolAskUserPlugin, dict(mode='timed', timeout=1))
+            assert 'timeout' in next(tool for tool in ctx.tools.schemas(agent) if tool['name'] == 'ask_user_question')['parameters']['properties']
+            marker = 'QUESTION_COLD' if previous else 'QUESTION_FRESH'
+            agent.followup(create_user_message(dict(content=[dict(type='text', text=marker)], source=dict(kind='user'))))
+            await asyncio.wait_for(agent.whenIdle(), 15)
+            await ctx.sessionController.rename(dict(sessionId=agent.id, title='Browser Timed Question'))
+            await agent.session.flush()
+            questions = ctx.userQuestions.projection.stateOf(agent.session)['questions']
+            assert any(question['callId'] == marker and question['state'] == 'continued' for question in questions['active']), questions
+            report['beforeQuestions'] = questions
+            from dsh.core.abort import NEVER_ABORTED
+            response = await ctx.typertGateway.dispatch_rpc('commands/list', dict(args=dict(agentId=agent.id)), NEVER_ABORTED, ctx.connection.browserPeer)
+            def types(value):
+                if isinstance(value, dict): return {key:types(item) for key,item in value.items()}
+                if isinstance(value, (list, tuple)): return [types(item) for item in value]
+                return dict(type=type(value).__module__+'.'+type(value).__name__, value=repr(value))
+            (output/'commands-diagnostic.json').write_text(json.dumps(types(response), indent=2), encoding='utf-8')
+        elif config['kind'] == 'schedule':
             if previous is None:
                 task = await ctx.schedule.create(dict(title='Browser Schedule contract', prompt='Perform the browser check',
                     timing=dict(kind='after', after_seconds=3600), target=dict(kind='session', sessionId=sid)), sid)
@@ -121,14 +164,26 @@ async def main(config):
         browser = dict(url=ctx.connection.authenticatedUrl(ctx.webServer.getOrigin()), cold=previous is not None,
                        browser=config['browser'], currentOnboarding=False)
         if config['kind'] == 'schedule': browser['task'] = task['id']
-        else: browser['index'] = config['fixture'] + '/index.json'
+        elif config['kind'] == 'market': browser['index'] = config['fixture'] + '/index.json'
+        else: browser['sessionId'] = agent.id
         (output / 'browser-config.json').write_text(json.dumps(browser), encoding='utf-8')
         print('CURRENT_APPLICATION_READY', flush=True)
         command = await asyncio.get_running_loop().run_in_executor(None, sys.stdin.readline)
         assert command.strip() == 'finish'
         observation = json.loads((output / 'browser-observations.json').read_text(encoding='utf-8'))
         assert observation['passed'], observation.get('failure')
-        if config['kind'] == 'schedule':
+        if config['kind'] == 'question':
+            await asyncio.wait_for(agent.whenIdle(), 15)
+            await agent.session.flush()
+            questions = ctx.userQuestions.projection.stateOf(agent.session)['questions']
+            assert not questions['active'], questions
+            settled = next(question for question in questions['settled'] if question['callId'] == marker)
+            assert settled['answers'] == [dict(id='choice', selected=['Late answer'])], settled
+            replies = [event for event in agent.session.snapshotEvents() if event['type'] == 'user/message'
+                and event['data']['source']['kind'] == 'user-question-reply']
+            assert len(replies) == (2 if previous else 1)
+            report.update(questions=questions, replies=replies, events=list(agent.session.snapshotEvents()))
+        elif config['kind'] == 'schedule':
             task = await ctx.schedule.view(dict(id=task['id']))
             assert task['title'] == ('Browser Schedule cold edited' if previous else 'Browser Schedule edited')
             assert task['status'] == 'active'

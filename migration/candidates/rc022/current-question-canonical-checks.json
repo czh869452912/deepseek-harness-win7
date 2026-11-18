@@ -1,0 +1,154 @@
+{
+  "contract": "C9-CS",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "status": "canonical providers and patched-extraction browser targeted passed; fresh archive qualification pending",
+  "changes": [
+    "Canonical registry mounts current userQuestions and timed/legacy tools",
+    "Authorized generated calls select declared Remote export adapters, preserving exact adapter resource readers before host activation",
+    "Current actual installed application gate includes fresh/cold timed-question late replies and required imported provider hashes"
+  ],
+  "verification": {
+    "native_run": "rc022-question-authorized-exports-20261118-02",
+    "passed": 41,
+    "browser_run": "rc022-question-installed-browser-20261118-06",
+    "observations": [
+      {
+        "path": ".goose\\out\\rc022-question-installed-browser-20261118-06\\question-fresh\\host-observations.json",
+        "sha256": "ebab9848711ec5ae450c3d464f723598e2e34cb4e6c09cfb7f2ad98dfe225e1e"
+      },
+      {
+        "path": ".goose\\out\\rc022-question-installed-browser-20261118-06\\question-fresh\\browser-observations.json",
+        "sha256": "db4b776171ce67d608a6c8e14ec09037585674e8f488c10ae4983c7392bd5164"
+      },
+      {
+        "path": ".goose\\out\\rc022-question-installed-browser-20261118-06\\question-cold\\host-observations.json",
+        "sha256": "1be813df3be89abd43926501c3e8809563728d15ec0987172d147fef4cf4d71b"
+      },
+      {
+        "path": ".goose\\out\\rc022-question-installed-browser-20261118-06\\question-cold\\browser-observations.json",
+        "sha256": "f258b9fdb5dcbba24babe89d49e27f962c42b4c48381cbf4e093dabc0f0ca523"
+      }
+    ],
+    "actual": "Isolated extracted Python3.8.10 and unchanged Chromium108/React client; timed tool result stays continued before browser, original Remote late answer admitted, refresh durable, fresh process reads prior settlement then answers a new continued call; no browser/HTTP errors."
+  },
+  "failures": "01 selector did not expand the ungrouped bucket;02 duplicate wait status selector and actual commands/list HTTP500;03 late-answer behavior passed but HTTP500 refused;04 diagnostic captured domain objects from authorized generated call;05 fresh/cold semantic/browser success but cold byte-boundary refused concurrent authorized_calls edit; all remain failed original runs. Old SettingsProvider and old fiber.store legacy regression failures remain open for the subsequent compatibility-consumer batch.",
+  "archive_qualified": false,
+  "debug_patch_manifest": ".goose\\out\\rc022-question-installed-browser-20261118-06\\debug-product-patches.json",
+  "cleanup": {
+    "bytes_removed": 307633,
+    "removed": [
+      {
+        "path": "C:\\Users\\czh86\\AppData\\Local\\Temp\\g-qkwynlnx",
+        "bytes_removed": 0
+      },
+      {
+        "path": "C:\\Users\\czh86\\Documents\\Codex\\deepseek-harness-win7\\.goose\\out\\rc022-question-installed-browser-20261118-01\\payload\\application-question",
+        "bytes_removed": 54952
+      },
+      {
+        "path": "C:\\Users\\czh86\\AppData\\Local\\Temp\\g-gl3znx8k",
+        "bytes_removed": 0
+      },
+      {
+        "path": "C:\\Users\\czh86\\Documents\\Codex\\deepseek-harness-win7\\.goose\\out\\rc022-question-installed-browser-20261118-02\\payload\\application-question",
+        "bytes_removed": 54972
+      },
+      {
+        "path": "C:\\Users\\czh86\\AppData\\Local\\Temp\\g-0v7pe557",
+        "bytes_removed": 0
+      },
+      {
+        "path": "C:\\Users\\czh86\\Documents\\Codex\\deepseek-harness-win7\\.goose\\out\\rc022-question-installed-browser-20261118-03\\payload\\application-question",
+        "bytes_removed": 56369
+      },
+      {
+        "path": "C:\\Users\\czh86\\AppData\\Local\\Temp\\g-cmt_j8vm",
+        "bytes_removed": 0
+      },
+      {
+        "path": "C:\\Users\\czh86\\Documents\\Codex\\deepseek-harness-win7\\.goose\\out\\rc022-question-installed-browser-20261118-04\\payload\\application-question",
+        "bytes_removed": 56379
+      },
+      {
+        "path": "C:\\Users\\czh86\\AppData\\Local\\Temp\\g-83twj4eg",
+        "bytes_removed": 0
+      },
+      {
+        "path": "C:\\Users\\czh86\\Documents\\Codex\\deepseek-harness-win7\\.goose\\out\\rc022-question-installed-browser-20261118-05\\payload\\application-question",
+        "bytes_removed": 73412
+      },
+      {
+        "path": "C:\\Users\\czh86\\Documents\\Codex\\deepseek-harness-win7\\.goose\\out\\rc022-question-canonical-remote-20261118-01\\pytest-workspace",
+        "bytes_removed": 893
+      },
+      {
+        "path": "C:\\Users\\czh86\\Documents\\Codex\\deepseek-harness-win7\\.goose\\out\\rc022-question-canonical-remote-20261118-01\\tmp",
+        "bytes_removed": 0
+      },
+      {
+        "path": "C:\\Users\\czh86\\Documents\\Codex\\deepseek-harness-win7\\.goose\\out\\rc022-question-canonical-remote-20261118-01\\home",
+        "bytes_removed": 0
+      },
+      {
+        "path": "C:\\Users\\czh86\\Documents\\Codex\\deepseek-harness-win7\\.goose\\out\\rc022-question-canonical-final-20261118-01\\pytest-workspace",
+        "bytes_removed": 2651
+      },
+      {
+        "path": "C:\\Users\\czh86\\Documents\\Codex\\deepseek-harness-win7\\.goose\\out\\rc022-question-canonical-final-20261118-01\\tmp",
+        "bytes_removed": 0
+      },
+      {
+        "path": "C:\\Users\\czh86\\Documents\\Codex\\deepseek-harness-win7\\.goose\\out\\rc022-question-canonical-final-20261118-01\\home",
+        "bytes_removed": 0
+      },
+      {
+        "path": "C:\\Users\\czh86\\Documents\\Codex\\deepseek-harness-win7\\.goose\\out\\rc022-question-direct-remaining-20261118-01\\pytest-workspace",
+        "bytes_removed": 2803
+      },
+      {
+        "path": "C:\\Users\\czh86\\Documents\\Codex\\deepseek-harness-win7\\.goose\\out\\rc022-question-direct-remaining-20261118-01\\tmp",
+        "bytes_removed": 0
+      },
+      {
+        "path": "C:\\Users\\czh86\\Documents\\Codex\\deepseek-harness-win7\\.goose\\out\\rc022-question-direct-remaining-20261118-01\\home",
+        "bytes_removed": 0
+      },
+      {
+        "path": "C:\\Users\\czh86\\Documents\\Codex\\deepseek-harness-win7\\.goose\\out\\rc022-question-authorized-exports-20261118-01\\pytest-workspace",
+        "bytes_removed": 2934
+      },
+      {
+        "path": "C:\\Users\\czh86\\Documents\\Codex\\deepseek-harness-win7\\.goose\\out\\rc022-question-authorized-exports-20261118-01\\tmp",
+        "bytes_removed": 0
+      },
+      {
+        "path": "C:\\Users\\czh86\\Documents\\Codex\\deepseek-harness-win7\\.goose\\out\\rc022-question-authorized-exports-20261118-01\\home",
+        "bytes_removed": 0
+      },
+      {
+        "path": "C:\\Users\\czh86\\Documents\\Codex\\deepseek-harness-win7\\.goose\\out\\rc022-question-authorized-exports-20261118-02\\pytest-workspace",
+        "bytes_removed": 2268
+      },
+      {
+        "path": "C:\\Users\\czh86\\Documents\\Codex\\deepseek-harness-win7\\.goose\\out\\rc022-question-authorized-exports-20261118-02\\tmp",
+        "bytes_removed": 0
+      },
+      {
+        "path": "C:\\Users\\czh86\\Documents\\Codex\\deepseek-harness-win7\\.goose\\out\\rc022-question-authorized-exports-20261118-02\\home",
+        "bytes_removed": 0
+      }
+    ],
+    "retained": "Raw real sessions/observations, logs/XML/screenshots/commands, patch identities and active debug extraction for remaining migration consumers. Retire debug extraction after final fresh archive qualification."
+  },
+  "inputs": {
+    "dsh/boot/plugin_registry_current.py": "4558b998808a224934aea73f40cfa959f26542aeb7ebed49b301b9b1c9bac68e",
+    "dsh/interaction/user_questions_current.py": "be23dfdbfa182c32bccedee10d9e704a4325f71ca3eabc5cc1d287fedcf76cbb",
+    "dsh/typert/authorized_calls.py": "919d7b0ae72271e9a106948b85e7a125c48efa8dfc55f593970d1ee8ef00edd6",
+    "scripts/current_application_gate.py": "048359648f1dc5814984f073f6c33b12f27cf11296b03ad80dd8c9a2f2377ba9",
+    "scripts/current_application_host.py": "6ede9632943a91a9b7b5278f71bd364d623e9c41f82c65418fb046d42e9e3849",
+    "scripts/oracles/rc022_question_browser.mjs": "14527fe47d257275a71633eb1fd5da28626d2d865dc3dff9d5b2970d826bbb07",
+    "tests/test_rc022_authorized_calls.py": "dc5d2daa753ce7fb4d54d91cf6b833e11edb28b157455059297749e6ceadff1b",
+    "tests/test_current_user_questions.py": "a72f5a1004c822fe37a7f8952d17e98047776102048e1bcae1d0d08bd2d28ee4"
+  },
+  "limitations": "No complete Python/476 Source/401 paired/fresh x64+x86/Desktop qualification; accepted_upstream null, actual Win7 deferred."
+}

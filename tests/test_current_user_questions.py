@@ -31,7 +31,10 @@ async def questions():
     agent.steer = agent.inbox.nextTurn.append
     live = {agent.id: agent}
     ctx.set_service('agents', NS(get=live.get))
-    owner = await ctx.plugin(CurrentUserQuestionService)
+    from dsh.boot.plugin_registry import resolve_harness_plugin
+    provider = resolve_harness_plugin('@deepseek-ai/dsh-user-questions')
+    assert provider is CurrentUserQuestionService
+    owner = await ctx.plugin(provider)
     try:
         yield ctx, ctx.userQuestions, agent, owner, live
     finally:
@@ -148,6 +151,29 @@ async def test_current_questions_remote_exports_and_serialized_timeout(questions
         raise ThrownValueError(dict(name='UserQuestionError', code='ASK_TIMED_OUT', message='client countdown expired'))
     ctx.on('user-questions/request', timeout)
     assert await service.askTimed(request(agent), 'call_1', 1000) == dict(pending=True, callId='call_1')
+
+
+@pytest.mark.asyncio
+async def test_current_questions_generated_remote_resolves_agent_and_rejects_bad_batch(questions):
+    from dsh.boot.plugin_registry import resolve_harness_plugin
+    from dsh.typert.artifact import read_generated_artifact
+    from dsh.typert.current import CurrentRemoteDispatcher
+    from dsh.typert.protocol import TypertLookupProvider
+    from dsh.typert.dispatch import TypertGatewayError
+    ctx, service, agent, _, live = questions
+    await ctx.plugin(resolve_harness_plugin('@deepseek-ai/dsh-typert-registry'))
+    ctx.typert.register(read_generated_artifact('packages/interaction/user-questions/lib/typert.host.js'))
+    ctx.typert.lookups.register('agent', TypertLookupProvider('agent', 'agentId', 'host#Agent',
+        '@deepseek-ai/dsh-session/types#SessionId', live.get))
+    continued(agent, service)
+    remote = CurrentRemoteDispatcher(ctx)
+    async def call(answer):
+        return await remote.invoke(dict(namespace='userQuestions', method='answer',
+            args=dict(agentId=agent.id, callId='call_1', answer=answer)))
+    with pytest.raises(TypertGatewayError):
+        await call(dict(answers=[dict(id='scope', selected='bad')]))
+    assert await call(dict(answers=[dict(id='scope', selected=['One'])])) is True
+    assert agent.inbox.nextTurn[0]['source']['kind'] == 'user-question-reply'
 
 
 @pytest.mark.parametrize('timeout', [True, 0, -2, 1.5, float('nan'), float('inf'), 2147484, '120'])

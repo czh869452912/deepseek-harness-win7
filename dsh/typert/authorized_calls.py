@@ -27,7 +27,9 @@ class AuthorizedCallResolver(CurrentRemoteDispatcher):
         if receiver is None:
             return None
         member = row.get('implementation', row['method'])
-        marker = next((marker for marker in remote_methods(original_of(receiver)) if marker['method'] == member), None)
+        marker = next((marker for marker in remote_methods(original_of(receiver))
+                       if (marker['method'] == member if 'implementation' in row
+                           else marker.get('exportName', marker['method']) == member)), None)
         return None if marker is None else marker.get('resources')
 
     async def resolve(self, request):
@@ -84,6 +86,13 @@ class AuthorizedCallResolver(CurrentRemoteDispatcher):
         row = prepared.descriptor
         receiver = prepared.context.extend(dict(invocation=invocation)).get(row['service'])
         implementation = row.get('implementation', row['method'])
+        if 'implementation' not in row:
+            markers = [marker for marker in remote_methods(original_of(receiver))
+                       if marker.get('exportName', marker['method']) == row['method']]
+            if len(markers) > 1:
+                raise TypertGatewayError('ambiguous-endpoint', prepared.endpoint, 'multiple Remote methods export this endpoint')
+            if markers:
+                implementation = markers[0]['method']
         method = getattr(receiver, implementation, None)
         if not callable(method):
             raise TypertGatewayError('method-unavailable', prepared.endpoint, 'active Service "%s" has no callable method "%s"' % (row['service'], implementation))

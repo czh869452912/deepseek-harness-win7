@@ -74,3 +74,44 @@ async def test_concurrent_receivers_keep_invocations_and_root_has_none():
         assert ctx.invocation is None
     finally:
         release.set();await ctx.fiber.dispose()
+
+
+@pytest.mark.asyncio
+async def test_generated_authorized_export_uses_adapter_and_its_resource_reader():
+    from dsh.typert.gateway_transport import AuthorizedGatewayTransport
+    from dsh.host.connection.rpc_current import full_response
+    import json
+    ctx = Context()
+    await ctx.plugin(CurrentTypertRegistry)
+    await ctx.plugin(RemoteAccessService)
+    await ctx.plugin(AuthorizedGatewayTransport)
+    entered = []
+    class Fixture(TypertRemoteService):
+        def __init__(self, child):
+            super().__init__(child, 'fixture')
+        def list(self, identity):
+            raise AssertionError('domain method must not implement the Remote export')
+        @Remote(dict(name='list', resources=dict(session=lambda identity: identity)))
+        def remoteList(self, identity):
+            entered.append(identity)
+            return [dict(name='adapter', sessionId=identity)]
+    try:
+        await ctx.plugin(Fixture)
+        ctx.typert.resources.register('session', dict(field='sessionId'))
+        ctx.typert.register(dict(package='adapter-fixture', face='host', model={}, schemas=[], invocations=[dict(
+            id='fixture#list', service='fixture', namespace='fixture', method='list',
+            parameters=[dict(name='identity', wire='identity', source='json', codec=dict(mode='src-json'))],
+            invocation=dict(kind='direct'), result=dict(mode='src-json'))]))
+        ctx.remoteAccess.registerPolicy('guest', dict(bindings=lambda _: [dict(resource=dict(kind='session', id='allowed'),
+            role=dict(actions=['fixture/list']))]))
+        peer = Peer(ctx, dict(principal=dict(kind='guest', id='g')))
+        denied = await ctx.typertGateway.dispatch_rpc('fixture/list', dict(args=dict(identity='denied')), NEVER_ABORTED, peer)
+        assert denied['ok'] is False and not entered
+        result = await ctx.typertGateway.dispatch_rpc('fixture/list', dict(args=dict(identity='allowed')), NEVER_ABORTED, peer)
+        assert result == dict(ok=True, value=[dict(name='adapter', sessionId='allowed')])
+        assert entered == ['allowed']
+        response = full_response('adapter', result)
+        assert response['status'] == 200
+        assert json.loads(response['body'])['result'] == result
+    finally:
+        await ctx.fiber.dispose()

@@ -2,6 +2,8 @@
 
 固定目标：`38a6a5c965aa99ab525161efb7cc5cf1fe62fced`。本页记录定向检查；生产 pin 已在 C9-CC 协调切换，`accepted_upstream` 仍为 null，完整资格待后续验证。
 
+C9-CS：正式启动解析表已接入新版提问服务和工具；生成的授权 Remote 调用修复为使用明确导出适配器，并保持其资源读取与调用前授权。41 项本地通过，实际隔离解压 Python/原版 Chromium108 完成限时提问、迟到回答、刷新与新进程恢复两阶段；没有浏览器或 HTTP 错误。调试解压修改单独留档，不认证旧 ZIP；旧兼容消费者失败仍待后续处理。已清理本轮失效资产。[记录](current-question-canonical-checks.json)。
+
 C9-CR：限时提问提供者完成：前台等待与 Client 声明、超时后可回答投影、迟到答案消息及接纳、重复回复所有权、Remote 与两种工具 schema。37 项本地、98 项原版及两组当前配对通过，输入前后不变；正式启动链路接入和浏览器验收仍待下一部分。已清理自有合成工作区。[记录](current-question-providers-checks.json)。
 
 C9-CP：回执破坏性控制改用内存 JSON 值，保留文件边界和全部原案例并新增 3 项。首轮时限前 1,383 个连续成功标记、余下 147 项完整 XML 通过分别记录，未拼接成单次完整资格；失效合成工作区已清理。[记录](parser-memory-controls-checks.json)。

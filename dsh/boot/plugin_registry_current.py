@@ -100,6 +100,8 @@ CURRENT_HARNESS_PLUGIN_CLASSES = {
     '@deepseek-ai/dsh-pwsh-sandbox': 'dsh.shell.sandbox_current:CurrentSandboxPwshExecutor',
     '@deepseek-ai/dsh-sandbox-policy': 'dsh.sandbox.policy_current:CurrentSandboxPolicy',
     '@deepseek-ai/dsh-user-approval': 'dsh.interaction.approval_current:CurrentApprovalService',
+    '@deepseek-ai/dsh-user-questions': 'dsh.interaction.user_questions_current:CurrentUserQuestionService',
+    '@deepseek-ai/dsh-tool-ask-user': 'dsh.interaction.tool_ask_user_current:CurrentToolAskUserPlugin',
     '@deepseek-ai/dsh-permission-presets': 'dsh.interaction.permission_current:CurrentPermissionPresets',
     '@deepseek-ai/dsh-experimental-auto-review': 'dsh.interaction.auto_review_current:CurrentAutoReview',
     '@deepseek-ai/dsh-tool-pwsh': 'dsh.shell.tool_current:CurrentToolPwsh',

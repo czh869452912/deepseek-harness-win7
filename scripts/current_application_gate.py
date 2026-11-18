@@ -30,6 +30,9 @@ def validate_observations(observed, browser, portable, candidate=ROOT):
     required = {'dsh/boot/profile_boot.py', 'dsh/typert/gateway_authorized.py',
                 'dsh/schedule/service_current.py', 'dsh/host/browser_compat/plugin.py'}
     if observed.get('kind') == 'market': required.add('dsh/boot/plugin_market_022.py')
+    if observed.get('kind') == 'question':
+        required.update({'dsh/interaction/user_questions_current.py', 'dsh/interaction/question_projection.py',
+                         'dsh/interaction/question_wait.py', 'dsh/interaction/tool_ask_user_current.py'})
     if not required <= modules.keys(): raise ValueError('Installed application import closure incomplete')
     for name, value in modules.items():
         if ('\\' in name or ':' in name or Path(name).is_absolute() or '..' in Path(name).parts
@@ -98,7 +101,7 @@ def journeys(portable, workspace, output, source, node, browser, kinds=None):
     url = 'http://127.0.0.1:' + str(fixture.server_port)
     rows = []
     try:
-        for kind in kinds or ['schedule', 'market']:
+        for kind in kinds or ['schedule', 'market', 'question']:
             home = workspace / ('application-' + kind)
             previous = None
             for mode in ['fresh', 'cold']:
@@ -130,7 +133,7 @@ def main():
     parser.add_argument('--phase', action='store_true')
     for name in ['portable', 'output', 'source', 'node', 'browser', 'home']:
         parser.add_argument('--' + name, type=Path, required=True)
-    parser.add_argument('--kind', choices=['schedule', 'market'])
+    parser.add_argument('--kind', choices=['schedule', 'market', 'question'])
     parser.add_argument('--fixture'); parser.add_argument('--previous', type=Path)
     options = parser.parse_args()
     if options.phase: phase(options)

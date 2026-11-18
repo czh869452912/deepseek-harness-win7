@@ -57,6 +57,9 @@ apps/desktop/locale.cjs -text
 apps/desktop/update-coordinator.cjs -text
 apps/desktop/renderer/** -text
 apps/desktop-host/transport.js -text
+apps/desktop/source-input.json text eol=lf
+apps/desktop/compatibility-source-input.json -text
+scripts/frontend-inputs.json text eol=lf
 dsh/session/bin/x86/** -text whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol
 dsh/subprocess/bin/** -text
 # Preserve official x86 notices/provenance verbatim, including source whitespace.

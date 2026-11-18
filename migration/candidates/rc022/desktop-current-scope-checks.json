@@ -38,7 +38,7 @@
     }
   ],
   "cleanup": {
-    "bytes_removed": 9362192,
+    "bytes_removed": 9364602,
     "owned_directories_removed": 9,
     "links_removed": 2022,
     "retained": "Commands, log/XML, prior failure/warnings and source-origin records; no fixture consumer remains"

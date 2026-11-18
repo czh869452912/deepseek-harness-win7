@@ -1,4 +1,6 @@
 import asyncio
+import json
+import os
 
 import pytest
 
@@ -8,6 +10,7 @@ from scripts.rc022_hmr_writes_probe import observe
 @pytest.mark.asyncio
 async def test_actual_partial_writes_atomic_editor_replacement_and_pending_disposal(tmp_path):
     rows = {row['name']:row for row in await observe(tmp_path/'writes')}
+    (tmp_path/'hmr-writes-observations.json').write_text(json.dumps(rows), encoding='utf-8')
     assert rows['plain']['early'] == ['part-1', 'part-2-longer']
     assert rows['plain']['added'] == ['add-2-longer']
     assert rows['stable'] == dict(name='stable', early=[], complete=['part-2-longer'],
@@ -18,6 +21,22 @@ async def test_actual_partial_writes_atomic_editor_replacement_and_pending_dispo
     for name in ('atomic-disabled','atomic-expired','editor-default'):
         assert rows[name]['events'] == []
     assert rows['editor-disabled']['events'] == ['edited']
+
+
+@pytest.mark.asyncio
+async def test_atomic_unlink_fixture_waits_for_delayed_watch_inventory(tmp_path, monkeypatch):
+    from dsh.cordis import hmr_root_watch
+    from scripts import rc022_hmr_writes_probe as probe
+    original = hmr_root_watch.scan
+    async def delayed(hmr, initial=False):
+        if not initial and any(not os.path.exists(path) for path in hmr._root_mtimes):
+            await asyncio.sleep(.12)
+        return await original(hmr, initial)
+    monkeypatch.setattr(hmr_root_watch, 'scan', delayed)
+    monkeypatch.setattr(probe, 'CASES', [dict(name='atomic-disabled', gap=60, atomic=False)])
+    rows = await probe.observe(tmp_path/'delayed')
+    (tmp_path/'hmr-delayed-inventory-observations.json').write_text(json.dumps(rows), encoding='utf-8')
+    assert rows == [dict(name='atomic-disabled', events=[])]
 
 
 def test_original_write_stability_defaults_and_polling_atomic_default():

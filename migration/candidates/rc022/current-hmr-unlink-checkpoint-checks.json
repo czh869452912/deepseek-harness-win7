@@ -1,0 +1,17 @@
+{
+  "contract": "C9-FN",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "failure": "Run07's atomic-disabled/expired assertion observed a change after a nominal unlink gap. A controlled 120ms inventory delay reproduced the former 60ms fixture gap being missed: before checkpoint, events=['replaced']; after checkpoint, events=[].",
+  "change": "Both original and Native observers wait up to one second for their actual watcher inventory to observe fixture deletion before starting the existing atomic timing interval. Product watcher implementation, atomic windows, stability thresholds and expected outputs are unchanged. Save raw write observations in regression runs.",
+  "verification": {
+    "run": "rc022-current-c9fn-hmr-writes-checkpoint-20261119-01",
+    "passed": 3,
+    "seconds": 8.14,
+    "controlled_reproduction": "rc022-current-c9fn-slow-scan-reproduction-20261119-01",
+    "actual_source_native_pair": "rc022-current-c9fmfn-hmr-pairs-20261119-01/hmr_writes",
+    "pair_seconds": 14.844,
+    "scope": "All nine real write/stability/atomic/editor/disposal scenarios, delayed-inventory fixture control and original timing defaults"
+  },
+  "cleanup": {"directories": 5, "bytes_removed": 903, "paired": "Completed files directories retired by the pair runner; original/Native rows, controlled before/after observations, logs/XML and receipts retained."},
+  "qualification": "Targeted only. Run07 remains a separate failed frozen candidate."
+}

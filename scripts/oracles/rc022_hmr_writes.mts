@@ -1,5 +1,5 @@
 import {mkdirSync,readFileSync,writeFileSync,unlinkSync} from 'node:fs'
-import {resolve,dirname,join} from 'node:path'
+import {resolve,dirname,join,basename} from 'node:path'
 import {fileURLToPath,pathToFileURL} from 'node:url'
 const root=process.argv[2]!,directory=resolve(dirname(process.argv[3]!),'files/source'),cases=JSON.parse(readFileSync(process.argv[3]!,'utf8'))
 const {Context}=await import(pathToFileURL(resolve(root,'vendor/cordis/lib/index.js')).href)
@@ -14,7 +14,15 @@ for(const {name,gap,editor,...options} of cases){
  try{
   await ctx.plugin(Hmr,{root:['.'],ignored:[],debounce:0,...options});const events:string[]=[]
   ctx.on('hmr/change',(url:string)=>events.push(readFileSync(fileURLToPath(url),'utf8')))
-  if(gap!==undefined){unlinkSync(path);await pause(gap);writeFileSync(path,'replaced');await pause(500);rows.push({name,events:[...events]})}
+  if(gap!==undefined){
+   unlinkSync(path)
+   const deadline=Date.now()+1000
+   while((ctx.hmr as any).watcher.getWatched()[base]?.includes(basename(path))){
+    if(Date.now()>=deadline)throw new Error('watcher did not observe fixture unlink')
+    await pause(5)
+   }
+   await pause(gap);writeFileSync(path,'replaced');await pause(500);rows.push({name,events:[...events]})
+  }
   else if(editor){writeFileSync(path,'edited');await pause(250);rows.push({name,events:[...events]})}
   else{
    writeFileSync(path,'part-1');await pause(90);writeFileSync(path,'part-2-longer');await pause(90);const early=[...events]

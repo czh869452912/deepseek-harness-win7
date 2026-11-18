@@ -18,6 +18,11 @@ async def observe(directory):
  from dsh.cordis.timer import TimerService
  from dsh.cordis.hmr import ConfigWatcherService
  from dsh.cordis.hmr_paths import file_path
+ async def observed_unlink(hmr,path):
+  deadline=asyncio.get_running_loop().time()+1
+  while str(path) in hmr._root_mtimes:
+   if asyncio.get_running_loop().time()>=deadline:raise TimeoutError('watcher did not observe fixture unlink')
+   await asyncio.sleep(.005)
  directory.mkdir(parents=True);rows=[]
  for case in CASES:
   base=directory/case['name'];base.mkdir();path=base/('file.txt~' if case.get('editor') else 'file.txt');path.write_text('initial',encoding='utf-8')
@@ -27,7 +32,7 @@ async def observe(directory):
    await ctx.plugin(ConfigWatcherService,dict(root=['.'],ignored=[],debounce=0,**{k:v for k,v in case.items() if k not in ('name','gap','editor')}));hmr=ctx.get('hmr');events=[]
    ctx.on('hmr/change',lambda url:events.append(Path(file_path(url)).read_text(encoding='utf-8')))
    if 'gap' in case:
-    path.unlink();await asyncio.sleep(case['gap']/1000);path.write_text('replaced',encoding='utf-8');await asyncio.sleep(.5)
+    path.unlink();await observed_unlink(hmr,path);await asyncio.sleep(case['gap']/1000);path.write_text('replaced',encoding='utf-8');await asyncio.sleep(.5)
     rows.append(dict(name=case['name'],events=list(events)))
    elif case.get('editor'):
     path.write_text('edited',encoding='utf-8');await asyncio.sleep(.25);rows.append(dict(name=case['name'],events=list(events)))

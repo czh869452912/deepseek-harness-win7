@@ -66,6 +66,10 @@ async def observe(entries=None, exporter_factory=None):
             except Exception as failure:rows.append(dict(error=str(failure)))
             continue
         hits=[];warnings=[];calls=[0];agent_calls=[];destroyed=[]
+        loop=asyncio.get_running_loop()
+        def cancel_after_request():
+            nonlocal timer
+            timer=loop.call_later(.03,controller.abort)
         class Handler(BaseHTTPRequestHandler):
             protocol_version='HTTP/1.1'
             def log_message(self,*args):pass
@@ -77,6 +81,8 @@ async def observe(entries=None, exporter_factory=None):
                 hits.append(dict(document=json.loads(body),headers=selected))
                 if entry.get('event'):selected['acceptEncoding']=self.headers.get('accept-encoding')
                 mode=entry['mode'];attempt=len(hits)
+                if entry.get('abort')=='delay' and attempt==1:
+                    loop.call_soon_threadsafe(cancel_after_request)
                 if mode=='reset-once' and attempt==1:
                     self.connection.shutdown(socket.SHUT_RDWR);self.connection.close();return
                 status=201 if mode=='created' else 302 if mode=='redirect' else 400 if mode=='bad-request' else 500 if mode=='server-error' else 503 if mode in ('retry-exhausted','retry-deadline') or mode=='retry-once' and attempt==1 else 200
@@ -124,6 +130,7 @@ async def observe(entries=None, exporter_factory=None):
             def failed_headers():raise ConnectionResetError('synthetic callback failure')
             options['headers']=failed_headers
         if entry['mode'] in ('timeout','retry-deadline'):options['timeoutMillis']=50
+        if entry.get('abort')=='delay':options['timeoutMillis']=1000
         if entry.get('dynamic'):
             async def headers():calls[0]+=1;return {'Authorization':'Bearer synthetic-'+str(calls[0])}
             options['headers']=headers
@@ -138,7 +145,6 @@ async def observe(entries=None, exporter_factory=None):
             from dsh.core.abort import AbortController
             controller=AbortController();extra['signal']=controller.signal
             if entry.get('abort')=='before':controller.abort()
-            if entry.get('abort')=='delay':timer=asyncio.get_running_loop().call_later(.03,controller.abort)
         exporter=(exporter_factory or SessionHttpExporter)(options,environment=environment,**extra)
         reporter=SessionLogReporter(dict(scope=dict(name='fixture',version='1'),resourceAttributes={},
             onFailure=lambda message,error=None:warnings.append(dict(message=message,error=None if error is None else str(error)))),exporter)

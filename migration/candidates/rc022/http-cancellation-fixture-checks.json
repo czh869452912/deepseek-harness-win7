@@ -1,0 +1,14 @@
+{
+  "contract": "C9-DQ",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "status": "Targeted current HTTP cancellation observations passed",
+  "changes": "The two delayed-cancellation cases now trigger their 30 ms cancellation from the first real collector request, on both actual Source and Native. Their independent deadline is 1000 ms so an unrelated 50 ms timeout does not win before that controlled cancellation. Pre-aborted and independent timeout cases remain unchanged. This establishes the intended after-admission boundary without assuming that request startup always takes less than 30 ms.",
+  "verification": [
+    {"run": "rc022-current-process-cancel-diagnostic-20261118-01", "passed": 4, "seconds": 4.52, "scope": "Three direct event HTTP consumers plus separate recorded process cancellation observation"},
+    {"run": "rc022-current-event-http-pair-20261118-01", "status": "passed", "observations": 43, "seconds": 11.938},
+    {"run": "rc022-current-session-http-pair-20261118-01", "status": "passed", "observations": 97, "seconds": 6.203},
+    {"run": "rc022-current-fs-event-http-consumers-20261118-01", "passed": 8, "failed": 1, "seconds": 4.74, "scope": "All three event HTTP consumers passed; unrelated FS atomic replacement encountered Win32 1175, separately retained and unresolved"}
+  ],
+  "cleanup": "HTTP pairs created no extracted runtimes or disposable file roots. Required request/warning observations, commands and logs retained. Completed diagnostic workspaces retired with their original failure reports and observations preserved.",
+  "qualification": "Targeted HTTP completion only; no combined full acceptance claim."
+}

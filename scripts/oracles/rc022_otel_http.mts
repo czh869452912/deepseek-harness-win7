@@ -25,6 +25,7 @@ for(const entry of inputs){
   continue
  }
  const hits:any[]=[],warnings:any[]=[],agentCalls:string[]=[];let calls=0,agentDestroyed=0
+ let controller:AbortController|undefined,timer:any
  const handle=async(req:any,res:any)=>{
   const chunks=[];for await(const chunk of req)chunks.push(chunk)
   let data=Buffer.concat(chunks);if(req.headers['content-encoding']==='gzip')data=gunzipSync(data)
@@ -32,6 +33,7 @@ for(const entry of inputs){
    authorization:req.headers.authorization??null,tenant:req.headers['x-tenant']??null,agent:req.headers['user-agent']??null,compression:req.headers['content-encoding']??null}})
   if(entry.event)hits[hits.length-1].headers.acceptEncoding=req.headers['accept-encoding']??null
   const mode=entry.mode,attempt=hits.length
+  if(entry.abort==='delay'&&attempt===1)timer=setTimeout(()=>controller!.abort(),30)
   if(mode==='reset-once'&&attempt===1){req.socket.destroy();return}
   const status=mode==='created'?201:mode==='redirect'?302:mode==='bad-request'?400:mode==='server-error'?500:
    ['retry-exhausted','retry-deadline'].includes(mode)||mode==='retry-once'&&attempt===1?503:200
@@ -58,19 +60,19 @@ for(const entry of inputs){
  }
  if(entry.agent==='headers-error')options.headers=()=>{throw Object.assign(new Error('synthetic callback failure'),{code:'ECONNRESET'})}
  if(['timeout','retry-deadline'].includes(entry.mode))options.timeoutMillis=50
+ if(entry.abort==='delay')options.timeoutMillis=1000
  if(entry.dynamic)options.headers=async()=>({Authorization:'Bearer synthetic-'+(++calls)})
  const names=[...new Set([...environmentNames,...Object.keys(entry.env)])],previous=Object.fromEntries(names.map(name=>[name,process.env[name]]))
  for(const name of names)delete process.env[name]
  Object.assign(process.env,entry.env)
- let reporter:any,timer:any
+ let reporter:any
  try{
   reporter=new SessionLogReporter({exporter:options,scope:{name:'fixture',version:'1'},resourceAttributes:{},
    onFailure(message:string,error?:Error){warnings.push({message,error:error?.message??null})}})
   if(entry.event){
    await reporter.processor.exporter.shutdown()
-   const controller=new AbortController()
+   controller=new AbortController()
    if(entry.abort==='before')controller.abort()
-   if(entry.abort==='delay')timer=setTimeout(()=>controller.abort(),30)
    reporter.processor.exporter=createEventLogExporter(options,controller.signal)
   }
   reporter.reportSessionLog(record);await reporter.shutdown()

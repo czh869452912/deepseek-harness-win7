@@ -8,6 +8,7 @@ import shutil
 import subprocess
 import sys
 import threading
+import yaml
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 import pytest
@@ -22,6 +23,7 @@ from dsh.extensions.inspect_registry import CordisInspectRegistryService
 from dsh.cordis.context import Context
 from dsh.skill.canonical_filesystem import CanonicalSkillFilesystem
 from canonical_web_fixture import web_context, close_web_context
+from scripts.model_http_fixture import model_sse
 from test_python_plugin_distribution import profile, boot, close, echo
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -91,13 +93,31 @@ async def test_builtin_inspect_lease_survives_owner_changes_without_weakening_re
         await ctx.fiber.dispose()
 
 
-def copy_preset(home, name):
+def copy_preset(home, name, export=True):
     source = ROOT / 'packages/preset/agent-presets/presets/cordis'
     target = home / '.agent-presets' / name
     shutil.copytree(str(source), str(target))
     path = target / 'agent.cordis.yml'
-    with path.open('a', encoding='utf-8') as stream:
-        stream.write("\n- id: tool-python-export\n  name: '@deepseek-ai/dsh-tool-python-export'\n")
+    plugins = yaml.safe_load(path.read_text(encoding='utf-8'))
+    for row in plugins:
+        if row.get('name') in ('@deepseek-ai/dsh-cordis-manager', '@deepseek-ai/dsh-tool-cordis'):
+            row['name'] = '@deepseek-win7/dsh-cordis-manager-python'
+        if row.get('id') == 'skill-filesystem':
+            row.setdefault('config', {})['bundledSkillDir'] = str(target / 'skills')
+    if export:
+        plugins.append(dict(id='tool-python-export', name='@deepseek-ai/dsh-tool-python-export'))
+    path.write_text(yaml.safe_dump(plugins, sort_keys=False), encoding='utf-8')
+    # Current upstream mounts explicit declarations; a filesystem directory
+    # alone no longer registers a preset. Preserve the copied authoring file.
+    from dsh.boot.profile import init_profile, PROFILE_TEMPLATES
+    profile = home / 'profiles/web'
+    if not (profile / 'package.json').exists():
+        init_profile(str(profile), PROFILE_TEMPLATES['web']['bundles'])
+    patch = profile / 'cordis.patch.yml'
+    rows = yaml.safe_load(patch.read_text(encoding='utf-8')) or []
+    rows.append(dict(insert=[dict(id='fixture-' + name, name='@deepseek-ai/dsh-agent-preset',
+        config=dict(id=name, plugins=yaml.safe_load(path.read_text(encoding='utf-8'))))]))
+    patch.write_text(yaml.safe_dump(rows, sort_keys=False), encoding='utf-8')
     return target
 
 
@@ -110,14 +130,17 @@ def recording_llm(monkeypatch):
             payload = json.loads(self.rfile.read(int(self.headers['Content-Length'])))
             requests.append(payload)
             text = json.dumps(payload['messages'])
-            if payload.get('tools') and SKILL_NAME in text and not any(row['role'] == 'tool' for row in payload['messages']):
+            has_result = any(row['role'] == 'tool' or any(
+                isinstance(block, dict) and block.get('type') == 'tool_result'
+                for block in row.get('content', []) if isinstance(row.get('content'), list))
+                for row in payload['messages'])
+            if payload.get('tools') and SKILL_NAME in text and not has_result:
                 delta = {'tool_calls': [{'index': 0, 'id': 'load-win7', 'type': 'function',
                     'function': {'name': 'skill', 'arguments': json.dumps({'name': SKILL_NAME})}}]}
                 finish = 'tool_calls'
             else:
                 delta, finish = {'content': 'Authoring request observed'}, 'stop'
-            body = ('data: ' + json.dumps({'choices': [{'delta': delta, 'finish_reason': finish}]})
-                    + '\n\ndata: [DONE]\n\n').encode('utf-8')
+            body = model_sse(self.path, delta, finish)
             self.send_response(200)
             self.send_header('Content-Type', 'text/event-stream')
             self.send_header('Content-Length', str(len(body)))
@@ -148,8 +171,10 @@ async def test_formal_first_request_and_actual_skill_load(tmp_path, monkeypatch,
     monkeypatch.setenv('DSH_TELEMETRY_MODE', 'DISABLED')
     monkeypatch.delenv('DSH_BUNDLED_SKILL_DIR', raising=False)
     monkeypatch.chdir(tmp_path)
-    if surface == 'web' and enabled:
-        copy_preset(home, 'cordis-win7')
+    if surface == 'web':
+        # Explicit Native authoring composition beside the current upstream
+        # read-only Cordis preset; do not replace that original composition.
+        copy_preset(home, 'native-authoring', export=enabled)
     patch = tmp_path / 'export.patch.yml'
     patch.write_text("- insert:\n    - id: tool-python-export\n      name: '@deepseek-ai/dsh-tool-python-export'\n", encoding='utf-8')
     result = await run_profile(dict(profile=surface, dshHome=str(home),
@@ -161,32 +186,39 @@ async def test_formal_first_request_and_actual_skill_load(tmp_path, monkeypatch,
         if surface == 'web':
             controller = ctx.get('sessionController')
             await controller.create(dict(sessionId='author', cwd=str(tmp_path),
-                                         agentPreset='cordis-win7' if enabled else 'cordis'))
+                                         agentPreset='native-authoring'))
             await controller.prompt(dict(sessionId='author', requestId='author-request', mode='queue',
                                          content=[dict(type='text', text='Develop a read-only Python plugin')]), NEVER_ABORTED)
             await asyncio.wait_for(ctx.get('agents').get('author').whenIdle(), 30)
         else:
             await asyncio.wait_for(result['shutdown'].wait(), 30)
         agent_requests = [row for row in recording_llm if row.get('tools')]
+        (tmp_path / 'observed-requests.json').write_text(json.dumps(recording_llm, ensure_ascii=False, indent=2), encoding='utf-8')
         assert len(agent_requests) == 2
         first = agent_requests[0]
-        names = [row['function']['name'] for row in first['tools']]
+        definitions = [row.get('function', row) for row in first['tools']]
+        names = [row['name'] for row in definitions]
         assert ('cordis_export' in names) is enabled
-        assert 'Python 3.8.10' in json.dumps(first['messages'])
-        assert SKILL_NAME in json.dumps(first['messages'])
-        assert 'load the cordis-plugin-development Skill' in json.dumps(first['messages'])
-        assert 'restricted builtins and computation imports' in json.dumps(first['messages'])
-        assert 'trusted DSH process with Python builtins and imports' not in json.dumps(first['messages'])
-        assert 'cordis-plugin-development-win7' not in json.dumps(first['messages'])
-        define_description = next(row['function']['description'] for row in first['tools']
-                                  if row['function']['name'] == 'cordis_define')
+        prompt = json.dumps(dict(system=first.get('system'), messages=first['messages']))
+        assert SKILL_NAME in prompt
+        assert 'Python Host code executes in an owned Python worker' in prompt
+        assert 'restricted builtins and computation imports' in prompt
+        assert 'trusted DSH process with Python builtins and imports' not in prompt
+        assert 'cordis-plugin-development-win7' not in prompt
+        define_description = next(row['description'] for row in definitions if row['name'] == 'cordis_define')
         assert 'Python Host syntax, and JavaScript Client syntax' in define_description
         assert 'syntax failures are reported during browser activation' not in define_description
         cordis_names = [name for name in names if name.startswith('cordis_') and name != 'cordis_export']
         assert cordis_names == sorted(['cordis_inspect_list', 'cordis_inspect_query', 'cordis_inspect_self',
                                        'cordis_define', 'cordis_run', 'cordis_stop', 'cordis_undefine'])
-        tool_message = next(row for row in agent_requests[1]['messages'] if row['role'] == 'tool')
-        body = tool_message['content']
+        tool_results = [row['content'] for row in agent_requests[1]['messages'] if row['role'] == 'tool']
+        tool_results.extend(block['content'] for row in agent_requests[1]['messages']
+                            if isinstance(row.get('content'), list) for block in row['content']
+                            if block.get('type') == 'tool_result')
+        assert len(tool_results) == 1
+        body = tool_results[0]
+        if isinstance(body, list):
+            body = '\n'.join(block['text'] for block in body if block.get('type') == 'text')
         assert 'ctx.tools.register' in body and 'harness.defineTool' in body
         assert 'Python 3.8.10' in body and 'plain JavaScript' in body
         assert 'restricted builtins and computation imports' in body
@@ -204,13 +236,14 @@ async def test_formal_first_request_and_actual_skill_load(tmp_path, monkeypatch,
 @pytest.mark.asyncio
 async def test_default_skill_user_shadowing_and_optional_export_are_separate(tmp_path):
     home = tmp_path / 'home'
+    copy_preset(home, 'native-authoring', export=False)
     for preset in ('dev-a', 'dev-b'):
         copy_preset(home, preset)
     before = {preset: (home / '.agent-presets' / preset / 'agent.cordis.yml').read_bytes() for preset in ('dev-a', 'dev-b')}
     ctx = await web_context(home)
     try:
         for sid in ('owner', 'foreign'):
-            await ctx.get('sessionController').create(dict(sessionId=sid, cwd=str(tmp_path), agentPreset='cordis'))
+            await ctx.get('sessionController').create(dict(sessionId=sid, cwd=str(tmp_path), agentPreset='native-authoring'))
         owner, foreign = [ctx.get('agents').get(sid) for sid in ('owner', 'foreign')]
         for sid, preset in [('preset-a', 'dev-a'), ('preset-shared', 'dev-a'), ('preset-b', 'dev-b')]:
             await ctx.get('sessionController').create(dict(sessionId=sid, cwd=str(tmp_path), agentPreset=preset))

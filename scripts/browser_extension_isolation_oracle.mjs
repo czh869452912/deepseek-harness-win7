@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import {spawn} from 'node:child_process';
-import {mkdtemp, readFile, writeFile} from 'node:fs/promises';
+import {mkdtemp, readFile, writeFile, rm} from 'node:fs/promises';
 import {createServer} from 'node:http';
 import {tmpdir} from 'node:os';
 import {join, resolve} from 'node:path';
@@ -64,12 +64,19 @@ async function observe(disabled) {
     await call('Runtime.enable'); await call('Page.enable');
     report.commandLine = await call('Browser.getBrowserCommandLine');
     report.version = await call('Browser.getVersion');
-    await call('Page.navigate', {url:'chrome://extensions/'});
-    await until(() => evaluate('typeof globalThis.chrome?.developerPrivate?.getExtensionsInfo === "function"'), 'extension inventory API');
-    report.inventory = await evaluate('new Promise(resolve => chrome.developerPrivate.getExtensionsInfo({includeDisabled:true, includeTerminated:true}, resolve))');
     await call('Page.navigate', {url});
     await until(() => evaluate('document.readyState === "complete" && location.href === ' + JSON.stringify(url)), 'local complete page');
     if (!disabled) await until(() => evaluate('document.documentElement.dataset.dshExtensionFixture === "loaded"'), 'fixture injection');
+    // Public extension APIs in its actual isolated execution context avoid
+    // browser-specific chrome://extensions developerPrivate internals.
+    const contexts = report.contexts.filter(context => context.origin.startsWith('chrome-extension://'));
+    report.inventory = [];
+    for (const context of contexts) {
+      const observed = await call('Runtime.evaluate', {contextId: context.id, returnByValue: true,
+        expression: '({id:chrome.runtime.id,name:chrome.runtime.getManifest().name})'});
+      if (observed.exceptionDetails) throw new Error(JSON.stringify(observed.exceptionDetails));
+      if (!report.inventory.some(row => row.id === observed.result.value.id)) report.inventory.push(observed.result.value);
+    }
     report.marker = await evaluate('document.documentElement.dataset.dshExtensionFixture ?? null');
     await evaluate('console.error("DSH_CONTROLLED_APP_ERROR"); setTimeout(() => {throw new Error("DSH_CONTROLLED_APP_EXCEPTION");}, 0); true');
     await until(() => report.exceptions.some(event => event.exceptionDetails.exception?.description?.includes('DSH_CONTROLLED_APP_EXCEPTION')), 'app exception still observed');
@@ -79,6 +86,9 @@ async function observe(disabled) {
   } finally {
     if (socket?.readyState === WebSocket.OPEN) socket.close();
     if (browser.exitCode === null && browser.signalCode === null) browser.kill();
+    await until(() => browser.exitCode !== null || browser.signalCode !== null, 'owned browser exited');
+    await rm(profile, {recursive:true, force:true, maxRetries:10, retryDelay:100});
+    report.profileRemoved = true;
   }
 }
 const result = {kind:'controlled-browser-extension-isolation', fixture, url, observations:[]};
@@ -102,5 +112,5 @@ try {
   }
   result.passed = true;
 } catch (error) {result.passed = false; result.failure = error.stack; process.exitCode = 1;}
-finally {await writeFile(output, JSON.stringify(result, null, 2) + '\n', 'utf8'); server.close();}
+finally {await writeFile(output, JSON.stringify(result, null, 2) + '\n', 'utf8'); server.close(); await rm(fixture, {recursive:true, force:true, maxRetries:10, retryDelay:100});}
 console.log(JSON.stringify({passed:result.passed, failure:result.failure, observations:result.observations.map(item => ({disabled:item.disabled, marker:item.marker, profile:item.profile, extensions:(item.inventory ?? []).map(extension => ({id:extension.id, name:extension.name, state:extension.state}))}))}));

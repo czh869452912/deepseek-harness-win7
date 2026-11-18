@@ -117,16 +117,20 @@ async def main():
                         availability['gate'].set()
                         value = True
                     elif SESSION and command == 'unload-session':
-                        from dsh.presets.mount import standing_mount_for
                         ctx = result['ctx']
-                        mount = standing_mount_for(ctx.agents.get('python-session-a').ctx)
+                        # Controlled package revocation inside the actual current
+                        # shared composition; the retired per-agent mount is absent.
+                        generation = ctx.agentPresets._generation_for(ctx.agents.get('python-session-a').ctx)
+                        assert generation is not None
+                        mount = generation.mount
                         entry = next(row for row in mount.tree.entries() if row.options.get('name') == NAME)
                         await entry.fiber.dispose()
                         await entry.fiber.await_settled()
                         value = await snapshot()
                     elif command == 'unload':
                         ctx = result['ctx']
-                        entry = next(row for row in ctx.loader.entries if row.options.get('name') == NAME)
+                        entry = next(row for row in ctx.loader.entries if row.options.get('name') == NAME
+                            and (not SESSION or row.options.get('config', {}).get('sessionClientBridge') is True))
                         await entry.fiber.dispose()
                         await entry.fiber.await_settled()
                         for _ in range(20):

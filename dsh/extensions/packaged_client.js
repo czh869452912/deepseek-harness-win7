@@ -1,6 +1,6 @@
 // Installed Client SDK adapter. The authored async function body is evaluated
 // by the pinned upstream evaluator, and its apply sees the upstream facade.
-exports.inject = IDENTITY.placement === 'session' ? ['remote', 'sessions'] : ['remote'];
+exports.inject = IDENTITY.placement === 'session' ? ['remote', 'sessions', 'uiSession'] : ['remote'];
 exports.apply = async function apply(ctx) {
   function json(value) {
     const root = {}, seen = new Set(), todo = [{value, holder: root, key: 'value'}];
@@ -51,6 +51,7 @@ exports.apply = async function apply(ctx) {
       const plugin = await SDK.evaluateClientHalf(IDENTITY.pluginId, CLIENT_SOURCE, {
         invoke: async (method, args) => {
           if (closed || !current()) throw new Error('exported Client activation ended');
+          try { args = json(args); } catch (error) { throw new Error('host.call rejected "args": ' + error.message); }
           const reply = agentId === undefined ? await remote.call(method, args) : await remote.call(agentId, method, args);
           if (closed || !current()) throw new Error('exported Client activation ended');
           if (!reply.ok) throw new Error(reply.error.code + ': ' + reply.error.message);
@@ -79,11 +80,11 @@ exports.apply = async function apply(ctx) {
     return;
   }
   const sessions = ctx.sessions;
+  const selection = ctx.uiSession.adapter.current;
   let selected, epoch = 0, active = true, release;
   const tasks = new Set();
   function changed() {
-    const snapshot = sessions.list.getSnapshot();
-    const agentId = snapshot.currentAddress === undefined ? snapshot.current : undefined;
+    const agentId = selection.getSnapshot().key;
     if (agentId === selected) return;
     selected = agentId;
     const token = ++epoch;
@@ -96,7 +97,12 @@ exports.apply = async function apply(ctx) {
       if (!active || token !== epoch || agentId === undefined) return;
       const reply = await remote.available(agentId);
       if (!active || token !== epoch) return;
-      if (!reply.ok) throw new Error(reply.error.code + ': ' + reply.error.message);
+      if (!reply.ok) {
+        // A Client retained briefly while its package graph is withdrawn has
+        // no available Host. It must not mount authored code or report a crash.
+        if (reply.error.code === 'gateway/service-unavailable' || reply.error.code === 'gateway/definition-unavailable') return;
+        throw new Error(reply.error.code + ': ' + reply.error.message);
+      }
       if (!reply.value) return;
       const scope = sessions.scope(agentId);
       if (!scope) return;
@@ -106,7 +112,7 @@ exports.apply = async function apply(ctx) {
     tasks.add(task);
     task.finally(() => tasks.delete(task));
   }
-  const unsubscribe = sessions.list.subscribe(changed);
+  const unsubscribe = selection.subscribe(changed);
   ctx.effect(() => async () => {
     active = false; ++epoch; unsubscribe();
     const drop = release; release = undefined;

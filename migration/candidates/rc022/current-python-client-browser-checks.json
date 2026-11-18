@@ -1,0 +1,28 @@
+{
+  "contract": "C9-ER",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "changes": [
+    "Native exported Client validates lossless JSON before current Remote serialization, observes the public uiSession selection binding, and treats withdrawn availability as absent without mounting authored code.",
+    "Controlled Session fixture revokes the actual shared preset generation and the explicit root bridge independently. The retained shared descriptor produces the exact service-unavailable error after bridge revocation.",
+    "Original-browser observers handle current Preview Notice/account onboarding, drain actual navigation RPCs except deliberately held availability, and observe real extension isolated-world identities. Original frontend bytes remain unchanged.",
+    "The private Native Creative bundle declares its optional export package without enabling that tool by default. Current Web read-only Cordis remains distinct; authoring tests declare an explicit Native composition and use actual current Messages SSE."
+  ],
+  "verification": [
+    {"run": "rc022-current-export-browser-final-20261118-01", "passed": 2, "failed": 1, "scope": "Host export full real-browser journey and extension isolation passed; deliberate held-request fixture drain failed and was corrected separately"},
+    {"run": "rc022-current-export-session-browser-20261118-09", "passed": 1, "seconds": 102.72, "scope": "All 23 actual Session browser steps, 15 RPC replies, exact failure envelopes, HMR/shared ownership, restart/upgrade/rollback/remove and empty unexpected error channels"},
+    {"run": "rc022-current-guide-browser-20261118-04", "passed": 1, "seconds": 50.37, "scope": "Six installed authoring guide phases, real trusted clicks, first-use onboarding and screenshot inspected"},
+    {"run": "rc022-current-authoring-units-20261118-04", "passed": 27, "failed": 2, "scope": "Export build/runtime, packaging metadata, isolated authoring and lifecycle units; two old preset rows were subsequently corrected"},
+    {"run": "rc022-current-authoring-web-20261118-01", "passed": 5, "seconds": 28.77, "scope": "Actual formal first request/skill execution for CLI and explicit Web Native authoring, both export settings, and scoped skill shadowing"},
+    {"run": "rc022-current-browser-onboarding-units-20261118-01", "passed": 20, "seconds": 1.66}
+  ],
+  "browser": "Actual installed Edge through repository CDP journeys; Browser plugin not available. This is targeted current-Windows evidence, not Win7 or complete release qualification.",
+  "cleanup": {
+    "runs": 21,
+    "directories_removed": 63,
+    "bytes_removed": 212449308,
+    "raw_observations_retained": 68,
+    "retained_unused_profiles": ["C:/Users/czh86/AppData/Local/Temp/dsh-guide-cdp-nZcnHa", "C:/Users/czh86/AppData/Local/Temp/dsh-guide-cdp-xMf1t4"],
+    "retention_reason": "Failed endpoint observers left these two profiles. Ownership, ordinary directory identity and no remaining browser consumers verified. Automatic approval review rejected both scoped dynamic and fixed-literal deletion commands as blocked by policy. No alternative deletion mechanism attempted. Remove when host policy permits; cleanup is incomplete for these assets."
+  },
+  "qualification": "Targeted completion only. Native Cordis browser observer and full frozen release qualification remain pending; earlier failed/timeout runs retain their original identities."
+}

@@ -281,7 +281,7 @@
     },
     {
       "path": "packages/bundle/creative/package.json",
-      "sha256": "ed4f8ce91ebd40bb32a590c97159097e8e5f9fc6704112121d685ecadd2bb4f3",
+      "sha256": "1c06d1114f8931acd365cf14577fbf551883aebac645453aa19b5747338e91f2",
       "origin": "native-product",
       "source_upstream": null,
       "source_sha256": null,

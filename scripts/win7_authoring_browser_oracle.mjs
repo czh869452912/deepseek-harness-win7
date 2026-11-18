@@ -1,7 +1,7 @@
 /** Exercise the shipped guide's installed Python + plain-JS example. */
 import assert from 'node:assert/strict';
 import {spawn} from 'node:child_process';
-import {mkdir, mkdtemp, writeFile, rm} from 'node:fs/promises';
+import {mkdir, mkdtemp, readFile, writeFile, rm} from 'node:fs/promises';
 import {tmpdir} from 'node:os';
 import {dirname, join, resolve} from 'node:path';
 import {fileURLToPath} from 'node:url';
@@ -64,7 +64,15 @@ async function click(selector) {
 }
 async function open(url) {
   await navigateOriginalPage(cdp, until, url);
-  await deferProviderOnboarding(cdp, until, false);
+  const firstOpen = !report.noticeDismissed;
+  if (!report.noticeDismissed) {
+    const selector = '[role="dialog"][aria-label="Preview Notice"]';
+    await until(() => cdp.evaluate('document.querySelector(' + JSON.stringify(selector) + ') !== null'), 'current original preview notice');
+    await click(selector + ' button');
+    await until(() => cdp.evaluate('document.querySelector(' + JSON.stringify(selector) + ') === null'), 'preview notice acknowledged');
+    report.noticeDismissed = true;
+  }
+  await deferProviderOnboarding(cdp, until, firstOpen);
   await until(() => cdp.evaluate('document.querySelector("[data-win7-result]")?.textContent === "Ready"'), 'guide panel');
 }
 async function echo(expected, calls) {
@@ -86,11 +94,12 @@ try {
   });
   const initial = await until(() => {if (bootError) throw bootError; return bootValue;}, 'Host startup', 60000);
   report.python = initial.python;
-  let endpoint;
   browser = spawn(args.browser, isolatedBrowserArguments(profile), {windowsHide: true});
-  browser.stderr.on('data', chunk => {const match = String(chunk).match(/DevTools listening on (ws:\/\/[^\s]+)/); if (match) endpoint = match[1];});
-  await until(() => endpoint, 'browser endpoint');
-  const port = new URL(endpoint).port;
+  browser.stderr.on('data', chunk => {report.browserStderr = (report.browserStderr ?? '') + chunk;});
+  const port = await until(async () => {
+    try {return (await readFile(join(profile, 'DevToolsActivePort'), 'utf8')).split('\n')[0];}
+    catch {return false;}
+  }, 'browser endpoint');
   const pages = await (await fetch('http://127.0.0.1:' + port + '/json/list')).json();
   const socket = new WebSocket(pages.find(page => page.type === 'page').webSocketDebuggerUrl);
   await new Promise((yes, no) => {socket.addEventListener('open', yes, {once: true}); socket.addEventListener('error', no, {once: true});});
@@ -121,7 +130,17 @@ try {
   report.steps.push('unload revoked retained Host RPC; page reload removed Client panel');
   assert.deepEqual(report.consoleErrors, []);
   report.passed = true;
-} catch (error) {report.errors.push(error.stack || String(error));}
+} catch (error) {
+  report.errors.push(error.stack || String(error));
+  if (cdp) {
+    try {
+      report.failureDOM = await cdp.evaluate('document.body.innerText');
+      report.failurePanel = await cdp.evaluate('document.querySelector("[data-win7-result]")?.textContent');
+      const shot = await cdp.call('Page.captureScreenshot', {format: 'png'});
+      await writeFile(output + '.failure.png', Buffer.from(shot.data, 'base64'));
+    } catch (diagnostic) { report.errors.push('Failure observation: ' + diagnostic); }
+  }
+}
 finally {
   try {if (cdp) await closeOriginalBrowser(cdp, browser, until); else if (browser) browser.kill();} catch (error) {report.errors.push(String(error));}
   try {if (host && host.exitCode === null) {await command('stop'); host.stdin.end(); await until(() => host.exitCode !== null, 'Host exit');}} catch (error) {report.errors.push(String(error)); if (host) host.kill();}

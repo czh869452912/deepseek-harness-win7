@@ -47,6 +47,13 @@ export async function closeOriginalBrowser(connection, browser, waitFor) {
 export async function deferProviderOnboarding(connection, waitFor, required = true) {
   const dialog = '[role="dialog"][aria-label="Add an API key to get started"], [role="dialog"][aria-label="添加一个 API Key 开始使用"]';
   const point = await waitFor(() => connection.evaluate(`(() => {
+    const start = document.querySelector('[role="dialog"][aria-label="Get started"], [role="dialog"][aria-label="开始使用"]');
+    if (start) {
+      const button = Array.from(start.querySelectorAll('button')).find(element => ['Add API Key', '添加 API Key'].includes(element.textContent.trim()));
+      if (!button || button.disabled) return false;
+      const bounds = button.getBoundingClientRect(), x = bounds.x + bounds.width/2, y = bounds.y + bounds.height/2;
+      return bounds.width && bounds.height && button.contains(document.elementFromPoint(x,y)) && {x,y,start:true};
+    }
     const dialog = document.querySelector(${JSON.stringify(dialog)});
     if (!dialog) return ${required ? 'false' : 'document.getElementById("root")?.inert === false && {absent: true}'};
     const button = Array.from(dialog.querySelectorAll('button')).find(element =>
@@ -59,6 +66,7 @@ export async function deferProviderOnboarding(connection, waitFor, required = tr
   if (point.absent) return false;
   await connection.call('Input.dispatchMouseEvent', {type: 'mousePressed', ...point, button: 'left', clickCount: 1});
   await connection.call('Input.dispatchMouseEvent', {type: 'mouseReleased', ...point, button: 'left', clickCount: 1});
+  if (point.start) return deferProviderOnboarding(connection, waitFor, true);
   await waitFor(() => connection.evaluate(`!document.querySelector(${JSON.stringify(dialog)})
     && document.getElementById('root')?.inert === false`), 'provider onboarding dismissed and application interactive');
   return true;

@@ -28,16 +28,19 @@ const requestDetails = new Map();
 let phase = 'startup';
 let networkChanged = Date.now();
 const delay = ms => new Promise(done => setTimeout(done, ms));
-async function assertWithdrawnRemote(result) {
+async function assertWithdrawnRemote(result, retainedDefinition = false) {
   assert.equal(result.ok, false);
-  const message = 'typert gateway: ' + rpcEndpoint + ': strict definition was withdrawn and SRC fallback is forbidden';
+  const expectedCode = retainedDefinition ? 'gateway/service-unavailable' : 'gateway/definition-unavailable';
+  const message = 'typert gateway: ' + rpcEndpoint + ': ' + (retainedDefinition
+    ? 'active Service "' + rpcEndpoint.split('/')[0] + '" is unavailable'
+    : 'strict definition was withdrawn and SRC fallback is forbidden');
   await Promise.all([...replyJobs]);
   const reply = report.replies.findLast(row => row.request.method === rpcEndpoint);
   assert.deepEqual(reply.response.result, {ok: false, error: {
-    code: 'gateway/definition-unavailable', message, details: {endpoint: rpcEndpoint},
+    code: expectedCode, message, details: {endpoint: rpcEndpoint},
   }});
   if (report.exported) {
-    assert.equal(result.error.message, 'gateway/definition-unavailable: ' + message);
+    assert.equal(result.error.message, expectedCode + ': ' + message);
     return;
   }
   const {code, details, isDSHRemoteError, name} = result.error;
@@ -123,7 +126,7 @@ async function open(boot, present = true) {
   await navigateOriginalPage(cdp, until, boot.url);
   await until(() => count('[class*="frame"]'), 'original application shell', 30000);
   // Dismiss the original first-use notice through its actual visible control.
-  const notice = '[role="dialog"][aria-label="Internal Testing Notice"]';
+  const notice = '[role="dialog"][aria-label="Preview Notice"]';
   if (!report.noticeDismissed) await until(() => count(notice), 'original first-use notice');
   if (await count(notice)) {
     await click(notice + ' button');
@@ -142,7 +145,7 @@ async function echo(version, calls, agentId) {
   assert.equal(agentId === undefined ? state.calls : state.sessionCalls[agentId], calls);
   report.steps.push({ step: `original-client-strict-remote-${version}-call-${calls}`, passed: true });
 }
-async function selectSession(agentId, present = true) {
+async function selectSession(agentId, present = true, drain = true) {
   await until(() => count('[role="treeitem"]'), 'original sidebar rows ready');
   if (await count('[role="treeitem"][aria-expanded="false"]')) await click('[role="treeitem"][aria-expanded="false"]');
   const point = await until(() => cdp.evaluate(`(() => {
@@ -155,6 +158,9 @@ async function selectSession(agentId, present = true) {
   await until(() => cdp.evaluate(`Array.from(document.querySelectorAll('[role="treeitem"][aria-selected="true"]')).some(e => e.textContent.includes(${JSON.stringify(agentId)}))`), 'original Session selected');
   if (present) await until(() => cdp.evaluate('document.querySelector("[data-python-web-echo-result]")?.textContent === "ready"'), 'Session Client activation');
   else await until(async () => !await count('[data-python-web-echo]'), 'Session Client absent');
+  // Selection publishes before the original sidebar reference finishes opening.
+  // Drain that real RPC before the next deliberate navigation releases it.
+  if (drain) await settleNetwork();
 }
 async function sessionJourney(boot) {
   const a = 'python-session-a', b = 'python-session-b', shared = 'python-session-shared', plain = 'python-session-plain';
@@ -167,9 +173,9 @@ async function sessionJourney(boot) {
   assert.equal(await count('style[data-dyn^="python-export-"]'), 0);
   report.steps.push({step: 'original-sidebar-independent-and-shared-presets-no-plain-client-no-root-source', passed: true});
   await command('hold-availability');
-  await selectSession(a, false);
+  await selectSession(a, false, false);
   await until(() => command('availability-waiting'), 'actual Agent lookup availability request held');
-  await selectSession(b);
+  await selectSession(b, true, false);
   assert.equal(await command('availability-waiting'), true);
   await command('release-availability');
   await until(() => cdp.evaluate('document.querySelector("[data-python-web-echo-result]")?.textContent === "ready"'), 'latest selection wins delayed availability');
@@ -200,7 +206,9 @@ async function sessionJourney(boot) {
   await command('unload');
   await click('[data-python-web-echo-call]');
   const withdrawn = await until(() => cdp.evaluate(`(() => {try {const v=JSON.parse(document.querySelector('[data-python-web-echo-result]')?.textContent); return v.ok === false && v;} catch {return false;}})()`), 'withdrawn Session bridge rejects retained Client');
-  await assertWithdrawnRemote(withdrawn);
+  // Other live preset generations still own this exact shared descriptor;
+  // the root bridge service alone has been revoked.
+  await assertWithdrawnRemote(withdrawn, true);
   await reloadPage();
   await until(async () => !await count('[data-python-web-echo]') && await count('[class*="frame"]'), 'no Session Client after bridge graph withdrawal');
   report.steps.push({step: 'bridge-withdrawal-forbids-src-fallback-and-reload-removes-client', passed: true});

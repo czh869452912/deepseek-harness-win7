@@ -1,0 +1,28 @@
+{
+  "contract": "C9-DW",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "status": "Targeted profile compatibility consumers passed",
+  "changes": "Web Minimal test follows the pinned web-app read_image/working_directory/platform-shell composition; standalone product Minimal overlay remains a separate editor contract. Retained SQLite reader is mounted through its actual explicit Python file entry because it is not a package in the new installation dependency graph; verify the loaded provider source and real export/read-only/database-preservation behavior. pnpm forwarding control now exercises the retained outdated command; registry install/upgrade use the current Native package path, covered independently by actual package-command tests.",
+  "verification": [
+    {
+      "run": "rc022-profile-compatibility-diagnostic-20261118-01",
+      "passed": 1,
+      "failed": 1,
+      "scope": "Current Minimal/Standard isolation passed; bare uninstalled legacy reader refused"
+    },
+    {
+      "run": "rc022-profile-compatibility-20261118-02",
+      "passed": 7,
+      "failed": 1,
+      "scope": "Retained transition/physical cut controls passed; explicit dynamic import invalidated shared Python class identity assumption"
+    },
+    {
+      "run": "rc022-profile-compatibility-20261118-03",
+      "passed": 8,
+      "seconds": 19.8,
+      "scope": "Actual canonical Web legacy export, unchanged original database, pnpm ownership/argument forwarding and all seven actual Native package query/command controls"
+    }
+  ],
+  "cleanup": "Three completed owned pytest workspace/home/tmp sets retired after raw diagnostic/log preservation; commands/XML retained.",
+  "qualification": "Targeted tests only; no complete current acceptance claimed."
+}

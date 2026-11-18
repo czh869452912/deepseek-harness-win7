@@ -1,6 +1,8 @@
 """rc.1 default publication, physical compatibility, and actual cold consumers."""
 import hashlib
+import inspect
 import json
+from pathlib import Path
 
 import pytest
 import yaml
@@ -95,13 +97,17 @@ async def test_legacy_reader_real_profile_export_preserves_database(tmp_path, mo
     monkeypatch.setenv('DSH_TELEMETRY_DISABLED', '1')
     patch = tmp_path / 'reader.yml'
     patch.write_text(yaml.safe_dump([dict(insert=[dict(id='legacy-reader',
-        name='@deepseek-ai/dsh-win7-session-sqlite-reader', config=dict(path=str(source)))])]), encoding='utf-8')
+        # Retained reader is an explicit Python extension, not a package
+        # in the current upstream installation dependency graph.
+        name=str(Path(__file__).resolve().parents[1] / 'dsh/session/sqlite_legacy_reader.py')
+             + ':LegacySqliteSessionReaderPlugin', config=dict(path=str(source)))])]), encoding='utf-8')
     result = await run_profile(dict(profile='web', dshHome=str(tmp_path / 'home'), patchFiles=[str(patch)],
         args=['--no-open', '--port', '0'], waitForExit=False))
     ctx = result['ctx']
     try:
         reader = ctx.get('legacySessionReader')
-        assert isinstance(reader, LegacySqliteSessionReader)
+        assert reader is not None
+        assert Path(inspect.getfile(type(reader))).resolve() == Path(inspect.getfile(LegacySqliteSessionReader)).resolve()
         assert (await reader.inspect('child')).inheritedEventCount == 2
         location = await reader.export('child', str(tmp_path / 'jsonl'), 'none')
         assert location.kind == 'jsonl'

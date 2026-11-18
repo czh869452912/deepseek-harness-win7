@@ -428,7 +428,7 @@ def test_three_versions_preserve_history_and_package_removal_keeps_archived_sour
     assert not installed(directory).exists() and all(path.is_dir() for path in archives)
 
 
-def test_upgrade_preserves_pnpm_forwarding_for_plain_packages(profile, monkeypatch):
+def test_outdated_preserves_pnpm_forwarding_for_plain_packages(profile, monkeypatch):
     from dsh.boot.profile_lease import ProfileLease
     _, directory = profile
     called = []
@@ -439,8 +439,8 @@ def test_upgrade_preserves_pnpm_forwarding_for_plain_packages(profile, monkeypat
             ProfileLease(cwd, exclusive=True)
         return type('Result', (), {'returncode': 0})()
     monkeypatch.setattr(plugin_cli.subprocess, 'run', pnpm)
-    assert plugin_cli.run_plugin('python-test', ['upgrade', 'ordinary-package']) == 0
-    assert called == [['pnpm', 'upgrade', 'ordinary-package']]
+    assert plugin_cli.run_plugin('python-test', ['outdated', 'ordinary-package']) == 0
+    assert called == [['pnpm', 'outdated', 'ordinary-package']]
 
 
 @pytest.mark.asyncio

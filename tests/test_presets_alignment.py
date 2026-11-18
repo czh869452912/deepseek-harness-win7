@@ -15,7 +15,9 @@ async def test_minimal_and_standard_preset_isolation(tmp_path):
             agents[preset] = ctx.get('agents').get(preset)
         names = {preset: {tool.name for tool in ctx.get('tools').list_tools(scope=agent.ctx)} for preset, agent in agents.items()}
         shell = 'pwsh' if sys.platform == 'win32' else 'bash'
-        assert names['minimal'] == {'str_replace_editor', shell}
+        # Web preset reuses the pinned web-app declaration; the standalone
+        # product Minimal overlay has a separate editor-only contract.
+        assert names['minimal'] == {'read_image', 'working_directory', shell}
         assert {'read', 'write', 'edit', shell, 'skill', 'exit_plan_mode', 'create_goal'} <= names['standard']
         assert agents['minimal'].ctx.get('compaction') is None
         assert 'compact' not in names['minimal']

@@ -63,7 +63,7 @@ fs.writeFileSync(process.env.DSH_ZONE_OBSERVATION, JSON.stringify({node:process.
     (tmp_path / 'runner.log').write_text(completed.stdout + completed.stderr, encoding='utf-8')
     assert completed.returncode == 0, completed.stderr
     source = json.loads(output.read_text(encoding='utf-8'))
-    assert source['node'] == 'v22.22.2' and source['zone'] == -60 * offset
+    assert source['node'] == 'v24.9.0' and source['zone'] == -60 * offset
     epoch = datetime.datetime(1970, 1, 1)
 
     class HostClock:

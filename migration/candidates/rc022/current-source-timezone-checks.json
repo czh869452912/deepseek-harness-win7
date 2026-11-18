@@ -1,0 +1,9 @@
+{
+  "contract": "C9-FR",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "failure": "Both explicit timezone cases in run07 invoked the correctly pinned Node 24.9.0 against current Source, but retained a Node 22.22.2 version assertion.",
+  "change": "Require exact Node 24.9.0 for the current Source timezone observation. Preserve exact timezone offsets, date-number restoration, date parsing and formatted property comparisons; historical observer runtimes remain separate.",
+  "verification": {"run": "rc022-current-c9fr-source-timezone-20261119-01", "passed": 8, "seconds": 2.25, "scope": "Actual current Source UTC/Asia-Shanghai realms, Python 3.8 timezone controls and complete Cosmokit utility comparison"},
+  "cleanup": {"directories": 3, "bytes_removed": 29124, "retained": "Commands, logs/XML and raw original Source timezone observations"},
+  "qualification": "Targeted only. Frozen run07 is unchanged and still collecting remaining Python results."
+}

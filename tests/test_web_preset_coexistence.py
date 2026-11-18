@@ -3,9 +3,9 @@ import pytest
 import json
 
 from canonical_web_fixture import web_context, close_web_context
-from dsh.core.tools import ToolExecutionInput
 from dsh.core.abort import NEVER_ABORTED
-from dsh.presets.mount import standing_mount_for, service_for_agent
+from dsh.core.scope import scope_of
+from dsh.llm.message import create_assistant_message
 
 
 @pytest.mark.asyncio
@@ -23,22 +23,37 @@ async def test_standard_ptc_and_cordis_coexist_and_execute(tmp_path):
             await ctx.get('sessionController').create(dict(
                 sessionId='coexist-' + preset, cwd=str(tmp_path), agentPreset=preset))
             agents[preset] = ctx.get('agents').get('coexist-' + preset)
-        engines = [service_for_agent(ctx, agents[p], 'workflowEngine') for p in ('standard', 'ptc', 'cordis')]
+        registry = ctx.get('agentPresets')
+        engines = [registry.serviceFor(agents[p], 'workflowEngine') for p in ('standard', 'cordis')]
         assert all(engine is not None for engine in engines)
-        assert len({id(getattr(engine, '_original', engine)) for engine in engines}) == 3
+        assert len({id(getattr(engine, '_original', engine)) for engine in engines}) == 2
+        assert registry.serviceFor(agents['ptc'], 'workflowEngine') is None
         assert ctx.get('workflowEngine') is None
         tools = ctx.get('tools')
-        assert [s['name'] for s in tools.schemas(agents['ptc'])] == ['run_code']
-        assert 'run_code' not in [s['name'] for s in tools.schemas(agents['standard'])]
-        assert 'cordis_define' in [s['name'] for s in tools.schemas(agents['cordis'])]
+        async def model_tools(agent):
+            assembly = await ctx.get('systemPrompt').assemble(dict(agent=agent, scope=scope_of(agent.ctx)))
+            return [schema['name'] for schema in assembly['tools']]
+        assert await model_tools(agents['ptc']) == ['run_code']
+        assert 'run_code' not in await model_tools(agents['standard'])
+        cordis_tools = await model_tools(agents['cordis'])
+        assert {'cordis_inspect_list', 'cordis_inspect_query'} <= set(cordis_tools)
+        assert 'cordis_define' not in cordis_tools
         fixture = tmp_path / 'ptc-input.txt'
         fixture.write_text('PTC nested dispatch works', encoding='utf-8')
         agents['ptc'].session.append('turn/start', dict(turn=1))
-        result = await tools.execute(ToolExecutionInput('ptc-code', 'run_code',
-            dict(code='return await tools.read(%s)' % repr({'file_path': str(fixture)}), description='Verify preset scoped tool dispatch'),
-            agent=agents['ptc'], signal=NEVER_ABORTED))
+        agents['ptc'].session.append('step/start', dict(turn=1, step=1))
+        advertised = dict(type='tool-call', id='ptc-code', name='run_code', arguments=json.dumps(dict(
+            code='return await tools.read(%s)' % repr({'file_path': str(fixture)}),
+            description='Verify preset scoped tool dispatch')))
+        agents['ptc'].session.append('assistant/message', dict(turn=1, step=1,
+            message=create_assistant_message(dict(source=dict(provider='fixture', model='fixture'),
+                                                  content=[advertised]))), surface_op='append')
+        batch = await tools.execute(dict(agent=agents['ptc'], signal=NEVER_ABORTED,
+            calls=[advertised], log=dict(turn=1, step=1)))
+        result = batch['results'][0]['result']
         assert not result.is_error, result.content
-        agents['ptc'].session.append('turn/end', dict(turn=1, stopReason='completed'))
+        agents['ptc'].session.append('step/end', dict(turn=1, step=1))
+        agents['ptc'].session.append('turn/end', dict(turn=1, reason=dict(kind='completed')))
         assert 'result' in result.value
         assert 'PTC nested dispatch works' in json.dumps(result.value)
         assert logged_dispatches == ['read']
@@ -52,8 +67,12 @@ async def test_standard_ptc_and_cordis_coexist_and_execute(tmp_path):
         # changing the tools or isolated providers of other sessions.
         for preset in ('ptc', 'cordis', 'standard'):
             await ctx.get('agentPresets').select(agents['minimal'], preset)
-            assert standing_mount_for(agents['minimal'].ctx) is standing_mount_for(agents[preset].ctx)
-        assert [s['name'] for s in tools.schemas(agents['ptc'])] == ['run_code']
+            selected = registry.inspectCompositions(agents['minimal'].ctx)
+            existing = registry.inspectCompositions(agents[preset].ctx)
+            assert len(selected) == len(existing) == 1
+            assert selected[0]['id'] == existing[0]['id'] == preset
+            assert registry.serviceFor(agents['minimal'], 'workflowEngine') is registry.serviceFor(agents[preset], 'workflowEngine')
+        assert await model_tools(agents['ptc']) == ['run_code']
     finally:
         await close_web_context(ctx)
     reader = await persistence.open('coexist-ptc', 'read')

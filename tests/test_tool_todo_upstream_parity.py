@@ -102,12 +102,17 @@ async def test_loader_composition_rejects_a_non_boolean_policy():
     loader = Loader(ctx)
     loader.register_plugin_class("@deepseek-ai/dsh-tool-todo", ToolTodoPlugin)
 
-    with pytest.raises(Exception, match="allowParallelInProgress expected boolean"):
+    try:
         await loader.root.update([{
             "id": "todo",
             "name": "@deepseek-ai/dsh-tool-todo",
             "config": {"allowParallelInProgress": "yes"},
         }])
+        await loader.wait()
+        with pytest.raises(Exception, match="allowParallelInProgress expected boolean"):
+            await loader.resolve('todo').fiber
+    finally:
+        await ctx.fiber.dispose()
 
 
 @pytest.mark.asyncio

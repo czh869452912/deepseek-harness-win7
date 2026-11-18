@@ -665,7 +665,6 @@ async def test_completed_result_wins_cleanup_reentrant_cancellation():
 @pytest.mark.asyncio
 async def test_workflow_real_web_profile_records_survive_cold_restart(tmp_path):
     from canonical_web_fixture import web_context, close_web_context
-    from dsh.presets.mount import service_for_agent
     directory = tmp_path / "home"
     ctx = await web_context(directory)
     try:
@@ -674,7 +673,7 @@ async def test_workflow_real_web_profile_records_survive_cold_restart(tmp_path):
         provider = Provider()
         provider.name = "workflow-record-probe"
         ctx.get("subagents").registerProvider(provider)
-        engine = service_for_agent(ctx, parent, "workflowEngine")
+        engine = ctx.get('agentPresets').serviceFor(parent, "workflowEngine")
         engine.config["provider"] = provider.name
         script = 'phase("actual records");return {answer:await agent("recorded child")}'
         assert ctx.get('jsRuntime') is not None

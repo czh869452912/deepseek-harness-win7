@@ -1,0 +1,13 @@
+{
+  "contract": "C9-EH",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "status": "Current preset/workflow consumers passed",
+  "change": "Use public retained-composition service lookup and actual assembled model tool catalogs. Check the two independent standard/cordis Workflow services, the deliberately disabled PTC Workflow and current read-only Cordis tools. Execute a real Python PTC nested read through the selected executor, with a complete advertised v4 tool lifecycle, and reopen its persisted dispatch events. Await the Loader fiber to assert retained configuration failure, since Loader wait settles pending work without rethrowing stored activation errors.",
+  "verification": [
+    {"run": "rc022-current-preset-workflow-todo-20261118-07", "passed": 62, "seconds": 21.70, "scope": "Actual preset coexistence, scoped executor/tool visibility, real nested file read and cold persisted dispatch reopening, all Ralph/Workflow consumers and three initial Todo cases passed. The remaining independent Todo Loader assertion failed before its correction."},
+    {"run": "rc022-current-todo-loader-20261118-02", "passed": 14, "seconds": 0.77, "scope": "All Todo policy, schema, execution, projection teardown and actual Loader configuration refusal consumers"},
+    {"run": "rc022-current-preset-workflow-successors-20261118-01", "exit_code": 0, "scope": "Three actual pinned Source/Native pairs: preset_registry, workflow_engine and tool_pipeline"}
+  ],
+  "cleanup": "Seven completed pytest runs retired 21 owned workspace directories and 178445 bytes after preserving 29 required observations. Four local composition diagnostics and final Todo workspaces were also retired after raw observation preservation; command/log/XML and compact receipts remain.",
+  "qualification": "Targeted checks only. Initial service-reuse suspicion was disproved: upstream explicitly disables Workflow in PTC. No production Workflow behavior changed. Complete candidate and extracted release acceptance remain pending."
+}

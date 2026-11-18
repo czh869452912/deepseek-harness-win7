@@ -59,14 +59,18 @@ def tree_identity(roots, approved, progress=None):
         if target in visited:
             return
         visited.add(target)
-        if target.is_dir():
+        # lstat already provides the ordinary entry's type. Re-query only a
+        # resolved link target; per-file is_dir/is_file calls otherwise repeat
+        # metadata I/O across the entire installed dependency graph.
+        target_info = target.stat() if linked else info
+        if stat.S_ISDIR(target_info.st_mode):
             with os.scandir(str(target)) as entries:
                 children = sorted(entries, key=lambda entry: entry.name)
             for child in children:
                 if child.name in VOLATILE_DIRECTORIES or child.name.endswith(('.pyc', '.pyo')):
                     continue
                 visit(Path(child.path))
-        elif target.is_file():
+        elif stat.S_ISREG(target_info.st_mode):
             files[str(target)] = digest(target)
             if progress is not None and len(files) % 2000 == 0:
                 progress(dict(path=str(target), files=len(files), links=len(links)))

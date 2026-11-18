@@ -1,0 +1,13 @@
+{
+  "contract": "C9-DD",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "status": "targeted and read-only actual Source comparison passed",
+  "changes": "Reuse the lstat file type for ordinary entries in installed dependency freezing; only resolved links need a target stat. Every selected file still has its actual SHA-256 read, and link bounds, optional absence and before/after identities remain enforced.",
+  "verification": [
+    {"run": "rc022-freeze-metadata-20261118-01", "passed": 27, "seconds": 2.28, "scope": "Dependency mutation, reparse target bounds and missing optional links, Python copy inputs, and current release orchestration"},
+    {"observation": "rc022-freeze-metadata-20261118-01/actual-source-comparison-02.json", "files": 653, "identities_equal": true, "manifest_sha256": "11c016eb1a9e82657ac83d695f818fa9838de09d30efc91c0bfa0923d46a0519", "before_stat_calls": 1428, "after_stat_calls": 0, "lstat_calls_each": 775, "before_seconds": 0.359, "after_seconds": 0.266, "scope": "Actual pinned Source apps/web/tests, same input bytes; finite warm sample, no general timing guarantee"}
+  ],
+  "diagnostics": "Initial os.stat instrumentation did not intercept Python 3.8 pathlib's bound accessor and only sampled four files; the corrected probe binds the actual instance accessor. A preparation AttributeError is retained in the coordination history. Neither is counted as gate acceptance.",
+  "cleanup": {"bytes_removed": 3145, "owned_directories_removed": 3, "retained": "Command, log/XML, read-only sample manifests and probe source; no sample payload was created"},
+  "acceptance": "The already frozen 3f20446c qualification continues unchanged; this later optimization belongs to the next candidate and establishes no release acceptance"
+}

@@ -8,6 +8,8 @@ C9-DB：当前统一门禁一次执行完整 Python 集合并收集普通用例�
 
 C9-DC：补齐另外两份授权事件/网关观察器的当前凭据夹具，26 项消费者与实际 9 行、8 行 Source/Python 配对通过，临时资产已清理。这些后续提交不计入已冻结 `3f20446c` 的完整诊断运行。[检查](credential-observer-consumers-checks.json)。
 
+C9-DD：冻结依赖时复用普通文件已有的类型信息，仍逐文件读取 SHA-256 并核验链接边界。27 项相关回归通过；原版 653 文件的只读样本清单完全相同，减少 1428 次重复类型查询，不推广样本用时。3145 字节合成夹具已清理，当前冻结候选运行保持不变。[检查](freeze-metadata-checks.json)。
+
 C9-CX：Win7 Desktop 外壳的旧来源与当前宿主/前端输入分开核验，明确私有管道 v3 并非当前原版 Desktop v4 生命周期。首轮 158 项通过、一项旧异步消费者失败，修复后 26 项及诊断编码两项复验通过，原始失败保留；失效工作区已清理。[范围与限制](../../../docs/research/2026-11-18-win7-desktop-current-scope.md)、[检查](desktop-current-scope-checks.json)。
 
 C9-CV：统一入口接到当前完整合同，冻结实际安装依赖/双架构构建输入和观察器；新鲜 x64/x86 包运行完整 SDK、Office、元数据、原版浏览器、应用冷恢复及 Standard Desktop 打包检查。相关 89 项与最后 47 项定向通过；这些单元控制不构成实际统一资格。已清理约 2.0 MiB 失效夹具。[编排检查](current-orchestration-checks.json)。

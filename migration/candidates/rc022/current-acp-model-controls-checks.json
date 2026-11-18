@@ -1,0 +1,52 @@
+{
+  "contract": "C9-ES",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "change": "Bind canonical ACP configuration to the real durable AgentModel. Model/reasoning changes apply from the next model step and pending selections survive cold resume. Project actual v4 tool-result messages. Update real MCP/permission consumers for SDK2 disposable negotiation probes, explicit executor, Messages HTTP and v4 physical logs.",
+  "verification": [
+    {
+      "run": "rc022-current-acp-model-selection-20261118-01",
+      "passed": 80,
+      "seconds": 8.86,
+      "scope": "Canonical ACP two durable backends, v3 controls, cold resume and ordered committed updates"
+    },
+    {
+      "run": "rc022-current-acp-owned-permission-20261118-01",
+      "passed": 30,
+      "seconds": 3.73,
+      "scope": "Actual canonical approval and prompt ownership; explicit native executor; next request uses current tool-role result"
+    },
+    {
+      "run": "rc022-current-acp-mcp-processes-20261118-01",
+      "passed": 22,
+      "seconds": 20.19,
+      "scope": "Actual ACP stdio/HTTP model process, all six permission modes, current gate plan guards"
+    },
+    {
+      "run": "rc022-current-acp-gate-controls-20261118-01",
+      "passed": 31,
+      "seconds": 4.47,
+      "scope": "HTTP fixture regressions and current gate guards"
+    },
+    {
+      "run": "rc022-current-acp-mcp-permissions-20261118-03",
+      "passed": 34,
+      "failed": 4,
+      "scope": "Actual Source/Native MCP tool lifecycle equality, real process and six permission modes passed; four separate permission/ownership cases subsequently fixed and covered by the fresh 30-pass run"
+    },
+    {
+      "run": "rc022-current-acp-model-pair-20261118-02",
+      "exit_code": 0,
+      "pairs": [
+        "acp_model"
+      ],
+      "scope": "Real current Source and Native AgentModel/session projection, two provider-default states, invalid choices, pending selection cold restoration and v4 success/failure tool-result updates"
+    }
+  ],
+  "cleanup": {
+    "bytes_removed": 1510845,
+    "directories": 24,
+    "observations_retained": 45
+  },
+  "diagnostics": "Original failed logs/XML and required raw observations retained under their original run identities; no partial runs merged into full acceptance.",
+  "qualification": "Targeted only; mandatory current paired roster expanded to 406. Complete frozen release acceptance remains pending."
+}

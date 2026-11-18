@@ -43,7 +43,10 @@ def tool_call_update(event):
 
 
 async def tool_result_update(ctx, event):
-    result = event['data']['message']['content'][0]
+    message = event['data']['message']
+    # Current durable tool messages carry identity/status beside content.
+    # Retained v3 consumers wrap the result as the first content block.
+    result = message if 'toolCallId' in message else message['content'][0]
     content = []
     for block in result['content']:
         converted = await assistant_block_to_acp(ctx, block)

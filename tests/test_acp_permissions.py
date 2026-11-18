@@ -123,7 +123,7 @@ async def test_canonical_agent_tool_permission_and_next_request_preserve_machine
     profile = home / 'profiles' / 'permission-owned'
     init_profile(str(profile), [])
     rows = [{'id': name, 'name': '@deepseek-ai/dsh-' + name} for name in
-            ('session', 'session-projection', 'tools', 'system-prompt', 'llm', 'agent', 'agent-loop', 'user-approval', 'acp')]
+            ('session', 'session-projection', 'tools', 'tool-executor-native', 'system-prompt', 'llm', 'agent', 'agent-loop', 'user-approval', 'acp')]
     rows.append({'id': 'persistence', 'name': '@deepseek-ai/dsh-session-persistence-jsonl',
                  'config': {'root': str(tmp_path / 'sessions'), 'packChunks': False}})
     (profile / 'cordis.patch.yml').write_text(yaml.safe_dump([{'insert': rows}]), encoding='utf-8')
@@ -164,8 +164,8 @@ async def test_canonical_agent_tool_permission_and_next_request_preserve_machine
         assert await asyncio.wait_for(pending, 5) == {'stopReason': 'end_turn'}
         assert effects == executions and len(adapter.requests) == 2
         next_messages = adapter.requests[1]['messages']
-        assert any(block.get('type') == 'tool-result' for message in next_messages
-                   for block in message.get('content', []) if isinstance(block, dict))
+        assert any(message.get('role') == 'tool' and message.get('toolCallId') == 'call-9'
+                   for message in next_messages)
         assert ('permission tool result' in str(next_messages)) is bool(executions)
         agent = bridge.sessions[session_id].agent
         assert [event['data']['outcome'] for event in agent.session.events if event['type'] == 'approval/decided'] == [

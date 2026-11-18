@@ -13,6 +13,6 @@ def test_actual_acp_process_owns_stdio_http_session_tools_and_model_consumers(tm
     assert result.returncode == 0 and not result.stderr, result.stdout + result.stderr
     report = json.loads(result.stdout)
     assert report['result'] == 'passed'
-    assert report['value'] == {'stdioProcesses': 3, 'stdioCalls': 3, 'stdioReaped': True,
+    assert report['value'] == {'stdioProcesses': 6, 'stdioCalls': 3, 'stdioReaped': True,
         'httpCalls': 1, 'httpClosed': True, 'acpClosed': True, 'modelRequests': 8,
         'scope': 'Actual canonical ACP process, stdio/HTTP consumers and same-session resume; no external endpoint.'}

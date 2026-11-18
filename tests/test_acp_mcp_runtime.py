@@ -115,7 +115,8 @@ async def test_actual_factory_rolls_back_all_mcp_children_before_agent_publicati
                         else str(tmp_path / 'missing.exe'), 'args': [], 'env': []})
         with pytest.raises(AcpMcpConfigError if failure == 'invalid-declaration' else RuntimeError):
             await bridge.new_session(ctx, {'cwd': str(tmp_path), 'mcpServers': servers})
-        assert len(processes) == (0 if failure == 'invalid-declaration' else 1)
+        # SDK 2 probes the legacy peer in a disposable sibling before initializing.
+        assert len(processes) == (0 if failure == 'invalid-declaration' else 2)
         assert all(process.returncode == 0 for process in processes)
         assert not ctx.get('agents').list() and not ctx.get('sessions').list()
         assert not bridge.sessions and not ctx.get('tools').list_tools()
@@ -152,7 +153,8 @@ async def test_cancelled_unpublished_mcp_setup_drains_real_child(tmp_path, monke
             while not marker.exists():
                 await asyncio.sleep(0.01)
         await asyncio.wait_for(admitted(), 5)
-        assert len(processes) == 1 and not ctx.get('agents').list() and not bridge.sessions
+        assert len(processes) == 2 and processes[0].returncode == 0
+        assert not ctx.get('agents').list() and not bridge.sessions
         if stop == 'request-abort':
             controller.abort(RuntimeError('controlled setup abort'))
         else:
@@ -161,7 +163,7 @@ async def test_cancelled_unpublished_mcp_setup_drains_real_child(tmp_path, monke
         release.write_text('release', encoding='utf-8')
         with pytest.raises(RuntimeError):
             await asyncio.wait_for(pending, 10)
-        assert processes[0].returncode == 0
+        assert all(process.returncode == 0 for process in processes)
         assert not ctx.get('agents').list() and not ctx.get('sessions').list()
         assert not ctx.get('tools').list_tools() and not bridge.sessions
         assert await ctx.get('sessionPersistence').list() == []

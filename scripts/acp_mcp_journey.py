@@ -11,6 +11,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 SCRIPT_ROOT = Path(__file__).resolve().parent
 sys.path.insert(0, str(SCRIPT_ROOT))
 from acp_permission_journey import Peer
+from model_http_fixture import model_sse
 
 
 def process_exited(identity):
@@ -52,7 +53,9 @@ for line in sys.stdin:
  if "id" not in packet:
   continue
  reply={"jsonrpc":"2.0","id":packet["id"]}
- if packet["method"]=="initialize":
+ if packet["method"]=="server/discover":
+  reply["error"]={"code":-32601,"message":"Method not found"}
+ elif packet["method"]=="initialize":
   reply["result"]={"protocolVersion":"2025-11-25","capabilities":{"tools":{}},"serverInfo":{"name":"controlled","version":"1"}}
  elif packet["method"]=="tools/list":
   reply["result"]={"tools":[{"name":"echo","inputSchema":{"type":"object","properties":{"text":{"type":"string"}},"required":["text"]}}]}
@@ -72,7 +75,7 @@ def prepare_profile(root, workspace):
     profile = home / 'profiles/acp'
     init_profile(str(profile), [])
     rows = [{'id': name, 'name': '@deepseek-ai/dsh-' + name} for name in
-            ('session', 'tools', 'system-prompt', 'llm', 'llm-deepseek', 'credentials-local',
+            ('session', 'tools', 'tool-executor-native', 'system-prompt', 'llm', 'llm-deepseek-api-key', 'credentials-local',
              'agent', 'session-projection', 'agent-loop', 'acp-app')]
     rows.extend([{'id': 'acp', 'name': '@deepseek-ai/dsh-acp', 'inject': ['acpAppStartup'],
         'config': {'provider': 'deepseek-official', 'model': 'deepseek-v4-flash'}},
@@ -92,12 +95,13 @@ def journey(root, workspace):
             request = json.loads(self.rfile.read(int(self.headers['Content-Length'])))
             requests.append(request)
             last_user = max(index for index, message in enumerate(request['messages']) if message['role'] == 'user')
-            second = any(message['role'] == 'tool' for message in request['messages'][last_user + 1:])
+            second = any(message['role'] == 'tool' or any(block.get('type') == 'tool_result'
+                         for block in message.get('content', []) if isinstance(block, dict))
+                         for message in request['messages'][last_user:])
             delta = {'content': 'MCP consumer finished'} if second else {'tool_calls': [
                 {'index': 0, 'id': 'owned-echo', 'type': 'function', 'function': {
                     'name': 'mcp__fixture__echo', 'arguments': '{"text":"actual ACP MCP consumer"}'}}]}
-            body = ('data: ' + json.dumps({'choices': [{'delta': delta,
-                'finish_reason': 'stop' if second else 'tool_calls'}]}) + '\n\ndata: [DONE]\n\n').encode('utf-8')
+            body = model_sse(self.path, delta, 'stop' if second else 'tool_calls')
             self.send_response(200)
             self.send_header('Content-Type', 'text/event-stream')
             self.send_header('Content-Length', str(len(body)))
@@ -141,7 +145,7 @@ def journey(root, workspace):
         started = [row['pid'] for row in captured if row['kind'] == 'started']
         closed = [row['pid'] for row in captured if row['kind'] == 'closed']
         called = [row['pid'] for row in captured if row['kind'] == 'called']
-        if len(set(started)) != 3 or set(started) != set(closed) or len(called) != 3:
+        if len(set(started)) != 6 or set(started) != set(closed) or len(called) != 3:
             raise RuntimeError('ACP stdio children were not independently consumed and closed')
         if not all(process_exited(identity) for identity in started):
             raise RuntimeError('ACP stdio child remains alive after awaited close')
@@ -163,12 +167,12 @@ def journey(root, workspace):
         http_rows = json.loads(http_records.read_text(encoding='utf-8'))
         if not http_rows or any(row['headers'].get('authorization') != 'session-owned' for row in http_rows):
             raise RuntimeError('ACP HTTP headers were not forwarded')
-        if len(requests) != 8 or any('mcp__fixture__echo' not in [tool['function']['name'] for tool in request.get('tools', [])]
+        if len(requests) != 8 or any('mcp__fixture__echo' not in [tool.get('name', tool.get('function', {}).get('name')) for tool in request.get('tools', [])]
                                       for request in requests):
             raise RuntimeError('Actual model consumers did not receive the session tool')
         if any('actual ACP MCP consumer' not in str(request['messages']) for request in requests[1::2]):
             raise RuntimeError('Actual model continuation did not receive the MCP result')
-        return {'stdioProcesses': 3, 'stdioCalls': 3, 'stdioReaped': True, 'httpCalls': 1, 'httpClosed': True,
+        return {'stdioProcesses': 6, 'stdioCalls': 3, 'stdioReaped': True, 'httpCalls': 1, 'httpClosed': True,
                 'acpClosed': True, 'modelRequests': 8, 'scope': 'Actual canonical ACP process, stdio/HTTP consumers and same-session resume; no external endpoint.'}
     finally:
         if peer is not None:

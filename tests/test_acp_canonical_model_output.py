@@ -42,7 +42,7 @@ class RoutedAdapter:
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize('backend', ['jsonl', 'jsonl-zstd'])
-async def test_canonical_multistep_turn_keeps_admitted_route_and_resume_never_replays_outputs(tmp_path, backend, monkeypatch):
+async def test_canonical_model_change_applies_next_step_and_resume_never_replays_outputs(tmp_path, backend, monkeypatch):
     runtime, bridge, unused = await boot_profile(tmp_path, backend, monkeypatch)
     ctx = runtime['ctx']
     adapter = RoutedAdapter()
@@ -65,7 +65,10 @@ async def test_canonical_multistep_turn_keeps_admitted_route_and_resume_never_re
         assert await asyncio.wait_for(pending, 5) == {'stopReason': 'end_turn'}
         assert executions == [{}]
         assert [(request['provider'], request['model'], request['reasoningEffort']) for request in adapter.requests] == [
-            ('mock', 'first', 'high'), ('mock', 'first', 'high')]
+            ('mock', 'first', 'high'), ('other', 'next', 'low')]
+        assert [event['data'] for event in bridge.sessions[created['sessionId']].agent.session.events
+                if event['type'] == 'model/selection'][-1] == {
+                    'provider': 'other', 'model': 'next', 'reasoningEffort': 'low'}
         agent = bridge.sessions[created['sessionId']].agent
         committed = [event for event in agent.session.events if event['type'] == 'assistant/message']
         assert {value['update']['messageId'] for value in notifications if 'messageId' in value['update']} == {

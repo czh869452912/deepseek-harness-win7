@@ -56,7 +56,9 @@ async def handle(reader, writer):
             await respond(writer, 202)
             return
         reply = {'jsonrpc': '2.0', 'id': packet['id']}
-        if packet['method'] == 'initialize':
+        if packet['method'] == 'server/discover':
+            reply['error'] = {'code': -32601, 'message': 'Method not found'}
+        elif packet['method'] == 'initialize':
             reply['result'] = {'protocolVersion': '2025-11-25', 'capabilities': {'tools': {}},
                 'serverInfo': {'name': 'controlled-http', 'version': '1'}}
         elif packet['method'] == 'tools/list':

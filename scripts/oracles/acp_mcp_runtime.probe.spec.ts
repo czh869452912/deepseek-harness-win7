@@ -11,9 +11,9 @@ it('observes real ACP MCP scopes, consumers and fresh resume', async () => {
   const params = {cwd: process.cwd(), mcpServers: declarations}
   const observations: any = {}
   const names = (sessionId?: string) => ctx.tools.schemas(sessionId === undefined ? undefined : scopeOf(ctx.agents.get(sessionId as any)!.ctx)).map(tool => tool.name)
-  const echo = async (sessionId: string, text: string) => ctx.tools.execute({
-    callId: 'owned-echo' as any, name: 'mcp__fixture__echo', arguments: {text},
-    agent: ctx.agents.get(sessionId as any), signal: new AbortController().signal})
+  const echo = async (sessionId: string, text: string) => (await ctx.tools.execute({
+    calls: [{callId: 'owned-echo' as any, name: 'mcp__fixture__echo', arguments: {text}}],
+    agent: ctx.agents.get(sessionId as any)!, signal: new AbortController().signal})).results[0].result
   try {
     const initialized = await client.initialize({protocolVersion: 1, clientCapabilities: {}})
     observations.mcpCapabilities = initialized.agentCapabilities?.mcpCapabilities

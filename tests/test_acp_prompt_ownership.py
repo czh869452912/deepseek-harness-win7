@@ -206,7 +206,7 @@ async def test_canonical_profile_acp_prompt_claims_real_turn_and_releases_agent(
     profile = home / 'profiles' / 'acp-owned'
     init_profile(str(profile), [])
     rows = [{'id': name, 'name': '@deepseek-ai/dsh-' + name} for name in
-            ('session', 'session-projection', 'tools', 'system-prompt', 'llm', 'agent', 'agent-loop', 'acp')]
+            ('session', 'session-projection', 'tools', 'tool-executor-native', 'system-prompt', 'llm', 'agent', 'agent-loop', 'acp')]
     rows.append({'id': 'persistence', 'name': '@deepseek-ai/dsh-session-persistence-jsonl',
                  'config': {'root': str(tmp_path / 'sessions'), 'packChunks': False}})
     (profile / 'cordis.patch.yml').write_text(yaml.safe_dump([{'insert': rows}]), encoding='utf-8')

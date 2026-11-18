@@ -46,14 +46,33 @@ class SelectionRef:
 class AcpModelControl:
     def __init__(self, llm, initial=None):
         self.llm = llm
+        self.model = None
         self.selected = detached(initial)
         self.turn_selection = None
         self.has_resolved_state = False
         self.selection = SelectionRef(self)
         self.lock = asyncio.Lock()
 
-    def install(self, agent_ctx):
-        install_model_selection(agent_ctx, self.selection)
+    @property
+    def selected(self):
+        if self.model is None:
+            return self._selected
+        current = self.model.current()
+        return (ModelSelection(current['provider'], current['model'], current.get('reasoningEffort'))
+                if isinstance(current, dict) else None)
+
+    @selected.setter
+    def selected(self, selection):
+        if self.model is None:
+            self._selected = selection
+        else:
+            self.model.select(selection.to_dict())
+
+    def install(self, agent_ctx, agent=None):
+        self.model = getattr(agent, 'model', None)
+        if self.model is None:
+            # Retained v3 agents do not expose the durable model-selection API.
+            install_model_selection(agent_ctx, self.selection)
 
     def snapshot(self):
         return detached(self.selected)

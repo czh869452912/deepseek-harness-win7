@@ -6553,6 +6553,14 @@
       "disposable_directories": [
         "pair.native.workspace"
       ]
+    },
+    {
+      "script": "scripts/rc022_acp_model_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 90,
+      "disposable_directories": []
     }
   ],
   "separate": [

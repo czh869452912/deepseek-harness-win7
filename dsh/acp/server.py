@@ -145,8 +145,8 @@ class AcpPlugin(Plugin):
         operation, cleanup = self._operation(signal)
         record = None
         control = AcpModelControl(ctx.get('llm'), self._fallback_selection())
-        def setup(agent_ctx):
-            control.install(agent_ctx)
+        def setup(agent_ctx, agent=None):
+            control.install(agent_ctx, agent)
             if params.get('mcpServers'):
                 return mount_acp_mcp_servers(agent_ctx, params['mcpServers'], cwd)
         try:
@@ -223,7 +223,7 @@ class AcpPlugin(Plugin):
             nonlocal control
             control = AcpModelControl(ctx.get('llm'), selection_for(
                 agent.session.request_header(), self._fallback_selection()))
-            control.install(agent_ctx)
+            control.install(agent_ctx, agent)
             if params.get('mcpServers'):
                 return mount_acp_mcp_servers(agent_ctx, params['mcpServers'], cwd)
         try:

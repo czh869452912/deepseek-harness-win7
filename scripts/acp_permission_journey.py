@@ -8,6 +8,10 @@ import subprocess
 import sys
 import threading
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+if __package__:
+    from .model_http_fixture import model_sse
+else:
+    from model_http_fixture import model_sse
 
 
 PLUGIN_SOURCE = '''from pathlib import Path
@@ -39,7 +43,7 @@ def prepare_profile(root, workspace):
     profile = home / 'profiles/acp'
     init_profile(str(profile), [])
     rows = [{'id': name, 'name': '@deepseek-ai/dsh-' + name} for name in
-            ('session', 'tools', 'system-prompt', 'llm', 'llm-deepseek', 'credentials-local',
+            ('session', 'tools', 'tool-executor-native', 'system-prompt', 'llm', 'llm-deepseek-api-key', 'credentials-local',
              'agent', 'session-projection', 'agent-loop', 'user-approval', 'acp-app')]
     rows.extend([{'id': 'acp', 'name': '@deepseek-ai/dsh-acp', 'inject': ['acpAppStartup'],
         'config': {'provider': 'deepseek-official', 'model': 'deepseek-v4-flash'}},
@@ -133,12 +137,13 @@ def journey(root, workspace, modes=None):
         def do_POST(self):
             request = json.loads(self.rfile.read(int(self.headers['Content-Length'])))
             requests.append(request)
-            second = any(message.get('role') == 'tool' for message in request['messages'])
+            second = any(message.get('role') == 'tool' or any(block.get('type') == 'tool_result'
+                         for block in message.get('content', []) if isinstance(block, dict))
+                         for message in request['messages'])
             delta = {'content': 'finished after decision'} if second else {'tool_calls': [
                 {'index': 0, 'id': 'call-9', 'type': 'function',
                  'function': {'name': 'guarded_echo', 'arguments': '{}'}}]}
-            chunk = {'choices': [{'delta': delta, 'finish_reason': 'stop' if second else 'tool_calls'}]}
-            body = ('data: ' + json.dumps(chunk) + '\n\ndata: [DONE]\n\n').encode('utf-8')
+            body = model_sse(self.path, delta, 'stop' if second else 'tool_calls')
             self.send_response(200)
             self.send_header('Content-Type', 'text/event-stream')
             self.send_header('Content-Length', str(len(body)))
@@ -195,13 +200,15 @@ def journey(root, workspace, modes=None):
                     peer.send({'jsonrpc': '2.0', 'id': permission['id'], 'result': {'outcome': outcome}})
                     assert peer.reply(3)['result'] == {'stopReason': 'end_turn'}
                     assert len(requests) == first + 2
-                    assert any(message.get('role') == 'tool' for message in requests[-1]['messages'])
+                    assert any(message.get('role') == 'tool' or any(block.get('type') == 'tool_result'
+                               for block in message.get('content', []) if isinstance(block, dict))
+                               for message in requests[-1]['messages'])
                     assert ('permission tool result' in str(requests[-1]['messages'])) is (mode == 'allow'), requests[-1]['messages']
                     peer.finish()
                 assert marker.exists() is (mode == 'allow')
                 if mode in ('cancel-late', 'close-late', 'eof'):
                     assert len(requests) == first + 1
-                files = [path for path in (workspace / 'sessions').rglob('session.v3.jsonl.zstd') if path.parent.name == session_id]
+                files = [path for path in (workspace / 'sessions').rglob('session.v4.jsonl.zstd') if path.parent.name == session_id]
                 assert len(files) == 1, files
                 buffer = files[0].read_bytes()
                 scanned = scan_frames(buffer)
@@ -210,8 +217,8 @@ def journey(root, workspace, modes=None):
                                 for frame in scanned['frames']).decode('utf-8')
                 from dsh.session.jsonl_current import scanLog
                 rows_on_disk = [json.loads(line) for line in text.splitlines()]
-                assert rows_on_disk[0]['version'] == 3
-                decoded = scanLog(text.encode('utf-8'))
+                assert rows_on_disk[0]['version'] == 4
+                decoded = scanLog(text.encode('utf-8'), format_version=4)
                 events = decoded['events']
                 audit = [event for event in events if event['type'] in ('approval/asked', 'approval/decided')]
                 expected = {'allow': 'allowed-once', 'reject': 'rejected', 'malformed': 'unavailable'}.get(mode, 'cancelled')

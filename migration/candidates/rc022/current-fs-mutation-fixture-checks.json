@@ -1,0 +1,11 @@
+{
+  "contract": "C9-EI",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "change": "Place outside-grant fixtures in a fresh owned output directory outside the OS temporary roots, which Source policy explicitly permits. Preserve actual mutation observations before retiring successful fixture payloads.",
+  "verification": [
+    {"run": "rc022-current-fs-mutation-fixture-20261118-04", "passed": 6, "seconds": 1.04, "scope": "Actual writes/edits/patches/deletion/moves, grants and revocation, junction fences, lock ordering, cancellation, stale guards, directory substitution and destination ACL behavior"},
+    {"run": "rc022-current-fs-mutations-pair-20261118-02", "exit_code": 0, "scope": "36 actual pinned Source/Native filesystem mutation observations"}
+  ],
+  "qualification": "Targeted checks only. Earlier intermittent native ReplaceFileW error 1175 diagnostics remain preserved and unexplained. No attribution to security software, automatic retry, ACL workaround or production publication change is claimed. Fresh unified candidate qualification remains pending.",
+  "cleanup": "Successful owned fixture payloads and pytest home/tmp/workspace were retired after raw observation preservation; commands, logs, XML and compact cleanup receipts remain. Earlier unresolved failure evidence is retained."
+}

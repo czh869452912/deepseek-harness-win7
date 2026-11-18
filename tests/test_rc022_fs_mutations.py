@@ -1,4 +1,7 @@
 import asyncio
+import json
+import os
+import tempfile
 from pathlib import Path
 
 import pytest
@@ -14,8 +17,15 @@ def hunks(before,after):return parse_patch('*** Begin Patch\n*** Update File: a\
 
 @pytest.mark.asyncio
 async def test_actual_mutations_extra_grants_and_all_fences(tmp_path,monkeypatch):
-    monkeypatch.setattr(probe,'WORKSPACE',tmp_path)
-    rows={row['name']:row for row in await probe.observe()}
+    # System temporary roots are writable under the real Source policy. Keep
+    # the outside-grant fixture outside them so this exercises an actual fence.
+    owner=Path(os.environ.get('DSH_RELEASE_PYTEST_OUTPUT',str(probe.ROOT/'.goose/out'))).resolve()
+    fixture=Path(tempfile.mkdtemp(prefix='fs-mutation-',dir=str(owner)))
+    workspace=fixture/'files';workspace.mkdir()
+    monkeypatch.setattr(probe,'WORKSPACE',workspace)
+    observed=await probe.observe()
+    (tmp_path/'fs-mutations-observations.json').write_text(json.dumps(observed),encoding='utf-8')
+    rows={row['name']:row for row in observed}
     assert rows['patch-extra']['value']['after']=='ONE\nTWO\n'
     assert rows['patch-bytes']['value']=='ONE\r\nTWO\r\n'
     assert rows['stale-patch']['error']['code']=='FS_STALE_VERSION'
@@ -38,6 +48,8 @@ async def test_actual_mutations_extra_grants_and_all_fences(tmp_path,monkeypatch
     assert rows['replaced-extra-denied']['error']['code']=='SANDBOX_INVALID_ROOT'
     assert rows['junction-effects']==dict(name='junction-effects',existing='keep',new=False)
     assert rows['locks-released']['value']
+    from scripts.rc022_gate_runner import retire_success
+    retire_success(fixture,['files'])
 
 
 @pytest.mark.asyncio

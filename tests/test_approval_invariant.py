@@ -122,17 +122,24 @@ async def test_loader_mount_unload_and_invalid_replay_roll_back_registration():
         loader = Loader(ctx)
         install_harness_plugin_classes(loader)
         await loader.root.update([dict(id='approval-invariant', name=PACKAGE_NAME + '/invariant')])
+        entry = loader.store['approval-invariant']
+        await entry._await()
+        mounted = entry.fiber
         assert ctx.get('invariants').registrations == {PACKAGE_NAME}
         session = ctx.get('sessions').create()
         start(session)
         session.append('approval/asked', dict(id='open', toolName='pwsh'))
         await loader.root.update([])
+        await mounted.await_settled()
         assert ctx.get('invariants').registrations == set()
         session.append('approval/decided', dict(id='open', outcome='cancelled'))
         session.append('turn/end', {'turn': 1, 'reason': {'kind': 'completed'}})
         session.append('approval/asked', dict(id='unenclosed', toolName='pwsh'))
+        await loader.root.update([dict(id='approval-invariant', name=PACKAGE_NAME + '/invariant')])
+        # Current Loader.update publishes entries; activation is a separate
+        # settlement, whose error is observable on the entry.
         with pytest.raises(LoaderUpdateError, match='outside any open turn'):
-            await loader.root.update([dict(id='approval-invariant', name=PACKAGE_NAME + '/invariant')])
+            await loader.store['approval-invariant']._await()
         assert PACKAGE_NAME not in ctx.get('invariants').registrations
     finally:
         await ctx.fiber.dispose()

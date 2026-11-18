@@ -28,12 +28,15 @@ class MemorySettings(SettingsProvider):
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize('late_settings', [False, True])
-async def test_boot_default_model_has_serializable_live_settings(late_settings):
+async def test_historical_default_model_has_serializable_live_settings(late_settings):
+    # Retained SettingsProvider compatibility. Canonical boot now uses the
+    # config-editor provider, covered by test_rc022_default_model and its pair.
+    from dsh.core.model_selection import AgentDefaultModelConfig
     ctx = Context()
     try:
         if not late_settings:
             await ctx.plugin(MemorySettings, {})
-        owner = await ctx.plugin(resolve_harness_plugin('@deepseek-ai/dsh-agent-default-model'),
+        owner = await ctx.plugin(AgentDefaultModelConfig,
                                  dict(provider='first', model='first-model'))
         if late_settings:
             await ctx.plugin(MemorySettings, {})

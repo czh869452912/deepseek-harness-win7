@@ -334,10 +334,13 @@ async def test_plugin_service_is_fiber_owned_and_removed_on_unload():
     assert isinstance(service, UserQuestionService)
     assert ctx.get("userQuestions").original is service.original
     assert fiber is not None
-    assert fiber.store["userQuestions"].value is service
+    provisions = [impl for impl in fiber.provisions if impl.name == 'userQuestions']
+    assert len(provisions) == 1
+    assert provisions[0].fiber is fiber
+    assert provisions[0].value.original is service.original
 
     assert await ctx.registry.unload_plugin("user-questions") is True
     assert ctx.get("userQuestions") is None
     assert ctx.get("userQuestions") is None
-    assert "userQuestions" not in ctx.reflect.store
+    assert not any(impl.name == 'userQuestions' for impl in ctx.reflect.store.values())
     assert not hasattr(ctx, "userQuestions")

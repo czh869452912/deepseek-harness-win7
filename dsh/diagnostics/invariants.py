@@ -23,7 +23,6 @@ class InvariantRegistry(Service):
 
     def __init__(self, ctx: Context, config: Optional[Dict[str, Any]] = None):
         super().__init__(ctx, name="invariants")
-        self.owner_ctx = ctx
         self.config = config or {}
         self.enabled: bool = bool(self.config.get("enabled", True))
         self.package_allowlist = [re.compile(p) for p in self.config.get("package_allowlist", [])]
@@ -47,7 +46,10 @@ class InvariantRegistry(Service):
         if package_name in self.registrations:
             raise ValueError(f'invariants: package "{package_name}" is already registered')
 
-        ctx = self.owner_ctx
+        # A traced Service method executes with the contribution's caller ctx.
+        # Keeping the provider's construction ctx makes registration survive
+        # unloading the Loader entry which created it.
+        ctx = self.ctx
         self.registrations.add(package_name)
 
         if not self.selected(package_name):

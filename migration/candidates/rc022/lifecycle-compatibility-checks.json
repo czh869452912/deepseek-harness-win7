@@ -1,0 +1,25 @@
+{
+  "contract": "C9-CT",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "status": "targeted passed; unified gate pending",
+  "changes": [
+    "Retained default-model SettingsProvider test explicitly mounts its historical provider; current config-editor tests remain independent",
+    "User-question ownership checks inspect actual current provisions and unload",
+    "Invariant registration effects belong to traced caller context, so Loader unload removes registration; activation failures are awaited on the current entry settlement"
+  ],
+  "verification": {
+    "run": "rc022-lifecycle-recheck-20261118-03",
+    "passed": 124,
+    "seconds": 6.24,
+    "scope": "Changed lifecycle providers, direct Loader/approval consumers and other invariant contributions, question ownership and current default model"
+  },
+  "prior_failures": [
+    "rc022-lifecycle-recheck-20261118-01",
+    "rc022-lifecycle-recheck-20261118-02"
+  ],
+  "cleanup": {
+    "bytes_removed": 1033,
+    "owned_directories_removed": 9,
+    "retained": "Commands, log/XML and cleanup records; no current Source or release acceptance claimed"
+  }
+}

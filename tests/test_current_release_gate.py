@@ -330,7 +330,10 @@ def test_extracted_session_observation_reads_require_exact_errors_cut_and_releas
     elif damage == 'cause':
         rows[4]['observed']['error']['sameCause'] = False
     elif damage == 'raw-failure':
-        rows[9]['observed']['error']['sameFailure'] = False
+        # Current observation errors wrap the raw failure and retain its cause.
+        # Flip the actual expected identity; assigning False was a no-op.
+        assert rows[9]['observed']['error']['sameFailure'] is False
+        rows[9]['observed']['error']['sameFailure'] = True
     elif damage == 'missing-release':
         rows[8]['observed']['counters']['releases'] = 0
     elif damage == 'double-release':

@@ -1,0 +1,9 @@
+{
+  "contract": "C9-FI",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "failure": "Frozen c756b9fc run07: the raw-failure negative receipt control assigned False to sameFailure, whose current expected value was already False. The input was unchanged, so the strict validator correctly accepted it.",
+  "change": "Assert the current expected wrapped-error identity is False, then mutate it to True. Preserve the exact-value validator, raw Source/Native observations and all other corruption controls.",
+  "verification": {"run": "rc022-current-c9fi-read-identity-control-20261118-01", "passed": 39, "seconds": 323.14, "scope": "All 16 receipt read controls, actual original/Native 16-scenario point-read comparison, and complete observer/runtime negative controls"},
+  "cleanup": {"directories": 3, "bytes_removed": 18878, "retained": "Commands, timings, log/XML and actual point-read Source/Native observations"},
+  "qualification": "Targeted only. Frozen run07 does not contain the test correction and continues collecting independent failures."
+}

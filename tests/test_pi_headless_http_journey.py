@@ -76,10 +76,10 @@ def test_headless_pi_provider_tool_result_replay_and_persistence(tmp_path, proto
         assert result.stdout.strip() == final
         assert len(calls) == 2
         assert 'PI-NATIVE-TOOL-EVIDENCE' in json.dumps(calls[1])
-        logs = list((tmp_path / 'home/sessions').rglob('session.v3.jsonl.zstd'))
+        logs = list((tmp_path / 'home/sessions').rglob('session.v4.jsonl.zstd'))
         assert len(logs) == 1
         events = [json.loads(line) for line in read_jsonl_text(logs[0]).splitlines()]
-        assert events[0]['type'] == 'session' and events[0]['version'] == 3
+        assert events[0]['type'] == 'session' and events[0]['version'] == 4
         results = [event for event in events if event['type'] == 'tool/result']
         assert len(results) == 1 and 'PI-NATIVE-TOOL-EVIDENCE' in json.dumps(results)
         assert 'pi-ai' in json.dumps(events) and protocol in json.dumps(events)

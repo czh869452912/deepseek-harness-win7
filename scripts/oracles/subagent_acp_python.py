@@ -35,7 +35,11 @@ async def wait_file(path):
         await asyncio.sleep(0.01)
 
 
-async def native_observations(workspace, row):
+async def native_observations(workspace, row, current=False):
+    provider_class, config_schema = AcpProvider, CONFIG
+    if current:
+        from dsh.subagent.acp_candidate import CandidateAcpProvider, CandidateSubagentAcp
+        provider_class, config_schema = CandidateAcpProvider, CandidateSubagentAcp.Config
     scenario = row['scenario']
     record = workspace / ('native-' + row['name'] + '.jsonl')
     env = dict(scenario['env'], PROBE_RECORD=str(record))
@@ -53,17 +57,19 @@ async def native_observations(workspace, row):
         child = spawn(spec)
         return child
     service.spawn = capture
-    config = CONFIG({'command': scenario.get('command', sys.executable),
+    config = config_schema({'command': scenario.get('command', sys.executable),
         'args': [str(ROOT / 'scripts/oracles/subagent_acp_peer.py')], 'env': env,
         'permission': scenario.get('policy', 'reject'), 'disposeEofGraceMs': 150, 'disposeGraceMs': 100})
-    backend = AcpProvider(ctx, config)
+    backend = provider_class(ctx, config)
     backend.report = lambda error, reason: errors.append(error)
     run = None
     from dsh.core.abort import AbortController
     controller = AbortController()
     try:
         try:
-            run = await backend.start(request(workspace, controller))
+            spec = request(workspace, controller)
+            if current:spec['cwd'] = str(workspace)
+            run = await backend.start(spec)
             if scenario.get('cancel'):
                 await wait_file(Path(env['PROBE_READY']))
                 controller.abort('local cancel')

@@ -1,3 +1,4 @@
+import asyncio
 from pathlib import Path
 import sys
 
@@ -19,7 +20,7 @@ async def test_canonical_profile_actual_tools_consumer_owns_acp_child_exit(tmp_p
     ctx = runtime['ctx']
     children = []
     try:
-        for package in ('subprocess-local', 'subagent'):
+        for package in ('fs-local', 'working-directory', 'subprocess-local', 'subagent'):
             await ctx.plugin(resolve_harness_plugin('@deepseek-ai/dsh-' + package))
         service = ctx.get('subprocess')
         spawn = service.spawn
@@ -36,17 +37,22 @@ async def test_canonical_profile_actual_tools_consumer_owns_acp_child_exit(tmp_p
         created = await bridge.new_session(ctx, {'cwd': str(tmp_path), 'mcpServers': []})
         agent = bridge.sessions[created['sessionId']].agent
         result = await ctx.get('tools').execute(ToolExecutionInput('actual-acp-delegation', 'subagent',
-            {'description': 'child work', 'prompt': 'explicit child task'}, agent=agent, signal=AbortController().signal))
-        assert not result.is_error
-        assert result.value['kind'] == 'foreground'
-        assert result.value['output'] == [{'type': 'text', 'text': 'actual child result'}]
-        assert result.content == [{'type': 'text', 'text': 'actual child result'}]
-        assert result.value['runId'] != 'same-child-id'
+            {'description': 'child work', 'prompt': 'explicit child task', 'name': 'worker'}, agent=agent, signal=AbortController().signal))
+        assert not result.is_error, result.content
+        assert result.value == dict(kind='activation', name='worker')
+        await asyncio.wait_for(ctx.subagents.waitForTreeWork(agent), 10)
+        await asyncio.wait_for(agent.whenIdle(), 10)
+        notices = [event for event in agent.session.snapshotEvents()
+                   if event['type'] == 'user/message' and event['data']['source']['kind'] == 'subagent-settled']
+        assert len(notices) == 1
+        assert notices[0]['data']['source']['stopReason'] == 'completed'
+        assert any(block.get('text') == 'actual child result' for block in notices[0]['data']['content'])
+        assert notices[0]['data']['source']['senderSessionId'] != 'same-child-id'
         assert len(children) == 1
         assert (await children[0].done).exitCode == 0 and await children[0].wait_for_exit()
         assert ctx.get('agents').list() == [agent]
         await provider.dispose()
-        assert ctx.get('subagents').list() == []
+        assert ctx.get('subagents').providers == {}
         assert not ctx.get('tools').list_tools(agent)
         await mounted.dispose()
         await bridge.close_session(ctx, created)

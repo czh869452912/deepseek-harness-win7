@@ -7,8 +7,8 @@ import subprocess
 import sys
 from types import SimpleNamespace
 
-from dsh.subagent.acp import CONFIG
-from dsh.subagent.acp_current import CurrentSubagentAcp as SubagentAcp
+from dsh.subagent.acp_candidate import CandidateSubagentAcp as SubagentAcp
+CONFIG = SubagentAcp.Config
 from scripts.oracles.subagent_acp_python import native_observations, public_observation
 
 
@@ -46,14 +46,14 @@ def test_actual_original_acp_subagent_runs_match_native_complete_public_observat
             SubagentAcp(context, config).apply(context)
             backend = captured[0]
             observation['result'] = {'config': config, 'name': backend.name,
-                'capabilities': backend.capabilities, 'inheritsParentContext': backend.inheritsParentContext}
+                'capabilities': dict(backend.capabilities), 'inheritsParentContext': backend.inheritsParentContext}
         except Exception as error:
             observation['error'] = {'name': getattr(error, 'name', 'Error'), 'message': str(error)}
         assert canonical(observation) == canonical(row)
     async def observe_all():
         results = []
         for row in original['rows']:
-            results.append({'name': row['name'], 'observations': await native_observations(tmp_path, row)})
+            results.append({'name': row['name'], 'observations': await native_observations(tmp_path, row, current=True)})
         return results
     native = asyncio.run(observe_all())
     (tmp_path / 'native.json').write_text(json.dumps(native, ensure_ascii=True, indent=2) + '\n', encoding='utf-8')

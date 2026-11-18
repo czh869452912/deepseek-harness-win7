@@ -76,7 +76,7 @@ CURRENT_HARNESS_PLUGIN_CLASSES = {
     '@deepseek-ai/dsh-tool-subagent-control': 'dsh.subagent.tools_control:SubagentControlTools',
     '@deepseek-ai/dsh-subagent-spawn-in-process': 'dsh.subagent.providers:SpawnInProcessPlugin',
     '@deepseek-ai/dsh-subagent-fork-in-process': 'dsh.subagent.providers:ForkInProcessPlugin',
-    '@deepseek-ai/dsh-subagent-acp': 'dsh.subagent.acp_current:CurrentSubagentAcp',
+    '@deepseek-ai/dsh-subagent-acp': 'dsh.subagent.acp_candidate:CandidateSubagentAcp',
     '@deepseek-ai/dsh-typert-registry': 'dsh.typert.current:CurrentTypertRegistry',
     '@deepseek-ai/dsh-api-remote-access': 'dsh.typert.remote_access:RemoteAccessService',
     '@deepseek-ai/dsh-api-gateway': 'dsh.typert.gateway_authorized:AuthorizedGatewayService',

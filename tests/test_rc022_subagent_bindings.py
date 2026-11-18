@@ -50,3 +50,9 @@ async def test_actual_candidate_loader_delegation_control_and_cold_continuation(
     finally:
         if lease is not None:await lease.dispose()
         await ctx.fiber.dispose()
+
+
+def test_production_acp_binding_uses_captured_cwd_provider():
+    from dsh.boot.plugin_registry import resolve_harness_plugin
+    from dsh.subagent.acp_candidate import CandidateSubagentAcp
+    assert resolve_harness_plugin('@deepseek-ai/dsh-subagent-acp') is CandidateSubagentAcp

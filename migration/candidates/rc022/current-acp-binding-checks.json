@@ -1,0 +1,27 @@
+{
+  "contract": "C9-EO",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "change": "Bind canonical optional ACP to the current captured-cwd provider. Its real subprocess peer, capability/config contracts and shared disposal match current Source. Update the actual parent/child profile journey for named asynchronous activation and later real settlement turn; install an explicit owned optional backend composition rather than assuming the CLI declares this package. Headless protocol consumers now inspect v4 durable logs.",
+  "verification": [
+    {
+      "run": "rc022-current-acp-final-20261118-01",
+      "passed": 27,
+      "seconds": 40.74,
+      "scope": "Actual canonical consumer for both compression modes, 22 Source/Native ACP subprocess scenarios and six configuration facts, child file/model chain and reap, production binding, three Pi wire providers, current provider and legacy cancellation controls"
+    },
+    {
+      "run": "rc022-current-acp-binding-successors-20261118-01",
+      "exit_code": 0,
+      "pairs": [
+        "acp_provider"
+      ]
+    }
+  ],
+  "diagnostics": "Earlier wrong fixture API, optional package admission, legacy HTTP shape and synchronous result expectations remain in original failed logs; corrected consumers rerun. No Source package composition or frozen inputs rewritten.",
+  "cleanup": {
+    "bytes_removed": 3410470,
+    "directories": 21,
+    "observations_retained": 57
+  },
+  "qualification": "Targeted only; full frozen candidate, Portable and browser acceptance pending."
+}

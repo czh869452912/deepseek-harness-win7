@@ -2,6 +2,8 @@
 
 固定目标：`38a6a5c965aa99ab525161efb7cc5cf1fe62fced`。本页记录定向检查；生产 pin 已在 C9-CC 协调切换，`accepted_upstream` 仍为 null，完整资格待后续验证。
 
+C9-FO：检查注册表身份断言按当前 Cordis 返回值追踪在两端解包 `cordis.original`；保留类型、37 毫秒期限、查询拒绝和 Host/监听器回收断言。完整 Runner/Inspect 7 项通过，3 个工作目录清理、回收 30,246 字节，生产身份行为不变。见[检查代理身份](current-inspect-proxy-identity-checks.json)。
+
 C9-FN：以 120 毫秒扫描延迟复现原 60 毫秒夹具未观察到删除而误判为修改；原版与 Native 夹具均先等实际目录库存观察到删除，再开始既有间隔，生产 watcher 与时间窗口不变。3 项回归、全部 9 场景实际配对及修复前后控制通过；5 个目录清理、回收 903 字节，原始观察保留。见[删除检查点](current-hmr-unlink-checkpoint-checks.json)。
 
 C9-FM：HMR 静态扫描遇到已加载独立模块中未执行的相对导入，不再因缺失包名或越过顶层而中断；有效导入边、缓存与替换所有权保持。48 项图扫描、热替换和实际包安装/更新/恢复/卸载消费者通过，图与 Profile 两组当前原版/Native 配对通过。三次定向运行的 9 个目录已清理、回收 656,808 字节；原失败和实际配对观察保留。见[相对导入图检查](current-hmr-relative-import-checks.json)。

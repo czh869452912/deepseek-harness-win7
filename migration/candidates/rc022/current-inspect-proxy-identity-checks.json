@@ -1,0 +1,9 @@
+{
+  "contract": "C9-FO",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "failure": "Run07 compared the raw inspect registry to a use-site service proxy returned by the current runner. Current Cordis return-value tracing correctly gives both lookups a proxy while cordis.original retains the raw identity.",
+  "change": "Compare cordis.original on both registry lookups. Preserve exact service type, 37ms deadline, pending-query rejection, abort-listener cleanup, Host process release and service-removal assertions.",
+  "verification": {"run": "rc022-current-c9fo-inspect-identity-20261119-01", "passed": 7, "seconds": 6.52, "scope": "Complete current Host runner and inspect-registry cases"},
+  "cleanup": {"directories": 3, "bytes_removed": 30246, "observations_retained": 2},
+  "qualification": "Test consumer correction only; production identity behavior and frozen run07 remain unchanged."
+}

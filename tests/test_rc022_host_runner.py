@@ -49,7 +49,7 @@ async def mounted():
 async def test_current_runner_owns_inspect_deadline_and_disposal(monkeypatch):
     ctx,fiber,runner=await mounted();registry=ctx.get('cordisInspect')
     try:
-        assert getattr(registry,Symbols.original) is runner.inspect_registry
+        assert getattr(registry,Symbols.original) is getattr(runner.inspect_registry,Symbols.original)
         assert isinstance(runner.inspect_registry,CurrentCordisInspectRegistryService)
         registry.syncClientManifest([manifest()]);clock=Clock();signal=AbortController().signal
         monkeypatch.setattr(asyncio.get_running_loop(),'call_later',clock.later)

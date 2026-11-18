@@ -15,6 +15,7 @@ async def main():
     parser.add_argument('--root', type=Path, required=True)
     parser.add_argument('--output', type=Path, required=True)
     parser.add_argument('--source-observer', action='store_true')
+    parser.add_argument('--format-version', type=int, choices=(3, 4), default=3)
     parser.add_argument('--fixtures-from', type=Path)
     options = parser.parse_args()
     root, output = options.root.resolve(), options.output.resolve()
@@ -39,6 +40,8 @@ async def main():
     sys.path.insert(0, str(root))
     from dsh.cordis.context import Context
     from dsh.core.session.current_session import CurrentSessionPlugin as SessionPlugin
+    if options.format_version == 4:
+        from dsh.core.runtime_v4 import SessionV4Plugin as SessionPlugin
     from dsh.session.jsonl_backend_current import CurrentJsonlSessionPersistencePlugin as JsonlSessionPersistencePlugin
     from dsh.session.file_revision import _windows_api
     from dsh.session.file_io import open_shared_read
@@ -53,7 +56,7 @@ async def main():
             await ctx.plugin(SessionPlugin)
             await ctx.plugin(JsonlSessionPersistencePlugin, dict(root=str(workspace / (compression + '-' + access)), compression=compression))
             provider = ctx.get('sessionPersistence')
-            meta = dict(id='sharing-session',version=3,createdAt=1,isSeeded=False)
+            meta = dict(id='sharing-session',version=options.format_version,createdAt=1,isSeeded=False)
             if not options.fixtures_from:
                 writer = await provider.create(meta)
                 await writer.append([dict(type='session/end-seed', seq=0, time=1, data={})])
@@ -84,7 +87,7 @@ async def main():
                         DSH_JSONL_SHARING_SOURCE_OUTPUT=str(source_output))
                     with output.with_suffix('.' + compression + '-' + access + '.source.log').open('x', encoding='utf-8') as stream:
                         completed = subprocess.run(['node', 'scripts/oracles/official/node_modules/vitest/vitest.mjs',
-                            'run', '--config', 'scripts/oracles/vitest.jsonl-sharing-probe.config.mts'], cwd=str(repository),
+                            'run', '--config', 'scripts/oracles/vitest.rc022-jsonl-sharing-probe.config.mts' if options.format_version == 4 else 'scripts/oracles/vitest.jsonl-sharing-probe.config.mts'], cwd=str(repository),
                             env=environment, stdout=stream, stderr=subprocess.STDOUT, timeout=60)
                     if completed.returncode:
                         raise RuntimeError('Actual original JSONL sharing observer failed: ' + name)

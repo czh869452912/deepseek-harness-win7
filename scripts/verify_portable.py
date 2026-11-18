@@ -363,7 +363,12 @@ def sharing_receipts(source, native, output):
         if completed.returncode or completed.stderr:
             raise RuntimeError('Fresh JSONL sharing Source qualification failed')
         source, native = paired.with_suffix('.source.json'), paired.with_suffix('.native.json')
-    expected = sharing_identity(json.loads(source.read_text(encoding='utf-8')))
+    value = json.loads(source.read_text(encoding='utf-8'))
+    if value.get('sourceCommit') == '38a6a5c965aa99ab525161efb7cc5cf1fe62fced':
+        from scripts.rc022_jsonl_sharing_contract import identity
+        expected = identity(value)
+    else:
+        expected = sharing_identity(value)
     runtime = json.loads(native.read_text(encoding='utf-8'))
     validate_jsonl_sharing(runtime, ROOT, expected, runtime['modules'])
     return source, expected, runtime['modules'], native

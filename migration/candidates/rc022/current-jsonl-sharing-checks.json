@@ -1,0 +1,13 @@
+{
+  "contract": "C9-EP",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "change": "Add a distinct current-v4 sharing contract. Actual pinned Node24 Source and Python 3.8 readers inspect the same physical files beside four live Win32 shared holders. Legacy v3 observer defaults and original receipt identities remain explicit.",
+  "verification": [
+    {"run": "rc022-current-jsonl-sharing-20261118-03", "passed": 30, "seconds": 27.20, "scope": "Four actual Source/Native sharing pairs, unchanged physical revisions on reuse, exclusive denial and all receipt/identity damage controls"},
+    {"run": "rc022-current-jsonl-sharing-pair-20261118-01", "exit_code": 0, "seconds": 23.422, "observations": 4},
+    {"run": "rc022-current-sharing-gate-20261118-01", "passed": 15, "seconds": 0.65, "scope": "Mandatory 405 observer inventory, damaged receipts and bounded owned asset retirement"}
+  ],
+  "diagnostics": "Initial observer import and namespace-export mistakes are retained in failed runs; corrected actual Source execution passed.",
+  "cleanup": {"pytest_directories_removed": 12, "pytest_bytes_removed": 788081, "required_observations_retained": 2, "paired_workspace": "Retired separately after the final physical-file consumer; commands, hashes and full observations retained"},
+  "qualification": "Targeted completion only; frozen unified release acceptance remains pending."
+}

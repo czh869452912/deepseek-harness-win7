@@ -8,7 +8,7 @@ import sys
 
 import pytest
 
-from scripts import jsonl_sharing_oracle as oracle
+from scripts import rc022_jsonl_sharing_contract as oracle
 from scripts.verify_portable import sharing_receipts
 
 
@@ -42,7 +42,7 @@ def damage_observations(runtime, damage):
 @pytest.fixture(scope='module')
 def actual_pair_paths(tmp_path_factory):
     output = tmp_path_factory.mktemp('jsonl-sharing-pair') / 'paired.json'
-    completed = subprocess.run([sys.executable, str(ROOT / 'scripts/jsonl_sharing_oracle.py'),
+    completed = subprocess.run([sys.executable, str(ROOT / 'scripts/rc022_jsonl_sharing_contract.py'),
         '--output', str(output)], cwd=str(ROOT), capture_output=True, timeout=180)
     assert completed.returncode == 0, completed.stdout + completed.stderr + output.read_bytes()
     report = json.loads(output.read_text(encoding='utf-8'))
@@ -67,7 +67,7 @@ def test_reused_physical_fixtures_keep_complete_revisions_and_bytes(actual_pair_
     before = fixture_snapshot(native_path)
     output = tmp_path / 'reused.json'
     completed = subprocess.run([sys.executable, '-I', str(ROOT / 'scripts/oracles/jsonl_sharing_python.py'),
-        '--root', str(ROOT), '--output', str(output), '--fixtures-from', str(native_path)],
+        '--root', str(ROOT), '--output', str(output), '--format-version', '4', '--fixtures-from', str(native_path)],
         cwd=str(tmp_path), env=dict(os.environ, PATH=''), capture_output=True, timeout=60)
     assert completed.returncode == 0, completed.stdout + completed.stderr
     assert completed.stderr == b''
@@ -88,7 +88,7 @@ def test_reused_fixtures_reject_changed_revision_without_rewriting_data(actual_p
         native_path.write_text(json.dumps(report), encoding='utf-8')
         output = tmp_path / 'rejected.json'
         completed = subprocess.run([sys.executable, '-I', str(ROOT / 'scripts/oracles/jsonl_sharing_python.py'),
-            '--root', str(ROOT), '--output', str(output), '--fixtures-from', str(native_path)],
+            '--root', str(ROOT), '--output', str(output), '--format-version', '4', '--fixtures-from', str(native_path)],
             cwd=str(tmp_path), capture_output=True, timeout=60)
         assert completed.returncode != 0
         assert b'complete observations changed' in completed.stderr
@@ -103,7 +103,7 @@ def test_reused_fixtures_require_original_workspace(actual_pair, tmp_path):
     receipt.write_text(json.dumps(actual_pair[1]), encoding='utf-8')
     output = tmp_path / 'rejected.json'
     completed = subprocess.run([sys.executable, '-I', str(ROOT / 'scripts/oracles/jsonl_sharing_python.py'),
-        '--root', str(ROOT), '--output', str(output), '--fixtures-from', str(receipt)],
+        '--root', str(ROOT), '--output', str(output), '--format-version', '4', '--fixtures-from', str(receipt)],
         cwd=str(tmp_path), capture_output=True, timeout=60)
     assert completed.returncode != 0
     assert b'physical JSONL sharing fixtures missing' in completed.stderr

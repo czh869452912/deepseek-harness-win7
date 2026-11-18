@@ -6543,6 +6543,16 @@
         "tmp",
         "home"
       ]
+    },
+    {
+      "script": "scripts/rc022_jsonl_sharing_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "pair.native.workspace"
+      ]
     }
   ],
   "separate": [

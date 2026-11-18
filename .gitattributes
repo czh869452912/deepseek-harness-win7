@@ -97,3 +97,11 @@ scripts/build_office_browser.mjs -text
 dsh/office/contract_runtime/** -text -whitespace
 scripts/build_office_contracts.mjs -text
 migration/candidates/rc022/previous-runtime-inputs.json -text -whitespace
+# Released logical receipts bind these exact observer/consumer input bytes.
+dsh/cordis/events.py -text whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol
+scripts/oracles/rc022_released_logical.mts -text
+scripts/rc022_events_probe.py -text
+scripts/rc022_released_logical_probe.py -text
+scripts/oracles/session_released_payload_cases.json -text whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol
+scripts/oracles/session_released_restore_cases.json -text whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol
+dsh/session/format_v0_to_v1/*.py -text

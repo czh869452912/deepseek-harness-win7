@@ -1,0 +1,21 @@
+{
+  "failure": "Fresh Windows checkout changed byte-bound released logical observer inputs through text conversion.",
+  "change": "Preserve original receipt bytes in Git for explicitly bound inputs. Existing corpus, expectations and input hashes remain unchanged.",
+  "verification": {
+    "run": "rc022-current-c9fx-released-bytes-20261119-01",
+    "passed": 872,
+    "seconds": 1.12,
+    "source_native_run": "rc022-current-c9fx-released-logical-20261119-01",
+    "paired_observations": 867,
+    "fresh_checkout_files": 12,
+    "core_autocrlf": true
+  },
+  "cleanup": {
+    "directories": 4,
+    "bytes_removed": 889090,
+    "retained": "Source/native observations, commands, XML/logs and byte-verified fresh checkout inventory"
+  },
+  "contract": "C9-FX",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "qualification": "Targeted only; complete failed run07 remains failed."
+}

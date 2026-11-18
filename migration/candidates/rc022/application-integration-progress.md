@@ -6,6 +6,8 @@ C9-FT：嵌套完整回归使用同一次冻结的 checkout 清单，严格原�
 
 C9-FW: Use the real Cordis effect runner in the editor fixture, dispose fixture effects, and accept canonical content block arrays in the ACP observation predicate without changing the expected child result. 13 targeted tests passed. [Record](current-editor-acp-fixture-checks.json).
 
+C9-FX: Preserve original receipt bytes in Git for explicitly bound inputs. Existing corpus, expectations and input hashes remain unchanged. 872 targeted tests passed. [Record](current-released-checkout-checks.json).
+
 C9-FU：SQLite Remote 夹具显式隔离 DSH_HOME，真实迁出、三预设模型/分叉/搜索/冷启及 Session Remote 共 7 项通过；3 个目录清理、回收 1,592,334 字节。见[检查](current-sqlite-home-checks.json)。
 
 C9-FS：规范 Source 路径下实际生成终端描述与双向通信通过，保持 wire 字段；Shell Job 等既有范围清理后再断言无活动进程。3 项通过，3 个目录清理、回收 17,414 字节，保留 6 份观察。见[生成通信检查](current-generated-carrier-checks.json)。

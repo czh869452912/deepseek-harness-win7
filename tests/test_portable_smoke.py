@@ -9,6 +9,12 @@ import sys
 import pytest
 
 
+@pytest.fixture(autouse=True)
+def isolated_profile_home(tmp_path, monkeypatch):
+    # dump-config prepares its profile root as well as rendering configuration.
+    monkeypatch.setenv('DSH_HOME', str(tmp_path / 'home'))
+
+
 def _run_dsh(*args):
     root_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     dsh_py = os.path.join(root_dir, "dsh.py")
@@ -80,7 +86,7 @@ def test_smoke_dist_portable_directory(profile):
     bundled_python = os.path.join(dist_dir, "python.exe")
     assert os.path.isfile(bundled_python), "portable must carry its own Python runtime"
     res = subprocess.run(
-        [bundled_python, "-I", dist_dsh_py, "--profile", profile, "--dump-config"],
+        [bundled_python, "-I", "-B", dist_dsh_py, "--profile", profile, "--dump-config"],
         cwd=dist_dir,
         capture_output=True,
         encoding="utf-8",
@@ -90,7 +96,7 @@ def test_smoke_dist_portable_directory(profile):
     )
     assert res.returncode == 0
     assert res.stdout.strip()
-    imported = subprocess.run([bundled_python, "-I", "-c", "import dsh; print(dsh.__file__)"],
+    imported = subprocess.run([bundled_python, "-I", "-B", "-c", "import dsh; print(dsh.__file__)"],
                               cwd=dist_dir, env=env, capture_output=True, encoding="utf-8", timeout=30)
     assert imported.returncode == 0
     assert os.path.normcase(os.path.abspath(imported.stdout.strip())).startswith(os.path.normcase(dist_dir + os.sep))

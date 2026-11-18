@@ -2,6 +2,8 @@
 
 固定目标：`38a6a5c965aa99ab525161efb7cc5cf1fe62fced`。本页记录定向检查；生产 pin 已在 C9-CC 协调切换，`accepted_upstream` 仍为 null，完整资格待后续验证。
 
+C9-GF: Isolate smoke DSH_HOME and disable bundled bytecode writes, since dump-config prepares profile roots. All 25 selected checks passed; 5 unsupplied dist cases remain skipped targeted-only. Actual minimal/standard profile roots were observed inside their owned test homes. Three workspaces retired (9,942 bytes). Run11 stopped during initial freeze before tests/build; its empty output removed and command/log preserved. [Record](current-smoke-isolation-checks.json).
+
 C9-GE: Original frozen run10 remains failed because five mandatory Portable smoke checks skipped, despite 22,593 passing Python cases. Its original XML and 15,701 raw observations are preserved. Removed 47,079 reconstructible files (1,924,597,393 bytes), 6,712 reparse entries and 2,530 read-only directory entries without following targets or changing shared attributes. Clean candidate `2c2bf337` is independently running run11. [Record](current-mandatory-smoke-retry-checks.json).
 
 C9-GD: Run10 completed 22,593 passing Python cases and 39 skips without failures, but the required roster correctly rejected five Portable smoke skips: the current orchestrator built the product only after regression. Build x64 first, explicitly smoke its bundled Python, and reuse the same unchanged ZIP later. All 20 orchestration/negative controls passed; 3 targeted workspaces cleaned (8,494 bytes). Original run10 remains failed, without final input integrity or unified acceptance. [Record](current-portable-order-checks.json).

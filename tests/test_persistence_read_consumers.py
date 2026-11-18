@@ -1,3 +1,4 @@
+"""Historical persistence read controls; current storage has separate probes."""
 import copy
 import json
 from pathlib import Path
@@ -8,20 +9,16 @@ import pytest
 
 from scripts.persistence_read_oracle import NAMES, identity, validate_runtime
 from scripts.verify_portable import read_receipts
+from historical_domain_models import historical_identity, historical_pair
 
 
 ROOT = Path(__file__).resolve().parents[1]
+identity = historical_identity('persistence-read', identity)
 
 
 @pytest.fixture(scope='module')
-def actual_pair(tmp_path_factory):
-    output = tmp_path_factory.mktemp('persistence-read-pair') / 'paired.json'
-    completed = subprocess.run([sys.executable, str(ROOT / 'scripts/persistence_read_oracle.py'),
-        '--output', str(output)], cwd=str(ROOT), capture_output=True, timeout=90)
-    (output.parent / 'runner.log').write_bytes(completed.stdout + completed.stderr)
-    assert completed.returncode == 0, output.read_text(encoding='utf-8')
-    return (json.loads(output.with_suffix('.source.json').read_text(encoding='utf-8')),
-        json.loads(output.with_suffix('.native.json').read_text(encoding='utf-8')))
+def actual_pair():
+    return historical_pair('persistence-read')
 
 
 @pytest.mark.parametrize('name', NAMES)

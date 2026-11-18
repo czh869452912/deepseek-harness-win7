@@ -1,0 +1,14 @@
+{
+  "contract": "C9-DR",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "status": "Targeted compatibility and current workflow/storage successors passed",
+  "changes": "Old worker initial-write/Ready and persistence-read consumers use explicit historical compatibility models with original immutable Source observations and fresh Native retained-provider execution. Worker identity validators gain explicit check_files=False for these guarded models; their default still checks actual checkout bytes. Existing complete-value/runtime/asset damage controls remain. No original Source facts or historical acceptance were rewritten.",
+  "provenance": "Three minimal original Source members from externally verified RC3-QUALIFICATION-20261018-228CFACC.zip/full-gate-root.zip, with full archive/container/member size and SHA-256 indexing. No extracted archive payload retained.",
+  "verification": [
+    {"run": "rc022-historical-worker-persistence-20261118-01", "passed": 109, "seconds": 8.60},
+    {"run": "rc022-historical-worker-persistence-20261118-02", "passed": 5, "seconds": 5.69, "scope": "Three new historical identity/successor guards and two strict-default worker identity controls"},
+    {"run": "rc022-current-worker-storage-successors-20261118-01", "status": "Four actual unchanged Source/Native probes passed", "scopes": ["workflow_host", "workflow_guest", "sqlite_batch", "session_access"]}
+  ],
+  "cleanup": "Both completed pytest workspace/home/tmp sets retired after preserving observations, commands and XML/logs. Current paired synthetic file roots retired after comparisons; raw Source/Native observations retained.",
+  "qualification": "Historical compatibility and targeted current checks only; a fresh complete frozen candidate remains required."
+}

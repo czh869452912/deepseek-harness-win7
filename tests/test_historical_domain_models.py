@@ -17,14 +17,16 @@ def test_historical_domain_guard_keeps_original_facts_and_rejects_changed_inputs
     guard = historical_identity(name, module.identity)
     arguments = () if name in ('javascript-errors', 'canonical-llm', 'llm-metadata',
                                'llm-config', 'llm-prepared', 'deepseek-capture',
-                               'deepseek-error') else (ROOT / 'reference',)
+                               'deepseek-error', 'javascript-initial', 'javascript-ready',
+                               'persistence-read') else (ROOT / 'reference',)
     guard(source, *arguments)
     altered = copy.deepcopy(source)
     altered['inputs'][next(iter(altered['inputs']))] = '0' * 64
     with pytest.raises(ValueError, match='guarded bytes'):
         guard(altered, *arguments)
     assert historical_source(name) == original
-    assert source['rows'] == original['rows']
+    key='rows' if 'rows' in original else 'observations'
+    assert source[key] == original[key]
     assert source['sourceCommit'] == original['sourceCommit']
     assert source['node'] == original['node']
     plan = json.loads((ROOT / 'migration/candidates/rc022/release-gate-plan.json').read_text(encoding='utf-8'))
@@ -35,3 +37,13 @@ def test_historical_domain_guard_keeps_original_facts_and_rejects_changed_inputs
 def test_historical_domain_models_refuse_unreviewed_contract():
     with pytest.raises(ValueError, match='Unreviewed'):
         historical_pair('current-release')
+
+
+@pytest.mark.parametrize('name', ['javascript-initial', 'javascript-ready'])
+def test_worker_oracle_identity_checks_checkout_bytes_by_default(name, monkeypatch):
+    source=historical_source(name)
+    module=importlib.import_module('scripts.'+name.replace('-','_')+'_oracle')
+    module.identity(source,check_files=False)
+    monkeypatch.setattr(module,'digest',lambda path:'0'*64)
+    with pytest.raises(ValueError,match='Source input bytes changed'):
+        module.identity(source)

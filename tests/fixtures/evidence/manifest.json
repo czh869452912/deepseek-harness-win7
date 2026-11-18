@@ -295,6 +295,39 @@
       "sha256": "b452d02bc46981e04286d5e6e1fcd095bf82131ba3e3cf61d2c2c323b41ba105",
       "fixture": "b452d02bc46981e04286d5e6e1fcd095bf82131ba3e3cf61d2c2c323b41ba105.json.gz",
       "scope": "Byte-preserved historical Source facts for explicit compatibility/parser unit controls; never current Source or release evidence"
+    },
+    {
+      "archive": "RC3-QUALIFICATION-20261018-228CFACC.zip",
+      "archive_sha256": "f0f175c64849ce0d22b0790fd2fc591daf41989f58961fb8fc7db7f62458f0f2",
+      "member": "full-gate-root.zip!/javascript-initial-paired.source.json",
+      "container": "full-gate-root.zip",
+      "container_sha256": "72b203024ac56295e662764c6b3c6f2deb36153e62e678fd4ec3d1d46e942e3b",
+      "size": 5446,
+      "sha256": "2461a6f43aebc335277f9e83a37ba9ec1da29c8496ba30f9e2d39db4756d9d7b",
+      "fixture": "2461a6f43aebc335277f9e83a37ba9ec1da29c8496ba30f9e2d39db4756d9d7b.json.gz",
+      "scope": "Byte-preserved historical Source facts for explicit compatibility/parser unit controls; never current Source or release evidence"
+    },
+    {
+      "archive": "RC3-QUALIFICATION-20261018-228CFACC.zip",
+      "archive_sha256": "f0f175c64849ce0d22b0790fd2fc591daf41989f58961fb8fc7db7f62458f0f2",
+      "member": "full-gate-root.zip!/javascript-ready-paired.source.json",
+      "container": "full-gate-root.zip",
+      "container_sha256": "72b203024ac56295e662764c6b3c6f2deb36153e62e678fd4ec3d1d46e942e3b",
+      "size": 5290,
+      "sha256": "04494f6f20f8bf414a8d4dfb1c728193b5ba25c0b2f1bbf4888499e06f2076f5",
+      "fixture": "04494f6f20f8bf414a8d4dfb1c728193b5ba25c0b2f1bbf4888499e06f2076f5.json.gz",
+      "scope": "Byte-preserved historical Source facts for explicit compatibility/parser unit controls; never current Source or release evidence"
+    },
+    {
+      "archive": "RC3-QUALIFICATION-20261018-228CFACC.zip",
+      "archive_sha256": "f0f175c64849ce0d22b0790fd2fc591daf41989f58961fb8fc7db7f62458f0f2",
+      "member": "full-gate-root.zip!/persistence-read-paired.source.json",
+      "container": "full-gate-root.zip",
+      "container_sha256": "72b203024ac56295e662764c6b3c6f2deb36153e62e678fd4ec3d1d46e942e3b",
+      "size": 10368,
+      "sha256": "036682c5f056b293b89586b782e629dbb010addbae52cc25a8c5e2c3440bb0c0",
+      "fixture": "036682c5f056b293b89586b782e629dbb010addbae52cc25a8c5e2c3440bb0c0.json.gz",
+      "scope": "Byte-preserved historical Source facts for explicit compatibility/parser unit controls; never current Source or release evidence"
     }
   ]
 }

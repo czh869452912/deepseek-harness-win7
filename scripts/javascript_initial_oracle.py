@@ -22,14 +22,14 @@ def observation_digest(observations):
         allow_nan=False, separators=(',', ':')).encode('utf-8')).hexdigest()
 
 
-def identity(source):
+def identity(source, check_files=True):
     if source.get('sourceCommit') != SOURCE_COMMIT or source.get('node') != 'v22.22.2':
         raise ValueError('JavaScript initial write Source identity differs')
     required = {'reference/packages/workflow/workflow-worker-thread/src/' + name + '.ts'
         for name in ('host', 'runtime', 'realm', 'session', 'worker')}
     if not required.issubset(source['inputs']) or 'scripts/oracles/javascript_initial_source.mjs' not in source['inputs']:
         raise ValueError('JavaScript initial write Source input closure differs')
-    for name, expected in source['inputs'].items():
+    for name, expected in source['inputs'].items() if check_files else ():
         path = (ROOT / name).resolve()
         if path.relative_to(ROOT).as_posix() != name or digest(path) != expected:
             raise ValueError('JavaScript initial write Source input bytes changed')

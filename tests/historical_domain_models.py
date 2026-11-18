@@ -19,11 +19,15 @@ DOMAINS = frozenset(('agent-dependencies', 'ask-user', 'javascript-errors',
                      'message-values', 'subagent-model', 'tool-durable',
                      'tool-errors', 'unicode-carrier', 'canonical-llm',
                      'llm-metadata', 'llm-config', 'llm-prepared',
-                     'deepseek-capture', 'deepseek-error'))
+                     'deepseek-capture', 'deepseek-error', 'javascript-initial',
+                     'javascript-ready', 'persistence-read'))
 
 # Current production observations run independently in the current paired lane.
 # These mappings identify successors, never transfer historical acceptance.
 SUCCESSORS = {
+    'javascript-initial': ('rc022_workflow_host', 'rc022_workflow_guest'),
+    'javascript-ready': ('rc022_workflow_host', 'rc022_workflow_guest'),
+    'persistence-read': ('rc022_sqlite_batch', 'rc022_session_access'),
     'llm-metadata': ('rc022_model_listing', 'rc022_model_discovery'),
     'llm-config': ('rc022_configured_model', 'rc022_request_extensions'),
     'llm-prepared': ('rc022_configured_model', 'rc022_messages_adapter'),

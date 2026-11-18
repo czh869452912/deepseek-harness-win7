@@ -1530,6 +1530,12 @@ REQUIRED_REGRESSION['test_current_release_orchestration'] = {
       for damage in ('none', 'candidate', 'dirty', 'partial-pipe', 'installer-bytes',
                      'browser-rejected', 'browser-error', 'browser-console')},
 }
+REQUIRED_REGRESSION['test_desktop_input_scope'] = {
+    'test_desktop_current_frontend_keeps_explicit_historical_shell_origin',
+    *{'test_desktop_rejects_stale_current_inputs_and_relabelled_shell[' + damage + ']'
+      for damage in ('target', 'protocol', 'source-bytes', 'frontend', 'origin-bytes',
+                     'origin-label', 'carrier', 'retained-bytes')},
+}
 REQUIRED_REGRESSION['test_message_feedback_contract'] = {
     'test_durable_feedback_identity_accepts_whole_json_numbers',
     *{'test_durable_feedback_identity_rejects_non_safe_integer_numbers[' + value + ']'

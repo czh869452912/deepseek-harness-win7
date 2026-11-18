@@ -1,4 +1,4 @@
-"""Run the actual Electron22 Node16 updater adapter and Source coordinator."""
+"""Run the Electron22 Win7 updater and retained compatibility coordinator."""
 import json
 import os
 from pathlib import Path

@@ -28,8 +28,9 @@ async def test_canonical_desktop_routes_and_disposal(tmp_path, monkeypatch):
         assert b'__DSH_BOOT__' in index['body']
         assert (await fetch('/', 'HEAD'))['body'] is None
         bundle = graph['batches'][0]['url']
-        assert (await fetch(bundle))['body'] == runtime.ctx.get('clientModules').fetchBundle(
-            dict(url='dsh-app://app' + bundle, method='GET'))['body']
+        direct = await runtime.ctx.get('clientModules').fetchBundle(
+            dict(url='dsh-app://app' + bundle, method='GET'))
+        assert (await fetch(bundle))['body'] == direct['body']
         assert (await fetch(bundle, 'HEAD'))['body'] is None
         assert (await fetch('/missing'))['status'] == 404
         assert (await fetch('/index.html', host='evil'))['status'] == 403

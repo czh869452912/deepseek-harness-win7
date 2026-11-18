@@ -1,61 +1,34 @@
-/** Reproduce the unmodified rc.3 shell codec, locale, renderer and transport. */
+/** Bind the current Host/frontend and the explicitly retained Win7 shell inputs. */
 import assert from 'node:assert/strict';
 import {createHash} from 'node:crypto';
 import {readFile,writeFile} from 'node:fs/promises';
-import {createRequire} from 'node:module';
 import {resolve,join} from 'node:path';
 import {execFileSync} from 'node:child_process';
 const options=Object.fromEntries(process.argv.slice(2).reduce((rows,value,index,args)=>{
   if(value.startsWith('--'))rows.push([value.slice(2),args[index+1]]);return rows;
 },[]));
-assert.ok(options.source&&options.esbuild,'Explicit clean Source checkout and esbuild package required');
+assert.ok(options.source,'Explicit clean current Source checkout required');
 const root=resolve(import.meta.dirname,'..'),source=resolve(options.source);
-const commit='a4c74a91e06b00fe0b0937bde982170c526cc842';
-assert.equal(execFileSync('git',['-C',source,'rev-parse','HEAD'],{encoding:'utf8'}).trim(),commit);
-assert.equal(execFileSync('git',['-C',source,'status','--porcelain','--untracked-files=no'],{encoding:'utf8'}).trim(),'');
-const esbuild=createRequire(import.meta.url)(resolve(options.esbuild));
-assert.equal(esbuild.version,'0.25.12');
+const baseline=JSON.parse(await readFile(join(root,'migration/baseline.json'),'utf8'));
+assert.equal(execFileSync('git',['-C',source,'rev-parse','HEAD'],{encoding:'utf8'}).trim(),baseline.target_upstream);
+assert.equal(execFileSync('git',['-C',source,'status','--porcelain'],{encoding:'utf8'}).trim(),'');
 const hash=value=>createHash('sha256').update(value).digest('hex');
-const inputs=[];
-async function publish(path,bytes,original){
-  bytes=Buffer.from(bytes);
-  if(options.check==='true')assert.deepEqual(await readFile(join(root,path)),bytes,path+' differs from frozen Source');
-  else await writeFile(join(root,path),bytes);
-  inputs.push({source:original.path,sourceSha256:hash(original.bytes),target:path,sha256:hash(bytes)});
-}
-for(const [name,target] of [['host-protocol','wire'],['locale','locale']]){
-  const path='apps/desktop/src/'+name+'.ts',bytes=await readFile(join(source,path));
-  const result=await esbuild.transform(bytes.toString('utf8'),{loader:'ts',format:'cjs',target:'node16.17'});
-  await publish('apps/desktop/'+target+'.cjs',result.code,{path,bytes});
-}
-{
-  const path='apps/desktop/src/update-coordinator.ts',bytes=await readFile(join(source,path));
-  const result=await esbuild.build({absWorkingDir:source,entryPoints:[path],bundle:true,write:false,
-    platform:'node',format:'cjs',target:'node16.17',external:['electron'],plugins:[{
-      name:'explicit-win7-updater-injection',setup(build){
-        build.onResolve({filter:/^electron-updater$/},()=>({path:'injected-updater',namespace:'win7'}));
-        build.onLoad({filter:/.*/,namespace:'win7'},()=>({contents:'export default {autoUpdater: undefined}',loader:'js'}));
-      },
-    }]});
-  await publish('apps/desktop/update-coordinator.cjs',result.outputFiles[0].contents,{path,bytes});
-}
-for(const extension of ['js','html','css']){
-  const path='apps/desktop/renderer/plugin-manager.'+extension,bytes=await readFile(join(source,path));
-  await publish(path,bytes,{path,bytes});
-}
-{
-  const path='apps/desktop-host/src/index.ts',bytes=await readFile(join(source,path));
-  const original=bytes.toString('utf8').replaceAll('\r\n','\n');
-  const match=original.match(/const DESKTOP_TRANSPORT_SCRIPT = `([\s\S]*?)`/u);
-  assert.ok(match,'Original transport literal missing');
-  const script=match[1].replace('${JSON.stringify(DESKTOP_STREAM_PATH)}',JSON.stringify('/.dsh/remote-stream')).replaceAll('\\\\n','\\n')+'\n';
-  assert.ok(!script.includes('${'),'Unexpected template expression in transport');
-  await publish('apps/desktop-host/transport.js',script,{path,bytes});
-}
-const manifest={sourceCommit:commit,builder:{name:'esbuild',version:esbuild.version,target:'node16.17',format:'cjs'},
-  updaterSubstrate:'Unchanged Source coordinator with explicitly injected Win7 full-installer updater; upstream electron-updater default binding is undefined and never used',
-  transportExtraction:'Original template with constant stream path and escaped newline evaluated; no browser application edits',inputs};
+const originPath='apps/desktop/compatibility-source-input.json',originBytes=await readFile(join(root,originPath));
+const origin=JSON.parse(originBytes);
+assert.equal(origin.sourceCommit,'a4c74a91e06b00fe0b0937bde982170c526cc842');
+for(const row of origin.inputs)assert.equal(hash(await readFile(join(root,row.target))),row.sha256,'Retained Win7 input changed: '+row.target);
+const protocolPath='apps/desktop/src/host-protocol.ts',protocolBytes=await readFile(join(source,protocolPath));
+const generation=protocolBytes.toString('utf8').match(/DESKTOP_HOST_PROTOCOL_VERSION = (\d+) as const/u);
+assert.ok(generation,'Current Desktop release protocol metadata missing');
+const frontendPath='scripts/frontend-inputs.json',frontendBytes=await readFile(join(root,frontendPath));
+const manifest={schema:2,targetUpstream:baseline.target_upstream,
+  scope:'Current Native Host/profile and unchanged current Web frontend in the retained Win7 Electron22 shell. This is not the upstream Electron44 shell/UI or its protocol-v4 lifecycle implementation.',
+  upstreamDesktopProtocol:{version:Number(generation[1]),source:protocolPath,sha256:hash(protocolBytes)},
+  frontend:{manifest:frontendPath,sha256:hash(frontendBytes)},
+  compatibility:{manifest:originPath,sha256:hash(originBytes),sourceCommit:origin.sourceCommit,
+    carrierVersion:3,scope:'Retained socket-free Win7 pipe adapter, locale/plugin UI and injected full-installer coordinator; original provenance is preserved and is never relabelled as current upstream code.'}};
 const data=JSON.stringify(manifest,null,2)+'\n';
 if(options.check==='true')assert.equal(await readFile(join(root,'apps/desktop/source-input.json'),'utf8'),data);
 else await writeFile(join(root,'apps/desktop/source-input.json'),data);
-console.log(JSON.stringify({status:options.check==='true'?'verified':'built',inputs:inputs.length}));
+console.log(JSON.stringify({status:options.check==='true'?'verified':'built',target:manifest.targetUpstream,
+  upstreamProtocol:manifest.upstreamDesktopProtocol.version,win7Carrier:3,compatibilityInputs:origin.inputs.length}));

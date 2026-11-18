@@ -146,7 +146,7 @@ def invoke_cleanup(root, *arguments):
         pytest.skip('Actual Windows PowerShell installer consumer')
     return subprocess.run(['powershell.exe','-NoProfile','-NonInteractive','-ExecutionPolicy','Bypass',
         '-File',str(ROOT / 'apps/desktop/installer/uninstall-files.ps1'),'-InstallDirectory',str(root)] + list(arguments),
-        stdout=subprocess.PIPE,stderr=subprocess.STDOUT,timeout=60,encoding='utf-8')
+        stdout=subprocess.PIPE,stderr=subprocess.STDOUT,timeout=60,encoding='utf-8',errors='replace')
 
 
 def cleanup_probe(root, log, before='', after=''):
@@ -171,7 +171,7 @@ exit $code
     encoded = base64.b64encode(script.encode('utf-16-le')).decode('ascii')
     return subprocess.run(['powershell.exe', '-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass',
                            '-EncodedCommand', encoded], stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
-                          timeout=60, encoding='utf-8')
+                           timeout=60, encoding='utf-8', errors='replace')
 
 
 @pytest.mark.parametrize('terminating', [False, True])

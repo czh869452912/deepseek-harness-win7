@@ -1,0 +1,47 @@
+{
+  "contract": "C9-CX",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "status": "Win7 adapter scope targeted passed; actual candidate/package qualification pending",
+  "scope": "Retained Win7 Electron22 shell with current Host/profile/Peer and unchanged current Web frontend; not full upstream Electron44 shell/UI or protocol-v4 lifecycle parity",
+  "changes": [
+    "Current Desktop input manifest no longer rejects all builds due to old active pin",
+    "Original seven-file shell origin remains byte-preserved in a separate manifest; current frontend and v4 release metadata bind current Source independently",
+    "Reject stale current inputs, foreign retained bytes and historical-origin relabelling",
+    "Current ClientModules fetch consumer awaits async public service; localized PowerShell diagnostic capture handles non-UTF8 output"
+  ],
+  "verification": [
+    {
+      "run": "rc022-desktop-current-scope-20261118-01",
+      "passed": 158,
+      "failed": 1,
+      "seconds": 58.3
+    },
+    {
+      "run": "rc022-desktop-current-scope-20261118-02",
+      "passed": 26,
+      "seconds": 42.87
+    },
+    {
+      "run": "rc022-desktop-diagnostic-encoding-20261118-01",
+      "passed": 2,
+      "seconds": 1.15
+    },
+    {
+      "run": "rc022-desktop-origin-reproducer-20261118-01",
+      "reproducer": {
+        "status": "verified",
+        "target": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+        "upstreamProtocol": 4,
+        "win7Carrier": 3,
+        "compatibilityInputs": 7
+      }
+    }
+  ],
+  "cleanup": {
+    "bytes_removed": 9362192,
+    "owned_directories_removed": 9,
+    "links_removed": 2022,
+    "retained": "Commands, log/XML, prior failure/warnings and source-origin records; no fixture consumer remains"
+  },
+  "acceptance": "No current archive or full Desktop/Win7 qualification claimed; accepted_upstream unchanged"
+}

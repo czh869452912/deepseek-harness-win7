@@ -121,11 +121,24 @@ def desktop_package_inputs(portable, destination):
 def desktop_source_inputs():
     manifest = json.loads((ROOT / 'apps/desktop/source-input.json').read_text(encoding='utf-8'))
     baseline = json.loads((ROOT / 'migration/baseline.json').read_text(encoding='utf-8'))
-    if manifest['sourceCommit'] != baseline['target_upstream']:
+    if manifest.get('schema') != 2 or manifest.get('targetUpstream') != baseline['target_upstream']:
         raise ValueError('Desktop Source inputs differ from the pinned target')
-    for row in manifest['inputs']:
-        if (digest(ROOT / row['target']) != row['sha256'] or
-                digest(ROOT / 'reference' / row['source']) != row['sourceSha256']):
+    protocol = manifest['upstreamDesktopProtocol']
+    if protocol.get('version') != 4 or digest(ROOT / 'reference' / protocol['source']) != protocol['sha256']:
+        raise ValueError('Desktop upstream release protocol differs')
+    frontend = manifest['frontend']
+    if digest(ROOT / frontend['manifest']) != frontend['sha256']:
+        raise ValueError('Desktop current frontend inputs changed')
+    compatibility = manifest['compatibility']
+    origin_path = ROOT / compatibility['manifest']
+    if digest(origin_path) != compatibility['sha256'] or compatibility.get('carrierVersion') != 3:
+        raise ValueError('Desktop Win7 compatibility origin differs')
+    origin = json.loads(origin_path.read_text(encoding='utf-8'))
+    if (origin['sourceCommit'] != compatibility['sourceCommit'] or
+            origin['sourceCommit'] != 'a4c74a91e06b00fe0b0937bde982170c526cc842'):
+        raise ValueError('Desktop Win7 origin was relabelled')
+    for row in origin['inputs']:
+        if digest(ROOT / row['target']) != row['sha256']:
             raise ValueError('Desktop generated/original bytes differ: ' + row['target'])
     return manifest
 
@@ -209,7 +222,7 @@ def build(args):
         for source in sorted((ROOT / 'apps/desktop').glob('*.cjs')):
             if source.name != 'smoke-test.cjs':
                 shutil.copyfile(str(source), str(application / source.name))
-        for filename in ('package.json', 'tray.png', 'source-input.json', 'win7-setup.html'):
+        for filename in ('package.json', 'tray.png', 'source-input.json', 'compatibility-source-input.json', 'win7-setup.html'):
             shutil.copyfile(str(ROOT / 'apps/desktop' / filename), str(application / filename))
         shutil.copytree(str(ROOT / 'apps/desktop/renderer'), str(application / 'renderer'))
         harness = unpacked / 'resources/harness'

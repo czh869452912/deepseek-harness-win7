@@ -1,4 +1,4 @@
-"""Actual Source v3 frames plus bounded, incremental native desktop decoding."""
+"""Retained v3 Win7 carrier fixtures; not the current upstream v4 lifecycle."""
 import base64
 import json
 from pathlib import Path

@@ -1,55 +1,21 @@
 {
-  "sourceCommit": "a4c74a91e06b00fe0b0937bde982170c526cc842",
-  "builder": {
-    "name": "esbuild",
-    "version": "0.25.12",
-    "target": "node16.17",
-    "format": "cjs"
+  "schema": 2,
+  "targetUpstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "scope": "Current Native Host/profile and unchanged current Web frontend in the retained Win7 Electron22 shell. This is not the upstream Electron44 shell/UI or its protocol-v4 lifecycle implementation.",
+  "upstreamDesktopProtocol": {
+    "version": 4,
+    "source": "apps/desktop/src/host-protocol.ts",
+    "sha256": "3ac3b9c5416144de212ed2e1fae3ae17a12dedd9389df99f07283012df5d77b9"
   },
-  "updaterSubstrate": "Unchanged Source coordinator with explicitly injected Win7 full-installer updater; upstream electron-updater default binding is undefined and never used",
-  "transportExtraction": "Original template with constant stream path and escaped newline evaluated; no browser application edits",
-  "inputs": [
-    {
-      "source": "apps/desktop/src/host-protocol.ts",
-      "sourceSha256": "ef608222e30a4976d3d93e9f0e7fcc004161b346fa8b0cd005a370dc44824065",
-      "target": "apps/desktop/wire.cjs",
-      "sha256": "ee1d386cdc98b6aa3f91b331e0fb19f81784d2652cd17a5b6141f55e1a865379"
-    },
-    {
-      "source": "apps/desktop/src/locale.ts",
-      "sourceSha256": "484bc187cbb8d8552df5d88920435a9499b17722e19275238135cbec568de5fa",
-      "target": "apps/desktop/locale.cjs",
-      "sha256": "c447748305078e603279c81220cc6b031a4344cccb7734217aae6bc5e4dc8958"
-    },
-    {
-      "source": "apps/desktop/src/update-coordinator.ts",
-      "sourceSha256": "441c1cff7bd5af7240ef3b2eec0ad45d0db8aee05fdeb5501ab3fb82d0e41eed",
-      "target": "apps/desktop/update-coordinator.cjs",
-      "sha256": "0972672bbec6cb145e5835f5acaad3a2045152a49a59b0d5d9a0f69f8fa48186"
-    },
-    {
-      "source": "apps/desktop/renderer/plugin-manager.js",
-      "sourceSha256": "b926486d417b505316b4b506ab61aa70f19f3068f6d3af16d81bcd543106fb95",
-      "target": "apps/desktop/renderer/plugin-manager.js",
-      "sha256": "b926486d417b505316b4b506ab61aa70f19f3068f6d3af16d81bcd543106fb95"
-    },
-    {
-      "source": "apps/desktop/renderer/plugin-manager.html",
-      "sourceSha256": "2aec1fb6879181fffc4f0526a6ea6f7316536e2317ffafd882a0a5750b83a531",
-      "target": "apps/desktop/renderer/plugin-manager.html",
-      "sha256": "2aec1fb6879181fffc4f0526a6ea6f7316536e2317ffafd882a0a5750b83a531"
-    },
-    {
-      "source": "apps/desktop/renderer/plugin-manager.css",
-      "sourceSha256": "c1ab4b6d85866488b9dc0a3d567ba0384cc811422cdfdfcb39315e041f979704",
-      "target": "apps/desktop/renderer/plugin-manager.css",
-      "sha256": "c1ab4b6d85866488b9dc0a3d567ba0384cc811422cdfdfcb39315e041f979704"
-    },
-    {
-      "source": "apps/desktop-host/src/index.ts",
-      "sourceSha256": "7e7583f07800f6c257809d1dfb328d3942e84e6df97a78dd8af877b5e3bc27f3",
-      "target": "apps/desktop-host/transport.js",
-      "sha256": "c5bf775cc09a82f083fd1486f61f6e39ca5ab2b95b2490dac0fdfc55bcfee319"
-    }
-  ]
+  "frontend": {
+    "manifest": "scripts/frontend-inputs.json",
+    "sha256": "c43ae4abe2437d8c97f05831ee0ba35dfc3aa9ce8ee0dab0c53a24ed33a2fff6"
+  },
+  "compatibility": {
+    "manifest": "apps/desktop/compatibility-source-input.json",
+    "sha256": "454642400a776d6d44c493cd113f3de88a15dbe8b335a8f11310a9ea0adca0f7",
+    "sourceCommit": "a4c74a91e06b00fe0b0937bde982170c526cc842",
+    "carrierVersion": 3,
+    "scope": "Retained socket-free Win7 pipe adapter, locale/plugin UI and injected full-installer coordinator; original provenance is preserved and is never relabelled as current upstream code."
+  }
 }

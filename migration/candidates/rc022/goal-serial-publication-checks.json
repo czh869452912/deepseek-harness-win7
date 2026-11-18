@@ -1,0 +1,13 @@
+{
+  "contract": "C9-EA",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "status": "Targeted Goal serial creation and Web publication checks passed",
+  "problem": "Goal agent/created listener returned its internal state dictionary. Cordis serial dispatch treated it as a bail value and never called later lifecycle listeners, including session availability publication.",
+  "change": "Use an explicit void callback and reset attempt/competing/checkpoint fields as the pinned Source lifecycle callback does. Preserve the normal serial failure boundary and listener order.",
+  "verification": [
+    {"run": "rc022-current-agent-goal-publication-20261118-01", "passed": 87, "seconds": 9.98, "scope": "Actual Web Session-before-Agent publication and fork, unavailable-preset refusal, all direct Goal driver and current Goal contract consumers"},
+    {"run": "rc022-current-goal-serial-20261118-01", "passed": 1, "seconds": 0.61, "scope": "Direct actual registered Goal callback does not bail a later serial lifecycle listener"}
+  ],
+  "cleanup": "Completed diagnostic and passing workspaces retired after original listener-return observations, logs and session JSONL preservation; commands/XML retained.",
+  "qualification": "Targeted checks only; no complete migration/release acceptance."
+}

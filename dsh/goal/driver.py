@@ -58,7 +58,10 @@ class GoalRoundDriver(Plugin):
         self.ctx, self.states = ctx, {}
         def lifecycle():
             ctx.on("agent/error", lambda payload: self.disarm(self.state(payload["agent"])))
-            ctx.on("agent/created", lambda payload: self.state(payload["agent"]))
+            def created(payload):
+                state = self.state(payload["agent"])
+                state.update(attempt=None, competing=False, checkpoint=False)
+            ctx.on("agent/created", created)
             ctx.on("agent/disposed", lambda payload: self.states.pop(payload["agent"], None))
             ctx.on("agent/session-start", self.session_start)
             ctx.on("agent/status", self.status)

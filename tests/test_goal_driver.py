@@ -55,6 +55,22 @@ async def until(predicate):
 
 
 @pytest.mark.asyncio
+async def test_created_listener_does_not_bail_later_serial_listeners():
+    ctx, model, handle, driver = await setup()
+    observed = []
+    try:
+        # Exercise the actual registered callback in the serial lifecycle mode.
+        agent = handle.agent
+        ctx.on('agent/created', lambda payload: observed.append(payload['agent']))
+        await ctx.serial('agent/created', dict(agent=agent))
+        assert observed == [agent]
+    finally:
+        await driver.dispose()
+        await handle.dispose()
+        await ctx.fiber.dispose()
+
+
+@pytest.mark.asyncio
 async def test_real_driver_admits_exact_rounds_and_blocks_at_durable_limit():
     ctx, model, handle, driver = await setup()
     agent, goals = handle.agent, ctx.get("goals")

@@ -71,11 +71,26 @@ async def _prepared_package(directory,spec,options=None,local=False,git=False,re
             # A killed child cannot orphan downloads outside the owned root.
             env=dict(options.get('env') or {});env.update(TEMP=owned,TMP=owned,TMPDIR=owned)
             argv=[command['command']]+command['args']+['prepare-url' if remote else 'prepare-git' if git else 'prepare-local' if local else 'prepare',spec,output]+([workspace] if git else [])+([] if registry is None else ['--registry='+registry])
+            # stdout JSON and stderr prose can arrive between each other's
+            # writes, including between print's body and newline. Preserve the
+            # ordinary merged log while parsing refusal metadata from stdout.
+            stdout=bytearray();callback=options.get('onOutput')
+            def received(text,stream):
+                if stream=='stdout':
+                    stdout.extend(text.encode('utf-8'))
+                    if len(stdout)>1024*1024:del stdout[:-1024*1024]
+                if callback is not None:callback(text,stream)
             try:
-                result=await run_package_process(directory,argv,dict(options,env=env,outputBytes=options.get('outputBytes',16384)))
+                result=await run_package_process(directory,argv,dict(options,env=env,onOutput=received,outputBytes=options.get('outputBytes',16384)))
             finally:
                 if workspace is not None:cleanup_git_workspace(workspace)
             if result['exitCode']!=0 or result.get('timedOut'):
+                for line in stdout.decode('utf-8',errors='replace').splitlines():
+                    try:
+                        error=json.loads(line).get('error',{})
+                        if error.get('code')=='ERR_DSH_PLUGIN_INCOMPATIBLE' and isinstance(error.get('incompatible'),list):
+                            result['incompatible']=error['incompatible']
+                    except (ValueError,AttributeError):pass
                 yield SimpleNamespace(result=result,candidate=None);return
             signal=options.get('signal')
             if signal is not None:signal.throwIfAborted()

@@ -200,13 +200,6 @@ class PythonPackageBackend(Plugin):
             async with preparation as prepared:
                 result = prepared.result
                 if prepared.candidate is None:
-                    for line in result['output'].splitlines():
-                        try:
-                            issue = json.loads(line).get('error', {}).get('incompatible')
-                            if issue is not None:
-                                result['incompatible'] = issue
-                        except (ValueError, AttributeError):
-                            pass
                     return result
                 return await self._install(prepared.candidate, result, options)
         except Exception as error:

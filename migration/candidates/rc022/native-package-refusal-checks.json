@@ -1,0 +1,14 @@
+{
+  "contract": "C9-DS",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "status": "Targeted Native package refusal and preparation checks passed",
+  "problem": "Actual registry/local incompatible-package tests returned operation-error instead of incompatible-version. The raw operation log showed stdout JSON immediately followed by stderr prose before stdout's newline, so parsing merged log lines lost the structured refusal.",
+  "changes": "Preparation retains a separate bounded 1 MiB stdout tail while forwarding unchanged stream callbacks and keeping the normal merged log/output cap. Refusal metadata is parsed only from stdout with the expected error code; stderr cannot inject it. The Native package backend consumes that structured preparation result instead of reparsing merged prose. No CLI flag or profile mutation behavior changed.",
+  "verification": [
+    {"run": "rc022-native-package-refusal-diagnostic-20261118-01", "failed": 1, "seconds": 6.22, "scope": "Reproduced registry incompatibility misclassification; original interleaved operation log retained"},
+    {"run": "rc022-native-package-refusal-20261118-02", "passed": 6, "seconds": 24.88, "scope": "Deterministic stream-framing regression and actual registry/local ABI, engine and expected-identity refusal before profile commit"},
+    {"run": "rc022-native-package-refusal-20261118-03", "passed": 17, "seconds": 55.64, "scope": "stdout framing and stderr-injection controls with one-byte log cap; actual child preparation, successful host commit, cancelled downloads, publication tampering, package process output/ownership consumers"}
+  ],
+  "cleanup": "All three completed runs' synthetic workspaces/homes retired. Original child/package logs and failed reports copied with size/SHA-256 receipts before cleanup; commands and XML/logs retained.",
+  "qualification": "Targeted Native backend completion; no claim of current complete release acceptance."
+}

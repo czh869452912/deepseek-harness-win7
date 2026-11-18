@@ -17,7 +17,8 @@ from dsh.session.observation_current import CurrentSessionObservationReader
 from dsh.session.preparations import throw_aborted
 from dsh.session.query_engine import SqliteSessionQueryEngine, invalid_config, row_header, header_dict
 from dsh.session.query_requests import MAX_PAGE_LIMIT, WHITESPACE
-from dsh.session.session_query import SessionQueryService, SessionQueryError, extract_session_event_text, filter_session_event_documents
+from dsh.session.session_query import SessionQueryService, SessionQueryError, filter_session_event_documents
+from dsh.session.text_current import extract_session_event_text, compile_session_text_filter
 from dsh.session.storage_contract import field
 
 
@@ -144,7 +145,8 @@ class CurrentSessionQueryService(SessionQueryService):
         from dsh.session.session_query import _materialized_read, materialize_session_event_result_filters
         async def read(owned):
             loaded=await self._corpus.load(session_id)
-            return filter_session_event_documents(documents(session_id,loaded['events']),owned)
+            compile_text=compile_session_text_filter if getattr(self.ctx.get('sessions'),'format_version',3)>=4 else None
+            return filter_session_event_documents(documents(session_id,loaded['events']),owned,compile_text=compile_text)
         return _materialized_read(filters,materialize_session_event_result_filters,read)
 
     async def traceEvent(self,request,signal=None):

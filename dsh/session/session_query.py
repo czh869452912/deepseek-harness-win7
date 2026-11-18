@@ -264,6 +264,7 @@ def filter_session_results(
 def filter_session_event_documents(
     documents: List[Dict[str, Any]],
     filters: Optional[List[Dict[str, Any]]] = None,
+    compile_text=None,
 ) -> List[Dict[str, Any]]:
     """
     Apply ANDed event filters to extracted semantic documents.
@@ -271,7 +272,8 @@ def filter_session_event_documents(
     if not filters:
         return list(documents)
     mat_filters = materialize_session_event_result_filters(filters)
-    text_patterns = {index: compile_session_text_filter(clause['text'])
+    compile_text = compile_session_text_filter if compile_text is None else compile_text
+    text_patterns = {index: compile_text(clause['text'])
                      for index, clause in enumerate(mat_filters) if clause['kind'] == 'text'}
     res = []
     for doc in documents:

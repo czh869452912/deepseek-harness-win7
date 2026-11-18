@@ -1,0 +1,15 @@
+{
+  "contract": "C9-EJ",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "change": "Current query documents ignore nested legacy tool-result content blocks, matching current Source extraction. Current v4 event text filters use independently pinned Unicode 16 simple C+S folds matching Node 24.9.0; old Unicode 17 and historical text behavior remain separate. Portable input checks verify both data files. Add exhaustive actual current Source consumers to the mandatory paired roster (403 drivers; 476 original Source configurations unchanged).",
+  "unicode_data": {"source": "https://www.unicode.org/Public/16.0.0/ucd/CaseFolding.txt", "size": 86092, "sha256": "6f1f9c588eb4a5c718d9e8f93b782685e5c7fec872cf05e8e6878053599e09bb"},
+  "verification": [
+    {"run": "rc022-historical-locale-consumers-20261118-01", "passed": 80, "seconds": 4.78, "scope": "Immutable historical Source members against freshly executed compatibility consumers, including refusal controls and direct text tests"},
+    {"run": "rc022-current-query-text-consumers-20261118-02", "passed": 287, "seconds": 21.92, "scope": "New semantic and actual v4 event-filter regressions, current query/SQLite engine, original query Source consumer, session tools/profile, Unicode/text compatibility and gate roster controls"},
+    {"run": "rc022-current-query-text-pair-20261118-03", "exit_code": 0, "observations": 9917, "scope": "1849 collation comparisons, 180 fingerprints, five actual SQLite Unicode cursor boundaries, 7678 literal regex cases, 187 extraction boundaries and 18 current v4 corpus/lineage orders"}
+  ],
+  "findings": "The first actual current pair exposed 56 Unicode 17 folds absent from pinned Node 24.9.0 Unicode 16. Independent official Unicode 16 data resolves them; no expected Source facts or original archive bytes were edited. Current Node reports ICU 77.1/Unicode16/CLDR47; Native retains its existing ICU78.2 library. Equality is demonstrated for this corpus and recorded locale, not arbitrary Unicode or other locales.",
+  "historical_members": "Three original Source/corpus members retain archive, nested-container, size and SHA provenance in tests/fixtures/evidence/manifest.json. These historical checks cannot qualify current Source.",
+  "cleanup": "Nine owned pytest home/tmp/workspace directories and 177293900 bytes were removed after preserving nine required raw observations. Pair command/logs, original first-difference output and subsequent actual observations remain; no Portable was built for this local change.",
+  "qualification": "Targeted and actual current Source pairing only. Complete frozen-candidate and extracted release acceptance remain pending."
+}

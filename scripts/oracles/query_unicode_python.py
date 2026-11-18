@@ -10,6 +10,7 @@ import sys
 parser = argparse.ArgumentParser()
 parser.add_argument('output', type=Path)
 parser.add_argument('--root', type=Path, default=Path(__file__).resolve().parents[2])
+parser.add_argument('--current-format', action='store_true')
 arguments = parser.parse_args()
 ROOT = arguments.root.resolve()
 sys.path.insert(0, str(ROOT))
@@ -21,6 +22,8 @@ from dsh.session.icu_collation import IcuCollator
 from dsh.session.query_engine import normalized_identity
 from dsh.session.query_current import CurrentSqliteSessionQueryEngine as SqliteSessionQueryEngine
 from types import SimpleNamespace
+if arguments.current_format:
+    from dsh.core.runtime_v4 import SessionV4Plugin as SessionPlugin
 
 
 VALUES = ['', 'a', 'A', 'á', 'a\u0301', 'ä', 'z', '中', '文', '阿', '😀', '🐍', '\ud800', '\udc00', 'a\0b', 'ab', 'a\u200bb', 'a\u00adb', '10', '2', '-', '_', 'é', 'e\u0301', 'Å', 'å', 'Ａ', 'ａ', 'ß', 'ss', 'İ', 'i', 'ı', '💻', '👩\u200d💻', '👩💻', '\u034f', '\u2060', 'a\u0315\u0300', 'a\u0300\u0315', '\u00e0\u0315', 'a\u0300\u034f\u0315', 'a\u2060b']
@@ -50,7 +53,7 @@ async def observe():
     for name, values in pairs:
         context = Context()
         await context.plugin(SessionPlugin)
-        entries = [dict(header=SessionHeader('beta' if index else 'alpha', version=3, created_at=1, cwd=cwd),
+        entries = [dict(header=SessionHeader('beta' if index else 'alpha', version=4 if arguments.current_format else 3, created_at=1, cwd=cwd),
                         events=[dict(type='user/message', seq=0, time=1, surfaceOp='append',
                                      data=dict(id='message-0', role='user', content=[dict(type='text', text='needle')],
                                                source=dict(kind='user')))]) for index, cwd in enumerate(values)]

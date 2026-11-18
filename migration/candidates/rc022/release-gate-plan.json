@@ -4594,6 +4594,21 @@
       ]
     },
     {
+      "script": "scripts/rc022_query_text_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
       "script": "scripts/rc022_question_projection_probe.py",
       "node": true,
       "browser": false,

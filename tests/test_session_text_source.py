@@ -1,27 +1,18 @@
 import copy
-import json
-import os
 from pathlib import Path
-import subprocess
-import sys
 
 import pytest
 from scripts import session_text_oracle
+from historical_locale_models import locale_pair
 
 
 @pytest.fixture(scope='module')
 def paired(tmp_path_factory):
     output = tmp_path_factory.mktemp('session-text-paired') / 'result.json'
-    result = subprocess.run([sys.executable, str(session_text_oracle.ROOT / 'scripts/session_text_oracle.py'),
-                             '--output', str(output)], capture_output=True, timeout=150, env=os.environ.copy())
-    assert result.returncode == 0, (result.stdout + result.stderr).decode('utf-8', errors='replace')
-    report = json.loads(output.read_text(encoding='utf-8'))
-    source = json.loads(output.with_name('result.source.json').read_text(encoding='utf-8'))
-    native = json.loads(output.with_name('result.native.json').read_text(encoding='utf-8'))
-    return report, source, native
+    return locale_pair('session-text', output)
 
 
-def test_actual_original_native_text_extraction_and_domain_order(paired):
+def test_historical_original_and_retained_native_text_extraction_and_domain_order(paired):
     report, source, native = paired
     assert report['status'] == 'passed' and report['cases'] == 7883
     expected_digest, expected_locale = session_text_oracle.source_identity(source)

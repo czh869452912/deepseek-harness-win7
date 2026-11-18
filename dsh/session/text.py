@@ -21,7 +21,10 @@ def verify_case_folding(path=None):
 
 @lru_cache(maxsize=1)
 def _fold_classes():
-    path = verify_case_folding()
+    return read_fold_classes(verify_case_folding())
+
+
+def read_fold_classes(path):
     classes = {}
     for line in path.read_text(encoding='utf-8').splitlines():
         parts = line.split('#')[0].strip().split(';')
@@ -32,8 +35,9 @@ def _fold_classes():
     return {chr(member): tuple(sorted(members)) for members in classes.values() for member in members}
 
 
-def literal_pattern(text):
-    equivalents = _fold_classes()
+def literal_pattern(text, equivalents=None):
+    if equivalents is None:
+        equivalents = _fold_classes()
     text = text.encode('utf-16-le', errors='surrogatepass').decode('utf-16-le', errors='surrogatepass')
     def character_pattern(character):
         values = equivalents.get(character, (ord(character),))

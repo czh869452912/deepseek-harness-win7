@@ -185,6 +185,8 @@ def checked_inputs(root_dir, site_packages, architecture='x64'):
     verify_sql_files(root / 'dsh/session/resources/sql')
     from dsh.session.text import verify_case_folding
     verify_case_folding(root / 'dsh/session/bin/unicode/CaseFolding.txt')
+    from dsh.session.text_current import verify_case_folding as verify_current_case_folding
+    verify_current_case_folding(root / 'dsh/session/bin/unicode/CaseFolding-16.0.0.txt')
     manifest = json.loads((root / 'scripts/frontend-inputs.json').read_text(encoding='utf-8'))
     baseline = json.loads((root / 'migration/baseline.json').read_text(encoding='utf-8'))
     if manifest['target_upstream'] != baseline['target_upstream']:

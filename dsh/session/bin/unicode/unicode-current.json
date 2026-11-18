@@ -1,0 +1,13 @@
+{
+  "unicode_version": [
+    16,
+    0,
+    0
+  ],
+  "data": "CaseFolding-16.0.0.txt",
+  "sha256": "6f1f9c588eb4a5c718d9e8f93b782685e5c7fec872cf05e8e6878053599e09bb",
+  "size": 86092,
+  "source": "https://www.unicode.org/Public/16.0.0/ucd/CaseFolding.txt",
+  "license": "../icu/ICU-LICENSE",
+  "scope": "Simple C+S case folding for pinned Node v24.9.0 Unicode 16 regular expressions; legacy Unicode 17 remains separate"
+}

@@ -13,6 +13,8 @@ packages/*/*/lib/client.*.js.map -text
 packages/*/*/lib/assets/** -text
 packages/**/lib/typert.host.js -text whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol
 packages/**/package.json -text whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol
+# Upstream locale receipts bind original bytes, including their line endings.
+packages/**/locale/** -text
 packages/**/cordis.patch.yml -text whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol
 packages/bundle/*/*.yml -text whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol
 packages/skill/skill-office/assets/** -text

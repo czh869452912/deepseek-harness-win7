@@ -1,0 +1,15 @@
+{
+  "contract": "C9-FK",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "failure": "Frozen run07's fresh Windows clone converted upstream account locale JSON from LF to CRLF. Exact byte receipts correctly rejected all sixteen converted locale files; the main checkout still had the original LF bytes.",
+  "change": "Mark packages/**/locale/** as -text in Git attributes so original upstream locale bytes survive a Windows checkout. Keep the strict SHA-256 assertions and retained upstream receipt unchanged.",
+  "verification": {
+    "run": "rc022-current-c9fk-account-bytes-20261119-01",
+    "pytest_passed": 3,
+    "seconds": 1.23,
+    "fresh_index_checkout": "All eighteen receipt members passed their exact original SHA-256 after git -c core.autocrlf=true checkout-index; byte input uses NUL-delimited paths.",
+    "initial_helper_attempt": "Text-mode stdin introduced CR into path names and Git rejected them before creating files. Corrected helper input to NUL-delimited bytes; this is separate from the original test failure."
+  },
+  "cleanup": {"directories": 4, "bytes_removed": 45883, "retained": "Command/log/XML, actual account observations and exact-byte fresh-checkout result"},
+  "qualification": "Targeted only; frozen run07 is unchanged and continues collecting other failures."
+}

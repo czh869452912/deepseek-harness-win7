@@ -45,7 +45,8 @@ async def test_formal_home_and_dormant_search(tmp_path):
 
 @pytest.mark.asyncio
 async def test_activation_failure_disposes_partial_profile(tmp_path, monkeypatch):
-    from dsh.host.webserver.webserver import WebServerPlugin
+    from dsh.boot.plugin_registry import resolve_harness_plugin
+    WebServerPlugin = resolve_harness_plugin('@deepseek-ai/dsh-host-webserver')
     seen = []
     def broken(self, ctx):
         seen.append(ctx)

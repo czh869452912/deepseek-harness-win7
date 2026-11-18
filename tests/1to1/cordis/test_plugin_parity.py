@@ -159,7 +159,8 @@ def test_t6_plugin_provide_metadata_and_runtime_config():
 
     f_cfg = ctx.plugin(ConfiguredPlugin, {})
     assert f_cfg.state == FiberState.ACTIVE
-    assert f_cfg.config == {"port": 8080}
+    assert f_cfg.config == {}
+    assert f_cfg.effectiveConfig == {"port": 8080}
     runtime = ctx.registry.get(ConfiguredPlugin)
     assert runtime is not None
     assert runtime.Config is cfg_schema

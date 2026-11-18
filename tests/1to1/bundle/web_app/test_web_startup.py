@@ -222,8 +222,9 @@ async def test_rejects_the_unsupported_all_interfaces_host_before_the_consumer_a
     values, observed, ctx, directory = await boot_provider(["--host", "0.0.0.0"])
     try:
         assert (
-            "--host 0.0.0.0 is intentionally not supported yet for safety: it would expose "
-            "remote code execution to the network; use 127.0.0.1 instead"
+            "--host 0.0.0.0 is an unspecified (wildcard) address, which is not supported: "
+            "binding every interface would expose remote code execution to the network; "
+            "bind one concrete IPv4 or IPv6 address instead"
         ) in observed.out
         assert values is None
         assert reader_config(ctx) is None

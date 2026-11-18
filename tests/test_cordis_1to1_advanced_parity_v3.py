@@ -97,7 +97,8 @@ def test_event_listener_auto_bind():
     ctx.emit('custom/event', 'test-payload')
     assert received == ['test-payload']
 
-def test_loader_internal_update_with_schema_simplify():
+@pytest.mark.asyncio
+async def test_loader_internal_update_with_schema_simplify():
     ctx = Context()
     loader = Loader(ctx)
 
@@ -106,6 +107,9 @@ def test_loader_internal_update_with_schema_simplify():
             'debug': Schema.boolean().default(False),
             'port': Schema.number().default(3000),
         })
+        @staticmethod
+        def apply(owner, config):
+            pass
 
     mock_entry = Entry(loader.root, {
         'id': 'mock-entry-1',
@@ -113,17 +117,13 @@ def test_loader_internal_update_with_schema_simplify():
         'config': {'debug': False, 'port': 3000},
     })
 
-    class DummyFiber:
-        def __init__(self):
-            self.entry = mock_entry
-            self.runtime = MockPlugin
-            self.plugin = MockPlugin
-            self.parent = None
-            self.ctx = ctx
-            self._hooks = {}
-
-    fiber = DummyFiber()
+    fiber = ctx.extend({'entry': mock_entry}).plugin(MockPlugin, {'debug': False, 'port': 3000})
     mock_entry.fiber = fiber
-
-    ctx.emit('internal/update', {'debug': True, 'port': 3000}, caller_ctx=ctx.extend({'fiber': fiber}))
-    assert mock_entry.options['config'] == {'debug': True}
+    try:
+        await fiber
+        await fiber.update({'debug': True, 'port': 3000})
+        assert mock_entry.options['config'] == {'debug': True}
+        assert fiber.config == {'debug': True, 'port': 3000}
+        assert fiber.effectiveConfig == {'debug': True, 'port': 3000}
+    finally:
+        await ctx.fiber.dispose()

@@ -113,7 +113,7 @@ def test_composite_epoch_and_cascade_reloading():
     assert ctx.get("downstream_val") == "ready_v1"
     assert downstream_fiber.plugin.reload_count == 1
     epoch_db1 = downstream_fiber.epoch
-    assert epoch_db1 == f":{f_db1.uid}"
+    assert epoch_db1 == f"0:{downstream_fiber.committed['database'].uid}"
 
     # 3. Unload db1 -> Downstream should transition to PENDING
     ctx.unload_plugin("db1")
@@ -125,7 +125,8 @@ def test_composite_epoch_and_cascade_reloading():
     assert downstream_fiber.state == FiberState.ACTIVE
     assert ctx.get("downstream_val") == "ready_v2"
     assert downstream_fiber.plugin.reload_count == 2
-    assert downstream_fiber.epoch == f":{f_db2.uid}"
+    assert downstream_fiber.epoch == f"0:{downstream_fiber.committed['database'].uid}"
+    assert downstream_fiber.epoch != epoch_db1
 
 
 def test_dynamic_service_check_predicate():

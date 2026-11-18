@@ -1,0 +1,26 @@
+{
+  "contract": "C9-EX",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "change": "Advance six supporting consumers to current contracts: wildcard startup diagnostic, actual resolved required WebServer provider failure/disposal, raw versus effective config, feedback definitionId, real Fiber.update commit/waterfall, and revision plus implementation-uid epochs.",
+  "verification": [
+    {
+      "run": "rc022-current-early-loader-20261118-01",
+      "passed": 214,
+      "failed": 6,
+      "seconds": 242.55,
+      "scope": "Known remaining early Loader/boot/Web/HMR/Cordis regressions; six failures diagnosed"
+    },
+    {
+      "run": "rc022-current-c9ex-loader-20261118-01",
+      "passed": 42,
+      "seconds": 18.8,
+      "scope": "All six affected modules, including canonical profile activation cleanup and real Fiber update"
+    }
+  ],
+  "cleanup": {
+    "directories": 6,
+    "bytes_removed": 12483,
+    "retained": "Commands, log/XML and original failure reports"
+  },
+  "qualification": "Targeted only; unified release qualification pending."
+}

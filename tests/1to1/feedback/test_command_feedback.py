@@ -92,6 +92,7 @@ async def test_registers_one_global_command_with_loader_safe_exports_and_dispose
 
     listed = [descriptor.to_dict() for descriptor in test["ctx"].commands.list(test["agent"])]
     assert {
+        "definitionId": "@deepseek-ai/dsh-command-feedback",
         "name": "feedback",
         "description": "record feedback about this session",
         "input": {"hint": "<text>"},

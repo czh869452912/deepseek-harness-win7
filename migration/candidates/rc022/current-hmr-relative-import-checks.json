@@ -1,0 +1,17 @@
+{
+  "contract": "C9-FM",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "failure": "In full run07 an already loaded standalone helper had an unexecuted relative-import branch with no package name. Static HMR inventory attempted to resolve it and raised ValueError. Graph construction and profile/package replacement then failed or reported module-comparison restart requirements.",
+  "change": "Resolve relative imports using the module package or its spec parent, and ignore statically unresolvable relative branches. Retain valid evaluated/runtime edges, cached source snapshots and replacement ownership.",
+  "verification": {
+    "run": "rc022-current-c9fm-hmr-imports-20261119-03",
+    "passed": 48,
+    "seconds": 250.37,
+    "scope": "Three unresolved-relative-import graph controls, complete graph/profile/consumer/planning cases and actual registry/Git/local package install, update, rollback and last unload",
+    "actual_source_native_pairs": ["hmr_graph", "hmr_profile"],
+    "paired_run": "rc022-current-c9fmfn-hmr-pairs-20261119-01",
+    "earlier_diagnostics": "Run01 referenced a nonexistent test file and executed no tests. Run02 had eleven passes and three new-test failures because its graph call omitted the required stopping callback. Both original logs are retained."
+  },
+  "cleanup": {"runs": 3, "directories": 9, "bytes_removed": 656808, "retained": "Commands, logs/XML, original failures and actual Source/Native paired observations"},
+  "qualification": "Targeted only. Frozen run07 remains unchanged and failed; the next stable candidate must complete fresh unified qualification."
+}

@@ -125,3 +125,25 @@ async def test_preexisting_module_graph_keeps_snapshot_and_ignores_opaque_values
     finally:
         sys.modules.pop(module.__name__, None)
         await ctx.fiber.dispose()
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize('package', ['', None, '_rc022_package'])
+async def test_unexecuted_unresolvable_relative_import_does_not_break_loaded_graph(tmp_path, package):
+    import json
+    from dsh.cordis import Context
+    from dsh.cordis.hmr_modules import PythonModules
+    path = tmp_path/'unresolved.py'
+    path.write_text('import json\nif False:\n    from ...missing import optional\n', encoding='utf-8')
+    module = types.ModuleType('_rc022_graph_unresolved')
+    module.__file__, module.__package__ = str(path), package
+    exec(compile(path.read_bytes(), str(path), 'exec'), module.__dict__)
+    sys.modules[module.__name__] = module
+    ctx = Context()
+    try:
+        cache = PythonModules(ctx)
+        assert cache.get_linked(path.as_uri()) == [Path(json.__file__).resolve().as_uri()]
+        assert path.as_uri() in (await cache.module_graph_async(lambda: False))[Path(json.__file__).resolve().as_uri()]
+    finally:
+        sys.modules.pop(module.__name__, None)
+        await ctx.fiber.dispose()

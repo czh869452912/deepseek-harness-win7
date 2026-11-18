@@ -2,6 +2,8 @@
 
 固定目标：`38a6a5c965aa99ab525161efb7cc5cf1fe62fced`。本页记录定向检查；生产 pin 已在 C9-CC 协调切换，`accepted_upstream` 仍为 null，完整资格待后续验证。
 
+C9-FM：HMR 静态扫描遇到已加载独立模块中未执行的相对导入，不再因缺失包名或越过顶层而中断；有效导入边、缓存与替换所有权保持。48 项图扫描、热替换和实际包安装/更新/恢复/卸载消费者通过，图与 Profile 两组当前原版/Native 配对通过。三次定向运行的 9 个目录已清理、回收 656,808 字节；原失败和实际配对观察保留。见[相对导入图检查](current-hmr-relative-import-checks.json)。
+
 C9-FL：70 份测试/探针的旧准备 Source 路径统一改为规范 `reference`，Analytics 使用明确输入或门禁 PATH 中的 Node；保留原 pin、字节与实际 artifact 检查。31 项实际消费者及 5 组原版/Native 配对通过，71 份修改的 Python 文件均由 3.8.10 解析通过；3 个定向工作目录清理、回收 1,075,163 字节，实际观察保留。07 其它独立失败另行修复，尚未统一签收。见[规范 Source 路径检查](current-canonical-source-path-checks.json)。
 
 C9-FK：07 的全新 Windows 检出暴露账号语言文件缺少字节保留属性，16 份 LF 文件被转成 CRLF，严格原版摘要正确拒绝。现为包内 locale 增加 `-text`，保持原摘要及全部断言；3 项账号回归通过，显式 `core.autocrlf=true` 的新鲜检出中全部 18 个成员精确摘要通过。4 个工作目录清理、回收 45,883 字节。见[语言文件检出检查](current-locale-checkout-checks.json)。

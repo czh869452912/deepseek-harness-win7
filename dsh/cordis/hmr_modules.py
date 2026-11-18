@@ -45,7 +45,14 @@ def _static_imports(module):
             if isinstance(node,ast.Import):
                 for alias in node.names:imports.extend([alias.name,alias.name.split('.')[0]])
             elif isinstance(node,ast.ImportFrom):
-                absolute=importlib.util.resolve_name('.'*node.level+(node.module or ''),module.__package__) if node.level else node.module or ''
+                package=getattr(module,'__package__',None)
+                if package is None:package=getattr(spec,'parent',None)
+                try:
+                    absolute=importlib.util.resolve_name('.'*node.level+(node.module or ''),package) if node.level else node.module or ''
+                except (ImportError,ValueError):
+                    # A static branch need not have executed. An unresolved
+                    # relative import has no evaluated edge to add to this graph.
+                    continue
                 imports.append(absolute)
                 imports.extend(absolute+'.'+alias.name for alias in node.names)
             else:work.extend(ast.iter_child_nodes(node))

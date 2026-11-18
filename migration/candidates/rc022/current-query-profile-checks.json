@@ -1,0 +1,13 @@
+{
+  "contract": "C9-DX",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "status": "Targeted current query and profile consumers passed",
+  "changes": "Surface and event-window snapshots use the loaded session format, including both the selected event and neighboring events. SQLite query result headers use the mounted current Session format instead of a fixed v3. Query Source/Native fixtures now both mount v4. Profile fixtures mount the explicit native tool executor; local HTTP model fixtures speak the requested Messages carrier, and retained SQLite reader tests use an explicit Python file entry.",
+  "verification": [
+    {"run": "rc022-current-profile-llm-20261118-04", "passed_before_failure": 7, "failed": 1, "scope": "Profile durable tools/recovery plus all three Web presets and real read tool passed; separate legacy reader entry failed and was corrected"},
+    {"run": "rc022-current-query-profile-consumers-20261118-06", "passed": 65, "seconds": 48.93, "scope": "All three retained SQLite export/read-only/cold restart journeys and current query regressions, including v3/v4 detached surface/event-window snapshots"},
+    {"run": "rc022-current-query-engine-20261118-02", "passed": 70, "seconds": 10.0, "scope": "Actual pinned Source/Native query FTS/lifecycle/revision/cursor pair, all query damage/provenance controls and direct query/startup consumers"}
+  ],
+  "cleanup": "Completed diagnostic and passing pytest workspaces, home and tmp payloads retired after raw JSON/log/JSONL preservation; commands, XML and cleanup receipts retained.",
+  "qualification": "Targeted results only; no complete regression or release acceptance."
+}

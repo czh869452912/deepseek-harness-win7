@@ -4,7 +4,7 @@ import SessionStore from '@deepseek-ai/dsh-session'
 import { it } from 'vitest'
 import { SqliteSessionQueryEngine } from '../../reference/packages/session-query/session-query-sqlite/src/index.ts'
 
-const header = (id: string) => ({id,version:3,createdAt:1,isSeeded:false})
+const header = (id: string) => ({id,version:4,createdAt:1,isSeeded:false})
 const event = (text: string, seq=0) => ({type:'user/message',seq,time:seq+1,surfaceOp:'append',
   data:{id:'message-'+seq,role:'user',content:[{type:'text',text}],source:{kind:'user'}}})
 const sessions = (page: any) => page.items.map((item: any) => ({id:item.header.id,live:item.live,persisted:item.persisted,

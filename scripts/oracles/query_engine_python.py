@@ -17,7 +17,7 @@ sys.path.insert(0, str(ROOT))
 from dsh.cordis.context import Context
 from dsh.core.abort import AbortController
 from dsh.core.session import SessionHeader
-from dsh.core.session.current_session import CurrentSessionPlugin as SessionPlugin
+from scripts.oracles.current_persistence_fixture import SessionPluginV4 as SessionPlugin
 from dsh.session.query_current import CurrentSqliteSessionQueryEngine as SqliteSessionQueryEngine
 from types import SimpleNamespace
 from dsh.session.sqlite_database import _library
@@ -39,8 +39,8 @@ async def main():
         rows.append(dict(name=name, observed=observed))
     context = Context()
     await context.plugin(SessionPlugin)
-    entries = dict(alpha=dict(header=SessionHeader('alpha', version=3, created_at=1), revision='1', events=[event('needle needle')]),
-                   beta=dict(header=SessionHeader('beta', version=3, created_at=1), revision='2', events=[event('needle')]))
+    entries = dict(alpha=dict(header=SessionHeader('alpha', version=4, created_at=1), revision='1', events=[event('needle needle')]),
+                   beta=dict(header=SessionHeader('beta', version=4, created_at=1), revision='2', events=[event('needle')]))
     class Persistence:
         inspected = 0
         snapshots = 0

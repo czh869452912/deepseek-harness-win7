@@ -14,7 +14,7 @@ async def test_profile_tool_turn_persists_and_resumes_after_shutdown(tmp_path):
     profile = tmp_path / 'profiles' / 'spine'
     init_profile(str(profile), [])
     rows = [{'id':name, 'name':'@deepseek-ai/dsh-' + name} for name in
-            ['session', 'session-projection', 'tools', 'system-prompt', 'agent', 'agent-loop']]
+            ['session', 'session-projection', 'tools', 'tool-executor-native', 'system-prompt', 'agent', 'agent-loop']]
     rows.append(dict(id='test-llm', name=str(Path(__file__).with_name('profile_llm_fixture.py')) + ':plugin'))
     rows.append({'id':'session-persistence-jsonl', 'name':'@deepseek-ai/dsh-session-persistence-jsonl',
                  'config':{'root':str(tmp_path / 'sessions')}})
@@ -35,7 +35,7 @@ async def test_profile_tool_turn_persists_and_resumes_after_shutdown(tmp_path):
     try:
         handle.agent.followup(create_user_message(dict(content=[dict(type='text', text='Compute 6 * 7')], source=dict(kind='user'))))
         await handle.agent.when_idle()
-        assert len(adapter.requests) == 2
+        assert len(adapter.requests) == 2, handle.agent.session.events
         events = handle.agent.session.events
         assert any(e['type'] == 'tool/result' for e in events)
         assert '42' in json.dumps(events)
@@ -43,7 +43,7 @@ async def test_profile_tool_turn_persists_and_resumes_after_shutdown(tmp_path):
         reader = await ctx.get('sessionPersistence').open('profile-recovery', 'read')
         try:
             saved = await reader.read()
-            assert reader.header['version'] == 3
+            assert reader.header['version'] == 4
             assert any(e['type'] == 'tool/result' for e in saved['events'])
         finally:
             await reader.close()

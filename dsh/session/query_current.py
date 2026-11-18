@@ -133,7 +133,8 @@ class CurrentSessionQueryService(SessionQueryService):
         signal=options.get('signal') if isinstance(options,dict) else options
         loaded=await self._corpus.load(session_id,signal)
         return dict(session=loaded['header'],inheritedEventCount=loaded['inheritedEventCount'],capturedThroughSeq=loaded['events'][-1]['seq'] if loaded['events'] else None,
-                    events=tracing.current_surface_events(session_id,loaded['events'],analyze_events,snapshotSessionEvent))
+                    events=tracing.current_surface_events(session_id,loaded['events'],analyze_events,
+                        lambda event:snapshotSessionEvent(event,loaded['header'].version)))
 
     async def listEvents(self,session_id):
         loaded=await self._corpus.load(session_id)
@@ -160,10 +161,10 @@ class CurrentSessionQueryService(SessionQueryService):
             windows.append(int(value))
         loaded=await self._corpus.load(request['sessionId'],signal)
         throw_aborted(signal)
-        target=snapshotSessionEvent(tracing.event_target(request['sessionId'],loaded['events'],request['seq']))
+        target=snapshotSessionEvent(tracing.event_target(request['sessionId'],loaded['events'],request['seq']),loaded['header'].version)
         seq=int(request['seq']);start=max(0,seq-windows[0]);end=min(len(loaded['events'])-1,seq+windows[1])
         return dict(session=loaded['header'],inheritedEventCount=loaded['inheritedEventCount'],target=target,
-            events=[target if event['seq']==seq else snapshotSessionEvent(event) for event in loaded['events'][start:end+1]],
+            events=[target if event['seq']==seq else snapshotSessionEvent(event,loaded['header'].version) for event in loaded['events'][start:end+1]],
             startSeq=start,endSeq=end)
 
 
@@ -230,7 +231,7 @@ class CurrentSqliteSessionQueryEngine(SqliteSessionQueryEngine,CurrentSessionQue
 
     def _row_header(self,row):
         header=row_header(row)
-        header.version=3
+        header.version=getattr(self.ctx.get('sessions'),'format_version',3)
         return header
 
 

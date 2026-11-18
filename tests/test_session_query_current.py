@@ -17,6 +17,25 @@ from scripts.session_format_oracle import json_equal
 CASES=json.loads((Path(__file__).resolve().parents[1]/'scripts/oracles/session_query_current_cases.json').read_text(encoding='utf8'))
 
 
+@pytest.mark.asyncio
+@pytest.mark.parametrize('version',[3,4])
+async def test_surface_and_event_windows_snapshot_the_loaded_format(version):
+    events=[dict(type='system/message',seq=seq,time=seq+1,surfaceOp='append',data=dict(message=dict(
+        id='system-%s' % seq,role='system',source=dict(kind='system-prompt') if version==4 else dict(kind='plugin',plugin='fixture'),
+        content=[dict(type='text',text='system %s' % seq)]))) for seq in range(2)]
+    header=SimpleNamespace(version=version)
+    async def load(session_id,signal=None):
+        assert session_id=='format-owner'
+        return dict(header=header,events=events,inheritedEventCount=0)
+    query=CurrentSessionQueryService(None)
+    query._corpus=SimpleNamespace(load=load)
+    surface=await query.readSurface('format-owner')
+    window=await query.readEvent(dict(sessionId='format-owner',seq=0,after=1))
+    assert surface['events']==events and window['events']==events
+    assert window['target']==events[0] and window['target'] is not events[0]
+    assert all(actual is not original for actual,original in zip(surface['events'],events))
+
+
 @pytest.mark.parametrize('case',CASES,ids=[case['case'] for case in CASES])
 def test_actual_source_query_and_sqlite_handle_journey(case):
     assert json_equal(observe(case),dict(case=case['case'],outcome='value',value=case['expected']))

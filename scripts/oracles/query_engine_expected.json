@@ -42,7 +42,7 @@
     "name": "event-header",
     "observed": {
       "header": {
-        "version": 3,
+        "version": 4,
         "id": "alpha",
         "createdAt": 1,
         "isSeeded": false

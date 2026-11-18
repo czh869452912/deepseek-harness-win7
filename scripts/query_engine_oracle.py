@@ -12,6 +12,7 @@ import sys
 ROOT = Path(__file__).resolve().parents[1]
 INPUTS = [
     'scripts/query_engine_oracle.py', 'scripts/oracles/query_engine_python.py',
+    'scripts/oracles/current_persistence_fixture.py',
     'scripts/oracles/query_engine.probe.spec.ts', 'scripts/oracles/query_engine_expected.json',
     'scripts/oracles/vitest.query-engine-probe.config.mts',
     'dsh/session/query_engine.py', 'dsh/session/query_current.py', 'dsh/session/cold_read.py',

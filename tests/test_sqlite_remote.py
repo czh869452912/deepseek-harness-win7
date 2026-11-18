@@ -4,6 +4,7 @@ from dsh.core.session import SessionHeader
 from dsh.session.sqlite_legacy_reader import LegacySqliteSessionReader
 from dsh.session.jsonl_backend_current import CurrentJsonlSessionPersistence as JsonlSessionPersistence
 import json
+from pathlib import Path
 
 import pytest
 import yaml
@@ -42,7 +43,7 @@ async def test_legacy_sqlite_export_remote_model_fork_search_and_cold_restart(tm
     patch = tmp_path / 'sqlite-reader.yml'
     patch.write_text(yaml.safe_dump([
         dict(id='session-persistence-jsonl', config=dict(root=str(logs), compression='none')),
-        dict(insert=[dict(id='legacy-sqlite-reader', name='@deepseek-ai/dsh-win7-session-sqlite-reader', config=dict(path=str(database)))]),
+        dict(insert=[dict(id='legacy-sqlite-reader', name=str(Path(__file__).resolve().parents[1] / 'dsh/session/sqlite_legacy_reader.py') + ':LegacySqliteSessionReaderPlugin', config=dict(path=str(database)))]),
         dict(id='session-query-sqlite', config=dict(path=':memory:', openAt='first-search')),
     ]), encoding='utf-8')
     options = dict(profile='web', dshHome=str(tmp_path / 'home'), patchFiles=[str(patch)],

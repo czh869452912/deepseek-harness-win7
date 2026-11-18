@@ -4,6 +4,7 @@ import threading
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import pytest
 import yaml
+from scripts.model_http_fixture import model_sse
 from dsh.boot.profile_boot import run_profile
 from dsh.typert.dispatch import RemoteDispatcher
 from dsh.core.abort import AbortController
@@ -18,11 +19,16 @@ def local_llm(monkeypatch):
             payload = json.loads(self.rfile.read(int(self.headers['Content-Length'])))
             requests.append(payload)
             delta, finish = {'content': 'Verified browser reply'}, 'stop'
-            tool_prompt = next((m.get('content', '') for m in payload['messages'] if m.get('role') == 'user' and isinstance(m.get('content'), str) and m['content'].startswith('TOOL_ACCEPTANCE:')), None)
-            if tool_prompt and not any(m.get('role') == 'tool' for m in payload['messages']):
+            texts = [m['content'] if isinstance(m.get('content'),str) else block.get('text','')
+                     for m in payload['messages'] if m.get('role')=='user'
+                     for block in ([{}] if isinstance(m.get('content'),str) else m.get('content',[]))]
+            tool_prompt = next((text for text in texts if text.startswith('TOOL_ACCEPTANCE:')),None)
+            has_result = any(m.get('role')=='tool' or any(block.get('type')=='tool_result'
+                for block in m.get('content',[]) if isinstance(block,dict)) for m in payload['messages'])
+            if tool_prompt and not has_result:
                 delta = {'tool_calls': [{'index': 0, 'id': 'acceptance-read', 'type': 'function', 'function': {'name': 'read', 'arguments': json.dumps({'file_path': tool_prompt.split(':', 1)[1]})}}]}
                 finish = 'tool_calls'
-            body = ('data: ' + json.dumps({'choices': [{'delta': delta, 'finish_reason': finish}]}) + '\n\ndata: [DONE]\n\n').encode('utf-8')
+            body = model_sse(self.path,delta,finish)
             self.send_response(200)
             self.send_header('Content-Type', 'text/event-stream')
             self.send_header('Content-Length', str(len(body)))
@@ -82,7 +88,8 @@ async def test_session_remote_create_follow_rename_resume(tmp_path, monkeypatch,
         assert any(event['type'] == 'assistant/message' and 'Verified browser reply' in json.dumps(event) for event in agent.session.events)
         assert local_llm
         if preset == 'minimal':
-            assert local_llm[-1]['messages'][0]['content'] == 'You are a helpful software engineer assistant.'
+            system=local_llm[-1].get('system',local_llm[-1]['messages'][0]['content'])
+            assert 'You are a helpful software engineer assistant.' in (system if isinstance(system,str) else json.dumps(system))
         if preset != 'minimal':
             assert 'WORKSPACE_RULE_38' in json.dumps(local_llm[-1]['messages'])
         else:
@@ -101,7 +108,7 @@ async def test_session_remote_create_follow_rename_resume(tmp_path, monkeypatch,
         import io
         import zipfile
         fetch = ctx.get('connection').create_shared_fetch_handler('/api').fetch
-        exported = await fetch(dict(path='/api/session.export', url='http://localhost/api/session.export?sessionId=' + created['sessionId'], method='GET', signal=NEVER_ABORTED))
+        exported = await fetch(dict(path='/api/session.export', url='http://localhost/api/session.export?sessionId=' + created['sessionId'], method='GET', signal=NEVER_ABORTED), ctx.get('connection').browserPeer)
         assert exported['status'] == 200
         archive = b''.join([chunk async for chunk in exported['body']])
         with zipfile.ZipFile(io.BytesIO(archive)) as zipped:
@@ -109,7 +116,7 @@ async def test_session_remote_create_follow_rename_resume(tmp_path, monkeypatch,
             logical = await read_session_log_text(ctx.get('sessionPersistence'), created['sessionId'])
             assert zipped.namelist() == [SESSION_LOG_FILENAME]
             assert zipped.read(SESSION_LOG_FILENAME) == logical.encode('utf-8')
-            assert json.loads(logical.splitlines()[0])['version'] == 3
+            assert json.loads(logical.splitlines()[0])['version'] == 4
         await stream.aclose()
         listing = await call('list', _request={})
         assert created['sessionId'] in [row['sessionId'] for row in listing['items']]
@@ -153,7 +160,11 @@ async def test_web_prompt_executes_real_read_tool(tmp_path, monkeypatch, local_l
                     return frame
         end = await asyncio.wait_for(finish(), 15)
         await stream.aclose()
-        assert len([r for r in local_llm if any(m.get('role') == 'tool' for m in r['messages'])]) == 1, end
-        assert any(m.get('role') == 'tool' and 'TOOL_READ_RESULT_38' in str(m.get('content')) for m in local_llm[-1]['messages'])
+        def tool_results(request):
+            return [m for m in request['messages'] if m.get('role') == 'tool'] + [
+                block for m in request['messages'] if isinstance(m.get('content'),list)
+                for block in m['content'] if block.get('type') == 'tool_result']
+        assert len([r for r in local_llm if tool_results(r)]) == 1, end
+        assert 'TOOL_READ_RESULT_38' in json.dumps(tool_results(local_llm[-1]))
     finally:
         await close_web_context(ctx)

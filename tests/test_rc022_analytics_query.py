@@ -2,6 +2,7 @@ import asyncio
 import ctypes
 import json
 import os
+import shutil
 import sys
 import threading
 from pathlib import Path
@@ -13,7 +14,7 @@ from dsh.core.abort import AbortController
 from scripts.rc022_analytics_query_probe import observe
 
 ROOT=Path(__file__).resolve().parents[1]
-NODE=ROOT/'.goose/out/rc022-prep-20261114-01/toolchain/node-v24.9.0-win-x64/node.exe'
+NODE=Path(os.environ.get('DSH_RC022_NODE') or shutil.which('node') or 'node')
 
 
 @pytest.mark.asyncio

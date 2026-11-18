@@ -139,4 +139,4 @@ if __name__ == '__main__':
     probe.main('rc022_related_publication.mts',
         'Real parent V3-to-V4 staging with original child revision witnesses, async validation before preparation and again before publication. Byte verifier injected on both sides; installed V4 Session acceptance remains separate.',
         [Path(__file__).resolve(), ROOT/'dsh/session/generation.py', ROOT/'dsh/session/catalog_migration.py',
-         ROOT/'.goose/out/rc022-prep-20261114-01/source/packages/session/session-persistence-jsonl/src/generation.ts'], prepare)
+         ROOT/'reference/packages/session/session-persistence-jsonl/src/generation.ts'], prepare)

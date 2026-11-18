@@ -59,7 +59,7 @@ async def native():
 
 if __name__ == '__main__':
     probe.native = native
-    source = ROOT/'.goose/out/rc022-prep-20261114-01/source'
+    source = ROOT/'reference'
     probe.main('rc022_hmr_cache.mts', 'Actual evaluated ESM/Python imports keep identity before eviction, evaluate changed source after eviction, and restore previous namespaces/cache after success or syntax failure. Python parent/alias/bytecode behavior has additional native checks.',
                [Path(__file__).resolve(), ROOT/'dsh/cordis/hmr_modules.py', ROOT/'dsh/cordis/loader.py', source/'packages/boot/hmr/src/index.ts'],
                prepare, node_args=('--expose-internals',))

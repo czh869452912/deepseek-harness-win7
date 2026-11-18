@@ -33,7 +33,7 @@ async def observe(data=None):
     from dsh.code_runtime.confined_ptc import ConfinedPythonPtcRuntime
     from dsh.sandbox.local import LocalSandboxProvider
     from dsh.sandbox.sandbox_policy import SandboxPolicyService
-    data = data or inputs(ROOT/'.goose/out/rc022-prep-20261114-01/source')
+    data = data or inputs(ROOT/'reference')
     result = []
     original = os.environ.get('DSH_TOOLS_MODE')
     try:

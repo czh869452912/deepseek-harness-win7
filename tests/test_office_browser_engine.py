@@ -199,7 +199,7 @@ def test_stale_generation_cache_messages_do_not_replace_current_faces():
 async def test_actual_browser_converter_writes_validated_pdf_and_joins(tmp_path):
     executable = os.environ.get('DSH_TEST_OFFICE_BROWSER')
     root = Path(__file__).resolve().parents[1]
-    source = root / '.goose/out/rc022-prep-20261114-01/source'
+    source = root / 'reference'
     if not executable or not source.exists():
         pytest.skip('Explicit actual browser and pinned SDK inputs required.')
     package = source / 'node_modules/.pnpm/@deepseek-ai+libreoffice-kit-wasm@0.2.3/node_modules/@deepseek-ai/libreoffice-kit-wasm'

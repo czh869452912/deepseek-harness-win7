@@ -131,4 +131,4 @@ if __name__ == '__main__':
     probe.native = native
     probe.main('rc022_preflight.mts', 'Detached profile admission rows and actual boot import effects, nested Include refusal without file edits.',
         [Path(__file__).resolve(), ROOT/'dsh/boot/compatibility_preflight.py', ROOT/'dsh/boot/app_boot.py',
-         ROOT/'.goose/out/rc022-prep-20261114-01/source/packages/boot/app-boot/src/compatibility-preflight.ts'], prepare, node_args=('--expose-internals',))
+         ROOT/'reference/packages/boot/app-boot/src/compatibility-preflight.ts'], prepare, node_args=('--expose-internals',))

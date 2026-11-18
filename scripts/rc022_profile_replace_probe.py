@@ -76,6 +76,6 @@ async def native():
 
 
 if __name__=='__main__':
-    probe.native=native;source=ROOT/'.goose/out/rc022-prep-20261114-01/source'
+    probe.native=native;source=ROOT/'reference'
     probe.main('rc022_profile_replace.mts','Actual staged profile replacement, template-only metadata, restore failures, concurrent winner and cleanup warnings.',
         [Path(__file__).resolve(),ROOT/'dsh/boot/profile_boot.py',ROOT/'dsh/boot/profile.py',ROOT/'dsh/boot/profile_lease.py',source/'apps/cli/src/profile-boot.ts',source/'packages/boot/app-boot/src/profile.ts'],prepare)

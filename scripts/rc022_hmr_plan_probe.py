@@ -83,6 +83,6 @@ async def native():
 
 if __name__ == '__main__':
     probe.native = native
-    source = ROOT/'.goose/out/rc022-prep-20261114-01/source'
+    source = ROOT/'reference'
     probe.main('rc022_hmr_plan.mts', 'Read-only ordered plans against unchanged Hmr.planReplacement with controlled module graph, exported plugins, registry fibers and real manifest ancestry. Runtime cache mutation is separate.',
                [Path(__file__).resolve(), ROOT/'dsh/cordis/hmr_plan.py', ROOT/'dsh/cordis/hmr_paths.py', source/'packages/boot/hmr/src/index.ts'], prepare, node_args=('--expose-internals',))

@@ -103,4 +103,4 @@ if __name__=='__main__':
     probe.native=observe
     probe.main('rc022_schedule_storage.mts',prepare=prepare,
         scope='Task admission and normalized values; sorted issue paths/codes only. Seven v1 JSON read/no-write/current publish/cold reopen journeys; history pagination and retention.',
-        extra_inputs=[Path(__file__).resolve(),ROOT/'dsh/schedule/storage_current.py',ROOT/'dsh/schedule/delivery_history_current.py',ROOT/'.goose/out/rc022-prep-20261114-01/source/packages/schedule/schedule/src/storage.ts',ROOT/'.goose/out/rc022-prep-20261114-01/source/packages/schedule/schedule/src/delivery-history.ts'])
+        extra_inputs=[Path(__file__).resolve(),ROOT/'dsh/schedule/storage_current.py',ROOT/'dsh/schedule/delivery_history_current.py',ROOT/'reference/packages/schedule/schedule/src/storage.ts',ROOT/'reference/packages/schedule/schedule/src/delivery-history.ts'])

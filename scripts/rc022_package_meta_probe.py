@@ -118,6 +118,6 @@ async def native():
 
 
 if __name__=='__main__':
-    probe.native=native;source=ROOT/'.goose/out/rc022-prep-20261114-01/source'
+    probe.native=native;source=ROOT/'reference'
     probe.main('rc022_package_meta.mjs','Actual exported locale/manifest/icon values, icon byte hashes and diagnostic presence; raw wording retained separately.',
         [Path(__file__).resolve(),ROOT/'dsh/boot/package_meta.py',ROOT/'dsh/boot/plugin_packages.py',ROOT/'dsh/boot/package_resolution.py',source/'packages/boot/app-boot/lib/index.js',source/'packages/boot/app-boot/src/package-meta.ts'],prepare,node_args=('--expose-internals',),plain_node=True)

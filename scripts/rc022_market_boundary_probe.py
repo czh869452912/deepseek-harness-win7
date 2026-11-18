@@ -92,7 +92,7 @@ if __name__ == '__main__':
         thread = threading.Thread(target=server.serve_forever, daemon=True); thread.start()
         BASE = 'http://127.0.0.1:'+str(server.server_port)
         probe.native = native
-        source = ROOT/'.goose/out/rc022-prep-20261114-01/source'
+        source = ROOT/'reference'
         try:
             probe.main('rc022_market_boundary.mts', 'Actual default 128 MiB exact body, declared/streamed/decoded-gzip overflow; original HTTP/parser and shipped x64/x86 workers.',
                 [Path(__file__).resolve(), ROOT/'dsh/boot/market_http_022.py', ROOT/'dsh/boot/market_index_022.py',

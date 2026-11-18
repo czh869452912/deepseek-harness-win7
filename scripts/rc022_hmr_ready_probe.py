@@ -113,7 +113,7 @@ async def native():
 
 if __name__ == '__main__':
     probe.native = native
-    source = ROOT/'.goose/out/rc022-prep-20261114-01/source'
+    source = ROOT/'reference'
     probe.main('rc022_hmr_ready.mts', 'Application startup barrier for queued reloads, cancellation, and production initial module identity capture including linked packages. Profile automatic watches and reconciliation are separate.',
                [Path(__file__).resolve(), ROOT/'dsh/cordis/hmr.py', ROOT/'dsh/cordis/hmr_paths.py', ROOT/'dsh/cordis/hmr_files.py',
                 source/'packages/boot/hmr/src/index.ts'], prepare, node_args=('--expose-internals',))

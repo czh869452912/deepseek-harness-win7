@@ -86,6 +86,6 @@ async def native():
 
 if __name__ == '__main__':
     probe.native = native
-    source=ROOT/'.goose/out/rc022-prep-20261114-01/source'
+    source=ROOT/'reference'
     probe.main('rc022_profile_layers.mts', 'Bundle multi-file order, skipped layers, compatibility grants, retired list removal, user errors and Host platform matrix.',
         [Path(__file__).resolve(), ROOT/'dsh/boot/profile.py', ROOT/'dsh/boot/bundle_platform.py', source/'packages/boot/app-boot/src/profile.ts', source/'packages/boot/app-boot/src/bundle-platform.ts'], prepare)

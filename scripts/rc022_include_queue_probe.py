@@ -89,4 +89,4 @@ if __name__=='__main__':
     probe.native=native
     probe.main(observer='rc022_include_queue.mts',prepare=prepare,
         scope='Actual production Include journal draining: independent edits in both orders, file-wins conflicts, missing/invalid file recovery and nested patch owner persistence.',
-        extra_inputs=[ROOT/'dsh/cordis/include.py',ROOT/'dsh/cordis/include_persistence.py',ROOT/'dsh/cordis/loader.py',ROOT/'scripts/rc022_include_queue_probe.py',ROOT/'.goose/out/rc022-prep-20261114-01/source/vendor/include/src/index.ts'])
+        extra_inputs=[ROOT/'dsh/cordis/include.py',ROOT/'dsh/cordis/include_persistence.py',ROOT/'dsh/cordis/loader.py',ROOT/'scripts/rc022_include_queue_probe.py',ROOT/'reference/vendor/include/src/index.ts'])

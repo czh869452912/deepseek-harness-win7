@@ -59,4 +59,4 @@ async def native():
 if __name__=='__main__':
     probe.native=native
     probe.main(observer='rc022_provisions.mts',scope='Per-provision identity, isolated own provisions, provider teardown barrier, retired bindings retain only their old dependents.',
-               extra_inputs=[ROOT/'dsh/cordis/fiber.py',ROOT/'dsh/cordis/reflect.py',ROOT/'dsh/cordis/context.py',ROOT/'dsh/cordis/loader_isolate.py',Path(__file__).resolve(),ROOT/'.goose/out/rc022-prep-20261114-01/source/vendor/cordis/src/fiber.ts',ROOT/'.goose/out/rc022-prep-20261114-01/source/vendor/cordis/src/reflect.ts'])
+               extra_inputs=[ROOT/'dsh/cordis/fiber.py',ROOT/'dsh/cordis/reflect.py',ROOT/'dsh/cordis/context.py',ROOT/'dsh/cordis/loader_isolate.py',Path(__file__).resolve(),ROOT/'reference/vendor/cordis/src/fiber.ts',ROOT/'reference/vendor/cordis/src/reflect.ts'])

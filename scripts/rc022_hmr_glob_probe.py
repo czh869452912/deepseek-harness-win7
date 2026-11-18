@@ -29,4 +29,4 @@ async def native():
  return [dict(pattern=p,values=[matches(path,[p]) for path in PATHS]) for p in PATTERNS]
 if __name__=='__main__':
  probe.native=native
- probe.main('rc022_hmr_glob.mts','Pinned picomatch ignore decisions: nested extglobs, ranges, nested braces, POSIX classes, repeated negation, dot and native separators.',[Path(__file__).resolve(),ROOT/'dsh/cordis/hmr_glob.py', *[ROOT/'.goose/out/rc022-prep-20261114-01/source/packages/boot/hmr/node_modules/picomatch/lib'/name for name in ('parse.js','scan.js','constants.js','picomatch.js')]],prepare,plain_node=True)
+ probe.main('rc022_hmr_glob.mts','Pinned picomatch ignore decisions: nested extglobs, ranges, nested braces, POSIX classes, repeated negation, dot and native separators.',[Path(__file__).resolve(),ROOT/'dsh/cordis/hmr_glob.py', *[ROOT/'reference/packages/boot/hmr/node_modules/picomatch/lib'/name for name in ('parse.js','scan.js','constants.js','picomatch.js')]],prepare,plain_node=True)

@@ -79,5 +79,5 @@ async def native():
 if __name__=='__main__':
     probe.native=native
     probe.main(observer='rc022_loader_lifecycle.mts',scope=__doc__,extra_inputs=[ROOT/'dsh/cordis/loader.py',Path(__file__).resolve(),
-        ROOT/'.goose/out/rc022-prep-20261114-01/source/vendor/loader/src/config/entry.ts',
-        ROOT/'.goose/out/rc022-prep-20261114-01/source/vendor/loader/src/config/tree.ts'])
+        ROOT/'reference/vendor/loader/src/config/entry.ts',
+        ROOT/'reference/vendor/loader/src/config/tree.ts'])

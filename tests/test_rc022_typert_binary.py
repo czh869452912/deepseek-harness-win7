@@ -59,7 +59,7 @@ def test_byte_functions_require_the_qualified_program_and_snapshot_once():
     assert encode_selected_data(UNDEFINED,lambda *_:None) is UNDEFINED
 
 
-SOURCE=Path(os.environ.get('DSH_RC022_SOURCE',str(Path(__file__).resolve().parents[1]/'.goose/out/rc022-prep-20261114-01/source')))
+SOURCE=Path(os.environ.get('DSH_RC022_SOURCE',str(Path(__file__).resolve().parents[1]/'reference')))
 
 
 @pytest.mark.parametrize('package',['api/workspace-files','document/office-kit'])

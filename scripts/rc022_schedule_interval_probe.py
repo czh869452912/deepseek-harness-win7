@@ -63,4 +63,4 @@ if __name__=='__main__':
     probe.main('rc022_schedule_interval.mts',prepare=prepare,
         scope='Current after/at/every constructors, durable decoding, title/instant boundaries, latest-only fixed-rate decisions and escaped delivery framing; errors preserve exact names/codes/messages.',
         extra_inputs=[Path(__file__).resolve(),ROOT/'dsh/schedule/domain_current.py',ROOT/'dsh/util_time_instant.py',
-            ROOT/'.goose/out/rc022-prep-20261114-01/source/packages/schedule/schedule/src/domain.ts'])
+            ROOT/'reference/packages/schedule/schedule/src/domain.ts'])

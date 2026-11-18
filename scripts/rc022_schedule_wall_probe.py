@@ -74,4 +74,4 @@ if __name__=='__main__':
     probe.main('rc022_schedule_wall.mts',prepare=prepare,
         scope='Daily/weekly strict selector and durable record validation, explicit weekday sets, creation and latest-only dispatch with gaps/overlaps/skipped dates and four-digit boundary exhaustion.',
         extra_inputs=[Path(__file__).resolve(),ROOT/'dsh/schedule/domain_current.py',ROOT/'dsh/util_time_calendar.py',ROOT/'dsh/util_time_instant.py',
-            ROOT/'.goose/out/rc022-prep-20261114-01/source/packages/schedule/schedule/src/domain.ts'])
+            ROOT/'reference/packages/schedule/schedule/src/domain.ts'])

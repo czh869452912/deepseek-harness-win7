@@ -7,7 +7,7 @@ sys.path.insert(0,str(ROOT))
 from scripts import rc022_events_probe as probe
 from scripts.rc022_resolution_probe import package
 OUTPUT=None
-SOURCE=ROOT/'.goose/out/rc022-prep-20261114-01/source'
+SOURCE=ROOT/'reference'
 EXPORTS=[
  './root.json',None,{},[],42,
  {'.':'./root.json','./feature':'./feature.json'},

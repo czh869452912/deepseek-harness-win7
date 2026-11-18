@@ -64,4 +64,4 @@ if __name__ == '__main__':
     probe.native = native
     probe.main('rc022_environment.mts', 'Home route names, exact endpoint spelling, project refusal, inherited precedence and atomic validation.',
         [ROOT/'dsh/boot/app_boot.py', ROOT/'dsh/cordis/environment.py', Path(__file__).resolve(),
-         ROOT/'.goose/out/rc022-prep-20261114-01/source/packages/boot/app-boot/src/index.ts'], prepare)
+         ROOT/'reference/packages/boot/app-boot/src/index.ts'], prepare)

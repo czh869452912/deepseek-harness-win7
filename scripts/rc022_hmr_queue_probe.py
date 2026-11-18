@@ -202,7 +202,7 @@ async def native():
 
 if __name__ == '__main__':
     probe.native = native
-    source = ROOT / '.goose/out/rc022-prep-20261114-01/source'
+    source = ROOT / 'reference'
     # prepare returns the output directory, not a hashed fixture input.
     def paired_prepare(output):
         prepare(output)

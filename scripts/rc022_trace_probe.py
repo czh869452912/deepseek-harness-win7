@@ -82,4 +82,4 @@ async def native():
 if __name__=='__main__':
     probe.native=native
     probe.main(observer='rc022_trace.mts',scope='Definition-site injection, consumption-site effects and public context, callable/getter/inherited service methods, logger ownership and readonly tracing context.',
-               extra_inputs=[ROOT/'dsh/cordis/service.py',ROOT/'dsh/cordis/utils.py',ROOT/'dsh/cordis/context.py',ROOT/'dsh/cordis/logger.py',Path(__file__).resolve(),ROOT/'.goose/out/rc022-prep-20261114-01/source/vendor/cordis/src/utils.ts',ROOT/'.goose/out/rc022-prep-20261114-01/source/vendor/cordis/src/service.ts',ROOT/'.goose/out/rc022-prep-20261114-01/source/vendor/cordis/src/reflect.ts',ROOT/'.goose/out/rc022-prep-20261114-01/source/vendor/cordis/src/logger.ts'])
+               extra_inputs=[ROOT/'dsh/cordis/service.py',ROOT/'dsh/cordis/utils.py',ROOT/'dsh/cordis/context.py',ROOT/'dsh/cordis/logger.py',Path(__file__).resolve(),ROOT/'reference/vendor/cordis/src/utils.ts',ROOT/'reference/vendor/cordis/src/service.ts',ROOT/'reference/vendor/cordis/src/reflect.ts',ROOT/'reference/vendor/cordis/src/logger.ts'])

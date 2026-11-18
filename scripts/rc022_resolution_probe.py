@@ -101,4 +101,4 @@ async def native():
 if __name__=='__main__':
     probe.native=native
     probe.main('rc022_resolution.mts','Read-only immutable package generation construction and recomputation; not runtime import interception.',
-        [Path(__file__).resolve(),ROOT/'dsh/boot/runtime_resolution.py',ROOT/'.goose/out/rc022-prep-20261114-01/source/packages/boot/app-boot/src/profile.ts'],prepare)
+        [Path(__file__).resolve(),ROOT/'dsh/boot/runtime_resolution.py',ROOT/'reference/packages/boot/app-boot/src/profile.ts'],prepare)

@@ -55,7 +55,7 @@ async def test_actual_default_provider_converts_through_application_queue(tmp_pa
     monkeypatch.setenv('LOCALAPPDATA', str(tmp_path / 'LocalAppData'))
     executable = os.environ.get('DSH_TEST_OFFICE_BROWSER')
     root = Path(__file__).resolve().parents[1]
-    original = root / '.goose/out/rc022-prep-20261114-01/source'
+    original = root / 'reference'
     if not executable or not original.exists():
         pytest.skip('Explicit pinned original/browser inputs required.')
     package = original / 'node_modules/.pnpm/@deepseek-ai+libreoffice-kit-wasm@0.2.3/node_modules/@deepseek-ai/libreoffice-kit-wasm'

@@ -42,4 +42,4 @@ async def observe(source=None,node=None):
 
 if __name__=='__main__':
     probe.native=observe
-    probe.main('rc022_sdk_client_run.mts','Actual pinned SDK client and Python client run against the same independently running pinned query protocol fixture. Compare routing result validation, receipt-bounded root/tree activity, command lifecycle/completion ordering, callback errors, and subscription closure.',[Path(__file__).resolve(),CASES,ROOT/'dsh/sdk/run.py',ROOT/'dsh/sdk/client.py',ROOT/'.goose/out/rc022-prep-20261114-01/source/packages/sdk/client/tests/fixtures/query.ts'])
+    probe.main('rc022_sdk_client_run.mts','Actual pinned SDK client and Python client run against the same independently running pinned query protocol fixture. Compare routing result validation, receipt-bounded root/tree activity, command lifecycle/completion ordering, callback errors, and subscription closure.',[Path(__file__).resolve(),CASES,ROOT/'dsh/sdk/run.py',ROOT/'dsh/sdk/client.py',ROOT/'reference/packages/sdk/client/tests/fixtures/query.ts'])

@@ -44,4 +44,4 @@ async def observe(directory):
 async def native():return await asyncio.wait_for(observe(OUTPUT/'files/native'),20)
 if __name__=='__main__':
  probe.native=native
- probe.main('rc022_hmr_writes.mts','Actual write stability, add suppression, atomic unlink/add windows, editor temporary files and teardown while awaiting writes.',[Path(__file__).resolve(),ROOT/'dsh/cordis/hmr_root_watch.py',ROOT/'dsh/cordis/hmr.py',ROOT/'.goose/out/rc022-prep-20261114-01/source/packages/boot/hmr/node_modules/chokidar/index.js'],prepare,node_args=('--expose-internals',),plain_node=True)
+ probe.main('rc022_hmr_writes.mts','Actual write stability, add suppression, atomic unlink/add windows, editor temporary files and teardown while awaiting writes.',[Path(__file__).resolve(),ROOT/'dsh/cordis/hmr_root_watch.py',ROOT/'dsh/cordis/hmr.py',ROOT/'reference/packages/boot/hmr/node_modules/chokidar/index.js'],prepare,node_args=('--expose-internals',),plain_node=True)

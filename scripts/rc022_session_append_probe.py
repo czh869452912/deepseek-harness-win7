@@ -113,5 +113,5 @@ if __name__=='__main__':
     probe.native=observe
     probe.main('rc022_session_append.mts','Actual V4 batch planning, all-or-none log/surface and dispatch validation, complete-batch observer view, reentry and deferred detach; prepared/announcement/removed store write admission.',
         [Path(__file__).resolve(),*[ROOT/'dsh/core/session'/name for name in ('current_append.py','current_session.py','current_surface.py')],
-         ROOT/'.goose/out/rc022-prep-20261114-01/source/packages/core/session/src/index.ts',
-         ROOT/'.goose/out/rc022-prep-20261114-01/source/packages/core/session/src/surface.ts'],prepare)
+         ROOT/'reference/packages/core/session/src/index.ts',
+         ROOT/'reference/packages/core/session/src/surface.ts'],prepare)

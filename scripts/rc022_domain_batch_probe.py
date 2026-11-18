@@ -66,4 +66,4 @@ async def observe():
 if __name__=='__main__':
     probe.native=observe
     probe.main('rc022_domain_batch.mts',prepare=prepare,scope='One backend delete per domain FIFO batch; complete observer snapshots, ordinary rejection progress, unknown-state identity quarantine including already-queued writes, close precedence.',
-        extra_inputs=[Path(__file__).resolve(),ROOT/'dsh/storage/domain_impl.py',ROOT/'dsh/storage/backend.py',ROOT/'.goose/out/rc022-prep-20261114-01/source/packages/storage/storage-domain/src/domain.ts'])
+        extra_inputs=[Path(__file__).resolve(),ROOT/'dsh/storage/domain_impl.py',ROOT/'dsh/storage/backend.py',ROOT/'reference/packages/storage/storage-domain/src/domain.ts'])

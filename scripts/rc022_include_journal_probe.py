@@ -109,4 +109,4 @@ if __name__=='__main__':
     probe.main(observer='rc022_include_journal.mts',prepare=prepare,
         scope='Per-entry delta folding, file-wins conflict reconciliation, nested relocation and patch owner routing. Independent foundation; not production Include persistence acceptance.',
         extra_inputs=[ROOT/'scripts/rc022_include_journal_probe.py',ROOT/'dsh/cordis/include_journal.py',ROOT/'dsh/cordis/include_patch.py',
-                      ROOT/'.goose/out/rc022-prep-20261114-01/source/vendor/include/src/journal.ts',ROOT/'.goose/out/rc022-prep-20261114-01/source/vendor/include/src/patch.ts'])
+                      ROOT/'reference/vendor/include/src/journal.ts',ROOT/'reference/vendor/include/src/patch.ts'])

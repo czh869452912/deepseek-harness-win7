@@ -57,4 +57,4 @@ if __name__ == '__main__':
                scope='Production Loader entry: immutable reference identity, atomic local notification, invalid raw retention, mixed updates and retained hooks.',
                extra_inputs=[ROOT / 'dsh/cordis/loader.py', ROOT / 'dsh/cordis/fiber.py',
                              ROOT / 'scripts/rc022_loader_volatile_probe.py',
-                             ROOT / '.goose/out/rc022-prep-20261114-01/source/vendor/loader/src/config/entry.ts'])
+                             ROOT / 'reference/vendor/loader/src/config/entry.ts'])

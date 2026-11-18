@@ -64,4 +64,4 @@ async def observe(files=None):
 if __name__=='__main__':
     probe.native=observe
     probe.main('rc022_json_single.mts',prepare=prepare,scope='Single JSON parse, compatible v1 reads/current v2 publishes, no-op deletes, batch deletes, snapshots and handle lifecycle.',
-        extra_inputs=[Path(__file__).resolve(),ROOT/'dsh/storage/storage_json.py',ROOT/'.goose/out/rc022-prep-20261114-01/source/packages/storage/storage-json/src/single-unit.ts',ROOT/'.goose/out/rc022-prep-20261114-01/source/packages/storage/storage-json/src/format.ts'])
+        extra_inputs=[Path(__file__).resolve(),ROOT/'dsh/storage/storage_json.py',ROOT/'reference/packages/storage/storage-json/src/single-unit.ts',ROOT/'reference/packages/storage/storage-json/src/format.ts'])

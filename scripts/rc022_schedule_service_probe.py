@@ -115,4 +115,4 @@ if __name__=='__main__':
     probe.native=observe
     probe.main('rc022_schedule_service.mts',prepare=prepare,
         scope='Actual Cordis service over routed DomainFacility and JSON storage: management/Remote errors, conflict revisions, target validation, idle/running notices, batch removal and post-commit observer containment. Generated identities normalized bijectively.',
-        extra_inputs=[Path(__file__).resolve(),ROOT/'dsh/schedule/service_current.py',ROOT/'.goose/out/rc022-prep-20261114-01/source/packages/schedule/schedule/src/index.ts'])
+        extra_inputs=[Path(__file__).resolve(),ROOT/'dsh/schedule/service_current.py',ROOT/'reference/packages/schedule/schedule/src/index.ts'])

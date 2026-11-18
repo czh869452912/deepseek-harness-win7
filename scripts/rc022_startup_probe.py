@@ -68,4 +68,4 @@ async def native():
 if __name__=='__main__':
     probe.native=native
     probe.main(observer='rc022_startup.mts',prepare=prepare,scope='Actual boot required/optional policy, disabled entries, import/root errors, isolation and bounded configuration-free diagnostics retained after teardown.',
-        extra_inputs=[Path(__file__).resolve(),ROOT/'dsh/boot/startup.py',ROOT/'dsh/boot/app_boot.py',ROOT/'.goose/out/rc022-prep-20261114-01/source/packages/boot/app-boot/src/index.ts',ROOT/'.goose/out/rc022-prep-20261114-01/source/packages/boot/app-boot/src/startup-diagnostics.ts'])
+        extra_inputs=[Path(__file__).resolve(),ROOT/'dsh/boot/startup.py',ROOT/'dsh/boot/app_boot.py',ROOT/'reference/packages/boot/app-boot/src/index.ts',ROOT/'reference/packages/boot/app-boot/src/startup-diagnostics.ts'])

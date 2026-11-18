@@ -71,4 +71,4 @@ if __name__=='__main__':
     probe.main('rc022_schedule_update.mts',prepare=prepare,
         scope='Seven authoritative Schedule records, typed timing construction, equivalent edits/identity, rearming/resume errors, RRULE decoding and zone-based display.',
         extra_inputs=[Path(__file__).resolve(),ROOT/'dsh/schedule/domain_current.py',ROOT/'dsh/schedule/update_current.py',
-            ROOT/'.goose/out/rc022-prep-20261114-01/source/packages/schedule/schedule/src/domain.ts',ROOT/'.goose/out/rc022-prep-20261114-01/source/packages/schedule/schedule/src/update.ts'])
+            ROOT/'reference/packages/schedule/schedule/src/domain.ts',ROOT/'reference/packages/schedule/schedule/src/update.ts'])

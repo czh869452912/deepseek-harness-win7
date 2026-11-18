@@ -111,7 +111,7 @@ async def native():
 
 if __name__ == '__main__':
     probe.native = native
-    source = ROOT/'.goose/out/rc022-prep-20261114-01/source'
+    source = ROOT/'reference'
     probe.main('rc022_hmr_profile.mts', 'Actual profile module replacement, no-change retention, failure, removal, host/unmanaged exclusions, shared helper and contained comparison failure. No automatic watcher dispatch claim.',
                [Path(__file__).resolve(), ROOT/'dsh/cordis/hmr_profile.py', ROOT/'dsh/cordis/hmr_modules.py', ROOT/'dsh/cordis/hmr_plan.py',
                 ROOT/'dsh/cordis/hmr.py', ROOT/'dsh/boot/recomposition.py', source/'packages/boot/hmr/src/index.ts'], prepare, node_args=('--expose-internals',))

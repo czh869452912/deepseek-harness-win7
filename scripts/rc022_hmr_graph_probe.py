@@ -64,7 +64,7 @@ async def native():
 
 if __name__ == '__main__':
     probe.native = native
-    source = ROOT/'.goose/out/rc022-prep-20261114-01/source'
+    source = ROOT/'reference'
     probe.main('rc022_hmr_graph.mts', 'Actual ESM static/dynamic and CommonJS runtime require edges versus Python traced imports. Evaluated bindings survive later source edits; graph values are normalized as edge sets.',
                [Path(__file__).resolve(), ROOT/'dsh/cordis/hmr_modules.py', ROOT/'dsh/boot/python_package.py', ROOT/'dsh/cordis/hmr.py',
                 ROOT/'dsh/cordis/loader.py', source/'packages/boot/hmr/src/index.ts'], prepare, node_args=('--expose-internals',))

@@ -72,7 +72,7 @@ async def after(ctx,result,output):
     result['remotePreflight']=preflight
     (output/'remote-preflight.json').write_text(json.dumps(dict(binding=result['scheduleBinding'],invalid=result['bindingDiagnostics'],strict=result['scheduleStrict'],calls=preflight),indent=2),encoding='utf-8')
     config.write_text(json.dumps(dict(url=ctx.connection.authenticatedUrl(server.getOrigin()),task=entry['id'],cold=COLD_FROM is not None)),encoding='utf-8')
-    source=ROOT/'.goose/out/rc022-prep-20261114-01/source'
+    source=ROOT/'reference'
     rendered=server.renderIndex((source/'apps/web/dist/index.html').read_text(encoding='utf-8'),ctx.connection.browserPeer)
     result['renderedIndexBytes']=len(rendered.encode('utf-8'))
     node=ROOT/'.goose/out/rc022-prep-20261114-01/toolchain/node-v24.9.0-win-x64/node.exe'

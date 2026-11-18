@@ -15,7 +15,7 @@ from dsh.office.file_transaction import FileExport, ImageExport, disk_call, read
 
 def test_public_source_file_failures_and_bounded_reads(tmp_path):
     root = Path(__file__).resolve().parents[1]
-    source = root / '.goose/out/rc022-prep-20261114-01/source'
+    source = root / 'reference'
     node = os.environ.get('DSH_TEST_OFFICE_NODE')
     if not node or not source.exists():
         pytest.skip('Explicit pinned Office Source/Node qualification inputs required.')

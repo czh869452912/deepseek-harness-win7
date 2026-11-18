@@ -19,7 +19,7 @@ from test_python_plugin_distribution import profile, close, echo, PACKAGE
 from test_rc022_python_package_acquire import registry_package
 from test_rc022_python_package_backend import start
 
-SOURCE=Path(os.environ.get('DSH_RC022_SOURCE', str(Path(__file__).resolve().parents[1]/'.goose/out/rc022-prep-20261114-01/source')))
+SOURCE=Path(os.environ.get('DSH_RC022_SOURCE', str(Path(__file__).resolve().parents[1]/'reference')))
 ARTIFACT=SOURCE/'packages/boot/plugin-manager/lib/typert.host.js'
 pytestmark=pytest.mark.skipif(not ARTIFACT.is_file(),reason='actual pinned rc022 generated manager artifact is required')
 

@@ -99,4 +99,4 @@ if __name__=='__main__':
     probe.native=observe
     probe.main('rc022_time_rrule.mts',prepare=prepare,scope='Bounded RRULE syntax/cost/defaults, six frequencies, COUNT/UNTIL, duplicate set positions, DST gaps/overlaps, sparse windows, all-gap rules and year-end exhaustion.',
         extra_inputs=[Path(__file__).resolve(),ROOT/'dsh/util_time_rrule.py',ROOT/'dsh/util_time_instant.py',ROOT/'dsh/util_time_calendar.py',ROOT/'dsh/javascript/rrule_enumerator.py',ROOT/'dsh/javascript/rrule/manifest.json',
-            ROOT/'.goose/out/rc022-prep-20261114-01/source/packages/util/time/src/rrule.ts'])
+            ROOT/'reference/packages/util/time/src/rrule.ts'])

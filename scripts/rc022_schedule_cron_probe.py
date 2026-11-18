@@ -87,4 +87,4 @@ if __name__=='__main__':
     probe.main('rc022_schedule_cron.mts',prepare=prepare,
         scope='Actual shared Cron fields/canonicalization, strict errors, Vixie semantics, 400-year horizon, zone-aware latest/next and Schedule record consumers.',
         extra_inputs=[Path(__file__).resolve(),ROOT/'dsh/util_time_cron.py',ROOT/'dsh/util_time_recurrence.py',ROOT/'dsh/util_time_calendar.py',ROOT/'dsh/schedule/domain_current.py',
-            ROOT/'.goose/out/rc022-prep-20261114-01/source/packages/util/time/src/cron.ts',ROOT/'.goose/out/rc022-prep-20261114-01/source/packages/schedule/schedule/src/domain.ts'])
+            ROOT/'reference/packages/util/time/src/cron.ts',ROOT/'reference/packages/schedule/schedule/src/domain.ts'])

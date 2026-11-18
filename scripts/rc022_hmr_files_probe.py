@@ -58,6 +58,6 @@ async def native():
 
 
 if __name__=='__main__':
-    probe.native=native;source=ROOT/'.goose/out/rc022-prep-20261114-01/source'
+    probe.native=native;source=ROOT/'reference'
     probe.main('rc022_hmr_files.mts','Actual disk identities, coarse timestamp boundaries, captured/retained records, hard links and replacement inodes.',
         [Path(__file__).resolve(),ROOT/'dsh/cordis/hmr_files.py',source/'packages/boot/hmr/src/module-files.ts'],prepare)

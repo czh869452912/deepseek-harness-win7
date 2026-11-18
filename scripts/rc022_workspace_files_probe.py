@@ -114,7 +114,7 @@ if __name__=='__main__':
     try:
         probe.main('rc022_workspace_files.mts',scope='Actual filesystem install/reuse/recovery/link safety and selected errors; OS failures compared by errno, JSON syntax by category; random staging basenames normalized.',prepare=prepare,
             extra_inputs=[ROOT/'dsh/host/workspace_runtime_files_current.py',ROOT/'dsh/host/workspace_runtime_manifest_current.py',Path(__file__).resolve(),
-                          ROOT/'.goose/out/rc022-prep-20261114-01/source/packages/skill/tool-workspace-dependencies/src/index.ts'])
+                          ROOT/'reference/packages/skill/tool-workspace-dependencies/src/index.ts'])
     finally:
         if WORKSPACE is not None:
             from scripts.verify_release import retain_regression_workspace

@@ -75,4 +75,4 @@ if __name__=='__main__':
     probe.native=native
     probe.main(observer='rc022_config.mts',
                scope='Candidate resolution, raw/effective identities, commit ordering, retained and loading updates, stale completion rejection.',
-               extra_inputs=[ROOT/'dsh/cordis/fiber.py',ROOT/'dsh/cordis/loader.py',ROOT/'dsh/cordis/loader_entry.py',ROOT/'scripts/rc022_config_probe.py',ROOT/'.goose/out/rc022-prep-20261114-01/source/vendor/cordis/src/fiber.ts'])
+               extra_inputs=[ROOT/'dsh/cordis/fiber.py',ROOT/'dsh/cordis/loader.py',ROOT/'dsh/cordis/loader_entry.py',ROOT/'scripts/rc022_config_probe.py',ROOT/'reference/vendor/cordis/src/fiber.ts'])

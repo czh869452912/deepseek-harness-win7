@@ -103,4 +103,4 @@ async def native():
 if __name__ == '__main__':
     probe.native = native
     probe.main('rc022_hmr_partial.mts', 'Actual file module partialReload: unchanged, source/helper upgrade, latest entry configuration, shared/unmanaged instances, disabled/removed runtime, syntax and activation failure then correction.',
-               [Path(__file__).resolve(), ROOT/'dsh/cordis/hmr_partial.py', ROOT/'dsh/cordis/hmr.py', ROOT/'dsh/cordis/hmr_changes.py', ROOT/'dsh/cordis/hmr_modules.py', ROOT/'.goose/out/rc022-prep-20261114-01/source/packages/boot/hmr/src/index.ts'], prepare, node_args=('--expose-internals',))
+               [Path(__file__).resolve(), ROOT/'dsh/cordis/hmr_partial.py', ROOT/'dsh/cordis/hmr.py', ROOT/'dsh/cordis/hmr_changes.py', ROOT/'dsh/cordis/hmr_modules.py', ROOT/'reference/packages/boot/hmr/src/index.ts'], prepare, node_args=('--expose-internals',))

@@ -126,4 +126,4 @@ if __name__=='__main__':
     probe.native=observe
     probe.main('rc022_schedule_runtime.mts',prepare=prepare,
         scope='Actual current runtime over controlled clocks/Agents: one-shot and recurring batch receipts, partial commits, flush refusal, rollback, execution recovery/floors, manual execution, reserved Session creation/retry and timer clamp. Generated identities normalized bijectively.',
-        extra_inputs=[Path(__file__).resolve(),ROOT/'dsh/schedule/runtime_current.py',ROOT/'.goose/out/rc022-prep-20261114-01/source/packages/schedule/schedule/src/runtime.ts'])
+        extra_inputs=[Path(__file__).resolve(),ROOT/'dsh/schedule/runtime_current.py',ROOT/'reference/packages/schedule/schedule/src/runtime.ts'])

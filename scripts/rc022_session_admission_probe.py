@@ -142,5 +142,5 @@ if __name__=='__main__':
     probe.native=native
     probe.main('rc022_session_admission.mts','Explicit V4 Session constructor, developer tool header references, tool/system roles and required message interpreter identity. Production Session selection remains V3.',
         [Path(__file__).resolve(),*[ROOT/'dsh/core/session'/name for name in ('current.py','current_session.py','current_surface.py','current_vocabulary.py')],
-         ROOT/'.goose/out/rc022-prep-20261114-01/source/packages/core/session/src/index.ts',
-         ROOT/'.goose/out/rc022-prep-20261114-01/source/packages/core/session/src/surface.ts'],prepare)
+         ROOT/'reference/packages/core/session/src/index.ts',
+         ROOT/'reference/packages/core/session/src/surface.ts'],prepare)

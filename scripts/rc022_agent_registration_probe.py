@@ -90,4 +90,4 @@ async def observe():
 
 if __name__=='__main__':
     probe.native=observe
-    probe.main('rc022_agent_registration.mts','Awaited serial creation, direct rejection identity and rollback, deferred detach through async listeners, announcement payload, stale entry identity and exact disposer nesting.',[Path(__file__).resolve(),ROOT/'dsh/core/agent_current.py',ROOT/'dsh/core/agent_loop_current.py',ROOT/'dsh/cordis/fiber.py',ROOT/'.goose/out/rc022-prep-20261114-01/source/vendor/cordis/src/fiber.ts'])
+    probe.main('rc022_agent_registration.mts','Awaited serial creation, direct rejection identity and rollback, deferred detach through async listeners, announcement payload, stale entry identity and exact disposer nesting.',[Path(__file__).resolve(),ROOT/'dsh/core/agent_current.py',ROOT/'dsh/core/agent_loop_current.py',ROOT/'dsh/cordis/fiber.py',ROOT/'reference/vendor/cordis/src/fiber.ts'])

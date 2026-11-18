@@ -40,7 +40,7 @@ async def native():
 
 if __name__ == '__main__':
     probe.native = native
-    source = ROOT/'.goose/out/rc022-prep-20261114-01/source'
+    source = ROOT/'reference'
     probe.main('rc022_market_index.mts', 'Persistent Source MarketSearch reuse, concurrent/repeated multilingual, taxonomy, ordering and 1001-document chunked queries.',
         [Path(__file__).resolve(), ROOT/'dsh/boot/market_search_022.py', ROOT/'dsh/boot/market-index/manifest.json',
          ROOT/'scripts/native/market-index/search-driver.js', source/'packages/boot/plugin-market/src/search.ts'], prepare)

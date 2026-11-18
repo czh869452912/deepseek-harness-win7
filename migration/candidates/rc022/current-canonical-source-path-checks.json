@@ -1,0 +1,17 @@
+{
+  "contract": "C9-FL",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "failure": "Frozen isolated run07 exposed tests and probe input receipts still reading the former preparation directory instead of the canonical pinned reference checkout; analytics also invoked a Node path absent from the clone.",
+  "change": "Replace the obsolete preparation Source path in seventy test/probe files with reference, retaining explicit Source environment overrides where already supported. Analytics selects the explicitly supplied Node or the gate's prepared PATH. Preserve all Source pin, exact-byte, generated-artifact and runtime assertions.",
+  "verification": {
+    "python_run": "rc022-current-c9fl-canonical-inputs-20261119-01",
+    "passed": 31,
+    "seconds": 68.68,
+    "scope": "Actual Node environment query, client Host mounting, executor composition, canonical Manager HTTP lifecycle/wire, binary artifacts and workspace preview",
+    "paired_run": "rc022-current-c9fl-canonical-pairs-20261119-01",
+    "actual_source_native_pairs_passed": ["agent_registration", "hmr_glob", "executor_composition", "schedule_cron", "market_search"],
+    "syntax": "All seventy-one modified Python files parsed with Python 3.8.10."
+  },
+  "cleanup": {"targeted_directories": 3, "bytes_removed": 1075163, "observations_retained": 6, "paired": "Completed synthetic files directories retired by the pair runner; actual original/Native JSON, input receipts and logs remain."},
+  "qualification": "Targeted only. Frozen run07 is unchanged; additional HMR, runner-identity, process-drain and isolated-workspace findings are handled separately before the next stable full qualification."
+}

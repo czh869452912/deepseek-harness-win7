@@ -103,7 +103,7 @@ async def native():
 
 if __name__ == '__main__':
     probe.native = native
-    source = ROOT/'.goose/out/rc022-prep-20261114-01/source'
+    source = ROOT/'reference'
     probe.main('rc022_compatibility.mts', 'Npm prerelease ranges, metadata precedence and independent exact-version permission read/grant/revoke.',
         [Path(__file__).resolve(), *[ROOT/'dsh/boot'/name for name in ('semver.py', 'plugin_compatibility.py', 'profile_compatibility.py')],
          *[source/'packages/boot/app-boot/src'/name for name in ('plugin-compatibility.ts', 'profile-compatibility.ts')],

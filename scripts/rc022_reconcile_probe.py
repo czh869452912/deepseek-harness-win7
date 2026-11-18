@@ -76,4 +76,4 @@ async def native():
 if __name__=='__main__':
     probe.native=native
     probe.main('rc022_reconcile.mts','Previous failure identity/config, required ids, pending warnings and removed Fiber settlement.',
-        [Path(__file__).resolve(),ROOT/'dsh/boot/recomposition.py',ROOT/'.goose/out/rc022-prep-20261114-01/source/packages/boot/app-boot/src/index.ts'],prepare)
+        [Path(__file__).resolve(),ROOT/'dsh/boot/recomposition.py',ROOT/'reference/packages/boot/app-boot/src/index.ts'],prepare)

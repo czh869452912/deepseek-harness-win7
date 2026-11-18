@@ -25,7 +25,7 @@ from scripts.rc022_connection_auth_probe import Response
 from scripts.rc022_rpc_http_probe import decode_response
 
 
-SOURCE=Path(os.environ.get('DSH_RC022_SOURCE',str(Path(__file__).resolve().parents[1]/'.goose/out/rc022-prep-20261114-01/source')))
+SOURCE=Path(os.environ.get('DSH_RC022_SOURCE',str(Path(__file__).resolve().parents[1]/'reference')))
 ARTIFACT=SOURCE/'packages/api/workspace-files/lib/typert.host.js'
 
 

@@ -70,4 +70,4 @@ if __name__=='__main__':
     probe.native=observe
     probe.main('rc022_session_projection_store.mts','Actual Context-owned registration and disposal; create/fork/shared-frozen restore retain one borrowed definition list and reject cached or pending interpretation after owner removal.',
         [Path(__file__).resolve(),ROOT/'dsh/core/session/current_session.py',ROOT/'dsh/core/session/current_surface.py',
-         ROOT/'.goose/out/rc022-prep-20261114-01/source/packages/core/session/src/index.ts'])
+         ROOT/'reference/packages/core/session/src/index.ts'])

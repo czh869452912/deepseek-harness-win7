@@ -21,7 +21,7 @@ def test_actual_source_system_roots():
     cases += [dict(platform='linux', home='/home/owner', env=env) for env in
               ({}, {'XDG_DATA_DIRS': '/one::/one:/two', 'XDG_DATA_HOME': '/private'}, {'XDG_DATA_DIRS': ''},
                {'XDG_DATA_DIRS': '/one/../two:/two', 'XDG_DATA_HOME': '/home/./private'})]
-    command = [node, str(root / 'scripts/oracles/rc022_office_font_roots.mjs'), str(root / '.goose/out/rc022-prep-20261114-01/source')]
+    command = [node, str(root / 'scripts/oracles/rc022_office_font_roots.mjs'), str(root / 'reference')]
     result = subprocess.run(command, input=json.dumps(cases).encode('utf-8'), stdout=subprocess.PIPE, stderr=subprocess.STDOUT, timeout=15)
     assert result.returncode == 0, result.stdout.decode('utf-8', 'replace')
     rows = json.loads(result.stdout)

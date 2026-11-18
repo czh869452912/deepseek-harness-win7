@@ -44,4 +44,4 @@ async def native():
 if __name__=='__main__':
     probe.native=native
     probe.main(observer='rc022_logger.mts',scope='Logger severity/nullish thresholds, per-registration disposal, exporter record isolation, metadata precedence, empty aggregates and shared bounded buffer.',
-        extra_inputs=[Path(__file__).resolve(),ROOT/'dsh/cordis/logger.py',ROOT/'.goose/out/rc022-prep-20261114-01/source/vendor/cordis/src/logger.ts'])
+        extra_inputs=[Path(__file__).resolve(),ROOT/'dsh/cordis/logger.py',ROOT/'reference/vendor/cordis/src/logger.ts'])

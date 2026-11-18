@@ -55,7 +55,7 @@ async def after(ctx, result, output):
             indexesBefore=ctx.pluginMarket.listIndexes())
         assert result['coldRestart']['indexesBefore'] == [dict(url=FIXTURE+'/index.json')]
     config.write_text(json.dumps(dict(url=ctx.connection.authenticatedUrl(ctx.webServer.getOrigin()), index=FIXTURE+'/index.json', cold=COLD_FROM is not None)), encoding='utf-8')
-    source = ROOT/'.goose/out/rc022-prep-20261114-01/source'
+    source = ROOT/'reference'
     node = ROOT/'.goose/out/rc022-prep-20261114-01/toolchain/node-v24.9.0-win-x64/node.exe'
     command = [str(node), str(ROOT/'scripts/oracles/rc022_market_browser.mjs'), str(source), str(output)]
     result['browserScriptSha256'] = hashlib.sha256(Path(command[1]).read_bytes()).hexdigest()
@@ -126,7 +126,7 @@ if __name__ == '__main__':
     from dsh.util.plugin_detail_http import fetch_body
     async def redirect(url, maximum, signal, options):
         return await fetch_body(FIXTURE+'/files?url='+quote(url, safe=''), maximum, signal, options)
-    source = ROOT/'.goose/out/rc022-prep-20261114-01/source'
+    source = ROOT/'reference'
     def prepare(home):
         if COLD_FROM is not None:
             seed = COLD_FROM/'comparison/home'

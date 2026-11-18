@@ -94,4 +94,4 @@ async def native():
 if __name__ == '__main__':
     probe.native = native
     probe.main('rc022_hmr_namespaces.mts', 'Actual re-exported namespaces sharing one runtime; coherent replacement, split implementations, ambiguous unmanaged rollback and retained node_modules namespace.',
-               [Path(__file__).resolve(), ROOT/'dsh/cordis/hmr_partial.py', ROOT/'dsh/cordis/hmr.py', ROOT/'.goose/out/rc022-prep-20261114-01/source/packages/boot/hmr/src/index.ts'], prepare, node_args=('--expose-internals',))
+               [Path(__file__).resolve(), ROOT/'dsh/cordis/hmr_partial.py', ROOT/'dsh/cordis/hmr.py', ROOT/'reference/packages/boot/hmr/src/index.ts'], prepare, node_args=('--expose-internals',))

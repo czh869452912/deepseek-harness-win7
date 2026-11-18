@@ -77,4 +77,4 @@ if __name__=='__main__':
     probe.main(observer='rc022_loader_move.mts',prepare=prepare,
         scope='Actual two-file cross-tree leaf/group moves, recursive member collision preflight, explicit root moves, negative positions and disabled entries.',
         extra_inputs=[ROOT/'dsh/cordis/loader.py',ROOT/'dsh/cordis/include_persistence.py',Path(__file__).resolve(),
-            ROOT/'.goose/out/rc022-prep-20261114-01/source/vendor/loader/src/config/tree.ts'])
+            ROOT/'reference/vendor/loader/src/config/tree.ts'])

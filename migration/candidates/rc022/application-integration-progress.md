@@ -2,6 +2,8 @@
 
 固定目标：`38a6a5c965aa99ab525161efb7cc5cf1fe62fced`。本页记录定向检查；生产 pin 已在 C9-CC 协调切换，`accepted_upstream` 仍为 null，完整资格待后续验证。
 
+C9-FL：70 份测试/探针的旧准备 Source 路径统一改为规范 `reference`，Analytics 使用明确输入或门禁 PATH 中的 Node；保留原 pin、字节与实际 artifact 检查。31 项实际消费者及 5 组原版/Native 配对通过，71 份修改的 Python 文件均由 3.8.10 解析通过；3 个定向工作目录清理、回收 1,075,163 字节，实际观察保留。07 其它独立失败另行修复，尚未统一签收。见[规范 Source 路径检查](current-canonical-source-path-checks.json)。
+
 C9-FK：07 的全新 Windows 检出暴露账号语言文件缺少字节保留属性，16 份 LF 文件被转成 CRLF，严格原版摘要正确拒绝。现为包内 locale 增加 `-text`，保持原摘要及全部断言；3 项账号回归通过，显式 `core.autocrlf=true` 的新鲜检出中全部 18 个成员精确摘要通过。4 个工作目录清理、回收 45,883 字节。见[语言文件检出检查](current-locale-checkout-checks.json)。
 
 C9-FJ：确认早先失败的 03 轮已结束且没有活动进程后，按原映射清理其失效合成工作区；3740 个文件共 26,705,419 字节已移除，1006 份原始观察逐份核对后保留。36 个链接只删除自身，476 个只读 Git 目录项未改共享属性；原失败、输入清单、收集记录及日志保持。自动审批已拒绝的旧 Edge 配置和零字节标记未再次尝试，当前 07 与活动依赖输入不受本次清理影响。见[过期回归资产检查](current-stale-regression-retention-checks.json)。

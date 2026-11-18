@@ -86,6 +86,6 @@ async def native():
 
 if __name__ == '__main__':
     probe.native = native
-    source = ROOT/'.goose/out/rc022-prep-20261114-01/source'
+    source = ROOT/'reference'
     probe.main('rc022_resource_consumers.mjs', 'Actual ESM/Python imports and preflight rows for exported modules, self references and imports aliases.',
         [Path(__file__).resolve(),ROOT/'dsh/cordis/loader.py',ROOT/'dsh/boot/compatibility_preflight.py',ROOT/'dsh/boot/package_resolution.py',source/'packages/boot/app-boot/lib/index.js'],prepare,node_args=('--expose-internals',),plain_node=True)

@@ -21,6 +21,31 @@ def test_current_cli_routes_to_current_qualification(tmp_path, monkeypatch):
     assert received == [(True, Path('base32'), Path('deps32'))]
 
 
+@pytest.mark.parametrize('damage', ['none', 'changed-original'])
+def test_nested_current_regression_retains_exact_preflight_inputs(tmp_path, damage):
+    from scripts import process_artifact_retention as retention
+    product = tmp_path / 'product'
+    output_root = product / '.goose/out'
+    output = output_root / 'current'
+    output.mkdir(parents=True)
+    source = product / 'apps/web/dist/index.html'
+    source.parent.mkdir(parents=True)
+    source.write_bytes(b'actual frozen frontend')
+    checkout = {'apps/web/dist/index.html': gate.lanes.digest(source)}
+    regression = gate.prepare_regression(output, dict(checkout=checkout))
+    workspace = output_root / 'g-inputs'
+    workspace.mkdir()
+    mapping = dict(execution_path=str(workspace), retained_path=str(regression / 'pytest-workspace'))
+    (regression / 'pytest-workspace-mapping.json').write_text(json.dumps(mapping), encoding='utf-8')
+    assert json.loads((regression / 'inputs.json').read_text(encoding='utf-8')) == checkout
+    if damage == 'changed-original':
+        source.write_bytes(b'changed after freeze')
+        with pytest.raises(ValueError, match='differs from frozen'):
+            retention.preflight_test_inputs(output_root, workspace, product, str(regression))
+    else:
+        assert retention.preflight_test_inputs(output_root, workspace, product, str(regression)) == checkout
+
+
 def test_current_gate_binds_root_installed_dependencies(tmp_path, monkeypatch):
     monkeypatch.setattr(gate, 'ROOT', tmp_path)
     source, node = tmp_path / 'source', tmp_path / 'toolchain/node.exe'

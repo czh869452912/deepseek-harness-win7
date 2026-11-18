@@ -1,0 +1,17 @@
+{
+  "contract": "C9-FT",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "failure": "The nested current regression omitted its own frozen checkout manifest, so all strict preflight fixtures rejected the missing owner input record.",
+  "change": "Write the nested inputs.json from the exact checkout map frozen by the current gate. Preserve changed-original rejection and all ownership/hash checks.",
+  "verification": {
+    "run": "rc022-current-c9ft-nested-preflight-20261119-01",
+    "passed": 92,
+    "seconds": 312.32
+  },
+  "cleanup": {
+    "directories": 3,
+    "bytes_removed": 685519985,
+    "retained": "Commands, logs/XML and selected raw observations"
+  },
+  "qualification": "Targeted only; frozen run07 unchanged."
+}

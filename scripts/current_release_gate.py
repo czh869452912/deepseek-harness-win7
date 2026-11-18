@@ -125,6 +125,15 @@ def archive_path(build, architecture):
     return path
 
 
+def prepare_regression(output, frozen):
+    regression = output / 'regression'
+    regression.mkdir()
+    # The retention fixture owns this nested directory and validates copies
+    # against the same checkout bytes already frozen by the current gate.
+    (regression / 'inputs.json').write_text(json.dumps(frozen['checkout'], indent=2), encoding='utf-8')
+    return regression
+
+
 def verify(args, output):
     if sys.platform != 'win32' or sys.version_info[:3] != (3, 8, 10):
         raise ValueError('Windows Python 3.8.10 required')
@@ -166,7 +175,7 @@ def verify(args, output):
         checkpoint()
         # The complete Python collection belongs to this one gate, with no
         # duplicate full pytest pass scheduled immediately beforehand.
-        regression = output / 'regression'; regression.mkdir()
+        regression = prepare_regression(output, before)
         retained.run_python_regression(sys.executable, regression, environment, timeout=args.regression_timeout, maxfail=0)
         report['stages']['regression'] = dict(status='passed', **retained.validate_regression(regression / 'pytest.xml'))
         checkpoint()

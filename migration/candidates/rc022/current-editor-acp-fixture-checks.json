@@ -1,0 +1,18 @@
+{
+  "failure": "The direct editor fixture did not execute generator effects used by the current tool registry. The ACP journey assumed update.content was always one object.",
+  "change": "Use the real Cordis effect runner in the editor fixture, dispose fixture effects, and accept canonical content block arrays in the ACP observation predicate without changing the expected child result.",
+  "verification": {
+    "run": "rc022-current-c9fw-editor-acp-20261119-01",
+    "passed": 13,
+    "seconds": 6.77,
+    "scope": "Complete editor regressions and actual parent ACP -> child process -> model -> file -> reap journey"
+  },
+  "cleanup": {
+    "directories": 3,
+    "bytes_removed": 42450,
+    "observations": 3
+  },
+  "contract": "C9-FW",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "qualification": "Targeted only; complete failed run07 remains failed."
+}

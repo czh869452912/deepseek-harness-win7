@@ -4,6 +4,7 @@ import os
 import pytest
 
 from dsh.cordis.events import EventBus
+from dsh.cordis import Context
 from dsh.core.tools import ToolExecutionInput, ToolRunContext, ToolsService
 from dsh.fs.fs_local import FsError, FsService, FsTarget
 from dsh.fs.tool_str_replace_editor import (
@@ -18,6 +19,7 @@ class DirectContext:
         self.events = EventBus()
         self.services = {"fs": FsService(cwd=str(cwd))}
         self.effects = []
+        self.lifecycle = Context()
         self.tools = ToolsService(self)
         self.services["tools"] = self.tools
 
@@ -37,9 +39,9 @@ class DirectContext:
         self.events.emit(event, *args)
 
     def effect(self, disposer, label=""):
-        cleanup = disposer()
-        if cleanup is not None:
-            self.effects.append(cleanup)
+        cleanup = self.lifecycle.effect(disposer, label=label)
+        self.effects.append(cleanup)
+        return cleanup
 
     def dispose(self):
         while self.effects:
@@ -64,7 +66,10 @@ def editor(tmp_path):
     tools = ctx.tools
     plugin = StrReplaceEditorPlugin()
     plugin.apply(ctx)
-    return ctx, tools, plugin
+    try:
+        yield ctx, tools, plugin
+    finally:
+        ctx.dispose()
 
 
 @pytest.mark.asyncio

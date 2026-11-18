@@ -116,8 +116,12 @@ def journey(root, workspace):
         # Named delegation returns immediately. Completion is a later real
         # parent activation, not the old foreground tool result.
         def received(packet):
-            return (packet.get('method') == 'session/update' and
-                packet.get('params', {}).get('update', {}).get('content', {}).get('text') == 'parent received child result')
+            if packet.get('method') != 'session/update':
+                return False
+            content = packet.get('params', {}).get('update', {}).get('content', {})
+            blocks = content if isinstance(content, list) else [content]
+            return any(isinstance(block, dict) and block.get('text') == 'parent received child result'
+                       for block in blocks)
         if not any(received(packet) for packet in peer.observed):
             peer.wait(received)
         if output_file.read_text(encoding='utf-8') != 'created by actual ACP child':

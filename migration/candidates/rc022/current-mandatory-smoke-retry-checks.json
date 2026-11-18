@@ -1,0 +1,31 @@
+{
+  "result": "failed",
+  "publishable": false,
+  "product_commit": "6372e4804c317f63bc33b4b092b379768a3d5530",
+  "complete_regression": true,
+  "regression": {
+    "tests": 22632,
+    "passed": 22593,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 39,
+    "seconds": "7526.201"
+  },
+  "final_input_recheck_complete": false,
+  "inputs_unchanged": null,
+  "candidate_unchanged": null,
+  "interrupted_at": "2026-11-19T07:18:13.324461",
+  "reason": "Complete Python collection passed, but the unchanged mandatory roster rejects five dist Portable smoke skips. Current orchestrator builds fresh Portable only after regression, so no prebuilt dist exists. Stop final reread; preserve diagnostic without Source/build or unified acceptance. Fix by building the exact frozen x64 product before regression and selecting it explicitly for mandatory profile smoke checks, then consume that same archive in later extracted/Desktop stages.",
+  "contract": "C9-GE",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "follow_up": "C9-GD builds the exact frozen x64 Portable before mandatory regression smoke checks; complete qualification now runs independently for clean candidate 2c2bf3377e7f272b16db2d3300e15fb62f6ca1b0 in run11.",
+  "cleanup": {
+    "bytes_removed": 1924597393,
+    "files": 47079,
+    "retained_observations": 15701,
+    "reparse_entries_removed": 6712,
+    "readonly_directory_entries_removed": 2530,
+    "shared_attributes_changed": false
+  },
+  "scope": "Completed Python diagnostics, not unified release acceptance. Five mandatory Portable cases skipped; Source, paired, build and extracted/Desktop stages were not run. Final frozen input reread was intentionally stopped. Original candidate and XML remain unchanged."
+}

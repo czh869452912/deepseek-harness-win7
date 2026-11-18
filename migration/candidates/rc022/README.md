@@ -1,5 +1,7 @@
 # 0.2.2-rc.3 实施候选区
 
+2026-11-19 current: Clean candidate `2c2bf337` is running unified run11 after the mandatory Portable smoke build-order fix. Original run10 completed 22,593 passing Python cases but remains failed because five required Portable cases skipped; its raw diagnostics are preserved and 1.92 GB of completed fixtures retired. [Current retry record](current-mandatory-smoke-retry-checks.json). Full Source/paired and actual same-archive x64/x86 qualification are pending this new candidate. Earlier entries below retain their original identities.
+
 2026-11-19: Current C1-C9 provider integration and known full-regression corrections are committed. Clean candidate `01499ca4` is running [unified qualification](current-stable-candidate-start.json). Schedule/Discover cold recovery already has targeted coverage; complete acceptance remains pending this exact candidate/archive. The [Win7 Desktop scope](../../../docs/research/2026-11-18-win7-desktop-current-scope.md) remains explicit; earlier entries below are historical.
 
 2026-11-18：生产 pin 已在 C9-CC 切换到 `38a6a5c9`，当前推进 C9 的实际应用与统一资格。C9-CI 的[实际解压与浏览器定向记录](current-extracted-browser-checks.json)覆盖 SDK、Office、现代 Edge 和固定 Chromium108；调试解压目录显式修改过，不能据此签收原 ZIP。继续完成 Schedule/Discover 冷恢复、当前回归消费者及干净候选完整门禁，Win7 真机仍延期。下方旧准备顺序与旧 pin 只保留为历史。

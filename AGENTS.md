@@ -72,17 +72,20 @@ To ensure strict Windows 7 and Python 3.8.10 compatibility:
 
 ## 4. Preset & Web GUI Conventions
 
-- **Minimal Mode (`dsh/presets/minimal.yaml`)**:
+- Preset behavior follows the current pinned composition under `packages/preset/agent-presets/presets/`; derive tools from the active scoped catalog. Legacy `dsh/presets` files are historical compatibility inputs, not current composition evidence.
+
+- **Minimal Mode (`packages/preset/agent-presets/presets/minimal/agent.cordis.yml`)**:
   - Persona: `You are a helpful software engineer assistant.`
   - Tools: `str_replace_editor` + persistent shell (`pwsh` on Windows, `bash` on POSIX).
   - No complex skill or compaction overhead.
 
-- **Standard Mode (`dsh/presets/standard.yaml`)**:
-  - Full engineering toolset: `str_replace_editor`, `pwsh`, `fs_search`, `ask_user`, `todo`, `skill`, `compaction`, `plan_mode`, `goal`.
+- **Standard Mode (`packages/preset/agent-presets/presets/standard/agent.cordis.yml`)**:
+  - Current scoped engineering tools cover file operations, shell/jobs, search, skills, planning/goals, compaction, continuable subagents, workflows and Web. Shared registries stay in the Host; agent-owned services use the preset's declared realms.
 
-- **Creative Mode (`dsh/presets/creative.yaml`)**:
-  - Includes full tool suite plus `@deepseek-ai/dsh-cordis-manager`.
-  - Exposes the pinned upstream seven-tool workflow: `cordis_define`, `cordis_run`, `cordis_stop`, `cordis_undefine`, `cordis_inspect_self`, `cordis_inspect_list`, `cordis_inspect_query`. Dynamic Host source targets Python 3.8.10; Client source remains plain JavaScript. Optional Python export/distribution is separate and is not enabled in this default workflow.
+- **Native Creative Profile (`packages/bundle/creative/cordis.patch.yml`)**:
+  - Adds `@deepseek-win7/dsh-cordis-manager-python` to the original base/headless composition.
+  - Preserves the project's seven-tool workflow: `cordis_define`, `cordis_run`, `cordis_stop`, `cordis_undefine`, `cordis_inspect_self`, `cordis_inspect_list`, `cordis_inspect_query`. Dynamic Host source targets Python 3.8.10; Client source remains plain JavaScript. Optional Python export/distribution is separate and is not enabled in this default workflow.
+  - Current upstream `@deepseek-ai/dsh-tool-cordis` has exactly the two read-only inspect tools. The original `cordis` agent preset and Native Creative profile are distinct compositions; do not add the five Native development tools to the original preset or describe them as current upstream behavior.
 
 - **Web GUI Mode (`dsh-web.bat` / `dsh --profile web`)**:
   - Use the canonical Web profile and upstream bundle composition: Web runtime, WebServer, Connection, Typert Gateway, application Remote controllers, ClientModules, HMR and FrontendStatic.
@@ -250,7 +253,7 @@ artifact handling, and the distinction between this guidance and current CI.
 
 ## 6. Portable Release Requirements
 
-The portable release script (`scripts/build_portable.py`) creates a standalone distribution in `dist/dsh-win7-portable/` and `dist/dsh-win7-portable-v0.1.2.zip` containing:
+The portable release script (`scripts/build_portable.py`) creates a standalone folder and versioned architecture-specific ZIPs in its selected output directory (default `dist/`), containing:
 1. Embedded Python 3.8 dependencies (`lib/`).
 2. Full `dsh/` framework and `dsh.py` entrypoint.
 3. Compiled React 18 Web GUI (`apps/web/dist/`) and official client packages (`packages/client/`).

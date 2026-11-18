@@ -43,6 +43,7 @@ async def test_loader_shell_job_actual_generated_remote_and_model_cursor(tmp_pat
         await asyncio.wait_for(ctx.jobs.wait(identity,10000,'owner'),12)
         while frames[-1]['type']!='end':frames.append(await client.receive())
         assert any(frame.get('value',{}).get('type')=='status' and frame['value']['job']['status']=='killed' for frame in frames)
+        await asyncio.wait_for(asyncio.gather(*ctx.subprocess.ordinary_cleanups),3)
         assert not ctx.subprocess.live
         assert ctx.jobs.store[identity]['modelCursor']==0 and not ctx.jobs.store[identity]['resultDelivered']
         model=ctx.jobs.read(identity,'owner');assert 'head' in ''.join(chunk['text'] for chunk in model['chunks'])

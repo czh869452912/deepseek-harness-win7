@@ -1,0 +1,19 @@
+{
+  "contract": "C9-FS",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "failure": "Frozen run07 used a stale generated Source artifact location for terminal registration; the shell job assertion also observed done before the existing process-range cleanup task completed.",
+  "change": "Keep generated terminal wire fields unchanged. The canonical reference path already registers the exact upstream descriptor. Await existing ordinary cleanup tasks before asserting that the completed shell job has no live process range.",
+  "verification": {
+    "run": "rc022-current-c9fs-generated-carriers-20261119-01",
+    "passed": 3,
+    "seconds": 4.96,
+    "scope": "Actual bidirectional generated terminal bindings and persistent shell job consumer"
+  },
+  "cleanup": {
+    "directories": 3,
+    "bytes_removed": 17414,
+    "observations": 6,
+    "links": 3
+  },
+  "qualification": "Targeted only; frozen run07 is unchanged."
+}

@@ -2,6 +2,8 @@
 
 固定目标：`38a6a5c965aa99ab525161efb7cc5cf1fe62fced`。本页记录定向检查；生产 pin 已在 C9-CC 协调切换，`accepted_upstream` 仍为 null，完整资格待后续验证。
 
+C9-FS：规范 Source 路径下实际生成终端描述与双向通信通过，保持 wire 字段；Shell Job 等既有范围清理后再断言无活动进程。3 项通过，3 个目录清理、回收 17,414 字节，保留 6 份观察。见[生成通信检查](current-generated-carrier-checks.json)。
+
 C9-FR：当前 Source 时区观察的 Node 版本断言由残留的 22.22.2 对齐到固定 24.9.0，UTC/上海偏移、日期恢复/解析和属性格式仍精确比较。8 项实际原版与 Python 3.8 检查通过，3 个工作目录清理、回收 29,124 字节，历史观察器运行时保持独立。见[当前 Source 时区检查](current-source-timezone-checks.json)。
 
 C9-FQ：实际 PowerShell 回归先等待既有 managed range 清理任务，再断言 live 集合为空；与固定原版的直接 `done`、后续 `waitForExit` 分离保持一致，生产行为不变。80 项真实输出/普通进程/资产保留检查通过，两次定向的 6 个目录清理、回收 448,092 字节。见[进程范围排空检查](current-pwsh-range-drain-checks.json)。

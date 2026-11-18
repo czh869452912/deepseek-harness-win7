@@ -1,0 +1,39 @@
+{
+  "contract": "C9-FH",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "verification": {"run": "rc022-current-c9fh-sdk-receipt-20261118-01", "passed": 54, "seconds": 164.62, "scope": "Actual shared receipt positive fixture, complete SDK value/runtime corruption controls and mandatory SDK consumer-lane controls"},
+  "failed_frozen_run": {
+    "run": "rc022-unified-20261118-06",
+    "product_commit": "ee1e7f5aaa3bd6c2ab2b291bb960676399fd451d",
+    "input_manifest_sha256": "3ce92f1bdf01ca3c4834d532453d422040926660b2dbe88225e66ee9df1c3da1",
+    "input_manifest_bytes": 59280825,
+    "plan_sha256": "08fbed889211ebcc26d903360959e71b0b8fdfc9257106032a9a4b42c30da422",
+    "collected": 22625,
+    "required_collected": 3966,
+    "failures_at_snapshot": 200,
+    "settled_failure_observations": 206,
+    "seconds": 4246.968,
+    "result": "failed and interrupted after repeated shared SDK setup failures",
+    "complete_regression": false,
+    "final_input_recheck_complete": false,
+    "inputs_unchanged": null,
+    "candidate_unchanged": null,
+    "publishable": false,
+    "followup": "C9-FD reproduces and corrects the retirement fixture warmup boundary. C9-FE fixes the exact three-module SDK import omission; C9-FG adapts the separate retained machine fixture. The shared receipt positive and SDK controls now pass. No old run or partial checks establish unified acceptance."
+  },
+  "cleanup": {
+    "frozen_workspace_bytes_removed": 117033285,
+    "frozen_workspace_files": 4051,
+    "raw_observations_retained": 950,
+    "readonly_git_entries_unlinked": 476,
+    "shared_attributes_changed": false,
+    "targeted_directories_removed": 3,
+    "targeted_bytes_removed": 2223082,
+    "failed_sdk_homes_removed": 6,
+    "failed_sdk_bytes_removed": 53401,
+    "real_sdk_sessions_retained": 6,
+    "total_bytes_removed": 119309768,
+    "retained": "Frozen input/collection manifests, commands and timings, original failures, Source/Native wire/import captures, real SDK sessions and raw observations. The failed run's owned process tree has exited."
+  },
+  "qualification": "Targeted SDK/receipt followup complete; next stable candidate needs a fresh single unified run."
+}

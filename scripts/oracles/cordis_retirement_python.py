@@ -17,6 +17,14 @@ HOST = "async def plugin(ctx):\n    ctx.provide('probeValue', 'starting')\n    h
 PREVIOUS = "def plugin(ctx):\n    ctx.provide('probePrevious', 'ready')\n"
 
 
+async def settle_host_preparation(runner):
+    # Native replacement workers are prepared asynchronously. Their process
+    # startup is not part of the Source lifecycle checkpoint or VM deadline.
+    warming = runner._warming
+    if warming is not None:
+        await asyncio.wait_for(asyncio.shield(warming), 15)
+
+
 async def observe(spec):
     ctx = Context()
     await ctx.plugin(SourceToolsPrompt)
@@ -47,6 +55,7 @@ async def observe(spec):
             plugin=dict(kind='existing', pluginId=defined['pluginId']) if defined else dict(kind='new', idPrefix='probe'),
             name='Probe', purpose='retirement', code=code))
         mode = 'update' if spec['update'] else 'run'
+        await settle_host_preparation(runner)
         if spec['client']:
             await runner.run(owner, defined['pluginId'], defined['packageId'], mode)
             request = next(value for name, value in reversed(events) if name == 'cordis/request-run')
@@ -57,6 +66,7 @@ async def observe(spec):
             await activation
         else:
             await asyncio.wait_for(entered.wait(), 1)
+        await settle_host_preparation(runner)
         before = capture()
         end_settled = False
         async def end():

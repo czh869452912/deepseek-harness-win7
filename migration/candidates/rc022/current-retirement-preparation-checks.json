@@ -1,0 +1,10 @@
+{
+  "contract": "C9-FD",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "failure": "Frozen ee1e7f5a unified run06: stop-update-starting timed out waiting one second for the controlled plugin checkpoint. Production prepares replacement Host workers asynchronously; that fixture deadline incorrectly included waiting for the replacement process to start.",
+  "reproduction": {"run": "rc022-current-c9fd-warmup-reproduction-20261118-01", "failed": 1, "seconds": 3.32, "trigger": "Delay only the second Host warmup by 1.1 seconds; retain exact historical observation comparison"},
+  "change": "Await native fixture Host preparation before starting the lifecycle checkpoint and before timed retirement. Preparation has a separate 15-second bound matching Host readiness. The original one-second lifecycle assertions, observation comparisons and production VM timeout are unchanged.",
+  "verification": {"run": "rc022-current-c9fd-retirement-20261118-01", "passed": 20, "seconds": 40.77, "scope": "Entire retirement module including controlled slow replacement, ownership/cancellation/unload and original historical Source binding"},
+  "cleanup": {"runs": 2, "directories": 6, "bytes_removed": 7495, "retained": "Commands, XML/logs and original failure diagnostics"},
+  "qualification": "Targeted only. Frozen run06 does not contain the fixture correction and continues collecting independent failures; it cannot establish complete acceptance."
+}

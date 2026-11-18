@@ -14,7 +14,7 @@ from dsh.core.tools import ToolsPlugin
 from dsh.extensions.host_runner import DynamicCordisRunner
 from dsh.typert.dispatch import RemoteDispatcher
 from scripts.cordis_retirement_oracle import classify, corrected_observation, BUG_HASHES
-from scripts.oracles.cordis_retirement_python import observe, HOST
+from scripts.oracles.cordis_retirement_python import observe, HOST, settle_host_preparation
 
 ROOT = Path(__file__).resolve().parents[1]
 SPECS = json.loads((ROOT / 'scripts/oracles/cordis-retirement-cases.json').read_text(encoding='utf-8'))
@@ -49,6 +49,27 @@ def test_source_binding_and_exact_bug_exception():
         assert classify(bad, native) == 'different'
 
 
+@pytest.mark.asyncio
+async def test_update_retirement_checkpoint_excludes_replacement_process_warmup(monkeypatch):
+    original = DynamicCordisRunner._warm_host
+    calls = []
+    async def delayed_replacement(self):
+        calls.append(None)
+        replacement = len(calls) == 2
+        await original(self)
+        if replacement:
+            # Process preparation belongs outside the one-second lifecycle
+            # checkpoint, just as it is outside the production VM deadline.
+            await asyncio.sleep(1.1)
+    monkeypatch.setattr(DynamicCordisRunner, '_warm_host', delayed_replacement)
+    spec = next(row for row in SPECS if row['mode'] == 'stop-update-starting')
+    fixture = json.loads((ROOT / 'tests/fixtures/cordis-retirement-source-observations.json').read_text(encoding='utf-8'))
+    source = next(row for row in fixture['observations'] if row['mode'] == spec['mode'])
+    expected = corrected_observation(source) if source['mode'] in BUG_HASHES else source
+    assert await observe(spec) == expected
+    assert len(calls) >= 2
+
+
 async def starting_runner(ctx):
     entered, release = asyncio.Event(), asyncio.Event()
     async def wait():
@@ -59,6 +80,7 @@ async def starting_runner(ctx):
     defined = runner.define(dict(sessionId=owner.id, plugin=dict(kind='new', idPrefix='probe'), name='Probe', purpose='retirement', code=dict(host=HOST)))
     task = asyncio.create_task(runner.run(owner, defined['pluginId'], defined['packageId'], 'run'))
     await asyncio.wait_for(entered.wait(), 1)
+    await settle_host_preparation(runner)
     return runner, owner, defined, task, release
 
 

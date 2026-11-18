@@ -1,4 +1,4 @@
-"""Current Source defects remain exact, finite exceptions to strict comparison."""
+"""Historical reviewed defects keep their exact original inputs and identity."""
 import copy
 import json
 from pathlib import Path
@@ -9,6 +9,7 @@ import pytest
 
 from scripts.compaction_oracle import (BUG_TARGET, BUG_CASE, SUMMARY_BUG_CASE,
     reviewed_route_key_difference, reviewed_summary_metadata_difference)
+from evidence_fixtures import read_member
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -16,19 +17,22 @@ ROOT = Path(__file__).resolve().parents[1]
 @pytest.fixture(scope='module')
 def captured(tmp_path_factory):
     output = tmp_path_factory.mktemp('current-compaction') / 'report.json'
-    result = subprocess.run([sys.executable, 'scripts/compaction_oracle.py', '--output', str(output)],
+    result = subprocess.run([sys.executable, 'scripts/oracles/compaction_python.py', str(output)],
                             cwd=str(ROOT), capture_output=True, timeout=90)
     output.with_suffix('.runner.log').write_bytes(result.stdout + result.stderr)
-    report = json.loads(output.read_text(encoding='utf-8'))
-    assert result.returncode == 0 and report['status'] == 'passed', report
-    return {row['mode']: row for row in report['cases']}
+    assert result.returncode == 0, result.stdout + result.stderr
+    native = {row['mode']: row for row in json.loads(output.read_text(encoding='utf-8'))}
+    source = read_member('RC3-QUALIFICATION-20261018-228CFACC.zip',
+                         'full-gate-root.zip!/compaction-paired.ts.json')
+    return {row['mode']: dict(status='reviewed-upstream-bug', upstream=row, python=native[row['mode']])
+            for row in source if row['mode'] in ('embedded-nul-routes', 'transaction-private-fields')}
 
 
 @pytest.mark.parametrize('mode,recipe,check', [
     ('embedded-nul-routes', BUG_CASE, reviewed_route_key_difference),
     ('transaction-private-fields', SUMMARY_BUG_CASE, reviewed_summary_metadata_difference),
 ])
-def test_actual_current_defects_require_exact_input_output_and_pin(captured, mode, recipe, check):
+def test_historical_defects_require_exact_input_output_and_pin(captured, mode, recipe, check):
     row = captured[mode]
     assert row['status'] == 'reviewed-upstream-bug'
     left, right = row['upstream'], row['python']

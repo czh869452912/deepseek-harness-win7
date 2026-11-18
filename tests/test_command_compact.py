@@ -272,7 +272,7 @@ async def test_canonical_web_command_compaction_and_cold_restart(tmp_path, prese
         await ctx.plugin(CompactionInvariantPlugin)
         await ctx.get('sessionController').create(dict(sessionId=identity, cwd=str(tmp_path), agentPreset=preset))
         agent = ctx.get('agents').get(identity)
-        assert service_for_agent(ctx, agent, 'compaction') is not None
+        assert ctx.get('agentPresets').serviceFor(agent, 'compaction') is not None
         assert ctx.get('commands').find(agent, 'compact') is not None
         ctx.get('llm').register_adapter(['compact-probe'], Adapter())
         agent.session.append('turn/start', dict(turn=1))

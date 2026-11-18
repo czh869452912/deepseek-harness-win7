@@ -102,7 +102,8 @@ async def test_mount_official_assertions(harness, monkeypatch, line):
         assert p.composed_preset(parent.ctx) is None and h.names(child)==[]
     elif line in (240,247,255,264,269):
         preset={240:'broken',247:'broken',255:'nested',264:'pending',269:'leaky'}[line]
-        pattern={240:'failed to mount',247:'first-refuses.*second-refuses',255:'outer.*inner-first.*inner-second',264:'waiting for absentService',269:'process-global service.*aaaLeaked, zzzLeaked'}[line]
+        # Current Cordis preserves the original first failure as the direct cause.
+        pattern={240:'failed to mount',247:'first-refuses',255:'inner-first',264:'waiting for absentService',269:'process-global service.*aaaLeaked, zzzLeaked'}[line]
         with pytest.raises(PresetMountError,match='(?s)'+pattern): await h.agent('failed',preset)
         assert ctx.agents.get('failed') is None and ctx.sessions.get('failed') is None
         assert h.names()==[] and h.mounts()==[]

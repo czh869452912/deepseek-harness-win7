@@ -1,0 +1,25 @@
+{
+  "contract": "C9-EU",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "change": "Use current declared preset serviceFor in the real Web command-compaction/cold-restart consumer. Retained preset mounts assert original first Cordis failure. Historical compaction bug-review unit inputs now come from immutable original Source archive members with size/SHA provenance, compared against fresh Native retained compaction observations; original bug pin unchanged.",
+  "verification": [
+    {
+      "run": "rc022-current-agent-signal-20261118-01",
+      "passed": 76,
+      "failed": 1,
+      "scope": "All preset closure and command-compaction cases passed, including three real Web preset/cold restart consumers; separate Agent signal observer failed and remains in progress"
+    },
+    {
+      "run": "rc022-retained-compaction-review-20261118-01",
+      "passed": 3,
+      "seconds": 1.52,
+      "scope": "Two exact historical exceptions with recipe/pin/input/output negative controls and private summary metadata damage"
+    }
+  ],
+  "cleanup": {
+    "bytes_removed": 506740,
+    "directories": 9,
+    "observations_retained": 6
+  },
+  "qualification": "Targeted only. Historical evidence remains historical; current compaction uses mandatory current Source tests and current recovery pair. Unified release acceptance pending."
+}

@@ -4354,6 +4354,22 @@
       ]
     },
     {
+      "script": "scripts/rc022_projection_cache_probe.py",
+      "node": true,
+      "browser": false,
+      "receipt": "report",
+      "timeout_seconds": 180,
+      "disposable_directories": [
+        "files",
+        "payload",
+        "workspace",
+        "source-workspace",
+        "native-workspace",
+        "tmp",
+        "home"
+      ]
+    },
+    {
       "script": "scripts/rc022_projection_domains_probe.py",
       "node": true,
       "browser": false,

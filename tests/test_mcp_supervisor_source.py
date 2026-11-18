@@ -9,19 +9,16 @@ from types import SimpleNamespace
 import pytest
 
 from dsh.mcp.connection import McpConnection
+from historical_mcp_modules import observe_module
 
 
 ROOT = Path(__file__).resolve().parents[1]
 
 
 @pytest.mark.asyncio
-async def test_actual_source_supervisor_outcomes_logs_and_owned_registry_order(tmp_path, monkeypatch):
+async def test_sealed_legacy_supervisor_with_current_helpers_and_retained_consumer(tmp_path, monkeypatch):
     output = tmp_path / 'supervisor.json'
-    environment = dict(os.environ, MCP_SUPERVISOR_OUTPUT=str(output))
-    subprocess.run([shutil.which('node'), '--expose-internals', str(ROOT / 'scripts/oracles/official/node_modules/vitest/vitest.mjs'),
-        'run', '--config', str(ROOT / 'scripts/oracles/vitest.mcp-supervisor-probe.config.mts')],
-        cwd=str(ROOT), env=environment, check=True, capture_output=True, timeout=60)
-    rows = json.loads(output.read_text(encoding='utf-8'))
+    rows = observe_module('supervisor', output, dict(MCP_SUPERVISOR_OUTPUT=str(output)))
     assert len(rows) == 9
     for row in rows:
         scenario, trace, logs, registered, peers = row['scenario'], [], [], set(), []

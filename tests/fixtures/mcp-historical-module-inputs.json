@@ -1,0 +1,26 @@
+{
+  "source_commit": "a4c74a91e06b00fe0b0937bde982170c526cc842",
+  "content_size": 42113,
+  "content_sha256": "2b87336a1373ad1fabec096dbb35a234c11ed06ac184b17bfaa62b39b25192c4",
+  "members": {
+    "tools.ts": {
+      "path": "reference/packages/mcp/mcp-client/src/tools.ts",
+      "size": 22721,
+      "sha256": "83bbcf32678682581ade18a2370e868f325604382c559c6dde56eeaa4ffdc14c",
+      "git_blob": "6a7ce9d0e48a7c57dcbc869d0c999b3ed4c1a6a9"
+    },
+    "connection.ts": {
+      "path": "reference/packages/mcp/mcp-client/src/connection.ts",
+      "size": 16356,
+      "sha256": "95b1b4eb67047a81ad4cca6b8d3e673425a39726f5d15d5b85972ea6e5a1f870",
+      "git_blob": "f452e3a81deebade51bdd207adeb0dd59037ba90"
+    },
+    "transport.ts": {
+      "path": "reference/packages/mcp/mcp-client/src/transport.ts",
+      "size": 1934,
+      "sha256": "07f977e2fa72f1c11f7a45621e6d20e04a1bee1e73168974860b860e75ea6be6",
+      "git_blob": "bc7fd1cc08cfadcc8c004b5c8c3531a7f889fbbb"
+    }
+  },
+  "scope": "Exact old MCP module inputs for explicit compatibility unit models with current helper dependencies; never current Source acceptance or historical receipt requalification"
+}

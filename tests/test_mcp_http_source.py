@@ -9,21 +9,13 @@ import pytest
 
 from dsh.core.abort import AbortController
 from test_mcp_http_transport import ROOT, dispose, launch
+from evidence_fixtures import read_member
+from release_gate_fixtures import ARCHIVE
 
 
 @pytest.mark.asyncio
-async def test_actual_source_http_sdk_wire_results_errors_and_close(tmp_path):
-    output = tmp_path / 'source.json'
-    directory = tmp_path / 'source-peers'
-    directory.mkdir()
-    environment = dict(os.environ, MCP_HTTP_OUTPUT=str(output), MCP_HTTP_DIRECTORY=str(directory),
-        MCP_FIXTURE_PYTHON=os.sys.executable, MCP_HTTP_PEER=str(ROOT / 'scripts/oracles/mcp_http_peer.py'))
-    source_run = subprocess.run([shutil.which('node'), '--expose-internals', str(ROOT / 'scripts/oracles/official/node_modules/vitest/vitest.mjs'),
-        'run', '--config', str(ROOT / 'scripts/oracles/vitest.mcp-http-probe.config.mts')],
-        cwd=str(ROOT), env=environment, capture_output=True, timeout=90)
-    output.with_suffix('.source.log').write_bytes(source_run.stdout + source_run.stderr)
-    assert source_run.returncode == 0, source_run.stdout.decode('utf-8', errors='replace') + source_run.stderr.decode('utf-8', errors='replace')
-    rows = json.loads(output.read_text(encoding='utf-8'))
+async def test_historical_source_http_sdk_wire_results_errors_and_close(tmp_path):
+    rows = read_member(ARCHIVE, 'full-gate-root.zip!/mcp-http-paired.ts.json')
     assert len(rows) == 16
     for expected in rows:
         mode = expected['mode']

@@ -1,0 +1,15 @@
+{
+  "contract": "C9-EL",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "change": "Separate obsolete optional session-tool and MCP contracts from current Source consumers. Five byte-preserved historical members retain archive/container/member SHA provenance. Two explicit MCP compatibility unit models execute three sealed old Git modules with current helper dependencies; this hybrid is not a current Source observer or a historical release qualification. Keep the failed-generation factory barrier unit test distinct from the archived disposal-stage close probe. Add actual current-v4 JSON projection-cache consumers to the mandatory gate (404 paired drivers; original 476 Source configurations unchanged).",
+  "verification": [
+    {"run": "rc022-historical-tool-cache-mcp-20261118-01", "passed": 49, "seconds": 9.65, "scope": "Historical session tools, projection-cache and MCP disposal with fresh retained Native consumers, plus refusal controls"},
+    {"run": "rc022-historical-mcp-factory-http-20261118-03", "passed": 110, "seconds": 10.38, "scope": "Retained factory close barrier, original historical 16-mode HTTP Source facts versus fresh owned Native peers, HTTP receipt refusal controls"},
+    {"run": "rc022-historical-mcp-module-models-20261118-01", "passed": 2, "seconds": 9.56, "scope": "38 legacy tool-bridge observations and nine legacy supervisor scenarios from sealed old MCP modules under explicit current-helper composition, compared with freshly executed retained Native providers"},
+    {"run": "rc022-current-mcp-compatibility-successors-20261118-01", "exit_code": 0, "scope": "Three actual current Source/Native pairs: MCP supervision, generation and result"},
+    {"run": "rc022-current-projection-cache-pair-20261118-01", "exit_code": 0, "observations": 9, "scope": "Actual current-v4 Source/Native JSON storage/domain/projection-cache reads, prepared fallback, parser-error identity and unchanged stored documents"},
+    {"run": "rc022-current-cache-gate-consumers-20261118-01", "passed": 37, "seconds": 2.49, "scope": "Historical and actual current-v4 cache consumers, cache refusal and gate roster controls after adding the current observer"}
+  ],
+  "cleanup": "Five compatibility runs retired 15 owned pytest directories, one link and 245096 bytes. The final cache/gate run and actual cache-pair files were also retired after preserving required observations; commands/logs/XML, original diagnostics and compact receipts remain.",
+  "qualification": "Targeted compatibility checks and separately identified actual current pairs only. The removed upstream optional tool-session-query package is not reintroduced or certified as a current Source package. No historical receipt is rebound, and complete frozen-candidate/extracted release qualification remains pending."
+}

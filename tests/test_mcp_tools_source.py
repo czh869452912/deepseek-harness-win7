@@ -11,6 +11,7 @@ import pytest
 from dsh.core.abort import AbortController
 from dsh.attachment.error import AttachmentError
 from dsh.mcp.tools import public_tool_name, sync_tools
+from historical_mcp_modules import observe_module
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -22,13 +23,9 @@ class Execution:
 
 
 @pytest.mark.asyncio
-async def test_actual_source_bridge_text_names_and_exact_execution_refusal(tmp_path):
+async def test_sealed_legacy_bridge_module_with_current_helpers_and_retained_consumer(tmp_path):
     output = tmp_path / 'tools.json'
-    environment = dict(os.environ, MCP_TOOLS_OUTPUT=str(output))
-    subprocess.run([shutil.which('node'), '--expose-internals', str(ROOT / 'scripts/oracles/official/node_modules/vitest/vitest.mjs'),
-        'run', '--config', str(ROOT / 'scripts/oracles/vitest.mcp-tools-probe.config.mts')],
-        cwd=str(ROOT), env=environment, check=True, capture_output=True, timeout=60)
-    rows = json.loads(output.read_text(encoding='utf-8'))
+    rows = observe_module('tools', output, dict(MCP_TOOLS_OUTPUT=str(output)))
     assert len(rows) == 38
     for row in rows:
         if row['kind'] == 'name':

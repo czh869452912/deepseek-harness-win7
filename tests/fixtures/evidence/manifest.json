@@ -438,6 +438,61 @@
       "sha256": "e725e1be45f1fbba71bba59fa4fd0863a3ed5d2fa0c4853f7922ba9c70c26ed1",
       "fixture": "e725e1be45f1fbba71bba59fa4fd0863a3ed5d2fa0c4853f7922ba9c70c26ed1.json.gz",
       "scope": "Byte-preserved historical ICU 78.2/Node 22 Source facts or corpus inputs; retained compatibility unit checks only, never current Source acceptance"
+    },
+    {
+      "archive": "RC3-QUALIFICATION-20261018-228CFACC.zip",
+      "archive_sha256": "f0f175c64849ce0d22b0790fd2fc591daf41989f58961fb8fc7db7f62458f0f2",
+      "member": "full-gate-root.zip!/session-tools-paired.source.json",
+      "container": "full-gate-root.zip",
+      "container_sha256": "72b203024ac56295e662764c6b3c6f2deb36153e62e678fd4ec3d1d46e942e3b",
+      "size": 35857,
+      "sha256": "5c1ed52a7a7fd0d6cc8e84b58408738528f6e93bde292871f94f74464c1daac3",
+      "fixture": "5c1ed52a7a7fd0d6cc8e84b58408738528f6e93bde292871f94f74464c1daac3.json.gz",
+      "scope": "Byte-preserved historical Source compatibility facts; never current Source acceptance"
+    },
+    {
+      "archive": "RC3-QUALIFICATION-20261018-228CFACC.zip",
+      "archive_sha256": "f0f175c64849ce0d22b0790fd2fc591daf41989f58961fb8fc7db7f62458f0f2",
+      "member": "full-gate-root.zip!/projection-cache-failure-paired.source.json",
+      "container": "full-gate-root.zip",
+      "container_sha256": "72b203024ac56295e662764c6b3c6f2deb36153e62e678fd4ec3d1d46e942e3b",
+      "size": 5964,
+      "sha256": "d8a2cce7a8bbea06b2d7c4e61c237100b66c4293ba596431004fc57664997c61",
+      "fixture": "d8a2cce7a8bbea06b2d7c4e61c237100b66c4293ba596431004fc57664997c61.json.gz",
+      "scope": "Byte-preserved historical Source compatibility facts; never current Source acceptance"
+    },
+    {
+      "archive": "RC3-QUALIFICATION-20261018-228CFACC.zip",
+      "archive_sha256": "f0f175c64849ce0d22b0790fd2fc591daf41989f58961fb8fc7db7f62458f0f2",
+      "member": "full-gate-root.zip!/mcp-disposal-paired.source.json",
+      "container": "full-gate-root.zip",
+      "container_sha256": "72b203024ac56295e662764c6b3c6f2deb36153e62e678fd4ec3d1d46e942e3b",
+      "size": 3559,
+      "sha256": "70d1b67e6e935bf637dfff80d33dc3a103afee598895b847b423fe5debe291e3",
+      "fixture": "70d1b67e6e935bf637dfff80d33dc3a103afee598895b847b423fe5debe291e3.json.gz",
+      "scope": "Byte-preserved historical Source compatibility facts; never current Source acceptance"
+    },
+    {
+      "archive": "RC3-QUALIFICATION-20261018-228CFACC.zip",
+      "archive_sha256": "f0f175c64849ce0d22b0790fd2fc591daf41989f58961fb8fc7db7f62458f0f2",
+      "member": "full-gate-root.zip!/mcp-disposal-paired.factory.json",
+      "container": "full-gate-root.zip",
+      "container_sha256": "72b203024ac56295e662764c6b3c6f2deb36153e62e678fd4ec3d1d46e942e3b",
+      "size": 386,
+      "sha256": "0ff133e0ed1aae5271397442445e757fa34995ae8305f8ca69b8433deac4bf9c",
+      "fixture": "0ff133e0ed1aae5271397442445e757fa34995ae8305f8ca69b8433deac4bf9c.json.gz",
+      "scope": "Byte-preserved historical Source compatibility facts; never current Source acceptance"
+    },
+    {
+      "archive": "RC3-QUALIFICATION-20261018-228CFACC.zip",
+      "archive_sha256": "f0f175c64849ce0d22b0790fd2fc591daf41989f58961fb8fc7db7f62458f0f2",
+      "member": "full-gate-root.zip!/mcp-http-paired.ts.json",
+      "container": "full-gate-root.zip",
+      "container_sha256": "72b203024ac56295e662764c6b3c6f2deb36153e62e678fd4ec3d1d46e942e3b",
+      "size": 44822,
+      "sha256": "9137f944db428ffe0e076224644a6a8c35053eb710ea2b63a49ee85178a1daa1",
+      "fixture": "9137f944db428ffe0e076224644a6a8c35053eb710ea2b63a49ee85178a1daa1.json.gz",
+      "scope": "Byte-preserved historical Source compatibility facts; never current Source acceptance"
     }
   ]
 }

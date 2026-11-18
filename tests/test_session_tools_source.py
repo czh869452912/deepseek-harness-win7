@@ -7,6 +7,7 @@ import sys
 
 import pytest
 from scripts import session_tools_oracle as oracle
+from historical_tool_cache_models import tool_cache_pair
 
 
 def test_source_inventory_ignores_generated_files_and_cyclic_dependencies(tmp_path):
@@ -37,14 +38,10 @@ def test_source_inventory_ignores_generated_files_and_cyclic_dependencies(tmp_pa
 @pytest.fixture(scope='module')
 def paired(tmp_path_factory):
     output = tmp_path_factory.mktemp('session-tools-paired') / 'result.json'
-    result = subprocess.run([sys.executable, str(oracle.ROOT / 'scripts/session_tools_oracle.py'), '--output', str(output)],
-                            capture_output=True, timeout=150, env=os.environ.copy())
-    assert result.returncode == 0, (result.stdout + result.stderr).decode('utf-8', errors='replace')
-    return (json.loads(output.read_text(encoding='utf-8')), json.loads(output.with_name('result.source.json').read_text(encoding='utf-8')),
-            json.loads(output.with_name('result.native.json').read_text(encoding='utf-8')))
+    return tool_cache_pair('session-tools', output)
 
 
-def test_actual_optional_session_tools_source_native_pair(paired):
+def test_historical_optional_session_tools_retained_native_pair(paired):
     report, source, native = paired
     assert report['status'] == 'passed' and report['cases'] == 78
     oracle.validate_runtime(native, oracle.ROOT, oracle.source_identity(source))

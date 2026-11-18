@@ -31,11 +31,10 @@ async def test_actual_source_retirement(spec):
 
 
 def test_source_binding_and_exact_bug_exception():
+    from historical_cordis_inputs import assert_historical_cordis_inputs
     fixture = json.loads((ROOT / 'tests/fixtures/cordis-retirement-source-observations.json').read_text(encoding='utf-8'))
-    assert fixture['target_upstream'] == json.loads((ROOT / 'migration/baseline.json').read_text(encoding='utf-8'))['target_upstream']
+    assert_historical_cordis_inputs('cordis-retirement', fixture)
     assert [row['mode'] for row in fixture['observations']] == [spec['mode'] for spec in SPECS]
-    for path, digest in fixture['source_sha256'].items():
-        assert hashlib.sha256((ROOT / path).read_text(encoding='utf-8').encode('utf-8')).hexdigest() == digest, path
     for source in fixture['observations']:
         if source['mode'] not in BUG_HASHES:
             continue

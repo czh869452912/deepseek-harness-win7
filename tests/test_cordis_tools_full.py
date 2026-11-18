@@ -1,4 +1,4 @@
-"""Cordis tools exercise the real, shared, session-owned Host runner."""
+"""Explicit Native Creative extension and current read-only Web consumers."""
 import asyncio
 import pytest
 from types import SimpleNamespace
@@ -6,6 +6,7 @@ from canonical_web_fixture import web_context, close_web_context
 from dsh.core.abort import NEVER_ABORTED
 from dsh.llm.message import create_user_message
 from dsh.typert.dispatch import RemoteDispatcher
+from dsh.extensions.cordis_manager_current import CurrentNativeCordisManager
 
 
 @pytest.mark.asyncio
@@ -13,8 +14,9 @@ async def test_cordis_tools_mount_and_dispose_actual_plugin(tmp_path):
     ctx = await web_context(tmp_path / 'home')
     try:
         runner = ctx.get('dynamicCordisRunner')
-        await ctx.get('sessionController').create(dict(sessionId='cordis-tools', cwd=str(tmp_path), agentPreset='cordis'))
+        await ctx.get('sessionController').create(dict(sessionId='cordis-tools', cwd=str(tmp_path), agentPreset='minimal'))
         agent = ctx.get('agents').get('cordis-tools')
+        await agent.ctx.plugin(CurrentNativeCordisManager)
         assert ctx.get('dynamicCordisRunner').typertRemote['service'] is runner.typertRemote['service']
         tools = ctx.get('tools')
         execution = SimpleNamespace(agent=agent, signal=NEVER_ABORTED)
@@ -68,7 +70,8 @@ async def test_cordis_reference_version_and_diagnostics_through_canonical_web(tm
     ctx = await web_context(tmp_path / 'home')
     try:
         for sid in ('cordis-owner', 'cordis-foreign'):
-            await ctx.get('sessionController').create(dict(sessionId=sid, cwd=str(tmp_path), agentPreset='cordis'))
+            await ctx.get('sessionController').create(dict(sessionId=sid, cwd=str(tmp_path), agentPreset='minimal'))
+            await ctx.get('agents').get(sid).ctx.plugin(CurrentNativeCordisManager)
         agent = ctx.get('agents').get('cordis-owner')
         foreign = ctx.get('agents').get('cordis-foreign')
         runner = ctx.get('dynamicCordisRunner')
@@ -103,8 +106,9 @@ async def test_cordis_reference_version_and_diagnostics_through_canonical_web(tm
         message = create_user_message(dict(content=[dict(type='text', text='Please update @theme-1 @theme-1')], source=dict(kind='user')))
         async def next_fn(*_):
             return dict(kind='accept', messages=[], startsRequestSeries=True)
-        payload = dict(agent=agent, messages=[message], signal=NEVER_ABORTED, turn=1, step=2)
-        decision = await agent.ctx.waterfall('agent/pre-step', payload, next_fn)
+        payload = dict(agent=agent, messages=[message], signal=NEVER_ABORTED, turn=1, step=2,
+                       modelSelection=ctx.get('agentDefaultModel').currentSelection())
+        decision = await agent.dispatch.waterfall('agent/pre-step', payload, next_fn)
         assert decision['startsRequestSeries'] is True
         references = [msg for msg in decision['messages'] if msg.get('source', {}).get('plugin') == 'tool-cordis']
         assert len(references) == 1
@@ -114,7 +118,7 @@ async def test_cordis_reference_version_and_diagnostics_through_canonical_web(tm
         assert 'Use Package pkg-1 as the base' in injected['content'][0]['text']
         assert 'mode="update"' in injected['content'][0]['text']
         assert source not in injected['content'][0]['text']
-        foreign_decision = await foreign.ctx.waterfall('agent/pre-step', dict(payload, agent=foreign), next_fn)
+        foreign_decision = await foreign.dispatch.waterfall('agent/pre-step', payload, next_fn)
         foreign_reference = next(msg for msg in foreign_decision['messages'] if msg.get('source', {}).get('plugin') == 'tool-cordis')
         assert 'unavailable in the current Session' in foreign_reference['content'][0]['text']
         with pytest.raises(ValueError, match='packageId requires pluginId'):
@@ -126,7 +130,7 @@ async def test_cordis_reference_version_and_diagnostics_through_canonical_web(tm
         assert await call('cordis_stop', pluginId=pid) == dict(pluginId=pid)
         assert (await call('cordis_inspect_self', pluginId=pid))['state'] == 'stopped'
         await call('cordis_undefine', pluginId=pid)
-        removed = await agent.ctx.waterfall('agent/pre-step', payload, next_fn)
+        removed = await agent.dispatch.waterfall('agent/pre-step', payload, next_fn)
         removed_reference = next(msg for msg in removed['messages'] if msg.get('source', {}).get('plugin') == 'tool-cordis')
         assert 'unavailable in the current Session' in removed_reference['content'][0]['text']
         with pytest.raises(ValueError, match='dynamic plugin'):
@@ -141,6 +145,7 @@ async def test_cordis_reference_version_and_diagnostics_through_canonical_web(tm
 async def test_inspect_uses_real_scoped_tools_and_canonical_remote_settlement(tmp_path):
     ctx = await web_context(tmp_path / 'home')
     pending = None
+    client = None
     try:
         for sid in ('inspect-owner', 'inspect-other'):
             await ctx.get('sessionController').create(dict(sessionId=sid, cwd=str(tmp_path), agentPreset='cordis'))
@@ -153,7 +158,7 @@ async def test_inspect_uses_real_scoped_tools_and_canonical_remote_settlement(tm
             tool = next(tool for tool in tools.list_tools(scope=agent.ctx) if tool.name == name)
             return await tool.execute(args, execution)
         directory = await call('cordis_inspect_list')
-        assert [row['id'] for row in directory['providers']] == ['Service', 'Event', 'Builtin', 'Tool']
+        assert [row['id'] for row in directory['providers']] == ['Service', 'Event', 'Config', 'Tool']
         local_tools = agent.ctx.get('tools')
         dispose = local_tools.register_tool(dict(name='inspect_only_owner', description='Scoped probe',
             parameters=dict(type='object', properties={}), execute=lambda *_: dict(ok=True),
@@ -173,6 +178,9 @@ async def test_inspect_uses_real_scoped_tools_and_canonical_remote_settlement(tm
             inputSchema=dict(type='object', properties={}, additionalProperties=False),
             outputSchema=dict(type='object', properties=dict(root=dict(type='string')), required=['root'], additionalProperties=False))])
         assert await remote('syncInspectManifest', providers=[client_manifest]) is None
+        peer = SimpleNamespace(principal=dict(kind='owner'), signal=NEVER_ABORTED)
+        client = ctx.get('typertGateway').events.open(dict(args={}), NEVER_ABORTED, peer)
+        assert (await client.__anext__())['type'] == 'ready'
         received = asyncio.Queue()
         ctx.on('cordis/inspect-query', received.put_nowait)
         pending = asyncio.create_task(call('cordis_inspect_query', platform='client', provider='Slots', method='listSubTree'))
@@ -189,4 +197,6 @@ async def test_inspect_uses_real_scoped_tools_and_canonical_remote_settlement(tm
             if not pending.done():
                 pending.cancel()
             await asyncio.gather(pending, return_exceptions=True)
+        if client is not None:
+            await client.aclose()
         await close_web_context(ctx)

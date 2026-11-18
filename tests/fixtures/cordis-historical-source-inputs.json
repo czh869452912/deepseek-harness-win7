@@ -1,0 +1,90 @@
+{
+  "source_commit": "a4c74a91e06b00fe0b0937bde982170c526cc842",
+  "source_repository": "https://github.com/deepseek-ai/deepseek-harness",
+  "scope": "Minimal original Source members needed to verify retained Native Creative historical fixtures; not current acceptance",
+  "fixture": "cordis-historical-source-inputs.json.gz",
+  "content_sha256": "c7e6705a37c43821eacf736f72ec07a8d8c26f7948dbf68987305c09fec4e5ae",
+  "content_size": 751781,
+  "members": {
+    "reference/packages/core/tools/src/json-schema.ts": {
+      "git_blob": "c064fb294c7bb6349befc825699e3dc841766d30",
+      "size": 26289,
+      "sha256": "13deffdfd34539e23706b0fde235991da45b2f07c5c18dbbf3ca734c1da0c788"
+    },
+    "reference/packages/extensions/cordis-host-runner/src/inspect-registry.ts": {
+      "git_blob": "7a4351348986708b3a5e8f83f0facd53451a144f",
+      "size": 10323,
+      "sha256": "1f530c25e6eeffdf6386e2896b4555825111cb6efdb4b784fae71c3cc08e518e"
+    },
+    "reference/packages/extensions/tool-cordis/src/providers.ts": {
+      "git_blob": "1c1998ab18460d633d18e60e71a4216e7d23eed4",
+      "size": 4184,
+      "sha256": "1bdd9a6348e69bb3e98f4bfa926922945c0d6d8281e13157ec48f21a6f70e5a6"
+    },
+    "reference/packages/extensions/tool-cordis/src/api-catalog.ts": {
+      "git_blob": "1fb4643b80f0174cdc736f762f9e316e62353181",
+      "size": 472143,
+      "sha256": "eb8bf45bf60a4cac3628c84683d8e20d43a808806f72fd65f98954a477ea3328"
+    },
+    "reference/packages/extensions/cordis-host-runner/src/index.ts": {
+      "git_blob": "332e36fbb82d6405ef79afd73423627eb171eaf8",
+      "size": 52871,
+      "sha256": "3e8bc7152a398bf629fe588b44d5b9ab532c34d661064c03c346249aad28781c"
+    },
+    "reference/packages/extensions/cordis-host-runner/src/registry.ts": {
+      "git_blob": "560ff207d148a873cbe66cb4aa9dacb6246817ce",
+      "size": 8903,
+      "sha256": "8d37d583a0e0f94581416ccb9c82b5bd37873c603c0a2c010fafa5366008587e"
+    },
+    "reference/packages/extensions/cordis-host-runner/src/types.ts": {
+      "git_blob": "5cf28e503e9be7fe71ccf0a66366674413a662f4",
+      "size": 14099,
+      "sha256": "2bf88fd24feeb3c6ae05bd739fabdd72a61dbad2362f9b46cbdcd588313c83c1"
+    },
+    "reference/packages/extensions/cordis-host-runner/src/sandbox.ts": {
+      "git_blob": "fc0a771e4f647924845a382eca267ab02fdd39e2",
+      "size": 13429,
+      "sha256": "a7deb6432593dab5f3976eb1c3f63ff8457112048a0a03294581ab6d42baed05"
+    },
+    "reference/packages/extensions/cordis-host-runner/src/guard.ts": {
+      "git_blob": "a70e47ef55cde288662dfef4d913181d7ddadd8a",
+      "size": 37929,
+      "sha256": "95dd68b8b5a295b950b6c8421c9630dd4155c5d93c903dd49d042ce4325e2735"
+    },
+    "reference/packages/extensions/cordis-host-runner/src/lifecycle.ts": {
+      "git_blob": "11b08327062e8b30d3ca028ec5429c5dce0b56f0",
+      "size": 2643,
+      "sha256": "cbe2d9beb583151fe590e2b8ebcdf1656cedc083cfde60532251f11c4f4a673f"
+    },
+    "reference/packages/extensions/cordis-host-runner/tests/helpers.ts": {
+      "git_blob": "f89a85f26804fb881df6d8f3bed43fe24e9288be",
+      "size": 9293,
+      "sha256": "53b47a4bff82da4c952b33a03df450b26f07c48d30254c4dc6e82143315f5de0"
+    },
+    "reference/packages/core/tools/src/schema.ts": {
+      "git_blob": "35b4106cd25df794d40dfead49bafd999d44db9d",
+      "size": 25337,
+      "sha256": "be6e4b3fa18fe633c6c83ed4f9072da5a2a203f64bf0b70c9066fd58b0e2c897"
+    },
+    "reference/packages/extensions/tool-cordis/src/index.ts": {
+      "git_blob": "e46e881ac3161c95f7b18e4aee9113caaa5c9207",
+      "size": 25434,
+      "sha256": "7b2f57367fe0fff2051c004e753c383b7054f676aa60f28a630846bc12156ae4"
+    },
+    "reference/packages/extensions/tool-cordis/src/prompt.ts": {
+      "git_blob": "81d91b8e283b840b558a2162fd2f97e3e73c0b82",
+      "size": 10318,
+      "sha256": "f0f5c9bc455af7cb594a79b09d1aa595780f860560f002b1f84f9f62edc32c7c"
+    },
+    "reference/packages/extensions/tool-cordis/src/present.ts": {
+      "git_blob": "06c91f0dca19fbbee31deee6f69713be39b2e085",
+      "size": 3872,
+      "sha256": "908bfc34f8575bfa7fe4023f8e95cc38c871cd2718c190e0d23474a2942a5e73"
+    },
+    "reference/packages/extensions/tool-cordis/src/inspect.ts": {
+      "git_blob": "a41ae3442c93d79a037d5ff912320fa649080b55",
+      "size": 15243,
+      "sha256": "74d3b247a189f023d222822b35c308f54e24ff106585a3b56b220e795ade601f"
+    }
+  }
+}

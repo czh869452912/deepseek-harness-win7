@@ -24,6 +24,8 @@ C9-DJ：39 个共享门禁夹具同时缓存失败初始化，后续消费者仍
 
 C9-DK：预设清单按包声明读取全部补丁，真实 Launcher 帮助、当前资源解析、独立检查工具和 Python 管理扩展分别验证；修复提前取消的插件包装任务遗留未启动协程。106 项定向通过，约 12 KiB 合成夹具及帮助命令临时 home 已清理，原失败和警告保留。[检查](profile-setup-ownership-checks.json)。
 
+C9-DL：五类 Cordis 历史观察固定原 pin，以 16 份最小原版源码字节核验，兼容检查与当前 Web 消费者分别验证。原 323 项通过后，剩余分发/订阅入口修正的 7 项及五份身份复验通过；当前原版检查注册表 26 组实际对照通过。约 143 KiB 合成资产清理，19 份实际观察保留，不提升历史 bug 例外为当前资格。[检查](cordis-historical-current-consumers-checks.json)。
+
 C9-CX：Win7 Desktop 外壳的旧来源与当前宿主/前端输入分开核验，明确私有管道 v3 并非当前原版 Desktop v4 生命周期。首轮 158 项通过、一项旧异步消费者失败，修复后 26 项及诊断编码两项复验通过，原始失败保留；失效工作区已清理。[范围与限制](../../../docs/research/2026-11-18-win7-desktop-current-scope.md)、[检查](desktop-current-scope-checks.json)。
 
 C9-CV：统一入口接到当前完整合同，冻结实际安装依赖/双架构构建输入和观察器；新鲜 x64/x86 包运行完整 SDK、Office、元数据、原版浏览器、应用冷恢复及 Standard Desktop 打包检查。相关 89 项与最后 47 项定向通过；这些单元控制不构成实际统一资格。已清理约 2.0 MiB 失效夹具。[编排检查](current-orchestration-checks.json)。

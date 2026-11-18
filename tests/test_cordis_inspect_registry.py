@@ -1,4 +1,4 @@
-"""Regress real source observations and native ownership at the Inspect boundary."""
+"""Historical Inspect compatibility and native ownership; not current parity."""
 import asyncio
 import hashlib
 import json
@@ -14,6 +14,7 @@ from dsh.core.tools import Tool
 from dsh.extensions.inspect_registry import CordisInspectRegistryService
 from scripts.inspect_oracle import classify, NATIVE_DISPOSAL, SOURCE_DISPOSAL
 from scripts.oracles.inspect_python import observe, manifest
+from historical_cordis_inputs import assert_historical_cordis_inputs
 
 ROOT = Path(__file__).resolve().parents[1]
 SPECS = json.loads((ROOT / 'scripts/oracles/inspect-cases.json').read_text(encoding='utf-8'))
@@ -28,11 +29,9 @@ async def test_inspect_real_source_observation(spec, expected):
 
 
 def test_inspect_source_receipts_are_bound_to_pinned_inputs():
-    assert FIXTURE['target_upstream'] == json.loads((ROOT / 'migration/baseline.json').read_text(encoding='utf-8'))['target_upstream']
+    assert_historical_cordis_inputs('inspect', FIXTURE)
     assert len(FIXTURE['observations']) == len(SPECS) - 1
     assert [row['mode'] for row in FIXTURE['observations']] == [spec['mode'] for spec in SPECS[:-1]]
-    for path, digest in FIXTURE['source_sha256'].items():
-        assert hashlib.sha256((ROOT / path).read_text(encoding='utf-8').encode('utf-8')).hexdigest() == digest, path
 
 
 def test_unload_exception_gate_rejects_any_other_difference():

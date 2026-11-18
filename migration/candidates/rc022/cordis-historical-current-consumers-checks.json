@@ -1,0 +1,17 @@
+{
+  "contract": "C9-DL",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "status": "Targeted historical compatibility and current consumers passed",
+  "historical_scope": "Inspect, runner, guard, retirement and seven-tool callback fixtures retain their original a4c74a91 pin and exact observations. Sixteen minimal original Source members were read from that Git commit, checked against every fixture SHA-256 and Git blob identity, then stored in one 162500-byte compressed fixture. Tests check original bytes offline, independently of current reference or old Git object availability. Original reviewed bug predicates apply only to those historical controls.",
+  "current_consumers": "Mount the explicit Native Creative extension on Minimal agents for management journeys; current upstream cordis remains read-only inspection. Use actual current Agent dispatch with scoped identity and model selection; open a real service-owned owner event subscription before client inspection and activation-event settlement.",
+  "verification": [
+    {"run": "rc022-historical-cordis-consumers-20261118-01", "passed": 323, "failed": 1, "seconds": 81.36, "remaining_failure": "Retired gateway stream method; corrected and rerun separately"},
+    {"run": "rc022-native-creative-consumers-20261118-01", "passed": 2, "failed": 2, "seconds": 32.81, "remaining_failures": "Current model-selection payload and live-client prerequisite"},
+    {"run": "rc022-native-creative-consumers-20261118-02", "passed": 1, "failed": 1, "seconds": 17.14, "remaining_failure": "Direct Context event dispatch bypassed current Agent identity routing"},
+    {"run": "rc022-cordis-scoped-consumers-20261118-01", "passed": 7, "seconds": 18.78, "scope": "Remaining actual Web consumers plus current inspection tools/registry consumers"},
+    {"run": "rc022-historical-cordis-inputs-20261118-01", "passed": 5, "seconds": 1.10, "scope": "All historical identities verified from compressed original Source members"},
+    {"run": "rc022-current-inspect-registry-recheck-20261118-01", "status": "passed", "observations": 26, "scope": "Independent actual current Source/Python comparison"}
+  ],
+  "cleanup": {"bytes_removed": 146761, "owned_directories_removed": 12, "real_observations_retained": 19, "additional": "Final historical identity run's empty owned directories removed; original failed reports, commands and logs/XML retained"},
+  "qualification": "Targeted completion only; old observations do not qualify current Source and partial diagnostic runs do not establish full acceptance."
+}

@@ -1,4 +1,4 @@
-"""Original callback observations plus native language boundary verification."""
+"""Historical callback contracts for the explicit Native language extension."""
 import hashlib
 import importlib.util
 import json
@@ -7,6 +7,7 @@ from pathlib import Path
 import pytest
 
 from dsh.extensions.cordis_prompt import native_contracts, SOURCE_CONTRACTS
+from historical_cordis_inputs import assert_historical_cordis_inputs
 
 ROOT = Path(__file__).resolve().parents[1]
 SPECS = json.loads((ROOT / 'scripts/oracles/cordis-tools-cases.json').read_text(encoding='utf-8'))
@@ -28,10 +29,9 @@ async def test_actual_native_registration_against_original_callback(index):
 
 
 def test_original_evidence_inputs_remain_pinned():
+    assert_historical_cordis_inputs('cordis-tools', FIXTURE)
     assert FIXTURE['target_upstream'] == SOURCE_CONTRACTS['target_upstream']
     assert len(SPECS) == len(FIXTURE['observations'])
-    for path, digest in FIXTURE['source_sha256'].items():
-        assert hashlib.sha256((ROOT / path).read_text(encoding='utf-8').encode('utf-8')).hexdigest() == digest, path
 
 
 def test_native_host_guidance_and_parameter_contract_are_explicit():

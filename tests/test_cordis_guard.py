@@ -1,4 +1,4 @@
-"""Real source-boundary observations and guarded native Host integration."""
+"""Historical guard observations and guarded Native Host integration."""
 import copy
 import hashlib
 import json
@@ -10,6 +10,7 @@ from dsh.core.abort import NEVER_ABORTED
 from dsh.extensions.cordis_guard import sandbox_define_tool, sandbox_register_tool, clone_json
 from scripts.cordis_guard_oracle import BUG_MODES, classify, corrected_observation
 from scripts.oracles.cordis_guard_python import observe, definition
+from historical_cordis_inputs import assert_historical_cordis_inputs
 
 ROOT = Path(__file__).resolve().parents[1]
 SPECS = json.loads((ROOT / 'scripts/oracles/cordis-guard-cases.json').read_text(encoding='utf-8'))
@@ -31,11 +32,9 @@ async def test_real_guard_source_observation(spec, source):
 
 
 def test_guard_source_observations_are_bound_to_pinned_inputs():
-    assert FIXTURE['target_upstream'] == json.loads((ROOT / 'migration/baseline.json').read_text(encoding='utf-8'))['target_upstream']
+    assert_historical_cordis_inputs('cordis-guard', FIXTURE)
     assert len(SPECS) == len(FIXTURE['observations'])
     assert [row['mode'] for row in FIXTURE['observations']] == [spec['mode'] for spec in SPECS]
-    for path, digest in FIXTURE['source_sha256'].items():
-        assert hashlib.sha256((ROOT / path).read_text(encoding='utf-8').encode('utf-8')).hexdigest() == digest, path
 
 
 def test_callable_context_exception_rejects_every_other_change():

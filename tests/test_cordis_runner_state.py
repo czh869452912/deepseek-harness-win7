@@ -1,4 +1,4 @@
-"""Pinned runner journeys and actual canonical Remote/activation lifetimes."""
+"""Historical runner journeys and current canonical Remote activation lifetimes."""
 from dsh.core.system_prompt import SystemPrompt as SourceToolsPrompt
 import asyncio
 import copy
@@ -16,6 +16,7 @@ from dsh.extensions.host_runner import DynamicCordisRunner
 from dsh.typert.dispatch import RemoteDispatcher
 from scripts.cordis_runner_oracle import classify, collision_projection, native_projection, source_fixture_matches
 from scripts.oracles.cordis_runner_python import observe
+from historical_cordis_inputs import assert_historical_cordis_inputs
 
 ROOT = Path(__file__).resolve().parents[1]
 SPECS = json.loads((ROOT / 'scripts/oracles/cordis-runner-cases.json').read_text(encoding='utf-8'))
@@ -45,10 +46,8 @@ async def test_same_approval_request_attaches_to_existing_run_for_both_approval_
 
 
 def test_runner_source_fixture_is_bound_to_actual_pinned_inputs():
-    assert FIXTURE['target_upstream'] == json.loads((ROOT / 'migration/baseline.json').read_text(encoding='utf-8'))['target_upstream']
+    assert_historical_cordis_inputs('cordis-runner', FIXTURE)
     assert [row['mode'] for row in FIXTURE['observations']] == [spec['mode'] for spec in SPECS]
-    for path, digest in FIXTURE['source_sha256'].items():
-        assert hashlib.sha256((ROOT / path).read_text(encoding='utf-8').encode('utf-8')).hexdigest() == digest, path
 
 
 @pytest.mark.parametrize('damage', ['missing-stack', 'source-line', 'exception-type', 'extra-frame'])
@@ -176,7 +175,8 @@ async def test_canonical_remote_binds_original_failure_fields_and_activation_eve
         await ctx.get('sessionController').create(dict(sessionId='runner-owner', cwd=str(tmp_path), agentPreset='minimal'))
         owner = ctx.get('agents').get('runner-owner')
         runner = ctx.get('dynamicCordisRunner')
-        stream = await ctx.get('typertGateway').open_wire_stream('$events', dict(args={}), controller.signal)
+        peer = NS(principal=dict(kind='owner'), signal=controller.signal)
+        stream = ctx.get('typertGateway').events.open(dict(args={}), controller.signal, peer)
         assert (await stream.__anext__())['type'] == 'ready'
         gateway = RemoteDispatcher(ctx)
         events = []

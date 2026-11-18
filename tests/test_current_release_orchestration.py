@@ -41,6 +41,37 @@ def test_current_gate_binds_root_installed_dependencies(tmp_path, monkeypatch):
         gate.installed_node_identity(source, node)
 
 
+@pytest.mark.parametrize('damage', ['none', 'pin', 'dirty'])
+def test_reused_prepared_source_is_pinned_and_frozen(tmp_path, monkeypatch, damage):
+    import os
+    from tests.test_qualification_inputs import directory_link
+    monkeypatch.setattr(gate, 'ROOT', tmp_path / 'checkout')
+    source, node = gate.ROOT / 'source', gate.ROOT / 'toolchain/node.exe'
+    for path in [source, node.parent, gate.ROOT / 'node_modules'] + [
+            gate.ROOT / folder / 'node_modules' for folder in
+            ['scripts/oracles', 'scripts/oracles/official', 'scripts/source-runtime']]:
+        path.mkdir(parents=True)
+    prepared = tmp_path / 'prepared'
+    (prepared / 'node_modules').mkdir(parents=True)
+    module = prepared / 'workspace.js'; module.write_bytes(b'prepared workspace')
+    link = source / 'node_modules'; directory_link(link, prepared / 'node_modules')
+    monkeypatch.setattr(gate, 'git', lambda *args, **kwargs:
+        ('stale' if damage == 'pin' else gate.lanes.TARGET) if args[0] == 'rev-parse'
+        else ('modified' if damage == 'dirty' else ''))
+    try:
+        if damage != 'none':
+            with pytest.raises(ValueError, match='unchanged current pin'):
+                gate.installed_node_identity(source, node)
+        else:
+            before = gate.installed_node_identity(source, node)
+            assert str(module) in before['files']
+            module.write_bytes(b'changed prepared workspace')
+            assert gate.installed_node_identity(source, node) != before
+    finally:
+        if os.name == 'nt': os.rmdir(str(link))
+        else: link.unlink()
+
+
 def test_current_x86_runtime_freezes_separate_approved_dependencies(tmp_path):
     args = NS(python32=tmp_path / 'base', site_packages32=tmp_path / 'approved', site_packages=None)
     value = gate.runtime_inputs(args)

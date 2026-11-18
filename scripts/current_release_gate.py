@@ -50,6 +50,14 @@ def desktop_tools(args):
 def installed_node_identity(source, node):
     roots = [source, node.parent, ROOT / 'node_modules'] + [ROOT / folder / 'node_modules' for folder in
         ['scripts/oracles', 'scripts/oracles/official', 'scripts/source-runtime']]
+    prepared = (source / 'node_modules').resolve().parent
+    if prepared != source:
+        # An isolated tracked Source may reuse an existing prepared pnpm graph.
+        # Workspace links can enter that original Source, so bind its full tree
+        # and require the same clean pin rather than approving an arbitrary parent.
+        if git('rev-parse', 'HEAD', root=prepared) != lanes.TARGET or git('status', '--porcelain', root=prepared):
+            raise ValueError('Reused prepared Source must have the unchanged current pin')
+        roots.append(prepared)
     # Bind installed bytes and resolution links, including absent optional links.
     # Every dependency root is explicit; links may not escape these inputs.
     return tree_identity(roots, [ROOT, source, node.parent] + [path.resolve() for path in roots],

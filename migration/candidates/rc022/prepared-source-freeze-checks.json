@@ -1,0 +1,15 @@
+{
+  "contract": "C9-CZ",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "status": "targeted passed; unified qualification pending",
+  "changes": [
+    "Use an independent tracked Source worktree within the qualification checkout, retaining migration's repository containment checks",
+    "When pnpm dependencies are reused through a directory junction, require the prepared workspace to have the same clean current pin and freeze its full actual tree",
+    "Refuse stale/dirty reused Source and detect changed workspace code"
+  ],
+  "verification": {"run": "rc022-prepared-source-freeze-20261118-01", "passed": 27, "seconds": 1.88},
+  "cleanup": {"bytes_removed": 3145, "owned_directories_removed": 3, "retained": "command and log/XML"},
+  "temporary_source": {"run": "rc022-isolated-source-20261118-01", "copied_files": 16972, "copied_bytes": 218473402, "dependency_junctions": 428, "owner": "rc022 qualification", "cleanup_milestone": "After final qualification consumers; retain observations and remove independent Source/generated copies"},
+  "metadata": "Original Source .git pointer restored to its exact original SHA after the external Source junction was removed",
+  "acceptance": "No complete gate, archive or Windows 7 acceptance established"
+}

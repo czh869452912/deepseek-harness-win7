@@ -575,3 +575,5 @@ C9-CG：显式整理 472 个原版测试文件、399 个当前配对入口，另
 | C9-CI | 实际解压 SDK 三场景、Office 和现代/108 原版浏览器五步定向通过；修复导出 Client 的当前 codec/目标、Web 兼容插件挂载及隔离 ACL runner，清理约 801 MiB 中间资产；干净完整资格和应用冷恢复仍待后续 | [解压与浏览器](current-extracted-browser-checks.json) |
 
 | C9-CY | 干净检出发现运行时字节差异，冻结阶段拒绝且未执行测试；保留 YAML 与两份历史元数据原字节、补齐根 Node 依赖冻结，32 项定向通过；新鲜统一资格待执行 | [检出与冻结](checkout-freeze-checks.json) |
+
+| C9-CZ | 使用仓库内独立原版检出，保留路径边界检查；复用 pnpm 工作区时验证当前干净 pin 并冻结完整原工作区，27 项定向通过，原版 Git 指针元数据已原样恢复 | [复用 Source 冻结](prepared-source-freeze-checks.json) |

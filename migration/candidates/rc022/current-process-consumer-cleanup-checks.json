@@ -1,0 +1,17 @@
+{
+  "contract": "C9-GB",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "change": "Following C9-GA, inspect the remaining direct-done process ownership assertions. Actual pwsh kill/abort, ripgrep and sandbox-shell fixtures now await the already-owned ordinary cleanup tasks with a three-second bound. Keep owner-unload assertions and production done/Job semantics unchanged.",
+  "verification": {
+    "run": "rc022-current-c9gb-process-consumers-20261119-01",
+    "passed": 41,
+    "seconds": 8.75,
+    "scope": "Complete actual pwsh, ripgrep, sandbox shell, ordinary cleanup and ordinary spawn consumers including detached descendant ownership"
+  },
+  "cleanup": {
+    "directories": 3,
+    "bytes_removed": 4774,
+    "observations": 2
+  },
+  "qualification": "Targeted only; frozen run09 unchanged."
+}

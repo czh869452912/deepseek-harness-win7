@@ -94,5 +94,6 @@ async def test_actual_acl_runner_denies_write_and_full_access_bypasses_provider(
         result=await asyncio.wait_for(full.result(),15)
         assert result['exitCode']==0 and target.read_text(encoding='utf-8-sig').strip()=='payload'
         assert result['sandbox']==dict(mode='danger-full-access',denied=False)
+        await asyncio.wait_for(asyncio.gather(*ctx.subprocess.ordinary_cleanups),3)
         assert not ctx.subprocess.live
     finally:await ctx.fiber.dispose()

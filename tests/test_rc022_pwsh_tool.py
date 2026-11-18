@@ -80,6 +80,7 @@ async def test_actual_background_kill_and_foreground_abort_join_owned_process(tm
         assert ctx.subprocess.live
         killed=await call('job_kill',dict(job_id=identity));assert not killed.is_error
         await ctx.jobs.wait(identity,10000,lease.agent.id)
+        await asyncio.wait_for(asyncio.gather(*ctx.subprocess.ordinary_cleanups),3)
         assert ctx.jobs.get(identity,lease.agent.id)['status']=='killed' and not ctx.subprocess.live
         ctx.jobs.remove(identity,lease.agent.id)
         controller=AbortController()
@@ -90,6 +91,7 @@ async def test_actual_background_kill_and_foreground_abort_join_owned_process(tm
         assert ctx.subprocess.live;controller.abort()
         stopped=await asyncio.wait_for(pending,10)
         assert stopped.is_error and 'tool call aborted' in stopped.content[0]['text']
+        await asyncio.wait_for(asyncio.gather(*ctx.subprocess.ordinary_cleanups),3)
         assert not ctx.subprocess.live and ctx.jobs.list(lease.agent.id)==[]
         assert not controller.signal._listeners
     finally:await lease.dispose();await ctx.fiber.dispose()

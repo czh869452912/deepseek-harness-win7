@@ -134,8 +134,6 @@ async def test_actual_packaged_rg_stream_owned_by_native_process_range(tmp_path,
         child=await ripgrep.spawn_ripgrep(ctx.subprocess,dict(argv=['--files','--null','--sort=path'],cwd=str(tmp_path),stdio=dict(stdin='ignore',stdout='pipe',stderr=dict(maxBytes=1000)),graceMs=5))
         result=await ripgrep.read_ripgrep_lines(child,'\0',lambda line:lines.append(line) or True)
         assert result==dict(outcome=dict(exitCode=0,signal=None),stopped=False) and lines==['file.txt','雪.txt']
-        for _ in range(50):
-            if not ctx.subprocess.live:break
-            await asyncio.sleep(0)
+        await asyncio.wait_for(asyncio.gather(*ctx.subprocess.ordinary_cleanups),3)
         assert not ctx.subprocess.live and child.stdout.closed
     finally:await ctx.fiber.dispose()

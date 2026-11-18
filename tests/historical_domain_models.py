@@ -17,11 +17,13 @@ from release_gate_fixtures import historical_source, native_fixture
 ROOT = Path(__file__).resolve().parents[1]
 DOMAINS = frozenset(('agent-dependencies', 'ask-user', 'javascript-errors',
                      'message-values', 'subagent-model', 'tool-durable',
-                     'tool-errors', 'unicode-carrier'))
+                     'tool-errors', 'unicode-carrier', 'canonical-llm'))
 
 # Current production observations run independently in the current paired lane.
 # These mappings identify successors, never transfer historical acceptance.
 SUCCESSORS = {
+    'canonical-llm': ('rc022_messages_wire', 'rc022_messages_adapter',
+                      'rc022_messages_framing', 'rc022_request_extensions'),
     'agent-dependencies': ('rc022_agent_registration', 'rc022_agent_boundary'),
     'ask-user': ('rc022_question_service', 'rc022_question_projection'),
     'javascript-errors': ('rc022_subprocess_errors', 'rc022_tool_pipeline'),

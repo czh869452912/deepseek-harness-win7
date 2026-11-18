@@ -218,6 +218,39 @@
       "sha256": "b3eb936b353ced2a18e247aca990aa9bc99b3726451d217dad02b5819d64c171",
       "fixture": "b3eb936b353ced2a18e247aca990aa9bc99b3726451d217dad02b5819d64c171.json.gz",
       "scope": "Historical immutable template for explicit synthetic parser unit model; no current Native execution/parity"
+    },
+    {
+      "archive": "RC3-QUALIFICATION-20261018-228CFACC.zip",
+      "archive_sha256": "f0f175c64849ce0d22b0790fd2fc591daf41989f58961fb8fc7db7f62458f0f2",
+      "member": "full-gate-root.zip!/canonical-llm-paired.source.json",
+      "container": "full-gate-root.zip",
+      "container_sha256": "72b203024ac56295e662764c6b3c6f2deb36153e62e678fd4ec3d1d46e942e3b",
+      "size": 112576,
+      "sha256": "52b4a22d08c48d5a0041eb2546a066bb8c16a211218e9a4417b712baa95963a1",
+      "fixture": "52b4a22d08c48d5a0041eb2546a066bb8c16a211218e9a4417b712baa95963a1.json.gz",
+      "scope": "Byte-preserved historical Source facts for explicit compatibility/parser unit controls; never current Source or release evidence"
+    },
+    {
+      "archive": "RC3-QUALIFICATION-20261018-228CFACC.zip",
+      "archive_sha256": "f0f175c64849ce0d22b0790fd2fc591daf41989f58961fb8fc7db7f62458f0f2",
+      "member": "rc1-capabilities.zip!/source.json",
+      "container": "rc1-capabilities.zip",
+      "container_sha256": "af419bc13c968a7b15b99093ca18613c780c1da5ae92fdbbd6d803cf2d262b14",
+      "size": 413076,
+      "sha256": "6e359b4bdd631b368ecdf67cff28230259d8b2464159a5b0ce46d903ebf86413",
+      "fixture": "6e359b4bdd631b368ecdf67cff28230259d8b2464159a5b0ce46d903ebf86413.json.gz",
+      "scope": "Byte-preserved historical Source facts for explicit compatibility/parser unit controls; never current Source or release evidence"
+    },
+    {
+      "archive": "RC3-QUALIFICATION-20261018-228CFACC.zip",
+      "archive_sha256": "f0f175c64849ce0d22b0790fd2fc591daf41989f58961fb8fc7db7f62458f0f2",
+      "member": "rc1-capabilities.zip!/inputs.json",
+      "container": "rc1-capabilities.zip",
+      "container_sha256": "af419bc13c968a7b15b99093ca18613c780c1da5ae92fdbbd6d803cf2d262b14",
+      "size": 367728,
+      "sha256": "bfd03a3941712985d1a47d1eece32b7c564919173de4eb8e9b0faef1d30aca2f",
+      "fixture": "bfd03a3941712985d1a47d1eece32b7c564919173de4eb8e9b0faef1d30aca2f.json.gz",
+      "scope": "Original historical capability inputs; unit tests derive only their owned workspace path. Never current Source evidence"
     }
   ]
 }

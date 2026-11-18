@@ -425,7 +425,7 @@ REQUIRED_REGRESSION = {
     },
 
     'test_canonical_llm_consumers': {
-        *{'test_actual_original_and_native_canonical_llm_match[' + name + ']' for name in CANONICAL_LLM_NAMES},
+        *{'test_historical_source_and_native_llm_compatibility_match[' + name + ']' for name in CANONICAL_LLM_NAMES},
         *{'test_canonical_llm_requires_complete_values_identity_and_runtime[' + damage + ']' for damage in ('request', 'event', 'tool-id', 'message-form', 'message-split', 'message-cross-fixture', 'retry-form', 'retry-split', 'retry-cross-fixture', 'tail', 'duplicate', 'order', 'type', 'root', 'python', 'executable', 'module', 'bytes', 'group-missing', 'group-rows', 'group-root', 'group-executable', 'group-module')},
         *{'test_canonical_llm_source_identity_is_required[' + damage + ']' for damage in ('pin', 'node', 'inputs', 'bytes')},
         *{'test_portable_canonical_llm_refuses_partial_receipts[' + side + ']' for side in ('source', 'native')},

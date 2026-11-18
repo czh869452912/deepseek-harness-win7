@@ -229,8 +229,14 @@ async def native(inputs):
             rows['positions'].append(row)
     ctx = Context()
     try:
-        await ctx.plugin(SessionStore)
-        await ctx.plugin(SessionProjectionRegistry)
+        # Service constructors take a format version rather than Cordis config.
+        # Construct them in their owning plugin contexts with the v3 contract.
+        def session_provider(owner):
+            SessionStore(owner, format_version=3)
+        def projection_provider(owner):
+            SessionProjectionRegistry(owner, format_version=3)
+        await ctx.plugin(session_provider)
+        await ctx.plugin(projection_provider)
         await ctx.plugin(SystemPrompt)
         registry = ctx.get('sessionProjections')
         registry.register(TURN_OUTLINE_DEFINITION)

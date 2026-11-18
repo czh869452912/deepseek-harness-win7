@@ -1,3 +1,8 @@
+"""Historical 81-case LLM compatibility and parser controls, not current parity.
+
+Original Source facts retain their old pin. Current Messages production
+successors run independently in the rc022 paired lane.
+"""
 import copy
 import json
 from pathlib import Path
@@ -10,9 +15,11 @@ import pytest
 from scripts import canonical_llm_oracle as oracle
 from scripts.verify_portable import canonical_llm_receipts
 from scripts.canonical_llm_values import observation_digest as value_digest
+from historical_domain_models import historical_identity, historical_pair
 
 
 ROOT = Path(__file__).resolve().parents[1]
+identity = historical_identity('canonical-llm', oracle.identity)
 VALUE_DAMAGES = ('request', 'event', 'tool-id', 'message-form', 'message-split', 'message-cross-fixture',
     'retry-form', 'retry-split', 'retry-cross-fixture', 'stream-time', 'system-source', 'tail', 'duplicate', 'order', 'type')
 RUNTIME_DAMAGES = ('root', 'python', 'executable', 'module', 'bytes', 'group-missing', 'group-rows',
@@ -83,24 +90,17 @@ def damage_observations(runtime, damage):
 
 
 @pytest.fixture(scope='module')
-def actual_pair(tmp_path_factory):
-    output = tmp_path_factory.mktemp('canonical-llm-pair') / 'paired.json'
-    completed = subprocess.run([sys.executable, str(ROOT / 'scripts/canonical_llm_oracle.py'),
-        '--output', str(output)], cwd=str(ROOT), capture_output=True, timeout=600)
-    assert completed.returncode == 0, completed.stdout + completed.stderr + output.read_bytes()
-    report = json.loads(output.read_text(encoding='utf-8'))
-    assert report['status'] == 'matched' and report['cases'] == 81
-    return (json.loads(output.with_suffix('.source.json').read_text(encoding='utf-8')),
-        json.loads(output.with_suffix('.native.json').read_text(encoding='utf-8')))
+def actual_pair():
+    return historical_pair('canonical-llm')
 
 
 @pytest.mark.parametrize('name', oracle.NAMES)
-def test_actual_original_and_native_canonical_llm_match(actual_pair, name):
+def test_historical_source_and_native_llm_compatibility_match(actual_pair, name):
     source, native = actual_pair
     source_row = next(row for row in source['rows'] if row['name'] == name)
     native_row = next(row for row in native['rows'] if row['name'] == name)
     assert value_digest([source_row], side='source') == value_digest([native_row], side='native')
-    oracle.validate_runtime(native, ROOT, oracle.identity(source), native['modules'])
+    oracle.validate_runtime(native, ROOT, identity(source), native['modules'])
 
 
 @pytest.mark.parametrize('damage', VALUE_DAMAGES + RUNTIME_DAMAGES)
@@ -130,7 +130,7 @@ def test_canonical_llm_requires_complete_values_identity_and_runtime(actual_pair
     else:
         del runtime['groups']['iterator']['modules']['dsh/llm/llm_service.py']
     with pytest.raises(ValueError):
-        oracle.validate_runtime(runtime, ROOT, oracle.identity(source, check_files=False), original['modules'])
+        oracle.validate_runtime(runtime, ROOT, identity(source), original['modules'])
 
 
 @pytest.mark.parametrize('damage', ('pin', 'node', 'inputs', 'bytes'))
@@ -145,7 +145,7 @@ def test_canonical_llm_source_identity_is_required(actual_pair, damage):
     else:
         source['inputs']['scripts/oracles/canonical-llm-fixtures.json'] = '0' * 64
     with pytest.raises(ValueError):
-        oracle.identity(source)
+        identity(source)
 
 
 def test_literal_identity_marker_remains_a_literal_value():
@@ -161,7 +161,7 @@ def test_source_message_identity_retains_uuid_shape(actual_pair):
     selected = source['rows'][0]['messages'][0]['id']
     source['rows'][0] = replace_identity(source['rows'][0], selected, 'msg-' + selected)
     with pytest.raises(ValueError):
-        oracle.identity(source)
+        identity(source)
 
 
 @pytest.mark.parametrize('side', ('source', 'native'))

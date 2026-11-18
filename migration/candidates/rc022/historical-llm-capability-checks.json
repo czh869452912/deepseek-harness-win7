@@ -1,0 +1,18 @@
+{
+  "contract": "C9-DH",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "status": "Historical compatibility and parser controls passed; independent current search follow-up remains open",
+  "changes": "Retain the old a4c Source pin and original archive member bytes for 81 LLM cases and 21 capability categories. Execute the checkout's retained Native contract providers afresh, with explicit owned v3 service constructors. Derive only the capability input workspace path. Keep all negative controls and the mandatory 81-case regression inventory. Historical facts never certify the current Source.",
+  "verification": [
+    {"run": "rc022-historical-llm-consumers-20261118-01", "passed": 124, "seconds": 55.60},
+    {"run": "rc022-historical-capabilities-20261118-01", "passed": 1, "errors": 28, "reason": "Legacy service class constructor received Cordis config as its format version; raw diagnostic retained"},
+    {"run": "rc022-historical-capabilities-20261118-02", "passed": 1, "errors": 28, "reason": "Context-free object construction omitted projection registration; raw diagnostic retained"},
+    {"run": "rc022-historical-capabilities-20261118-03", "passed": 1, "errors": 28, "reason": "Original input already uses split persona names; attempted older persona binding rejected and removed; raw diagnostic retained"},
+    {"run": "rc022-historical-capabilities-20261118-04", "passed": 29, "seconds": 2.85},
+    {"run": "rc022-historical-consumer-guards-20261118-01", "passed": 34, "seconds": 8.08, "scope": "Archive identity validation, orchestration, mandatory test-definition and LLM consumer coverage guards"},
+    {"run": "rc022-historical-current-successors-20261118-01", "status": "partial", "passed_pairs": {"messages_wire": 407, "messages_adapter": 33, "messages_framing": 1352, "request_extensions": 48, "session_append": 16, "session_projection_store": 4, "session_prompt": 11}, "failed": {"messages_search": "Actual current Source observer exceeded its existing 60-second deadline; preserve command and inputs for follow-up, no passing claim"}}
+  ],
+  "archive": {"name": "RC3-QUALIFICATION-20261018-228CFACC.zip", "sha256": "f0f175c64849ce0d22b0790fd2fc591daf41989f58961fb8fc7db7f62458f0f2", "original_retained": true, "minimal_members": ["full-gate-root.zip!/canonical-llm-paired.source.json", "rc1-capabilities.zip!/source.json", "rc1-capabilities.zip!/inputs.json"]},
+  "cleanup": {"bytes_removed": 3864198, "owned_directories_removed": 23, "retained": "Commands, XML/logs, raw failure diagnostics, byte-bound actual observations and search timeout inputs. Two actual v4 session logs preserved before retiring the successful pair's workspace."},
+  "acceptance": "No new accepted exception or release qualification. Frozen complete collection 3f20446c continues independently. Search timeout remains an explicit next consumer to diagnose."
+}

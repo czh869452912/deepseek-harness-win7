@@ -15,7 +15,7 @@ def test_historical_domain_guard_keeps_original_facts_and_rejects_changed_inputs
     source, native = historical_pair(name)
     module = importlib.import_module('scripts.' + name.replace('-', '_') + '_oracle')
     guard = historical_identity(name, module.identity)
-    arguments = () if name == 'javascript-errors' else (ROOT / 'reference',)
+    arguments = () if name in ('javascript-errors', 'canonical-llm') else (ROOT / 'reference',)
     guard(source, *arguments)
     altered = copy.deepcopy(source)
     altered['inputs'][next(iter(altered['inputs']))] = '0' * 64

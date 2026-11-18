@@ -1,0 +1,47 @@
+{
+  "contract": "C9-FA",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "migration_index": [
+    {
+      "command": [
+        "C:\\Users\\czh86\\Documents\\Codex\\deepseek-harness-win7\\.venv\\Scripts\\python.exe",
+        "scripts/migration.py",
+        "check"
+      ],
+      "exit_code": 0,
+      "seconds": 219.71799999999348
+    },
+    {
+      "command": [
+        "C:\\Users\\czh86\\Documents\\Codex\\deepseek-harness-win7\\.venv\\Scripts\\python.exe",
+        "scripts/migration.py",
+        "ready"
+      ],
+      "exit_code": 0,
+      "seconds": 27.594000000040978
+    }
+  ],
+  "index_scope": "Checkout/index only; external archive bytes and parity not certified.",
+  "failed_run": {
+    "result": "failed",
+    "publishable": false,
+    "product_commit": "e41cac3eaaa5d3ee8cb62013d01193bc4c939af2",
+    "worktree_dirty": false,
+    "tests_executed": false,
+    "collection": "refused: 88 stale mandatory identities",
+    "collected": 22625,
+    "final_input_recheck_complete": false,
+    "inputs_unchanged": null,
+    "candidate_unchanged": null,
+    "stop_reason": "Stop redundant post-refusal reread after preserving input manifest and collection diagnostics; next candidate fixes and actual complete collection checks passed.",
+    "controller_exit_code": 1,
+    "seconds": 4301.936999999976
+  },
+  "next_run": {
+    "run": "rc022-unified-20261118-05",
+    "product_commit": "e99904f4",
+    "status": "in progress",
+    "single_run": true
+  },
+  "cleanup": "Removed the completed empty owned regression workspace. Original run04 diagnostics and input identities retained."
+}

@@ -259,7 +259,9 @@ class Context:
         Load a plugin onto context wrapped in a Fiber matching TS ctx.plugin().
         Returns the Fiber instance (which is awaitable and transparently delegates attribute access to plugin).
         """
-        fiber = self.registry.plugin(plugin_cls_or_instance, config=config, parent_ctx=self)
+        from dsh.cordis.utils import trace_context_sites
+        _, use_site = trace_context_sites(self)
+        fiber = use_site.registry.plugin(plugin_cls_or_instance, config=config, parent_ctx=use_site)
         return fiber
 
     def inject(self, deps: Any, callback: Callable[..., Any]) -> Any:
@@ -267,7 +269,9 @@ class Context:
         Run a callback once requested services are available.
         Shorthand for ctx.plugin({ inject, apply: callback }).
         """
-        return self.registry.inject(deps, callback)
+        from dsh.cordis.utils import trace_context_sites
+        _, use_site = trace_context_sites(self)
+        return use_site.registry.inject(deps, callback)
 
     def unload_plugin(self, plugin_id: str) -> bool:
         """
@@ -317,7 +321,13 @@ class Context:
         """
         Create a child context inheriting services and event bus.
         """
-        child = Context(parent=self, is_extension=True, strict_inject=self.strict_inject, base_url=self.baseUrl)
+        from dsh.cordis.utils import symbols
+        definition = self.__dict__.get(symbols.shadow)
+        # A shadow has a separate outer definition-site layer. The new scope
+        # inherits its use site; a later extension must not inherit that outer
+        # layer's injection declaration as the new plugin's definition site.
+        parent = self._parent if definition is not None else self
+        child = Context(parent=parent, is_extension=True, strict_inject=self.strict_inject, base_url=self.baseUrl)
         child._isolated_keys = dict(self._isolated_keys)
         # TS `extend()` inherits the parent's intercept map through the context
         # prototype chain, so the child starts with no entry of its own; readers
@@ -326,13 +336,14 @@ class Context:
         shadow = getattr(self, "_shadow", None)
         if shadow is not None:
             child._shadow = shadow
-        from dsh.cordis.utils import symbols
-        definition = getattr(self, symbols.shadow, None)
-        if definition is not None:
-            setattr(child, symbols.shadow, definition)
         if meta:
             for k, v in meta.items():
                 setattr(child, k, v)
+        if definition is not None:
+            outer = Context(parent=child, is_extension=True, strict_inject=self.strict_inject, base_url=self.baseUrl)
+            outer._isolated_keys = dict(child._isolated_keys)
+            setattr(outer, symbols.shadow, definition)
+            return outer
         return child
 
     def isolate(self, name: Optional[Union[str, List[str]]] = None, label: Any = None, **kwargs: Any) -> "Context":

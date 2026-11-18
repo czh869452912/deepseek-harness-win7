@@ -45,4 +45,21 @@ const {Context}=await module('context'),{Service}=await module('service'),{symbo
  Reflect.set(proxy,symbols.caller,ctx);result.noShadow.push((proxy as any)[symbols.caller]===definition)
  await ctx.fiber.dispose()
 }
+{
+ const ctx=new Context(),seen:any[]=[],disposed:any[]=[];ctx.provide('secret','provider')
+ class Api extends Service{
+   scope(){return this.ctx.extend({marker:'derived'})}
+   mount(){return this.ctx.extend({marker:'derived'}).inject(['secret'],(child:any)=>{
+     seen.push(child.secret,child.marker);child.effect(()=>()=>disposed.push('child'))
+   })}
+ }
+ await ctx.plugin((owner:any)=>{new Api(owner,'api')})
+ const realm=ctx.isolate('secret');realm.provide('secret','caller')
+ let child:any
+ const consumer=await realm.inject(['api'],async(owner:any)=>{
+   const scope=owner.api.scope();seen.push(scope.marker,Object.hasOwn(scope,symbols.shadow))
+   child=await owner.api.mount();seen.push(child.parent.fiber===owner.fiber)
+ })
+ await consumer.dispose();result.nested=[seen,disposed];await ctx.fiber.dispose()
+}
 process.stdout.write(JSON.stringify(result))

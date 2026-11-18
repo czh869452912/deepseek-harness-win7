@@ -1,0 +1,31 @@
+{
+  "contract": "C9-EW",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "change": "Preserve the two-layer Context.extend definition/use-site model. Mount nested plugins at the consumption site with their own inject scope; unwrap returned shadow contexts before tracker handling and trace public service method/property results while preserving method signatures.",
+  "verification": [
+    {
+      "run": "rc022-current-shadow-services-20261118-01",
+      "passed": 47,
+      "seconds": 1.98,
+      "scope": "Three failing invariant contribution modules plus Context injection, traceable, effect ownership and context parity consumers"
+    },
+    {
+      "run": "rc022-current-shadow-signatures-20261118-01",
+      "passed": 20,
+      "seconds": 1.0,
+      "scope": "Signature-preserving service method wrapper, getters, inheritance and effect ownership"
+    },
+    {
+      "run": "rc022-current-shadow-pair-20261118-03",
+      "passed": true,
+      "scope": "Actual immutable Source/Native definition/use-site pair, including derived Context return, nested injected child, isolated caller service, metadata and cleanup"
+    }
+  ],
+  "cleanup": {
+    "runs": 5,
+    "directories": 15,
+    "bytes_removed": 10988,
+    "retained": "Commands, log/XML and raw Source/Native pair observations; no disposable pair workspace was created."
+  },
+  "qualification": "Targeted only. Unified release acceptance pending."
+}

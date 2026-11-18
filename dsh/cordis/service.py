@@ -61,13 +61,22 @@ class _ServiceExtendedProxy:
             return self.__dict__["_props"][name]
         target = self.__dict__["_target"]
         import inspect, types
-        from dsh.cordis.utils import TraceCallReceiver, trace_method_context
+        from dsh.cordis.utils import TraceCallReceiver, trace_method_context, get_traceable
         origin = getattr(target, "ctx", None)
         receiver = TraceCallReceiver(self, "ctx", trace_method_context(self.ctx, origin))
         descriptor = inspect.getattr_static(target, name, None)
         attr = descriptor.__get__(receiver, type(target)) if isinstance(descriptor, property) else getattr(target, name)
         if inspect.ismethod(attr) and getattr(attr, "__self__", None) is target:
-            return types.MethodType(attr.__func__, receiver)
+            bound = types.MethodType(attr.__func__, receiver)
+            if self.__dict__.get('_trace_writes') and not name.startswith('_'):
+                from functools import wraps
+                @wraps(bound)
+                def call(*args, **kwargs):
+                    return get_traceable(self.ctx, bound(*args, **kwargs))
+                return call
+            return bound
+        if self.__dict__.get('_trace_writes'):
+            return get_traceable(self.ctx, attr)
         return attr
 
     def __setattr__(self, name: str, value: Any) -> None:

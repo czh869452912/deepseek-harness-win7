@@ -61,6 +61,20 @@ async def native():
     tracked=Tracked();tracked.ctx=definition;setattr(tracked,symbols.tracker,{'property':'ctx','noShadow':True})
     proxy=get_traceable(shadow,tracked);result['noShadow']=proxy.read();setattr(proxy,symbols.caller,ctx)
     result['noShadow'].append(getattr(proxy,symbols.caller) is definition);await ctx.fiber.dispose()
+    ctx=Context();seen=[];disposed=[];ctx.provide('secret','provider')
+    class Api(Service):
+        def scope(self):return self.ctx.extend({'marker':'derived'})
+        def mount(self):
+            def install(child):
+                seen.extend([child.secret,child.marker]);child.effect(lambda:lambda:disposed.append('child'))
+            return self.ctx.extend({'marker':'derived'}).inject(['secret'],install)
+    await ctx.plugin(lambda owner:Api(owner,'api'))
+    realm=ctx.isolate('secret');realm.provide('secret','caller')
+    async def consume(owner):
+        scope=owner.api.scope();seen.extend([scope.marker,symbols.shadow in scope.__dict__])
+        child=await owner.api.mount();seen.append(child.parent.fiber is owner.fiber)
+    consumer=await realm.inject(['api'],consume)
+    await consumer.dispose();result['nested']=[seen,disposed];await ctx.fiber.dispose()
     return result
 
 

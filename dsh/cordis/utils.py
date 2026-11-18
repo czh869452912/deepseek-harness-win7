@@ -2610,6 +2610,10 @@ def get_traceable(ctx: Any, value: Any) -> Any:
         return value
     if isinstance(value, TracedProxy):
         return value
+    # Cordis removes an own shadow layer before consulting the tracker,
+    # including when the value is a Context returned by a service method.
+    if Symbols.shadow in getattr(value, '__dict__', {}):
+        return getattr(value, '_parent', value)
     # Never wrap Context or Fiber instances matching TS: if (value instanceof Context) return value
     if hasattr(value, "registry") and hasattr(value, "reflect") and hasattr(value, "extend"):
         return value

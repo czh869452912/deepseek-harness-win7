@@ -4,6 +4,8 @@
 
 C9-FT：嵌套完整回归使用同一次冻结的 checkout 清单，严格原件与所有权校验保持；92 项通过，3 个目录清理、回收 685,519,985 字节。见[检查](current-nested-preflight-checks.json)。
 
+C9-FY: Frozen run07 completed 22,626 Python cases: 22,511 passed, 46 skipped, 51 failed and 18 setup errors. It remains failed, without final input recheck or release acceptance. Original diagnostics and 8,548 raw observations preserved; 37,205 reconstructible files removed, reclaiming 1,249,473,666 bytes. Known failures have targeted follow-ups; the next stable candidate requires its own complete gate. [Record](current-complete-regression-retry-checks.json).
+
 C9-FV: All 8 original remaining HMR update consumers and the Web preset composition identity check passed. A wider 360-second diagnostic timed out; its result remains incomplete. 9 owned directories cleaned, 202,672 bytes removed. [Record](current-final-consumer-checks.json).
 
 C9-FW: Use the real Cordis effect runner in the editor fixture, dispose fixture effects, and accept canonical content block arrays in the ACP observation predicate without changing the expected child result. 13 targeted tests passed. [Record](current-editor-acp-fixture-checks.json).

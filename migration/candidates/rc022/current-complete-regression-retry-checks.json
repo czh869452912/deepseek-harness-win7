@@ -1,0 +1,47 @@
+{
+  "result": "failed",
+  "publishable": false,
+  "product_commit": "c756b9fcca1887d5a4d3f0aee50994d58395e085",
+  "complete_regression": true,
+  "regression": {
+    "tests": 22626,
+    "passed": 22511,
+    "failures": 51,
+    "errors": 18,
+    "skipped": 46,
+    "seconds": 7548.62
+  },
+  "final_input_recheck_complete": false,
+  "inputs_unchanged": null,
+  "candidate_unchanged": null,
+  "interrupted_at": "2026-11-19T01:16:38.594235",
+  "reason": "Complete Python diagnostics finished with known failures. Stop the failed candidate during final dependency reread; no Source/build/release acceptance and no final input integrity claim. Preserve XML, frozen inputs and all raw failures; retire reconstructible fixtures after their consumers finish.",
+  "contract": "C9-FY",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "control": ".goose/out/rc022-unified-control-20261118-07",
+  "cleanup": {
+    "files": 37205,
+    "bytes_removed": 1249473666,
+    "retained_observations": 8548,
+    "status": "Completed from original SHA inventory after guards were extended for owned bare/incomplete Git fixtures and the explicit read-only win32-stat metadata fixture. No shared attributes changed; all original raw observations preserved."
+  },
+  "resolved_followups": [
+    "C9-FI",
+    "C9-FK",
+    "C9-FL",
+    "C9-FM",
+    "C9-FN",
+    "C9-FO",
+    "C9-FP",
+    "C9-FQ",
+    "C9-FR",
+    "C9-FS",
+    "C9-FT",
+    "C9-FU",
+    "C9-FV",
+    "C9-FW",
+    "C9-FX"
+  ],
+  "retained_policy_blocked": "Two previously rejected obsolete Edge profiles and a zero-byte worktree marker were not retried. Retained failure evidence, current qualification inputs and protected history remain owned and separate.",
+  "removed_workspace": "C:\\Users\\czh86\\AppData\\Local\\Temp\\dsh-rc022-qualification\\.goose\\out\\rc022-unified-20261118-07\\regression\\pytest-workspace"
+}

@@ -125,6 +125,16 @@ def archive_path(build, architecture):
     return path
 
 
+def build_archive(architecture, runtime, site, office, output, environment):
+    build = output / ('build-' + architecture)
+    lanes.execute([sys.executable, 'scripts/build_portable.py', '--output-dir', str(build),
+        '--architecture', architecture, '--office-runtime', str(office),
+        '--python-runtime', str(runtime), '--site-packages', str(site)],
+        ROOT, output, 'build-' + architecture, environment, 1200)
+    archive = archive_path(build, architecture)
+    return build, dict(path=str(archive), sha256=lanes.digest(archive))
+
+
 def prepare_regression(output, frozen):
     regression = output / 'regression'
     regression.mkdir()
@@ -173,6 +183,13 @@ def verify(args, output):
         inputs = output / 'inputs.json'; inputs.write_text(json.dumps(before, indent=2), encoding='utf-8')
         report.update(input_manifest_sha256=lanes.digest(inputs), plan_sha256=lanes.digest(lanes.PLAN))
         checkpoint()
+        # Mandatory Portable smoke cases must execute this candidate's bundled
+        # Python, not skip because the unrelated legacy dist directory is absent.
+        # Keep this exact archive for the later extracted and Desktop consumers.
+        build64, archive64 = build_archive('x64', *runtimes['x64'], office, output, environment)
+        environment['DSH_TEST_PORTABLE_ROOT'] = str(build64 / 'dsh-win7-portable')
+        report['stages']['build-x64'] = dict(status='passed', archive=archive64)
+        checkpoint()
         # The complete Python collection belongs to this one gate, with no
         # duplicate full pytest pass scheduled immediately beforehand.
         regression = prepare_regression(output, before)
@@ -186,13 +203,14 @@ def verify(args, output):
             report['stages'][lane] = dict(status='passed', rows=rows); checkpoint()
         archives = {}
         for architecture, (runtime, site) in runtimes.items():
-            build = output / ('build-' + architecture)
-            lanes.execute([sys.executable, 'scripts/build_portable.py', '--output-dir', str(build),
-                '--architecture', architecture, '--office-runtime', str(office),
-                '--python-runtime', str(runtime), '--site-packages', str(site)],
-                ROOT, output, 'build-' + architecture, environment, 1200)
+            if architecture == 'x64':
+                build, identity = build64, archive64
+            else:
+                build, identity = build_archive(architecture, runtime, site, office, output, environment)
             archive = archive_path(build, architecture)
-            archives[architecture] = dict(path=str(archive), sha256=lanes.digest(archive))
+            if lanes.digest(archive) != identity['sha256']:
+                raise ValueError('Frozen built archive changed before qualification: ' + architecture)
+            archives[architecture] = identity
             result = portable.qualify(SimpleNamespace(archive=archive, output=output / ('extracted-' + architecture),
                 source=source, node=node, browser=browser, browser108=browser108, architecture=architecture,
                 expected_commit=selected['product_commit']))

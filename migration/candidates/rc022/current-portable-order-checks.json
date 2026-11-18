@@ -1,0 +1,27 @@
+{
+  "contract": "C9-GD",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "change": "Build the frozen x64 Portable before the complete Python collection and explicitly select that product for the five mandatory profile smoke cases. Reuse the same ZIP for extracted and Desktop consumers; reject changes to its digest. An explicitly selected missing Portable fails rather than skips. Existing mandatory roster is unchanged.",
+  "verification": {
+    "run": "rc022-current-c9gd-portable-order-20261119-01",
+    "passed": 20,
+    "seconds": 1.38,
+    "scope": "Current orchestration, exact preflight binding, explicit missing Portable negative control, fresh archive selection/order and archive mutation rejection."
+  },
+  "cleanup": {
+    "directories": 3,
+    "bytes_removed": 8494,
+    "links": 9
+  },
+  "original_run10": {
+    "product_commit": "6372e4804c317f63bc33b4b092b379768a3d5530",
+    "tests": 22632,
+    "passed": 22593,
+    "skipped": 39,
+    "failures": 0,
+    "errors": 0,
+    "seconds": 7526.201,
+    "qualification": "Failed: five mandatory dist smoke cases skipped before this orchestration had built its Portable. Final input reread stopped, no Source/paired/build acceptance. Preserve original XML, collection and observations."
+  },
+  "qualification": "Targeted only. A new clean frozen candidate must complete its own unified gate and actual same-archive profile smoke checks."
+}

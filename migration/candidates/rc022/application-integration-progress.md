@@ -2,6 +2,8 @@
 
 固定目标：`38a6a5c965aa99ab525161efb7cc5cf1fe62fced`。本页记录定向检查；生产 pin 已在 C9-CC 协调切换，`accepted_upstream` 仍为 null，完整资格待后续验证。
 
+C9-GD: Run10 completed 22,593 passing Python cases and 39 skips without failures, but the required roster correctly rejected five Portable smoke skips: the current orchestrator built the product only after regression. Build x64 first, explicitly smoke its bundled Python, and reuse the same unchanged ZIP later. All 20 orchestration/negative controls passed; 3 targeted workspaces cleaned (8,494 bytes). Original run10 remains failed, without final input integrity or unified acceptance. [Record](current-portable-order-checks.json).
+
 C9-FT：嵌套完整回归使用同一次冻结的 checkout 清单，严格原件与所有权校验保持；92 项通过，3 个目录清理、回收 685,519,985 字节。见[检查](current-nested-preflight-checks.json)。
 
 C9-GC: Complete frozen run09: 22,592 passed, 39 skipped, one failed, no setup errors. The single Git cleanup assertion has C9-GA/GB targeted fixes; all prior run07 failures are absent. This remains failed qualification without final input recheck. Preserved 15,702 raw observations, removed 47,080 reconstructible files (1,924,891,251 bytes); unlinked 6,712 reparse entries without following targets and 2,530 read-only entries without shared attribute changes. [Record](current-single-failure-retry-checks.json).

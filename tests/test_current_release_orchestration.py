@@ -21,6 +21,72 @@ def test_current_cli_routes_to_current_qualification(tmp_path, monkeypatch):
     assert received == [(True, Path('base32'), Path('deps32'))]
 
 
+@pytest.mark.parametrize('damage', ['none', 'changed-archive'])
+def test_current_gate_smokes_and_extracts_the_same_fresh_archive(tmp_path, monkeypatch, damage):
+    from scripts import browser108_gate
+    monkeypatch.setattr(gate, 'ROOT', tmp_path)
+    browsers = [tmp_path / name for name in ('node.exe', 'browser.exe', 'browser108.exe')]
+    for path in browsers:
+        path.write_bytes(b'actual selected input')
+    node, browser, browser108 = browsers
+    args = NS(node=node, browser=browser, browser108=browser108, office_runtime=tmp_path / 'office',
+              prepare=False, allow_dirty=False, regression_timeout=None)
+    output = tmp_path / 'output'; output.mkdir()
+    selected = dict(product_commit='candidate', worktree_dirty=False)
+    monkeypatch.setattr(browser108_gate, 'validate_input', lambda path: {})
+    monkeypatch.setattr(gate.retained, 'release_environment', lambda path: {'PATH': ''})
+    monkeypatch.setattr(gate, 'runtime_inputs', lambda args: {name: (tmp_path, tmp_path) for name in ('x64', 'x86')})
+    monkeypatch.setattr(gate, 'desktop_tools', lambda args: {})
+    monkeypatch.setattr(gate, 'candidate', lambda *args: selected)
+    monkeypatch.setattr(gate, 'freeze', lambda *args: dict(checkout={}))
+    monkeypatch.setattr(gate.lanes, 'load_plan', lambda: {})
+    plan = tmp_path / 'plan.json'; plan.write_bytes(b'fixed plan')
+    monkeypatch.setattr(gate.lanes, 'PLAN', plan)
+    events, archives = [], {}
+
+    def build(architecture, *args):
+        events.append('build-' + architecture)
+        folder = output / ('build-' + architecture); folder.mkdir()
+        product = folder / 'dsh-win7-portable'; product.mkdir()
+        (product / 'python.exe').write_bytes(architecture.encode())
+        archive = folder / ('dsh-win7-portable-v' + gate.retained.PORTABLE_VERSION +
+                            ('-x86' if architecture == 'x86' else '') + '.zip')
+        archive.write_bytes(architecture.encode())
+        archives[architecture] = archive
+        return folder, dict(path=str(archive), sha256=gate.lanes.digest(archive))
+
+    def regression(python, destination, environment, **kwargs):
+        events.append('regression')
+        product = Path(environment['DSH_TEST_PORTABLE_ROOT'])
+        assert product == output / 'build-x64/dsh-win7-portable'
+        assert (product / 'python.exe').read_bytes() == b'x64'
+        assert archives['x64'].read_bytes() == b'x64'
+        if damage == 'changed-archive': archives['x64'].write_bytes(b'foreign archive')
+
+    def qualify(args):
+        events.append('extracted-' + args.architecture)
+        assert args.archive == archives[args.architecture]
+        assert args.expected_commit == 'candidate'
+        return dict(status='passed', inputs_unchanged=True)
+
+    monkeypatch.setattr(gate, 'build_archive', build)
+    monkeypatch.setattr(gate.retained, 'run_python_regression', regression)
+    monkeypatch.setattr(gate.retained, 'validate_regression', lambda path: {})
+    monkeypatch.setattr(gate.lanes, 'source_lane', lambda *args: [])
+    monkeypatch.setattr(gate.lanes, 'paired_lane', lambda *args: [])
+    monkeypatch.setattr(gate.portable, 'qualify', qualify)
+    monkeypatch.setattr(gate, 'desktop_lane', lambda *args: dict(status='passed'))
+    monkeypatch.setattr(gate.lanes, 'remove_owned', lambda path: 0)
+    if damage == 'changed-archive':
+        with pytest.raises(ValueError, match='Frozen built archive changed'):
+            gate.verify(args, output)
+        assert events == ['build-x64', 'regression']
+    else:
+        result = gate.verify(args, output)
+        assert result['result'] == 'passed' and result['inputs_unchanged']
+        assert events == ['build-x64', 'regression', 'extracted-x64', 'build-x86', 'extracted-x86']
+
+
 @pytest.mark.parametrize('damage', ['none', 'changed-original'])
 def test_nested_current_regression_retains_exact_preflight_inputs(tmp_path, damage):
     from scripts import process_artifact_retention as retention

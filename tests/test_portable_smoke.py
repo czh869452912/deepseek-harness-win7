@@ -68,9 +68,11 @@ def test_smoke_dump_config_legacy_mode_flag():
 def test_smoke_dist_portable_directory(profile):
     """If dist/dsh-win7-portable exists, verify it executes cleanly."""
     root_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    dist_dir = os.path.join(root_dir, "dist", "dsh-win7-portable")
+    selected = os.environ.get("DSH_TEST_PORTABLE_ROOT")
+    dist_dir = os.path.abspath(selected or os.path.join(root_dir, "dist", "dsh-win7-portable"))
     dist_dsh_py = os.path.join(dist_dir, "dsh.py")
     if not os.path.exists(dist_dsh_py):
+        assert not selected, "explicit qualification Portable must exist"
         pytest.skip("dist/dsh-win7-portable not built yet")
 
     env = dict(os.environ)
@@ -92,4 +94,10 @@ def test_smoke_dist_portable_directory(profile):
                               cwd=dist_dir, env=env, capture_output=True, encoding="utf-8", timeout=30)
     assert imported.returncode == 0
     assert os.path.normcase(os.path.abspath(imported.stdout.strip())).startswith(os.path.normcase(dist_dir + os.sep))
+
+
+def test_explicit_qualification_portable_cannot_skip(tmp_path, monkeypatch):
+    monkeypatch.setenv('DSH_TEST_PORTABLE_ROOT', str(tmp_path / 'missing'))
+    with pytest.raises(AssertionError, match='explicit qualification Portable must exist'):
+        test_smoke_dist_portable_directory('minimal')
 

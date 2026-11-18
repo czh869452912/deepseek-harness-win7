@@ -1094,7 +1094,7 @@
       "sha256": "829d14a5212a89b3844785790bdd5fd7fa7cb85027c364c6da261a47c33f8ddb",
       "classification": "fixture",
       "responsibility": "Upstream test fixture; never a shipped plugin.",
-      "owner": "reference/apps/web/tests/fixtures/plugins/fixture-bundle/search",
+      "owner": "reference/apps/web/tests/fixtures/plugins/fixture-bundle",
       "workspace_dependencies": [],
       "parity": "not-certified-by-inventory"
     },

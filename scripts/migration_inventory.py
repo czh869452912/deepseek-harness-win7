@@ -8,7 +8,7 @@ import json
 import re
 import subprocess
 from collections import Counter
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -37,6 +37,13 @@ def write(path, value):
     temporary.replace(path)
 
 
+def manifest_owner(path, package_owners):
+    """Metadata such as search.package.json belongs to its enclosing package."""
+    parent = PurePosixPath(path).parent.as_posix()
+    return next(owner for owner in sorted(package_owners, key=len, reverse=True)
+                if parent == owner or parent.startswith(owner + '/'))
+
+
 def inventory():
     modules = json.loads((ROOT / 'migration/modules.json').read_text(encoding='utf-8'))
     target = subprocess.check_output(['git', '-C', str(ROOT / 'reference'), 'rev-parse', 'HEAD'], encoding='utf-8').strip()
@@ -47,7 +54,8 @@ def inventory():
     if manifests != {row['path'] for row in modules['manifests']}:
         raise RuntimeError('Manifest set drift; update the baseline inventory first.')
     names = {row['name'] for row in modules['manifests'] if row.get('name')}
-    owners = sorted((row['path'][:-len('/package.json')] for row in modules['manifests']), key=len, reverse=True)
+    owners = sorted((str(PurePosixPath(row['path']).parent) for row in modules['manifests']
+                     if PurePosixPath(row['path']).name == 'package.json'), key=len, reverse=True)
     for row in modules['manifests']:
         path = ROOT / row['path']
         text = path.read_text(encoding='utf-8')
@@ -55,7 +63,7 @@ def inventory():
             raise RuntimeError('Manifest content drift: ' + row['path'])
         manifest = json.loads(text)
         row['classification'], row['responsibility'] = classification(row['path'])
-        row['owner'] = row['path'][:-len('/package.json')]
+        row['owner'] = manifest_owner(row['path'], owners)
         row['workspace_dependencies'] = [
             {'name': name, 'kind': kind, 'version': version}
             for kind in ('dependencies', 'peerDependencies', 'optionalDependencies', 'devDependencies')

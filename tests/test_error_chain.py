@@ -188,9 +188,11 @@ async def test_canonical_web_errors_and_failed_compaction_survive_restart(tmp_pa
         ctx.emit('agent/error', dict(agent=agent, error=failure))
         assert emitted == [(identity, 'provider failed: socket closed')]
         ctx.get('llm').register_adapter(['failure-probe'], Adapter())
+        agent.session.append('turn/start', dict(turn=1))
         agent.session.append_request_header(dict(config=dict(provider='failure-probe', model='probe')))
         agent.session.append_user_message('important facts ' * 300)
         agent.session.append_user_message('recent question')
+        agent.session.append('turn/end', dict(turn=1, reason=dict(kind='completed')))
         result = await ctx.get('commands').execute(agent, '/compact', [], None)
         assert result.result['kind'] == 'error'
         await agent.session.flush()

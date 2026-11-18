@@ -101,14 +101,21 @@ def observe(repository, inventory_path, base_ref, target_ref):
     manifests = []
     names = {row['name'] for row in inventory['manifests'] if row.get('name')}
     seen = set()
+    if __package__:
+        from scripts.migration_inventory import manifest_owner
+    else:
+        from migration_inventory import manifest_owner
+    package_owners = [PurePosixPath(row['path']).parent.as_posix()
+                      for row in inventory['manifests']
+                      if PurePosixPath(row['path']).name == 'package.json']
     for row in inventory['manifests']:
         relative_manifest = PurePosixPath(row['path'])
         if relative_manifest.parts[0] != 'reference' or '..' in relative_manifest.parts:
             raise ValueError('Manifest is outside the pinned reference inventory')
         relative_manifest = relative_manifest.relative_to('reference').as_posix()
         relative_owner = PurePosixPath(row['owner']).relative_to('reference').as_posix()
-        if relative_owner != str(PurePosixPath(relative_manifest).parent):
-            raise ValueError('Manifest owner differs from its package directory')
+        if row['owner'] != manifest_owner(row['path'], package_owners):
+            raise ValueError('Manifest owner differs from its nearest package directory')
         if relative_manifest in seen:
             raise ValueError('Pinned manifest is duplicated')
         seen.add(relative_manifest)

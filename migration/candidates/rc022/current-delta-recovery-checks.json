@@ -1,0 +1,11 @@
+{
+  "contract": "C9-ED",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "status": "Targeted delta ownership and cold recovery checks passed",
+  "change": "Discover all tracked manifest metadata but assign search.package.json to its real enclosing package, rather than inventing a directory by truncating its filename. Reject fabricated and foreign owners. Preserve historical delta change identities while recomputing their advisory impact against the current package graph. Build the compaction recovery fixture with a complete v4 turn and retain historical exception qualification pins.",
+  "verification": [
+    {"run": "rc022-current-misc-consumers-20261118-03", "passed": 99, "deselected": 1, "seconds": 28.48, "scope": "Actual read-only current inventory/historical deltas, metadata owner positive and refusal controls, durable compaction failure and cold recovery, historical exception discovery validation"},
+    {"run": "rc022-current-misc-consumers-20261118-01", "scope": "The deselected native error renderer already passed; unrelated unresolved failures remain failed."}
+  ],
+  "qualification": "Targeted checks only. Original exception records and historical Source observations are not promoted to the current baseline. Full migration and release qualification remain pending."
+}

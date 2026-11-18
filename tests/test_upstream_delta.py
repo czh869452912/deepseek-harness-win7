@@ -128,6 +128,33 @@ def test_invalid_revision_cannot_become_a_git_option_or_write(history):
     assert delta.source_state(repository) == before
 
 
+@pytest.mark.parametrize('owner', ['reference/packages/provider',
+                                  'reference/packages/provider/search',
+                                  'reference/packages/consumer'])
+def test_metadata_manifest_uses_real_enclosing_package_and_rejects_false_owners(history, owner):
+    from scripts.migration_inventory import manifest_owner
+    repository, inventory, base, _ = history
+    name = 'packages/provider/search.package.json'
+    metadata = repository / name
+    metadata.write_text(json.dumps(dict(name='Search metadata')), encoding='utf-8')
+    target = commit(repository)
+    value = json.loads(inventory.read_text(encoding='utf-8'))
+    value['target_upstream'] = target
+    owners = [str(Path(row['path']).parent).replace('\\', '/') for row in value['manifests']]
+    assert manifest_owner('reference/' + name, owners) == 'reference/packages/provider'
+    value['manifests'].append(dict(path='reference/' + name, owner=owner, name='Search metadata',
+                                  sha256=hashlib.sha256(metadata.read_bytes()).hexdigest(),
+                                  workspace_dependencies=[]))
+    inventory.write_text(json.dumps(value), encoding='utf-8')
+    if owner == 'reference/packages/provider':
+        report = delta.observe(repository, inventory, base, target)
+        row = next(row for row in report['changes'] if row['after'] == name)
+        assert row['pinned_package_owners'] == [owner]
+    else:
+        with pytest.raises(ValueError, match='nearest package'):
+            delta.observe(repository, inventory, base, target)
+
+
 def test_source_drift_during_observation_is_refused(history, monkeypatch):
     repository, inventory, base, target = history
     state = delta.source_state(repository)
@@ -162,9 +189,9 @@ def test_actual_pinned_source_parent_delta_is_readonly_and_source_qualified():
     assert report['target_commit'] == 'a66e4702047846cdaa10c66c9d3df3951f5ea70d'
     assert len(report['changes']) == 252
     assert all(row['status'] == 'M' and row['after'].endswith('package.json') for row in report['changes'])
-    assert len(report['package_impact']['direct']) == 252
+    assert len(report['package_impact']['direct']) == 224
     # Ownership follows the current pinned manifest graph, even for this historical release delta.
-    assert len(report['package_impact']['transitive']) == 20
+    assert len(report['package_impact']['transitive']) == 147
     assert delta.source_state(repository) == before
     assert inventory.read_bytes() == original
 

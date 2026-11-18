@@ -25,7 +25,7 @@ async def native():
     realm=ctx.isolate('secret');realm.provide('secret','caller')
     def consume(owner):
         proxy=owner.api;first=proxy.read();second=proxy()
-        seen.extend([first[0],first[1] is owner.fiber,proxy.value,second[0],second[1] is owner.fiber,proxy.ctx is owner,getattr(proxy,symbols.caller) is owner])
+        seen.extend([first[0],first[1] is owner.fiber,proxy.value,second[0],second[1] is owner.fiber,proxy.ctx is owner,getattr(proxy,symbols.caller) is owner,getattr(proxy,symbols.original) is getattr(ctx.get('api'),symbols.original)])
         proxy.ctx=ctx;seen.append(proxy.ctx is owner)
     consumer=realm.inject(['api'],consume);await consumer
     result['allowed']=[seen,[row.fiber() is provider.ctx.fiber for row in ctx.logger.buffer if row.args[0]=='api read']]
@@ -64,6 +64,7 @@ async def native():
     ctx=Context();seen=[];disposed=[];ctx.provide('secret','provider')
     class Api(Service):
         def scope(self):return self.ctx.extend({'marker':'derived'})
+        def pluginType(self):return Api
         def mount(self):
             def install(child):
                 seen.extend([child.secret,child.marker]);child.effect(lambda:lambda:disposed.append('child'))
@@ -71,7 +72,7 @@ async def native():
     await ctx.plugin(lambda owner:Api(owner,'api'))
     realm=ctx.isolate('secret');realm.provide('secret','caller')
     async def consume(owner):
-        scope=owner.api.scope();seen.extend([scope.marker,symbols.shadow in scope.__dict__])
+        scope=owner.api.scope();seen.extend([scope.marker,symbols.shadow in scope.__dict__,owner.api.pluginType() is Api])
         child=await owner.api.mount();seen.append(child.parent.fiber is owner.fiber)
     consumer=await realm.inject(['api'],consume)
     await consumer.dispose();result['nested']=[seen,disposed];await ctx.fiber.dispose()

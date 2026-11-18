@@ -23,6 +23,7 @@ async def test_service_methods_getters_and_invocation_keep_definition_scope():
     realm=ctx.isolate('secret');realm.provide('secret','caller')
     def consume(owner):
         proxy=owner.api
+        assert getattr(proxy,symbols.original) is getattr(ctx.get('api'),symbols.original)
         seen.extend([proxy.read(),proxy.value,proxy(),getattr(proxy,symbols.caller) is owner,proxy.ctx is owner])
         proxy.ctx=ctx
         assert proxy.ctx is owner

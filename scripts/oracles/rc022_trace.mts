@@ -15,7 +15,7 @@ const {Context}=await module('context'),{Service}=await module('service'),{symbo
  const realm=ctx.isolate('secret');realm.provide('secret','caller')
  const consumer=await realm.inject(['api'],(owner:any)=>{
    const proxy=owner.api,first=proxy.read(),second=proxy()
-   seen.push(first[0],first[1]===owner.fiber,proxy.value,second[0],second[1]===owner.fiber,proxy.ctx===owner,proxy[symbols.caller]===owner)
+   seen.push(first[0],first[1]===owner.fiber,proxy.value,second[0],second[1]===owner.fiber,proxy.ctx===owner,proxy[symbols.caller]===owner,proxy[symbols.original]===ctx.get('api')[symbols.original])
    Reflect.set(proxy,'ctx',ctx);seen.push(proxy.ctx===owner)
  })
  result.allowed=[seen,ctx.logger.buffer.filter((row:any)=>row.args[0]==='api read').map((row:any)=>row.fiber?.deref()===provider)]
@@ -49,6 +49,7 @@ const {Context}=await module('context'),{Service}=await module('service'),{symbo
  const ctx=new Context(),seen:any[]=[],disposed:any[]=[];ctx.provide('secret','provider')
  class Api extends Service{
    scope(){return this.ctx.extend({marker:'derived'})}
+   pluginType(){return Api}
    mount(){return this.ctx.extend({marker:'derived'}).inject(['secret'],(child:any)=>{
      seen.push(child.secret,child.marker);child.effect(()=>()=>disposed.push('child'))
    })}
@@ -57,7 +58,7 @@ const {Context}=await module('context'),{Service}=await module('service'),{symbo
  const realm=ctx.isolate('secret');realm.provide('secret','caller')
  let child:any
  const consumer=await realm.inject(['api'],async(owner:any)=>{
-   const scope=owner.api.scope();seen.push(scope.marker,Object.hasOwn(scope,symbols.shadow))
+   const scope=owner.api.scope();seen.push(scope.marker,Object.hasOwn(scope,symbols.shadow),owner.api.pluginType()===Api)
    child=await owner.api.mount();seen.push(child.parent.fiber===owner.fiber)
  })
  await consumer.dispose();result.nested=[seen,disposed];await ctx.fiber.dispose()

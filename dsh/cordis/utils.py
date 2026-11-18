@@ -2637,7 +2637,7 @@ def get_traceable(ctx: Any, value: Any) -> Any:
         proxy = value._extend({"ctx": effective_ctx, Symbols.caller: definition})
         proxy.__dict__["_trace_writes"] = True
         return proxy
-    if hasattr(value, "_extend") and not hasattr(value, "_mock_return_value") and callable(getattr(value, "_extend")):
+    if not inspect.isclass(value) and hasattr(value, "_extend") and not hasattr(value, "_mock_return_value") and callable(getattr(value, "_extend")):
         return value._extend({"ctx": effective_ctx})
     if tracker and not hasattr(value, "_mock_return_value"):
         return TracedProxy(ctx, value, tracker=tracker if isinstance(tracker, dict) else {})

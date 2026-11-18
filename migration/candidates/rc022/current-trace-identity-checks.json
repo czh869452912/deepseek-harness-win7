@@ -1,0 +1,16 @@
+{
+  "contract": "C9-FB",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "change": "Preserve the raw cordis.original identity when tracing service results, while continuing to bind symbol methods to the consumption site. Do not call instance _extend on returned service constructors.",
+  "verification": [
+    {"run": "rc022-current-c9fb-remote-symbols-20261118-02", "passed": 72, "scope": "Typert dispatch, trace context and actual HTTP/Web protocol contracts"},
+    {"run": "rc022-current-c9fb-loader-class-20261118-01", "passed": 8, "scope": "Actual Loader service constructor identity and traceable consumers"},
+    {"run": "rc022-current-c9fb-remote-consumers-20261118-01", "passed": 83, "scope": "Session creation/resumption, model service ownership, commands Remote and plugin registry"},
+    {"run": "rc022-current-c9fb-cordis-regressions-20261118-01", "passed": 140, "scope": "All three newly failing Cordis trace/guard consumer modules"},
+    {"run": "rc022-current-c9fb-browser-20261118-02", "passed": 3, "seconds": 71.99, "scope": "Actual original browser lifecycle, inspection and inventory"},
+    {"run": "rc022-current-c9fb-remote-trace-pair-20261118-03", "passed": true, "scope": "Actual fixed Source/Native pair including raw service identity, constructor return, callable scope and nested injection"}
+  ],
+  "prior_diagnostics": "The first broad-symbol bypass failed callable receiver scope and was narrowed to original only. Pre-constructor-fix browser and Session diagnostics remain failures; their complete affected consumers subsequently passed. The separate frozen e99904f4 unified run does not contain these fixes.",
+  "cleanup": {"runs": 8, "directories": 24, "bytes_removed": 1780912, "retained": "Commands, timings, XML/logs, raw browser observations, Source/Native JSON and original failure diagnostics"},
+  "qualification": "Targeted only. Unified release acceptance remains pending."
+}

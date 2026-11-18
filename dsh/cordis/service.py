@@ -60,6 +60,11 @@ class _ServiceExtendedProxy:
         if "_props" in self.__dict__ and name in self.__dict__["_props"]:
             return self.__dict__["_props"][name]
         target = self.__dict__["_target"]
+        # Tracing `original` again would turn it into a new proxy and break
+        # the identity carried by typertRemote.service. Symbol methods such
+        # as invoke still need their consumption-site receiver below.
+        if name == symbols.original:
+            return getattr(target, name)
         import inspect, types
         from dsh.cordis.utils import TraceCallReceiver, trace_method_context, get_traceable
         origin = getattr(target, "ctx", None)

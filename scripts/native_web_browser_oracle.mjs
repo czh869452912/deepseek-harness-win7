@@ -251,11 +251,33 @@ try {
       const name = map.sources[i].replaceAll('\\', '/');
       const packageStart = name.indexOf('packages/');
       if (packageStart < 0) {
+        if (name === 'typert.remote-client.js') {
+          const generatedPath = join(artifact.path, '..', name);
+          const generated = await readFile(generatedPath, 'utf8');
+          assert.equal(map.sourcesContent[i].replaceAll('\r\n', '\n'), generated.replaceAll('\r\n', '\n'),
+            'Client map must bind the generated Remote module to its actual adjacent build input');
+          sources.push({ generated: generatedPath.replace(root, '[workspace]'),
+            sourceSha256: createHash('sha256').update(generated).digest('hex') });
+          continue;
+        }
         assert.ok(name.includes('node_modules/') || name.includes('vendor/'), `Unbound source map path: ${name}`);
         sources.push({ vendor: name, sourceSha256: createHash('sha256').update(map.sourcesContent[i]).digest('hex') });
         continue;
       }
       const path = name.slice(packageStart);
+      if (/\.(?:webp|png|jpe?g|gif|svg|woff2?)$/.test(path)) {
+        const original = await readFile(join(root, 'reference', path));
+        const sha256 = createHash('sha256').update(original).digest('hex');
+        const revision = createHash('sha1').update(original).digest('hex').slice(0, 12);
+        const asset = basename(path).replace(/(\.[^.]+)$/, `-${revision}$1`);
+        const relativeAsset = `assets/${asset}`;
+        const expected = `export default __dshPackageAsset_5f8e2c1a9b7d(${JSON.stringify(`plugins/${artifact.name}/${relativeAsset}`)});`;
+        assert.equal(map.sourcesContent[i], expected, `Client asset module differs: ${path}`);
+        const emitted = await readFile(join(dirname(artifact.path), relativeAsset));
+        assert.ok(original.equals(emitted), `Client asset differs from pinned original: ${path}`);
+        sources.push({ asset: path, emitted: relativeAsset, sourceSha256: sha256 });
+        continue;
+      }
       let source;
       let generated = false;
       try { source = await readFile(join(root, 'reference', path), 'utf8'); }
@@ -321,9 +343,9 @@ try {
   assert.equal(report.capabilitiesAfter.promiseWithResolvers, 'function');
   report.initialText = await cdp.evaluate('document.body.innerText');
   report.initialControls = await cdp.evaluate("Array.from(document.querySelectorAll('button,input,[role=dialog]')).map(e=>({tag:e.tagName,text:e.textContent,label:e.getAttribute('aria-label'),role:e.getAttribute('role')}))");
-  await until(() => count('[role="dialog"][aria-label="Internal Testing Notice"]'), 'onboarding notice');
-  await click('[role="dialog"][aria-label="Internal Testing Notice"] button');
-  await until(async () => await count('[role="dialog"][aria-label="Internal Testing Notice"]') === 0, 'onboarding dismissed');
+  await until(() => count('[role="dialog"][aria-label="Preview Notice"]'), 'onboarding notice');
+  await click('[role="dialog"][aria-label="Preview Notice"] button');
+  await until(async () => await count('[role="dialog"][aria-label="Preview Notice"]') === 0, 'onboarding dismissed');
   report.steps.push({ step: 'original-onboarding-settings-remote', passed: true });
   await deferProviderOnboarding(cdp, until);
   report.providerOnboardingDeferrals = 1;
@@ -512,7 +534,7 @@ try {
   assert.deepEqual(report.errors, []); assert.deepEqual(report.requests, []);
   assert.equal(report.consoleErrors.length, 1, 'Only the deliberately failed Client may log an error');
   assert.equal(report.consoleErrors[0][0], '[cordis-client-runner] Client activation probe-1/pkg-3 (run-3) failed:');
-  assert.match(report.consoleErrors[0][1], /^Error: failed to apply loader entry [a-f0-9]+ \(dyn\/probe-1\): native browser fixture client failure\n/);
+  assert.match(report.consoleErrors[0][1], /^Error: native browser fixture client failure\n/);
   report.expectedConsoleError = report.consoleErrors[0];
   assert.ok(report.webSockets.includes('/api/remote.mux'));
   for (const method of ['runHostHalf', 'getClientCode', 'resolveRequestRun', 'settleUserRun', 'invoke', 'stopFromPanel', 'undefineFromPanel']) assert.ok(report.remoteCalls[method], `Actual browser did not send ${method}`);

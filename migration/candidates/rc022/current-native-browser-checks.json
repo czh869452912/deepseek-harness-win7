@@ -1,0 +1,19 @@
+{
+  "contract": "C9-ET",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "change": "Update browser evidence binding for actual adjacent generated Typert Remote source and original asset-loader transformations. Verify emitted binary assets byte-for-byte against the fixed Source and exact SHA1 revision URL; use current Preview Notice and original Client error identity.",
+  "verification": {
+    "run": "rc022-current-native-browser-20261118-06",
+    "passed": 3,
+    "seconds": 60.88,
+    "scope": "Actual unchanged original Web over Python 3.8.10: complete Cordis host/client lifecycle, failure/rollback/decline/unload, inspect across two pages and cancellation/reload, inventory layout stale-click boundary. Actual Remote mux, trusted clicks, no unexpected errors/network requests, awaited host/browser teardown."
+  },
+  "browser": "Microsoft Edge, repository CDP oracle; Browser plugin unavailable. Desktop flow only.",
+  "diagnostics": "Original failed maps/asset/error assertions retained; run02 is skipped and never acceptance. Run05 reached all18 lifecycle steps and screenshot was visually reviewed; final06 three scenarios passed.",
+  "cleanup": {
+    "bytes_removed": 1838067,
+    "directories": 18,
+    "observations_retained": 0
+  },
+  "qualification": "Targeted current browser only; fresh extracted Portable and unified frozen release acceptance pending."
+}

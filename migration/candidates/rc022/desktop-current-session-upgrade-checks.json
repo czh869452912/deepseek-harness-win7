@@ -1,0 +1,12 @@
+{
+  "contract": "C9-DY",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "status": "Targeted Desktop session upgrade consumers passed",
+  "changes": "Keep Desktop encoding-conflict startup fatal after session catalog initialization moved into workspace activation. The app checks workspace activation with its own required-entry scope; shared optional-plugin startup behavior is preserved. Upgrade fixtures target v4, use v5 as an unsupported future format, and inspect only the owned session directory. Attachment errors retain their current typed public identity.",
+  "verification": [
+    {"run": "rc022-desktop-format-consumers-20261118-03", "passed": 47, "seconds": 139.36, "scope": "Actual Desktop boots/cold opens, explicit/mixed encoding conflicts and recovery, cross-profile historical read/write migration with unchanged old bytes/mtime, custom roots and complete thrown-value tool controls"},
+    {"run": "rc022-current-query-engine-20261118-02", "passed": 70, "scope": "Includes direct required/optional startup, failure cause and cleanup controls after startup audit parameter extension"}
+  ],
+  "cleanup": "Both failed Desktop runs and successful run retired after raw diagnostics and original session observations were preserved. No test process remains in their bounded jobs.",
+  "qualification": "Current-host Python adapter checks only; no Electron/Win7/Portable or complete release acceptance."
+}

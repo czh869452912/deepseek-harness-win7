@@ -140,11 +140,12 @@ def startup_diagnostic(bin_name: str, failures: List[Dict[str, Any]], required: 
     return '\n'.join(lines)
 
 
-async def audit_startup_entries(ctx: Any, bin_name: str, warn: Any = None) -> None:
+async def audit_startup_entries(ctx: Any, bin_name: str, warn: Any = None,
+                                required_entry_ids: Any = REQUIRED_STARTUP_ENTRY_IDS) -> None:
     from dsh.boot.app_boot import _bootstrap_includes
     failures = await inactive_entries(ctx)
     required = {row['entry'] for row in failures if row['entry'] is _bootstrap_includes.get(ctx)
-        or row['entry'].options['id'] in REQUIRED_STARTUP_ENTRY_IDS}
+        or row['entry'].options['id'] in required_entry_ids}
     if required:
         entries = [dict(id=row['entry'].options['id'], module=row['entry'].options.get('name'),
             required=row['entry'] in required, fiberState=row['entry'].fiber.state if row['entry'].fiber is not None else None,

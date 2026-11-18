@@ -88,8 +88,8 @@ async def test_actual_tool_body_public_error(kind, value, message):
         expected = dict(message=message)
         if kind == 'typed-error':
             expected['info'] = dict(name='HarnessError', code='CONTROLLED_TYPED')
-        elif kind in ('fs', 'goal', 'subagent', 'llm'):
-            expected['info'] = dict(name=dict(fs='FsError', goal='GoalError', subagent='SubagentError', llm='LlmError')[kind], code='CONTROLLED_TYPED')
+        elif kind in ('fs', 'goal', 'subagent', 'llm', 'attachment'):
+            expected['info'] = dict(name=dict(fs='FsError', goal='GoalError', subagent='SubagentError', llm='LlmError', attachment='AttachmentError')[kind], code='CONTROLLED_TYPED')
         assert calls == [{}]
         assert result.is_error is True
         assert result.error == expected

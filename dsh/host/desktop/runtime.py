@@ -191,6 +191,12 @@ async def run_desktop_host(profile_dir, environment=None, patches=None):
             PluginPackages(host, dict(resolution=resolution))
             provide_cmdline(host, dict(args=[], exit=lambda code: None, ready=app_ready['service']))
         ctx = await boot('dsh desktop', str(root_config), admit_historical_persona_patches(rows), prepare)
+        # Workspace initialization now opens the session catalog. Its failure
+        # must retain the Desktop adapter's fatal upgrade/encoding boundary.
+        if ctx.get('workspaceRegistry') is None:
+            from dsh.boot.startup import audit_startup_entries
+            await audit_startup_entries(ctx, 'dsh desktop', required_entry_ids=('workspace',))
+            raise RuntimeError('dsh desktop: composition did not provide workspaceRegistry')
         await ctx.plugin(BrowserCompatibilityPlugin)
         for name in ('connection', 'typertGateway', 'clientModules'):
             if ctx.get(name) is None:

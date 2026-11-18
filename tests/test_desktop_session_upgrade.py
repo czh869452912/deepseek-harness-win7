@@ -31,7 +31,7 @@ async def test_existing_home_boots_and_cold_opens_without_rewriting_history(tmp_
     monkeypatch.setenv('DSH_HOME', str(home))
     monkeypatch.setenv('DSH_TELEMETRY_DISABLED', '1')
     old = history(home, compression)
-    future = history(home, compression, 4, 'future-session')
+    future = history(home, compression, 5, 'future-session')
     original = {path: (path.read_bytes(), path.stat().st_mtime_ns) for path in (old, future)}
     for _ in range(2):
         runtime = await run_desktop_host(tmp_path / 'profile')
@@ -44,7 +44,7 @@ async def test_existing_home_boots_and_cold_opens_without_rewriting_history(tmp_
         finally:
             await runtime.close()
     assert {path: (path.read_bytes(), path.stat().st_mtime_ns) for path in (old, future)} == original
-    assert not list(home.rglob('session.v3*'))
+    assert not list((home / 'sessions').rglob('session.v4*'))
 
 
 @pytest.mark.asyncio
@@ -120,10 +120,10 @@ async def test_shared_home_content_resume_migration_and_surface_cold_open(tmp_pa
             assert store.compression == compression
             reader = await store.open('generation', 'read')
             artifact = await reader.read()
-            assert (await store.stat('generation'))['header']['version'] == 3
+            assert (await store.stat('generation'))['header']['version'] == 4
             assert any(event['type'] == 'system/message' for event in artifact['events'])
             await reader.close()
-            current = Path(generationLogPath(store.root, UNDEFINED, 'generation', 3, compression))
+            current = Path(generationLogPath(store.root, UNDEFINED, 'generation', 4, compression))
             if not cold:
                 assert not current.exists(), 'reading legacy content must not publish migration'
                 writer = await store.open('generation', 'write')

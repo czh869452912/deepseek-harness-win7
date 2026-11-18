@@ -1,0 +1,16 @@
+{
+  "contract": "C9-DI",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "status": "Targeted SDK actual Source/native and strict consumer checks passed",
+  "changes": "Add the four actual canonical question-service imports to each of the normal/cancel/error SDK closures: question_projection, question_wait, tool_ask_user_current and user_questions_current. No broad allowance or missing/extra-module guard removed; adapter_failure remains the existing sole optional cancel import.",
+  "verification": [
+    {"run": "rc022-sdk-question-imports-20261118-01", "passed": 3, "errors": 61, "reason": "Targeted launch omitted the required Node 24 path; original command and failure preserved"},
+    {"run": "rc022-sdk-question-imports-20261118-02", "passed": 64, "seconds": 67.55, "scope": "Actual current original and Native SDK normal/tool/next-model, live cancellation and failure; exact imported closure and all negative value/runtime/identity controls"},
+    {"run": "rc022-search-source-timeout-20261118-01", "status": "diagnostic-timeout", "seconds": 60.016, "scope": "Instrumented original observer located the pending body-abort case; unmodified Source"},
+    {"run": "rc022-search-source-timeout-20261118-02", "status": "diagnostic-passed", "scope": "Isolated header/body cancellation sequence"},
+    {"run": "rc022-search-source-timeout-20261118-03", "status": "diagnostic-passed", "scope": "Complete original input with observer tracing; original Source unchanged"},
+    {"run": "rc022-search-current-recheck-20261118-01", "status": "passed", "scope": "Unmodified original current search observer and actual Native comparison; no code/deadline/input relaxation. Earlier intermittent timeout remains retained, not rewritten."}
+  ],
+  "cleanup": {"bytes_removed": 6259314, "owned_directories_removed": 6, "real_observations_retained": 8, "retained": "Commands, XML/logs, original failure reports, actual session observations and unresolved timing diagnostics. No task-owned search Node process remained after timeout."},
+  "acceptance": "Targeted only. The frozen 3f20446c full diagnostic run retains its original failing closure; a new stable candidate requires its own unified qualification. Search cancellation timing remains under observation in that complete run."
+}

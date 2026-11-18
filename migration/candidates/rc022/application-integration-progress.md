@@ -18,6 +18,8 @@ C9-DG：旧重载事务回滚断言改按当前原版的尽力应用、原始候
 
 C9-DH：81 个旧 LLM 用例和 21 类能力观察保留历史 Source 原始字节，当前兼容提供方重新执行，124/29/34 项定向通过，原始失败诊断保留。独立当前 Messages/Session 七组实际配对通过；搜索 Source 观察器触及原有 60 秒期限，作为未解决项继续诊断，不作通过声明。约 3.69 MiB 夹具已清理，真实会话日志另存。[检查](historical-llm-capability-checks.json)。
 
+C9-DI：SDK 三场景导入清单补齐当前问题服务的四份实际模块，64 项真实 Source/Native 与严格消费者检查通过；约 5.97 MiB 夹具已清理，八份实际观察保留。搜索超时隔离后，完整原始观察器与 Native 对照重新通过；原超时诊断保留，未放宽期限或修改原版，取消时序仍随完整门禁观察。[检查](sdk-question-import-closure-checks.json)。
+
 C9-CX：Win7 Desktop 外壳的旧来源与当前宿主/前端输入分开核验，明确私有管道 v3 并非当前原版 Desktop v4 生命周期。首轮 158 项通过、一项旧异步消费者失败，修复后 26 项及诊断编码两项复验通过，原始失败保留；失效工作区已清理。[范围与限制](../../../docs/research/2026-11-18-win7-desktop-current-scope.md)、[检查](desktop-current-scope-checks.json)。
 
 C9-CV：统一入口接到当前完整合同，冻结实际安装依赖/双架构构建输入和观察器；新鲜 x64/x86 包运行完整 SDK、Office、元数据、原版浏览器、应用冷恢复及 Standard Desktop 打包检查。相关 89 项与最后 47 项定向通过；这些单元控制不构成实际统一资格。已清理约 2.0 MiB 失效夹具。[编排检查](current-orchestration-checks.json)。

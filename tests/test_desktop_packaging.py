@@ -172,6 +172,46 @@ def test_desktop_copies_complete_reviewed_package_closure_not_build_fixtures(tmp
         build_desktop.desktop_package_inputs(portable,tmp_path / 'rejected')
 
 
+@pytest.mark.parametrize('damage', [None, 'missing', 'changed', 'escape'])
+def test_desktop_copies_every_declared_bundle_layer(tmp_path, monkeypatch, damage):
+    source, portable, output = (tmp_path / name for name in ('source', 'portable', 'desktop'))
+    (source / 'scripts').mkdir(parents=True)
+    layers = ['cordis.patch.yml', 'presets/standard.patch.yml',
+              'presets/ptc.patch.yml', 'presets/minimal.patch.yml', 'presets/cordis.patch.yml']
+    for base in (source, portable):
+        package = base / 'packages/bundle/web-app'
+        package.mkdir(parents=True)
+        manifest = dict(name='@deepseek-ai/dsh-web-app', dsh=dict(bundle=dict(patch=layers)))
+        (package / 'package.json').write_text(json.dumps(manifest), encoding='utf-8')
+        for index, name in enumerate(layers):
+            path = package / name
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text('- insert: [] # layer %s\n' % index, encoding='utf-8')
+    manifest_path = source / 'packages/bundle/web-app/package.json'
+    if damage == 'escape':
+        manifest['dsh']['bundle']['patch'] = ['../outside.patch.yml']
+        manifest_path.write_text(json.dumps(manifest), encoding='utf-8')
+    row = dict(path='packages/bundle/web-app/package.json',
+               sha256=hashlib.sha256(manifest_path.read_bytes()).hexdigest())
+    for name, files in (('runtime-inputs.json', [row]), ('frontend-inputs.json', [])):
+        (source / 'scripts' / name).write_text(json.dumps(dict(files=files)), encoding='utf-8')
+    last = portable / 'packages/bundle/web-app' / layers[-1]
+    if damage == 'missing':
+        last.unlink()
+    elif damage == 'changed':
+        last.write_bytes(b'changed preset')
+    monkeypatch.setattr(build_desktop, 'ROOT', source)
+    if damage is not None:
+        with pytest.raises((ValueError, FileNotFoundError)):
+            build_desktop.desktop_package_inputs(portable, output)
+        return
+    result = build_desktop.desktop_package_inputs(portable, output)
+    assert result['files'] == 6
+    for name in layers:
+        path = 'packages/bundle/web-app/' + name
+        assert (output / path).read_bytes() == (source / path).read_bytes()
+
+
 @pytest.mark.parametrize('arguments,diagnostic', [
     (['--edition','aio'], 'AIO requires --external-prereq-dir'),
     (['--architecture','x86'], 'requires an explicit qualified --portable-dir'),

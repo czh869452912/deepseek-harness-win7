@@ -1,0 +1,37 @@
+{
+  "contract": "C9-GS",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "problem": "Actual packaged Desktop skipped the entire current Web bundle because four manifest-declared preset layers were absent, leaving workspaceRegistry, connection and clientModules unavailable.",
+  "change": "Include every declared bundle patch in the reviewed Desktop package closure. Require source identity for each Portable member and reject paths escaping the owning package.",
+  "verification": {
+    "targeted": {
+      "passed": 62,
+      "seconds": 179.3,
+      "scope": "Desktop packaging, actual canonical route/disposal and shared-home session upgrade/cold consumers; missing, changed and escaped preset rejection"
+    },
+    "actual_diagnostic_package": {
+      "original_failed_run": "rc022-desktop-preparation-20261119-37",
+      "overlay_run": "rc022-desktop-layer-preflight-20261119-41",
+      "added_layers": 4,
+      "node16_python38_pipe_checks": 9,
+      "electron108_browser_lifecycle_checks": 6,
+      "renderer_errors": 0,
+      "release_acceptance": false,
+      "identity": "Retained exact 700d Portable inside failed Desktop closure plus four explicitly inventoried absent preset files; diagnostic preparation only, not a new-candidate installer qualification."
+    }
+  },
+  "targeted_cleanup": {
+    "directories_removed": 3,
+    "bytes_removed": 7989248,
+    "links_removed": 3071,
+    "raw_observations_preserved": 35
+  },
+  "remaining": "Rebuild both complete products and Desktop installers within one new frozen-candidate unified qualification.",
+  "release_acceptance": false,
+  "diagnostic_cleanup": {
+    "completed_outputs": 6,
+    "bytes_removed": 969664633,
+    "failed_empty_command_workspace_removed": true,
+    "raw_observation_bytes_unchanged": true
+  }
+}

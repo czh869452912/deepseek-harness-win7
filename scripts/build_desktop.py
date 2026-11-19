@@ -122,6 +122,19 @@ def desktop_package_inputs(portable, destination):
     # consumed on import by the public compatibility facade, before boot.
     for path in (ROOT / 'packages/bundle').glob('*/cordis.patch.yml'):
         selected[path.relative_to(ROOT).as_posix()] = digest(path)
+    # Current bundles declare additional preset layers. Missing any declared
+    # layer makes profile loading skip the entire bundle, including providers.
+    from dsh.boot.profile import bundle_patch_files
+    for manifest_path in (ROOT / 'packages/bundle').glob('*/package.json'):
+        manifest = json.loads(manifest_path.read_text(encoding='utf-8'))
+        bundle = manifest.get('dsh', {}).get('bundle')
+        if bundle is None:
+            continue
+        package_root = manifest_path.parent.resolve()
+        for name in bundle_patch_files(bundle):
+            path = (package_root / name).resolve()
+            path.relative_to(package_root)
+            selected[path.relative_to(ROOT.resolve()).as_posix()] = digest(path)
     for name, expected in sorted(selected.items()):
         source = Path(portable) / name
         if digest(source) != expected:

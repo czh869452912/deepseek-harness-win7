@@ -1,0 +1,52 @@
+{
+  "contract": "C9-HE",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "candidate": "796b15b1c99123f858bc672e51c22597f42db5eb",
+  "run": "rc022-unified-20261119-15",
+  "result": "failed",
+  "unified_seconds": 13385.391000000061,
+  "ended": "2026-11-20T00:33:23.495246",
+  "python": {
+    "collected": 22677,
+    "passed": 22648,
+    "skipped": 26,
+    "failed": 3,
+    "errors": 0,
+    "seconds": 7804.464
+  },
+  "final_inputs_unchanged": true,
+  "final_candidate_unchanged": true,
+  "original_report_sha256": "fd1ceda4d9095e7ef59026533d680bd09e2893228bf693ebc8ce566411949355",
+  "input_manifest_sha256": "d793b1234102a2e6e8b0bf30e4eae2e5c7cdd8ed981eda756910c1f0d1b144fd",
+  "fixes": [
+    {
+      "commit": "418c09b2",
+      "receipt": "current-title-deadline-observation-checks.json"
+    },
+    {
+      "commit": "54771b88",
+      "receipt": "current-hmr-write-observation-checks.json"
+    },
+    {
+      "commit": "db783777",
+      "receipt": "current-console-line-observation-checks.json"
+    }
+  ],
+  "cleanup": {
+    "regression_bytes_removed": 1919274003,
+    "product": {
+      "removed": [
+        "dsh-win7-portable"
+      ],
+      "bytes_removed": 810534481
+    },
+    "original_logs_xml_failure_observations_and_required_fixture_bytes_preserved": true
+  },
+  "retained_exact_original_portable": {
+    "path": "C:\\Users\\czh86\\Documents\\Codex\\dsh-rc022-qualification\\.goose\\out\\rc022-unified-20261119-15\\build-x64\\dsh-win7-portable-v0.2.2-rc.3-r1.zip",
+    "sha256": "9bed5d239e374429096b59ef1cfe3aa490175b94b30efdfad30b5fcf0e9303e6",
+    "bytes": 288740812
+  },
+  "release_acceptance": false,
+  "remaining": "Freeze a clean new candidate with the three verified test/observer fixes and execute all eight unified stages afresh. Source, paired, extracted and Desktop stages were not reached in run15. Historical and targeted results are not combined as acceptance."
+}

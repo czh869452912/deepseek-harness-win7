@@ -1,5 +1,7 @@
 # 应用提供方与组合接入
 
+2026-11-20 C9-HE：[run15 失败收口](current-run15-closure-checks.json)确认完整 Python 22,648通过/26跳过/3失败，最终冻结输入和候选复核均一致。三项测试/观察问题已分别提交定向修复；原失败、日志、必要夹具字节和精确 x64 ZIP 保持身份。已退役用完的回归夹具及解压副本；下一步冻结新候选，重新执行全部八阶段统一资格，不拼接历史局部结果。
+
 固定目标：`38a6a5c965aa99ab525161efb7cc5cf1fe62fced`。本页记录定向检查；生产 pin 已在 C9-CC 协调切换，`accepted_upstream` 仍为 null，完整资格待后续验证。
 
 C9-GL: Closed the C9-GK cleanup finding: 12 completed `files/` roots retired (1,667,734 file bytes), 94 raw observations retained, and original top-level observations/receipts unchanged. Declare the synthetic root for 115 constructing drivers and reject runtime undeclared roots. Retain exact inventories/raw observations before unlinking, guard paths/receipt overwrite, and delete modern-Windows read-only entries without changing shared hardlink attributes. All 67 targeted controls/actual FS consumers and two real Git/client-registry pairs passed, with their fixtures retired. [Record](current-paired-fixture-retention-checks.json).

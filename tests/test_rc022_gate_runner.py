@@ -9,19 +9,21 @@ def test_plan_accounts_for_every_current_observer_and_original_selection():
     plan = gate.load_plan()
     assert len(plan['paired']) == 406 and len(plan['source_tests']) == 476
     assert plan['source_test_timeout_ms'] == 30000
+    assert plan['source_test_node_version'] == 'v24.13.1'
     assert any(row['script'] == 'scripts/rc022_released_logical_probe.py' for row in plan['paired'])
     assert any(row['script'] == 'scripts/rc022_query_text_probe.py' for row in plan['paired'])
     assert any(row['script'] == 'scripts/rc022_projection_cache_probe.py' for row in plan['paired'])
     assert all((gate.ROOT / row['script']).is_file() for row in plan['paired'])
 
 
-@pytest.mark.parametrize('damage', ['observer', 'source', 'duplicate', 'path', 'separate'])
+@pytest.mark.parametrize('damage', ['observer', 'source', 'duplicate', 'path', 'separate', 'source-runtime'])
 def test_plan_rejects_silent_roster_damage(tmp_path, monkeypatch, damage):
     plan = copy.deepcopy(gate.load_plan())
     if damage == 'observer': plan['paired'].pop()
     if damage == 'source': plan['source_tests'].pop()
     if damage == 'duplicate': plan['paired'][-1] = plan['paired'][0]
     if damage == 'path': plan['source_tests'][0] = '../source.spec.ts'
+    if damage == 'source-runtime': plan['source_test_node_version'] = 'v24.9.0'
     if damage == 'separate':
         row = plan['paired'].pop()
         plan['separate'].append(dict(script=row['script'], reason='silently skipped'))
@@ -89,6 +91,7 @@ def test_source_lane_uses_pinned_upstream_budget_and_keeps_failure_diagnostics(t
     environment = dict(DSH_COVERAGE_TEST_TIMEOUT_MS='1')
     def execute(command, cwd, output, name, env, timeout):
         assert env['DSH_COVERAGE_TEST_TIMEOUT_MS'] == '30000'
+        assert env['PATH'].startswith(str(tmp_path))
         assert '--reporter=default' in command and '--reporter=json' in command
         assert timeout == 900
         (output / (name + '.json')).write_text(json.dumps(dict(success=True,
@@ -99,3 +102,13 @@ def test_source_lane_uses_pinned_upstream_budget_and_keeps_failure_diagnostics(t
     rows = gate.source_lane(plan, source, tmp_path / 'node', tmp_path, environment)
     assert rows[0]['test_timeout_ms'] == 30000
     assert environment == dict(DSH_COVERAGE_TEST_TIMEOUT_MS='1')
+
+
+@pytest.mark.parametrize('version', ['v24.9.0', 'v24.13.1', 'v25.0.0'])
+def test_source_test_runtime_is_distinct_and_pinned(tmp_path, monkeypatch, version):
+    node = tmp_path / 'node.exe'; node.write_bytes(b'actual selected executable')
+    monkeypatch.setattr(gate.subprocess, 'check_output', lambda *args, **kwargs: version + '\n')
+    plan = gate.load_plan()
+    if version == 'v24.13.1': assert gate.source_test_runtime(plan, node) == node
+    else:
+        with pytest.raises(ValueError, match='Source test runtime'): gate.source_test_runtime(plan, node)

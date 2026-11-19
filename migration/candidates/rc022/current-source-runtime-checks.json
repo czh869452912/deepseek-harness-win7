@@ -1,0 +1,83 @@
+{
+  "contract": "C9-GI",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "diagnosis": "Original Source repository-cache eviction test fails on Windows because Node24.9.0 rmSync leaves a dangling file symlink. Isolated original test and diagnostic fs observations reproduce the vanished entry surviving rmSync. Node official 24.13.1 release includes fix #61040; direct old/new runtime controls confirm it.",
+  "sources": [
+    "https://nodejs.org/en/blog/release/v24.13.1",
+    "https://github.com/nodejs/node/pull/61040",
+    "https://nodejs.org/download/release/v24.13.1/SHASUMS256.txt"
+  ],
+  "runtimes": {
+    "contract_observers": "v24.9.0",
+    "source_unit_tests": {
+      "version": "v24.13.1",
+      "sha256": "e3be0545990c90995d7bf3a7af5d64af1f2e0fc1bbd9b79c27f7abc1e9676e50",
+      "bytes": 91406496
+    },
+    "source_engines": ">=24.9.0",
+    "original_prepared_builds": "Node24.9.0; preserved original provenance, no rebuild or relabelling",
+    "product": "Python3.8.10/Win7 and unchanged renderer; neither modern Node runtime is a product dependency"
+  },
+  "change": "Separate Source unit-test runtime argument and frozen identity. Source tests use its PATH; paired observers keep the original contract Node. All original tests/assertions retained, no Source patch/preload/exclusion in validation.",
+  "verification": {
+    "python": {
+      "run": "rc022-current-c9gi-source-runtime-20261119-02",
+      "passed": 45,
+      "seconds": 2.23
+    },
+    "source": {
+      "run": "C:\\Users\\czh86\\Documents\\Codex\\dsh-rc022-qualification\\.goose\\out\\rc022-source-repository-fixed-node-20261119-20",
+      "passed": 18,
+      "failed": 0,
+      "skipped": 0
+    }
+  },
+  "diagnostics": {
+    "original_lane": "rc022-source-current-20261119-15",
+    "status": "failed",
+    "inputs_unchanged": true,
+    "failed_case": "deletes least recently used repositories beyond the cache size and stale staging directories",
+    "observed_extra_entry": "vanished",
+    "full_lane_acceptance": false
+  },
+  "cleanup": {
+    "failed_caches": [
+      {
+        "path": "C:\\Users\\czh86\\AppData\\Local\\Temp\\g-qjtpxot9",
+        "bytes_removed": 24135
+      },
+      {
+        "path": "C:\\Users\\czh86\\AppData\\Local\\Temp\\g-dh9l_gh9",
+        "bytes_removed": 0
+      },
+      {
+        "path": "C:\\Users\\czh86\\AppData\\Local\\Temp\\g-e21u3wcn",
+        "bytes_removed": 0
+      },
+      {
+        "path": "C:\\Users\\czh86\\AppData\\Local\\Temp\\g-rw9ybfk1",
+        "bytes_removed": 0
+      },
+      {
+        "path": "C:\\Users\\czh86\\AppData\\Local\\Temp\\g-z3xt7y1o",
+        "bytes_removed": 0
+      }
+    ],
+    "targeted": [
+      {
+        "run": "rc022-current-c9gi-source-runtime-20261119-01",
+        "directories": 3,
+        "bytes_removed": 1400362,
+        "links": 16
+      },
+      {
+        "run": "rc022-current-c9gi-source-runtime-20261119-02",
+        "directories": 3,
+        "bytes_removed": 1526806,
+        "links": 16
+      }
+    ]
+  },
+  "release_acceptance": false,
+  "remaining": "Fresh complete Source and paired preparation, then one exact stable unified candidate. Failed runs and raw diagnostic observations remain unchanged."
+}

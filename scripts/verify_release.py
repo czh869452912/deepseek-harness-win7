@@ -2624,6 +2624,7 @@ def main(argv=None):
     # retained validator implementation remains callable by parser unit tests.
     parser.set_defaults(current=True)
     parser.add_argument('--node', type=Path, help='Pinned Node 24.9.0 development observer')
+    parser.add_argument('--source-test-node', type=Path, help='Pinned Node 24.13.1 Windows Source unit-test runtime')
     parser.add_argument('--python32', type=Path, help='Python3.8.10 x86 base runtime')
     parser.add_argument('--site-packages32', type=Path, help='Approved x86 dependency environment')
     parser.add_argument('--site-packages', type=Path, help='Approved x64 dependency environment')

@@ -65,7 +65,7 @@ def installed_node_identity(source, node):
             if item['files'] % 20000 == 0 else None)
 
 
-def freeze(source, node, browsers, office, runtimes, tools):
+def freeze(source, node, browsers, office, runtimes, tools, source_test_node):
     value = lanes.input_identity(source, node)
     # Check copy inputs before traversing the much larger installed Node graph.
     value['python_build_inputs'] = {arch:python_identity(ROOT, runtime, site, arch)
@@ -84,6 +84,7 @@ def freeze(source, node, browsers, office, runtimes, tools):
         ROOT / '.goose/tools/node-22.22.2',
     ]
     value['observer_support'] = tree_identity(observers, [path.resolve() for path in observers])
+    value['source_test_runtime'] = tree_identity([source_test_node.parent], [source_test_node.parent])
     return value
 
 
@@ -177,9 +178,10 @@ def verify(args, output):
         if args.prepare:
             retained.prepare_node_dependencies(output, environment)
         plan = lanes.load_plan()
+        test_node = lanes.source_test_runtime(plan, getattr(args, 'source_test_node', None))
         selected = candidate(source, node, args.allow_dirty); report.update(selected)
         print('Freezing actual prepared dependencies and build runtimes', flush=True)
-        before = freeze(source, node, [browser, browser108], office, runtimes, tools)
+        before = freeze(source, node, [browser, browser108], office, runtimes, tools, test_node)
         inputs = output / 'inputs.json'; inputs.write_text(json.dumps(before, indent=2), encoding='utf-8')
         report.update(input_manifest_sha256=lanes.digest(inputs), plan_sha256=lanes.digest(lanes.PLAN))
         checkpoint()
@@ -198,7 +200,7 @@ def verify(args, output):
         checkpoint()
         for lane in ['source', 'paired']:
             destination = output / lane; destination.mkdir()
-            if lane == 'source': rows = lanes.source_lane(plan, source, node, destination, environment)
+            if lane == 'source': rows = lanes.source_lane(plan, source, test_node, destination, environment)
             else: rows = lanes.paired_lane(plan, source, node, browser108, destination, environment)
             report['stages'][lane] = dict(status='passed', rows=rows); checkpoint()
         archives = {}
@@ -232,7 +234,7 @@ def verify(args, output):
         try:
             if before is not None:
                 print('Rechecking frozen dependency bytes', flush=True)
-                report['inputs_unchanged'] = before == freeze(source, node, [browser, browser108], office, runtimes, tools)
+                report['inputs_unchanged'] = before == freeze(source, node, [browser, browser108], office, runtimes, tools, test_node)
                 report['candidate_unchanged'] = candidate(source, node, True) == selected
                 if not report['inputs_unchanged'] or not report['candidate_unchanged']:
                     report.update(result='failed', publishable=False, failure='Frozen qualification inputs changed')

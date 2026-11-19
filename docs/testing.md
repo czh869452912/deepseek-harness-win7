@@ -42,6 +42,8 @@ rc022 协调切换期间，当前 Source/配对清单见 [release-gate-plan.json
 
 当前统一资格入口为完整 Python 集合选择 `maxfail=0`，集中收集普通用例失败；既有内部快速检查默认仍为 `maxfail=1`。任一失败都会保持门禁失败且不继续资格后续阶段；操作期限、工作区保留和冻结输入复核仍照常执行。
 
+当前原版测试与合同观察器使用两个显式固定的现代 Node：`--node` 保持 24.9.0，供有限合同配对与原构建输入使用；`--source-test-node` 使用 24.13.1，默认位于 `.goose/tools/node-24.13.1-win-x64/node.exe`，供未修改的原版单元测试使用。后者包含官方 Windows 失效符号链接 `rmSync` 修复 #61040；两个身份均参与冻结与复核，不替换产品的 Python3.8.10，也不改写原构建来源。原版通过 `DSH_COVERAGE_TEST_TIMEOUT_MS` 支持共享主机期限，当前冻结计划为 30000 毫秒，统一应用到测试、hook 和轮询默认值；用例显式期限和全部断言保持。详见[实际失败与复验](../migration/candidates/rc022/current-source-runtime-checks.json)。
+
 完整运行发现多项问题后，保留原始失败和用时，集中修复，并复验各失败及受影响消费者。下一次完整门禁安排在这些问题收尾后的稳定候选；不要每修好一个用例就重新跑全部集合。已有运行记录可用于诊断，不能把不同候选的通过片段拼成新的完整通过。
 
 耗时长不直接等于死循环。先检查冷夹具构造、文件复制/打包、真实子进程启动、等待截止时间及重复或嵌套等待。当前发行入口默认不对整个 pytest 集合设置3600秒硬限制；只有显式 `--regression-timeout SECONDS` 才设置总预算，单项操作的连接、取消及子进程期限仍保留。
@@ -105,7 +107,7 @@ FS公共值配对的物理夹具由 `scripts/fs_fixture_workspace.py` 分配到�
 
 ## 当前 CI 的边界
 
-当前 `.github/workflows/verify.yml` 仍在 PR、手工调用及发布复用时执行完整发行门禁，整体job期限为180分钟；先准备固定Chromium108观察器，与现代浏览器共同传入发行入口。完整入口新增同ZIP包内Python的108三预设fresh/cold功能旅程和输入/模块/缺lane拒绝；这不替代其他realm/CSS审计或Win7认证。`.github/workflows/release.yml` 的发布依赖同一验收产物和精确ZIP散列，不另行重建。
+历史 `.github/workflows/verify.yml` 配置在 PR、手工调用及发布复用时调用发行入口，job 期限为180分钟。它仍配置旧 Node22.22.2、缺少当前显式双架构/Office/Source测试运行时准备，并读取旧的单份 archive 回执字段；当前本机统一门禁不能证明该远程流程可运行或发布。远程工作流和发布消费者须另行完成当前输入及多架构回执适配、实际 Actions 资格，不能复用本机结果宣称 CI 已通过。本轮本机入口的同 ZIP 包内 Python/108 浏览器旅程也不替代 Win7 真机认证。
 
 CI诊断先由 `scripts/package_release_diagnostics.py` 封装，再只上传单一ZIP，避免上传器遍历测试链接。普通文件保留原字节和清单，symlink/junction/reparse自身记录原始目标或reparse数据而不跟随；原工作区不删除。失败摘要在封装前直接输出到CI日志；缺失/截断XML不得推断最终计数。GitHub artifact 下载ZIP包含这个诊断ZIP，消费时应分别绑定外层传输校验和与内层原始诊断载体，不把传输封装误当成新的验收。
 

@@ -13,12 +13,13 @@ from scripts import verify_release
 def test_current_cli_routes_to_current_qualification(tmp_path, monkeypatch):
     received = []
     def verify(args, output):
-        received.append((args.current, args.python32, args.site_packages32))
+        received.append((args.current, args.python32, args.site_packages32, args.source_test_node))
         return dict(result='passed', publishable=False)
     monkeypatch.setattr(gate, 'verify', verify)
     assert verify_release.main(['--python32', 'base32', '--site-packages32', 'deps32',
+                                '--source-test-node', 'source-test-node.exe',
                                 '--output-dir', str(tmp_path)]) == 0
-    assert received == [(True, Path('base32'), Path('deps32'))]
+    assert received == [(True, Path('base32'), Path('deps32'), Path('source-test-node.exe'))]
 
 
 @pytest.mark.parametrize('damage', ['none', 'changed-archive'])
@@ -38,8 +39,13 @@ def test_current_gate_smokes_and_extracts_the_same_fresh_archive(tmp_path, monke
     monkeypatch.setattr(gate, 'runtime_inputs', lambda args: {name: (tmp_path, tmp_path) for name in ('x64', 'x86')})
     monkeypatch.setattr(gate, 'desktop_tools', lambda args: {})
     monkeypatch.setattr(gate, 'candidate', lambda *args: selected)
-    monkeypatch.setattr(gate, 'freeze', lambda *args: dict(checkout={}))
+    def freeze(*args):
+        assert args[1] == node
+        assert args[-1] == tmp_path / 'source-test-node.exe'
+        return dict(checkout={})
+    monkeypatch.setattr(gate, 'freeze', freeze)
     monkeypatch.setattr(gate.lanes, 'load_plan', lambda: {})
+    monkeypatch.setattr(gate.lanes, 'source_test_runtime', lambda *args: tmp_path / 'source-test-node.exe')
     plan = tmp_path / 'plan.json'; plan.write_bytes(b'fixed plan')
     monkeypatch.setattr(gate.lanes, 'PLAN', plan)
     events, archives = [], {}
@@ -72,8 +78,14 @@ def test_current_gate_smokes_and_extracts_the_same_fresh_archive(tmp_path, monke
     monkeypatch.setattr(gate, 'build_archive', build)
     monkeypatch.setattr(gate.retained, 'run_python_regression', regression)
     monkeypatch.setattr(gate.retained, 'validate_regression', lambda path: {})
-    monkeypatch.setattr(gate.lanes, 'source_lane', lambda *args: [])
-    monkeypatch.setattr(gate.lanes, 'paired_lane', lambda *args: [])
+    def source_lane(*args):
+        assert args[2] == tmp_path / 'source-test-node.exe'
+        return []
+    def paired_lane(*args):
+        assert args[2] == node
+        return []
+    monkeypatch.setattr(gate.lanes, 'source_lane', source_lane)
+    monkeypatch.setattr(gate.lanes, 'paired_lane', paired_lane)
     monkeypatch.setattr(gate.portable, 'qualify', qualify)
     monkeypatch.setattr(gate, 'desktop_lane', lambda *args: dict(status='passed'))
     monkeypatch.setattr(gate.lanes, 'remove_owned', lambda path: 0)

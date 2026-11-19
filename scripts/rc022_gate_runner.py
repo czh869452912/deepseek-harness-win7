@@ -32,6 +32,8 @@ def load_plan():
     plan = json.loads(PLAN.read_text(encoding='utf-8'))
     if plan['target_upstream'] != TARGET or plan['node_version'] != 'v24.9.0':
         raise ValueError('Current gate target/toolchain differs')
+    if plan.get('source_test_node_version') != 'v24.13.1':
+        raise ValueError('Current Windows Source test runtime differs')
     budget = plan.get('source_test_timeout_ms')
     if type(budget) is not int or not 1000 <= budget <= 120000:
         raise ValueError('Invalid Source shared-host test budget')
@@ -153,12 +155,21 @@ def execute(command, cwd, output, name, environment, timeout):
     return receipt
 
 
+def source_test_runtime(plan, selected=None):
+    node = Path(selected or ROOT / '.goose/tools/node-24.13.1-win-x64/node.exe').resolve()
+    if (not node.is_file() or subprocess.check_output([str(node), '--version'], encoding='utf-8').strip()
+            != plan['source_test_node_version']):
+        raise ValueError('Pinned Windows Source test runtime required')
+    return node
+
+
 def source_lane(plan, source, node, output, environment, only=()):
     selected = list(only) if only else plan['source_tests']
     if not set(selected) <= set(plan['source_tests']): raise ValueError('Unplanned Source test')
     # The unchanged upstream config applies its shared-host budget to each
     # inline project's tests, hooks and polling. Preserve explicit case limits.
-    environment = dict(environment, DSH_COVERAGE_TEST_TIMEOUT_MS=str(plan['source_test_timeout_ms']))
+    environment = dict(environment, DSH_COVERAGE_TEST_TIMEOUT_MS=str(plan['source_test_timeout_ms']),
+                       PATH=str(node.parent) + os.pathsep + environment.get('PATH', ''))
     rows = []
     for offset in range(0, len(selected), 32):
         batch = selected[offset:offset + 32]
@@ -204,6 +215,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     for name in ['source', 'node', 'browser', 'output']:
         parser.add_argument('--' + name, type=Path, required=True)
+    parser.add_argument('--source-test-node', type=Path, help='Pinned Windows Source unit-test runtime, separate from contract Node')
     parser.add_argument('--lane', choices=['source', 'paired'], required=True)
     parser.add_argument('--only', action='append', default=[], help='Explicit planned subset; never a complete lane')
     args = parser.parse_args()
@@ -216,18 +228,20 @@ def main():
         return (subprocess.check_output(['git', '-C', str(source), 'rev-parse', 'HEAD'], encoding='utf-8').strip() == TARGET
                 and not subprocess.check_output(['git', '-C', str(source), 'status', '--porcelain'], encoding='utf-8').strip())
     if not source_clean(): raise ValueError('Unchanged current Source required')
+    test_node = source_test_runtime(plan, args.source_test_node) if args.lane == 'source' else None
     environment = {key: value for key, value in os.environ.items()
         if not re.search(r'(?:^|_)(?:API_KEY|API_TOKEN|ACCESS_TOKEN|REFRESH_TOKEN|OAUTH_TOKEN)$', key, re.I)
         and key.upper() not in ['DSH_HOME', 'PYTHONPATH', 'PYTHONHOME']}
     environment.update(PATH=str(node.parent) + os.pathsep + environment['PATH'],
                        DSH_TEST_CHROMIUM=str(browser), DSH_TEST_CHROMIUM108=str(browser))
     before = input_identity(source, node)
+    if test_node: before['source_test_runtime'] = dict(path=str(test_node), sha256=digest(test_node))
     before['plan'] = digest(PLAN)
     (output / 'inputs.json').write_text(json.dumps(before, indent=2), encoding='utf-8')
     report = dict(target_upstream=TARGET, plan_sha256=before['plan'], status='failed', lane=args.lane,
                   complete_lane=not args.only, release_acceptance=False)
     try:
-        if args.lane == 'source': report['rows'] = source_lane(plan, source, node, output, environment, args.only)
+        if args.lane == 'source': report['rows'] = source_lane(plan, source, test_node, output, environment, args.only)
         else: report['rows'] = paired_lane(plan, source, node, browser, output, environment, args.only)
         report['status'] = 'passed'
     except BaseException as error:
@@ -235,6 +249,7 @@ def main():
         raise
     finally:
         after = input_identity(source, node); after['plan'] = digest(PLAN)
+        if test_node: after['source_test_runtime'] = dict(path=str(test_node), sha256=digest(test_node))
         report['inputs_unchanged'] = before == after and source_clean()
         if not report['inputs_unchanged']: report.update(status='failed', error='Frozen current inputs changed')
         (output / 'report.json').write_text(json.dumps(report, indent=2), encoding='utf-8')

@@ -1,6 +1,9 @@
 """Current gate cannot lose an observer or accept a damaged process receipt."""
 import copy
 import json
+import os
+import subprocess
+import sys
 import pytest
 from scripts import rc022_gate_runner as gate
 
@@ -156,3 +159,29 @@ def test_source_lane_accounts_for_original_exclusions_without_accepting_missing_
         assert result['files'] == ['case.spec.ts'] and result['upstream_platform_exclusions'] == [row]
     else:
         with pytest.raises(ValueError, match='Source cases'): operation()
+
+
+def test_actual_paired_entrypoint_imports_siblings_without_pythonpath(tmp_path, monkeypatch):
+    package = tmp_path / 'scripts'; package.mkdir()
+    (package / '__init__.py').write_text('', encoding='utf-8')
+    (package / 'fixture_helper.py').write_text("STATUS = 'passed'\n", encoding='utf-8')
+    script = package / 'fixture_probe.py'
+    script.write_text('from scripts.fixture_helper import STATUS\n'
+        'import argparse,json\nfrom pathlib import Path\n'
+        'p=argparse.ArgumentParser();p.add_argument("--source");p.add_argument("--output");a=p.parse_args()\n'
+        'out=Path(a.output);out.mkdir();(out/"files").mkdir();(out/"files/payload").write_bytes(b"owned")\n'
+        '(out/"report.json").write_text(json.dumps(dict(status=STATUS)),encoding="utf-8")\n', encoding='utf-8')
+    env = {k: v for k, v in os.environ.items() if k.upper() not in ['PYTHONPATH', 'PYTHONHOME']}
+    # The original direct-file launcher must fail before creating a report.
+    direct = subprocess.run([sys.executable, str(script)], cwd=str(tmp_path), env=env,
+                            capture_output=True, timeout=10)
+    assert direct.returncode != 0 and b"No module named 'scripts'" in direct.stderr
+    monkeypatch.setattr(gate, 'ROOT', tmp_path)
+    output = tmp_path / 'output'; output.mkdir()
+    row = dict(script='scripts/fixture_probe.py', node=False, browser=False, timeout_seconds=10,
+               receipt='report', disposable_directories=['files'])
+    rows = gate.paired_lane(dict(paired=[row]), tmp_path / 'source', tmp_path / 'node', tmp_path / 'browser', output, env)
+    receipt = json.loads((output / 'commands/fixture_probe.json').read_text(encoding='utf-8'))
+    assert receipt['command'][:3] == [sys.executable, '-m', 'scripts.fixture_probe']
+    assert rows[0]['cleanup'] == dict(removed=['files'], bytes_removed=5)
+    assert json.loads((output / 'fixture_probe/report.json').read_text(encoding='utf-8')) == dict(status='passed')

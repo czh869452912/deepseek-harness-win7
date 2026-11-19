@@ -1,0 +1,19 @@
+{
+  "contract": "C9-GK",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "problem": "Preparatory paired run24 passed 47 drivers, then config_async failed before observation because direct-file Python launch did not resolve the scripts namespace package. Original run remains failed with inputs_unchanged=true.",
+  "change": "Launch every planned paired driver from the selected checkout as python -m scripts.<module>, with existing environment filtering, process ownership, deadlines and strict comparisons unchanged.",
+  "verification": {
+    "python": {"run": "rc022-current-c9gk-module-entry-20261119-01", "passed": 54, "seconds": 2.55, "scope": "Actual sibling-import failure control and module-launch success, process receipt/cleanup, Source policy/runtime controls and release orchestration."},
+    "actual_pairs": {"run": "rc022-paired-module-targeted-20261119-25", "drivers": ["rc022_config_async_probe", "rc022_config_projection_probe"], "observations_each": 180, "scope": "Both adapters compare the same 180 real original Source schema graphs; not 360 unique Source cases."}
+  },
+  "cleanup": {
+    "targeted": {"directories": 3, "bytes_removed": 1538437, "links": 19},
+    "failed_bootstrap_workspace_bytes_removed": 0,
+    "incorrect_external_source_invocation_workspace_bytes_removed": 160620,
+    "preserved": "Original failed commands/logs, Source/Native observations, 47 successful comparison and cleanup receipts; actual targeted comparison reports.",
+    "next_immediate_milestone": "C9-GL cleanup audit found 12 successful drivers' synthetic files/ roots absent from the generic disposable list. Preserve required observations and retire them before another complete paired preparation; current generic cleanup is not claimed complete."
+  },
+  "release_acceptance": false,
+  "remaining": "Complete paired preparation and exact stable unified candidate qualification. No partial run promoted."
+}

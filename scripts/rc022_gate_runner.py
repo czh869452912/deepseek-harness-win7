@@ -227,7 +227,10 @@ def paired_lane(plan, source, node, browser, output, environment, only=()):
     for row in selected:
         name = Path(row['script']).stem
         destination = output / name
-        command = [sys.executable, row['script'], '--source', str(source), '--output', str(destination)]
+        # Namespace-package entrypoints resolve siblings from the selected
+        # checkout without relying on an inherited PYTHONPATH or per-file shim.
+        module = Path(row['script']).with_suffix('').as_posix().replace('/', '.')
+        command = [sys.executable, '-m', module, '--source', str(source), '--output', str(destination)]
         if row['node']: command += ['--node', str(node)]
         if row['browser']: command += ['--browser', str(browser)]
         print(name + ' starting', flush=True)

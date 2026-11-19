@@ -35,7 +35,14 @@ try{
    }
    try{result={value:await pending}}
    catch(error:any){result={error:{name:error.name,message:error.message,...error.code!==undefined?{code:error.code}:{},...error.data!==undefined?{data:error.data}:{}},reasonIdentity:error===reason}}
-   if('abort' in fixture||fixture.mode.endsWith('hold')||(fixture.options.onprogress&&!fixture.options.resetTimeoutOnProgress))await new Promise(resolve=>setTimeout(resolve,30))
+   const expectsCancellation=fixture.mode.startsWith('legacy-')&&!fixture.pre&&!fixture.disconnect&&('abort' in fixture||fixture.mode.endsWith('hold')||(fixture.options.onprogress&&!fixture.options.resetTimeoutOnProgress))
+   if(expectsCancellation){
+    const deadline=performance.now()+1000
+    while(!records().some(item=>item.path===urlPath&&item.packet.method==='notifications/cancelled')){
+     if(performance.now()>=deadline)throw Error('legacy cancellation not observed')
+     await new Promise(resolve=>setTimeout(resolve,2))
+    }
+   }else if('abort' in fixture||fixture.mode.endsWith('hold')||(fixture.options.onprogress&&!fixture.options.resetTimeoutOnProgress))await new Promise(resolve=>setTimeout(resolve,30))
    elapsed=clock
   }finally{await client.close();await transport.close()}
   const packets=records().filter(item=>item.path===urlPath&&['tools/list','notifications/cancelled'].includes(item.packet.method)).map(item=>item.packet)

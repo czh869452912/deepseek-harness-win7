@@ -62,3 +62,26 @@ async def test_cancelled_modern_http_stream_does_not_cancel_overlapping_sibling(
 @pytest.mark.parametrize('value,seconds',[(0,.001),(-1,.001),(2147483648,.001),(float('nan'),.001),(1.9,.001),(1000,1)])
 def test_node_timer_duration_bounds(value,seconds):
     assert delay_seconds(value)==seconds
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize('delay', [0, .12])
+async def test_legacy_cancel_observation_waits_for_actual_peer_before_close(tmp_path, monkeypatch, delay):
+    case=corpus.cases()[12]
+    monkeypatch.setattr(corpus,'cases',lambda:[case])
+    original=CurrentStreamableHttpMcpTransport._cancel_request
+    async def delayed(self,params):
+        await asyncio.sleep(delay)
+        await original(self,params)
+    monkeypatch.setattr(CurrentStreamableHttpMcpTransport,'_cancel_request',delayed)
+    corpus.prepare(tmp_path)
+    try:
+        rows=await corpus.observe()
+    finally:corpus.stop_peer()
+    assert len(rows)==1
+    row=rows[0]
+    assert row['packets']==[
+        dict(method='tools/list',jsonrpc='2.0',id=1),
+        dict(jsonrpc='2.0',method='notifications/cancelled',params=dict(requestId=1,reason='[object Object]'))]
+    assert row['result']==dict(error=dict(name='SdkError',message='[object Object]',code='REQUEST_TIMEOUT'),reasonIdentity=False)
+    assert row['listeners']==0

@@ -24,6 +24,12 @@ def cases():
 def records():return [json.loads(line) for line in LOG.read_text(encoding='utf-8').splitlines()] if LOG.exists() else []
 
 
+def expects_cancellation(case):
+    return (case['mode'].startswith('legacy-') and not case.get('pre') and not case.get('disconnect')
+        and ('abort' in case or case['mode'].endswith('hold')
+             or (case['options'].get('onprogress') and not case['options'].get('resetTimeoutOnProgress'))))
+
+
 async def observe():
     from dsh.core.abort import AbortController
     from dsh.mcp.client_current import CurrentSdkClient
@@ -63,7 +69,12 @@ async def observe():
                         if hasattr(error,key) and (getattr(error,key) is not None or isinstance(error,CurrentProtocolError)):
                             value[key]=getattr(error,key)
                     result=dict(error=value,reasonIdentity=error is reason)
-                if 'abort' in case or case['mode'].endswith('hold') or (case['options'].get('onprogress') and not case['options'].get('resetTimeoutOnProgress')):
+                if expects_cancellation(case):
+                    deadline=asyncio.get_running_loop().time()+1
+                    while not any(row['path']==path and row['packet']['method']=='notifications/cancelled' for row in records()):
+                        if asyncio.get_running_loop().time()>=deadline:raise AssertionError('legacy cancellation not observed')
+                        await asyncio.sleep(.002)
+                elif 'abort' in case or case['mode'].endswith('hold') or (case['options'].get('onprogress') and not case['options'].get('resetTimeoutOnProgress')):
                     await asyncio.sleep(.03)
                 elapsed=clock[0]
                 assert not wire._pending and not getattr(wire,'_sdk_requests',{})

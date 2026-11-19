@@ -1,0 +1,33 @@
+{
+  "contract": "C9-HG",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "original_run": {
+    "candidate": "aac3759eadeaa62f34b56d8a5303ed4d0e766d6d",
+    "run": "rc022-unified-20261120-16",
+    "python": {"passed": 22656, "skipped": 26, "failed": 0, "errors": 0, "seconds": 7847.555, "required_lanes": 3966},
+    "source": {"batches": 15, "planned_files": 476, "executed_files": 474, "passed": 12272, "pending": 33},
+    "paired_passed_before_failure": 185,
+    "failure": "Only legacy in-flight object-reason abort (row12) lacked the peer cancellation packet on Native. Source had the packet; result/error/reason/listener fields and the other49 rows were equal. The observer waited30ms then closed its connection.",
+    "state_at_record": "Failed paired lane; final frozen-input reread still active. No extracted or Desktop stages reached."
+  },
+  "negative_control": {
+    "run": "rc022-mcp-cancel-negative-20261120-73",
+    "result": "Original observer deterministically misses cancellation after a120ms cancellation-handler delay: handler entered with exact requestId/reason, then the30ms observer closed before peer arrival.",
+    "original_failure_report_source_native_peer_input_and_stderr_copied_unchanged": true
+  },
+  "change": "Only Source/Python observers now wait for actual expected legacy peer cancellation within a1second guard before closing. Exact packets/reason/order, timeout/progress results, modern no-cancellation and listener/socket cleanup remain checked. Immediate and120ms delayed native cancellation regressions assert exact wire packets. Production providers are unchanged.",
+  "verification": {
+    "targeted": {"run": "rc022-mcp-cancel-targeted-20261120-74", "passed": 19, "seconds": 12.15, "scope": "All actual request deadline/progress/abort/server-error/disconnect cases, overlapping modern streams, exact immediate/delayed legacy packet arrival, HTTP negotiation cancellation and direct negotiation consumers."},
+    "actual_pair": {"run": "rc022-mcp-cancel-paired-20261120-75", "observations": 50, "status": "passed", "source_exit_code": 0, "seconds": 10.125}
+  },
+  "cleanup": {
+    "run": "rc022-mcp-cancel-retirement-20261120-76",
+    "bytes_removed": 154563,
+    "owned_directories_removed": 1,
+    "original_reports_unchanged": true,
+    "raw_peer_negative_and_paired_observations_preserved": true,
+    "unified_regression_workspace_already_removed_bytes": 1923887087
+  },
+  "release_acceptance": false,
+  "remaining": "Complete original run16 final identity reread, retain all failures and exact original ZIP, retire ended payloads, finish remaining paired preparation, then freeze a new clean candidate for one fresh complete unified qualification. Do not combine successful stages from run16 with later partial results."
+}

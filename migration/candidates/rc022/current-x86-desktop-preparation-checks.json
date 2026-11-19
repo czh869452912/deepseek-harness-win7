@@ -1,0 +1,37 @@
+{
+  "contract": "C9-GX",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "product_candidate": "2faa33cabc10f570d67668b4a134419ad84f377b",
+  "observer_candidate": "4fe8293f83387d006132400bf463f3dae73ebba4",
+  "run": "rc022-x86-recheck-20261119-49",
+  "status": "passed",
+  "portable_sha256": "dda7042d40fa871d73bea2a38dd420129067a06de89d1fb419156d7f4f6beb2d",
+  "extracted": {
+    "architecture": "x86",
+    "python": "3.8.10, actual 32-bit isolated bundled interpreter",
+    "scope": "Runtime/install/export/session recovery, Office, seven metadata cases and 256 handle probes, strict SDK normal/error/cancel, actual modern and Chromium108 browsers, schedule/market/question fresh and cold journeys",
+    "inputs_unchanged": true
+  },
+  "desktop": {
+    "edition": "standard",
+    "pipe_preflight_checks": 9,
+    "actual_electron_lifecycle_checks": 6,
+    "renderer_errors": 0,
+    "installer_bytes": 239729113,
+    "installer_sha256": "4f720360e422b82def460122b33ea371e67bef41848fe33e2f50db1ffd941eef",
+    "build_receipt_sha256": "df874d1c4fe7cb1904f6ccede5873311d319e5d6322746fe588e668fb9812cb0",
+    "browser_receipt_sha256": "ff2014a01dfcb96a178f38e4d4d6e900224430b743c2f5408121814e978309e9"
+  },
+  "cleanup": {
+    "receipt_run": "rc022-x86-preparation-retirement-20261119-50",
+    "bytes_removed": 2371024205,
+    "scope": "Original failed extraction, ended Portable build copy, Desktop unpacked/NSIS directories and ended synthetic user/home data",
+    "original_failure_observations_preserved": 49,
+    "original_failed_reports_and_complete_workspace_inventory_unchanged": true,
+    "exact_portable_and_installer_retained": true
+  },
+  "release_acceptance": false,
+  "windows7_acceptance": false,
+  "installation_acceptance": false,
+  "remaining": "Freeze a new clean stable candidate and execute one fresh complete unified qualification; these separately identified preparation observations do not qualify a later candidate."
+}

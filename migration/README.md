@@ -346,3 +346,5 @@ See [live-write closure](reviews/SESSION-LIVE-CLOSURE-20260927.md). Core, Agent,
 固定观察到的上游 SHA，计算 manifest、源码、测试及动态契约变化；先审基础契约，再按提供端 → 必要消费者 → 集成 spine 排依赖。将独立模块拆成任务，接口变更合并为共享闭包。每个候选运行双侧观察、官方源断言和 Python 回归，平台适配必须有具体复现与理由。
 
 只有已验证的明确范围可以集成。全项目 `accepted_upstream` 仍为空；本批次 Cordis/Spine 完成不等于所有业务模块或未来上游版本自动对齐。更早的阶段记录、失败复现和设计讨论保存在 reviews/evidence 与 research 文档中。
+
+2026-11-19：C9-GX [实际 x86 与 Standard Desktop 准备](candidates/rc022/current-x86-desktop-preparation-checks.json)用同一保留精确 ZIP 完成实际解压复验，运行时、Office、元数据、SDK 三场景、现代/108 浏览器及三个应用 fresh/cold 均通过、前后输入一致；包内 Node16/Python 九项和实际 Electron 六项生命周期全部通过，生成 239,729,113 字节 Standard 安装器。产品仍绑定 2faa33ca，观察器绑定 4fe8293f，不拼作新候选统一资格。最后消费者结束后退役失败解压及构建/桌面副本等 2,371,024,205 字节，保留 49 份原始失败观察、原清单和精确产物；下一步为冻结稳定候选的新鲜单次完整门禁。

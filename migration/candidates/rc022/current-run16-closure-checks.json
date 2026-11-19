@@ -1,0 +1,60 @@
+{
+  "contract": "C9-HH",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "candidate": "aac3759eadeaa62f34b56d8a5303ed4d0e766d6d",
+  "run": "rc022-unified-20261120-16",
+  "result": "failed",
+  "unified_seconds": 14578.594000000041,
+  "ended": "2026-11-20T04:43:43.436946",
+  "final_inputs_unchanged": true,
+  "final_candidate_unchanged": true,
+  "original_report_sha256": "19b3154acabc9e8bb0b5efff208260d5c79d1583cc240143f6461d81877e58b0",
+  "input_manifest_sha256": "26ddcd441427f59e4d2b4a4b2e562c4de87244adc41a261d75a9a2daf7e3c1e8",
+  "python": {
+    "collected": 22682,
+    "passed": 22656,
+    "skipped": 26,
+    "failed": 0,
+    "errors": 0,
+    "seconds": 7847.555,
+    "required_lanes": 3966
+  },
+  "source": {
+    "batches": 15,
+    "planned_files": 476,
+    "executed_files": 474,
+    "passed": 12272,
+    "pending": 33
+  },
+  "paired_passed_before_failure": 185,
+  "failure": "MCP request observer closed after30ms before one expected legacy cancellation reached peer; exact original failure stays failed.",
+  "fix": {
+    "commit": "20e9d800",
+    "receipt": "current-mcp-cancel-observation-checks.json"
+  },
+  "separate_preparation": {
+    "run": "rc022-paired-final-preparation-20261120-77",
+    "actual_drivers_passed": 221,
+    "complete_lane": false,
+    "exact_roster_and_all_actual_pair_receipts_revalidated": true,
+    "every_declared_disposable_root_absent": true,
+    "synthetic_bytes_removed": 14296576
+  },
+  "cleanup": {
+    "regression_bytes_removed": 1923887087,
+    "product": {
+      "removed": [
+        "dsh-win7-portable"
+      ],
+      "bytes_removed": 810534481
+    },
+    "original_logs_xml_and_actual_failure_observations_preserved": true
+  },
+  "retained_exact_original_portable": {
+    "path": "C:\\Users\\czh86\\Documents\\Codex\\dsh-rc022-qualification\\.goose\\out\\rc022-unified-20261120-16\\build-x64\\dsh-win7-portable-v0.2.2-rc.3-r1.zip",
+    "sha256": "4671286b683211b26c3f628b18e70525a506805cfc1c2664e276704587fa227a",
+    "bytes": 288740812
+  },
+  "release_acceptance": false,
+  "remaining": "Freeze a clean new candidate and execute all eight unified stages afresh. Neither successful run16 stages nor separate221-driver preparation establish the new candidate qualification."
+}

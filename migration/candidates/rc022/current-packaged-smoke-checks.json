@@ -1,0 +1,30 @@
+{
+  "candidate": "700d48433cc217ddcc273489f0590ee0aa695ced",
+  "archive": {
+    "path": "C:\\Users\\czh86\\Documents\\Codex\\dsh-rc022-qualification\\.goose\\out\\rc022-unified-20261119-12\\build-x64\\dsh-win7-portable-v0.2.2-rc.3-r1.zip",
+    "sha256": "f093df64e6800bc203b6551571ad54d97ac38abd3c4524968b24d87d29766313"
+  },
+  "product": "C:\\Users\\czh86\\Documents\\Codex\\dsh-rc022-qualification\\.goose\\out\\rc022-unified-20261119-12\\build-x64\\dsh-win7-portable",
+  "qualification": "Targeted same-archive smoke only. The independent run12 complete regression, pinned Source/paired, x86, extracted/Desktop and final frozen input checks remain required. This does not certify the archive as a release.",
+  "contract": "C9-GG",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "verification": {
+    "run": "rc022-current-c9gf-packaged-smoke-20261119-02",
+    "passed": 5,
+    "skipped": 0,
+    "seconds": 3.36,
+    "profiles": [
+      "minimal",
+      "standard",
+      "creative",
+      "web",
+      "headless"
+    ],
+    "scope": "The newly built clean candidate x64 Portable executes its own isolated Python for config dump and module import in all five mandatory profiles. Exact same ZIP SHA256 unchanged before/after these checks."
+  },
+  "cleanup": {
+    "directories": 3,
+    "bytes_removed": 3702,
+    "links": 1
+  }
+}

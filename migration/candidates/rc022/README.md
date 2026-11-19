@@ -1,6 +1,6 @@
 # 0.2.2-rc.3 实施候选区
 
-2026-11-19 current: C9-GD fixes mandatory Portable build order, and C9-GF isolates smoke homes/product bytecode writes. Run11 stopped during initial freeze before tests/build to include that isolation; its empty output was retired. Preparing a fresh clean unified candidate. [Smoke isolation](current-smoke-isolation-checks.json). Original run10 remains failed because five mandatory Portable cases skipped, despite 22,593 passing Python cases; its original observations are preserved and 1.92 GB of fixtures retired. Earlier entries retain their original identities.
+2026-11-19 current: Clean frozen candidate `700d4843` is running unified run12. Its fresh x64 Portable has passed all five actual profile smoke cases without skips; the exact ZIP remains unchanged. [Packaged smoke](current-packaged-smoke-checks.json). Full Python, Source/paired, x86 and extracted/Desktop qualification remain pending this single candidate. Earlier entries retain their original identities.
 
 2026-11-19: Current C1-C9 provider integration and known full-regression corrections are committed. Clean candidate `01499ca4` is running [unified qualification](current-stable-candidate-start.json). Schedule/Discover cold recovery already has targeted coverage; complete acceptance remains pending this exact candidate/archive. The [Win7 Desktop scope](../../../docs/research/2026-11-18-win7-desktop-current-scope.md) remains explicit; earlier entries below are historical.
 

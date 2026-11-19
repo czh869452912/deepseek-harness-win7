@@ -78,13 +78,37 @@ async def test_provider_disposal_waits_for_inflight_settlement_and_blocks_replac
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize("timeout", [False, True])
-async def test_first_prompt_provider_records_exact_auxiliary_request_and_timeout(timeout):
+@pytest.mark.parametrize("preparation_delay", [0, 0.1])
+async def test_first_prompt_provider_records_exact_auxiliary_request_and_timeout(timeout, preparation_delay, monkeypatch):
     ctx, titles, session, _ = await setup()
     await ctx.plugin(LlmRuntime)
     captured = []
+    entered = asyncio.Event()
+    timers = []
+    loop = asyncio.get_running_loop()
+    call_later = loop.call_later
+    if timeout:
+        # Observe the configured deadline, then expire it after adapter entry.
+        # The separate preparation test exercises the real 30ms timer.
+        def observe_deadline(delay, callback, *args, **kwargs):
+            if (getattr(callback, "__module__", None) == FirstPromptTitlePlugin.__module__
+                    and getattr(callback, "__name__", None) == "timeout"):
+                assert delay == 0.03
+                handle = call_later(30, callback, *args, **kwargs)
+                timers.append((callback, args, handle))
+                return handle
+            return call_later(delay, callback, *args, **kwargs)
+        monkeypatch.setattr(loop, "call_later", observe_deadline)
+    prepare_call = ctx.get("llm").prepare_call
+    async def prepare(request, signal=None):
+        if preparation_delay:
+            await asyncio.sleep(preparation_delay)
+        return await prepare_call(request, signal)
+    monkeypatch.setattr(ctx.get("llm"), "prepare_call", prepare)
     class Adapter:
         async def stream(self, request):
             captured.append(request)
+            entered.set()
             if timeout:
                 await asyncio.Event().wait()
             yield {"type": "block-start", "index": 0, "blockType": "text"}
@@ -95,12 +119,19 @@ async def test_first_prompt_provider_records_exact_auxiliary_request_and_timeout
     await ctx.plugin(FirstPromptTitlePlugin, config={"targetWords": 5, "targetCjkCharacters": 10,
         "maxInputBytes": 4096, "maxOutputTokens": 64, "timeoutMs": 30 if timeout else 1000,
         "provider": "fixture", "model": "title"})
+    refresh = None
     try:
         session.append_user_message("Build something")
         if timeout:
+            refresh = asyncio.create_task(titles.refresh(session))
+            await asyncio.wait_for(entered.wait(), 2)
+            assert len(timers) == 1
+            callback, arguments, _ = timers[0]
+            callback(*arguments)
             with pytest.raises(LlmError) as error:
-                await titles.refresh(session)
+                await asyncio.wait_for(refresh, 2)
             assert error.value.code == "SESSION_TITLE_TIMEOUT"
+            assert timers[0][2].cancelled()
         else:
             result = await titles.refresh(session)
             assert result["title"] == "A useful title"
@@ -108,6 +139,43 @@ async def test_first_prompt_provider_records_exact_auxiliary_request_and_timeout
         record = next(event["data"] for event in session.events if event["type"] == "session/title-llm-request")
         assert record["messages"] == captured[0]["messages"]
         assert captured[0]["purpose"] == "session-title" and captured[0]["maxTokens"] == 64
+    finally:
+        if refresh is not None and not refresh.done():
+            refresh.cancel()
+            await asyncio.gather(refresh, return_exceptions=True)
+        await ctx.fiber.dispose()
+
+
+@pytest.mark.asyncio
+async def test_first_prompt_deadline_expires_before_adapter_entry(monkeypatch):
+    ctx, titles, session, _ = await setup()
+    await ctx.plugin(LlmRuntime)
+    entered, cancelled = asyncio.Event(), asyncio.Event()
+    captured = []
+    class Adapter:
+        async def stream(self, request):
+            captured.append(request)
+            yield {"type": "finish", "reason": {"kind": "stop"}}
+    ctx.get("llm").register_adapter(["fixture"], Adapter())
+    async def prepare(request, signal=None):
+        entered.set()
+        try:
+            await asyncio.Event().wait()
+        finally:
+            cancelled.set()
+    monkeypatch.setattr(ctx.get("llm"), "prepare_call", prepare)
+    await ctx.plugin(FirstPromptTitlePlugin, config={"targetWords": 5, "targetCjkCharacters": 10,
+        "maxInputBytes": 4096, "maxOutputTokens": 64, "timeoutMs": 30,
+        "provider": "fixture", "model": "title"})
+    try:
+        session.append_user_message("Build something")
+        with pytest.raises(LlmError) as error:
+            await asyncio.wait_for(titles.refresh(session), 2)
+        assert error.value.code == "SESSION_TITLE_TIMEOUT"
+        assert not captured
+        assert not entered.is_set() or cancelled.is_set()
+        assert len([event for event in session.events if event["type"] == "session/title-llm-request"]) == 1
+        assert titles.get(session)["source"] == {"kind": "fallback"}
     finally:
         await ctx.fiber.dispose()
 

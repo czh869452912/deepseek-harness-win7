@@ -1,0 +1,33 @@
+{
+  "contract": "C9-HB",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "problem": "Frozen 796b15b1 unified run15 recorded the expected SESSION_TITLE_TIMEOUT in the 30ms title test before its adapter captured a request. The test then indexed the empty capture list. The immediate original failure JSON is preserved; this is not a missing timeout or an accepted unified run.",
+  "diagnosis": {
+    "original_nodeid": "tests/test_canonical_session_title.py::test_first_prompt_provider_records_exact_auxiliary_request_and_timeout[True]",
+    "original_error": "IndexError: list index out of range at captured[0], after the correct timeout code assertion passed",
+    "unchanged_isolated_group": "rc022-title-timeout-investigation-20261119-54: 9 passed",
+    "controlled_negative": "rc022-title-timeout-negative-20261119-56: unchanged test plus 100ms asynchronous LLM preparation delay reproduced the same empty-capture IndexError with the configured 30ms deadline unchanged",
+    "initial_diagnostic_setup_error": "Run55 requested a pytest fixture before setup. Its error and raw report remain separate; it is not the negative reproduction."
+  },
+  "change": "Test-only: observe the configured 30ms callback and explicitly expire it after adapter entry when comparing exact auxiliary request bytes and active stream cancellation. Cover immediate and 100ms preparation. A separate real, unmodified 30ms timer must expire before a deliberately blocked preparation can enter the adapter, cancel any entered preparation, preserve the fallback and log exactly one auxiliary request. Production title, LLM and timeout implementations remain unchanged.",
+  "verification": {
+    "run": "rc022-title-consumers-targeted-20261119-58",
+    "passed": 98,
+    "pytest_seconds": 4.37,
+    "scope": "Original failing test, explicit delayed preparation and real deadline boundary; direct title service/reference specifications, identity commands, current session listing/search/cache and title/stat consumers",
+    "earlier_test_group": "Run57: 12 passed before clarifying that a real deadline can also expire before preparation itself enters. Run58 validates the final test assertions."
+  },
+  "cleanup": {
+    "run": "rc022-title-investigation-retirement-20261119-59",
+    "owned_workspaces_removed": 5,
+    "bytes_removed": 13922,
+    "original_failure_json_logs_xml_and_negative_diagnostics_preserved": true
+  },
+  "original_unified_run": {
+    "candidate": "796b15b1c99123f858bc672e51c22597f42db5eb",
+    "run": "rc022-unified-20261119-15",
+    "state_at_record": "Complete Python collection still running with one immediate retained title-test failure; final counts and frozen-input reread are not yet available. Original final reports remain authoritative."
+  },
+  "release_acceptance": false,
+  "remaining": "Finish the original collection and preserve all failures, resolve any additional findings, then freeze one new stable candidate for a fresh unified gate. No partial runs are combined into acceptance."
+}

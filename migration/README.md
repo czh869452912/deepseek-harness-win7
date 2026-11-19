@@ -1,5 +1,7 @@
 # 持续对齐记录
 
+2026-11-19：C9-HB [标题期限观察](candidates/rc022/current-title-deadline-observation-checks.json)修正完整回归识别的测试时序假设：真实30ms期限可以在适配器入口前正确触发，随后访问空捕获列表才导致失败。100ms准备延迟负对照复现；测试分别覆盖精确辅助请求、进入后的取消和实际提前到期，98项直接消费者通过，生产代码不变。五个合成工作区已退役、原始诊断保留；run15继续完整收集，下一稳定候选的统一资格仍待执行。
+
 迁移开发同样遵守两项规则：新日志、临时工作区和大型证据 ZIP 放入自有忽略目录或运行器指定的仓库外目录，保存必要记录后按保留规则及时清理，不再加入 Git/LFS；完整历史审计或旧版本检查只按[位置映射](storage/external-locations.json)从 Release 取回所需归档，并核对原始索引的尺寸及 SHA-256。旧版检出关闭自动 LFS 下载，还原输入不得重新提交。远端 LFS 回收工单不阻塞日常开发、定向验证、提交或推送。
 
 2026-11-14 存储调整：历史 ZIP 改由仓库外保存，索引见 `storage/external-artifacts.json`。默认 `scripts/migration.py check/ready` 只检查索引与 checkout，外部字节未核验时不提供当前验收资格；显式 `check --verify-artifacts` 配合 `DSH_EVIDENCE_ROOT` 才核验原始归档。最小回归成员及原前端构建输入留在普通 Git，CI 不再默认下载 LFS。历史回执、候选身份与整合状态保持，以下关于 LFS 的记录是当时操作历史。详见 [证据存储规则](../docs/testing.md#证据不再进入-lfs)。

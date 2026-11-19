@@ -1,0 +1,19 @@
+{
+  "contract": "C9-GT",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "original_unified_run": {
+    "run": "rc022-unified-20261119-13",
+    "candidate": "78b66fe4d44f42a4460aa4c0bd1b5c59b5860f7c",
+    "python": {"passed": 22637, "failed": 1, "skipped": 34, "seconds": 7959.48},
+    "failure": "PTC actual-process test expected overlapping host calls during a fixed 30ms sleep; request arrival was farther apart, so peak was 1 despite correct result 6.",
+    "release_acceptance": false
+  },
+  "change": "Use a bounded two-call entry barrier to prove real overlap, and deliberately delay the second request by 100ms. A serialized dispatcher cannot release the barrier. Preserve value, structured-result isolation, v4 event and owned-process disposal assertions; production code is unchanged.",
+  "verification": {
+    "final_targeted": {"passed": 33, "seconds": 8.36, "scope": "Actual selected PTC process, protocol/runtime and Windows ownership consumers"},
+    "negative_control": {"run": "rc022-current-c9gt-ptc-concurrency-negative-20261119-03", "exit_code": 1, "expected_failure": "Same deliberate 100ms request spacing with original 30ms host sleep deterministically reproduces peak 1 while result remains 6."}
+  },
+  "targeted_cleanup": {"directories_removed": 9, "bytes_removed": 6, "links_removed": 17},
+  "remaining": "Preserve failed unified diagnostics and final input recheck; finish Source and actual product preparation before scheduling the next stable-candidate complete gate.",
+  "release_acceptance": false
+}

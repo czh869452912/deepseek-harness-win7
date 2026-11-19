@@ -46,6 +46,7 @@ async def test_actual_selected_plugin_python_process_and_v4_session_log(tmp_path
     session = CurrentSession.create('ptc-live', format_version=4)
     agent = SimpleNamespace(ctx=ctx, session=session)
     active = peak = 0
+    both_started = asyncio.Event()
     original_results=[]
     async def work(args, execution):
         nonlocal active, peak
@@ -53,8 +54,13 @@ async def test_actual_selected_plugin_python_process_and_v4_session_log(tmp_path
         assert execution.parent is not None
         active += 1
         peak = max(peak, active)
+        if active == 2:
+            both_started.set()
         try:
-            await asyncio.sleep(.03)
+            # The actual pipe may deliver requests more than 30ms apart on a
+            # busy Windows host. Prove overlap by holding the first call until
+            # the second enters; a serialized dispatcher still fails boundedly.
+            await asyncio.wait_for(both_started.wait(), 10)
             if structured:
                 value=dict(n=args['n']*2,items=[args['n']]);original_results.append(value);return value
             return args['n'] * 2
@@ -63,8 +69,14 @@ async def test_actual_selected_plugin_python_process_and_v4_session_log(tmp_path
     ctx.tools.register(dict(name='work', description='Work', parameters=dict(type='object',
         properties=dict(n=dict(type='integer')), required=['n']), execute=work, isConcurrencySafe=lambda args: True,
         output=dict(schema=(dict(type='object',properties=dict(n=dict(type='number'),items=dict(type='array',items=dict(type='integer'))),required=['n','items']) if structured else dict(type='number')), render=lambda args,value:[dict(type='text',text=str(value))])))
-    program = "import asyncio\nvalues = await asyncio.gather(tools.work({'n': 1}), tools.work({'n': 2}))\nreturn sum(values)"
-    if structured:program="import asyncio\nvalues = await asyncio.gather(tools.work({'n': 1}), tools.work({'n': 2}))\nvalues[0]['items'].append(99)\nreturn sum(value['n'] for value in values)"
+    program = ("import asyncio\nasync def second():\n"
+               "    await asyncio.sleep(.1)\n"
+               "    return await tools.work({'n': 2})\n"
+               "values = await asyncio.gather(tools.work({'n': 1}), second())\n")
+    if structured:
+        program += "values[0]['items'].append(99)\nreturn sum(value['n'] for value in values)"
+    else:
+        program += "return sum(values)"
     try:
         result = await ctx.tools.execute(dict(agent=agent, calls=[dict(type='tool-call', id='outer', name='run_code',
             arguments=json.dumps(dict(code=program,description='Run two calculations')))], signal=AbortController().signal,

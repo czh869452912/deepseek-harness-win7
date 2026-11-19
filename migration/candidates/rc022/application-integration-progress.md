@@ -2,7 +2,9 @@
 
 固定目标：`38a6a5c965aa99ab525161efb7cc5cf1fe62fced`。本页记录定向检查；生产 pin 已在 C9-CC 协调切换，`accepted_upstream` 仍为 null，完整资格待后续验证。
 
-C9-GG: Fresh frozen `700d4843` x64 Portable passed all five actual profile smoke cases with its own Python (5 passed, zero skipped). ZIP SHA256 remained unchanged; three targeted workspaces retired (3,702 bytes). Run12 complete regression now follows this same build; other qualification stages remain pending. [Record](current-packaged-smoke-checks.json).
+C9-GH: Run12 complete Python passed (22,601 passed, 34 skips, 3,966 required cases executed); Source batch3 failed the real Git approval case's default 5-second deadline. An isolated reproduction preserved the timeout, and the unchanged case passed in 7.18 seconds under the upstream-supported shared-host budget. Pin 30 seconds in the gate plan for tests/hooks/polling, preserve explicit case deadlines and add human-readable failure diagnostics beside JSON. All 41 gate/orchestration controls passed. Preserved 15,718 original Python observations and removed 1,924,665,022 bytes of synthetic fixtures plus owned caches. Original run12 remains failed without final input recheck or release acceptance. [Record](current-source-budget-checks.json).
+
+C9-GG: Fresh frozen `700d4843` x64 Portable passed all five actual profile smoke cases with its own Python (5 passed, zero skipped). ZIP SHA256 remained unchanged; three targeted workspaces retired (3,702 bytes). This targeted result retains its original scope; run12 later passed Python and failed Source as recorded above. [Record](current-packaged-smoke-checks.json).
 
 C9-GF: Isolate smoke DSH_HOME and disable bundled bytecode writes, since dump-config prepares profile roots. All 25 selected checks passed; 5 unsupplied dist cases remain skipped targeted-only. Actual minimal/standard profile roots were observed inside their owned test homes. Three workspaces retired (9,942 bytes). Run11 stopped during initial freeze before tests/build; its empty output removed and command/log preserved. [Record](current-smoke-isolation-checks.json).
 

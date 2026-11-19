@@ -2,6 +2,7 @@
   "schema_version": 1,
   "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
   "node_version": "v24.9.0",
+  "source_test_timeout_ms": 30000,
   "scope": "Explicit current C1-C9 Source/native contracts and selected original unit tests. A full release also requires one frozen candidate, complete Python collection and actual extracted runtime/browser lanes. This plan does not establish those outcomes or universal upstream parity.",
   "source_tests": [
     "apps/cli/tests/profile-hmr.spec.ts",

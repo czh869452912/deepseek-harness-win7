@@ -32,6 +32,9 @@ def load_plan():
     plan = json.loads(PLAN.read_text(encoding='utf-8'))
     if plan['target_upstream'] != TARGET or plan['node_version'] != 'v24.9.0':
         raise ValueError('Current gate target/toolchain differs')
+    budget = plan.get('source_test_timeout_ms')
+    if type(budget) is not int or not 1000 <= budget <= 120000:
+        raise ValueError('Invalid Source shared-host test budget')
     scripts = [row['script'] for row in plan['paired']]
     separate = [row['script'] for row in plan['separate']]
     inventory = {'scripts/' + path.name for path in (ROOT / 'scripts').glob('rc022*_probe.py')}
@@ -153,6 +156,9 @@ def execute(command, cwd, output, name, environment, timeout):
 def source_lane(plan, source, node, output, environment, only=()):
     selected = list(only) if only else plan['source_tests']
     if not set(selected) <= set(plan['source_tests']): raise ValueError('Unplanned Source test')
+    # The unchanged upstream config applies its shared-host budget to each
+    # inline project's tests, hooks and polling. Preserve explicit case limits.
+    environment = dict(environment, DSH_COVERAGE_TEST_TIMEOUT_MS=str(plan['source_test_timeout_ms']))
     rows = []
     for offset in range(0, len(selected), 32):
         batch = selected[offset:offset + 32]
@@ -160,7 +166,7 @@ def source_lane(plan, source, node, output, environment, only=()):
         name = 'source-%03d' % (offset // 32 + 1)
         result = output / (name + '.json')
         command = [str(node), '--expose-internals', str(source / 'node_modules/vitest/vitest.mjs'),
-                   'run', *batch, '--maxWorkers=2', '--reporter=json', '--outputFile=' + str(result)]
+                   'run', *batch, '--maxWorkers=2', '--reporter=default', '--reporter=json', '--outputFile=' + str(result)]
         print(name + ' starting', flush=True)
         executed = execute(command, source, output, name, environment, 900)
         value = json.loads(result.read_text(encoding='utf-8'))
@@ -169,7 +175,8 @@ def source_lane(plan, source, node, output, environment, only=()):
                 or actual != set(batch)):
             raise ValueError('Source cases failed, disappeared or expanded: ' + name)
         rows.append(dict(name=name, files=sorted(actual), passed=value['numPassedTests'],
-                         pending=value['numPendingTests'], sha256=digest(result), seconds=executed['seconds']))
+                         pending=value['numPendingTests'], sha256=digest(result), seconds=executed['seconds'],
+                         test_timeout_ms=plan['source_test_timeout_ms']))
         print(name + ' passed ' + str(value['numPassedTests']), flush=True)
     return rows
 

@@ -8,6 +8,7 @@ from scripts import rc022_gate_runner as gate
 def test_plan_accounts_for_every_current_observer_and_original_selection():
     plan = gate.load_plan()
     assert len(plan['paired']) == 406 and len(plan['source_tests']) == 476
+    assert plan['source_test_timeout_ms'] == 30000
     assert any(row['script'] == 'scripts/rc022_released_logical_probe.py' for row in plan['paired'])
     assert any(row['script'] == 'scripts/rc022_query_text_probe.py' for row in plan['paired'])
     assert any(row['script'] == 'scripts/rc022_projection_cache_probe.py' for row in plan['paired'])
@@ -69,3 +70,32 @@ def test_cleanup_failure_retains_completed_process_receipt(tmp_path, monkeypatch
     assert receipt['completed'] and receipt['exit_code'] == 0
     assert receipt['workspace'] == str(workspace)
     assert 'remains locked' in receipt['cleanup_error']
+
+
+@pytest.mark.parametrize('budget', [None, True, 0, 999, 120001, '30000'])
+def test_plan_rejects_missing_or_unbounded_source_budget(tmp_path, monkeypatch, budget):
+    plan = copy.deepcopy(gate.load_plan())
+    plan['source_test_timeout_ms'] = budget
+    path = tmp_path / 'plan.json'
+    path.write_text(json.dumps(plan), encoding='utf-8')
+    monkeypatch.setattr(gate, 'PLAN', path)
+    with pytest.raises(ValueError, match='Source shared-host'): gate.load_plan()
+
+
+def test_source_lane_uses_pinned_upstream_budget_and_keeps_failure_diagnostics(tmp_path, monkeypatch):
+    source = tmp_path / 'source'; source.mkdir()
+    (source / 'case.spec.ts').write_text('', encoding='utf-8')
+    plan = dict(source_tests=['case.spec.ts'], source_test_timeout_ms=30000)
+    environment = dict(DSH_COVERAGE_TEST_TIMEOUT_MS='1')
+    def execute(command, cwd, output, name, env, timeout):
+        assert env['DSH_COVERAGE_TEST_TIMEOUT_MS'] == '30000'
+        assert '--reporter=default' in command and '--reporter=json' in command
+        assert timeout == 900
+        (output / (name + '.json')).write_text(json.dumps(dict(success=True,
+            numFailedTests=0, numPassedTests=1, numPendingTests=0,
+            testResults=[dict(name=str(source / 'case.spec.ts'))])), encoding='utf-8')
+        return dict(seconds=7)
+    monkeypatch.setattr(gate, 'execute', execute)
+    rows = gate.source_lane(plan, source, tmp_path / 'node', tmp_path, environment)
+    assert rows[0]['test_timeout_ms'] == 30000
+    assert environment == dict(DSH_COVERAGE_TEST_TIMEOUT_MS='1')

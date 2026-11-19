@@ -1,0 +1,72 @@
+{
+  "contract": "C9-GH",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "change": "Use unchanged upstream shared-host test/hook/poll budget of 30000ms from the frozen gate plan; keep explicit case deadlines and all assertions. Add default reporter beside JSON to retain real failure diagnostics.",
+  "original_run12": {
+    "candidate": "700d48433cc217ddcc273489f0590ee0aa695ced",
+    "status": "failed",
+    "python": {
+      "total": 22635,
+      "passed": 22601,
+      "skipped": 34,
+      "failed": 0,
+      "errors": 0,
+      "required_executed": 3966
+    },
+    "source_batches_passed": 2,
+    "source_batch3": {
+      "passed": 1180,
+      "failed": 1,
+      "pending": 3
+    },
+    "final_input_recheck_complete": false,
+    "release_acceptance": false
+  },
+  "reproduction": [
+    {
+      "run": "C:\\Users\\czh86\\Documents\\Codex\\dsh-rc022-qualification\\.goose\\out\\rc022-source-git-repro-20261119-13",
+      "exit_code": 1,
+      "passed": 0,
+      "failed": 1,
+      "duration_ms": 5546.3787,
+      "case": "offers approval for a real git-hosted package pnpm refused to prepare"
+    },
+    {
+      "run": "C:\\Users\\czh86\\Documents\\Codex\\dsh-rc022-qualification\\.goose\\out\\rc022-source-git-repro-20261119-14",
+      "exit_code": 0,
+      "passed": 1,
+      "failed": 0,
+      "duration_ms": 7179.793099999999,
+      "case": "offers approval for a real git-hosted package pnpm refused to prepare"
+    }
+  ],
+  "verification": {
+    "run": "rc022-current-c9gh-source-budget-20261119-01",
+    "passed": 41,
+    "seconds": 2.22,
+    "scope": "Source budget validation, roster and observer guards, ownership cleanup and full release orchestration consumers."
+  },
+  "cleanup": {
+    "regression": {
+      "files": 47129,
+      "bytes_removed": 1924665022,
+      "retained_observations": 15718
+    },
+    "cache_workspaces": [
+      {
+        "path": "C:\\Users\\czh86\\AppData\\Local\\Temp\\g-ujtnxqb8",
+        "bytes_removed": 2843012
+      },
+      {
+        "path": "C:\\Users\\czh86\\AppData\\Local\\Temp\\g-41trs42n",
+        "bytes_removed": 5129720
+      }
+    ],
+    "targeted": {
+      "directories": 3,
+      "bytes_removed": 1399844,
+      "links": 15
+    }
+  },
+  "remaining": "Complete current Source and paired preparation, then one fresh stable unified candidate including both architectures and extracted/Desktop checks. No partial runs combined into release acceptance."
+}

@@ -43,7 +43,7 @@ async def observe(workspace=None):
         rows.append(dict(name='local-absolute',value=await runtime.resolveExecutable(str(second/'dsh-shell.exe'),None,signal)))
         for name in ('absent','directory',str(first/'missing.exe'),'./relative',''):
             try:await runtime.resolveExecutable(name,env,signal)
-            except Exception as error:rows.append(dict(name='lookup-'+name.replace(str(first),'<first>'),message=str(error),code=getattr(error,'code',None),typed=getattr(error,'name',None)=='SubprocessExecutableNotFoundError'))
+            except Exception as error:rows.append(dict(name='lookup-'+name.replace(str(first),'<first>'),message=getattr(error,'message',str(error)),code=getattr(error,'code',None),typed=getattr(error,'name',None)=='SubprocessExecutableNotFoundError'))
         controller=AbortController();failure=RuntimeError('cancel lookup');controller.abort(failure)
         try:await runtime.resolveExecutable('dsh-shell',env,controller.signal)
         except RuntimeError as error:rows.append(dict(name='lookup-cancellation',same=error is failure))

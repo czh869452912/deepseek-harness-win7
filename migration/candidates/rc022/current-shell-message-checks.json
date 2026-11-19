@@ -1,0 +1,31 @@
+{
+  "contract": "C9-GO",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "problem": "The observer compared JavaScript Error.message with Python HarnessError display str(), introducing a code prefix in three otherwise identical typed executable misses.",
+  "change": "Observe the actual message property when present, falling back to str for ordinary Python exceptions. Keep code and subclass checks separate; production exceptions are unchanged.",
+  "verification": {
+    "python": {
+      "passed": 16,
+      "seconds": 1.87,
+      "scope": "Actual terminal lookup/discovery, cancellation, canonical subprocess errors and terminal-controller consumers"
+    },
+    "actual_pair": {
+      "observations": 19,
+      "status": "passed"
+    }
+  },
+  "cleanup": {
+    "targeted_directories": 3,
+    "links": 2,
+    "resolved_old_fixture": {
+      "removed": [
+        "files"
+      ],
+      "bytes_removed": 0
+    },
+    "old_failure_bytes_preserved": true,
+    "failed_cache_bytes_removed": 369241,
+    "failed_cache_inventory": "C:\\Users\\czh86\\Documents\\Codex\\deepseek-harness-win7\\.goose\\out\\rc022-paired-remaining-20261119-32\\terminal-failed-cache-inventory.json"
+  },
+  "release_acceptance": false
+}

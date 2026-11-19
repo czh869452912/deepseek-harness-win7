@@ -149,3 +149,5 @@
 2026-11-19：C9-GM [嵌套夹具清理](current-paired-nested-fixture-checks.json)将可选 `files/` 合成根统一声明到 406 个新鲜自有探针输出，覆盖 `files/native` 和共享 helper；不依赖不完整的字符串枚举。凭据编辑 184 组实际配对及 67 项定向检查通过，run28 原始观察未改写、30,678 字节夹具已清理；三次定向调用的 9 个自有目录、3,167,199 字节和 43 个链接已退役。误选文件与中断的过宽测试范围单独保留，不作验收；run28 仍为失败，后续全门禁待执行。
 
 2026-11-19：C9-GN [PTC 工作区所有权](current-ptc-workspace-checks.json)将 confinement/control/protocol/runtime 四个驱动从调用方共享 `tmp/workspace` 改为各自 `output/files/workspace`。57 项和 74 项定向检查及四个实际 Source/Python 配对通过，覆盖真实进程、沙箱拒绝、协议、取消和卸载；自有夹具与失败启动空缓存已清理。原 run29 在程序启动前失败的记录保持；剩余准备和单次完整门禁继续。
+
+2026-11-19：C9-GO [终端诊断字段观察](current-shell-message-checks.json)修正探针将原版 `Error.message` 与 Python 展示用 `str(error)` 混比的问题，读取真实 `message` 并独立比较 code/子类，生产错误不变。19 组实际配对和 16 项终端/进程错误消费者检查通过；失败原始观察保留，已结束自有夹具和编译缓存退役。

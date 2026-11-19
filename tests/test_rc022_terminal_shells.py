@@ -20,6 +20,8 @@ async def test_target_shell_profiles_discovery_and_actual_lookup(tmp_path):
     assert rows['transport-failure']['message'] == 'transport offline'
     assert rows['local-path']['value'].endswith('first\\dsh-shell.EXE')
     assert rows['lookup-absent']['typed'] and rows['lookup-directory']['typed']
+    assert rows['lookup-absent']['message'] == 'subprocess-local: command "absent" was not found on PATH'
+    assert rows['lookup-directory']['message'] == 'subprocess-local: command "directory" was not found on PATH'
     assert not rows['lookup-./relative']['typed'] and not rows['lookup-']['typed']
     assert rows['lookup-cancellation']['same']
 

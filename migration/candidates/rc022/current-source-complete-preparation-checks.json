@@ -1,0 +1,32 @@
+{
+  "contract": "C9-GU",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "source_preparation": {
+    "run": "rc022-source-complete-preparation-20261119-46",
+    "status": "passed",
+    "complete_lane": true,
+    "inputs_unchanged": true,
+    "batches": 15,
+    "planned_files": 476,
+    "executed_files": 474,
+    "passed": 12272,
+    "pending": 33,
+    "test_seconds": 530.671,
+    "source_node": "v24.13.1",
+    "shared_host_budget_ms": 30000,
+    "original_windows_file_exclusions": ["packages/subprocess/subprocess-local/tests/spawn.spec.ts", "packages/subprocess/subprocess/tests/error.spec.ts"],
+    "scope": "One fresh complete planned Source lane with original assertions and configuration. Pending cases and two original Windows file exclusions are not reported as passes. This preparation is not a unified Native/product qualification."
+  },
+  "failed_run13_fixture_retirement": {
+    "original_candidate": "78b66fe4d44f42a4460aa4c0bd1b5c59b5860f7c",
+    "bytes_removed": 1926054733,
+    "regular_files_inventoried": 47359,
+    "reparse_entries_removed_without_following": 6732,
+    "raw_observations_preserved": 15792,
+    "original_logs_xml_and_other_root_receipts_unchanged": true,
+    "failed_case_directory": "Inspected empty; original complete failed body and assertion remain in XML/log."
+  },
+  "negative_control_cache_cleanup": {"bytes_removed": 11634, "retained": "Exact reproducer source, commands, XML and failure log"},
+  "release_acceptance": false,
+  "remaining": "Actual x86 product preparation and one new stable-candidate unified gate. Failed run13 retains its failed result and separate exact archive."
+}

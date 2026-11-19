@@ -1,0 +1,38 @@
+{
+  "contract": "C9-HC",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "problem": "Frozen 796b15b1 unified run15 retained plain early/complete write observations containing only part-1. Fixed 90ms intervals between synthetic writes did not guarantee 50ms separation between actual watcher observations. Both pinned Chokidar and the unchanged Native watcher suppress changes in that window.",
+  "diagnosis": {
+    "original_nodeid": "tests/test_rc022_hmr_writes.py::test_actual_partial_writes_atomic_editor_replacement_and_pending_disposal",
+    "original_observation": "plain early and complete were [part-1]; all eight other scenarios matched their expected observations",
+    "controlled_negative": "Run60 adds 120ms only before the first post-initial plain inventory. The unchanged fixture loses part-1 and fails the same strict two-part assertion. Original failure JSON, observations and all 13 negative fixture files are preserved.",
+    "source_inventory_correction": "Run62 rejected the new add barrier because pinned HMR sets Chokidar cwd to watchBaseDir: getWatched uses the relative directory key '.', not the absolute base. Both Source unlink and add barriers now use that real key. The original failed reports and both fixture bytes remain; run62 is not relabelled."
+  },
+  "change": "Observer and test only: both actual Source and Native plain-write fixtures await the first change before the 90ms gap and second write, await exact second/later changes, and inventory a new file before modifying it. One-second arrival guards still fail absent observations. Stable writes, pending disposal, atomic windows, editor suppression, exact values and production watcher semantics remain unchanged.",
+  "verification": {
+    "targeted_run": "rc022-hmr-writes-targeted-20261119-61",
+    "passed": 18,
+    "pytest_seconds": 34.14,
+    "scope": "Original failing write/stability/atomic/disposal cases, deliberately delayed 60ms and 120ms initial scans, delayed unlink inventory, live profile watchers, root options and direct module reload observations",
+    "actual_pair_run": "rc022-hmr-writes-pair-20261119-64",
+    "actual_pair_status": "passed",
+    "actual_pair_scenarios": 9,
+    "actual_pair_seconds": 14.438,
+    "comparison": "All nine actual Source and Native observation objects are exactly equal; Source exits zero. The final relative Source inventory-key correction is exercised by this actual pair."
+  },
+  "cleanup": {
+    "runs": ["rc022-hmr-investigation-retirement-20261119-63", "rc022-hmr-pair-retirement-20261119-65"],
+    "bytes_removed": 6148,
+    "negative_and_targeted_workspaces_removed": 2,
+    "actual_pair_fixture_roots_removed": 2,
+    "empty_owned_failed_command_workspace_removed": true,
+    "all_original_failure_logs_xml_observations_and_failed_fixture_bytes_preserved": true
+  },
+  "original_unified_run": {
+    "candidate": "796b15b1c99123f858bc672e51c22597f42db5eb",
+    "run": "rc022-unified-20261119-15",
+    "state_at_record": "Complete Python collection still running; title and HMR observer failures retained. Final counts and final input reread remain pending."
+  },
+  "release_acceptance": false,
+  "remaining": "Complete original diagnostics, resolve any additional findings and qualify one fresh stable candidate; targeted results and failed/partial runs never compose a complete acceptance."
+}

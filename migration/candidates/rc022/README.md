@@ -1,5 +1,7 @@
 # 0.2.2-rc.3 实施候选区
 
+2026-11-19 C9-HC：[HMR 写入观察](current-hmr-write-observation-checks.json)修正固定90ms写入仍可能落入实际50ms去重窗口的夹具时序；两侧先等待真实变化/新增目录清单，再进行下一次普通写入。18项直接检查和九场景实际 Source/Python 配对通过，生产 watcher 不变；相对工作目录清单键的首次探针失败保留，6,148字节夹具已清理。原run15继续收集其余回归结果。
+
 2026-11-19 C9-HB：冻结 `796b15b1` 的 run15 回归发现标题超时测试在正确超时后仍假定适配器已进入，空捕获列表导致断言失败；100ms 准备延迟负对照复现。测试现分别验证完整辅助请求、进入后的期限取消和真实30ms提前到期，生产代码不变。98项标题/命令/列表直接消费者通过，五个合成工作区已清理；原全量仍继续收集结果，不作新资格。[诊断与定向检查](current-title-deadline-observation-checks.json)。
 
 2026-11-19 C9-GL: Retired all 12 completed synthetic `files/` roots found by the immediate audit (1,667,734 file bytes), preserving 94 raw observations and original report/receipt hashes. The plan now declares this fixture path for 115 constructing drivers; undeclared fixtures fail the runner. Added safe inventory/raw preservation, path/receipt guards and modern Windows read-only entry unlink that preserves other hardlinks' attributes. All 67 selected controls/FS consumers and two actual fixture-owning pairs passed. [Retention verification](current-paired-fixture-retention-checks.json). The original failed run24 remains failed.

@@ -18,11 +18,13 @@ async def observe(directory):
  from dsh.cordis.timer import TimerService
  from dsh.cordis.hmr import ConfigWatcherService
  from dsh.cordis.hmr_paths import file_path
- async def observed_unlink(hmr,path):
+ async def observed(predicate,message):
   deadline=asyncio.get_running_loop().time()+1
-  while str(path) in hmr._root_mtimes:
-   if asyncio.get_running_loop().time()>=deadline:raise TimeoutError('watcher did not observe fixture unlink')
+  while not predicate():
+   if asyncio.get_running_loop().time()>=deadline:raise TimeoutError(message)
    await asyncio.sleep(.005)
+ async def observed_unlink(hmr,path):
+  await observed(lambda:str(path) not in hmr._root_mtimes,'watcher did not observe fixture unlink')
  directory.mkdir(parents=True);rows=[]
  for case in CASES:
   base=directory/case['name'];base.mkdir();path=base/('file.txt~' if case.get('editor') else 'file.txt');path.write_text('initial',encoding='utf-8')
@@ -37,12 +39,23 @@ async def observe(directory):
    elif case.get('editor'):
     path.write_text('edited',encoding='utf-8');await asyncio.sleep(.25);rows.append(dict(name=case['name'],events=list(events)))
    else:
-    path.write_text('part-1',encoding='utf-8');await asyncio.sleep(.09);path.write_text('part-2-longer',encoding='utf-8');await asyncio.sleep(.09);early=list(events)
+    path.write_text('part-1',encoding='utf-8')
+    if case['name']=='plain':await observed(lambda:events==['part-1'],'watcher did not observe first plain write')
+    await asyncio.sleep(.09);path.write_text('part-2-longer',encoding='utf-8')
+    if case['name']=='plain':await observed(lambda:events==['part-1','part-2-longer'],'watcher did not observe second plain write')
+    else:await asyncio.sleep(.09)
+    early=list(events)
     if case['name']=='stable-dispose':
      await ctx.fiber.dispose();await asyncio.sleep(.4);rows.append(dict(name=case['name'],early=early,after=list(events)));continue
     await asyncio.sleep(.45);complete=list(events);events.clear()
-    added=base/'added.txt';added.write_text('add-1',encoding='utf-8');await asyncio.sleep(.09);added.write_text('add-2-longer',encoding='utf-8');await asyncio.sleep(.45);new=list(events);events.clear()
-    added.write_text('after-add',encoding='utf-8');await asyncio.sleep(.45);rows.append(dict(name=case['name'],early=early,complete=complete,added=new,changed=list(events)))
+    added=base/'added.txt';added.write_text('add-1',encoding='utf-8')
+    if case['name']=='plain':await observed(lambda:str(added) in hmr._root_mtimes,'watcher did not inventory fixture add')
+    await asyncio.sleep(.09);added.write_text('add-2-longer',encoding='utf-8')
+    if case['name']=='plain':await observed(lambda:events==['add-2-longer'],'watcher did not observe added-file change')
+    await asyncio.sleep(.45);new=list(events);events.clear()
+    added.write_text('after-add',encoding='utf-8')
+    if case['name']=='plain':await observed(lambda:events==['after-add'],'watcher did not observe later plain change')
+    await asyncio.sleep(.45);rows.append(dict(name=case['name'],early=early,complete=complete,added=new,changed=list(events)))
    await hmr.runExclusive(lambda:None)
   finally:await ctx.fiber.dispose()
  return rows

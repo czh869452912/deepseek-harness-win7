@@ -24,6 +24,27 @@ async def test_actual_partial_writes_atomic_editor_replacement_and_pending_dispo
 
 
 @pytest.mark.asyncio
+@pytest.mark.parametrize('first_scan_delay', [.06, .12])
+async def test_plain_write_fixture_waits_for_observed_changes_before_next_write(tmp_path, monkeypatch, first_scan_delay):
+    from dsh.cordis import hmr_root_watch
+    from scripts import rc022_hmr_writes_probe as probe
+    original = hmr_root_watch.scan
+    delayed_once = set()
+    async def delayed(hmr, initial=False):
+        if not initial and id(hmr) not in delayed_once:
+            delayed_once.add(id(hmr))
+            await asyncio.sleep(first_scan_delay)
+        return await original(hmr, initial)
+    monkeypatch.setattr(hmr_root_watch, 'scan', delayed)
+    monkeypatch.setattr(probe, 'CASES', [dict(name='plain')])
+    rows = await probe.observe(tmp_path/'delayed-plain')
+    (tmp_path/'hmr-delayed-plain-observations.json').write_text(json.dumps(rows), encoding='utf-8')
+    assert rows == [dict(name='plain', early=['part-1', 'part-2-longer'],
+                         complete=['part-1', 'part-2-longer'],
+                         added=['add-2-longer'], changed=['after-add'])]
+
+
+@pytest.mark.asyncio
 async def test_atomic_unlink_fixture_waits_for_delayed_watch_inventory(tmp_path, monkeypatch):
     from dsh.cordis import hmr_root_watch
     from scripts import rc022_hmr_writes_probe as probe

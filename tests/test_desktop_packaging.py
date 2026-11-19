@@ -16,6 +16,50 @@ from scripts import build_desktop
 ROOT = Path(__file__).resolve().parents[1]
 
 
+@pytest.mark.parametrize('damage', [None, 'office-byte', 'extra-office', 'other-architecture', 'provider'])
+def test_portable_validation_binds_offline_office_inventory_and_current_providers(tmp_path, monkeypatch, damage):
+    from dsh.office import runtime_inputs
+    from dsh.office.errors import OfficeKitError
+    source, portable = tmp_path / 'source', tmp_path / 'portable'
+    for name in ('dsh/host/desktop/process.py', 'dsh/host/desktop/health_transaction.py',
+                 'apps/web/dist/index.html', 'packages/client/fixture.js'):
+        for base in (source, portable):
+            path = base / name
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_bytes(b'current provider')
+    for name in ('python.exe', 'python38.dll', 'dsh.py'):
+        (portable / name).write_bytes(b'owned fixture')
+    resources = {'browser/chrome.exe': b'offline executable', 'package/package.json': b'{}'}
+    office = portable / 'dsh/office/bin/x64'
+    manifest = dict(format='dsh-office-runtime@1', architecture='x64', executable='browser/chrome.exe',
+                    package='package', resources={name: dict(bytes=len(data), sha256=hashlib.sha256(data).hexdigest())
+                                                  for name, data in resources.items()})
+    for name, data in resources.items():
+        path = office / name
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_bytes(data)
+    raw = json.dumps(manifest).encode('utf-8')
+    (office / 'runtime.json').write_bytes(raw)
+    monkeypatch.setitem(runtime_inputs.MANIFESTS, 'x64', hashlib.sha256(raw).hexdigest())
+    # Optional development cache is not a source provider or an approved build input.
+    cache = source / 'dsh/office/bin/stale/cache.bin'
+    cache.parent.mkdir(parents=True); cache.write_bytes(b'unbundled development cache')
+    (portable / 'build-provenance.json').write_text(json.dumps(dict(
+        python_runtime=dict(version=[3, 8, 10], bits=64), office_runtime_input=manifest)), encoding='utf-8')
+    monkeypatch.setattr(build_desktop, 'ROOT', source)
+    if damage == 'office-byte': (office / 'browser/chrome.exe').write_bytes(b'changed')
+    if damage == 'extra-office': (office / 'undeclared.bin').write_bytes(b'not approved')
+    if damage == 'other-architecture':
+        other = office.parent / 'x86'
+        other.mkdir(); (other / 'extra.bin').write_bytes(b'wrong architecture')
+    if damage == 'provider': (portable / 'dsh/host/desktop/process.py').write_bytes(b'stale provider')
+    if damage:
+        with pytest.raises((ValueError, OfficeKitError)):
+            build_desktop.validate_portable(portable)
+    else:
+        assert build_desktop.validate_portable(portable)['office_runtime_input'] == manifest
+
+
 @pytest.mark.parametrize('name', ['../escape', 'C:/escape', 'directory/../../escape'])
 def test_tool_archive_cannot_escape_owned_output(tmp_path, name):
     archive = tmp_path / 'tool.zip'

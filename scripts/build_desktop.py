@@ -70,14 +70,28 @@ def validate_portable(directory, architecture='x64'):
         raise ValueError('Desktop requires Python3.8.10')
     if provenance['python_runtime'].get('bits') != (32 if architecture == 'x86' else 64):
         raise ValueError('Desktop Portable architecture differs')
+    # Office is copied from a separately approved offline inventory, rather
+    # than the source checkout's optional runtime cache. Validate every added
+    # byte and reject undeclared files before comparing the source providers.
+    from scripts.office_runtime_inputs import validate_bundled_office_runtime
+    office = validate_bundled_office_runtime(directory, provenance.get('office_runtime_input'))
+    if office['architecture'] != architecture:
+        raise ValueError('Desktop Portable Office architecture differs')
+    office_root = directory / 'dsh/office/bin'
+    approved = {architecture + '/' + name for name in office['resources']}
+    approved.add(architecture + '/runtime.json')
+    if {path.relative_to(office_root).as_posix() for path in office_root.rglob('*') if path.is_file()} != approved:
+        raise ValueError('Desktop Portable Office inventory contains undeclared files')
     # Reject a stale manually supplied Portable: providers and original bundles
     # must match this checkout. The receipt retains its original provenance.
     for prefix in ('dsh', 'apps/web/dist', 'packages'):
         expected = {path.relative_to(ROOT / prefix).as_posix(): path for path in (ROOT / prefix).rglob('*')
                     if path.is_file() and not {'__pycache__','node_modules','.git'}.intersection(path.parts)
-                    and path.suffix not in ('.pyc','.tsbuildinfo')}
+                    and path.suffix not in ('.pyc','.tsbuildinfo')
+                    and not (prefix == 'dsh' and path.relative_to(ROOT / prefix).as_posix().startswith('office/bin/'))}
         actual = {path.relative_to(directory / prefix).as_posix(): path for path in (directory / prefix).rglob('*')
-                  if path.is_file() and '__pycache__' not in path.parts and path.suffix != '.pyc'}
+                  if path.is_file() and '__pycache__' not in path.parts and path.suffix != '.pyc'
+                  and not (prefix == 'dsh' and path.relative_to(directory / prefix).as_posix().startswith('office/bin/'))}
         if set(expected) != set(actual) or any(digest(path) != digest(actual[name]) for name, path in expected.items()):
             raise ValueError('Portable payload differs from current source: ' + prefix)
     return provenance

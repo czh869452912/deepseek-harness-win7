@@ -84,3 +84,33 @@ def test_isolated_windows_environment_keeps_private_absolute_user_directories(tm
     assert result.returncode == 0, result.stderr
     cache = Path(result.stdout.strip())
     assert cache.is_absolute() and Path(env['LOCALAPPDATA']) in cache.parents
+
+
+@pytest.mark.parametrize('architecture', ['x64', 'x86'])
+@pytest.mark.parametrize('wrong_receipt', [False, True])
+def test_both_browser_observers_use_and_confirm_selected_architecture(tmp_path, monkeypatch, architecture, wrong_receipt):
+    output = tmp_path / 'output'; output.mkdir()
+    archive = tmp_path / 'portable.zip'; archive.write_bytes(b'exact archive')
+    commands = []
+    monkeypatch.setattr(notice, 'validate_input', lambda path: {})
+    monkeypatch.setattr(notice, 'prepare_notice_input', lambda *args, **kwargs: dict(proof='owned'))
+    monkeypatch.setattr(notice, 'validate_observation', lambda *args, **kwargs: None)
+    def execute(command, *args):
+        commands.append(command)
+        assert command[command.index('--architecture') + 1] == architecture
+        report = dict(passed=True, hostExitCode=0, hostErrors='', exceptions=[], consoleErrors=[],
+                      archiveSha256=gate.digest(archive),
+                      architecture=('x64' if architecture == 'x86' else 'x86') if wrong_receipt else architecture)
+        Path(command[command.index('--output') + 1]).write_text(json.dumps(report), encoding='utf-8')
+    monkeypatch.setattr(gate, 'execute', execute)
+    args = (tmp_path / 'portable', tmp_path / 'workspace', output, {}, tmp_path / 'node.exe',
+            tmp_path / 'browser.exe', tmp_path / 'browser108.exe', archive,
+            dict(identity=dict(browserCompatibilitySha256='compat')), architecture)
+    if wrong_receipt:
+        with pytest.raises(ValueError, match='browser journey failed'):
+            gate.browser_journeys(*args)
+        assert len(commands) == 1
+    else:
+        result = gate.browser_journeys(*args)
+        assert len(commands) == 2
+        assert result['browser']['architecture'] == result['browser108']['architecture'] == architecture

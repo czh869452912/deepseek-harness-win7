@@ -1,0 +1,11 @@
+{
+  "contract": "C9-GW",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "problem": "Actual extracted x86 runtime, Office, metadata and strict SDK passed, but the browser observer launched the selected 32-bit interpreter without forwarding architecture to its Python Host probe. The probe's default x64 assertion rejected startup before any browser interaction.",
+  "change": "Forward explicit architecture through both browser commands and the Node-to-Python serve command; record and require the matching architecture in each browser receipt. The Python probe still verifies actual pointer width and isolated bundled imports.",
+  "verification": {"passed": 108, "seconds": 4.44, "scope": "Current Portable and release orchestration, modern/108 notice proof, both architecture propagation and mismatched-receipt rejection"},
+  "unsuccessful_control": {"run": "rc022-current-c9gw-browser-architecture-20261119-01", "reason": "Two new rejection cases initially expected RuntimeError instead of the existing ValueError; guard correctly rejected both mismatched receipts. Corrected test expectation; no guard weakening."},
+  "actual_failed_preparation": {"candidate": "2faa33cabc10f570d67668b4a134419ad84f377b", "run": "rc022-x86-preparation-20261119-47", "archive_sha256": "dda7042d40fa871d73bea2a38dd420129067a06de89d1fb419156d7f4f6beb2d", "inputs_unchanged": true, "release_acceptance": false},
+  "release_acceptance": false,
+  "remaining": "Recheck the retained exact x86 archive with corrected observers, then complete actual Standard Desktop preparation and one new stable-candidate unified qualification. Preserve original failed observations and retire ended synthetic assets."
+}

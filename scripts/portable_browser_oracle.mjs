@@ -17,7 +17,9 @@ const options = Object.fromEntries(process.argv.slice(2).reduce((rows, value, i,
 for (const key of ['python', 'workspace', 'environment', 'browser', 'output']) {
   if (!options[key]) throw new Error('Missing --' + key);
 }
-const report = {passed: false, steps: [], exceptions: [], consoleErrors: [], sockets: [], replies: [], sessionRequests: []};
+const architecture = options.architecture ?? 'x64';
+assert.ok(['x64', 'x86'].includes(architecture), 'Unsupported Portable architecture');
+const report = {passed: false, architecture, steps: [], exceptions: [], consoleErrors: [], sockets: [], replies: [], sessionRequests: []};
 report.consoleMessages = [];
 const noticeVersion = options['notice-version'] ?? '2026-08-13.1';
 const noticeTitle = options['notice-title'] ?? 'Internal Testing Notice';
@@ -91,7 +93,7 @@ try {
   const ready = new Promise((yes, no) => {readyYes = yes; readyNo = no;});
   const timer = setTimeout(() => readyNo(new Error('Extracted Host startup timeout')), 30000);
   host = spawn(resolve(options.python), ['-I', '-B', '-u', join(dirname(fileURLToPath(import.meta.url)), 'portable_runtime_probe.py'),
-    '--workspace', resolve(options.workspace), '--serve'], {cwd: options.workspace, env, windowsHide: true});
+    '--workspace', resolve(options.workspace), '--architecture', architecture, '--serve'], {cwd: options.workspace, env, windowsHide: true});
   host.stderr.on('data', data => {hostErrors += data;});
   host.on('error', readyNo); host.on('exit', code => readyNo(new Error('Host exited: ' + code)));
   createInterface({input: host.stdout}).on('line', line => {

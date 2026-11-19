@@ -158,7 +158,7 @@ asyncio.run(main())
     return report
 
 
-def browser_journeys(portable, workspace, output, env, node, browser, browser108, archive, runtime):
+def browser_journeys(portable, workspace, output, env, node, browser, browser108, archive, runtime, architecture):
     from scripts.browser108_gate import validate_input, validate_observation, prepare_notice_input
     identity108 = validate_input(browser108)
     environment = output / 'host-environment.json'
@@ -168,13 +168,14 @@ def browser_journeys(portable, workspace, output, env, node, browser, browser108
         result = output / (name + '.json')
         command = [str(node), str(ROOT / 'scripts/portable_browser_oracle.mjs'), '--python', str(portable / 'python.exe'),
                    '--workspace', str(workspace), '--environment', str(environment), '--browser', str(executable),
-                   '--output', str(result), '--archive', str(archive)]
+                   '--output', str(result), '--archive', str(archive), '--architecture', architecture]
         command += ['--notice-version', CURRENT_NOTICE['version'], '--notice-title', 'Preview Notice', '--current-onboarding', 'true']
         command += ['--notice-relative-path', CURRENT_NOTICE['relative_path']]
         if notice: command += ['--notice-input', str(output / 'browser108-notice-input.json')]
         execute(command, workspace, output, name, dict(os.environ), 150)
         rows[name] = json.loads(result.read_text(encoding='utf-8'))
         require(rows[name].get('passed') is True and rows[name].get('hostExitCode') == 0
+                and rows[name].get('architecture') == architecture
                 and not rows[name].get('hostErrors') and not rows[name].get('exceptions')
                 and not rows[name].get('consoleErrors') and rows[name].get('archiveSha256') == digest(archive),
                 'Actual original browser journey failed: ' + name)
@@ -215,7 +216,7 @@ def qualify(args):
             if args.architecture in ('x64', 'x86'):
                 report['sdk'] = sdk_journey(source, node, portable, output, frozen['native'])
                 report['browsers'] = browser_journeys(portable, workspace, output, env, node,
-                    args.browser.resolve(), args.browser108.resolve(), archive, report['runtime'])
+                    args.browser.resolve(), args.browser108.resolve(), archive, report['runtime'], args.architecture)
                 from scripts.current_application_gate import journeys
                 applications = output / 'applications'; applications.mkdir()
                 report['applications'] = journeys(portable, workspace / 'applications', applications,

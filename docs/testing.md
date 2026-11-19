@@ -44,6 +44,8 @@ rc022 协调切换期间，当前 Source/配对清单见 [release-gate-plan.json
 
 当前原版测试与合同观察器使用两个显式固定的现代 Node：`--node` 保持 24.9.0，供有限合同配对与原构建输入使用；`--source-test-node` 使用 24.13.1，默认位于 `.goose/tools/node-24.13.1-win-x64/node.exe`，供未修改的原版单元测试使用。后者包含官方 Windows 失效符号链接 `rmSync` 修复 #61040；两个身份均参与冻结与复核，不替换产品的 Python3.8.10，也不改写原构建来源。原版通过 `DSH_COVERAGE_TEST_TIMEOUT_MS` 支持共享主机期限，当前冻结计划为 30000 毫秒，统一应用到测试、hook 和轮询默认值；用例显式期限和全部断言保持。详见[实际失败与复验](../migration/candidates/rc022/current-source-runtime-checks.json)。
 
+Source 计划保留 476 个文件。当前原版 Windows 配置明确排除其中两个 subprocess 文件；门禁逐项核验上游配置中的原始匹配规则，分别记录计划文件、实际执行文件和原版平台排除项。正常完整 Windows Source 结果应为 474 个执行文件加 2 个原版排除项，排除项不得计作通过，其他文件缺失仍失败。详见[原版平台规则核算](../migration/candidates/rc022/current-source-platform-checks.json)。
+
 完整运行发现多项问题后，保留原始失败和用时，集中修复，并复验各失败及受影响消费者。下一次完整门禁安排在这些问题收尾后的稳定候选；不要每修好一个用例就重新跑全部集合。已有运行记录可用于诊断，不能把不同候选的通过片段拼成新的完整通过。
 
 耗时长不直接等于死循环。先检查冷夹具构造、文件复制/打包、真实子进程启动、等待截止时间及重复或嵌套等待。当前发行入口默认不对整个 pytest 集合设置3600秒硬限制；只有显式 `--regression-timeout SECONDS` 才设置总预算，单项操作的连接、取消及子进程期限仍保留。

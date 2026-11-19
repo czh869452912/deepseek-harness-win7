@@ -10,6 +10,7 @@ def test_plan_accounts_for_every_current_observer_and_original_selection():
     assert len(plan['paired']) == 406 and len(plan['source_tests']) == 476
     assert plan['source_test_timeout_ms'] == 30000
     assert plan['source_test_node_version'] == 'v24.13.1'
+    assert len(plan['source_platform_exclusions']['win32']) == 2
     assert any(row['script'] == 'scripts/rc022_released_logical_probe.py' for row in plan['paired'])
     assert any(row['script'] == 'scripts/rc022_query_text_probe.py' for row in plan['paired'])
     assert any(row['script'] == 'scripts/rc022_projection_cache_probe.py' for row in plan['paired'])
@@ -87,7 +88,9 @@ def test_plan_rejects_missing_or_unbounded_source_budget(tmp_path, monkeypatch, 
 def test_source_lane_uses_pinned_upstream_budget_and_keeps_failure_diagnostics(tmp_path, monkeypatch):
     source = tmp_path / 'source'; source.mkdir()
     (source / 'case.spec.ts').write_text('', encoding='utf-8')
+    (source / 'vitest.config.ts').write_text("const windowsUnsupportedTests = process.platform === 'win32' ? [] : []", encoding='utf-8')
     plan = dict(source_tests=['case.spec.ts'], source_test_timeout_ms=30000)
+    plan['source_platform_exclusions'] = dict(win32=[])
     environment = dict(DSH_COVERAGE_TEST_TIMEOUT_MS='1')
     def execute(command, cwd, output, name, env, timeout):
         assert env['DSH_COVERAGE_TEST_TIMEOUT_MS'] == '30000'
@@ -112,3 +115,44 @@ def test_source_test_runtime_is_distinct_and_pinned(tmp_path, monkeypatch, versi
     if version == 'v24.13.1': assert gate.source_test_runtime(plan, node) == node
     else:
         with pytest.raises(ValueError, match='Source test runtime'): gate.source_test_runtime(plan, node)
+
+
+@pytest.mark.parametrize('damage', ['none', 'upstream-removed', 'unavailable'])
+def test_source_exclusions_require_the_original_windows_config_policy(tmp_path, damage):
+    plan = gate.load_plan()
+    patterns = [row['upstream_pattern'] for row in plan['source_platform_exclusions']['win32']]
+    text = "const windowsUnsupportedTests = process.platform === 'win32' ? [\n" + ''.join("  '" + p + "',\n" for p in patterns) + '] : []'
+    if damage == 'upstream-removed': text = text.replace(patterns[0], 'different.spec.ts')
+    if damage == 'unavailable': text = 'unknown config'
+    (tmp_path / 'vitest.config.ts').write_text(text, encoding='utf-8')
+    assert gate.source_exclusions(plan, tmp_path, 'linux') == {}
+    if damage == 'none':
+        assert set(gate.source_exclusions(plan, tmp_path, 'win32')) == {r['path'] for r in plan['source_platform_exclusions']['win32']}
+    else:
+        with pytest.raises(ValueError): gate.source_exclusions(plan, tmp_path, 'win32')
+
+
+@pytest.mark.parametrize('damage', ['none', 'missing', 'expanded', 'failed', 'empty'])
+def test_source_lane_accounts_for_original_exclusions_without_accepting_missing_tests(tmp_path, monkeypatch, damage):
+    source = tmp_path / 'source'; source.mkdir()
+    for name in ['case.spec.ts', 'skip.spec.ts']: (source / name).write_text('', encoding='utf-8')
+    (source / 'vitest.config.ts').write_text("const windowsUnsupportedTests = process.platform === 'win32' ? [\n'skip.spec.ts',\n] : []", encoding='utf-8')
+    row = dict(path='skip.spec.ts', upstream_pattern='skip.spec.ts', reason='Explicit original policy')
+    plan = dict(source_tests=['case.spec.ts', 'skip.spec.ts'], source_test_timeout_ms=30000, source_platform_exclusions=dict(win32=[row]))
+    monkeypatch.setattr(gate, 'source_exclusions', lambda *args: {'skip.spec.ts': row})
+    def execute(command, cwd, output, name, env, timeout):
+        names = [] if damage == 'missing' else ['case.spec.ts']
+        if damage == 'expanded': names.append('skip.spec.ts')
+        value = dict(success=damage != 'failed', numFailedTests=int(damage == 'failed'),
+                     numPassedTests=0 if damage == 'empty' else 1, numPendingTests=0,
+                     testResults=[dict(name=str(source / name)) for name in names])
+        (output / (name + '.json')).write_text(json.dumps(value), encoding='utf-8')
+        return dict(seconds=1)
+    monkeypatch.setattr(gate, 'execute', execute)
+    operation = lambda: gate.source_lane(plan, source, tmp_path / 'node', tmp_path, {})
+    if damage == 'none':
+        result = operation()[0]
+        assert result['planned_files'] == ['case.spec.ts', 'skip.spec.ts']
+        assert result['files'] == ['case.spec.ts'] and result['upstream_platform_exclusions'] == [row]
+    else:
+        with pytest.raises(ValueError, match='Source cases'): operation()

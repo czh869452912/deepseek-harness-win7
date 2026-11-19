@@ -1,0 +1,47 @@
+{
+  "contract": "C9-GJ",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "problem": "The 476-file inventory included two files excluded by unchanged upstream Windows vitest.config.ts. Original Source batch14 ran 30 files with 529 passed/zero failed but the gate correctly rejected an unaccounted inventory gap. Original run21 remains failed with unchanged inputs.",
+  "change": "Keep all 476 planned files. Validate the two explicit Windows exclusions against literal patterns in unchanged upstream config; record planned, executed and excluded files separately. Missing/expanded/failed/empty observations remain failures. The full Windows Source gate will execute 474 files and account for two original exclusions, never report those as passed.",
+  "excluded": [
+    {
+      "path": "packages/subprocess/subprocess-local/tests/spawn.spec.ts",
+      "upstream_pattern": "packages/subprocess/subprocess-local/tests/spawn.spec.ts",
+      "reason": "Explicit Windows exclusion in unchanged upstream vitest.config.ts. Native process/ownership consumers and current subprocess pairs remain mandatory."
+    },
+    {
+      "path": "packages/subprocess/subprocess/tests/error.spec.ts",
+      "upstream_pattern": "packages/subprocess/subprocess/tests/**/*.spec.ts",
+      "reason": "Covered by the unchanged upstream Windows subprocess test exclusion. This file is not reported as executed or passed."
+    }
+  ],
+  "verification": {
+    "python": {
+      "run": "rc022-current-c9gj-source-platform-20261119-01",
+      "passed": 53,
+      "seconds": 2.3
+    },
+    "source": {
+      "run": "C:\\Users\\czh86\\Documents\\Codex\\deepseek-harness-win7\\.goose\\out\\rc022-source-platform-targeted-20261119-22",
+      "planned_files": 60,
+      "executed_files": 58,
+      "passed": 1540,
+      "pending": 0,
+      "inputs_unchanged": true,
+      "complete_lane": false
+    }
+  },
+  "cleanup": {
+    "directories": 3,
+    "bytes_removed": 1536242,
+    "links": 18,
+    "source": "Both successful process workspaces were retired by execute after their final consumer; commands, JSON and complete logs remain."
+  },
+  "migration_index_checks": {
+    "check_exit": 0,
+    "ready_exit": 0,
+    "external_artifact_bytes_verified": false
+  },
+  "release_acceptance": false,
+  "remaining": "Run all actual paired drivers, then one stable unified candidate. Original failed Source runs retain their original status; no partial runs stitched into qualification."
+}

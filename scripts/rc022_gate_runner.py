@@ -1,5 +1,6 @@
 """Fresh, bounded current Source/paired lanes; not standalone release acceptance."""
 import argparse
+import fnmatch
 import hashlib
 import json
 import os
@@ -50,6 +51,17 @@ def load_plan():
     for name in tests + scripts:
         if Path(name).is_absolute() or '..' in Path(name).parts or '\\' in name:
             raise ValueError('Unsafe gate input path')
+    exclusions = plan.get('source_platform_exclusions', {})
+    if set(exclusions) != {'win32'}:
+        raise ValueError('Explicit Source platform policy required')
+    seen = set()
+    for row in exclusions['win32']:
+        name, pattern = row['path'], row['upstream_pattern']
+        # **/ also matches a direct child in the upstream glob grammar.
+        if (name not in tests or name in seen or not row.get('reason')
+                or not (fnmatch.fnmatchcase(name, pattern) or fnmatch.fnmatchcase(name, pattern.replace('**/', '')))):
+            raise ValueError('Invalid Source platform exclusion')
+        seen.add(name)
     for row in plan['paired']:
         if type(row['timeout_seconds']) is not int or row['timeout_seconds'] < 1:
             raise ValueError('Invalid owned process deadline')
@@ -163,9 +175,22 @@ def source_test_runtime(plan, selected=None):
     return node
 
 
+def source_exclusions(plan, source, platform=None):
+    if (platform or sys.platform) != 'win32': return {}
+    text = (source / 'vitest.config.ts').read_text(encoding='utf-8')
+    block = re.search(r"const windowsUnsupportedTests = process\.platform === 'win32'\s*\?\s*\[(.*?)\]\s*:\s*\[\]", text, re.S)
+    if not block: raise ValueError('Upstream Windows test policy unavailable')
+    patterns = set(re.findall(r"(?m)^\s*'([^']+)',?\s*$", block.group(1)))
+    rows = plan['source_platform_exclusions']['win32']
+    if any(row['upstream_pattern'] not in patterns for row in rows):
+        raise ValueError('Source platform exclusion is not declared by upstream')
+    return {row['path']: row for row in rows}
+
+
 def source_lane(plan, source, node, output, environment, only=()):
     selected = list(only) if only else plan['source_tests']
     if not set(selected) <= set(plan['source_tests']): raise ValueError('Unplanned Source test')
+    exclusions = source_exclusions(plan, source)
     # The unchanged upstream config applies its shared-host budget to each
     # inline project's tests, hooks and polling. Preserve explicit case limits.
     environment = dict(environment, DSH_COVERAGE_TEST_TIMEOUT_MS=str(plan['source_test_timeout_ms']),
@@ -182,10 +207,13 @@ def source_lane(plan, source, node, output, environment, only=()):
         executed = execute(command, source, output, name, environment, 900)
         value = json.loads(result.read_text(encoding='utf-8'))
         actual = {Path(item['name']).resolve().relative_to(source).as_posix() for item in value['testResults']}
+        expected = set(batch) - set(exclusions)
         if (not value.get('success') or value.get('numFailedTests') != 0 or not value.get('numPassedTests')
-                or actual != set(batch)):
+                or actual != expected):
             raise ValueError('Source cases failed, disappeared or expanded: ' + name)
-        rows.append(dict(name=name, files=sorted(actual), passed=value['numPassedTests'],
+        rows.append(dict(name=name, planned_files=batch, files=sorted(actual),
+                         upstream_platform_exclusions=[exclusions[name] for name in batch if name in exclusions],
+                         passed=value['numPassedTests'],
                          pending=value['numPendingTests'], sha256=digest(result), seconds=executed['seconds'],
                          test_timeout_ms=plan['source_test_timeout_ms']))
         print(name + ' passed ' + str(value['numPassedTests']), flush=True)

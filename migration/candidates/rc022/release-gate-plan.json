@@ -4,6 +4,20 @@
   "node_version": "v24.9.0",
   "source_test_node_version": "v24.13.1",
   "source_test_timeout_ms": 30000,
+  "source_platform_exclusions": {
+    "win32": [
+      {
+        "path": "packages/subprocess/subprocess-local/tests/spawn.spec.ts",
+        "upstream_pattern": "packages/subprocess/subprocess-local/tests/spawn.spec.ts",
+        "reason": "Explicit Windows exclusion in unchanged upstream vitest.config.ts. Native process/ownership consumers and current subprocess pairs remain mandatory."
+      },
+      {
+        "path": "packages/subprocess/subprocess/tests/error.spec.ts",
+        "upstream_pattern": "packages/subprocess/subprocess/tests/**/*.spec.ts",
+        "reason": "Covered by the unchanged upstream Windows subprocess test exclusion. This file is not reported as executed or passed."
+      }
+    ]
+  },
   "scope": "Explicit current C1-C9 Source/native contracts and selected original unit tests. A full release also requires one frozen candidate, complete Python collection and actual extracted runtime/browser lanes. This plan does not establish those outcomes or universal upstream parity.",
   "source_tests": [
     "apps/cli/tests/profile-hmr.spec.ts",

@@ -3871,7 +3871,8 @@
         "native-workspace",
         "tmp",
         "home",
-        "files"
+        "files",
+        "fixtures"
       ]
     },
     {
@@ -3887,7 +3888,9 @@
         "native-workspace",
         "tmp",
         "home",
-        "files"
+        "files",
+        "formula.xlsx",
+        "slides.odp"
       ]
     },
     {
@@ -4095,7 +4098,9 @@
         "native-workspace",
         "tmp",
         "home",
-        "files"
+        "files",
+        "localhost-cert.pem",
+        "localhost-key.pem"
       ]
     },
     {
@@ -4111,7 +4116,9 @@
         "native-workspace",
         "tmp",
         "home",
-        "files"
+        "files",
+        "localhost-cert.pem",
+        "localhost-key.pem"
       ]
     },
     {

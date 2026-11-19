@@ -155,3 +155,5 @@
 2026-11-19：C9-GQ [实际生成 codec 形态](current-typert-codec-shapes-checks.json)让探针分别消费原版 factory codec 与已解析 `schema`，未知形态仍拒绝；不改原版制品或 Native 解析器、不跳过 reader。42/42 个实际制品、876 个 codec/15,768 次验证与 Native 一致，30 项解析/加载/注册消费者检查通过；原失败诊断保留，已结束夹具与空缓存退役。
 
 2026-11-19：C9-GP [Desktop 离线 Office 清单校验](current-desktop-office-inventory-checks.json)将另行打包的 95 份已批准 Office 运行时文件与源码 provider 区分校验，逐字节核对固定清单、来源、架构及无未声明文件；源码比较仍拒绝旧 provider。58 项打包/来源/Office 定向检查通过，自有夹具和失败空缓存已退役；原实际失败与输入保持。实际 Desktop 重建、预检及浏览器仍待下一步，不据单元检查认证安装器。
+
+2026-11-19：C9-GR [探针资产及时退役](current-probe-asset-retention-checks.json)补齐字体、文档和 TLS 合成输入的显式清理声明；16 个实际 Office SDK 配对均一致，最后消费者结束后删除 30,819 字节输入副本，保留完整实际文档、图像与比较。52 项定向检查通过、1 项需显式 Source 输入的检查跳过；旧准备运行的 20 组冗余输入共 8,717,350 字节及本次三个临时目录已退役。实际 Desktop 与新鲜单次完整门禁继续，不合并历史局部结果为发行资格。

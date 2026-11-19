@@ -1,0 +1,13 @@
+{
+  "contract": "C9-GR",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "change": "Declare disposable font, document and TLS fixture copies in fresh probe outputs; retire all Office SDK case input copies only after their final consumer succeeds. Preserve actual documents, images, comparison observations and input SHA inventories.",
+  "verification": {
+    "targeted": {"passed": 52, "skipped": 1, "seconds": 2.93, "scope": "Gate retention guards, Office font discovery, metadata cache and structured format evidence", "skip": "Explicit actual Source/Node Office inputs required; the actual SDK pipeline is independently exercised below."},
+    "actual_office_sdk": {"run": "rc022-office-retention-targeted-20261119-38", "cases": 16, "equal": 16, "input_copies_removed": 16, "bytes_removed": 30819, "active_tasks": 0, "remaining_profiles": []},
+    "original_preparation_cleanup": {"run": "rc022-paired-preparation-20261119-29", "rows": 20, "bytes_removed": 8717350, "outside_observation_bytes_unchanged": true}
+  },
+  "targeted_cleanup": {"directories_removed": 3, "bytes_removed": 1587625, "links_removed": 24},
+  "release_acceptance": false,
+  "remaining": "Single frozen unified candidate, actual current Desktop and both architecture qualification. Earlier unsuccessful receipts retain their original identities."
+}

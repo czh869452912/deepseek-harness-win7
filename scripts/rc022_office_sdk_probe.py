@@ -162,7 +162,17 @@ async def main():
     finally:
         await carrier.close()
         report.update(activeTasks=len(carrier.active), remainingProfiles=[path.name for path in temporary.iterdir()])
-        (out / 'report.json').write_text(json.dumps(report, indent=2), encoding='utf-8')
+        try:
+            if report.get('status') == 'passed':
+                from scripts.rc022_gate_runner import retire_success
+                report['input_cleanup'] = [dict(case=case['name'], **retire_success(
+                    out / case['name'], ['input.' + case.get('extension', 'docx')],
+                    receipt_name='input-cleanup.json')) for case in cases]
+        except BaseException as error:
+            report.update(status='failed', cleanup_error=str(error))
+            raise
+        finally:
+            (out / 'report.json').write_text(json.dumps(report, indent=2), encoding='utf-8')
 
 
 if __name__ == '__main__':

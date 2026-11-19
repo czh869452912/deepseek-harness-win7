@@ -1,0 +1,33 @@
+{
+  "contract": "C9-GY",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "problem": "Clean b898921a unified run14 passed complete Python and Source and 233 paired drivers, then package-view comparison differed only in whether a synthetic startup print arrived before the same 150ms deadline. Source had no progress bytes; Native had progress bytes. Both correctly reported timeout, null exit and empty stderr. Eight other scenarios matched.",
+  "change": "Use silent sleeping subprocess fixtures for timeout/caller cancellation and require exact empty output on both sides. Keep strict real normal/registry/environment/line/error output comparisons, all exit/deadline/cancellation assertions and unchanged production code. No scheduling-dependent progress-presence normalization remains.",
+  "verification": {
+    "run": "rc022-current-c9gz-package-view-20261119-01",
+    "passed": 15,
+    "pytest_seconds": 163.35,
+    "scope": "Actual package-view execution with immediate and deliberately delayed 250ms interpreter startup; normal and explicit environment, exact line/error output, deadline/caller/pre-spawn cancellation and child reaping; direct package operations, manager install/update and Python update lifetime consumers",
+    "actual_pair_run": "rc022-paired-final-preparation-20261119-51",
+    "actual_pair_scenarios": 9,
+    "actual_pair_status": "passed"
+  },
+  "cleanup": {"targeted_owned_directories": 3, "targeted_bytes_removed": 199212, "targeted_links_removed_without_following": 12, "pair_fixture_bytes_removed": 1614},
+  "original_unified_run": {
+    "candidate": "b898921a7688ec693dde9056bce683f32b6ae00a",
+    "result": "failed",
+    "python_passed": 22650,
+    "python_skipped": 26,
+    "source_passed": 12272,
+    "source_pending": 33,
+    "source_batches": 15,
+    "paired_passed_before_failure": 233,
+    "input_manifest_sha256": "1293ba45f49b1e081b50b3b6d93d450dcccc80df96ebbabe111e388dab605e56",
+    "final_input_reread": "Still running when this targeted record was written; original final report is authoritative.",
+    "python_fixture_bytes_removed": 1925031419,
+    "original_python_xml_log_and_raw_observations_preserved": true
+  },
+  "separate_preparation_failure": "Run51 later encountered Win32 ReplaceFileW 1175 in the unchanged patch executor provider; raw failure and its original fixture remain. Fresh run52 passed that exact paired driver and proceeds through the remaining roster. No production ACL or retry policy changed and no failed run is promoted.",
+  "release_acceptance": false,
+  "remaining": "Finish remaining paired preparation, preserve original failed candidate's final freeze identity, then qualify one new stable candidate through a fresh complete unified gate."
+}

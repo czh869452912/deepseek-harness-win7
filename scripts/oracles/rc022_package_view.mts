@@ -16,7 +16,7 @@ for(const mode of input.cases){
  if(result.cause!==undefined)result.cause={code:result.cause.code}
  if(mode==='missing')result={launchFailed:result.exitCode!==0&&!!(result.cause||result.stderr)}
  if(['normal','registry','environment'].includes(mode)){const value=JSON.parse(result.stdout);value.cwd='<profile>';result.stdout=value}
- if(['slow','cancel'].includes(mode))result.stdout=!!result.stdout
+ if(['slow','cancel'].includes(mode)&&result.stdout!=='')throw new Error('Silent deadline fixture emitted output')
  rows.push({name:mode,result})
 }
 console.log(JSON.stringify(rows))

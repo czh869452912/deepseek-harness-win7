@@ -10,7 +10,9 @@ WORKSPACE=None
 PROGRAM='''import json,os,sys,time
 mode=sys.argv[1]
 if mode in ('slow','cancel'):
-    print('started',flush=True)
+    # Deadline/cancellation can win before interpreter startup. Keep these
+    # fixtures silent so their result does not depend on startup scheduling;
+    # normal/lines/failure independently verify actual collected output.
     time.sleep(10)
 elif mode=='lines':
     sys.stdout.buffer.write(b'one\\r\\n\\r\\n');sys.stdout.flush()
@@ -52,7 +54,7 @@ async def observe(workspace=None):
             if mode=='missing':result=dict(launchFailed=result['exitCode'] not in (0,) and bool(result.get('cause') or result['stderr']))
             if mode in ('normal','registry','environment'):
                 value=json.loads(result['stdout']);value['cwd']='<profile>';result['stdout']=value
-            if mode in ('slow','cancel'):result['stdout']=bool(result['stdout'])
+            if mode in ('slow','cancel'):assert result['stdout']=='', 'Silent deadline fixture emitted output'
             rows.append(dict(name=mode,result=result))
         return rows
     finally:
@@ -69,4 +71,4 @@ def prepare(output):
 
 if __name__=='__main__':
     probe.native=observe
-    probe.main('rc022_package_view.mts','Actual Source viewProfilePackage and Python process adapter invoke the same owned fixture executable. Compare arguments/registry/no-retry flag, profile cwd, scrubbed ambient environment with explicit overrides, exit/output/newline handling, timeout/caller/pre-spawn cancellation and missing executable causes. Normalize only owned cwd and progress-output presence. This executable seam is not package installation or the built-in Python registry backend.',[Path(__file__).resolve(),ROOT/'dsh/boot/plugin_package_view.py'],prepare=prepare)
+    probe.main('rc022_package_view.mts','Actual Source viewProfilePackage and Python process adapter invoke the same owned fixture executable. Compare arguments/registry/no-retry flag, profile cwd, scrubbed ambient environment with explicit overrides, exit/output/newline handling, timeout/caller/pre-spawn cancellation and missing executable causes. Normalize only owned cwd. Deadline/cancellation fixtures are silent regardless of interpreter startup scheduling; output collection is checked by normal/lines/failure. This executable seam is not package installation or the built-in Python registry backend.',[Path(__file__).resolve(),ROOT/'dsh/boot/plugin_package_view.py'],prepare=prepare)

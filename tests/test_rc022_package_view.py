@@ -4,11 +4,15 @@ from pathlib import Path
 import sys
 import pytest
 from scripts.rc022_package_view_probe import observe
+from scripts import rc022_package_view_probe as probe
 from dsh.boot.plugin_package_view import view_profile_package
 
 
 @pytest.mark.asyncio
-async def test_owned_package_view_execution_environment_and_deadlines(tmp_path):
+@pytest.mark.parametrize('startup_delay', [0, .25])
+async def test_owned_package_view_execution_environment_and_deadlines(tmp_path, monkeypatch, startup_delay):
+    if startup_delay:
+        monkeypatch.setattr(probe, 'PROGRAM', 'import time; time.sleep(.25)\n'+probe.PROGRAM)
     rows={row['name']:row['result'] for row in await observe(tmp_path)}
     assert len(rows)==9
     assert rows['normal']['stdout']['args']==['view','@scope/pkg@^1.0','name','version','dsh','--json','--config.fetch-retries=0']
@@ -18,8 +22,11 @@ async def test_owned_package_view_execution_environment_and_deadlines(tmp_path):
     assert rows['environment']['stdout']['environment']['EXPLICIT_SECRET']=='explicit'
     assert rows['environment']['stdout']['environment']['DSH_PRIVATE_VALUE']=='explicit'
     assert rows['failure']['exitCode']==7 and rows['failure']['stderr']=='registry unavailable'
+    assert rows['lines']['stdout']=='one\r\n' and rows['lines']['stderr']=='two\n'
     assert rows['slow']['timedOut'] and rows['slow']['exitCode'] is None
     assert not rows['cancel']['timedOut'] and rows['cancel']['exitCode'] is None
+    assert rows['slow']['stdout']==rows['cancel']['stdout']==''
+    assert rows['pre-cancel']==dict(exitCode=None,stdout='',stderr='',timedOut=False)
     assert rows['missing']==dict(launchFailed=True)
     absent=await view_profile_package(str(tmp_path),'pkg',dict(command=str(tmp_path/'absent.exe'),fields=[],timeoutMs=2000))
     assert absent['cause'].code=='ENOENT'

@@ -1,0 +1,35 @@
+{
+  "contract": "C9-HD",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "problem": "Frozen 796b15b1 run15's legacy physical confined-console test returned exactly VALUE=1436, newline, Chinese text and one additional final newline. Its strict no-final-newline assertion failed; the original full XML and immediate failure JSON are preserved.",
+  "diagnosis": {
+    "original_nodeid": "tests/test_windows_confined_console.py::test_confined_console_retains_state_unicode_and_actual_write_boundary",
+    "original_output": "VALUE=1436\n中文\n",
+    "diagnostic_run66": "The unchanged real confined-console case passed with all 36 raw PTY chunks and each command capture saved, including actual allowed write, denied sibling-root write and owner isolation.",
+    "diagnostic_run67": "One bounded same-console diagnostic executed initialization and 30 actual state/Unicode commands, all with exact expected output. Every raw chunk and snapshot is saved. This does not prove the original final-newline cause or replace its failure.",
+    "causal_limit": "The original failing command had no raw PTY capture. The extra carrier newline is established; a precise timing/WinPTY origin is not claimed. Chunk-vs-character replay of the subsequently captured bytes was equal."
+  },
+  "change": "Only this legacy physical-console state/Unicode assertion now accepts the exact two-line output with either zero or one final newline. It does not strip arbitrary whitespace, accept extra blank lines, change terminal rendering, alter production behavior or broaden the canonical rc022 pipe protocol. Actual retained state, Unicode text, file write/refusal, owner isolation, timeout/cancel and resource cleanup checks remain.",
+  "verification": {
+    "physical_and_current_consumers": {"run": "rc022-console-consumers-targeted-20261120-68", "passed": 17, "pytest_seconds": 24.76},
+    "exact_protocol_and_text": {"run": "rc022-terminal-protocol-targeted-20261120-69", "passed": 11, "pytest_seconds": 8.77},
+    "scope": "Original physical confined console and write boundary, real timeout/cancel job cleanup, exact terminal state/protocol/text parsing, current rc022 canonical PowerShell foreground/background output, registry lifetime, queued cancellation and terminal recovery; the two selected groups do not overlap."
+  },
+  "cleanup": {
+    "run": "rc022-console-investigation-retirement-20261120-70",
+    "owned_directories_removed": 4,
+    "bytes_removed": 4848,
+    "original_failure_raw_chunks_snapshots_commands_logs_and_xml_preserved": true
+  },
+  "original_unified_run": {
+    "candidate": "796b15b1c99123f858bc672e51c22597f42db5eb",
+    "run": "rc022-unified-20261119-15",
+    "python_collected": 22677,
+    "python_passed": 22648,
+    "python_skipped": 26,
+    "python_failed": 3,
+    "state_at_record": "Complete XML obtained; title, HMR and legacy physical-console failures remain failures. Final frozen-input reread still running; Source, paired and extracted/desktop stages were not reached."
+  },
+  "release_acceptance": false,
+  "remaining": "Finish original final input reread, retain all observations and exact ZIP, clean ended synthetic payloads, then freeze a new stable candidate for one fresh complete unified qualification."
+}

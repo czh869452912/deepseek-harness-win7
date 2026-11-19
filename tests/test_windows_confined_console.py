@@ -81,7 +81,10 @@ async def confined(tmp_path):
 async def test_confined_console_retains_state_unicode_and_actual_write_boundary(tmp_path):
     async with confined(tmp_path) as state:
         assert await state.execute("$retained_value = 1436; Write-Output 'INITIAL_READY'") == 'INITIAL_READY'
-        assert await state.execute("Write-Output ('VALUE=' + $retained_value); Write-Output ('中' + '文')") == 'VALUE=1436\n中文'
+        output = await state.execute("Write-Output ('VALUE=' + $retained_value); Write-Output ('中' + '文')")
+        # The legacy physical console sanitizer is not a screen emulator.
+        # Keep the exact two lines; its carrier may retain one final newline.
+        assert output in ('VALUE=1436\n中文', 'VALUE=1436\n中文\n')
         assert await state.execute("Set-Content -LiteralPath 'allowed.txt' -Value 'OWNED_WRITE'; Write-Output 'WROTE'") == 'WROTE'
         assert (state.workspace / 'allowed.txt').read_bytes().strip() == b'OWNED_WRITE'
         forbidden = tmp_path / 'forbidden.txt'

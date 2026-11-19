@@ -1,0 +1,24 @@
+{
+  "contract": "C9-GZ",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "observer_fix_commit": "26ef3fc4",
+  "paired_preparation": {
+    "runs": ["rc022-paired-final-preparation-20261119-51", "rc022-paired-final-preparation-20261119-52"],
+    "selected_drivers": 173,
+    "passed": 173,
+    "complete_lane": false,
+    "scope": "Two passed initial drivers from run51 and all 171 fresh remaining drivers from run52. Covers the corrected package-view observer, actual patch execution, SDK normal/error/cancel, settings, terminal, sessions, Typert, Web, workflow and workspace through the end of the roster. The original run51 ReplaceFileW 1175 failure retains its identity; successful fresh run52 is separate.",
+    "cleanup": "Each successful driver retired its declared synthetic roots through the runner; actual observations remain."
+  },
+  "ended_failure_retirement": {
+    "run": "rc022-run14-preparation-retirement-20261119-53",
+    "bytes_removed": 810554024,
+    "failed_fixture_regular_files_preserved_byte_for_byte": 76,
+    "original_failed_reports_unchanged": true,
+    "scope": "Ended failed package-view and patch-execution synthetic workspaces and original run14 Portable copy after the last Python consumer",
+    "retained_exact_original_portable_sha256": "226c5d3c41e2c66415d35d9464338ae8ea47e7aafef9a0c459f05070de270322",
+    "remaining_consumer": "Original run14 still completes final frozen-source/dependency reread; these removed output payloads are not its frozen inputs."
+  },
+  "release_acceptance": false,
+  "remaining": "After original run14's final input/candidate check ends, freeze one new clean stable candidate and execute every unified stage afresh. No partial results are stitched into a new qualification."
+}

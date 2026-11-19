@@ -23,7 +23,8 @@ for(const file of input.files){const {TYPERT:value}=await import(pathToFileURL(f
  for(const row of value.invocations){const codecs=[];
   for(const parameter of row.parameters){codecs.push([parameter.wire,parameter.codec]);if(parameter.strictCodec)codecs.push([parameter.wire+':strict',parameter.strictCodec]);}
   codecs.push(['result',row.result]);
-  for(const [name,codec] of codecs){const schema=codec.create();
+  for(const [name,codec] of codecs){const schema=typeof codec.create==='function'?codec.create():codec.schema;
+   if(!schema||typeof schema.safeParse!=='function')throw Error('Unrecognized generated codec: '+file+' '+row.namespace+'/'+row.method+' '+name);
    const validations=[undefined,...input.samples].map(sample=>{const result=schema.safeParse(sample);return result.success?{ok:true,...(result.data===undefined?{undefined:true}:{value:result.data})}:{ok:false};});
    rows.push({package:value.package,endpoint:row.namespace+'/'+row.method,name,typeSymbol:codec.typeSymbol,validations,...(codec.jsonSchema===undefined?{}:{jsonSchema:codec.jsonSchema}),...(codec.jsonSchemaError===undefined?{}:{jsonSchemaError:codec.jsonSchemaError})});
   }

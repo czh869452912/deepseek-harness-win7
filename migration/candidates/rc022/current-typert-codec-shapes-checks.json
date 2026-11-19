@@ -1,0 +1,28 @@
+{
+  "contract": "C9-GQ",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "problem": "The generated-artifact observer assumed every actual upstream codec exposes create(). An admitted agent-team artifact already exposes a resolved schema instead.",
+  "change": "Use the actual codec factory when present, otherwise its resolved schema; require a real Zod safeParse method and fail unknown shapes. No artifact or parser patch, no skipped reader.",
+  "verification": {
+    "actual_source": {
+      "artifacts": 42,
+      "qualified_readers": 42,
+      "refused": 0,
+      "codec_rows": 876,
+      "validation_cases": 15768,
+      "differences": 0,
+      "source_observation_sha256": "3e75fc355728591b5694c9ed58e481e3d3e8f295f1fafa577de733136c19f70a"
+    },
+    "python": {
+      "passed": 30,
+      "seconds": 4.27,
+      "scope": "Current generated grammar, loader and registry consumers"
+    }
+  },
+  "cleanup": {
+    "targeted_directories": 3,
+    "failed_cache_bytes_removed": 0,
+    "original_failed_program_and_log_retained": true
+  },
+  "release_acceptance": false
+}

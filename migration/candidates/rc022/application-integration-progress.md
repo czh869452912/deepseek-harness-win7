@@ -687,3 +687,5 @@ C9-CG：显式整理 472 个原版测试文件、399 个当前配对入口，另
 2026-11-19：C9-GN [PTC 工作区所有权](current-ptc-workspace-checks.json)将 confinement/control/protocol/runtime 四个驱动从调用方共享 `tmp/workspace` 改为各自 `output/files/workspace`。57 项和 74 项定向检查及四个实际 Source/Python 配对通过，覆盖真实进程、沙箱拒绝、协议、取消和卸载；自有夹具与失败启动空缓存已清理。原 run29 在程序启动前失败的记录保持；剩余准备和单次完整门禁继续。
 
 2026-11-19：C9-GO [终端诊断字段观察](current-shell-message-checks.json)修正探针将原版 `Error.message` 与 Python 展示用 `str(error)` 混比的问题，读取真实 `message` 并独立比较 code/子类，生产错误不变。19 组实际配对和 16 项终端/进程错误消费者检查通过；失败原始观察保留，已结束自有夹具和编译缓存退役。
+
+2026-11-19：C9-GQ [实际生成 codec 形态](current-typert-codec-shapes-checks.json)让探针分别消费原版 factory codec 与已解析 `schema`，未知形态仍拒绝；不改原版制品或 Native 解析器、不跳过 reader。42/42 个实际制品、876 个 codec/15,768 次验证与 Native 一致，30 项解析/加载/注册消费者检查通过；原失败诊断保留，已结束夹具与空缓存退役。

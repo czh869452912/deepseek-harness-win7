@@ -4,6 +4,7 @@ import json
 import os
 import subprocess
 import sys
+import stat
 import pytest
 from scripts import rc022_gate_runner as gate
 
@@ -161,7 +162,8 @@ def test_source_lane_accounts_for_original_exclusions_without_accepting_missing_
         with pytest.raises(ValueError, match='Source cases'): operation()
 
 
-def test_actual_paired_entrypoint_imports_siblings_without_pythonpath(tmp_path, monkeypatch):
+@pytest.mark.parametrize('declared', [True, False])
+def test_actual_paired_entrypoint_imports_siblings_without_pythonpath(tmp_path, monkeypatch, declared):
     package = tmp_path / 'scripts'; package.mkdir()
     (package / '__init__.py').write_text('', encoding='utf-8')
     (package / 'fixture_helper.py').write_text("STATUS = 'passed'\n", encoding='utf-8')
@@ -179,9 +181,63 @@ def test_actual_paired_entrypoint_imports_siblings_without_pythonpath(tmp_path, 
     monkeypatch.setattr(gate, 'ROOT', tmp_path)
     output = tmp_path / 'output'; output.mkdir()
     row = dict(script='scripts/fixture_probe.py', node=False, browser=False, timeout_seconds=10,
-               receipt='report', disposable_directories=['files'])
+               receipt='report', disposable_directories=['files'] if declared else [])
+    if not declared:
+        with pytest.raises(ValueError, match='Undeclared synthetic'):
+            gate.paired_lane(dict(paired=[row]), tmp_path / 'source', tmp_path / 'node', tmp_path / 'browser', output, env)
+        assert (output / 'fixture_probe/files/payload').read_bytes() == b'owned'
+        return
     rows = gate.paired_lane(dict(paired=[row]), tmp_path / 'source', tmp_path / 'node', tmp_path / 'browser', output, env)
     receipt = json.loads((output / 'commands/fixture_probe.json').read_text(encoding='utf-8'))
     assert receipt['command'][:3] == [sys.executable, '-m', 'scripts.fixture_probe']
     assert rows[0]['cleanup'] == dict(removed=['files'], bytes_removed=5)
     assert json.loads((output / 'fixture_probe/report.json').read_text(encoding='utf-8')) == dict(status='passed')
+
+
+@pytest.mark.parametrize('name', ['.', '..', '../outside', 'files/nested'])
+def test_cleanup_refuses_paths_outside_its_declared_root(tmp_path, name):
+    output = tmp_path / 'owned'; output.mkdir()
+    sentinel = tmp_path / 'keep'; sentinel.write_bytes(b'user data')
+    with pytest.raises(ValueError, match='escaped'): gate.retire_success(output, [name])
+    assert sentinel.read_bytes() == b'user data'
+
+
+def test_cleanup_preserves_raw_observations_and_unlinks_without_following_targets(tmp_path):
+    output = tmp_path / 'owned'; output.mkdir()
+    files = output / 'files'; files.mkdir()
+    raw = b'{"raw":"actual observation"}'
+    (files / 'capture.json').write_bytes(raw)
+    (files / 'fixture.bin').write_bytes(b'synthetic')
+    protected = tmp_path / 'protected'; protected.mkdir()
+    (protected / 'keep.json').write_bytes(b'outside target')
+    link = files / 'external'
+    os.symlink(str(protected), str(link), target_is_directory=True)
+    result = gate.retire_success(output, ['files'])
+    assert result['bytes_removed'] == len(raw) + len(b'synthetic') and not files.exists()
+    preserved = output / 'gate-cleanup-observations/files/capture.json'
+    assert preserved.read_bytes() == raw
+    assert (protected / 'keep.json').read_bytes() == b'outside target'
+    inventory = json.loads((output / 'gate-cleanup-inventory.json').read_text(encoding='utf-8'))
+    assert dict(path='files/external', kind='reparse') in inventory
+    assert not any(row['path'].endswith('keep.json') for row in inventory)
+    original = (output / 'gate-cleanup.json').read_bytes()
+    with pytest.raises(ValueError, match='already exists'): gate.retire_success(output, ['files'])
+    assert (output / 'gate-cleanup.json').read_bytes() == original
+
+
+@pytest.mark.skipif(os.name != 'nt' or sys.getwindowsversion().major < 10,
+                    reason='Modern Windows qualification-host entry unlink')
+def test_cleanup_readonly_hardlink_preserves_other_link_attributes_and_bytes(tmp_path):
+    source = tmp_path / 'protected.bin'; source.write_bytes(b'shared immutable bytes')
+    os.chmod(str(source), stat.S_IREAD)
+    output = tmp_path / 'owned'; output.mkdir()
+    files = output / 'files'; files.mkdir()
+    os.link(str(source), str(files / 'readonly.bin'))
+    attributes, checksum = source.stat().st_file_attributes, gate.digest(source)
+    try:
+        gate.retire_success(output, ['files'])
+        assert not files.exists() and source.stat().st_file_attributes == attributes
+        assert source.stat().st_file_attributes & 1 and gate.digest(source) == checksum
+    finally:
+        # This remaining test-owned entry has no consumer after the assertions.
+        gate.remove_owned(source)

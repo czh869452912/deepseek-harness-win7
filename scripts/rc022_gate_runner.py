@@ -6,6 +6,7 @@ import json
 import os
 from pathlib import Path
 import re
+import shutil
 import stat
 import subprocess
 import sys
@@ -26,7 +27,10 @@ SEPARATE = {'rc022_application_probe.py', 'rc022_application_python_probe.py',
 
 
 def digest(path):
-    return hashlib.sha256(path.read_bytes()).hexdigest()
+    value = hashlib.sha256()
+    with path.open('rb') as stream:
+        for block in iter(lambda: stream.read(1024 * 1024), b''): value.update(block)
+    return value.hexdigest()
 
 
 def load_plan():
@@ -98,6 +102,30 @@ def validate_pair(row, output):
     return dict(receipt=receipt.relative_to(output).as_posix(), sha256=digest(receipt))
 
 
+def unlink_readonly_entry(path):
+    """Modern Windows host cleanup: remove this entry, preserving shared attributes."""
+    import ctypes
+    from ctypes import wintypes
+    kernel = ctypes.WinDLL('kernel32', use_last_error=True)
+    kernel.CreateFileW.argtypes = [wintypes.LPCWSTR, wintypes.DWORD, wintypes.DWORD,
+                                  ctypes.c_void_p, wintypes.DWORD, wintypes.DWORD, wintypes.HANDLE]
+    kernel.CreateFileW.restype = wintypes.HANDLE
+    kernel.SetFileInformationByHandle.argtypes = [wintypes.HANDLE, ctypes.c_int, ctypes.c_void_p, wintypes.DWORD]
+    kernel.SetFileInformationByHandle.restype = wintypes.BOOL
+    kernel.CloseHandle.argtypes = [wintypes.HANDLE]
+    kernel.CloseHandle.restype = wintypes.BOOL
+    handle = kernel.CreateFileW(str(path.absolute()), 0x10000, 7, None, 3, 0x00200000, None)
+    if handle == wintypes.HANDLE(-1).value: raise ctypes.WinError(ctypes.get_last_error())
+    try:
+        # DELETE | POSIX_SEMANTICS | IGNORE_READONLY_ATTRIBUTE affects this
+        # directory entry, unlike chmod/SetFileAttributes on shared hardlinks.
+        flags = wintypes.DWORD(0x13)
+        if not kernel.SetFileInformationByHandle(handle, 21, ctypes.byref(flags), ctypes.sizeof(flags)):
+            raise ctypes.WinError(ctypes.get_last_error())
+    finally:
+        kernel.CloseHandle(handle)
+
+
 def remove_owned(path):
     """Unlink reparse points without entering their targets or changing ACLs."""
     info = path.lstat()
@@ -115,6 +143,10 @@ def remove_owned(path):
             path.unlink()
             break
         except OSError as error:
+            if (os.name == 'nt' and getattr(error, 'winerror', None) == 5
+                    and getattr(info, 'st_file_attributes', 0) & 1):
+                unlink_readonly_entry(path)
+                break
             # Chromium's Windows BITS cleanup can briefly hold a file after
             # its process job has closed. Never reset attributes or permissions.
             if getattr(error, 'winerror', None) != 32 or time.monotonic() >= deadline:
@@ -123,17 +155,53 @@ def remove_owned(path):
     return info.st_size
 
 
-def retire_success(output, names):
-    removed = []; size = 0
+def retire_success(output, names, receipt_name='gate-cleanup.json'):
+    if Path(receipt_name).name != receipt_name or not receipt_name.endswith('.json'):
+        raise ValueError('Invalid cleanup receipt name')
+    receipt = output / receipt_name
+    if receipt.exists(): raise ValueError('Cleanup receipt already exists')
+    inventory, observations, assets = [], [], []
+    stem = Path(receipt_name).stem
+    def snapshot(path):
+        info = path.lstat()
+        name = path.relative_to(output).as_posix()
+        if stat.S_ISLNK(info.st_mode) or getattr(info, 'st_file_attributes', 0) & 0x400:
+            inventory.append(dict(path=name, kind='reparse'))
+        elif stat.S_ISDIR(info.st_mode):
+            for child in path.iterdir(): snapshot(child)
+        else:
+            if not stat.S_ISREG(info.st_mode): raise ValueError('Unsupported owned fixture entry')
+            row = dict(path=name, kind='file', bytes=info.st_size, sha256=digest(path))
+            inventory.append(row)
+            if path.suffix.lower() in ['.json', '.jsonl', '.log', '.png', '.zstd']:
+                target = output / (stem + '-observations') / path.relative_to(output)
+                target.parent.mkdir(parents=True, exist_ok=True)
+                if target.exists(): raise ValueError('Observation destination already exists')
+                shutil.copyfile(str(path), str(target))
+                if target.stat().st_size != info.st_size or digest(target) != row['sha256']:
+                    raise ValueError('Preserved cleanup observation differs')
+                observations.append(dict(path=target.relative_to(output).as_posix(),
+                                         bytes=info.st_size, sha256=row['sha256']))
     for name in names:
+        if Path(name).name != name or name in ['.', '..']:
+            raise ValueError('Asset escaped its owner')
         path = output / name
-        if not path.exists() and not path.is_symlink(): continue
+        try: path.lstat()
+        except FileNotFoundError: continue
+        if path.parent.resolve() != output.resolve(): raise ValueError('Asset escaped its owner')
+        snapshot(path); assets.append((name, path))
+    # Save original observations and an exact inventory before deleting any
+    # reconstructible fixture. Failed removals retain both these and the asset.
+    (output / (stem + '-inventory.json')).write_text(json.dumps(inventory, indent=2), encoding='utf-8')
+    (output / (stem + '-preserved.json')).write_text(json.dumps(observations, indent=2), encoding='utf-8')
+    removed = []; size = 0
+    for name, path in assets:
         # output is a fresh owned observer directory, with no remaining process
         # or comparison consumer. Only the plan's declared synthetic roots go.
         if path.parent.resolve() != output.resolve(): raise ValueError('Asset escaped its owner')
         size += remove_owned(path); removed.append(name)
     result = dict(removed=removed, bytes_removed=size)
-    (output / 'gate-cleanup.json').write_text(json.dumps(result, indent=2), encoding='utf-8')
+    receipt.write_text(json.dumps(result, indent=2), encoding='utf-8')
     return result
 
 
@@ -236,6 +304,8 @@ def paired_lane(plan, source, node, browser, output, environment, only=()):
         print(name + ' starting', flush=True)
         executed = execute(command, ROOT, output, name, environment, row['timeout_seconds'])
         receipt = validate_pair(row, destination)
+        if (destination / 'files').exists() and 'files' not in row['disposable_directories']:
+            raise ValueError('Undeclared synthetic files fixture: ' + name)
         cleanup = retire_success(destination, row['disposable_directories'])
         rows.append(dict(script=row['script'], **receipt, seconds=executed['seconds'], cleanup=cleanup))
         print(name + ' passed', flush=True)

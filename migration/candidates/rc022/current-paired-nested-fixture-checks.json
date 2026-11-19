@@ -1,0 +1,43 @@
+{
+  "contract": "C9-GM",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "problem": "Nested files/native construction escaped the earlier exact string-literal inventory; run28 stopped after a successful 184-row credential editor comparison.",
+  "change": "Declare the optional synthetic files root for every one of the 406 fresh owned observer output directories, including helpers and nested path constructors. Existing strict receipt comparison, raw retention, reparse and shared-hardlink safety remain mandatory.",
+  "verification": {
+    "python": {
+      "passed": 67,
+      "seconds": 4.31,
+      "scope": "Paired entry/receipt and actual filesystem cleanup controls, release orchestration, filesystem mutation consumers"
+    },
+    "actual_pair": {
+      "script": "scripts/rc022_credential_editor_probe.py",
+      "observations": 184,
+      "status": "passed",
+      "cleanup": {
+        "removed": [
+          "files"
+        ],
+        "bytes_removed": 30678
+      }
+    }
+  },
+  "cleanup": {
+    "targeted_directories": 9,
+    "bytes_removed": 3167199,
+    "links": 43,
+    "run28_fixture_bytes_removed": 30678,
+    "run28_original_observations_unchanged": true
+  },
+  "unsuccessful_controls": [
+    {
+      "run": "rc022-current-c9gm-nested-fixtures-20261119-01",
+      "reason": "Incorrect test filename; no cases executed"
+    },
+    {
+      "run": "rc022-current-c9gm-nested-fixtures-20261119-02",
+      "reason": "Overbroad gate test module selected accidentally; interrupted after 42 cases to restore targeted scope. No acceptance claimed."
+    }
+  ],
+  "release_acceptance": false,
+  "remaining": "Remaining preparatory paired drivers, then one frozen complete unified qualification."
+}

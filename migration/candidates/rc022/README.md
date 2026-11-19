@@ -145,3 +145,5 @@
 2026-11-15：C4-B [Store 消息解释器所有权](session-projection-store-checks.json)完成 4 组真实 Context/Fiber 配对与 1158 项 Python 定向检查。registerMessageProjection 随调用插件 effect 所有，重复类型拒绝；显式释放/插件卸载撤销同一 borrowed 列表，live/pending/fork/shared-frozen restore 的已用解释器均拒绝继续解释。无关注册撤销不影响存活会话，旧派生快照可读。全部自有合成工作区清理；继续原子批量 append 和 Store 发布准入。
 
 2026-11-15：C4-C [Session 原子批量发布](session-append-checks.json)完成 16 组真实 Context/Store 配对、36 项原版和 1094 项 Python 定向检查。数组 append 在全部数据、surface 和 dispatch 准入后一次入日志，观察者读取最终整批状态，重写/消息投影失败不部分提交；callback 快照、currentBatchPublication、重入拒绝和延迟 detach 覆盖。显式 v4 准备/公告中/公告失败/已移除及旧同名实例拒绝空/普通写入。全部自有合成夹具清理，继续 plugin records 与内建解释器等合同。
+
+2026-11-19：C9-GM [嵌套夹具清理](current-paired-nested-fixture-checks.json)将可选 `files/` 合成根统一声明到 406 个新鲜自有探针输出，覆盖 `files/native` 和共享 helper；不依赖不完整的字符串枚举。凭据编辑 184 组实际配对及 67 项定向检查通过，run28 原始观察未改写、30,678 字节夹具已清理；三次定向调用的 9 个自有目录、3,167,199 字节和 43 个链接已退役。误选文件与中断的过宽测试范围单独保留，不作验收；run28 仍为失败，后续全门禁待执行。

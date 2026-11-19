@@ -42,8 +42,8 @@ async def observe():
 
 def prepare(output):
     global WORKSPACE
-    WORKSPACE = output.parent/'tmp'/'workspace'
-    WORKSPACE.mkdir()
+    WORKSPACE = output/'files'/'workspace'
+    WORKSPACE.mkdir(parents=True)
     path = output/'cases.json'
     path.write_text(json.dumps(dict(cases=cases(), workspace=str(WORKSPACE))), encoding='utf-8')
     return [path]

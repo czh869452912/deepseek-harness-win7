@@ -1,0 +1,73 @@
+{
+  "contract": "C9-GN",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "problem": "Four process-tool-call drivers depended on a shared caller tmp/workspace. The canonical paired module runner supplies an independent output for each driver; confinement failed during preparation before either program launched.",
+  "change": "Each PTC driver creates its own output/files/workspace, which the runner owns and retires after comparison. Sibling drivers do not share a workspace or require a parent tmp convention.",
+  "verification": {
+    "python": [
+      {
+        "passed": 57,
+        "seconds": 8.6,
+        "scope": "Confinement, Windows process ownership and gate controls"
+      },
+      {
+        "passed": 74,
+        "seconds": 8.31,
+        "scope": "Runtime, control, protocol and gate controls including independent preparation and sibling cleanup"
+      }
+    ],
+    "actual_pairs": [
+      {
+        "script": "scripts/rc022_ptc_confinement_probe.py",
+        "observations": 10,
+        "status": "passed",
+        "cleanup": {
+          "removed": [
+            "files"
+          ],
+          "bytes_removed": 3
+        }
+      },
+      {
+        "script": "scripts/rc022_ptc_control_probe.py",
+        "observations": 4,
+        "status": "passed",
+        "cleanup": {
+          "removed": [
+            "files"
+          ],
+          "bytes_removed": 0
+        }
+      },
+      {
+        "script": "scripts/rc022_ptc_protocol_probe.py",
+        "observations": 22,
+        "status": "passed",
+        "cleanup": {
+          "removed": [
+            "files"
+          ],
+          "bytes_removed": 0
+        }
+      },
+      {
+        "script": "scripts/rc022_ptc_runtime_probe.py",
+        "observations": 25,
+        "status": "passed",
+        "cleanup": {
+          "removed": [
+            "files"
+          ],
+          "bytes_removed": 0
+        }
+      }
+    ]
+  },
+  "cleanup": {
+    "targeted_directories": 6,
+    "failed_bootstrap_workspace_removed": true,
+    "failed_bootstrap_bytes": 0
+  },
+  "release_acceptance": false,
+  "remaining": "Remaining preparatory paired drivers and exact stable-candidate unified gate."
+}

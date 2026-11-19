@@ -1,10 +1,12 @@
 """Current gate cannot lose an observer or accept a damaged process receipt."""
 import copy
+import importlib
 import json
 import os
 import subprocess
 import sys
 import stat
+from pathlib import Path
 import pytest
 from scripts import rc022_gate_runner as gate
 
@@ -65,6 +67,25 @@ def test_cleanup_only_retires_declared_owned_assets(tmp_path):
     result = gate.retire_success(tmp_path, ['payload'])
     assert result == dict(removed=['payload'], bytes_removed=5)
     assert observation.read_text(encoding='utf-8') == '{}'
+
+
+def test_ptc_preparations_share_no_caller_workspace(tmp_path, monkeypatch):
+    workspaces = []
+    for kind in ('confinement', 'control', 'protocol', 'runtime'):
+        driver = importlib.import_module('scripts.rc022_ptc_' + kind + '_probe')
+        monkeypatch.setattr(driver, 'WORKSPACE', driver.WORKSPACE)
+        output = tmp_path / kind
+        output.mkdir()
+        inputs = driver.prepare(output)
+        workspace = Path(json.loads(inputs[0].read_text(encoding='utf-8'))['workspace'])
+        assert workspace.is_dir() and output in workspace.parents
+        (workspace / 'owner.txt').write_text(kind, encoding='utf-8')
+        workspaces.append(workspace)
+    assert len(set(workspaces)) == 4 and not (tmp_path / 'tmp').exists()
+    gate.retire_success(tmp_path / 'control', ['files'])
+    assert not workspaces[1].exists()
+    for index in (0, 2, 3):
+        assert (workspaces[index] / 'owner.txt').is_file()
 
 
 def test_cleanup_failure_retains_completed_process_receipt(tmp_path, monkeypatch):

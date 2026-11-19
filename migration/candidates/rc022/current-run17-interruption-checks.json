@@ -1,0 +1,41 @@
+{
+  "contract": "C9-HJ",
+  "candidate": "82cff3eaf1e697bf943cc86906788d1243d55af3",
+  "run": "rc022-unified-20261120-17",
+  "status": "interrupted-without-final-xml-or-exit-receipt",
+  "observed_at": "2026-11-20T07:40:23.570145",
+  "original_reports_unchanged": true,
+  "original_report_sha256": "c76a2abff5133ec137eb1596652519dc6488763cdf2203c190b0b9ec94644dc5",
+  "original_controller_sha256": "1f46ca280cad9ce1c547ac676a91ea17d4467ae5dd4d83a57982ee22d5a7dc9f",
+  "last_log_write": "2026-11-20T06:07:32.799321",
+  "partial_log_markers": {
+    "passed": 4566,
+    "skipped": 1,
+    "failed": 0,
+    "errors": 0,
+    "authoritative_final_counts": false
+  },
+  "cause": "Not established; original gate and pytest processes no longer exist after turn interruption.",
+  "final_inputs_recheck": false,
+  "final_candidate_recheck": false,
+  "release_acceptance": false,
+  "cleanup": {
+    "removed": [
+      "dsh-win7-portable"
+    ],
+    "bytes_removed": 810534481
+  },
+  "retained_archive": {
+    "path": "C:\\Users\\czh86\\Documents\\Codex\\dsh-rc022-qualification\\.goose\\out\\rc022-unified-20261120-17\\build-x64\\dsh-win7-portable-v0.2.2-rc.3-r1.zip",
+    "sha256": "37ce3de22f3d901f053251821f10760f78c7ff1768c79ed597b7cc1a47247294",
+    "bytes": 288740812
+  },
+  "retained_workspace": {
+    "path": "C:\\Users\\czh86\\Documents\\Codex\\dsh-rc022-qualification\\.goose\\out\\rc022-unified-20261120-17\\regression\\pytest-workspace",
+    "original_path": "C:\\Users\\czh86\\AppData\\Local\\Temp\\g-4imz1ze8",
+    "owner": "MIG-RC022-COORDINATION-001",
+    "purpose": "Unfinished regression raw diagnostics retained in full; no final XML.",
+    "review": "After next complete candidate qualification, inventory and preserve needed raw diagnostics before fixture retirement."
+  },
+  "remaining": "A fresh full gate is required; do not resume a partial collection or combine this run with other results."
+}

@@ -63,6 +63,7 @@ def test_current_gate_smokes_and_extracts_the_same_fresh_archive(tmp_path, monke
 
     def regression(python, destination, environment, **kwargs):
         events.append('regression')
+        assert environment['DSH_TEST_X86_PYTHON'] == str(tmp_path / 'python.exe')
         product = Path(environment['DSH_TEST_PORTABLE_ROOT'])
         assert product == output / 'build-x64/dsh-win7-portable'
         assert (product / 'python.exe').read_bytes() == b'x64'

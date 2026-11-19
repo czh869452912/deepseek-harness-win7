@@ -166,6 +166,7 @@ def verify(args, output):
     office = Path(office).resolve()
     environment['DSH_OFFICE_RUNTIME_INPUT_ROOT'] = str(office)
     runtimes, tools = runtime_inputs(args), desktop_tools(args)
+    environment['DSH_TEST_X86_PYTHON'] = str(runtimes['x86'][0] / 'python.exe')
     old_path = os.environ['PATH']; os.environ['PATH'] = environment['PATH']
     report = dict(result='failed', publishable=False, target_upstream=lanes.TARGET, stages={},
         windows7_acceptance=False, installation_acceptance=False,

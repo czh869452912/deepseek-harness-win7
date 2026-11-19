@@ -1,0 +1,18 @@
+{
+  "contract": "C9-GV",
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "problem": "The unified gate accepted and froze an explicit x86 runtime but did not pass it to eight optional x86 regression consumers, so those cases skipped despite the selected input being available.",
+  "change": "Set DSH_TEST_X86_PYTHON from the selected frozen x86 runtime before the complete Python regression. Assert propagation in the existing full-orchestration consumer test.",
+  "verification": {
+    "passed": 60,
+    "skipped": 0,
+    "seconds": 47.68,
+    "scope": "Current release orchestration and actual x86 configuration projection, market JSON/index/repository/search, MCP output, recurrence enumeration and DST/count decisions",
+    "runtime": ".goose/tools/python-3.8.10-win32/python.exe",
+    "run": "rc022-current-c9gv-x86-regression-20261119-01"
+  },
+  "cleanup": {"directories_removed": 3, "bytes_removed": 2403416, "links_removed": 28, "raw_observations_preserved": 9},
+  "failed_run13_final_recheck": {"result": "failed", "candidate_unchanged": true, "inputs_unchanged": true, "seconds": 13255.25, "unpacked_product_bytes_removed": 810534481, "retained": "Exact original de39b505 x64 ZIP, final failure receipt, frozen input manifest and original regression diagnostics"},
+  "release_acceptance": false,
+  "remaining": "Actual x86 product preparation and a new stable-candidate complete gate. No earlier failed or partial run is reused as unified acceptance."
+}

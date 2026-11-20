@@ -16,6 +16,8 @@ def main():
                         help='JSON with lanes [{id,installer,previous?}], using absolute paths')
     parser.add_argument('--node', type=Path, required=True)
     parser.add_argument('--output', type=Path, required=True)
+    parser.add_argument('--current-onboarding', action='store_true',
+                        help='Observe the current account/API-key onboarding and version-5 future-history fixture')
     args = parser.parse_args()
     output = args.output.absolute()
     output.mkdir(parents=True, exist_ok=False)
@@ -60,6 +62,8 @@ def main():
                 command = [str(args.node.absolute()), str(ROOT / 'scripts/oracles/desktop_upgrade_current.mjs'),
                            '--executable', installed['executable'], '--output', str(directory / phase)]
                 command += ['--seed', 'plaintext'] if phase == 'fresh' else ['--home', str(directory / 'fresh/home')]
+                if args.current_onboarding:
+                    command += ['--current-onboarding', 'true']
                 started = time.monotonic()
                 with (directory / (phase + '.log')).open('wb') as log:
                     observed = subprocess.run(command, cwd=str(ROOT), stdout=log, stderr=subprocess.STDOUT, timeout=240)

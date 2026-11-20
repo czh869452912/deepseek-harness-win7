@@ -40,9 +40,9 @@ async function historySnapshot(){
  await walk(join(env.DSH_HOME,'sessions'));return rows.sort((a,b)=>a[0].localeCompare(b[0]));
 }
 if(options.seed==='plaintext'){
- for(const [id,version] of [['desktop-upgrade',0],['newer-history',4]]){
+ for(const [id,version] of [['desktop-upgrade',0],['newer-history',options['current-onboarding']?5:4]]){
   const directory=join(env.DSH_HOME,'sessions','_no-cwd',id);await mkdir(directory,{recursive:true});
-  await writeFile(join(directory,version?'session.v4.jsonl':'session.jsonl'),JSON.stringify({type:'session',version,id,createdAt:1,delegationDepth:0,...(version>=2?{isSeeded:false}:{})})+'\n',{flag:'wx'});
+  await writeFile(join(directory,version?`session.v${version}.jsonl`:'session.jsonl'),JSON.stringify({type:'session',version,id,createdAt:1,delegationDepth:0,...(version>=2?{isSeeded:false}:{})})+'\n',{flag:'wx'});
  }
 }
 const originalHistory=await historySnapshot();
@@ -93,14 +93,19 @@ try{
   await until(()=>cdp.evaluate(`document.readyState==='complete'&&!!document.querySelector('#root')?.children.length&&!!globalThis.__DSH_TRANSPORT__`),'original packaged application');
   enter('onboarding');
   const notice='[role="dialog"][aria-label="Internal Testing Notice"], [role="dialog"][aria-label="内测声明"]';
-  if(!options.home){
+  if(!options.home&&!options['current-onboarding']){
     const point=await until(()=>cdp.evaluate(`(()=>{const button=document.querySelector(${JSON.stringify(notice)})?.querySelector('button');if(!button||button.disabled)return false;const b=button.getBoundingClientRect();return {x:b.x+b.width/2,y:b.y+b.height/2}})()`),'first-use notice');
     await cdp.call('Input.dispatchMouseEvent',{type:'mousePressed',...point,button:'left',clickCount:1});
     await cdp.call('Input.dispatchMouseEvent',{type:'mouseReleased',...point,button:'left',clickCount:1});
     await until(()=>cdp.evaluate(`!document.querySelector(${JSON.stringify(notice)})`),'first-use notice acknowledged');
     report.checks.push('original-first-use-notice-acknowledged');
   }
-  await deferProviderOnboarding(cdp,until,!options['live-provider']);
+  if(options['current-onboarding']){
+   report.currentOnboarding={deferred:await deferProviderOnboarding(cdp,until,false),phase:options.home?'cold':'fresh'};
+   report.checks.push('current-original-onboarding-interactive-without-credentials');
+  }else{
+   await deferProviderOnboarding(cdp,until,!options['live-provider']);
+  }
   report.renderer=await cdp.evaluate(`({url:location.href,node:typeof process,require:typeof require,transport:window.__DSH_TRANSPORT__?.ownsHost,text:document.body.innerText.slice(0,4000)})`);
   assert.equal(report.renderer.node,'undefined');assert.equal(report.renderer.require,'undefined');
   assert.equal(report.renderer.transport,true);report.checks.push('original-packaged-renderer-without-node');

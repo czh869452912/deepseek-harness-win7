@@ -1,5 +1,7 @@
 # 持续对齐记录
 
+2026-11-20：已发布独立 [rc022 Pre-release](https://github.com/czh869452912/deepseek-harness-win7/releases/tag/rc022-preview-20261120)，标签指向原完整验收候选`779b0b88`；双架构Portable/Standard及完整证据等8个附件的远端尺寸、SHA-256和公开入口均核对通过，原稳定版保持。使用精确原产品，未重建；当前Windows范围与Win7等未新增验收范围见[发布说明](../docs/releases/rc022-preview-20261120.md)和[回执](../docs/releases/rc022-preview-20261120.json)。
+
 最终[资产与进程审计](candidates/rc022/current-final-cleanup-checks.json)记录本轮约5.35GB清理，以及已归档/已结束中间目录的补充退役；保留资产的用途和复查点、此前策略拒绝删除的例外单独列明。
 
 2026-11-20 C9-HM：**rc022 C1–C9 已完成约定的当前 Windows 对齐与验收。** 干净候选 `779b0b88` 的一次新鲜完整门禁通过：Python 22,660通过/26跳过，全部15组固定 Source（12,272通过/33 pending，原版两份 Windows 排除单独记录）、406个实际配对驱动、x64/x86 实际解压 Portable 的 SDK/Office/元数据/原版现代及108浏览器和应用冷恢复，以及两架构 Standard Desktop 各9项管道预检/6项实际 Electron 界面检查。最终候选和冻结输入均一致；[精确资格](candidates/rc022/current-unified-qualification-checks.json)及[正式回执](evidence/RUN-RC022-QUALIFICATION-20261120-779B0B88.json)绑定四份原始产品和完整原始证据的外部归档。本轮已用合成夹具和解压/构建副本及时退役；历史失败保持独立身份。范围为当前 Windows 与 Electron22 私有 v3 适配器；Win7 真机/客体、管理员安装/AIO维护、完整原版 Electron44/v4 外壳及真实付费 provider 未新增认证，`accepted_upstream`仍为null，未推送或发布。

@@ -1,0 +1,81 @@
+{
+  "status": "published-complete",
+  "url": "https://github.com/czh869452912/deepseek-harness-win7/releases/tag/rc022-preview-20261120",
+  "tag": "rc022-preview-20261120",
+  "candidate": "779b0b8835aeb97db438210669037c86c8eb21bd",
+  "release_id": 452869229,
+  "prerelease": true,
+  "published_at": "2026-11-20T15:46:36Z",
+  "assets": [
+    {
+      "name": "dsh-win7-portable-v0.2.2-rc.3-r1.zip",
+      "id": 772348097,
+      "bytes": 288740811,
+      "sha256": "46e04df6b17036c08018e00b964df843b79a2505820dc216ecc82d2c7d0762c3",
+      "url": "https://github.com/czh869452912/deepseek-harness-win7/releases/download/rc022-preview-20261120/dsh-win7-portable-v0.2.2-rc.3-r1.zip",
+      "public_download_head_verified": true
+    },
+    {
+      "name": "dsh-desktop-standard-setup-v0.2.2-rc.3-r1-x64.exe",
+      "id": 772357828,
+      "bytes": 253211798,
+      "sha256": "fec3e8301434a81318f96398efc90fccc4b2086a2e0619507b284a1812db7a55",
+      "url": "https://github.com/czh869452912/deepseek-harness-win7/releases/download/rc022-preview-20261120/dsh-desktop-standard-setup-v0.2.2-rc.3-r1-x64.exe",
+      "public_download_head_verified": true
+    },
+    {
+      "name": "dsh-win7-portable-v0.2.2-rc.3-r1-x86.zip",
+      "id": 772360428,
+      "bytes": 271212302,
+      "sha256": "e33c77ba31c813aa7596befa45ab00aff05efd36282e3065cee91ed6481b32e1",
+      "url": "https://github.com/czh869452912/deepseek-harness-win7/releases/download/rc022-preview-20261120/dsh-win7-portable-v0.2.2-rc.3-r1-x86.zip",
+      "public_download_head_verified": true
+    },
+    {
+      "name": "dsh-desktop-standard-setup-v0.2.2-rc.3-r1-x86.exe",
+      "id": 772363669,
+      "bytes": 239734570,
+      "sha256": "7ba05ee881622416d641d9afe05dc73f3dc153918235396bf9d364b054f202b4",
+      "url": "https://github.com/czh869452912/deepseek-harness-win7/releases/download/rc022-preview-20261120/dsh-desktop-standard-setup-v0.2.2-rc.3-r1-x86.exe",
+      "public_download_head_verified": true
+    },
+    {
+      "name": "RC022-QUALIFICATION-20261120-779B0B88.zip",
+      "id": 772367574,
+      "bytes": 1130491299,
+      "sha256": "24b7bc9797e0d312f3e3f9fefaa8ef4d671744c2f9a84e648604f9092caa41d2",
+      "url": "https://github.com/czh869452912/deepseek-harness-win7/releases/download/rc022-preview-20261120/RC022-QUALIFICATION-20261120-779B0B88.zip",
+      "public_download_head_verified": true
+    },
+    {
+      "name": "release-verification.json",
+      "id": 772378733,
+      "bytes": 227008,
+      "sha256": "739991d24ed891449fbe2d0d5b15f90b55502a5cd4e95c0639b27471ffd1feb1",
+      "url": "https://github.com/czh869452912/deepseek-harness-win7/releases/download/rc022-preview-20261120/release-verification.json",
+      "public_download_verified": true
+    },
+    {
+      "name": "release-manifest.json",
+      "id": 772379240,
+      "bytes": 2318,
+      "sha256": "229d01f2b6200c67486946bad34a3a86f354b113507021301a1438b049d2ca21",
+      "url": "https://github.com/czh869452912/deepseek-harness-win7/releases/download/rc022-preview-20261120/release-manifest.json",
+      "public_download_verified": true
+    },
+    {
+      "name": "SHA256SUMS.txt",
+      "id": 772379699,
+      "bytes": 737,
+      "sha256": "e1297e7ef4a11fa1387bcf29cc827d83afd21292399a535c372d00f72f591c1d",
+      "url": "https://github.com/czh869452912/deepseek-harness-win7/releases/download/rc022-preview-20261120/SHA256SUMS.txt",
+      "public_download_verified": true
+    }
+  ],
+  "all_remote_asset_sizes_and_sha256_match": true,
+  "public_unauthenticated_api_page_and_assets_verified": true,
+  "latest_stable_release": "v0.1.5-rc.3-r3",
+  "product_rebuilt": false,
+  "qualification_evidence_id": "RUN-RC022-QUALIFICATION-20261120-779B0B88",
+  "scope": "Current Windows x64/x86 Portable and Standard Desktop Electron22 adapter; no new Win7/admin/AIO/fullElectron44/paid-provider qualification."
+}

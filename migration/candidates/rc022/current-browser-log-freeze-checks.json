@@ -1,0 +1,70 @@
+{
+  "contract": "C9-HL",
+  "candidate": "6c89f6d274f3a245636700c166ea31f927acb8bc",
+  "run": "rc022-unified-20261120-18",
+  "status": "failed-final-input-comparison",
+  "original_report_sha256": "05f65608adde542d8600bd6f21543af4fa3a10a6ec49d576d3bdfdae122833b8",
+  "seconds": 14383.734,
+  "completed_stages": [
+    "build-x64",
+    "regression",
+    "source",
+    "paired",
+    "extracted-x64",
+    "desktop-x64",
+    "extracted-x86",
+    "desktop-x86"
+  ],
+  "python": {
+    "passed": 22658,
+    "skipped": 26,
+    "failed": 0,
+    "errors": 0,
+    "seconds": 6853.569
+  },
+  "source": {
+    "batches": 15,
+    "planned_files": 476,
+    "executed_files": 474,
+    "passed": 12272,
+    "pending": 33
+  },
+  "paired_drivers": 406,
+  "both_extracted_passed": true,
+  "both_desktop_9pipe_6browser_passed": true,
+  "complete_independent_input_reread_changes": [
+    {
+      "path": "/observer_support/files/C:\\Users\\czh86\\Documents\\Codex\\deepseek-harness-win7\\.goose\\tools\\chromium-1058931\\chrome-win\\debug.log",
+      "before": "a593b1f7768b839bec5e215363916cae878b5636f986ba484cbc95844976eef9",
+      "after": "cc8b3d5ce64df8909d81bbe7a80e05c2e9cfc8c21c289215a00a5ec751aab1c4"
+    }
+  ],
+  "fix": "Only selected browser root debug.log is classified as generated observation; preserve raw before/after bytes and hashes. All other runtime bytes, nested debug.log and links remain strict.",
+  "targeted": {
+    "command": ".venv/Scripts/python.exe -m pytest tests/test_current_release_orchestration.py tests/test_qualification_inputs.py -q --basetemp=.goose/out/t-browser-freeze87 --junitxml=.goose/out/rc022-browser-freeze-20261120-87.xml",
+    "passed": 33,
+    "seconds": 2.83,
+    "exit_code": 0
+  },
+  "actual_GPU_negative_positive": {
+    "path": ".goose/out/rc022-browser-freeze-20261120-88/report.json",
+    "status": "passed",
+    "runtime_identity_unchanged": true,
+    "raw_log_preserved": true
+  },
+  "earlier_diagnostics": "81/82 negative controls did not write logs;83/84/85 show env/stderr/log-file ineffective for GPU default debug.log. These failed probes retain their original outcomes.",
+  "cleanup": {
+    "regression_bytes": 1925216887,
+    "desktop_x64_bytes": 976279891,
+    "desktop_x86_bytes": 883605749,
+    "disposable_probe_bytes": 1402890388,
+    "targeted_bytes": 9777,
+    "both_portable_build_copies_removed": true
+  },
+  "retained_products": "Both exact Portable ZIPs and Standard installers remain original run18 bytes, together with all raw observations and input manifests.",
+  "retained_owner": "MIG-RC022-COORDINATION-001",
+  "retained_purpose": "Independent final-input failure diagnostics and exact original products.",
+  "retained_review": "Next complete qualification and storage review by 2026-11-26; never delete only verified raw bytes.",
+  "release_acceptance": false,
+  "remaining": "Commit fix and start one clean fresh full qualification. No relabel or partial-result combination."
+}

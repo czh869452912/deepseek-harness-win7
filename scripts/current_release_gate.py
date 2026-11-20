@@ -65,6 +65,37 @@ def installed_node_identity(source, node):
             if item['files'] % 20000 == 0 else None)
 
 
+def browser_support_identity(observers, browsers):
+    value = tree_identity(observers, [path.resolve() for path in observers])
+    outputs = sorted(str(path.parent.resolve() / 'debug.log') for path in browsers)
+    for path in outputs:
+        # Chromium GPU diagnostics are generated observations, not runtime code.
+        # Only this exact root file is classified; nested logs and all binaries
+        # retain their ordinary byte identities. Never accept a linked output.
+        log = Path(path)
+        if str(log) in value['links'] or str(log) in value['missing_links']:
+            raise ValueError('Linked browser diagnostic output is not permitted')
+        value['files'].pop(path, None)
+    value['generated_observation_files'] = outputs
+    return value
+
+
+def capture_browser_diagnostics(browsers, output, phase):
+    rows = []
+    for index, browser in enumerate(browsers):
+        log = browser.parent / 'debug.log'
+        if log.is_symlink() or (log.exists() and getattr(log.lstat(), 'st_file_attributes', 0) & 0x400):
+            raise ValueError('Linked browser diagnostic output is not permitted')
+        if log.exists():
+            target = output / ('browser-' + str(index) + '-' + phase + '-debug.log')
+            raw = log.read_bytes()
+            target.write_bytes(raw)
+            rows.append(dict(source=str(log), observation=target.name,
+                             bytes=len(raw), sha256=lanes.digest(target)))
+    (output / ('browser-diagnostics-' + phase + '.json')).write_text(
+        json.dumps(rows, indent=2), encoding='utf-8')
+
+
 def freeze(source, node, browsers, office, runtimes, tools, source_test_node):
     value = lanes.input_identity(source, node)
     # Check copy inputs before traversing the much larger installed Node graph.
@@ -83,7 +114,7 @@ def freeze(source, node, browsers, office, runtimes, tools, source_test_node):
         ROOT / '.goose/tools/electron-44.0.0-win32-x64/runtime',
         ROOT / '.goose/tools/node-22.22.2',
     ]
-    value['observer_support'] = tree_identity(observers, [path.resolve() for path in observers])
+    value['observer_support'] = browser_support_identity(observers, browsers)
     value['source_test_runtime'] = tree_identity([source_test_node.parent], [source_test_node.parent])
     return value
 
@@ -182,6 +213,7 @@ def verify(args, output):
         test_node = lanes.source_test_runtime(plan, getattr(args, 'source_test_node', None))
         selected = candidate(source, node, args.allow_dirty); report.update(selected)
         print('Freezing actual prepared dependencies and build runtimes', flush=True)
+        capture_browser_diagnostics([browser, browser108], output, 'before')
         before = freeze(source, node, [browser, browser108], office, runtimes, tools, test_node)
         inputs = output / 'inputs.json'; inputs.write_text(json.dumps(before, indent=2), encoding='utf-8')
         report.update(input_manifest_sha256=lanes.digest(inputs), plan_sha256=lanes.digest(lanes.PLAN))
@@ -234,6 +266,7 @@ def verify(args, output):
     finally:
         try:
             if before is not None:
+                capture_browser_diagnostics([browser, browser108], output, 'after')
                 print('Rechecking frozen dependency bytes', flush=True)
                 report['inputs_unchanged'] = before == freeze(source, node, [browser, browser108], office, runtimes, tools, test_node)
                 report['candidate_unchanged'] = candidate(source, node, True) == selected

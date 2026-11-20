@@ -10,6 +10,42 @@ from scripts import current_release_gate as gate
 from scripts import verify_release
 
 
+def test_browser_generated_diagnostics_preserved_without_masking_runtime_changes(tmp_path):
+    runtime = tmp_path / 'browser'; runtime.mkdir()
+    browser = runtime / 'chrome.exe'; browser.write_bytes(b'pinned browser')
+    library = runtime / 'runtime.dll'; library.write_bytes(b'pinned library')
+    nested = runtime / 'nested'; nested.mkdir()
+    nested_log = nested / 'debug.log'; nested_log.write_bytes(b'input')
+    output = tmp_path / 'observations'; output.mkdir()
+    before = gate.browser_support_identity([runtime], [browser])
+    log = runtime / 'debug.log'; log.write_bytes(b'GPU diagnostic\r\n')
+    assert gate.browser_support_identity([runtime], [browser]) == before
+    gate.capture_browser_diagnostics([browser], output, 'after')
+    assert (output / 'browser-0-after-debug.log').read_bytes() == log.read_bytes()
+    receipt = json.loads((output / 'browser-diagnostics-after.json').read_text(encoding='utf-8'))
+    assert receipt[0]['sha256'] == gate.lanes.digest(log)
+    for path in [browser, library, nested_log]:
+        original = path.read_bytes(); path.write_bytes(b'changed')
+        assert gate.browser_support_identity([runtime], [browser]) != before
+        path.write_bytes(original)
+    log.unlink()
+    assert gate.browser_support_identity([runtime], [browser]) == before
+
+
+def test_browser_diagnostic_link_cannot_escape_input_validation(tmp_path):
+    runtime = tmp_path / 'browser'; runtime.mkdir()
+    browser = runtime / 'chrome.exe'; browser.write_bytes(b'browser')
+    target = runtime / 'real.log'; target.write_bytes(b'data')
+    link = runtime / 'debug.log'; link.symlink_to(target)
+    try:
+        with pytest.raises(ValueError, match='Linked browser diagnostic'):
+            gate.browser_support_identity([runtime], [browser])
+        with pytest.raises(ValueError, match='Linked browser diagnostic'):
+            gate.capture_browser_diagnostics([browser], tmp_path, 'after')
+    finally:
+        link.unlink()
+
+
 def test_current_cli_routes_to_current_qualification(tmp_path, monkeypatch):
     received = []
     def verify(args, output):

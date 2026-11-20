@@ -2,7 +2,7 @@
   "id": "MIG-RC022-COORDINATION-001",
   "goal": "完成 rc022 C1-C9 实际合同和协调安装切换",
   "kind": "implementation",
-  "state": "running",
+  "state": "integrated",
   "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
   "base_product": "32d656acbc6d69b7a9a1ff02dc45a132e2ed64e9",
   "owner": "current-session-coordinator",
@@ -21,11 +21,17 @@
     "migration",
     "tests"
   ],
-  "evidence_ids": [],
-  "open_findings": [
-    "Unified current Source gate/SDK consumers and extracted candidate qualification remain pending.",
-    "Actual Windows 7 requalification is not established by current Windows observations."
+  "evidence_ids": [
+    "RUN-RC022-QUALIFICATION-20261120-779B0B88"
   ],
-  "next_action": "Finish current entrypoint and gate-consumer adaptation, qualify stable candidate, preserve deferred platform scope.",
-  "conflicts_with": []
+  "open_findings": [],
+  "next_action": "Maintain this exact bounded current Windows qualification; Win7, administrator/AIO installation, full upstream Electron44 shell and paid-provider work require their own evidence.",
+  "conflicts_with": [],
+  "candidate_commit": "779b0b8835aeb97db438210669037c86c8eb21bd",
+  "integrated_commit": "779b0b8835aeb97db438210669037c86c8eb21bd",
+  "deferred_scope": [
+    "No current Win7 physical/guest OS, administrator installation or AIO servicing/reboot qualification.",
+    "Electron22 private v3 adapter running current canonical Python services and unchanged Web frontend; not the complete upstream Electron44/v4 shell.",
+    "Finite actual Source/native contracts and named application journeys; no arbitrary plugin ABI or paid-provider certification."
+  ]
 }

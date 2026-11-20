@@ -1,18 +1,18 @@
 {
   "schema_version": 1,
-  "product_commit": "32d656acbc6d69b7a9a1ff02dc45a132e2ed64e9",
+  "product_commit": "779b0b8835aeb97db438210669037c86c8eb21bd",
   "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
   "accepted_upstream": null,
   "observed_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
-  "recorded_at": "2026-11-18",
-  "scope": "Coordinated rc022 development input switch. Targeted contracts exist; new unified candidate/release and Windows 7 qualification are not established.",
+  "recorded_at": "2026-11-20",
+  "scope": "Qualified rc022 C1-C9 bounded current Windows candidate: one fresh unified complete Python/Source/paired gate and actual x64/x86 Portable/Standard Desktop. Original upstream frontend retained; accepted_upstream remains unestablished.",
   "platform_validation": {
-    "python38": "targeted-only-unified-pending",
+    "python38": "complete-unified-current-windows-passed",
     "win7": "not-requalified-for-rc022",
-    "portable": "new-archive-not-qualified",
+    "portable": "exact-x64-x86-extracted-current-windows-qualified",
     "real_provider": "not-requalified-for-rc022",
     "browser_on_win7": "not-requalified-for-rc022",
-    "desktop": "not-requalified-for-rc022"
+    "desktop": "x64-x86-standard-packaged-current-windows-qualified-with-electron22-adapter"
   },
   "previous_baseline": "migration/candidates/rc022/previous-baseline.json",
   "historical_qualifications": [
@@ -42,5 +42,11 @@
         }
       ]
     }
-  ]
+  ],
+  "current_qualification": {
+    "evidence_id": "RUN-RC022-QUALIFICATION-20261120-779B0B88",
+    "product_commit": "779b0b8835aeb97db438210669037c86c8eb21bd",
+    "artifact": "migration/evidence/artifacts/RC022-QUALIFICATION-20261120-779B0B88.zip",
+    "archive_sha256": "24b7bc9797e0d312f3e3f9fefaa8ef4d671744c2f9a84e648604f9092caa41d2"
+  }
 }

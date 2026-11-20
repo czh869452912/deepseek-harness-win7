@@ -1,0 +1,770 @@
+{
+  "contract": "C9-HM-cleanup",
+  "candidate": "779b0b8835aeb97db438210669037c86c8eb21bd",
+  "formal_archive": {
+    "path": "migration/evidence/artifacts/RC022-QUALIFICATION-20261120-779B0B88.zip",
+    "external_path": "C:\\Users\\czh86\\Documents\\Codex\\deepseek-harness-win7-evidence\\migration\\evidence\\artifacts\\RC022-QUALIFICATION-20261120-779B0B88.zip",
+    "bytes": 1130491299,
+    "sha256": "24b7bc9797e0d312f3e3f9fefaa8ef4d671744c2f9a84e648604f9092caa41d2",
+    "verified_regular_members": 29709,
+    "opaque_links": 1348,
+    "candidate": "779b0b8835aeb97db438210669037c86c8eb21bd",
+    "reports_only": false,
+    "all_archive_member_crc_sha_and_original_bytes_verified": true
+  },
+  "current_run": {
+    "pair_roster": 406,
+    "declared_fixture_roots_absent": 2838,
+    "command_workspaces_absent": 427,
+    "no_current_test_processes": true,
+    "regression_and_both_extract_desktop_portable_workspaces_absent": true,
+    "cleanup_receipt_bytes": 5354028401
+  },
+  "extra_current_archived_input_cleanup": {
+    "status": "retired",
+    "archive": "migration/evidence/artifacts/RC022-QUALIFICATION-20261120-779B0B88.zip",
+    "archive_sha256": "24b7bc9797e0d312f3e3f9fefaa8ef4d671744c2f9a84e648604f9092caa41d2",
+    "rows": [
+      {
+        "path": "regression/historical-domain-models",
+        "members": [
+          {
+            "member": "regression/historical-domain-models/agent-dependencies.json",
+            "bytes": 575,
+            "sha256": "8f69552cea87d95a169ac27a587258f064e0fc83a4d59183bf1850c41f24513e"
+          },
+          {
+            "member": "regression/historical-domain-models/ask-user.json",
+            "bytes": 555,
+            "sha256": "bfeb339a4ae04b38a1c03c710ade418c6dca024ea22a1b7ddb7e6c6e9956ae3b"
+          },
+          {
+            "member": "regression/historical-domain-models/canonical-llm.json",
+            "bytes": 334,
+            "sha256": "0df279060fb4ca67ccaec136eba23bab3c28a7e8f536e3087689e9d91ad8f934"
+          },
+          {
+            "member": "regression/historical-domain-models/deepseek-capture.json",
+            "bytes": 337,
+            "sha256": "8ee6ee44dbd5f92ea5d1eccc72023777144b6f5689a326a147c47eff5fd1a7b4"
+          },
+          {
+            "member": "regression/historical-domain-models/deepseek-error.json",
+            "bytes": 335,
+            "sha256": "4fbbbb02eef54b9ea6851938786646a3567db8b3b47528f3ff869666b25ed8c7"
+          },
+          {
+            "member": "regression/historical-domain-models/javascript-errors.json",
+            "bytes": 338,
+            "sha256": "1d459b193bbd92c1382bce70799ea91f9b44263d817a8ff40ffd8bee52d840fe"
+          },
+          {
+            "member": "regression/historical-domain-models/javascript-initial.json",
+            "bytes": 339,
+            "sha256": "d6484159f351818fcea858e6aa1a944eaf0a2d2c9d961176df23b861842961c3"
+          },
+          {
+            "member": "regression/historical-domain-models/javascript-ready.json",
+            "bytes": 337,
+            "sha256": "c903707288058a7b872e22cefa29cba6f305e584b13b00c7b9c0211d8857564f"
+          },
+          {
+            "member": "regression/historical-domain-models/llm-config.json",
+            "bytes": 331,
+            "sha256": "4ce6ffed8e3689c7df28021678179c8f9f245b04613a06e5733eb697e1fc7d99"
+          },
+          {
+            "member": "regression/historical-domain-models/llm-metadata.json",
+            "bytes": 333,
+            "sha256": "e0d88254798cbe6bc9b87f3e8e5e0584a9fa6206ddb3e0152c80970d92a04f39"
+          },
+          {
+            "member": "regression/historical-domain-models/llm-prepared.json",
+            "bytes": 333,
+            "sha256": "972be9c1e1fdbcf20fbe1130406ae81257200bbd0999f3b51f2e9363b3aa9267"
+          },
+          {
+            "member": "regression/historical-domain-models/message-values.json",
+            "bytes": 868,
+            "sha256": "4a1647bf057765d9a864f4342b30a2f57e1a320c163876c14bcaa1919191a11b"
+          },
+          {
+            "member": "regression/historical-domain-models/persistence-read.json",
+            "bytes": 337,
+            "sha256": "b0cb1c3fa7cda50729184cc9046b272c1f4f7e4753b25ed63e85d471dacb0b8a"
+          },
+          {
+            "member": "regression/historical-domain-models/runtime-context.json",
+            "bytes": 336,
+            "sha256": "c062ff55a39c62025da06c85dbe3cabf46551b23565e216690d505e6921e7fe7"
+          },
+          {
+            "member": "regression/historical-domain-models/runtime-full-request.json",
+            "bytes": 341,
+            "sha256": "d2f1723e67781fa8ee1bb21ecd2a7f3cb9e9870471bfe376401e3b58e8aa18dd"
+          },
+          {
+            "member": "regression/historical-domain-models/session-diagnostic.json",
+            "bytes": 339,
+            "sha256": "7a541d05372f743f5801f39b8c74cdf998326110be79941d819888b4ae2ac8e4"
+          },
+          {
+            "member": "regression/historical-domain-models/session-number.json",
+            "bytes": 335,
+            "sha256": "a1b461a0e96e459fdb6540fe5c578d835498f85f184a5cf08575b2fc6a431b52"
+          },
+          {
+            "member": "regression/historical-domain-models/session-restore-sign.json",
+            "bytes": 341,
+            "sha256": "c1f284a7c18df01a19a463459c9756c1d20e80191bf1ec9fe157dbcf779e9ea6"
+          },
+          {
+            "member": "regression/historical-domain-models/subagent-model.json",
+            "bytes": 567,
+            "sha256": "800ff91cf1754623c2ee3a2263932091cfa70cd797cb9eb7b17ca71f36692147"
+          },
+          {
+            "member": "regression/historical-domain-models/tool-durable.json",
+            "bytes": 563,
+            "sha256": "b204621bd83e8ac6fd261b8d1e0b971e3d907f4c2ef821294436f14ccc8d4760"
+          },
+          {
+            "member": "regression/historical-domain-models/tool-errors.json",
+            "bytes": 561,
+            "sha256": "9597984ac509401f93155287f2e8b11c1fe11eecafe09dc4f6f89e0220ed041d"
+          },
+          {
+            "member": "regression/historical-domain-models/unicode-carrier.json",
+            "bytes": 569,
+            "sha256": "b9ff161755c3ccad50502e8c5b493e45e52a8ac2ac44a0d82d9f52a6fdb84176"
+          }
+        ],
+        "bytes_removed": 9304
+      },
+      {
+        "path": "regression/parser-fixtures",
+        "members": [
+          {
+            "member": "regression/parser-fixtures/agent-dependencies/command.json",
+            "bytes": 522,
+            "sha256": "9cd1a1390bfda59ad862ade3dbeae5f2a1a7fb28ea5bbeb14b2001274ca44cc8"
+          },
+          {
+            "member": "regression/parser-fixtures/agent-dependencies/native.json",
+            "bytes": 27558,
+            "sha256": "ac6bf7577ed2ff1108cd0cad62159a4fee0457c5eea8a59e029d736c60219762"
+          },
+          {
+            "member": "regression/parser-fixtures/agent-dependencies/native.log",
+            "bytes": 0,
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          },
+          {
+            "member": "regression/parser-fixtures/agent-dependencies/synthetic-model.json",
+            "bytes": 460,
+            "sha256": "2487b9002211d6939b5413a1d58042ca332908c7fdad4cd55c883dfcbb481320"
+          },
+          {
+            "member": "regression/parser-fixtures/ask-user/command.json",
+            "bytes": 512,
+            "sha256": "96a050509f4e6feadd476cc4f518f85507c0e579dd601df47d68326595e75ecc"
+          },
+          {
+            "member": "regression/parser-fixtures/ask-user/native.json",
+            "bytes": 28432,
+            "sha256": "4845b87ee9d77566476be10e61a869a5939900b65444db9bd1742c97aad65f19"
+          },
+          {
+            "member": "regression/parser-fixtures/ask-user/native.log",
+            "bytes": 0,
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          },
+          {
+            "member": "regression/parser-fixtures/ask-user/synthetic-model.json",
+            "bytes": 440,
+            "sha256": "53b8860ecdbcf4902897a709f96f294d0c76affab518612a51346f373a47a6de"
+          },
+          {
+            "member": "regression/parser-fixtures/canonical-llm/command.json",
+            "bytes": 517,
+            "sha256": "1612f5551d4b30f7ae91df1b6e1a2dcf529d22b5fc40365029a77700fbd4e0cb"
+          },
+          {
+            "member": "regression/parser-fixtures/canonical-llm/native.json",
+            "bytes": 332619,
+            "sha256": "32bcd2f803e0ec9ea2ad00d8478bdc7291f58f3d57bcacc55a0078d8db3187e4"
+          },
+          {
+            "member": "regression/parser-fixtures/canonical-llm/native.log",
+            "bytes": 0,
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          },
+          {
+            "member": "regression/parser-fixtures/capabilities/command.json",
+            "bytes": 665,
+            "sha256": "949eb55a42ae59304f5b67e7aa6cf0eda7b71bf4d40d87a8812cc3c3483f205f"
+          },
+          {
+            "member": "regression/parser-fixtures/capabilities/native.json",
+            "bytes": 453198,
+            "sha256": "0c60e9178afb81ec1cd4f6bba2f42bae5d3f75034f0ec097a56ea2780c8bb936"
+          },
+          {
+            "member": "regression/parser-fixtures/capabilities/native.log",
+            "bytes": 0,
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          },
+          {
+            "member": "regression/parser-fixtures/deepseek-capture/command.json",
+            "bytes": 621,
+            "sha256": "6ad95b23d475831de447aaa00d78cbbe9c71458639e5a9850119b3477dfd1d16"
+          },
+          {
+            "member": "regression/parser-fixtures/deepseek-capture/native.json",
+            "bytes": 113089,
+            "sha256": "6934518e84e2584ce0de579ea17cbbdf9181291140f67ed4f5095700109fc639"
+          },
+          {
+            "member": "regression/parser-fixtures/deepseek-capture/native.log",
+            "bytes": 338,
+            "sha256": "7efd80e34d12bc6ba98d339accf28a198a0a4c6b2c2a28a4dc55cd9b61183b65"
+          },
+          {
+            "member": "regression/parser-fixtures/deepseek-error/command.json",
+            "bytes": 518,
+            "sha256": "f99753c39c9b2fb14874cc6065fcdf2c21be5bc6b5eea6cf806232fa316640a8"
+          },
+          {
+            "member": "regression/parser-fixtures/deepseek-error/native.json",
+            "bytes": 46968,
+            "sha256": "39e6cb35ada559d057e6fd41b7aa9439315f5cf78c2909be6b741283c32e0669"
+          },
+          {
+            "member": "regression/parser-fixtures/deepseek-error/native.log",
+            "bytes": 0,
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          },
+          {
+            "member": "regression/parser-fixtures/fs-values/synthetic-model.json",
+            "bytes": 170,
+            "sha256": "c1ca85f659a924875761c002dcd9bfd83a9968878517fb869a455ff23c131771"
+          },
+          {
+            "member": "regression/parser-fixtures/http-redirect/command.json",
+            "bytes": 517,
+            "sha256": "9030959bb52e55024257e71172563324c6db5db77821a138b5ac9dee06303e05"
+          },
+          {
+            "member": "regression/parser-fixtures/http-redirect/native.json",
+            "bytes": 106968,
+            "sha256": "d6d5f90fab077f02378d42bb6d7f96528fcc5d6748d467df804aaea4ba0d753f"
+          },
+          {
+            "member": "regression/parser-fixtures/http-redirect/native.log",
+            "bytes": 0,
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          },
+          {
+            "member": "regression/parser-fixtures/javascript-errors/command.json",
+            "bytes": 521,
+            "sha256": "f70504d8ad1152bf4d1f861ce80806feb0ce1464b355831aff8f27be2b462e10"
+          },
+          {
+            "member": "regression/parser-fixtures/javascript-errors/native.json",
+            "bytes": 82846,
+            "sha256": "3e20192689fd8f6f9b4fc61c41a817d443047f0e5b040590f5af6ecec025371a"
+          },
+          {
+            "member": "regression/parser-fixtures/javascript-errors/native.log",
+            "bytes": 0,
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          },
+          {
+            "member": "regression/parser-fixtures/javascript-errors/synthetic-model.json",
+            "bytes": 219,
+            "sha256": "f41f5931d0db0bf43b527940001d5a6b9de3b14d0ee8d0bf9b2ef2287d333962"
+          },
+          {
+            "member": "regression/parser-fixtures/javascript-initial/command.json",
+            "bytes": 522,
+            "sha256": "9ae47f59f728159ecd4d46daf3d826e4e471f3624cc38337b0f6abecee8c803e"
+          },
+          {
+            "member": "regression/parser-fixtures/javascript-initial/native.json",
+            "bytes": 20020,
+            "sha256": "616ebd854ab1c61424b193606c4373ed293b56a66740f414174151a1d8b3b270"
+          },
+          {
+            "member": "regression/parser-fixtures/javascript-initial/native.log",
+            "bytes": 0,
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          },
+          {
+            "member": "regression/parser-fixtures/javascript-ready/command.json",
+            "bytes": 520,
+            "sha256": "a283f89632f9f20392b6d309907cbaacde18b3d0b5bbf746fd2c531bad0f24e9"
+          },
+          {
+            "member": "regression/parser-fixtures/javascript-ready/native.json",
+            "bytes": 19959,
+            "sha256": "1a60208c9e39b52b3eae727cb3e200026433f0c429ee90dc3af2681d7c6166bd"
+          },
+          {
+            "member": "regression/parser-fixtures/javascript-ready/native.log",
+            "bytes": 0,
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          },
+          {
+            "member": "regression/parser-fixtures/javascript-workflow/command.json",
+            "bytes": 657,
+            "sha256": "f0c78a91df816194a18e6730e6977351f5a27ff0ba5cbfd8ef6d62964213efe0"
+          },
+          {
+            "member": "regression/parser-fixtures/javascript-workflow/native.json",
+            "bytes": 52613,
+            "sha256": "bc4ccc916c4d97abf6af805ba800fe7122711b5810869138242e59fd453c14b9"
+          },
+          {
+            "member": "regression/parser-fixtures/javascript-workflow/native.log",
+            "bytes": 0,
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          },
+          {
+            "member": "regression/parser-fixtures/jsonl-sharing/command.json",
+            "bytes": 517,
+            "sha256": "6ae4fd0681c42224f19f40630a83e99d0bcaa5cf147de6ea22cae960cb9d876e"
+          },
+          {
+            "member": "regression/parser-fixtures/jsonl-sharing/native.json",
+            "bytes": 23070,
+            "sha256": "0bd352e39ebc9d3ac24ba9e2f75a7d082e29fdce2ac3041a17b15d17f97928ec"
+          },
+          {
+            "member": "regression/parser-fixtures/jsonl-sharing/native.log",
+            "bytes": 0,
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          },
+          {
+            "member": "regression/parser-fixtures/llm-config/command.json",
+            "bytes": 514,
+            "sha256": "5c40ed4ce540422875670fc88e1c2823955a85b203af60285a666271cf561eaf"
+          },
+          {
+            "member": "regression/parser-fixtures/llm-config/native.json",
+            "bytes": 94121,
+            "sha256": "ef65af29cb6d3ff309db8b2e9e4204991ebc6db9439845f6c8a9b4725de34414"
+          },
+          {
+            "member": "regression/parser-fixtures/llm-config/native.log",
+            "bytes": 0,
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          },
+          {
+            "member": "regression/parser-fixtures/llm-metadata/command.json",
+            "bytes": 516,
+            "sha256": "e8bb8ba9b4100a23e3dbaa4cf60aab1e476d7269ea80ce6bd686215eb3b8b222"
+          },
+          {
+            "member": "regression/parser-fixtures/llm-metadata/native.json",
+            "bytes": 176521,
+            "sha256": "ee71ba2a3385750c6566b963600e642a3b52d9b9ebe00191ae3da544228fd1b7"
+          },
+          {
+            "member": "regression/parser-fixtures/llm-metadata/native.log",
+            "bytes": 0,
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          },
+          {
+            "member": "regression/parser-fixtures/llm-prepared/command.json",
+            "bytes": 516,
+            "sha256": "5ea9d0d769a1b8358c326d566dc47367a41af86bd0ebe7be1bbae231cee61f91"
+          },
+          {
+            "member": "regression/parser-fixtures/llm-prepared/native.json",
+            "bytes": 389457,
+            "sha256": "a2fcfd544b1897efdfecf0692ea378f540fc33a649fec5cdeb32b0aa59ceb934"
+          },
+          {
+            "member": "regression/parser-fixtures/llm-prepared/native.log",
+            "bytes": 0,
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          },
+          {
+            "member": "regression/parser-fixtures/message-values/command.json",
+            "bytes": 518,
+            "sha256": "63e7a120e6fa9d3197164466a40144deb40bd1e88abf66432ba616357e9697ee"
+          },
+          {
+            "member": "regression/parser-fixtures/message-values/native.json",
+            "bytes": 31001,
+            "sha256": "18bd314826a162b9f86ff3e003e174258e86276a43614717e679a5f0fb914cac"
+          },
+          {
+            "member": "regression/parser-fixtures/message-values/native.log",
+            "bytes": 0,
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          },
+          {
+            "member": "regression/parser-fixtures/message-values/synthetic-model.json",
+            "bytes": 686,
+            "sha256": "c01cf227536beaf3f1a2c4c21427c843516d0eb56448650edc445c0e63aca556"
+          },
+          {
+            "member": "regression/parser-fixtures/permission-presets/command.json",
+            "bytes": 522,
+            "sha256": "d029428a9de876d0190e591366a91e9430f5c45a356e00b75b91ff0aa00073d3"
+          },
+          {
+            "member": "regression/parser-fixtures/permission-presets/native.json",
+            "bytes": 123007,
+            "sha256": "f299760e525ff19b628b9f8dbe69ae4b9ef267f5291ca8d8059a63f3d14e2bf5"
+          },
+          {
+            "member": "regression/parser-fixtures/permission-presets/native.log",
+            "bytes": 0,
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          },
+          {
+            "member": "regression/parser-fixtures/permission-presets/synthetic-model.json",
+            "bytes": 220,
+            "sha256": "3fd1aad3ee29f38ec9f865e93e796093b2c9aeaf4a7a08a1a82b6378119f24af"
+          },
+          {
+            "member": "regression/parser-fixtures/persistence-read/command.json",
+            "bytes": 520,
+            "sha256": "430966225cbe1dcc6664d659fa54227232250a8e8b785ef368ba483a1fb0094d"
+          },
+          {
+            "member": "regression/parser-fixtures/persistence-read/native.json",
+            "bytes": 27707,
+            "sha256": "59781acc610379ca81ec361a7921acddf9a537cc3a4983b18da6147615ae9c01"
+          },
+          {
+            "member": "regression/parser-fixtures/persistence-read/native.log",
+            "bytes": 0,
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          },
+          {
+            "member": "regression/parser-fixtures/runtime-context/command.json",
+            "bytes": 519,
+            "sha256": "9f3d8aad9268592d90c0e6fc293ef4dc43b7a2ea3f6e3fccfd8247eb8942cc3f"
+          },
+          {
+            "member": "regression/parser-fixtures/runtime-context/native.json",
+            "bytes": 40820,
+            "sha256": "7929c95ed3480fc1cea91b0b67d3c63b25bbae8bae7eec73e5c4407cff35e355"
+          },
+          {
+            "member": "regression/parser-fixtures/runtime-context/native.log",
+            "bytes": 0,
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          },
+          {
+            "member": "regression/parser-fixtures/runtime-full-request/command.json",
+            "bytes": 524,
+            "sha256": "e28da902583501fd8ca752ffd35c436abf5388164553b1e990f89c3f4a31bc62"
+          },
+          {
+            "member": "regression/parser-fixtures/runtime-full-request/native.json",
+            "bytes": 119406,
+            "sha256": "d34770c1c33ebe6f3c8e2032f43986bec3d7f6a386cbd7a060e5d9b22bab8774"
+          },
+          {
+            "member": "regression/parser-fixtures/runtime-full-request/native.log",
+            "bytes": 0,
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          },
+          {
+            "member": "regression/parser-fixtures/session-diagnostic/command.json",
+            "bytes": 522,
+            "sha256": "edbdb5c79dffdb61291305bb854e42ceff176fd103f7adb102ad52c1e13e9891"
+          },
+          {
+            "member": "regression/parser-fixtures/session-diagnostic/native.json",
+            "bytes": 30662,
+            "sha256": "3f240d745666d32040e6f9a390fe257c91219770d13fe2ae8830638205998e99"
+          },
+          {
+            "member": "regression/parser-fixtures/session-diagnostic/native.log",
+            "bytes": 0,
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          },
+          {
+            "member": "regression/parser-fixtures/session-number/command.json",
+            "bytes": 518,
+            "sha256": "cd99fa63b061900b088b99e42d90ee982a8c5380d081302f427bbd5b81a8b461"
+          },
+          {
+            "member": "regression/parser-fixtures/session-number/native.json",
+            "bytes": 28904,
+            "sha256": "5990d8153c19f25db4f9a54bb2b2bee325691d46a20dca0aeacce88e03aa854b"
+          },
+          {
+            "member": "regression/parser-fixtures/session-number/native.log",
+            "bytes": 0,
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          },
+          {
+            "member": "regression/parser-fixtures/session-restore-sign/command.json",
+            "bytes": 524,
+            "sha256": "283b02b4a9b9d6533bed3a0e51af09141312e703f5bcf7296311569447c41ccd"
+          },
+          {
+            "member": "regression/parser-fixtures/session-restore-sign/native.json",
+            "bytes": 18321,
+            "sha256": "3af0672a64d5087cb433f4d23f820c7dc145f3d0a6cc7b0b6b4de86e509a841c"
+          },
+          {
+            "member": "regression/parser-fixtures/session-restore-sign/native.log",
+            "bytes": 0,
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          },
+          {
+            "member": "regression/parser-fixtures/subagent-model/command.json",
+            "bytes": 486,
+            "sha256": "db304110b8e801d62d748ab549f3eea6ae6043a948d862f4cae188d158a420a9"
+          },
+          {
+            "member": "regression/parser-fixtures/subagent-model/native.json",
+            "bytes": 103694,
+            "sha256": "becb81d4ff5a705bc921bcf68f30627ae8024507eceef66ae673927eb99338c5"
+          },
+          {
+            "member": "regression/parser-fixtures/subagent-model/native.log",
+            "bytes": 0,
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          },
+          {
+            "member": "regression/parser-fixtures/subagent-model/synthetic-model.json",
+            "bytes": 452,
+            "sha256": "f3a361b33f2e5c8c2c027ccbc5dfb5909de477ffb8d04fd45ddcf0520c471aca"
+          },
+          {
+            "member": "regression/parser-fixtures/tool-durable/command.json",
+            "bytes": 516,
+            "sha256": "c31328352e6d9476c2dbcd842ccef36140694212a131ce312c88c2a473efd588"
+          },
+          {
+            "member": "regression/parser-fixtures/tool-durable/native.json",
+            "bytes": 72928,
+            "sha256": "d4f1e1d2b6460ffdc2cac1f53e8f7204ecd46fc25fa04b5da0880a7ea30f4b9c"
+          },
+          {
+            "member": "regression/parser-fixtures/tool-durable/native.log",
+            "bytes": 0,
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          },
+          {
+            "member": "regression/parser-fixtures/tool-durable/synthetic-model.json",
+            "bytes": 448,
+            "sha256": "32b2a98e03d5389390469b6b01472c3a2c9209d5affeb1d616ddaec834f1efb6"
+          },
+          {
+            "member": "regression/parser-fixtures/tool-errors/command.json",
+            "bytes": 515,
+            "sha256": "cab6002858fa2ea5d9497cc4d0565be5cb2c943c8a8fbc3c915ba061cfd1a603"
+          },
+          {
+            "member": "regression/parser-fixtures/tool-errors/native.json",
+            "bytes": 17144,
+            "sha256": "2462b2de1cd88a7453aba6548ee3b1388c20c3a9c466a27e00b4a1c0f91a94ba"
+          },
+          {
+            "member": "regression/parser-fixtures/tool-errors/native.log",
+            "bytes": 0,
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          },
+          {
+            "member": "regression/parser-fixtures/tool-errors/synthetic-model.json",
+            "bytes": 446,
+            "sha256": "43c289012745b7ba9cf5df145a836ae946e3d3713e121d44546c683746c5e4e5"
+          },
+          {
+            "member": "regression/parser-fixtures/tool-scheduler/command.json",
+            "bytes": 518,
+            "sha256": "ebc6f1f9294c3e827dc4f71b308628e79b5ada4a4d82f5ae739fc02ec14a55cb"
+          },
+          {
+            "member": "regression/parser-fixtures/tool-scheduler/native.json",
+            "bytes": 28172,
+            "sha256": "fc5b5e1ca2f7ff1422fb470bbcdbed6183f94408e616cb525abc369aa7334bc5"
+          },
+          {
+            "member": "regression/parser-fixtures/tool-scheduler/native.log",
+            "bytes": 0,
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          },
+          {
+            "member": "regression/parser-fixtures/unicode-carrier/command.json",
+            "bytes": 487,
+            "sha256": "7efc88c40540a78069ecc3fc0ac4d0f88e22614906b3515feaf228b936ddf15c"
+          },
+          {
+            "member": "regression/parser-fixtures/unicode-carrier/native.json",
+            "bytes": 39230,
+            "sha256": "fee6ba2a4535c58b1d6495bf727760beeb084f9153dff2e7d9df037e44d69e3b"
+          },
+          {
+            "member": "regression/parser-fixtures/unicode-carrier/native.log",
+            "bytes": 0,
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          },
+          {
+            "member": "regression/parser-fixtures/unicode-carrier/synthetic-model.json",
+            "bytes": 454,
+            "sha256": "b35b81be2601e16dd1cae0b682aac54ae249a258b4a4fc873bd20de8b05a5449"
+          }
+        ],
+        "bytes_removed": 2667612
+      },
+      {
+        "path": "regression/parser-models",
+        "members": [
+          {
+            "member": "regression/parser-models/jsonl-provider-paired.native.json.model.json",
+            "bytes": 1920,
+            "sha256": "e74ae2bcac024d8010349bdf14a2eb4488b550e9ac3a41476e411c039934c121"
+          },
+          {
+            "member": "regression/parser-models/native.json.model.json",
+            "bytes": 247,
+            "sha256": "ca4e0ce7fd7cb56c4ad97a57cf578529a9f862891568ad605fbad8930937fb15"
+          }
+        ],
+        "bytes_removed": 2167
+      },
+      {
+        "path": "desktop-x64/installer-inputs",
+        "members": [
+          {
+            "member": "desktop-x64/installer-inputs/prerequisites.ps1",
+            "bytes": 5525,
+            "sha256": "ea107df4377a00c13c14097c7c9f9ac7eb6d2dd99cf74609109aa718ac700521"
+          },
+          {
+            "member": "desktop-x64/installer-inputs/publish-installation.ps1",
+            "bytes": 5325,
+            "sha256": "4f4aa4435ecfc37c1be504442db6a26ce977d41adcd5cbe6791a874e9668c6fe"
+          },
+          {
+            "member": "desktop-x64/installer-inputs/setup.nsi",
+            "bytes": 10288,
+            "sha256": "cf80ae635ef543bb93c533b847b21dd5c68f2bb5399eac137ffd8cbba82a8a56"
+          },
+          {
+            "member": "desktop-x64/installer-inputs/uninstall-files.ps1",
+            "bytes": 7805,
+            "sha256": "37985fd98cf038ae265b82c15bcf184f8f46ed4681642cba3c4c1a1e4dcd6224"
+          }
+        ],
+        "bytes_removed": 28943
+      },
+      {
+        "path": "desktop-x86/installer-inputs",
+        "members": [
+          {
+            "member": "desktop-x86/installer-inputs/prerequisites.ps1",
+            "bytes": 5525,
+            "sha256": "ea107df4377a00c13c14097c7c9f9ac7eb6d2dd99cf74609109aa718ac700521"
+          },
+          {
+            "member": "desktop-x86/installer-inputs/publish-installation.ps1",
+            "bytes": 5325,
+            "sha256": "4f4aa4435ecfc37c1be504442db6a26ce977d41adcd5cbe6791a874e9668c6fe"
+          },
+          {
+            "member": "desktop-x86/installer-inputs/setup.nsi",
+            "bytes": 10288,
+            "sha256": "cf80ae635ef543bb93c533b847b21dd5c68f2bb5399eac137ffd8cbba82a8a56"
+          },
+          {
+            "member": "desktop-x86/installer-inputs/uninstall-files.ps1",
+            "bytes": 7805,
+            "sha256": "37985fd98cf038ae265b82c15bcf184f8f46ed4681642cba3c4c1a1e4dcd6224"
+          }
+        ],
+        "bytes_removed": 28943
+      }
+    ]
+  },
+  "interrupted17_cleanup": {
+    "owner": "MIG-RC022-COORDINATION-001",
+    "run": "rc022-unified-20261120-17",
+    "cleanup": {
+      "removed": [
+        "pytest-workspace"
+      ],
+      "bytes_removed": 94114380
+    },
+    "original_observations_unchanged": true,
+    "interrupted_run_remains_incomplete": true,
+    "observations": "C:\\Users\\czh86\\Documents\\Codex\\dsh-rc022-qualification\\.goose\\out\\rc022-unified-20261120-17\\regression\\interrupted-regression-cleanup-preserved.json"
+  },
+  "closed_run17_and18_intermediate_cleanup": {
+    "original_run_identities_unchanged": true,
+    "rows": [
+      {
+        "run": "rc022-unified-20261120-17",
+        "scope": "parser-inputs",
+        "cleanup": {
+          "removed": [
+            "historical-domain-models",
+            "parser-fixtures",
+            "parser-models"
+          ],
+          "bytes_removed": 2535068
+        }
+      },
+      {
+        "run": "rc022-unified-20261120-18",
+        "scope": "parser-inputs",
+        "cleanup": {
+          "removed": [
+            "historical-domain-models",
+            "parser-fixtures",
+            "parser-models"
+          ],
+          "bytes_removed": 2679083
+        }
+      },
+      {
+        "run": "rc022-unified-20261120-18",
+        "scope": "installer-inputs-x64",
+        "cleanup": {
+          "removed": [
+            "installer-inputs"
+          ],
+          "bytes_removed": 28943
+        }
+      },
+      {
+        "run": "rc022-unified-20261120-18",
+        "scope": "installer-inputs-x86",
+        "cleanup": {
+          "removed": [
+            "installer-inputs"
+          ],
+          "bytes_removed": 28943
+        }
+      }
+    ]
+  },
+  "additional_cleanup_bytes": 102123386,
+  "protected_or_retained": {
+    "owner": "MIG-RC022-COORDINATION-001",
+    "purpose": "Exact formal qualified products and independently identified original failures, raw observations and reusable pinned offline input graph.",
+    "review": "Next release qualification/storage review, no later than 2026-11-26; never delete the only verified archive.",
+    "shared_inputs": "Prepared reference/node/Python/Office/Electron runtimes remain shared development dependencies, not retired per-run copies.",
+    "policy_blocked": {
+      "bytes": 11515675,
+      "owner": "C9-ER",
+      "roots": [
+        "C:/Users/czh86/AppData/Local/Temp/dsh-guide-cdp-nZcnHa",
+        "C:/Users/czh86/AppData/Local/Temp/dsh-guide-cdp-xMf1t4",
+        "C:/Users/czh86/.codex/worktrees/rc022-qualification/.codex-worktree-name"
+      ],
+      "reason": "Automatic approval review rejected deletion as blocked by policy; no alternate deletion attempted.",
+      "next_action": "Manual user cleanup or explicit policy-permitted path; not retried."
+    }
+  }
+}

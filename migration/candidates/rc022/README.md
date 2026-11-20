@@ -1,5 +1,9 @@
 # 0.2.2-rc.3 实施候选区
 
+最终[资产与进程审计](current-final-cleanup-checks.json)记录本轮约5.35GB清理，以及已归档/已结束中间目录的补充退役；保留资产的用途和复查点、此前策略拒绝删除的例外单独列明。
+
+2026-11-20 C9-HM：**rc022 C1–C9 已完成约定的当前 Windows 对齐与验收。** 干净候选 `779b0b88` 的一次新鲜完整门禁通过：Python 22,660通过/26跳过，全部15组固定 Source（12,272通过/33 pending，原版两份 Windows 排除单独记录）、406个实际配对驱动、x64/x86 实际解压 Portable 的 SDK/Office/元数据/原版现代及108浏览器和应用冷恢复，以及两架构 Standard Desktop 各9项管道预检/6项实际 Electron 界面检查。最终候选和冻结输入均一致；[精确资格](current-unified-qualification-checks.json)及[正式回执](../../evidence/RUN-RC022-QUALIFICATION-20261120-779B0B88.json)绑定四份原始产品和完整原始证据的外部归档。本轮已用合成夹具和解压/构建副本及时退役；历史失败保持独立身份。范围为当前 Windows 与 Electron22 私有 v3 适配器；Win7 真机/客体、管理员安装/AIO维护、完整原版 Electron44/v4 外壳及真实付费 provider 未新增认证，`accepted_upstream`仍为null，未推送或发布。
+
 2026-11-20 C9-HL：[浏览器运行日志归属](current-browser-log-freeze-checks.json)记录run18全部八阶段通过、完整Python22,658通过/26跳过、15组原版及406配对均通过，但最终输入复核因Chromium108生成的根debug.log变化而失败。完整独立复读确认唯一差异；仅将所选浏览器根日志作为生成观察保存原始字节，其他运行时文件继续严格冻结。33项定向和真实GPU日志写入验证通过，自有隔离副本及时退役；原失败及四份精确产品保留，下一候选重新完整验收。
 
 2026-11-20 C9-HJ：[run17 中断现场](current-run17-interruption-checks.json)确认原门禁/pytest进程已消失，06:07后日志无更新，未生成最终XML或退出回执；局部标记不作最终数量。保留全部原日志、控制文件、精确ZIP及完整中断工作区；已用解压副本退役。原因未确定，未做最终输入复核；继续新鲜完整门禁，不续接局部集合或拼接资格。

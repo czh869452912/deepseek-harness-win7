@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "scope": "Original historical bytes; no new qualification",
+  "scope": "Historical original bytes and separately identified current qualifications; index alone never establishes byte verification or acceptance.",
   "artifacts": [
     {
       "path": "migration/evidence/artifacts/ACP-CONFIG-20261003-97f7b287.zip",
@@ -673,6 +673,16 @@
       "sha256": "0c7e9c9ea25e048186d030d508547b89fd6fc925baa23f5fee99a703fda4ae2f",
       "retention": "historical-preserved",
       "location": "DSH_EVIDENCE_ROOT/{path}"
+    },
+    {
+      "path": "migration/evidence/artifacts/RC022-QUALIFICATION-20261120-779B0B88.zip",
+      "size": 1130491299,
+      "sha256": "24b7bc9797e0d312f3e3f9fefaa8ef4d671744c2f9a84e648604f9092caa41d2",
+      "retention": "current-qualification-preserved",
+      "location": "DSH_EVIDENCE_ROOT/{path}",
+      "owner": "MIG-RC022-COORDINATION-001",
+      "purpose": "Exact qualified candidate products, complete raw observations and frozen inputs",
+      "review_milestone": "Preserve as formal qualification; review storage at the next release without deleting the only verified copy."
     },
     {
       "path": "migration/evidence/artifacts/RC1-QUALIFICATION-20261015-D5F74C2D.zip",

@@ -1,5 +1,6 @@
 """Existing home upgrades through the actual Desktop/workspace composition."""
 import json
+import os
 from pathlib import Path
 
 import pytest
@@ -22,6 +23,46 @@ def history(home, compression, version=0, identity='old-session'):
     data = (json.dumps(header) + '\n').encode('utf-8')
     path.write_bytes(compress_frame(data) if compression == 'zstd' else data)
     return path
+
+
+@pytest.mark.asyncio
+async def test_old_desktop_workspace_and_credential_marker_upgrade(tmp_path, monkeypatch):
+    home = tmp_path / 'home'
+    monkeypatch.setenv('DSH_HOME', str(home))
+    monkeypatch.setenv('DSH_TELEMETRY_DISABLED', '1')
+    old = history(home, 'zstd', 3)
+    workspace_file = home / 'storages/workspace.json'
+    workspace_file.parent.mkdir()
+    workspace_file.write_text(json.dumps(dict(
+        unit=dict(name='workspace', version=2),
+        **{'global': dict(initialized=True, workspaceIds=['legacy-workspace'],
+                          archivedSessionIds=['old-session'], pendingMutation=None)},
+        tables=dict(workspaces={'legacy-workspace': dict(path=str(tmp_path), title='Old workspace',
+            sessionIds=[], createdAt='2026-10-01T00:00:00Z', updatedAt='2026-10-01T00:00:00Z')}))),
+        encoding='utf-8')
+    lock = home / '.credentials.yaml.lock'
+    if os.name == 'nt':
+        lock.write_bytes(b'\0')
+    before = [(path.read_bytes(), path.stat().st_mtime_ns) for path in (old, workspace_file)]
+    for _ in range(2):
+        app = await run_desktop_host(home / 'profiles/desktop')
+        try:
+            registry = app.ctx.get('workspaceRegistry')
+            assert [(item.id, item.title) for item in registry.list()] == [('legacy-workspace', 'Old workspace')]
+            assert registry.archivedSessionIds == ['old-session']
+            assert app.ctx.get('connection') is not None
+            store = app.ctx.get('sessionPersistence')
+            reader = await store.open('old-session', 'read')
+            try:
+                assert (await reader.read())['events'] == []
+                assert (await store.stat('old-session'))['header']['version'] == 4
+            finally:
+                await reader.close()
+        finally:
+            await app.close()
+    assert [(path.read_bytes(), path.stat().st_mtime_ns) for path in (old, workspace_file)] == before
+    if os.name == 'nt':
+        assert lock.read_bytes() == b'\0'
 
 
 @pytest.mark.asyncio

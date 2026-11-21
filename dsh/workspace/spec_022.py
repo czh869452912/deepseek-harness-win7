@@ -26,8 +26,9 @@ def state(value):
     if 'defaultWorkspaceId' in value:
         if not isinstance(value['defaultWorkspaceId'],str):raise ValueError('expected default workspace id')
         result['defaultWorkspaceId']=value['defaultWorkspaceId']
-    if 'pendingMutation' in value:
-        pending=value['pendingMutation']
+    # The 0.1.5 Python registry serialized the cleared optional journal as null.
+    pending=value.get('pendingMutation')
+    if pending is not None:
         if not isinstance(pending,dict) or pending.get('operation') not in ('create','delete') or not isinstance(pending.get('workspaceId'),str):
             raise ValueError('expected pending workspace mutation')
         result['pendingMutation']=dict(operation=pending['operation'],workspaceId=pending['workspaceId'])

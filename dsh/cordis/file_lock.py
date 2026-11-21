@@ -104,7 +104,47 @@ def _get_async_lock(key: str) -> asyncio.Lock:
         return _async_locks[key]
 
 
-async def with_file_lock(lock_path: str, fn: Any, *args: Any, **kwargs: Any) -> Any:
+def _try_legacy_windows_lock(path):
+    """Hold the old Windows CRT lock file exclusively if it contains its NUL marker."""
+    import ctypes
+    import msvcrt
+    import stat
+    from ctypes import wintypes
+
+    kernel = ctypes.WinDLL("kernel32", use_last_error=True)
+    create = kernel.CreateFileW
+    create.argtypes = [wintypes.LPCWSTR, wintypes.DWORD, wintypes.DWORD, ctypes.c_void_p,
+                       wintypes.DWORD, wintypes.DWORD, wintypes.HANDLE]
+    create.restype = wintypes.HANDLE
+    close = kernel.CloseHandle
+    close.argtypes = [wintypes.HANDLE]
+    close.restype = wintypes.BOOL
+    # Sharing mode zero prevents an older CRT writer from opening this marker
+    # while the new writer is running. Open the file itself, including links.
+    handle = create(path, 0x80000000, 0, None, 3, 0x00200000, None)
+    if handle == ctypes.c_void_p(-1).value:
+        error = ctypes.get_last_error()
+        if error in (2, 3, 5, 32, 33):
+            return None
+        raise ctypes.WinError(error)
+    try:
+        fd = msvcrt.open_osfhandle(handle, os.O_RDONLY | os.O_BINARY)
+    except BaseException:
+        close(handle)
+        raise
+    try:
+        info = os.fstat(fd)
+        if (stat.S_ISREG(info.st_mode) and not getattr(info, "st_file_attributes", 0) & 0x400
+                and info.st_size == 1 and os.read(fd, 1) == b"\0"):
+            return fd
+    except BaseException:
+        os.close(fd)
+        raise
+    os.close(fd)
+    return None
+
+
+async def with_file_lock(lock_path: str, fn: Any, *args: Any, legacy_windows_marker=False, **kwargs: Any) -> Any:
     """Acquire file lock around an async or sync callable matching reference withFileLock."""
     wait_ms = kwargs.pop("waitMs", kwargs.pop("wait_ms", 2000))
     lock_file = lock_path if lock_path.endswith(".lock") else f"{lock_path}.lock"
@@ -116,6 +156,7 @@ async def with_file_lock(lock_path: str, fn: Any, *args: Any, **kwargs: Any) -> 
         deadline = time.time() + (wait_ms / 1000.0)
         delay = 0.02
         acquired_os_lock = False
+        legacy_fd = None
         fd = -1
         while True:
             try:
@@ -127,6 +168,10 @@ async def with_file_lock(lock_path: str, fn: Any, *args: Any, **kwargs: Any) -> 
                 acquired_os_lock = True
                 break
             except (FileExistsError, PermissionError):
+                if legacy_windows_marker and os.name == "nt":
+                    legacy_fd = _try_legacy_windows_lock(lock_file)
+                    if legacy_fd is not None:
+                        break
                 if time.time() >= deadline:
                     raise RuntimeError(f"atomic-write: timed out waiting for the writer lock at {lock_file}")
                 await asyncio.sleep(delay)
@@ -140,6 +185,8 @@ async def with_file_lock(lock_path: str, fn: Any, *args: Any, **kwargs: Any) -> 
                 return await res
             return res
         finally:
+            if legacy_fd is not None:
+                os.close(legacy_fd)
             if acquired_os_lock:
                 if fd != -1:
                     try:

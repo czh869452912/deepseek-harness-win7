@@ -82,7 +82,7 @@ class CurrentLocalCredentialProvider(CredentialProvider):
                 if logger is not None:
                     logger.info('credentials-local: migrated %s to the version %d layout; values are unchanged', self.filepath, 1)
                 return migrated
-            text = await with_file_lock(self.filepath, migrate, waitMs=30000)
+            text = await with_file_lock(self.filepath, migrate, waitMs=30000, legacy_windows_marker=True)
         document = self._parse(text)
         self.text, self._credentials, self._records = text, document['refs'], document['records']
         if self.watch:
@@ -161,7 +161,7 @@ class CurrentLocalCredentialProvider(CredentialProvider):
             async def locked():
                 await self.reconcile_from_disk()
                 return await operation()
-            return await with_file_lock(self.filepath, locked, waitMs=30000)
+            return await with_file_lock(self.filepath, locked, waitMs=30000, legacy_windows_marker=True)
         return self._enqueue(queued)
 
     async def _commit(self, section, key, value):

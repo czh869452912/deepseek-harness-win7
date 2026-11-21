@@ -2,7 +2,7 @@
 require('./stdio.cjs').protectStdio();
 const {app,BrowserWindow,protocol,ipcMain,Menu,Tray,nativeImage,dialog,shell:systemShell,nativeTheme,session}=require('electron');
 const {join,resolve,extname,dirname}=require('node:path');
-const {release:osRelease,cpus,totalmem}=require('node:os');
+const {cpus,totalmem}=require('node:os');
 const {readFile}=require('node:fs/promises');
 const {Readable}=require('node:stream');
 const {DesktopProjectManager}=require('./project-manager.cjs');
@@ -40,8 +40,7 @@ function assertSender(event,hosts=['shell']){
   if(!frame||frame!==event.sender.mainFrame||url.protocol!=='dsh-app:'||!hosts.includes(url.host)||url.username||url.password)throw new Error('Desktop IPC from unowned renderer');
 }
 function createWindow(shell){
-  // The native frame keeps caption controls available on unqualified legacy Windows versions.
-  const caption=process.platform==='win32'&&!shell&&Number(osRelease().split('.')[0])>=10;
+  const caption=process.platform==='win32'&&!shell;
   const colors=()=>nativeTheme.shouldUseDarkColors
     ? {color:'#1b1b1c',symbolColor:'#f9fafb'} : {color:'#f9fafb',symbolColor:'#0f1115'};
   const window=new BrowserWindow({width:shell?900:1280,height:shell?620:840,minWidth:shell?880:520,minHeight:600,show:false,

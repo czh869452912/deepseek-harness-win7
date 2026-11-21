@@ -4,7 +4,6 @@ const {mkdir,writeFile,readFile,cp}=require('node:fs/promises');
 const {join,resolve}=require('node:path');
 const assert=require('node:assert/strict');
 const {createServer}=require('node:http');
-const {release:osRelease}=require('node:os');
 const pause=ms=>new Promise(resolve=>setTimeout(resolve,ms));
 async function evaluate(window,expression,timeout=45000){
   let timer;
@@ -89,7 +88,7 @@ async function run({app,mainWindow,openPlugins,pluginWindow,guideWindow,environm
       return {initial:before.status,edit:edit.status,platform:document.documentElement.dataset.platform};
     })()`);
     assert.deepEqual(report.shortcuts,{initial:'ready',edit:'saved',platform:process.platform});
-    if (process.platform==='win32' && Number(osRelease().split('.')[0])>=10) {
+    if (process.platform==='win32') {
       assert.equal(report.main.preload.titlebar,true);
       assert.equal(report.main.preload.titlebarHeight,'40px');
     }

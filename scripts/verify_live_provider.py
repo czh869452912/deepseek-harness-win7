@@ -16,7 +16,23 @@ import uuid
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 import yaml
+from dsh.llm.deepseek_config_current import PUBLIC_BASE_URL
+from dsh.session.jsonl_current import parseGenerationLogFilename
 from dsh.session.jsonl_zstd import decompress_frame, scan_frames
+
+
+def durable_session_log(home):
+    files = [path for path in (home / 'sessions').glob('*/*/*.jsonl.zstd')
+             if parseGenerationLogFilename(path.name, 'zstd') is not None]
+    if len(files) != 1:
+        raise RuntimeError('Expected one durable session log, found {}'.format(len(files)))
+    return files[0]
+
+
+def session_events(path):
+    physical = path.read_bytes()
+    return [json.loads(line) for frame in scan_frames(physical)['frames']
+            for line in decompress_frame(physical[frame['start']:frame['end']]).splitlines()]
 
 
 def main():
@@ -40,7 +56,7 @@ def main():
     profile = home / 'profiles/headless'
     profile.mkdir(parents=True)
     (profile / 'cordis.patch.yml').write_text(yaml.safe_dump([
-        dict(id='llm-deepseek', config=dict(baseURL='https://api.deepseek.com', maxTokens=1024,
+        dict(id='llm-deepseek', config=dict(baseURL=PUBLIC_BASE_URL, maxTokens=1024,
              thinking='disabled', retryPolicy=dict(mode='normal', maxRetries=0), streamIdleTimeoutMs=45000)),
         dict(id='agent-default-model', config=dict(provider='deepseek-official', model=args.model)),
     ]), encoding='utf-8')
@@ -48,7 +64,7 @@ def main():
            if not any(part in name.upper() for part in ('API_KEY', 'API_TOKEN', 'ACCESS_TOKEN', 'REFRESH_TOKEN', 'PYTHONPATH', 'PYTHONHOME'))}
     env.update(DSH_HOME=str(home), DEEPSEEK_API_KEY=key, DSH_TELEMETRY_DISABLED='1', PYTHONDONTWRITEBYTECODE='1', PYTHONIOENCODING='utf-8')
     report = dict(scope='Actual DeepSeek authentication, first message, read tool and cold Agent resume; generated document only',
-                  model=args.model, endpoint='https://api.deepseek.com', phases=[], status='running')
+                  model=args.model, endpoint=PUBLIC_BASE_URL, phases=[], status='running')
 
     def run(name, command):
         started = time.monotonic()
@@ -64,23 +80,19 @@ def main():
         answer = run('first-turn', [str(args.python.absolute()), str(args.root / 'dsh.py'), '--profile', 'headless',
             'Read this generated test document using the read tool: ' + str(target) + '. Reply only with its complete text. Do not write files or call other tools.'])
         assert marker in answer, 'Real model must return the generated document marker'
-        files = list((home / 'sessions').glob('*/*/session.v3.jsonl.zstd'))
-        assert len(files) == 1, 'One durable real session required'
-        def events():
-            physical = files[0].read_bytes()
-            return [json.loads(line) for line in b''.join(decompress_frame(physical[f['start']:f['end']]) for f in scan_frames(physical)['frames']).splitlines()]
-        before = events()
+        log_path = durable_session_log(home)
+        before = session_events(log_path)
         assert any(row.get('type') == 'tool/result' for row in before), 'Actual tool result required'
         identity = before[0]['id']
         code = (ROOT / 'tests/headless_resume_process.py').read_text(encoding='utf-8')
         resumed = run('cold-resume', [str(args.python.absolute()), '-c', code, identity])
         resume = json.loads(resumed.splitlines()[-1])
         assert resume['after'] > resume['before']
-        after = events()
+        after = session_events(log_path)
         assert len(after) > len(before)
         report.update(status='passed', credentialAccepted=True, realToolResult=True, coldResume=resume,
                       eventCounts=dict(before=len(before), after=len(after)),
-                      sessionSha256=hashlib.sha256(files[0].read_bytes()).hexdigest())
+                      sessionSha256=hashlib.sha256(log_path.read_bytes()).hexdigest())
     except Exception as error:
         report.update(status='failed', failure=str(error).replace(key, '[REDACTED]'))
     finally:

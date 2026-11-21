@@ -158,9 +158,9 @@ try{
   const nodeAddress=report.stderr.match(/Debugger listening on (ws:\/\/[^\s]+)/)?.[1];assert.ok(nodeAddress);
   const mainSocket=new WebSocket(nodeAddress);await new Promise((done,reject)=>{mainSocket.addEventListener('open',done,{once:true});mainSocket.addEventListener('error',reject,{once:true});});
   const mainCdp=new CDP(mainSocket);
-  report.menu=await mainCdp.evaluate(`(()=>{const e=process.mainModule.require('electron'),menu=e.Menu.getApplicationMenu();return {labels:menu.items.map(row=>row.label),pluginLabel:menu.items[0].submenu.items[0].label,accelerator:menu.items[0].submenu.items[0].accelerator}})()`);
-  assert.equal(report.menu.accelerator,'CmdOrCtrl+,');assert.equal(report.menu.labels.length,1);
-  await mainCdp.evaluate(`process.mainModule.require('electron').Menu.getApplicationMenu().items[0].submenu.items[0].click()`);
+  report.menu=await mainCdp.evaluate(`(()=>{const e=process.mainModule.require('electron'),menu=e.Menu.getApplicationMenu(),item=menu.getMenuItemById('dsh-plugin-manager');return {labels:menu.items.map(row=>row.label),pluginLabel:item.label,accelerator:item.accelerator}})()`);
+  assert.equal(report.menu.accelerator,'CmdOrCtrl+,');
+  await mainCdp.evaluate(`process.mainModule.require('electron').Menu.getApplicationMenu().getMenuItemById('dsh-plugin-manager').click()`);
   const shellPage=await until(async()=>{const rows=await(await fetch(base+'/json/list')).json();return rows.find(row=>row.url==='dsh-app://shell/plugin-manager.html');},'native menu plugin target');
   const shellSocket=new WebSocket(shellPage.webSocketDebuggerUrl);await new Promise((done,reject)=>{shellSocket.addEventListener('open',done,{once:true});shellSocket.addEventListener('error',reject,{once:true});});
   const shellCdp=new CDP(shellSocket);await shellCdp.call('Runtime.enable');await shellCdp.call('Page.enable');

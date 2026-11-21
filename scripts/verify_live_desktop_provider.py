@@ -10,7 +10,8 @@ import uuid
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 import yaml
-from dsh.session.jsonl_zstd import decompress_frame, scan_frames
+from dsh.llm.deepseek_config_current import PUBLIC_BASE_URL
+from scripts.verify_live_provider import durable_session_log, session_events
 
 
 def main():
@@ -31,7 +32,7 @@ def main():
     profile = output / 'fresh/home/profiles/desktop'
     profile.mkdir(parents=True)
     (profile / 'cordis.patch.yml').write_text(yaml.safe_dump([
-        dict(id='llm-deepseek', config=dict(baseURL='https://api.deepseek.com', maxTokens=1024,
+        dict(id='llm-deepseek', config=dict(baseURL=PUBLIC_BASE_URL, maxTokens=1024,
              thinking='disabled', retryPolicy=dict(mode='normal', maxRetries=0), streamIdleTimeoutMs=45000)),
         dict(id='agent-default-model', config=dict(provider='deepseek-official', model='deepseek-flash')),
     ]), encoding='utf-8')
@@ -49,7 +50,7 @@ def main():
                 target.rmdir()
             command = [str(args.node.absolute()), str(ROOT / 'scripts/oracles/desktop_upgrade_current.mjs'),
                        '--executable', str(args.executable.absolute()), '--output', str(target),
-                       '--live-provider', marker, '--workspace', str(workspace)]
+                       '--current-onboarding', 'true', '--live-provider', marker, '--workspace', str(workspace)]
             if phase == 'fresh':
                 # Restore before spawn, after the observer has claimed its fresh directory.
                 command += ['--prepared-home', str(staged)]
@@ -62,12 +63,9 @@ def main():
             assert result.returncode == 0, phase + ' actual Desktop journey failed'
             observed = json.loads((target / 'report.json').read_text(encoding='utf-8'))
             report['phases'].append(dict(phase=phase, checks=observed['checks'], answer=observed['liveProvider']))
-        files = list((output / 'fresh/home/sessions').glob('*/*/session.v3.jsonl.zstd'))
-        assert len(files) == 1
-        physical = files[0].read_bytes()
-        events = [json.loads(line) for line in b''.join(decompress_frame(physical[f['start']:f['end']]) for f in scan_frames(physical)['frames']).splitlines()]
-        assert any(row.get('type') == 'tool/result' and marker in json.dumps(row) for row in events)
-        assert sum(row.get('type') == 'user/message' for row in events) >= 2
+        events = session_events(durable_session_log(output / 'fresh/home'))
+        assert any(row.get('type') == 'tool/result' and marker in json.dumps(row) for row in events), 'Missing durable read result'
+        assert sum(row.get('type') == 'user/message' for row in events) >= 2, 'Missing durable cold turn'
         report.update(status='passed', realReadToolResult=True, durableEvents=len(events))
     except Exception as error:
         report.update(status='failed', failure=str(error).replace(key, '[REDACTED]'))

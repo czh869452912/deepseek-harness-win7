@@ -2,6 +2,7 @@ import math
 from typing import Any
 
 from dsh.cordis.schema import Schema
+from dsh.cordis.volatile import is_volatile
 from dsh.settings.provider import install_settings_section
 from dsh.settings.types import settings_namespace
 
@@ -37,7 +38,11 @@ def resolve_max_parallel_tool_calls(value: Any = None) -> int:
 
 
 def install_parallel_settings(ctx, owner, config):
-    entry = {'maxParallelToolCalls': resolve_max_parallel_tool_calls(config.get('maxParallelToolCalls'))}
+    limit = config.get('maxParallelToolCalls')
+    if is_volatile(limit):
+        owner._parallel_settings_source = lambda: {'maxParallelToolCalls': resolve_max_parallel_tool_calls(limit.get())}
+        return
+    entry = {'maxParallelToolCalls': resolve_max_parallel_tool_calls(limit)}
     owner._parallel_settings_source = lambda: entry
     install_settings_section(ctx, AGENT_LOOP_SETTINGS_NAMESPACE, AGENT_LOOP_SETTINGS_SCHEMA, entry, {
         'setSource': lambda source: setattr(owner, '_parallel_settings_source', source),

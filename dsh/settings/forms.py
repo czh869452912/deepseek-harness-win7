@@ -1,5 +1,6 @@
 """Loader Config descriptors and live form edits through ConfigEditor."""
 import asyncio
+import hashlib
 import os
 import re
 import yaml
@@ -12,6 +13,16 @@ from dsh.cordis.utils import _UNDEFINED
 from dsh.settings.provider import SettingsConflictError, clone_json_shaped, merge_layers
 from dsh.settings.redact import redact_secrets
 from dsh.settings.schema_current import plain_config, project_form, volatile_form, is_volatile_path
+from dsh.util.atomic_write import write_file_atomic
+
+
+_RECOVERABLE_SETTINGS = {
+    'llm-pi-ai': {'providers'},
+    'ui-settings': {'enabled'},
+    'ui-conversation': {'busyEnter'},
+    'ui-chat': {'transcriptView', 'collapseTiming', 'foldedReplies', 'performanceUsage', 'linkOpening'},
+    'agent-loop': {'maxParallelToolCalls'},
+}
 
 
 def clone_config(value):
@@ -96,22 +107,52 @@ class SettingsForms(Service):
     async def import_legacy_document(self):
         profile = self.owner_context.get('profileContext')
         home = profile['home'] if isinstance(profile, dict) else profile.home
+        directory = profile['dir'] if isinstance(profile, dict) else profile.dir
         path = os.path.join(home, 'settings.yaml')
-        if not os.path.exists(path):
-            return
         imported = path + '.imported'
-        os.replace(path, imported)
-        with open(imported, encoding='utf-8') as stream:
-            sections = yaml.safe_load(stream) or {}
+        fresh = os.path.exists(path)
+        source = path if fresh else imported
+        try:
+            with open(source, encoding='utf-8') as stream:
+                text = stream.read()
+        except FileNotFoundError:
+            return
+        sections = yaml.safe_load(text) or {}
+        if not isinstance(sections, dict):
+            return
+        receipt = os.path.join(directory, 'legacy-settings-issue11.sha256')
+        digest = hashlib.sha256(text.encode('utf-8')).hexdigest()
+        if not fresh and os.path.isfile(receipt):
+            with open(receipt, encoding='utf-8') as stream:
+                if stream.read().strip() == digest:
+                    return
+        if fresh:
+            if os.path.exists(imported):
+                backup = imported + '.previous'
+                if os.path.exists(backup):
+                    with open(imported, encoding='utf-8') as stream:
+                        suffix = hashlib.sha256(stream.read().encode('utf-8')).hexdigest()
+                    backup += '.' + suffix
+                os.replace(imported, backup)
+            os.replace(path, imported)
         names = {'ui-developer-tools': 'ui-settings', 'ui-onboarding': 'ui-settings-general',
                  'shell': 'pwsh-sandbox' if os.name == 'nt' else 'bash-sandbox'}
+        recovery_complete = True
         for section, values in sections.items():
             ns = names.get(section, section)
             try:
-                await self.update(ns, values)
-            except Exception as error:
+                if ns in _RECOVERABLE_SETTINGS and isinstance(values, dict):
+                    patch = {key: values[key] for key in _RECOVERABLE_SETTINGS[ns] if key in values}
+                    if patch:
+                        await self.write(ns, lambda current, base, schema: merge_layers(patch, current))
+                elif fresh:
+                    await self.update(ns, values)
+            except Exception:
                 self.owner_context.logger.warn('settings: section %s of %s was not imported into entry %s', section, imported, ns)
-                self.owner_context.logger.warn(error)
+                if ns in _RECOVERABLE_SETTINGS:
+                    recovery_complete = False
+        if recovery_complete:
+            await write_file_atomic(receipt, digest + '\n', mode=0o600)
 
     def configure(self, presentation, owner=None):
         fiber = (owner.ctx if owner is not None else self.ctx).fiber

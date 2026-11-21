@@ -3,12 +3,15 @@ import copy
 import logging
 
 from dsh.cordis.plugin import Plugin
+from dsh.cordis.schema import Schema
+from dsh.cordis.volatile import is_volatile
 from dsh.llm.pi_adapter import PiAiAdapter, native_profiles
 from dsh.llm.pi_auth import resolve_api_key
 from dsh.llm.pi_catalog import catalog_provider_ids
 from dsh.llm.pi_discovery import discover_models
 from dsh.llm.pi_schema import config_schema
 from dsh.settings.provider import deep_equal_json, install_settings_section
+from dsh.settings.schema_current import plain_config
 
 
 def directory_entries(profiles):
@@ -27,7 +30,9 @@ class LLMPiAiPlugin(Plugin):
 
     def apply(self, ctx):
         llm = ctx.get('llm')
-        entry = copy.deepcopy(self.config or {})
+        config = self.config or {}
+        live = is_volatile(config.get('providers'))
+        entry = plain_config(config)
         adapter = PiAiAdapter(ctx, native_profiles(entry))
         ctx.effect(lambda: adapter.close)
         source = [lambda: entry]
@@ -79,5 +84,26 @@ class LLMPiAiPlugin(Plugin):
 
         disposer = llm.register_model_discovery('llm-pi-ai', discover)
         ctx.effect(lambda: disposer)
-        install_settings_section(ctx, 'llm-pi-ai', self.Config, entry, dict(validate=native_profiles,
-            setSource=lambda current: source.__setitem__(0, current), onChange=changed))
+        if live:
+            source[0] = lambda: plain_config(config)
+            ctx.on('loader/volatile-update', lambda *_: changed())
+        else:
+            install_settings_section(ctx, 'llm-pi-ai', self.Config, entry, dict(validate=native_profiles,
+                setSource=lambda current: source.__setitem__(0, current), onChange=changed))
+
+
+class _CurrentProviderConfig(Schema):
+    def validate(self, value):
+        result = super().validate(value)
+        if 'value' in result:
+            try:
+                native_profiles(plain_config(result['value']))
+            except ValueError as error:
+                return {'issues': [{'message': str(error), 'path': ['providers']}]}
+        return result
+
+
+class CurrentLLMPiAiPlugin(LLMPiAiPlugin):
+    Config = _CurrentProviderConfig(dict(type='object', meta={'default': {}}, dict={
+        'providers': LLMPiAiPlugin.Config.dict['providers'].volatile(),
+    }))

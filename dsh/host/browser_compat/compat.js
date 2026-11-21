@@ -166,10 +166,46 @@ function mix(value,variables,seen=new Set()){
 }
 function rgba(color){return `rgba(${color.slice(0,3).map(v=>(v*255).toFixed(8)).join(',')},${color[3].toFixed(8)})`;}
 
+const sheetCache = new WeakMap();
+function stylesheetURL(link) {
+  if (!link.relList.contains('stylesheet') || !link.href) return null;
+  const url = new URL(link.href, document.baseURI);
+  if (url.username || url.password) return null;
+  if (location.protocol === 'dsh-app:') {
+    return location.host === 'app' && url.protocol === 'dsh-app:' && url.host === 'app' ? url : null;
+  }
+  return ['http:', 'https:'].includes(location.protocol) && url.origin === location.origin ? url : null;
+}
+function readStylesheet(link) {
+  const url = stylesheetURL(link);
+  if (!url) return null;
+  const cached = sheetCache.get(link);
+  if (cached?.href === url.href) return cached;
+  const row = {href: url.href, text: ''};
+  row.ready = fetch(url.href, {redirect: 'error'}).then(async response => {
+    if (!response.ok || !/^text\/css(?:;|$)/i.test(response.headers.get('content-type') ?? '')) return '';
+    const css = await response.text();
+    // Adjacent generated style elements resolve resource URLs against the document.
+    row.text = css.replace(/url\(\s*(?:"([^"\\]*)"|'([^'\\]*)'|([^()\s"'\\]+))\s*\)/gi,
+      (match, double, single, bare) => {
+        const value = double ?? single ?? bare;
+        if (!value || /^(?:#|[a-z][a-z0-9+.-]*:)/i.test(value)) return match;
+        return 'url(' + JSON.stringify(new URL(value, url.href).href) + ')';
+      });
+    return row.text;
+  }).catch(() => '');
+  sheetCache.set(link, row);
+  return row;
+}
+Object.defineProperty(window, Symbol.for('deepseek-win7.host.stylesheets'), {
+  value: {url: stylesheetURL, read: readStylesheet}, configurable: true,
+});
+
 function installColorMix() {
   if (CSS.supports('color', 'color-mix(in srgb, red, blue)')) return {active: false, dispose() {}};
   let expressions = new Map(), active = new Map(), serial = 0, pending = false;
   const originals = new Map(), own = new WeakSet(), tokens = new Set();
+  const loadedLinks = new WeakMap();
   const saved = new WeakMap(), mediaListeners = new Map();
   let disposed = false, pendingFrame = 0, watchFrame = 0, mediaDirty = true;
   const written = new WeakMap(), properties = new WeakMap(), scopes = new Set(), errorKeys = new Set();
@@ -194,14 +230,23 @@ function installColorMix() {
   }
   function styles() {
     active = new Map(); tokens.clear();
+    function source(original) {
+      if (original.tagName !== 'LINK') return original.textContent;
+      const row = readStylesheet(original);
+      if (row && loadedLinks.get(original) !== row) {
+        loadedLinks.set(original, row);
+        row.ready.then(schedule);
+      }
+      return row?.text ?? '';
+    }
     for (const [original, clone] of originals) {
-      if (!original.isConnected || !original.textContent.includes('color-mix(')) {
+      if (!original.isConnected || !source(original).includes('color-mix(')) {
         clone.remove(); originals.delete(original);
       }
     }
-    for (const original of document.querySelectorAll('style')) {
+    for (const original of document.querySelectorAll('style,link[rel~="stylesheet"]')) {
       if (own.has(original)) continue;
-      const text = original.textContent;
+      const text = source(original);
       if (!text.includes('color-mix(')) continue;
       const transformed = transcribe(text);
       let clone = originals.get(original);
@@ -218,7 +263,7 @@ function installColorMix() {
       if (clone.nonce !== original.nonce) clone.nonce = original.nonce;
       if (clone.textContent !== transformed) clone.textContent = transformed;
       if (original.nextSibling !== clone) original.after(clone);
-      if (clone.sheet && original.sheet) clone.sheet.disabled = original.sheet.disabled;
+      if (clone.sheet) clone.sheet.disabled = Boolean(original.disabled || original.sheet?.disabled);
     }
     expressions = active;
     facts.expressions = expressions.size; facts.activeStyles = originals.size;
@@ -308,8 +353,9 @@ function installColorMix() {
   }
   function watchDisabled() {
     if (disposed) return;
-    for (const [original, clone] of originals) if (original.sheet && clone.sheet && original.sheet.disabled !== clone.sheet.disabled) {
-      clone.sheet.disabled = original.sheet.disabled; schedule();
+    for (const [original, clone] of originals) if (clone.sheet) {
+      const disabled = Boolean(original.disabled || original.sheet?.disabled);
+      if (clone.sheet.disabled !== disabled) {clone.sheet.disabled = disabled; schedule();}
     }
     watchFrame = requestAnimationFrame(watchDisabled);
   }
@@ -326,7 +372,7 @@ function installColorMix() {
     })) schedule();
   });
   observer.observe(document, {subtree: true, childList: true, characterData: true, attributes: true,
-    attributeFilter: ['class', 'style', 'media', 'type', 'title', 'nonce', 'disabled', 'data-theme', 'data-dsw-theme', 'data-ds-dark-theme']});
+    attributeFilter: ['class', 'style', 'href', 'rel', 'media', 'type', 'title', 'nonce', 'disabled', 'data-theme', 'data-dsw-theme', 'data-ds-dark-theme']});
   for (const event of ['pointerover', 'pointerout', 'focusin', 'focusout']) document.addEventListener(event, schedule, true);
   window.addEventListener('resize', schedule);
   for (const event of ['beforeprint', 'afterprint']) window.addEventListener(event, schedule);

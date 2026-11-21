@@ -4,6 +4,7 @@ import copy
 from dsh.api.settings import CredentialsController, failure, settled
 from dsh.core.session.json import UNDEFINED
 from dsh.host.native_command import open_text_file
+from dsh.typert.artifact import UNDEFINED as WIRE_UNDEFINED
 from dsh.typert.remote import Remote, TypertRemoteService
 
 
@@ -55,7 +56,8 @@ class CurrentSettingsController(TypertRemoteService):
             raise failure('gateway/bad-request', 'invalid payload for settings.'+mode, dict(issues=[issue]))
         settings = self._provider()
         try:
-            await settled(getattr(settings, mode)(ns, value, None if expected is UNDEFINED else expected))
+            revision = None if expected is UNDEFINED or expected is WIRE_UNDEFINED else expected
+            await settled(getattr(settings, mode)(ns, value, revision))
         except Exception as error:
             expected = getattr(error, 'expected', None); actual = getattr(error, 'actual', None)
             message = getattr(error, 'message', str(error))

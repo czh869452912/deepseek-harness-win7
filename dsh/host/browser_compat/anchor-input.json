@@ -30,13 +30,15 @@
       "Collect/release autoUpdate observers",
       "Preserve React stylesheet and inline ownership via generated adjacent rules",
       "Read unsupported CSSOM anchor properties through custom-property bridge",
+      "Resolve pinned model and menu anchor variables",
+      "Read local stylesheets through the Host compatibility adapter",
       "Expose reset for dynamic portal discovery"
     ]
   },
   "output": {
     "path": "anchor.js",
-    "bytes": 120986,
-    "sha256": "9c9997d4f3f901f052238d2a44325ebb0264dc0a1af84998924de142e0825c5b"
+    "bytes": 121078,
+    "sha256": "88f3bdaefe91c361f905ac0cfe6c92aa0be30ea631bea31a104313f70436b0ba"
   },
   "licenseSha256": "e60fc0de71d5f1c0581748da51af72fdb41f62f2bd803faa4ee21f9080d9da0b",
   "thirdPartyLicenses": [

@@ -191,6 +191,14 @@ async def run_desktop_host(profile_dir, environment=None, patches=None):
             PluginPackages(host, dict(resolution=resolution))
             provide_cmdline(host, dict(args=[], exit=lambda code: None, ready=app_ready['service']))
         ctx = await boot('dsh desktop', str(root_config), admit_historical_persona_patches(rows), prepare)
+        from dsh.host.desktop.health_transaction import read as pending_health
+        health = pending_health(directory)
+        if health is not None and health['phase'] == 'pending' and health['operation'] != 'remove':
+            from dsh.boot.startup import inactive_entries, inactive_diagnostic
+            failures = [row for row in await inactive_entries(ctx)
+                        if row['entry'].options.get('name') == health['name']]
+            if failures:
+                raise RuntimeError('Desktop package activation failed: ' + inactive_diagnostic(failures[0]))
         # Workspace initialization now opens the session catalog. Its failure
         # must retain the Desktop adapter's fatal upgrade/encoding boundary.
         if ctx.get('workspaceRegistry') is None:

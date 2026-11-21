@@ -8,6 +8,10 @@
   const set = prototype.setProperty, get = prototype.getPropertyValue;
   const remove = prototype.removeProperty, priority = prototype.getPropertyPriority;
   const names = {'anchor-name': '--dsh-compat-anchor-name', 'position-anchor': '--dsh-compat-position-anchor'};
+  const variables = [...Object.values(names), '--dsh-menu-anchor', '--dsh-model-anchor', '--dsh-submenu-parent'];
+  const managed = new RegExp('(?:^|;)\\s*(?:' + variables.join('|') + ')\\s*:');
+  const targets = '[style*="--dsh-compat-position-anchor"],[style*="--dsh-menu-anchor"],' +
+    '[style*="--dsh-model-anchor"][role="menu"],[style*="--dsh-model-anchor"][role="group"],[style*="--dsh-submenu-parent"]';
   let frame = 0, running = false, pending = false, last = '', generation = 0;
   const ids = new WeakMap(); let nextId = 0;
   const identity = node => {if (!ids.has(node)) ids.set(node, ++nextId); return ids.get(node);};
@@ -45,10 +49,10 @@
   function signature() {
     const styles = Array.from(document.querySelectorAll('style:not([data-generated-by-polyfill]):not([data-dsh-color-mix-fallback]),link[rel="stylesheet"]'));
     const anchors = Array.from(document.querySelectorAll('[style]')).filter(node =>
-      /(?:--dsh-compat-(?:anchor-name|position-anchor)|--dsh-menu-anchor)\s*:/.test(node.getAttribute('style')));
+      managed.test(node.getAttribute('style')));
     return styles.map(node => identity(node) + ':' + (node.href || node.textContent)).join('|') + '\n' +
-      anchors.map(node => identity(node) + ':' + node.className + ':' + get.call(node.style, names['anchor-name']) +
-        ':' + get.call(node.style, names['position-anchor']) + ':' + get.call(node.style, '--dsh-menu-anchor')).join('|');
+      anchors.map(node => [identity(node), node.className, node.getAttribute('role'),
+        ...variables.map(key => get.call(node.style, key))].join(':')).join('|');
   }
   async function refresh() {
     frame = 0; pending = false;
@@ -56,7 +60,7 @@
     last = value; running = true; const turn = ++generation;
     try {
       dshAnchorVendor.reset();
-      const target = document.querySelector('[style*="--dsh-compat-position-anchor"],[style*="--dsh-menu-anchor"]');
+      const target = document.querySelector(targets);
       if (target) await dshAnchorVendor.apply({positionAreaContainingBlock: false});
       if (turn === generation) {
         state.refreshes++; state.active = !!target; state.error = null;
@@ -71,7 +75,7 @@
     schedule();
   });
   observer.observe(document, {subtree: true, childList: true, characterData: true,
-    attributes: true, attributeFilter: ['style', 'class', 'href', 'rel', 'data-anchor-polyfill']});
+    attributes: true, attributeFilter: ['style', 'class', 'role', 'href', 'rel', 'data-anchor-polyfill']});
   document.addEventListener('load', event => {if (event.target instanceof HTMLLinkElement) schedule();}, true);
   window.addEventListener('pagehide', () => {
     observer.disconnect(); cancelAnimationFrame(frame); generation++; dshAnchorVendor.reset();
@@ -80,7 +84,7 @@
   window.addEventListener('pageshow', event => {
     if (event.persisted) {
       observer.observe(document, {subtree:true,childList:true,characterData:true,attributes:true,
-        attributeFilter:['style','class','href','rel','data-anchor-polyfill']});schedule();
+        attributeFilter:['style','class','role','href','rel','data-anchor-polyfill']});schedule();
     }
   });
   schedule();

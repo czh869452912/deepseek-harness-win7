@@ -1,7 +1,8 @@
 'use strict';
 require('./stdio.cjs').protectStdio();
-const {app,BrowserWindow,protocol,ipcMain,Menu,Tray,nativeImage,dialog}=require('electron');
+const {app,BrowserWindow,protocol,ipcMain,Menu,Tray,nativeImage,dialog,shell:systemShell,nativeTheme,session}=require('electron');
 const {join,resolve,extname,dirname}=require('node:path');
+const {release:osRelease}=require('node:os');
 const {readFile}=require('node:fs/promises');
 const {Readable}=require('node:stream');
 const {DesktopProjectManager}=require('./project-manager.cjs');
@@ -10,6 +11,10 @@ const {desktopHome}=require('./home.cjs');
 const {desktopEnvironment}=require('./environment.cjs');
 const {DesktopUpdateCoordinator}=require('./update-coordinator.cjs');
 const {Win7Updater,loadConfiguration}=require('./updates.cjs');
+const {createBrowserGuests,httpUrl}=require('./browser-guests.cjs');
+const {installFileActions}=require('./file-actions.cjs');
+const {installFileDrag}=require('./file-drag.cjs');
+const {installDesktopShortcuts}=require('./shortcuts.cjs');
 
 protocol.registerSchemesAsPrivileged([{scheme:'dsh-app',privileges:{standard:true,secure:true,supportFetchAPI:true,corsEnabled:false,stream:true}}]);
 const development=!app.isPackaged;
@@ -20,6 +25,7 @@ const home=desktopHome(development&&option('--home')||process.env.DSH_HOME,app.g
 app.setPath('userData',join(home,'desktop','electron'));
 const primary=app.requestSingleInstanceLock();
 let mainWindow,pluginWindow,guideWindow,manager,tray,stopping=false,allowQuit=false,shellReady=false;
+let browserGuests,fileDrag,shortcuts;
 function focus(){
   if(!app.isReady()||!shellReady||stopping)return;
   if(!mainWindow||mainWindow.isDestroyed())mainWindow=createWindow(false);
@@ -34,11 +40,31 @@ function assertSender(event,hosts=['shell']){
   if(!frame||frame!==event.sender.mainFrame||url.protocol!=='dsh-app:'||!hosts.includes(url.host)||url.username||url.password)throw new Error('Desktop IPC from unowned renderer');
 }
 function createWindow(shell){
-  const window=new BrowserWindow({width:shell?900:1280,height:shell?620:840,minWidth:880,minHeight:600,show:false,
+  // The native frame keeps caption controls available on unqualified legacy Windows versions.
+  const caption=process.platform==='win32'&&!shell&&Number(osRelease().split('.')[0])>=10;
+  const colors=()=>nativeTheme.shouldUseDarkColors
+    ? {color:'#1b1b1c',symbolColor:'#f9fafb'} : {color:'#f9fafb',symbolColor:'#0f1115'};
+  const window=new BrowserWindow({width:shell?900:1280,height:shell?620:840,minWidth:shell?880:520,minHeight:600,show:false,
+    ...(caption?{titleBarStyle:'hidden',titleBarOverlay:{height:40,...colors()},autoHideMenuBar:true}:{}),
     title:shell?'DeepSeek Harness — Desktop Plugins':'DeepSeek Harness',webPreferences:{
-      preload:join(__dirname,shell?'preload.cjs':'preload-app.cjs'),nodeIntegration:false,contextIsolation:true,sandbox:true,webSecurity:true}});
+      preload:join(__dirname,shell?'preload.cjs':'preload-app.cjs'),nodeIntegration:false,contextIsolation:true,sandbox:true,webSecurity:true,
+      webviewTag:!shell}});
   const expected=shell?'shell':'app';
-  window.webContents.setWindowOpenHandler(()=>({action:'deny'}));
+  if (!shell) {
+    shortcuts.attach(window);
+    browserGuests=createBrowserGuests(window.webContents,(guest,id)=>shortcuts.attachGuest(window,guest,id));
+    fileDrag.attach(window.webContents);
+  }
+  if (caption) {
+    const sync=()=>{if (!window.isDestroyed()) window.setTitleBarOverlay({height:40,...colors()});};
+    nativeTheme.on('updated',sync);
+    window.once('closed',()=>nativeTheme.removeListener('updated',sync));
+  }
+  window.webContents.setWindowOpenHandler(({url,postBody})=>{
+    const target=!shell&&!postBody&&httpUrl(url);
+    if (target) void systemShell.openExternal(target.href).catch(console.error);
+    return {action:'deny'};
+  });
   window.webContents.on('will-navigate',(event,url)=>{try{const parsed=new URL(url);if(parsed.protocol!=='dsh-app:'||parsed.hostname!==expected)event.preventDefault();}catch{event.preventDefault();}});
   window.once('ready-to-show',()=>{if(!window.isDestroyed())window.show();});
   window.on('close',event=>{if(!shell&&!stopping){event.preventDefault();window.hide();}});
@@ -75,6 +101,7 @@ async function resource(request){
     for(const row of uploads){
       if(row.bytes)yield row.bytes;
       else if(row.file){for await(const data of createReadStream(row.file))yield data;}
+      else if(row.blobUUID)yield await session.defaultSession.getBlobData(row.blobUUID);
       else throw new Error('Unsupported Electron upload body source');
     }
   })():null;
@@ -98,6 +125,22 @@ async function main(){
     ?{limitedShell:true,status:'limited'}:await desktopEnvironment();
   ipcMain.handle('dsh-desktop:environment-get',event=>{assertSender(event,['app']);return {...environment,locale:locale.id};});
   ipcMain.handle('dsh-desktop:setup-guide',event=>{assertSender(event,['app','shell']);openGuide();});
+  const appHandler=(name, handler)=>ipcMain.handle(name,(event,...args)=>{
+    assertSender(event,['app']);
+    if (event.sender!==mainWindow?.webContents) throw new Error('Desktop IPC from unowned window');
+    return handler(...args);
+  });
+  appHandler('dsh-desktop:browser-acquire',workspace=>browserGuests.acquire(workspace));
+  appHandler('dsh-desktop:browser-release',lease=>browserGuests.release(lease));
+  appHandler('dsh-desktop:directory-pick',async()=>{
+    const selected=await dialog.showOpenDialog(mainWindow,{properties:['openDirectory']});
+    return selected.canceled ? null : selected.filePaths[0] ?? null;
+  });
+  appHandler('dsh-desktop:theme-set',theme=>{
+    if (['system','light','dark'].includes(theme)) nativeTheme.themeSource=theme;
+  });
+  installFileActions(appHandler,()=>mainWindow);
+  fileDrag=installFileDrag(appHandler,()=>mainWindow,join(home,'desktop','drag'));
   locale.messages={...locale.messages,
     pluginManagerDescription:locale.id==='zh-CN'?'安装本地 Python 插件文件夹或 ZIP 包，仅作用于桌面端。':'Install a local Python plugin folder or ZIP package in Desktop.',
     npmPackage:locale.id==='zh-CN'?'插件文件夹或 ZIP 路径':'Plugin folder or ZIP path',
@@ -144,10 +187,15 @@ async function main(){
   register('dsh-desktop:plugins-add',spec=>mutation('add',spec));
   register('dsh-desktop:plugins-remove',name=>mutation('remove',name));
   register('dsh-desktop:plugins-update',(name,source)=>mutation('upgrade',source,name));
-  Menu.setApplicationMenu(Menu.buildFromTemplate([{label:locale.messages.application,submenu:[
+  const updateMenu=()=>Menu.setApplicationMenu(Menu.buildFromTemplate([shortcuts.fileMenu({
+    fileMenu:locale.id==='zh-CN'?'文件':'File',closePage:locale.id==='zh-CN'?'关闭页面':'Close Page',
+  }),{label:locale.messages.application,submenu:[
     {label:locale.messages.pluginsMenu,accelerator:'CmdOrCtrl+,',click:openPlugins},
     {label:locale.messages.checkUpdatesMenu,click:()=>{void checkAndPrompt(true);}},{type:'separator'},
     {label:locale.id==='zh-CN'?'退出':'Quit',click:()=>app.quit()}]}]));
+  shortcuts=installDesktopShortcuts(()=>mainWindow,app.getPath('userData'),'windows',updateMenu,
+    ()=>({revision:0,blocked:false}));
+  updateMenu();
   shellReady=true;
   mainWindow=createWindow(false);
   const icon=nativeImage.createFromPath(join(__dirname,'tray.png'));
@@ -168,7 +216,10 @@ app.on('before-quit',event=>{
   // Release renderer subscriptions before closing the transport they consume.
   // Otherwise a live control stream receives a network failure during quit.
   for(const window of BrowserWindow.getAllWindows())if(!window.isDestroyed())window.destroy();
-  Promise.resolve(manager?.close()).catch(error=>console.error(error)).finally(()=>{
+  shortcuts?.dispose();
+  Promise.allSettled([manager?.close(),fileDrag?.dispose()]).then(results=>{
+    for (const result of results) if (result.status==='rejected') console.error(result.reason);
+  }).finally(()=>{
     tray?.destroy();allowQuit=true;app.quit();
   });
 });

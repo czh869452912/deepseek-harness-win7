@@ -69,6 +69,31 @@ try{
   await page.evaluate(()=>document.querySelector('button').style.removeProperty('anchor-name'));
   assert.equal(await page.locator('button').evaluate(node=>node.style.anchorName),'');
   assert.deepEqual(result.errors,[]);
+  const external=await browser.newPage({viewport:{width:900,height:600}});
+  await external.route('http://fixture.test/**',route=>{
+    if (route.request().url().endsWith('/menu.css')) {
+      return route.fulfill({contentType:'text/css',body:css+
+        '#trigger{anchor-name:var(--dsh-model-anchor)}.target{position-anchor:var(--dsh-model-anchor)}'});
+    }
+    return route.fulfill({contentType:'text/html',body:
+      '<link rel="stylesheet" href="/menu.css"><button id="trigger" style="--dsh-model-anchor:--picker">Model</button>'});
+  });
+  await external.goto('http://fixture.test/');
+  await external.addScriptTag({content:input.script});
+  await external.evaluate(()=>{
+    const menu=document.createElement('div');
+    menu.className='target';
+    menu.role='menu';
+    menu.style.setProperty('--dsh-model-anchor','--picker');
+    document.body.append(menu);
+  });
+  await external.waitForFunction(()=>{
+    const button=document.querySelector('#trigger'),menu=document.querySelector('.target');
+    return Math.abs(menu.getBoundingClientRect().top-button.getBoundingClientRect().bottom-4)<1 &&
+      getComputedStyle(menu).backgroundColor==='rgb(128, 0, 128)' && window.__dshAnchorCompatibility.targets===1;
+  });
+  result.rows.push({name:'external-model-stylesheet',state:await external.evaluate(()=>({...window.__dshAnchorCompatibility}))});
+  await external.close();
   // Native capability detection leaves the CSSOM methods and state untouched.
   const native=await browser.newPage();await native.setContent('<div></div>');
   await native.evaluate(()=>{window.previousAnchorSetter=CSSStyleDeclaration.prototype.setProperty;

@@ -38,7 +38,22 @@ function dshAlign(target){
 }
 function Ve(e,t,n,r){dshTargets.add(t);const release=dshAutoUpdate(e,t,()=>{dshAlign(t);return n();},r);dshCleanups.push(release);return release;}
 function dshAutoUpdate(e, t, n, r) {`);
-patch('function Su(e) {','function dshInline(e){return (e.getAttribute("style") || "").replaceAll("--dsh-compat-anchor-name:","anchor-name:").replaceAll("--dsh-compat-position-anchor:","position-anchor:");}\nfunction Su(e) {');
+patch('function Su(e) {',`function dshInline(e){
+  let css=(e.getAttribute("style")||"").replaceAll("--dsh-compat-anchor-name:","anchor-name:").replaceAll("--dsh-compat-position-anchor:","position-anchor:");
+  const model=e.style.getPropertyValue("--dsh-model-anchor").trim();
+  const menu=e.style.getPropertyValue("--dsh-menu-anchor").trim();
+  const parent=e.style.getPropertyValue("--dsh-submenu-parent").trim();
+  const name=model||menu||parent;
+  if(/^--[A-Za-z0-9_-]+$/.test(name)){
+    const target=parent||e.hasAttribute("data-menu-backing")||
+      (model&&e.matches('[role="menu"],[role="group"]'));
+    if(target)css+=";position-anchor:"+name;
+    else if(model||e.hasAttribute("data-menu-material"))css+=";anchor-name:"+name;
+  }
+  return css;
+}
+function Su(e) {`);
+patch('let t = e.getAttribute("style");\n\treturn t ? /(?:^|;)\\s*position-anchor\\s*:/i.test(t) : !1;','return /(?:^|;)\\s*position-anchor\\s*:/i.test(dshInline(e));');
 patch('return xu.test((t = e.getAttribute("style")) == null ? "" : t);','return xu.test(dshInline(e));');
 patch('${e.getAttribute("style")}','${dshInline(e)}');
 patch('a.setAttribute("style", `${r.uuid}: var(${s}); \u0024{(g = a.getAttribute("style")) == null ? "" : g}`)',
@@ -46,6 +61,14 @@ patch('a.setAttribute("style", `${r.uuid}: var(${s}); \u0024{(g = a.getAttribute
 assert.equal(code.split('n.style.setProperty(').length-1,8);
 code=code.replaceAll('n.style.setProperty(','dshRootSet(');
 patch('.filter((e) => e !== null);','.filter((e) => e !== null && /(?:anchor(?:-name|-size|-scope)?\\s*[(:]|position-(?:anchor|area|try)\\s*:)/.test(e.css));');
+patch('let t = new URL(e.href, document.baseURI);\n\tif (_u(e) && t.origin === location.origin) return t;',
+  'if (_u(e)) return window[Symbol.for("deepseek-win7.host.stylesheets")].url(e);');
+const fetchStart=code.indexOf('\t\t\t\ttry {\n\t\t\t\t\tlet t = yield fetch(e.url.toString())');
+const fetchEnd=code.indexOf('\n\t\t\t});',fetchStart);
+assert.ok(fetchStart>0&&fetchEnd>fetchStart);
+code=code.slice(0,fetchStart)+`                const row=window[Symbol.for("deepseek-win7.host.stylesheets")].read(e.el);
+                const css=yield row?.ready;
+                return css?{...e,css}:null;`+code.slice(fetchEnd);
 patch('!e.hasAttribute(uu)','!e.hasAttribute(uu) && !e.hasAttribute("data-dsh-color-mix-fallback")');
 const start=code.indexOf('function wf(e, t, n) {'),end=code.indexOf('\nfunction Tf(e)',start);
 assert.ok(start>0&&end>start);
@@ -92,7 +115,7 @@ const record={schema:1,package:manifest.name,version:manifest.version,license:ma
   source:'https://github.com/oddbird/css-anchor-positioning',
   npm:JSON.parse(await readFile(join(source,'registry.json'),'utf8')).dist,
   input:{path:'dist/css-anchor-positioning-fn.js',bytes:bytes.length,sha256:hash(bytes)},
-  build:{esbuild:builder.version,target:'chrome108',format:'iife',patches:['Collect/release autoUpdate observers','Preserve React stylesheet and inline ownership via generated adjacent rules','Read unsupported CSSOM anchor properties through custom-property bridge','Expose reset for dynamic portal discovery']},
+  build:{esbuild:builder.version,target:'chrome108',format:'iife',patches:['Collect/release autoUpdate observers','Preserve React stylesheet and inline ownership via generated adjacent rules','Read unsupported CSSOM anchor properties through custom-property bridge','Resolve pinned model and menu anchor variables','Read local stylesheets through the Host compatibility adapter','Expose reset for dynamic portal discovery']},
   output:{path:'anchor.js',bytes:output.length,sha256:hash(output)},
   licenseSha256:hash(await readFile(join(source,'LICENSE'))),
   thirdPartyLicenses:JSON.parse(await readFile(join(source,'third-party-inputs.json'),'utf8')),

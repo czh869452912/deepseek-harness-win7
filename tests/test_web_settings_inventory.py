@@ -1,10 +1,12 @@
 """Settings and plugin inventory acceptance through the shipped Web composition."""
 import os
+import asyncio
 
 import pytest
 
 from canonical_web_fixture import web_context, close_web_context
 from dsh.typert.dispatch import RemoteDispatcher
+from dsh.typert.remote import RemoteError
 
 
 @pytest.mark.asyncio
@@ -36,7 +38,7 @@ async def test_source_settings_schema_facts_survive_canonical_web_boot(tmp_path,
             modes = [deepseek['refs'][str(uid)] for uid in retry['list']]
             assert modes[0]['dict']['backoff'] == modes[1]['dict']['backoff']
         elif case == 'ordinary-provider':
-            assert 'llm-pi-ai' not in rows
+            assert rows['llm-pi-ai']['value']['providers'] == {}
             inventory = await RemoteDispatcher(ctx).invoke(dict(namespace='pluginInventory',method='list',args={}))
             entry = next(row for row in inventory['entries'] if row['entryId']=='include:llm-pi-ai')
             assert entry['enabled'] and entry['fiberPhase']=='active'
@@ -46,6 +48,58 @@ async def test_source_settings_schema_facts_survive_canonical_web_boot(tmp_path,
             preference = schema['refs'][str(root['dict']['preference'])]
             assert preference['meta']['pattern'] == dict(
                 source=r'^[A-Za-z]{2,8}(?:-[A-Za-z0-9]{1,8})*$', flags='')
+    finally:
+        await close_web_context(ctx)
+
+
+@pytest.mark.asyncio
+async def test_issue11_live_settings_and_archived_preferences(tmp_path):
+    home = tmp_path / 'home'
+    home.mkdir()
+    (home / 'settings.yaml.imported').write_text(
+        'ui-developer-tools:\n  enabled: false\nui-chat:\n  transcriptView: expanded\n'
+        'ui-conversation:\n  busyEnter: steer\nui-theme:\n  preference: light\n', encoding='utf-8')
+    ctx = await web_context(home)
+    try:
+        remote = RemoteDispatcher(ctx)
+
+        async def update(ns, **patch):
+            return await remote.invoke(dict(namespace='settings', method='update', args=dict(ns=ns, patch=patch)))
+
+        async def wait_for_recovery():
+            while not any(home.rglob('legacy-settings-issue11.sha256')):
+                await asyncio.sleep(0.01)
+
+        await asyncio.wait_for(wait_for_recovery(), 12)
+        rows = {row['ns']: row for row in ctx.settings.describe()}
+        assert rows['ui-settings']['value'] == {'enabled': False}
+        assert not rows['ui-settings']['autoGenerate']
+        assert rows['ui-chat']['value']['transcriptView'] == 'expanded'
+        assert rows['ui-conversation']['value']['busyEnter'] == 'steer'
+        assert 'preference' not in rows['ui-theme']['user']
+        await update('ui-settings', enabled=True)
+        await update('ui-chat', linkOpening='new-tab', performanceUsage='compact')
+        await update('agent-loop', maxParallelToolCalls=2)
+        assert ctx.agentLoop.config['maxParallelToolCalls'] == 2
+
+        catalog, custom = 'openai', 'issue11-local'
+        await update('llm-pi-ai', providers={catalog: {'models': [{'id': 'gpt-4o'}]},
+            custom: {'api': 'openai-completions', 'baseURL': 'http://127.0.0.1:1/v1', 'models': [{'id': 'local'}]}})
+        assert 'local' in {m['id'] for m in await ctx.llm.listModels(custom)}
+        with pytest.raises(RemoteError) as rejected:
+            await update('llm-pi-ai', providers={custom: {'baseURL': ''}})
+        assert rejected.value.code == 'settings/rejected'
+        assert 'local' in {m['id'] for m in await ctx.llm.listModels(custom)}
+    finally:
+        await close_web_context(ctx)
+
+    ctx = await web_context(home)
+    try:
+        rows = {row['ns']: row for row in ctx.settings.describe()}
+        assert rows['ui-settings']['value']['enabled'] is True
+        assert rows['ui-chat']['value']['linkOpening'] == 'new-tab'
+        assert ctx.agentLoop.config['maxParallelToolCalls'] == 2
+        assert 'local' in {m['id'] for m in await ctx.llm.listModels('issue11-local')}
     finally:
         await close_web_context(ctx)
 

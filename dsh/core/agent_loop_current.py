@@ -4,6 +4,8 @@ import asyncio
 from dsh.core.agent import AgentHandle, AgentOptions
 from dsh.core.session.json import UNDEFINED
 from dsh.core.agent_lifecycle_current import CurrentAgentLifecycleService, CurrentAgentLifecyclePlugin
+from dsh.core.agent_loop_settings import AGENT_LOOP_CONFIG_SCHEMA
+from dsh.cordis.schema import Schema
 from dsh.core.agent_dispatch_current import emit_agent_event
 from dsh.core.react_loop_current import ReactLoopAgent
 from dsh.core.inbox_current import INBOX_PROJECTION_DEFINITION
@@ -120,3 +122,5 @@ class CurrentAgentLoopService(CurrentAgentLifecycleService):
 
 class CurrentAgentLoopPlugin(CurrentAgentLifecyclePlugin):
     _service_class = CurrentAgentLoopService
+    Config = Schema.object(dict(AGENT_LOOP_CONFIG_SCHEMA.dict,
+        maxParallelToolCalls=AGENT_LOOP_CONFIG_SCHEMA.dict['maxParallelToolCalls'].volatile()))

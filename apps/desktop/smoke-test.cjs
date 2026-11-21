@@ -3,6 +3,8 @@
 const {mkdir,writeFile,readFile,cp}=require('node:fs/promises');
 const {join,resolve}=require('node:path');
 const assert=require('node:assert/strict');
+const {createServer}=require('node:http');
+const {release:osRelease}=require('node:os');
 const pause=ms=>new Promise(resolve=>setTimeout(resolve,ms));
 async function evaluate(window,expression,timeout=45000){
   let timer;
@@ -50,15 +52,95 @@ async function run({app,mainWindow,openPlugins,pluginWindow,guideWindow,environm
     }
     report.main=await evaluate(mainWindow,`({
       url:location.href,node:typeof require,process:typeof process,ownsHost:globalThis.__DSH_TRANSPORT__.ownsHost,
-      text:document.body.innerText.slice(0,1500),preload:globalThis.dshDesktop,
+      text:document.body.innerText.slice(0,1500),preload:{protocolVersion:globalThis.dshDesktop.protocolVersion,
+        browser:typeof globalThis.dshDesktop.browser?.acquire,directoryPicker:typeof globalThis.__DSH_DIRECTORY_PICKER__?.pick,
+        titlebar:navigator.windowControlsOverlay?.visible, titlebarHeight:document.documentElement.style.getPropertyValue('--dsh-windows-titlebar-height')},
       workers:globalThis.__DSH_BROWSER_COMPAT__?.workers
     })`);
     assert.equal(report.main.node,'undefined');assert.equal(report.main.process,'undefined');assert.equal(report.main.ownsHost,true);
+    assert.equal(report.main.preload.browser,'function');
+    report.shortcuts=await evaluate(mainWindow,`(async()=>{
+      const {shortcuts}=window.dshDesktop;
+      const definitions=[{id:'smoke.shortcut',defaults:{}}];
+      const before=await shortcuts.get(definitions);
+      const edit=await shortcuts.edit({type:'set',id:'smoke.shortcut',binding:{code:'KeyJ',modifiers:['control','shift']}},before.revision);
+      return {initial:before.status,edit:edit.status,platform:document.documentElement.dataset.platform};
+    })()`);
+    assert.deepEqual(report.shortcuts,{initial:'ready',edit:'saved',platform:process.platform});
+    if (process.platform==='win32' && Number(osRelease().split('.')[0])>=10) {
+      assert.equal(report.main.preload.titlebar,true);
+      assert.equal(report.main.preload.titlebarHeight,'40px');
+    }
+    const downloads=join(output,'downloads');
+    await mkdir(downloads);
+    app.setPath('downloads',downloads);
+    const pngFixture=Buffer.from('89504e470d0a1a0a','hex');
+    const localPage=createServer((request,response)=>{
+      if (request.url==='/image.png') {
+        response.writeHead(200,{'Content-Type':'image/png'});
+        response.end(pngFixture);
+        return;
+      }
+      response.writeHead(200,{'Content-Type':'text/html','X-Frame-Options':'DENY'});
+      response.end('<title>Desktop sidebar guest fixture</title><p>Guest loaded</p>');
+    });
+    await new Promise((resolve,reject)=>{localPage.once('error',reject);localPage.listen(0,'127.0.0.1',resolve);});
+    try {
+      const source='http://127.0.0.1:'+localPage.address().port;
+      report.guest=await evaluate(mainWindow,`(async()=>{
+        const browser=window.dshDesktop.browser,reservation=await browser.acquire('smoke-workspace');
+        const guest=document.createElement('webview');
+        const wait=event=>new Promise(resolve=>guest.addEventListener(event,resolve,{once:true}));
+        guest.partition=reservation.partition;guest.setAttribute('allowpopups','');
+        guest.src='about:blank#'+reservation.lease;
+        const ready=wait('dom-ready');document.body.append(guest);await ready;
+        try {
+          await guest.loadURL(${JSON.stringify(source)});
+          const state=await guest.executeJavaScript('({title:document.title,node:typeof require,bridge:typeof dshDesktop})');
+          const popup=new Promise(resolve=>{const off=browser.onOpenRequested(reservation.lease,url=>{off();resolve(url);});});
+          await guest.executeJavaScript("window.open('/next','_blank'); void 0");
+          return {...state,popup:await popup};
+        } finally {await browser.release(reservation.lease);guest.remove();}
+      })()`);
+      assert.deepEqual(report.guest,{title:'Desktop sidebar guest fixture',node:'undefined',bridge:'undefined',popup:source+'/next'});
+      report.fileActions=await evaluate(mainWindow,`(async()=>{
+        const files=window.dshDesktop.fileActions,drag=window.dshDesktop.fileDrag;
+        const image=await files.readClipboardImage(${JSON.stringify(source+'/image.png')});
+        const url=URL.createObjectURL(new Blob(['native download'],{type:'text/plain'}));
+        try{
+          const saved=await files.save({url,mode:'download',name:'smoke.txt'});
+          const handle=await drag.prepare({kind:'bytes',bytes:new Uint8Array([1,2]),name:'drag.bin'},'smoke-drag');
+          drag.release(handle);
+          return {mediaType:image.mediaType,size:image.bytes.length,saved,drag:typeof handle==='string'};
+        }finally{URL.revokeObjectURL(url);}
+      })()`);
+      assert.equal(report.fileActions.mediaType,'image/png');
+      assert.equal(report.fileActions.size,pngFixture.length);
+      assert.equal(report.fileActions.saved.path,join(downloads,'smoke.txt'));
+      assert.equal(await readFile(report.fileActions.saved.path,'utf8'),'native download');
+      assert.equal(report.fileActions.drag,true);
+    } finally {await new Promise(resolve=>localPage.close(resolve));}
     report.settings=await evaluate(mainWindow,`fetch('/api/settings/describe',{
       method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({type:'client-request',rpcId:'desktop-smoke',
       method:'settings/describe',payload:{args:{}}})}).then(async response=>({status:response.status,body:await response.json()}))`);
     assert.equal(report.settings.status,200);assert.equal(report.settings.body.result.ok,true);
     assert.ok(report.settings.body.result.value.namespaces.length>0);
+    report.upload=await evaluate(mainWindow,`(async()=>{
+      const rpc=async(method,args)=>{
+        const response=await fetch('/api/'+method,{method:'POST',headers:{'content-type':'application/json'},
+          body:JSON.stringify({type:'client-request',rpcId:method,method,payload:{args}})});
+        return (await response.json()).result;
+      };
+      const session=await rpc('session/create',{request:{}});
+      const canvas=document.createElement('canvas');
+      canvas.width=canvas.height=1;
+      const png=await new Promise(resolve=>canvas.toBlob(resolve,'image/png'));
+      const response=await fetch('/api/session/uploadFileBinary?sessionId='+session.value.sessionId+'&mediaType=image/png',
+        {method:'POST',headers:{'content-type':'application/octet-stream'},body:png});
+      const result=await response.json();
+      return {ok:result.ok,receipt:typeof result.value?.receiptId==='string',error:result.error};
+    })()`);
+    assert.deepEqual(report.upload,{ok:true,receipt:true,error:undefined});
     report.stream=await evaluate(mainWindow,`(async()=>{
       const controller=new AbortController();
       const iterator=globalThis.__DSH_TRANSPORT__.openStream('workspace/follow',{args:{}},controller.signal);

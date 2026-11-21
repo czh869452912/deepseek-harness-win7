@@ -1,5 +1,9 @@
 # 持续对齐记录
 
+本轮分发补件的[清理与进程审计](candidates/rc022/current-distribution-cleanup-checks.json)确认已退役 4,604,170,626 字节自有构建、解压、离线组件暂存、浏览器夹具、旧安装器和证据重复副本，无遗留测试进程；正式产品、必要原始观察及受保护系统备份按用途和复查点保留。
+
+2026-11-21：同一 [rc022 Pre-release](https://github.com/czh869452912/deepseek-harness-win7/releases/tag/rc022-preview-20261120) 已补齐双架构 AIO 和独立双架构离线组件 ZIP，共七份产品、十二个附件，公开入口、尺寸和 SHA-256 均复核通过；原四份产品、完整门禁及标签候选 `779b0b88` 保持原身份。新增包内检查及六组真实管理员安装/覆盖升级/失败回滚/卸载、12 次 GUI fresh/cold 独立通过，原注册表和快捷方式已核对恢复；UAC 等待超时的原父进程失败保持，恢复观察器接续同一提权运行器。见[补充回执](evidence/RUN-RC022-DISTRIBUTION-20261121-779B0B88.json)、[发布说明](../docs/releases/rc022-preview-20261120.md)及[公开回执](../docs/releases/rc022-preview-20261120.json)。构建、解压、浏览器夹具和旧安装器副本按记录退役；Win7 实际系统维护/重启、完整 Electron44 外壳和真实付费 provider 未新增认证。
+
 2026-11-20：已发布独立 [rc022 Pre-release](https://github.com/czh869452912/deepseek-harness-win7/releases/tag/rc022-preview-20261120)，标签指向原完整验收候选`779b0b88`；双架构Portable/Standard及完整证据等8个附件的远端尺寸、SHA-256和公开入口均核对通过，原稳定版保持。使用精确原产品，未重建；当前Windows范围与Win7等未新增验收范围见[发布说明](../docs/releases/rc022-preview-20261120.md)和[回执](../docs/releases/rc022-preview-20261120.json)。
 
 最终[资产与进程审计](candidates/rc022/current-final-cleanup-checks.json)记录本轮约5.35GB清理，以及已归档/已结束中间目录的补充退役；保留资产的用途和复查点、此前策略拒绝删除的例外单独列明。

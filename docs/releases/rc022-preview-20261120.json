@@ -48,26 +48,58 @@
       "public_download_head_verified": true
     },
     {
+      "name": "dsh-desktop-aio-setup-v0.2.2-rc.3-r1-x64.exe",
+      "id": 773938209,
+      "bytes": 476206355,
+      "sha256": "c26702f6e0fe0f5107796f93583cdea0b0525aac3d6f010df0b9886153bf0fba",
+      "url": "https://github.com/czh869452912/deepseek-harness-win7/releases/download/rc022-preview-20261120/dsh-desktop-aio-setup-v0.2.2-rc.3-r1-x64.exe",
+      "public_download_head_verified": true
+    },
+    {
+      "name": "dsh-desktop-aio-setup-v0.2.2-rc.3-r1-x86.exe",
+      "id": 773941528,
+      "bytes": 548072715,
+      "sha256": "4c5462097f1cdc3f50cb9c8231a3d3f81b764d6005627a652b051dc9ce9fa408",
+      "url": "https://github.com/czh869452912/deepseek-harness-win7/releases/download/rc022-preview-20261120/dsh-desktop-aio-setup-v0.2.2-rc.3-r1-x86.exe",
+      "public_download_head_verified": true
+    },
+    {
+      "name": "dsh-win7-offline-upgrade.zip",
+      "id": 773944700,
+      "bytes": 306682857,
+      "sha256": "4578c39800c42e36755828d7ac3669649dc6e037eeff63617098de14e89a6020",
+      "url": "https://github.com/czh869452912/deepseek-harness-win7/releases/download/rc022-preview-20261120/dsh-win7-offline-upgrade.zip",
+      "public_download_head_verified": true
+    },
+    {
+      "name": "RC022-DISTRIBUTION-20261121-779B0B88.zip",
+      "id": 773947228,
+      "bytes": 7143752,
+      "sha256": "06cacf4f82baa676acda656762bcc021c95fc1e3335daf7b9b1f1c2f1cf8455f",
+      "url": "https://github.com/czh869452912/deepseek-harness-win7/releases/download/rc022-preview-20261120/RC022-DISTRIBUTION-20261121-779B0B88.zip",
+      "public_download_head_verified": true
+    },
+    {
       "name": "release-verification.json",
-      "id": 772378733,
-      "bytes": 227008,
-      "sha256": "739991d24ed891449fbe2d0d5b15f90b55502a5cd4e95c0639b27471ffd1feb1",
+      "id": 773947615,
+      "bytes": 243839,
+      "sha256": "5fc9def840801c9794a837201c2b02db8e3b2546e500cac84b60bdd24e22bf66",
       "url": "https://github.com/czh869452912/deepseek-harness-win7/releases/download/rc022-preview-20261120/release-verification.json",
       "public_download_verified": true
     },
     {
       "name": "release-manifest.json",
-      "id": 772379240,
-      "bytes": 2318,
-      "sha256": "229d01f2b6200c67486946bad34a3a86f354b113507021301a1438b049d2ca21",
+      "id": 773947810,
+      "bytes": 2167,
+      "sha256": "ef3061ca428aa791a2ec06fe09bd4cd71a5c65151dddbc252646e9e8caa57bab",
       "url": "https://github.com/czh869452912/deepseek-harness-win7/releases/download/rc022-preview-20261120/release-manifest.json",
       "public_download_verified": true
     },
     {
       "name": "SHA256SUMS.txt",
-      "id": 772379699,
-      "bytes": 737,
-      "sha256": "e1297e7ef4a11fa1387bcf29cc827d83afd21292399a535c372d00f72f591c1d",
+      "id": 773947975,
+      "bytes": 1165,
+      "sha256": "ef179ea809656e87701375d77df4e20cca3d650e4a8dc8a39431ba6895ce1043",
       "url": "https://github.com/czh869452912/deepseek-harness-win7/releases/download/rc022-preview-20261120/SHA256SUMS.txt",
       "public_download_verified": true
     }
@@ -75,7 +107,316 @@
   "all_remote_asset_sizes_and_sha256_match": true,
   "public_unauthenticated_api_page_and_assets_verified": true,
   "latest_stable_release": "v0.1.5-rc.3-r3",
-  "product_rebuilt": false,
+  "original_four_products_rebuilt": false,
+  "distribution_products": 7,
   "qualification_evidence_id": "RUN-RC022-QUALIFICATION-20261120-779B0B88",
-  "scope": "Current Windows x64/x86 Portable and Standard Desktop Electron22 adapter; no new Win7/admin/AIO/fullElectron44/paid-provider qualification."
+  "scope": "Current Windows x64/x86 Portable, Standard and AIO; independent six-lane administrator lifecycle and 12 installed GUI phases; no new Win7 servicing/reboot/fullElectron44/paid-provider qualification.",
+  "distribution_supplement_evidence_id": "RUN-RC022-DISTRIBUTION-20261121-779B0B88",
+  "original_published_receipt": {
+    "status": "published-complete",
+    "url": "https://github.com/czh869452912/deepseek-harness-win7/releases/tag/rc022-preview-20261120",
+    "tag": "rc022-preview-20261120",
+    "candidate": "779b0b8835aeb97db438210669037c86c8eb21bd",
+    "release_id": 452869229,
+    "prerelease": true,
+    "published_at": "2026-11-20T15:46:36Z",
+    "assets": [
+      {
+        "name": "dsh-win7-portable-v0.2.2-rc.3-r1.zip",
+        "id": 772348097,
+        "bytes": 288740811,
+        "sha256": "46e04df6b17036c08018e00b964df843b79a2505820dc216ecc82d2c7d0762c3",
+        "url": "https://github.com/czh869452912/deepseek-harness-win7/releases/download/rc022-preview-20261120/dsh-win7-portable-v0.2.2-rc.3-r1.zip",
+        "public_download_head_verified": true
+      },
+      {
+        "name": "dsh-desktop-standard-setup-v0.2.2-rc.3-r1-x64.exe",
+        "id": 772357828,
+        "bytes": 253211798,
+        "sha256": "fec3e8301434a81318f96398efc90fccc4b2086a2e0619507b284a1812db7a55",
+        "url": "https://github.com/czh869452912/deepseek-harness-win7/releases/download/rc022-preview-20261120/dsh-desktop-standard-setup-v0.2.2-rc.3-r1-x64.exe",
+        "public_download_head_verified": true
+      },
+      {
+        "name": "dsh-win7-portable-v0.2.2-rc.3-r1-x86.zip",
+        "id": 772360428,
+        "bytes": 271212302,
+        "sha256": "e33c77ba31c813aa7596befa45ab00aff05efd36282e3065cee91ed6481b32e1",
+        "url": "https://github.com/czh869452912/deepseek-harness-win7/releases/download/rc022-preview-20261120/dsh-win7-portable-v0.2.2-rc.3-r1-x86.zip",
+        "public_download_head_verified": true
+      },
+      {
+        "name": "dsh-desktop-standard-setup-v0.2.2-rc.3-r1-x86.exe",
+        "id": 772363669,
+        "bytes": 239734570,
+        "sha256": "7ba05ee881622416d641d9afe05dc73f3dc153918235396bf9d364b054f202b4",
+        "url": "https://github.com/czh869452912/deepseek-harness-win7/releases/download/rc022-preview-20261120/dsh-desktop-standard-setup-v0.2.2-rc.3-r1-x86.exe",
+        "public_download_head_verified": true
+      },
+      {
+        "name": "RC022-QUALIFICATION-20261120-779B0B88.zip",
+        "id": 772367574,
+        "bytes": 1130491299,
+        "sha256": "24b7bc9797e0d312f3e3f9fefaa8ef4d671744c2f9a84e648604f9092caa41d2",
+        "url": "https://github.com/czh869452912/deepseek-harness-win7/releases/download/rc022-preview-20261120/RC022-QUALIFICATION-20261120-779B0B88.zip",
+        "public_download_head_verified": true
+      },
+      {
+        "name": "release-verification.json",
+        "id": 772378733,
+        "bytes": 227008,
+        "sha256": "739991d24ed891449fbe2d0d5b15f90b55502a5cd4e95c0639b27471ffd1feb1",
+        "url": "https://github.com/czh869452912/deepseek-harness-win7/releases/download/rc022-preview-20261120/release-verification.json",
+        "public_download_verified": true
+      },
+      {
+        "name": "release-manifest.json",
+        "id": 772379240,
+        "bytes": 2318,
+        "sha256": "229d01f2b6200c67486946bad34a3a86f354b113507021301a1438b049d2ca21",
+        "url": "https://github.com/czh869452912/deepseek-harness-win7/releases/download/rc022-preview-20261120/release-manifest.json",
+        "public_download_verified": true
+      },
+      {
+        "name": "SHA256SUMS.txt",
+        "id": 772379699,
+        "bytes": 737,
+        "sha256": "e1297e7ef4a11fa1387bcf29cc827d83afd21292399a535c372d00f72f591c1d",
+        "url": "https://github.com/czh869452912/deepseek-harness-win7/releases/download/rc022-preview-20261120/SHA256SUMS.txt",
+        "public_download_verified": true
+      }
+    ],
+    "all_remote_asset_sizes_and_sha256_match": true,
+    "public_unauthenticated_api_page_and_assets_verified": true,
+    "latest_stable_release": "v0.1.5-rc.3-r3",
+    "product_rebuilt": false,
+    "qualification_evidence_id": "RUN-RC022-QUALIFICATION-20261120-779B0B88",
+    "scope": "Current Windows x64/x86 Portable and Standard Desktop Electron22 adapter; no new Win7/admin/AIO/fullElectron44/paid-provider qualification."
+  },
+  "superseded_metadata": [
+    {
+      "name": "release-manifest.json",
+      "id": 772379240,
+      "bytes": 2318,
+      "sha256": "229d01f2b6200c67486946bad34a3a86f354b113507021301a1438b049d2ca21",
+      "preserved_archive_member": "original-publication/release-manifest.json"
+    },
+    {
+      "name": "release-verification.json",
+      "id": 772378733,
+      "bytes": 227008,
+      "sha256": "739991d24ed891449fbe2d0d5b15f90b55502a5cd4e95c0639b27471ffd1feb1",
+      "preserved_archive_member": "original-publication/release-verification.json"
+    },
+    {
+      "name": "SHA256SUMS.txt",
+      "id": 772379699,
+      "bytes": 737,
+      "sha256": "e1297e7ef4a11fa1387bcf29cc827d83afd21292399a535c372d00f72f591c1d",
+      "preserved_archive_member": "original-publication/SHA256SUMS.txt"
+    }
+  ],
+  "independent_distribution_supplement": {
+    "verification": {
+      "status": "passed",
+      "candidate": "779b0b8835aeb97db438210669037c86c8eb21bd",
+      "products": [
+        {
+          "architecture": "x64",
+          "kind": "desktop-aio",
+          "path": "C:\\Users\\czh86\\Documents\\Codex\\deepseek-harness-win7\\.goose\\out\\a21-x64\\dsh-desktop-aio-setup-v0.2.2-rc.3-r1-x64.exe",
+          "bytes": 476206355,
+          "sha256": "c26702f6e0fe0f5107796f93583cdea0b0525aac3d6f010df0b9886153bf0fba",
+          "candidate": "779b0b8835aeb97db438210669037c86c8eb21bd",
+          "pipe_checks": 9,
+          "browser_checks": 6,
+          "build_report": "C:\\Users\\czh86\\Documents\\Codex\\deepseek-harness-win7\\.goose\\out\\a21-x64\\desktop-build.json"
+        },
+        {
+          "architecture": "x86",
+          "kind": "desktop-aio",
+          "path": "C:\\Users\\czh86\\Documents\\Codex\\deepseek-harness-win7\\.goose\\out\\a21-x86\\dsh-desktop-aio-setup-v0.2.2-rc.3-r1-x86.exe",
+          "bytes": 548072715,
+          "sha256": "4c5462097f1cdc3f50cb9c8231a3d3f81b764d6005627a652b051dc9ce9fa408",
+          "candidate": "779b0b8835aeb97db438210669037c86c8eb21bd",
+          "pipe_checks": 9,
+          "browser_checks": 6,
+          "build_report": "C:\\Users\\czh86\\Documents\\Codex\\deepseek-harness-win7\\.goose\\out\\a21-x86\\desktop-build.json"
+        },
+        {
+          "kind": "offline-upgrade",
+          "architecture": "both",
+          "path": "C:\\Users\\czh86\\Documents\\Codex\\deepseek-harness-win7\\.goose\\out\\a21-offline\\dsh-win7-offline-upgrade.zip",
+          "bytes": 306682857,
+          "sha256": "4578c39800c42e36755828d7ac3669649dc6e037eeff63617098de14e89a6020"
+        }
+      ],
+      "lifecycle": {
+        "lanes": 6,
+        "actual_install_upgrade_rollback_uninstall": true,
+        "gui_fresh_cold_phases": 12,
+        "independent_restoration": true
+      },
+      "observer_inputs": {
+        "scripts/verify_desktop_lifecycle.py": "be2ac93e4e6bed06e54c441f5d5d16bed7ee40930201172f925ce152f1be0242",
+        "scripts/verify_desktop_installation.ps1": "76f261f98e494ea1229d6026ff8d267ef5aa96eb35de233f8a16241b6babeb5a",
+        "scripts/oracles/desktop_upgrade_current.mjs": "371966170859208bfffbbe05856c5ce3cff18cf6341336987fc4371d92732f31",
+        "tests/test_desktop_lifecycle_current_onboarding.py": "c09a32cffa58e5a27e2cfd1fa324495723ba1a40190292c191f573bd059246db"
+      },
+      "observer_source_commit": "1cb515def3fd0e9c3ace32c84fc836dc389edeb9",
+      "build_inputs": {
+        "scripts/build_desktop.py": "4353f69e2c0dcb27d9df25245f0ddddc0654d129ea20ea4e96c74eeb2b2ccb7e",
+        "scripts/build_windows_upgrade.py": "f55fda3a8bb52848a2beefb2608c85e75436defea0a16c8069a955b57460b1c7",
+        "scripts/windows-prerequisite-inputs.json": "aeaf99c37c787eb74f848eac9fe89a077fda13f9d1b982f788df8b4281fd290b"
+      },
+      "qualified_build_commit": "779b0b8835aeb97db438210669037c86c8eb21bd",
+      "profile_cleanups": [
+        {
+          "lane": "x64-standard-new",
+          "cleanup": {
+            "removed": [
+              "home"
+            ],
+            "bytes_removed": 1119283
+          }
+        },
+        {
+          "lane": "x64-standard-upgrade",
+          "cleanup": {
+            "removed": [
+              "home"
+            ],
+            "bytes_removed": 1119321
+          }
+        },
+        {
+          "lane": "x64-aio-new",
+          "cleanup": {
+            "removed": [
+              "home"
+            ],
+            "bytes_removed": 1119245
+          }
+        },
+        {
+          "lane": "x86-standard-new",
+          "cleanup": {
+            "removed": [
+              "home"
+            ],
+            "bytes_removed": 1119285
+          }
+        },
+        {
+          "lane": "x86-standard-upgrade",
+          "cleanup": {
+            "removed": [
+              "home"
+            ],
+            "bytes_removed": 1119317
+          }
+        },
+        {
+          "lane": "x86-aio-new",
+          "cleanup": {
+            "removed": [
+              "home"
+            ],
+            "bytes_removed": 1119246
+          }
+        }
+      ],
+      "previous_installer_copies_removed_bytes": 241884605,
+      "qualification_scope": "Independent supplement for exact AIO/Standard installers on current Windows; original full gate and four original products retain their identities; no Win7 servicing/reboot qualification."
+    },
+    "evidence": {
+      "path": "migration/evidence/artifacts/RC022-DISTRIBUTION-20261121-779B0B88.zip",
+      "external_path": "C:\\Users\\czh86\\Documents\\Codex\\deepseek-harness-win7-evidence\\migration\\evidence\\artifacts\\RC022-DISTRIBUTION-20261121-779B0B88.zip",
+      "bytes": 7143752,
+      "sha256": "06cacf4f82baa676acda656762bcc021c95fc1e3335daf7b9b1f1c2f1cf8455f",
+      "members": 2473,
+      "all_member_sha256_and_original_bytes_verified": true
+    }
+  },
+  "restoration_independently_verified": true,
+  "original_parent_timeout_preserved": true,
+  "distribution_cleanup": {
+    "status": "passed",
+    "scope": "Owned assets for rc022 distribution supplement; unrelated historical retention exceptions remain governed by their existing records",
+    "removed": [
+      {
+        "kind": "x64-compiler-and-portable-copies",
+        "bytes": 2007139498
+      },
+      {
+        "kind": "x64-packaged-browser-profiles",
+        "bytes": 1124312
+      },
+      {
+        "kind": "x64-pipe-preflight-profiles",
+        "bytes": 1028
+      },
+      {
+        "kind": "x86-compiler-and-portable-copies",
+        "bytes": 1931975401
+      },
+      {
+        "kind": "x86-packaged-browser-profiles",
+        "bytes": 1124313
+      },
+      {
+        "kind": "x86-pipe-preflight-profiles",
+        "bytes": 1028
+      },
+      {
+        "kind": "offline-staged-components",
+        "bytes": 390634908
+      },
+      {
+        "kind": "six-installed-gui-profiles",
+        "bytes": 6715697
+      },
+      {
+        "kind": "previous-installer-download-copies",
+        "bytes": 241884605
+      },
+      {
+        "kind": "onboarding-targeted-synthetic-workspace",
+        "bytes": 2862
+      },
+      {
+        "kind": "sealed-evidence-staging-copy",
+        "bytes": 23566974
+      }
+    ],
+    "total_bytes_removed": 4604170626,
+    "six_installation_roots_removed": true,
+    "task_owned_test_processes_remaining": [],
+    "retained": [
+      {
+        "path": ".goose/out/a21-life",
+        "owner": "rc022 release maintenance",
+        "purpose": "Raw lifecycle observations and protected registry/shortcut backups",
+        "review": "Next release retention review; formal archive preserved"
+      },
+      {
+        "path": ".goose/out/a21-x64, a21-x86, a21-offline",
+        "owner": "rc022 release maintenance",
+        "purpose": "Exact public product bytes, build observations and cleanup inventories",
+        "review": "Next release retention review; keep at least one verified product copy"
+      },
+      {
+        "path": "C:\\Users\\czh86\\Documents\\Codex\\deepseek-harness-win7-evidence\\migration\\evidence\\artifacts\\RC022-DISTRIBUTION-20261121-779B0B88.zip",
+        "owner": "rc022 release maintenance",
+        "purpose": "Verified formal supplement original bytes; also published as Release attachment",
+        "review": "Next release evidence retention review; do not delete the only verified copy"
+      },
+      {
+        "path": "C:\\Users\\czh86\\Documents\\Codex\\deepseek-harness-win7\\.goose\\out\\rc022-aio-control-20261121",
+        "owner": "rc022 release maintenance",
+        "purpose": "Compact commands, receipts, publication metadata and original parent failure",
+        "review": "Next release retention review"
+      }
+    ]
+  }
 }

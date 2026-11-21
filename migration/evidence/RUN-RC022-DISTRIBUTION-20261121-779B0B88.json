@@ -1,0 +1,153 @@
+{
+  "id": "RUN-RC022-DISTRIBUTION-20261121-779B0B88",
+  "status": "passed",
+  "candidate": "779b0b8835aeb97db438210669037c86c8eb21bd",
+  "qualification_type": "independent-distribution-supplement",
+  "original_unified_gate": "RUN-RC022-QUALIFICATION-20261120-779B0B88",
+  "verification": {
+    "status": "passed",
+    "candidate": "779b0b8835aeb97db438210669037c86c8eb21bd",
+    "products": [
+      {
+        "architecture": "x64",
+        "kind": "desktop-aio",
+        "path": "C:\\Users\\czh86\\Documents\\Codex\\deepseek-harness-win7\\.goose\\out\\a21-x64\\dsh-desktop-aio-setup-v0.2.2-rc.3-r1-x64.exe",
+        "bytes": 476206355,
+        "sha256": "c26702f6e0fe0f5107796f93583cdea0b0525aac3d6f010df0b9886153bf0fba",
+        "candidate": "779b0b8835aeb97db438210669037c86c8eb21bd",
+        "pipe_checks": 9,
+        "browser_checks": 6,
+        "build_report": "C:\\Users\\czh86\\Documents\\Codex\\deepseek-harness-win7\\.goose\\out\\a21-x64\\desktop-build.json"
+      },
+      {
+        "architecture": "x86",
+        "kind": "desktop-aio",
+        "path": "C:\\Users\\czh86\\Documents\\Codex\\deepseek-harness-win7\\.goose\\out\\a21-x86\\dsh-desktop-aio-setup-v0.2.2-rc.3-r1-x86.exe",
+        "bytes": 548072715,
+        "sha256": "4c5462097f1cdc3f50cb9c8231a3d3f81b764d6005627a652b051dc9ce9fa408",
+        "candidate": "779b0b8835aeb97db438210669037c86c8eb21bd",
+        "pipe_checks": 9,
+        "browser_checks": 6,
+        "build_report": "C:\\Users\\czh86\\Documents\\Codex\\deepseek-harness-win7\\.goose\\out\\a21-x86\\desktop-build.json"
+      },
+      {
+        "kind": "offline-upgrade",
+        "architecture": "both",
+        "path": "C:\\Users\\czh86\\Documents\\Codex\\deepseek-harness-win7\\.goose\\out\\a21-offline\\dsh-win7-offline-upgrade.zip",
+        "bytes": 306682857,
+        "sha256": "4578c39800c42e36755828d7ac3669649dc6e037eeff63617098de14e89a6020"
+      }
+    ],
+    "lifecycle": {
+      "lanes": 6,
+      "actual_install_upgrade_rollback_uninstall": true,
+      "gui_fresh_cold_phases": 12,
+      "independent_restoration": true
+    },
+    "observer_inputs": {
+      "scripts/verify_desktop_lifecycle.py": "be2ac93e4e6bed06e54c441f5d5d16bed7ee40930201172f925ce152f1be0242",
+      "scripts/verify_desktop_installation.ps1": "76f261f98e494ea1229d6026ff8d267ef5aa96eb35de233f8a16241b6babeb5a",
+      "scripts/oracles/desktop_upgrade_current.mjs": "371966170859208bfffbbe05856c5ce3cff18cf6341336987fc4371d92732f31",
+      "tests/test_desktop_lifecycle_current_onboarding.py": "c09a32cffa58e5a27e2cfd1fa324495723ba1a40190292c191f573bd059246db"
+    },
+    "observer_source_commit": "1cb515def3fd0e9c3ace32c84fc836dc389edeb9",
+    "build_inputs": {
+      "scripts/build_desktop.py": "4353f69e2c0dcb27d9df25245f0ddddc0654d129ea20ea4e96c74eeb2b2ccb7e",
+      "scripts/build_windows_upgrade.py": "f55fda3a8bb52848a2beefb2608c85e75436defea0a16c8069a955b57460b1c7",
+      "scripts/windows-prerequisite-inputs.json": "aeaf99c37c787eb74f848eac9fe89a077fda13f9d1b982f788df8b4281fd290b"
+    },
+    "qualified_build_commit": "779b0b8835aeb97db438210669037c86c8eb21bd",
+    "profile_cleanups": [
+      {
+        "lane": "x64-standard-new",
+        "cleanup": {
+          "removed": [
+            "home"
+          ],
+          "bytes_removed": 1119283
+        }
+      },
+      {
+        "lane": "x64-standard-upgrade",
+        "cleanup": {
+          "removed": [
+            "home"
+          ],
+          "bytes_removed": 1119321
+        }
+      },
+      {
+        "lane": "x64-aio-new",
+        "cleanup": {
+          "removed": [
+            "home"
+          ],
+          "bytes_removed": 1119245
+        }
+      },
+      {
+        "lane": "x86-standard-new",
+        "cleanup": {
+          "removed": [
+            "home"
+          ],
+          "bytes_removed": 1119285
+        }
+      },
+      {
+        "lane": "x86-standard-upgrade",
+        "cleanup": {
+          "removed": [
+            "home"
+          ],
+          "bytes_removed": 1119317
+        }
+      },
+      {
+        "lane": "x86-aio-new",
+        "cleanup": {
+          "removed": [
+            "home"
+          ],
+          "bytes_removed": 1119246
+        }
+      }
+    ],
+    "previous_installer_copies_removed_bytes": 241884605,
+    "qualification_scope": "Independent supplement for exact AIO/Standard installers on current Windows; original full gate and four original products retain their identities; no Win7 servicing/reboot qualification."
+  },
+  "artifact": {
+    "path": "migration/evidence/artifacts/RC022-DISTRIBUTION-20261121-779B0B88.zip",
+    "external_path": "C:\\Users\\czh86\\Documents\\Codex\\deepseek-harness-win7-evidence\\migration\\evidence\\artifacts\\RC022-DISTRIBUTION-20261121-779B0B88.zip",
+    "bytes": 7143752,
+    "sha256": "06cacf4f82baa676acda656762bcc021c95fc1e3335daf7b9b1f1c2f1cf8455f",
+    "members": 2473,
+    "all_member_sha256_and_original_bytes_verified": true
+  },
+  "release": "https://github.com/czh869452912/deepseek-harness-win7/releases/tag/rc022-preview-20261120",
+  "original_parent_timeout": "Preserved failed parent report; UAC outlasted its readiness deadline. Normal-user recovery completed the same already elevated administrator runner without another installation run or relaxed checks.",
+  "kind": "verification",
+  "result": "passed",
+  "validity": "current",
+  "exit_code": 0,
+  "target_upstream": "38a6a5c965aa99ab525161efb7cc5cf1fe62fced",
+  "product_commit": "779b0b8835aeb97db438210669037c86c8eb21bd",
+  "environment": {
+    "python": "3.8.10 (default, May  6 2021, 17:27:56) [MSC v.1928 64 bit (AMD64)]",
+    "os": "Windows-10-10.0.26300-SP0",
+    "cwd": "C:\\Users\\czh86\\Documents\\Codex\\deepseek-harness-win7"
+  },
+  "contract_revisions": {},
+  "commands": [
+    ".venv/Scripts/python.exe .goose/out/rc022-aio-control-20261121/build.py",
+    ".venv/Scripts/python.exe .goose/out/rc022-aio-control-20261121/recover_lifecycle.py",
+    ".venv/Scripts/python.exe .goose/out/rc022-aio-control-20261121/restoration.py",
+    ".venv/Scripts/python.exe .goose/out/rc022-aio-control-20261121/complete_seal.py"
+  ],
+  "artifacts": [
+    {
+      "path": "migration/evidence/artifacts/RC022-DISTRIBUTION-20261121-779B0B88.zip",
+      "sha256": "06cacf4f82baa676acda656762bcc021c95fc1e3335daf7b9b1f1c2f1cf8455f"
+    }
+  ]
+}

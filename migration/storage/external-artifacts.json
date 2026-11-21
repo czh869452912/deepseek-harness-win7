@@ -675,6 +675,16 @@
       "location": "DSH_EVIDENCE_ROOT/{path}"
     },
     {
+      "path": "migration/evidence/artifacts/RC022-DISTRIBUTION-20261121-779B0B88.zip",
+      "size": 7143752,
+      "sha256": "06cacf4f82baa676acda656762bcc021c95fc1e3335daf7b9b1f1c2f1cf8455f",
+      "retention": "current-qualification-preserved",
+      "location": "DSH_EVIDENCE_ROOT/{path}",
+      "owner": "rc022 release maintenance",
+      "purpose": "Exact distribution inputs, installed lifecycle GUI observations, restoration and original publication metadata",
+      "review_milestone": "Next release evidence retention review; keep at least one verified original and its public Release attachment"
+    },
+    {
       "path": "migration/evidence/artifacts/RC022-QUALIFICATION-20261120-779B0B88.zip",
       "size": 1130491299,
       "sha256": "24b7bc9797e0d312f3e3f9fefaa8ef4d671744c2f9a84e648604f9092caa41d2",

@@ -1,0 +1,79 @@
+{
+  "status": "passed",
+  "scope": "Owned assets for rc022 distribution supplement; unrelated historical retention exceptions remain governed by their existing records",
+  "removed": [
+    {
+      "kind": "x64-compiler-and-portable-copies",
+      "bytes": 2007139498
+    },
+    {
+      "kind": "x64-packaged-browser-profiles",
+      "bytes": 1124312
+    },
+    {
+      "kind": "x64-pipe-preflight-profiles",
+      "bytes": 1028
+    },
+    {
+      "kind": "x86-compiler-and-portable-copies",
+      "bytes": 1931975401
+    },
+    {
+      "kind": "x86-packaged-browser-profiles",
+      "bytes": 1124313
+    },
+    {
+      "kind": "x86-pipe-preflight-profiles",
+      "bytes": 1028
+    },
+    {
+      "kind": "offline-staged-components",
+      "bytes": 390634908
+    },
+    {
+      "kind": "six-installed-gui-profiles",
+      "bytes": 6715697
+    },
+    {
+      "kind": "previous-installer-download-copies",
+      "bytes": 241884605
+    },
+    {
+      "kind": "onboarding-targeted-synthetic-workspace",
+      "bytes": 2862
+    },
+    {
+      "kind": "sealed-evidence-staging-copy",
+      "bytes": 23566974
+    }
+  ],
+  "total_bytes_removed": 4604170626,
+  "six_installation_roots_removed": true,
+  "task_owned_test_processes_remaining": [],
+  "retained": [
+    {
+      "path": ".goose/out/a21-life",
+      "owner": "rc022 release maintenance",
+      "purpose": "Raw lifecycle observations and protected registry/shortcut backups",
+      "review": "Next release retention review; formal archive preserved"
+    },
+    {
+      "path": ".goose/out/a21-x64, a21-x86, a21-offline",
+      "owner": "rc022 release maintenance",
+      "purpose": "Exact public product bytes, build observations and cleanup inventories",
+      "review": "Next release retention review; keep at least one verified product copy"
+    },
+    {
+      "path": "C:\\Users\\czh86\\Documents\\Codex\\deepseek-harness-win7-evidence\\migration\\evidence\\artifacts\\RC022-DISTRIBUTION-20261121-779B0B88.zip",
+      "owner": "rc022 release maintenance",
+      "purpose": "Verified formal supplement original bytes; also published as Release attachment",
+      "review": "Next release evidence retention review; do not delete the only verified copy"
+    },
+    {
+      "path": "C:\\Users\\czh86\\Documents\\Codex\\deepseek-harness-win7\\.goose\\out\\rc022-aio-control-20261121",
+      "owner": "rc022 release maintenance",
+      "purpose": "Compact commands, receipts, publication metadata and original parent failure",
+      "review": "Next release retention review"
+    }
+  ]
+}

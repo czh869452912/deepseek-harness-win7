@@ -771,6 +771,14 @@
       "asset_id": 747130055
     },
     {
+      "path": "migration/evidence/artifacts/RC022-DISTRIBUTION-20261121-779B0B88.zip",
+      "size": 7143752,
+      "sha256": "06cacf4f82baa676acda656762bcc021c95fc1e3335daf7b9b1f1c2f1cf8455f",
+      "url": "https://github.com/czh869452912/deepseek-harness-win7/releases/download/rc022-preview-20261120/RC022-DISTRIBUTION-20261121-779B0B88.zip",
+      "tag": "rc022-preview-20261120",
+      "asset_id": 773947228
+    },
+    {
       "path": "migration/evidence/artifacts/RC022-QUALIFICATION-20261120-779B0B88.zip",
       "size": 1130491299,
       "sha256": "24b7bc9797e0d312f3e3f9fefaa8ef4d671744c2f9a84e648604f9092caa41d2",

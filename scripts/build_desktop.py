@@ -20,6 +20,13 @@ from scripts.build_portable import VERSION, build_portable
 from scripts.windows_prerequisites import stage_prerequisites, validate_prerequisites, verify_file
 
 
+def desktop_package_manifest(path):
+    raw = Path(path).read_bytes()
+    if json.loads(raw.decode('utf-8')).get('version') != VERSION:
+        raise ValueError('Electron package version differs from Desktop installer version ' + VERSION)
+    return raw
+
+
 def digest(path):
     result = hashlib.sha256()
     with Path(path).open('rb') as stream:
@@ -178,6 +185,7 @@ def nsis_define(value):
 
 
 def build(args):
+    app_manifest = desktop_package_manifest(ROOT / 'apps/desktop/package.json')
     architecture = args.architecture
     if architecture not in ('x64', 'x86'):
         raise ValueError('Unsupported Desktop architecture')
@@ -249,7 +257,8 @@ def build(args):
         for source in sorted((ROOT / 'apps/desktop').glob('*.cjs')):
             if source.name != 'smoke-test.cjs':
                 shutil.copyfile(str(source), str(application / source.name))
-        for filename in ('package.json', 'tray.png', 'source-input.json', 'compatibility-source-input.json', 'win7-setup.html'):
+        (application / 'package.json').write_bytes(app_manifest)
+        for filename in ('tray.png', 'source-input.json', 'compatibility-source-input.json', 'win7-setup.html'):
             shutil.copyfile(str(ROOT / 'apps/desktop' / filename), str(application / filename))
         shutil.copytree(str(ROOT / 'apps/desktop/renderer'), str(application / 'renderer'))
         harness = unpacked / 'resources/harness'

@@ -16,6 +16,15 @@ from scripts import build_desktop
 ROOT = Path(__file__).resolve().parents[1]
 
 
+def test_installer_rejects_stale_electron_product_version(tmp_path):
+    manifest = ROOT / 'apps/desktop/package.json'
+    assert build_desktop.desktop_package_manifest(manifest) == manifest.read_bytes()
+    stale = tmp_path / 'package.json'
+    stale.write_text('{"version":"0.1.5-rc.3-r2"}', encoding='utf-8')
+    with pytest.raises(ValueError, match='Electron package version differs'):
+        build_desktop.desktop_package_manifest(stale)
+
+
 @pytest.mark.parametrize('damage', [None, 'office-byte', 'extra-office', 'other-architecture', 'provider'])
 def test_portable_validation_binds_offline_office_inventory_and_current_providers(tmp_path, monkeypatch, damage):
     from dsh.office import runtime_inputs

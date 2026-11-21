@@ -23,10 +23,16 @@ async function wait(window,predicate){
 async function run({app,mainWindow,openPlugins,pluginWindow,guideWindow,environment,manager,output}){
   await mkdir(output,{recursive:true});
   const report={versions:process.versions,errors:[],transitionErrors:[]};
+  const interruptedRequests=new Set([
+    '[session-controller] control stream failed: RemoteError: network error',
+    '[session-controller] control stream failed: RemoteError: Failed to fetch',
+    '[ui-cordis] reading the Cordis inventory failed: Error: gateway/internal: client api: dynamicCordisRunner/inventory failed: Failed to fetch',
+    '[cordis-client-runner] syncing inspect providers failed: Error: gateway/internal: client api: dynamicCordisRunner/syncInspectManifest failed: Failed to fetch',
+  ]);
   let phase='initial';
   mainWindow.webContents.on('console-message',(_event,level,message)=>{
     if(level!==3)return;
-    if(phase==='mutating'&&message==='[session-controller] control stream failed: RemoteError: network error')report.transitionErrors.push(message);
+    if(phase==='mutating'&&interruptedRequests.has(message))report.transitionErrors.push(message);
     else report.errors.push(message);
   });
   try{
@@ -59,6 +65,22 @@ async function run({app,mainWindow,openPlugins,pluginWindow,guideWindow,environm
     })`);
     assert.equal(report.main.node,'undefined');assert.equal(report.main.process,'undefined');assert.equal(report.main.ownsHost,true);
     assert.equal(report.main.preload.browser,'function');
+    const apiKeyPresent=await evaluate(mainWindow,'window.dshOnboarding.hasApiKey()');
+    assert.equal(typeof apiKeyPresent,'boolean');
+    await evaluate(mainWindow,"(window.dshOnboarding.setActive(true), true)");
+    const deadline=Date.now()+5000;
+    while(mainWindow.getMinimumSize()[0]!==960&&Date.now()<deadline)await pause(50);
+    assert.deepEqual(mainWindow.getMinimumSize(),[960,600]);
+    await evaluate(mainWindow,"(window.dshOnboarding.setActive(false), true)");
+    const resetDeadline=Date.now()+5000;
+    while(mainWindow.getMinimumSize()[0]!==520&&Date.now()<resetDeadline)await pause(50);
+    assert.deepEqual(mainWindow.getMinimumSize(),[520,600]);
+    report.onboarding={credentialMetadata:true,minimumSizeRestored:true};
+    const deviceInfo=await evaluate(mainWindow,'window.dshDesktop.deviceInfo()');
+    const deviceKeys=deviceInfo.split('; ').map(field=>field.split('=')[0]);
+    assert.deepEqual(deviceKeys,['platform','os','app_arch','cpu','memory_gib']);
+    assert.ok(deviceInfo.includes('app_arch='+process.arch+';'));
+    report.deviceInfo={keys:deviceKeys,arch:process.arch};
     report.shortcuts=await evaluate(mainWindow,`(async()=>{
       const {shortcuts}=window.dshDesktop;
       const definitions=[{id:'smoke.shortcut',defaults:{}}];
@@ -71,6 +93,12 @@ async function run({app,mainWindow,openPlugins,pluginWindow,guideWindow,environm
       assert.equal(report.main.preload.titlebar,true);
       assert.equal(report.main.preload.titlebarHeight,'40px');
     }
+    mainWindow.show();
+    mainWindow.setFullScreen(true);
+    await wait(mainWindow,"document.documentElement.dataset.fullscreen==='true'");
+    mainWindow.setFullScreen(false);
+    await wait(mainWindow,"!document.documentElement.hasAttribute('data-fullscreen')");
+    report.fullscreen={entered:true,restored:true};
     const downloads=join(output,'downloads');
     await mkdir(downloads);
     app.setPath('downloads',downloads);
@@ -125,6 +153,17 @@ async function run({app,mainWindow,openPlugins,pluginWindow,guideWindow,environm
       method:'settings/describe',payload:{args:{}}})}).then(async response=>({status:response.status,body:await response.json()}))`);
     assert.equal(report.settings.status,200);assert.equal(report.settings.body.result.ok,true);
     assert.ok(report.settings.body.result.value.namespaces.length>0);
+    report.locale=await evaluate(mainWindow,`(async()=>{
+      const method='settings/update';
+      const response=await fetch('/api/'+method,{method:'POST',headers:{'content-type':'application/json'},
+        body:JSON.stringify({type:'client-request',rpcId:'smoke-locale',method,
+          payload:{args:{ns:'locale',patch:{preference:'zh-CN'}}}})});
+      if(!(await response.json()).result.ok)throw Error('Could not save locale during Desktop smoke');
+      return window.__DSH_LOCALE__.read();
+    })()`);
+    assert.equal(report.locale.preference,'zh-CN');
+    assert.ok(report.locale.languages.length);
+    await evaluate(mainWindow,"(window.__DSH_LOCALE__.onChange('zh-CN'), true)");
     report.upload=await evaluate(mainWindow,`(async()=>{
       const rpc=async(method,args)=>{
         const response=await fetch('/api/'+method,{method:'POST',headers:{'content-type':'application/json'},
@@ -156,8 +195,17 @@ async function run({app,mainWindow,openPlugins,pluginWindow,guideWindow,environm
       title:document.querySelector('#title').textContent,status:document.querySelector('#status').textContent,
       plugins:await globalThis.dshDesktop.plugins.list(),locale:await globalThis.dshDesktop.locale()}))()`);
     assert.equal(report.shell.node,'undefined');assert.equal(report.shell.process,'undefined');assert.equal(report.shell.status,'');
-    report.updates=await evaluate(shell,'globalThis.dshDesktop.updates.check()');
-    assert.deepEqual(report.updates,{phase:'idle'});
+    assert.equal(report.shell.locale.id,'zh-CN');
+    await evaluate(mainWindow,`(window.__updateStates=[], window.__updateDispose=window.dshDesktop.updates.subscribe(state=>window.__updateStates.push(state)), true)`);
+    assert.deepEqual(await evaluate(shell,'window.dshDesktop.updates.check()'),{phase:'idle'});
+    await wait(mainWindow,"window.__updateStates.some(state=>state.phase==='checking') && window.__updateStates.at(-1)?.phase==='idle'");
+    report.updates=await evaluate(mainWindow,`(async()=>{
+      window.__updateDispose();
+      const bridge=window.dshDesktop.updates;
+      return {states:window.__updateStates,status:await bridge.status(),keys:Object.keys(bridge).sort()};
+    })()`);
+    assert.deepEqual(report.updates.status,{phase:'idle'});
+    assert.deepEqual(report.updates.keys,['open','status','subscribe']);
     const example=resolve(__dirname,'../../examples/python-echo');
     const source=join(output,'broken-upgrade');
     await cp(example,source,{recursive:true,filter:file=>!file.includes('__pycache__')});

@@ -15,7 +15,12 @@ if (location.protocol==='dsh-app:' && location.host==='app' && process.isMainFra
       return ()=>ipcRenderer.removeListener('dsh-desktop:browser-open-requested',listener);
     },
   };
-  contextBridge.exposeInMainWorld('dshDesktop',{protocolVersion:1,browser,shortcuts:{
+  contextBridge.exposeInMainWorld('dshDesktop',{protocolVersion:1,browser,
+  deviceInfo:()=>ipcRenderer.invoke('dsh-desktop:device-info'),updates:{
+    status:()=>ipcRenderer.invoke('dsh-desktop:updates-status'),
+    open:()=>ipcRenderer.invoke('dsh-desktop:updates-open'),
+    subscribe:callback=>subscribe('dsh-desktop:updates-presentation',callback),
+  },shortcuts:{
     get:definitions=>ipcRenderer.invoke('dsh-desktop:shortcuts-get',definitions),
     edit:(edit,revision)=>ipcRenderer.invoke('dsh-desktop:shortcuts-edit',edit,revision),
     recording:active=>ipcRenderer.invoke('dsh-desktop:shortcuts-recording',active),
@@ -35,6 +40,14 @@ if (location.protocol==='dsh-app:' && location.host==='app' && process.isMainFra
   contextBridge.exposeInMainWorld('__DSH_DIRECTORY_PICKER__',{
     pick:()=>ipcRenderer.invoke('dsh-desktop:directory-pick'),
   });
+  contextBridge.exposeInMainWorld('__DSH_LOCALE__',{
+    read:()=>ipcRenderer.invoke('dsh-desktop:locale-bootstrap'),
+    onChange:language=>{void ipcRenderer.invoke('dsh-desktop:locale-changed',language).catch(console.error);},
+  });
+  contextBridge.exposeInMainWorld('dshOnboarding',{
+    hasApiKey:()=>ipcRenderer.invoke('dsh-desktop:onboarding-api-key'),
+    setActive:active=>{void ipcRenderer.invoke('dsh-desktop:onboarding-active',active).catch(console.error);},
+  });
   // Electron 22 exposes the backing path as File.path.
   contextBridge.exposeInMainWorld('__DSH_HOST_PATHS__',{
     pathFor:file=>file instanceof File && typeof file.path==='string' ? file.path : '',
@@ -42,6 +55,12 @@ if (location.protocol==='dsh-app:' && location.host==='app' && process.isMainFra
   const markPlatform=()=>{document.documentElement.dataset.platform=process.platform;};
   if (document.documentElement) markPlatform();
   else window.addEventListener('DOMContentLoaded',markPlatform,{once:true});
+  ipcRenderer.on('dsh-desktop:window-fullscreen',(_event,fullscreen)=>{
+    const root=document.documentElement;
+    if (!root) return;
+    if (fullscreen) root.dataset.fullscreen='true';
+    else delete root.dataset.fullscreen;
+  });
 }
 window.addEventListener('DOMContentLoaded',async()=>{
   if(location.protocol!=='dsh-app:'||location.hostname!=='app'||window.top!==window)return;

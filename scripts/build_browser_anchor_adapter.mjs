@@ -60,7 +60,7 @@ patch('a.setAttribute("style", `${r.uuid}: var(${s}); \u0024{(g = a.getAttribute
   'dshSetInline(a,r.uuid,s)');
 assert.equal(code.split('n.style.setProperty(').length-1,8);
 code=code.replaceAll('n.style.setProperty(','dshRootSet(');
-patch('.filter((e) => e !== null);','.filter((e) => e !== null && /(?:anchor(?:-name|-size|-scope)?\\s*[(:]|position-(?:anchor|area|try)\\s*:)/.test(e.css));');
+patch('.filter((e) => e !== null);','.filter((e) => e !== null && !e.el?.disabled && !e.el?.sheet?.disabled && /(?:anchor(?:-name|-size|-scope)?\\s*[(:]|position-(?:anchor|area|try)\\s*:)/.test(e.css));');
 patch('let t = new URL(e.href, document.baseURI);\n\tif (_u(e) && t.origin === location.origin) return t;',
   'if (_u(e)) return window[Symbol.for("deepseek-win7.host.stylesheets")].url(e);');
 const fetchStart=code.indexOf('\t\t\t\ttry {\n\t\t\t\t\tlet t = yield fetch(e.url.toString())');
@@ -86,6 +86,11 @@ function wf(entries, inline, roots) {
       const values=inline?.get(row.el);
       if(values){const at=css.indexOf('{')+1;css=css.slice(0,at)+Object.entries(values).map(([key,value])=>key+':var('+value+');').join('')+css.slice(at);}
     }
+    for(const attribute of ['media','type','title']){
+      const value=row.el?.getAttribute(attribute)??null;
+      if(value===null)node.removeAttribute(attribute);else node.setAttribute(attribute,value);
+    }
+    if(row.el?.nonce)node.nonce=row.el.nonce;
     node.textContent=css;
     return {...row,changed:false};
   });

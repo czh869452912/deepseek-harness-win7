@@ -37,8 +37,8 @@
   },
   "output": {
     "path": "anchor.js",
-    "bytes": 121078,
-    "sha256": "88f3bdaefe91c361f905ac0cfe6c92aa0be30ea631bea31a104313f70436b0ba"
+    "bytes": 121275,
+    "sha256": "db6837d187d9735f3a9a779e34b3a30179c5ced2f96ce5b217c923b2e915a46d"
   },
   "licenseSha256": "e60fc0de71d5f1c0581748da51af72fdb41f62f2bd803faa4ee21f9080d9da0b",
   "thirdPartyLicenses": [

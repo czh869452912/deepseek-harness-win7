@@ -2,7 +2,7 @@
 require('./stdio.cjs').protectStdio();
 const {app,BrowserWindow,protocol,ipcMain,Menu,Tray,nativeImage,dialog,shell:systemShell,nativeTheme,session}=require('electron');
 const {join,resolve,extname,dirname}=require('node:path');
-const {release:osRelease}=require('node:os');
+const {release:osRelease,cpus,totalmem}=require('node:os');
 const {readFile}=require('node:fs/promises');
 const {Readable}=require('node:stream');
 const {DesktopProjectManager}=require('./project-manager.cjs');
@@ -54,6 +54,19 @@ function createWindow(shell){
     shortcuts.attach(window);
     browserGuests=createBrowserGuests(window.webContents,(guest,id)=>shortcuts.attachGuest(window,guest,id));
     fileDrag.attach(window.webContents);
+    let lastFullscreen;
+    const publishFullscreen=(force=false)=>{
+      if(window.isDestroyed())return;
+      const value=window.isFullScreen();
+      if(force||value!==lastFullscreen) {
+        lastFullscreen=value;
+        window.webContents.send('dsh-desktop:window-fullscreen',value);
+      }
+    };
+    window.webContents.on('did-finish-load',()=>publishFullscreen(true));
+    window.on('enter-full-screen',()=>setImmediate(publishFullscreen));
+    window.on('leave-full-screen',()=>setImmediate(publishFullscreen));
+    window.on('resize',()=>setImmediate(publishFullscreen));
   }
   if (caption) {
     const sync=()=>{if (!window.isDestroyed()) window.setTitleBarOverlay({height:40,...colors()});};
@@ -120,7 +133,16 @@ async function main(){
       console.error(error);callback({statusCode:500,data:Readable.from(['Desktop request failed'])});
     });
   });
-  const locale=resolveDesktopLocale(app.getLocale());
+  const languages=app.getPreferredSystemLanguages?.()??[];
+  if (!languages.length) languages.push(app.getLocale());
+  function shellLocale(language){
+    const value=resolveDesktopLocale(language);
+    return {...value,messages:{...value.messages,
+      pluginManagerDescription:value.id==='zh-CN'?'安装本地 Python 插件文件夹或 ZIP 包，仅作用于桌面端。':'Install a local Python plugin folder or ZIP package in Desktop.',
+      npmPackage:value.id==='zh-CN'?'插件文件夹或 ZIP 路径':'Plugin folder or ZIP path',
+      targetVersion:value.id==='zh-CN'?'输入 {name} 的升级 ZIP 或文件夹路径':'Enter the upgrade ZIP or folder path for {name}'}};
+  }
+  let locale=shellLocale(languages[0]??app.getLocale());
   const environment=development&&option('--test-output')&&option('--test-limited-shell')==='true'
     ?{limitedShell:true,status:'limited'}:await desktopEnvironment();
   ipcMain.handle('dsh-desktop:environment-get',event=>{assertSender(event,['app']);return {...environment,locale:locale.id};});
@@ -139,18 +161,82 @@ async function main(){
   appHandler('dsh-desktop:theme-set',theme=>{
     if (['system','light','dark'].includes(theme)) nativeTheme.themeSource=theme;
   });
+  appHandler('dsh-desktop:device-info',()=>{
+    const fields=[['platform',()=>process.platform],['os',()=>process.getSystemVersion()],
+      ['app_arch',()=>process.arch],['cpu',()=>cpus()[0]?.model],
+      ['memory_gib',()=>(totalmem()/1024**3).toFixed(1)]];
+    const result=[];
+    for (const [key,read] of fields) {
+      let value;
+      try { value=read(); } catch { continue; }
+      if (value) result.push(key+'='+value);
+    }
+    return result.join('; ');
+  });
+  async function hostRpc(host,method,args={}){
+    const response=await host.fetch({url:'dsh-app://app/api/'+method,method:'POST',
+      headers:[['content-type','application/json']],
+      body:JSON.stringify({type:'client-request',rpcId:'desktop-shell',method,payload:{args}})});
+    const chunks=[];
+    for await (const chunk of response.body) chunks.push(Buffer.from(chunk));
+    if(response.status!==200) throw new Error('Desktop Host RPC failed: '+method);
+    const {result}=JSON.parse(Buffer.concat(chunks).toString('utf8'));
+    if(!result?.ok) throw new Error('Desktop Host RPC failed: '+method);
+    return result.value;
+  }
+  appHandler('dsh-desktop:locale-bootstrap',async()=>{
+    const {namespaces}=await hostRpc(manager.host,'settings/describe');
+    const preference=namespaces.find(row=>row.ns==='locale')?.value?.preference??null;
+    return {languages,preference};
+  });
+  appHandler('dsh-desktop:locale-changed',language=>{
+    if(typeof language!=='string'||!language||language.length>64)return;
+    const resolved=shellLocale(language);
+    if(resolved.id===locale.id)return;
+    locale=resolved;
+    updateMenu();
+    updateTray();
+  });
+  appHandler('dsh-desktop:onboarding-api-key',async()=>{
+    const host=manager.host;
+    const [{namespaces},providers]=await Promise.all([
+      hostRpc(host,'settings/describe'),
+      hostRpc(host,'llm/listConfigurableProviders'),
+    ]);
+    const settings=new Map(namespaces.map(row=>[row.ns,row.value]));
+    const refs=new Set();
+    const official=settings.get('llm-deepseek')?.apiKeyEnv;
+    if(typeof official==='string')refs.add(official);
+    for (const {settingsNs,settingsPath} of providers){
+      let value=settings.get(settingsNs);
+      for (const key of settingsPath) value=value?.[key];
+      if(typeof value?.apiKeyEnv==='string')refs.add(value.apiKeyEnv);
+    }
+    const unique=[...refs];
+    for(let offset=0;offset<unique.length;offset+=64){
+      const states=await hostRpc(host,'credentials/describe',{refs:unique.slice(offset,offset+64)});
+      if(Object.values(states).some(state=>state?.configured===true))return true;
+    }
+    return false;
+  });
+  appHandler('dsh-desktop:onboarding-active',active=>{
+    if(typeof active==='boolean')mainWindow.setMinimumSize(active?960:520,600);
+  });
   installFileActions(appHandler,()=>mainWindow);
   fileDrag=installFileDrag(appHandler,()=>mainWindow,join(home,'desktop','drag'));
-  locale.messages={...locale.messages,
-    pluginManagerDescription:locale.id==='zh-CN'?'安装本地 Python 插件文件夹或 ZIP 包，仅作用于桌面端。':'Install a local Python plugin folder or ZIP package in Desktop.',
-    npmPackage:locale.id==='zh-CN'?'插件文件夹或 ZIP 路径':'Plugin folder or ZIP path',
-    targetVersion:locale.id==='zh-CN'?'输入 {name} 的升级 ZIP 或文件夹路径':'Enter the upgrade ZIP or folder path for {name}'};
   const register=(channel,handler)=>ipcMain.handle(channel,(event,...args)=>{assertSender(event);return handler(...args);});
   const updateConfiguration=development?undefined:await loadConfiguration(join(process.resourcesPath,'win7-update.json'));
   let updateState={phase:'idle'};
+  let updatePresentation={phase:'idle'};
   const publishUpdate=state=>{
+    const failure=state.phase==='error'?(updateState.phase==='checking'?'check':'install'):undefined;
     updateState=state;
-    for(const window of BrowserWindow.getAllWindows())if(!window.isDestroyed())window.webContents.send('dsh-desktop:updates-state',state);
+    updatePresentation={phase:state.phase,...(state.version?{version:state.version}:{}),...(failure?{failure}:{})};
+    for(const window of BrowserWindow.getAllWindows()){
+      const url=window.webContents.getURL();
+      if(url.startsWith('dsh-app://shell/'))window.webContents.send('dsh-desktop:updates-state',state);
+      if(url.startsWith('dsh-app://app/'))window.webContents.send('dsh-desktop:updates-presentation',updatePresentation);
+    }
     return state;
   };
   const updater=new Win7Updater({config:updateConfiguration,currentVersion:app.getVersion(),
@@ -159,7 +245,7 @@ async function main(){
   const updates=new DesktopUpdateCoordinator(publishUpdate,()=>manager.close(),updater,()=>Boolean(updateConfiguration));
   register('dsh-desktop:updates-check',()=>updates.check());
   register('dsh-desktop:updates-install',async()=>{await updates.install();});
-  const checkAndPrompt=async manual=>{
+  const showUpdate=async manual=>{
     const state=await updates.check(),messages=locale.messages;
     if(state.phase==='error'){
       if(manual)await dialog.showMessageBox({type:'error',title:messages.updateCheckFailedTitle,message:state.message??messages.unknownError});
@@ -175,6 +261,13 @@ async function main(){
     const installed=await updates.install();
     if(installed.phase==='error')await dialog.showMessageBox({type:'error',title:messages.updateFailedTitle,message:installed.message??messages.unknownError});
   };
+  let updatePrompt;
+  const checkAndPrompt=manual=>{
+    if (!updatePrompt) updatePrompt=showUpdate(manual).finally(()=>{updatePrompt=undefined;});
+    return updatePrompt;
+  };
+  appHandler('dsh-desktop:updates-status',()=>updatePresentation);
+  appHandler('dsh-desktop:updates-open',()=>checkAndPrompt(true));
   register('dsh-desktop:locale-get',()=>locale);
   register('dsh-desktop:plugins-list',()=>manager.list());
   const mutation=async(operation,value,name)=>{
@@ -190,9 +283,12 @@ async function main(){
   const updateMenu=()=>Menu.setApplicationMenu(Menu.buildFromTemplate([shortcuts.fileMenu({
     fileMenu:locale.id==='zh-CN'?'文件':'File',closePage:locale.id==='zh-CN'?'关闭页面':'Close Page',
   }),{label:locale.messages.application,submenu:[
-    {label:locale.messages.pluginsMenu,accelerator:'CmdOrCtrl+,',click:openPlugins},
+    {id:'dsh-plugin-manager',label:locale.messages.pluginsMenu,accelerator:'CmdOrCtrl+,',click:openPlugins},
     {label:locale.messages.checkUpdatesMenu,click:()=>{void checkAndPrompt(true);}},{type:'separator'},
     {label:locale.id==='zh-CN'?'退出':'Quit',click:()=>app.quit()}]}]));
+  const updateTray=()=>tray?.setContextMenu(Menu.buildFromTemplate([
+    {label:'DeepSeek Harness',click:focus},{label:locale.messages.pluginsMenu,click:openPlugins},
+    {type:'separator'},{label:locale.id==='zh-CN'?'退出':'Quit',click:()=>app.quit()}]));
   shortcuts=installDesktopShortcuts(()=>mainWindow,app.getPath('userData'),'windows',updateMenu,
     ()=>({revision:0,blocked:false}));
   updateMenu();
@@ -201,8 +297,7 @@ async function main(){
   const icon=nativeImage.createFromPath(join(__dirname,'tray.png'));
   if(icon.isEmpty())throw new Error('Desktop tray image is missing or invalid');
   tray=new Tray(icon);tray.setToolTip('DeepSeek Harness');tray.on('double-click',focus);
-  tray.setContextMenu(Menu.buildFromTemplate([{label:'DeepSeek Harness',click:focus},{label:locale.messages.pluginsMenu,click:openPlugins},
-    {type:'separator'},{label:locale.id==='zh-CN'?'退出':'Quit',click:()=>app.quit()}]));
+  updateTray();
   app.on('activate',focus);
   publishUpdate(updateState);
   const updateTimer=setTimeout(()=>{void checkAndPrompt(false);},10000);updateTimer.unref();

@@ -13,6 +13,7 @@
   const targets = '[style*="--dsh-compat-position-anchor"],[style*="--dsh-menu-anchor"],' +
     '[style*="--dsh-model-anchor"][role="menu"],[style*="--dsh-model-anchor"][role="group"],[style*="--dsh-submenu-parent"]';
   let frame = 0, running = false, pending = false, last = '', generation = 0;
+  const styleAttributes = ['style', 'class', 'role', 'href', 'rel', 'media', 'type', 'disabled', 'data-anchor-polyfill'];
   const ids = new WeakMap(); let nextId = 0;
   const identity = node => {if (!ids.has(node)) ids.set(node, ++nextId); return ids.get(node);};
   const state = {refreshes: 0, active: false, error: null, targets: 0, observers: 0};
@@ -47,10 +48,11 @@
       set(value) {this.setProperty(key, value);}});
   }
   function signature() {
-    const styles = Array.from(document.querySelectorAll('style:not([data-generated-by-polyfill]):not([data-dsh-color-mix-fallback]),link[rel="stylesheet"]'));
+    const styles = Array.from(document.querySelectorAll('style:not([data-generated-by-polyfill]):not([data-dsh-color-mix-fallback]),link[rel~="stylesheet"]'));
     const anchors = Array.from(document.querySelectorAll('[style]')).filter(node =>
       managed.test(node.getAttribute('style')));
-    return styles.map(node => identity(node) + ':' + (node.href || node.textContent)).join('|') + '\n' +
+    return JSON.stringify(styles.map(node => [identity(node), node.href || node.textContent, node.media,
+      node.type, Boolean(node.disabled || node.sheet?.disabled)])) + '\n' +
       anchors.map(node => [identity(node), node.className, node.getAttribute('role'),
         ...variables.map(key => get.call(node.style, key))].join(':')).join('|');
   }
@@ -75,7 +77,7 @@
     schedule();
   });
   observer.observe(document, {subtree: true, childList: true, characterData: true,
-    attributes: true, attributeFilter: ['style', 'class', 'role', 'href', 'rel', 'data-anchor-polyfill']});
+    attributes: true, attributeFilter: styleAttributes});
   document.addEventListener('load', event => {if (event.target instanceof HTMLLinkElement) schedule();}, true);
   window.addEventListener('pagehide', () => {
     observer.disconnect(); cancelAnimationFrame(frame); generation++; dshAnchorVendor.reset();
@@ -84,7 +86,7 @@
   window.addEventListener('pageshow', event => {
     if (event.persisted) {
       observer.observe(document, {subtree:true,childList:true,characterData:true,attributes:true,
-        attributeFilter:['style','class','role','href','rel','data-anchor-polyfill']});schedule();
+        attributeFilter:styleAttributes});schedule();
     }
   });
   schedule();

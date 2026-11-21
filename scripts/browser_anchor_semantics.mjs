@@ -93,6 +93,30 @@ try{
       getComputedStyle(menu).backgroundColor==='rgb(128, 0, 128)' && window.__dshAnchorCompatibility.targets===1;
   });
   result.rows.push({name:'external-model-stylesheet',state:await external.evaluate(()=>({...window.__dshAnchorCompatibility}))});
+  const linkOverride=css.replace(' + 4px',' + 10px').replace('#ff0000','#00ff00')+
+    '#trigger{anchor-name:var(--dsh-model-anchor)}.target{position-anchor:var(--dsh-model-anchor)}';
+  await external.evaluate(text=>{
+    document.querySelector('link').disabled=true;
+    const replacement=document.createElement('style');
+    replacement.id='replacement';
+    replacement.textContent=text;
+    document.head.append(replacement);
+  },linkOverride);
+  async function checkSheet(gap,backgroundColor) {
+    await external.waitForFunction(({gap,backgroundColor})=>{
+      const button=document.querySelector('#trigger'),menu=document.querySelector('.target');
+      return Math.abs(menu.getBoundingClientRect().top-button.getBoundingClientRect().bottom-gap)<1 &&
+        getComputedStyle(menu).backgroundColor===backgroundColor;
+    },{gap,backgroundColor});
+  }
+  await checkSheet(10,'rgb(0, 128, 128)');
+  result.rows.push({name:'inline-replacement',state:await external.evaluate(()=>({...window.__dshAnchorCompatibility}))});
+  await external.evaluate(()=>{
+    document.querySelector('#replacement').remove();
+    document.querySelector('link').disabled=false;
+  });
+  await checkSheet(4,'rgb(128, 0, 128)');
+  result.rows.push({name:'external-restored',state:await external.evaluate(()=>({...window.__dshAnchorCompatibility}))});
   await external.close();
   // Native capability detection leaves the CSSOM methods and state untouched.
   const native=await browser.newPage();await native.setContent('<div></div>');

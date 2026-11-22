@@ -35,7 +35,31 @@ try{
  write(join(nested,'AGENTS.md'),'failed read must not project this');await call('read',{file_path:join('pkg','missing.txt')});await Promise.resolve();rows.push({name:'failed-tool-no-projection',pending:clean(pending())})
  await ctx.workingDirectory.set(agent,'pkg',fixture.signal);await step('directory-replacement');rows.push({name:'header-preserved',cwd:agent.session.header.cwd,current:ctx.workingDirectory.get(agent.session)})
  appendPending();for(const name of ['alpha','beta']){mkdirSync(join(nested,name));write(join(nested,name,'AGENTS.md'),name+' nested rule');write(join(nested,name,'file.txt'),'content')}
- await Promise.all(['alpha','beta'].map(name=>call('read',{file_path:join(name,'file.txt')})));await step('serialized-concurrent-projections')
+ const betaReady = Promise.withResolvers<void>()
+ const alphaCommitted = Promise.withResolvers<void>()
+ const alphaPath = join('alpha','file.txt')
+ const betaPath = join('beta','file.txt')
+ // Hold the results until both reads are in flight, then commit alpha first.
+ const unhook = ctx.on('tools/post-execute', async (execution, _result, next) => {
+  if (execution.name === 'read' && execution.arguments.file_path === alphaPath) {
+   await betaReady.promise
+  } else if (execution.name === 'read' && execution.arguments.file_path === betaPath) {
+   betaReady.resolve()
+   await alphaCommitted.promise
+  }
+  return next()
+ })
+ try {
+  const alpha = call('read', {file_path: alphaPath}).then(result => {
+   alphaCommitted.resolve()
+   return result
+  })
+  const results = await Promise.all([alpha, call('read', {file_path: betaPath})])
+  if (results.some(result => result.isError)) throw new Error('Concurrent fixture read failed')
+ } finally {
+  unhook()
+ }
+ await step('serialized-concurrent-projections')
  await plugin.dispose();const before=agent.session.snapshotEvents().length;await call('read',{file_path:'file.txt'});await Promise.resolve();rows.push({name:'unloaded-no-projection',inboxEvents:agent.session.snapshotEvents().slice(before).filter((event:any)=>event.type==='agent/inbox/spliced').length})
 }finally{if(handle)await handle.dispose();await ctx.fiber.dispose();for(const [key,value] of Object.entries(saved)){if(value===undefined)delete process.env[key];else process.env[key]=value}}
 const normalize=(value:any):any=>typeof value==='string'&&value.includes(project)?value.replaceAll(project,'<work>'):Array.isArray(value)?value.map(normalize):value&&typeof value==='object'?Object.fromEntries(Object.entries(value).map(([key,item])=>[key,normalize(item)])):value

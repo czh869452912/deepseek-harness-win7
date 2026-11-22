@@ -77,7 +77,30 @@ async def observe(workspace=None):
         for message in pending():agent.session.append('user/message',message,surface_op='append');agent.inbox.remove(message['id'])
         for name in ('alpha','beta'):
             (nested/name).mkdir();write(nested/name/'AGENTS.md',name+' nested rule');write(nested/name/'file.txt','content')
-        await asyncio.gather(*[call('read',dict(file_path=name+'/file.txt')) for name in ('alpha','beta')])
+        beta_ready = asyncio.Event()
+        alpha_committed = asyncio.Event()
+
+        async def order_results(execution, result, next_hook):
+            path = execution.arguments.get('file_path')
+            if execution.name == 'read' and path == 'alpha/file.txt':
+                await beta_ready.wait()
+            elif execution.name == 'read' and path == 'beta/file.txt':
+                beta_ready.set()
+                await alpha_committed.wait()
+            return await next_hook()
+
+        async def read_alpha():
+            result = await call('read', dict(file_path='alpha/file.txt'))
+            alpha_committed.set()
+            return result
+
+        # Hold the results until both reads are in flight, then commit alpha first.
+        unhook = ctx.on('tools/post-execute', order_results)
+        try:
+            results = await asyncio.gather(read_alpha(), call('read', dict(file_path='beta/file.txt')))
+            assert all(not result.isError for result in results)
+        finally:
+            unhook()
         await step('serialized-concurrent-projections')
         await plugin.dispose()
         before=len(agent.session.snapshotEvents());await call('read',dict(file_path='file.txt'));await asyncio.sleep(0)

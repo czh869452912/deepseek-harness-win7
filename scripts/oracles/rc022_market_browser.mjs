@@ -35,7 +35,8 @@ try {
  await page.getByRole('button',{name:/^(插件|Plugins)$/}).click();
  await page.getByText(/^(发现|Discover)$/,{exact:true}).click();result.steps.push('optional-original-discover-opened');
  if(!config.cold){
- await page.getByRole('button',{name:/^(添加索引源|Add index source)$/}).click({timeout:20000});
+ // Discover waits for the installed host's settings, inventory and index list.
+ await page.getByRole('button',{name:/^(添加索引源|Add index source)$/}).click({timeout:60000});
  await page.getByRole('textbox',{name:/^(索引 URL|Index URL)$/}).fill(config.index);
  await page.getByRole('button',{name:/^(添加|Add)$/}).click();
  await page.getByRole('dialog').getByRole('button',{name:/^(关闭|Close)$/}).click();

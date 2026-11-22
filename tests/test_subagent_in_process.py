@@ -17,6 +17,10 @@ from dsh.subagent.runtime import SubagentRuntime, SubagentError, settle_run
 from dsh.subagent.in_process import SpawnInProcess
 
 
+# Session replay and persistence can outlast a short deadline on Windows.
+RUN_RESULT_TIMEOUT = 30
+
+
 class Model:
     provider, model = "fixture", "fixture"
 
@@ -58,7 +62,7 @@ async def test_actual_child_execution_owns_session_context_and_result(fork):
                    "descriptor": snapshot_descriptor({"mode": "one-shot", "provider": provider.name, "label": "test"})}
         run = await ctx.get("agents").with_initiator_async(parent.agent, provider.start(request))
         assert ctx.get("agents").get(run.id) is run.localAgent
-        result = await asyncio.wait_for(run.result, 3)
+        result = await asyncio.wait_for(run.result, RUN_RESULT_TIMEOUT)
         assert result == {"output": [{"type": "text", "text": "actual child answer"}], "stopReason": "completed"}
         assert ("parent secret" in str(model.requests[-1]["messages"])) is fork
         assert run.localAgent.session.header.parentSession == parent.agent.id
@@ -103,7 +107,7 @@ async def test_structured_request_does_not_accept_plain_text_as_success():
                    "signal": AbortController().signal, "outputSchema": {"type": "object", "properties": {"value": {"type": "string"}}, "required": ["value"]},
                    "descriptor": snapshot_descriptor({"mode": "one-shot", "provider": "spawn"})}
         run = await InProcessProvider("spawn").start(request)
-        result = await asyncio.wait_for(run.result, 3)
+        result = await asyncio.wait_for(run.result, RUN_RESULT_TIMEOUT)
         assert result["stopReason"] == "error" and "structured" not in result
         assert ctx.get("tools").get("structured_output") is None
         assert "structured_output" in str(model.requests[-1]["tools"])
@@ -156,7 +160,7 @@ async def test_structured_capture_commits_only_authoritative_result_and_stops_la
         await ctx.plugin(SpawnInProcess)
         run = await ctx.get("subagents").start("spawn", {"parent": parent.agent, "prompt": [{"type": "text", "text": "task"}],
             "signal": AbortController().signal, "outputSchema": {"type": "object", "properties": {"value": {"type": "string"}}, "required": ["value"], "additionalProperties": False}})
-        result = await asyncio.wait_for(run.result, 3)
+        result = await asyncio.wait_for(run.result, RUN_RESULT_TIMEOUT)
         assert result["stopReason"] == "completed" and result["structured"] == {"value": "accepted"}
         assert ctx.get("tools").get("structured_output") is None
     finally:

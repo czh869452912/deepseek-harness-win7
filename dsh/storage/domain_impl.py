@@ -415,7 +415,7 @@ class DomainFacility:
                         global_val = spec.global_spec.initial
                     else:
                         try:
-                            global_val = spec.global_spec.schema.parse(raw_g)
+                            global_val = spec.global_spec.parse_stored(raw_g)
                         except Exception as e:
                             raise DomainError(
                                 "invalid-record",

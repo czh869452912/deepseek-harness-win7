@@ -26,15 +26,23 @@ def state(value):
     if 'defaultWorkspaceId' in value:
         if not isinstance(value['defaultWorkspaceId'],str):raise ValueError('expected default workspace id')
         result['defaultWorkspaceId']=value['defaultWorkspaceId']
-    # The 0.1.5 Python registry serialized the cleared optional journal as null.
-    pending=value.get('pendingMutation')
-    if pending is not None:
+    if 'pendingMutation' in value:
+        pending=value['pendingMutation']
         if not isinstance(pending,dict) or pending.get('operation') not in ('create','delete') or not isinstance(pending.get('workspaceId'),str):
             raise ValueError('expected pending workspace mutation')
         result['pendingMutation']=dict(operation=pending['operation'],workspaceId=pending['workspaceId'])
     return result
 
 
+def normalize_stored_state(value):
+    # The 0.1.5 Python registry serialized the cleared optional journal as null.
+    if isinstance(value, dict) and 'pendingMutation' in value and value['pendingMutation'] is None:
+        value = dict(value)
+        del value['pendingMutation']
+    return value
+
+
 workspace_domain_spec = define_domain(name='workspace',version=2,
-    global_spec=DomainGlobalSpec(SchemaValidator(state),dict(initialized=False,workspaceIds=[],archivedSessionIds=[],pinnedSessionIds=[])),
+    global_spec=DomainGlobalSpec(SchemaValidator(state),dict(initialized=False,workspaceIds=[],archivedSessionIds=[],pinnedSessionIds=[]),
+        normalize_stored=normalize_stored_state),
     tables=dict(workspaces=domain_table(SchemaValidator(record))))

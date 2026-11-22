@@ -32,9 +32,15 @@ class SchemaValidator:
 class DomainGlobalSpec:
     """Global singleton declaration."""
 
-    def __init__(self, schema: Any, initial: Any):
+    def __init__(self, schema: Any, initial: Any, *, normalize_stored: Optional[Callable[[Any], Any]] = None):
         self.schema = schema if isinstance(schema, SchemaValidator) else SchemaValidator(schema)
         self.initial = initial
+        self.normalize_stored = normalize_stored
+
+    def parse_stored(self, data: Any) -> Any:
+        if self.normalize_stored is not None:
+            data = self.normalize_stored(data)
+        return self.schema.parse(data)
 
 
 class DomainTableSpec:

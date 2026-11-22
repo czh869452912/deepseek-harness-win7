@@ -18,6 +18,9 @@ async def web_context(home=None):
     ctx = result['ctx']
     ctx.effect(lambda: environment.undo)
     ctx._test_shutdown = result['shutdown']
+    # Whole-suite Windows load can delay teardown past the CLI's exit deadline.
+    # The in-process fixture still exercises the real application disposer.
+    ctx._test_shutdown._timeout_ms = 60_000
     return ctx
 
 

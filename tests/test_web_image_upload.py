@@ -20,10 +20,13 @@ async def test_web_image_upload_reaches_local_model_and_cold_history(tmp_path, m
             header = (await reader.readuntil(b'\r\n\r\n')).decode('ascii')
             length = next(int(line.split(':', 1)[1]) for line in header.splitlines()
                           if line.lower().startswith('content-length:'))
-            model_requests.append(json.loads(await reader.readexactly(length)))
+            request = json.loads(await reader.readexactly(length))
+            image_request = request.get('model') == 'vision' and 'data:image/png;base64,' in json.dumps(request)
+            model_requests.append(request)
+            reply = 'image received' if image_request else 'fixture text response'
+            chunk = json.dumps({'choices': [{'delta': {'content': reply}, 'finish_reason': 'stop'}]})
             writer.write(b'HTTP/1.1 200 OK\r\nContent-Type: text/event-stream\r\nConnection: close\r\n\r\n'
-                         b'data: {"choices":[{"delta":{"content":"image received"},"finish_reason":"stop"}]}\n\n'
-                         b'data: [DONE]\n\n')
+                         + ('data: ' + chunk + '\n\ndata: [DONE]\n\n').encode('utf-8'))
             await writer.drain()
         finally:
             writer.close()
@@ -93,7 +96,7 @@ async def test_web_image_upload_reaches_local_model_and_cold_history(tmp_path, m
                 if 'image received' in json.dumps(page):
                     return
                 await asyncio.sleep(0.025)
-        await asyncio.wait_for(wait_for_reply(), 10)
+        await asyncio.wait_for(wait_for_reply(), 30)
         assert any(request['model'] == 'vision' and 'data:image/png;base64,' in json.dumps(request)
                    for request in model_requests)
 

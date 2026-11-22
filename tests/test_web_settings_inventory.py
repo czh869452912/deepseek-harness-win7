@@ -66,11 +66,15 @@ async def test_issue11_live_settings_and_archived_preferences(tmp_path):
         async def update(ns, **patch):
             return await remote.invoke(dict(namespace='settings', method='update', args=dict(ns=ns, patch=patch)))
 
-        async def wait_for_recovery():
-            while not any(home.rglob('legacy-settings-issue11.sha256')):
-                await asyncio.sleep(0.01)
+        receipt = home / 'profiles' / 'web' / 'legacy-settings-issue11.sha256'
 
-        await asyncio.wait_for(wait_for_recovery(), 12)
+        async def wait_for_recovery():
+            while not receipt.is_file():
+                await asyncio.sleep(0.05)
+
+        # Recovery serializes three real settings writes, each with a Loader
+        # reload. Poll only its receipt and allow those writes on a busy host.
+        await asyncio.wait_for(wait_for_recovery(), 60)
         rows = {row['ns']: row for row in ctx.settings.describe()}
         assert rows['ui-settings']['value'] == {'enabled': False}
         assert not rows['ui-settings']['autoGenerate']

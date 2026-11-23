@@ -1,217 +1,93 @@
 # DeepSeek Harness Win7
 
-> 2026-10-21 已确认 Windows 工作区 ACL 继承问题：固定原版与未修复迁移版均可能出现新文件写完后不可读。**master 尚未合入修复，已发布版本未修复此项**；当前候选设计未获接受，单独提交 PR 讨论。见 [issue #4](https://github.com/czh869452912/deepseek-harness-win7/issues/4)、[问题分析](docs/research/2026-10-21-workspace-acl-mechanism-assessment.md)、[原版已知问题](docs/upstream-known-issues.md)及[已知差异](docs/known-differences.md)。
+**DeepSeek Harness Win7（DSH Win7）** 是 DeepSeek Harness 的非官方 Python 3.8.10 移植，面向 Windows 7 SP1 及更新的 Windows。它是可在项目目录中读取和编辑文件、运行 Shell 命令、保存会话的 AI 编程助手，提供桌面应用、Web GUI 和 CLI。项目以 Cordis 组织插件，Web 界面复用固定版本的上游前端。[DeepSeek Harness 上游项目](https://github.com/deepseek-ai/deepseek-harness)
 
-开发维护：[Goose 多智能体操作指南](.goose/OPERATIONS.zh-CN.md) · [编排工作流参考](.goose/README.md)
+**DeepSeek Harness Win7 (DSH Win7)** is an unofficial Python port of DeepSeek Harness for Windows 7 SP1 and newer. It includes a desktop app, a browser-based Web GUI, and a command-line interface. See the [English quick start](#english-quick-start).
 
-插件开发：[Win7/Python 创造模式开发指南](docs/plugin-development-win7.md)（CLI/Web 默认技能、动态 Host/Client 插件与生命周期）。
+[**下载正式版**](https://github.com/czh869452912/deepseek-harness-win7/releases/latest) · [试用 0.2.2 预览版](https://github.com/czh869452912/deepseek-harness-win7/releases/tag/rc022-preview-20261123-r2-b0756568) · [源码运行](#源码运行) · [问题反馈](https://github.com/czh869452912/deepseek-harness-win7/issues)
 
-[README.md](README.md) | [AGENTS.md](AGENTS.md)
+## 下载和启动
 
-当前上游目标为 **dsh-v0.1.5-rc.3**（`a4c74a91e06b00fe0b0937bde982170c526cc842`），产品版本 **0.1.5-rc.3-r2**。本次 Windows 修订修复旧 Win7 / PowerShell 2.0 下 AIO 输入管道访问拒绝、脚本及系统补丁退出码采集，并保留完整检查日志；继续包含 r1 的安装兼容性和文件夹选择器修复。固定原版前端保持 rc.3 身份，产品版本与分发文件独立增加修订号。
+首次使用可从 GitHub 标记的正式版下载。0.2.2 预览版适合试用新版桌面界面和迁移功能。每个发布页都列出了对应安装包、`SHA256SUMS.txt` 和验收范围。正式版 v0.1.5-rc.3-r3 的附件沿用了包含 `creative-preview` 的构建文件名。[正式版](https://github.com/czh869452912/deepseek-harness-win7/releases/latest) · [0.2.2 预览版](https://github.com/czh869452912/deepseek-harness-win7/releases/tag/rc022-preview-20261123-r2-b0756568)
 
-下载 [v0.1.5-rc.3-r2 Release](https://github.com/czh869452912/deepseek-harness-win7/releases/tag/v0.1.5-rc.3-r2)；产物、校验清单和本次完整验收以发行页的精确回执为准，详见[修订版说明](docs/releases/v0.1.5-rc.3-r2.md)。前版 `6cbcbf1c` 的完整资格、用户 Win7 反馈及原始文件保留于 [v0.1.5-rc.3](https://github.com/czh869452912/deepseek-harness-win7/releases/tag/v0.1.5-rc.3)，不算作新修订验收。修复已在独立 Win7 SP1 x64 虚拟机中完成缺失组件安装、两次重启及应用启动验证；x86 Win7 客体和实体机器/多屏矩阵尚未覆盖，最终分发包的精确资格以发行回执为准；既有 ACL 问题、Source 例外、插件 ABI 和实际内网更新部署边界不扩张。
+| 选择 | 下载后怎么用 |
+| --- | --- |
+| **Desktop Standard** | 已装齐系统前置组件时，下载对应架构的 `dsh-desktop-standard-setup-*.exe` 并启动应用。 |
+| **Desktop AIO** | Win7 缺少前置组件时，下载 `dsh-desktop-aio-setup-*.exe` 离线补齐。遇到重启提示，重启后再运行同一个安装器。 |
+| **Portable ZIP** | 下载 `dsh-win7-portable-*.zip` 并解压。包内自带 Python，运行 `dsh-web.bat` 打开 Web GUI，或在终端中运行 `dsh.bat`。 |
 
-规范 JSONL 默认写 `session.v3.jsonl.zstd`；明文配置写 `session.v3.jsonl`，逻辑导出仍为 `session.jsonl`。历史代际只读时在内存转换，写打开时验证并发布新代际，保留旧文件。已有明文根目录可显式配置 `compression: none`；canonical CLI/Web 和 Desktop 对未显式设置压缩的默认目录沿用已有单一明文编码；自定义目录及显式配置仍须匹配后端。同一根目录不能混用两种压缩格式。升级前停止应用并备份整个 DSH_HOME 及自定义存储根目录；rc.1 不能读取新写的 v3 历史，回退应恢复升级前的完整备份，不能仅换回旧程序。旧私有 SQLite 仍由显式只读 reader 导出。见 [分发与升级说明](docs/distribution.md)。
+64 位系统通常选 **x64**，32 位系统选 **x86**。Windows 7 的安装前置条件及验证覆盖以所选发布页为准。[安装包与系统组件说明](docs/distribution.md#安装包选择)
 
-> 2026-09-29 历史 Web 验收：原版前端与本地模拟模型完成创建工作区、对话、工具执行、恢复、反馈、分支和导出。该记录没有执行 Web 真实模型或 Win7 真机验收；本轮真实 DeepSeek 观察范围为包内 CLI 和 x64 Desktop，见上方最终记录。完整上游 parity 仍受已披露边界约束。见 [Web 验收记录](docs/research/2026-09-29-web-usable-baseline.md)。历史审查见 [当前状态审查](docs/research/2026-09-28-current-state-mvp-audit.md) 和 [入口切换实施记录](docs/research/2026-09-28-canonical-entry-progress.md)。CLI 已统一到正式 profile 入口，旧 CLI 分流不再保留。
+### 配置模型并开始
 
-**DeepSeek Harness Win7** 是面向 Windows 7 及以上系统的开源 Agent Harness（智能体框架）Python 迁移工程，目标包含 **Cordis in Browser + React 18 + TSX + CSS Modules** Web GUI 与正式 profile CLI。正式 Web 路径采用 Connection / Typert Remote 与 WebSocket 流。
-
-本项目基于 **Python 3.8.10**，忠实复刻了 DeepSeek Harness 原生的 **Cordis（万物皆插件）** 架构。项目的核心目标是：
-1. **Windows 7 兼容目标**：使用 Python 3.8.10；当前 Windows 回归不能替代 Win7 真机认证。
-2. **极简模式与创造模式**：支持原生 DeepSeek Harness 的双关键模式（Minimal & Creative Presets）。
-3. **1:1 官方 Web GUI**：复用固定上游的 Cordis in Browser 前端，Client 插件由实际启用的 Loader 配置派生。
-4. **零依赖 Portable Release**：提供脱离 Python 全局环境依赖的开箱即用便携版。
-
----
-
-## 核心架构 (Cordis Architecture)
-
-本项目遵循 Cordis 的核心设计理念：**“产品的每一部分都是插件”**。
-
-```
-                    +------------------------------------+
-                    |    Context (ctx Service Container) |
-                    +-----------------+------------------+
-                                      |
-         +----------------------------+----------------------------+
-         |                            |                            |
-  [ctx.llm]                    [ctx.tools]                  [ctx.sessions]
-  OpenAI / DeepSeek API         Tool Catalog                 Append-only Event Log
-         |                            |                            |
-  [ctx.fs]                     [ctx.terminal]               [ctx.agent_loop]
-  Local Workspace FS           Persistent PowerShell        Turn & Step Loop
-         |                            |                            |
-  [ctx.web_server]             [ctx.client_modules]         [ctx.connection]
-  HTTP / WebSocket             Client Bundle Registry       Typert Remote / Fetch
-```
-
-- **上下文容器 (`Context`)**：服务（Service）统一绑在 `ctx` 上，插件之间通过 Key 进行依赖查找而非强耦合导入。
-- **依赖声明 (`inject`)**：插件通过 `inject` 字段声明所需服务，等待服务就绪后触发 `apply(ctx)`。
-- **可逆副作用 (`effect`)**：所有的工具注册、事件监听均注册为可撤销 effect，插件卸载/重载时自动清理资源。
-- **正式浏览器协议**：Connection → Typert Gateway → Remote，业务流走 `/api/remote.mux` WebSocket；`/plugins/events` 是客户端 HMR SSE。旧 ApiProxy、双业务 SSE 和 `/api/respond` 已退休。
-
----
-
-## 启动 Web
-
-配置模型凭据后，在仓库目录运行：
+在桌面或 Web 设置中配置模型提供商和 API Key，选择一个工作区即可开始。用户可使用 DeepSeek API，也可按提供商设置配置 OpenAI 兼容端点。通过终端启动时，可以在当前 PowerShell 会话中设置 DeepSeek 凭据。
 
 ```powershell
+$env:DEEPSEEK_API_KEY = "your-api-key"
 .\dsh-web.bat
 ```
 
-打开终端打印的带一次性 token 的地址。无法操作系统目录选择框时，可使用原版网页目录选择器：
+浏览器未自动打开时，使用终端打印的本地地址。下面的 CLI 命令会执行一次任务。
 
 ```powershell
-.\dsh.bat --profile web --patch examples/web-browse.patch.yml --no-open
+.\dsh.bat --profile headless "检查当前项目"
 ```
 
-该补丁只改变插件装配，不修改原版前端。测试演示使用隔离的 DSH_HOME 和本地模拟模型；它不是生产模型配置。
+### 升级与已知问题
 
-设置中的“插件列表”显示宿主 Loader 条目。原版默认关闭宿主 HMR，Web 的多数模型工具由会话预设按需挂载，因此宿主同名工具显示“已停用”不代表会话缺少工具；浏览器 `client-hmr` 是另一条独立启用的插件。“插件配置”只显示已注册设置且提供原版配置卡片的插件，不是所有插件的配置编辑器。设置目录、模型提供方和预设工具的验证见 [设置专项验收](docs/research/2026-09-30-web-settings-acceptance.md)。更新代码后需要重启 Web 服务再刷新页面。
+升级前退出 Desktop（包括托盘）、Web 和 CLI，备份整个 `DSH_HOME`（默认是用户目录下的 `.dsh`）及自定义会话目录。会话升级、压缩格式和回退步骤见[会话升级与恢复指南](docs/session-upgrade-recovery.md)。
 
-## Web GUI (Cordis in Browser)
+Windows 工作区 ACL 继承问题可能使新建文件在关闭后无法读取。复现条件与进展见 [Issue #4](https://github.com/czh869452912/deepseek-harness-win7/issues/4)。0.2.2 预览版的剩余桌面交互和 Win7 验收项见 [Issue #11](https://github.com/czh869452912/deepseek-harness-win7/issues/11)。[已知差异](docs/known-differences.md) · [上游已知问题](docs/upstream-known-issues.md)
 
-Web 端基于官方 **React 18 + TSX + CSS Modules** 架构，使用浏览器端 Cordis 微内核实现动态插件插拔：
+## 使用方式
 
-- **官方 Client 插件组合**：`ui-layout`、`ui-sidebar`、`ui-conversation`、`ui-composer`、`ui-user-questions`、`ui-permission-presets`、`ui-goal`、`ui-plan`、`ui-trajectory`、`ui-settings` 等，以固定上游 bundle 和实际启用条目为准。
-- **三栏响应式布局 (`AppFrame`)**：侧边栏工作区树、中央对话流、右侧轨迹与性能指标折叠栏。
-- **丰富的交互视图**：
-  - **ReasoningRow**：DeepSeek R1 / V3 深度思考折叠卡与实时打字机输出。
-  - **Tool Cards**：`str_replace_editor` 差异比对卡、PowerShell 终端卡、目录搜索卡。
-  - **User Questions**：交互式问答弹窗（单选/多选/自定义输入/分页）。
-  - **Permission Approval**：敏感工具执行单次放行 / 拒绝审批流。
-  - **Goal CAS Bar**：带乐观锁版本校验的多轮目标看板。
+- **Desktop / Web GUI** 提供工作区和会话管理、工具执行卡片、交互提问、权限确认以及计划和目标视图。
+- **极简模式（Minimal）** 提供编辑器和持久 Shell。**标准模式（Standard）** 提供文件、搜索、Shell、技能、规划和子智能体等工程工具。
+- **创造模式（Creative）** 支持创建和运行 Python 3.8.10 Host 插件与 JavaScript Client 插件。该模式的七个 Cordis 工具由本项目的 Creative profile 提供。[创造模式插件开发指南](docs/plugin-development-win7.md)
 
----
+## English quick start
 
-## 快速开始
+1. Open the latest full release and choose the x64 or x86 Desktop installer or Portable ZIP. Use Desktop Standard when prerequisites are installed. On Windows 7 SP1, Desktop AIO can install missing prerequisites offline. [Latest release](https://github.com/czh869452912/deepseek-harness-win7/releases/latest)
+2. Open the Desktop app or extract the Portable ZIP and run `dsh-web.bat`. Configure a DeepSeek or OpenAI-compatible model provider, then open a workspace. For the CLI, set `DEEPSEEK_API_KEY` and run `dsh.bat --profile headless "Inspect this project"`.
+3. Before upgrading, close all app instances and back up `DSH_HOME` and any custom session directories. Check the release notes for Windows 7 compatibility and verification details. [Release history](https://github.com/czh869452912/deepseek-harness-win7/releases) · [Known differences (中文)](docs/known-differences.md)
 
-### 获取 reference 参考仓库
+## 源码运行
 
-本项目通过 Git submodule 固定官方 DeepSeek Harness reference 版本。首次克隆时请初始化 submodule：
+使用 **Python 3.8.10**，并通过 Git submodule 检出固定的上游参考版本。已有工作树可在项目根目录执行 `git submodule update --init --recursive`。
 
 ```powershell
-git clone --recurse-submodules <项目地址>
+git clone --recurse-submodules https://github.com/czh869452912/deepseek-harness-win7.git
+cd deepseek-harness-win7
+python -m venv .venv
+.\.venv\Scripts\python.exe -m pip install -r requirements.txt
 ```
 
-已有工作树可执行：
+设置模型凭据后，可在仓库根目录运行以下命令。
 
 ```powershell
-git submodule update --init --recursive
+.\.venv\Scripts\python.exe dsh.py --help
+.\.venv\Scripts\python.exe dsh.py --profile web
+.\.venv\Scripts\python.exe dsh.py --profile headless "检查当前项目"
 ```
 
-不要在 `reference` 目录内自行切换到其他提交；官方参考版本由外层仓库的 submodule 提交锁定。
+用 `--patch <path>` 添加 profile 补丁，用 `--dump-config` 查看合成配置。需要在网页里选择目录时，可运行 `.\dsh.bat --profile web --patch examples/web-browse.patch.yml --no-open`，再用终端打印的地址打开 Web 界面。
 
-### 1. 源码运行
+## 架构与开发
 
-1. 克隆仓库并使用 Python 3.8.10 安装依赖：
-   ```powershell
-   git clone https://github.com/deepseek-ai/deepseek-harness-win7.git
-   cd deepseek-harness-win7
+Python Host、模型、工具、会话和 Web 载体均以插件挂载到 Cordis `Context`。插件通过 `inject` 声明服务依赖，通过 `effect` 注册卸载时的清理。Web 使用固定上游的 React 18 前端，客户端插件由实际启用的 Loader 条目决定。业务流使用 Connection / Typert Remote 与 `/api/remote.mux` WebSocket，`/plugins/events` 用于客户端热更新。
 
-   # 创建虚拟环境
-   python -m venv .venv
-   .venv\Scripts\python.exe -m pip install -r requirements.txt
-   ```
+| 路径 | 内容 |
+| --- | --- |
+| `apps/` | CLI、Web 前端资源和 Desktop 应用 |
+| `dsh/` | Python Host、Cordis、工具、会话和 profile 启动 |
+| `packages/` | Cordis 插件、应用与预设组合 |
+| `reference/` | 固定的 DeepSeek Harness 上游提交 |
+| `scripts/`、`tests/` | 打包、发行验收和回归测试 |
 
-2. 设置 API Key 与 Base URL：
-   ```powershell
-   $env:DEEPSEEK_API_KEY="your-api-key"
-   $env:DEEPSEEK_BASE_URL="https://api.deepseek.com" # 或 OpenAI 兼容 Endpoint
-   ```
+源码环境可用 `.\.venv\Scripts\python.exe scripts\build_portable.py` 构建 Portable。桌面打包、x86 嵌入式运行时与离线组件输入见[分发与升级说明](docs/distribution.md#维护者构建)。
 
-3. 正式入口语法（默认组合的可用性以产品验收为准）：
-   ```powershell
-   # 查看启动器帮助
-   .venv\Scripts\python.exe dsh.py --help
-
-   # Web profile
-   .venv\Scripts\python.exe dsh.py --profile web
-
-   # 单次任务：应用读取任务位置参数
-   .venv\Scripts\python.exe dsh.py --profile headless "检查当前项目"
-
-   # 查看组合配置，不代表完成实际启动验收
-   .venv\Scripts\python.exe dsh.py --profile headless --dump-config
-   ```
-
-`--mode`、`-m`、`--prompt`、`-p`、`--web` 和无参数交互回退已移除。
-模型、端点等配置由 profile patch、settings 和 credentials 服务提供；启动器不再通过这些参数切换旧运行时。
-
----
-
-## 便携版构建 (Portable Release)
-
-[v0.1.2 Portable](https://github.com/czh869452912/deepseek-harness-win7/releases/tag/v0.1.2) 对齐 `dsh-v0.1.2-rc.1`，包含文件引用及原子写失败诊断、保守清理保护。解压 ZIP 后运行 `dsh.bat` 或 `dsh-web.bat`。用户已确认包含 ACL 加固的新 Portable 在 Win7 下复验可用；这是用户实际测试反馈，完整自动化发行结果及对应 ZIP 的 SHA-256 以发行页和原始验收回执为准。ACL 明确拒绝的目录仍需维护者修正权限，程序不会自动提权或重置 ACL。
-
-项目支持一键打成无环境依赖的 Windows 7 便携版：
-
-```powershell
-.venv\Scripts\python.exe scripts\build_portable.py
-```
-
-当前构建产物放置在 `dist/dsh-win7-portable/` 并打包为 `dist/dsh-win7-portable-v0.1.5-rc.3-r2.zip`：
-- 双击 **`dsh-web.bat`**：一键启动 Web GUI 并在浏览器中打开。
-- **`dsh.bat --profile headless "任务"`**：通过正式入口执行单次任务。
-
-桌面版采用 Electron22.3.27 与内置 Python3.8.10，分别构建 x64/x86 的 Standard 和 AIO 安装包。Standard 不安装系统补丁；AIO 按实际缺失项使用离线微软组件，必要时先重启、再运行同一安装器。独立环境升级 ZIP 和构建命令见 [分发与升级说明](docs/distribution.md)。安装包编译、解包运行和真实管理员安装分别验收。
-
----
-
-## 单元与集成测试
-
-日常开发、提交和推送不必等待历史 LFS 配额回收。请遵守两项[证据存储规则](docs/testing.md#证据不再进入-lfs)：
-
-- 测试日志、工作区和大型证据 ZIP 放在新建的自有忽略目录（如 `.goose/out/<run-id>/`）或运行器指定的仓库外目录，保存必要记录后及时清理，不再加入 Git/LFS。
-- 审计完整历史证据或检查旧版本时，按[位置映射](migration/storage/external-locations.json)从 Release 按需取回归档，核对尺寸和 SHA-256；旧版检出关闭自动 LFS 下载，不将还原归档重新提交。
-
-日常开发默认运行原失败用例、修改模块及直接消费者的定向测试。例如，修改 SDK 等待逻辑时：
-```powershell
-.venv\Scripts\python.exe -m pytest tests/test_sdk_stdio_wait.py --durations=20
-```
-定向验证通过后，只有新变更、失败或未覆盖风险才扩测。提交、合并、push 和普通任务收尾本身不要求重跑完整集合或重新打包。文档修改通常只需检查差异和链接。
-
-完整测试安排在稳定迁移批次统一签收、跨模块架构改造整体收尾、Portable 发布候选冻结或用户明确要求时。正式统一验收使用 `scripts/verify_release.py`，它已包含全量 pytest、固定原版配置、配对及实际解压/浏览器验证，不应在它之前重复执行一次 `pytest tests`。
-
-如果任务目标只是独立的完整 Python 回归，可运行 `.venv\Scripts\python.exe -m pytest tests`，但这不等于发行验收。完整门禁失败后先保留材料、集中修复并定向复验，下一稳定候选再安排完整门禁；不在每修一项后自动重跑。
-
-测试数量和结果以当前检出的实际运行日志为准。局部通过不证明全量或发行通过，历史通过记录不证明新默认 profile 或 Web 协议已经完成迁移。节点规划和产物保留规则见 [验证指南](docs/testing.md) 和 [agent 开发指引](AGENTS.md#5-verification--testing)。
-
----
-
-## 目录结构
-
-```text
-deepseek-harness-win7/
-├── apps/
-│   ├── cli/                  # CLI 入口实现
-│   └── web/                  # 官方 React 18 Web 前端 SPA (dist)
-├── packages/
-│   └── client/               # 原版 Client 模块，按实际 Loader 组合派生
-├── dsh/
-│   ├── cordis/               # Cordis 核心微内核 (Context, EventBus, Plugin, Loader)
-│   ├── core/                 # 核心 Agent 循环、Surface 投影与 Session 存储
-│   ├── host/                 # WebServer、Connection、ClientModules、Remote 与 Desktop 载体
-│   ├── fs/                   # 文件系统与 str_replace_editor 工具
-│   ├── shell/                # pwsh / cmd 持久化终端工具
-│   ├── llm/                  # OpenAI / DeepSeek API 驱动与 TokenMeter
-│   ├── goal/                 # CAS 目标服务与工具
-│   ├── plan/                 # Plan 模式控制器
-│   └── boot/                 # canonical profile 解析、组合与启动
-├── scripts/                  # 便携版构建与自动化打包脚本
-├── tests/                    # pytest 自动化测试套件
-├── dsh.py                    # 主 CLI / Web 启动入口
-├── dsh.bat                   # 便携版 CLI 批处理启动脚本
-├── dsh-web.bat               # 便携版 Web 批处理启动脚本
-├── AGENTS.md                 # 开发与架构规范文档
-└── README.md                 # 项目说明文档
-```
-
----
+日常开发按改动范围选择定向测试。发行候选的完整门禁由 `scripts/verify_release.py` 执行，覆盖 Python 回归、固定上游、配对契约和实际分发包。临时工作区与日志使用独立的忽略目录，历史证据按发布资产索引按需核验。[开发指引](AGENTS.md) · [验证与证据管理](docs/testing.md) · [迁移记录](migration/README.md) · [Goose 多智能体操作指南](.goose/OPERATIONS.zh-CN.md) · [编排工作流](.goose/README.md)
 
 ## 许可证
 
-[上游 MIT 许可证](reference/LICENSE)；分发内各第三方组件保留各自的许可证与来源记录。
+上游采用 MIT 许可证，分发包中各第三方组件保留各自的许可证及来源记录。[上游许可证](https://github.com/deepseek-ai/deepseek-harness/blob/38a6a5c965aa99ab525161efb7cc5cf1fe62fced/LICENSE)

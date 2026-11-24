@@ -45,6 +45,28 @@ async def test_actual_file_directory_and_cancellation_observations(tmp_path,monk
 
 
 @pytest.mark.asyncio
+async def test_exact_file_watch_does_not_enumerate_siblings(tmp_path, monkeypatch):
+    fs = CurrentFileSystem(cwd=str(tmp_path))
+    target = await fs.resolve('target')
+    events = asyncio.Queue()
+    controller = AbortController()
+    close = await fs.watch(target, lambda error=None: events.put_nowait(error), controller.signal)
+
+    def unexpected_scan(_directory):
+        raise AssertionError('an exact file watch must not enumerate the directory')
+
+    try:
+        with monkeypatch.context() as patch:
+            patch.setattr(os, 'scandir', unexpected_scan)
+            (tmp_path / 'target').write_text('created', encoding='utf-8')
+            assert await asyncio.wait_for(events.get(), 2) is None
+            (tmp_path / 'target').unlink()
+            assert await asyncio.wait_for(events.get(), 2) is None
+    finally:
+        await close()
+
+
+@pytest.mark.asyncio
 @pytest.mark.parametrize('kind',['file','missing','directory'])
 async def test_waits_for_ready_filters_events_and_awaits_close(tmp_path,kind):
     fs,target,watcher,controller,events,pending=await fixture(tmp_path,kind)

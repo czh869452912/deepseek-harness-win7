@@ -24,8 +24,9 @@ class WatchInitAborted(RuntimeError):
 
 
 class PollingWatcher:
-    def __init__(self,root,options,interval=.05):
+    def __init__(self,root,options,interval=.05,*,exact=None):
         self.root=root;self.options=options;self.interval=interval;self.listeners={};self.closed=False;self.stopped=asyncio.Event();self.closing=None
+        self.exact = exact
         self.task=asyncio.create_task(self.run())
         self.task.add_done_callback(lambda task:None if task.cancelled() else task.exception())
 
@@ -44,6 +45,9 @@ class PollingWatcher:
             directory=stat.S_ISDIR(info.st_mode)
             entries[path]=('directory',info.st_dev,info.st_ino) if directory else ('file',info.st_dev,info.st_ino,info.st_size,info.st_mtime_ns,info.st_ctime_ns)
         add(self.root)
+        if self.exact is not None:
+            add(self.exact)
+            return entries
         try:
             with os.scandir(self.root) as iterator:
                 for entry in iterator:add(os.path.join(self.root,entry.name))
@@ -82,8 +86,11 @@ async def watch(filesystem,target,changed,signal):
     signal.throwIfAborted();path=os.path.abspath(filesystem.processPath(target));metadata=await filesystem.stat(target,signal);directory=metadata is not None and metadata.type=='directory';signal.throwIfAborted()
     root=path if directory else os.path.dirname(path)
     def ignored(entry):return not directory and os.path.abspath(entry) not in (root,path)
-    factory=getattr(filesystem.internals,'watchFactory',None) or PollingWatcher
-    watcher=factory(root,dict(ignoreInitial=True,depth=0,ignored=ignored));filesystem.watchers.add(watcher)
+    factory=getattr(filesystem.internals,'watchFactory',None)
+    options=dict(ignoreInitial=True,depth=0,ignored=ignored)
+    watcher = (factory(root, options) if factory else
+               PollingWatcher(root, options, exact=None if directory else path))
+    filesystem.watchers.add(watcher)
     ready=asyncio.get_running_loop().create_future()
     def error(value):
         value=value if isinstance(value,Exception) else WatchError(js_to_string(value));changed(value)

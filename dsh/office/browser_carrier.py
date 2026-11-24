@@ -63,12 +63,16 @@ _WORKER_PREFIX = '''self.addEventListener('unhandledrejection', event => {
 
 
 def _decode(value):
+    # The JSON tree is private to this response. Replace each Base64 value
+    # as it is decoded so completed inputs do not stay live alongside it.
     if isinstance(value, dict):
-        if set(value) == {'__dsh_bytes__'}:
+        if len(value) == 1 and '__dsh_bytes__' in value:
             return base64.b64decode(value['__dsh_bytes__'], validate=True)
-        return {key: _decode(item) for key, item in value.items()}
-    if isinstance(value, list):
-        return [_decode(item) for item in value]
+        for key, item in value.items():
+            value[key] = _decode(item)
+    elif isinstance(value, list):
+        for index, item in enumerate(value):
+            value[index] = _decode(item)
     return value
 
 
@@ -223,6 +227,7 @@ class BrowserCarrier:
                     if len(raw) != length:
                         raise ValueError('The Office worker result was truncated.')
                     payload = json.loads(raw.decode('utf-8'))
+                    del raw
                     if not isinstance(payload, dict) or set(payload) not in ({'value'}, {'error'}):
                         raise ValueError('Invalid Office worker result envelope.')
                     if 'error' in payload:

@@ -176,7 +176,7 @@ class SettingsForms(Service):
             if self.closed or self.owner_context.fiber.state != FiberState.ACTIVE:
                 return
             try:
-                self.describe()
+                self._describe(include_values=False)
             except Exception as error:
                 self.owner_context.logger.error(error)
         asyncio.get_running_loop().call_soon(refresh)
@@ -199,9 +199,14 @@ class SettingsForms(Service):
         return schema if callable(getattr(schema, 'toJSON', None)) else None
 
     def describe(self, options=None):
+        return self._describe(options)
+
+    def _describe(self, options=None, *, include_values=True):
         active, descriptors = set(), []
-        for row in self.owner_context.get('configEditor').configuration():
-            entry, inherited, override = row['entry'], row['inherited'], row['override']
+        editor = self.owner_context.get('configEditor')
+        rows = editor.configuration() if include_values else (dict(entry=entry) for entry in editor.entries())
+        for row in rows:
+            entry = row['entry']
             schema = self.schema(entry)
             if schema is None or entry.fiber.state != FiberState.ACTIVE:
                 continue
@@ -213,18 +218,22 @@ class SettingsForms(Service):
             auto = self.presentations.get(entry.fiber.ctx.fiber, {}).get('auto', True)
             previous = self.revisions.get(entry.id)
             revision = 0 if previous is None else previous['revision'] + int(previous['raw'] != raw)
-            self.revisions[entry.id] = dict(raw=raw, revision=revision, ns=entry.options['id'], autoGenerate=auto)
+            ns = entry.options['id']
+            self.revisions[entry.id] = dict(raw=raw, revision=revision, ns=ns, autoGenerate=auto)
             if previous is None or previous['raw'] != raw or previous['autoGenerate'] != auto:
-                self.owner_context.emit('settings/document-updated', entry.options['id'], revision)
+                self.owner_context.emit('settings/document-updated', ns, revision)
+            if not include_values:
+                descriptors.append(dict(ns=ns, revision=revision))
+                continue
             value = project_form(form, plain_config(entry.fiber.effectiveConfig))
-            resolved = interpolate(entry.fiber.ctx, inherited)
+            resolved = interpolate(entry.fiber.ctx, row['inherited'])
             try:
                 resolved = resolve_config(None, resolved, entry.fiber.runtime)
             except Exception:
                 pass
             base = project_form(form, plain_config(resolved))
-            user = project_form(form, override)
-            descriptor = dict(autoGenerate=auto, ns=entry.options['id'], schema=form.toJSON(), revision=revision, applies='live', value=value, base=base, user=user)
+            user = project_form(form, row['override'])
+            descriptor = dict(autoGenerate=auto, ns=ns, schema=form.toJSON(), revision=revision, applies='live', value=value, base=base, user=user)
             if (options or {}).get('redactSecrets'):
                 redacted = redact_secrets(form, value)
                 descriptor.update(value=redacted.value, base=redact_secrets(form, base).value,
@@ -273,7 +282,7 @@ class SettingsForms(Service):
             if path and not is_volatile_path(schema, path):
                 raise RuntimeError('Config field "{}" is not volatile'.format('.'.join(path)))
         def edit(raw, inherited):
-            descriptor = next((row for row in self.describe() if row['ns'] == ns), None)
+            descriptor = next((row for row in self._describe(include_values=False) if row['ns'] == ns), None)
             if descriptor is None:
                 raise RuntimeError('Plugin entry "{}" is no longer configurable'.format(ns))
             if expected is not None and descriptor['revision'] != expected:
@@ -304,4 +313,4 @@ class SettingsForms(Service):
                 return result
             return merge_layers(strip(raw, form), value)
         await editor.edit(entry, edit)
-        self.describe()
+        self._describe(include_values=False)

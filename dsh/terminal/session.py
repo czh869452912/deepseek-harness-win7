@@ -155,13 +155,27 @@ class LocalTerminalSession:
         if type(count) is not int or not 0 < count <= 9007199254740991:
             raise ValueError('PTY read count must be a positive safe integer')
         snapshot = self.scrollback.snapshot()
-        lines = snapshot['text'].split('\n') if snapshot['text'] else []
-        if offset >= len(lines):
-            return dict(text='', totalLines=len(lines), lineBegin=offset, lineEnd=offset, truncated=snapshot['truncated'])
-        end = len(lines) - offset
-        text, dropped = utf8_tail('\n'.join(lines[max(0, end - count):end]), self.config['maxReadBytes'])
-        return dict(text=text, totalLines=len(lines), lineBegin=offset,
-                    lineEnd=offset + (len(text.split('\n')) if text else 0), truncated=dropped or snapshot['truncated'])
+        history = snapshot['text']
+        # Bound the Python-level reverse scan. Deep or large pages use the C split.
+        if offset + count > 1024:
+            lines = history.split('\n') if history else []
+            total = len(lines)
+            end = total - offset
+            page = '\n'.join(lines[max(0, end - count):end]) if end > 0 else ''
+        else:
+            total = history.count('\n') + 1 if history else 0
+            page = ''
+            if offset < total:
+                end = len(history)
+                for _ in range(offset):
+                    end = history.rfind('\n', 0, end)
+                start = end
+                for _ in range(min(count, total - offset)):
+                    start = history.rfind('\n', 0, start)
+                page = history[start + 1:end]
+        text, dropped = utf8_tail(page, self.config['maxReadBytes'])
+        return dict(text=text, totalLines=total, lineBegin=offset,
+                    lineEnd=offset + (text.count('\n') + 1 if text else 0), truncated=dropped or snapshot['truncated'])
 
     async def signal(self, signal):
         if self.closing:

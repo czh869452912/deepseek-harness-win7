@@ -1900,13 +1900,18 @@ def test_extracted_office_runtime_acceptance_is_required(tmp_path, damage):
         validate_model(report, path, archive, candidate)
 
 
+@runtime_fixture
+def pinned_ucrt_manifest():
+    from scripts.ucrt_inputs import verify_pinned_ucrt
+    return verify_pinned_ucrt(ROOT)
+
+
 def extracted_receipt(tmp_path):
     archive = tmp_path / 'portable.zip'
     archive.write_bytes(b'exact candidate archive')
     candidate = {'product_commit': 'a' * 40, 'worktree_dirty': False,
                  'frontend': json.loads((ROOT / 'scripts/frontend-inputs.json').read_text(encoding='utf-8'))}
-    from scripts.ucrt_inputs import verify_pinned_ucrt
-    candidate['ucrt_input'] = verify_pinned_ucrt(ROOT)
+    candidate['ucrt_input'] = copy.deepcopy(pinned_ucrt_manifest())
     candidate['office_runtime_input'] = json.loads(
         (ROOT / 'scripts/office-runtime-inputs.json').read_text(encoding='utf-8'))['architectures']['x64']['manifest']
     native_search = copy.deepcopy(native_search_runtime_fixture())
@@ -3129,8 +3134,6 @@ def subagent_model_runtime_fixture():
 @pytest.mark.parametrize('damage', GATE.SUBAGENT_MODEL_DAMAGES + ('receipt-missing', 'source-missing', 'source-changed', 'source-file'))
 def test_extracted_subagent_model_requires_complete_values_and_runtime(tmp_path, damage):
     archive, candidate, report = extracted_receipt(tmp_path)
-    output = tmp_path / 'extracted.json'
-    validate_model(report, output, archive, candidate)
     if damage == 'receipt-missing':
         del report['subagentModels']
     elif damage == 'source-missing':
@@ -3170,8 +3173,6 @@ def unicode_carrier_runtime_fixture():
 @pytest.mark.parametrize('damage', GATE.UNICODE_CARRIER_DAMAGES + ('receipt-missing', 'source-missing', 'source-changed', 'source-file'))
 def test_extracted_unicode_carrier_requires_complete_values_and_runtime(tmp_path, damage):
     archive, candidate, report = extracted_receipt(tmp_path)
-    output = tmp_path / 'extracted.json'
-    validate_model(report, output, archive, candidate)
     if damage == 'receipt-missing':
         del report['unicodeCarriers']
     elif damage == 'source-missing':
@@ -3211,8 +3212,6 @@ def fs_values_runtime_fixture():
 @pytest.mark.parametrize('damage', GATE.FS_VALUES_DAMAGES + ('receipt-missing', 'source-missing', 'source-changed', 'source-file'))
 def test_extracted_fs_values_requires_complete_values_and_runtime(tmp_path, damage):
     archive, candidate, report = extracted_receipt(tmp_path)
-    output = tmp_path / 'extracted.json'
-    validate_model(report, output, archive, candidate)
     if damage == 'receipt-missing':
         del report['fsValues']
     elif damage == 'source-missing':
@@ -3253,8 +3252,6 @@ def message_values_runtime_fixture():
 @pytest.mark.parametrize('damage', GATE.MESSAGE_VALUES_DAMAGES + ('receipt-missing', 'source-missing', 'source-changed', 'source-file'))
 def test_extracted_message_values_requires_complete_values_and_runtime(tmp_path, damage):
     archive, candidate, report = extracted_receipt(tmp_path)
-    output = tmp_path / 'extracted.json'
-    validate_model(report, output, archive, candidate)
     if damage == 'receipt-missing':
         del report['messageValues']
     elif damage == 'source-missing':

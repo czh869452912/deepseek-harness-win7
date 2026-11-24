@@ -140,20 +140,25 @@ class SessionLogScanner:
         self.input_bytes = self.committed_bytes = len(headerRecord)
         self.issue, self.finished = None, False
 
-    def write(self, chunk):
+    def write(self, chunk, *, offset=0):
         if self.finished:
             raise ValueError('cannot write to a finished session log scanner')
-        start = self.input_bytes
-        self.input_bytes += len(chunk)
-        line_start = 0
+        # The first chunk may include the already consumed header.
+        start = self.input_bytes - offset
+        self.input_bytes += len(chunk) - offset
+        line_start = offset
+        view = memoryview(chunk)
         while True:
             newline = chunk.find(b'\n', line_start)
             if newline < 0:
-                self.fragments.extend(chunk[line_start:])
+                if line_start < len(chunk):
+                    self.fragments.extend(view[line_start:])
                 return
-            self.fragments.extend(chunk[line_start:newline])
-            line = bytes(self.fragments)
-            self.fragments.clear()
+            line = view[line_start:newline]
+            if self.fragments:
+                self.fragments.extend(line)
+                line = bytes(self.fragments)
+                self.fragments.clear()
             self.consume(line, start+newline+1)
             line_start = newline+1
 
@@ -173,7 +178,7 @@ class SessionLogScanner:
     def consume(self, line, end):
         self.event_line += 1
         try:
-            decoded = parse_json(line.decode('utf-8', 'replace'))
+            decoded = parse_json(str(line, 'utf-8', 'replace'))
         except Exception:
             issue = ValueError('corrupt session log: unparsable committed event at line %s' % self.event_line)
             if self.recovery == 'strict':
@@ -213,5 +218,5 @@ def scanLog(buffer, format_version=3):
     if boundary < 0:
         raise ValueError('empty or header-less session log')
     scanner = SessionLogScanner(buffer[:boundary+1], format_version=format_version)
-    scanner.write(buffer[boundary+1:])
+    scanner.write(buffer, offset=boundary+1)
     return scanner.finish()

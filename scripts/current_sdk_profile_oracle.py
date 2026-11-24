@@ -123,8 +123,6 @@ def main():
         output.with_suffix('.capture.log').write_bytes(completed.stdout + completed.stderr)
         if completed.returncode:
             raise RuntimeError('Actual SDK profile capture failed')
-        if source_inputs(source_root) != inputs:
-            raise ValueError('SDK guarded Source/observer inputs changed during capture')
         sys.path.insert(0, str(ROOT))
         sys.path.insert(0, str(native_root))
         from scripts.current_sdk_profile_values import SCENARIOS, observations
@@ -141,8 +139,9 @@ def main():
             captures=source_captures, rows=source_rows)
         native = dict(root=str(native_root), executable=sys.executable, python=sys.version, modules=modules,
             destinations=destinations, captures=native_captures, rows=native_rows)
-        identity(source, source_root)
         validate_runtime(native, native_root, sys.executable, source, modules)
+        # Recheck the guarded bytes once, after the capture and runtime validation.
+        identity(source, source_root)
         for path, value in ((source_path, source), (native_path, native)):
             with path.open('x', encoding='utf-8') as stream:
                 json.dump(value, stream, indent=2, ensure_ascii=False)

@@ -8,9 +8,26 @@ import pytest
 from dsh.terminal.local import DEFAULTS, LocalTerminalPlugin
 from dsh.terminal.service import TerminalSessionService, TerminalError
 from dsh.terminal.session import LocalTerminalSession
+from dsh.terminal.text import BoundedTextBuffer
 from dsh.subprocess.local import LocalSubprocessRuntime
 from dsh.sandbox.sandbox_policy import SandboxPolicyService, set_sandbox_mode
 from test_subagent_in_process import setup
+
+
+def test_scrollback_pages_preserve_empty_lines_and_utf8_clipping():
+    scrollback = BoundedTextBuffer(8192, 1030)
+    scrollback.append('dropped\nfirst\n' + 'line\n' * 1027 + '中🙂\n')
+    session = SimpleNamespace(scrollback=scrollback, config=dict(maxReadBytes=5))
+    read = LocalTerminalSession.read
+
+    assert read(session, dict(offset=0, count=1)) == dict(
+        text='', totalLines=1030, lineBegin=0, lineEnd=0, truncated=True)
+    assert read(session, dict(offset=0, count=2)) == dict(
+        text='🙂\n', totalLines=1030, lineBegin=0, lineEnd=2, truncated=True)
+    assert read(session, dict(offset=1029, count=2)) == dict(
+        text='first', totalLines=1030, lineBegin=1029, lineEnd=1030, truncated=True)
+    assert read(session, dict(offset=1030, count=1)) == dict(
+        text='', totalLines=1030, lineBegin=1030, lineEnd=1030, truncated=True)
 
 
 @pytest.mark.asyncio

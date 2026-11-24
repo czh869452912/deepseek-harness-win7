@@ -281,7 +281,7 @@ class JsonlGenerationRuntime:
             if end < 0:
                 raise ValueError('empty or header-less session log')
             scanner = SessionLogScanner(data[:end+1], 'strict', self.format_version)
-            scanner.write(data[end+1:])
+            scanner.write(data, offset=end+1)
         else:
             scanned = scan_frames(data)
             if not scanned['frames']:

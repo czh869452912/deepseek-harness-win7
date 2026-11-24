@@ -12,6 +12,7 @@ from dsh.host.desktop.wire import (CHUNK_BYTES, FrameDecoder, encode_start,
     encode_data, encode_end, encode_error)
 
 CONTROL_PREFIX = 'DSH_DESKTOP_CONTROL '
+RESPONSE_WINDOW = 4
 
 
 class RequestBody:
@@ -33,10 +34,29 @@ class RequestBody:
             yield item
 
 
+class ResponseWindow:
+    def __init__(self):
+        self.remaining = RESPONSE_WINDOW
+        self.available = asyncio.Event()
+
+    async def take(self):
+        while not self.remaining:
+            await self.available.wait()
+        self.remaining -= 1
+        self.available.clear()
+
+    def replenish(self):
+        if self.remaining == RESPONSE_WINDOW:
+            raise ValueError('dsh desktop: too much response credit')
+        self.remaining += 1
+        self.available.set()
+
+
 async def serve(profile_dir, output):
     runtime, requests, tasks = None, {}, set()
     lock = asyncio.Lock()
     loop = asyncio.get_running_loop()
+    response_credit = os.environ.get('DSH_DESKTOP_RESPONSE_CREDIT') == '1'
     def control(value):
         sys.stderr.write(CONTROL_PREFIX + json.dumps(value, ensure_ascii=True) + '\n')
         sys.stderr.flush()
@@ -51,29 +71,39 @@ async def serve(profile_dir, output):
         output.flush()
     async def write(data):
         async with lock:
-            await loop.run_in_executor(None, write_bytes, data)
+            pending = loop.run_in_executor(None, write_bytes, data)
+            try:
+                await asyncio.shield(pending)
+            except asyncio.CancelledError:
+                # The blocking pipe operation retains exclusive ownership
+                # until its bytes have been written.
+                await pending
+                raise
     async def dispatch(identity, state, request):
         controller = state['abort']
+        window = state['window']
+
+        async def send_body(chunk):
+            if isinstance(chunk, str):
+                chunk = chunk.encode('utf-8')
+            for offset in range(0, len(chunk), CHUNK_BYTES):
+                if window is not None:
+                    await window.take()
+                controller.signal.throwIfAborted()
+                await write(encode_data(identity, chunk[offset:offset + CHUNK_BYTES]))
+
         try:
             response = await runtime.fetch(request)
             body = response.get('body')
             headers = response.get('headers', {})
             pairs = list(headers.items()) if isinstance(headers, dict) else headers
             await write(encode_start(identity, dict(status=response['status'], headers=[list(pair) for pair in pairs], hasBody=body is not None)))
-            if isinstance(body, str):
-                body = body.encode('utf-8')
-            if isinstance(body, (bytes, bytearray)):
-                for offset in range(0, len(body), CHUNK_BYTES):
-                    controller.signal.throwIfAborted()
-                    await write(encode_data(identity, body[offset:offset + CHUNK_BYTES]))
+            if isinstance(body, (str, bytes, bytearray)):
+                await send_body(body)
             elif body is not None:
                 try:
                     async for chunk in body:
-                        if isinstance(chunk, str):
-                            chunk = chunk.encode('utf-8')
-                        for offset in range(0, len(chunk), CHUNK_BYTES):
-                            controller.signal.throwIfAborted()
-                            await write(encode_data(identity, chunk[offset:offset + CHUNK_BYTES]))
+                        await send_body(chunk)
                 finally:
                     if hasattr(body, 'aclose'):
                         await body.aclose()
@@ -92,8 +122,11 @@ async def serve(profile_dir, output):
     try:
         runtime = await run_desktop_host(profile_dir)
         from dsh import __version__
-        control(dict(type='ready', protocolVersion=3, dshVersion=__version__))
-        decoder = FrameDecoder()
+        ready = dict(type='ready', protocolVersion=3, dshVersion=__version__)
+        if response_credit:
+            ready['responseCredit'] = True
+        control(ready)
+        decoder = FrameDecoder(response_credit=response_credit)
         while True:
             chunk = await loop.run_in_executor(None, os.read, sys.stdin.fileno(), CHUNK_BYTES)
             if not chunk:
@@ -107,7 +140,8 @@ async def serve(profile_dir, output):
                     if len(requests) >= 128:
                         raise ValueError('dsh desktop: too many active requests')
                     abort, body = AbortController(), RequestBody() if frame['hasBody'] else None
-                    state = dict(abort=abort, body=body, finished=False)
+                    state = dict(abort=abort, body=body, finished=False,
+                                 window=ResponseWindow() if response_credit else None)
                     requests[identity] = state
                     task = asyncio.ensure_future(dispatch(identity, state, dict(url=frame['url'], method=frame['method'],
                         headers={key.lower(): value for key, value in frame['headers']}, body=body, signal=abort.signal)))
@@ -119,6 +153,10 @@ async def serve(profile_dir, output):
                     if state is not None:
                         state['abort'].abort('desktop caller cancelled')
                         state['task'].cancel()
+                elif kind == 'response-credit':
+                    state = requests.get(identity)
+                    if state is not None and not state['finished']:
+                        state['window'].replenish()
                 else:
                     state = requests.get(identity)
                     if state is None:

@@ -6,6 +6,15 @@ const {PassThrough}=require('node:stream');
 const {createInterface}=require('node:readline');
 const wire=require('./wire.cjs');
 
+// Private Win7 v3 extension, enabled only after the Host acknowledges it.
+function encodeResponseCredit(streamId){
+  const frame=Buffer.alloc(13);
+  frame.writeUInt32BE(0x44534833,0);
+  frame.writeUInt8(5,4);
+  frame.writeUInt32BE(streamId,5);
+  return frame;
+}
+
 class DesktopHostProcess{
   constructor({python,root,profile,home}){
     this.options={python,root,profile,home};this.pending=new Map();this.next=1;
@@ -18,6 +27,7 @@ class DesktopHostProcess{
       const env=Object.fromEntries(Object.entries(process.env).filter(([key])=>
         key!=='NODE_OPTIONS'&&!/^DSH_DESKTOP_/i.test(key)&&!/^(?:npm|pnpm|corepack)_/i.test(key)));
       env.DSH_CLIENT_VERSION=require('./package.json').version;
+      env.DSH_DESKTOP_RESPONSE_CREDIT='1';
       const child=this.child=spawn(python,['-m','dsh.host.desktop.process','--profile-dir',profile,'--home',home],
         {cwd:root,env,windowsHide:true,stdio:['pipe','pipe','pipe']});
       const timer=setTimeout(()=>{reject(new Error('Desktop Host readiness timed out'));this.terminate();},60000);
@@ -37,7 +47,11 @@ class DesktopHostProcess{
         if(line.startsWith('DSH_DESKTOP_CONTROL ')){
           try{
             const event=JSON.parse(line.slice('DSH_DESKTOP_CONTROL '.length));
-            if(event.type==='ready'&&event.protocolVersion===3){clearTimeout(timer);resolve(event);}
+            if(event.type==='ready'&&event.protocolVersion===3){
+              this.responseCredit=event.responseCredit===true;
+              clearTimeout(timer);
+              resolve(event);
+            }
             else if(event.type==='fatal'){clearTimeout(timer);const error=new Error(event.message);reject(error);this.fail(error);}
             else throw new Error('Invalid desktop lifecycle event');
           }catch(error){reject(error);this.fail(error);}
@@ -75,7 +89,13 @@ class DesktopHostProcess{
       item.resolve({status:frame.status,headers:frame.headers,body:item.body,hasBody:frame.hasBody});
     }else if(frame.type==='data'){
       if(!item.started)throw new Error('Desktop data before start');
-      if(!item.body.write(frame.data)){
+      if(this.responseCredit){
+        item.body.write(frame.data,error=>{
+          if(!error&&this.pending.get(frame.streamId)===item){
+            this.enqueue(encodeResponseCredit(frame.streamId)).catch(error=>this.cancel(frame.streamId,error));
+          }
+        });
+      }else if(!item.body.write(frame.data)){
         this.child.stdout.pause();
         item.body.once('drain',()=>this.child?.stdout.resume());
       }
@@ -91,7 +111,8 @@ class DesktopHostProcess{
     const item=this.pending.get(identity);if(!item)return;
     item.ended=true;clearTimeout(item.timer);item.cleanup();this.pending.delete(identity);
     item.reject(error);item.body?.destroy(error);
-    this.child?.stdout.resume();this.enqueue(wire.encodeDesktopRequestCancel(identity)).catch(()=>{});
+    if(!this.responseCredit)this.child?.stdout.resume();
+    this.enqueue(wire.encodeDesktopRequestCancel(identity)).catch(()=>{});
   }
   async fetch({url,method='GET',headers=[],body=null,signal}){
     await this.start();
@@ -112,7 +133,10 @@ class DesktopHostProcess{
         for await(const data of chunks){
           if(!this.pending.has(identity))return;
           const bytes=Buffer.from(data);
-          for(let offset=0;offset<bytes.length;offset+=65536)await this.enqueue(wire.encodeDesktopRequestData(identity,bytes.subarray(offset,offset+65536)));
+          for(let offset=0;offset<bytes.length;offset+=65536){
+            if(!this.pending.has(identity))break;
+            await this.enqueue(wire.encodeDesktopRequestData(identity,bytes.subarray(offset,offset+65536)));
+          }
         }
       }
       await this.enqueue(wire.encodeDesktopRequestEnd(identity));

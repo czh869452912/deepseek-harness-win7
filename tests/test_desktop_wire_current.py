@@ -1,12 +1,16 @@
 """Retained v3 Win7 carrier fixtures; not the current upstream v4 lifecycle."""
 import base64
 import json
+import os
 from pathlib import Path
+import shutil
+import subprocess
+import sys
 
 import pytest
 
 from dsh.host.desktop.wire import (CHUNK_BYTES, CONTROL_BYTES, FrameDecoder,
-    DesktopProtocolError, encode_start, encode_data, encode_end, encode_error)
+    DesktopProtocolError, encode_start, encode_data, encode_end, encode_error, encode_frame)
 
 CASES_PATH = Path(__file__).resolve().parents[1] / 'scripts/oracles/desktop_wire_current_cases.json'
 CASES = json.loads(CASES_PATH.read_text(encoding='utf-8')) if CASES_PATH.exists() else []
@@ -76,3 +80,26 @@ def test_outgoing_response_round_trip_and_frame_limits():
     for identity in (0, -1, True, 0x100000000, 1.5, float('nan')):
         with pytest.raises(DesktopProtocolError):
             encode_end(identity)
+
+
+def test_response_credit_is_a_negotiated_empty_request_frame():
+    frame = encode_frame(5, 1, direction='request')
+    assert FrameDecoder(response_credit=True).push(frame) == [
+        dict(type='response-credit', streamId=1)]
+    for decoder in (FrameDecoder(), FrameDecoder('response', response_credit=True)):
+        with pytest.raises(DesktopProtocolError, match='unknown'):
+            decoder.push(frame)
+    with pytest.raises(DesktopProtocolError, match='carried a payload'):
+        FrameDecoder(response_credit=True).push(encode_frame(5, 1, b'x'))
+
+
+@pytest.mark.parametrize('carrier', ('credit', 'legacy'))
+def test_actual_pipe_response_flow(carrier):
+    node = shutil.which('node')
+    if node is None:
+        pytest.skip('Node is required for the Desktop main-process pipe adapter')
+    root = CASES_PATH.parents[2]
+    script = Path(__file__).parent / 'fixtures/desktop_pipe_flow.cjs'
+    result = subprocess.run([node, str(script), sys.executable, carrier], cwd=str(root),
+        env=dict(os.environ, PYTHONPATH=str(root)), capture_output=True, timeout=20)
+    assert result.returncode == 0, result.stdout + result.stderr

@@ -53,10 +53,11 @@ def headers(value):
 
 
 class FrameDecoder:
-    def __init__(self, direction='request'):
+    def __init__(self, direction='request', *, response_credit=False):
         if direction not in ('request', 'response'):
             raise ValueError('Invalid desktop frame direction')
         self.direction, self.buffer = direction, bytearray()
+        self.response_credit = response_credit and direction == 'request'
 
     @property
     def peer(self):
@@ -70,6 +71,8 @@ class FrameDecoder:
             if magic != MAGIC:
                 raise DesktopProtocolError('dsh desktop: invalid %s frame marker' % self.peer)
             stream_id(identity)
+            if self.response_credit and kind == 5 and size:
+                raise DesktopProtocolError('dsh desktop: response credit frame carried a payload')
             limit = CHUNK_BYTES if kind == 2 else CONTROL_BYTES
             if size > limit:
                 raise DesktopProtocolError('dsh desktop: %s frame exceeds the %s-byte limit' % (self.peer, limit))
@@ -82,6 +85,8 @@ class FrameDecoder:
         return frames
 
     def decode(self, kind, identity, payload):
+        if self.response_credit and kind == 5:
+            return dict(type='response-credit', streamId=identity)
         if kind == 2:
             return dict(type='data', streamId=identity, data=payload)
         if kind == 3 or kind == 4 and self.direction == 'request':

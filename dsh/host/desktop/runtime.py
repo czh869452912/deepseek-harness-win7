@@ -18,6 +18,7 @@ from dsh.cordis.environment import DSH_LAUNCH_ENVIRONMENT_KEY
 from dsh.cordis.environment import resolve_dsh_home
 from dsh.cordis.json_text import stringify_json
 from dsh.host.browser_compat.plugin import BrowserCompatibilityPlugin
+from dsh.host.frontend_static.current import read_owned
 from dsh.host.frontend_static.frontend_static import MIME_TYPES
 from dsh.host.http_proxy import install_proxy_from_environment
 from dsh.host.webserver.injections import render_index_injections
@@ -116,14 +117,27 @@ class DesktopRuntime:
         if path in ('/', '/index.html'):
             if request['method'] == 'HEAD':
                 return result(200, headers={'content-type': MIME_TYPES['.html']})
-            rows = [dict(kind='script', placement='head', text=(ROOT / 'apps/desktop-host/transport.js').read_text(encoding='utf-8'))]
+            transport = await read_owned(ROOT / 'apps/desktop-host/transport.js')
+            signal.throwIfAborted()
+            transport_text = transport.decode('utf-8').replace('\r\n', '\n').replace('\r', '\n')
+            rows = [dict(kind='script', placement='head', text=transport_text)]
             self.ctx.emit('webserver/index-inject', rows)
-            html = render_index_injections((self.dist / 'index.html').read_text(encoding='utf-8'), rows)
+            index = await read_owned(self.dist / 'index.html')
+            signal.throwIfAborted()
+            index_text = index.decode('utf-8').replace('\r\n', '\n').replace('\r', '\n')
+            html = render_index_injections(index_text, rows)
             html = self.ctx.get('browserCompatibility').validate_index(html)
             return result(200, html.encode('utf-8'), {'content-type': MIME_TYPES['.html']})
         if not target.is_file():
             return result(404)
-        return result(200, None if request['method'] == 'HEAD' else target.read_bytes(),
+        body = None
+        if request['method'] != 'HEAD':
+            try:
+                body = await read_owned(target)
+            except (FileNotFoundError, NotADirectoryError, IsADirectoryError):
+                return result(404)
+            signal.throwIfAborted()
+        return result(200, body,
                       {'content-type': MIME_TYPES.get(target.suffix, 'application/octet-stream')})
 
 

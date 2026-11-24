@@ -1,11 +1,13 @@
 import asyncio
 import gzip
 import http.client
+import threading
 
 import pytest
 
 from dsh.cordis.context import Context
 from dsh.host.connection.http_current import current_bridge_handler
+from dsh.host.webserver import webserver
 from dsh.host.webserver.webserver import HttpResponseWriter, WebServerService
 
 
@@ -110,12 +112,29 @@ async def test_pipelined_buffered_rpc_keeps_each_request_body_and_disconnect_sep
 
 
 @pytest.mark.asyncio
-async def test_buffered_gzip_response_is_chunk_framed_on_a_reused_socket():
+async def test_buffered_gzip_response_is_chunk_framed_on_a_reused_socket(monkeypatch):
     server = WebServerService(None, port=0, compression='gzip', compression_threshold_bytes=1)
+    event_loop_thread = threading.get_ident()
+    compression_threads = []
+    original_compressor = webserver.zlib.compressobj
+    payloads = {'/probe/first': b'first' * 1024, '/probe/second': b'second' * 65536}
+
+    class Compressor:
+        def __init__(self, *args):
+            self.stream = original_compressor(*args)
+
+        def compress(self, data):
+            compression_threads.append(threading.get_ident())
+            return self.stream.compress(data)
+
+        def flush(self):
+            return self.stream.flush()
+
+    monkeypatch.setattr(webserver.zlib, 'compressobj', Compressor)
 
     async def answer(request, response):
         response.write_header('Content-Type', 'text/plain')
-        response.write_body(request['path'].encode('ascii') * 1024)
+        response.write_body(payloads[request['path']])
         await response.finish()
 
     server.register('prefix', '/probe', answer)
@@ -129,7 +148,7 @@ async def test_buffered_gzip_response_is_chunk_framed_on_a_reused_socket():
                 client.request('GET', path, headers={'Accept-Encoding': 'gzip'})
                 response = client.getresponse()
                 assert response.status == 200 and response.chunked and not response.will_close
-                assert gzip.decompress(response.read()) == path.encode('ascii') * 1024
+                assert gzip.decompress(response.read()) == payloads[path]
                 if socket is None:
                     socket = client.sock
                     assert socket is not None
@@ -140,5 +159,8 @@ async def test_buffered_gzip_response_is_chunk_framed_on_a_reused_socket():
 
     try:
         await asyncio.get_running_loop().run_in_executor(None, exercise)
+        assert len(compression_threads) == 2
+        assert compression_threads[0] == event_loop_thread
+        assert compression_threads[1] != event_loop_thread
     finally:
         await server.stop()

@@ -34,6 +34,7 @@ COMPRESSION_MODES = ("none", "gzip")
 # The DEFLATE window bits selecting the gzip container in `zlib` (`15 + 16`),
 # the Python equivalent of node:zlib's `createGzip`.
 GZIP_WINDOW_BITS = 31
+GZIP_EXECUTOR_MIN_BYTES = 256 * 1024
 
 # `compressible`'s verdicts for the media types this carrier serves: the text,
 # JSON and XML families plus SVG compress; archive, media and font payloads are
@@ -760,7 +761,13 @@ class HttpResponseWriter:
 
     async def _write_encoded(self, data: bytes) -> None:
         if self._compressing and self._gzip_stream is not None:
-            data = self._gzip_stream.compress(data)
+            compress = self._gzip_stream.compress
+            if len(data) >= GZIP_EXECUTOR_MIN_BYTES:
+                # zlib releases the GIL on large inputs. Keep other sockets
+                # responsive while this response awaits its ordered chunk.
+                data = await asyncio.get_running_loop().run_in_executor(None, compress, data)
+            else:
+                data = compress(data)
             if not data:
                 return
         await self._write_payload(data)

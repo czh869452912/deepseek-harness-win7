@@ -73,14 +73,17 @@ async def scan(hmr, initial=False):
     follow = hmr.config.get('followSymlinks', True)
     limit = hmr.config.get('depth')
     atomic = atomic_delay(hmr.config)
-    async def visit(path, depth, ancestors):
+    async def visit(path, depth, ancestors, entry=None):
         await asyncio.sleep(0)
         if hmr.is_ignored(path, hmr.watch_base_dir):
             return
         if atomic and _EDITOR_TEMP.search(path):
             return
         try:
-            info = os.stat(path) if follow else os.lstat(path)
+            if entry is None:
+                info = os.stat(path) if follow else os.lstat(path)
+            else:
+                info = entry.stat(follow_symlinks=follow)
             if not follow and (stat.S_ISLNK(info.st_mode) or getattr(info, 'st_file_attributes', 0) & 0x400):
                 return
             if stat.S_ISDIR(info.st_mode):
@@ -89,9 +92,11 @@ async def scan(hmr, initial=False):
                     return
                 if limit is not None and depth > limit:
                     return
-                for name in os.listdir(path):
-                    await visit(os.path.join(path, name), depth+1,
-                                ancestors | {canonical})
+                with os.scandir(path) as children:
+                    entries = list(children)
+                descendants = ancestors | {canonical}
+                for child in entries:
+                    await visit(child.path, depth+1, descendants, child)
             elif stat.S_ISREG(info.st_mode):
                 current[path] = (info.st_mtime, info.st_size)
         except OSError as error:

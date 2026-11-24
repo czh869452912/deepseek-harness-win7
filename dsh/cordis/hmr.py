@@ -492,65 +492,50 @@ class ConfigWatcherService(Service):
                 # 1. Check registered config files
                 for filename, registration in list(self._configs.items()):
                     observed = registration.observed
-                    exists = os.path.exists(filename)
                     last_info = self._mtimes.get(filename)
                     last_mtime, last_size = last_info if isinstance(last_info, tuple) else (last_info or 0.0, -1)
-                    if exists:
-                        try:
-                            stat = os.stat(filename)
-                            mtime, size = stat.st_mtime, stat.st_size
-                        except OSError:
-                            continue
-
-                        changed = False
-                        if last_mtime == 0.0:  # add event
-                            changed = True
-                        elif mtime != last_mtime or size != last_size:  # change event
-                            changed = True
-                        else:
-                            try:
-                                with open(filename, "rb") as f:
-                                    curr_content = f.read()
-                                if curr_content != self._config_contents.get(filename):
-                                    changed = True
-                            except OSError:
-                                pass
-
-                        if changed:
-                            try:
-                                with open(filename, "rb") as f:
-                                    self._config_contents[filename] = f.read()
-                            except OSError:
-                                pass
-                            self._mtimes[filename] = (mtime, size)
-                            self._trigger_config_refresh(
-                                registration, filename, registration.refresh, observed)
-                    else:
-                        if last_mtime > 0.0:  # unlink event
+                    try:
+                        metadata = os.stat(filename)
+                    except OSError:
+                        if last_mtime > 0.0 and not os.path.exists(filename):
                             self._config_contents.pop(filename, None)
                             self._mtimes[filename] = (0.0, -1)
                             self._trigger_config_refresh(
                                 registration, filename, registration.refresh, observed)
+                        continue
+
+                    stamp = (metadata.st_mtime, metadata.st_size)
+                    changed = last_mtime == 0.0 or stamp != (last_mtime, last_size)
+                    try:
+                        with open(filename, "rb") as stream:
+                            content = stream.read()
+                    except OSError:
+                        pass
+                    else:
+                        changed = changed or content != self._config_contents.get(filename)
+                        if changed:
+                            self._config_contents[filename] = content
+                    if changed:
+                        self._mtimes[filename] = stamp
+                        self._trigger_config_refresh(
+                            registration, filename, registration.refresh, observed)
 
                 # 2. Check registered module files
                 for filename, target_plugin in list(self._modules.items()):
-                    exists = os.path.exists(filename)
                     last_info = self._module_mtimes.get(filename)
                     last_mtime, last_size = last_info if isinstance(last_info, tuple) else (last_info or 0.0, -1)
-                    if exists:
-                        try:
-                            stat = os.stat(filename)
-                            mtime, size = stat.st_mtime, stat.st_size
-                        except OSError:
-                            continue
-                        if last_mtime != 0.0 and (mtime != last_mtime or size != last_size):  # change event only
-                            self._module_mtimes[filename] = (mtime, size)
-                            self._trigger_module_reload(filename, target_plugin)
-                        elif last_mtime == 0.0:
-                            self._module_mtimes[filename] = (mtime, size)
-                    else:
-                        if last_mtime > 0.0:
+                    try:
+                        metadata = os.stat(filename)
+                    except OSError:
+                        if last_mtime > 0.0 and not os.path.exists(filename):
                             self._module_mtimes[filename] = (0.0, -1)
+                        continue
+                    stamp = (metadata.st_mtime, metadata.st_size)
+                    if last_mtime == 0.0:
+                        self._module_mtimes[filename] = stamp
+                    elif stamp != (last_mtime, last_size):
+                        self._module_mtimes[filename] = stamp
+                        self._trigger_module_reload(filename, target_plugin)
 
                 if self._watch_started and self.root:
                     from dsh.cordis.hmr_root_watch import scan

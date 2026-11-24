@@ -100,6 +100,15 @@ class LocalSandboxProvider(Service):
                                    ["read-only file system"], [{"fatalSignatures": ["bwrap: "]}])
         raise SandboxUnavailableError(mode)
 
+    def confine_shell(self, argv, policy, signal=None):
+        facts = self.confine(argv, policy, signal)
+        subprocess_runtime = self.ctx.get("subprocess")
+        if (sys.platform == "win32" and sys.getwindowsversion()[:2] == (6, 1)
+                and not self.runner and getattr(subprocess_runtime, "owns_windows_job", False)):
+            position = facts["argv"].index("--")
+            facts["argv"].insert(position, "--inherit-job")
+        return facts
+
     @staticmethod
     def result(argv, enforcement, denials, failures):
         return {"argv": argv, "enforcement": enforcement,

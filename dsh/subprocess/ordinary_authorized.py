@@ -67,7 +67,9 @@ def spawn(runtime,spec):
     from .windows_process import WindowsJobProcess
     stdio=spec['stdio'];batch=stdio['stdin'].get('data') if isinstance(stdio['stdin'],dict) else None
     def mode(value):
-        if isinstance(value,dict):return SubprocessCollect(value['maxBytes'],value.get('spill'))
+        if isinstance(value, dict):
+            return SubprocessCollect(value['maxBytes'], value.get('spill'),
+                                     text_encoding=value.get('textEncoding', 'utf-8'))
         return value
     native=SubprocessSpawnSpec(spec['argv'],spec['cwd'],SubprocessStdio(
         'pipe' if batch is not None else stdio['stdin'],mode(stdio['stdout']),mode(stdio['stderr'])),

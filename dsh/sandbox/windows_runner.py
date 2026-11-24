@@ -29,6 +29,7 @@ def main(argv=None):
     parser.add_argument("--temp-write-sid")
     parser.add_argument("--memory-bytes", type=int)
     parser.add_argument("--breakaway", action="store_true")
+    parser.add_argument("--inherit-job", action="store_true")
     parser.add_argument("command", nargs=argparse.REMAINDER)
     args = parser.parse_args(argv)
     command = args.command[1:] if args.command[:1] == ["--"] else args.command
@@ -38,6 +39,8 @@ def main(argv=None):
         raise ValueError("memory-bytes must be a positive native-size integer")
     if args.breakaway and args.memory_bytes is None:
         raise ValueError("breakaway requires a child memory limit")
+    if args.inherit_job and args.memory_bytes is not None:
+        raise ValueError("inherit-job cannot impose an independent child memory limit")
     for path in (args.workspace, args.temp):
         if not os.path.isdir(path):
             raise ValueError("not an existing directory: " + path)
@@ -70,6 +73,8 @@ def main(argv=None):
             if args.memory_bytes is not None:
                 return api.run(token, command, os.getcwd(), memory_bytes=args.memory_bytes,
                                breakaway=args.breakaway)
+            if args.inherit_job:
+                return api.run(token, command, os.getcwd(), inherit_job=True)
             return api.run(token, command, os.getcwd())
     finally:
         if owned:

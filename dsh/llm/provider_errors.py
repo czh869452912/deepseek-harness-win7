@@ -29,9 +29,24 @@ def is_quota_exceeded(detail):
     ))
 
 
+CONTEXT_LIMIT_CODES = frozenset((
+    "context_length_exceeded", "context_window_exceeded", "model_context_window_exceeded",
+    "context_limit_exceeded", "context_length_error", "context_window_too_large",
+))
+
+
+def explicit_context_limit(error):
+    return isinstance(error, dict) and any(
+        isinstance(error.get(key), str) and error[key].lower() in CONTEXT_LIMIT_CODES
+        for key in ("code", "type")
+    )
+
+
 def http_error_code(status, error=None):
     if status in (401, 403):
         return "AUTH"
+    if status in (400, 413, 422) and explicit_context_limit(error):
+        return "CONTEXT_WINDOW_EXCEEDED"
     if status == 413:
         return "INVALID_REQUEST"
     fields = error if isinstance(error, dict) else {}

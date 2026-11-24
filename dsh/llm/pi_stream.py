@@ -1,11 +1,12 @@
 """pi-ai event translation, including native replay and terminal failures."""
+import json
 import re
 from dsh.llm.pi_json import dumps
 
 from dsh.core.cancellation import aborted
 from dsh.llm.llm_service import LlmError
 from dsh.llm.pi_replay import replay_state
-from dsh.llm.provider_errors import is_context_window_exceeded, is_quota_exceeded
+from dsh.llm.provider_errors import explicit_context_limit, is_context_window_exceeded, is_quota_exceeded
 
 
 OVERFLOW = [r'prompt is too long', r'request_too_large', r'input is too long for requested model',
@@ -17,7 +18,7 @@ OVERFLOW = [r'prompt is too long', r'request_too_large', r'input is too long for
     r'context window exceeds limit', r'exceeded model token limit', r'prompt has [\d,]+ tokens?, but the configured context size is [\d,]+ tokens?',
     r'too large for model with \d+ maximum context length', r'model_context_window_exceeded', r'prompt too long; exceeded (?:max )?context length',
     r'range of input length should be', r'context[_ ]length[_ ]exceeded', r'too many tokens', r'token limit exceeded',
-    r'^4(?:00|13)\s*(?:status code)?\s*\(no body\)']
+    r'^400\s*(?:status code)?\s*\(no body\)']
 
 
 def usage(value):
@@ -43,14 +44,28 @@ def classify(message):
     return 'PI_AI_ERROR'
 
 
+def http_context_limit(detail):
+    # Native OpenAI streams report the status followed by the upstream JSON.
+    status, _, body = detail.partition(' ')
+    if status not in ('400', '413', '422'):
+        return False
+    try:
+        payload = json.loads(body)
+    except ValueError:
+        return False
+    return isinstance(payload, dict) and explicit_context_limit(payload.get('error', payload))
+
+
 def stop_reason(message, context_window=None):
     stop = message['stopReason']
     detail = message.get('errorMessage', '')
     counts = message['usage']
     total_input = counts['input'] + counts['cacheRead']
-    overflow = (stop == 'error' and (is_context_window_exceeded(detail) or
-        (not re.search(r'^(Throttling error|Service unavailable):|rate limit|too many requests', detail, re.I)
-         and any(re.search(pattern, detail, re.I) for pattern in OVERFLOW))))
+    non_context_status = re.match(r'^(?:401|403|429|5\d\d)\b', detail)
+    overflow = (stop == 'error' and not non_context_status
+        and (http_context_limit(detail) or is_context_window_exceeded(detail)
+             or (not re.search(r'^(Throttling error|Service unavailable):|rate limit|too many requests', detail, re.I)
+                 and any(re.search(pattern, detail, re.I) for pattern in OVERFLOW))))
     if context_window and ((stop == 'stop' and total_input > context_window) or
                           (stop == 'length' and counts['output'] == 0 and total_input >= context_window * .99)):
         overflow = True

@@ -25,6 +25,10 @@ class Model:
 
     async def stream(self, request):
         self.summary_requests.append(request)
+        if self.delivery == 'summary-overflow' and len(self.summary_requests) == 1:
+            yield dict(type='finish', reason=dict(kind='error', failure=dict(
+                message='summary input exceeds context', code='CONTEXT_WINDOW_EXCEEDED')))
+            return
         yield dict(type='text-delta', index=0, text='RECOVERY CHECKPOINT')
         yield dict(type='finish', reason=dict(kind='stop'))
 
@@ -41,7 +45,7 @@ class Model:
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize('delivery', ['thrown', 'in-band'])
+@pytest.mark.parametrize('delivery', ['thrown', 'in-band', 'summary-overflow'])
 async def test_real_loop_overflow_rebuilds_same_step_from_replacement(delivery):
     ctx = Context()
     model = Model(delivery)
@@ -54,10 +58,17 @@ async def test_real_loop_overflow_rebuilds_same_step_from_replacement(delivery):
         session = handle.agent.session
         session.append('turn/start', dict(turn=1))
         session.append_user_message('OLD HISTORY SENTINEL ' * 300)
+        if delivery == 'summary-overflow':
+            session.append_user_message('NEWER HISTORY SENTINEL ' * 300)
         session.append('turn/end', dict(turn=1, reason=dict(kind='completed')))
         handle.agent.followup('continue from history')
         await asyncio.wait_for(handle.agent.when_idle(), 3)
-        assert len(model.requests) == 2 and len(model.summary_requests) == 1
+        assert len(model.requests) == 2
+        assert len(model.summary_requests) == (2 if delivery == 'summary-overflow' else 1)
+        if delivery == 'summary-overflow':
+            assert 'NEWER HISTORY SENTINEL' in str(model.summary_requests[0]['messages'])
+            assert 'NEWER HISTORY SENTINEL' not in str(model.summary_requests[1]['messages'])
+            assert 'NEWER HISTORY SENTINEL' in str(model.requests[1]['messages'])
         assert 'OLD HISTORY SENTINEL' in str(model.requests[0]['messages'])
         assert 'OLD HISTORY SENTINEL' not in str(model.requests[1]['messages'])
         assert 'RECOVERY CHECKPOINT' in str(model.requests[1]['messages'])

@@ -3,53 +3,59 @@ import os
 import asyncio
 
 import pytest
+import pytest_asyncio
 
 from canonical_web_fixture import web_context, close_web_context
 from dsh.typert.dispatch import RemoteDispatcher
 from dsh.typert.remote import RemoteError
 
 
-@pytest.mark.asyncio
-@pytest.mark.parametrize('case', ['deepseek-base', 'retry-union', 'ordinary-provider', 'locale-pattern'])
-async def test_source_settings_schema_facts_survive_canonical_web_boot(tmp_path, case):
-    ctx = await web_context(tmp_path / 'home')
+@pytest_asyncio.fixture(scope='module', loop_scope='module')
+async def web_settings_snapshot(tmp_path_factory):
+    ctx = await web_context(tmp_path_factory.mktemp('web-settings') / 'home')
     try:
-        directory = await RemoteDispatcher(ctx).invoke(dict(namespace='settings', method='describe', args={}))
-        rows = {row['ns']: row for row in directory['namespaces']}
-        if case == 'deepseek-base':
-            # The pinned provider exports Config; Loader defaults are public
-            # Settings.base facts, before a user writes any overrides.
-            base = rows['llm-deepseek']['base']
-            assert base['apiKeyEnv'] == 'DEEPSEEK_API_KEY'
-            assert base['maxTokens'] == 256000
-            assert base['streamIdleTimeoutMs'] == 300000
-            assert base['fileExpiresAfterSeconds'] == 604800
-            assert [model['id'] for model in base['models']] == [
-                'deepseek-flash', 'deepseek-v4-pro']
-            assert 'baseURL' not in base
-        elif case == 'retry-union':
-            # Current forms expose only volatile Config fields. Preserve the
-            # exact retry union and shared backoff relation within that graph.
-            deepseek = rows['llm-deepseek']['schema']
-            root = deepseek['refs'][str(deepseek['uid'])]
-            retry_uid = str(root['dict']['retryPolicy'])
-            retry = deepseek['refs'][retry_uid]
-            assert retry['type'] == 'union' and len(retry['list']) == 2
-            modes = [deepseek['refs'][str(uid)] for uid in retry['list']]
-            assert modes[0]['dict']['backoff'] == modes[1]['dict']['backoff']
-        elif case == 'ordinary-provider':
-            assert rows['llm-pi-ai']['value']['providers'] == {}
-            inventory = await RemoteDispatcher(ctx).invoke(dict(namespace='pluginInventory',method='list',args={}))
-            entry = next(row for row in inventory['entries'] if row['entryId']=='include:llm-pi-ai')
-            assert entry['enabled'] and entry['fiberPhase']=='active'
-        else:
-            schema = rows['locale']['schema']
-            root = schema['refs'][str(schema['uid'])]
-            preference = schema['refs'][str(root['dict']['preference'])]
-            assert preference['meta']['pattern'] == dict(
-                source=r'^[A-Za-z]{2,8}(?:-[A-Za-z0-9]{1,8})*$', flags='')
+        remote = RemoteDispatcher(ctx)
+        directory = await remote.invoke(dict(namespace='settings', method='describe', args={}))
+        inventory = await remote.invoke(dict(namespace='pluginInventory', method='list', args={}))
+        return {row['ns']: row for row in directory['namespaces']}, inventory
     finally:
         await close_web_context(ctx)
+
+
+@pytest.mark.parametrize('case', ['deepseek-base', 'retry-union', 'ordinary-provider', 'locale-pattern'])
+def test_source_settings_schema_facts_survive_canonical_web_boot(web_settings_snapshot, case):
+    rows, inventory = web_settings_snapshot
+    if case == 'deepseek-base':
+        # The pinned provider exports Config; Loader defaults are public
+        # Settings.base facts, before a user writes any overrides.
+        base = rows['llm-deepseek']['base']
+        assert base['apiKeyEnv'] == 'DEEPSEEK_API_KEY'
+        assert base['maxTokens'] == 256000
+        assert base['streamIdleTimeoutMs'] == 300000
+        assert base['fileExpiresAfterSeconds'] == 604800
+        assert [model['id'] for model in base['models']] == [
+            'deepseek-flash', 'deepseek-v4-pro']
+        assert 'baseURL' not in base
+    elif case == 'retry-union':
+        # Current forms expose only volatile Config fields. Preserve the
+        # exact retry union and shared backoff relation within that graph.
+        deepseek = rows['llm-deepseek']['schema']
+        root = deepseek['refs'][str(deepseek['uid'])]
+        retry_uid = str(root['dict']['retryPolicy'])
+        retry = deepseek['refs'][retry_uid]
+        assert retry['type'] == 'union' and len(retry['list']) == 2
+        modes = [deepseek['refs'][str(uid)] for uid in retry['list']]
+        assert modes[0]['dict']['backoff'] == modes[1]['dict']['backoff']
+    elif case == 'ordinary-provider':
+        assert rows['llm-pi-ai']['value']['providers'] == {}
+        entry = next(row for row in inventory['entries'] if row['entryId']=='include:llm-pi-ai')
+        assert entry['enabled'] and entry['fiberPhase']=='active'
+    else:
+        schema = rows['locale']['schema']
+        root = schema['refs'][str(schema['uid'])]
+        preference = schema['refs'][str(root['dict']['preference'])]
+        assert preference['meta']['pattern'] == dict(
+            source=r'^[A-Za-z]{2,8}(?:-[A-Za-z0-9]{1,8})*$', flags='')
 
 
 @pytest.mark.asyncio

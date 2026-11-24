@@ -3,6 +3,27 @@ import socket
 from asyncio.sslproto import SSLProtocol
 
 
+class SocketReader(asyncio.StreamReader):
+    """Expose socket EOF without reading from the request body buffer."""
+    def __init__(self, loop):
+        super().__init__(loop=loop)
+        self.input_closed = loop.create_future()
+
+    def feed_eof(self):
+        super().feed_eof()
+        if not self.input_closed.done():
+            self.input_closed.set_result(None)
+
+    def set_exception(self, error):
+        super().set_exception(error)
+        if not self.input_closed.done():
+            self.input_closed.set_result(None)
+
+
+def stream_protocol(callback, loop):
+    return asyncio.StreamReaderProtocol(SocketReader(loop), callback, loop=loop)
+
+
 class OwnedTLSProtocol(SSLProtocol):
     """Python 3.8 adapter: observe raw closure even before the TLS handshake."""
     def __init__(self, *args, **kwargs):
@@ -50,8 +71,7 @@ class OwnedSocketServer(asyncio.AbstractServer):
         ready = self.loop.create_future()
         succeeded = False
         try:
-            reader = asyncio.StreamReader(loop=self.loop)
-            protocol = asyncio.StreamReaderProtocol(reader, self.callback, loop=self.loop)
+            protocol = stream_protocol(self.callback, self.loop)
             tls_protocol = OwnedTLSProtocol(self.loop, protocol, self.ssl_context, ready,
                 server_side=True, ssl_handshake_timeout=60)
             transport, _ = await self.loop.connect_accepted_socket(lambda: tls_protocol, owned)
@@ -86,9 +106,8 @@ class OwnedSocketServer(asyncio.AbstractServer):
                     self.handshakes[task] = record
                     owned = None
                     continue
-                reader = asyncio.StreamReader(loop=self.loop)
-                protocol = asyncio.StreamReaderProtocol(reader, self.callback, loop=self.loop)
-                await self.loop.connect_accepted_socket(lambda: protocol, owned)
+                await self.loop.connect_accepted_socket(
+                    lambda: stream_protocol(self.callback, self.loop), owned)
                 owned = None
             finally:
                 accepted.close()

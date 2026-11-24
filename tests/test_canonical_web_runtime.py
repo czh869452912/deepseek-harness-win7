@@ -15,7 +15,8 @@ from dsh.host.webserver.webserver import WebServerPlugin
 
 async def request(port, path='/', headers=None):
     reader, writer = await asyncio.open_connection('127.0.0.1', port)
-    fields = dict(host='127.0.0.1:%s' % port, **(headers or {}))
+    fields = {'host': '127.0.0.1:%s' % port, 'connection': 'close'}
+    fields.update(headers or {})
     writer.write(('GET %s HTTP/1.1\r\n' % path + ''.join('%s: %s\r\n' % item for item in fields.items()) + '\r\n').encode())
     await writer.drain()
     raw = await asyncio.wait_for(reader.read(), 3)

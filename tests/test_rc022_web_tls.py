@@ -99,7 +99,7 @@ async def test_ipv6_loopback_binds_concrete_interface_and_reports_bracketed_orig
         assert server.getOrigin() == 'http://[::1]:' + str(server.port)
         reader, writer = await asyncio.open_connection('::1', server.port)
         try:
-            writer.write(b'GET / HTTP/1.1\r\nHost: [::1]\r\n\r\n'); await writer.drain()
+            writer.write(b'GET / HTTP/1.1\r\nHost: [::1]\r\nConnection: close\r\n\r\n'); await writer.drain()
             assert (await asyncio.wait_for(reader.read(), 2)).startswith(b'HTTP/1.1 404')
         finally:
             writer.close(); await writer.wait_closed()

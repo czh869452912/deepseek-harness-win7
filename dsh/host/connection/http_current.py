@@ -75,6 +75,7 @@ def current_bridge_handler(connection, api, limit=DEFAULT_MAX_REQUEST_BODY_BYTES
         if not streaming:
             try:
                 body = await read_body(request, limit)
+                response.request_body_read = True
             except BodyTooLarge:
                 await write_response(response, dict(status=413, headers={'connection': 'close'}, body=b''))
                 return
@@ -98,7 +99,20 @@ def current_bridge_handler(connection, api, limit=DEFAULT_MAX_REQUEST_BODY_BYTES
                 except (ConnectionError, OSError):
                     pass
             controller.abort('HTTP client disconnected')
-        monitor = asyncio.create_task(disconnected())
+        input_closed = getattr(request.get('reader'), 'input_closed', None)
+        monitor = None
+        completed = False
+
+        def client_closed(_):
+            if not completed:
+                controller.abort('HTTP client disconnected')
+
+        if input_closed is None:
+            monitor = asyncio.create_task(disconnected())
+        elif input_closed.done():
+            client_closed(input_closed)
+        else:
+            input_closed.add_done_callback(client_closed)
         try:
             # Node's Fetch carrier constructs this against the same internal
             # base. Preserve the raw query for route-owned upload receipts.
@@ -108,10 +122,16 @@ def current_bridge_handler(connection, api, limit=DEFAULT_MAX_REQUEST_BODY_BYTES
                 result = await result
             if streaming and not body.ended:
                 result = dict(result, headers=dict(result.get('headers', {}), connection='close'))
+            elif streaming:
+                response.request_body_read = True
             await write_response(response, result)
         finally:
             # Normal response completion is not a cancellation in the original.
-            monitor.cancel()
-            await asyncio.gather(monitor, return_exceptions=True)
+            completed = True
+            if monitor is None:
+                input_closed.remove_done_callback(client_closed)
+            else:
+                monitor.cancel()
+                await asyncio.gather(monitor, return_exceptions=True)
     handler.defer_body = True
     return handler

@@ -104,7 +104,7 @@ async def test_rpc_and_mux_share_actual_remote_service_cancel_and_drain():
     try:
         reader, writer = await asyncio.open_connection("127.0.0.1", server.listened_port)
         body = json.dumps({"type": "client-request", "rpcId": "r", "method": "fixture/echo", "payload": {"args": {"value": {"ok": 1}}}}).encode()
-        writer.write(b"POST /api/fixture/echo HTTP/1.1\r\nHost: 127.0.0.1\r\nContent-Type: application/json\r\nContent-Length: " + str(len(body)).encode() + b"\r\n\r\n" + body)
+        writer.write(b"POST /api/fixture/echo HTTP/1.1\r\nHost: 127.0.0.1\r\nConnection: close\r\nContent-Type: application/json\r\nContent-Length: " + str(len(body)).encode() + b"\r\n\r\n" + body)
         await writer.drain()
         raw = await reader.read()
         assert json.loads(raw.split(b"\r\n\r\n", 1)[1])["result"] == {"ok": True, "value": {"ok": 1}}

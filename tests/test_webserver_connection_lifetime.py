@@ -4,6 +4,7 @@ import http.client
 import pytest
 
 from dsh.cordis.context import Context
+from dsh.host.connection.http_current import current_bridge_handler
 from dsh.host.webserver.webserver import HttpResponseWriter, WebServerService
 
 
@@ -35,7 +36,8 @@ async def test_one_request_carrier_does_not_advertise_an_already_closing_persist
 
 
 @pytest.mark.asyncio
-async def test_standard_http_client_reconnects_before_next_post_instead_of_reusing_closed_socket():
+@pytest.mark.parametrize('close', [False, True])
+async def test_standard_http_client_reuses_only_an_open_connection(close):
     ctx = Context()
     server = WebServerService(ctx, host='127.0.0.1', port=0)
     async def answer(request, response):
@@ -48,16 +50,59 @@ async def test_standard_http_client_reconnects_before_next_post_instead_of_reusi
         try:
             observations = []
             for method in ('GET', 'POST', 'POST'):
-                connection.request(method, '/probe')
+                connection.request(method, '/probe', headers={'Connection': 'close'} if close else {})
                 response = connection.getresponse()
-                observations.append((response.status, response.will_close, response.read()))
+                observations.append((response.status, response.will_close, response.read(),
+                                     connection.sock))
             return observations
         finally:
             connection.close()
     try:
         observations = await asyncio.get_running_loop().run_in_executor(None, exercise)
-        assert observations == [(200, True, method.encode('ascii')) for method in ('GET', 'POST', 'POST')]
+        assert [row[:3] for row in observations] == [
+            (200, close, method.encode('ascii')) for method in ('GET', 'POST', 'POST')]
+        if not close:
+            assert observations[0][3] is not None
+            assert observations[0][3] is observations[1][3] is observations[2][3]
     finally:
+        await server.stop()
+        await ctx.fiber.dispose()
+        await ctx.fiber.await_settled()
+
+
+@pytest.mark.asyncio
+async def test_pipelined_buffered_rpc_keeps_each_request_body_and_disconnect_separate():
+    from types import SimpleNamespace
+
+    ctx = Context()
+    server = WebServerService(ctx, port=0)
+    signals = []
+
+    async def fetch(request):
+        signals.append(request['signal'])
+        await asyncio.sleep(0)
+        return dict(status=200, body=request['body'])
+
+    bridge = current_bridge_handler(SimpleNamespace(request_rejection=lambda _: None),
+        SimpleNamespace(requestBodyMode=lambda _: 'buffered', fetch=fetch))
+    server.register('exact', '/probe', bridge)
+    await server.start()
+    reader, writer = await asyncio.open_connection('127.0.0.1', server.listened_port)
+    try:
+        writer.write(b'POST /probe HTTP/1.1\r\nHost: localhost\r\nContent-Length: 3\r\n\r\none'
+                     b'POST /probe HTTP/1.1\r\nHost: localhost\r\nContent-Length: 3\r\nConnection: close\r\n\r\ntwo')
+        await writer.drain()
+        first = await asyncio.wait_for(reader.readuntil(b'\r\n\r\n'), 3)
+        assert b'Connection: close' not in first
+        assert await reader.readexactly(3) == b'one'
+        second = await asyncio.wait_for(reader.readuntil(b'\r\n\r\n'), 3)
+        assert b'Connection: close' in second
+        assert await reader.readexactly(3) == b'two'
+        assert await asyncio.wait_for(reader.read(), 3) == b''
+        assert len(signals) == 2 and not any(signal.aborted for signal in signals)
+    finally:
+        writer.close()
+        await writer.wait_closed()
         await server.stop()
         await ctx.fiber.dispose()
         await ctx.fiber.await_settled()

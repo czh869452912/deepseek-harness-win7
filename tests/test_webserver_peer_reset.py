@@ -159,7 +159,7 @@ async def test_real_peer_resets_retire_owned_connections_and_leave_host_healthy(
             except ConnectionError:
                 pass
         reader, writer = await asyncio.open_connection('127.0.0.1', server.port)
-        writer.write(b'GET /healthy HTTP/1.1\r\nHost: local\r\n\r\n')
+        writer.write(b'GET /healthy HTTP/1.1\r\nHost: local\r\nConnection: close\r\n\r\n')
         await writer.drain()
         response = await asyncio.wait_for(reader.read(), 5)
         assert response.endswith(b'alive') and response.startswith(b'HTTP/1.1 200')

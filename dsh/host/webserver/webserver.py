@@ -23,7 +23,7 @@ from urllib.parse import urlparse
 
 from dsh.cordis.plugin import Plugin
 from dsh.host.webserver.injections import render_index_injections
-from dsh.host.webserver.socket_server import OwnedSocketServer
+from dsh.host.webserver.socket_server import OwnedSocketServer, stream_protocol
 
 
 DEFAULT_COMPRESSION = "none"
@@ -420,7 +420,9 @@ class WebServerService:
             if os.name == "nt" or ssl_context is not None:
                 self._server = OwnedSocketServer(sock, _client_connected_cb, self._log_warning, ssl_context)
             else:
-                self._server = await asyncio.start_server(_client_connected_cb, sock=sock)
+                loop = asyncio.get_running_loop()
+                self._server = await loop.create_server(
+                    lambda: stream_protocol(_client_connected_cb, loop), sock=sock)
         except BaseException:
             sock.close()
             raise
@@ -516,12 +518,28 @@ class WebServerService:
             self._forget_upgraded(writer)
 
     async def _handle_http_connection(self, reader: asyncio.StreamReader, writer: asyncio.StreamWriter) -> None:
-        response: Optional[HttpResponseWriter] = None
         upgraded = False
         try:
-            line = await reader.readline()
-            if not line:
+            outcome = await self._handle_http_request(reader, writer)
+            while outcome == 'keep-alive':
+                outcome = await self._handle_http_request(reader, writer, reused=True)
+            upgraded = outcome == 'upgraded'
+        finally:
+            if not upgraded:
                 writer.close()
+                try:
+                    await writer.wait_closed()
+                except Exception:
+                    pass
+
+    async def _handle_http_request(self, reader, writer, *, reused=False):
+        response: Optional[HttpResponseWriter] = None
+        try:
+            try:
+                line = await asyncio.wait_for(reader.readline(), 5) if reused else await reader.readline()
+            except asyncio.TimeoutError:
+                return
+            if not line:
                 return
 
             request_line = line.decode("utf-8", errors="ignore").strip()
@@ -530,8 +548,9 @@ class WebServerService:
                 writer.close()
                 return
 
-            method, raw_url = parts[0], parts[1]
+            method, raw_url = parts[0].upper(), parts[1]
             headers: Dict[str, str] = {}
+            repeated_framing = False
             while True:
                 header_line = await reader.readline()
                 if not header_line or header_line == b"\r\n" or header_line == b"\n":
@@ -539,7 +558,13 @@ class WebServerService:
                 h_str = header_line.decode("utf-8", errors="ignore").strip()
                 if ":" in h_str:
                     k, v = h_str.split(":", 1)
-                    headers[k.strip().lower()] = v.strip()
+                    name = k.strip().lower()
+                    if name in ('content-length', 'transfer-encoding') and name in headers:
+                        repeated_framing = True
+                    value = v.strip()
+                    if name == 'connection' and name in headers:
+                        value = headers[name] + ',' + value
+                    headers[name] = value
 
             content_length = int(headers.get("content-length", "0"))
             body = b""
@@ -551,11 +576,8 @@ class WebServerService:
             if content_length > 0 and not deferred:
                 body = await reader.readexactly(content_length)
 
-            parsed = self.parse_request_target(raw_url)
-            pathname = parsed.path or "/"
-
             request = {
-                "method": method.upper(),
+                "method": method,
                 "path": pathname,
                 "raw_url": raw_url,
                 "query": parsed.query,
@@ -569,16 +591,24 @@ class WebServerService:
             # exists: the handler owns protocol negotiation and the socket from
             # its 101 onward, so this loop must not answer or close it.
             if is_upgrade_request(headers):
-                upgraded = True
                 await self._dispatch_upgrade(request, writer)
-                return
+                return 'upgraded'
 
             response = HttpResponseWriter(
                 writer, compression=self._response_compression(headers)
             )
-            response.head_only = method.upper() == 'HEAD'
+            response.head_only = method == 'HEAD'
+            connection_tokens = headers.get('connection', '').lower().split(',')
+            response.allow_reuse = (
+                len(parts) == 3 and parts[2] == 'HTTP/1.1'
+                and all(token.strip() != 'close' for token in connection_tokens)
+                and not repeated_framing and content_length >= 0
+                and 'transfer-encoding' not in headers
+                and ('content-length' not in headers or headers['content-length'].isascii()
+                     and headers['content-length'].isdecimal())
+            )
+            response.request_body_read = not deferred
 
-            route = self.match(pathname)
             if route is not None:
                 await route.handler(request, response)
             elif self._fallback is not None:
@@ -588,6 +618,9 @@ class WebServerService:
                 # unmatched request the composing application never handled.
                 response.write_status(404)
                 await response.finish()
+
+            if response.keep_alive and not reader.at_eof() and not writer.is_closing():
+                return 'keep-alive'
 
         except Exception as e:
             # Last-resort guard: an unhandled per-request failure (a malformed
@@ -607,18 +640,6 @@ class WebServerService:
                     await err_resp.finish()
             except Exception:
                 pass
-        finally:
-            # An upgraded socket belongs to its handler and is tracked by the
-            # service until teardown; only ordinary requests close here.
-            if not upgraded:
-                try:
-                    writer.close()
-                    # Await the real close: the response bytes are queued on the
-                    # transport, and closing without waiting can drop a body-less
-                    # response (headers only) on the proactor loop.
-                    await writer.wait_closed()
-                except Exception:
-                    pass
 
 
 class HttpResponseWriter:
@@ -645,6 +666,9 @@ class HttpResponseWriter:
         self._compressing = False
         self._gzip_stream: Optional[Any] = None
         self.head_only = False
+        self.allow_reuse = False
+        self.request_body_read = False
+        self.keep_alive = False
 
     def write_status(self, status: int) -> None:
         self.status = status
@@ -720,7 +744,8 @@ class HttpResponseWriter:
         if self._headers_sent:
             return
         self._drop_header("Connection")
-        self._set_header("Connection", "close")
+        if not self.keep_alive:
+            self._set_header("Connection", "close")
         self._prepare_compression()
         status_phrase = http.HTTPStatus(self.status).phrase if self.status in http.HTTPStatus.__members__.values() else "OK"
         lines = [f"HTTP/1.1 {self.status} {status_phrase}"]
@@ -755,6 +780,16 @@ class HttpResponseWriter:
                 and self.header("Transfer-Encoding") is None
             ):
                 self._set_header("Content-Length", str(len(self.body)))
+            # Reuse only after both sides have a complete, unambiguous message.
+            self.keep_alive = (
+                self.allow_reuse and self.request_body_read and not self._compressing
+                and not self.head_only and self.status >= 200
+                and self.status not in (204, 304)
+                and self.header("Connection") is None
+                and self.header("Transfer-Encoding") is None
+                and [value for key, value in self.headers.items()
+                     if key.lower() == "content-length"] == [str(len(self.body))]
+            )
             await self.send_headers()
         if self.head_only:
             self.body.clear()

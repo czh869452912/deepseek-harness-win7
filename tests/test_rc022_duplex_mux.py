@@ -3,7 +3,8 @@ import asyncio
 from types import SimpleNamespace
 from wsproto.connection import ConnectionState
 from wsproto.events import CloseConnection
-from dsh.typert.duplex_mux import DuplexConnection
+from wsproto.frame_protocol import Opcode, RsvBits
+from dsh.typert.duplex_mux import DuplexConnection, _ThresholdDeflate, _large_text
 from scripts.rc022_duplex_mux_probe import observe
 
 
@@ -32,6 +33,23 @@ class Writer:
     def write(self,value):self.writes.append(value)
     async def drain(self):pass
     def close(self):self.closed=True
+
+
+@pytest.mark.parametrize(('text', 'compress'), [
+    ('a' * 1023, False),
+    ('a' * 1024, True),
+    ('文' * 1023, False),
+    ('文' * 1024, True),
+    ('😀' * 511 + 'a', False),
+    ('😀' * 512, True),
+])
+def test_compression_boundary_counts_utf16_units(text, compress):
+    deflate = _ThresholdDeflate()
+    rsv, _ = deflate.frame_outbound(SimpleNamespace(client=False), Opcode.TEXT,
+        RsvBits(False, False, False), text.encode('utf-8'), True)
+
+    assert rsv.rsv1 is compress
+    assert _large_text(text) is compress
 
 
 def connection(failure=lambda error:dict(code='test',message=str(error),details={})):

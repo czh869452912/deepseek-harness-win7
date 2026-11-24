@@ -19,11 +19,30 @@ from dsh.typert.stream_protocol import parse_client_message
 from dsh.typert.uplink_inbox import UplinkInbox
 
 
+_COMPRESSION_THRESHOLD = 1024
+
+
+def _large_text(text):
+    # Each Python code point takes one or two UTF-16 code units.
+    length = len(text)
+    if length >= _COMPRESSION_THRESHOLD:
+        return True
+    if length * 2 < _COMPRESSION_THRESHOLD or text.isascii():
+        return False
+    return len(text.encode('utf-16-le', errors='surrogatepass')) // 2 >= _COMPRESSION_THRESHOLD
+
+
 class _ThresholdDeflate(PerMessageDeflate):
     """Negotiate ws-compatible takeover; compress large text frames at level 1."""
     def frame_outbound(self, proto, opcode, rsv, data, fin):
-        if opcode in (Opcode.TEXT, Opcode.BINARY):
-            self._large = len(bytes(data).decode('utf-8').encode('utf-16-le', errors='surrogatepass')) // 2 >= 1024
+        if opcode == Opcode.TEXT:
+            # wsproto passes valid UTF-8 bytes for a text frame. A UTF-16
+            # code unit represents between one and three of those bytes.
+            size = len(data)
+            self._large = size >= _COMPRESSION_THRESHOLD * 3 or (
+                size >= _COMPRESSION_THRESHOLD and _large_text(bytes(data).decode('utf-8')))
+        elif opcode == Opcode.BINARY:
+            self._large = _large_text(bytes(data).decode('utf-8'))
         if opcode in (Opcode.TEXT, Opcode.BINARY, Opcode.CONTINUATION) and not getattr(self, '_large', False):
             return rsv, data
         if opcode in (Opcode.TEXT, Opcode.BINARY) and self._compressor is None:
@@ -122,7 +141,7 @@ class DuplexConnection:
             raise RuntimeError('api gateway: Remote stream item is not JSON serializable') from error
         await self.send_event(TextMessage(data=text), activity=True)
         # Source deflate completion counts as activity, including its async queue.
-        if self.deflate is not None and self.deflate.enabled() and len(text.encode('utf-16-le', errors='surrogatepass')) // 2 >= 1024:
+        if self.deflate is not None and self.deflate.enabled() and _large_text(text):
             self.alive()
 
     async def terminate(self, code, reason):

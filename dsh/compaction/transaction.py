@@ -98,8 +98,22 @@ def entry_state(session):
     return turn, opening if opening and opening["seq"] > seed else None
 
 
+def smaller_end(session, priced):
+    """Keep a balanced oldest prefix near half the original input price."""
+    target = sum(node['tokens'] for node in priced) / 2
+    total = 0
+    last_balanced = None
+    for node in priced[:-1]:
+        total += node['tokens']
+        if tool_pairing_balanced_after(session, node['seq']):
+            last_balanced = node['seq']
+            if total >= target:
+                break
+    return last_balanced
+
+
 async def compact(engine, session, start, end, agent=None, signal=None,
-                  manual=False, source_command_id=None, flush=None):
+                  manual=False, source_command_id=None, flush=None, retry_smaller=False):
     from dsh.compaction.engine import ManualCompactionError
     from dsh.compaction.native_summary import frame_summary
     if manual:
@@ -129,11 +143,20 @@ async def compact(engine, session, start, end, agent=None, signal=None,
                 summary = await engine.summarize(engine.summarization_input(session, selected), agent, signal)
                 break
             except Exception as error:
+                if aborted(signal):
+                    raise
                 recover = getattr(engine, 'recover_summary', None)
-                if aborted(signal) or recover is None:
+                overflow = retry_smaller and getattr(error, 'code', None) == 'CONTEXT_WINDOW_EXCEEDED'
+                if recover is None and not overflow:
                     raise
                 assert_stable(session, meter, start, end, selected, measured, priced, manual)
-                if not await recover(error, agent, selected, signal):
+                if overflow:
+                    retry_smaller = False
+                    narrower = smaller_end(session, priced)
+                    if narrower is None:
+                        raise
+                    end = narrower
+                elif not await recover(error, agent, selected, signal):
                     raise
                 selected = select(session, start, end)
                 measured, priced, shadow_tokens = prepare(session, meter, start, end, selected)

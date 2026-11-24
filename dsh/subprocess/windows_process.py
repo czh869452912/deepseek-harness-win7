@@ -12,7 +12,7 @@ class Accounting(c.Structure):
 
 class WindowsJobProcess:
     """Popen-shaped private plumbing with a stable Job-owned process range."""
-    def __init__(self,argv,**options):
+    def __init__(self,argv, *, allow_breakaway=False, **options):
         import _winapi
         import msvcrt
         from dsh.sandbox.windows_acl import WinApi,JobLimit,P,D
@@ -25,7 +25,7 @@ class WindowsJobProcess:
         child_files=[];parent_files=[];inherited=[];thread=None
         try:
             self.job=self.api.check(self.api.CreateJobObjectW(None,None),'CreateJobObjectW')
-            limit=JobLimit();limit.basic.flags=0x2000
+            limit=JobLimit();limit.basic.flags=0x2000 | (0x800 if allow_breakaway else 0)
             self.api.check(self.api.SetInformationJobObject(self.job,9,c.byref(limit),c.sizeof(limit)),'SetInformationJobObject')
             startup=subprocess.STARTUPINFO();startup.dwFlags|=subprocess.STARTF_USESTDHANDLES
             for name,selector,mode in [('stdin',-10,'rb'),('stdout',-11,'wb'),('stderr',-12,'wb')]:

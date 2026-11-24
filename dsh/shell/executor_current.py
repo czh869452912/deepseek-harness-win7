@@ -104,7 +104,10 @@ class CurrentPwshExecutor(Service):
     def spawn_spec(self,spec,signal,argv):
         def collect(size):return dict(maxBytes=size,spill=dict(maxBytes=self.value('maxSpillBytes')))
         env=dict(ENV_OVERRIDES);env.update(spec.get('env') or {});env.update(spec.get('dshEnv') or {})
-        return dict(argv=list(argv),cwd=spec['workdir'],stdio=dict(stdin=dict(data=spec['stdin']) if 'stdin' in spec else 'ignore',stdout=collect(spec['stdoutMaxBytes']),stderr=collect(self.value('maxOutputBytes'))),graceMs=self.value('graceMs'),signal=signal,env=env)
+        stderr = collect(self.value('maxOutputBytes'))
+        if sys.platform == 'win32':
+            stderr['textEncoding'] = 'powershell'
+        return dict(argv=list(argv),cwd=spec['workdir'],stdio=dict(stdin=dict(data=spec['stdin']) if 'stdin' in spec else 'ignore',stdout=collect(spec['stdoutMaxBytes']),stderr=stderr),graceMs=self.value('graceMs'),signal=signal,env=env)
 
     def execute(self,spec):return self.execute_argv(spec,self.argv(spec))
 

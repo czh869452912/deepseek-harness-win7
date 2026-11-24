@@ -63,7 +63,9 @@ class CurrentSandboxPwshExecutor(CurrentPwshExecutor):
             return self.decorate(await super().execute(spec),lambda result:dict(result,sandbox=dict(mode=mode,denied=False)))
         confined=[None]
         async def prepare(signal):
-            facts=await await_callback_result(self.ctx.sandbox.confine(self.argv(spec),dict(policy,mode=mode),signal))
+            sandbox = self.ctx.sandbox
+            confine = getattr(sandbox, 'confine_shell', sandbox.confine)
+            facts = await await_callback_result(confine(self.argv(spec), dict(policy, mode=mode), signal))
             signal.throwIfAborted();confined[0]=facts;return facts['argv']
         def started(process):self.process_facts[id(process)]=dict(confined[0],mode=mode,workdir=spec['workdir'])
         execution=await self.execute_argv(spec,prepare,started)

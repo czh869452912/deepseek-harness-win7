@@ -15,6 +15,9 @@ from dsh.host.client_modules.registry import (
     validate_source_map)
 from dsh.host.client_modules.resources_current import build_combo,LazyBody,script_body,source_map_body
 from dsh.host.client_modules.assets_current import ASSET_PATH,asset_response
+from dsh.host.browser_compat.pdf_chunk import (
+    CHUNK as PDF_CHUNK, PACKAGE as PDF_PACKAGE, REVISION as PDF_REVISION, adapt_pdf_chunk,
+)
 from dsh.host.webserver.resources import request_target,resource_handler
 
 
@@ -22,8 +25,11 @@ def current_graph_row(package,revision,meta):
     row=graph_row(package,revision,meta);row['url']=row['url'][1:];return row
 
 
-def baseline_revision(baseline):
-    return framed_hash('plugin-artifact',[stringify_json(baseline[key]).encode('utf-8') for key in ('mtimeMs','ctimeMs','size')])
+def baseline_revision(baseline, package=None):
+    inputs = [stringify_json(baseline[key]).encode('utf-8') for key in ('mtimeMs', 'ctimeMs', 'size')]
+    if package == PDF_PACKAGE:
+        inputs.append(PDF_REVISION.encode('ascii'))
+    return framed_hash('plugin-artifact', inputs)
 
 
 class CurrentClientModuleRegistry(LoaderClientModuleRegistry):
@@ -154,7 +160,7 @@ class CurrentClientModuleRegistry(LoaderClientModuleRegistry):
                                 self._table.pop(package);self._pkg_meta.pop(package,None);changed=True
                             continue
                         meta=sources[0]['meta'];baseline=self._baseline(package,meta['client_path'])
-                        entry=current_graph_row(package,baseline_revision(baseline),meta);current=self._table.get(package)
+                        entry=current_graph_row(package,baseline_revision(baseline, package),meta);current=self._table.get(package)
                         if current is not None and current['meta']==meta and current['entry']==entry:continue
                         baseline,bundle,source_map=self.initial_bundle_snapshot(package,meta['client_path'])
                         self._table[package]=dict(id=package,meta=meta,baseline=baseline,bundle=bundle,source_map=source_map,entry=entry)
@@ -170,7 +176,7 @@ class CurrentClientModuleRegistry(LoaderClientModuleRegistry):
     def rebuilt(self,package):
         record=self._table.get(package)
         if record is None:return None
-        path=record['meta']['client_path'];baseline=self.capture_artifact_baseline(path);revision=baseline_revision(baseline)
+        path=record['meta']['client_path'];baseline=self.capture_artifact_baseline(path);revision=baseline_revision(baseline, package)
         if revision==record['entry']['rev']:return revision
         with open(path,'rb') as stream:bundle=stream.read()
         record.update(baseline=baseline,entry=current_graph_row(package,revision,record['meta']),bundle=bundle)
@@ -214,6 +220,12 @@ class CurrentClientModuleRegistry(LoaderClientModuleRegistry):
         async def produce():
             resource=dict(id=record['id'],rev=record['entry']['rev'],client_path=path,file_name=filename,
                 bundle=await self.read_chunk(path))
+            if record['id'] == PDF_PACKAGE and filename == PDF_CHUNK:
+                adapted = adapt_pdf_chunk(resource['bundle'])
+                if adapted is not resource['bundle']:
+                    resource['bundle'] = adapted
+                    if request['source_map']:
+                        return source_map_body([resource], lambda _path: None, filename)
             if request['source_map']:return source_map_body([resource],self.current_source_map,filename)
             return script_body([resource],map_reference)
         response=dict(body=LazyBody(produce),contentType=JSON_CONTENT_TYPE if request['source_map'] else JAVASCRIPT_CONTENT_TYPE)

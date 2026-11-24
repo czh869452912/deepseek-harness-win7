@@ -259,21 +259,31 @@ class WinApi:
                 self.CloseHandle(restricted)
             self.CloseHandle(current)
 
-    def run(self, token, argv, cwd, memory_bytes=None, breakaway=False):
-        """Suspend -> assign kill-on-close Job -> resume, inheriting only stdio.
+    def in_job(self, process):
+        member = w.BOOL()
+        self.check(self.IsProcessInJob(process, None, c.byref(member)), "IsProcessInJob")
+        return bool(member.value)
 
-        This runs in a dedicated runner process, which owns no unrelated
-        inheritable handles. Failure to assign a Job kills the suspended child.
+    def run(self, token, argv, cwd, memory_bytes=None, breakaway=False, inherit_job=False):
+        """Resume the suspended child only once it belongs to a kill-on-close Job.
+
+        The dedicated runner owns no unrelated inheritable handles. Win7 shell
+        calls may reuse the launcher's Job because Windows cannot nest Jobs there.
         """
-        job = self.check(self.CreateJobObjectW(None, None), "CreateJobObjectW")
+        if inherit_job and (memory_bytes is not None or breakaway):
+            raise ValueError("inherited Job cannot use independent process limits")
+        if inherit_job and not self.in_job(self.GetCurrentProcess()):
+            raise OSError("Windows sandbox runner expected a launcher-owned Job")
+        job = None if inherit_job else self.check(self.CreateJobObjectW(None, None), "CreateJobObjectW")
         process = Process()
         try:
-            limit = JobLimit()
-            limit.basic.flags = 0x2000
-            if memory_bytes is not None:
-                limit.basic.flags |= 0x100
-                limit.processMemory = memory_bytes
-            self.check(self.SetInformationJobObject(job, 9, c.byref(limit), c.sizeof(limit)), "SetInformationJobObject")
+            if job is not None:
+                limit = JobLimit()
+                limit.basic.flags = 0x2000
+                if memory_bytes is not None:
+                    limit.basic.flags |= 0x100
+                    limit.processMemory = memory_bytes
+                self.check(self.SetInformationJobObject(job, 9, c.byref(limit), c.sizeof(limit)), "SetInformationJobObject")
             startup = Startup()
             startup.cb, startup.flags = c.sizeof(startup), 0x100
             startup.show = 0
@@ -293,7 +303,12 @@ class WinApi:
                 creation_flags |= 0x01000000
             self.check(self.CreateProcessAsUserW(token, None, command, None, None, True,
                        creation_flags, None, cwd, c.byref(startup), c.byref(process)), "CreateProcessAsUserW")
-            self.check(self.AssignProcessToJobObject(job, process.process), "AssignProcessToJobObject")
+            if job is not None:
+                self.check(self.AssignProcessToJobObject(job, process.process), "AssignProcessToJobObject")
+            elif not self.in_job(process.process):
+                # Win7 supports one Job per process. With breakaway disabled
+                # the suspended child must already belong to the runner's Job.
+                raise OSError("restricted child did not inherit the launcher-owned Job")
             if self.ResumeThread(process.thread) == 0xffffffff:
                 self.error("ResumeThread", c.get_last_error())
             if self.WaitForSingleObject(process.process, 0xffffffff) != 0:
@@ -304,7 +319,8 @@ class WinApi:
         finally:
             if process.process:
                 self.TerminateProcess(process.process, 1)
-            self.CloseHandle(job)
+            if job is not None:
+                self.CloseHandle(job)
             if process.thread:
                 self.CloseHandle(process.thread)
             if process.process:

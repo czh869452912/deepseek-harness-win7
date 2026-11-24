@@ -11,6 +11,7 @@ import os
 import secrets
 import signal as posix_signal
 import subprocess
+import sys
 import tempfile
 import threading
 import time
@@ -249,15 +250,19 @@ class BrowserCarrier:
             options = dict(stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
             if os.name == 'nt':
                 from dsh.subprocess.windows_process import WindowsJobProcess
-                process = WindowsJobProcess(argv, **options)
+                # On Win7 Chromium starts its own renderer Jobs with explicit
+                # CREATE_BREAKAWAY_FROM_JOB. The broker owns their lifetime.
+                process = WindowsJobProcess(argv, allow_breakaway=sys.getwindowsversion()[:2] == (6, 1),
+                                            **options)
             else:
                 process = subprocess.Popen(argv, start_new_session=True, **options)
             if signal is not None:
                 remove_abort = signal.add_listener('abort', lambda reason: settle(error=abort_reason_error(signal)))
             deadline = loop.time() + timeout
             while not future.done():
-                if process.poll() is not None:
-                    raise OfficeKitError('failed', 'The Office browser exited before returning a result.')
+                exit_code = process.poll()
+                if exit_code is not None:
+                    raise OfficeKitError('failed', 'The Office browser exited before returning a result (exit {}).'.format(exit_code))
                 remaining = deadline - loop.time()
                 if remaining <= 0:
                     raise OfficeKitError('timeout', 'The Office browser operation timed out.')

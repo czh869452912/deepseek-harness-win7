@@ -219,7 +219,8 @@ class CompactionEngine(Service):
         from dsh.compaction.transaction import compact
         return await compact(self, target_session, start, end, agent=agent,
                              signal=signal, manual=kwargs.get("manual", False),
-                             source_command_id=kwargs.get("source_command_id"), flush=kwargs.get("flush"))
+                             source_command_id=kwargs.get("source_command_id"), flush=kwargs.get("flush"),
+                             retry_smaller=kwargs.get("retry_smaller", False))
 
     compact_surface_region = compact_region
     compactRegion = compact_region
@@ -304,7 +305,7 @@ class CompactionEngine(Service):
                 measurement = meter.measure(target_session)
             rng = self.select_range(target_session, measurement, retain_tokens=0)
             return (await self.compact_region(start=rng["start"], end=rng["end"], session=target_session,
-                                             agent=agent, signal=signal)) if rng else None
+                                             agent=agent, signal=signal, retry_smaller=True)) if rng else None
 
         info = await self.ctx.get("llm").resolve_model_info(target["provider"], target["model"], signal)
         from dsh.compaction.transaction import entry_state

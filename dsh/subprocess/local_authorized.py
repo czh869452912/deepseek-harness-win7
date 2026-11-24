@@ -13,6 +13,8 @@ def check(signal):
 
 
 class AuthorizedLocalSubprocessRuntime(LocalSubprocessRuntime):
+    owns_windows_job = True
+
     def __init__(self,ctx):
         super().__init__(ctx)
         self.ordinary_cleanups=set()

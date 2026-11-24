@@ -66,3 +66,21 @@ def test_custom_runner_preserves_exact_argv_and_failure_contract():
     assert wrapped["argv"][:2] == ["custom", "--flag"]
     assert wrapped["argv"][-3:] == ["--", "command", "spaced arg"]
     assert wrapped["runnerFailureRules"] == [{"fatalSignatures": ["custom: failed"]}]
+
+@pytest.mark.parametrize('version,owns_job,expected', [
+    ((6, 1), True, True), ((6, 1), False, False), ((10, 0), True, False),
+])
+def test_shell_inherits_job_only_from_owning_win7_launcher(monkeypatch, version, owns_job, expected):
+    from types import SimpleNamespace
+
+    monkeypatch.setattr(sys, 'platform', 'win32')
+    monkeypatch.setattr(sys, 'getwindowsversion', lambda: version, raising=False)
+    ctx = Context()
+    ctx.set_service('subprocess', SimpleNamespace(owns_windows_job=owns_job))
+    provider = LocalSandboxProvider(ctx)
+    policy = dict(mode='read-only', workspaceRoot='C:/workspace')
+    ordinary = provider.confine(['cmd.exe'], policy)
+    shell = provider.confine_shell(['cmd.exe'], policy)
+    assert '--inherit-job' not in ordinary['argv']
+    assert ('--inherit-job' in shell['argv']) is expected
+    assert shell['argv'][-2:] == ['--', 'cmd.exe']

@@ -131,12 +131,24 @@ class WinPtyTerminalHandle:
         return handle
 
     async def wait(self):
-        while self.api.WaitForSingleObject(self.process, 0) == 258:
-            await asyncio.sleep(.01)
-        code = D()
-        self.api.check(self.api.GetExitCodeProcess(self.process, c.byref(code)), 'GetExitCodeProcess')
-        if not self.done.done():
-            self.done.set_result(SubprocessOutcome(exit_code=code.value, signal=None))
+        proactor = getattr(asyncio.get_running_loop(), '_proactor', None)
+        wait_for_handle = getattr(proactor, 'wait_for_handle', None)
+        try:
+            if wait_for_handle is not None:
+                # The default Windows loop uses the same IOCP wait for its
+                # native subprocesses. The Job still owns descendant teardown.
+                await wait_for_handle(self.process)
+            else:
+                while self.api.WaitForSingleObject(self.process, 0) == 258:
+                    await asyncio.sleep(.01)
+            code = D()
+            self.api.check(self.api.GetExitCodeProcess(self.process, c.byref(code)), 'GetExitCodeProcess')
+        except Exception as error:
+            if not self.done.done():
+                self.done.set_exception(error)
+        else:
+            if not self.done.done():
+                self.done.set_result(SubprocessOutcome(exit_code=code.value, signal=None))
 
     async def write(self, data):
         async with self._write_lock:
@@ -221,6 +233,8 @@ class WinPtyTerminalHandle:
                 if c.c_ulong.from_buffer(values, 40).value == 0:
                     break
                 await asyncio.sleep(.01)
-        await self.done
-        async with self._write_lock:
-            self.close_native(keep_output=getattr(self,'defer_output_close',False))
+        try:
+            await self.done
+        finally:
+            async with self._write_lock:
+                self.close_native(keep_output=getattr(self,'defer_output_close',False))

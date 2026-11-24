@@ -1,4 +1,5 @@
 import asyncio
+import gzip
 import http.client
 
 import pytest
@@ -106,3 +107,38 @@ async def test_pipelined_buffered_rpc_keeps_each_request_body_and_disconnect_sep
         await server.stop()
         await ctx.fiber.dispose()
         await ctx.fiber.await_settled()
+
+
+@pytest.mark.asyncio
+async def test_buffered_gzip_response_is_chunk_framed_on_a_reused_socket():
+    server = WebServerService(None, port=0, compression='gzip', compression_threshold_bytes=1)
+
+    async def answer(request, response):
+        response.write_header('Content-Type', 'text/plain')
+        response.write_body(request['path'].encode('ascii') * 1024)
+        await response.finish()
+
+    server.register('prefix', '/probe', answer)
+    await server.start()
+
+    def exercise():
+        client = http.client.HTTPConnection('127.0.0.1', server.port, timeout=3)
+        try:
+            socket = None
+            for path in ('/probe/first', '/probe/second'):
+                client.request('GET', path, headers={'Accept-Encoding': 'gzip'})
+                response = client.getresponse()
+                assert response.status == 200 and response.chunked and not response.will_close
+                assert gzip.decompress(response.read()) == path.encode('ascii') * 1024
+                if socket is None:
+                    socket = client.sock
+                    assert socket is not None
+                else:
+                    assert client.sock is socket
+        finally:
+            client.close()
+
+    try:
+        await asyncio.get_running_loop().run_in_executor(None, exercise)
+    finally:
+        await server.stop()

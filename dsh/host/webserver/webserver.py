@@ -665,6 +665,7 @@ class HttpResponseWriter:
         self.compression = compression
         self._compressing = False
         self._gzip_stream: Optional[Any] = None
+        self._chunked = False
         self.head_only = False
         self.allow_reuse = False
         self.request_body_read = False
@@ -762,7 +763,15 @@ class HttpResponseWriter:
             data = self._gzip_stream.compress(data)
             if not data:
                 return
-        self.writer.write(data)
+        await self._write_payload(data)
+
+    async def _write_payload(self, data: bytes) -> None:
+        if self._chunked:
+            self.writer.write(b'%x\r\n' % len(data))
+            self.writer.write(data)
+            self.writer.write(b'\r\n')
+        else:
+            self.writer.write(data)
         await self.writer.drain()
 
     async def write_chunk(self, chunk: bytes) -> None:
@@ -782,14 +791,17 @@ class HttpResponseWriter:
                 self._set_header("Content-Length", str(len(self.body)))
             # Reuse only after both sides have a complete, unambiguous message.
             self.keep_alive = (
-                self.allow_reuse and self.request_body_read and not self._compressing
+                self.allow_reuse and self.request_body_read
                 and not self.head_only and self.status >= 200
                 and self.status not in (204, 304)
                 and self.header("Connection") is None
                 and self.header("Transfer-Encoding") is None
-                and [value for key, value in self.headers.items()
-                     if key.lower() == "content-length"] == [str(len(self.body))]
+                and (self._compressing or [value for key, value in self.headers.items()
+                     if key.lower() == "content-length"] == [str(len(self.body))])
             )
+            if self.keep_alive and self._compressing:
+                self._set_header("Transfer-Encoding", "chunked")
+                self._chunked = True
             await self.send_headers()
         if self.head_only:
             self.body.clear()
@@ -799,9 +811,11 @@ class HttpResponseWriter:
         if self._compressing and self._gzip_stream is not None:
             tail = self._gzip_stream.flush()
             if tail:
-                self.writer.write(tail)
-                await self.writer.drain()
+                await self._write_payload(tail)
             self._gzip_stream = None
+        if self._chunked:
+            self.writer.write(b'0\r\n\r\n')
+            await self.writer.drain()
 
 
 class WebServerPlugin(Plugin):

@@ -6,6 +6,8 @@ import shutil
 from pathlib import Path
 import subprocess
 import sys
+import time
+import uuid
 import zipfile
 
 import pytest
@@ -125,7 +127,7 @@ exit 3010
                      .replace('RequestExecutionLevel admin', 'RequestExecutionLevel user'), encoding='utf-8')
     installer = tmp_path / 'restart-fixture.exe'
     definitions = dict(VERSION='0.1.5', EDITION='aio', ARCHITECTURE='x64' if sys.maxsize > 2 ** 32 else 'x86',
-                       OUTPUT=installer, GENERATION='0.1.5-0123456789ab', PAYLOAD=payload,
+                       OUTPUT=installer, PAYLOAD=payload,
                        POLICY=policy, CLEANUP=ROOT / 'apps/desktop/installer/uninstall-files.ps1',
                        PUBLICATION=ROOT / 'apps/desktop/installer/publish-installation.ps1',
                        PREREQUISITES=prerequisites, MAX_INSTALL_ROOT=240)
@@ -142,6 +144,115 @@ exit 3010
     assert diagnostic.index('Setup request:') < diagnostic.index('Instance check exit=0')
     assert '-InputFormat None' in command_line.read_text(encoding='utf-8-sig')
     assert not installed.exists()
+
+
+@pytest.mark.skipif(os.name != 'nt', reason='Actual Windows NSIS upgrade')
+def test_actual_nsis_upgrades_legacy_and_reuses_fixed_path(tmp_path):
+    import winreg
+
+    archive = ROOT / '.goose/tools/nsis-3.13/nsis-3.13.zip'
+    if not archive.is_file():
+        pytest.skip('Pinned NSIS archive is not prepared')
+    identity = json.loads((ROOT / 'scripts/desktop-tool-inputs.json').read_text(encoding='utf-8'))['nsis']
+    compiler = tmp_path / 'compiler'
+    extract_tool(archive, identity, compiler)
+    source = ROOT / 'apps/desktop/installer'
+    product = 'DshSetupTest' + uuid.uuid4().hex
+    menu = tmp_path / 'menu'
+    fail_publication = tmp_path / 'fail-publication'
+    setup = tmp_path / 'setup.nsi'
+    setup.write_text((source / 'setup.nsi').read_text(encoding='utf-8')
+                     .replace('DeepSeekHarnessWin7', product)
+                     .replace('RequestExecutionLevel admin', 'RequestExecutionLevel user')
+                     .replace(' HKLM ', ' HKCU ')
+                     .replace(r'$PROGRAMFILES64\DeepSeek Harness', str(tmp_path / 'unused-default'))
+                     .replace(r'$PROGRAMFILES32\DeepSeek Harness', str(tmp_path / 'unused-default'))
+                     .replace(r'$SMPROGRAMS\DeepSeek Harness', str(menu)), encoding='utf-8')
+    publication = tmp_path / 'publish.ps1'
+    publication.write_text((source / 'publish-installation.ps1').read_text(encoding='utf-8')
+                           .replace('DeepSeekHarnessWin7', product)
+                           .replace('[Microsoft.Win32.Registry]::LocalMachine', '[Microsoft.Win32.Registry]::CurrentUser')
+                           .replace("[IO.Path]::Combine($shell.SpecialFolders.Item('AllUsersPrograms'),'DeepSeek Harness')",
+                                    "'" + str(menu).replace("'", "''") + "'")
+                           .replace('[IO.File]::Copy($temporary[$index],$links[$index].Path,$true)',
+                                    "if($index -eq 1 -and [IO.File]::Exists('"
+                                    + str(fail_publication).replace("'", "''") + "')){throw 'test publication failure'}\n"
+                                    + '    [IO.File]::Copy($temporary[$index],$links[$index].Path,$true)'), encoding='utf-8')
+    policy = tmp_path / 'policy.ps1'
+    policy.write_text('exit 0\n', encoding='utf-8')
+    payload = tmp_path / 'payload'
+    payload.mkdir()
+    (payload / 'empty-packaged-directory').mkdir()
+    executable = 'DeepSeek Harness.exe'
+    (payload / executable).write_bytes(b'current executable')
+    (payload / 'dsh-owned-files.tsv').write_text(
+        hashlib.sha256(b'current executable').hexdigest() + '\t' + executable + '\n', encoding='utf-8')
+    installer = tmp_path / 'setup.exe'
+    definitions = dict(VERSION='0.2.2', EDITION='standard', ARCHITECTURE='x86',
+                       OUTPUT=installer, PAYLOAD=payload, POLICY=policy,
+                       CLEANUP=source / 'uninstall-files.ps1', PUBLICATION=publication, MAX_INSTALL_ROOT=240)
+    result = subprocess.run([str(compiler / 'nsis-3.13/makensis.exe'), '/V2'] +
+                            ['/D' + name + '=' + nsis_define(value) for name, value in definitions.items()] + [str(setup)],
+                            stdout=subprocess.PIPE, stderr=subprocess.STDOUT, encoding='utf-8', timeout=60)
+    assert result.returncode == 0, result.stdout
+    root, legacy = create_installed_fixture(tmp_path / 'custom install path')
+    _, legacy_rebuild = create_installed_fixture(root, '0.1.5-rc.3-fedcba987654')
+    _, legacy_release = create_installed_fixture(root, '0.2.2-rc.3-r1-111122223333')
+    (legacy / 'user-notes.txt').write_bytes(b'preserve legacy data')
+    (legacy_release / 'resources/host.py').write_bytes(b'user-modified legacy file')
+    outside, outside_release = create_installed_fixture(tmp_path / 'unregistered install path')
+    registration = 'Software\\' + product
+    uninstall_key = r'Software\Microsoft\Windows\CurrentVersion\Uninstall' + '\\' + product
+    view = winreg.KEY_WOW64_64KEY
+    try:
+        with winreg.CreateKeyEx(winreg.HKEY_CURRENT_USER, registration, access=winreg.KEY_WRITE | view) as key:
+            winreg.SetValueEx(key, 'InstallLocation', 0, winreg.REG_SZ, str(root))
+        # Exercise the registered custom path without using /D.
+        assert subprocess.run([str(installer), '/S'], timeout=90).returncode == 0
+        active = root / 'app'
+        assert (active / executable).read_bytes() == b'current executable'
+        assert not (legacy / 'app.exe').exists()
+        assert (legacy / 'user-notes.txt').read_bytes() == b'preserve legacy data'
+        assert not legacy_rebuild.exists()
+        assert not (legacy_release / 'app.exe').exists()
+        assert (legacy_release / 'resources/host.py').read_bytes() == b'user-modified legacy file'
+        assert (outside_release / 'app.exe').read_bytes() == b'owned product: app.exe'
+        assert not (outside / 'app').exists()
+        (active / executable).write_bytes(b'prior active executable')
+        original_inventory = (active / 'dsh-owned-files.tsv').read_text(encoding='utf-8')
+        (active / 'dsh-owned-files.tsv').write_text(
+            original_inventory.replace(hashlib.sha256(b'current executable').hexdigest(),
+                                       hashlib.sha256(b'prior active executable').hexdigest()), encoding='utf-8')
+        (active / 'user-notes.txt').write_bytes(b'preserve active data')
+        links = {path.name: path.read_bytes() for path in menu.glob('*.lnk')}
+        fail_publication.touch()
+        assert subprocess.run([str(installer), '/S'], timeout=90).returncode == 1
+        assert (active / executable).read_bytes() == b'prior active executable'
+        assert (active / 'user-notes.txt').read_bytes() == b'preserve active data'
+        assert {path.name: path.read_bytes() for path in menu.glob('*.lnk')} == links
+        assert not (root / '.dsh-old').exists()
+        assert not (root / '.dsh-new').exists()
+        fail_publication.unlink()
+        assert subprocess.run([str(installer), '/S'], timeout=90).returncode == 0
+        assert (active / executable).read_bytes() == b'current executable'
+        assert not (root / '.dsh-new').exists()
+        assert not (root / '.dsh-old' / executable).exists()
+        assert (root / '.dsh-old/user-notes.txt').read_bytes() == b'preserve active data'
+        with winreg.OpenKey(winreg.HKEY_CURRENT_USER, uninstall_key, access=winreg.KEY_READ | view) as key:
+            assert winreg.QueryValueEx(key, 'UninstallString')[0] == '"' + str(active / 'uninstall.exe') + '"'
+        assert subprocess.run([str(active / 'uninstall.exe'), '/S'], timeout=30).returncode == 0
+        deadline = time.monotonic() + 30
+        while (menu / 'Uninstall.lnk').exists() and time.monotonic() < deadline:
+            time.sleep(0.1)
+        assert not (menu / 'Uninstall.lnk').exists()
+        assert not (active / executable).exists()
+        assert (legacy / 'user-notes.txt').read_bytes() == b'preserve legacy data'
+    finally:
+        for key in (registration, uninstall_key):
+            try:
+                winreg.DeleteKeyEx(winreg.HKEY_CURRENT_USER, key, access=view)
+            except FileNotFoundError:
+                pass
 
 
 @pytest.mark.parametrize('damage', ['browser', 'native-skill'])
@@ -356,9 +467,9 @@ def test_cleanup_requires_install_directory_without_interactive_prompt():
 
 
 @pytest.mark.skipif(os.name != 'nt', reason='Actual Windows PowerShell CLI')
-@pytest.mark.parametrize('missing', ['InstallDirectory', 'Generation', 'Version', None])
+@pytest.mark.parametrize('missing', ['InstallDirectory', 'Version', None])
 def test_publication_rejects_missing_or_invalid_inputs_before_system_changes(tmp_path, missing):
-    values = dict(InstallDirectory=str(tmp_path / 'installed'), Generation=str(tmp_path / 'outside'), Version='0.1.5')
+    values = dict(InstallDirectory=str(tmp_path / 'installed'), Version='0.1.5')
     arguments = []
     for name, value in values.items():
         if name != missing:
@@ -367,7 +478,7 @@ def test_publication_rejects_missing_or_invalid_inputs_before_system_changes(tmp
                              '-File', str(ROOT / 'apps/desktop/installer/publish-installation.ps1')] + arguments,
                             stdout=subprocess.PIPE, stderr=subprocess.STDOUT, timeout=15, encoding='utf-8')
     assert result.returncode == 1, result.stdout
-    assert ('are required' if missing else 'Invalid publication generation') in result.stdout
+    assert ('are required' if missing else 'Publication input missing') in result.stdout
     assert not (tmp_path / 'installed').exists()
 
 
@@ -401,8 +512,8 @@ def installed(tmp_path):
     return create_installed_fixture(tmp_path / 'installed')
 
 
-def create_installed_fixture(root):
-    generation = root / 'versions/0.1.5-rc.3-0123456789ab'
+def create_installed_fixture(root, build='0.1.5-rc.3-0123456789ab'):
+    generation = root / 'versions' / build
     generation.mkdir(parents=True)
     rows = []
     for name in ('app.exe','resources/host.py'):
@@ -445,19 +556,24 @@ def test_invalid_inventory_preserves_complete_generation(installed):
 
 
 def test_installer_registers_and_uninstalls_its_generated_uninstaller(installed):
-    root,generation = installed
-    (generation / 'uninstall.exe').write_bytes(b'generated NSIS uninstaller')
-    result = invoke_cleanup(root,'-RegisterGeneration',str(generation))
+    root, generation = installed
+    stage = root / '.dsh-new'
+    generation.rename(stage)
+    uninstaller = root / 'test-uninstall.exe'
+    uninstaller.write_bytes(b'generated NSIS uninstaller')
+    result = invoke_cleanup(root, '-StagedUninstaller', str(uninstaller))
     assert result.returncode == 0, result.stdout
-    assert 'uninstall.exe' in (generation / 'dsh-owned-files.tsv').read_text(encoding='utf-8')
+    assert 'uninstall.exe' in (stage / 'dsh-owned-files.tsv').read_text(encoding='utf-8')
+    active = root / 'app'
+    stage.rename(active)
     result = invoke_cleanup(root)
     assert result.returncode == 0, result.stdout
-    assert not generation.exists()
+    assert not active.exists()
 
 
-def test_extraction_rollback_only_removes_selected_owned_generation(installed):
+def test_extraction_rollback_only_removes_verified_staged_files(installed):
     root, previous = installed
-    failed = previous.with_name('0.1.5-rc.3-' + 'b' * 12)
+    failed = root / '.dsh-new'
     failed.mkdir()
     owned = b'partially extracted product'
     (failed / 'app.exe').write_bytes(owned)
@@ -465,18 +581,26 @@ def test_extraction_rollback_only_removes_selected_owned_generation(installed):
         hashlib.sha256(owned).hexdigest() + '\tapp.exe\n' + '0' * 64 + '\tnot-yet-extracted.dll\n', encoding='utf-8')
     (failed / 'user-notes.txt').write_bytes(b'preserve unknown data')
     before = (previous / 'app.exe').read_bytes()
-    result = invoke_cleanup(root, '-RemoveGeneration', str(failed))
+    result = invoke_cleanup(root, '-DiscardStage')
     assert result.returncode == 0, result.stdout
     assert (previous / 'app.exe').read_bytes() == before
     assert not (failed / 'app.exe').exists()
     assert (failed / 'user-notes.txt').read_bytes() == b'preserve unknown data'
 
 
-def test_extraction_rollback_rejects_an_outside_generation(installed, tmp_path):
+def test_prepare_install_restores_active_app_after_interrupted_directory_swap(installed):
     root, previous = installed
-    result = invoke_cleanup(root, '-RemoveGeneration', str(tmp_path / 'outside'))
-    assert result.returncode == 1, result.stdout
-    assert (previous / 'app.exe').exists()
+    backup = root / '.dsh-old'
+    previous.rename(backup)
+    (backup / 'DeepSeek Harness.exe').write_bytes(b'previous app')
+    stage = root / '.dsh-new'
+    stage.mkdir()
+    (stage / 'dsh-owned-files.tsv').write_bytes(b'')
+    result = invoke_cleanup(root, '-PrepareInstall')
+    assert result.returncode == 0, result.stdout
+    assert (root / 'app/DeepSeek Harness.exe').read_bytes() == b'previous app'
+    assert not stage.exists()
+    assert not backup.exists()
 
 
 @pytest.mark.skipif(os.name != 'nt', reason='Windows process path check')

@@ -87,11 +87,14 @@ function installerHandoff(installer,sha256,parentPid,log,installRoot,releaseVers
   // A background helper waits for this exact live process handle to exit before
   // UAC/setup's running-file check. It never kills a process or runs silently.
   const restart=installRoot?"$shortcut=Join-Path ([Environment]::GetFolderPath('CommonStartMenu')) 'Programs\\DeepSeek Harness\\DeepSeek Harness.lnk';$shell=New-Object -ComObject WScript.Shell;$target=$shell.CreateShortcut($shortcut).TargetPath;"+
-    '$prefix='+psLiteral(join(installRoot,'versions',releaseVersion+'-'))+";if(-not $target.StartsWith($prefix,[StringComparison]::OrdinalIgnoreCase) -or [IO.Path]::GetFileName($target) -ne 'DeepSeek Harness.exe'){throw 'Installed restart target differs'};Start-Process -FilePath $target;":"";
+    '$expected='+psLiteral(join(installRoot,'app','DeepSeek Harness.exe'))+';$version='+psLiteral(releaseVersion)+";"+
+    "$installed=Get-ItemProperty -LiteralPath 'HKLM:\\Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\DeepSeekHarnessWin7';"+
+    "if($target -ne $expected -or $installed.DisplayVersion -cne $version){throw 'Installed restart target differs'};Start-Process -FilePath $target;":"";
   const script="$ErrorActionPreference='Stop';try { $parent=Get-Process -Id "+parentPid+" -ErrorAction SilentlyContinue;if($null -ne $parent){if(-not $parent.WaitForExit(120000)){throw 'Desktop did not exit before update'}};"+
     '$file='+psLiteral(installer)+';$stream=[System.IO.File]::OpenRead($file);try {$hash=[System.Security.Cryptography.SHA256]::Create();$actual=[System.BitConverter]::ToString($hash.ComputeHash($stream)).Replace(\'-\',\'\').ToLowerInvariant()}finally{$stream.Dispose()};'+
     'if($actual -ne '+psLiteral(sha256)+"){throw 'Downloaded installer changed before launch'};$setup=Start-Process -FilePath $file -Verb RunAs -Wait -PassThru;if($setup.ExitCode -eq 3010){exit 0};if($setup.ExitCode -ne 0){throw ('Installer exit code: '+$setup.ExitCode)};"+restart+"Remove-Item -LiteralPath $file -Force }catch { $_ | Out-File -LiteralPath "+psLiteral(log)+" -Encoding UTF8;exit 1 }";
-  const binary=join(process.env.SystemRoot||'C:\\Windows','System32','WindowsPowerShell','v1.0','powershell.exe');
+  const systemDirectory=process.arch==='ia32'&&process.env.PROCESSOR_ARCHITEW6432?'Sysnative':'System32';
+  const binary=join(process.env.SystemRoot||'C:\\Windows',systemDirectory,'WindowsPowerShell','v1.0','powershell.exe');
   return {binary,args:['-NoProfile','-NonInteractive','-ExecutionPolicy','Bypass','-EncodedCommand',Buffer.from(script,'utf16le').toString('base64')]};
 }
 class Win7Updater {

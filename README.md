@@ -4,11 +4,11 @@
 
 **DeepSeek Harness Win7 (DSH Win7)** is an unofficial Python port of DeepSeek Harness for Windows 7 SP1 and newer. It includes a desktop app, a browser-based Web GUI, and a command-line interface. See the [English quick start](#english-quick-start).
 
-[**下载正式版**](https://github.com/czh869452912/deepseek-harness-win7/releases/latest) · [试用 0.2.2 预览版](https://github.com/czh869452912/deepseek-harness-win7/releases/tag/rc022-preview-20261123-r2-b0756568) · [源码运行](#源码运行) · [问题反馈](https://github.com/czh869452912/deepseek-harness-win7/issues)
+[**下载正式版**](https://github.com/czh869452912/deepseek-harness-win7/releases/latest) · [源码运行](#源码运行) · [问题反馈](https://github.com/czh869452912/deepseek-harness-win7/issues)
 
 ## 下载和启动
 
-首次使用可从 GitHub 标记的正式版下载。0.2.2 预览版适合试用新版桌面界面和迁移功能。每个发布页都列出了对应安装包、`SHA256SUMS.txt` 和验收范围。正式版 v0.1.5-rc.3-r3 的附件沿用了包含 `creative-preview` 的构建文件名。[正式版](https://github.com/czh869452912/deepseek-harness-win7/releases/latest) · [0.2.2 预览版](https://github.com/czh869452912/deepseek-harness-win7/releases/tag/rc022-preview-20261123-r2-b0756568)
+首次使用可从 GitHub 下载正式版。发布页列出了安装包、`SHA256SUMS.txt` 和验收范围。Desktop 升级沿用现有安装目录，安装成功后清理可验证的旧程序文件并保留用户数据。 [正式版](https://github.com/czh869452912/deepseek-harness-win7/releases/latest)
 
 | 选择 | 下载后怎么用 |
 | --- | --- |

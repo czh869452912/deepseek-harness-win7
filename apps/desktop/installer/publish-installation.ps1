@@ -1,5 +1,5 @@
 # Keep this a basic script: PS2 -File discards advanced-script exit codes.
-param([string]$InstallDirectory, [string]$Generation, [string]$Version)
+param([string]$InstallDirectory, [string]$Version)
 # Run after verified extraction. Restore the previous registry values and exact
 # shortcut bytes if publishing any part of the new installation fails.
 $ErrorActionPreference='Stop'
@@ -7,22 +7,29 @@ $snapshots=@()
 $links=@()
 $temporary=@()
 $registry=[Microsoft.Win32.Registry]::LocalMachine
+$oldMoved=$false
+$newMoved=$false
 try {
-  if ([string]::IsNullOrEmpty($InstallDirectory) -or [string]::IsNullOrEmpty($Generation) -or [string]::IsNullOrEmpty($Version)) {
-    throw 'InstallDirectory, Generation and Version are required'
+  if ([string]::IsNullOrEmpty($InstallDirectory) -or [string]::IsNullOrEmpty($Version)) {
+    throw 'InstallDirectory and Version are required'
   }
   $root=[IO.Path]::GetFullPath($InstallDirectory).TrimEnd('\')
-  $target=[IO.Path]::GetFullPath($Generation).TrimEnd('\')
-  if ([IO.Path]::GetDirectoryName($target) -ne [IO.Path]::Combine($root,'versions') -or
-      [IO.Path]::GetFileName($target) -notmatch '^0\.[0-9]+\.[0-9]+[-.a-zA-Z0-9]*-[a-f0-9]{12}$') { throw 'Invalid publication generation' }
+  $target=[IO.Path]::Combine($root,'app')
+  $stage=[IO.Path]::Combine($root,'.dsh-new')
+  $backup=[IO.Path]::Combine($root,'.dsh-old')
   foreach($name in @('DeepSeek Harness.exe','uninstall.exe','dsh-owned-files.tsv')) {
-    $path=[IO.Path]::Combine($target,$name)
+    $path=[IO.Path]::Combine($stage,$name)
     if (![IO.File]::Exists($path)) {throw ('Publication input missing: '+$name)}
     $item=Get-Item -LiteralPath $path -Force
     while($item) {
       if(($item.Attributes -band [IO.FileAttributes]::ReparsePoint) -ne 0){throw 'Linked publication path'}
-      if($item.FullName.TrimEnd('\') -eq $root){break}
       if($item -is [IO.DirectoryInfo]){$item=$item.Parent}else{$item=$item.Directory}
+    }
+  }
+  if(Test-Path -LiteralPath $target) {
+    if(![IO.File]::Exists([IO.Path]::Combine($target,'dsh-owned-files.tsv')) -or
+        ((Get-Item -LiteralPath $target -Force).Attributes -band [IO.FileAttributes]::ReparsePoint)) {
+      throw 'Existing app directory has no trusted installation inventory'
     }
   }
   $specs=@(
@@ -58,6 +65,12 @@ try {
     $shortcut.WorkingDirectory=$target
     $shortcut.Save()
   }
+  if([IO.Directory]::Exists($target)) {
+    [IO.Directory]::Move($target,$backup)
+    $oldMoved=$true
+  }
+  [IO.Directory]::Move($stage,$target)
+  $newMoved=$true
   foreach($spec in $specs) {
     $key=$registry.CreateSubKey($spec.Path)
     try {foreach($name in $spec.Values.Keys){
@@ -73,6 +86,10 @@ try {
 } catch {
   Write-Host $_.Exception.Message
   $failed=$false
+  try {
+    if($newMoved){[IO.Directory]::Move($target,$stage)}
+    if($oldMoved){[IO.Directory]::Move($backup,$target)}
+  } catch {$failed=$true;Write-Host ('Application rollback failed: '+$_.Exception.Message)}
   foreach($entry in $links) {
     try {
       if($null -eq $entry.Bytes){if([IO.File]::Exists($entry.Path)){[IO.File]::Delete($entry.Path)}}
@@ -95,5 +112,8 @@ try {
   if($failed){exit 5}
   exit 1
 } finally {
-  foreach($path in $temporary){if([IO.File]::Exists($path)){[IO.File]::Delete($path)}}
+  foreach($path in $temporary){
+    try {if([IO.File]::Exists($path)){[IO.File]::Delete($path)}}
+    catch {Write-Host ('Could not remove temporary shortcut: '+$path)}
+  }
 }

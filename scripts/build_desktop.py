@@ -293,11 +293,9 @@ def build(args):
         rows = inventory(unpacked)
         owned = ''.join(row['sha256'] + '\t' + row['path'] + '\n' for row in rows)
         (unpacked / 'dsh-owned-files.tsv').write_bytes(owned.encode('utf-8'))
-        generation = VERSION + '-' + hashlib.sha256(owned.encode('utf-8')).hexdigest()[:12]
-        max_root = 240 - len('/versions/' + generation + '/') - max(len(row['path'].encode('utf-16-le')) // 2 for row in rows)
+        max_root = 240 - len('/.dsh-old-00000000/') - max(len(row['path'].encode('utf-16-le')) // 2 for row in rows)
         if max_root < 40:
             raise ValueError('Desktop payload paths leave insufficient Win7 installation space')
-        record['generation'] = generation
         record['payload'] = dict(files=len(rows),bytes=sum(row['bytes'] for row in rows),
                                  inventorySha256=hashlib.sha256(owned.encode('utf-8')).hexdigest())
         extract_tool(args.nsis_archive, tools['nsis'], output / 'nsis')
@@ -306,7 +304,7 @@ def build(args):
         for edition in editions:
             filename = 'dsh-desktop-' + edition + '-setup-v' + VERSION + '-' + architecture + '.exe'
             definitions = dict(VERSION=VERSION,EDITION=edition,ARCHITECTURE=architecture,OUTPUT=output / filename,
-                               GENERATION=generation,PAYLOAD=unpacked,
+                               PAYLOAD=unpacked,
                                POLICY=frozen / 'prerequisites.ps1',
                                CLEANUP=frozen / 'uninstall-files.ps1',PUBLICATION=frozen / 'publish-installation.ps1',MAX_INSTALL_ROOT=max_root,
                                PREREQUISITES=output / 'prerequisites')

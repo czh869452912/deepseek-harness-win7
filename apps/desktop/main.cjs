@@ -239,7 +239,7 @@ async function main(){
     return state;
   };
   const updater=new Win7Updater({config:updateConfiguration,currentVersion:app.getVersion(),
-    installRoot:development?undefined:resolve(dirname(app.getPath('exe')),'../..'),quit:()=>app.quit(),
+    installRoot:development?undefined:resolve(dirname(app.getPath('exe')),'..'),quit:()=>app.quit(),
     onError:error=>publishUpdate({phase:'error',message:error.message})});
   const updates=new DesktopUpdateCoordinator(publishUpdate,()=>manager.close(),updater,()=>Boolean(updateConfiguration));
   register('dsh-desktop:updates-check',()=>updates.check());

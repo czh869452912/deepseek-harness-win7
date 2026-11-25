@@ -12,17 +12,17 @@ OutFile "${OUTPUT}"
   !define ARCHITECTURE x64
 !endif
 !if "${ARCHITECTURE}" == "x64"
-  InstallDir "$PROGRAMFILES64\DeepSeek Harness"
+  !define DEFAULT_INSTALL_DIR "$PROGRAMFILES64\DeepSeek Harness"
 !else if "${ARCHITECTURE}" == "x86"
-  InstallDir "$PROGRAMFILES32\DeepSeek Harness"
+  !define DEFAULT_INSTALL_DIR "$PROGRAMFILES32\DeepSeek Harness"
 !else
   !error "Unsupported desktop architecture"
 !endif
-InstallDirRegKey HKLM "Software\DeepSeekHarnessWin7" "InstallLocation"
+InstallDir "${DEFAULT_INSTALL_DIR}"
 ShowInstDetails show
 ShowUninstDetails show
 Var PrereqLog
-Var Generation
+Var Stage
 Var PrereqLimited
 !ifndef MAX_INSTALL_ROOT
   !define MAX_INSTALL_ROOT 100
@@ -31,7 +31,7 @@ Var PrereqLimited
 !insertmacro MUI_PAGE_DIRECTORY
 !insertmacro MUI_PAGE_INSTFILES
 !define MUI_FINISHPAGE_TEXT "DeepSeek Harness was installed. Start it from the Start menu. Your settings and sessions stay in your DSH_HOME."
-!define MUI_FINISHPAGE_SHOWREADME "$Generation\resources\app\win7-setup.html"
+!define MUI_FINISHPAGE_SHOWREADME "$INSTDIR\app\resources\app\win7-setup.html"
 !define MUI_FINISHPAGE_SHOWREADME_TEXT "View Windows 7 offline setup guide"
 !define MUI_FINISHPAGE_SHOWREADME_NOTCHECKED
 !define MUI_PAGE_CUSTOMFUNCTION_SHOW ShowEnvironmentGuidance
@@ -75,12 +75,19 @@ Function .onInit
   ${Else}
     SetRegView 32
   ${EndIf}
+  # Resolve the recorded root after selecting publication's registry view.
+  ${If} $INSTDIR == "${DEFAULT_INSTALL_DIR}"
+    ReadRegStr $0 HKLM "Software\DeepSeekHarnessWin7" "InstallLocation"
+    ${If} $0 != ""
+      StrCpy $INSTDIR $0
+    ${EndIf}
+  ${EndIf}
 FunctionEnd
 
 Function ValidateInstallDirectory
   StrLen $0 $INSTDIR
   ${If} $0 > ${MAX_INSTALL_ROOT}
-    MessageBox MB_ICONSTOP "Choose a shorter installation folder. This Win7 package allows at most ${MAX_INSTALL_ROOT} characters before its version directory." /SD IDOK
+    MessageBox MB_ICONSTOP "Choose a shorter installation folder. This Win7 package allows at most ${MAX_INSTALL_ROOT} characters for the installation root." /SD IDOK
     SetErrorLevel 1
     Abort
   ${EndIf}
@@ -157,46 +164,59 @@ Section "Desktop" SEC_DESKTOP
     SetErrorLevel 1
     Abort
   ${EndIf}
-  StrCpy $Generation "$INSTDIR\versions\${GENERATION}"
-  IfFileExists "$Generation\*" generation_exists
-  SetOutPath "$Generation"
+  ${DisableX64FSRedirection}
+  nsExec::ExecToLog /TIMEOUT=180000 '"$SYSDIR\WindowsPowerShell\v1.0\powershell.exe" -NoProfile -NonInteractive -InputFormat None -ExecutionPolicy Bypass -File "$PLUGINSDIR\uninstall-files.ps1" -InstallDirectory "$INSTDIR" -PrepareInstall'
+  Pop $0
+  ${EnableX64FSRedirection}
+  ${If} $0 != 0
+    MessageBox MB_ICONSTOP "Setup could not prepare the installation directory. See Details for the files or running application that require attention." /SD IDOK
+    SetErrorLevel 1
+    Abort
+  ${EndIf}
+  StrCpy $Stage "$INSTDIR\.dsh-new"
+  SetOutPath "$Stage"
   ClearErrors
-  # Publish the inventory before extraction, so interrupted extraction can
-  # remove verified product bytes without touching any earlier generation.
+  # Write the inventory first so a retry can clean up interrupted extraction.
   File /oname=dsh-owned-files.tsv "${PAYLOAD}\dsh-owned-files.tsv"
   File /r "${PAYLOAD}\*"
   IfErrors install_failed
-  WriteUninstaller "$Generation\uninstall.exe"
+  WriteUninstaller "$PLUGINSDIR\uninstall.exe"
   IfErrors install_failed
+  SetOutPath "$PLUGINSDIR"
   ${DisableX64FSRedirection}
-  nsExec::ExecToLog /TIMEOUT=60000 '"$SYSDIR\WindowsPowerShell\v1.0\powershell.exe" -NoProfile -NonInteractive -InputFormat None -ExecutionPolicy Bypass -File "$PLUGINSDIR\uninstall-files.ps1" -InstallDirectory "$INSTDIR" -RegisterGeneration "$Generation"'
+  nsExec::ExecToLog /TIMEOUT=60000 '"$SYSDIR\WindowsPowerShell\v1.0\powershell.exe" -NoProfile -NonInteractive -InputFormat None -ExecutionPolicy Bypass -File "$PLUGINSDIR\uninstall-files.ps1" -InstallDirectory "$INSTDIR" -StagedUninstaller "$PLUGINSDIR\uninstall.exe"'
   Pop $0
   ${EnableX64FSRedirection}
   ${If} $0 != 0
     Goto install_failed
   ${EndIf}
   ${DisableX64FSRedirection}
-  nsExec::ExecToLog /TIMEOUT=60000 '"$SYSDIR\WindowsPowerShell\v1.0\powershell.exe" -NoProfile -NonInteractive -InputFormat None -ExecutionPolicy Bypass -File "$PLUGINSDIR\publish-installation.ps1" -InstallDirectory "$INSTDIR" -Generation "$Generation" -Version "${VERSION}"'
+  nsExec::ExecToLog /TIMEOUT=60000 '"$SYSDIR\WindowsPowerShell\v1.0\powershell.exe" -NoProfile -NonInteractive -InputFormat None -ExecutionPolicy Bypass -File "$PLUGINSDIR\publish-installation.ps1" -InstallDirectory "$INSTDIR" -Version "${VERSION}"'
   Pop $0
   ${EnableX64FSRedirection}
-  ${If} $0 == 5
-    MessageBox MB_ICONSTOP "Installation registration could not be restored. Application generations were preserved for inspection." /SD IDOK
+  ${If} $0 != 0
+  ${AndIf} $0 != 1
+    MessageBox MB_ICONSTOP "Setup could not confirm rollback. Application files were preserved for recovery. See Details." /SD IDOK
     SetErrorLevel 5
     Abort
   ${ElseIf} $0 != 0
     Goto install_failed
   ${EndIf}
+  ${DisableX64FSRedirection}
+  nsExec::ExecToLog /TIMEOUT=180000 '"$SYSDIR\WindowsPowerShell\v1.0\powershell.exe" -NoProfile -NonInteractive -InputFormat None -ExecutionPolicy Bypass -File "$PLUGINSDIR\uninstall-files.ps1" -InstallDirectory "$INSTDIR" -RetirePrevious'
+  Pop $0
+  ${EnableX64FSRedirection}
+  ${If} $0 != 0
+    MessageBox MB_ICONEXCLAMATION "The upgrade is installed. Setup could not finish removing previous application files. See Details. You can retry by running Setup again." /SD IDOK
+  ${EndIf}
   Goto done
-  generation_exists:
-    MessageBox MB_ICONINFORMATION "This exact application generation already exists. Start the installed application or uninstall it before reinstalling." /SD IDOK
-    SetErrorLevel 1
-    Abort
   install_failed:
+    SetOutPath "$PLUGINSDIR"
     ${DisableX64FSRedirection}
-    nsExec::ExecToLog /TIMEOUT=180000 '"$SYSDIR\WindowsPowerShell\v1.0\powershell.exe" -NoProfile -NonInteractive -InputFormat None -ExecutionPolicy Bypass -File "$PLUGINSDIR\uninstall-files.ps1" -InstallDirectory "$INSTDIR" -RemoveGeneration "$Generation"'
+    nsExec::ExecToLog /TIMEOUT=180000 '"$SYSDIR\WindowsPowerShell\v1.0\powershell.exe" -NoProfile -NonInteractive -InputFormat None -ExecutionPolicy Bypass -File "$PLUGINSDIR\uninstall-files.ps1" -InstallDirectory "$INSTDIR" -DiscardStage'
     Pop $0
     ${EnableX64FSRedirection}
-    MessageBox MB_ICONSTOP "Application extraction failed. Verified new-generation files were rolled back; previous generations and user data have been preserved. Modified or unknown files remain for inspection." /SD IDOK
+    MessageBox MB_ICONSTOP "Setup failed. The previous installation and user data were preserved. See Details for extraction, publication and cleanup results." /SD IDOK
     SetErrorLevel 1
     Abort
   done:
@@ -209,8 +229,8 @@ Function un.onInit
   ${Else}
     SetRegView 32
   ${EndIf}
-  # The uninstaller lives inside versions/<generation>.
-  GetFullPathName $INSTDIR "$INSTDIR\..\.."
+  # The uninstaller lives in the fixed app subdirectory.
+  GetFullPathName $INSTDIR "$INSTDIR\.."
 FunctionEnd
 Section "Uninstall"
   InitPluginsDir
@@ -225,15 +245,14 @@ Section "Uninstall"
     SetErrorLevel 1
     Abort
   ${EndIf}
-  SetShellVarContext all
-  Delete "$SMPROGRAMS\DeepSeek Harness\DeepSeek Harness.lnk"
-  Delete "$SMPROGRAMS\DeepSeek Harness\Uninstall.lnk"
-  RMDir "$SMPROGRAMS\DeepSeek Harness"
   ReadRegStr $0 HKLM "Software\DeepSeekHarnessWin7" "InstallLocation"
   ${If} $0 == $INSTDIR
+    SetShellVarContext all
+    Delete "$SMPROGRAMS\DeepSeek Harness\DeepSeek Harness.lnk"
+    Delete "$SMPROGRAMS\DeepSeek Harness\Uninstall.lnk"
+    RMDir "$SMPROGRAMS\DeepSeek Harness"
     DeleteRegKey HKLM "Software\DeepSeekHarnessWin7"
     DeleteRegKey HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\DeepSeekHarnessWin7"
   ${EndIf}
-  Delete "$EXEPATH"
   RMDir "$INSTDIR"
 SectionEnd

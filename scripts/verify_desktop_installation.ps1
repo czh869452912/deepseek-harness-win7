@@ -103,8 +103,8 @@ try {
     if($lane.previous) {
       Invoke-Setup $lane.previous $root (Join-Path $directory 'previous-install.log')
       if((Installed-Root) -ne $root){throw 'Previous install registry differs'}
-      $previous=Get-ChildItem -LiteralPath (Join-Path $root 'versions') | Where-Object PSIsContainer | Select-Object -First 1
-      $previousHash=Digest (Join-Path $previous.FullName 'DeepSeek Harness.exe')
+      $previous=(New-Object -ComObject WScript.Shell).CreateShortcut((Join-Path $menu 'DeepSeek Harness.lnk')).TargetPath
+      if(![IO.File]::Exists($previous)){throw 'Previous application missing'}
       $state.checks+=,'actual-previous-installer'
     }
     $sentinel=Join-Path $root 'user-preservation-probe.txt';[IO.File]::WriteAllText($sentinel,'owned user preservation probe',[Text.Encoding]::UTF8)
@@ -112,22 +112,23 @@ try {
     if((Installed-Root) -ne $root){throw 'Current install registry differs'}
     $shell=New-Object -ComObject WScript.Shell
     $executable=$shell.CreateShortcut((Join-Path $menu 'DeepSeek Harness.lnk')).TargetPath
-    if(!$executable.StartsWith($root+'\versions\',[StringComparison]::OrdinalIgnoreCase) -or [IO.Path]::GetFileName($executable) -ne 'DeepSeek Harness.exe'){throw 'Shortcut target differs'}
-    if($previous -and (Digest (Join-Path $previous.FullName 'DeepSeek Harness.exe')) -ne $previousHash){throw 'Upgrade changed previous executable'}
+    if($executable -ne (Join-Path $root 'app\DeepSeek Harness.exe')){throw 'Shortcut target differs'}
+    if($previous -and $previous -ne $executable -and [IO.File]::Exists($previous)){throw 'Upgrade retained previous executable'}
     $state.checks+=,'real-administrator-install-registry-shortcuts-and-upgrade'
     # Lock the second shortcut to force failure after the first shortcut and
     # registry have been changed. Verify exact restoration of all old values.
     $before=Snapshot-Publication
-    $generation=Join-Path (Join-Path $root 'versions') '0.1.5-rc.3-deadbeef0123';[void][IO.Directory]::CreateDirectory($generation)
-    foreach($name in @('DeepSeek Harness.exe','uninstall.exe','dsh-owned-files.tsv')){[IO.File]::WriteAllText((Join-Path $generation $name),'publication rollback probe',[Text.Encoding]::UTF8)}
+    $priorHash=Digest $executable
+    $stage=Join-Path $root '.dsh-new';[void][IO.Directory]::CreateDirectory($stage)
+    foreach($name in @('DeepSeek Harness.exe','uninstall.exe','dsh-owned-files.tsv')){[IO.File]::WriteAllText((Join-Path $stage $name),'publication rollback probe',[Text.Encoding]::UTF8)}
     $locked=[IO.File]::Open((Join-Path $menu 'Uninstall.lnk'),[IO.FileMode]::Open,[IO.FileAccess]::Read,[IO.FileShare]::Read)
     try {
-      & powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -File $configuration.publication -InstallDirectory $root -Generation $generation -Version '0.1.5-rc.3' *> (Join-Path $directory 'publication-failure.log')
+      & powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -File $configuration.publication -InstallDirectory $root -Version '0.1.5-rc.3' *> (Join-Path $directory 'publication-failure.log')
       $failureCode=$LASTEXITCODE
     } finally {$locked.Close()}
-    if($failureCode -ne 1 -or (Snapshot-Publication) -ne $before){throw ('Publication rollback differs: '+$failureCode)}
-    foreach($name in @('DeepSeek Harness.exe','uninstall.exe','dsh-owned-files.tsv')){[IO.File]::Delete((Join-Path $generation $name))}
-    [IO.Directory]::Delete($generation,$false)
+    if($failureCode -ne 1 -or (Snapshot-Publication) -ne $before -or (Digest $executable) -ne $priorHash){throw ('Publication rollback differs: '+$failureCode)}
+    foreach($name in @('DeepSeek Harness.exe','uninstall.exe','dsh-owned-files.tsv')){[IO.File]::Delete((Join-Path $stage $name))}
+    [IO.Directory]::Delete($stage,$false)
     $state.checks+=,'actual-publication-failure-restores-registry-and-exact-shortcuts'
     @{executable=$executable;root=$root} | ConvertTo-Json | Set-Content -LiteralPath (Join-Path $directory 'installed.json') -Encoding UTF8
     Save-Report
@@ -146,7 +147,7 @@ try {
       Start-Sleep -Milliseconds 200
     }
     if(![IO.File]::Exists($sentinel)){throw 'Uninstaller removed user data'}
-    if([IO.File]::Exists($executable) -or ($previous -and [IO.File]::Exists((Join-Path $previous.FullName 'DeepSeek Harness.exe')))){throw 'Uninstaller retained owned executables'}
+    if([IO.File]::Exists($executable) -or ($previous -and [IO.File]::Exists($previous))){throw 'Uninstaller retained owned executables'}
     foreach($name in @('DeepSeek Harness.lnk','Uninstall.lnk')){if([IO.File]::Exists((Join-Path $menu $name))){throw 'Uninstaller retained shortcut'}}
     [IO.File]::Delete($sentinel)
     # File inventories cannot own empty directories shipped by older builds.

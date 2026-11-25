@@ -25,9 +25,9 @@ Desktop 使用本发行版的独立完整安装器通道。x86 和 x64 分别提
 1. 从已验收候选取得精确的 Standard 安装器，保留字节数和 SHA。安装器名称必须是 `dsh-desktop-standard-setup-v<VERSION>-<x86|x64>.exe`。
 2. 先把安装器发布到 HTTPS 地址，再运行 `node scripts/sign_desktop_update.cjs --installer <exe> --version <version> --architecture <x86|x64> --artifact-url <https-exe-url> --manifest-url <https-feed-url> --private-key <external-pem> --output <new-feed-json>`。
 3. 原子替换对应架构的 feed。服务器不要对响应施加内容编码；允许的 HTTPS 重定向也必须提供可信证书。签名有效期最多 90 天，服务器和客户端需要正确时钟。
-4. 在一台普通用户客户端检查更新，核对下载 SHA，完成 UAC/安装向导，确认重启指向新代目录；再检查会话、设置、快捷方式及旧代保留。
+4. 在一台普通用户客户端检查更新，核对下载 SHA，完成 UAC 和安装向导，确认重启指向安装根目录下的 `app`。再检查会话、设置和快捷方式，确认旧程序文件已清理。
 
-更新器只接受更高的产品版本。同为 `0.1.5-rc.3` 的修复重打包即使代目录散列改变，也不会作为自动更新出现；这一类修复使用独立安装器覆盖安装。下一次正式更新必须同时推进安装器内版本和签名 feed 版本，不能只修改 feed 标签。
+更新器只接受更高的产品版本。同版本的修复重打包使用独立安装器覆盖安装。下一次正式更新必须同时推进安装器内版本和签名 feed 版本。使用旧版内网更新器首次升级到固定安装目录时，安装完成后从开始菜单启动一次，因为旧版更新器只接受 `versions` 目录下的自动重启路径。
 
 ## 部署前验证
 

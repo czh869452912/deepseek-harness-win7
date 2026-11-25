@@ -58,7 +58,7 @@ async def test_actual_tcp_auth_cold_inherited_file_uses_viewed_child_current_sou
     async def fetch(path,method='POST'):
         reader,writer=await asyncio.open_connection('127.0.0.1',server.listened_port)
         try:
-            writer.write((method+' '+path+' HTTP/1.1\r\nHost: 127.0.0.1\r\nContent-Length: 0\r\n\r\n').encode('ascii'))
+            writer.write((method+' '+path+' HTTP/1.1\r\nHost: 127.0.0.1\r\nConnection: close\r\nContent-Length: 0\r\n\r\n').encode('ascii'))
             await writer.drain()
             raw=await asyncio.wait_for(reader.read(),5)
             headers,body=raw.split(b'\r\n\r\n',1)

@@ -35,7 +35,7 @@ async def test_actual_http_channel_admits_before_body_and_carries_binary_for_ope
     async def exchange(cookie=None,body=None):
         reader,writer=await asyncio.open_connection('127.0.0.1',server.listened_port)
         try:
-            headers=b'POST /binary/read HTTP/1.1\r\nHost: 127.0.0.1\r\nContent-Type: application/json\r\n'
+            headers=b'POST /binary/read HTTP/1.1\r\nHost: 127.0.0.1\r\nConnection: close\r\nContent-Type: application/json\r\n'
             if cookie:headers+=('Cookie: '+cookie+'\r\n').encode()
             payload=body if body is not None else b''
             headers+=('Content-Length: '+str(len(payload) if body is not None else 999999)+'\r\n\r\n').encode()

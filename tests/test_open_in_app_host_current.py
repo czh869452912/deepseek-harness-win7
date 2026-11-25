@@ -71,7 +71,8 @@ async def test_real_tcp_auth_before_body_bounded_chunked_input_and_reversible_ro
     async def fetch(path,method='GET',body=b'',headers=None,declared=None,chunked=False):
         reader,writer=await asyncio.open_connection('127.0.0.1',server.listened_port)
         try:
-            values={'Host':'127.0.0.1','Content-Type':'application/json'};values.update(headers or {})
+            values={'Host':'127.0.0.1','Content-Type':'application/json','Connection':'close'}
+            values.update(headers or {})
             if chunked:
                 values['Transfer-Encoding']='chunked'
             else:values['Content-Length']=str(len(body) if declared is None else declared)

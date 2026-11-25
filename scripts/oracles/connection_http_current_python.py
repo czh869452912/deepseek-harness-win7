@@ -32,7 +32,8 @@ async def execute(action):
     await server.start()
     reader, writer = await asyncio.open_connection('127.0.0.1', server.listened_port)
     try:
-        headers = 'POST /api/upload HTTP/1.1\r\nHost: 127.0.0.1\r\n'
+        # The probe reads until EOF. Opt out of persistent connections for this request.
+        headers = 'POST /api/upload HTTP/1.1\r\nHost: 127.0.0.1\r\nConnection: close\r\n'
         if action.get('chunked'):
             headers += 'Transfer-Encoding: chunked\r\n'
             body = b''.join(('{:x}\r\n'.format(len(chunk.encode('utf-8'))).encode('ascii') + chunk.encode('utf-8') + b'\r\n') for chunk in action.get('chunks', []))

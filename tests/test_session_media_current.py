@@ -56,7 +56,8 @@ async def test_real_tcp_head_length_get_ranges_auth_and_route_unload(tmp_path):
         async def fetch(method, path=str(target), extra=''):
             reader, writer = await asyncio.open_connection('127.0.0.1', server.listened_port)
             try:
-                writer.write((method + ' /api/file?' + urlencode(dict(path=path)) + ' HTTP/1.1\r\nHost: 127.0.0.1\r\n' + extra + '\r\n').encode('ascii'))
+                writer.write((method + ' /api/file?' + urlencode(dict(path=path)) +
+                              ' HTTP/1.1\r\nHost: 127.0.0.1\r\nConnection: close\r\n' + extra + '\r\n').encode('ascii'))
                 await writer.drain()
                 raw = await asyncio.wait_for(reader.read(), 5)
                 headers, body = raw.split(b'\r\n\r\n', 1)

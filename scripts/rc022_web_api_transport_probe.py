@@ -61,6 +61,7 @@ async def observe():
                     except OSError: pass
                     return
                 self.send_response(status)
+                self.send_header('connection', 'close')
                 if status == 302: self.send_header('location', '/must-not-follow')
                 self.send_header('content-length', str(len(encoded))); self.end_headers()
                 if 'body-abort' in mode:

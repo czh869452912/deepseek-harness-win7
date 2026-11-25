@@ -22,7 +22,14 @@ async def observe():
                 data=''.join(parts).encode('utf-8');return dict(text=data[offset:].decode('utf-8',errors='replace'),nextOffset=len(data),lossy=False)
             return NS(readFrom=read)
         def spawn(spec):
-            calls.append({key:spec[key] for key in ('argv','cwd','stdio','graceMs','env')})
+            call = {key: spec[key] for key in ('argv', 'cwd', 'stdio', 'graceMs', 'env')}
+            if sys.platform == 'win32':
+                # The Native collector needs this hint for Windows PowerShell's
+                # legacy stderr encoding. Check it before comparing the shared spec.
+                expected = dict(call['stdio']['stderr'])
+                assert expected.pop('textEncoding') == 'powershell'
+                call['stdio'] = dict(call['stdio'], stderr=expected)
+            calls.append(call)
             if mode=='sync-failure':raise original
             def terminated():
                 kills.append('kill')

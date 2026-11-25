@@ -23,6 +23,8 @@ const server=http.createServer(async(req,res)=>{
  entered=true
  if(mode==='header-abort')return
  res.statusCode=status
+ // Each fixture observes an independent request, including cancellation mid-body.
+ res.setHeader('connection','close')
  if(status===302)res.setHeader('location','/must-not-follow')
  res.setHeader('content-length',Buffer.byteLength(encoded))
  if(mode.includes('body-abort')){res.write(encoded.slice(0,1));return}

@@ -105,6 +105,12 @@ class DesktopRuntime:
             return await self.api.fetch(request, self.peer)
         if request['method'] not in ('GET', 'HEAD'):
             return result(405)
+        if url.path == '/plugins/events':
+            stream = self.ctx.get('clientHmrStream')
+            if stream is None:
+                return result(404)
+            return result(200, stream(signal) if request['method'] == 'GET' else None,
+                          {'content-type': 'text/event-stream', 'cache-control': 'no-cache'})
         if url.path.startswith('/plugins/'):
             from dsh.cordis.awaiting import await_callback_result
             return await await_callback_result(self.ctx.get('clientModules').fetchBundle(request))
@@ -120,7 +126,8 @@ class DesktopRuntime:
             transport = await read_owned(ROOT / 'apps/desktop-host/transport.js')
             signal.throwIfAborted()
             transport_text = transport.decode('utf-8').replace('\r\n', '\n').replace('\r', '\n')
-            rows = [dict(kind='script', placement='head', text=transport_text)]
+            rows = [dict(kind='script', placement='head', text=transport_text + '\n'
+                         'globalThis.__DSH_TRANSPORT__.fetch = (input, init) => fetch(input, init);')]
             self.ctx.emit('webserver/index-inject', rows)
             index = await read_owned(self.dist / 'index.html')
             signal.throwIfAborted()
@@ -177,7 +184,7 @@ async def run_desktop_host(profile_dir, environment=None, patches=None):
         rows = [row for layer in profile.layers for row in layer.patches] + profile.patches
         application_patch_start = len(rows)
         rows += [dict(id=identity, disabled=True) for identity in
-                 ('web-startup', 'webserver', 'web-runtime', 'client-hmr', 'open-in-app', 'ui-open-in-app', 'directory-picker')]
+                 ('web-startup', 'webserver', 'web-runtime', 'open-in-app', 'ui-open-in-app', 'directory-picker')]
         rows += [dict(id='connection', inject=['credentials'], config={}), dict(insert=[
             dict(id='directory-picker-native', name='@deepseek-ai/dsh-host-directory-picker-native'),
             dict(id='ui-directory-picker-native', name='@deepseek-ai/dsh-client-ui-directory-picker-native')])]
@@ -198,11 +205,15 @@ async def run_desktop_host(profile_dir, environment=None, patches=None):
         root_config = directory / 'desktop.cordis.yml'
         root_config.write_text('# Desktop composition root; user overrides belong in cordis.patch.yml.\n[]\n', encoding='utf-8')
         app_ready = create_app_ready()
-        def prepare(host):
+        async def prepare(host):
             host.provide(DSH_LAUNCH_ENVIRONMENT_KEY, environment)
             host.provide('profileContext', profile_context)
             host.provide('nativeProcessEnvironment', process_environment)
+            host.provide('pythonProfileLease', lease)
+            host.provide('pythonDependencies', dependencies)
             PluginPackages(host, dict(resolution=resolution))
+            from dsh.boot.python_package_backend import PythonPackageBackend
+            await host.plugin(PythonPackageBackend)
             provide_cmdline(host, dict(args=[], exit=lambda code: None, ready=app_ready['service']))
         ctx = await boot('dsh desktop', str(root_config), admit_historical_persona_patches(rows), prepare)
         from dsh.host.desktop.health_transaction import read as pending_health

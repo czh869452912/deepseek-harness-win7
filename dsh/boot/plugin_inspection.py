@@ -3,6 +3,7 @@ import asyncio
 import json
 import os
 import re
+import zipfile
 
 from dsh.boot.plugin_bundle_metadata import bundle_selection, update_refusal
 from dsh.boot.plugin_compatibility import evaluate_plugin_compatibility
@@ -17,6 +18,30 @@ from dsh.cordis.utils import js_to_string
 from dsh.typert.remote import Remote
 
 INSPECT_FIELDS = ['name', 'version', 'description', 'dsh']
+MAX_MANIFEST_BYTES = 1024 * 1024
+
+
+def _local_manifest(path, native):
+    if native and os.path.isfile(path) and path.lower().endswith('.zip'):
+        with zipfile.ZipFile(path) as archive:
+            manifests = [entry for entry in archive.infolist() if not entry.is_dir()
+                         and entry.filename.count('/') <= 1
+                         and entry.filename.rsplit('/', 1)[-1].casefold() == 'package.json']
+            roots = [entry for entry in manifests if '/' not in entry.filename]
+            candidates = roots or manifests
+            if len(candidates) != 1:
+                raise ValueError('ZIP requires one package.json at its root')
+            member = candidates[0]
+            if member.file_size > MAX_MANIFEST_BYTES:
+                raise ValueError('package.json exceeds the metadata limit')
+            return _json(archive.read(member).decode('utf-8'))
+    with open(os.path.join(path, 'package.json'), encoding='utf-8', errors='replace') as stream:
+        return _json(stream.read())
+
+
+def _native_abi(manifest):
+    version = _field(_field(_field(manifest, 'dsh'), 'python'), 'apiVersion')
+    return type(version) is int and version == 1
 
 
 def _message(error):return getattr(error, 'message', str(error))
@@ -122,6 +147,7 @@ class PluginInspection:
     async def inspect(self, spec, options=None, signal=None):
         try:parsed = parse_install_spec(spec)
         except InvalidInstallSpecError as error:return _refused('invalid-spec', error.reason)
+        native = self._package_backend() is not None
         manifest = read_profile_manifest('dsh', _field(self.profile, 'dir'))
         with open(_field(self.profile, 'installAnchor'), encoding='utf-8') as stream:installation = json.load(stream)
         known = set(bundle_selection(manifest)) | set(manifest.get('dependencies') or {}) | set(installation.get('dependencies') or {})
@@ -136,12 +162,14 @@ class PluginInspection:
         if parsed['kind'] == 'path':
             if not os.path.exists(parsed['path']):return _refused('not-a-package', 'the path does not exist')
             try:
-                with open(os.path.join(parsed['path'], 'package.json'), encoding='utf-8', errors='replace') as stream:read = _json(stream.read())
-            except (OSError, ValueError) as error:return _refused('not-a-package', 'no readable package.json at the path: '+_message(error))
+                read = await asyncio.get_running_loop().run_in_executor(None, _local_manifest, parsed['path'], native)
+            except (OSError, ValueError, KeyError, zipfile.BadZipFile) as error:
+                return _refused('not-a-package', 'no readable package.json at the path: '+_message(error))
             inspection = _inspection('path', read, registry)
             if 'name' not in inspection:return _refused('not-a-package', 'the package.json names no package')
             if inspection['name'] in known:return _refused('already-installed', inspection['name']+' is already installed')
             if not inspection['bundle']:return _refused('not-a-bundle', inspection['name']+' declares no dsh.bundle')
+            if native and not _native_abi(read):return _refused('not-a-package', inspection['name']+' requires a Win7 Python plugin build')
             return inspection
         if parsed['name'] in known:return _refused('already-installed', parsed['name']+' is already installed')
         asked = await self._ask_registries(spec.strip(JS_SPACE), INSPECT_FIELDS, plan, parsed, signal)
@@ -152,6 +180,8 @@ class PluginInspection:
         inspection = _inspection('registry', latest, asked['registry'])
         inspection.setdefault('name', parsed['name'])
         if not inspection['bundle']:return dict(_refused('not-a-bundle', inspection['name']+' declares no dsh.bundle'), registries=registries)
+        if native and not _native_abi(latest):
+            return dict(_refused('not-a-package', inspection['name']+' requires a Win7 Python plugin build'), registries=registries)
         return inspection
 
     @Remote('listVersions')

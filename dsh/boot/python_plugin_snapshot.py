@@ -7,7 +7,7 @@ import tempfile
 
 from dsh.boot import python_plugins as store
 from dsh.boot.profile import read_profile_manifest
-from dsh.boot.python_plugin_versions import managed, owned_path
+from dsh.boot.python_plugin_versions import archive_path, generation, managed, owned_path, verify
 
 _OWNER = object()
 ROOT = '.dsh-python-updates'
@@ -29,6 +29,31 @@ class InstalledPackageSnapshot:
                 or os.path.normcase(os.path.realpath(source)) != os.path.normcase(os.path.realpath(self.source))):
             raise RuntimeError('installed snapshot is expired or belongs to another source/profile')
         return json.loads(self._record_json)
+
+    def record_history(self, name, version):
+        previous = self.record_for(self.directory, self.source)
+        profile = read_profile_manifest('dsh', self.directory)
+        _, current = managed(self.directory, name, profile)
+        if current['version'] != version:
+            raise RuntimeError('The updated plugin changed before its history was recorded')
+        history = previous.pop('history', [])
+        for retained in history:
+            verify(archive_path(self.directory, name, retained), retained['files'])
+        previous['generation'] = generation(previous)
+        archive = archive_path(self.directory, name, previous)
+        if not os.path.exists(archive):
+            parent = os.path.dirname(archive)
+            os.makedirs(parent, exist_ok=True)
+            with tempfile.TemporaryDirectory(prefix='retain-', dir=parent) as temporary:
+                stage = os.path.join(temporary, 'package')
+                os.mkdir(stage)
+                store.copy_source(self.source, stage)
+                verify(stage, previous['files'])
+                store.replace_directory(stage, archive)
+        verify(archive, previous['files'])
+        replaced = {generation(current), previous['generation']}
+        current['history'] = [retained for retained in history if retained['generation'] not in replaced] + [previous]
+        store.atomic_bytes(os.path.join(self.directory, 'package.json'), store.json_bytes(profile))
 
     def preserve(self, reason):
         record = self.record_for(self.directory, self.source)

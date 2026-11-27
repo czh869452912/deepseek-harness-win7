@@ -19,7 +19,7 @@ async function wait(window,predicate){
   }
   throw new Error('Desktop renderer did not become ready: '+predicate);
 }
-async function run({app,mainWindow,openPlugins,pluginWindow,guideWindow,environment,manager,output}){
+async function run({app,mainWindow,openPlugins,openLocalPlugins,pluginWindow,guideWindow,environment,manager,output}){
   await mkdir(output,{recursive:true});
   const report={versions:process.versions,errors:[],transitionErrors:[]};
   const interruptedRequests=new Set([
@@ -188,7 +188,25 @@ async function run({app,mainWindow,openPlugins,pluginWindow,guideWindow,environm
       return {first,cancelled};
     })()`);
     assert.equal(report.stream.first.done,false);assert.equal(report.stream.cancelled,true);
-    openPlugins();const shell=pluginWindow();
+    openPlugins();
+    await wait(mainWindow,"Boolean(document.querySelector('[data-plugin-panel]'))");
+    assert.equal(pluginWindow(),undefined);
+    const marketBundle='@deepseek-ai/dsh-experimental-plugin-market-bundle';
+    const callPluginManager=(method,args)=>evaluate(mainWindow,`(async()=>{
+      const method=${JSON.stringify('pluginManager/'+method)};
+      const response=await fetch('/api/'+method,{method:'POST',headers:{'content-type':'application/json'},
+        body:JSON.stringify({type:'client-request',rpcId:crypto.randomUUID(),method,payload:{args:${JSON.stringify(args)}}})});
+      const {result}=await response.json();
+      return result.ok?result.value:result;
+    })()`);
+    const enableMarket=enabled=>callPluginManager('setBundleEnabled',{name:marketBundle,enabled});
+    const enabledMarket=await enableMarket(true);
+    assert.equal(enabledMarket.application,'applied',JSON.stringify(enabledMarket));
+    await wait(mainWindow,"[...document.querySelectorAll('[role=tab]')].some(tab=>tab.textContent.trim()==='发现')");
+    assert.equal((await enableMarket(false)).application,'applied');
+    await wait(mainWindow,"![...document.querySelectorAll('[role=tab]')].some(tab=>tab.textContent.trim()==='发现')");
+    report.pluginPanel={mainWindow:true,discoverLive:true};
+    openLocalPlugins();const shell=pluginWindow();
     await wait(shell,"Boolean(document.querySelector('#title')?.textContent && !document.querySelector('#refresh').disabled)");
     report.shell=await evaluate(shell,`(async()=>({url:location.href,node:typeof require,process:typeof process,
       title:document.querySelector('#title').textContent,status:document.querySelector('#status').textContent,

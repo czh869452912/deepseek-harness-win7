@@ -8,6 +8,7 @@ import pytest
 
 from dsh.boot.profile_boot import INSTALL_ANCHOR
 from dsh.boot.python_plugin_snapshot import restore_retained_package
+from dsh.boot.python_plugin_versions import archive_path, verify
 from test_python_plugin_distribution import profile, close, boot, echo, PACKAGE
 from test_rc022_python_package_acquire import registry_package
 from test_rc022_python_package_backend import start
@@ -63,6 +64,10 @@ async def test_actual_native_update_removal_install_and_owned_offline_restoratio
         assert result['from'] == '0.1.0' and result['to'] == '0.2.0' and result['step'] == 'install', result
         if mode in ('success', 'disabled'):
             assert result['result']['application'] == 'applied' and 'restore' not in result, result
+            manifest = json.loads((directory / 'package.json').read_text(encoding='utf-8'))
+            retained, = manifest['dsh']['pythonPlugins'][PACKAGE]['history']
+            assert retained['version'] == previous['version'] and retained['acquisition'] == previous['acquisition']
+            verify(archive_path(str(directory), PACKAGE, retained), previous['files'])
             if mode == 'success':
                 assert await echo(ctx) == 'Updated: hello'
             else:

@@ -38,7 +38,7 @@ def installation_of(bundle, version):
     return dict(status='update-available' if newer else 'different-version', installedVersion=installed)
 
 
-def listing_of(plugin, bundles, exemptions, runtime_version):
+def listing_of(plugin, bundles, exemptions, runtime_version, native_compatible=True):
     bundle = next((bundle for bundle in bundles if bundle['name'] == plugin['name']), None)
     origin = pinned_git_origin(bundle['source']) if bundle is not None and bundle.get('update') == 'git' and 'source' in bundle else None
     installed = None if bundle is None else bundle.get('version')
@@ -53,6 +53,11 @@ def listing_of(plugin, bundles, exemptions, runtime_version):
         issue = evaluate_plugin_compatibility(manifest, exemptions, runtime_version)
         compatibility = dict(compatible=True) if issue is None else dict(compatible=False,
             runtimeVersion=issue['runtimeVersion'], requirements=issue['requirements'], exempted=issue['exempted'])
+        if not native_compatible:
+            requirements = dict(compatibility.get('requirements', {}))
+            requirements['win7'] = 'Win7 Python Host (verified index required)'
+            compatibility = dict(compatible=False, runtimeVersion=runtime_version,
+                requirements=requirements, exempted=False)
         versions.append(dict(version, install=target, compatibility=compatibility, update=update))
     stable = any(prerelease(version['version']) is None for version in plugin['versions'])
     default = next((version['version'] for version in versions if version['compatibility']['compatible']

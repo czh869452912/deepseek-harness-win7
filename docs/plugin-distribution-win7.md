@@ -1,5 +1,7 @@
 # Native delivery on Win7
 
+For the planned Desktop and Web plugin management flow, compatible plugin indexes, and LAN distribution, see the [Win7 plugin management plan](research/2026-11-27-win7-plugin-management-plan.md).
+
 This optional native extension is separate from the original dynamic Cordis workflow. Use it only when the user requests persistent source delivery. It is not mounted by default or required by the cordis-plugin-development skill.
 
 To expose cordis_export, explicitly mount the existing row `name: '@deepseek-ai/dsh-tool-python-export'`: insert it with a CLI profile patch, or append it to a user-owned Web preset copy. Do not edit a shipped preset or mount another development-skill provider.
@@ -103,6 +105,31 @@ supplied by registry metadata. The plugin manager can install/remove this source
 its automatic version update flow accepts registry or fixed Git sources. Use
 the stopped-profile `upgrade <tarball-url>` and offline `rollback` commands for
 explicit direct URL replacements.
+
+## Publish an index for Desktop and Portable
+
+Build a static upstream format-1 index and npm-compatible package registry from reviewed native packages. The publisher produces `index.json`, registry version metadata and `.tgz` archives with `dist.integrity`. Run it on the maintainer machine from the source checkout. Set the base URL to the final HTTPS directory and use the release time in Unix seconds.
+
+```powershell
+.venv/Scripts/python.exe scripts/build_plugin_index.py --output C:\release\win7-index --base-url https://plugins.example.test/win7/ --publish-timestamp 1795737600 C:\release\dsh-context.zip
+```
+
+Serve the output directory at the configured URL. Paths under `registry/` are JSON packuments, and paths under `packages/` serve the exact archives. For scoped npm names, the web server must resolve the encoded slash in metadata requests to the scope directory. Copy a published archive unchanged when deploying it to another site. Add new versions as additional publisher inputs. Use `https://dshopen.org/` to browse the wider community and the Win7 port’s release page to obtain its supported build.
+
+Configure the profile's `cordis.patch.yml`. On Desktop the file is under `DSH_HOME/profiles/desktop`. For the default Portable Web profile use `DSH_HOME/profiles/web`. `compatibleIndexes` identifies feeds whose publisher verifies Win7 compatibility. The Host validates the actual archive, and newly added unreviewed sources remain browseable with their installation actions disabled.
+
+```yaml
+- id: plugin-market
+  config:
+    indexes: [https://plugins.example.test/win7/index.json]
+    compatibleIndexes: [https://plugins.example.test/win7/index.json]
+- id: plugin-manager
+  config:
+    registry: https://plugins.example.test/win7/registry/
+    fallbackRegistries: []
+```
+
+In the main Plugins page, enable Custom plugin indexes under Experimental plugins and open Discover. When moving a plugin from a local ZIP to an indexed release, use a newer version of the same package and run the existing stopped-profile upgrade command with the selected registry. The upgrade retains the previous version for offline rollback. Scope configuration and saved sources belong to the current profile. For a private CA, configure trust for the Win7 Host and package subprocess before launch. Index icons and package URLs need to resolve inside the LAN on isolated deployments.
 
 ## Upgrade, rollback and removal
 

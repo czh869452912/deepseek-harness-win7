@@ -398,8 +398,17 @@ class CurrentPluginManager(PluginUpdate, PluginInstallation, PluginInspection, T
     async def setBundleEnabled(self, name, enabled):
         async def operation(result):
             async def apply():
+                profile = read_profile_manifest('dsh', _field(self.profile, 'dir'))
+                native_install = name in profile.get('dsh', {}).get('pythonPlugins', {})
+                enabling_native = enabled and native_install and name not in bundle_selection(profile)
                 await self._select_bundle(name, enabled)
-                result.update(await self._publish_and_reload([row['id'] for row in self._bundle_rows(name)]) if enabled else await self._reload())
+                try:
+                    result.update(await self._publish_and_reload([row['id'] for row in self._bundle_rows(name)]) if enabled else await self._reload())
+                except Exception:
+                    if enabling_native:
+                        await self._select_bundle(name, False)
+                        await self._reload()
+                    raise
             await self._configure(apply)
         return await self._change(operation, dict(stage='enable', target=name, enabled=enabled), 'bundle')
 

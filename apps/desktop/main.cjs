@@ -83,7 +83,22 @@ function createWindow(shell){
   window.loadURL('dsh-app://'+expected+(shell?'/plugin-manager.html':'/index.html')).catch(error=>console.error(error));
   return window;
 }
-function openPlugins(){if(pluginWindow&&!pluginWindow.isDestroyed()){pluginWindow.show();pluginWindow.focus();}else pluginWindow=createWindow(true);}
+function openLocalPlugins(){
+  if(pluginWindow&&!pluginWindow.isDestroyed()){pluginWindow.show();pluginWindow.focus();}
+  else pluginWindow=createWindow(true);
+}
+function openPlugins(){
+  focus();
+  if(!mainWindow||mainWindow.isDestroyed())return;
+  const contents=mainWindow.webContents;
+  const open=()=>{
+    if(!contents.isDestroyed()&&contents.getURL().startsWith('dsh-app://app/')){
+      contents.send('dsh-desktop:open-plugins');
+    }
+  };
+  if(contents.isLoadingMainFrame())contents.once('did-finish-load',open);
+  else open();
+}
 function openGuide(){
   if(guideWindow&&!guideWindow.isDestroyed()){guideWindow.show();guideWindow.focus();return;}
   guideWindow=new BrowserWindow({width:920,height:760,title:'Windows 7 offline setup',webPreferences:{nodeIntegration:false,contextIsolation:true,sandbox:true,webSecurity:true}});
@@ -282,11 +297,12 @@ async function main(){
   const updateMenu=()=>Menu.setApplicationMenu(Menu.buildFromTemplate([shortcuts.fileMenu({
     fileMenu:locale.id==='zh-CN'?'文件':'File',closePage:locale.id==='zh-CN'?'关闭页面':'Close Page',
   }),{label:locale.messages.application,submenu:[
-    {id:'dsh-plugin-manager',label:locale.messages.pluginsMenu,accelerator:'CmdOrCtrl+,',click:openPlugins},
+    {id:'dsh-plugin-manager',label:locale.id==='zh-CN'?'插件':'Plugins',accelerator:'CmdOrCtrl+,',click:openPlugins},
+    {label:locale.id==='zh-CN'?'导入本地插件…':'Import Local Plugin…',click:openLocalPlugins},
     {label:locale.messages.checkUpdatesMenu,click:()=>{void checkAndPrompt(true);}},{type:'separator'},
     {label:locale.id==='zh-CN'?'退出':'Quit',click:()=>app.quit()}]}]));
   const updateTray=()=>tray?.setContextMenu(Menu.buildFromTemplate([
-    {label:'DeepSeek Harness',click:focus},{label:locale.messages.pluginsMenu,click:openPlugins},
+    {label:'DeepSeek Harness',click:focus},{label:locale.id==='zh-CN'?'插件':'Plugins',click:openPlugins},
     {type:'separator'},{label:locale.id==='zh-CN'?'退出':'Quit',click:()=>app.quit()}]));
   shortcuts=installDesktopShortcuts(()=>mainWindow,app.getPath('userData'),'windows',updateMenu,
     ()=>({revision:0,blocked:false}));
@@ -300,7 +316,7 @@ async function main(){
   app.on('activate',focus);
   publishUpdate(updateState);
   const updateTimer=setTimeout(()=>{void checkAndPrompt(false);},10000);updateTimer.unref();
-  if(development&&option('--test-output'))await require('./smoke-test.cjs').run({app,mainWindow,openPlugins,
+  if(development&&option('--test-output'))await require('./smoke-test.cjs').run({app,mainWindow,openPlugins,openLocalPlugins,
     pluginWindow:()=>pluginWindow,guideWindow:()=>guideWindow,environment,manager,output:resolve(option('--test-output'))});
 }
 app.on('window-all-closed',()=>{});

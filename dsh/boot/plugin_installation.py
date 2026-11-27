@@ -183,7 +183,13 @@ class PluginInstallation:
                 if options.get('enabled') is not False:await self._select_bundle(name,True)
                 if name in before and self.owner_context.get('hmr') is None:return
                 selected=name in bundle_selection(read_profile_manifest('dsh',directory))
-                result.update(await self._publish_and_reload([row['id'] for row in self._bundle_rows(name)] if selected else []))
+                try:
+                    result.update(await self._publish_and_reload([row['id'] for row in self._bundle_rows(name)] if selected else []))
+                except Exception:
+                    if selected and run.get('nativeCommitted'):
+                        await self._select_bundle(name, False)
+                        await self._reload()
+                    raise
             return await self._configure(apply)
         async def run():
             try:return await self._change(operation,dict(stage='install',target=spec,enabled=options.get('enabled') is not False),'install')

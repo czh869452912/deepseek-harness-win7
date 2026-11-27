@@ -4,6 +4,7 @@ import tempfile
 from types import SimpleNamespace
 
 from dsh.boot.plugin_compatibility import evaluate_plugin_compatibility,plugin_compatibility_warning
+from dsh.boot.plugin_registry_policy import normalize_registry
 from dsh.boot.plugin_install_spec import parse_install_spec
 from dsh.boot.python_package import package_name
 from dsh.boot.python_package_query import PackageQueryError,query_metadata,npm_configuration,package_registry,_public
@@ -32,6 +33,10 @@ def acquired_registry_package(directory,spec,registry=None,env=None,exemptions=N
     if parsed['kind']!='registry' or parsed.get('range','').startswith('npm:'):
         raise NativePackageRefused('ERR_DSH_PACKAGE_SPEC','native package installation requires a registry identity under its own name')
     name=package_name(parsed['name'])
+    selected = package_registry(npm_configuration(directory, env), name, registry)
+    if registry is not None and selected != normalize_registry(registry):
+        raise NativePackageRefused('ERR_DSH_REGISTRY_MISMATCH',
+            'The configured package scope points to a different registry than the selected source')
     metadata=query_metadata(directory,spec,ACQUISITION_FIELDS,registry,env)
     if (not isinstance(metadata,dict) or metadata.get('name')!=name or not is_exact_version(metadata.get('version'))
             or is_exact_version(parsed.get('range')) and metadata['version']!=parsed['range']):
@@ -44,7 +49,7 @@ def acquired_registry_package(directory,spec,registry=None,env=None,exemptions=N
     distribution=metadata.get('dist')
     if not isinstance(distribution,dict):raise NativePackageRefused('ERR_DSH_PACKAGE_ARTIFACT','registry package has no pinned archive')
     with downloaded_tarball(distribution.get('tarball'),distribution.get('integrity')) as (archive,record):
-        record.update(name=name,version=version,registry=_public(package_registry(npm_configuration(directory,env),name,registry)))
+        record.update(name=name,version=version,registry=_public(selected))
         with tempfile.TemporaryDirectory(prefix='dsh-native-unpack-') as stage:
             unpack_tarball(archive,stage)
             try:manifest=validate_package(stage)

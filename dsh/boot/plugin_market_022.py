@@ -5,7 +5,7 @@ import os
 import re
 from urllib.parse import parse_qs, urlsplit
 
-from dsh.boot.market_document_022 import MarketDocumentCache
+from dsh.boot.market_document_022 import MarketDocumentCache, normalize_index_url
 from dsh.boot.market_detail_022 import MarketDetailReader
 from dsh.boot.market_http_022 import MarketHttpReader
 from dsh.boot.market_search_022 import MarketSearchWorker
@@ -35,6 +35,7 @@ class CurrentPluginMarket(TypertRemoteService):
     inject = ['pluginManager']
     Config = z.object(dict(
         indexes=z.array(z.string().pattern(re.compile('^https?://[^'+re.escape(JS_WHITESPACE)+']+$'))).default([]).volatile(),
+        compatibleIndexes=z.array(z.string()).default([]),
         fetchTimeoutMs=z.natural().min(1).max(2147483647).default(15000),
         maxBytes=z.natural().min(1).default(128*1024*1024), cacheTtlMs=z.natural().default(600000),
         detailMaxBytes=z.natural().min(1).default(1024*1024), detailImageMaxBytes=z.natural().min(1).default(5*1024*1024),
@@ -46,6 +47,7 @@ class CurrentPluginMarket(TypertRemoteService):
     def __init__(self, ctx, config=None):
         super().__init__(ctx, 'pluginMarket')
         self.owner, self.config = ctx, config
+        self.compatible_indexes = frozenset(normalize_index_url(url) for url in config.get('compatibleIndexes', []))
         self.entry_id = field(field(getattr(ctx.fiber, 'entry', None), 'options'), 'id')
         profile = ctx.get('profileContext')
         cache_dir = config.get('detailCacheDir')
@@ -89,12 +91,13 @@ class CurrentPluginMarket(TypertRemoteService):
             raise RemoteError('plugin-market/settings-unavailable', 'Index sources require the settings service and a profile entry', {})
         await await_callback_result(settings.update(self.entry_id, dict(indexes=normalized)))
 
-    async def annotator(self):
+    async def annotator(self, url):
         manager = self.owner.get('pluginManager')
         bundles = await await_callback_result(manager.listBundles())
         exemptions = manager.listVersionExemptions()['exemptions']
         runtime = get_dsh_runtime_version()
-        return lambda plugin: listing_of(plugin, bundles, exemptions, runtime)
+        native_compatible = self.owner.get('profilePackages') is None or url in self.compatible_indexes
+        return lambda plugin: listing_of(plugin, bundles, exemptions, runtime, native_compatible)
 
     @Remote
     async def search(self, url, query):
@@ -115,7 +118,7 @@ class CurrentPluginMarket(TypertRemoteService):
         names = await self.searches.select(url, document, query)
         page = names[int(offset):int(offset+limit)]
         plugins = {plugin['name']: plugin for plugin in index['plugins']}
-        listing = await self.annotator()
+        listing = await self.annotator(url)
         next_offset = offset+len(page)
         return dict(url=url, title=index['title'], **({} if 'description' not in index else dict(description=index['description'])),
             metadata=index['metadata'], fetchedAt=document['fetchedAt'], entries=[listing(plugins[name]) for name in page],
@@ -124,7 +127,7 @@ class CurrentPluginMarket(TypertRemoteService):
     async def entry(self, url, name):
         index = (await self.documents.document(url))['index']
         plugin = next((plugin for plugin in index['plugins'] if plugin['name'] == name), None)
-        return None if plugin is None else (await self.annotator())(plugin)
+        return None if plugin is None else (await self.annotator(url))(plugin)
 
     def detail_repository_options(self):
         return dict(timeoutMs=self.config['fetchTimeoutMs'], lifetime=self.documents.lifetime.signal,

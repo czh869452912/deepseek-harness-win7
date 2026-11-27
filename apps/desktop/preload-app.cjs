@@ -6,6 +6,30 @@ if (location.protocol==='dsh-app:' && location.host==='app' && process.isMainFra
     ipcRenderer.on(channel,listener);
     return ()=>ipcRenderer.removeListener(channel,listener);
   };
+  let pluginNavigationObserver;
+  let pluginNavigationDeadline;
+  const stopPluginNavigation=()=>{
+    pluginNavigationObserver?.disconnect();
+    clearTimeout(pluginNavigationDeadline);
+  };
+  ipcRenderer.on('dsh-desktop:open-plugins',()=>{
+    stopPluginNavigation();
+    // The pinned sidebar exposes Plugins as a fixed, labelled navigation button.
+    const labels=new Set(['Plugins','插件','プラグイン','Complementos','Плагины','Plug-ins']);
+    const open=()=>{
+      const entry=Array.from(document.querySelectorAll('nav button[aria-label]'))
+        .find(button=>labels.has(button.getAttribute('aria-label')));
+      if(!entry)return false;
+      stopPluginNavigation();
+      entry.click();
+      return true;
+    };
+    if(open())return;
+    pluginNavigationObserver=new MutationObserver(open);
+    pluginNavigationObserver.observe(document,{childList:true,subtree:true});
+    pluginNavigationDeadline=setTimeout(stopPluginNavigation,10000);
+  });
+  window.addEventListener('pagehide',stopPluginNavigation,{once:true});
   const browser={
     acquire:workspace=>ipcRenderer.invoke('dsh-desktop:browser-acquire',workspace),
     release:lease=>ipcRenderer.invoke('dsh-desktop:browser-release',lease),

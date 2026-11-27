@@ -62,6 +62,10 @@ class PythonPackageBackend(Plugin):
                 await with_file_lock(os.path.join(self.directory, 'package.json'), capture, waitMs=lock_wait_ms)
                 result = await operation()
                 restore = result.get('restore', {})
+                if snapshot is not None and result['result']['application'] in ('applied', 'restart-required'):
+                    async def retain_history():
+                        await self._exclusive(lambda: snapshot.record_history(name, result['to']), NEVER_ABORTED)
+                    await with_file_lock(os.path.join(self.directory, 'package.json'), retain_history, waitMs=lock_wait_ms)
                 if snapshot is not None and restore.get('application') in ('failed', 'cancelled'):
                     path = snapshot.preserve('update-restoration-failed')
                     command = ['dsh', 'plugin', '--profile', _field(self.profile, 'name'), 'recover', path]

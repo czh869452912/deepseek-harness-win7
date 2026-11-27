@@ -399,7 +399,7 @@ async def _run_profile(options: Dict[str, Any]) -> Dict[str, Any]:
         'telemetryDisabledEnv': composed.telemetry_disabled_env,
     }
 
-    def host_setup(host_ctx: Context) -> None:
+    async def host_setup(host_ctx: Context) -> None:
         app["current"] = host_ctx
         holder = options.get("_python_profile_context")
         if holder is not None:
@@ -433,6 +433,9 @@ async def _run_profile(options: Dict[str, Any]) -> Dict[str, Any]:
         host_ctx.provide(DSH_LAUNCH_ENVIRONMENT_KEY, environment)
         host_ctx.provide('profileContext', profile_context)
         PluginPackages(host_ctx, dict(resolution=composed.resolution))
+        if lease is not None and '@deepseek-ai/dsh-web-app' in profile_context['startedBundles']:
+            from dsh.boot.python_package_backend import PythonPackageBackend
+            await host_ctx.plugin(PythonPackageBackend)
         provide_cmdline(host_ctx, {
             "args": args,
             "exit": lambda code: shutdown.shutdown(code),

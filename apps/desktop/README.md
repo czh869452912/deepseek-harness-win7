@@ -12,7 +12,8 @@ For a development checkout:
 ```
 
 The application owns `$DSH_HOME/profiles/desktop` (default `~/.dsh`). Ctrl+,
-opens its separate plugin manager. The Windows tray keeps the main window
+opens Plugins in the main window. The Application menu exposes a separate local
+folder/ZIP import for offline packages. The Windows tray keeps the main window
 available after closing it; Quit releases the Host and profile lease. Both
 renderers use context isolation, sandboxing and disabled Node integration.
 On upgrade, an unchanged default session configuration preserves a purely

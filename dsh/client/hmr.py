@@ -14,13 +14,13 @@ def stat_bundle(path):
 
 class ClientHmrPlugin(Plugin):
     id = 'client-hmr'
-    inject = ['clientModules', 'webServer']
+    inject = ['clientModules']
 
     def apply(self, ctx):
         interval = self.config.get('pollIntervalMs', 500)
         if type(interval) is not int or interval < 1:
             raise ValueError('client-hmr: pollIntervalMs must be a positive integer')
-        modules, server = ctx.get('clientModules'), ctx.get('webServer')
+        modules = ctx.get('clientModules')
         watched, clients, active = {}, {}, set()
         stopped = asyncio.Event()
         def rehash(identity, watch, current):
@@ -53,7 +53,10 @@ class ClientHmrPlugin(Plugin):
                     watched[identity] = dict(baseline, dirty=False)
                     check(identity, watched[identity])
         sync()
-        unsubscribe_graph = modules.on_graph_changed(sync)
+        def graph_changed():
+            sync()
+            broadcast(dict(type='graph', graph=modules.graph()))
+        unsubscribe_graph = modules.on_graph_changed(graph_changed)
         ctx.effect(lambda: unsubscribe_graph)
         async def poll():
             while not stopped.is_set():
@@ -62,10 +65,11 @@ class ClientHmrPlugin(Plugin):
                 except asyncio.TimeoutError:
                     for identity, watch in list(watched.items()):
                         check(identity, watch)
-        def rebuilt(identity, revision):
-            frame = dict(type='rebuilt', id=identity, rev=revision)
+        def broadcast(frame):
             for queue in list(clients.values()):
                 queue.put_nowait(frame)
+        def rebuilt(identity, revision):
+            broadcast(dict(type='rebuilt', id=identity, rev=revision))
         unsubscribe_rebuilt = modules.rebuild_listener(rebuilt)
         ctx.effect(lambda: unsubscribe_rebuilt)
         async def handler(request, response):
@@ -104,17 +108,32 @@ class ClientHmrPlugin(Plugin):
                 await asyncio.gather(*([disconnect] + ([pending] if pending is not None else [])), return_exceptions=True)
                 response.writer.close()
                 active.discard(asyncio.current_task())
-        remove_route = server.register('exact', '/plugins/events', handler)
-        ctx.effect(lambda: remove_route)
+        def register_web(scope):
+            scope.effect(lambda: scope.get('webServer').register('exact', '/plugins/events', handler))
+        ctx.inject(['webServer'], register_web)
+        ctx.provide('clientHmrStream', lambda signal: self.stream(modules, clients, signal))
         task = asyncio.create_task(poll())
         async def close():
             stopped.set()
-            remove_route()
             unsubscribe_graph()
             unsubscribe_rebuilt()
             for response, queue in list(clients.items()):
                 queue.put_nowait(None)
-                response.writer.close()
+                if hasattr(response, 'writer'):
+                    response.writer.close()
             await asyncio.gather(task, *list(active), return_exceptions=True)
             watched.clear()
         ctx.effect(lambda: close)
+
+    async def stream(self, modules, clients, signal):
+        owner, queue = object(), asyncio.Queue()
+        clients[owner] = queue
+        detach = signal.add_listener('abort', lambda _: queue.put_nowait(None))
+        queued = dict(type='graph', graph=modules.graph())
+        try:
+            while queued is not None and not signal.aborted:
+                yield ('data: ' + json.dumps(queued, ensure_ascii=False, separators=(',', ':')) + '\n\n').encode('utf-8')
+                queued = await queue.get()
+        finally:
+            detach()
+            clients.pop(owner, None)
